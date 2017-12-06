@@ -56,5 +56,37 @@
         </plugins>
       </build>
     </profile>
+
+    <profile>
+      <id>platform-windows</id>
+      <activation>
+        <os>
+          <family>windows</family>
+        </os>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-antrun-plugin</artifactId>
+            <version>1.7</version>
+            <executions>
+              <execution>
+                <phase>generate-sources</phase>
+                <configuration>
+                  <tasks>
+                    <exec executable="${project.basedir}\build_client.bat" failonerror="true">
+                    </exec>
+                  </tasks>
+                  <skip>${skip.fe.build}</skip>
+                </configuration>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
   </profiles>
 </project>
