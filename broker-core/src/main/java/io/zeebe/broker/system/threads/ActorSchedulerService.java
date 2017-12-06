@@ -120,7 +120,7 @@ public class ActorSchedulerService implements Service<ActorScheduler>
             case BUSY_SPIN:
                 return new BusySpinIdleStrategy();
             default:
-                return new BackoffIdleStrategy(1000, 100, 100, TimeUnit.MILLISECONDS.toNanos(maxIdleTimeMs));
+                return new BackoffIdleStrategy(10_000, 10_000, 100, TimeUnit.MILLISECONDS.toNanos(maxIdleTimeMs));
         }
     }
 

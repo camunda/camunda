@@ -36,7 +36,7 @@ public abstract class MaxRateThroughputTest
 {
     public static final String TEST_WARMUP_TIMEMS = "test.warmup.timems";
     public static final String TEST_WARMUP_REQUESTRATE = "test.warmup.requestRate";
-    public static final String TEST_MAX_CONCURRENT_REQUESTS = "128";
+    public static final String TEST_MAX_CONCURRENT_REQUESTS = "test.maxRequests";
 
     public void run()
     {
@@ -71,7 +71,7 @@ public abstract class MaxRateThroughputTest
     protected void setDefaultProperties(final Properties properties)
     {
         properties.putIfAbsent(TEST_WARMUP_TIMEMS, "30000");
-        properties.putIfAbsent(TEST_WARMUP_REQUESTRATE, "1000");
+        properties.putIfAbsent(TEST_WARMUP_REQUESTRATE, "30000");
         properties.putIfAbsent(CommonProperties.TEST_TIMEMS, "30000");
         properties.putIfAbsent(TEST_MAX_CONCURRENT_REQUESTS, "128");
         properties.putIfAbsent(CommonProperties.TEST_OUTPUT_FILE_NAME, "data/output.txt");
