@@ -73,7 +73,7 @@ public class ConfigurationService {
   private Integer engineJobExecutorQueueSize;
   private Integer engineJobExecutorThreadCount;
   private String hpiEndpoint;
-  private Long importRestIntervalMs;
+  private Integer importRestIntervalMs;
   private Integer elasticsearchScrollTimeout;
   private Integer elasticsearchConnectionTimeout;
   private Integer engineConnectTimeout;
@@ -443,13 +443,6 @@ public class ConfigurationService {
     return hpiEndpoint;
   }
 
-  public long getImportResetIntervalValue() {
-    if (importRestIntervalMs == null) {
-      importRestIntervalMs = jsonContext.read(ConfigurationServiceConstants.IMPORT_REST_INTERVAL_MS, Long.class);
-    }
-    return importRestIntervalMs;
-  }
-
   public int getElasticsearchScrollTimeout() {
     if (elasticsearchScrollTimeout == null) {
       elasticsearchScrollTimeout = jsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_SCROLL_TIMEOUT, Integer.class);
@@ -795,7 +788,7 @@ public class ConfigurationService {
     return finishedPiIdTrackingType;
   }
 
-  public Long getImportRestIntervalMs() {
+  public Integer getImportRestIntervalMs() {
     if (importRestIntervalMs == null) {
       importRestIntervalMs = jsonContext.read(ConfigurationServiceConstants.IMPORT_REST_INTERVAL_MS);
     }
@@ -1056,7 +1049,7 @@ public class ConfigurationService {
     this.hpiEndpoint = hpiEndpoint;
   }
 
-  public void setImportRestIntervalMs(Long importRestIntervalMs) {
+  public void setImportRestIntervalMs(Integer importRestIntervalMs) {
     this.importRestIntervalMs = importRestIntervalMs;
   }
 
