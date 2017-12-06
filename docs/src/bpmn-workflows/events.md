@@ -1,6 +1,6 @@
 # Events
 
-Currently, Zeebe only supports two types of events:
+Currently, Zeebe supports two types of events:
 
 * None Start Events
 * None End Events

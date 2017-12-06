@@ -1,6 +1,6 @@
 # Activities
 
-Currently, Zeebe only supports service tasks.
+Currently, Zeebe supports service tasks.
 
 ## Service Tasks
 

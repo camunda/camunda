@@ -1,6 +1,6 @@
 # Gateways
 
-Currently, Zeebe only supports the exclusive gateway.
+Currently, Zeebe supports the exclusive gateway.
 
 ## Exclusive Gateway (XOR)
 
