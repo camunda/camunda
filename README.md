@@ -1,7 +1,7 @@
 # Zeebe.io - Microservice Orchestration Engine
 
 
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.zeebe/zeebe-root/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.zeebe/zeebe-root)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.zeebe/zeebe-distribution/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.zeebe/zeebe-distribution)
 [![Slack](https://zeebe-slackin.herokuapp.com/badge.svg)](https://zeebe-slackin.herokuapp.com/)
 
 Zeebe scales orchestration of workers and microservices using visual workflows. Zeebe is horizontally scalable and fault tolerant so that you can reliably process all your transactions as they happen.
