@@ -1,6 +1,6 @@
 import React from 'react';
 import moment from 'moment';
-import {Redirect} from 'react-router-dom';
+import {Redirect, Link} from 'react-router-dom';
 
 import {Table, Button} from 'components';
 
@@ -69,17 +69,25 @@ export default class EntityList extends React.Component {
 
   render() {
     const {redirectToEntity, loaded} = this.state;
+    const {isHomeList} = this.props;
+
+    const isListEmpty = (this.state.data.length === 0);
 
     let createButton = null;
     if(this.props.operations.includes('create')) {
       createButton = <Button className='Button--green EntityList__createButton' onClick={this.createEntity}>Create New {this.props.label}</Button>;
     }
 
+    const createLink = <Link className='EntityList__createLink' to='' onClick={this.createEntity}>Create New {this.props.label}...</Link>;
     const header = <h1 className='EntityList__heading'>{this.props.label}s</h1>;
 
     let list;
     if(loaded) {
-      list = (<ul className='EntityList__list'>
+      list = (isListEmpty) ?
+      (<ul className="EntityList__list">
+            <li className="EntityList__item EntityList__no-entities">You have no Dashboards configured yet. {createLink}</li>
+       </ul>) :
+      (<ul className='EntityList__list'>
         {this.formatData(this.state.data).map((row, idx) => {
           return (<li key={idx} className='EntityList__item'>
             {row.map((cell, idx) => {
@@ -109,6 +117,7 @@ export default class EntityList extends React.Component {
         </div>
         {list}
         {this.props.children}
+        {(isHomeList && !isListEmpty) ? <Link to={`/${this.props.api}s`} className='small'>View all {`${this.props.label}`}s…</Link> : ''}
       </section>);
     }
   }

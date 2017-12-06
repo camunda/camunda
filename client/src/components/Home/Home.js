@@ -1,8 +1,6 @@
 import React from 'react';
 import {EntityList} from '../EntityList';
 
-import {Link} from 'react-router-dom';
-
 export default function Home() {
   return [
     <EntityList
@@ -11,10 +9,8 @@ export default function Home() {
       label='Dashboard'
       displayOnly='5'
       sortBy={'lastModified'}
-      operations={['edit']}>
-
-      <Link to='/dashboards' className='small'>View all Dashboards…</Link>
-
+      operations={['edit']}
+      isHomeList = {true}>
     </EntityList>,
     <EntityList
       key='report'
@@ -22,10 +18,8 @@ export default function Home() {
       label='Report'
       displayOnly='5'
       sortBy={'lastModified'}
-      operations={['edit']}>
-
-      <Link to='/reports' className='small'>View all Reports…</Link>
-
+      operations={['edit']}
+      isHomeList = {true}>
     </EntityList>
   ];
 }

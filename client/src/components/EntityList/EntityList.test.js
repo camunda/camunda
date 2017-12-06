@@ -22,9 +22,8 @@ jest.mock('./service', () => {
 });
 jest.mock('react-router-dom', () => {
   return {
-    Redirect: ({to}) => {
-      return <div>REDIRECT to {to}</div>
-    },
+    Link: ({children, to}) => {return <a href={to}>{children}</a>},
+    Redirect: ({to}) => {return <div>REDIRECT to {to}</div>}
   }
 });
 
@@ -81,7 +80,50 @@ it('should display a list with the results', () => {
   expect(node).toIncludeText(sampleEntity.name);
   expect(node).toIncludeText(sampleEntity.lastModifier);
   expect(node).toIncludeText('some date');
+  expect(node.find('.EntityList__no-entities')).not.toBePresent();
   expect(node.find('ul')).toBePresent();
+});
+
+it('should display no-entities indicator if no entities', () => {
+  const node = mount(<EntityList api='endpoint' label='Dashboard'/>);
+
+  node.setState({
+    loaded: true,
+    data: []
+  });
+
+  expect(node.find('.EntityList__no-entities')).toBePresent();
+});
+
+it('should display create entity link if no entities', () => {
+  const node = mount(<EntityList api='endpoint' label='Dashboard'/>);
+
+  node.setState({
+    loaded: true,
+    data: []
+  });
+  expect(node.find('.EntityList__createLink')).toBePresent();
+});
+
+it('should not display create entity link if there are entities', () => {
+  const node = mount(<EntityList api='endpoint' label='Dashboard' operations={['edit']}/>);
+
+  node.setState({
+    loaded: true,
+    data: [sampleEntity]
+  });
+  expect(node.find('.EntityList__createLink')).not.toBePresent();
+});
+
+it('should not display create entity button on home page' , () => {
+  const node = mount(<EntityList isHomeList={true} api='endpoint' label='Dashboard' operations={['edit']}/>);
+
+  node.setState({
+    loaded: true,
+    data: []
+  });
+
+  expect(node.find('.EntityList__createButton')).not.toBePresent();
 });
 
 it('should call new entity on click on the new entity button and redirect to the new entity', async () => {
