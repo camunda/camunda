@@ -1,6 +1,6 @@
 import React from 'react';
 
-import {Modal, Button, Select} from 'components';
+import {Modal, Button, Select, ControlGroup} from 'components';
 
 import {loadReports} from './service';
 
@@ -59,21 +59,21 @@ export default class AddButton extends React.Component {
       <Modal open={this.state.modalOpen} onClose={this.closeModal} className='AddButton__modal'>
         <Modal.Header>Add a Report</Modal.Header>
         <Modal.Content>
-          <center>
-            <div>Select a Report from the list...</div>
-            <div>
-              <Select value={this.state.selectedReportId} onChange={this.selectReport}>
-                {this.state.availableReports.map(report => {
-                  return <Select.Option key={report.id} value={report.id}>{report.name}</Select.Option>
-                })}
-              </Select>
-            </div>
-            <div>or</div>
+          <ControlGroup layout='centered'>
+            <label htmlFor='AddButton__selectReports'>Select a Report from the list…</label>
+            <Select value={this.state.selectedReportId} onChange={this.selectReport} name='AddButton__selectReports' className='AddButton__selectReports'>
+              {this.state.availableReports.map(report => {
+                return <Select.Option key={report.id} value={report.id}>{report.name}</Select.Option>
+              })}
+            </Select>
+          </ControlGroup>
+          <div className='AddButton__modal-divider'>or</div>
+          <div className='AddButton__create-button'>
             <Button disabled={true}>Create new Report...</Button>
-          </center>
+          </div>
         </Modal.Content>
         <Modal.Actions>
-          <Button onClick={this.closeModal}>Abort</Button>
+          <Button onClick={this.closeModal}>Cancel</Button>
           <Button type='primary' className='Button--blue' onClick={this.addReport}>Add Report</Button>
         </Modal.Actions>
       </Modal>

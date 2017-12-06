@@ -16,7 +16,8 @@ jest.mock('components', () => {
   return {
     Modal,
     Select,
-    Button: props => <button {...props}>{props.children}</button>
+    Button: props => <button {...props}>{props.children}</button>,
+    ControlGroup: props => <div>{props.children}</div>
   };
 });
 
