@@ -79,29 +79,29 @@ export default class ControlPanel extends React.Component {
     return <div className='ControlPanel'>
       <ul className='ControlPanel__list'>
         <li className='ControlPanel__item'>
-          <label htmlFor='process-definition' className='ControlPanel__label'>Process definition</label>
-          <Select name='process-definition' value={this.props.processDefinitionId} onChange={this.changeDefinition}>
+          <label htmlFor='ControlPanel__process-definition' className='ControlPanel__label'>Process definition</label>
+          <Select name='ControlPanel__process-definition' value={this.props.processDefinitionId} onChange={this.changeDefinition}>
             {addSelectionOption()}
             {this.state.availableDefinitions.map(definition => <Select.Option value={definition.id} key={definition.id}>{definition.id}</Select.Option>)}
           </Select>
         </li>
         <li className='ControlPanel__item'>
-          <label htmlFor='view' className='ControlPanel__label'>View</label>
-          <Select name='view' value={parseView(this.props.view)} onChange={this.changeView}>
+          <label htmlFor='ControlPanel__view' className='ControlPanel__label'>View</label>
+          <Select name='ControlPanel__view' value={parseView(this.props.view)} onChange={this.changeView}>
             {addSelectionOption()}
             {renderOptions('view')}
           </Select>
         </li>
         <li className='ControlPanel__item'>
-          <label htmlFor='group-by' className='ControlPanel__label'>Group by</label>
-          <Select name='group-by' value={parseGroup(this.props.groupBy)} onChange={this.changeGroup}>
+          <label htmlFor='ControlPanel__group-by' className='ControlPanel__label'>Group by</label>
+          <Select name='ControlPanel__group-by' value={parseGroup(this.props.groupBy)} onChange={this.changeGroup}>
             {addSelectionOption()}
             {renderOptions('groupBy')}
           </Select>
         </li>
         <li className='ControlPanel__item'>
-          <label htmlFor='visualize-as' className='ControlPanel__label'>Visualize as</label>
-          <Select name='visualize-as' value={this.props.visualization} onChange={this.changeVisualization}>
+          <label htmlFor='ControlPanel__visualize-as' className='ControlPanel__label'>Visualize as</label>
+          <Select name='ControlPanel__visualize-as' value={this.props.visualization} onChange={this.changeVisualization}>
             {addSelectionOption()}
             {renderOptions('visualizeAs')}
           </Select>

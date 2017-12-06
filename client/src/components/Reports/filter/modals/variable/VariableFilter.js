@@ -81,8 +81,8 @@ export default class VariableFilter extends React.Component {
       <Modal.Content>
         <form>
           <ControlGroup layout='horizontal'>
-            <label htmlFor='variables'>Variable Name</label>
-            <Select value={selectedVariableIdx} onChange={this.selectVariable} name='variables'>
+            <label htmlFor='VariableFilter__variables'>Variable Name</label>
+            <Select value={selectedVariableIdx} onChange={this.selectVariable} name='VariableFilter__variables'>
               <Select.Option disabled value={-1}>Please Select Variable</Select.Option>
               {variables.map(({name}, idx) => {
                 return <Select.Option value={idx} key={idx}>{name}</Select.Option>

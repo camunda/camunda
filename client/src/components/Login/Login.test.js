@@ -38,7 +38,7 @@ it('should reflect the state in the input fields', () => {
 it('should update the state from the input fields', () => {
   const node = mount(<Login />);
   const input = 'asdf'
-  const field = 'username';
+  const field = 'Login__username';
 
   node.instance().passwordField = document.createElement('input');
 
@@ -113,7 +113,7 @@ it('should clear the error state after user input', () => {
   node.setState({error: true});
 
   const input = 'asdf'
-  const field = 'username';
+  const field = 'Login__username';
   node.find(`input[name="${field}"]`).simulate('change', {target: {value: input, name:field}});
 
   expect(node).not.toHaveState('error', true);
