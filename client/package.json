@@ -39,6 +39,7 @@
     "jest-enzyme": "^4.0.1",
     "request": "^2.83.0",
     "shelljs": "^0.7.8",
+    "js-yaml": "^3.10.0",
     "tarball-extract": "^0.0.6"
   },
   "proxy": {

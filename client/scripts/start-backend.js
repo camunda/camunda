@@ -33,7 +33,7 @@ if (!process.env.FAST_BUILD) {
   const mvnCleanPackage = runWithColor(mvnCleanPackageCmd,'maven',chalk.green,{
     cwd: mvnCwd
   });
-  
+
   mvnCleanPackage.on('close', startBackend);
 } else {
   startBackend(0);
@@ -94,13 +94,13 @@ function startBackend(code) {
             const backendJar = utils.findFile(extractDir, '.jar');
             const config = utils.findPath(extractDir, [
               'environment',
-              'environment-config.json'
+              'environment-config.yaml'
             ]);
             const environmentDir = path.resolve(extractDir, 'environment');
             const classpathSeparator = isWindows ? ';' : ':' ;
             const classpath = environmentDir + classpathSeparator + backendJar;
 
-            utils.changeJsonFile(config, content => {
+            utils.changeYAMLFile(config, content => {
               return Object.assign(
                 content,
                 {

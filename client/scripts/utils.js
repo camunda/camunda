@@ -6,6 +6,7 @@ const request = promisify(require('request'));
 const tarball = require('tarball-extract');
 const chalk = require('chalk');
 const exec = require('child_process').exec;
+const yaml = require('js-yaml');
 
 const readdir = promisify(fs.readdir, fs);
 
@@ -21,6 +22,7 @@ exports.isWindows = /^win/.test(process.platform);
 exports.runInSequence = runInSequence;
 exports.changeFile = changeFile;
 exports.changeJsonFile = changeJsonFile;
+exports.changeYAMLFile = changeYAMLFile;
 exports.delay = delay;
 
 function runWithColor(command, name, color, options = {}) {
@@ -189,5 +191,13 @@ function changeJsonFile(file, changeFn) {
     const jsonContent = JSON.parse(content);
 
     return JSON.stringify(changeFn(jsonContent), null, 2);
+  });
+}
+
+function changeYAMLFile (file, changeFn) {
+  return changeFile(file, content => {
+    const yamlContent = yaml.safeLoad(content);
+
+    return yaml.safeDump(changeFn(yamlContent));
   });
 }
