@@ -1,5 +1,9 @@
 # Zeebe Test
 
+
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.zeebe/zeebe-test/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.zeebe/zeebe-test)
+
+
 JUnit test rules for Zeebe applications.
 
 * [Web Site](https://zeebe.io)
