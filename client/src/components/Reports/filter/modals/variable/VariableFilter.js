@@ -89,12 +89,12 @@ export default class VariableFilter extends React.Component {
               })}
             </Select>
           </ControlGroup>
-          <div className='VariableFilter__operatorButtons'>
-            {this.variableIsSelected() && this.renderOperatorButtons(
-              variables[selectedVariableIdx].type,
-              operator
-            )}
-          </div>
+            <div className='VariableFilter__operatorButtons'>
+              {this.variableIsSelected() && this.renderOperatorButtons(
+                variables[selectedVariableIdx].type,
+                operator
+              )}
+            </div>
           <div className='VariableFilter__valueFields'>
             {this.variableIsSelected() && this.renderValueFields(
               variables[selectedVariableIdx].type,
@@ -183,18 +183,18 @@ export default class VariableFilter extends React.Component {
   renderOperatorButtons = (type, selection) => {
     switch(type) {
       case 'String': return [
-        <Button key='=' onClick={this.selectOperator} operator='in' className={this.state.operator === 'in' ? 'VariableFilter__operatorButton--active' : ''}>is</Button>,
-        <Button key='!=' onClick={this.selectOperator} operator='not in' className={this.state.operator === 'not in' ? 'VariableFilter__operatorButton--active' : ''}>is not</Button>
+        <Button key='=' onClick={this.selectOperator} operator='in' className={this.state.operator === 'in' ? 'is-active' : ''}>is</Button>,
+        <Button key='!=' onClick={this.selectOperator} operator='not in' className={this.state.operator === 'not in' ? 'is-active' : ''}>is not</Button>
       ];
       case 'Boolean': return [
-        <Button key='true' onClick={this.selectOperator} operator='=' className={this.state.values[0] === true ? 'VariableFilter__operatorButton--active' : ''} value={true}>is true</Button>,
-        <Button key='false' onClick={this.selectOperator} operator='=' className={this.state.values[0] === false ? 'VariableFilter__operatorButton--active' : ''} value={false}>is false</Button>
+        <Button key='true' onClick={this.selectOperator} operator='=' className={this.state.values[0] === true ? 'is-active' : ''} value={true}>is true</Button>,
+        <Button key='false' onClick={this.selectOperator} operator='=' className={this.state.values[0] === false ? 'is-active' : ''} value={false}>is false</Button>
       ];
       default: return [
-        <Button key='=' onClick={this.selectOperator} className={this.state.operator === 'in' ? 'VariableFilter__operatorButton--active' : ''} operator='in'>is</Button>,
-        <Button key='!=' onClick={this.selectOperator} className={this.state.operator === 'not in' ? 'VariableFilter__operatorButton--active' : ''} operator='not in'>is not</Button>,
-        <Button key='<' onClick={this.selectOperator} className={this.state.operator === '<' ? 'VariableFilter__operatorButton--active' : ''} operator='<'>is less than</Button>,
-        <Button key='>' onClick={this.selectOperator} className={this.state.operator === '>' ? 'VariableFilter__operatorButton--active' : ''} operator='>'>is greater than</Button>
+        <Button key='=' onClick={this.selectOperator} className={this.state.operator === 'in' ? 'is-active' : ''} operator='in'>is</Button>,
+        <Button key='!=' onClick={this.selectOperator} className={this.state.operator === 'not in' ? 'is-active' : ''} operator='not in'>is not</Button>,
+        <Button key='<' onClick={this.selectOperator} className={this.state.operator === '<' ? 'is-active' : ''} operator='<'>is less than</Button>,
+        <Button key='>' onClick={this.selectOperator} className={this.state.operator === '>' ? 'is-active' : ''} operator='>'>is greater than</Button>
       ];
     }
   }
@@ -205,9 +205,9 @@ export default class VariableFilter extends React.Component {
         if(availableValues.length === 0) {
           return 'loading...';
         }
-        return <ul>
+        return <ul className='VariableFilter__valueList'>
           {availableValues.map((value, idx) => {
-            return <li key={idx}>
+            return <li key={idx} className='VariableFilter__valueListItem'>
               <label>
                 <Input type='checkbox' checked={values.includes(value)} value={value} onChange={this.toggleValue} />
                 {value}
@@ -221,13 +221,13 @@ export default class VariableFilter extends React.Component {
       case 'Boolean':
         return null;
       default:
-        return <ul>
+        return <ul className='VariableFilter__valueList VariableFilter__valueList--inputs'>
           {values.map((value, idx) => {
-            return <li key={idx}>
-              <Input type='text' value={value} data-idx={idx} onChange={this.changeValue} placeholder='Enter value' />
+            return <li key={idx} className='VariableFilter__valueListItem'>
+              <Input type='text' value={value} data-idx={idx} onChange={this.changeValue} placeholder='Enter value' autoFocus />
             </li>
           })}
-          {values[values.length - 1] && <li><Button onClick={this.addValue}>Add Another Value</Button></li>}
+          {values[values.length - 1] && <li className='VariableFilter__valueListButton'><Button onClick={this.addValue} className='VariableFilter__addValueButton'>Add Value</Button></li>}
         </ul>
     }
   }

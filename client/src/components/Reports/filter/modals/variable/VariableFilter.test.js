@@ -127,7 +127,7 @@ describe('number variables', () => {
       values: ['value0']
     });
 
-    expect(node).toIncludeText('Add Another Value');
+    expect(node.find('.VariableFilter__addValueButton')).toBePresent();
   });
 
   it('should not display the possibility to add another value if last field is empty', () => {
@@ -138,7 +138,7 @@ describe('number variables', () => {
       values: ['value0', 'value1', '']
     });
 
-    expect(node).not.toIncludeText('Add Another Value');
+    expect(node.find('.VariableFilter__addValueButton')).not.toBePresent();
   });
 
   it('should add another value when clicking add another value button', () => {

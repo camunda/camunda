@@ -1,5 +1,11 @@
 .ControlGroup {
 
+  margin-bottom: 24px;
+  
+  &:last-child {
+    margin-bottom: 0;
+  }
+
   .Input,
   .Select {
     width: 100%;
@@ -10,10 +16,6 @@
     color: #626265;
     margin-bottom: 12px;
     display: block;
-  }
-  
-  & + & {
-    margin-bottom: 24px;
   }
   
 }
@@ -35,4 +37,20 @@
     display: inline-block;
   }
     
+}
+
+
+.ControlGroup--centered {
+  text-align: center;
+  
+  label {
+    display: block;
+    margin-bottom: 12px;
+  }
+  
+  .Input,
+  .Select {
+    width: auto;
+  }
+  
 }
