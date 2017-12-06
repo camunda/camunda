@@ -746,6 +746,91 @@ public class ConfigurationService {
     return containerHttpPort;
   }
 
+  public String getHpiEndpoint() {
+    if (hpiEndpoint == null) {
+      hpiEndpoint = jsonContext.read(ConfigurationServiceConstants.HPI_ENDPOINT);
+    }
+    return hpiEndpoint;
+  }
+
+  public String getHviEndpoint() {
+    if (hviEndpoint == null) {
+      hviEndpoint = jsonContext.read(ConfigurationServiceConstants.HVI_ENDPOINT);
+    }
+    return hviEndpoint;
+  }
+
+  public String getHaiEndpoint() {
+    if (haiEndpoint == null) {
+      haiEndpoint = jsonContext.read(ConfigurationServiceConstants.HAI_ENDPOINT);
+    }
+    return haiEndpoint;
+  }
+
+  public String getHaiCountEndpoint() {
+    if (haiCountEndpoint == null) {
+      haiCountEndpoint = jsonContext.read(ConfigurationServiceConstants.HAI_COUNT_ENDPOINT);
+    }
+    return haiCountEndpoint;
+  }
+
+  public Integer getLifeTime() {
+    if (lifeTime == null) {
+      lifeTime = jsonContext.read(ConfigurationServiceConstants.LIFE_TIME);
+    }
+    return lifeTime;
+  }
+
+  public String getElasticsearchUsersType() {
+    if (elasticsearchUsersType == null) {
+      elasticsearchUsersType = jsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_USERS_TYPE);
+    }
+    return elasticsearchUsersType;
+  }
+
+  public String getFinishedPiIdTrackingType() {
+    if (finishedPiIdTrackingType == null) {
+      finishedPiIdTrackingType = jsonContext.read(ConfigurationServiceConstants.FINISHED_PROCESS_INSTANCE_ID_TRACKING_TYPE);
+    }
+    return finishedPiIdTrackingType;
+  }
+
+  public Long getImportRestIntervalMs() {
+    if (importRestIntervalMs == null) {
+      importRestIntervalMs = jsonContext.read(ConfigurationServiceConstants.IMPORT_REST_INTERVAL_MS);
+    }
+    return importRestIntervalMs;
+  }
+
+  public String getHviCountEndpoint() {
+    if (hviCountEndpoint == null) {
+      hviCountEndpoint = jsonContext.read(ConfigurationServiceConstants.HVI_COUNT_ENDPOINT);
+    }
+    return hviCountEndpoint;
+  }
+
+  public String getHpiCountEndpoint() {
+    if (hpiCountEndpoint == null) {
+      hpiCountEndpoint = jsonContext.read(ConfigurationServiceConstants.HPI_COUNT_ENDPOINT);
+    }
+    return hpiCountEndpoint;
+  }
+
+  public Boolean getDefaultUserCreationEnabled() {
+    if (defaultUserCreationEnabled == null) {
+      defaultUserCreationEnabled = jsonContext.read(ConfigurationServiceConstants.DEFAULT_USER_ENABLED);
+    }
+    return defaultUserCreationEnabled;
+  }
+
+  public String getGroupsEndpoint() {
+    if (groupsEndpoint == null) {
+      groupsEndpoint = jsonContext.read(ConfigurationServiceConstants.GET_GROUPS_ENDPOINT);
+    }
+    return groupsEndpoint;
+  }
+
+
   public String getProcessDefinitionXmlEndpoint(String processDefinitionId) {
     String processDefinitionXmlEndpoint =
         getProcessDefinitionEndpoint() + "/" + processDefinitionId + getProcessDefinitionXmlEndpoint();
@@ -859,10 +944,6 @@ public class ConfigurationService {
     this.jsonContext = jsonContext;
   }
 
-  public Integer getLifeTime() {
-    return lifeTime;
-  }
-
   public void setLifeTime(Integer lifeTime) {
     this.lifeTime = lifeTime;
   }
@@ -879,16 +960,8 @@ public class ConfigurationService {
     this.optimizeIndex = optimizeIndex;
   }
 
-  public String getHaiEndpoint() {
-    return haiEndpoint;
-  }
-
   public void setHaiEndpoint(String haiEndpoint) {
     this.haiEndpoint = haiEndpoint;
-  }
-
-  public String getHaiCountEndpoint() {
-    return haiCountEndpoint;
   }
 
   public void setHaiCountEndpoint(String haiCountEndpoint) {
@@ -917,10 +990,6 @@ public class ConfigurationService {
 
   public void setProcessDefinitionXmlType(String processDefinitionXmlType) {
     this.processDefinitionXmlType = processDefinitionXmlType;
-  }
-
-  public String getElasticsearchUsersType() {
-    return elasticsearchUsersType;
   }
 
   public void setElasticsearchUsersType(String elasticsearchUsersType) {
@@ -983,16 +1052,8 @@ public class ConfigurationService {
     this.engineJobExecutorThreadCount = engineJobExecutorThreadCount;
   }
 
-  public String getHpiEndpoint() {
-    return hpiEndpoint;
-  }
-
   public void setHpiEndpoint(String hpiEndpoint) {
     this.hpiEndpoint = hpiEndpoint;
-  }
-
-  public Long getImportRestIntervalMs() {
-    return importRestIntervalMs;
   }
 
   public void setImportRestIntervalMs(Long importRestIntervalMs) {
@@ -1027,10 +1088,6 @@ public class ConfigurationService {
     this.durationHeatmapTargetValueType = durationHeatmapTargetValueType;
   }
 
-  public String getHviEndpoint() {
-    return hviEndpoint;
-  }
-
   public void setHviEndpoint(String hviEndpoint) {
     this.hviEndpoint = hviEndpoint;
   }
@@ -1043,20 +1100,12 @@ public class ConfigurationService {
     this.maxVariableValueListSize = maxVariableValueListSize;
   }
 
-  public String getHviCountEndpoint() {
-    return hviCountEndpoint;
-  }
-
   public void setHviCountEndpoint(String hviCountEndpoint) {
     this.hviCountEndpoint = hviCountEndpoint;
   }
 
   public void setProcessInstanceType(String processInstanceType) {
     this.processInstanceType = processInstanceType;
-  }
-
-  public String getHpiCountEndpoint() {
-    return hpiCountEndpoint;
   }
 
   public void setHpiCountEndpoint(String hpiCountEndpoint) {
@@ -1115,10 +1164,6 @@ public class ConfigurationService {
     this.samplerInterval = samplerInterval;
   }
 
-  public String getFinishedPiIdTrackingType() {
-    return finishedPiIdTrackingType;
-  }
-
   public void setFinishedPiIdTrackingType(String finishedPiIdTrackingType) {
     this.finishedPiIdTrackingType = finishedPiIdTrackingType;
   }
@@ -1135,13 +1180,7 @@ public class ConfigurationService {
     this.engineImportActivityInstanceMaxPageSize = engineImportActivityInstanceMaxPageSize;
   }
 
-  public Boolean getDefaultUserCreationEnabled() {
-    return defaultUserCreationEnabled;
-  }
 
-  public String getGroupsEndpoint() {
-    return groupsEndpoint;
-  }
 
   public void setGroupsEndpoint(String groupsEndpoint) {
     this.groupsEndpoint = groupsEndpoint;
