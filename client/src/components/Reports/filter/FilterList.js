@@ -6,6 +6,11 @@ import {Button} from 'components';
 import './FilterList.css';
 
 export default class FilterList extends React.Component {
+
+  createOperator  = (name) => {
+    return <span className='FilterList__operator'> {name} </span>;
+  }
+
   render() {
     const list = [];
 
@@ -21,7 +26,7 @@ export default class FilterList extends React.Component {
           <span className='FilterList__item-content'>
             Start Date between
             {' '}<span className='FilterList__value'>{moment(filter.data.value).format('YYYY-MM-DD')}</span>{' '}
-            and
+            {this.createOperator('and')}
             {' '}<span className='FilterList__value'>{moment(nextFilter.data.value).format('YYYY-MM-DD')}</span>{' '}
           </span>
         </li>);
@@ -35,17 +40,17 @@ export default class FilterList extends React.Component {
             <Button onClick={() => this.props.deleteFilter(filter)}  className='FilterList__deleteButton'>×</Button>
             <span className='FilterList__item-content'>
               <span className='FilterList__variable-name'>{name}</span>
-                {(operator === 'in' || operator === '=') && ' is '}
+                {(operator === 'in' || operator === '=') && this.createOperator('is')}
                 {operator === 'not in' && (
-                  values.length === 1 ? ' is not ' : ' is neither '
+                  values.length === 1 ? this.createOperator('is not') : this.createOperator('is neither')
                 )}
-                {operator === '<' && ' is less than '}
-                {operator === '>' && ' is greater than '}
+                {operator === '<' && this.createOperator('is less than')}
+                {operator === '>' && this.createOperator('is greater than')}
               {values.map((value, idx) => {
                 return <span key={idx}>
                   <span className='FilterList__value'>{value.toString()}</span>
                   {idx < values.length - 1 && (
-                    operator === 'not in' ? ' nor ' : ' or '
+                    operator === 'not in' ? this.createOperator('nor') : this.createOperator('or')
                   )}
                 </span>
               })}
@@ -62,7 +67,7 @@ export default class FilterList extends React.Component {
               executed flow node {values.map((value, idx) => {
                 return <span key={idx}>
                   <span className='FilterList__value'>{value.toString()}</span>
-                  {idx < values.length - 1 && ' or '}
+                  {idx < values.length - 1 && this.createOperator('or')}
                 </span>
               })}
             </span>
