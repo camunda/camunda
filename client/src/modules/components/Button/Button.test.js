@@ -39,10 +39,17 @@ it('renders a label as provided as a property', () => {
 });
 
 it('renders a modifier class name based on the type provided as a property', () => {
-  const type = 'danger'
-
+  const type = 'primary';
   const node = mount(<Button type={type} />);
-  expect(node.find('button')).toHaveClassName('Button--danger');
+  
+  expect(node.find('button')).toHaveClassName('Button--primary');
+});
+
+it('renders a modifier class name based on the color provided as a property', () => {
+  const color = 'red';
+  const node = mount(<Button color={color} />);
+  
+  expect(node.find('button')).toHaveClassName('Button--red');
 });
 
 it('renders the id as provided as a property', () => {

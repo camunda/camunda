@@ -66,7 +66,6 @@ a.Button--primary {
   font-weight: bold;
 }
 
-
 .Button--blue,
 a.Button--blue {
   color: white;
@@ -96,24 +95,24 @@ a.Button--blue[disabled="disabled"]:hover {
 
 }
 
-.Button--danger,
-a.Button--danger {
+.Button--red,
+a.Button--red {
   color: white;
   background-color: #B5152B;
   border: 1px solid #B5152B;
 }
 
-.Button--danger:hover,
-a.Button--danger:hover {
+.Button--red:hover,
+a.Button--red:hover {
   color: white;
   background-color: #9C0012; /* #B5152B -> darken 10% */
   border: 1px solid #9C0012;
 }
 
-.Button--danger[disabled]:hover,
-.Button--danger[disabled="disabled"]:hover,
-a.Button--danger[disabled]:hover,
-a.Button--danger[disabled="disabled"]:hover {
+.Button--red[disabled]:hover,
+.Button--red[disabled="disabled"]:hover,
+a.Button--red[disabled]:hover,
+a.Button--red[disabled="disabled"]:hover {
   color: white;
   background-color: #B5152B;
   border: 1px solid #B5152B;
