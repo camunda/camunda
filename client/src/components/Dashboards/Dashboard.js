@@ -1,5 +1,6 @@
 import React from 'react';
 import moment from 'moment';
+import {default as updateState} from 'immutability-helper';
 import {Link, Redirect} from 'react-router-dom';
 
 import {Button, Modal, Input, ControlGroup, CopyToClipboard} from 'components';
@@ -10,6 +11,7 @@ import DashboardView from './DashboardView';
 import AddButton from './AddButton';
 import Grid from './Grid';
 import DeleteButton from './DeleteButton';
+import DragBehavior from './DragBehavior';
 
 import './Dashboard.css';
 
@@ -28,7 +30,8 @@ export default class Dashboard extends React.Component {
       originalName: null,
       reports: [],
       originalReports : [],
-      modalVisible: false
+      modalVisible: false,
+      addButtonVisible: true
     };
 
     this.load();
@@ -96,6 +99,20 @@ export default class Dashboard extends React.Component {
     });
   }
 
+  updateReport = ({report, ...changes}) => {
+    const reportIdx = this.state.reports.indexOf(report);
+
+    Object.keys(changes).forEach(prop => {
+      changes[prop] = {$set: changes[prop]};
+    });
+
+    this.setState({
+      reports: updateState(this.state.reports, {
+        [reportIdx]: changes
+      })
+    });
+  }
+
   showModal = () => {
     this.setState({
       modalVisible: true
@@ -105,6 +122,18 @@ export default class Dashboard extends React.Component {
   closeModal = () => {
     this.setState({
       modalVisible: false
+    });
+  }
+
+  showAddButton = () => {
+    this.setState({
+      addButtonVisible: true
+    });
+  }
+
+  hideAddButton = () => {
+    this.setState({
+      addButtonVisible: false
     });
   }
 
@@ -124,10 +153,11 @@ export default class Dashboard extends React.Component {
           </div>
         </div>
         <DashboardView reports={this.state.reports} reportAddons={[
+          <DragBehavior key='DragBehavior' reports={this.state.reports} updateReport={this.updateReport} onDragStart={this.hideAddButton} onDragEnd={this.showAddButton} />,
           <DeleteButton key='DeleteButton' deleteReport={this.deleteReport} />
         ]}>
           <Grid />
-          <AddButton addReport={this.addReport} />
+          <AddButton addReport={this.addReport} visible={this.state.addButtonVisible} />
         </DashboardView>
       </div>
     )

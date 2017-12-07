@@ -2,7 +2,6 @@ import React from 'react';
 import {mount} from 'enzyme';
 
 import AddButton from './AddButton';
-import DashboardObject from './DashboardObject';
 import {loadReports} from './service';
 
 jest.mock('components', () => {
@@ -23,7 +22,8 @@ jest.mock('components', () => {
 });
 
 jest.mock('./service', () => {return {
-  loadReports: jest.fn().mockReturnValue([])
+  loadReports: jest.fn().mockReturnValue([]),
+  getOccupiedTiles: jest.fn().mockReturnValue({0:{0: true}, 1:{0: true}, 2:{0: true}, 3:{0: true}, 4:{0: true}})
 }});
 
 jest.mock('./DashboardObject', () => ({children}) => <div className="DashboardObject">{children}</div>);
@@ -89,7 +89,7 @@ it('should call the callback when adding a report', () => {
       width: 3
     },
     position: {
-      x: 0,
+      x: 5,
       y: 0
     },
     id: 'a'
@@ -119,4 +119,10 @@ it('should place the addButton where is no Report', () => {
 
   expect(addButtonPosition.x).toBe(5);
   expect(addButtonPosition.y).toBe(0);
+})
+
+it('should render nothing if visible is set to false', () => {
+  const node = mount(<AddButton {...props} visible={false} />);
+
+  expect(node.getDOMNode()).toBe(null);
 })

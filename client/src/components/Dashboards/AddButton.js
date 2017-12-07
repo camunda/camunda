@@ -3,7 +3,7 @@ import React from 'react';
 import {Modal, Button, Select, ControlGroup} from 'components';
 
 import DashboardObject from './DashboardObject';
-import {loadReports} from './service';
+import {loadReports, getOccupiedTiles} from './service';
 
 import './AddButton.css';
 
@@ -64,6 +64,10 @@ export default class AddButton extends React.Component {
   render() {
     const position = this.getAddButtonPosition();
 
+    if(this.props.visible === false) {
+      return null;
+    }
+
     return <DashboardObject tileDimensions={this.props.tileDimensions} {...position}>
       <Button className='AddButton' onClick={this.openModal}>
         <div className='AddButton__symbol'></div>
@@ -95,16 +99,7 @@ export default class AddButton extends React.Component {
   }
 
   getAddButtonPosition = () => {
-    const occupiedTiles = {};
-
-    this.props.reports.forEach(({position, dimensions}) => {
-      for(let x = position.x; x < position.x + dimensions.width; x++) {
-        for(let y = position.y; y < position.y + dimensions.height; y++) {
-          occupiedTiles[x] = occupiedTiles[x] || {};
-          occupiedTiles[x][y] = true;
-        }
-      }
-    });
+    const occupiedTiles = getOccupiedTiles(this.props.reports);
 
     for(let y = 0;; y++) {
       for(let x = 0; x < this.props.tileDimensions.columns - size.width + 1; x++) {

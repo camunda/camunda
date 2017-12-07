@@ -46,9 +46,10 @@ jest.mock('moment', () => () => {
 
 jest.mock('./DashboardView', () => ({children, reportAddons}) => <div className='DashboardView'>{children} Addons: {reportAddons}</div>);
 
-jest.mock('./AddButton', () => () => <div>AddButton</div>);
+jest.mock('./AddButton', () => ({visible}) => <div>AddButton visible: {''+visible}</div>);
 jest.mock('./Grid', () => () => <div>Grid</div>);
 jest.mock('./DeleteButton', () => () => <button>DeleteButton</button>);
+jest.mock('./DragBehavior', () => () => <div>DragBehavior</div>);
 
 const props = {
   match: {params: {id: '1'}}
@@ -229,5 +230,23 @@ describe('edit mode', async () => {
     node.setState({loaded: true});
 
     expect(node).toIncludeText('DeleteButton');
+  });
+
+  it('should hide the AddButton based on the state', () => {
+    props.match.params.viewMode = 'edit';
+
+    const node = mount(<Dashboard {...props} />);
+    node.setState({loaded: true, addButtonVisible: false});
+
+    expect(node).toIncludeText('AddButton visible: false');
+  });
+
+  it('should add DragBehavior', () => {
+    props.match.params.viewMode = 'edit';
+
+    const node = mount(<Dashboard {...props} />);
+    node.setState({loaded: true});
+
+    expect(node).toIncludeText('DragBehavior');
   });
 });

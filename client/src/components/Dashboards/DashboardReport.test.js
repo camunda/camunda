@@ -54,11 +54,13 @@ it('should contain the report name', async () => {
 it('should render optional addons', async () => {
   loadReport.mockReturnValue('data');
 
-    const node = mount(<DashboardReport report={report} addons={[
-      <p key='textAddon'>I am an addon!</p>
-    ]} />);
+  const TextRenderer = ({children}) => <p>{children}</p>;
 
-    await node.instance().loadReportData();
+  const node = mount(<DashboardReport report={report} addons={[
+    <TextRenderer key='textAddon'>I am an addon!</TextRenderer>
+  ]} />);
 
-    expect(node).toIncludeText('I am an addon!');
+  await node.instance().loadReportData();
+
+  expect(node).toIncludeText('I am an addon!');
 });

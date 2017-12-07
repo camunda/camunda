@@ -28,3 +28,18 @@ export async function loadReport(id) {
     return await error.json();
   }
 }
+
+export function getOccupiedTiles(reports) {
+  const occupiedTiles = {};
+
+  reports.forEach(({position, dimensions}) => {
+    for(let x = position.x; x < position.x + dimensions.width; x++) {
+      for(let y = position.y; y < position.y + dimensions.height; y++) {
+        occupiedTiles[x] = occupiedTiles[x] || {};
+        occupiedTiles[x][y] = true;
+      }
+    }
+  });
+
+  return occupiedTiles;
+}

@@ -40,7 +40,8 @@ export default class DashboardReport extends React.Component {
       </div>
       {this.props.addons && this.props.addons.map(addon =>
         React.cloneElement(addon, {
-          report: this.props.report
+          report: this.props.report,
+          tileDimensions: this.props.tileDimensions
         })
       )}
     </div>
