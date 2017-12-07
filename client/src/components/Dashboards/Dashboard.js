@@ -9,6 +9,7 @@ import {loadDashboard, remove, update} from './service';
 import DashboardView from './DashboardView';
 import AddButton from './AddButton';
 import Grid from './Grid';
+import DeleteButton from './DeleteButton';
 
 import './Dashboard.css';
 
@@ -89,6 +90,12 @@ export default class Dashboard extends React.Component {
     });
   }
 
+  deleteReport = ({report: reportToRemove}) => {
+    this.setState({
+      reports: this.state.reports.filter(report => report !== reportToRemove)
+    });
+  }
+
   showModal = () => {
     this.setState({
       modalVisible: true
@@ -116,7 +123,9 @@ export default class Dashboard extends React.Component {
             <Link className='Button Dashboard__tool-button Dashboard__cancel-button' to={`/dashboard/${this.id}`} onClick={this.cancelChanges}>Cancel</Link>
           </div>
         </div>
-        <DashboardView reports={this.state.reports}>
+        <DashboardView reports={this.state.reports} reportAddons={[
+          <DeleteButton key='DeleteButton' deleteReport={this.deleteReport} />
+        ]}>
           <Grid />
           <AddButton addReport={this.addReport} />
         </DashboardView>

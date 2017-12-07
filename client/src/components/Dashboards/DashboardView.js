@@ -14,12 +14,12 @@ export default class DashboardView extends React.Component {
     return (<div className='DashboardView' ref={node => this.container = node}>
       {this.state && this.props.reports.map((report, idx) =>
         <DashboardObject
-          key={idx}
+          key={idx + '_' + report.id}
           tileDimensions={this.state.tileDimensions}
           {...report.position}
           {...report.dimensions}
         >
-        <DashboardReport id={report.id} />
+        <DashboardReport report={report} addons={this.props.reportAddons || []} />
       </DashboardObject>)}
       {this.state &&
         React.Children.map(this.props.children, child =>

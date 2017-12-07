@@ -19,7 +19,7 @@ export default class DashboardReport extends React.Component {
 
   loadReportData = async () => {
     this.setState({
-      data: await loadReport(this.props.id)
+      data: await loadReport(this.props.report.id)
     });
   }
 
@@ -28,17 +28,21 @@ export default class DashboardReport extends React.Component {
       return 'loading...'
     }
 
-    if(this.state.data.errorMessage) {
-      return this.state.data.errorMessage;
-    }
-
     return <div>
       <div className='DashboardReport__header'>
         {this.state.data.name}
       </div>
       <div className='DashboardReport__visualization'>
-        <ReportView report={this.state.data} />
+        {this.state.data.errorMessage ?
+          this.state.data.errorMessage :
+          <ReportView report={this.state.data} />
+        }
       </div>
+      {this.props.addons && this.props.addons.map(addon =>
+        React.cloneElement(addon, {
+          report: this.props.report
+        })
+      )}
     </div>
   }
 }

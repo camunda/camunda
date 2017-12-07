@@ -4,7 +4,7 @@ import {mount} from 'enzyme';
 
 import DashboardView from './DashboardView';
 
-jest.mock('./DashboardReport', () => ({id}) => <div>Report {id}</div>);
+jest.mock('./DashboardReport', () => ({report}) => <div>Report {report.id}</div>);
 jest.mock('./DashboardObject', () => ({children}) => <div>{children}</div>);
 
 const reports = [
