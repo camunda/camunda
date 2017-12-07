@@ -117,13 +117,6 @@ public abstract class ScrollBasedImportIndexHandler
     Long maxEntityCount = this.maxEntityCount;
     Long importIndex = this.importIndex;
 
-    Optional<AllEntitiesBasedImportIndexDto> storedIndex =
-        importIndexReader.getImportIndex(getElasticsearchId());
-    if (storedIndex.isPresent()) {
-      importIndex = storedIndex.get().getImportIndex();
-      maxEntityCount = storedIndex.get().getMaxEntityCount();
-    }
-
     if (hasNothingToImport(importIndex, maxEntityCount)) {
       return OptionalDouble.empty();
     } else if (indexReachedMaxCount()) {

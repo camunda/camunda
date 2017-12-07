@@ -78,13 +78,6 @@ public abstract class AllEntitiesBasedImportIndexHandler
     long maxEntityCount = this.maxEntityCount;
     long importIndex = this.importIndex;
 
-    Optional<AllEntitiesBasedImportIndexDto> storedIndex =
-        importIndexReader.getImportIndex(EsHelper.constructKey(getElasticsearchImportIndexType(), engineContext.getEngineAlias()));
-    if (storedIndex.isPresent()) {
-      maxEntityCount = storedIndex.get().getMaxEntityCount();
-      importIndex = storedIndex.get().getImportIndex();
-    }
-
     if (hasNothingToImport(importIndex, maxEntityCount)) {
       return OptionalDouble.empty();
     } else if (indexReachedMaxCount()) {

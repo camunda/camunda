@@ -329,4 +329,9 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     return getApplicationContext().getBean(ImportIndexHandlerProvider.class);
   }
 
+  public void restartImportCycle() {
+    for (ImportIndexHandler importIndexHandler : getIndexProvider().getAllHandlers()) {
+      importIndexHandler.restartImportCycle();
+    }
+  }
 }

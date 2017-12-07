@@ -131,12 +131,8 @@ public abstract class DefinitionBasedImportIndexHandler
     } catch (Exception e) {
       //nothing to do error has been already reported before
     }
-    Optional<DefinitionBasedImportIndexDto> dto =
-        importIndexReader.getImportIndex(getElasticsearchType(), engineContext.getEngineAlias());
     long totalEntitiesImported = this.totalEntitiesImported;
-    if (dto.isPresent()) {
-      totalEntitiesImported = dto.get().getTotalEntitiesImported();
-    }
+
     boolean hasNothingToImport = totalEntityCount == 0L;
     boolean allEntitiesHaveBeenImported = totalEntitiesImported >= totalEntityCount;
     if (hasNothingToImport) {

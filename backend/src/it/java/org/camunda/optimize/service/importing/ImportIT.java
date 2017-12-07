@@ -676,7 +676,7 @@ public class ImportIT  {
   }
 
   @Test
-  public void resetDoesNotAffectProgress() throws Exception {
+  public void restartDoesNotAffectProgress() throws Exception {
     deployAndStartSimpleServiceTask();
     deployAndStartSimpleServiceTask();
     engineRule.waitForAllProcessesToFinish();
@@ -685,9 +685,7 @@ public class ImportIT  {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
     assertThat(embeddedOptimizeRule.getProgressValue(), is(100L));
 
-    embeddedOptimizeRule.storeImportIndexesToElasticsearch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-    embeddedOptimizeRule.resetImportStartIndexes();
+    embeddedOptimizeRule.restartImportCycle();
     
     assertThat(embeddedOptimizeRule.getProgressValue(), is(100L));
   }
