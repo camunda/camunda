@@ -26,6 +26,10 @@ export default class DashboardReport extends React.Component {
       return 'loading...'
     }
 
+    if(this.state.data.errorMessage) {
+      return this.state.data.errorMessage;
+    }
+
     return <ReportView report={this.state.data} />
   }
 }

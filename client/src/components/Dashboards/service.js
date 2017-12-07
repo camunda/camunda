@@ -21,7 +21,10 @@ export async function loadReports() {
 }
 
 export async function loadReport(id) {
-  const response = await get(`/api/report/${id}/evaluate`);
-
-  return await response.json();
+  try {
+    const response = await get(`/api/report/${id}/evaluate`);
+    return await response.json();
+  } catch(error) {
+    return await error.json();
+  }
 }
