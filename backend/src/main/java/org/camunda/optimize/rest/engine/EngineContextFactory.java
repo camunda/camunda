@@ -5,6 +5,8 @@ import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.EngineConfiguration;
 import org.glassfish.jersey.client.ClientProperties;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
@@ -12,6 +14,9 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.ClientRequestContext;
+import javax.ws.rs.client.ClientRequestFilter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +26,8 @@ import java.util.Map;
  */
 @Component
 public class EngineContextFactory {
+
+  protected Logger logger = LoggerFactory.getLogger(getClass());
 
   private List<EngineContext> configuredEngines;
 
@@ -49,6 +56,7 @@ public class EngineContextFactory {
     Client client = ClientBuilder.newClient();
     client.property(ClientProperties.CONNECT_TIMEOUT, configurationService.getEngineConnectTimeout());
     client.property(ClientProperties.READ_TIMEOUT, configurationService.getEngineReadTimeout());
+    client.register(new LoggingFilter());
     if (config.getValue().getAuthentication().isEnabled()) {
       client.register(
           new BasicAccessAuthenticationFilter(
@@ -60,6 +68,16 @@ public class EngineContextFactory {
     client.register(optimizeObjectMapperProvider);
     return client;
   }
+
+  public class LoggingFilter implements ClientRequestFilter {
+
+    @Override
+    public void filter(ClientRequestContext requestContext) throws IOException {
+      String body = requestContext.getEntity() != null ? requestContext.getEntity().toString() : "";
+      logger.debug("sending request to [{}] with body [{}]", requestContext.getUri() , body);
+    }
+  }
+
 
   public List<EngineContext> getConfiguredEngines() {
     return configuredEngines;
