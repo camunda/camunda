@@ -75,17 +75,17 @@ export default class EntityList extends React.Component {
 
     let createButton = null;
     if(this.props.operations.includes('create')) {
-      createButton = <Button className='Button--green EntityList__createButton' onClick={this.createEntity}>Create New {this.props.label}</Button>;
+      createButton = <Button className='Button--green EntityList__createButton' onClick={this.createEntity}>Create new {this.props.label}</Button>;
     }
 
-    const createLink = <a className='EntityList__createLink' onClick={this.createEntity}>Create New {this.props.label}...</a>;
+    const createLink = <a className='EntityList__createLink' role='button' onClick={this.createEntity}>Create a new {this.props.label}…</a>;
     const header = <h1 className='EntityList__heading'>{this.props.label}s</h1>;
 
     let list;
     if(loaded) {
       list = (isListEmpty) ?
       (<ul className="EntityList__list">
-            <li className="EntityList__item EntityList__no-entities">You have no Dashboards configured yet. {createLink}</li>
+            <li className="EntityList__item EntityList__no-entities">You have no Dashboards configured yet.&nbsp;{createLink}</li>
        </ul>) :
       (<ul className='EntityList__list'>
         {this.formatData(this.state.data).map((row, idx) => {
