@@ -93,7 +93,7 @@ public abstract class BackoffImportIndexHandler<PAGE extends ImportPage, INDEX>
     if (configurationService.isBackoffEnabled()) {
       backoffCounter = Math.min(backoffCounter + 1, configurationService.getMaximumBackoff());
       if (backoffCounter == configurationService.getMaximumBackoff()) {
-        checkThresholdsAndRestartOrReset();
+        restartOrReset();
       } else {
         long interval = configurationService.getImportHandlerWait();
         long sleepTimeInMs = interval * backoffCounter;
@@ -103,7 +103,7 @@ public abstract class BackoffImportIndexHandler<PAGE extends ImportPage, INDEX>
     }
   }
 
-  private void checkThresholdsAndRestartOrReset() {
+  private void restartOrReset() {
     try {
       if (LocalDateTime.now().isAfter(this.nextReset)) {
         this.resetImportIndex();
