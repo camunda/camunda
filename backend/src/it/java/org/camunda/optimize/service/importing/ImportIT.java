@@ -664,8 +664,6 @@ public class ImportIT  {
     embeddedOptimizeRule.waitForBackoff();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntitiesWithoutReset();
 
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-
     reportData = createDefaultReportData(targetProcess.getDefinitionId());
     result = evaluateReport(reportData);
 

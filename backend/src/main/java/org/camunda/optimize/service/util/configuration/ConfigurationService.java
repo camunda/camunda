@@ -788,9 +788,9 @@ public class ConfigurationService {
     return finishedPiIdTrackingType;
   }
 
-  public Integer getImportRestIntervalMs() {
+  public Integer getImportResetIntervalValue() {
     if (importRestIntervalMs == null) {
-      importRestIntervalMs = jsonContext.read(ConfigurationServiceConstants.IMPORT_REST_INTERVAL_MS);
+      importRestIntervalMs = jsonContext.read(ConfigurationServiceConstants.IMPORT_RESET_INTERVAL_VALUE);
     }
     return importRestIntervalMs;
   }

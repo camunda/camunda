@@ -20,6 +20,7 @@ public abstract class BackoffImportIndexHandler<PAGE extends ImportPage, INDEX>
   private static final long STARTING_BACKOFF = 0;
   private long backoffCounter = STARTING_BACKOFF;
   private LocalDateTime dateUntilPaginationIsBlocked = LocalDateTime.MIN;
+  private LocalDateTime nextReset;
 
   @Autowired
   protected ConfigurationService configurationService;
@@ -30,6 +31,20 @@ public abstract class BackoffImportIndexHandler<PAGE extends ImportPage, INDEX>
   @PostConstruct
   private void initialize() {
     init();
+    setNextReset();
+  }
+
+  private void setNextReset() {
+    ChronoUnit unit = ChronoUnit.MINUTES;
+    try {
+      unit = ChronoUnit.valueOf(configurationService.getImportResetIntervalUnit());
+    } catch (Exception e) {
+      //nothing to do falling back to default
+    }
+    nextReset = LocalDateTime.now().plus(
+        configurationService.getImportResetIntervalValue(),
+        unit
+    );
   }
 
   protected abstract void init();
@@ -69,22 +84,35 @@ public abstract class BackoffImportIndexHandler<PAGE extends ImportPage, INDEX>
    */
   protected abstract Optional<PAGE> getNextImportPage();
 
+
+  public void restartImportCycle () {
+    //nothing to do by default
+  }
+
   private void calculateNewDateUntilIsBlocked() {
     if (configurationService.isBackoffEnabled()) {
       backoffCounter = Math.min(backoffCounter + 1, configurationService.getMaximumBackoff());
-
       if (backoffCounter == configurationService.getMaximumBackoff()) {
-        try {
-          this.resetImportIndex();
-        } catch (Exception e) {
-          logger.error("Can't reset index for engine [{}]", this.getEngineContext().getEngineAlias());
-        }
+        checkThresholdsAndRestartOrReset();
+      } else {
+        long interval = configurationService.getImportHandlerWait();
+        long sleepTimeInMs = interval * backoffCounter;
+        dateUntilPaginationIsBlocked = LocalDateTime.now().plus(sleepTimeInMs, ChronoUnit.MILLIS);
+        logDebugSleepInformation(sleepTimeInMs);
       }
+    }
+  }
 
-      long interval = configurationService.getImportHandlerWait();
-      long sleepTimeInMs = interval * backoffCounter;
-      dateUntilPaginationIsBlocked = LocalDateTime.now().plus(sleepTimeInMs, ChronoUnit.MILLIS);
-      logDebugSleepInformation(sleepTimeInMs);
+  private void checkThresholdsAndRestartOrReset() {
+    try {
+      if (LocalDateTime.now().isAfter(this.nextReset)) {
+        this.resetImportIndex();
+        this.setNextReset();
+      } else {
+        this.restartImportCycle();
+      }
+    } catch (Exception e) {
+      logger.error("Can't restart or restart index for engine [{}]", this.getEngineContext().getEngineAlias());
     }
   }
 
