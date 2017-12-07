@@ -15,38 +15,37 @@
  */
 package io.zeebe.broker.it.workflow;
 
-import java.io.File;
-import java.io.InputStream;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.time.Duration;
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.regex.Pattern;
 
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
-import io.zeebe.broker.it.startup.BrokerRestartTest;
+import io.zeebe.broker.it.TestLoggers;
+import io.zeebe.broker.workflow.data.WorkflowInstanceState;
 import io.zeebe.client.ClientProperties;
 import io.zeebe.client.WorkflowsClient;
+import io.zeebe.client.event.WorkflowInstanceEvent;
 import io.zeebe.client.task.TaskHandler;
-import io.zeebe.test.util.TestFileUtil;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
+import org.slf4j.Logger;
 
-/**
- *
- */
 public class LargeWorkflowTest
 {
-    public static final int CREATION_TIMES = 100_000;
-    public static final URL PATH = LargeWorkflowTest.class.getResource("");
+    public static final Logger LOG = TestLoggers.TEST_LOGGER;
+    public static final int CREATION_TIMES = 1_000_000;
+    public static final int REPORT_INTERVAL = 10000;
 
-    public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(() -> brokerConfig(PATH.getPath()));
+    public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
     public ClientRule clientRule = new ClientRule(() ->
     {
         final Properties p = new Properties();
@@ -59,15 +58,6 @@ public class LargeWorkflowTest
     public RuleChain ruleChain = RuleChain.outerRule(brokerRule)
                                           .around(clientRule);
 
-    protected static InputStream brokerConfig(String path)
-    {
-        final String canonicallySeparatedPath = path.replaceAll(Pattern.quote(File.separator), "/");
-
-        return TestFileUtil.readAsTextFileAndReplace(BrokerRestartTest.class.getClassLoader()
-                                                                            .getResourceAsStream("persistent-broker.cfg.toml"), StandardCharsets.UTF_8,
-                                                     Collections.singletonMap("brokerFolder", canonicallySeparatedPath));
-    }
-
     @Before
     public void deployProcess()
     {
@@ -75,16 +65,20 @@ public class LargeWorkflowTest
 
         workflowService.deploy(clientRule.getDefaultTopic())
                        .addResourceFromClasspath("workflows/extended-order-process.bpmn")
+                       .execute();
+
+        workflowService.deploy(clientRule.getDefaultTopic())
                        .addResourceFromClasspath("workflows/forty-task-process.bpmn")
                        .execute();
     }
 
     @Test
-    public void shouldCreateBunchOfWorkflowInstances()
+    public void shouldCreateWorkflowInstancesSynchronously()
     {
         final WorkflowsClient workflowService = clientRule.workflows();
 
-        // when
+        LOG.info("Creating {} workflows", CREATION_TIMES);
+
         for (int i = 0; i < CREATION_TIMES; i++)
         {
             workflowService.create(clientRule.getDefaultTopic())
@@ -93,9 +87,9 @@ public class LargeWorkflowTest
                            .payload("{ \"orderId\": 31243, \"orderStatus\": \"NEW\", \"orderItems\": [435, 182, 376] }")
                            .execute();
 
-            if (i % (CREATION_TIMES / 10) == 0)
+            if (i % REPORT_INTERVAL == 0)
             {
-                System.out.println("Iteration: " + i);
+                LOG.info("Workflows created: {}", i);
             }
         }
     }
@@ -109,19 +103,20 @@ public class LargeWorkflowTest
         final CompletableFuture<Void> finished = new CompletableFuture<>();
         final AtomicLong completed = new AtomicLong(0);
 
+        // open task subscription for all tasks
         clientRule.tasks()
                   .newTaskSubscription(clientRule.getDefaultTopic())
                   .taskType("reserveOrderItems")
-                  .lockOwner("stocker")
+                  .lockOwner("test")
                   .lockTime(Duration.ofMinutes(5))
                   .handler((tasksClient, task) -> {
                       final long c = completed.incrementAndGet();
                       tasksClient.complete(task)
                                  .payload("{ \"orderStatus\": \"RESERVED\" }")
                                  .execute();
-                      if (c % CREATION_TIMES == 0)
+                      if (c % REPORT_INTERVAL == 0)
                       {
-                          System.out.println("Completed: " + c);
+                          System.out.println("Tasks completed: " + c);
                       }
 
                       if (c >= CREATION_TIMES * taskCount)
@@ -130,15 +125,21 @@ public class LargeWorkflowTest
                       }
                   }).open();
 
-        // when
+        // create workflow instances
+        final List<Future<WorkflowInstanceEvent>> futures = new ArrayList<>();
         for (int i = 0; i < CREATION_TIMES; i++)
         {
-            workflowService.create(clientRule.getDefaultTopic())
-                           .bpmnProcessId("extended-order-process")
-                           .latestVersion()
-                           .payload("{ \"orderId\": 31243, \"orderStatus\": \"NEW\", \"orderItems\": [435, 182, 376] }")
-                           .executeAsync();
+            final Future<WorkflowInstanceEvent> future =
+                workflowService.create(clientRule.getDefaultTopic())
+                               .bpmnProcessId("extended-order-process")
+                               .latestVersion()
+                               .payload("{ \"orderId\": 31243, \"orderStatus\": \"NEW\", \"orderItems\": [435, 182, 376] }")
+                               .executeAsync();
+
+            futures.add(future);
         }
+
+        waitForWorkflowInstanceCreation(futures);
 
         // wait for task completion
         finished.get();
@@ -154,12 +155,13 @@ public class LargeWorkflowTest
         final CompletableFuture<Void> finished = new CompletableFuture<>();
         final AtomicLong completed = new AtomicLong(0);
 
+        // generic task handler for all tasks
         final TaskHandler taskHandler = (tasksClient, task) -> {
             final long c = completed.incrementAndGet();
             tasksClient.complete(task)
                        .payload("{ \"orderStatus\": \"RESERVED\" }")
                        .execute();
-            if (c % CREATION_TIMES == 0)
+            if (c % REPORT_INTERVAL == 0)
             {
                 System.out.println("Completed: " + c);
             }
@@ -170,28 +172,63 @@ public class LargeWorkflowTest
             }
         };
 
+        // open task subscription for all tasks
         for (int i = 0; i < 40; i++)
         {
             clientRule.tasks()
                       .newTaskSubscription(clientRule.getDefaultTopic())
                       .taskType("reserveOrderItems" + i)
-                      .lockOwner("stocker")
+                      .lockOwner("test")
                       .lockTime(Duration.ofMinutes(5))
                       .handler(taskHandler).open();
         }
 
-        // when
+        // create workflow instance
+        final List<Future<WorkflowInstanceEvent>> futures = new ArrayList<>();
         for (int i = 0; i < CREATION_TIMES; i++)
         {
-            workflowService.create(clientRule.getDefaultTopic())
-                           .bpmnProcessId("forty-task-process")
-                           .latestVersion()
-                           .payload("{ \"orderId\": 31243, \"orderStatus\": \"NEW\", \"orderItems\": [435, 182, 376] }")
-                           .executeAsync();
+            final Future<WorkflowInstanceEvent> future =
+                workflowService.create(clientRule.getDefaultTopic())
+                               .bpmnProcessId("forty-task-process")
+                               .latestVersion()
+                               .payload("{ \"orderId\": 31243, \"orderStatus\": \"NEW\", \"orderItems\": [435, 182, 376] }")
+                               .executeAsync();
+
+            futures.add(future);
         }
+
+        waitForWorkflowInstanceCreation(futures);
 
         // wait for task completion
         finished.get();
+    }
+
+    private void waitForWorkflowInstanceCreation(final List<Future<WorkflowInstanceEvent>> futures)
+    {
+        long workflowInstancesCreated = 0;
+
+        for (final Future<WorkflowInstanceEvent> future : futures)
+        {
+            try
+            {
+                final WorkflowInstanceEvent workflowInstanceEvent = future.get();
+                assertThat(workflowInstanceEvent.getState()).isEqualTo(WorkflowInstanceState.WORKFLOW_INSTANCE_CREATED.toString());
+                workflowInstancesCreated++;
+
+                if (workflowInstancesCreated % REPORT_INTERVAL == 0)
+                {
+                    LOG.info("Created workflow instances: {}", workflowInstancesCreated);
+                }
+            }
+            catch (final Exception e)
+            {
+                LOG.error("Failed to create workflow instance", e);
+            }
+        }
+
+        assertThat(workflowInstancesCreated)
+            .isEqualTo(CREATION_TIMES)
+            .withFailMessage("Failed to create {} workflow instances. Only created {} instances", CREATION_TIMES, workflowInstancesCreated);
     }
 
 }

@@ -28,3 +28,5 @@ public/
 tngp-data
 docs/book
 docs/mdbook
+
+hs_err*.log

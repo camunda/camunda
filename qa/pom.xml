@@ -15,6 +15,7 @@
   <modules>
     <module>integration-tests</module>
     <module>perf-tests</module>
+    <module>long-running-tests</module>
   </modules>
 
 </project>
