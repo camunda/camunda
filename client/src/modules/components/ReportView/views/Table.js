@@ -2,17 +2,18 @@ import React from 'react';
 
 import {Table as TableRenderer} from 'components';
 
-export default function Table({data, errorMessage}) {
+export default function Table({data, labels, errorMessage}) {
   if(!data || typeof data !== 'object') {
     return <p>{errorMessage}</p>;
   }
 
   return (
-    <TableRenderer {...formatData(data)} />
+    <TableRenderer {...formatData(data, labels)} />
   );
 }
 
-function formatData(data) {
+function formatData(data, labels) {
+
   if (data.length) {
     // raw data
     const processInstanceProps = Object.keys(data[0]).filter(entry => entry !== 'variables');
@@ -33,10 +34,11 @@ function formatData(data) {
     return {head, body};
   } else {
     // normal two-dimensional data
+    const head = labels? [labels.groupByLabel, labels.viewLabel]: null;
     const body = Object.keys(data).map(key => [
       key,
       data[key]
     ]);
-    return {body};
+    return {head, body};
   }
 }

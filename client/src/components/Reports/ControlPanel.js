@@ -3,38 +3,9 @@ import {Select} from 'components';
 
 import {Filter} from './filter';
 import {loadProcessDefinitions} from './service';
+import {mapper} from 'services';
 
 import './ControlPanel.css';
-
-const options = {
-  view: [
-    {key: 'rawData_ignored_ignored', label: 'Raw Data'},
-    {key: 'count_processInstance_frequency', label: 'Count Process Instance Frequency'},
-    {key: 'count_flowNode_frequency', label: 'Count Flow Node Frequency'},
-    {key: 'avg_processInstance_duration', label: 'Average Process Instance Duration'},
-    {key: 'avg_flowNode_duration', label: 'Average Flow Node Duration'}
-
-  ],
-  groupBy: [
-    {key: 'none_null', label: 'None'},
-    {key: 'flowNode_null', label: 'Flow Nodes'},
-    {key: 'startDate_year', label: 'Start Date of Process Instance - Year'},
-    {key: 'startDate_month', label: 'Start Date of Process Instance - Month'},
-    {key: 'startDate_week', label: 'Start Date of Process Instance - Week'},
-    {key: 'startDate_day', label: 'Start Date of Process Instance - Day'},
-    {key: 'startDate_hour', label: 'Start Date of Process Instance - Hour'}
-  ],
-  visualizeAs: [
-    {key: 'number', label: 'Number'},
-    {key: 'table', label: 'Table'},
-    {key: 'bar', label: 'Bar Chart'},
-    {key: 'line', label: 'Line Chart'},
-    {key: 'pie', label: 'Pie Chart'},
-    {key: 'badge', label: 'Diagram Badge'},
-    {key: 'heat', label: 'Heatmap'},
-    {key: 'json', label: 'JSON Dump'}
-  ]
-};
 
 export default class ControlPanel extends React.Component {
   constructor(props) {
@@ -59,16 +30,12 @@ export default class ControlPanel extends React.Component {
     this.props.onChange('processDefinitionId', evt.target.value);
   }
   changeView = evt => {
-    const data = evt.target.value.split('_');
-    this.props.onChange('view', {operation: data[0], entity: data[1], property: data[2]});
+    const viewKey = evt.target.value;
+    this.props.onChange('view', mapper.keyToObject(viewKey, mapper.view));
   }
   changeGroup = evt => {
-    const data = evt.target.value.split('_');
-
-    const type = data[0];
-    const unit = data[1] === 'null' ? null : data[1];
-
-    this.props.onChange('groupBy', {type, unit});
+    const groupByKey = evt.target.value;
+    this.props.onChange('groupBy', mapper.keyToObject(groupByKey, mapper.groupBy));
   }
 
   changeVisualization = evt => {
@@ -87,23 +54,23 @@ export default class ControlPanel extends React.Component {
         </li>
         <li className='ControlPanel__item'>
           <label htmlFor='ControlPanel__view' className='ControlPanel__label'>View</label>
-          <Select name='ControlPanel__view' value={parseView(this.props.view)} onChange={this.changeView}>
+          <Select name='ControlPanel__view' value={mapper.objectToKey(this.props.view, mapper.view)} onChange={this.changeView}>
             {addSelectionOption()}
-            {renderOptions('view')}
+            {renderOptions(mapper.getOptions('view'))}
           </Select>
         </li>
         <li className='ControlPanel__item'>
           <label htmlFor='ControlPanel__group-by' className='ControlPanel__label'>Group by</label>
-          <Select name='ControlPanel__group-by' value={parseGroup(this.props.groupBy)} onChange={this.changeGroup}>
+          <Select name='ControlPanel__group-by' value={mapper.objectToKey(this.props.groupBy, mapper.groupBy)} onChange={this.changeGroup}>
             {addSelectionOption()}
-            {renderOptions('groupBy')}
+            {renderOptions(mapper.getOptions('groupBy'))}
           </Select>
         </li>
         <li className='ControlPanel__item'>
           <label htmlFor='ControlPanel__visualize-as' className='ControlPanel__label'>Visualize as</label>
           <Select name='ControlPanel__visualize-as' value={this.props.visualization} onChange={this.changeVisualization}>
             {addSelectionOption()}
-            {renderOptions('visualizeAs')}
+            {renderOptions(mapper.getOptions('visualizeAs'))}
           </Select>
         </li>
         <li className='ControlPanel__item ControlPanel__item--filter'>
@@ -118,13 +85,6 @@ function addSelectionOption() {
   return <Select.Option value=''>Please select a value...</Select.Option>;
 }
 
-function parseView({operation, entity, property}) {
-  return `${operation}_${entity}_${property}`;
-}
-function parseGroup({type, unit}) {
-  return `${type}_${unit}`;
-}
-
-function renderOptions(prop) {
-  return options[prop].map(({key, label}) => <Select.Option key={key} value={key}>{label}</Select.Option>);
+function renderOptions(options) {
+  return options.map(({key, label}) => <Select.Option key={key} value={key}>{label}</Select.Option>);
 }

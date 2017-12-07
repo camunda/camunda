@@ -17,6 +17,16 @@ jest.mock('components', () => {
   return {Select};
 });
 
+jest.mock('services', () => {return {
+  mapper: {
+    objectToLabel: (...props) => 'foo',
+    objectToKey: (...props) => 'foo',
+    keyToLabel: (...props) => 'foo',
+    getOptions: (...props) => [],
+    keyToObject: (...props) => 'foo',
+  }
+}});
+
 const data = {
   processDefinitionId: '',
   view: {operation: 'count', entity: 'processInstance'},

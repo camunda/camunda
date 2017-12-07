@@ -13,6 +13,16 @@ jest.mock('components', () => {return {
   ErrorBoundary: (props) => <div>{props.children}</div>
 }});
 
+jest.mock('services', () => {return {
+  mapper: {
+    objectToLabel: (...props) => 'foo',
+    objectToKey: (...props) => 'foo',
+    keyToLabel: (...props) => 'foo',
+    getOptions: (...props) => [],
+    keyToObject: (...props) => 'foo',
+  }
+}});
+
 it('should display a number if visualization is number', () => {
   const report = {
     data: {

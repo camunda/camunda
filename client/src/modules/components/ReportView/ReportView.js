@@ -1,6 +1,7 @@
 import React from 'react';
 
 import {ErrorBoundary} from 'components';
+import {mapper} from 'services';
 
 import {Number, Json, Table, Heatmap, Chart} from './views';
 
@@ -75,9 +76,11 @@ export default class ReportView extends React.Component {
           props: {data: result}
         }; break;
       case 'table':
+        const viewLabel = mapper.objectToLabel(data.view, mapper.view);
+        const groupByLabel = mapper.objectToLabel(data.groupBy, mapper.groupBy);
         config = {
           component: Table,
-          props: {data: result}
+          props: {data: result, labels: {viewLabel, groupByLabel}}
         }; break;
       case 'heat':
         config = {
