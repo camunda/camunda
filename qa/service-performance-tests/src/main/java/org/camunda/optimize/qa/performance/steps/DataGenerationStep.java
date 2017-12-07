@@ -60,11 +60,11 @@ public abstract class DataGenerationStep extends PerfTestStep {
     client
       .admin()
       .indices()
-      .prepareRefresh(context.getConfiguration().getOptimizeIndex())
+      .prepareRefresh(context.getConfiguration().getIndexForType("process-instance"))
       .get();
 
     SearchResponse response = client
-      .prepareSearch(context.getConfiguration().getOptimizeIndex())
+      .prepareSearch(context.getConfiguration().getIndexForType("process-instance"))
       .setSize(0)
       .get();
     return response.getHits().getTotalHits() >= dataGenerationSize;

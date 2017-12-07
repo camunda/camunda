@@ -41,8 +41,12 @@ public class PerfTestConfiguration {
     return dataGenerationSize;
   }
 
-  public String getOptimizeIndex() {
+  protected String getOptimizeIndex() {
     return optimizeIndex;
+  }
+
+  public String getIndexForType(String type) {
+    return this.getOptimizeIndex() + '-' + type;
   }
 
   public String getProcessInstanceType() {

@@ -33,6 +33,11 @@
 
   <dependencies>
     <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.elasticsearch.client</groupId>
       <artifactId>transport</artifactId>
       <version>${elasticsearch.version}</version>
@@ -49,6 +54,12 @@
       <artifactId>camunda-engine</artifactId>
       <version>${version.camunda}</version>
       <scope>provided</scope>
+      <exclusions>
+        <exclusion>
+          <artifactId>spring-beans</artifactId>
+          <groupId>org.springframework</groupId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
@@ -64,6 +75,12 @@
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <artifactId>spring-beans</artifactId>
+          <groupId>org.springframework</groupId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>

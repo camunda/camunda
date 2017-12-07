@@ -14,6 +14,7 @@ import org.camunda.optimize.qa.performance.util.IdGenerator;
 import org.camunda.optimize.qa.performance.util.PerfTestException;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.common.xcontent.XContentType;
 import ru.yandex.qatools.allure.annotations.Step;
 
 import java.io.IOException;
@@ -62,15 +63,15 @@ public class BranchAnalysisDataGenerationStep extends DataGenerationStep {
     try {
 
       client.prepareIndex(
-          context.getConfiguration().getOptimizeIndex(),
+          context.getConfiguration().getIndexForType("process-definition-xml"),
           "process-definition-xml",
           processDefinitionId
         )
-        .setSource(mapper.writeValueAsString(dto))
+        .setSource(mapper.writeValueAsString(dto), XContentType.JSON)
         .get();
 
       client.admin().indices()
-          .prepareRefresh(context.getConfiguration().getOptimizeIndex())
+          .prepareRefresh(context.getConfiguration().getIndexForType("process-definition-xml"))
           .get();
     } catch (JsonProcessingException e) {
       throw new PerfTestException("Failed to add model to elasticsearch! Could not write object to string!", e);
@@ -117,7 +118,7 @@ public class BranchAnalysisDataGenerationStep extends DataGenerationStep {
       bulkRequest
         .add(client
           .prepareIndex(
-            context.getConfiguration().getOptimizeIndex(),
+            context.getConfiguration().getIndexForType(context.getConfiguration().getProcessInstanceType()),
             context.getConfiguration().getProcessInstanceType(),
             processInstanceId
           )

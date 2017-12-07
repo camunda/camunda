@@ -49,7 +49,7 @@ public class HeatMapDataGenerationStep extends DataGenerationStep {
       bulkRequest
         .add(client
           .prepareIndex(
-              context.getConfiguration().getOptimizeIndex(),
+              context.getConfiguration().getIndexForType(context.getConfiguration().getProcessInstanceType()),
               context.getConfiguration().getProcessInstanceType(),
               id
           )
