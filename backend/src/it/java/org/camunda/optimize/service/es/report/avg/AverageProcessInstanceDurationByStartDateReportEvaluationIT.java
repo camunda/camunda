@@ -204,14 +204,14 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
       @Override
       public void describeTo (Description description)
       {
-        description.appendText("The given list should be sorted in  order!");
+        description.appendText("The given list should be sorted in descending order!");
       }
 
       @Override
       protected boolean matchesSafely (List<String> item)
       {
         for(int i = (item.size() - 1) ; i > 0; i--) {
-          if(item.get(i).compareTo(item.get(i-1)) < 1) return false;
+          if(item.get(i).compareTo(item.get(i-1)) > 0) return false;
         }
         return true;
       }

@@ -222,7 +222,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
       protected boolean matchesSafely (List<String> item)
       {
         for(int i = item.size() -1 ; i > 0 ; i--) {
-          if(item.get(i).compareTo(item.get(i-1)) < 1 )return false;
+          if(item.get(i).compareTo(item.get(i-1)) > 0 )return false;
         }
         return true;
       }

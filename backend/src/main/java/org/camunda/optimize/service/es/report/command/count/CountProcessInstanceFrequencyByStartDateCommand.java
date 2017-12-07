@@ -16,6 +16,9 @@ import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
 import org.joda.time.DateTime;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -62,7 +65,7 @@ public class CountProcessInstanceFrequencyByStartDateCommand extends ReportComma
   Map<String, Long> processAggregations(Aggregations aggregations) {
     Histogram agg = aggregations.get(DATE_HISTOGRAM_AGGREGATION);
 
-    Map<String, Long> result = new TreeMap<>();
+    Map<String, Long> result = new LinkedHashMap<>();
     // For each entry
     for (Histogram.Bucket entry : agg.getBuckets()) {
       DateTime key = (DateTime) entry.getKey();    // Key
