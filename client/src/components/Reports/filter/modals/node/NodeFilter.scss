@@ -9,4 +9,37 @@
   left: 0;
   right: 0;
   bottom: 0;
+
+  margin-top: 70px;
 }
+
+.NodeFilter__preview {
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  background-color: white;
+  border-radius: 3px;
+
+  &:first-child {
+    margin-left: 0;
+  }
+  
+  &:last-child {
+    margin-right: 20px;
+  }
+
+  &:empty {
+    border: 0px solid #ccc;
+  }
+
+}
+
+.NodeFilter__preview-item {
+  list-style-type: none;
+  display: inline-block;
+
+}
+
+.NodeFilter__preview-item-operator {
+  margin: 0 .5em;
+}
+

@@ -47,13 +47,36 @@ export default class NodeFilter extends React.Component {
   }
 
   noNodeIsSeleacted = () => {
-    return this.state.selectedNodes.length==0;
+    return this.state.selectedNodes.length===0;
+  }
+
+  createOperator  = (name) => {
+    return <span className='NodeFilter__preview-item-operator'> {name} </span>;
+  }
+
+  createPreviewList = () => {
+    const previewList = [];
+
+    this.state.selectedNodes.forEach( (selectedNode, idx) => {
+      previewList.push(
+        <li key={idx} className='NodeFilter__preview-item'>
+          <span key={idx}>
+            {' '}<span className='NodeFilter__preview-item-value'>{selectedNode.toString()}</span>{' '}
+            {idx < this.state.selectedNodes.length - 1 && this.createOperator('or')}
+          </span>
+        </li>
+      )
+    });
+    return <ul className='NodeFilter__preview'>
+              {previewList}
+            </ul>;
   }
 
   render() {
     return (<Modal open={true} onClose={this.props.close} className='NodeFilter__modal'>
       <Modal.Header>New Flownode Filter</Modal.Header>
       <Modal.Content>
+        {this.createPreviewList()}
         {this.state.xml && (
           <div className='NodeFilter__diagram-container'>
             <BPMNDiagram xml={this.state.xml}>

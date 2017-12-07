@@ -91,3 +91,23 @@ it('should disable create filter button if no node was selected', () => {
   expect(buttons.at(0).prop("disabled")).toBeFalsy(); // abort
   expect(buttons.at(1).prop("disabled")).toBeTruthy(); // create filter
 });
+
+it('should create preview of selected node', () => {
+  const node = mount(<NodeFilter processDefinitionId='procDefId' />);
+  
+    node.instance().toggleNode('node1');
+  
+    expect(node.find('#modal_content')).toIncludeText('node1');
+});
+
+it('should create preview of selected nodes linked by or', () => {
+  const node = mount(<NodeFilter processDefinitionId='procDefId' />);
+  
+    node.instance().toggleNode('node1');
+    node.instance().toggleNode('node2');
+  
+    const content = node.find('#modal_content');
+    expect(content).toIncludeText('node1');
+    expect(content).toIncludeText('or');
+    expect(content).toIncludeText('node2');
+});
