@@ -4,6 +4,8 @@ import {loadReport} from './service';
 
 import {ReportView} from 'components';
 
+import './DashboardReport.css';
+
 export default class DashboardReport extends React.Component {
   constructor(props) {
     super(props);
@@ -30,6 +32,13 @@ export default class DashboardReport extends React.Component {
       return this.state.data.errorMessage;
     }
 
-    return <ReportView report={this.state.data} />
+    return <div>
+      <div className='DashboardReport__header'>
+        {this.state.data.name}
+      </div>
+      <div className='DashboardReport__visualization'>
+        <ReportView report={this.state.data} />
+      </div>
+    </div>
   }
 }

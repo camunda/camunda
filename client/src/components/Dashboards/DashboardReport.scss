@@ -1,0 +1,21 @@
+.DashboardReport__visualization {
+  position: absolute;
+  top: 2em;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  overflow: auto;
+}
+
+.DashboardReport__header {
+  position: absolute;
+  top: 0;
+  height: 2em;
+  left: 0;
+  right: 0;
+  line-height: 2em;
+  font-weight: bold;
+  padding-left: .5em;
+  border-bottom: 1px solid lightgray;
+  background-color: #f3f3f3;
+}
