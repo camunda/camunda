@@ -107,7 +107,7 @@ export default class ControlPanel extends React.Component {
           </Select>
         </li>
         <li className='ControlPanel__item ControlPanel__item--filter'>
-          <Filter data={this.props.filter} onChange={this.props.onChange} id='ControlPanel__filters' processDefinitionId={this.props.processDefinitionId} />
+          <Filter data={this.props.filter} onChange={this.props.onChange} processDefinitionId={this.props.processDefinitionId} />
         </li>
       </ul>
     </div>
