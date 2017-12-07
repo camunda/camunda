@@ -14,7 +14,6 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.util.List;
 
@@ -44,20 +43,16 @@ public class VariableRestService {
   @Path("/{id}/values")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public Response getVariableValues(@PathParam("id") String processDefinitionId,
-                                    @Context UriInfo uriInfo) {
-    try {
-      MultivaluedMap<String, String> queryParameters = uriInfo.getQueryParameters();
-      String name = queryParameters.getFirst(NAME);
-      ValidationHelper.ensureNotEmpty("variable name", name);
-      String type = queryParameters.getFirst(TYPE);
-      ValidationHelper.ensureNotEmpty("variable type", type);
-      List<String> variableValues = variableReader.getVariableValues(processDefinitionId, name, type);
-      variableValues = adjustVariableValuesToQueryParameters(variableValues, queryParameters);
-      return Response.ok(variableValues, MediaType.APPLICATION_JSON).build();
-    } catch (Exception e) {
-      return buildServerErrorResponse(e);
-    }
+  public List<String> getVariableValues(@PathParam("id") String processDefinitionId,
+                                        @Context UriInfo uriInfo) {
+    MultivaluedMap<String, String> queryParameters = uriInfo.getQueryParameters();
+    String name = queryParameters.getFirst(NAME);
+    ValidationHelper.ensureNotEmpty("variable name", name);
+    String type = queryParameters.getFirst(TYPE);
+    ValidationHelper.ensureNotEmpty("variable type", type);
+    List<String> variableValues = variableReader.getVariableValues(processDefinitionId, name, type);
+    variableValues = adjustVariableValuesToQueryParameters(variableValues, queryParameters);
+    return variableValues;
   }
 
 

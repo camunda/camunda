@@ -1,5 +1,6 @@
 package org.camunda.optimize.rest;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.rest.providers.Secured;
@@ -7,6 +8,7 @@ import org.camunda.optimize.rest.queryparam.adjustment.QueryParamAdjustmentUtil;
 import org.camunda.optimize.rest.util.AuthenticationUtil;
 import org.camunda.optimize.service.es.reader.DashboardReader;
 import org.camunda.optimize.service.es.writer.DashboardWriter;
+import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.security.TokenService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -66,19 +68,14 @@ public class DashboardRestService {
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public Response updateDashboard(@Context ContainerRequestContext requestContext,
+  public void updateDashboard(@Context ContainerRequestContext requestContext,
                            @PathParam("id") String dashboardId,
-                           DashboardDefinitionDto updatedDashboard) {
+                           DashboardDefinitionDto updatedDashboard) throws OptimizeException, JsonProcessingException {
     updatedDashboard.setId(dashboardId);
     String token = AuthenticationUtil.getToken(requestContext);
     String userId = tokenService.getTokenIssuer(token);
     updatedDashboard.setLastModifier(userId);
-    try {
-      dashboardWriter.updateDashboard(updatedDashboard);
-      return Response.noContent().build();
-    } catch (Exception e) {
-      return buildServerErrorResponse(e);
-    }
+    dashboardWriter.updateDashboard(updatedDashboard);
   }
 
   /**
@@ -87,15 +84,11 @@ public class DashboardRestService {
    */
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  public Response getStoredDashboards(@Context UriInfo uriInfo) throws IOException {
-    try {
-      List<DashboardDefinitionDto> dashboards = dashboardReader.getAllDashboards();
-      MultivaluedMap<String, String> queryParameters = uriInfo.getQueryParameters();
-      dashboards = QueryParamAdjustmentUtil.adjustDashboardResultsToQueryParameters(dashboards, queryParameters);
-      return Response.ok(dashboards, MediaType.APPLICATION_JSON).build();
-    } catch (Exception e) {
-      return buildServerErrorResponse(e);
-    }
+  public List<DashboardDefinitionDto> getStoredDashboards(@Context UriInfo uriInfo) throws IOException {
+    List<DashboardDefinitionDto> dashboards = dashboardReader.getAllDashboards();
+    MultivaluedMap<String, String> queryParameters = uriInfo.getQueryParameters();
+    dashboards = QueryParamAdjustmentUtil.adjustDashboardResultsToQueryParameters(dashboards, queryParameters);
+    return dashboards;
   }
 
   /**
@@ -104,12 +97,8 @@ public class DashboardRestService {
   @GET
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
-  public Response getDashboards(@PathParam("id") String dashboardId) {
-    try {
-      return Response.ok(dashboardReader.getDashboard(dashboardId), MediaType.APPLICATION_JSON).build();
-    } catch (Exception e) {
-      return buildServerErrorResponse(e);
-    }
+  public DashboardDefinitionDto getDashboards(@PathParam("id") String dashboardId) throws IOException, OptimizeException {
+    return dashboardReader.getDashboard(dashboardId);
   }
 
   /**

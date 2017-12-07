@@ -1,5 +1,6 @@
 package org.camunda.optimize.rest;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.query.ConnectionStatusDto;
 import org.camunda.optimize.dto.optimize.query.ProgressDto;
@@ -32,8 +33,6 @@ public class StatusRestService {
   @Autowired
   private ObjectMapper objectMapper;
 
-  private final String FAILED_TO_COMPUTE_PROGRESS_MESSAGE = "It was not possible to compute the import progress!";
-
   /**
    * Get the status of the connection from Optimize to Elasticsearch and Camunda.
    *
@@ -56,14 +55,10 @@ public class StatusRestService {
   @Path("/import-progress")
   @Produces(MediaType.APPLICATION_JSON)
   @Secured
-  public Response getImportProgress() {
-    try {
-      ProgressDto progressDto = new ProgressDto();
-      progressDto.setProgress(importProgressReporter.computeImportProgress());
-      return Response.ok(objectMapper.writeValueAsString(progressDto), MediaType.APPLICATION_JSON).build();
-    } catch (Exception e) {
-      return buildServerErrorResponse(FAILED_TO_COMPUTE_PROGRESS_MESSAGE);
-    }
+  public String getImportProgress() throws OptimizeException, JsonProcessingException {
+    ProgressDto progressDto = new ProgressDto();
+    progressDto.setProgress(importProgressReporter.computeImportProgress());
+    return objectMapper.writeValueAsString(progressDto);
   }
 
 }

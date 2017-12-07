@@ -1,5 +1,6 @@
 package org.camunda.optimize.rest;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -78,21 +79,15 @@ public class ReportRestService {
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public Response updateReport(@Context ContainerRequestContext requestContext,
+  public void updateReport(@Context ContainerRequestContext requestContext,
                            @PathParam("id") String reportId,
-                           ReportDefinitionDto updatedReport) {
+                           ReportDefinitionDto updatedReport) throws OptimizeException, JsonProcessingException {
     updatedReport.setId(reportId);
     String token = AuthenticationUtil.getToken(requestContext);
     String userId = tokenService.getTokenIssuer(token);
     updatedReport.setLastModifier(userId);
     updatedReport.setLastModified(LocalDateUtil.getCurrentDateTime());
-    try {
-      reportWriter.updateReport(updatedReport);
-      return Response.noContent().build();
-    } catch (Exception e) {
-      logger.error("Error while updating report",e);
-      return buildServerErrorResponse(e);
-    }
+    reportWriter.updateReport(updatedReport);
   }
 
   /**
@@ -101,16 +96,11 @@ public class ReportRestService {
    */
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  public Response getStoredReports(@Context UriInfo uriInfo) throws IOException {
-    try {
+  public List<ReportDefinitionDto> getStoredReports(@Context UriInfo uriInfo) throws IOException {
       List<ReportDefinitionDto> reports = reportReader.getAllReports();
       MultivaluedMap<String, String> queryParameters = uriInfo.getQueryParameters();
       reports = QueryParamAdjustmentUtil.adjustReportResultsToQueryParameters(reports, queryParameters);
-      return Response.ok(reports, MediaType.APPLICATION_JSON).build();
-    } catch (Exception e) {
-      logger.error("Error while trying to fetch all stored reports from Elasticsearch", e);
-      return buildServerErrorResponse(e);
-    }
+      return reports;
   }
 
   /**
@@ -119,13 +109,8 @@ public class ReportRestService {
   @GET
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
-  public Response getReport(@PathParam("id") String reportId) {
-    try {
-      return Response.ok(reportReader.getReport(reportId), MediaType.APPLICATION_JSON).build();
-    } catch (Exception e) {
-      logger.error("Error during retrieval of a report", e);
-      return buildServerErrorResponse(e);
-    }
+  public ReportDefinitionDto getReport(@PathParam("id") String reportId) throws IOException, OptimizeException {
+    return reportReader.getReport(reportId);
   }
 
   /**
@@ -147,23 +132,11 @@ public class ReportRestService {
   @Path("/{id}/evaluate")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  public Response evaluateReport(@PathParam("id") String reportId) {
-    ReportDefinitionDto reportDefinition = null;
-    try {
-      reportDefinition = reportReader.getReport(reportId);
-      ReportResultDto result = reportEvaluator.evaluate(reportDefinition);
-      return Response.ok(result, MediaType.APPLICATION_JSON).build();
-    } catch (Exception e) {
-      String reportName = reportDefinition != null? reportDefinition.getName() : "unknown report";
-      logger.error("Error during report evaluation of repord with id [{}] and name [{}]. Reason: {}",
-        reportId,
-        reportName,
-        e);
-      String errorMessage = "Report [" + reportName + "]: " +
-        "Could not evaluate report. Reason: " + e.getMessage();
-      Exception optimizeException = new OptimizeException(errorMessage);
-      return buildServerErrorResponse(optimizeException);
-    }
+  public ReportResultDto evaluateReport(@PathParam("id") String reportId) throws IOException, OptimizeException {
+    ReportDefinitionDto reportDefinition;
+    reportDefinition = reportReader.getReport(reportId);
+    ReportResultDto result = reportEvaluator.evaluate(reportDefinition);
+    return result;
   }
 
   /**
@@ -174,15 +147,8 @@ public class ReportRestService {
   @Path("/evaluate")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public Response evaluateReport(ReportDataDto reportData) {
-    try {
-      ReportResultDto result = reportEvaluator.evaluate(reportData);
-      return Response.ok(result, MediaType.APPLICATION_JSON).build();
-    } catch (Exception e) {
-      logger.error("Error during evaluation of an unsaved report", e);
-      String errorMessage = "Report [unsaved report]: Could not evaluate report. Reason: " + e.getMessage();
-      Exception optimizeException = new OptimizeException(errorMessage);
-      return buildServerErrorResponse(optimizeException);
-    }
+  public ReportResultDto evaluateReport(ReportDataDto reportData) throws IOException, OptimizeException {
+    ReportResultDto result = reportEvaluator.evaluate(reportData);
+    return result;
   }
 }

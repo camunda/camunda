@@ -20,6 +20,7 @@ import org.springframework.stereotype.Component;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
+import javax.ws.rs.NotFoundException;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
@@ -90,17 +91,14 @@ public class ProcessDefinitionRestService {
    */
   @GET
   @Path("/{id}/xml")
-  public Response getProcessDefinitionXml(@PathParam("id") String processDefinitionId) {
-    Response response;
+  public String getProcessDefinitionXml(@PathParam("id") String processDefinitionId) {
+    String response;
     String xml = processDefinitionReader.getProcessDefinitionXml(processDefinitionId);
     if (xml == null) {
       String notFoundErrorMessage = "Could not find xml for process definition with id :" + processDefinitionId;
-      response = Response.status(404)
-        .entity(notFoundErrorMessage)
-        .type(MediaType.APPLICATION_JSON_TYPE)
-        .build();
+      throw new NotFoundException(notFoundErrorMessage);
     } else {
-      response = Response.ok(xml, MediaType.APPLICATION_JSON).build();
+      response = xml;
     }
     return response;
   }
@@ -193,11 +191,7 @@ public class ProcessDefinitionRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public Response persistTargetValues(DurationHeatmapTargetValueDto targetValueDto) {
-    try {
-      targetValueWriter.persistTargetValue(targetValueDto);
-    } catch (RuntimeException e) {
-      return buildServerErrorResponse(e);
-    }
+    targetValueWriter.persistTargetValue(targetValueDto);
     return buildOkResponse();
   }
 
