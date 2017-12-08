@@ -33,6 +33,7 @@ import io.zeebe.client.ClientProperties;
 import io.zeebe.client.WorkflowsClient;
 import io.zeebe.client.event.WorkflowInstanceEvent;
 import io.zeebe.client.task.TaskHandler;
+import io.zeebe.client.task.cmd.CompleteTaskCommand;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -68,7 +69,7 @@ public class LargeWorkflowTest
                        .execute();
 
         workflowService.deploy(clientRule.getDefaultTopic())
-                       .addResourceFromClasspath("workflows/forty-task-process.bpmn")
+                       .addResourceFromClasspath("workflows/forty-tasks-process.bpmn")
                        .execute();
     }
 
@@ -158,9 +159,18 @@ public class LargeWorkflowTest
         // generic task handler for all tasks
         final TaskHandler taskHandler = (tasksClient, task) -> {
             final long c = completed.incrementAndGet();
-            tasksClient.complete(task)
-                       .payload("{ \"orderStatus\": \"RESERVED\" }")
-                       .execute();
+
+            final String taskType = task.getType();
+            final CompleteTaskCommand complete = tasksClient.complete(task);
+            if (taskType.equalsIgnoreCase("reserveOrderItems30") ||
+                taskType.equalsIgnoreCase("reserveOrderItems20") ||
+                taskType.equalsIgnoreCase("reserveOrderItems10") ||
+                taskType.equalsIgnoreCase("reserveOrderItems0"))
+            {
+                complete.payload("{ \"orderStatus\": \"RESERVED\" }");
+            }
+            complete.execute();
+
             if (c % REPORT_INTERVAL == 0)
             {
                 System.out.println("Completed: " + c);
@@ -189,7 +199,7 @@ public class LargeWorkflowTest
         {
             final Future<WorkflowInstanceEvent> future =
                 workflowService.create(clientRule.getDefaultTopic())
-                               .bpmnProcessId("forty-task-process")
+                               .bpmnProcessId("forty-tasks-process")
                                .latestVersion()
                                .payload("{ \"orderId\": 31243, \"orderStatus\": \"NEW\", \"orderItems\": [435, 182, 376] }")
                                .executeAsync();
