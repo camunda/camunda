@@ -71,6 +71,11 @@ it('does merge and render classNames provided as a property', () => {
   expect(node.find('.Button')).toMatchSelector('.Button.foo');
 });
 
+it('adds an "is-active" class when "active" prop was provided', () => {
+  const node = mount(<Button active />);
+  expect(node.find('.Button')).toMatchSelector('.Button.is-active');
+});
+
 it('executes a click handler as provided as a property', () => {
   const handler = jest.fn();
   const node = mount(<Button onClick={handler} />);

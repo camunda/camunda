@@ -4,13 +4,29 @@ import {Link} from 'react-router-dom';
 import './Button.css';
 
 export default function Button(props) {
+  const filteredProps = {...props};
+  delete filteredProps.active;
   if (props.tag === 'a') {
-    return (<Link {...props} className={'Button ' + (props.type ? ('Button--' + props.type + ' ') : '') + (props.color? ('Button--' + props.color + ' ') : '') + (props.className || '')}>
-      {props.children}
-    </Link>);
+    return (<Link 
+              {...filteredProps} 
+                className={'Button ' 
+                  + (props.type ? ('Button--' + props.type + ' ') : '') 
+                  + (props.color ? ('Button--' + props.color + ' ') : '') 
+                  + (props.className ? props.className + ' ' : '')
+                  + (props.active ? 'is-active' : '')
+              }>
+              {props.children}
+            </Link>);
   } else {
-    return (<button {...props} className={'Button ' + (props.type ? ('Button--' + props.type + ' ') : '') + (props.color? ('Button--' + props.color + ' ') : '') + (props.className || '')}>
-      {props.children}
-    </button>);
+    return (<button 
+              {...filteredProps} 
+                className={'Button ' 
+                + (props.type ? ('Button--' + props.type + ' ') : '') 
+                + (props.color ? ('Button--' + props.color + ' ') : '') 
+                + (props.className ? props.className + ' ' : '')
+                + (props.active ? 'is-active' : '')
+              }>
+              {props.children}
+            </button>);
   }
 }
