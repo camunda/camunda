@@ -680,7 +680,7 @@ public class ImportIT  {
     deployAndStartSimpleServiceTask();
     deployAndStartSimpleServiceTask();
     engineRule.waitForAllProcessesToFinish();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntitiesWithoutReset();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
 
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
     assertThat(embeddedOptimizeRule.getProgressValue(), is(100L));
