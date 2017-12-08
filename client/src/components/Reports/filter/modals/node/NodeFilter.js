@@ -46,8 +46,8 @@ export default class NodeFilter extends React.Component {
     });
   }
 
-  noNodeIsSeleacted = () => {
-    return this.state.selectedNodes.length===0;
+  isNodeSelected = () => {
+    return this.state.selectedNodes.length>0;
   }
 
   createOperator  = (name) => {
@@ -87,7 +87,7 @@ export default class NodeFilter extends React.Component {
       </Modal.Content>
       <Modal.Actions>
         <Button onClick={this.props.close}>Abort</Button>
-        <Button type='primary' className='Button--blue' disabled={this.noNodeIsSeleacted()} onClick={this.createFilter}>Create Filter</Button>
+        <Button type='primary' className='Button--blue' disabled={!this.isNodeSelected()} onClick={this.createFilter}>Create Filter</Button>
       </Modal.Actions>
     </Modal>);
   }
