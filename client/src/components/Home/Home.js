@@ -10,7 +10,7 @@ export default function Home() {
       displayOnly='5'
       sortBy={'lastModified'}
       operations={['edit']}
-      isHomeList = {true}>
+      includeViewAllLink = {true}>
     </EntityList>,
     <EntityList
       key='report'
@@ -19,7 +19,7 @@ export default function Home() {
       displayOnly='5'
       sortBy={'lastModified'}
       operations={['edit']}
-      isHomeList = {true}>
+      includeViewAllLink = {true}>
     </EntityList>
   ];
 }

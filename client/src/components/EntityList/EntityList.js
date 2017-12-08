@@ -69,7 +69,7 @@ export default class EntityList extends React.Component {
 
   render() {
     const {redirectToEntity, loaded} = this.state;
-    const {isHomeList} = this.props;
+    const {includeViewAllLink} = this.props;
 
     const isListEmpty = (this.state.data.length === 0);
 
@@ -85,7 +85,7 @@ export default class EntityList extends React.Component {
     if(loaded) {
       list = (isListEmpty) ?
       (<ul className="EntityList__list">
-            <li className="EntityList__item EntityList__no-entities">You have no Dashboards configured yet.&nbsp;{createLink}</li>
+            <li className="EntityList__item EntityList__no-entities">{`You have no ${this.props.api}s configured yet.`}&nbsp;{createLink}</li>
        </ul>) :
       (<ul className='EntityList__list'>
         {this.formatData(this.state.data).map((row, idx) => {
@@ -117,7 +117,7 @@ export default class EntityList extends React.Component {
         </div>
         {list}
         {this.props.children}
-        {(isHomeList && !isListEmpty) ? <Link to={`/${this.props.api}s`} className='small'>View all {`${this.props.label}`}s…</Link> : ''}
+        {(includeViewAllLink && !isListEmpty) ? <Link to={`/${this.props.api}s`} className='small'>View all {`${this.props.label}`}s…</Link> : ''}
       </section>);
     }
   }

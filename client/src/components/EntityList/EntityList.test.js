@@ -116,7 +116,7 @@ it('should not display create entity link if there are entities', () => {
 });
 
 it('should not display create entity button on home page' , () => {
-  const node = mount(<EntityList isHomeList={true} api='endpoint' label='Dashboard' operations={['edit']}/>);
+  const node = mount(<EntityList includeViewAllLink={true} api='endpoint' label='Dashboard' operations={['edit']}/>);
 
   node.setState({
     loaded: true,
