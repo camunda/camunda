@@ -22,7 +22,6 @@ const options = {
       {key: 'bar', label: 'Bar Chart'},
       {key: 'line', label: 'Line Chart'},
       {key: 'pie', label: 'Pie Chart'},
-      {key: 'badge', label: 'Diagram Badge'},
       {key: 'heat', label: 'Heatmap'},
       {key: 'json', label: 'JSON Dump'}
     ]
