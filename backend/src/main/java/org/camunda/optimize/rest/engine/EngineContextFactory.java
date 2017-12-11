@@ -72,9 +72,9 @@ public class EngineContextFactory {
   public class LoggingFilter implements ClientRequestFilter {
 
     @Override
-    public void filter(ClientRequestContext requestContext) throws IOException {
+    public void filter(ClientRequestContext requestContext) {
       String body = requestContext.getEntity() != null ? requestContext.getEntity().toString() : "";
-      logger.debug("sending request to [{}] with body [{}]", requestContext.getUri() , body);
+      logger.trace("sending request to [{}] with body [{}]", requestContext.getUri() , body);
     }
   }
 
