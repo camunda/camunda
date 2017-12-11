@@ -1,9 +1,12 @@
 package org.camunda.optimize.test.it.rule;
 
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -29,11 +32,14 @@ import org.camunda.optimize.rest.engine.dto.UserDto;
 import org.camunda.optimize.rest.engine.dto.UserProfileDto;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.util.CustomDeserializer;
+import org.camunda.optimize.service.util.CustomSerializer;
 import org.camunda.optimize.test.util.PropertyUtil;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -48,6 +54,9 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -92,11 +101,25 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   private void setupObjectMapper() {
-    objectMapper = new ObjectMapper();
-    objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-    objectMapper.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
-    DateFormat df = new SimpleDateFormat(properties.getProperty("camunda.optimize.serialization.date.format"));
-    objectMapper.setDateFormat(df);
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern(properties.getProperty("camunda.optimize.serialization.date.format"));
+    JavaTimeModule javaTimeModule = new JavaTimeModule();
+    javaTimeModule.addSerializer(OffsetDateTime.class, new CustomSerializer(formatter));
+    javaTimeModule.addDeserializer(OffsetDateTime.class, new CustomDeserializer(formatter));
+
+    objectMapper = Jackson2ObjectMapperBuilder
+        .json()
+        .modules(javaTimeModule)
+        .featuresToDisable(
+            SerializationFeature.WRITE_DATES_AS_TIMESTAMPS,
+            DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE,
+            DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
+            DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES
+        )
+        .featuresToEnable(
+            JsonParser.Feature.ALLOW_COMMENTS,
+            SerializationFeature.INDENT_OUTPUT
+        )
+        .build();
   }
 
   protected void starting(Description description) {
@@ -422,13 +445,22 @@ public class EngineIntegrationRule extends TestWatcher {
       } else {
         Map<String, Object> fields = new HashMap<>();
         fields.put("value", nameToValue.getValue());
-        fields.put("type", nameToValue.getValue().getClass().getSimpleName());
+        fields.put("type", getSimpleName(nameToValue));
         variables.put(nameToValue.getKey(), fields);
       }
     }
     Map<String, Object> variableWrapper = new HashMap<>();
     variableWrapper.put("variables", variables);
     return objectMapper.writeValueAsString(variableWrapper);
+  }
+
+  private String getSimpleName(Map.Entry<String, Object> nameToValue) {
+
+    String simpleName = nameToValue.getValue().getClass().getSimpleName();
+    if (nameToValue.getValue().getClass().equals(OffsetDateTime.class)) {
+      simpleName = Date.class.getSimpleName();
+    }
+    return simpleName;
   }
 
   public void waitForAllProcessesToFinish() throws Exception {

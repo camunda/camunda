@@ -23,6 +23,8 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 
 import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.GREATER_THAN;
@@ -54,7 +56,7 @@ public class DateQueryFilterIT {
   public void testGetHeatMapWithLtStartDateCriteria() throws Exception {
     //given
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    Date past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getStartTime();
+    OffsetDateTime past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getStartTime();
     String processDefinitionId = processInstanceDto.getDefinitionId();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -64,7 +66,7 @@ public class DateQueryFilterIT {
     String type = "start_date";
 
     //when
-    HeatMapQueryDto dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() + TIME_OFFSET_MILLS));
+    HeatMapQueryDto dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, past.plus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS));
     HeatMapResponseDto resultMap = getHeatMapResponseDto(dto);
 
     //then
@@ -77,7 +79,7 @@ public class DateQueryFilterIT {
     assertResults(resultMap, 0,0L);
 
     //when
-    dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() - TIME_OFFSET_MILLS));
+    dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, past.minus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS));
     resultMap = getHeatMapResponseDto(dto);
     //then
     assertResults(resultMap, 3, TEST_ACTIVITY, 1L, 1L);
@@ -104,7 +106,7 @@ public class DateQueryFilterIT {
   public void testGetHeatMapWithLteStartDateCriteria() throws Exception {
     //given
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    Date past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getStartTime();
+    OffsetDateTime past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getStartTime();
     String processDefinitionId = processInstanceDto.getDefinitionId();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -113,7 +115,7 @@ public class DateQueryFilterIT {
     String type = "start_date";
 
     //when
-    HeatMapQueryDto dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() + TIME_OFFSET_MILLS));
+    HeatMapQueryDto dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, past.plus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS));
     HeatMapResponseDto resultMap = getHeatMapResponseDto(dto);
 
     //then
@@ -126,7 +128,7 @@ public class DateQueryFilterIT {
     assertResults(resultMap, 3, 1L);
 
     //when
-    dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() - TIME_OFFSET_MILLS));
+    dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, past.minus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS));
     resultMap = getHeatMapResponseDto(dto);
     //then
     assertResults(resultMap, 3, TEST_ACTIVITY, 1L, 1L);
@@ -136,7 +138,7 @@ public class DateQueryFilterIT {
   public void testGetHeatMapWithLteEndDateCriteria() throws Exception {
     //given
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    Date past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getEndTime();
+    OffsetDateTime past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getEndTime();
     String processDefinitionId = processInstanceDto.getDefinitionId();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -145,7 +147,7 @@ public class DateQueryFilterIT {
     String type = "end_date";
 
     //when
-    HeatMapQueryDto dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() + TIME_OFFSET_MILLS));
+    HeatMapQueryDto dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, past.plus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS));
     HeatMapResponseDto resultMap = getHeatMapResponseDto(dto);
 
     //then
@@ -158,7 +160,7 @@ public class DateQueryFilterIT {
     assertResults(resultMap, 3, TEST_ACTIVITY, 1L, 1L);
 
     //when
-    dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() - TIME_OFFSET_MILLS));
+    dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, past.minus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS));
     resultMap = getHeatMapResponseDto(dto);
     //then
     assertResults(resultMap, 3, TEST_ACTIVITY, 1L, 1L);
@@ -168,7 +170,7 @@ public class DateQueryFilterIT {
   public void testGetHeatMapWithGtStartDateCriteria() throws Exception {
     //given
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    Date past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getStartTime();
+    OffsetDateTime past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getStartTime();
     String processDefinitionId = processInstanceDto.getDefinitionId();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -177,7 +179,7 @@ public class DateQueryFilterIT {
     String type = "start_date";
 
     //when
-    HeatMapQueryDto dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() + TIME_OFFSET_MILLS));
+    HeatMapQueryDto dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, past.plus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS));
     HeatMapResponseDto resultMap = getHeatMapResponseDto(dto);
 
     //then
@@ -190,7 +192,7 @@ public class DateQueryFilterIT {
     assertResults(resultMap, 0, 0L);
 
     //when
-    dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() - TIME_OFFSET_MILLS));
+    dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, past.minus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS));
     resultMap = getHeatMapResponseDto(dto);
     //then
     assertResults(resultMap, 0, 0L);
@@ -200,7 +202,7 @@ public class DateQueryFilterIT {
   public void testGetHeatMapWithMixedDateCriteria() throws Exception {
     //given
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    Date past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getStartTime();
+    OffsetDateTime past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getStartTime();
     String processDefinitionId = processInstanceDto.getDefinitionId();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -208,10 +210,10 @@ public class DateQueryFilterIT {
     String operator = GREATER_THAN;
     String type = "start_date";
 
-    HeatMapQueryDto dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() - TIME_OFFSET_MILLS));
+    HeatMapQueryDto dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, past.minus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS));
     operator = LESS_THAN;
     type = "end_date";
-    DateUtilHelper.addDateFilter(operator, type, new Date(past.getTime() + TIME_OFFSET_MILLS), dto);
+    DateUtilHelper.addDateFilter(operator, type, past.plus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS), dto);
 
     //when
     HeatMapResponseDto resultMap = getHeatMapResponseDto(dto);
@@ -222,10 +224,10 @@ public class DateQueryFilterIT {
     //given
     operator = GREATER_THAN;
     type = "start_date";
-    dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() - TIME_OFFSET_MILLS));
+    dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, past.minus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS));
     operator = LESS_THAN;
     type = "end_date";
-    DateUtilHelper.addDateFilter(operator, type, new Date(past.getTime()), dto);
+    DateUtilHelper.addDateFilter(operator, type, past, dto);
 
     //when
     resultMap = getHeatMapResponseDto(dto);
@@ -238,7 +240,7 @@ public class DateQueryFilterIT {
   public void testGetHeatMapWithGtEndDateCriteria() throws Exception {
     //given
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    Date past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getEndTime();
+    OffsetDateTime past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getEndTime();
     String processDefinitionId = processInstanceDto.getDefinitionId();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -247,7 +249,7 @@ public class DateQueryFilterIT {
     String type = "end_date";
 
     //when
-    HeatMapQueryDto dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() + TIME_OFFSET_MILLS));
+    HeatMapQueryDto dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, past.plus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS));
     HeatMapResponseDto resultMap = getHeatMapResponseDto(dto);
 
     //then
@@ -260,7 +262,7 @@ public class DateQueryFilterIT {
     assertResults(resultMap, 0, 0L);
 
     //when
-    dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() - TIME_OFFSET_MILLS));
+    dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, past.minus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS));
     resultMap = getHeatMapResponseDto(dto);
     //then
     assertResults(resultMap, 0, 0L);
@@ -270,7 +272,7 @@ public class DateQueryFilterIT {
   public void testGetHeatMapWithGteStartDateCriteria() throws Exception {
     //given
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    Date past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getStartTime();
+    OffsetDateTime past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getStartTime();
     String processDefinitionId = processInstanceDto.getDefinitionId();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -279,7 +281,7 @@ public class DateQueryFilterIT {
     String type = "start_date";
 
     //when
-    HeatMapQueryDto dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() + TIME_OFFSET_MILLS));
+    HeatMapQueryDto dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, past.plus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS));
     HeatMapResponseDto resultMap = getHeatMapResponseDto(dto);
 
     //then
@@ -292,7 +294,7 @@ public class DateQueryFilterIT {
     assertResults(resultMap, 3, TEST_ACTIVITY, 1L, 1L);
 
     //when
-    dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, new Date(past.getTime() - TIME_OFFSET_MILLS));
+    dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, past.minus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS));
     resultMap = getHeatMapResponseDto(dto);
     //then
     assertResults(resultMap, 0, 0L);
@@ -331,7 +333,7 @@ public class DateQueryFilterIT {
     assertThat(resultMap.getFlowNodes().get(activity), is(activityCount));
   }
 
-  private HeatMapQueryDto createHeatMapQueryWithDateFilter(String processDefinitionId, String operator, String type, Date dateValue) {
+  private HeatMapQueryDto createHeatMapQueryWithDateFilter(String processDefinitionId, String operator, String type, OffsetDateTime dateValue) {
     logger.debug("Preparing query on [{}] with operator [{}], type [{}], date [{}]", processDefinitionId, operator, type, dateValue);
     HeatMapQueryDto dto = new HeatMapQueryDto();
     dto.setProcessDefinitionId(processDefinitionId);

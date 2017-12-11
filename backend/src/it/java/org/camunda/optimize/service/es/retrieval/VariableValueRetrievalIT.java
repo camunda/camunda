@@ -20,12 +20,16 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAccessor;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.camunda.optimize.rest.VariableRestService.*;
+import static org.camunda.optimize.rest.VariableRestService.NAME;
+import static org.camunda.optimize.rest.VariableRestService.TYPE;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -37,11 +41,11 @@ public class VariableValueRetrievalIT {
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 
-  private SimpleDateFormat simpleDateFormat;
+  private DateTimeFormatter simpleDateFormat;
 
   @Before
   public void init() {
-    simpleDateFormat = new SimpleDateFormat(elasticSearchRule.getDateFormat());
+    simpleDateFormat = DateTimeFormatter.ofPattern(elasticSearchRule.getDateFormat());
   }
 
   @Rule
@@ -159,7 +163,7 @@ public class VariableValueRetrievalIT {
     String processDefinitionId = deploySimpleProcessDefinition();
     Map<String, String> varNameToTypeMap = createVarNameToTypeMap();
     Map<String, Object> variables = new HashMap<>();
-    variables.put("dateVar", new Date());
+    variables.put("dateVar", OffsetDateTime.now());
     variables.put("boolVar", true);
     variables.put("shortVar", (short)2);
     variables.put("intVar", 5);
@@ -181,12 +185,13 @@ public class VariableValueRetrievalIT {
       // then
       String expectedValue;
       if (name.equals("dateVar")) {
-        expectedValue = simpleDateFormat.format(variables.get(name));
+        OffsetDateTime temporal = (OffsetDateTime) variables.get(name);
+        expectedValue = simpleDateFormat.format(temporal.withOffsetSameInstant(ZoneOffset.UTC));
       } else {
         expectedValue = variables.get(name).toString();
       }
       assertThat(variableResponse.size(), is(1));
-      assertThat(variableResponse.contains(expectedValue), is(true));
+      assertThat("contains [" + expectedValue + "]", variableResponse.contains(expectedValue), is(true));
     }
 
   }

@@ -21,7 +21,7 @@ import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -125,7 +125,7 @@ public class DashboardHandlingIT {
     dashboard.setId("shouldNotBeUpdated");
     dashboard.setLastModifier("shouldNotBeUpdatedManually");
     dashboard.setName("MyDashboard");
-    LocalDateTime shouldBeIgnoredDate = LocalDateTime.now().plusHours(1);
+    OffsetDateTime shouldBeIgnoredDate = OffsetDateTime.now().plusHours(1);
     dashboard.setCreated(shouldBeIgnoredDate);
     dashboard.setLastModified(shouldBeIgnoredDate);
     dashboard.setOwner("NewOwner");

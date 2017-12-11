@@ -18,7 +18,7 @@ import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_RAW_DATA_OPERATION;
@@ -268,7 +268,7 @@ public class ReportRestServiceIT {
     report.setId("something");
     report.setLastModifier("something");
     report.setName("something");
-    LocalDateTime someDate = LocalDateTime.now().plusHours(1);
+    OffsetDateTime someDate = OffsetDateTime.now().plusHours(1);
     report.setCreated(someDate);
     report.setLastModified(someDate);
     report.setOwner("something");

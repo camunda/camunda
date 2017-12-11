@@ -2,14 +2,14 @@ package org.camunda.optimize.dto.optimize.query.dashboard;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class DashboardDefinitionUpdateDto {
 
   protected String name;
-  protected LocalDateTime lastModified;
+  protected OffsetDateTime lastModified;
   protected String owner;
   protected String lastModifier;
   protected List<ReportLocationDto> reports;
@@ -22,11 +22,11 @@ public class DashboardDefinitionUpdateDto {
     this.name = name;
   }
 
-  public LocalDateTime getLastModified() {
+  public OffsetDateTime getLastModified() {
     return lastModified;
   }
 
-  public void setLastModified(LocalDateTime lastModified) {
+  public void setLastModified(OffsetDateTime lastModified) {
     this.lastModified = lastModified;
   }
 

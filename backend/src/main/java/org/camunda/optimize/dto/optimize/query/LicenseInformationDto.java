@@ -3,12 +3,12 @@ package org.camunda.optimize.dto.optimize.query;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 
 import java.io.Serializable;
-import java.util.Date;
+import java.time.OffsetDateTime;
 
 public class LicenseInformationDto implements OptimizeDto, Serializable {
 
   private String customerId;
-  private Date validUntil;
+  private OffsetDateTime validUntil;
   private boolean isUnlimited;
 
   public String getCustomerId() {
@@ -19,11 +19,11 @@ public class LicenseInformationDto implements OptimizeDto, Serializable {
     this.customerId = customerId;
   }
 
-  public Date getValidUntil() {
+  public OffsetDateTime getValidUntil() {
     return validUntil;
   }
 
-  public void setValidUntil(Date validUntil) {
+  public void setValidUntil(OffsetDateTime validUntil) {
     this.validUntil = validUntil;
   }
 

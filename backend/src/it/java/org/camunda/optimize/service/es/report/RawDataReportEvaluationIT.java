@@ -33,7 +33,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -134,7 +134,7 @@ public class RawDataReportEvaluationIT {
     report.setId("something");
     report.setLastModifier("something");
     report.setName("something");
-    LocalDateTime someDate = LocalDateTime.now().plusHours(1);
+    OffsetDateTime someDate = OffsetDateTime.now().plusHours(1);
     report.setCreated(someDate);
     report.setLastModified(someDate);
     report.setOwner("something");
@@ -217,10 +217,10 @@ public class RawDataReportEvaluationIT {
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     String processDefinitionId = processInstance.getDefinitionId();
     ProcessInstanceEngineDto processInstanceDto2 =  engineRule.startProcessInstance(processDefinitionId);
-    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto2.getId(), LocalDateTime.now().minusDays(2));
+    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto2.getId(), OffsetDateTime.now().minusDays(2));
     ProcessInstanceEngineDto processInstanceDto3 =
       engineRule.startProcessInstance(processDefinitionId);
-    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto3.getId(), LocalDateTime.now().minusDays(1));
+    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto3.getId(), OffsetDateTime.now().minusDays(1));
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
@@ -316,7 +316,7 @@ public class RawDataReportEvaluationIT {
   public void dateFilterInReport() throws Exception {
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
-    Date past = engineRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
+    OffsetDateTime past = engineRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
     String processDefinitionId = processInstance.getDefinitionId();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -358,7 +358,7 @@ public class RawDataReportEvaluationIT {
     return reportData;
   }
 
-  public List<FilterDto> createDateFilter(String operator, String type, Date dateValue) {
+  public List<FilterDto> createDateFilter(String operator, String type, OffsetDateTime dateValue) {
     DateFilterDataDto date = new DateFilterDataDto();
     date.setOperator(operator);
     date.setType(type);

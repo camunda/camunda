@@ -1,6 +1,6 @@
 package org.camunda.optimize.dto.engine;
 
-import java.util.Date;
+import java.time.OffsetDateTime;
 
 public class HistoricActivityInstanceEngineDto implements EngineDto {
 
@@ -17,8 +17,8 @@ public class HistoricActivityInstanceEngineDto implements EngineDto {
   protected String calledProcessInstanceId;
   protected String calledCaseInstanceId;
   protected String assignee;
-  protected Date startTime;
-  protected Date endTime;
+  protected OffsetDateTime startTime;
+  protected OffsetDateTime endTime;
   protected Long durationInMillis;
   protected Boolean canceled;
   protected Boolean completeScope;
@@ -76,11 +76,11 @@ public class HistoricActivityInstanceEngineDto implements EngineDto {
     return assignee;
   }
 
-  public Date getStartTime() {
+  public OffsetDateTime getStartTime() {
     return startTime;
   }
 
-  public Date getEndTime() {
+  public OffsetDateTime getEndTime() {
     return endTime;
   }
 
@@ -152,11 +152,11 @@ public class HistoricActivityInstanceEngineDto implements EngineDto {
     this.assignee = assignee;
   }
 
-  public void setStartTime(Date startTime) {
+  public void setStartTime(OffsetDateTime startTime) {
     this.startTime = startTime;
   }
 
-  public void setEndTime(Date endTime) {
+  public void setEndTime(OffsetDateTime endTime) {
     this.endTime = endTime;
   }
 

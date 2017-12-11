@@ -10,8 +10,8 @@ import org.camunda.optimize.dto.optimize.query.variable.value.ShortVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.value.StringVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.value.VariableInstanceDto;
 
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 public class ProcessInstanceDto implements OptimizeDto {
@@ -19,8 +19,8 @@ public class ProcessInstanceDto implements OptimizeDto {
   protected String processDefinitionKey;
   protected String processDefinitionId;
   protected String processInstanceId;
-  protected Date startDate;
-  protected Date endDate;
+  protected OffsetDateTime startDate;
+  protected OffsetDateTime endDate;
   protected Long durationInMs;
   protected String engine;
   protected List<SimpleEventDto> events = new ArrayList<>();
@@ -94,19 +94,19 @@ public class ProcessInstanceDto implements OptimizeDto {
     this.processInstanceId = processInstanceId;
   }
 
-  public Date getStartDate() {
+  public OffsetDateTime getStartDate() {
     return startDate;
   }
 
-  public void setStartDate(Date startDate) {
+  public void setStartDate(OffsetDateTime startDate) {
     this.startDate = startDate;
   }
 
-  public Date getEndDate() {
+  public OffsetDateTime getEndDate() {
     return endDate;
   }
 
-  public void setEndDate(Date endDate) {
+  public void setEndDate(OffsetDateTime endDate) {
     this.endDate = endDate;
   }
 

@@ -1,6 +1,6 @@
 package org.camunda.optimize.dto.optimize.query.report.filter.data;
 
-import java.util.Date;
+import java.time.OffsetDateTime;
 
 /**
  * @author Askar Akhmerov
@@ -12,7 +12,7 @@ public class DateFilterDataDto implements FilterDataDto {
 
   protected String type;
   protected String operator;
-  protected Date value;
+  protected OffsetDateTime value;
 
 
   public String getType() {
@@ -31,11 +31,11 @@ public class DateFilterDataDto implements FilterDataDto {
     this.operator = operator;
   }
 
-  public Date getValue() {
+  public OffsetDateTime getValue() {
     return value;
   }
 
-  public void setValue(Date value) {
+  public void setValue(OffsetDateTime value) {
     this.value = value;
   }
 

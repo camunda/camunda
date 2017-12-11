@@ -31,7 +31,7 @@ import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -142,7 +142,7 @@ public class ReportHandlingIT {
     report.setId("shouldNotBeUpdated");
     report.setLastModifier("shouldNotBeUpdatedManually");
     report.setName("MyReport");
-    LocalDateTime shouldBeIgnoredDate = LocalDateTime.now().plusHours(1);
+    OffsetDateTime shouldBeIgnoredDate = OffsetDateTime.now().plusHours(1);
     report.setCreated(shouldBeIgnoredDate);
     report.setLastModified(shouldBeIgnoredDate);
     report.setOwner("NewOwner");
@@ -177,7 +177,7 @@ public class ReportHandlingIT {
     report.setId("shouldNotBeUpdated");
     report.setLastModifier("shouldNotBeUpdatedManually");
     report.setName("MyReport");
-    LocalDateTime shouldBeIgnoredDate = LocalDateTime.now().plusHours(1);
+    OffsetDateTime shouldBeIgnoredDate = OffsetDateTime.now().plusHours(1);
     report.setCreated(shouldBeIgnoredDate);
     report.setLastModified(shouldBeIgnoredDate);
     report.setOwner("NewOwner");
@@ -198,7 +198,7 @@ public class ReportHandlingIT {
     DateFilterDataDto date = new DateFilterDataDto();
     date.setOperator("foo");
     date.setType("bar");
-    date.setValue(new Date());
+    date.setValue(OffsetDateTime.now());
 
     DateFilterDto dateFilterDto = new DateFilterDto();
     dateFilterDto.setData(date);
@@ -253,7 +253,7 @@ public class ReportHandlingIT {
     ReportDefinitionDto report = new ReportDefinitionDto();
     report.setData(reportData);
     report.setName("name");
-    LocalDateTime now = LocalDateTime.now();
+    OffsetDateTime now = OffsetDateTime.now();
     report.setOwner("owner");
     updateReport(reportId, report);
 

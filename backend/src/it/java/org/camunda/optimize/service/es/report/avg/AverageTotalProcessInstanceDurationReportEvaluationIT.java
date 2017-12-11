@@ -30,7 +30,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -64,8 +64,8 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
   public void reportEvaluationForOneProcess() throws Exception {
 
     // given
-    LocalDateTime startDate = LocalDateTime.now();
-    LocalDateTime endDate = startDate.plusSeconds(1);
+    OffsetDateTime startDate = OffsetDateTime.now();
+    OffsetDateTime endDate = startDate.plusSeconds(1);
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
     engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), endDate);
@@ -92,7 +92,7 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
   @Test
   public void reportEvaluationById() throws Exception {
     // given
-    LocalDateTime startDate = LocalDateTime.now();
+    OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     String processDefinitionId = processInstanceDto.getDefinitionId();
     engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
@@ -119,18 +119,18 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
   @Test
   public void evaluateReportForMultipleEvents() throws Exception {
     // given
-    LocalDateTime startDate = LocalDateTime.now();
+    OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     ProcessInstanceEngineDto processInstanceDto2 =
       engineRule.startProcessInstance(processInstanceDto.getDefinitionId());
     ProcessInstanceEngineDto processInstanceDto3 =
       engineRule.startProcessInstance(processInstanceDto.getDefinitionId());
-    Map<String, LocalDateTime> startDatesToUpdate = new HashMap<>();
+    Map<String, OffsetDateTime> startDatesToUpdate = new HashMap<>();
     startDatesToUpdate.put(processInstanceDto.getId(), startDate);
     startDatesToUpdate.put(processInstanceDto2.getId(), startDate);
     startDatesToUpdate.put(processInstanceDto3.getId(), startDate);
     engineDatabaseRule.updateProcessInstanceStartDates(startDatesToUpdate);
-    Map<String, LocalDateTime> endDatesToUpdate = new HashMap<>();
+    Map<String, OffsetDateTime> endDatesToUpdate = new HashMap<>();
     endDatesToUpdate.put(processInstanceDto.getId(), startDate.plusSeconds(1));
     endDatesToUpdate.put(processInstanceDto2.getId(), startDate.plusSeconds(2));
     endDatesToUpdate.put(processInstanceDto3.getId(), startDate.plusSeconds(3));
@@ -162,7 +162,7 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
   @Test
   public void otherProcessDefinitionsDoNoAffectResult() throws Exception {
     // given
-    LocalDateTime startDate = LocalDateTime.now();
+    OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
     engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(1));
@@ -185,11 +185,11 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
   @Test
   public void dateFilterInReport() throws Exception {
     // given
-    LocalDateTime startDate = LocalDateTime.now();
+    OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
     engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(1));
-    Date past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getStartTime();
+    OffsetDateTime past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getStartTime();
     String processDefinitionId = processInstanceDto.getDefinitionId();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -213,7 +213,7 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
     assertThat(result.getResult(), is(1000L));
   }
 
-  public List<FilterDto> createDateFilter(String operator, String type, Date dateValue) {
+  public List<FilterDto> createDateFilter(String operator, String type, OffsetDateTime dateValue) {
     DateFilterDataDto date = new DateFilterDataDto();
     date.setOperator(operator);
     date.setType(type);
@@ -229,7 +229,7 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
     // given
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", true);
-    LocalDateTime startDate = LocalDateTime.now();
+    OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcessWithVariables(variables);
     engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
     engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(1));
@@ -264,7 +264,7 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
     // given
     Map<String, Object> variables = new HashMap<>();
     variables.put("goToTask1", true);
-    LocalDateTime startDate = LocalDateTime.now();
+    OffsetDateTime startDate = OffsetDateTime.now();
     String processDefinitionId = deploySimpleGatewayProcessDefinition();
     ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinitionId, variables);
     engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
@@ -400,8 +400,8 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
     report.setId(id);
     report.setLastModifier("something");
     report.setName("something");
-    report.setCreated(LocalDateTime.now());
-    report.setLastModified(LocalDateTime.now());
+    report.setCreated(OffsetDateTime.now());
+    report.setLastModified(OffsetDateTime.now());
     report.setOwner("something");
     updateReport(id, report);
     return id;

@@ -30,6 +30,7 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
+import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -279,7 +280,7 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
     String processDefinitionId = deploySimpleServiceTaskProcessDefinition();
     ProcessInstanceEngineDto processInstance = engineRule.startProcessInstance(processDefinitionId);
     engineDatabaseRule.changeActivityDuration(processInstance.getId(), 10L);
-    Date past = engineRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
+    OffsetDateTime past = engineRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
@@ -305,7 +306,7 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
     assertThat(flowNodeIdToExecutionFrequency.get(SERVICE_TASK_ID ), is(10L));
   }
 
-  public List<FilterDto> createDateFilter(String operator, String type, Date dateValue) {
+  public List<FilterDto> createDateFilter(String operator, String type, OffsetDateTime dateValue) {
     DateFilterDataDto date = new DateFilterDataDto();
     date.setOperator(operator);
     date.setType(type);

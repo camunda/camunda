@@ -25,6 +25,7 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
+import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -74,7 +75,7 @@ public class MixedFilterIT {
     variables.put("var", "value");
     instanceEngineDto = engineRule.startProcessInstance(processDefinitionId, variables);
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
-    Date date = engineRule.getHistoricProcessInstance(instanceEngineDto.getId()).getStartTime();
+    OffsetDateTime date = engineRule.getHistoricProcessInstance(instanceEngineDto.getId()).getStartTime();
 
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();

@@ -13,7 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"/unit/applicationContext.xml"})
@@ -82,7 +82,7 @@ public class TokenServiceTest {
     tokenService.validateToken(token);
   }
 
-  private LocalDateTime get1SecondAfterExpiryTime(int expiryTime) {
+  private OffsetDateTime get1SecondAfterExpiryTime(int expiryTime) {
     return LocalDateUtil.getCurrentDateTime().plusMinutes(expiryTime).plusSeconds(1);
   }
 }

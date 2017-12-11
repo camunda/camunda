@@ -36,7 +36,8 @@ import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.DayOfWeek;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -78,7 +79,7 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
   @Test
   public void simpleReportEvaluation() throws Exception {
     // given
-    LocalDateTime startDate = LocalDateTime.now();
+    OffsetDateTime startDate = OffsetDateTime.now().withOffsetSameInstant(ZoneOffset.UTC);
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     adjustProcessInstanceDates(processInstanceDto.getId(), startDate, 0L, 1L);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
@@ -101,7 +102,7 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
     assertThat(result.getResult(), is(notNullValue()));
     assertThat(result.getResult().size(), is(1));
     Map<String, Long> resultMap = result.getResult();
-    LocalDateTime startOfToday = LocalDateTime.now().truncatedTo(ChronoUnit.DAYS);
+    OffsetDateTime startOfToday = new Date().toInstant().atOffset(ZoneOffset.UTC).truncatedTo(ChronoUnit.DAYS);
     assertThat(resultMap.containsKey(localDateTimeToString(startOfToday)), is(true));
     assertThat(resultMap.get(localDateTimeToString(startOfToday)), is(1000L));
   }
@@ -109,7 +110,7 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
   @Test
   public void simpleReportEvaluationById() throws Exception {
     // given
-    LocalDateTime startDate = LocalDateTime.now();
+    OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     adjustProcessInstanceDates(processInstanceDto.getId(), startDate, 0L, 1L);
     String processDefinitionId = processInstanceDto.getDefinitionId();
@@ -132,7 +133,8 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
     assertThat(result.getResult(), is(notNullValue()));
     assertThat(result.getResult().size(), is(1));
     Map<String, Long> resultMap = result.getResult();
-    LocalDateTime startOfToday = LocalDateTime.now().truncatedTo(ChronoUnit.DAYS);
+
+    OffsetDateTime startOfToday = new Date().toInstant().atOffset(ZoneOffset.UTC).truncatedTo(ChronoUnit.DAYS);
     assertThat(resultMap.containsKey(localDateTimeToString(startOfToday)), is(true));
     assertThat(resultMap.get(localDateTimeToString(startOfToday)), is(1000L));
   }
@@ -140,7 +142,7 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
   @Test
   public void processInstancesStartedAtSameIntervalAreGroupedTogether() throws Exception {
     // given
-    LocalDateTime startDate = LocalDateTime.now();
+    OffsetDateTime startDate = OffsetDateTime.now().withOffsetSameInstant(ZoneOffset.UTC);
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     adjustProcessInstanceDates(processInstanceDto.getId(), startDate, 0L, 1L);
     processInstanceDto = engineRule.startProcessInstance(processInstanceDto.getDefinitionId());
@@ -161,7 +163,7 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
     // then
     Map<String, Long> resultMap = result.getResult();
     assertThat(resultMap.size(), is(2));
-    LocalDateTime startOfToday = startDate.truncatedTo(ChronoUnit.DAYS);
+    OffsetDateTime startOfToday = startDate.truncatedTo(ChronoUnit.DAYS);
     String expectedStringToday = localDateTimeToString(startOfToday);
     assertThat(resultMap.containsKey(expectedStringToday), is(true));
     assertThat(resultMap.get(expectedStringToday), is(2000L));
@@ -173,7 +175,7 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
   @Test
   public void resultIsSortedInDescendingOrder() throws Exception {
     // given
-    LocalDateTime startDate = LocalDateTime.now();
+    OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     adjustProcessInstanceDates(processInstanceDto.getId(), startDate, 0L, 1L);
     processInstanceDto = engineRule.startProcessInstance(processInstanceDto.getDefinitionId());
@@ -219,10 +221,10 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
   }
 
   private void adjustProcessInstanceDates(String processInstanceId,
-                                          LocalDateTime startDate,
+                                          OffsetDateTime startDate,
                                           long daysToShift,
                                           long durationInSec) throws SQLException {
-    LocalDateTime shiftedStartDate = startDate.plusDays(daysToShift);
+    OffsetDateTime shiftedStartDate = startDate.plusDays(daysToShift);
     engineDatabaseRule.changeProcessInstanceStartDate(processInstanceId, shiftedStartDate);
     engineDatabaseRule.changeProcessInstanceEndDate(processInstanceId, shiftedStartDate.plusSeconds(durationInSec));
   }
@@ -230,7 +232,7 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
   @Test
   public void emptyIntervalBetweenTwoProcessInstances() throws Exception {
     // given
-    LocalDateTime startDate = LocalDateTime.now();
+    OffsetDateTime startDate = OffsetDateTime.now().withOffsetSameInstant(ZoneOffset.UTC);
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     adjustProcessInstanceDates(processInstanceDto.getId(), startDate, 0L, 1L);
     processInstanceDto = engineRule.startProcessInstance(processInstanceDto.getDefinitionId());
@@ -250,7 +252,9 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
     // then
     Map<String, Long> resultMap = result.getResult();
     assertThat(resultMap.size(), is(3));
-    LocalDateTime startOfToday = LocalDateTime.now().truncatedTo(ChronoUnit.DAYS);
+
+    OffsetDateTime startOfToday = new Date().toInstant().atOffset(ZoneOffset.UTC).truncatedTo(ChronoUnit.DAYS);
+
     String expectedStringToday = localDateTimeToString(startOfToday);
     assertThat(resultMap.containsKey(expectedStringToday), is(true));
     assertThat(resultMap.get(expectedStringToday), is(2000L));
@@ -266,7 +270,7 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
   public void averageGroupedByHour() throws Exception {
     // given
     List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(5);
-    LocalDateTime now = LocalDateTime.now();
+    OffsetDateTime now = OffsetDateTime.now();
     updateProcessInstancesDates(processInstanceDtos, now, ChronoUnit.HOURS);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -282,9 +286,9 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
     assertDateResultMap(resultMap, 5, now, ChronoUnit.HOURS);
   }
 
-  private void assertDateResultMap(Map<String, Long> resultMap, int size, LocalDateTime now, ChronoUnit unit) {
+  private void assertDateResultMap(Map<String, Long> resultMap, int size, OffsetDateTime now, ChronoUnit unit) {
     assertThat(resultMap.size(), is(size));
-    final LocalDateTime finalStartOfUnit = truncateToStartOfUnit(now, unit);
+    final OffsetDateTime finalStartOfUnit = truncateToStartOfUnit(now, unit);
     IntStream.range(0, size)
       .forEach(i -> {
         String expectedDateString = localDateTimeToString(finalStartOfUnit.minus(i, unit));
@@ -293,8 +297,8 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
       });
   }
 
-  private LocalDateTime truncateToStartOfUnit(LocalDateTime date, ChronoUnit unit) {
-    LocalDateTime truncatedDate;
+  private OffsetDateTime truncateToStartOfUnit(OffsetDateTime date, ChronoUnit unit) {
+    OffsetDateTime truncatedDate;
     if (unit.equals(ChronoUnit.HOURS) || unit.equals(ChronoUnit.DAYS)) {
       truncatedDate = date.truncatedTo(unit);
     } else if (unit.equals(ChronoUnit.WEEKS)) {
@@ -309,14 +313,14 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
   }
 
   private void updateProcessInstancesDates(List<ProcessInstanceEngineDto> procInsts,
-                                           LocalDateTime now,
+                                           OffsetDateTime now,
                                            ChronoUnit unit) throws SQLException {
-    Map<String, LocalDateTime> idToNewStartDate = new HashMap<>();
-    Map<String, LocalDateTime> idToNewEndDate = new HashMap<>();
+    Map<String, OffsetDateTime> idToNewStartDate = new HashMap<>();
+    Map<String, OffsetDateTime> idToNewEndDate = new HashMap<>();
     IntStream.range(0, procInsts.size())
       .forEach( i -> {
         String id = procInsts.get(i).getId();
-        LocalDateTime newStartDate = now.minus(i, unit);
+        OffsetDateTime newStartDate = now.minus(i, unit);
         idToNewStartDate.put(id, newStartDate);
         idToNewEndDate.put(id, newStartDate.plusSeconds(1L));
       });
@@ -328,7 +332,7 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
   public void averageGroupedByDay() throws Exception {
     // given
     List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(8);
-    LocalDateTime now = LocalDateTime.now();
+    OffsetDateTime now = OffsetDateTime.now().withOffsetSameInstant(ZoneOffset.UTC);
     updateProcessInstancesDates(processInstanceDtos, now, ChronoUnit.DAYS);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -348,7 +352,7 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
   public void averageGroupedByWeek() throws Exception {
     // given
     List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(8);
-    LocalDateTime now = LocalDateTime.now();
+    OffsetDateTime now = OffsetDateTime.now().withOffsetSameInstant(ZoneOffset.UTC);
     updateProcessInstancesDates(processInstanceDtos, now, ChronoUnit.WEEKS);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -368,7 +372,7 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
   public void averageGroupedByMonth() throws Exception {
     // given
     List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(8);
-    LocalDateTime now = LocalDateTime.now();
+    OffsetDateTime now = OffsetDateTime.now().withOffsetSameInstant(ZoneOffset.UTC);
     updateProcessInstancesDates(processInstanceDtos, now, ChronoUnit.MONTHS);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -388,7 +392,7 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
   public void averageGroupedByYear() throws Exception {
     // given
     List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(8);
-    LocalDateTime now = LocalDateTime.now();
+    OffsetDateTime now = OffsetDateTime.now().withOffsetSameInstant(ZoneOffset.UTC);
     updateProcessInstancesDates(processInstanceDtos, now, ChronoUnit.YEARS);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -407,7 +411,7 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
   @Test
   public void otherProcessDefinitionsDoNoAffectResult() throws Exception {
     // given
-    LocalDateTime startDate = LocalDateTime.now().minusDays(2);
+    OffsetDateTime startDate = OffsetDateTime.now().withOffsetSameInstant(ZoneOffset.UTC).minusDays(2);
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     adjustProcessInstanceDates(processInstanceDto.getId(), startDate, 0L, 1L);
     deployAndStartSimpleServiceTaskProcess();
@@ -421,7 +425,7 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
 
     // then
     Map<String, Long> resultMap = result.getResult();
-    LocalDateTime startOfToday = startDate.truncatedTo(ChronoUnit.DAYS);
+    OffsetDateTime startOfToday = startDate.truncatedTo(ChronoUnit.DAYS);
     String expectedStartDateString = localDateTimeToString(startOfToday);
     assertThat(resultMap.size(), is(1));
     assertThat(resultMap.containsKey(expectedStartDateString), is(true));
@@ -431,10 +435,10 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
   @Test
   public void dateFilterInReport() throws Exception {
     // given
-    LocalDateTime startDate = LocalDateTime.now();
+    OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     adjustProcessInstanceDates(processInstanceDto.getId(), startDate, 0L, 1L);
-    Date past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getStartTime();
+    OffsetDateTime past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getStartTime();
     String processDefinitionId = processInstanceDto.getDefinitionId();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -459,7 +463,7 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
   }
 
 
-  public List<FilterDto> createDateFilter(String operator, String type, Date dateValue) {
+  public List<FilterDto> createDateFilter(String operator, String type, OffsetDateTime dateValue) {
     DateFilterDataDto date = new DateFilterDataDto();
     date.setOperator(operator);
     date.setType(type);
@@ -475,7 +479,7 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
     // given
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", true);
-    LocalDateTime startDate = LocalDateTime.now();
+    OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcessWithVariables(variables);
     adjustProcessInstanceDates(processInstanceDto.getId(), startDate, 0L, 1L);
     String processDefinitionId = processInstanceDto.getDefinitionId();
@@ -512,7 +516,7 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
     variables.put("goToTask1", true);
     String processDefinitionId = deploySimpleGatewayProcessDefinition();
     ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinitionId, variables);
-    adjustProcessInstanceDates(processInstanceDto.getId(), LocalDateTime.now(), 0L, 1L);
+    adjustProcessInstanceDates(processInstanceDto.getId(), OffsetDateTime.now(), 0L, 1L);
     variables.put("goToTask1", false);
     engineRule.startProcessInstance(processDefinitionId, variables);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
@@ -645,8 +649,8 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
     report.setId(id);
     report.setLastModifier("something");
     report.setName("something");
-    report.setCreated(LocalDateTime.now());
-    report.setLastModified(LocalDateTime.now());
+    report.setCreated(OffsetDateTime.now());
+    report.setLastModified(OffsetDateTime.now());
     report.setOwner("something");
     updateReport(id, report);
     return id;
@@ -663,8 +667,8 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
     return response.readEntity(MapReportResultDto.class);
   }
 
-  private String localDateTimeToString(LocalDateTime time) {
-    return embeddedOptimizeRule.getDateTimeFormatter().format(time);
+  private String localDateTimeToString(OffsetDateTime time) {
+    return embeddedOptimizeRule.getDateTimeFormatter().format(time.withOffsetSameInstant(ZoneOffset.UTC));
   }
 
   private ReportDataDto createDefaultReportData(String processDefinitionId, String dateInterval) {

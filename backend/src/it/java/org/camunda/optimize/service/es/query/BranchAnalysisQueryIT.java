@@ -30,6 +30,8 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -255,7 +257,7 @@ public class BranchAnalysisQueryIT {
     //given
     String processDefinitionId = deploySimpleGatewayProcessDefinition();
     startSimpleGatewayProcessAndTakeTask1(processDefinitionId);
-    Date now = new Date();
+    OffsetDateTime now = OffsetDateTime.now();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
@@ -298,7 +300,7 @@ public class BranchAnalysisQueryIT {
     dto.setProcessDefinitionId(processDefinitionId);
     dto.setGateway(SPLITTING_GATEWAY_ID);
     dto.setEnd(END_EVENT_ID);
-    DateUtilHelper.addDateFilter(">", "start_date", new Date(), dto);
+    DateUtilHelper.addDateFilter(">", "start_date", OffsetDateTime.now(), dto);
 
     //when
     BranchAnalysisDto result = getBranchAnalysisDto(dto);
@@ -756,8 +758,8 @@ public class BranchAnalysisQueryIT {
     return getResponse(token, request);
   }
 
-  private Date nowPlusTimeInMs(int timeInMs) {
-    return new Date(new Date().getTime() + timeInMs);
+  private OffsetDateTime nowPlusTimeInMs(int timeInMs) {
+    return OffsetDateTime.now().plus(timeInMs, ChronoUnit.MILLIS);
   }
 
 }

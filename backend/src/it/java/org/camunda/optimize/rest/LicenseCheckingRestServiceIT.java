@@ -22,6 +22,8 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -36,9 +38,9 @@ public class LicenseCheckingRestServiceIT {
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 
   private static final String CUSTOMER_ID = "schrottis inn";
-  private static Date VALID_UNTIL;
+  private static OffsetDateTime VALID_UNTIL;
 
-  private static SimpleDateFormat sdf = new SimpleDateFormat(elasticSearchRule.getDateFormat());
+  private static DateTimeFormatter sdf = DateTimeFormatter.ofPattern(elasticSearchRule.getDateFormat());
 
   @Rule
   public RuleChain chain = RuleChain
@@ -46,11 +48,11 @@ public class LicenseCheckingRestServiceIT {
 
   @BeforeClass
   public static void init() throws ParseException {
-    VALID_UNTIL = sdf.parse("9999-01-01T00:00:00");
+    VALID_UNTIL = OffsetDateTime.parse("9999-01-01T00:00:00.000+0100", sdf);
   }
 
   @Test
-  public void validLicenseShouldBeAccepted() throws IOException, URISyntaxException, ParseException {
+  public void validLicenseShouldBeAccepted() throws IOException, URISyntaxException {
 
     // given
     String license = readFileToString("/license/ValidTestLicense.txt");
@@ -68,7 +70,7 @@ public class LicenseCheckingRestServiceIT {
   }
 
   @Test
-  public void unlimitedValidLicenseShouldBeAccepted() throws IOException, URISyntaxException, ParseException {
+  public void unlimitedValidLicenseShouldBeAccepted() throws IOException, URISyntaxException {
 
     // given
     String license = readFileToString("/license/UnlimitedTestLicense.txt");
@@ -144,7 +146,7 @@ public class LicenseCheckingRestServiceIT {
   }
 
   @Test
-  public void noLicenseAvailableShouldThrowAnError() throws IOException, URISyntaxException {
+  public void noLicenseAvailableShouldThrowAnError() {
     // when
     Response response =
         embeddedOptimizeRule.target("license/validate")
@@ -178,7 +180,7 @@ public class LicenseCheckingRestServiceIT {
     return new String(Files.readAllBytes(Paths.get(getClass().getResource(filePath).toURI())), StandardCharsets.UTF_8);
   }
 
-  private void assertResult(Response response, String customerId, Date validUntil, boolean isUnlimited) throws ParseException {
+  private void assertResult(Response response, String customerId, OffsetDateTime validUntil, boolean isUnlimited) {
     LicenseInformationDto licenseInfo =
       response.readEntity(new GenericType<LicenseInformationDto>() { });
     assertThat(licenseInfo.getCustomerId(), is(customerId));

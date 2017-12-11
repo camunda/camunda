@@ -3,7 +3,7 @@ package org.camunda.optimize.dto.optimize.importing;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 
 import java.io.Serializable;
-import java.util.Date;
+import java.time.OffsetDateTime;
 
 /**
  * @author Askar Akhmerov
@@ -13,14 +13,14 @@ public class FlowNodeEventDto implements Serializable,OptimizeDto {
   protected String id;
   protected String activityId;
   protected String activityInstanceId;
-  protected Date timestamp;
+  protected OffsetDateTime timestamp;
   protected String processDefinitionKey;
   protected String processDefinitionId;
   protected String processInstanceId;
-  protected Date startDate;
-  protected Date endDate;
-  protected Date processInstanceStartDate;
-  protected Date processInstanceEndDate;
+  protected OffsetDateTime startDate;
+  protected OffsetDateTime endDate;
+  protected OffsetDateTime processInstanceStartDate;
+  protected OffsetDateTime processInstanceEndDate;
   protected Long durationInMs;
   protected String activityType;
 
@@ -49,11 +49,11 @@ public class FlowNodeEventDto implements Serializable,OptimizeDto {
   }
 
 
-  public void setTimestamp(Date timestamp) {
+  public void setTimestamp(OffsetDateTime timestamp) {
     this.timestamp = timestamp;
   }
 
-  public Date getTimestamp() {
+  public OffsetDateTime getTimestamp() {
     return timestamp;
   }
 
@@ -81,35 +81,35 @@ public class FlowNodeEventDto implements Serializable,OptimizeDto {
     this.processDefinitionId = processDefinitionId;
   }
 
-  public Date getStartDate() {
+  public OffsetDateTime getStartDate() {
     return startDate;
   }
 
-  public void setStartDate(Date startDate) {
+  public void setStartDate(OffsetDateTime startDate) {
     this.startDate = startDate;
   }
 
-  public Date getEndDate() {
+  public OffsetDateTime getEndDate() {
     return endDate;
   }
 
-  public void setEndDate(Date endDate) {
+  public void setEndDate(OffsetDateTime endDate) {
     this.endDate = endDate;
   }
 
-  public Date getProcessInstanceStartDate() {
+  public OffsetDateTime getProcessInstanceStartDate() {
     return processInstanceStartDate;
   }
 
-  public void setProcessInstanceStartDate(Date processInstanceStartDate) {
+  public void setProcessInstanceStartDate(OffsetDateTime processInstanceStartDate) {
     this.processInstanceStartDate = processInstanceStartDate;
   }
 
-  public Date getProcessInstanceEndDate() {
+  public OffsetDateTime getProcessInstanceEndDate() {
     return processInstanceEndDate;
   }
 
-  public void setProcessInstanceEndDate(Date processInstanceEndDate) {
+  public void setProcessInstanceEndDate(OffsetDateTime processInstanceEndDate) {
     this.processInstanceEndDate = processInstanceEndDate;
   }
 

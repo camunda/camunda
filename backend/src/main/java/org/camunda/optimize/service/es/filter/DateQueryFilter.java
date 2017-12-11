@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.text.SimpleDateFormat;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.GREATER_THAN;
@@ -32,12 +33,8 @@ public class DateQueryFilter implements QueryFilter<DateFilterDataDto> {
   @Autowired
   private ConfigurationService configurationService;
 
-  private SimpleDateFormat formatter;
-
-  @PostConstruct
-  private void init() {
-    formatter = new SimpleDateFormat(configurationService.getDateFormat());
-  }
+  @Autowired
+  private DateTimeFormatter formatter;
 
   public void addFilters(BoolQueryBuilder query, List<DateFilterDataDto> dates) {
     if (dates != null) {

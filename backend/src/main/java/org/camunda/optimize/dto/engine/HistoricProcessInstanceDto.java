@@ -2,7 +2,7 @@ package org.camunda.optimize.dto.engine;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-import java.util.Date;
+import java.time.OffsetDateTime;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class HistoricProcessInstanceDto implements EngineDto {
@@ -12,8 +12,8 @@ public class HistoricProcessInstanceDto implements EngineDto {
   protected String processDefinitionId;
   protected String processDefinitionKey;
   protected String processDefinitionName;
-  protected Date startTime;
-  protected Date endTime;
+  protected OffsetDateTime startTime;
+  protected OffsetDateTime endTime;
   protected Long durationInMillis;
   protected String startUserId;
   protected String startActivityId;
@@ -65,19 +65,19 @@ public class HistoricProcessInstanceDto implements EngineDto {
     this.processDefinitionName = processDefinitionName;
   }
 
-  public Date getStartTime() {
+  public OffsetDateTime getStartTime() {
     return startTime;
   }
 
-  public void setStartTime(Date startTime) {
+  public void setStartTime(OffsetDateTime startTime) {
     this.startTime = startTime;
   }
 
-  public Date getEndTime() {
+  public OffsetDateTime getEndTime() {
     return endTime;
   }
 
-  public void setEndTime(Date endTime) {
+  public void setEndTime(OffsetDateTime endTime) {
     this.endTime = endTime;
   }
 

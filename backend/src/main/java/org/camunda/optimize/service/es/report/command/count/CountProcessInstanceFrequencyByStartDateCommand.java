@@ -31,7 +31,7 @@ public class CountProcessInstanceFrequencyByStartDateCommand extends ReportComma
   public static final String DATE_HISTOGRAM_AGGREGATION = "dateIntervalGrouping";
 
   @Override
-  protected ReportResultDto evaluate() throws IOException, OptimizeException {
+  protected ReportResultDto evaluate() throws OptimizeException {
 
     logger.debug("Evaluating count process instance frequency grouped by start date report " +
       "for process definition id [{}]", reportData.getProcessDefinitionId());

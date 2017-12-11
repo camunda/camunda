@@ -12,7 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.security.SecureRandom;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
@@ -38,7 +38,7 @@ public class TokenService {
     }
     tokenVerifier.isTokenValid(token);
     tokenVerifier.isExpired(token);
-    LocalDateTime expiry = calculateExpiryDate();
+    OffsetDateTime expiry = calculateExpiryDate();
     tokenVerifier.updateExpiryDate(expiry);
   }
 
@@ -47,14 +47,14 @@ public class TokenService {
     return decoded.getIssuer();
   }
 
-  private LocalDateTime calculateExpiryDate() {
+  private OffsetDateTime calculateExpiryDate() {
     return LocalDateUtil.getCurrentDateTime().plus(configurationService.getLifetime(), ChronoUnit.MINUTES);
   }
 
   public String issueToken(String username) {
     String token = null;
     try {
-      LocalDateTime expiryDate = calculateExpiryDate();
+      OffsetDateTime expiryDate = calculateExpiryDate();
 
       Algorithm hashingAlgorithm = generateAlgorithm();
       token = JWT.create()
@@ -93,15 +93,15 @@ public class TokenService {
 
   private class TokenVerifier {
 
-    private LocalDateTime expiryDate;
+    private OffsetDateTime expiryDate;
     private JWTVerifier verifier;
 
-    public TokenVerifier(LocalDateTime expiryDate, JWTVerifier verifier) {
+    public TokenVerifier(OffsetDateTime expiryDate, JWTVerifier verifier) {
       this.expiryDate = expiryDate;
       this.verifier = verifier;
     }
 
-    public void updateExpiryDate(LocalDateTime newExpiryDate) {
+    public void updateExpiryDate(OffsetDateTime newExpiryDate) {
       this.expiryDate = newExpiryDate;
     }
 

@@ -18,6 +18,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.text.SimpleDateFormat;
+import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -34,12 +35,8 @@ public class UnfinishedProcessInstanceWriter {
   @Autowired
   private ObjectMapper objectMapper;
 
-  private SimpleDateFormat sdf;
-
-  @PostConstruct
-  public void init() {
-    sdf = new SimpleDateFormat(configurationService.getDateFormat());
-  }
+  @Autowired
+  private DateTimeFormatter dateTimeFormatter;
 
   public void importProcessInstances(List<ProcessInstanceDto> processInstances) throws Exception {
     logger.debug("Writing [{}] unfinished process instances to elasticsearch", processInstances.size());
@@ -75,7 +72,7 @@ public class UnfinishedProcessInstanceWriter {
   private void addImportProcessInstanceRequest(BulkRequestBuilder bulkRequest, ProcessInstanceDto procInst) throws JsonProcessingException {
     String processInstanceId = procInst.getProcessInstanceId();
     Map<String, Object> params = new HashMap<>();
-    params.put(ProcessInstanceType.START_DATE, sdf.format(procInst.getStartDate()));
+    params.put(ProcessInstanceType.START_DATE, dateTimeFormatter.format(procInst.getStartDate()));
     params.put(ProcessInstanceType.ENGINE, procInst.getEngine());
 
     Script updateScript = new Script(

@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.annotation.PostConstruct;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
@@ -19,8 +19,8 @@ public abstract class BackoffImportIndexHandler<PAGE extends ImportPage, INDEX>
 
   private static final long STARTING_BACKOFF = 0;
   private long backoffCounter = STARTING_BACKOFF;
-  private LocalDateTime dateUntilPaginationIsBlocked = LocalDateTime.MIN;
-  private LocalDateTime nextReset;
+  private OffsetDateTime dateUntilPaginationIsBlocked = OffsetDateTime.MIN;
+  private OffsetDateTime nextReset;
 
   @Autowired
   protected ConfigurationService configurationService;
@@ -41,7 +41,7 @@ public abstract class BackoffImportIndexHandler<PAGE extends ImportPage, INDEX>
     } catch (Exception e) {
       //nothing to do falling back to default
     }
-    nextReset = LocalDateTime.now().plus(
+    nextReset = OffsetDateTime.now().plus(
         configurationService.getImportResetIntervalValue(),
         unit
     );
@@ -97,7 +97,7 @@ public abstract class BackoffImportIndexHandler<PAGE extends ImportPage, INDEX>
       } else {
         long interval = configurationService.getImportHandlerWait();
         long sleepTimeInMs = interval * backoffCounter;
-        dateUntilPaginationIsBlocked = LocalDateTime.now().plus(sleepTimeInMs, ChronoUnit.MILLIS);
+        dateUntilPaginationIsBlocked = OffsetDateTime.now().plus(sleepTimeInMs, ChronoUnit.MILLIS);
         logDebugSleepInformation(sleepTimeInMs);
       }
     }
@@ -105,7 +105,7 @@ public abstract class BackoffImportIndexHandler<PAGE extends ImportPage, INDEX>
 
   private void restartOrReset() {
     try {
-      if (LocalDateTime.now().isAfter(this.nextReset)) {
+      if (OffsetDateTime.now().isAfter(this.nextReset)) {
         this.resetImportIndex();
         this.setNextReset();
       } else {
@@ -124,7 +124,7 @@ public abstract class BackoffImportIndexHandler<PAGE extends ImportPage, INDEX>
   }
 
   private boolean isReadyToFetchNextPage() {
-    boolean isReady = dateUntilPaginationIsBlocked.isBefore(LocalDateTime.now());
+    boolean isReady = dateUntilPaginationIsBlocked.isBefore(OffsetDateTime.now());
     logger.debug("is ready to fetch next page [{}]", isReady);
     return isReady;
   }
@@ -136,7 +136,7 @@ public abstract class BackoffImportIndexHandler<PAGE extends ImportPage, INDEX>
    * @return time to sleep for import process of an engine in general
    */
   public long getBackoffTimeInMs() {
-    long backoffTime = configurationService.isBackoffEnabled() ? LocalDateTime.now().until(dateUntilPaginationIsBlocked, ChronoUnit.MILLIS) : 0;
+    long backoffTime = configurationService.isBackoffEnabled() ? OffsetDateTime.now().until(dateUntilPaginationIsBlocked, ChronoUnit.MILLIS) : 0;
     backoffTime = Math.max(0, backoffTime);
     return backoffTime;
   }

@@ -27,6 +27,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
+import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -118,7 +119,7 @@ public class CountTotalProcessInstanceFrequencyReportEvaluationIT {
   public void dateFilterInReport() throws Exception {
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleServiceTaskProcess();
-    Date past = engineRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
+    OffsetDateTime past = engineRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
     String processDefinitionId = processInstance.getDefinitionId();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -142,7 +143,7 @@ public class CountTotalProcessInstanceFrequencyReportEvaluationIT {
     assertThat(result.getResult(), is(1L));
   }
 
-  public List<FilterDto> createDateFilter(String operator, String type, Date dateValue) {
+  public List<FilterDto> createDateFilter(String operator, String type, OffsetDateTime dateValue) {
     DateFilterDataDto date = new DateFilterDataDto();
     date.setOperator(operator);
     date.setType(type);

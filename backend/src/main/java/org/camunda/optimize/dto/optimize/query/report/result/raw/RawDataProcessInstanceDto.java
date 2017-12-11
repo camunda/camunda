@@ -1,6 +1,6 @@
 package org.camunda.optimize.dto.optimize.query.report.result.raw;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.Map;
 
 public class RawDataProcessInstanceDto {
@@ -8,8 +8,8 @@ public class RawDataProcessInstanceDto {
   protected String processDefinitionKey;
   protected String processDefinitionId;
   protected String processInstanceId;
-  protected LocalDateTime startDate;
-  protected LocalDateTime endDate;
+  protected OffsetDateTime startDate;
+  protected OffsetDateTime endDate;
   protected String engineName;
   protected Map<String, Object> variables;
 
@@ -37,19 +37,19 @@ public class RawDataProcessInstanceDto {
     this.processInstanceId = processInstanceId;
   }
 
-  public LocalDateTime getStartDate() {
+  public OffsetDateTime getStartDate() {
     return startDate;
   }
 
-  public void setStartDate(LocalDateTime startDate) {
+  public void setStartDate(OffsetDateTime startDate) {
     this.startDate = startDate;
   }
 
-  public LocalDateTime getEndDate() {
+  public OffsetDateTime getEndDate() {
     return endDate;
   }
 
-  public void setEndDate(LocalDateTime endDate) {
+  public void setEndDate(OffsetDateTime endDate) {
     this.endDate = endDate;
   }
 

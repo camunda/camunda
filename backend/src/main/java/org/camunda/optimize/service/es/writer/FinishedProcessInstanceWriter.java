@@ -18,6 +18,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.text.SimpleDateFormat;
+import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -33,13 +34,8 @@ public class FinishedProcessInstanceWriter {
   private ConfigurationService configurationService;
   @Autowired
   private ObjectMapper objectMapper;
-
-  private SimpleDateFormat sdf;
-
-  @PostConstruct
-  public void init() {
-    sdf = new SimpleDateFormat(configurationService.getDateFormat());
-  }
+  @Autowired
+  private DateTimeFormatter dateTimeFormatter;
 
   public void importProcessInstances(List<ProcessInstanceDto> processInstances) throws Exception {
     logger.debug("Writing [{}] finished process instances to elasticsearch", processInstances.size());
@@ -74,8 +70,8 @@ public class FinishedProcessInstanceWriter {
   private void addImportProcessInstanceRequest(BulkRequestBuilder bulkRequest, ProcessInstanceDto procInst) throws JsonProcessingException {
     String processInstanceId = procInst.getProcessInstanceId();
     Map<String, Object> params = new HashMap<>();
-    params.put(ProcessInstanceType.START_DATE, sdf.format(procInst.getStartDate()));
-    String endDate = (procInst.getEndDate() != null) ? sdf.format(procInst.getEndDate()) : null;
+    params.put(ProcessInstanceType.START_DATE, dateTimeFormatter.format(procInst.getStartDate()));
+    String endDate = (procInst.getEndDate() != null) ? dateTimeFormatter.format(procInst.getEndDate()) : null;
     if (endDate == null) {
       logger.warn("End date should not be null for finished process instances!");
     }

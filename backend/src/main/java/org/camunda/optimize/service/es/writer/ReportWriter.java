@@ -97,7 +97,6 @@ public class ReportWriter {
 
   private ReportDefinitionPersistenceDto convertToElasticsearchFormat(ReportDefinitionDto original) throws JsonProcessingException {
     ReportDefinitionPersistenceDto persistenceDto = new ReportDefinitionPersistenceDto();
-    persistenceDto.setCreated(original.getCreated());
     persistenceDto.setData(objectMapper.writeValueAsString(original.getData()));
     persistenceDto.setId(original.getId());
     persistenceDto.setLastModified(original.getLastModified());

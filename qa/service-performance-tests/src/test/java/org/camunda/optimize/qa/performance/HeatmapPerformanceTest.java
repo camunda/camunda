@@ -17,9 +17,9 @@ import org.camunda.optimize.qa.performance.steps.decorator.HeatMapDataGeneration
 import org.junit.Before;
 import org.junit.Test;
 
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 
 import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.IN;
@@ -63,7 +63,7 @@ public class HeatmapPerformanceTest extends OptimizePerformanceTestCase {
     DateFilterDataDto date = new DateFilterDataDto();
     date.setOperator(operator);
     date.setType(type);
-    date.setValue(new Date());
+    date.setValue(OffsetDateTime.now());
 
     DateFilterDto dateFilterDto = new DateFilterDto();
     dateFilterDto.setData(date);
@@ -155,7 +155,7 @@ public class HeatmapPerformanceTest extends OptimizePerformanceTestCase {
     DateFilterDataDto date = new DateFilterDataDto();
     date.setOperator(operator);
     date.setType(type);
-    date.setValue(new Date());
+    date.setValue(OffsetDateTime.now());
 
     DateFilterDto dateFilterDto = new DateFilterDto();
     dateFilterDto.setData(date);

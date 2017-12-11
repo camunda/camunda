@@ -1,12 +1,12 @@
 package org.camunda.optimize.service.security.util;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 public class LocalDateUtil {
 
-  private volatile static LocalDateTime CURRENT_TIME = null;
+  private volatile static OffsetDateTime CURRENT_TIME = null;
 
-  public static void setCurrentTime(LocalDateTime currentTime) {
+  public static void setCurrentTime(OffsetDateTime currentTime) {
     LocalDateUtil.CURRENT_TIME = currentTime;
   }
 
@@ -14,11 +14,11 @@ public class LocalDateUtil {
     LocalDateUtil.CURRENT_TIME = null;
   }
 
-  public static LocalDateTime getCurrentDateTime() {
+  public static OffsetDateTime getCurrentDateTime() {
     if (CURRENT_TIME != null) {
       return CURRENT_TIME;
     }
-    return LocalDateTime.now();
+    return OffsetDateTime.now();
   }
 
 }

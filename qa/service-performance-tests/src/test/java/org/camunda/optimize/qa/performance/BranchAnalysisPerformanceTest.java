@@ -16,6 +16,7 @@ import org.camunda.optimize.qa.performance.steps.GetBranchAnalysisStep;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -65,7 +66,7 @@ public class BranchAnalysisPerformanceTest extends OptimizePerformanceTestCase {
     DateFilterDataDto date = new DateFilterDataDto();
     date.setOperator(operator);
     date.setType(type);
-    date.setValue(new Date());
+    date.setValue(OffsetDateTime.now());
 
     DateFilterDto dateFilterDto = new DateFilterDto();
     dateFilterDto.setData(date);

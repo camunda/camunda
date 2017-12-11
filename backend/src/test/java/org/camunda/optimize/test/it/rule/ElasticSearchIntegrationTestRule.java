@@ -1,8 +1,14 @@
 package org.camunda.optimize.test.it.rule;
 
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.camunda.optimize.dto.optimize.query.CredentialsDto;
+import org.camunda.optimize.service.util.CustomDeserializer;
+import org.camunda.optimize.service.util.CustomSerializer;
 import org.camunda.optimize.test.util.PropertyUtil;
 import org.elasticsearch.action.admin.cluster.repositories.put.PutRepositoryResponse;
 import org.elasticsearch.action.admin.cluster.snapshots.create.CreateSnapshotResponse;
@@ -20,9 +26,11 @@ import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
 import java.net.InetAddress;
-import java.text.SimpleDateFormat;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -54,9 +62,27 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   }
 
   private void initObjectMapper() {
-    if (objectMapper==null) {
-      objectMapper = new ObjectMapper();
-      objectMapper.setDateFormat(new SimpleDateFormat(getDateFormat()));
+    if (objectMapper == null) {
+
+      DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(getDateFormat());
+      JavaTimeModule javaTimeModule = new JavaTimeModule();
+      javaTimeModule.addSerializer(OffsetDateTime.class, new CustomSerializer(dateTimeFormatter));
+      javaTimeModule.addDeserializer(OffsetDateTime.class, new CustomDeserializer(dateTimeFormatter));
+
+      objectMapper = Jackson2ObjectMapperBuilder
+          .json()
+          .modules(javaTimeModule)
+          .featuresToDisable(
+              SerializationFeature.WRITE_DATES_AS_TIMESTAMPS,
+              DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE,
+              DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
+              DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES
+          )
+          .featuresToEnable(
+              JsonParser.Feature.ALLOW_COMMENTS,
+              SerializationFeature.INDENT_OUTPUT
+          )
+          .build();
     }
   }
 

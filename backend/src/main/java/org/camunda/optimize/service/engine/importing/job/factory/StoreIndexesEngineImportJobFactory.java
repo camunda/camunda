@@ -19,7 +19,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,7 +35,7 @@ public class StoreIndexesEngineImportJobFactory
   @Autowired
   private ImportIndexWriter importIndexWriter;
 
-  private LocalDateTime dateUntilJobCreationIsBlocked;
+  private OffsetDateTime dateUntilJobCreationIsBlocked;
   protected EngineContext engineContext;
 
   public StoreIndexesEngineImportJobFactory(EngineContext engineContext) {
@@ -49,13 +49,13 @@ public class StoreIndexesEngineImportJobFactory
 
   @Override
   public long getBackoffTimeInMs() {
-    long backoffTime = LocalDateTime.now().until(dateUntilJobCreationIsBlocked, ChronoUnit.MILLIS);
+    long backoffTime = OffsetDateTime.now().until(dateUntilJobCreationIsBlocked, ChronoUnit.MILLIS);
     backoffTime = Math.max(0, backoffTime);
     return backoffTime;
   }
 
   public Optional<Runnable> getNextJob() {
-    if (LocalDateTime.now().isAfter(dateUntilJobCreationIsBlocked)) {
+    if (OffsetDateTime.now().isAfter(dateUntilJobCreationIsBlocked)) {
       dateUntilJobCreationIsBlocked = calculateDateUntilJobCreationIsBlocked();
       try {
         return Optional.of(createStoreIndexJob());
@@ -68,8 +68,8 @@ public class StoreIndexesEngineImportJobFactory
     }
   }
 
-  private LocalDateTime calculateDateUntilJobCreationIsBlocked() {
-    return LocalDateTime.now().plusSeconds(configurationService.getImportIndexAutoStorageIntervalInSec());
+  private OffsetDateTime calculateDateUntilJobCreationIsBlocked() {
+    return OffsetDateTime.now().plusSeconds(configurationService.getImportIndexAutoStorageIntervalInSec());
   }
 
   private Runnable createStoreIndexJob() {
@@ -112,6 +112,6 @@ public class StoreIndexesEngineImportJobFactory
   }
 
   public void disableBlocking() {
-    this.dateUntilJobCreationIsBlocked = LocalDateTime.MIN;
+    this.dateUntilJobCreationIsBlocked = OffsetDateTime.MIN;
   }
 }

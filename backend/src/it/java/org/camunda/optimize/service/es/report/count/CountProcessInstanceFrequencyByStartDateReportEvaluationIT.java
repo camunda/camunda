@@ -36,7 +36,9 @@ import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.DayOfWeek;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -99,7 +101,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     assertThat(result.getResult(), is(notNullValue()));
     assertThat(result.getResult().size(), is(1));
     Map<String, Long> resultMap = result.getResult();
-    LocalDateTime startOfToday = LocalDateTime.now().truncatedTo(ChronoUnit.DAYS);
+    OffsetDateTime startOfToday = new Date().toInstant().atOffset(ZoneOffset.UTC).truncatedTo(ChronoUnit.DAYS);
     assertThat(resultMap.containsKey(localDateTimeToString(startOfToday)), is(true));
     assertThat(resultMap.containsValue(1L), is(true));
   }
@@ -112,8 +114,8 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     report.setId(id);
     report.setLastModifier("something");
     report.setName("something");
-    report.setCreated(LocalDateTime.now());
-    report.setLastModified(LocalDateTime.now());
+    report.setCreated(OffsetDateTime.now());
+    report.setLastModified(OffsetDateTime.now());
     report.setOwner("something");
     updateReport(id, report);
     return id;
@@ -152,7 +154,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     return response.readEntity(MapReportResultDto.class);
   }
 
-  private String localDateTimeToString(LocalDateTime time) {
+  private String localDateTimeToString(OffsetDateTime time) {
     return embeddedOptimizeRule.getDateTimeFormatter().format(time);
   }
 
@@ -180,7 +182,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     assertThat(result.getResult(), is(notNullValue()));
     assertThat(result.getResult().size(), is(1));
     Map<String, Long> resultMap = result.getResult();
-    LocalDateTime startOfToday = LocalDateTime.now().truncatedTo(ChronoUnit.DAYS);
+    OffsetDateTime startOfToday = new Date().toInstant().atOffset(ZoneOffset.UTC).truncatedTo(ChronoUnit.DAYS);
     assertThat(resultMap.containsKey(localDateTimeToString(startOfToday)), is(true));
     assertThat(resultMap.containsValue(1L), is(true));
   }
@@ -190,10 +192,10 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     // given
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     ProcessInstanceEngineDto processInstanceDto2 =  engineRule.startProcessInstance(processInstanceDto.getDefinitionId());
-    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto2.getId(), LocalDateTime.now().minusDays(2));
+    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto2.getId(), OffsetDateTime.now().minusDays(2));
     ProcessInstanceEngineDto processInstanceDto3 =
       engineRule.startProcessInstance(processInstanceDto.getDefinitionId());
-    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto3.getId(), LocalDateTime.now().minusDays(1));
+    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto3.getId(), OffsetDateTime.now().minusDays(1));
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
@@ -236,7 +238,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     engineRule.startProcessInstance(processInstanceDto.getDefinitionId());
     ProcessInstanceEngineDto processInstanceDto3 =
       engineRule.startProcessInstance(processInstanceDto.getDefinitionId());
-    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto3.getId(), LocalDateTime.now().minusDays(1));
+    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto3.getId(), OffsetDateTime.now().minusDays(1));
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
@@ -248,7 +250,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     // then
     Map<String, Long> resultMap = result.getResult();
     assertThat(resultMap.size(), is(2));
-    LocalDateTime startOfToday = LocalDateTime.now().truncatedTo(ChronoUnit.DAYS);
+    OffsetDateTime startOfToday = new Date().toInstant().atOffset(ZoneOffset.UTC).truncatedTo(ChronoUnit.DAYS);
     String expectedStringToday = localDateTimeToString(startOfToday);
     assertThat(resultMap.containsKey(expectedStringToday), is(true));
     assertThat(resultMap.get(expectedStringToday), is(2L));
@@ -264,7 +266,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     engineRule.startProcessInstance(processInstanceDto.getDefinitionId());
     ProcessInstanceEngineDto processInstanceDto3 =
       engineRule.startProcessInstance(processInstanceDto.getDefinitionId());
-    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto3.getId(), LocalDateTime.now().minusDays(2));
+    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto3.getId(), OffsetDateTime.now().minusDays(2));
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
@@ -276,7 +278,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     // then
     Map<String, Long> resultMap = result.getResult();
     assertThat(resultMap.size(), is(3));
-    LocalDateTime startOfToday = LocalDateTime.now().truncatedTo(ChronoUnit.DAYS);
+    OffsetDateTime startOfToday = new Date().toInstant().atOffset(ZoneOffset.UTC).truncatedTo(ChronoUnit.DAYS);
     String expectedStringToday = localDateTimeToString(startOfToday);
     assertThat(resultMap.containsKey(expectedStringToday), is(true));
     assertThat(resultMap.get(expectedStringToday), is(2L));
@@ -292,7 +294,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
   public void countGroupedByHour() throws Exception {
     // given
     List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(5);
-    LocalDateTime now = LocalDateTime.now();
+    OffsetDateTime now = OffsetDateTime.now();
     updateProcessInstancesStartTime(processInstanceDtos, now, ChronoUnit.HOURS);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -308,21 +310,21 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     assertStartDateResultMap(resultMap, 5, now, ChronoUnit.HOURS);
   }
 
-  private void assertStartDateResultMap(Map<String, Long> resultMap, int size, LocalDateTime now, ChronoUnit unit) {
+  private void assertStartDateResultMap(Map<String, Long> resultMap, int size, OffsetDateTime now, ChronoUnit unit) {
     assertThat(resultMap.size(), is(size));
-    final LocalDateTime finalStartOfUnit = truncateToStartOfUnit(now, unit);
+    final OffsetDateTime finalStartOfUnit = truncateToStartOfUnit(now, unit);
     IntStream.range(0, size)
       .forEach(i -> {
-        String expectedDateString = localDateTimeToString(finalStartOfUnit.minus(i, unit));
-        assertThat(resultMap.containsKey(expectedDateString), is(true));
+        String expectedDateString = localDateTimeToString(finalStartOfUnit.minus((i), unit));
+        assertThat("contains [" + expectedDateString + "]", resultMap.containsKey(expectedDateString), is(true));
         assertThat(resultMap.get(expectedDateString), is(1L));
       });
   }
 
-  private LocalDateTime truncateToStartOfUnit(LocalDateTime date, ChronoUnit unit) {
-    LocalDateTime truncatedDate;
+  private OffsetDateTime truncateToStartOfUnit(OffsetDateTime date, ChronoUnit unit) {
+    OffsetDateTime truncatedDate;
     if (unit.equals(ChronoUnit.HOURS) || unit.equals(ChronoUnit.DAYS)) {
-      truncatedDate = date.truncatedTo(unit);
+      truncatedDate = date.truncatedTo(unit).withOffsetSameInstant(ZoneOffset.UTC);
     } else if (unit.equals(ChronoUnit.WEEKS)) {
       truncatedDate = date.with(DayOfWeek.MONDAY).truncatedTo(ChronoUnit.DAYS);
     } else if (unit.equals(ChronoUnit.MONTHS)){
@@ -335,13 +337,13 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
   }
   
   private void updateProcessInstancesStartTime(List<ProcessInstanceEngineDto> procInsts,
-                                               LocalDateTime now,
+                                               OffsetDateTime now,
                                                ChronoUnit unit) throws SQLException {
-    Map<String, LocalDateTime> idToNewStartDate = new HashMap<>();
+    Map<String, OffsetDateTime> idToNewStartDate = new HashMap<>();
     IntStream.range(0, procInsts.size())
       .forEach( i -> {
         String id = procInsts.get(i).getId();
-        LocalDateTime newStartDate = now.minus(i, unit);
+        OffsetDateTime newStartDate = now.minus(i, unit);
         idToNewStartDate.put(id, newStartDate);
       });
     engineDatabaseRule.updateProcessInstanceStartDates(idToNewStartDate);
@@ -351,7 +353,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
   public void countGroupedByDay() throws Exception {
     // given
     List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(8);
-    LocalDateTime now = LocalDateTime.now();
+    OffsetDateTime now = OffsetDateTime.now().withOffsetSameInstant(ZoneOffset.UTC);
     updateProcessInstancesStartTime(processInstanceDtos, now, ChronoUnit.DAYS);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -371,7 +373,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
   public void countGroupedByWeek() throws Exception {
     // given
     List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(8);
-    LocalDateTime now = LocalDateTime.now();
+    OffsetDateTime now = OffsetDateTime.now().withOffsetSameInstant(ZoneOffset.UTC);
     updateProcessInstancesStartTime(processInstanceDtos, now, ChronoUnit.WEEKS);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -391,7 +393,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
   public void countGroupedByMonth() throws Exception {
     // given
     List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(8);
-    LocalDateTime now = LocalDateTime.now();
+    OffsetDateTime now = OffsetDateTime.now().withOffsetSameInstant(ZoneOffset.UTC);
     updateProcessInstancesStartTime(processInstanceDtos, now, ChronoUnit.MONTHS);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -411,7 +413,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
   public void countGroupedByYear() throws Exception {
     // given
     List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(8);
-    LocalDateTime now = LocalDateTime.now();
+    OffsetDateTime now = OffsetDateTime.now().withOffsetSameInstant(ZoneOffset.UTC);
     updateProcessInstancesStartTime(processInstanceDtos, now, ChronoUnit.YEARS);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -442,9 +444,9 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
 
     // then
     Map<String, Long> resultMap = result.getResult();
-    LocalDateTime startOfToday = LocalDateTime.now().truncatedTo(ChronoUnit.DAYS);
+    OffsetDateTime startOfToday = new Date().toInstant().atOffset(ZoneOffset.UTC).truncatedTo(ChronoUnit.DAYS);
     String expectedStartDateString = localDateTimeToString(startOfToday);
-    assertThat(resultMap.containsKey(expectedStartDateString), is(true));
+    assertThat("contains [" + expectedStartDateString + "]", resultMap.containsKey(expectedStartDateString), is(true));
     assertThat(resultMap.get(expectedStartDateString), is(1L));
   }
 
@@ -452,7 +454,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
   public void dateFilterInReport() throws Exception {
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleServiceTaskProcess();
-    Date past = engineRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
+    OffsetDateTime past = engineRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
     String processDefinitionId = processInstance.getDefinitionId();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -477,7 +479,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
   }
 
 
-  public List<FilterDto> createDateFilter(String operator, String type, Date dateValue) {
+  public List<FilterDto> createDateFilter(String operator, String type, OffsetDateTime dateValue) {
     DateFilterDataDto date = new DateFilterDataDto();
     date.setOperator(operator);
     date.setType(type);

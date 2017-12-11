@@ -2,15 +2,15 @@ package org.camunda.optimize.dto.optimize.query.report;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ReportDefinitionPersistenceDto {
 
   protected String id;
   protected String name;
-  protected LocalDateTime lastModified;
-  protected LocalDateTime created;
+  protected OffsetDateTime lastModified;
+  protected OffsetDateTime created;
   protected String owner;
   protected String lastModifier;
   protected String data;
@@ -31,19 +31,19 @@ public class ReportDefinitionPersistenceDto {
     this.name = name;
   }
 
-  public LocalDateTime getLastModified() {
+  public OffsetDateTime getLastModified() {
     return lastModified;
   }
 
-  public LocalDateTime getCreated() {
+  public OffsetDateTime getCreated() {
     return created;
   }
 
-  public void setCreated(LocalDateTime created) {
+  public void setCreated(OffsetDateTime created) {
     this.created = created;
   }
 
-  public void setLastModified(LocalDateTime lastModified) {
+  public void setLastModified(OffsetDateTime lastModified) {
     this.lastModified = lastModified;
   }
 

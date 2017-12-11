@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Properties;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -60,11 +60,11 @@ public class ImportPerformanceTest {
   @Test
   public void importPerformanceTest() throws Exception {
     //given
-    LocalDateTime pointOne = LocalDateTime.now();
+    OffsetDateTime pointOne = OffsetDateTime.now();
     if (shouldGenerateData) {
       generateData();
     }
-    LocalDateTime pointTwo = LocalDateTime.now();
+    OffsetDateTime pointTwo = OffsetDateTime.now();
     logger.info("Data generation took [ " + ChronoUnit.MINUTES.between(pointOne, pointTwo) + " ] min");
 
     //trigger import
@@ -72,7 +72,7 @@ public class ImportPerformanceTest {
     engineRule.waitForAllProcessesToFinish();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
 
-    LocalDateTime pointThree = LocalDateTime.now();
+    OffsetDateTime pointThree = OffsetDateTime.now();
 
     //report results
     long importDurationInMinutes = ChronoUnit.MINUTES.between(pointTwo,pointThree);

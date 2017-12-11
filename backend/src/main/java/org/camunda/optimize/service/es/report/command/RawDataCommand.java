@@ -14,7 +14,7 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.sort.SortOrder;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Date;
@@ -84,8 +84,8 @@ public class RawDataCommand extends ReportCommand {
     rawDataInstance.setProcessInstanceId(processInstanceDto.getProcessInstanceId());
     rawDataInstance.setProcessDefinitionId(processInstanceDto.getProcessDefinitionId());
     rawDataInstance.setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey());
-    rawDataInstance.setStartDate(convertDate(processInstanceDto.getStartDate()));
-    rawDataInstance.setEndDate(convertDate(processInstanceDto.getEndDate()));
+    rawDataInstance.setStartDate(processInstanceDto.getStartDate());
+    rawDataInstance.setEndDate(processInstanceDto.getEndDate());
     rawDataInstance.setEngineName(processInstanceDto.getEngine());
 
     rawDataInstance.setVariables(variables);
@@ -97,14 +97,6 @@ public class RawDataCommand extends ReportCommand {
     .obtainAllVariables()
     .stream()
     .collect(Collectors.toMap(VariableInstanceDto::getName, VariableInstanceDto::getValue, (a,b) -> a, TreeMap::new));
-  }
-
-  private LocalDateTime convertDate(Date date) {
-    if (date != null) {
-      return LocalDateTime.ofInstant(date.toInstant(), ZoneId.systemDefault());
-    } else {
-      return null;
-    }
   }
 
   private List<RawDataProcessInstanceDto> cutRawDataSizeToMaxSize(List<RawDataProcessInstanceDto> rawData) {

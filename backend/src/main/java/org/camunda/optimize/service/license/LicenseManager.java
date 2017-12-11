@@ -19,6 +19,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 
 import static org.camunda.optimize.service.es.schema.type.LicenseType.LICENSE;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
@@ -132,7 +134,7 @@ public class LicenseManager {
     dto.setCustomerId(licenseKey.getCustomerId());
     dto.setUnlimited(licenseKey.isUnlimited());
     if(!licenseKey.isUnlimited()) {
-      dto.setValidUntil(licenseKey.getValidUntil());
+      dto.setValidUntil(OffsetDateTime.ofInstant(licenseKey.getValidUntil().toInstant(), ZoneId.systemDefault()));
     }
     return dto;
   }

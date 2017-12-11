@@ -5,6 +5,7 @@ import org.camunda.optimize.dto.optimize.query.report.filter.DateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.data.DateFilterDataDto;
 
+import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -14,12 +15,12 @@ import java.util.List;
  */
 public class DateUtilHelper {
 
-  public static void addDateFilter(String operator, String type, Date dateValue, HeatMapQueryDto dto) {
+  public static void addDateFilter(String operator, String type, OffsetDateTime dateValue, HeatMapQueryDto dto) {
     List<FilterDto> dateFilter = createDateFilter(operator, type, dateValue);
     dto.getFilter().addAll(dateFilter);
   }
 
-  public static List<FilterDto> createDateFilter(String operator, String type, Date dateValue) {
+  public static List<FilterDto> createDateFilter(String operator, String type, OffsetDateTime dateValue) {
     DateFilterDataDto date = new DateFilterDataDto();
     date.setOperator(operator);
     date.setType(type);

@@ -30,6 +30,8 @@ import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -59,12 +61,8 @@ public class VariableWriter {
   @Autowired
   private ObjectMapper objectMapper;
 
-  private SimpleDateFormat sdf;
-
-  @PostConstruct
-  public void init() {
-    sdf = new SimpleDateFormat(configurationService.getDateFormat());
-  }
+  @Autowired
+  private DateTimeFormatter dateTimeFormatter;
 
   public void importVariables(List<VariableDto> variables) throws Exception {
     logger.debug("Writing [{}] variables to elasticsearch", variables.size());
@@ -192,8 +190,8 @@ public class VariableWriter {
     procInst.setProcessDefinitionId(variable.getProcessDefinitionId());
     procInst.setProcessDefinitionKey(variable.getProcessDefinitionKey());
     procInst.setProcessInstanceId(processInstanceId);
-    procInst.setStartDate(new Date());
-    procInst.setEndDate(new Date());
+    procInst.setStartDate(OffsetDateTime.now());
+    procInst.setEndDate(OffsetDateTime.now());
     for (Map.Entry<String, List<VariableDto>> entry: typeMappedVars.entrySet()) {
       for (VariableDto var : entry.getValue()) {
         procInst.addVariableInstance(parseValue(var));
@@ -258,7 +256,7 @@ public class VariableWriter {
       variableInstanceDto = booleanVariableDto;
     } else if(isDateType(e.getType())) {
       DateVariableDto dateVariableDto = new DateVariableDto();
-      dateVariableDto.setValue(sdf.parse(e.getValue()));
+      dateVariableDto.setValue(OffsetDateTime.parse(e.getValue(), dateTimeFormatter));
       variableInstanceDto = dateVariableDto;
     } else {
       logger.warn("Unsupported variable type [{}] if variable {}! " +
