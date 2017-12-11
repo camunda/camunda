@@ -89,7 +89,7 @@ public class LargeWorkflowTest
 
             if (i % REPORT_INTERVAL == 0)
             {
-                LOG.info("Workflows created: {}", i);
+                LOG.info("Workflows started: {}/{} ({}%)", i, CREATION_TIMES, i * 100 / CREATION_TIMES);
             }
         }
     }
@@ -100,6 +100,7 @@ public class LargeWorkflowTest
         final WorkflowsClient workflowService = clientRule.workflows();
 
         final int taskCount = 10;
+        final int expectedTasks = CREATION_TIMES * taskCount;
         final CompletableFuture<Void> finished = new CompletableFuture<>();
         final AtomicLong completed = new AtomicLong(0);
 
@@ -109,21 +110,7 @@ public class LargeWorkflowTest
                   .taskType("reserveOrderItems")
                   .lockOwner("test")
                   .lockTime(Duration.ofMinutes(5))
-                  .handler((tasksClient, task) -> {
-                      final long c = completed.incrementAndGet();
-                      tasksClient.complete(task)
-                                 .payload("{ \"orderStatus\": \"RESERVED\" }")
-                                 .execute();
-                      if (c % REPORT_INTERVAL == 0)
-                      {
-                          System.out.println("Tasks completed: " + c);
-                      }
-
-                      if (c >= CREATION_TIMES * taskCount)
-                      {
-                          finished.complete(null);
-                      }
-                  }).open();
+                  .handler(getTaskHandler(expectedTasks, finished, completed)).open();
 
         // create workflow instances
         final List<Future<WorkflowInstanceEvent>> futures = new ArrayList<>();
@@ -145,35 +132,15 @@ public class LargeWorkflowTest
         finished.get();
     }
 
-
     @Test
     public void shouldCreateAndCompleteWorkflowInstancesWithFortyTasks() throws Exception
     {
         final WorkflowsClient workflowService = clientRule.workflows();
 
         final int taskCount = 40;
+        final int expectedTasks = CREATION_TIMES * taskCount;
         final CompletableFuture<Void> finished = new CompletableFuture<>();
         final AtomicLong completed = new AtomicLong(0);
-
-        // generic task handler for all tasks
-        final TaskHandler taskHandler = (tasksClient, task) -> {
-            final long c = completed.incrementAndGet();
-
-            tasksClient.complete(task)
-                       .payload("{ \"orderStatus\": \"RESERVED\" }")
-                       .execute();
-
-            if (c % REPORT_INTERVAL == 0)
-            {
-                System.out.println("Completed: " + c);
-            }
-
-            if (c >= CREATION_TIMES * taskCount)
-            {
-                System.out.println("All " + c + " tasks completed!");
-                finished.complete(null);
-            }
-        };
 
         // open task subscription for all tasks
         for (int i = 0; i < 40; i++)
@@ -183,7 +150,7 @@ public class LargeWorkflowTest
                       .taskType("reserveOrderItems" + i)
                       .lockOwner("test")
                       .lockTime(Duration.ofMinutes(5))
-                      .handler(taskHandler).open();
+                      .handler(getTaskHandler(expectedTasks, finished, completed)).open();
         }
 
         // create workflow instance
@@ -220,7 +187,7 @@ public class LargeWorkflowTest
 
                 if (workflowInstancesCreated % REPORT_INTERVAL == 0)
                 {
-                    LOG.info("Created workflow instances: {}", workflowInstancesCreated);
+                    LOG.info("Workflows started: {}/{} ({}%)", workflowInstancesCreated, CREATION_TIMES, workflowInstancesCreated * 100 / CREATION_TIMES);
                 }
             }
             catch (final Exception e)
@@ -232,6 +199,25 @@ public class LargeWorkflowTest
         assertThat(workflowInstancesCreated)
             .isEqualTo(CREATION_TIMES)
             .withFailMessage("Failed to create {} workflow instances. Only created {} instances", CREATION_TIMES, workflowInstancesCreated);
+    }
+
+    private TaskHandler getTaskHandler(final int expectedTasks, final CompletableFuture<Void> finished, final AtomicLong completed)
+    {
+        return (tasksClient, task) -> {
+            final long c = completed.incrementAndGet();
+            tasksClient.complete(task)
+                       .payload("{ \"orderStatus\": \"RESERVED\" }")
+                       .execute();
+            if (c % REPORT_INTERVAL == 0)
+            {
+                LOG.info("Tasks completed: {}/{} ({}%)", c, expectedTasks, c * 100.0 / expectedTasks);
+            }
+
+            if (c >= expectedTasks)
+            {
+                finished.complete(null);
+            }
+        };
     }
 
 }
