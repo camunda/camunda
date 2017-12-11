@@ -62,7 +62,7 @@ DS:
 
 JDBC
 ```
-cp ~/.m2/repository/org/postgresql/postgresql/9.3-1102-jdbc4/postgresql-9.3-1102-jdbc4.jar server/apache-tomcat-8.0.24/lib/
+cp ~/.m2/repository/org/postgresql/postgresql/9.3-1102-jdbc4/postgresql-9.3-1102-jdbc4.jar server/apache-tomcat-8.0.47/lib/
 ```
 
 ### Configuration with Oracle Database

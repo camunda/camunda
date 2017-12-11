@@ -414,7 +414,7 @@
         <engine.runtime>${project.build.directory}/camunda-tomcat</engine.runtime>
         <tomcat.runtime>${engine.runtime}/server/apache-tomcat-${version.tomcat}</tomcat.runtime>
         <http.port>${tomcat.connector.http.port}</http.port>
-        <version.tomcat>8.0.24</version.tomcat>
+        <version.tomcat>8.0.47</version.tomcat>
 
         <tomcat.connector.http.port>48080</tomcat.connector.http.port>
         <tomcat.connector.http.redirectPort>48443</tomcat.connector.http.redirectPort>
