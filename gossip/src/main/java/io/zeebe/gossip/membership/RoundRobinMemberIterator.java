@@ -17,23 +17,29 @@ package io.zeebe.gossip.membership;
 
 import java.util.*;
 
-public class RoundRobinMemberIterator implements Iterator<Member>
+import io.zeebe.gossip.GossipMembershipListener;
+import org.agrona.collections.IntArrayList;
+
+public class RoundRobinMemberIterator implements Iterator<Member>, GossipMembershipListener
 {
     private final Random random = new Random();
 
     private final List<Member> members;
 
+    private final IntArrayList playList = new IntArrayList();
     private int index = 0;
 
     public RoundRobinMemberIterator(MembershipList list)
     {
         this.members = list.getMembersView();
+
+        list.addListener(this);
     }
 
     @Override
     public boolean hasNext()
     {
-        return members.size() > 0;
+        return playList.size() > 0;
     }
 
     @Override
@@ -41,22 +47,37 @@ public class RoundRobinMemberIterator implements Iterator<Member>
     {
         if (hasNext())
         {
-            index += 1;
-
-            if (index >= members.size())
+            if (index >= playList.size())
             {
-                // TODO keep it mind that other's are may also watching the list
-                Collections.shuffle(members, random);
+                if (playList.size() > 2)
+                {
+                    Collections.shuffle(playList, random);
+                }
 
                 index = 0;
             }
 
-            return members.get(index);
+            final int nextMember = playList.getInt(index);
+            index += 1;
+
+            return members.get(nextMember);
         }
         else
         {
             throw new NoSuchElementException();
         }
+    }
+
+    @Override
+    public void onAdd(Member member)
+    {
+        playList.addInt(index, members.size() - 1);
+    }
+
+    @Override
+    public void onRemove(Member member)
+    {
+        playList.removeInt(members.size());
     }
 
 }

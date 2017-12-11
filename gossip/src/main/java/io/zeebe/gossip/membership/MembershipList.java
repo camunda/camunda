@@ -27,6 +27,7 @@ public class MembershipList implements Iterable<Member>
     private final GossipConfiguration configuration;
 
     private final List<Member> members = new ArrayList<>();
+    private final List<Member> membersView = Collections.unmodifiableList(members);
 
     private final List<GossipMembershipListener> listeners = new ArrayList<>();
 
@@ -127,7 +128,7 @@ public class MembershipList implements Iterable<Member>
 
     public List<Member> getMembersView()
     {
-        return members;
+        return membersView;
     }
 
     public void addListener(GossipMembershipListener listener)

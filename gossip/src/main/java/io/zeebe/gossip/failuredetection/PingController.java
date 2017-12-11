@@ -41,7 +41,8 @@ public class PingController implements Actor
     private final GossipConfiguration config;
 
     private final MembershipList memberList;
-    private final RoundRobinMemberIterator memberIterator;
+    private final RoundRobinMemberIterator propbeMemberIterator;
+    private final RoundRobinMemberIterator indirectProbeMemberIterator;
 
     private final StateMachine<Context> stateMachine;
 
@@ -50,7 +51,8 @@ public class PingController implements Actor
         this.config = context.getConfiguration();
 
         this.memberList = context.getMemberList();
-        this.memberIterator = new RoundRobinMemberIterator(memberList);
+        this.propbeMemberIterator = new RoundRobinMemberIterator(memberList);
+        this.indirectProbeMemberIterator = new RoundRobinMemberIterator(memberList);
 
         final AwaitNextIntervalState awaitNextIntervalState = new AwaitNextIntervalState();
         final SendPingState sendPingState = new SendPingState(context.getGossipEventSender());
@@ -106,7 +108,7 @@ public class PingController implements Actor
             {
                 context.nextInterval = currentTime + config.getProbeInterval();
 
-                if (memberIterator.hasNext())
+                if (propbeMemberIterator.hasNext())
                 {
                     context.take(TRANSITION_DEFAULT);
                 }
@@ -126,7 +128,7 @@ public class PingController implements Actor
         @Override
         public void work(Context context) throws Exception
         {
-            final Member member = memberIterator.next();
+            final Member member = propbeMemberIterator.next();
             context.probeMember = member;
 
             LOG.trace("Send PING to '{}'", member.getId());
@@ -184,7 +186,7 @@ public class PingController implements Actor
 
             for (int n = 0; n < probeNodes;)
             {
-                final Member member = memberIterator.next();
+                final Member member = indirectProbeMemberIterator.next();
 
                 if (member != suspiciousMember)
                 {

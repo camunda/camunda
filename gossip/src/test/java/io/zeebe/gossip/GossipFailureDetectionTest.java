@@ -50,8 +50,8 @@ public class GossipFailureDetectionTest
         actorScheduler.waitUntilDone();
 
         // ensure that all members know each other
-        clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
-        actorScheduler.waitUntilDone();
+        // clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
+        // actorScheduler.waitUntilDone();
 
         gossip1.clearReceivedEvents();
         gossip2.clearReceivedEvents();
@@ -59,6 +59,8 @@ public class GossipFailureDetectionTest
 
         assertThat(gossip2.hasMember(gossip3)).isTrue();
         assertThat(gossip3.hasMember(gossip2)).isTrue();
+
+        System.out.println("============================================");
     }
 
     @Test
@@ -91,7 +93,6 @@ public class GossipFailureDetectionTest
         assertThat(gossip3.receivedEvent(GossipEventType.ACK, gossip2)).isTrue();
     }
 
-    @Ignore("instable")
     @Test
     public void shouldSendPingReqAndForwardAck()
     {
@@ -107,6 +108,7 @@ public class GossipFailureDetectionTest
 
         clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeTimeout()));
         actorScheduler.waitUntilDone();
+        actorScheduler.waitUntilDone();
 
         // then
         assertThat(gossip3.receivedEvent(GossipEventType.PING_REQ, gossip1)).isTrue();
@@ -119,7 +121,6 @@ public class GossipFailureDetectionTest
         assertThat(gossip1.receivedEvent(GossipEventType.ACK, gossip2)).isFalse();
     }
 
-    @Ignore("instable")
     @Test
     public void shouldSpreadSuspectEvent()
     {
@@ -131,9 +132,6 @@ public class GossipFailureDetectionTest
         clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
         actorScheduler.waitUntilDone();
 
-        clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
-        actorScheduler.waitUntilDone();
-
         clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeTimeout()));
         actorScheduler.waitUntilDone();
 
@@ -141,7 +139,6 @@ public class GossipFailureDetectionTest
         actorScheduler.waitUntilDone();
 
         // then
-        // TODO can fail when spread event to suspect member
         assertThat(gossip1.receivedMembershipEvent(MembershipEventType.SUSPECT, gossip3)).isTrue();
         assertThat(gossip2.receivedMembershipEvent(MembershipEventType.SUSPECT, gossip3)).isTrue();
 
@@ -182,7 +179,6 @@ public class GossipFailureDetectionTest
         actorScheduler.waitUntilDone();
 
         // then
-        // TODO can fail when spread event to suspect member
         assertThat(gossip1.receivedMembershipEvent(MembershipEventType.CONFIRM, gossip3)).isTrue();
         assertThat(gossip2.receivedMembershipEvent(MembershipEventType.CONFIRM, gossip3)).isTrue();
         // TODO can fail when JOIN event is still sent

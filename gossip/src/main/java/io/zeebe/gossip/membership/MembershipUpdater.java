@@ -16,12 +16,16 @@
 package io.zeebe.gossip.membership;
 
 import io.zeebe.clustering.gossip.MembershipEventType;
+import io.zeebe.gossip.Loggers;
 import io.zeebe.gossip.dissemination.DisseminationComponent;
 import io.zeebe.gossip.protocol.MembershipEvent;
 import io.zeebe.gossip.protocol.MembershipEventConsumer;
+import org.slf4j.Logger;
 
 public final class MembershipUpdater implements MembershipEventConsumer
 {
+    private static final Logger LOG = Loggers.GOSSIP_LOGGER;
+
     private final MembershipList memberList;
     private final DisseminationComponent disseminationComponent;
 
@@ -43,6 +47,8 @@ public final class MembershipUpdater implements MembershipEventConsumer
                 final Member self = memberList.self();
                 // need to increment term when update the status
                 self.getTerm().increment();
+
+                LOG.debug("Spread ALIVE event with gossip-term: {}", self.getTerm());
 
                 disseminationComponent.addMembershipEvent()
                     .memberId(self.getId())
@@ -75,6 +81,8 @@ public final class MembershipUpdater implements MembershipEventConsumer
             {
                 if (event.getGossipTerm().isGreaterThan(member.getTerm()))
                 {
+                    LOG.debug("Update member '{}', status = ALIVE, gossip-term: {}", event.getMemberId(), event.getGossipTerm());
+
                     memberList.aliveMember(member.getId(), event.getGossipTerm());
                     changed = true;
                 }
@@ -88,6 +96,8 @@ public final class MembershipUpdater implements MembershipEventConsumer
                     {
                         if (event.getGossipTerm().isGreaterThan(member.getTerm()))
                         {
+                            LOG.debug("Update member '{}', status = SUSPECT, gossip-term: {}", event.getMemberId(), event.getGossipTerm());
+
                             memberList.suspectMember(member.getId(), event.getGossipTerm());
                             changed = true;
                         }
@@ -97,6 +107,8 @@ public final class MembershipUpdater implements MembershipEventConsumer
                     {
                         if (event.getGossipTerm().isEqual(member.getTerm()) || event.getGossipTerm().isGreaterThan(member.getTerm()))
                         {
+                            LOG.debug("Update member '{}', status = SUSPECT, gossip-term: {}", event.getMemberId(), event.getGossipTerm());
+
                             memberList.aliveMember(member.getId(), event.getGossipTerm());
                             changed = true;
                         }
@@ -108,6 +120,8 @@ public final class MembershipUpdater implements MembershipEventConsumer
             case CONFIRM:
             case LEAVE:
             {
+                LOG.debug("Remove member '{}', status = {}, gossip-term: {}", event.getMemberId(), event.getType(), event.getGossipTerm());
+
                 memberList.removeMember(member.getId());
                 changed = true;
                 break;
@@ -129,12 +143,16 @@ public final class MembershipUpdater implements MembershipEventConsumer
             case JOIN:
             case ALIVE:
             {
+                LOG.info("Add member '{}' with status ALIVE, gossip-term: {}", event.getMemberId(), event.getGossipTerm());
+
                 memberList.newMember(event.getMemberId(), event.getGossipTerm());
                 changed = true;
                 break;
             }
             case SUSPECT:
             {
+                LOG.info("Add member '{}' with status SUSPECT, gossip-term: {}", event.getMemberId(), event.getGossipTerm());
+
                 final Member member = memberList.newMember(event.getMemberId(), event.getGossipTerm());
                 memberList.suspectMember(member.getId(), event.getGossipTerm());
                 changed = true;
