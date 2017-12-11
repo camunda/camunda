@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "array-includes": "^3.0.3",
+    "array.prototype.find": "^2.0.4",
     "bpmn-js": "0.23.2",
     "chart.js": "^2.7.1",
     "element-closest": "^2.0.2",
