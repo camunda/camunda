@@ -108,7 +108,7 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   private void cleanEngine() {
-    CloseableHttpClient client = HttpClientBuilder.create().build();
+    CloseableHttpClient client = getHttpClient();
     HttpGet getRequest = new HttpGet(properties.get("camunda.optimize.test.purge").toString());
     try {
       CloseableHttpResponse response = client.execute(getRequest);
@@ -125,13 +125,13 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   public void finishAllUserTasks() {
-    CloseableHttpClient client = HttpClientBuilder.create().build();
+    CloseableHttpClient client = getHttpClient();
     HttpGet get = new HttpGet(getTaskListUri());
     executeFinishAllUserTasks(client, get);
   }
 
   public void finishAllUserTasks(String processInstanceId) {
-    CloseableHttpClient client = HttpClientBuilder.create().build();
+    CloseableHttpClient client = getHttpClient();
     HttpGet get = new HttpGet(getTaskListUri());
     URI uri = null;
     try {
@@ -197,7 +197,7 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   public String getProcessDefinitionId() {
-    CloseableHttpClient client = HttpClientBuilder.create().build();
+    CloseableHttpClient client = getHttpClient();
     HttpRequestBase get = new HttpGet(getProcessDefinitionUri());
     CloseableHttpResponse response;
     try {
@@ -216,7 +216,7 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   public ProcessInstanceEngineDto deployAndStartProcessWithVariables(BpmnModelInstance bpmnModelInstance, Map<String, Object> variables) {
-    CloseableHttpClient client = HttpClientBuilder.create().build();
+    CloseableHttpClient client = getHttpClient();
     DeploymentDto deployment = deployProcess(bpmnModelInstance, client);
     ProcessInstanceEngineDto processInstanceDto = new ProcessInstanceEngineDto();
     try {
@@ -237,7 +237,7 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   public HistoricProcessInstanceDto getHistoricProcessInstance(String processInstanceId) {
-    CloseableHttpClient client = HttpClientBuilder.create().build();
+    CloseableHttpClient client = getHttpClient();
     HttpRequestBase get = new HttpGet(getHistoricGetProcessInstanceUri(processInstanceId));
     HistoricProcessInstanceDto processInstanceDto = new HistoricProcessInstanceDto();
     try {
@@ -253,12 +253,17 @@ public class EngineIntegrationRule extends TestWatcher {
     return processInstanceDto;
   }
 
+  private CloseableHttpClient getHttpClient() {
+    CloseableHttpClient closeableHttpClient = HttpClientBuilder.create().build();
+    return closeableHttpClient;
+  }
+
   public String getProcessDefinitionIdOfProcessInstanceId(String processInstanceId) {
     return getHistoricProcessInstance(processInstanceId).getProcessDefinitionId();
   }
 
   public ProcessInstanceEngineDto startProcessInstance(String processDefinitionId) {
-    CloseableHttpClient client = HttpClientBuilder.create().build();
+    CloseableHttpClient client = getHttpClient();
     ProcessInstanceEngineDto processInstanceDto = new ProcessInstanceEngineDto();
     try {
       processInstanceDto = startProcessInstance(processDefinitionId, client, new HashMap<>());
@@ -283,7 +288,7 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   public String deployProcessAndGetId(BpmnModelInstance modelInstance) throws IOException {
-    CloseableHttpClient client = HttpClientBuilder.create().build();
+    CloseableHttpClient client = getHttpClient();
     DeploymentDto deploymentDto = deployProcess(modelInstance, client);
     String processDefinitionId = getProcessDefinitionId(deploymentDto, client);
     closeClient(client);
@@ -378,7 +383,7 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   public ProcessInstanceEngineDto startProcessInstance(String processDefinitionId, Map<String, Object> variables) throws IOException {
-    CloseableHttpClient client = HttpClientBuilder.create().build();
+    CloseableHttpClient client = getHttpClient();
     ProcessInstanceEngineDto processInstanceDto = startProcessInstance(processDefinitionId, client, variables);
     closeClient(client);
     return processInstanceDto;
@@ -386,12 +391,19 @@ public class EngineIntegrationRule extends TestWatcher {
 
   private ProcessInstanceEngineDto startProcessInstance(String procDefId, CloseableHttpClient client, Map<String, Object> variables) throws IOException {
     HttpPost post = new HttpPost(getStartProcessInstanceUri(procDefId));
-    post.addHeader("content-type", "application/json");
-    post.setEntity(new StringEntity(convertVariableMapToJsonString(variables)));
+    post.addHeader("Content-Type", "application/json");
+    post.setEntity(new StringEntity(convertVariableMapToJsonString(variables), ContentType.APPLICATION_JSON));
     CloseableHttpResponse response = client.execute(post);
     if (response.getStatusLine().getStatusCode() != 200) {
-      throw new RuntimeException("Could not start the process definition " + procDefId +
-      ". Reason: " + response.getStatusLine().getReasonPhrase());
+      String body = "";
+      if (response.getEntity() != null) {
+        body = EntityUtils.toString(response.getEntity());
+      }
+      throw new RuntimeException(
+          "Could not start the process definition. " +
+              "Request: [" + post.toString() + "]. " +
+              "Response: [" + body + "]"
+      );
     }
     String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
     ProcessInstanceEngineDto processInstanceEngineDto =
@@ -420,7 +432,7 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   public void waitForAllProcessesToFinish() throws Exception {
-    CloseableHttpClient client = HttpClientBuilder.create().build();
+    CloseableHttpClient client = getHttpClient();
     boolean done = false;
     HttpRequestBase get = new HttpGet(getCountHistoryUri());
     URI uri = null;

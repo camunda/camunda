@@ -26,7 +26,7 @@ public class PerfTestConfiguration {
 
     optimizeIndex = properties.getProperty("camunda.optimize.es.index", "optimize");
     processInstanceType = properties.getProperty("camunda.optimize.es.process.instance.type", "process-instance");
-    dateFormat = properties.getProperty("camunda.optimize.serialization.date.format", "yyyy-MM-dd'T'HH:mm:ss");
+    dateFormat = properties.getProperty("camunda.optimize.serialization.date.format", "yyyy-MM-dd'T'HH:mm:ss.SSSZ");
     frequencyHeatMapEndpoint = properties.getProperty("camunda.optimize.rest.heatmap.frequency",
       "http://localhost:8090/api/process-definition/heatmap/frequency");
     durationHeatMapEndpoint = properties.getProperty("camunda.optimize.rest.heatmap.duration",

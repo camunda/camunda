@@ -244,7 +244,9 @@ plugin:
 serialization:
   #Define a custom date format that should be used
   #(should be the same as in the engine)
-  dateFormat: yyyy-MM-dd'T'HH:mm:ss
+  #please not that engine prior to 7.8 use yyyy-MM-dd'T'HH:mm:ss as default date format
+  dateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ
+  #dateFormat: yyyy-MM-dd'T'HH:mm:ss
 variable:
   #States the maximum number of values that are shown for the user in the
   #variable filter selection.                                            
