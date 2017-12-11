@@ -41,3 +41,16 @@
   border-radius: 0;
   border-right: 1px solid #ccc;
 }
+
+
+.FilterList__variable-name {
+  font-style: italic;
+  font-weight: bold;
+}
+
+.FilterList__value {
+  background-color: #7FA8C5;
+  padding: 1px 8px 2px;
+  border-radius: 10px;
+  color: #fff;
+}
