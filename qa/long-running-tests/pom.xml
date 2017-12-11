@@ -75,6 +75,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <skip>${skip.long-running-tests}</skip>
+          <redirectTestOutputToFile>false</redirectTestOutputToFile>
         </configuration>
       </plugin>
     </plugins>
