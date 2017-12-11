@@ -45,7 +45,7 @@ it('should load the available reports', () => {
 it('should open a modal on click', () => {
   const node = mount(<AddButton {...props} />);
 
-  node.find('.AddButton').simulate('click');
+  node.find('Button.AddButton').simulate('click');
 
   expect(node.find('#modal_header')).toIncludeText('Add a Report');
 });
