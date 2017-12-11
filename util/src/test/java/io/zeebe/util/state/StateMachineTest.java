@@ -91,6 +91,7 @@ public class StateMachineTest
             throw new RuntimeException("expected");
         }
 
+        @Override
         public void onFailure(CustomStateMachineContext context, Exception e)
         {
             context.setData("fail");
@@ -109,6 +110,7 @@ public class StateMachineTest
             return 1;
         }
 
+        @Override
         public void onFailure(CustomStateMachineContext context, Exception e)
         {
             fail("should not handle missing transition failure");
@@ -280,6 +282,26 @@ public class StateMachineTest
         thrown.expect(NoSuchTransitionException.class);
 
         stateMachine.doWork();
+    }
+
+    @Test
+    public void shouldCountTransitionAsWork()
+    {
+        final StateMachine<SimpleStateMachineContext> stateMachine = StateMachine.builder()
+                .initialState(a)
+                .from(a).take(TRANSITION_NEXT).to(c)
+                .from(c).take(TRANSITION_NEXT).to(b)
+                .build();
+
+        // a --> a
+        int workCount = stateMachine.doWork();
+        assertThat(workCount).isEqualTo(0);
+
+        // a --> c
+        stateMachine.take(TRANSITION_NEXT);
+        // c --> b
+        workCount = stateMachine.doWork();
+        assertThat(workCount).isEqualTo(1);
     }
 
 }

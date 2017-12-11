@@ -108,7 +108,14 @@ public class StateMachine<C extends StateMachineContext>
         int workCount = 0;
         try
         {
+            final State<C> stateBefore = currentState;
+
             workCount = currentState.doWork(context);
+
+            if (currentState != stateBefore)
+            {
+                workCount += 1;
+            }
         }
         catch (NoSuchTransitionException e)
         {
