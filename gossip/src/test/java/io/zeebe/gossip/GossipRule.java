@@ -55,7 +55,8 @@ public class GossipRule extends ExternalResource
     private Dispatcher serverSendBuffer;
     private Dispatcher serverReceiveBuffer;
 
-    private ActorReference actorReference;
+    private ActorReference gossipActorRef;
+    private ActorReference testSubscriptionActorRef;
 
     private LocalMembershipListener localMembershipListener;
     private ReceivedEventsCollector receivedEventsCollector = new ReceivedEventsCollector();
@@ -122,7 +123,7 @@ public class GossipRule extends ExternalResource
 
         gossip = new Gossip(socketAddress, serverTransport, clientTransport, configuration);
 
-        actorReference = actorScheduler.schedule(() ->
+        gossipActorRef = actorScheduler.schedule(() ->
         {
             // make it easier to distinguish different gossip runners
             MDC.put("gossip-id", name);
@@ -135,14 +136,15 @@ public class GossipRule extends ExternalResource
 
         serverReceiveBuffer.openSubscriptionAsync("received-events-collector").thenAccept(sub ->
         {
-            actorScheduler.schedule(() -> sub.poll(receivedEventsCollector, 32));
+            testSubscriptionActorRef = actorScheduler.schedule(() -> sub.poll(receivedEventsCollector, 32));
         });
     }
 
     @Override
     protected void after()
     {
-        actorReference.close();
+        gossipActorRef.close();
+        testSubscriptionActorRef.close();
 
         serverTransport.closeAsync()
             .thenCompose(v -> serverSendBuffer.closeAsync())

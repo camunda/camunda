@@ -91,6 +91,7 @@ public class GossipFailureDetectionTest
         assertThat(gossip3.receivedEvent(GossipEventType.ACK, gossip2)).isTrue();
     }
 
+    @Ignore("instable")
     @Test
     public void shouldSendPingReqAndForwardAck()
     {
@@ -118,7 +119,7 @@ public class GossipFailureDetectionTest
         assertThat(gossip1.receivedEvent(GossipEventType.ACK, gossip2)).isFalse();
     }
 
-    @Ignore
+    @Ignore("instable")
     @Test
     public void shouldSpreadSuspectEvent()
     {
@@ -148,7 +149,7 @@ public class GossipFailureDetectionTest
         assertThat(gossip2.hasMember(gossip3)).isTrue();
     }
 
-    @Ignore
+    @Ignore("instable")
     @Test
     public void shouldSpreadConfirmEvent()
     {

@@ -69,7 +69,7 @@ public class GossipTerm
     public String toString()
     {
         final StringBuilder builder = new StringBuilder();
-        builder.append("GossipTerm [epoch=");
+        builder.append("[epoch=");
         builder.append(epoch);
         builder.append(", heartBeat=");
         builder.append(heartbeat);
