@@ -15,8 +15,7 @@
  */
 package io.zeebe.gossip.failuredetection;
 
-import io.zeebe.gossip.GossipConfiguration;
-import io.zeebe.gossip.GossipContext;
+import io.zeebe.gossip.*;
 import io.zeebe.gossip.membership.Member;
 import io.zeebe.gossip.membership.MembershipList;
 import io.zeebe.gossip.protocol.*;
@@ -27,12 +26,13 @@ import org.slf4j.Logger;
 
 public class PingReqEventHandler implements Actor, GossipEventConsumer
 {
+    private static final Logger LOG = Loggers.GOSSIP_LOGGER;
+
     private static final int TRANSITION_DEFAULT = 0;
     private static final int TRANSITION_ACK_RECEIVED = 1;
     private static final int TRANSITION_FAIL = 2;
     private static final int TRANSITION_PING_REQ_RECEIVED = 3;
 
-    private final Logger logger;
     private final GossipConfiguration config;
 
     private final MembershipList memberList;
@@ -43,7 +43,6 @@ public class PingReqEventHandler implements Actor, GossipEventConsumer
     {
         this.config = context.getConfiguration();
         this.memberList = context.getMemberList();
-        this.logger = context.getLogger();
 
         final WaitState<Context> awaitPingReqState = ctx ->
         { };
@@ -68,7 +67,7 @@ public class PingReqEventHandler implements Actor, GossipEventConsumer
         final String sender = event.getSender();
         final String suspiciousMember = event.getProbeMember();
 
-        logger.trace("Received PING-REQ from '{}' to probe '{}'", sender, suspiciousMember);
+        LOG.trace("Received PING-REQ from '{}' to probe '{}'", sender, suspiciousMember);
 
         final Member member = memberList.get(suspiciousMember);
         if (member != null)
@@ -86,7 +85,7 @@ public class PingReqEventHandler implements Actor, GossipEventConsumer
             {
                 // currently, we process only one request at a time
                 // - if another request is received then it's rejected until the pending request is done
-                logger.trace("Reject PING-REQ from '{}' because the previous request isn't completed yet", sender);
+                LOG.trace("Reject PING-REQ from '{}' because the previous request isn't completed yet", sender);
 
                 // TODO buffer incoming request to reduce false-positive failure detection
             }
@@ -127,7 +126,7 @@ public class PingReqEventHandler implements Actor, GossipEventConsumer
         @Override
         public void work(Context context) throws Exception
         {
-            logger.trace("Forward PING to '{}'", context.suspiciousMember.getId());
+            LOG.trace("Forward PING to '{}'", context.suspiciousMember.getId());
 
             final ClientRequest request = gossipEventSender.sendPing(context.suspiciousMember.getAddress());
             context.ackResponse.wrap(request, config.getProbeTimeout());
@@ -143,7 +142,7 @@ public class PingReqEventHandler implements Actor, GossipEventConsumer
         {
             if (context.ackResponse.isReceived())
             {
-                logger.trace("Received ACK from '{}'", context.suspiciousMember.getAddress());
+                LOG.trace("Received ACK from '{}'", context.suspiciousMember.getAddress());
 
                 context.ackResponse.process();
 
@@ -151,7 +150,7 @@ public class PingReqEventHandler implements Actor, GossipEventConsumer
             }
             else if (context.ackResponse.isFailed() || context.ackResponse.isTimedOut())
             {
-                logger.trace("Doesn't receive ACK from '{}'", context.suspiciousMember.getAddress());
+                LOG.trace("Doesn't receive ACK from '{}'", context.suspiciousMember.getAddress());
 
                 context.take(TRANSITION_FAIL);
             }
@@ -176,7 +175,7 @@ public class PingReqEventHandler implements Actor, GossipEventConsumer
         @Override
         public void work(Context context) throws Exception
         {
-            logger.trace("Forward ACK to '{}'", context.sender);
+            LOG.trace("Forward ACK to '{}'", context.sender);
 
             gossipEventSender.responseAck(context.requestId, context.streamId);
 

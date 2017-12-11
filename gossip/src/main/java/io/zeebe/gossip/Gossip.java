@@ -26,12 +26,9 @@ import io.zeebe.gossip.protocol.*;
 import io.zeebe.transport.*;
 import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.actor.Actor;
-import org.slf4j.Logger;
 
 public class Gossip implements Actor, GossipController
 {
-    private final Logger logger;
-
     private final SubscriptionController subscriptionController;
     private final PingController failureDetectionController;
     private final MembershipList memberList;
@@ -48,16 +45,14 @@ public class Gossip implements Actor, GossipController
             final ClientTransport clientTransport,
             final GossipConfiguration configuration)
     {
-        this.logger = Loggers.getLogger(socketAddress);
-
         memberList = new MembershipList(socketAddress, configuration);
         final DisseminationComponent disseminationComponent = new DisseminationComponent(configuration, memberList);
 
         final GossipEventFactory gossipEventFactory = new GossipEventFactory(memberList, disseminationComponent);
 
-        final GossipEventSender gossipEventSender = new GossipEventSender(logger, clientTransport, serverTransport, memberList, disseminationComponent, gossipEventFactory);
+        final GossipEventSender gossipEventSender = new GossipEventSender(clientTransport, serverTransport, memberList, disseminationComponent, gossipEventFactory);
 
-        final GossipContext context = new GossipContext(logger, configuration, memberList, disseminationComponent, serverTransport, clientTransport, gossipEventSender, gossipEventFactory);
+        final GossipContext context = new GossipContext(configuration, memberList, disseminationComponent, serverTransport, clientTransport, gossipEventSender, gossipEventFactory);
 
         failureDetectionController = new PingController(context);
 

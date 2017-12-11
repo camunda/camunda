@@ -21,12 +21,9 @@ import io.zeebe.gossip.protocol.GossipEventFactory;
 import io.zeebe.gossip.protocol.GossipEventSender;
 import io.zeebe.transport.BufferingServerTransport;
 import io.zeebe.transport.ClientTransport;
-import org.slf4j.Logger;
 
 public class GossipContext
 {
-    private final Logger logger;
-
     private final GossipConfiguration configuration;
 
     private final MembershipList memberList;
@@ -37,7 +34,6 @@ public class GossipContext
     private final GossipEventSender gossipEventSender;
 
     public GossipContext(
-            Logger logger,
             GossipConfiguration configuration,
             MembershipList memberList,
             DisseminationComponent disseminationComponent,
@@ -46,17 +42,11 @@ public class GossipContext
             GossipEventSender gossipEventSender,
             GossipEventFactory gossipEventFactory)
     {
-        this.logger = logger;
         this.configuration = configuration;
         this.memberList = memberList;
         this.disseminationComponent = disseminationComponent;
         this.gossipEventSender = gossipEventSender;
         this.gossipEventFactory = gossipEventFactory;
-    }
-
-    public Logger getLogger()
-    {
-        return logger;
     }
 
     public GossipConfiguration getConfiguration()

@@ -15,18 +15,10 @@
  */
 package io.zeebe.gossip;
 
-import io.zeebe.transport.SocketAddress;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class Loggers
 {
-
-    public static Logger getLogger(final SocketAddress socketAddress)
-    {
-        final String loggerName = String.format("io.zeebe.gossip.%s:%d", socketAddress.host(), socketAddress.port());
-
-        return LoggerFactory.getLogger(loggerName);
-    }
-
+    public static final Logger GOSSIP_LOGGER = LoggerFactory.getLogger("io.zeebe.gossip");
 }

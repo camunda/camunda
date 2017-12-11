@@ -73,18 +73,15 @@ public class SubscriptionController implements Actor
             final CompletableFuture<ServerInputSubscription> future = serverTransport.openSubscription(SUBSCRIPTION_NAME, null, requestHandler);
 
             context.future = future;
-
             context.take(TRANSITION_DEFAULT);
         }
     }
 
-    private class AwaitOpenSubscriptionState implements State<Context>
+    private class AwaitOpenSubscriptionState implements WaitState<Context>
     {
         @Override
-        public int doWork(Context context) throws Exception
+        public void work(Context context) throws Exception
         {
-            int workCount = 0;
-
             final CompletableFuture<ServerInputSubscription> future = context.future;
 
             if (future.isDone())
@@ -97,11 +94,7 @@ public class SubscriptionController implements Actor
                 context.future = null;
 
                 context.take(TRANSITION_DEFAULT);
-
-                workCount += 1;
             }
-
-            return workCount;
         }
     }
 

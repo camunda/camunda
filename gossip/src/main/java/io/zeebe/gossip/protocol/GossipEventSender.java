@@ -16,6 +16,7 @@
 package io.zeebe.gossip.protocol;
 
 import io.zeebe.clustering.gossip.GossipEventType;
+import io.zeebe.gossip.Loggers;
 import io.zeebe.gossip.dissemination.DisseminationComponent;
 import io.zeebe.gossip.membership.Member;
 import io.zeebe.gossip.membership.MembershipList;
@@ -24,9 +25,9 @@ import org.slf4j.Logger;
 
 public class GossipEventSender
 {
-    private final ServerResponse serverResponse = new ServerResponse();
+    private static final Logger LOG = Loggers.GOSSIP_LOGGER;
 
-    private final Logger logger;
+    private final ServerResponse serverResponse = new ServerResponse();
 
     private final ClientTransport clientTransport;
     private final ServerTransport serverTransport;
@@ -38,14 +39,12 @@ public class GossipEventSender
     private final GossipEvent gossipSyncEvent;
 
     public GossipEventSender(
-            Logger logger,
             ClientTransport clientTransport,
             ServerTransport serverTransport,
             MembershipList memberList,
             DisseminationComponent disseminationComponent,
             GossipEventFactory eventFactory)
     {
-        this.logger = logger;
         this.clientTransport = clientTransport;
         this.serverTransport = serverTransport;
         this.disseminationComponent = disseminationComponent;
@@ -89,7 +88,7 @@ public class GossipEventSender
             .reset()
             .eventType(GossipEventType.ACK);
 
-        responseTo(gossipSyncEvent, requestId, streamId);
+        responseTo(gossipFailureDetectionEvent, requestId, streamId);
     }
 
     public void responseSync(long requestId, int streamId)

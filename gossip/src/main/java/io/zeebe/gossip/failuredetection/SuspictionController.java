@@ -19,6 +19,7 @@ import java.util.Iterator;
 
 import io.zeebe.clustering.gossip.MembershipEventType;
 import io.zeebe.gossip.GossipContext;
+import io.zeebe.gossip.Loggers;
 import io.zeebe.gossip.dissemination.DisseminationComponent;
 import io.zeebe.gossip.membership.*;
 import io.zeebe.util.state.*;
@@ -27,16 +28,16 @@ import org.slf4j.Logger;
 
 public class SuspictionController
 {
+    private static final Logger LOG = Loggers.GOSSIP_LOGGER;
+
     private static final int TRANSITION_DEFAULT = 0;
 
-    private final Logger logger;
     private final MembershipList memberList;
 
     private final StateMachine<SimpleStateMachineContext> stateMachine;
 
     public SuspictionController(GossipContext context)
     {
-        this.logger = context.getLogger();
         this.memberList = context.getMemberList();
 
         // check suspicion in the same interval as probing
@@ -103,11 +104,11 @@ public class SuspictionController
 
                 if (member.getStatus() == MembershipStatus.SUSPECT && currentTime >= member.getSuspectTimeout())
                 {
-                    logger.info("Remove suspicious member '{}'", member.getId());
+                    LOG.info("Remove suspicious member '{}'", member.getId());
 
                     members.remove();
 
-                    logger.trace("Spread CONFIRM event about '{}'", member.getId());
+                    LOG.trace("Spread CONFIRM event about '{}'", member.getId());
 
                     disseminationComponent.addMembershipEvent()
                         .memberId(member.getId())

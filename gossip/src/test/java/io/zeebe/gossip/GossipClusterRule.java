@@ -17,16 +17,17 @@ package io.zeebe.gossip;
 
 import java.util.*;
 
+import org.junit.rules.ExternalResource;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 public class GossipClusterRule implements TestRule
 {
-    private final ActorSchedulerRule actorScheduler;
+    private final ExternalResource actorScheduler;
     private final List<GossipRule> gossips;
 
-    public GossipClusterRule(final ActorSchedulerRule actorScheduler, final GossipRule... gossips)
+    public GossipClusterRule(final ExternalResource actorScheduler, final GossipRule... gossips)
     {
         this.actorScheduler = actorScheduler;
         this.gossips = gossips != null ? new ArrayList<>(Arrays.asList(gossips)) : Collections.emptyList();

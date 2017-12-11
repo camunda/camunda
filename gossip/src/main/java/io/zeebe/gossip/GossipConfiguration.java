@@ -18,7 +18,7 @@ package io.zeebe.gossip;
 public class GossipConfiguration
 {
 
-    private int retransmissionMultiplier = 5;
+    private int retransmissionMultiplier = 1;
 
     private int probeInterval = 1_000;
     private int probeTimeout = 500;

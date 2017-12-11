@@ -84,9 +84,9 @@ public class DisseminationComponent implements MembershipEventSupplier, Membersh
         final int clusterSize = 1 + memberList.size();
         final int multiplier = configuration.getRetransmissionMultiplier();
 
-        final int speadLimit = GossipMathUtil.gossipPeriodsToSpread(multiplier, clusterSize);
+        final int spreadLimit = GossipMathUtil.gossipPeriodsToSpread(multiplier, clusterSize);
 
-        membershipEventBuffer.removeEventsWithSpreadCountGreaterThan(speadLimit);
+        membershipEventBuffer.removeEventsWithSpreadCountGreaterThan(spreadLimit);
     }
 
     private class MembershipEventIterator implements Iterator<MembershipEvent>

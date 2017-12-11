@@ -18,8 +18,7 @@ package io.zeebe.gossip.failuredetection;
 import java.util.*;
 
 import io.zeebe.clustering.gossip.MembershipEventType;
-import io.zeebe.gossip.GossipConfiguration;
-import io.zeebe.gossip.GossipContext;
+import io.zeebe.gossip.*;
 import io.zeebe.gossip.dissemination.DisseminationComponent;
 import io.zeebe.gossip.membership.Member;
 import io.zeebe.gossip.protocol.*;
@@ -32,20 +31,20 @@ import org.slf4j.Logger;
 
 public class JoinController implements Actor
 {
+    private static final Logger LOG = Loggers.GOSSIP_LOGGER;
+
     private static final int TRANSITION_DEFAULT = 0;
     private static final int TRANSITION_RECEIVED = 1;
     private static final int TRANSITION_TIMEOUT = 2;
     private static final int TRANSITION_FAIL = 3;
     private static final int TRANSITION_JOIN = 4;
 
-    private final Logger logger;
     private final GossipConfiguration config;
 
     private final StateMachine<Context> stateMachine;
 
     public JoinController(GossipContext context)
     {
-        this.logger = context.getLogger();
         this.config = context.getConfiguration();
 
         final WaitState<Context> awaitJoinState = ctx ->
@@ -86,7 +85,7 @@ public class JoinController implements Actor
         final boolean success = stateMachine.tryTake(TRANSITION_JOIN);
         if (success)
         {
-            logger.debug("Join cluster with known contact points: {}", contactPoints);
+            LOG.debug("Join cluster with known contact points: {}", contactPoints);
 
             final Context context = stateMachine.getContext();
             context.contactPoints = new ArrayList<>(contactPoints);
@@ -144,7 +143,7 @@ public class JoinController implements Actor
             {
                 if (!self.getAddress().equals(contactPoint))
                 {
-                    logger.trace("Spread JOIN event to contact point '{}'", contactPoint);
+                    LOG.trace("Spread JOIN event to contact point '{}'", contactPoint);
 
                     final ClientRequest request = gossipEventSender.sendPing(contactPoint);
                     context.requests.add(request);
@@ -180,7 +179,7 @@ public class JoinController implements Actor
                 if (response.isReceived())
                 {
                     contactPoint = context.contactPoints.get(r);
-                    logger.trace("Received response from contact point '{}'", contactPoint);
+                    LOG.trace("Received response from contact point '{}'", contactPoint);
 
                     response.process();
                 }
@@ -193,7 +192,7 @@ public class JoinController implements Actor
             }
             else if (currentTime >= context.joinTimeout)
             {
-                logger.warn("Failed to contact any of '{}'. Try again in {}ms", context.contactPoints, config.getJoinInterval());
+                LOG.warn("Failed to contact any of '{}'. Try again in {}ms", context.contactPoints, config.getJoinInterval());
 
                 context.nextJoinInterval = currentTime + config.getJoinInterval();
                 context.take(TRANSITION_TIMEOUT);
@@ -220,7 +219,7 @@ public class JoinController implements Actor
         @Override
         public void work(Context context) throws Exception
         {
-            logger.trace("Send SYNC request to '{}'", context.contactPoint);
+            LOG.trace("Send SYNC request to '{}'", context.contactPoint);
 
             final ClientRequest request = gossipEventSender.sendSyncRequest(context.contactPoint);
 
@@ -237,7 +236,7 @@ public class JoinController implements Actor
             final GossipEventResponse response = context.syncResponse;
             if (response.isReceived())
             {
-                logger.trace("Received SYNC response from '{}'", context.contactPoint);
+                LOG.trace("Received SYNC response from '{}'", context.contactPoint);
 
                 response.process();
 
@@ -246,13 +245,13 @@ public class JoinController implements Actor
             }
             else if (response.isFailed())
             {
-                logger.trace("Failed to receive SYNC response from '{}'", context.contactPoint);
+                LOG.trace("Failed to receive SYNC response from '{}'", context.contactPoint);
 
                 context.take(TRANSITION_FAIL);
             }
             else if (response.isTimedOut())
             {
-                logger.warn("Doesn't receive SYNC response from '{}'. Try again in {}ms", context.contactPoint, config.getJoinInterval());
+                LOG.warn("Doesn't receive SYNC response from '{}'. Try again in {}ms", context.contactPoint, config.getJoinInterval());
 
                 context.nextJoinInterval = ClockUtil.getCurrentTimeInMillis() + config.getJoinInterval();
                 context.take(TRANSITION_TIMEOUT);

@@ -16,19 +16,18 @@
 package io.zeebe.gossip.failuredetection;
 
 import io.zeebe.gossip.GossipContext;
+import io.zeebe.gossip.Loggers;
 import io.zeebe.gossip.protocol.*;
 import org.slf4j.Logger;
 
 public class PingEventHandler implements GossipEventConsumer
 {
-    private final Logger logger;
+    private static final Logger LOG = Loggers.GOSSIP_LOGGER;
 
     private final GossipEventSender gossipEventSender;
 
     public PingEventHandler(GossipContext context)
     {
-        this.logger = context.getLogger();
-
         this.gossipEventSender = context.getGossipEventSender();
     }
 
@@ -37,9 +36,9 @@ public class PingEventHandler implements GossipEventConsumer
     {
         final String sender = event.getSender();
 
-        logger.trace("Received PING from '{}'", sender);
+        LOG.trace("Received PING from '{}'", sender);
 
-        logger.trace("Send ACK to '{}'", sender);
+        LOG.trace("Send ACK to '{}'", sender);
 
         gossipEventSender.responseAck(requestId, streamId);
     }

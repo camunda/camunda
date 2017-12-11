@@ -24,6 +24,7 @@ public class GossipEventResponse
     private final GossipEvent event;
 
     private ClientRequest request;
+    private long requestId;
     private long timeout;
 
     public GossipEventResponse(GossipEvent event)
@@ -34,22 +35,24 @@ public class GossipEventResponse
     public void wrap(ClientRequest request)
     {
         this.request = request;
+        this.requestId = request.getRequestId();
     }
 
     public void wrap(ClientRequest request, long durationInMillis)
     {
         this.request = request;
+        this.requestId = request.getRequestId();
         this.timeout = ClockUtil.getCurrentTimeInMillis() + durationInMillis;
     }
 
     public boolean isReceived()
     {
-        return request.isDone() && !request.isFailed();
+        return request.isDone() && !request.isFailed() && request.getRequestId() > 0 && request.getRequestId() == requestId;
     }
 
     public boolean isFailed()
     {
-        return request.isFailed();
+        return request.isFailed() || request.getRequestId() < 0 || request.getRequestId() != requestId;
     }
 
     public boolean isTimedOut()
@@ -64,6 +67,7 @@ public class GossipEventResponse
             final DirectBuffer response = request.join();
 
             event.wrap(response, 0, response.capacity());
+            // TODO ensure event type
 
             clear();
         }

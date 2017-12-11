@@ -20,24 +20,23 @@ import java.util.Map;
 
 import io.zeebe.clustering.gossip.*;
 import io.zeebe.gossip.GossipContext;
+import io.zeebe.gossip.Loggers;
 import io.zeebe.transport.*;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 
 public class GossipRequestHandler implements ServerRequestHandler
 {
+    private static final Logger LOG = Loggers.GOSSIP_LOGGER;
+
     private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
 
     private final GossipEvent gossipEvent;
-
-    private final Logger logger;
 
     private final Map<GossipEventType, GossipEventConsumer> consumers = new EnumMap<>(GossipEventType.class);
 
     public GossipRequestHandler(GossipContext context, GossipEventFactory eventFactory)
     {
-        this.logger = context.getLogger();
-
         this.gossipEvent = eventFactory.createFailureDetectionEvent();
     }
 
@@ -67,12 +66,12 @@ public class GossipRequestHandler implements ServerRequestHandler
             }
             else
             {
-                logger.warn("No consumer registered for gossip event type '{}'", eventType);
+                LOG.warn("No consumer registered for gossip event type '{}'", eventType);
             }
         }
         else
         {
-            logger.warn("Cannot handle request with schema-id '{}' and template-id '{}'", schemaId, templateId);
+            LOG.warn("Cannot handle request with schema-id '{}' and template-id '{}'", schemaId, templateId);
         }
 
         return true;

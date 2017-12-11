@@ -16,18 +16,18 @@
 package io.zeebe.gossip.failuredetection;
 
 import io.zeebe.gossip.GossipContext;
+import io.zeebe.gossip.Loggers;
 import io.zeebe.gossip.protocol.*;
 import org.slf4j.Logger;
 
 public class SyncRequestEventHandler implements GossipEventConsumer
 {
-    private final Logger logger;
+    private static final Logger LOG = Loggers.GOSSIP_LOGGER;
 
     private final GossipEventSender gossipEventSender;
 
     public SyncRequestEventHandler(GossipContext context)
     {
-        this.logger = context.getLogger();
         this.gossipEventSender = context.getGossipEventSender();
     }
 
@@ -36,11 +36,11 @@ public class SyncRequestEventHandler implements GossipEventConsumer
     {
         final String sender = event.getSender();
 
-        logger.trace("Received SYNC request from '{}'", sender);
+        LOG.trace("Received SYNC request from '{}'", sender);
 
         // TODO handle custom sync events
 
-        logger.trace("Send SYNC response to '{}'", sender);
+        LOG.trace("Send SYNC response to '{}'", sender);
 
         gossipEventSender.responseSync(requestId, streamId);
     }
