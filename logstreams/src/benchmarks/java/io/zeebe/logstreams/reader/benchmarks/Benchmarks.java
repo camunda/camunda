@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.logstreams.snapshot.benchmarks;
+package io.zeebe.logstreams.reader.benchmarks;
 
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.Options;
@@ -22,7 +22,7 @@ import org.openjdk.jmh.runner.options.TimeValue;
 
 public class Benchmarks
 {
-    public static final int DATA_SET_SIZE = 10_000_000;
+    public static final int DATA_SET_SIZE = 100_000;
 
     public static void main(String... args) throws Exception
     {

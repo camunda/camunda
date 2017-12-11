@@ -684,7 +684,7 @@ public class StreamProcessorController implements Actor
         }
     }
 
-    private class Context extends SimpleStateMachineContext
+    protected class Context extends SimpleStateMachineContext
     {
         private LoggedEvent event;
         private long lastWrittenEventPosition = -1;
