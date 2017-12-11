@@ -58,6 +58,33 @@ it('should display available variables', () => {
   expect(node.find('option').at(2)).toIncludeText('bar');
 });
 
+it('should disable add filter button if no variable is selected', () => {
+  const node = mount(<VariableFilter processDefinitionId='procDefId' />);
+  
+  node.setState({
+    variables: [{name: 'foo', type: 'String'}, {name: 'bar', type: 'String'}]
+  });
+  
+  const buttons = node.find("#modal_actions button");
+  expect(buttons.at(0).prop("disabled")).toBeFalsy(); // abort
+  expect(buttons.at(1).prop("disabled")).toBeTruthy(); // create filter
+});
+
+it('should enable add filter button if variable selection is valid', () => {
+  const node = mount(<VariableFilter processDefinitionId='procDefId' />);
+  
+  node.setState({
+    variables: [{name: 'foo', type: 'String'}, {name: 'bar', type: 'String'}],
+    values : ['bar'], 
+    selectedVariableIdx: 1,
+  });
+  
+  const buttons = node.find("#modal_actions button");
+  expect(buttons.at(0).prop("disabled")).toBeFalsy(); // abort
+  expect(buttons.at(1).prop("disabled")).toBeFalsy(); // create filter
+});
+
+
 describe('boolean variables', () => {
   it('should assume variable value true per default', () => {
     const node = mount(<VariableFilter processDefinitionId='procDefId' />);
@@ -153,6 +180,34 @@ describe('number variables', () => {
 
     expect(node.state().values).toEqual(['value0', 'value1', '']);
   });
+
+  it('should disable add filter button if provided value is invalid', () => {
+    const node = mount(<VariableFilter processDefinitionId='procDefId' />);
+    
+    node.setState({
+      variables: [{name: 'foo', type: 'Float'}],
+      selectedVariableIdx: 0,
+      values: ['123xxxx']
+    });
+    
+    const buttons = node.find("#modal_actions button");
+    expect(buttons.at(0).prop("disabled")).toBeFalsy(); // abort
+    expect(buttons.at(1).prop("disabled")).toBeTruthy(); // create filter
+  });
+
+  it('should disable add filter button if variable is integer but provided input is float', () => {
+    const node = mount(<VariableFilter processDefinitionId='procDefId' />);
+    
+    node.setState({
+      variables: [{name: 'foo', type: 'Integer'}],
+      selectedVariableIdx: 0,
+      values: ['123.23']
+    });
+    
+    const buttons = node.find("#modal_actions button");
+    expect(buttons.at(0).prop("disabled")).toBeFalsy(); // abort
+    expect(buttons.at(1).prop("disabled")).toBeTruthy(); // create filter
+  });
 });
 
 describe('string variables', () => {
@@ -229,5 +284,20 @@ it('should create a new filter', () => {
       operator: 'not in',
       values: ['value1', 'value2']
     }
+  });
+
+  it('should disable add filter button if no value is selected', () => {
+    const node = mount(<VariableFilter processDefinitionId='procDefId' />);
+    
+    node.setState({
+      variables: [{name: 'foo', type: 'String'}],
+      selectedVariableIdx: 0,
+      availableValues: []
+    });
+    
+    const buttons = node.find("#modal_actions button");
+    expect(buttons.at(0).prop("disabled")).toBeFalsy(); // abort
+    expect(buttons.at(1).prop("disabled")).toBeTruthy(); // create filter
+
   });
 });

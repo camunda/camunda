@@ -106,10 +106,40 @@ export default class VariableFilter extends React.Component {
       </Modal.Content>
       <Modal.Actions>
         <Button onClick={this.props.close}>Cancel</Button>
-        <Button type='primary' className='Button--blue' onClick={this.createFilter}>Add Filter</Button>
+        <Button type='primary' className='Button--blue' disabled={!this.selectionIsValid()} onClick={this.createFilter}>Add Filter</Button>
       </Modal.Actions>
     </Modal>
     );
+  }
+
+  selectionIsValid = () => {
+    let isValid = true;
+    const variable = this.state.variables[this.state.selectedVariableIdx];
+
+    if(variable && this.typeIsNumeric(variable.type)) {
+      // match float number: https://stackoverflow.com/a/10256077
+      // match integer: https://stackoverflow.com/a/1779019
+      const matcher = this.typeIsFloating(variable.type)? /^[+-]?\d+(\.\d+)?$/ : /^[+-]?\d+?$/; 
+      const containsOnlyValidNumbers = 
+          this.state.values
+            .every(value => matcher.test(value) ); 
+      isValid = isValid && containsOnlyValidNumbers;
+    }
+
+    isValid = isValid && this.variableIsSelected() && this.state.values.length > 0;
+    return isValid;
+  }
+
+  typeIsNumeric = (type) => {
+    return  this.typeIsFloating(type) || this.typeIsInteger(type);
+  }
+
+  typeIsFloating = (type) => {
+    return type === 'Double' || type === 'Float';
+  }
+
+  typeIsInteger = (type) => {
+    return type === 'Short' || type === 'Integer' || type === 'Long';
   }
 
   variableIsSelected = () => {
