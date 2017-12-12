@@ -77,7 +77,7 @@ export default class AddButton extends React.Component {
         <Modal.Header>Add a Report</Modal.Header>
         <Modal.Content>
           <ControlGroup layout='centered'>
-            <label htmlFor='AddButton__selectReports'>Select a Report from the list…</label>
+            <label htmlFor='AddButton__selectReports'>Select a Report…</label>
             <Select value={this.state.selectedReportId} onChange={this.selectReport} name='AddButton__selectReports' className='AddButton__selectReports'>
               {this.state.availableReports.map(report => {
                 return <Select.Option key={report.id} value={report.id}>{report.name}</Select.Option>
