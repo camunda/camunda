@@ -18,7 +18,7 @@ package io.zeebe.gossip;
 public class GossipConfiguration
 {
 
-    private int retransmissionMultiplier = 1;
+    private int retransmissionMultiplier = 3;
 
     private int probeInterval = 1_000;
     private int probeTimeout = 500;
@@ -34,6 +34,7 @@ public class GossipConfiguration
     private int joinTimeout = 1_000;
     private int joinInterval = 5_000;
 
+    private int leaveTimeout = 1_000;
 
     public int getJoinTimeout()
     {
@@ -195,6 +196,17 @@ public class GossipConfiguration
     public GossipConfiguration setSuspicionMultiplier(final int suspicionMultiplier)
     {
         this.suspicionMultiplier = suspicionMultiplier;
+        return this;
+    }
+
+    public int getLeaveTimeout()
+    {
+        return leaveTimeout;
+    }
+
+    public GossipConfiguration leaveTimeout(int leaveTimeout)
+    {
+        this.leaveTimeout = leaveTimeout;
         return this;
     }
 

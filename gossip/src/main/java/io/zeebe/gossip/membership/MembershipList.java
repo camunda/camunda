@@ -29,6 +29,8 @@ public class MembershipList implements Iterable<Member>
     private final List<Member> members = new ArrayList<>();
     private final List<Member> membersView = Collections.unmodifiableList(members);
 
+    private int aliveMemberSize = 0;
+
     private final List<GossipMembershipListener> listeners = new ArrayList<>();
 
     private final MembershipIterator iterator = new MembershipIterator();
@@ -55,6 +57,7 @@ public class MembershipList implements Iterable<Member>
         member.getTerm().epoch(term.getEpoch()).heartbeat(term.getHeartbeat());
 
         members.add(member);
+        aliveMemberSize += 1;
 
         listeners.forEach(c -> c.onAdd(member));
 
@@ -66,7 +69,8 @@ public class MembershipList implements Iterable<Member>
         final Member member = get(id);
         if (member != null)
         {
-            members.remove(member);
+            member.setStatus(MembershipStatus.DEAD);
+            aliveMemberSize -= 1;
 
             listeners.forEach(c -> c.onRemove(member));
         }
@@ -77,10 +81,19 @@ public class MembershipList implements Iterable<Member>
         final Member member = get(id);
         if (member != null)
         {
+            final boolean isZombi = member.getStatus() == MembershipStatus.DEAD;
+
             member
                 .setStatus(MembershipStatus.ALIVE)
                 .setGossipTerm(gossipTerm)
                 .setSuspictionTimeout(-1L);
+
+            if (isZombi)
+            {
+                aliveMemberSize += 1;
+
+                listeners.forEach(c -> c.onAdd(member));
+            }
         }
     }
 
@@ -102,7 +115,7 @@ public class MembershipList implements Iterable<Member>
         final int clusterSize = 1 + size();
         final int probeInterval = configuration.getProbeInterval();
 
-        final long timeout = GossipMathUtil.suspicionTimeout(multiplier, clusterSize, probeInterval);
+        final long timeout = GossipMath.suspicionTimeout(multiplier, clusterSize, probeInterval);
 
         return ClockUtil.getCurrentTimeInMillis() + timeout;
     }
@@ -123,7 +136,7 @@ public class MembershipList implements Iterable<Member>
 
     public int size()
     {
-        return members.size();
+        return aliveMemberSize;
     }
 
     public List<Member> getMembersView()
@@ -173,7 +186,7 @@ public class MembershipList implements Iterable<Member>
         @Override
         public boolean hasNext()
         {
-            return index < members.size();
+            return index < aliveMemberSize;
         }
 
         @Override
@@ -181,9 +194,14 @@ public class MembershipList implements Iterable<Member>
         {
             if (hasNext())
             {
-                final Member member = members.get(index);
-
-                index += 1;
+                // only return alive members
+                Member member = null;
+                do
+                {
+                    member = members.get(index);
+                    index += 1;
+                }
+                while (member.getStatus() == MembershipStatus.DEAD);
 
                 return member;
             }

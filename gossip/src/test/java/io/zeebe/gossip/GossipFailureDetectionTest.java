@@ -21,6 +21,7 @@ import java.time.Duration;
 
 import io.zeebe.clustering.gossip.GossipEventType;
 import io.zeebe.clustering.gossip.MembershipEventType;
+import io.zeebe.gossip.protocol.MembershipEvent;
 import io.zeebe.test.util.agent.ControllableTaskScheduler;
 import org.junit.*;
 
@@ -48,10 +49,6 @@ public class GossipFailureDetectionTest
 
         actorScheduler.waitUntilDone();
         actorScheduler.waitUntilDone();
-
-        // ensure that all members know each other
-        // clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
-        // actorScheduler.waitUntilDone();
 
         gossip1.clearReceivedEvents();
         gossip2.clearReceivedEvents();
@@ -146,7 +143,6 @@ public class GossipFailureDetectionTest
         assertThat(gossip2.hasMember(gossip3)).isTrue();
     }
 
-    @Ignore("instable")
     @Test
     public void shouldSpreadConfirmEvent()
     {
@@ -161,6 +157,16 @@ public class GossipFailureDetectionTest
         clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
         actorScheduler.waitUntilDone();
 
+        clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeTimeout()));
+        actorScheduler.waitUntilDone();
+
+        clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeIndirectTimeout()));
+        actorScheduler.waitUntilDone();
+
+        final long suspicionTimeout = GossipMath.suspicionTimeout(CONFIGURATION.getSuspicionMultiplier(), 3, CONFIGURATION.getProbeInterval());
+        clock.addTime(Duration.ofMillis(suspicionTimeout));
+        actorScheduler.waitUntilDone();
+
         clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
         actorScheduler.waitUntilDone();
 
@@ -170,20 +176,49 @@ public class GossipFailureDetectionTest
         clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeIndirectTimeout()));
         actorScheduler.waitUntilDone();
 
-        final long suspicionTimeout = GossipMathUtil.suspicionTimeout(CONFIGURATION.getSuspicionMultiplier(), 3, CONFIGURATION.getProbeInterval());
-        clock.addTime(Duration.ofMillis(suspicionTimeout));
+        // then
+        assertThat(gossip1.receivedMembershipEvent(MembershipEventType.CONFIRM, gossip3)).isTrue();
+        assertThat(gossip2.receivedMembershipEvent(MembershipEventType.CONFIRM, gossip3)).isTrue();
+
+        assertThat(gossip1.hasMember(gossip3)).isFalse();
+        assertThat(gossip2.hasMember(gossip3)).isFalse();
+    }
+
+    @Test
+    public void shouldCounterSuspectEventIfAlive()
+    {
+        // given
+        gossip1.interruptConnectionTo(gossip3);
+        gossip2.interruptConnectionTo(gossip3);
+
+        clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
         actorScheduler.waitUntilDone();
+
+        clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeTimeout()));
         actorScheduler.waitUntilDone();
+
+        clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeIndirectTimeout()));
+        actorScheduler.waitUntilDone();
+
+        // when
+        gossip1.reconnectTo(gossip3);
+        gossip2.reconnectTo(gossip3);
 
         clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
         actorScheduler.waitUntilDone();
 
         // then
-        assertThat(gossip1.receivedMembershipEvent(MembershipEventType.CONFIRM, gossip3)).isTrue();
-        assertThat(gossip2.receivedMembershipEvent(MembershipEventType.CONFIRM, gossip3)).isTrue();
-        // TODO can fail when JOIN event is still sent
-        assertThat(gossip1.hasMember(gossip3)).isFalse();
-        assertThat(gossip2.hasMember(gossip3)).isFalse();
+        assertThat(gossip3.receivedMembershipEvent(MembershipEventType.SUSPECT, gossip3)).isTrue();
+
+        final MembershipEvent suspectEvent = gossip1.getReceivedMembershipEvents(MembershipEventType.SUSPECT, gossip3)
+            .findFirst()
+            .get();
+
+        final MembershipEvent counterAliveEvent = gossip1.getReceivedMembershipEvents(MembershipEventType.ALIVE, gossip3)
+            .findFirst()
+            .get();
+
+        assertThat(counterAliveEvent.getGossipTerm().isGreaterThan(suspectEvent.getGossipTerm())).isTrue();
     }
 
 }

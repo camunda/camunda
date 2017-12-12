@@ -18,7 +18,7 @@ package io.zeebe.gossip.dissemination;
 import java.util.Iterator;
 
 import io.zeebe.gossip.GossipConfiguration;
-import io.zeebe.gossip.GossipMathUtil;
+import io.zeebe.gossip.GossipMath;
 import io.zeebe.gossip.membership.MembershipList;
 import io.zeebe.gossip.protocol.*;
 
@@ -84,7 +84,7 @@ public class DisseminationComponent implements MembershipEventSupplier, Membersh
         final int clusterSize = 1 + memberList.size();
         final int multiplier = configuration.getRetransmissionMultiplier();
 
-        final int spreadLimit = GossipMathUtil.gossipPeriodsToSpread(multiplier, clusterSize);
+        final int spreadLimit = GossipMath.gossipPeriodsToSpread(multiplier, clusterSize);
 
         membershipEventBuffer.removeEventsWithSpreadCountGreaterThan(spreadLimit);
     }

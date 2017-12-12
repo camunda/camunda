@@ -71,13 +71,24 @@ public class RoundRobinMemberIterator implements Iterator<Member>, GossipMembers
     @Override
     public void onAdd(Member member)
     {
-        playList.addInt(index, members.size() - 1);
+        final int i = members.indexOf(member);
+
+        if (index < playList.size())
+        {
+            playList.addInt(index, i);
+        }
+        else
+        {
+            playList.addInt(i);
+        }
     }
 
     @Override
     public void onRemove(Member member)
     {
-        playList.removeInt(members.size());
+        final int i = members.indexOf(member);
+
+        playList.removeInt(i);
     }
 
 }

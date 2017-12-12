@@ -52,7 +52,7 @@ public class Gossip implements Actor, GossipController
 
         final GossipEventSender gossipEventSender = new GossipEventSender(clientTransport, serverTransport, memberList, disseminationComponent, gossipEventFactory);
 
-        final GossipContext context = new GossipContext(configuration, memberList, disseminationComponent, serverTransport, clientTransport, gossipEventSender, gossipEventFactory);
+        final GossipContext context = new GossipContext(configuration, memberList, disseminationComponent, gossipEventSender, gossipEventFactory);
 
         failureDetectionController = new PingController(context);
 
@@ -74,15 +74,21 @@ public class Gossip implements Actor, GossipController
     @Override
     public CompletableFuture<Void> join(List<SocketAddress> contactPoints)
     {
-        // TODO complete future when joined
-        return deferredCommands.runAsync(future -> joinController.join(contactPoints));
+        return deferredCommands.runAsync(future -> joinController.join(contactPoints, future));
     }
 
     @Override
     public CompletableFuture<Void> leave()
     {
-        // TODO leave gossip cluster
-        return null;
+        return deferredCommands.runAsync(future ->
+        {
+            joinController.leave(future);
+
+            future.thenAccept(v ->
+            {
+                // TODO clear / stop other stuff
+            });
+        });
     }
 
     @Override
@@ -92,6 +98,7 @@ public class Gossip implements Actor, GossipController
 
         workCount += deferredCommands.doWork();
         workCount += joinController.doWork();
+
         workCount += subscriptionController.doWork();
         workCount += failureDetectionController.doWork();
         workCount += pingReqController.doWork();

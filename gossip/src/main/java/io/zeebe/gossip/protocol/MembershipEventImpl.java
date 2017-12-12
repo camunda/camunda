@@ -49,4 +49,74 @@ public class MembershipEventImpl implements MembershipEvent
         return memberId;
     }
 
+    @Override
+    public int hashCode()
+    {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((gossipTerm == null) ? 0 : gossipTerm.hashCode());
+        result = prime * result + ((memberId == null) ? 0 : memberId.hashCode());
+        result = prime * result + ((type == null) ? 0 : type.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (this == obj)
+        {
+            return true;
+        }
+        if (obj == null)
+        {
+            return false;
+        }
+        if (getClass() != obj.getClass())
+        {
+            return false;
+        }
+        final MembershipEventImpl other = (MembershipEventImpl) obj;
+        if (gossipTerm == null)
+        {
+            if (other.gossipTerm != null)
+            {
+                return false;
+            }
+        }
+        else if (!gossipTerm.equals(other.gossipTerm))
+        {
+            return false;
+        }
+        if (memberId == null)
+        {
+            if (other.memberId != null)
+            {
+                return false;
+            }
+        }
+        else if (!memberId.equals(other.memberId))
+        {
+            return false;
+        }
+        if (type != other.type)
+        {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public String toString()
+    {
+        final StringBuilder builder = new StringBuilder();
+        builder.append("MembershipEvent [memberId=");
+        builder.append(memberId);
+        builder.append(", type=");
+        builder.append(type);
+        builder.append(", gossipTerm=");
+        builder.append(gossipTerm);
+        builder.append("]");
+        return builder.toString();
+    }
+
 }

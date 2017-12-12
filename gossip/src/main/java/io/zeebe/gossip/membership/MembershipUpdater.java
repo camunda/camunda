@@ -42,9 +42,10 @@ public final class MembershipUpdater implements MembershipEventConsumer
 
         if (event.getMemberId().equals(memberList.self().getId()))
         {
-            if (event.getType() == MembershipEventType.SUSPECT)
+            final Member self = memberList.self();
+
+            if (event.getType() == MembershipEventType.SUSPECT && event.getGossipTerm().isEqual(self.getTerm()))
             {
-                final Member self = memberList.self();
                 // need to increment term when update the status
                 self.getTerm().increment();
 
@@ -114,16 +115,21 @@ public final class MembershipUpdater implements MembershipEventConsumer
                         }
                         break;
                     }
+                    default:
+                        break;
                 }
                 break;
             }
             case CONFIRM:
             case LEAVE:
             {
-                LOG.debug("Remove member '{}', status = {}, gossip-term: {}", event.getMemberId(), event.getType(), event.getGossipTerm());
+                if (member.getStatus() != MembershipStatus.DEAD)
+                {
+                    LOG.info("Remove member '{}', status = {}, gossip-term: {}", event.getMemberId(), event.getType(), event.getGossipTerm());
 
-                memberList.removeMember(member.getId());
-                changed = true;
+                    memberList.removeMember(member.getId());
+                    changed = true;
+                }
                 break;
             }
             default:

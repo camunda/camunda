@@ -18,9 +18,11 @@ package io.zeebe.gossip;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
 
 import io.zeebe.clustering.gossip.GossipEventType;
 import io.zeebe.clustering.gossip.MembershipEventType;
+import io.zeebe.gossip.protocol.MembershipEvent;
 import io.zeebe.test.util.agent.ControllableTaskScheduler;
 import org.junit.Rule;
 import org.junit.Test;
@@ -160,6 +162,97 @@ public class GossipJoinTest
         // then
         assertThat(gossip1.receivedMembershipEvent(MembershipEventType.JOIN, gossip3)).isTrue();
         assertThat(gossip2.receivedMembershipEvent(MembershipEventType.JOIN, gossip3)).isTrue();
+    }
+
+    @Test
+    public void shouldCompleteFutureWhenJoined()
+    {
+        // when
+        final CompletableFuture<Void> future = gossip2.join(gossip1);
+
+        actorScheduler.waitUntilDone();
+        actorScheduler.waitUntilDone();
+
+        // then
+        assertThat(gossip2.receivedEvent(GossipEventType.SYNC_RESPONSE, gossip1)).isTrue();
+        assertThat(future).isDone().hasNotFailed();
+    }
+
+    @Test
+    public void shouldCompleteFutureWithFailureWhenAlreadyJoined()
+    {
+        // given
+        gossip2.join(gossip1);
+
+        actorScheduler.waitUntilDone();
+        actorScheduler.waitUntilDone();
+
+        // when
+        final CompletableFuture<Void> future = gossip2.join(gossip1);
+
+        actorScheduler.waitUntilDone();
+
+        // then
+        assertThat(future).isDone().withFailMessage("Already joined.");
+    }
+
+    @Test
+    public void shouldJoinAfterLeave()
+    {
+        // given
+        gossip2.join(gossip1);
+
+        actorScheduler.waitUntilDone();
+        actorScheduler.waitUntilDone();
+
+        final CompletableFuture<Void> leaveFuture = gossip2.getController().leave();
+        actorScheduler.waitUntilDone();
+
+        assertThat(leaveFuture).isDone().hasNotFailed();
+
+        // when
+        final CompletableFuture<Void> joinFuture = gossip2.join(gossip1);
+        actorScheduler.waitUntilDone();
+        actorScheduler.waitUntilDone();
+
+        // then
+        assertThat(joinFuture).isDone().hasNotFailed();
+        assertThat(gossip1.hasMember(gossip2)).isTrue();
+    }
+
+    @Test
+    public void shouldIncreaseGossipTermOnJoin()
+    {
+        // given
+        gossip2.join(gossip1);
+
+        actorScheduler.waitUntilDone();
+        actorScheduler.waitUntilDone();
+
+        final CompletableFuture<Void> leaveFuture = gossip2.getController().leave();
+        actorScheduler.waitUntilDone();
+
+        assertThat(leaveFuture).isDone().hasNotFailed();
+
+        // when
+        final CompletableFuture<Void> joinFuture = gossip2.join(gossip1);
+        actorScheduler.waitUntilDone();
+        actorScheduler.waitUntilDone();
+
+        // then
+        assertThat(joinFuture).isDone().hasNotFailed();
+
+        final MembershipEvent leaveEvent = gossip1.getReceivedMembershipEvents(MembershipEventType.LEAVE, gossip2)
+                .findFirst()
+                .get();
+
+        final MembershipEvent secondJoinEvent = gossip1.getReceivedMembershipEvents(MembershipEventType.JOIN, gossip2)
+                .distinct()
+                .skip(1)
+                .findFirst()
+                .get();
+
+        assertThat(secondJoinEvent.getGossipTerm().isGreaterThan(leaveEvent.getGossipTerm())).isTrue();
     }
 
 }

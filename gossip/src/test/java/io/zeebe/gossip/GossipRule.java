@@ -21,6 +21,7 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -154,11 +155,11 @@ public class GossipRule extends ExternalResource
             .thenCompose(v -> clientSendBuffer.closeAsync());
     }
 
-    public void join(GossipRule... contactPoints)
+    public CompletableFuture<Void> join(GossipRule... contactPoints)
     {
         final List<SocketAddress> contactPointList = Arrays.asList(contactPoints).stream().map(c -> c.socketAddress).collect(toList());
 
-        getController().join(contactPointList);
+        return getController().join(contactPointList);
     }
 
     public void interruptConnectionTo(GossipRule other)
@@ -191,11 +192,16 @@ public class GossipRule extends ExternalResource
 
     public boolean receivedMembershipEvent(MembershipEventType eventType, GossipRule member)
     {
-        return receivedEventsCollector.membershipEvents()
-                .filter(e -> e.getType() == eventType)
-                .filter(e -> e.getMemberId().equals(member.memberId))
+        return getReceivedMembershipEvents(eventType, member)
                 .findFirst()
                 .isPresent();
+    }
+
+    public Stream<MembershipEvent> getReceivedMembershipEvents(MembershipEventType eventType, GossipRule member)
+    {
+        return receivedEventsCollector.membershipEvents()
+                .filter(e -> e.getType() == eventType)
+                .filter(e -> e.getMemberId().equals(member.memberId));
     }
 
     public void clearReceivedEvents()

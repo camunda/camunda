@@ -76,4 +76,41 @@ public class GossipTerm
         builder.append("]");
         return builder.toString();
     }
+
+    @Override
+    public int hashCode()
+    {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + (int) (epoch ^ (epoch >>> 32));
+        result = prime * result + (int) (heartbeat ^ (heartbeat >>> 32));
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (this == obj)
+        {
+            return true;
+        }
+        if (obj == null)
+        {
+            return false;
+        }
+        if (getClass() != obj.getClass())
+        {
+            return false;
+        }
+        final GossipTerm other = (GossipTerm) obj;
+        if (epoch != other.epoch)
+        {
+            return false;
+        }
+        if (heartbeat != other.heartbeat)
+        {
+            return false;
+        }
+        return true;
+    }
 }

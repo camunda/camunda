@@ -19,8 +19,6 @@ import io.zeebe.gossip.dissemination.DisseminationComponent;
 import io.zeebe.gossip.membership.MembershipList;
 import io.zeebe.gossip.protocol.GossipEventFactory;
 import io.zeebe.gossip.protocol.GossipEventSender;
-import io.zeebe.transport.BufferingServerTransport;
-import io.zeebe.transport.ClientTransport;
 
 public class GossipContext
 {
@@ -37,8 +35,6 @@ public class GossipContext
             GossipConfiguration configuration,
             MembershipList memberList,
             DisseminationComponent disseminationComponent,
-            BufferingServerTransport serverTransport,
-            ClientTransport clientTransport,
             GossipEventSender gossipEventSender,
             GossipEventFactory gossipEventFactory)
     {

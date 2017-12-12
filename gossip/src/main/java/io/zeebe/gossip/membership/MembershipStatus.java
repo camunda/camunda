@@ -19,5 +19,7 @@ public enum MembershipStatus
 {
     ALIVE,
 
-    SUSPECT;
+    SUSPECT,
+
+    DEAD;
 }

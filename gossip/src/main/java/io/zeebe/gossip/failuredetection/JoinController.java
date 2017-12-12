@@ -16,11 +16,13 @@
 package io.zeebe.gossip.failuredetection;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 import io.zeebe.clustering.gossip.MembershipEventType;
 import io.zeebe.gossip.*;
 import io.zeebe.gossip.dissemination.DisseminationComponent;
 import io.zeebe.gossip.membership.Member;
+import io.zeebe.gossip.membership.MembershipList;
 import io.zeebe.gossip.protocol.*;
 import io.zeebe.transport.ClientRequest;
 import io.zeebe.transport.SocketAddress;
@@ -38,6 +40,7 @@ public class JoinController implements Actor
     private static final int TRANSITION_TIMEOUT = 2;
     private static final int TRANSITION_FAIL = 3;
     private static final int TRANSITION_JOIN = 4;
+    private static final int TRANSITION_LEAVE = 5;
 
     private final GossipConfiguration config;
 
@@ -53,11 +56,16 @@ public class JoinController implements Actor
         final WaitState<Context> joinedState = ctx ->
         { };
 
+        final WaitState<Context> leftState = ctx ->
+        { };
+
         final SendJoinState sendJoinState = new SendJoinState(context.getDisseminationComponent(), context.getMemberList().self(), context.getGossipEventSender());
         final AwaitJoinResponseState awaitJoinResponseState = new AwaitJoinResponseState(context.getGossipEventFactory());
         final SendSyncRequestState sendSyncRequestState = new SendSyncRequestState(context.getGossipEventSender());
         final AwaitSyncResponseState awaitSyncResponseState = new AwaitSyncResponseState();
         final AwaitNextJoinIntervalState awaitRetryState = new AwaitNextJoinIntervalState();
+        final LeaveState leaveState = new LeaveState(context.getDisseminationComponent(), context.getGossipEventSender(), context.getMemberList());
+        final AwaitLeaveResponseState awaitLeaveResponseState = new AwaitLeaveResponseState(context.getGossipEventFactory());
 
         this.stateMachine = StateMachine.<Context> builder(sm -> new Context(sm, context.getGossipEventFactory()))
                 .initialState(awaitJoinState)
@@ -71,6 +79,11 @@ public class JoinController implements Actor
                 .from(awaitSyncResponseState).take(TRANSITION_TIMEOUT).to(awaitRetryState)
                 .from(awaitRetryState).take(TRANSITION_DEFAULT).to(sendJoinState)
                 .from(awaitRetryState).take(TRANSITION_JOIN).to(sendJoinState)
+                .from(joinedState).take(TRANSITION_LEAVE).to(leaveState)
+                .from(leaveState).take(TRANSITION_DEFAULT).to(awaitLeaveResponseState)
+                .from(awaitLeaveResponseState).take(TRANSITION_RECEIVED).to(leftState)
+                .from(awaitLeaveResponseState).take(TRANSITION_TIMEOUT).to(leftState)
+                .from(leftState).take(TRANSITION_JOIN).to(sendJoinState)
                 .build();
     }
 
@@ -80,16 +93,38 @@ public class JoinController implements Actor
         return stateMachine.doWork();
     }
 
-    public void join(List<SocketAddress> contactPoints)
+    public void join(List<SocketAddress> contactPoints, CompletableFuture<Void> future)
     {
         final boolean success = stateMachine.tryTake(TRANSITION_JOIN);
         if (success)
         {
-            LOG.debug("Join cluster with known contact points: {}", contactPoints);
+            LOG.info("Join cluster with known contact points: {}", contactPoints);
 
             final Context context = stateMachine.getContext();
             context.contactPoints = new ArrayList<>(contactPoints);
             context.requests = new ArrayList<>(contactPoints.size());
+            context.future = future;
+        }
+        else
+        {
+            future.completeExceptionally(new IllegalStateException("Already joined."));
+        }
+    }
+
+    public void leave(CompletableFuture<Void> future)
+    {
+        final boolean success = stateMachine.tryTake(TRANSITION_LEAVE);
+        if (success)
+        {
+            LOG.info("Leave cluster");
+
+            final Context context = stateMachine.getContext();
+            context.clear();
+            context.future = future;
+        }
+        else
+        {
+            future.completeExceptionally(new IllegalStateException("Not joined."));
         }
     }
 
@@ -99,9 +134,10 @@ public class JoinController implements Actor
 
         private List<SocketAddress> contactPoints;
         private List<ClientRequest> requests;
-        private long joinTimeout;
+        private long timeout;
         private long nextJoinInterval;
         private SocketAddress contactPoint;
+        private CompletableFuture<Void> future;
 
         Context(StateMachine<Context> stateMachine, GossipEventFactory eventFactory)
         {
@@ -115,6 +151,7 @@ public class JoinController implements Actor
             contactPoints = Collections.emptyList();
             requests = Collections.emptyList();
             contactPoint = null;
+            future = null;
         }
     }
 
@@ -134,6 +171,8 @@ public class JoinController implements Actor
         @Override
         public void work(Context context) throws Exception
         {
+            self.getTerm().increment();
+
             disseminationComponent.addMembershipEvent()
                 .memberId(self.getId())
                 .type(MembershipEventType.JOIN)
@@ -150,7 +189,7 @@ public class JoinController implements Actor
                 }
             }
 
-            context.joinTimeout = ClockUtil.getCurrentTimeInMillis() + config.getJoinTimeout();
+            context.timeout = ClockUtil.getCurrentTimeInMillis() + config.getJoinTimeout();
             context.take(TRANSITION_DEFAULT);
         }
     }
@@ -190,7 +229,7 @@ public class JoinController implements Actor
                 context.contactPoint = contactPoint;
                 context.take(TRANSITION_RECEIVED);
             }
-            else if (currentTime >= context.joinTimeout)
+            else if (currentTime >= context.timeout)
             {
                 LOG.warn("Failed to contact any of '{}'. Try again in {}ms", context.contactPoints, config.getJoinInterval());
 
@@ -240,6 +279,9 @@ public class JoinController implements Actor
 
                 response.process();
 
+                LOG.info("Joined cluster successfully");
+                context.future.complete(null);
+
                 context.clear();
                 context.take(TRANSITION_DEFAULT);
             }
@@ -273,6 +315,94 @@ public class JoinController implements Actor
             if (ClockUtil.getCurrentTimeInMillis() >= context.nextJoinInterval)
             {
                 context.take(TRANSITION_DEFAULT);
+            }
+        }
+    }
+
+    private class LeaveState implements TransitionState<Context>
+    {
+        private final DisseminationComponent disseminationComponent;
+        private final GossipEventSender gossipEventSender;
+        private final MembershipList membershipList;
+
+        LeaveState(DisseminationComponent disseminationComponent, GossipEventSender gossipEventSender, MembershipList membershipList)
+        {
+            this.disseminationComponent = disseminationComponent;
+            this.gossipEventSender = gossipEventSender;
+            this.membershipList = membershipList;
+        }
+
+        @Override
+        public void work(Context context) throws Exception
+        {
+            final Member self = membershipList.self();
+
+            self.getTerm().increment();
+
+            disseminationComponent.addMembershipEvent()
+                .memberId(self.getId())
+                .type(MembershipEventType.LEAVE)
+                .gossipTerm(self.getTerm());
+
+            final int clusterSize = membershipList.size();
+            final int multiplier = config.getRetransmissionMultiplier();
+            final int spreadCount = Math.min(GossipMath.gossipPeriodsToSpread(multiplier, clusterSize), clusterSize);
+
+            // TODO should it be more random? - maybe ignore suspicious members?
+            final Iterator<Member> members = membershipList.iterator();
+
+            context.requests = new ArrayList<>(spreadCount);
+
+            for (int n = 0; n < spreadCount; n++)
+            {
+                final Member member = members.next();
+
+                LOG.trace("Spread LEAVE event to '{}'", member.getAddress());
+
+                final ClientRequest clientRequest = gossipEventSender.sendPing(member.getAddress());
+                context.requests.add(clientRequest);
+            }
+
+            context.timeout = ClockUtil.getCurrentTimeInMillis() + config.getLeaveTimeout();
+            context.take(TRANSITION_DEFAULT);
+        }
+    }
+
+    private class AwaitLeaveResponseState implements WaitState<Context>
+    {
+        private final GossipEventResponse response;
+
+        AwaitLeaveResponseState(GossipEventFactory gossipEventFactory)
+        {
+            this.response = new GossipEventResponse(gossipEventFactory.createFailureDetectionEvent());
+        }
+
+        @Override
+        public void work(Context context) throws Exception
+        {
+            boolean receivedResponses = true;
+
+            for (int r = 0; r < context.requests.size() && receivedResponses; r++)
+            {
+                final ClientRequest request = context.requests.get(r);
+                response.wrap(request);
+
+                receivedResponses &= (response.isReceived() || response.isFailed());
+            }
+
+            if (receivedResponses)
+            {
+                LOG.info("Left cluster successfully");
+
+                context.future.complete(null);
+                context.take(TRANSITION_RECEIVED);
+            }
+            else if (ClockUtil.getCurrentTimeInMillis() >= context.timeout)
+            {
+                LOG.info("Left cluster but timeout is reached before LEAVE event is spread to all members");
+
+                context.future.complete(null);
+                context.take(TRANSITION_TIMEOUT);
             }
         }
     }

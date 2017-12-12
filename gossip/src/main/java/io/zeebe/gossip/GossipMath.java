@@ -15,7 +15,7 @@
  */
 package io.zeebe.gossip;
 
-public class GossipMathUtil
+public class GossipMath
 {
 
     public static int gossipPeriodsToSpread(int repeatMult, int clusterSize)
