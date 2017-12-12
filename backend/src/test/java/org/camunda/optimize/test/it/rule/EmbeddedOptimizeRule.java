@@ -179,8 +179,8 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   }
 
   protected void starting(Description description) {
-    startOptimize();
     try {
+      startOptimize();
       resetImportStartIndexes();
     } catch (Exception e) {
       //nothing to do
