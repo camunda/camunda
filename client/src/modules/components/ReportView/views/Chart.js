@@ -57,19 +57,30 @@ export default class Chart extends React.Component {
   createNewChart = (data, type) => {
     this.destroyChart();
 
-    const datasetOptions = {borderColor: undefined, backgroundColor: undefined, borderWidth: undefined};
+    let datasetOptions;
     switch(type) {
       case 'pie':
-        datasetOptions.backgroundColor = colors;
+        datasetOptions = {
+          borderColor: undefined, 
+          backgroundColor: colors, 
+          borderWidth: undefined
+        };
         break;
       case 'line':
       case 'bar':
-        datasetOptions.borderColor = '#00a8ff';
-        datasetOptions.backgroundColor = '#e5f6ff';
-        datasetOptions.borderWidth = 2;
+        datasetOptions = {
+          borderColor: '#00a8ff', 
+          backgroundColor: '#e5f6ff', 
+          borderWidth: 2
+        };
         break;
       default:
-        // is already defined;
+        datasetOptions = {
+          borderColor: undefined, 
+          backgroundColor: undefined, 
+          borderWidth: undefined
+        };
+        break;
     }
     
 
