@@ -180,7 +180,11 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
   protected void starting(Description description) {
     startOptimize();
-    resetImportStartIndexes();
+    try {
+      resetImportStartIndexes();
+    } catch (Exception e) {
+      //nothing to do
+    }
   }
 
   public String getAuthenticationToken() {
