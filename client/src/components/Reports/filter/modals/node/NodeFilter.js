@@ -87,8 +87,8 @@ export default class NodeFilter extends React.Component {
         )}
       </Modal.Content>
       <Modal.Actions>
-        <Button onClick={this.props.close}>Abort</Button>
-        <Button type='primary' className='Button--blue' disabled={!this.isNodeSelected()} onClick={this.createFilter}>Create Filter</Button>
+        <Button onClick={this.props.close}>Cancel</Button>
+        <Button type='primary' color='blue' disabled={!this.isNodeSelected()} onClick={this.createFilter}>Create Filter</Button>
       </Modal.Actions>
     </Modal>);
   }

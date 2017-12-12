@@ -75,7 +75,7 @@ export default class EntityList extends React.Component {
 
     let createButton = null;
     if(this.props.operations.includes('create')) {
-      createButton = <Button className='Button--green EntityList__createButton' onClick={this.createEntity}>Create new {this.props.label}</Button>;
+      createButton = <Button color='green' className='EntityList__createButton' onClick={this.createEntity}>Create new {this.props.label}</Button>;
     }
 
     const createLink = <a className='EntityList__createLink' role='button' onClick={this.createEntity}>Create a new {this.props.label}…</a>;

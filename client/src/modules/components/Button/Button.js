@@ -6,6 +6,8 @@ import './Button.css';
 export default function Button(props) {
   const filteredProps = {...props};
   delete filteredProps.active;
+  delete filteredProps.color;
+  delete filteredProps.type;
   if (props.tag === 'a') {
     return (<Link 
               {...filteredProps} 
