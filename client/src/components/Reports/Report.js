@@ -195,6 +195,8 @@ export default class Report extends React.Component {
           dimensions.height = '400px';
           dimensions.width = '1000px';
           break;
+        default:
+          // is already defined;
       }
     }
     return dimensions;

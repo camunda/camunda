@@ -68,6 +68,8 @@ export default class Chart extends React.Component {
         datasetOptions.backgroundColor = '#e5f6ff';
         datasetOptions.borderWidth = 2;
         break;
+      default:
+        // is already defined;
     }
     
 

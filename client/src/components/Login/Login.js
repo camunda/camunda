@@ -68,7 +68,7 @@ export default class Login extends React.Component {
             <Input className='Login__input' placeholder='Password' value={password} onChange={this.handleInputChange} type='password' name='password' reference={input => this.passwordField = input} />
           </div>
         </div>
-        <Button type='submit' onClick={this.submit} type='primary' color='blue' className='Login__button'>Login</Button>
+        <Button onClick={this.submit} type='primary' color='blue' className='Login__button'>Login</Button>
       </form>
     );
   }
