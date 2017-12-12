@@ -225,7 +225,9 @@ export default class Report extends React.Component {
             <Button className="Report__close-share-modal-button" onClick={this.closeModal}>Close</Button>
           </Modal.Actions>
         </Modal>
-        <ReportView report={reportResult} />
+        <div className='Report__content' style={this.retrieveReportViewDimensions()}>
+          <ReportView report={reportResult} />
+        </div>
       </div>
     )
   }
