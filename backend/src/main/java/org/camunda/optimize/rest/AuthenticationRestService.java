@@ -38,6 +38,7 @@ public class AuthenticationRestService {
 
   /**
    * Authenticate an user given his credentials.
+   *
    * @param credentials the credentials of the user.
    * @return Response code 200 (OK) if it was possible to authenticate the user, otherwise status code 401 (Unauthorized).
    */
@@ -61,6 +62,7 @@ public class AuthenticationRestService {
 
   /**
    * An endpoint to test if you are authenticated.
+   *
    * @return Status code 200 (OK) if you are authenticated.
    */
   @Secured
@@ -72,13 +74,14 @@ public class AuthenticationRestService {
 
   /**
    * Logout yourself from Optimize.
+   *
    * @param requestContext
    * @return Status code 200 (OK) if the logout was successful.
    */
   @Secured
   @GET
   @Path("logout")
-  public Response logout(@Context  ContainerRequestContext requestContext) {
+  public Response logout(@Context ContainerRequestContext requestContext) {
     String token = AuthenticationUtil.getToken(requestContext);
     tokenService.expireToken(token);
     return Response.status(200).entity("OK").build();

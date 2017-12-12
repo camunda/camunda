@@ -86,7 +86,7 @@ public class DurationHeatmapTargetValueIT {
         .request()
         .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
         .put(entity);
-    assertThat(response.getStatus(),is(200));
+    assertThat(response.getStatus(),is(204));
   }
 
   @Test

@@ -31,12 +31,9 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 import java.util.List;
-
-import static org.camunda.optimize.rest.util.RestResponseUtil.buildServerErrorResponse;
 
 @Secured
 @Path("/report")
@@ -59,6 +56,7 @@ public class ReportRestService {
 
   /**
    * Creates an empty report.
+   *
    * @return the id of the report
    */
   @POST
@@ -72,7 +70,8 @@ public class ReportRestService {
 
   /**
    * Updates the given fields of a report to the given id.
-   * @param reportId the id of the report
+   *
+   * @param reportId      the id of the report
    * @param updatedReport report that needs to be updated. Only the fields that are defined here are actually updated.
    */
   @PUT
@@ -92,15 +91,16 @@ public class ReportRestService {
 
   /**
    * Get a list of all available reports.
+   *
    * @throws IOException If there was a problem retrieving the reports from Elasticsearch.
    */
   @GET
   @Produces(MediaType.APPLICATION_JSON)
   public List<ReportDefinitionDto> getStoredReports(@Context UriInfo uriInfo) throws IOException {
-      List<ReportDefinitionDto> reports = reportReader.getAllReports();
-      MultivaluedMap<String, String> queryParameters = uriInfo.getQueryParameters();
-      reports = QueryParamAdjustmentUtil.adjustReportResultsToQueryParameters(reports, queryParameters);
-      return reports;
+    List<ReportDefinitionDto> reports = reportReader.getAllReports();
+    MultivaluedMap<String, String> queryParameters = uriInfo.getQueryParameters();
+    reports = QueryParamAdjustmentUtil.adjustReportResultsToQueryParameters(reports, queryParameters);
+    return reports;
   }
 
   /**
@@ -125,6 +125,7 @@ public class ReportRestService {
   /**
    * Retrieves the report definition to the given report id and then
    * evaluate this report and return the result.
+   *
    * @param reportId the id of the report
    * @return A report definition that is also containing the actual result of the report evaluation.
    */
@@ -141,6 +142,7 @@ public class ReportRestService {
 
   /**
    * Evaluates the given report and returns the result.
+   *
    * @return A report definition that is also containing the actual result of the report evaluation.
    */
   @POST

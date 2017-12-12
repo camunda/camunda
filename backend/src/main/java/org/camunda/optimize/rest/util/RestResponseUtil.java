@@ -6,14 +6,6 @@ import javax.ws.rs.core.Response;
 
 public class RestResponseUtil {
 
-  public static Response buildOkResponse() {
-    return Response.status(200).entity("OK").build();
-  }
-
-  public static Response buildOkResponse(Object dtoMessage) {
-    return Response.status(200).entity(dtoMessage).build();
-  }
-
   public static Response buildServerErrorResponse(Throwable e) {
     if (e.getClass().equals(NotAuthorizedException.class)) {
       return buildServerAuthenticationErrorResponse(e.getMessage());

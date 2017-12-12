@@ -18,7 +18,6 @@ import javax.ws.rs.core.UriInfo;
 import java.util.List;
 
 import static org.camunda.optimize.rest.queryparam.adjustment.QueryParamAdjustmentUtil.adjustVariableValuesToQueryParameters;
-import static org.camunda.optimize.rest.util.RestResponseUtil.buildServerErrorResponse;
 
 @Path("/variables")
 @Component

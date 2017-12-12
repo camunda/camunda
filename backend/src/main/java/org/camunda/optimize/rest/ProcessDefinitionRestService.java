@@ -28,13 +28,9 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-
-import static org.camunda.optimize.rest.util.RestResponseUtil.buildOkResponse;
-import static org.camunda.optimize.rest.util.RestResponseUtil.buildServerErrorResponse;
 
 @Secured
 @Path("/process-definition")
@@ -61,6 +57,7 @@ public class ProcessDefinitionRestService {
 
   /**
    * Retrieves all process definition stored in Optimize.
+   *
    * @param includeXml A parameter saying if the process definition xml should be included to the response.
    * @return A collection of process definitions.
    * @throws OptimizeException Something went wrong while fetching the process definitions.
@@ -74,18 +71,20 @@ public class ProcessDefinitionRestService {
 
   /**
    * Retrieves all process definition stored in Optimize and groups them by key.
+   *
    * @return A collection of process definitions.
    * @throws OptimizeException Something went wrong while fetching the process definitions.
    */
   @GET
   @Produces(MediaType.APPLICATION_JSON)
   @Path("/groupedByKey")
-  public List<ProcessDefinitionGroupOptimizeDto> getProcessDefinitionsGroupedByKey () throws OptimizeException {
+  public List<ProcessDefinitionGroupOptimizeDto> getProcessDefinitionsGroupedByKey() throws OptimizeException {
     return processDefinitionReader.getProcessDefinitionsGroupedByKey();
   }
 
   /**
    * Get the process definition xml to a given process definition id.
+   *
    * @param processDefinitionId The process definition id the xml should be returned.
    * @return The process definition xml requested.
    */
@@ -105,6 +104,7 @@ public class ProcessDefinitionRestService {
 
   /**
    * Get the process definition xmls to the given process definition ids.
+   *
    * @param ids List of process Definition ids for which the xmls have to be returned
    * @return The process definition xml requested.
    */
@@ -112,12 +112,13 @@ public class ProcessDefinitionRestService {
   @Path("/xml")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public Map<String,String> getProcessDefinitionsXml(@QueryParam("ids") List<String> ids) {
+  public Map<String, String> getProcessDefinitionsXml(@QueryParam("ids") List<String> ids) {
     return processDefinitionReader.getProcessDefinitionsXml(ids);
   }
 
   /**
    * Get the frequency heat map of a certain process definition.
+   *
    * @param processDefinitionId Telling of which process definition the heat map is requested.
    * @return the frequency heat map.
    */
@@ -130,6 +131,7 @@ public class ProcessDefinitionRestService {
 
   /**
    * Get the frequency heat map of a certain process definition.
+   *
    * @return the frequency heat map.
    */
   @POST
@@ -142,6 +144,7 @@ public class ProcessDefinitionRestService {
 
   /**
    * Get the duration heat map of a certain process definition.
+   *
    * @param processDefinitionId Telling of which process definition the heat map is requested.
    * @return the duration heat map.
    */
@@ -154,6 +157,7 @@ public class ProcessDefinitionRestService {
 
   /**
    * Get the duration heat map of a certain process definition.
+   *
    * @return the duration heat map.
    */
   @POST
@@ -180,7 +184,7 @@ public class ProcessDefinitionRestService {
 
   /**
    * Stores the given target values of a duration heatmap related to the given process definition in elasticsearch.
-   *
+   * <p>
    * Note: Storing the values to the same process definition does overwrite the old values.
    *
    * @param targetValueDto target values related to a certain process definition
@@ -190,13 +194,13 @@ public class ProcessDefinitionRestService {
   @Path("/heatmap/duration/target-value")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public Response persistTargetValues(DurationHeatmapTargetValueDto targetValueDto) {
+  public void persistTargetValues(DurationHeatmapTargetValueDto targetValueDto) {
     targetValueWriter.persistTargetValue(targetValueDto);
-    return buildOkResponse();
   }
 
   /**
    * Get the branch analysis from the given query information.
+   *
    * @return All information concerning the branch analysis.
    */
   @POST

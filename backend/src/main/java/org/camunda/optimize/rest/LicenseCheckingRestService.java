@@ -13,10 +13,6 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-
-import static org.camunda.optimize.rest.util.RestResponseUtil.buildOkResponse;
-import static org.camunda.optimize.rest.util.RestResponseUtil.buildServerErrorResponse;
 
 
 @Path("/license")

@@ -25,12 +25,9 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 import java.util.List;
-
-import static org.camunda.optimize.rest.util.RestResponseUtil.buildServerErrorResponse;
 
 @Secured
 @Path("/dashboard")
@@ -48,6 +45,7 @@ public class DashboardRestService {
 
   /**
    * Creates an empty dashboard.
+   *
    * @return the id of the dashboard
    */
   @POST
@@ -61,7 +59,8 @@ public class DashboardRestService {
 
   /**
    * Updates the given fields of a dashboard to the given id.
-   * @param dashboardId the id of the dashboard
+   *
+   * @param dashboardId      the id of the dashboard
    * @param updatedDashboard dashboard that needs to be updated. Only the fields that are defined here are actually updated.
    */
   @PUT
@@ -69,8 +68,8 @@ public class DashboardRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public void updateDashboard(@Context ContainerRequestContext requestContext,
-                           @PathParam("id") String dashboardId,
-                           DashboardDefinitionDto updatedDashboard) throws OptimizeException, JsonProcessingException {
+                              @PathParam("id") String dashboardId,
+                              DashboardDefinitionDto updatedDashboard) throws OptimizeException, JsonProcessingException {
     updatedDashboard.setId(dashboardId);
     String token = AuthenticationUtil.getToken(requestContext);
     String userId = tokenService.getTokenIssuer(token);
@@ -80,6 +79,7 @@ public class DashboardRestService {
 
   /**
    * Get a list of all available dashboards.
+   *
    * @throws IOException If there was a problem retrieving the dashboards from Elasticsearch.
    */
   @GET
