@@ -20,7 +20,7 @@ const options = {
       {key: 'number', label: 'Number'},
       {key: 'table', label: 'Table'},
       {key: 'bar', label: 'Bar Chart'},
-      {key: 'line', label: 'Line Chart'},
+      {key: 'line', label: 'Area Chart'},
       {key: 'pie', label: 'Pie Chart'},
       {key: 'heat', label: 'Heatmap'},
       {key: 'json', label: 'JSON Dump'}
