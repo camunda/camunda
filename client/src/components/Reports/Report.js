@@ -168,9 +168,36 @@ export default class Report extends React.Component {
         </div>
 
         <ControlPanel {...data} onChange={this.updateReport} />
-        <ReportView report={reportResult} />
+        <div className='Report__content' style={this.retrieveReportViewDimensions()}>
+          <ReportView report={reportResult} />
+        </div>
       </div>
     )
+  }
+
+  retrieveReportViewDimensions = () => {
+    const dimensions =  {height: '100%', width: '100%'};
+    
+    if(this.state.reportResult && this.state.reportResult.data) {
+      const data = this.state.reportResult.data;
+      switch(data.visualization) {
+        case 'table':
+          dimensions.height = '100%';
+          dimensions.width = '100%';
+          break;
+        case 'heat':
+          dimensions.height = '750px';
+          dimensions.width = '100%';
+          break;
+        case 'bar':
+        case 'line':
+        case 'pie':
+          dimensions.height = '400px';
+          dimensions.width = '1000px';
+          break;
+      }
+    }
+    return dimensions;
   }
 
   renderViewMode = () => {
