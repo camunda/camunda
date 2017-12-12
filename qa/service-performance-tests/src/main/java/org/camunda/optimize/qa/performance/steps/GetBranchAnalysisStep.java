@@ -1,6 +1,10 @@
 package org.camunda.optimize.qa.performance.steps;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
@@ -14,20 +18,23 @@ import org.camunda.optimize.qa.performance.framework.PerfTestContext;
 import org.camunda.optimize.qa.performance.framework.PerfTestStep;
 import org.camunda.optimize.qa.performance.framework.PerfTestStepResult;
 import org.camunda.optimize.qa.performance.util.PerfTestException;
+import org.camunda.optimize.service.util.CustomDeserializer;
+import org.camunda.optimize.service.util.CustomSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import ru.yandex.qatools.allure.annotations.Step;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 public class GetBranchAnalysisStep extends PerfTestStep {
 
   private Logger logger = LoggerFactory.getLogger(this.getClass());
   private List<FilterDto> filter;
-
-  private ObjectMapper objectMapper = new ObjectMapper();
 
   public GetBranchAnalysisStep(List<FilterDto> filter) {
     this.filter = filter;
@@ -36,6 +43,7 @@ public class GetBranchAnalysisStep extends PerfTestStep {
   @Override
   @Step ("Get branch analysis from Optimize")
   public PerfTestStepResult execute(PerfTestContext context) {
+    objectMapper = initMapper(context);
     CloseableHttpClient client = HttpClientBuilder.create().build();
     try {
       return getHeatmap(context, client);

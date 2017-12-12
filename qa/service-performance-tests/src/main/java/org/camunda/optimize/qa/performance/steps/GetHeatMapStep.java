@@ -1,6 +1,5 @@
 package org.camunda.optimize.qa.performance.steps;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
@@ -26,14 +25,13 @@ abstract class GetHeatMapStep extends PerfTestStep {
   private Logger logger = LoggerFactory.getLogger(this.getClass());
   private List<FilterDto> filter;
 
-  private ObjectMapper objectMapper = new ObjectMapper();
-
   GetHeatMapStep(List<FilterDto> filter) {
     this.filter = filter;
   }
 
   @Override
   public PerfTestStepResult<HeatMapResponseDto> execute(PerfTestContext context) {
+    objectMapper = initMapper(context);
     CloseableHttpClient client = HttpClientBuilder.create().build();
     try {
       return getHeatmap(context, client);
