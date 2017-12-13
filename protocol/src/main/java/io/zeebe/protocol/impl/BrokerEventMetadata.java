@@ -181,4 +181,12 @@ public class BrokerEventMetadata implements BufferWriter, BufferReader
         return requestId != BrokerEventMetadataEncoder.requestIdNullValue() &&
                 requestStreamId != BrokerEventMetadataEncoder.requestStreamIdNullValue();
     }
+
+    @Override
+    public String toString()
+    {
+        return "BrokerEventMetadata{" + "requestStreamId=" + requestStreamId + ", requestId=" + requestId +
+            ", subscriberKey=" + subscriberKey + ", protocolVersion=" + protocolVersion + ", eventType=" + eventType +
+            ", incidentKey=" + incidentKey + '}';
+    }
 }
