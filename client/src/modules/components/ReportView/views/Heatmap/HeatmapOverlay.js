@@ -4,12 +4,7 @@ import {getHeatmap} from './service';
 
 export default class HeatmapOverlay extends React.Component {
 
-  constructor(props) {
-    super(props);
-    this.state = {
-      heatmap: undefined
-    };
-  }
+  heatmap = undefined;
 
   render() {
     return null;
@@ -28,11 +23,11 @@ export default class HeatmapOverlay extends React.Component {
     
     const heatmap = getHeatmap(viewer, data);
 
-    if(this.state.heatmap) {
-      viewer.get('canvas')._viewport.removeChild(this.state.heatmap);
+    if(this.heatmap) {
+      viewer.get('canvas')._viewport.removeChild(this.heatmap);
     }
     viewer.get('canvas')._viewport.appendChild(heatmap);
-    this.state.heatmap = heatmap;
+    this.heatmap = heatmap;
   }
   
 }
