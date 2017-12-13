@@ -17,8 +17,8 @@ package io.zeebe.map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.*;
-import java.util.function.BiConsumer;
+import java.util.Random;
+import java.util.function.Consumer;
 
 import io.zeebe.map.types.LongKeyHandler;
 import org.agrona.BitUtil;
@@ -40,14 +40,35 @@ public class LongKeyHandlerTest
     }
 
     @Test
+    public void shouldGenerateSameHashes()
+    {
+        // given
+        final LongKeyHandler keyHandler = new LongKeyHandler();
+        final int hashes[] = new int[DATA_COUNT];
+
+        // when
+        for (int i = 0; i < DATA_COUNT; i++)
+        {
+            keyHandler.theKey = i;
+            hashes[i] = keyHandler.keyHashCode();
+        }
+
+        // then
+        for (int i = 0; i < DATA_COUNT; i++)
+        {
+            keyHandler.theKey = i;
+            assertThat(keyHandler.keyHashCode()).isEqualTo(hashes[i]);
+        }
+    }
+
+    @Test
     public void shouldAddLinearKeys()
     {
         final Long2LongZbMap map = new Long2LongZbMap();
 
-
         for (int i = 0; i < DATA_COUNT; i++)
         {
-            map.put(i, 0);
+            map.put(i, i);
         }
 
         assertThat(map.hashTable.getCapacity()).isLessThan(DATA_COUNT / 2);
@@ -57,18 +78,16 @@ public class LongKeyHandlerTest
     public void shouldAddKeysToMap()
     {
         final Long2LongZbMap map = new Long2LongZbMap();
-        positionAsKeyProducer((hashCode, position) ->
+        positionAsKeyProducer((position) ->
         {
-            map.put(position, 1);
+            map.put(position, position);
         });
 
         assertThat(map.hashTable.getCapacity()).isLessThan(DATA_COUNT / 2);
     }
 
-    private void positionAsKeyProducer(BiConsumer<Integer, Long> biConsumer)
+    private void positionAsKeyProducer(Consumer<Long> consumer)
     {
-        final LongKeyHandler keyHandler = new LongKeyHandler();
-
         int segmentId = 0;
         int segmentOffset = 0;
         final Random random = new Random(1 << 15);
@@ -76,12 +95,7 @@ public class LongKeyHandlerTest
         for (int i = 0; i < DATA_COUNT; i++)
         {
             final long position = position(segmentId, segmentOffset);
-
-            keyHandler.theKey = position;
-            final int hashCode = keyHandler.keyHashCode();
-
-
-            biConsumer.accept(hashCode, position);
+            consumer.accept(position);
 
             if (i % partitionSize == 0)
             {

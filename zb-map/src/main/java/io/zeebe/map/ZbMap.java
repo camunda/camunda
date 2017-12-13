@@ -269,7 +269,7 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
 
     protected boolean put()
     {
-        final long keyHashCode = keyHandler.keyHashCode();
+        final int keyHashCode = keyHandler.keyHashCode();
         int bucketId = getBucketId(keyHashCode);
         boolean isUpdated = false;
         boolean isPut = false;
@@ -309,11 +309,11 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
         return isUpdated;
     }
 
-    private int getBucketId(long keyHashCode)
+    private int getBucketId(int keyHashCode)
     {
         final int bucketId;
         final int mask = hashTable.getCapacity() - 1;
-        bucketId = (int) (keyHashCode & mask);
+        bucketId = (keyHashCode & mask);
         return bucketId;
     }
 
@@ -375,7 +375,7 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
 
     private Block findBlock()
     {
-        final long keyHashCode = keyHandler.keyHashCode();
+        final int keyHashCode = keyHandler.keyHashCode();
         final int bucketId = getBucketId(keyHashCode);
         final long bucketAddress = hashTable.getBucketAddress(bucketId);
         return findBlockInBucket(bucketAddress);
@@ -473,7 +473,7 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
                 final int blockLength = bucketBufferArray.getBlockLength();
 
                 bucketBufferArray.readKey(splitKeyHandler, filledBucketAddress, blockOffset);
-                final long keyHashCode = splitKeyHandler.keyHashCode();
+                final int keyHashCode = splitKeyHandler.keyHashCode();
 
                 if ((keyHashCode & splitMask) == splitMask)
                 {
