@@ -16,10 +16,10 @@
 package io.zeebe.logstreams.impl.log.fs;
 
 import io.zeebe.logstreams.impl.Loggers;
-import io.zeebe.util.FileUtil;
 import org.agrona.IoUtil;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
+import io.zeebe.util.FileUtil;
 import org.slf4j.Logger;
 
 import java.io.File;
@@ -215,6 +215,11 @@ public class FsLogSegment
             try
             {
                 final int writtenBytes = fileChannel.write(block, newSize);
+                if (writtenBytes == 0)
+                {
+                    LOG.warn("Unable to temporary write more bytes to file channel");
+                    return -1;
+                }
                 newSize += writtenBytes;
             }
             catch (Exception e)

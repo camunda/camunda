@@ -28,9 +28,8 @@ public class Benchmarks
     {
 
         final Options opts = new OptionsBuilder()
-                .include(".*LogStream")
-                .warmupIterations(5)
-                .measurementIterations(5)
+                .include(".*")
+//                .warmupIterations(5)
                 .measurementTime(TimeValue.seconds(30))
                 .jvmArgs("-server")
                 .forks(1)

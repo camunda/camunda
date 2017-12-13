@@ -23,7 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Random;
 
-import static io.zeebe.map.ZbMap.DEFAULT_BLOCK_COUNT;
+import static io.zeebe.map.ZbMap.OPTIMAL_BLOCK_COUNT;
 
 /**
  *
@@ -41,14 +41,14 @@ public class FilledMapOldSnapshotSupplier
     {
 
         tmpFile = new File("writeMapSnapshot-benchmark.old.txt");
-        map = new Long2LongZbMap(Benchmarks.DATA_SET_SIZE / DEFAULT_BLOCK_COUNT, DEFAULT_BLOCK_COUNT);
+        map = new Long2LongZbMap(Benchmarks.DATA_SET_SIZE / OPTIMAL_BLOCK_COUNT, OPTIMAL_BLOCK_COUNT);
 
         final Random random = new Random();
         for (int idx = 0; idx < Benchmarks.DATA_SET_SIZE; idx++)
         {
             map.put(idx, Math.min(Math.abs(random.nextLong()), Benchmarks.DATA_SET_SIZE - 1));
         }
-        oldComposedSnapshot = new OldComposedSnapshot(new ZbMapSnapshotSupport<>(map));
+        oldComposedSnapshot = new OldComposedSnapshot(new ZbMapSnapshotSupport(map));
     }
 
     @TearDown(Level.Iteration)
