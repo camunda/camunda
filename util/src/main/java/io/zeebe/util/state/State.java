@@ -42,4 +42,14 @@ public interface State<C extends StateMachineContext>
         // do nothing
     }
 
+    /**
+     * <p>It is not guaranteed that {@link #doWork(StateMachineContext)} is invoked after that (e.g. consider
+     * another command that changes the state yet again before doWork is called).
+     *
+     * <p>You can change that if you need this behavior.
+     */
+    default void onEnter()
+    {
+    }
+
 }

@@ -78,6 +78,8 @@ public class StateMachine<C extends StateMachineContext>
             currentState.onExit();
 
             currentState = transition.getNextState();
+
+            currentState.onEnter();
             hasTaken = true;
         }
         return hasTaken;

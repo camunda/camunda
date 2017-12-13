@@ -18,6 +18,7 @@ package io.zeebe.util.state;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.fail;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -302,6 +303,42 @@ public class StateMachineTest
         // c --> b
         workCount = stateMachine.doWork();
         assertThat(workCount).isEqualTo(1);
+    }
+
+    public void shouldInvokeOnEnterBeforeState()
+    {
+        final List<String> events = new ArrayList<>();
+
+        final State<SimpleStateMachineContext> state = new State<SimpleStateMachineContext>()
+        {
+            @Override
+            public void onEnter()
+            {
+                events.add("onEnter");
+            }
+
+            @Override
+            public int doWork(SimpleStateMachineContext context) throws Exception
+            {
+                events.add("doWork");
+                return 1;
+            }
+        };
+
+
+        final StateMachine<SimpleStateMachineContext> stateMachine = StateMachine.<SimpleStateMachineContext>builder(s -> new CustomStateMachineContext(s))
+                .initialState(c)
+                .from(c).take(TRANSITION_NEXT).to(state)
+                .build();
+
+        // when
+        stateMachine.doWork(); // c: do work
+        stateMachine.doWork(); // state: do work
+        stateMachine.doWork(); // state: do work
+
+        // then
+        // onEnter is invoked only once although we remain in state for more than one cycle
+        assertThat(events).containsExactly("onEnter", "doWork", "doWork");
     }
 
 }
