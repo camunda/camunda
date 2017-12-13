@@ -27,7 +27,7 @@ const options = {
     ]
   };
 
-  const mapper = {
+  const reportLabelMap = {
 
     view: 'view',
     groupBy: 'groupBy',
@@ -66,6 +66,6 @@ const options = {
 
   };
 
-  export {mapper};
+  export default reportLabelMap;
 
   

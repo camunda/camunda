@@ -1,1 +1,1 @@
-export {mapper} from './ReportLabelMap';
+export {default as reportLabelMap} from './ReportLabelMap';

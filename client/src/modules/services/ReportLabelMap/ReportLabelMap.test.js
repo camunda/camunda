@@ -1,31 +1,31 @@
-import {mapper} from './ReportLabelMap';
+import {default as reportLabelMap} from './ReportLabelMap';
 
 it('should return all possible options for a type', () => {
-  expect(mapper.getOptions(mapper.view)).toHaveLength(5);
+  expect(reportLabelMap.getOptions(reportLabelMap.view)).toHaveLength(5);
 });
 
 it('should create a report view object for a given key', () => {
-  expect(mapper.keyToObject('count_flowNode_frequency', mapper.view)).toEqual({operation: 'count', entity: 'flowNode', property: 'frequency'});
+  expect(reportLabelMap.keyToObject('count_flowNode_frequency', reportLabelMap.view)).toEqual({operation: 'count', entity: 'flowNode', property: 'frequency'});
 });
 
 it('should create a report group by object for a given key', () => {
-  expect(mapper.keyToObject('startDate_year', mapper.groupBy)).toEqual({type: 'startDate', unit: 'year'});
+  expect(reportLabelMap.keyToObject('startDate_year', reportLabelMap.groupBy)).toEqual({type: 'startDate', unit: 'year'});
 });
 
 it('should compose a key for a given view object', () => {
-  expect(mapper.objectToKey({operation: 'count', entity: 'flowNode', property: 'frequency'}, mapper.view)).toEqual('count_flowNode_frequency');
+  expect(reportLabelMap.objectToKey({operation: 'count', entity: 'flowNode', property: 'frequency'}, reportLabelMap.view)).toEqual('count_flowNode_frequency');
 });
 
 it('should compose a key for a given group object', () => {
-  expect(mapper.objectToKey({type: 'startDate', unit: 'year'}, mapper.groupBy)).toEqual('startDate_year');
+  expect(reportLabelMap.objectToKey({type: 'startDate', unit: 'year'}, reportLabelMap.groupBy)).toEqual('startDate_year');
 });
 
 it('should extract a label for a given view object', () => {
-  expect(mapper.objectToLabel({operation: 'count', entity: 'flowNode', property: 'frequency'}, mapper.view)).toEqual('Count Flow Node Frequency');
+  expect(reportLabelMap.objectToLabel({operation: 'count', entity: 'flowNode', property: 'frequency'}, reportLabelMap.view)).toEqual('Count Flow Node Frequency');
 });
 
 it('should compose a key for a given group object', () => {
-  expect(mapper.objectToLabel({type: 'startDate', unit: 'year'}, mapper.groupBy)).toEqual('Start Date of Process Instance - Year');
+  expect(reportLabelMap.objectToLabel({type: 'startDate', unit: 'year'}, reportLabelMap.groupBy)).toEqual('Start Date of Process Instance - Year');
 });
 
   

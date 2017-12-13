@@ -34,11 +34,10 @@ function formatData(data, labels) {
     return {head, body};
   } else {
     // normal two-dimensional data
-    const head = labels? [labels.groupByLabel, labels.viewLabel]: null;
     const body = Object.keys(data).map(key => [
       key,
       data[key]
     ]);
-    return {head, body};
+    return {head: labels, body};
   }
 }

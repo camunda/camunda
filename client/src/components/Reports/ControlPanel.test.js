@@ -18,12 +18,12 @@ jest.mock('components', () => {
 });
 
 jest.mock('services', () => {return {
-  mapper: {
-    objectToLabel: (...props) => 'foo',
-    objectToKey: (...props) => 'foo',
-    keyToLabel: (...props) => 'foo',
-    getOptions: (...props) => [],
-    keyToObject: (...props) => 'foo',
+  reportLabelMap: {
+    objectToLabel: () => 'foo',
+    objectToKey: () => 'foo',
+    keyToLabel: () => 'foo',
+    getOptions: () => [],
+    keyToObject: () => 'foo',
   }
 }});
 

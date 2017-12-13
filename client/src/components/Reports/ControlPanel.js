@@ -3,7 +3,7 @@ import {Select} from 'components';
 
 import {Filter} from './filter';
 import {loadProcessDefinitions} from './service';
-import {mapper} from 'services';
+import {reportLabelMap} from 'services';
 
 import './ControlPanel.css';
 
@@ -31,11 +31,11 @@ export default class ControlPanel extends React.Component {
   }
   changeView = evt => {
     const viewKey = evt.target.value;
-    this.props.onChange('view', mapper.keyToObject(viewKey, mapper.view));
+    this.props.onChange('view', reportLabelMap.keyToObject(viewKey, reportLabelMap.view));
   }
   changeGroup = evt => {
     const groupByKey = evt.target.value;
-    this.props.onChange('groupBy', mapper.keyToObject(groupByKey, mapper.groupBy));
+    this.props.onChange('groupBy', reportLabelMap.keyToObject(groupByKey, reportLabelMap.groupBy));
   }
 
   changeVisualization = evt => {
@@ -54,23 +54,23 @@ export default class ControlPanel extends React.Component {
         </li>
         <li className='ControlPanel__item'>
           <label htmlFor='ControlPanel__view' className='ControlPanel__label'>View</label>
-          <Select name='ControlPanel__view' value={mapper.objectToKey(this.props.view, mapper.view)} onChange={this.changeView}>
+          <Select name='ControlPanel__view' value={reportLabelMap.objectToKey(this.props.view, reportLabelMap.view)} onChange={this.changeView}>
             {addSelectionOption()}
-            {renderOptions(mapper.getOptions('view'))}
+            {renderOptions(reportLabelMap.getOptions('view'))}
           </Select>
         </li>
         <li className='ControlPanel__item'>
           <label htmlFor='ControlPanel__group-by' className='ControlPanel__label'>Group by</label>
-          <Select name='ControlPanel__group-by' value={mapper.objectToKey(this.props.groupBy, mapper.groupBy)} onChange={this.changeGroup}>
+          <Select name='ControlPanel__group-by' value={reportLabelMap.objectToKey(this.props.groupBy, reportLabelMap.groupBy)} onChange={this.changeGroup}>
             {addSelectionOption()}
-            {renderOptions(mapper.getOptions('groupBy'))}
+            {renderOptions(reportLabelMap.getOptions('groupBy'))}
           </Select>
         </li>
         <li className='ControlPanel__item'>
           <label htmlFor='ControlPanel__visualize-as' className='ControlPanel__label'>Visualize as</label>
           <Select name='ControlPanel__visualize-as' value={this.props.visualization} onChange={this.changeVisualization}>
             {addSelectionOption()}
-            {renderOptions(mapper.getOptions('visualizeAs'))}
+            {renderOptions(reportLabelMap.getOptions('visualizeAs'))}
           </Select>
         </li>
         <li className='ControlPanel__item ControlPanel__item--filter'>
