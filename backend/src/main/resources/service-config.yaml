@@ -37,7 +37,7 @@ container:
 engines:
   #an alias of the engine, which will be used for internal purposes like
   #logging
-  '1':
+  'camunda-bpm':
     #The name of the engine that will be used to import data.
     name: default
     #A base URL that will be used for connections to the Camunda Engine REST API.
@@ -164,7 +164,7 @@ import:
       #Once all pages are consumed, the import scheduler component will
       #start scheduling fetching tasks in increasing periods of time,
       #controlled by "backoff" counter.
-      max: 5
+      max: 30
       #Tells if the backoff is enabled of not.
       isEnabled: true
     pages:

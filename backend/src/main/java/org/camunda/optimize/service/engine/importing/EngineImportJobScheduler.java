@@ -1,9 +1,11 @@
 package org.camunda.optimize.service.engine.importing;
 
 import org.camunda.optimize.service.engine.importing.job.factory.EngineImportJobFactory;
+import org.camunda.optimize.service.engine.importing.job.factory.StoreIndexesEngineImportJobFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -14,15 +16,28 @@ public class EngineImportJobScheduler extends Thread {
 
   private EngineImportJobExecutor executor;
   private List<EngineImportJobFactory> jobFactories;
+  private List<EngineImportJobFactory> sleepyFactories;
 
   private volatile boolean isEnabled = true;
 
   public EngineImportJobScheduler(
       EngineImportJobExecutor executor,
-                                  List<EngineImportJobFactory> jobFactories
+      List<EngineImportJobFactory> jobFactories
   ) {
     this.executor = executor;
     this.jobFactories = jobFactories;
+    this.sleepyFactories = filterSleepyFactories(jobFactories);
+  }
+
+  private List<EngineImportJobFactory> filterSleepyFactories(List<EngineImportJobFactory> jobFactories) {
+    ArrayList result = new ArrayList();
+
+    for (EngineImportJobFactory factory : jobFactories) {
+      if (!factory.getClass().equals(StoreIndexesEngineImportJobFactory.class)) {
+        result.add(factory);
+      }
+    }
+    return result;
   }
 
   public void disable() {
@@ -84,7 +99,7 @@ public class EngineImportJobScheduler extends Thread {
   }
 
   private long calculateTimeToSleep() {
-    long timeToSleepInMs = jobFactories
+    long timeToSleepInMs = sleepyFactories
         .stream()
         .map(EngineImportJobFactory::getBackoffTimeInMs)
         .min(Long::compare)
@@ -110,7 +125,7 @@ public class EngineImportJobScheduler extends Thread {
   }
 
   public long maxTimeToSleep() {
-    long timeToSleepInMs = jobFactories
+    long timeToSleepInMs = sleepyFactories
         .stream()
         .map(EngineImportJobFactory::getBackoffTimeInMs)
         .max(Long::compare)

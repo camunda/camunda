@@ -109,6 +109,7 @@ public abstract class BackoffImportIndexHandler<PAGE extends ImportPage, INDEX>
         this.resetImportIndex();
         this.setNextReset();
       } else {
+        this.resetBackoff();
         this.restartImportCycle();
       }
     } catch (Exception e) {
