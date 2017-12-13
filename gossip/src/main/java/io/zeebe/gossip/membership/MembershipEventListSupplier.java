@@ -19,6 +19,7 @@ import java.util.Iterator;
 
 import io.zeebe.clustering.gossip.MembershipEventType;
 import io.zeebe.gossip.protocol.*;
+import io.zeebe.transport.SocketAddress;
 
 public class MembershipEventListSupplier implements MembershipEventSupplier
 {
@@ -93,7 +94,17 @@ public class MembershipEventListSupplier implements MembershipEventSupplier
             final MembershipEventType eventType = resolveType(member.getStatus());
             if (eventType != null)
             {
-                membershipEvent.wrap(member.getId(), eventType, member.getTerm().getEpoch(), member.getTerm().getHeartbeat());
+                membershipEvent.type(eventType);
+
+                final GossipTerm gossipTerm = member.getTerm();
+                membershipEvent.getGossipTerm()
+                    .epoch(gossipTerm.getEpoch())
+                    .heartbeat(gossipTerm.getHeartbeat());
+
+                final SocketAddress address = member.getAddress();
+                membershipEvent.getAddress()
+                    .port(address.port())
+                    .host(address.getHostBuffer(), 0, address.hostLength());
             }
 
             index += 1;

@@ -174,7 +174,7 @@ public class JoinController implements Actor
             self.getTerm().increment();
 
             disseminationComponent.addMembershipEvent()
-                .memberId(self.getId())
+                .address(self.getAddress())
                 .type(MembershipEventType.JOIN)
                 .gossipTerm(self.getTerm());
 
@@ -340,7 +340,7 @@ public class JoinController implements Actor
             self.getTerm().increment();
 
             disseminationComponent.addMembershipEvent()
-                .memberId(self.getId())
+                .address(self.getAddress())
                 .type(MembershipEventType.LEAVE)
                 .gossipTerm(self.getTerm());
 
@@ -348,14 +348,14 @@ public class JoinController implements Actor
             final int multiplier = config.getRetransmissionMultiplier();
             final int spreadCount = Math.min(GossipMath.gossipPeriodsToSpread(multiplier, clusterSize), clusterSize);
 
-            // TODO should it be more random? - maybe ignore suspicious members?
-            final Iterator<Member> members = membershipList.iterator();
+            final List<Member> members = new ArrayList<>(membershipList.getMembersView());
+            Collections.shuffle(members);
 
             context.requests = new ArrayList<>(spreadCount);
 
             for (int n = 0; n < spreadCount; n++)
             {
-                final Member member = members.next();
+                final Member member = members.get(n);
 
                 LOG.trace("Spread LEAVE event to '{}'", member.getAddress());
 

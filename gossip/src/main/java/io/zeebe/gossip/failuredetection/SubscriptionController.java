@@ -13,37 +13,43 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.gossip;
+package io.zeebe.gossip.failuredetection;
 
 import java.util.concurrent.CompletableFuture;
 
+import io.zeebe.gossip.Loggers;
 import io.zeebe.transport.*;
 import io.zeebe.util.actor.Actor;
 import io.zeebe.util.state.*;
+import org.slf4j.Logger;
 
 public class SubscriptionController implements Actor
 {
+    private static final Logger LOG = Loggers.GOSSIP_LOGGER;
+
     private static final String SUBSCRIPTION_NAME = "gossip";
 
     private static final int TRANSITION_DEFAULT = 1;
+    private static final int TRANSITION_FAILED = 2;
 
     private final BufferingServerTransport serverTransport;
     private final ServerRequestHandler requestHandler;
 
     private final StateMachine<Context> stateMachine;
 
-    public SubscriptionController(BufferingServerTransport serverTransport, ServerRequestHandler requestHandler)
+    public SubscriptionController(BufferingServerTransport serverTransport, ServerRequestHandler requestHandler, int pollLimit)
     {
         this.serverTransport = serverTransport;
         this.requestHandler = requestHandler;
 
         final OpenSubscriptionState openSubscriptionState = new OpenSubscriptionState();
         final AwaitOpenSubscriptionState awaitOpenSubscriptionState = new AwaitOpenSubscriptionState();
-        final PollSubscriptionState pollSubscriptionState = new PollSubscriptionState();
+        final PollSubscriptionState pollSubscriptionState = new PollSubscriptionState(pollLimit);
 
         this.stateMachine = StateMachine.<Context> builder(Context::new)
                 .initialState(openSubscriptionState)
                 .from(openSubscriptionState).take(TRANSITION_DEFAULT).to(awaitOpenSubscriptionState)
+                .from(awaitOpenSubscriptionState).take(TRANSITION_FAILED).to(openSubscriptionState)
                 .from(awaitOpenSubscriptionState).take(TRANSITION_DEFAULT).to(pollSubscriptionState)
                 .build();
     }
@@ -86,8 +92,6 @@ public class SubscriptionController implements Actor
 
             if (future.isDone())
             {
-                // TODO handle failures on open
-
                 final ServerInputSubscription subscription = future.get();
 
                 context.subscription = subscription;
@@ -96,17 +100,31 @@ public class SubscriptionController implements Actor
                 context.take(TRANSITION_DEFAULT);
             }
         }
+
+        @Override
+        public void onFailure(Context context, Exception e)
+        {
+            LOG.warn("Failed to open subscription", e);
+
+            context.take(TRANSITION_FAILED);
+        }
     }
 
     private class PollSubscriptionState implements State<Context>
     {
+        private final int subscriptionPollLimit;
+
+        PollSubscriptionState(int subscriptionPollLimit)
+        {
+            this.subscriptionPollLimit = subscriptionPollLimit;
+        }
+
         @Override
         public int doWork(Context context) throws Exception
         {
             final ServerInputSubscription subscription = context.subscription;
 
-            // TODO limit the number of messages via config
-            return subscription.poll(1);
+            return subscription.poll(subscriptionPollLimit);
         }
     }
 

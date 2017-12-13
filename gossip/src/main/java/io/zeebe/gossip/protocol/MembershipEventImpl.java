@@ -17,18 +17,17 @@ package io.zeebe.gossip.protocol;
 
 import io.zeebe.clustering.gossip.MembershipEventType;
 import io.zeebe.gossip.membership.GossipTerm;
+import io.zeebe.transport.SocketAddress;
 
 public class MembershipEventImpl implements MembershipEvent
 {
     private MembershipEventType type = MembershipEventType.NULL_VAL;
     private GossipTerm gossipTerm = new GossipTerm();
-    private String memberId = null;
+    private SocketAddress address = new SocketAddress();
 
-    public void wrap(String memberId, MembershipEventType type, long gossipTermEpoch, long gossipTermHeartbeat)
+    public void type(MembershipEventType type)
     {
-        this.memberId = memberId;
         this.type = type;
-        this.gossipTerm.epoch(gossipTermEpoch).heartbeat(gossipTermHeartbeat);
     }
 
     @Override
@@ -44,9 +43,23 @@ public class MembershipEventImpl implements MembershipEvent
     }
 
     @Override
-    public String getMemberId()
+    public SocketAddress getAddress()
     {
-        return memberId;
+        return address;
+    }
+
+    @Override
+    public String toString()
+    {
+        final StringBuilder builder = new StringBuilder();
+        builder.append("MembershipEvent [address=");
+        builder.append(address);
+        builder.append(", type=");
+        builder.append(type);
+        builder.append(", gossipTerm=");
+        builder.append(gossipTerm);
+        builder.append("]");
+        return builder.toString();
     }
 
     @Override
@@ -54,8 +67,8 @@ public class MembershipEventImpl implements MembershipEvent
     {
         final int prime = 31;
         int result = 1;
+        result = prime * result + ((address == null) ? 0 : address.hashCode());
         result = prime * result + ((gossipTerm == null) ? 0 : gossipTerm.hashCode());
-        result = prime * result + ((memberId == null) ? 0 : memberId.hashCode());
         result = prime * result + ((type == null) ? 0 : type.hashCode());
         return result;
     }
@@ -76,6 +89,17 @@ public class MembershipEventImpl implements MembershipEvent
             return false;
         }
         final MembershipEventImpl other = (MembershipEventImpl) obj;
+        if (address == null)
+        {
+            if (other.address != null)
+            {
+                return false;
+            }
+        }
+        else if (!address.equals(other.address))
+        {
+            return false;
+        }
         if (gossipTerm == null)
         {
             if (other.gossipTerm != null)
@@ -87,36 +111,11 @@ public class MembershipEventImpl implements MembershipEvent
         {
             return false;
         }
-        if (memberId == null)
-        {
-            if (other.memberId != null)
-            {
-                return false;
-            }
-        }
-        else if (!memberId.equals(other.memberId))
-        {
-            return false;
-        }
         if (type != other.type)
         {
             return false;
         }
         return true;
-    }
-
-    @Override
-    public String toString()
-    {
-        final StringBuilder builder = new StringBuilder();
-        builder.append("MembershipEvent [memberId=");
-        builder.append(memberId);
-        builder.append(", type=");
-        builder.append(type);
-        builder.append(", gossipTerm=");
-        builder.append(gossipTerm);
-        builder.append("]");
-        return builder.toString();
     }
 
 }

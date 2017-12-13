@@ -111,7 +111,7 @@ public class SuspictionController
                     LOG.trace("Spread CONFIRM event about '{}'", member.getId());
 
                     disseminationComponent.addMembershipEvent()
-                        .memberId(member.getId())
+                        .address(member.getAddress())
                         .gossipTerm(member.getTerm())
                         .type(MembershipEventType.CONFIRM);
 

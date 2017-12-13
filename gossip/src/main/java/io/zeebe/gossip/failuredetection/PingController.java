@@ -192,7 +192,7 @@ public class PingController implements Actor
                 {
                     LOG.debug("Send PING-REQ to '{}' to probe '{}'", member.getId(), suspiciousMember.getId());
 
-                    final ClientRequest request = gossipEventSender.sendPingReq(member.getAddress(), suspiciousMember.getId());
+                    final ClientRequest request = gossipEventSender.sendPingReq(member.getAddress(), suspiciousMember.getAddress());
                     context.indirectRequests.add(request);
 
                     n += 1;
@@ -267,7 +267,7 @@ public class PingController implements Actor
                 memberList.suspectMember(probeMember.getId(), probeMember.getTerm());
 
                 disseminationComponent.addMembershipEvent()
-                    .memberId(probeMember.getId())
+                    .address(probeMember.getAddress())
                     .type(MembershipEventType.SUSPECT)
                     .gossipTerm(probeMember.getTerm());
 

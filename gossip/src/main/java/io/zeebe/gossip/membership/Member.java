@@ -31,8 +31,8 @@ public class Member
 
     public Member(SocketAddress address)
     {
-        this.id = String.format("%s:%d", address.host(), address.port());
-        this.address = address;
+        this.address = new SocketAddress(address);
+        this.id = address.toString();
     }
 
     public SocketAddress getAddress()

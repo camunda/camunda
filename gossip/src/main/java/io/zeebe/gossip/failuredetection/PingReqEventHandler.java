@@ -64,12 +64,8 @@ public class PingReqEventHandler implements Actor, GossipEventConsumer
     @Override
     public void accept(GossipEvent event, long requestId, int streamId)
     {
-        final String sender = event.getSender();
-        final String suspiciousMember = event.getProbeMember();
-
-        LOG.trace("Received PING-REQ from '{}' to probe '{}'", sender, suspiciousMember);
-
-        final Member member = memberList.get(suspiciousMember);
+        final Member sender = memberList.get(event.getSender());
+        final Member member = memberList.get(event.getProbeMember());
         if (member != null)
         {
             final boolean success = stateMachine.tryTake(TRANSITION_PING_REQ_RECEIVED);
@@ -102,7 +98,7 @@ public class PingReqEventHandler implements Actor, GossipEventConsumer
     {
         private final GossipEventResponse ackResponse;
 
-        private String sender;
+        private Member sender;
         private Member suspiciousMember;
         private long requestId;
         private int streamId;
@@ -175,7 +171,7 @@ public class PingReqEventHandler implements Actor, GossipEventConsumer
         @Override
         public void work(Context context) throws Exception
         {
-            LOG.trace("Forward ACK to '{}'", context.sender);
+            LOG.trace("Forward ACK to '{}'", context.sender.getId());
 
             gossipEventSender.responseAck(context.requestId, context.streamId);
 

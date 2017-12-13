@@ -34,11 +34,10 @@ public class PingEventHandler implements GossipEventConsumer
     @Override
     public void accept(GossipEvent event, long requestId, int streamId)
     {
-        final String sender = event.getSender();
-
-        LOG.trace("Received PING from '{}'", sender);
-
-        LOG.trace("Send ACK to '{}'", sender);
+        if (LOG.isTraceEnabled())
+        {
+            LOG.trace("Send ACK to '{}'", event.getSender());
+        }
 
         gossipEventSender.responseAck(requestId, streamId);
     }

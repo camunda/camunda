@@ -15,17 +15,17 @@
  */
 package io.zeebe.gossip.protocol;
 
+import java.util.concurrent.*;
+
 import io.zeebe.clustering.gossip.GossipEventType;
-import io.zeebe.gossip.Loggers;
 import io.zeebe.gossip.dissemination.DisseminationComponent;
-import io.zeebe.gossip.membership.Member;
 import io.zeebe.gossip.membership.MembershipList;
 import io.zeebe.transport.*;
-import org.slf4j.Logger;
+import org.agrona.DirectBuffer;
 
 public class GossipEventSender
 {
-    private static final Logger LOG = Loggers.GOSSIP_LOGGER;
+    private static final ClientRequest FAILED_REQUEST = new FailedClientRequest();
 
     private final ServerResponse serverResponse = new ServerResponse();
 
@@ -63,7 +63,7 @@ public class GossipEventSender
         return sendEventTo(gossipFailureDetectionEvent, receiver);
     }
 
-    public ClientRequest sendPingReq(SocketAddress receiver, String probeMember)
+    public ClientRequest sendPingReq(SocketAddress receiver, SocketAddress probeMember)
     {
         gossipFailureDetectionEvent
             .reset()
@@ -104,11 +104,19 @@ public class GossipEventSender
     {
         prepareGossipEvent(event);
 
-        // TODO handle failure
         final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(receiver);
-        final ClientRequest request = clientTransport.getOutput().sendRequest(remoteAddress, event);
 
-        return request;
+        try
+        {
+            final ClientRequest request = clientTransport.getOutput().sendRequest(remoteAddress, event);
+
+            return request != null ? request : FAILED_REQUEST;
+        }
+        catch (Throwable t)
+        {
+            // ignore
+            return FAILED_REQUEST;
+        }
     }
 
     private void responseTo(GossipEvent event, long requestId, int streamId)
@@ -121,19 +129,77 @@ public class GossipEventSender
             .requestId(requestId)
             .remoteStreamId(streamId);
 
-        // TODO handle failure
-        serverTransport.getOutput().sendResponse(serverResponse);
+        try
+        {
+            serverTransport.getOutput().sendResponse(serverResponse);
+        }
+        catch (Throwable t)
+        {
+            // ignore
+        }
     }
 
     private void prepareGossipEvent(GossipEvent event)
     {
         disseminationComponent.clearSpreadEvents();
 
-        final Member self = memberList.self();
+        event.sender(memberList.self().getAddress());
+    }
 
-        event
-            .sender(self.getId())
-            .senderGossipTerm(self.getTerm());
+    private static class FailedClientRequest implements ClientRequest
+    {
+        @Override
+        public boolean isFailed()
+        {
+            return true;
+        }
+
+        @Override
+        public boolean cancel(boolean mayInterruptIfRunning)
+        {
+            return false;
+        }
+
+        @Override
+        public boolean isCancelled()
+        {
+            return false;
+        }
+
+        @Override
+        public boolean isDone()
+        {
+            return true;
+        }
+
+        @Override
+        public DirectBuffer get() throws InterruptedException, ExecutionException
+        {
+            return null;
+        }
+
+        @Override
+        public DirectBuffer get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException
+        {
+            return null;
+        }
+
+        @Override
+        public long getRequestId()
+        {
+            return -1L;
+        }
+
+        @Override
+        public DirectBuffer join()
+        {
+            throw new RuntimeException("Request failed.");
+        }
+
+        @Override
+        public void close()
+        {
+        }
     }
 
 }

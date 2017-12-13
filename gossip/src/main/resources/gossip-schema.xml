@@ -33,10 +33,10 @@
     </enum>
 
     <enum name="membershipEventType" encodingType="uint8" description="type of membership event">
+      <validValue name="JOIN">0</validValue>
       <validValue name="SUSPECT">1</validValue>
       <validValue name="ALIVE">2</validValue>
       <validValue name="CONFIRM">3</validValue>
-      <validValue name="JOIN">0</validValue>
       <validValue name="LEAVE">4</validValue>
     </enum>
 
@@ -44,20 +44,21 @@
 
   <sbe:message name="GossipEvent" id="0" description="ping probe request">
     <field name="eventType" id="0" type="gossipEventType" />
-    <field name="senderGossipEpoch" id="1" type="uint64" />    <!-- do it need the gossip term? -->
-    <field name="senderGossipHeartbeat" id="2" type="uint64" />
+    <field name="senderPort" id="1" type="uint16" />
+    <field name="probeMemberPort" id="2" type="uint16" />
     <group name="membershipEvents" id="3" dimensionType="groupSizeEncoding">
       <field name="eventType" id="4" type="membershipEventType" />  
       <field name="gossipEpoch" id="5" type="uint64" />
       <field name="gossipHeartbeat" id="6" type="uint64" />
-      <data name="address" id="7" type="varDataEncoding" />
+      <field name="port" id="7" type="uint16"/>
+      <data name="host" id="8" type="varDataEncoding"/>
     </group>
-    <group name="customEvents" id="8" dimensionType="groupSizeEncoding"> <!-- here, we need a gossip term -->
-      <field name="eventType" id="9" type="uint32" />
-      <data name="payload" id="10" type="varDataEncoding" />
+    <group name="customEvents" id="9" dimensionType="groupSizeEncoding">
+      <field name="eventType" id="10" type="uint32" />
+      <data name="payload" id="11" type="varDataEncoding" />
     </group>
-    <data name="sender" id="11" type="varDataEncoding" />
-    <data name="probeMember" id="12" type="varDataEncoding" />    
+    <data name="senderHost" id="12" type="varDataEncoding" />
+    <data name="probeMemberHost" id="13" type="varDataEncoding" />    
   </sbe:message>
 
 </sbe:messageSchema>

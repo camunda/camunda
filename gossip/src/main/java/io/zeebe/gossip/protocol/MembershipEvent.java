@@ -17,6 +17,7 @@ package io.zeebe.gossip.protocol;
 
 import io.zeebe.clustering.gossip.MembershipEventType;
 import io.zeebe.gossip.membership.GossipTerm;
+import io.zeebe.transport.SocketAddress;
 
 public interface MembershipEvent
 {
@@ -25,6 +26,6 @@ public interface MembershipEvent
 
     GossipTerm getGossipTerm();
 
-    String getMemberId();
+    SocketAddress getAddress();
 
 }

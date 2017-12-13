@@ -46,14 +46,14 @@ public class MembershipList implements Iterable<Member>
         return self;
     }
 
-    public boolean hasMember(String id)
+    public boolean hasMember(SocketAddress address)
     {
-        return get(id) != null;
+        return get(address) != null;
     }
 
-    public Member newMember(String id, GossipTerm term)
+    public Member newMember(SocketAddress address, GossipTerm term)
     {
-        final Member member = new Member(SocketAddress.from(id));
+        final Member member = new Member(address);
         member.getTerm().epoch(term.getEpoch()).heartbeat(term.getHeartbeat());
 
         members.add(member);
@@ -127,6 +127,20 @@ public class MembershipList implements Iterable<Member>
             final Member member = members.get(m);
 
             if (member.getId().equals(id))
+            {
+                return member;
+            }
+        }
+        return null;
+    }
+
+    public Member get(SocketAddress address)
+    {
+        for (int m = 0; m < members.size(); m++)
+        {
+            final Member member = members.get(m);
+
+            if (member.getAddress().equals(address))
             {
                 return member;
             }

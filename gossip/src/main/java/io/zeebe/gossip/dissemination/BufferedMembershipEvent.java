@@ -18,6 +18,7 @@ package io.zeebe.gossip.dissemination;
 import io.zeebe.clustering.gossip.MembershipEventType;
 import io.zeebe.gossip.membership.GossipTerm;
 import io.zeebe.gossip.protocol.MembershipEvent;
+import io.zeebe.transport.SocketAddress;
 
 public class BufferedMembershipEvent implements Comparable<BufferedMembershipEvent>, MembershipEvent
 {
@@ -26,7 +27,7 @@ public class BufferedMembershipEvent implements Comparable<BufferedMembershipEve
 
     private MembershipEventType type = MembershipEventType.NULL_VAL;
     private GossipTerm gossipTerm = new GossipTerm();
-    private String memberId = null;
+    private SocketAddress address = new SocketAddress();
 
     public int getSpreadCount()
     {
@@ -51,14 +52,15 @@ public class BufferedMembershipEvent implements Comparable<BufferedMembershipEve
     }
 
     @Override
-    public String getMemberId()
+    public SocketAddress getAddress()
     {
-        return memberId;
+        return address;
     }
 
-    public BufferedMembershipEvent memberId(String memberId)
+    public BufferedMembershipEvent address(SocketAddress address)
     {
-        this.memberId = memberId;
+        this.address.host(address.getHostBuffer(), 0, address.hostLength());
+        this.address.port(address.port());
         return this;
     }
 

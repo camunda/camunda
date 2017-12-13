@@ -22,8 +22,7 @@ import java.util.concurrent.CompletableFuture;
 
 import io.zeebe.clustering.gossip.MembershipEventType;
 import io.zeebe.test.util.agent.ControllableTaskScheduler;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 
 public class GossipLeaveTest
 {
@@ -36,63 +35,69 @@ public class GossipLeaveTest
     private GossipRule gossip3 = new GossipRule(() -> actorScheduler, CONFIGURATION, "localhost", 8003);
 
     @Rule
-    public GossipClusterRule clusterRule = new GossipClusterRule(actorScheduler, gossip1, gossip2, gossip3);
+    public GossipClusterRule cluster = new GossipClusterRule(actorScheduler, gossip1, gossip2, gossip3);
 
     @Rule
     public ClockRule clock = ClockRule.pinCurrentTime();
 
+    @Before
+    public void init()
+    {
+        gossip2.join(gossip1);
+        gossip3.join(gossip1);
+
+        actorScheduler.waitUntilDone();
+        actorScheduler.waitUntilDone();
+
+        gossip1.clearReceivedEvents();
+        gossip2.clearReceivedEvents();
+        gossip3.clearReceivedEvents();
+
+        assertThat(gossip2.hasMember(gossip3)).isTrue();
+        assertThat(gossip3.hasMember(gossip2)).isTrue();
+    }
+
     @Test
     public void shouldSpreadLeaveEvent()
     {
-        // given
-        gossip2.join(gossip1);
-
-        actorScheduler.waitUntilDone();
-        actorScheduler.waitUntilDone();
-
         // when
-        gossip2.getController().leave();
+        gossip3.getController().leave();
 
+        actorScheduler.waitUntilDone();
         actorScheduler.waitUntilDone();
 
         // then
-        assertThat(gossip1.receivedMembershipEvent(MembershipEventType.LEAVE, gossip2)).isTrue();
+        assertThat(gossip1.receivedMembershipEvent(MembershipEventType.LEAVE, gossip3)).isTrue();
+        assertThat(gossip2.receivedMembershipEvent(MembershipEventType.LEAVE, gossip3)).isTrue();
     }
 
     @Test
     public void shouldRemoveMemberOnLeave()
     {
-        // given
-        gossip2.join(gossip1);
-
-        actorScheduler.waitUntilDone();
-        actorScheduler.waitUntilDone();
-
         // when
-        gossip2.getController().leave();
+        gossip3.getController().leave();
 
+        actorScheduler.waitUntilDone();
         actorScheduler.waitUntilDone();
 
         // then
-        assertThat(gossip1.hasMember(gossip2)).isFalse();
+        assertThat(gossip1.hasMember(gossip3)).isFalse();
+        assertThat(gossip2.hasMember(gossip3)).isFalse();
     }
 
     @Test
     public void shouldCompleteFutureWhenEventIsSpread()
     {
-        // given
-        gossip2.join(gossip1);
-
-        actorScheduler.waitUntilDone();
-        actorScheduler.waitUntilDone();
-
         // when
-        final CompletableFuture<Void> future = gossip2.getController().leave();
+        final CompletableFuture<Void> future = gossip3.getController().leave();
 
+        actorScheduler.waitUntilDone();
         actorScheduler.waitUntilDone();
 
         // then
-        assertThat(gossip1.receivedMembershipEvent(MembershipEventType.LEAVE, gossip2)).isTrue();
+        assertThat(gossip1.receivedMembershipEvent(MembershipEventType.LEAVE, gossip3)).isTrue();
+        assertThat(gossip2.receivedMembershipEvent(MembershipEventType.LEAVE, gossip3)).isTrue();
+
         assertThat(future).isDone().hasNotFailed();
     }
 
@@ -100,15 +105,11 @@ public class GossipLeaveTest
     public void shouldCompleteFutureWhenTimeoutIsReached()
     {
         // given
-        gossip2.join(gossip1);
-
-        actorScheduler.waitUntilDone();
-        actorScheduler.waitUntilDone();
-
-        gossip2.interruptConnectionTo(gossip1);
+        cluster.interruptConnectionBetween(gossip3, gossip1);
 
         // when
-        final CompletableFuture<Void> future = gossip2.getController().leave();
+        final CompletableFuture<Void> future = gossip3.getController().leave();
+        actorScheduler.waitUntilDone();
         actorScheduler.waitUntilDone();
 
         assertThat(future).isNotDone();
@@ -123,9 +124,16 @@ public class GossipLeaveTest
     @Test
     public void shouldCompleteFutureWithFailureWhenNotJoined()
     {
-        // when
-        final CompletableFuture<Void> future = gossip2.getController().leave();
+        // given
+        gossip3.getController().leave();
 
+        actorScheduler.waitUntilDone();
+        actorScheduler.waitUntilDone();
+
+        // when
+        final CompletableFuture<Void> future = gossip3.getController().leave();
+
+        actorScheduler.waitUntilDone();
         actorScheduler.waitUntilDone();
 
         // then

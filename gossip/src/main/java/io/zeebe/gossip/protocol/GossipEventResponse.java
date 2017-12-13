@@ -67,7 +67,6 @@ public class GossipEventResponse
             final DirectBuffer response = request.join();
 
             event.wrap(response, 0, response.capacity());
-            // TODO ensure event type
 
             clear();
         }

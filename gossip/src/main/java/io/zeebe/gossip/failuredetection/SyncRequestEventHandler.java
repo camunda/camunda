@@ -34,13 +34,10 @@ public class SyncRequestEventHandler implements GossipEventConsumer
     @Override
     public void accept(GossipEvent event, long requestId, int streamId)
     {
-        final String sender = event.getSender();
-
-        LOG.trace("Received SYNC request from '{}'", sender);
-
-        // TODO handle custom sync events
-
-        LOG.trace("Send SYNC response to '{}'", sender);
+        if (LOG.isTraceEnabled())
+        {
+            LOG.trace("Send SYNC response to '{}'", event.getSender());
+        }
 
         gossipEventSender.responseSync(requestId, streamId);
     }

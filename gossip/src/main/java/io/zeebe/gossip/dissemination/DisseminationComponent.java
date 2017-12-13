@@ -71,10 +71,9 @@ public class DisseminationComponent implements MembershipEventSupplier, Membersh
     public boolean consumeMembershipEvent(MembershipEvent event)
     {
         addMembershipEvent()
-            .memberId(event.getMemberId())
+            .address(event.getAddress())
             .type(event.getType())
-            .gossipTermEpoch(event.getGossipTerm().getEpoch())
-            .gossipTermHeartbeat(event.getGossipTerm().getHeartbeat());
+            .gossipTerm(event.getGossipTerm());
 
         return true;
     }

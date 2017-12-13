@@ -30,8 +30,9 @@ import io.zeebe.util.actor.Actor;
 public class Gossip implements Actor, GossipController
 {
     private final SubscriptionController subscriptionController;
-    private final PingController failureDetectionController;
+    private final PingController pingController;
     private final MembershipList memberList;
+    private final DisseminationComponent disseminationComponent;
 
     private final PingReqEventHandler pingReqController;
     private final JoinController joinController;
@@ -46,15 +47,15 @@ public class Gossip implements Actor, GossipController
             final GossipConfiguration configuration)
     {
         memberList = new MembershipList(socketAddress, configuration);
-        final DisseminationComponent disseminationComponent = new DisseminationComponent(configuration, memberList);
+        disseminationComponent = new DisseminationComponent(configuration, memberList);
 
-        final GossipEventFactory gossipEventFactory = new GossipEventFactory(memberList, disseminationComponent);
+        final GossipEventFactory gossipEventFactory = new GossipEventFactory(configuration, memberList, disseminationComponent);
 
         final GossipEventSender gossipEventSender = new GossipEventSender(clientTransport, serverTransport, memberList, disseminationComponent, gossipEventFactory);
 
         final GossipContext context = new GossipContext(configuration, memberList, disseminationComponent, gossipEventSender, gossipEventFactory);
 
-        failureDetectionController = new PingController(context);
+        pingController = new PingController(context);
 
         final PingEventHandler pingMessageHandler = new PingEventHandler(context);
         pingReqController = new PingReqEventHandler(context);
@@ -68,7 +69,7 @@ public class Gossip implements Actor, GossipController
         joinController = new JoinController(context);
         suspictionController = new SuspictionController(context);
 
-        subscriptionController = new SubscriptionController(serverTransport, requestHandler);
+        subscriptionController = new SubscriptionController(serverTransport, requestHandler, configuration.getSubscriptionPollLimit());
     }
 
     @Override
@@ -80,15 +81,7 @@ public class Gossip implements Actor, GossipController
     @Override
     public CompletableFuture<Void> leave()
     {
-        return deferredCommands.runAsync(future ->
-        {
-            joinController.leave(future);
-
-            future.thenAccept(v ->
-            {
-                // TODO clear / stop other stuff
-            });
-        });
+        return deferredCommands.runAsync(future -> joinController.leave(future));
     }
 
     @Override
@@ -100,7 +93,7 @@ public class Gossip implements Actor, GossipController
         workCount += joinController.doWork();
 
         workCount += subscriptionController.doWork();
-        workCount += failureDetectionController.doWork();
+        workCount += pingController.doWork();
         workCount += pingReqController.doWork();
         workCount += suspictionController.doWork();
 

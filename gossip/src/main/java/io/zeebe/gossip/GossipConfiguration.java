@@ -36,6 +36,10 @@ public class GossipConfiguration
 
     private int leaveTimeout = 1_000;
 
+    private int maxMembershipEventsPerMessage = 32;
+
+    private int subscriptionPollLimit = 3;
+
     public int getJoinTimeout()
     {
         return joinTimeout;
@@ -207,6 +211,28 @@ public class GossipConfiguration
     public GossipConfiguration leaveTimeout(int leaveTimeout)
     {
         this.leaveTimeout = leaveTimeout;
+        return this;
+    }
+
+    public int getMaxMembershipEventsPerMessage()
+    {
+        return maxMembershipEventsPerMessage;
+    }
+
+    public GossipConfiguration maxMembershipEventsPerMessage(int maxMembershipEventsPerMessage)
+    {
+        this.maxMembershipEventsPerMessage = maxMembershipEventsPerMessage;
+        return this;
+    }
+
+    public int getSubscriptionPollLimit()
+    {
+        return subscriptionPollLimit;
+    }
+
+    public GossipConfiguration subscriptionPollLimit(int limit)
+    {
+        this.subscriptionPollLimit = limit;
         return this;
     }
 

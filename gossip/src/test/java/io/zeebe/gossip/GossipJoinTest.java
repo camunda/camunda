@@ -38,7 +38,7 @@ public class GossipJoinTest
     private GossipRule gossip3 = new GossipRule(() -> actorScheduler, CONFIGURATION, "localhost", 8003);
 
     @Rule
-    public GossipClusterRule clusterRule = new GossipClusterRule(actorScheduler, gossip1, gossip2, gossip3);
+    public GossipClusterRule cluster = new GossipClusterRule(actorScheduler, gossip1, gossip2, gossip3);
 
     @Rule
     public ClockRule clock = ClockRule.pinCurrentTime();
@@ -102,7 +102,7 @@ public class GossipJoinTest
     public void shouldRetryJoinIfContactPointIsNotAvailable()
     {
         // given
-        gossip2.interruptConnectionTo(gossip1);
+        cluster.interruptConnectionBetween(gossip1, gossip2);
 
         gossip2.join(gossip1);
 
@@ -116,7 +116,7 @@ public class GossipJoinTest
         assertThat(gossip1.receivedMembershipEvent(MembershipEventType.JOIN, gossip2)).isFalse();
 
         // when
-        gossip2.reconnectTo(gossip1);
+        cluster.reconnect(gossip1, gossip2);
 
         clock.addTime(Duration.ofMillis(CONFIGURATION.getJoinInterval()));
 
@@ -131,7 +131,7 @@ public class GossipJoinTest
     public void shouldJoinIfOneContactPointIsAvailable()
     {
         // given
-        gossip3.interruptConnectionTo(gossip1);
+        cluster.interruptConnectionBetween(gossip1, gossip3);
 
         // when
         gossip3.join(gossip1, gossip2);
@@ -206,6 +206,7 @@ public class GossipJoinTest
         actorScheduler.waitUntilDone();
 
         final CompletableFuture<Void> leaveFuture = gossip2.getController().leave();
+        actorScheduler.waitUntilDone();
         actorScheduler.waitUntilDone();
 
         assertThat(leaveFuture).isDone().hasNotFailed();

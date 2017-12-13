@@ -15,6 +15,7 @@
  */
 package io.zeebe.gossip.protocol;
 
+import io.zeebe.gossip.GossipConfiguration;
 import io.zeebe.gossip.Loggers;
 import io.zeebe.gossip.dissemination.DisseminationComponent;
 import io.zeebe.gossip.membership.*;
@@ -22,11 +23,13 @@ import org.slf4j.Logger;
 
 public class GossipEventFactory
 {
+    private final GossipConfiguration configuration;
     private final MembershipList memberList;
     private final DisseminationComponent disseminationComponent;
 
-    public GossipEventFactory(MembershipList memberList, DisseminationComponent disseminationComponent)
+    public GossipEventFactory(GossipConfiguration configuration, MembershipList memberList, DisseminationComponent disseminationComponent)
     {
+        this.configuration = configuration;
         this.memberList = memberList;
         this.disseminationComponent = disseminationComponent;
     }
@@ -35,14 +38,21 @@ public class GossipEventFactory
     {
         // send the events from the dissemination component as payload
         // - update membership list with response and add events to the dissemination component
-        return new GossipEvent(disseminationComponent, new MembershipEventLogger().andThen(new MembershipUpdater(memberList, disseminationComponent)).andThen(disseminationComponent));
+        return new GossipEvent(disseminationComponent,
+                               new MembershipEventLogger()
+                                   .andThen(new MembershipUpdater(memberList, disseminationComponent))
+                                   .andThen(disseminationComponent),
+                               configuration.getMaxMembershipEventsPerMessage());
     }
 
     public GossipEvent createSyncEvent()
     {
         // send the complete membership list as payload
         // - update membership list with response
-        return new GossipEvent(new MembershipEventListSupplier(memberList), new MembershipEventLogger().andThen(new MembershipUpdater(memberList, disseminationComponent)));
+        return new GossipEvent(new MembershipEventListSupplier(memberList),
+                               new MembershipEventLogger()
+                                   .andThen(new MembershipUpdater(memberList, disseminationComponent)),
+                               configuration.getMaxMembershipEventsPerMessage());
     }
 
     private static final class MembershipEventLogger implements MembershipEventConsumer
@@ -54,8 +64,8 @@ public class GossipEventFactory
         {
             if (LOG.isTraceEnabled())
             {
-                LOG.trace("Receive membership event with member-id: {}, type: {}, gossip-term: {}",
-                          event.getMemberId(), event.getType(), event.getGossipTerm());
+                LOG.trace("Receive membership event with address: '{}', type: {}, gossip-term: {}",
+                          event.getAddress(), event.getType(), event.getGossipTerm());
             }
 
             return true;

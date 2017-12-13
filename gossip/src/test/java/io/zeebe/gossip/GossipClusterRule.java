@@ -49,6 +49,16 @@ public class GossipClusterRule implements TestRule
         return base;
     }
 
+    public void interruptConnectionBetween(GossipRule thisMember, GossipRule thatMember)
+    {
+        thisMember.interruptConnectionTo(thatMember);
+        thatMember.interruptConnectionTo(thisMember);
+    }
 
+    public void reconnect(GossipRule thisMember, GossipRule thatMember)
+    {
+        thisMember.reconnectTo(thatMember);
+        thatMember.reconnectTo(thisMember);
+    }
 
 }

@@ -36,7 +36,7 @@ public class GossipFailureDetectionTest
     private GossipRule gossip3 = new GossipRule(() -> actorScheduler, CONFIGURATION, "localhost", 8003);
 
     @Rule
-    public GossipClusterRule clusterRule = new GossipClusterRule(actorScheduler, gossip1, gossip2, gossip3);
+    public GossipClusterRule cluster = new GossipClusterRule(actorScheduler, gossip1, gossip2, gossip3);
 
     @Rule
     public ClockRule clock = ClockRule.pinCurrentTime();
@@ -56,8 +56,6 @@ public class GossipFailureDetectionTest
 
         assertThat(gossip2.hasMember(gossip3)).isTrue();
         assertThat(gossip3.hasMember(gossip2)).isTrue();
-
-        System.out.println("============================================");
     }
 
     @Test
@@ -94,7 +92,7 @@ public class GossipFailureDetectionTest
     public void shouldSendPingReqAndForwardAck()
     {
         // given
-        gossip1.interruptConnectionTo(gossip2);
+        cluster.interruptConnectionBetween(gossip1, gossip2);
 
         // when
         clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
@@ -122,8 +120,8 @@ public class GossipFailureDetectionTest
     public void shouldSpreadSuspectEvent()
     {
         // given
-        gossip1.interruptConnectionTo(gossip3);
-        gossip2.interruptConnectionTo(gossip3);
+        cluster.interruptConnectionBetween(gossip3, gossip1);
+        cluster.interruptConnectionBetween(gossip3, gossip2);
 
         // when
         clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
@@ -147,11 +145,8 @@ public class GossipFailureDetectionTest
     public void shouldSpreadConfirmEvent()
     {
         // given
-        gossip1.interruptConnectionTo(gossip3);
-        gossip2.interruptConnectionTo(gossip3);
-
-        gossip3.interruptConnectionTo(gossip1);
-        gossip3.interruptConnectionTo(gossip2);
+        cluster.interruptConnectionBetween(gossip3, gossip1);
+        cluster.interruptConnectionBetween(gossip3, gossip2);
 
         // when
         clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
@@ -188,8 +183,8 @@ public class GossipFailureDetectionTest
     public void shouldCounterSuspectEventIfAlive()
     {
         // given
-        gossip1.interruptConnectionTo(gossip3);
-        gossip2.interruptConnectionTo(gossip3);
+        cluster.interruptConnectionBetween(gossip3, gossip1);
+        cluster.interruptConnectionBetween(gossip3, gossip2);
 
         clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
         actorScheduler.waitUntilDone();
@@ -201,8 +196,8 @@ public class GossipFailureDetectionTest
         actorScheduler.waitUntilDone();
 
         // when
-        gossip1.reconnectTo(gossip3);
-        gossip2.reconnectTo(gossip3);
+        cluster.reconnect(gossip3, gossip1);
+        cluster.reconnect(gossip3, gossip2);
 
         clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
         actorScheduler.waitUntilDone();

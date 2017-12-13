@@ -59,6 +59,8 @@ public class GossipRule extends ExternalResource
     private ActorReference gossipActorRef;
     private ActorReference testSubscriptionActorRef;
 
+    private ClientOutput spyClientOutput;
+
     private LocalMembershipListener localMembershipListener;
     private ReceivedEventsCollector receivedEventsCollector = new ReceivedEventsCollector();
 
@@ -115,14 +117,13 @@ public class GossipRule extends ExternalResource
                 .inputListener(receivedEventsCollector)
                 .build();
 
-        // TODO make it more safe
-        clientTransport = spy(clientTransport);
 
-        final ClientOutput clientOutput = spy(clientTransport.getOutput());
+        spyClientOutput = spy(clientTransport.getOutput());
 
-        when(clientTransport.getOutput()).thenReturn(clientOutput);
+        final ClientTransport spyClientTransport = spy(clientTransport);
+        when(spyClientTransport.getOutput()).thenReturn(spyClientOutput);
 
-        gossip = new Gossip(socketAddress, serverTransport, clientTransport, configuration);
+        gossip = new Gossip(socketAddress, serverTransport, spyClientTransport, configuration);
 
         gossipActorRef = actorScheduler.schedule(() ->
         {
@@ -166,14 +167,12 @@ public class GossipRule extends ExternalResource
     {
         final ClientRequest clientRequest = mock(ClientRequest.class);
 
-        final ClientOutput clientOutput = clientTransport.getOutput();
-        doReturn(clientRequest).when(clientOutput).sendRequest(argThat(r -> r.getAddress().equals(other.socketAddress)), any());
+        doReturn(clientRequest).when(spyClientOutput).sendRequest(argThat(r -> r.getAddress().equals(other.socketAddress)), any());
     }
 
     public void reconnectTo(GossipRule other)
     {
-        final ClientOutput clientOutput = clientTransport.getOutput();
-        doCallRealMethod().when(clientOutput).sendRequest(argThat(r -> r.getAddress().equals(other.socketAddress)), any());
+        doCallRealMethod().when(spyClientOutput).sendRequest(argThat(r -> r.getAddress().equals(other.socketAddress)), any());
     }
 
     public GossipController getController()
@@ -185,7 +184,7 @@ public class GossipRule extends ExternalResource
     {
         return receivedEventsCollector.gossipEvents()
                 .filter(e -> e.getEventType() == eventType)
-                .filter(e -> e.getSender().equals(sender.memberId))
+                .filter(e -> e.getSender().equals(sender.socketAddress))
                 .findFirst()
                 .isPresent();
     }
@@ -201,7 +200,7 @@ public class GossipRule extends ExternalResource
     {
         return receivedEventsCollector.membershipEvents()
                 .filter(e -> e.getType() == eventType)
-                .filter(e -> e.getMemberId().equals(member.memberId));
+                .filter(e -> e.getAddress().equals(member.socketAddress));
     }
 
     public void clearReceivedEvents()
@@ -228,12 +227,20 @@ public class GossipRule extends ExternalResource
             private final GossipEvent gossipEvent = new GossipEvent(null, event ->
             {
                 final MembershipEventImpl membershipEvent = new MembershipEventImpl();
-                membershipEvent.wrap(event.getMemberId(), event.getType(), event.getGossipTerm().getEpoch(), event.getGossipTerm().getHeartbeat());
+                membershipEvent.type(event.getType());
+
+                membershipEvent.getGossipTerm()
+                    .epoch(event.getGossipTerm().getEpoch())
+                    .heartbeat(event.getGossipTerm().getHeartbeat());
+
+                membershipEvent.getAddress()
+                    .port(event.getAddress().port())
+                    .host(event.getAddress().getHostBuffer(), 0, event.getAddress().hostLength());
 
                 membershipEvents.add(membershipEvent);
 
                 return true;
-            });
+            }, 0);
 
             ReceivedEvent(DirectBuffer buffer, int offset, int length)
             {
