@@ -256,7 +256,12 @@ public class VariableWriter {
       variableInstanceDto = booleanVariableDto;
     } else if(isDateType(e.getType())) {
       DateVariableDto dateVariableDto = new DateVariableDto();
-      dateVariableDto.setValue(OffsetDateTime.parse(e.getValue(), dateTimeFormatter));
+      try {
+        OffsetDateTime offsetDateTime = objectMapper.readerFor(OffsetDateTime.class).readValue("\""+ e.getValue() + "\"");
+        dateVariableDto.setValue(offsetDateTime);
+      } catch (IOException error) {
+        logger.debug("Could not deserialize date variable out of [{}]! Reason: {}", e.getValue(), error.getMessage());
+      }
       variableInstanceDto = dateVariableDto;
     } else {
       logger.warn("Unsupported variable type [{}] if variable {}! " +

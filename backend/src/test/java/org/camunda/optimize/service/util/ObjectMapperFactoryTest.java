@@ -10,6 +10,8 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.text.SimpleDateFormat;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 
@@ -46,6 +48,19 @@ public class ObjectMapperFactoryTest {
     String value = "2017-12-11T17:28:38.222+0100";
     DateHolder toTest = new DateHolder();
     toTest.setDate(OffsetDateTime.parse(value, DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZ")));
+
+    assertThat("value is [" + value + "]", underTest.writeValueAsString(toTest), containsString(value));
+  }
+
+  @Test
+  public void testFromStringWithOldEngineFormat() throws JsonProcessingException {
+    String value = "2017-12-11T17:28:38";
+    DateHolder toTest = new DateHolder();
+    toTest.setDate(
+      ZonedDateTime
+        .parse(value, DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss").withZone(ZoneId.systemDefault()))
+        .toOffsetDateTime()
+    );
 
     assertThat("value is [" + value + "]", underTest.writeValueAsString(toTest), containsString(value));
   }

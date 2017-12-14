@@ -24,10 +24,10 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -62,11 +62,11 @@ public class VariableQueryFilterIT {
   public RuleChain chain = RuleChain
       .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
 
-  private SimpleDateFormat sdf;
+  private DateTimeFormatter dateTimeFormatter;
 
   @Before
   public void init() {
-    sdf = new SimpleDateFormat(elasticSearchRule.getDateFormat());
+    dateTimeFormatter = embeddedOptimizeRule.getDateTimeFormatter();
   }
 
   private final String TEST_DEFINITION = "testDefinition";
@@ -653,8 +653,8 @@ public class VariableQueryFilterIT {
   @Test
   public void dateLessThanEqualVariableFilter() throws Exception {
     // given
-    Date now = nowDate();
-    String nowAsString = sdf.format(now);
+    OffsetDateTime now = nowDate();
+    String nowAsString = dateTimeFormatter.format(now);
     String processDefinitionId = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", nowDateMinusSeconds(2));
@@ -682,8 +682,8 @@ public class VariableQueryFilterIT {
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", nowDate());
     engineRule.startProcessInstance(processDefinitionId, variables);
-    Date nowMinusTwoSeconds = nowDateMinusSeconds(2);
-    String nowMinusTwoSecondsAsString = sdf.format(nowMinusTwoSeconds);
+    OffsetDateTime nowMinusTwoSeconds = nowDateMinusSeconds(2);
+    String nowMinusTwoSecondsAsString = dateTimeFormatter.format(nowMinusTwoSeconds);
     variables.put("var", nowMinusTwoSeconds);
     engineRule.startProcessInstance(processDefinitionId, variables);
     variables.put("var", nowDatePlus10Seconds());
@@ -702,8 +702,8 @@ public class VariableQueryFilterIT {
   @Test
   public void dateGreaterThanEqualVariableFilter() throws Exception {
     // given
-    Date now = nowDate();
-    String nowAsString = sdf.format(now);
+    OffsetDateTime now = nowDate();
+    String nowAsString = dateTimeFormatter.format(now);
     String processDefinitionId = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", now);
@@ -727,8 +727,8 @@ public class VariableQueryFilterIT {
   @Test
   public void dateEqualVariableFilter() throws Exception {
     // given
-    Date now = nowDate();
-    String nowAsString = sdf.format(now);
+    OffsetDateTime now = nowDate();
+    String nowAsString = dateTimeFormatter.format(now);
     String processDefinitionId = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", now);
@@ -753,8 +753,8 @@ public class VariableQueryFilterIT {
   public void dateUnequalVariableFilter() throws Exception {
 
     // given
-    Date now = nowDate();
-    String nowAsString = sdf.format(now);
+    OffsetDateTime now = nowDate();
+    String nowAsString = dateTimeFormatter.format(now);
     String processDefinitionId = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", now);
@@ -779,8 +779,8 @@ public class VariableQueryFilterIT {
   public void dateWithinRangeVariableFilter() throws Exception {
     // given
     String processDefinitionId = deploySimpleProcessDefinition();
-    Date nowMinus2Seconds = nowDateMinusSeconds(2);
-    Date nowPlus10Seconds = nowDatePlus10Seconds();
+    OffsetDateTime nowMinus2Seconds = nowDateMinusSeconds(2);
+    OffsetDateTime nowPlus10Seconds = nowDatePlus10Seconds();
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", nowDate());
     engineRule.startProcessInstance(processDefinitionId, variables);
@@ -792,8 +792,8 @@ public class VariableQueryFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    VariableFilterDto filter = createVariableFilter(GREATER_THAN, "var", DATE_TYPE, sdf.format(nowMinus2Seconds));
-    VariableFilterDto filter2 = createVariableFilter(LESS_THAN, "var", DATE_TYPE, sdf.format(nowPlus10Seconds));
+    VariableFilterDto filter = createVariableFilter(GREATER_THAN, "var", DATE_TYPE, dateTimeFormatter.format(nowMinus2Seconds));
+    VariableFilterDto filter2 = createVariableFilter(LESS_THAN, "var", DATE_TYPE, dateTimeFormatter.format(nowPlus10Seconds));
     List<FilterDto> filters = Stream.of(filter, filter2).collect(Collectors.toList());
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilters(processDefinitionId, filters);
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
@@ -805,8 +805,8 @@ public class VariableQueryFilterIT {
   @Test
   public void dateOffRangeVariableFilter() throws Exception {
     // given
-    Date now = nowDate();
-    String nowAsString = sdf.format(now);
+    OffsetDateTime now = nowDate();
+    String nowAsString = dateTimeFormatter.format(now);
     String processDefinitionId = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", now);
@@ -921,23 +921,21 @@ public class VariableQueryFilterIT {
     assertThat(response.getStatus(),is(500));
   }
 
-  private Date nowDate() {
-    return new Date();
+  private OffsetDateTime nowDate() {
+    return OffsetDateTime.now();
   }
 
 
   private String nowDateAsString() {
-    return sdf.format(nowDate());
+    return dateTimeFormatter.format(nowDate());
   }
 
-  private Date nowDateMinusSeconds(int nSeconds) {
-    long nSecondsInMilliSecond = (nSeconds * 1000L);
-    return new Date(System.currentTimeMillis() - nSecondsInMilliSecond);
+  private OffsetDateTime nowDateMinusSeconds(int nSeconds) {
+    return OffsetDateTime.now().minusSeconds(nSeconds);
   }
 
-  private Date nowDatePlus10Seconds() {
-    long nSecondsInMilliSecond = (10 * 1000L);
-    return new Date(System.currentTimeMillis() + nSecondsInMilliSecond);
+  private OffsetDateTime nowDatePlus10Seconds() {
+    return OffsetDateTime.now().plusSeconds(10);
   }
 
   private VariableFilterDto createVariableFilter(String operator, String variableName, String variableType, String variableValue) {

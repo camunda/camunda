@@ -6,7 +6,6 @@ import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -19,11 +18,8 @@ import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
-import java.time.temporal.TemporalAccessor;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,12 +37,6 @@ public class VariableValueRetrievalIT {
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 
-  private DateTimeFormatter simpleDateFormat;
-
-  @Before
-  public void init() {
-    simpleDateFormat = DateTimeFormatter.ofPattern(elasticSearchRule.getDateFormat());
-  }
 
   @Rule
   public RuleChain chain = RuleChain
@@ -163,7 +153,7 @@ public class VariableValueRetrievalIT {
     String processDefinitionId = deploySimpleProcessDefinition();
     Map<String, String> varNameToTypeMap = createVarNameToTypeMap();
     Map<String, Object> variables = new HashMap<>();
-    variables.put("dateVar", OffsetDateTime.now());
+    variables.put("dateVar", OffsetDateTime.now().withOffsetSameLocal(ZoneOffset.UTC));
     variables.put("boolVar", true);
     variables.put("shortVar", (short)2);
     variables.put("intVar", 5);
@@ -186,7 +176,7 @@ public class VariableValueRetrievalIT {
       String expectedValue;
       if (name.equals("dateVar")) {
         OffsetDateTime temporal = (OffsetDateTime) variables.get(name);
-        expectedValue = simpleDateFormat.format(temporal.withOffsetSameInstant(ZoneOffset.UTC));
+        expectedValue = embeddedOptimizeRule.getDateTimeFormatter().format(temporal.withOffsetSameLocal(ZoneOffset.UTC));
       } else {
         expectedValue = variables.get(name).toString();
       }
