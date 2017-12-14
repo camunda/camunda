@@ -16,6 +16,7 @@
     <skip.elasticsearch>false</skip.elasticsearch>
     <skip.unit.tests>${skipTests}</skip.unit.tests>
     <javadoc.opts>-Xdoclint:none</javadoc.opts>
+    <additionalparam>-Xdoclint:none</additionalparam>
   </properties>
 
   <dependencyManagement>
