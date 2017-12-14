@@ -15,8 +15,6 @@
     <jersey.version>2.26</jersey.version>
     <skip.elasticsearch>false</skip.elasticsearch>
     <skip.unit.tests>${skipTests}</skip.unit.tests>
-    <javadoc.opts>-Xdoclint:none</javadoc.opts>
-    <additionalparam>-Xdoclint:none</additionalparam>
   </properties>
 
   <dependencyManagement>
@@ -491,35 +489,6 @@
 
       <build>
         <plugins>
-
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-javadoc-plugin</artifactId>
-            <executions>
-              <execution>
-                <configuration>
-                  <additionalparam>${javadoc.opts}</additionalparam>
-                  <skip>true</skip>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-site-plugin</artifactId>
-            <configuration>
-              <reportPlugins>
-                <plugin>
-                  <groupId>org.apache.maven.plugins</groupId>
-                  <artifactId>maven-javadoc-plugin</artifactId>
-                  <configuration>
-                    <additionalparam>${javadoc.opts}</additionalparam>
-                  </configuration>
-                </plugin>
-              </reportPlugins>
-            </configuration>
-          </plugin>
 
           <plugin>
             <groupId>com.github.alexcojocaru</groupId>
