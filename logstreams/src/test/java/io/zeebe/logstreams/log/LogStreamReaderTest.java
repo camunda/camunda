@@ -371,6 +371,28 @@ public class LogStreamReaderTest
     }
 
     @Test
+    public void shouldIncreaseBufferAndSeekToLastEventIfSmallAndBigDoesNotFitTogether()
+    {
+        // given
+        final byte[] bytes = new byte[1024 - 56];
+        final long[] positions = writeEvents(31,  new UnsafeBuffer(bytes));
+        TestUtil.waitUntil(() -> logStream.getCurrentAppenderPosition() > positions[30]);
+
+        // when
+        reader.wrap(logStream);
+        final byte[] bigEventValue = new byte[BufferedLogStreamReader.DEFAULT_INITIAL_BUFFER_CAPACITY - 56 - 1];
+        final long[] bigEventPositions = writeEvents(3, new UnsafeBuffer(bigEventValue));
+        TestUtil.waitUntil(() -> logStream.getCurrentAppenderPosition() > bigEventPositions[2]);
+
+        // then
+        assertThat(reader.seek(bigEventPositions[2])).isTrue();
+        final LoggedEvent bigEvent = reader.next();
+        assertThat(bigEvent.getPosition()).isEqualTo(bigEventPositions[2]);
+        assertThat(bigEvent.getKey()).isEqualTo(2);
+        assertThat(reader.hasNext()).isFalse();
+    }
+
+    @Test
     public void shouldResizeBufferAndIterateOverSmallAndBigLoggedEvent()
     {
         // given

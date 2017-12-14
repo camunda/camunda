@@ -82,7 +82,7 @@ public class CompleteInBlockProcessorTest
 
         // a large event
         idx = 2 * ALIGNED_LEN;
-        directBuffer.putInt(lengthOffset(idx), framedLength(headerLength(256))); // aligned size: 48
+        directBuffer.putInt(lengthOffset(idx), framedLength(headerLength(256)));
         directBuffer.putLong(positionOffset(messageOffset(idx)), 3);
 
         fsLogStorage.open();
@@ -196,18 +196,68 @@ public class CompleteInBlockProcessorTest
     }
 
     @Test
-    public void shouldInsufficientBufferCapacityForLessThenHalfFullBuffer()
+    public void shouldInsufficientBufferCapacityIfEventIsLargerThenBufferCapacity()
     {
-        // given buffer
+        // given
         final ByteBuffer readBuffer = ByteBuffer.allocate(2 * ALIGNED_LEN + ALIGNED_LEN);
 
-        // when read into buffer and buffer was processed
+        // when
         final long result = fsLogStorage.read(readBuffer, appendedAddress, processor);
 
-        // then only first 2 small events can be read
-        // third event was to large, since position is less then remaining bytes,
-        // which means buffer is less then half full, OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY will be returned
+        // then
         assertThat(result).isEqualTo(OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY);
+    }
+
+    @Test
+    public void shouldInsufficientBufferCapacityIfPosWasSetAndNewEventCantReadCompletely()
+    {
+        // given
+        final ByteBuffer writeBuffer = ByteBuffer.allocate(176);
+        final MutableDirectBuffer directBuffer = new UnsafeBuffer(0, 0);
+        directBuffer.wrap(writeBuffer);
+
+        int idx = 0;
+        directBuffer.putInt(lengthOffset(idx), framedLength(LENGTH));
+        directBuffer.putLong(positionOffset(messageOffset(idx)), 1);
+
+        idx = ALIGNED_LEN;
+        directBuffer.putInt(lengthOffset(idx), framedLength(LENGTH));
+        directBuffer.putLong(positionOffset(messageOffset(idx)), 2);
+
+        // a large event
+        idx = 2 * ALIGNED_LEN;
+        directBuffer.putInt(lengthOffset(idx), framedLength(headerLength(64 - 56)));
+        directBuffer.putLong(positionOffset(messageOffset(idx)), 3);
+
+        final long appendedAddress = fsLogStorage.append(writeBuffer);
+
+
+        final ByteBuffer smallBuffer = ByteBuffer.allocate(2 * ALIGNED_LEN);
+
+        // when
+        final long result = fsLogStorage.read(smallBuffer, appendedAddress, processor);
+
+        // then
+        assertThat(smallBuffer.position()).isEqualTo(smallBuffer.capacity());
+
+        // when
+        smallBuffer.position(ALIGNED_LEN);
+        final long newResult = fsLogStorage.read(smallBuffer, result, processor);
+
+        // then
+        assertThat(newResult).isEqualTo(OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY);
+
+        // when
+        smallBuffer.limit(ALIGNED_LEN);
+        smallBuffer.position(0);
+        final ByteBuffer largerBuffer = ByteBuffer.allocate(4 * ALIGNED_LEN);
+        largerBuffer.put(smallBuffer);
+        final long opResult = fsLogStorage.read(largerBuffer, result, processor);
+
+        // then
+        assertThat(opResult).isGreaterThan(result);
+        assertThat(largerBuffer.position()).isEqualTo(ALIGNED_LEN + 64);
+        assertThat(largerBuffer.limit()).isEqualTo(ALIGNED_LEN + 64);
     }
 
     @Test

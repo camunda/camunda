@@ -29,10 +29,10 @@ import static io.zeebe.logstreams.spi.LogStorage.OP_RESULT_INSUFFICIENT_BUFFER_C
  */
 public class CompleteEventsInBlockProcessor implements ReadResultProcessor
 {
-    protected final MutableDirectBuffer directBuffer = new UnsafeBuffer(0, 0);
-    protected long lastReadEventPosition = -1;
+    private final MutableDirectBuffer directBuffer = new UnsafeBuffer(0, 0);
+    private long lastReadEventPosition = -1;
 
-    public long getLastReadEventPosition()
+    long getLastReadEventPosition()
     {
         return lastReadEventPosition;
     }
@@ -50,14 +50,14 @@ public class CompleteEventsInBlockProcessor implements ReadResultProcessor
         final int startPosition = byteBuffer.position() - readResult;
         readResult = calculateCorrectReadResult(readResult, startPosition);
 
-        if (readResult >= HEADER_BLOCK_LENGTH)
+        if (readResult > 0)
         {
             byteBuffer.position(startPosition + readResult);
             byteBuffer.limit(startPosition + readResult);
         }
-        else
+        else if (readResult == 0)
         {
-            byteBuffer.clear();
+            readResult = (int) OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY;
         }
         return readResult;
     }
@@ -80,7 +80,7 @@ public class CompleteEventsInBlockProcessor implements ReadResultProcessor
 
             if (fragmentLength <= remainingBytes)
             {
-                lastReadEventPosition = getPosition(directBuffer, position);
+                lastReadEventPosition = LogEntryDescriptor.getPosition(directBuffer, position);
                 remainingBytes -= fragmentLength;
                 position += fragmentLength;
             }
