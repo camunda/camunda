@@ -15,7 +15,7 @@
  */
 package io.zeebe.logstreams.snapshot.benchmarks;
 
-import io.zeebe.logstreams.snapshot.ComposedZbMapSnapshot;
+import io.zeebe.logstreams.snapshot.ComposedSnapshot;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Mode;
@@ -36,7 +36,7 @@ public class ComposedMapSnapshotBenchmark
         // given
         final File tmpFile = filledMapSnapshotSupplier.tmpFile;
         final FileOutputStream outputStream = new FileOutputStream(tmpFile);
-        final ComposedZbMapSnapshot composedZbMapSnapshot = filledMapSnapshotSupplier.composedZbMapSnapshot;
+        final ComposedSnapshot composedZbMapSnapshot = filledMapSnapshotSupplier.composedZbMapSnapshot;
 
         // run
         composedZbMapSnapshot.writeSnapshot(outputStream);
@@ -52,7 +52,7 @@ public class ComposedMapSnapshotBenchmark
         // given
         final File tmpFile = writtenMapSnapshotSupplier.tmpFile;
         final FileInputStream outputStream = new FileInputStream(tmpFile);
-        final ComposedZbMapSnapshot composedZbMapSnapshot = writtenMapSnapshotSupplier.composedZbMapSnapshot;
+        final ComposedSnapshot composedZbMapSnapshot = writtenMapSnapshotSupplier.composedZbMapSnapshot;
 
         // run
         composedZbMapSnapshot.recoverFromSnapshot(outputStream);

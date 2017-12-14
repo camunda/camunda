@@ -47,12 +47,13 @@ public class CompleteEventsInBlockProcessor implements ReadResultProcessor
 
         directBuffer.wrap(byteBuffer);
 
-        readResult = calculateCorrectReadResult(readResult, byteBuffer.position() - readResult);
+        final int startPosition = byteBuffer.position() - readResult;
+        readResult = calculateCorrectReadResult(readResult, startPosition);
 
         if (readResult >= HEADER_BLOCK_LENGTH)
         {
-            byteBuffer.position(readResult);
-            byteBuffer.limit(readResult);
+            byteBuffer.position(startPosition + readResult);
+            byteBuffer.limit(startPosition + readResult);
         }
         else
         {

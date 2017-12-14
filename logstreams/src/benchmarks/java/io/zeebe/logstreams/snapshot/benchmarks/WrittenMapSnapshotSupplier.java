@@ -15,7 +15,7 @@
  */
 package io.zeebe.logstreams.snapshot.benchmarks;
 
-import io.zeebe.logstreams.snapshot.ComposedZbMapSnapshot;
+import io.zeebe.logstreams.snapshot.ComposedSnapshot;
 import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
 import io.zeebe.map.Long2LongZbMap;
 import org.openjdk.jmh.annotations.*;
@@ -24,7 +24,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.util.Random;
 
-import static io.zeebe.map.ZbMap.OPTIMAL_BLOCK_COUNT;
+import static io.zeebe.map.ZbMap.DEFAULT_BLOCK_COUNT;
 
 /**
  *
@@ -35,20 +35,20 @@ public class WrittenMapSnapshotSupplier
     private Long2LongZbMap map;
 
     File tmpFile;
-    ComposedZbMapSnapshot composedZbMapSnapshot;
+    ComposedSnapshot composedZbMapSnapshot;
 
     @Setup(Level.Iteration)
     public void writeMapSnapshot() throws Exception
     {
         tmpFile = new File("recoverIdxSnapshot-benchmark.txt");
-        map = new Long2LongZbMap(Benchmarks.DATA_SET_SIZE / OPTIMAL_BLOCK_COUNT, OPTIMAL_BLOCK_COUNT);
+        map = new Long2LongZbMap(Benchmarks.DATA_SET_SIZE / DEFAULT_BLOCK_COUNT, DEFAULT_BLOCK_COUNT);
 
         final Random random = new Random();
         for (int idx = 0; idx < Benchmarks.DATA_SET_SIZE; idx++)
         {
             map.put(idx, Math.min(Math.abs(random.nextLong()), Benchmarks.DATA_SET_SIZE - 1));
         }
-        composedZbMapSnapshot = new ComposedZbMapSnapshot(new ZbMapSnapshotSupport(map));
+        composedZbMapSnapshot = new ComposedSnapshot(new ZbMapSnapshotSupport<>(map));
 
         composedZbMapSnapshot.writeSnapshot(new FileOutputStream(tmpFile));
     }

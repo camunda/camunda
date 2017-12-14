@@ -110,6 +110,10 @@ public class FsLogStorage implements LogStorage
 
                 markSegmentAsDirty(currentSegment);
             }
+            else
+            {
+                opresult = appendResult;
+            }
         }
 
         return opresult;
