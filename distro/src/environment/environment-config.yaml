@@ -4,7 +4,7 @@ container:
   ports:
     http: 8090
 engines:
-  '1':
+  'camunda-bpm':
     name: default
     rest: http://localhost:8080/engine-rest
     authentication:
