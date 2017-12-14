@@ -188,7 +188,6 @@ public class ProcessDefinitionRestService {
    * Note: Storing the values to the same process definition does overwrite the old values.
    *
    * @param targetValueDto target values related to a certain process definition
-   * @return if the process of persisting the values was successful (200) or an error if there were probelems (500).
    */
   @PUT
   @Path("/heatmap/duration/target-value")
