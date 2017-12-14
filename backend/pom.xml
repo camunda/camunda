@@ -15,6 +15,7 @@
     <jersey.version>2.26</jersey.version>
     <skip.elasticsearch>false</skip.elasticsearch>
     <skip.unit.tests>${skipTests}</skip.unit.tests>
+    <javadoc.opts>-Xdoclint:none</javadoc.opts>
   </properties>
 
   <dependencyManagement>
@@ -501,10 +502,27 @@
                   <goal>jar</goal>
                 </goals>
                 <configuration> <!-- add this to disable checking -->
-                  <additionalparam>-Xdoclint:none</additionalparam>
+                  <additionalparam>${javadoc.opts}</additionalparam>
                 </configuration>
               </execution>
             </executions>
+          </plugin>
+
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-site-plugin</artifactId>
+            <version>3.3</version>
+            <configuration>
+              <reportPlugins>
+                <plugin>
+                  <groupId>org.apache.maven.plugins</groupId>
+                  <artifactId>maven-javadoc-plugin</artifactId>
+                  <configuration>
+                    <additionalparam>${javadoc.opts}</additionalparam>
+                  </configuration>
+                </plugin>
+              </reportPlugins>
+            </configuration>
           </plugin>
 
           <plugin>
