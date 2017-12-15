@@ -15,8 +15,10 @@ button.DropdownOption {
   border-radius: 0;
 
   &:hover {
-    background-color: #f2f2f2;
+    background-color: #008fe6;  /* #00a8ff -> darken 10% */
+    color: #fff;
     border: none;
+    transition: none;
   }
 
   &:focus {
