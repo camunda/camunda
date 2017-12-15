@@ -7,7 +7,7 @@ import {loadReports, getOccupiedTiles} from './service';
 
 import './AddButton.css';
 
-const size = {width: 3, height: 3};
+const size = {width: 6, height: 4};
 
 export default class AddButton extends React.Component {
   constructor(props) {
