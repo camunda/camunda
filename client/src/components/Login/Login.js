@@ -4,7 +4,7 @@ import {getToken} from 'credentials';
 
 import {login} from './service';
 
-import {Message, Button, Input} from 'components';
+import {Logo, Message, Button, Input} from 'components';
 
 import './Login.css';
 
@@ -53,8 +53,8 @@ export default class Login extends React.Component {
 
     return (
       <form  className='Login'>
-        <h1 className="Login__heading">
-          <span className='Login__brand-logo'></span>
+        <h1 className='Login__heading'>
+          <Logo className='Login__logo'/>
           Camunda Optimize
         </h1>
         {error ? (<Message type='error' message='Could not log you in. Please check your username and password.'/>) : ('')}

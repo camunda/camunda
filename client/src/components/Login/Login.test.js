@@ -17,7 +17,8 @@ jest.mock('react-router-dom', () => {return {
 jest.mock('components', () => {return {
   Message: ({type}) => {return <div className={"Message Message--" + type}></div>},
   Button: props => <button {...props}>{props.children}</button>,
-  Input: props => <input onChange={props.onChange} type={props.type} name={props.name} value={props.value}/>
+  Input: props => <input onChange={props.onChange} type={props.type} name={props.name} value={props.value}/>,
+  Logo: () => <div></div>
   }
 });
 

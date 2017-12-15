@@ -1,6 +1,7 @@
 import React from 'react';
 import {Link} from 'react-router-dom';
 
+import {Logo} from 'components';
 import HeaderNav from './HeaderNav';
 import LogoutButton from './LogoutButton';
 
@@ -12,7 +13,7 @@ export default function Header({name}) {
   return (
     <header role='banner' className='Header'>
       <Link to='/' className='Header__link' title={name}>
-        <span className='Header__brand-logo' />
+        <Logo className='Header__logo'/>
         <span>{name}</span>
       </Link>
       {(getToken() &&

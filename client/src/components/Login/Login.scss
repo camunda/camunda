@@ -6,22 +6,20 @@
   width: 340px;
 }
 
-.Login__brand-logo {
-  display: inline-block;
-  margin-right: .3em;
-  width: 21px;
-  height: 23px;
-  background-image: url('./camunda.svg');
-  background-repeat: no-repeat;
-  background-size: 21px;
-  vertical-align: middle;
-}
-
 .Login__heading {
   font-size: 1.5em;
   font-weight: normal;
   margin-bottom: 36px;
   text-align: center;
+}
+
+.Login__logo {
+  margin-right: .3em;
+  width: 21px;
+  height: 21px;
+  vertical-align: baseline;
+  position: relative;
+  top: 2px;
 }
 
 .Login__controls {
@@ -50,3 +48,6 @@
   font-size: 1em;
   padding: 8px 14px 9px;
 }
+
+
+

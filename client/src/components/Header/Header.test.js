@@ -16,6 +16,10 @@ jest.mock('./HeaderNav', () => {
   HeaderNav.Item = () => <div>HeaderNavItem</div>;
   return HeaderNav;
 });
+jest.mock('components', () => {return {
+  Logo: () => <div></div>
+  }
+});
 
 
 it('renders without crashing', () => {

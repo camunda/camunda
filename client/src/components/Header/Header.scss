@@ -26,14 +26,12 @@
   color: #333;
 }
 
-.Header__brand-logo {
-  display: inline-block;
+.Header__logo {
   margin-right: .3em;
   width: 19px;
-  height: 24px;
-  background-image: url('./camunda.svg');
-  background-repeat: no-repeat;
-  background-size: 19px;
-  vertical-align: middle;
+  height: 19px;
+  vertical-align: baseline;
+  position: relative;
+  top: 2px;
 }
 

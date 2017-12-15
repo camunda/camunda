@@ -12,3 +12,4 @@ export {ControlGroup} from './ControlGroup';
 export {CopyToClipboard} from './CopyToClipboard';
 export {ReportView} from './ReportView';
 export {ErrorBoundary} from './ErrorBoundary';
+export {Logo} from './Logo';
