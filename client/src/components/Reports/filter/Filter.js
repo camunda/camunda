@@ -34,7 +34,18 @@ export default class Filter extends React.Component {
   }
 
   addFilter = (...newFilters) => {
-    this.props.onChange('filter', [...this.props.data, ...newFilters]);
+    const filters = this.props.data;
+
+    if(newFilters[0].type === "date") {
+      const startDateIndex = filters.findIndex((filter, index) => {
+        return (filter.data.type === "start_date" && filter.data.operator === ">=");
+      });
+      if (typeof(startDateIndex) === "number" && startDateIndex !== -1) {
+          filters.splice(startDateIndex, 2);
+      }
+    }
+
+    this.props.onChange('filter', [...filters, ...newFilters]);
     this.closeModal();
   }
 
@@ -43,7 +54,7 @@ export default class Filter extends React.Component {
   }
 
   processDefinitionIsNotSelected = () => {
-    return !this.props.processDefinitionId || 
+    return !this.props.processDefinitionId ||
     this.props.processDefinitionId === '';
   }
 
@@ -61,6 +72,4 @@ export default class Filter extends React.Component {
       <FilterModal addFilter={this.addFilter} close={this.closeModal} processDefinitionId={this.props.processDefinitionId} />
     </div>);
   }
-
-  
 }

@@ -58,24 +58,40 @@ it('should contain a FilterModal component based on the selected new Filter', ()
 
 it('should add a filter to the list of filters', () => {
   const spy = jest.fn();
-  const previousFilters = ['Filter 1'];
+  const sampleFilter = {
+      data: {
+        operator : "bar",
+        type : "baz",
+        value : "foo"
+      },
+      type : "qux"
+  }
+  const previousFilters = [sampleFilter];
 
   const node = mount(<Filter data={previousFilters} onChange={spy} />);
 
   node.instance().addFilter('Filter 2');
 
-  expect(spy.mock.calls[0][1]).toEqual(['Filter 1', 'Filter 2']);
+  expect(spy.mock.calls[0][1]).toEqual([sampleFilter, 'Filter 2']);
 });
 
 it('should add multiple filters to the list of filters', () => {
   const spy = jest.fn();
-  const previousFilters = ['Filter 1'];
+  const sampleFilter = {
+      data: {
+        operator : "bar",
+        type : "baz",
+        value : "foo"
+      },
+      type : "qux"
+  };
+  const previousFilters = [sampleFilter];
 
   const node = mount(<Filter data={previousFilters} onChange={spy} />);
 
   node.instance().addFilter('Filter 2', 'Filter 3');
 
-  expect(spy.mock.calls[0][1]).toEqual(['Filter 1', 'Filter 2', 'Filter 3']);
+  expect(spy.mock.calls[0][1]).toEqual([sampleFilter, 'Filter 2', 'Filter 3']);
 
 });
 
@@ -103,7 +119,7 @@ it('should remove multiple filters from the list of filters', () => {
 
 it('should disable variable and executed flow node filter if no process definition is available', () => {
   const node = mount(<Filter processDefinitionId="" />);
-   
+
   const buttons = node.find("#dropwdown button");
   expect(buttons.at(0).prop("disabled")).toBeFalsy(); // start date filter
   expect(buttons.at(1).prop("disabled")).toBeTruthy(); // variable filter
