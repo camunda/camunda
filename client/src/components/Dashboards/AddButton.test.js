@@ -85,8 +85,8 @@ it('should call the callback when adding a report', () => {
 
   expect(spy).toHaveBeenCalledWith({
     dimensions: {
-      height: 3,
-      width: 3
+      height: 4,
+      width: 6
     },
     position: {
       x: 5,
