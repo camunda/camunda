@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.system.threads;
 
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.agrona.ErrorHandler;
@@ -29,8 +30,6 @@ import io.zeebe.broker.Loggers;
 import io.zeebe.broker.system.ConfigurationManager;
 import io.zeebe.broker.system.threads.cfg.ThreadingCfg;
 import io.zeebe.broker.system.threads.cfg.ThreadingCfg.BrokerIdleStrategy;
-import io.zeebe.broker.transport.cfg.SocketBindingCfg;
-import io.zeebe.broker.transport.cfg.TransportComponentCfg;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
@@ -47,17 +46,15 @@ public class ActorSchedulerService implements Service<ActorScheduler>
 
     protected final BrokerIdleStrategy brokerIdleStrategy;
     protected final int maxIdleTimeMs;
-    protected final String brokerId;
 
     protected ActorScheduler scheduler;
+    protected final Map<String, String> diagnosticContext;
 
-    public ActorSchedulerService(ConfigurationManager configurationManager)
+    public ActorSchedulerService(Map<String, String> diagnosticContext, ConfigurationManager configurationManager)
     {
-        final ThreadingCfg cfg = configurationManager.readEntry("threading", ThreadingCfg.class);
-        final TransportComponentCfg transportComponentCfg = configurationManager.readEntry("network", TransportComponentCfg.class);
-        final SocketBindingCfg clientApiCfg = transportComponentCfg.clientApi;
-        brokerId = clientApiCfg.getHost(transportComponentCfg.host) + ":" + clientApiCfg.getPort();
+        this.diagnosticContext = diagnosticContext;
 
+        final ThreadingCfg cfg = configurationManager.readEntry("threading", ThreadingCfg.class);
         int numberOfThreads = cfg.numberOfThreads;
 
         if (numberOfThreads > maxThreadCount)
@@ -90,7 +87,7 @@ public class ActorSchedulerService implements Service<ActorScheduler>
                 .runnerIdleStrategy(idleStrategy)
                 .runnerErrorHander(errorHandler)
                 .baseIterationsPerActor(37)
-                .diagnosticProperty("broker-id", brokerId)
+                .diagnosticContext(diagnosticContext)
                 .build();
     }
 
@@ -131,7 +128,7 @@ public class ActorSchedulerService implements Service<ActorScheduler>
             "availableThreads=" + availableThreads +
             ", brokerIdleStrategy=" + brokerIdleStrategy +
             ", maxIdleTimeMs=" + maxIdleTimeMs +
-            ", brokerId='" + brokerId + '\'' +
+            ", context='" + diagnosticContext + '\'' +
             '}';
     }
 }

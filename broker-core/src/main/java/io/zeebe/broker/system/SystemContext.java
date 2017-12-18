@@ -20,16 +20,19 @@ package io.zeebe.broker.system;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.agrona.LangUtil;
 import org.slf4j.Logger;
 
 import io.zeebe.broker.Loggers;
+import io.zeebe.broker.transport.cfg.SocketBindingCfg;
+import io.zeebe.broker.transport.cfg.TransportComponentCfg;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.impl.ServiceContainerImpl;
 import io.zeebe.util.FileUtil;
@@ -37,6 +40,7 @@ import io.zeebe.util.FileUtil;
 public class SystemContext implements AutoCloseable
 {
     public static final Logger LOG = Loggers.SYSTEM_LOGGER;
+    public static final String BROKER_ID_LOG_PROPERTY = "broker-id";
 
     protected final ServiceContainer serviceContainer;
 
@@ -46,10 +50,21 @@ public class SystemContext implements AutoCloseable
 
     protected final List<CompletableFuture<?>> requiredStartActions = new ArrayList<>();
 
+    protected Map<String, String> diagnosticContext;
+
     public SystemContext(ConfigurationManager configurationManager)
     {
-        this.serviceContainer = new ServiceContainerImpl();
+        final String brokerId = readBrokerId(configurationManager);
+        this.diagnosticContext = Collections.singletonMap(BROKER_ID_LOG_PROPERTY, brokerId);
+        this.serviceContainer = new ServiceContainerImpl(Collections.singletonMap(BROKER_ID_LOG_PROPERTY, brokerId));
         this.configurationManager = configurationManager;
+    }
+
+    protected static String readBrokerId(ConfigurationManager configurationManager)
+    {
+        final TransportComponentCfg transportComponentCfg = configurationManager.readEntry("network", TransportComponentCfg.class);
+        final SocketBindingCfg clientApiCfg = transportComponentCfg.clientApi;
+        return clientApiCfg.getHost(transportComponentCfg.host) + ":" + clientApiCfg.getPort();
     }
 
     public SystemContext(String configFileLocation)
@@ -103,7 +118,7 @@ public class SystemContext implements AutoCloseable
         {
             LOG.error("Could not start broker", e);
             close();
-            LangUtil.rethrowUnchecked(e);
+            throw new RuntimeException(e);
         }
 
     }
@@ -150,6 +165,11 @@ public class SystemContext implements AutoCloseable
     public void addRequiredStartAction(CompletableFuture<?> future)
     {
         requiredStartActions.add(future);
+    }
+
+    public Map<String, String> getDiagnosticContext()
+    {
+        return diagnosticContext;
     }
 
 }

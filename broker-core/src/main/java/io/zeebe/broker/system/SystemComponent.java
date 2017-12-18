@@ -43,7 +43,7 @@ public class SystemComponent implements Component
         serviceContainer.createService(COUNTERS_MANAGER_SERVICE, countersManagerService)
             .install();
 
-        final ActorSchedulerService agentRunnerService = new ActorSchedulerService(context.getConfigurationManager());
+        final ActorSchedulerService agentRunnerService = new ActorSchedulerService(context.getDiagnosticContext(), context.getConfigurationManager());
         serviceContainer.createService(ACTOR_SCHEDULER_SERVICE, agentRunnerService)
             .install();
 

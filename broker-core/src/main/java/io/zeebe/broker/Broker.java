@@ -27,6 +27,8 @@ import io.zeebe.broker.system.SystemContext;
 import io.zeebe.broker.task.TaskQueueComponent;
 import io.zeebe.broker.transport.TransportComponent;
 import io.zeebe.broker.workflow.WorkflowComponent;
+import io.zeebe.util.LogUtil;
+
 import org.slf4j.Logger;
 
 public class Broker implements AutoCloseable
@@ -62,7 +64,7 @@ public class Broker implements AutoCloseable
     public Broker(SystemContext brokerContext)
     {
         this.brokerContext = brokerContext;
-        start();
+        LogUtil.doWithMDC(brokerContext.getDiagnosticContext(), () -> start());
     }
 
     protected void start()
@@ -82,13 +84,15 @@ public class Broker implements AutoCloseable
     @Override
     public void close()
     {
-        if (!isClosed)
+        LogUtil.doWithMDC(brokerContext.getDiagnosticContext(), () ->
         {
-            brokerContext.close();
-            isClosed = true;
-            LOG.info("Broker closed");
-        }
-
+            if (!isClosed)
+            {
+                brokerContext.close();
+                isClosed = true;
+                LOG.info("Broker closed");
+            }
+        });
     }
 
     public SystemContext getBrokerContext()
