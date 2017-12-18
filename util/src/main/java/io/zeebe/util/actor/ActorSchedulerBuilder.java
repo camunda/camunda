@@ -112,9 +112,9 @@ public final class ActorSchedulerBuilder
     /**
      * Made available to loggers via SLF4J {@link MDC} concept.
      */
-    public ActorSchedulerBuilder diagnosticProperty(String key, String value)
+    public ActorSchedulerBuilder diagnosticContext(Map<String, String> diagnosticContext)
     {
-        this.diagnosticContext.put(key, value);
+        this.diagnosticContext.putAll(diagnosticContext);
         return this;
     }
 

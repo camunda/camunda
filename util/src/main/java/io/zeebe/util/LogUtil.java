@@ -13,21 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.util.actor;
+package io.zeebe.util;
 
-import io.zeebe.util.CloseableSilently;
+import java.util.Map;
 
-/**
- * Schedule the given agents and invoke them within a duty cycle.
- *
- * <p>
- * Use {@link ActorReference#close()} to remove a scheduled actor from the duty
- * cycle.
- */
-public interface ActorScheduler extends CloseableSilently
+import org.slf4j.MDC;
+
+public class LogUtil
 {
     /**
-     * Schedule the given actor.
+     * see https://logback.qos.ch/manual/mdc.html
      */
-    ActorReference schedule(Actor actor);
+    public static void doWithMDC(Map<String, String> context, Runnable r)
+    {
+        final Map<String, String> currentContext = MDC.getCopyOfContextMap();
+        MDC.setContextMap(context);
+
+        try
+        {
+            r.run();
+        }
+        finally
+        {
+            MDC.setContextMap(currentContext);
+        }
+    }
 }

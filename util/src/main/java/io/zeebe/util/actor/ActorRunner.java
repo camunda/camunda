@@ -21,10 +21,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import io.zeebe.util.DeferredCommandContext;
 import org.agrona.ErrorHandler;
 import org.agrona.concurrent.IdleStrategy;
-import org.slf4j.MDC;
+
+import io.zeebe.util.DeferredCommandContext;
+import io.zeebe.util.LogUtil;
 
 /**
  * Invokes the given actors in a loop. The amount of invocations depends on the
@@ -73,18 +74,7 @@ public class ActorRunner implements Runnable
     @Override
     public void run()
     {
-        final Map<String, String> currentContext = MDC.getCopyOfContextMap();
-        MDC.setContextMap(diagnosticContext);
-
-        try
-        {
-            doWorkUntilClose();
-        }
-        finally
-        {
-            MDC.setContextMap(currentContext);
-        }
-
+        LogUtil.doWithMDC(diagnosticContext, this::doWorkUntilClose);
     }
 
     private void doWorkUntilClose()
