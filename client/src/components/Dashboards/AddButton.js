@@ -68,6 +68,8 @@ export default class AddButton extends React.Component {
       return null;
     }
 
+    const noReports = (this.state.availableReports.length === 0);
+
     return <DashboardObject tileDimensions={this.props.tileDimensions} {...position}>
       <Button className='AddButton' onClick={this.openModal}>
         <div className='AddButton__symbol'></div>
@@ -78,10 +80,11 @@ export default class AddButton extends React.Component {
         <Modal.Content>
           <ControlGroup layout='centered'>
             <label htmlFor='AddButton__selectReports'>Select a Report…</label>
-            <Select value={this.state.selectedReportId} onChange={this.selectReport} name='AddButton__selectReports' className='AddButton__selectReports'>
+            <Select disabled={noReports} value={this.state.selectedReportId} onChange={this.selectReport} name='AddButton__selectReports' className='AddButton__selectReports'>
               {this.state.availableReports.map(report => {
                 return <Select.Option key={report.id} value={report.id}>{report.name}</Select.Option>
               })}
+              {(noReports) ? <Select.Option>No reports created yet</Select.Option> : ''}
             </Select>
           </ControlGroup>
           <div className='AddButton__modal-divider'>or</div>
@@ -91,7 +94,7 @@ export default class AddButton extends React.Component {
         </Modal.Content>
         <Modal.Actions>
           <Button onClick={this.closeModal}>Cancel</Button>
-          <Button type='primary' color='blue' onClick={this.addReport}>Add Report</Button>
+          <Button type='primary' color='blue' onClick={this.addReport} disabled={noReports}>Add Report</Button>
         </Modal.Actions>
       </Modal>
 
