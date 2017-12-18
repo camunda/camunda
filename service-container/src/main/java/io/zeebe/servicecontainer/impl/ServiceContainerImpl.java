@@ -24,6 +24,7 @@ import java.util.function.Consumer;
 
 import io.zeebe.servicecontainer.*;
 import io.zeebe.util.LangUtil;
+import io.zeebe.util.LogUtil;
 import io.zeebe.util.actor.*;
 import org.agrona.ErrorHandler;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
@@ -39,6 +40,7 @@ public class ServiceContainerImpl implements Actor, ServiceContainer
     }
 
     private static final String NAME = "service-container-main";
+    protected final Map<String, String> diagnosticContext;
 
     protected final Map<ServiceName<?>, ServiceController> controllersByName = new HashMap<>();
     protected final Map<ServiceName<?>, ServiceGroup> groups = new HashMap<>();
@@ -66,10 +68,17 @@ public class ServiceContainerImpl implements Actor, ServiceContainer
 
     public ServiceContainerImpl()
     {
+        this(Collections.emptyMap());
+    }
+
+    public ServiceContainerImpl(Map<String, String> diagnosticContext)
+    {
         idleStrategy = new WaitingIdleStrategy();
 
+        this.diagnosticContext = diagnosticContext;
         actorScheduler = new ActorSchedulerBuilder()
                 .name("service-container")
+                .diagnosticContext(diagnosticContext)
                 .runnerIdleStrategy(idleStrategy)
                 .runnerErrorHander(DEFAULT_ERROR_HANDLER)
                 .build();
@@ -340,7 +349,7 @@ public class ServiceContainerImpl implements Actor, ServiceContainer
 
     public void executeShortRunning(Runnable runnable)
     {
-        actionsExecutor.execute(runnable);
+        actionsExecutor.execute(() -> LogUtil.doWithMDC(diagnosticContext, runnable));
     }
 
 }
