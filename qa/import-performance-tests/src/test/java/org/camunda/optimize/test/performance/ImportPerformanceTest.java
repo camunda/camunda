@@ -2,7 +2,6 @@ package org.camunda.optimize.test.performance;
 
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.camunda.optimize.test.performance.data.generation.DataGenerator;
 import org.camunda.optimize.test.performance.data.generation.DataGeneratorProvider;
 import org.camunda.optimize.test.util.PropertyUtil;
@@ -37,14 +36,16 @@ import static org.hamcrest.Matchers.lessThanOrEqualTo;
 @ContextConfiguration(locations = {"/import-performance-applicationContext.xml"})
 public class ImportPerformanceTest {
 
-  public static final int TEN_SECONDS = 10_000;
-  public static final int QUEUE_SIZE = 100;
-  private final Logger logger = LoggerFactory.getLogger(ImportPerformanceTest.class);
-  public EngineIntegrationRule engineRule = new EngineIntegrationRule("import-performance-test.properties");
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
+  private final Logger logger = LoggerFactory.getLogger(getClass());
+
+  private ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
+  private EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
+
+
+  private static final int QUEUE_SIZE = 100;
   private int NUMBER_OF_INSTANCES;
   private boolean shouldGenerateData;
+  private long maxImportDurationInMin;
 
   @Rule
   public RuleChain chain = RuleChain
@@ -55,6 +56,7 @@ public class ImportPerformanceTest {
     Properties properties = PropertyUtil.loadProperties("import-performance-test.properties");
     NUMBER_OF_INSTANCES = Integer.parseInt(properties.getProperty("import.test.number.of.processes"));
     shouldGenerateData = Boolean.parseBoolean(properties.getProperty("import.test.generate.data"));
+    maxImportDurationInMin = Long.parseLong(properties.getProperty("import.test.max.duration.in.max"));
   }
 
   @Test
@@ -69,16 +71,25 @@ public class ImportPerformanceTest {
 
     //trigger import
     logger.info("Starting import of engine data to Optimize...");
-    engineRule.waitForAllProcessesToFinish();
+    ScheduledExecutorService progressReporter = reportImportProgress();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    stopReportingProgress(progressReporter);
 
     OffsetDateTime pointThree = OffsetDateTime.now();
 
     //report results
     long importDurationInMinutes = ChronoUnit.MINUTES.between(pointTwo,pointThree);
-    long fifteenMinutes = 15L;
     logger.info("Import took [ " +  importDurationInMinutes + " ] min");
-    assertThat(importDurationInMinutes, lessThanOrEqualTo(fifteenMinutes));
+    assertThat(importDurationInMinutes, lessThanOrEqualTo(maxImportDurationInMin));
+  }
+
+  private ScheduledExecutorService reportImportProgress() {
+    ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
+    exec.scheduleAtFixedRate(
+      () -> logger.info("Progress of engine import: {}%",
+        embeddedOptimizeRule.getProgressValue()), 0, 5, TimeUnit.SECONDS
+    );
+    return exec;
   }
 
   public void generateData() throws InterruptedException {
@@ -97,10 +108,10 @@ public class ImportPerformanceTest {
     importExecutor.awaitTermination(16L, TimeUnit.HOURS);
     logger.info("Finished data generation!");
 
-    stopReportingDataGenerationProgress(exec);
+    stopReportingProgress(exec);
   }
 
-  private void stopReportingDataGenerationProgress(ScheduledExecutorService exec) {
+  private void stopReportingProgress(ScheduledExecutorService exec) {
     exec.shutdownNow();
   }
 
