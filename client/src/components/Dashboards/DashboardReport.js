@@ -30,7 +30,9 @@ export default class DashboardReport extends React.Component {
 
     return <div>
       <div className='DashboardReport__header'>
-        {this.state.data.name}
+        <h1 className='DashboardReport__heading'>
+          {this.state.data.name}
+        </h1>
       </div>
       <div className='DashboardReport__visualization'>
         {this.state.data.errorMessage ?

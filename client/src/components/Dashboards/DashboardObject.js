@@ -12,12 +12,12 @@ export default function DashboardObject({
 
   const margin = outerWidth - innerWidth;
 
-  return (<div className='DashboardObject' style={{
+  return (<section className='DashboardObject' style={{
     top: y * outerHeight + margin / 2 - 1,
     left: x * outerWidth + margin / 2 - 1,
     width: width * outerWidth - margin + 1,
     height: height * outerHeight - margin + 1,
   }}>
     {children}
-  </div>);
+  </section>);
 }
