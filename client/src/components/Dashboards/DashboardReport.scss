@@ -1,3 +1,7 @@
+.DashboardReport__wrapper {
+  height: 100%
+}
+
 .DashboardReport__visualization {
   position: absolute;
   top: 2em;
@@ -5,6 +9,7 @@
   left: 0;
   right: 0;
   overflow: auto;
+  padding: 10px;
 }
 
 .DashboardReport__header {
@@ -15,11 +20,19 @@
   right: 0;
   line-height: 2em;
   font-weight: bold;
-  padding-left: .5em;
-  border-bottom: 1px solid lightgray;
+  padding-left: 10px;
 }
 
 .DashboardReport__heading {
-  font-size: 21px;
+  font-size: 24px;
   margin: 0;
+}
+
+.DashboardReport__visualization { 
+
+  .Table {
+    table-layout: fixed;
+    min-width: 100%;
+  }
+  
 }

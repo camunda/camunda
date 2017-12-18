@@ -28,7 +28,7 @@ export default class DashboardReport extends React.Component {
       return 'loading...'
     }
 
-    return <div>
+    return <div className='DashboardReport__wrapper'>
       <div className='DashboardReport__header'>
         <h1 className='DashboardReport__heading'>
           {this.state.data.name}
