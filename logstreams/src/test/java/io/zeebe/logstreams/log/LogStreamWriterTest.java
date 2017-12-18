@@ -53,6 +53,7 @@ public class LogStreamWriterTest
 {
     private static final DirectBuffer TOPIC_NAME = wrapString("test-topic");
     private static final int PARTITION_ID = 1;
+    private static final int TERM = 255;
     private static final byte[] EVENT_VALUE = getBytes("test");
     private static final byte[] EVENT_METADATA = getBytes("metadata");
 
@@ -85,6 +86,7 @@ public class LogStreamWriterTest
         when(mockLog.getWriteBuffer()).thenReturn(mockWriteBuffer);
         when(mockLog.getTopicName()).thenReturn(TOPIC_NAME);
         when(mockLog.getPartitionId()).thenReturn(PARTITION_ID);
+        when(mockLog.getTerm()).thenReturn(TERM);
 
         writer = new LogStreamWriterImpl(mockLog);
 
@@ -303,11 +305,10 @@ public class LogStreamWriterTest
 
         writer
             .key(4L)
-            .raftTermId(5)
             .value(new UnsafeBuffer(EVENT_VALUE))
             .tryWrite();
 
-        assertThat(writeBuffer.getInt(LogEntryDescriptor.raftTermOffset(MESSAGE_OFFSET))).isEqualTo(5);
+        assertThat(writeBuffer.getInt(LogEntryDescriptor.raftTermOffset(MESSAGE_OFFSET))).isEqualTo(TERM);
     }
 
     protected Answer<?> claimFragment(final long offset)

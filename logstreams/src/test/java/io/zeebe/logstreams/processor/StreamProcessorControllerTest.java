@@ -629,30 +629,6 @@ public class StreamProcessorControllerTest
     }
 
     @Test
-    public void shouldSetRaftTermIdOnWrittenEvent()
-    {
-        // given
-        final int raftTerm = 53;
-
-        mockSourceLogStreamReader.addEvent(mockSourceEvent);
-
-        when(mockEventProcessor.executeSideEffects()).thenReturn(true);
-        when(mockEventProcessor.writeEvent(mockLogStreamWriter)).thenReturn(1L);
-        when(mockTargetLogStream.getTerm()).thenReturn(raftTerm);
-
-        open();
-
-
-        // when
-        // -> open
-        controller.doWork();
-        // -> processing
-        controller.doWork();
-
-        verify(mockLogStreamWriter).raftTermId(raftTerm);
-    }
-
-    @Test
     public void shouldNotCreateSnapshotIfPolicyNotApplied() throws Exception
     {
         mockSourceLogStreamReader.addEvent(mockSourceEvent);

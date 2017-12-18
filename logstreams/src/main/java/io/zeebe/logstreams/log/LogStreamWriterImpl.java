@@ -45,12 +45,10 @@ public class LogStreamWriterImpl implements LogStreamWriter
     protected final DirectBufferWriter bufferWriterInstance = new DirectBufferWriter();
     protected final ClaimedFragment claimedFragment = new ClaimedFragment();
 
-    protected Dispatcher logWriteBuffer;
-    protected int logId;
+    private LogStream logStream;
 
     protected boolean positionAsKey;
     protected long key;
-    protected int raftTermId;
 
     protected long sourceEventPosition = -1L;
     protected int sourceEventLogStreamPartitionId = -1;
@@ -75,9 +73,7 @@ public class LogStreamWriterImpl implements LogStreamWriter
     @Override
     public void wrap(LogStream log)
     {
-        this.logWriteBuffer = log.getWriteBuffer();
-        this.logId = log.getPartitionId();
-
+        this.logStream = log;
         reset();
     }
 
@@ -85,13 +81,6 @@ public class LogStreamWriterImpl implements LogStreamWriter
     public LogStreamWriter positionAsKey()
     {
         positionAsKey = true;
-        return this;
-    }
-
-    @Override
-    public LogStreamWriter raftTermId(int termId)
-    {
-        raftTermId = termId;
         return this;
     }
 
@@ -166,7 +155,6 @@ public class LogStreamWriterImpl implements LogStreamWriter
         sourceEventLogStreamPartitionId = -1;
         sourceEventPosition = -1L;
         producerId = -1;
-        raftTermId = -1;
 
         bufferWriterInstance.reset();
         metadataWriterInstance.reset();
@@ -200,7 +188,7 @@ public class LogStreamWriterImpl implements LogStreamWriter
 
                 // write log entry header
                 setPosition(writeBuffer, bufferOffset, claimedPosition);
-                setRaftTerm(writeBuffer, bufferOffset, raftTermId); // TODO: consider setting this always to the current log's term
+                setRaftTerm(writeBuffer, bufferOffset, logStream.getTerm());
                 setProducerId(writeBuffer, bufferOffset, producerId);
                 setSourceEventLogStreamPartitionId(writeBuffer, bufferOffset, sourceEventLogStreamPartitionId);
                 setSourceEventPosition(writeBuffer, bufferOffset, sourceEventPosition);
@@ -237,9 +225,12 @@ public class LogStreamWriterImpl implements LogStreamWriter
         final int framedLength = valueLength + headerLength(metadataLength);
 
         long claimedPosition = -1;
+        final Dispatcher logWriteBuffer = logStream.getWriteBuffer();
+        final int logId = logStream.getPartitionId();
 
         do
         {
+
             claimedPosition = logWriteBuffer.claim(claimedFragment, framedLength, logId);
         }
         while (claimedPosition == RESULT_PADDING_AT_END_OF_PARTITION);
