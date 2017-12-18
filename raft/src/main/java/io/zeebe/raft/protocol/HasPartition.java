@@ -15,13 +15,7 @@
  */
 package io.zeebe.raft.protocol;
 
-import org.agrona.DirectBuffer;
-
-public interface HasTopic
+public interface HasPartition
 {
-
-    DirectBuffer getTopicName();
-
     int getPartitionId();
-
 }

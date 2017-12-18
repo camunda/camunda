@@ -26,7 +26,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class JoinRequest extends AbstractRaftMessage implements HasSocketAddress, HasTerm, HasTopic
+public class JoinRequest extends AbstractRaftMessage implements HasSocketAddress, HasTerm, HasPartition
 {
 
     protected final JoinRequestDecoder bodyDecoder = new JoinRequestDecoder();
@@ -37,12 +37,10 @@ public class JoinRequest extends AbstractRaftMessage implements HasSocketAddress
     protected int term;
 
     // read
-    protected final DirectBuffer readTopicName = new UnsafeBuffer(0, 0);
     private final DirectBuffer readHost = new UnsafeBuffer(0, 0);
     private final SocketAddress readSocketAddress = new SocketAddress();
 
     // write
-    private DirectBuffer writeTopicName;
     private SocketAddress writeSocketAddress;
 
 
@@ -56,11 +54,9 @@ public class JoinRequest extends AbstractRaftMessage implements HasSocketAddress
         partitionId = partitionIdNullValue();
         term = termNullValue();
 
-        readTopicName.wrap(0, 0);
         readHost.wrap(0, 0);
         readSocketAddress.reset();
 
-        writeTopicName = null;
         writeSocketAddress = null;
 
         return this;
@@ -97,12 +93,6 @@ public class JoinRequest extends AbstractRaftMessage implements HasSocketAddress
     }
 
     @Override
-    public DirectBuffer getTopicName()
-    {
-        return readTopicName;
-    }
-
-    @Override
     public SocketAddress getSocketAddress()
     {
         return readSocketAddress;
@@ -114,7 +104,6 @@ public class JoinRequest extends AbstractRaftMessage implements HasSocketAddress
 
         partitionId = logStream.getPartitionId();
         term = raft.getTerm();
-        writeTopicName = logStream.getTopicName();
 
         writeSocketAddress = raft.getSocketAddress();
 
@@ -126,13 +115,7 @@ public class JoinRequest extends AbstractRaftMessage implements HasSocketAddress
     {
         int length = headerEncoder.encodedLength() +
             bodyEncoder.sbeBlockLength() +
-            topicNameHeaderLength() +
             hostHeaderLength();
-
-        if (writeTopicName != null)
-        {
-            length += writeTopicName.capacity();
-        }
 
         if (writeSocketAddress != null)
         {
@@ -160,9 +143,6 @@ public class JoinRequest extends AbstractRaftMessage implements HasSocketAddress
 
         offset += bodyDecoder.sbeBlockLength();
 
-        offset += wrapVarData(buffer, offset, readTopicName, topicNameHeaderLength(), bodyDecoder.hostLength());
-        bodyDecoder.limit(offset);
-
         offset += wrapVarData(buffer, offset, readHost, hostHeaderLength(), bodyDecoder.hostLength());
         bodyDecoder.limit(offset);
 
@@ -187,11 +167,6 @@ public class JoinRequest extends AbstractRaftMessage implements HasSocketAddress
             .wrap(buffer, offset)
             .partitionId(partitionId)
             .term(term);
-
-        if (writeTopicName != null)
-        {
-            bodyEncoder.putTopicName(writeTopicName, 0, writeTopicName.capacity());
-        }
 
         if (writeSocketAddress != null)
         {

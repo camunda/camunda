@@ -27,7 +27,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class AppendResponse extends AbstractRaftMessage implements HasSocketAddress, HasTerm, HasTopic
+public class AppendResponse extends AbstractRaftMessage implements HasSocketAddress, HasTerm, HasPartition
 {
 
     protected final AppendResponseDecoder bodyDecoder = new AppendResponseDecoder();
@@ -40,12 +40,10 @@ public class AppendResponse extends AbstractRaftMessage implements HasSocketAddr
     protected long previousEventPosition;
 
     // read
-    protected final DirectBuffer readTopicName = new UnsafeBuffer(0, 0);
     protected final DirectBuffer readHost = new UnsafeBuffer(0, 0);
     protected final SocketAddress readSocketAddress = new SocketAddress();
 
     // write
-    private DirectBuffer writeTopicName;
     private SocketAddress writeSocketAddress;
 
     public AppendResponse()
@@ -59,11 +57,9 @@ public class AppendResponse extends AbstractRaftMessage implements HasSocketAddr
         term = termNullValue();
         succeeded = false;
         previousEventPosition = previousEventPositionNullValue();
-        readTopicName.wrap(0, 0);
         readHost.wrap(0, 0);
         readSocketAddress.reset();
 
-        writeTopicName = null;
         writeSocketAddress = null;
 
         return this;
@@ -122,12 +118,6 @@ public class AppendResponse extends AbstractRaftMessage implements HasSocketAddr
     }
 
     @Override
-    public DirectBuffer getTopicName()
-    {
-        return readTopicName;
-    }
-
-    @Override
     public SocketAddress getSocketAddress()
     {
         return readSocketAddress;
@@ -137,7 +127,6 @@ public class AppendResponse extends AbstractRaftMessage implements HasSocketAddr
     {
         final LogStream logStream = raft.getLogStream();
 
-        writeTopicName = logStream.getTopicName();
         partitionId = logStream.getPartitionId();
         term = raft.getTerm();
 
@@ -151,13 +140,7 @@ public class AppendResponse extends AbstractRaftMessage implements HasSocketAddr
     {
         int length = headerEncoder.encodedLength() +
             bodyEncoder.sbeBlockLength() +
-            topicNameHeaderLength() +
             hostHeaderLength();
-
-        if (writeTopicName != null)
-        {
-            length += writeTopicName.capacity();
-        }
 
         if (writeSocketAddress != null)
         {
@@ -187,9 +170,6 @@ public class AppendResponse extends AbstractRaftMessage implements HasSocketAddr
 
         offset += bodyDecoder.sbeBlockLength();
 
-        offset += wrapVarData(buffer, offset, readTopicName, topicNameHeaderLength(), bodyDecoder.hostLength());
-        bodyDecoder.limit(offset);
-
         offset += wrapVarData(buffer, offset, readHost, hostHeaderLength(), bodyDecoder.hostLength());
         bodyDecoder.limit(offset);
 
@@ -216,11 +196,6 @@ public class AppendResponse extends AbstractRaftMessage implements HasSocketAddr
             .term(term)
             .succeeded(succeeded ? BooleanType.TRUE : BooleanType.FALSE)
             .previousEventPosition(previousEventPosition);
-
-        if (writeTopicName != null)
-        {
-            bodyEncoder.putTopicName(writeTopicName, 0, writeTopicName.capacity());
-        }
 
         if (writeSocketAddress != null)
         {

@@ -663,14 +663,11 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
     }
 
     /**
-     * @return true if the topic name and partition id of the log stream matches the argument, false otherwise
+     * @return true if the partition id of the log stream matches the argument, false otherwise
      */
-    public boolean matchesLog(final HasTopic hasTopic)
+    public boolean matchesLog(final HasPartition hasPartition)
     {
-        final DirectBuffer topicName = logStream.getTopicName();
-        final int partitionId = logStream.getPartitionId();
-
-        return topicName.equals(hasTopic.getTopicName()) && partitionId == hasTopic.getPartitionId();
+        return logStream.getPartitionId() == hasPartition.getPartitionId();
     }
 
 

@@ -69,7 +69,7 @@ public class RaftProtocolMessageTest
         joinRequest = writeAndRead(joinRequest);
 
         // then
-        assertTopic(joinRequest);
+        assertPartition(joinRequest);
         assertTerm(joinRequest);
     }
 
@@ -106,7 +106,7 @@ public class RaftProtocolMessageTest
         pollRequest = writeAndRead(pollRequest);
 
         // then
-        assertTopic(pollRequest);
+        assertPartition(pollRequest);
         assertTerm(pollRequest);
         assertSocketAddress(pollRequest);
         assertThat(pollRequest.getLastEventPosition()).isEqualTo(111);
@@ -142,7 +142,7 @@ public class RaftProtocolMessageTest
         voteRequest = writeAndRead(voteRequest);
 
         // then
-        assertTopic(voteRequest);
+        assertPartition(voteRequest);
         assertTerm(voteRequest);
         assertSocketAddress(voteRequest);
         assertThat(voteRequest.getLastEventPosition()).isEqualTo(111);
@@ -178,7 +178,7 @@ public class RaftProtocolMessageTest
         appendRequest = writeAndRead(appendRequest);
 
         // then
-        assertTopic(appendRequest);
+        assertPartition(appendRequest);
         assertTerm(appendRequest);
         assertSocketAddress(appendRequest);
         assertThat(appendRequest.getPreviousEventPosition()).isEqualTo(111);
@@ -209,7 +209,7 @@ public class RaftProtocolMessageTest
         appendRequest = writeAndRead(appendRequest);
 
         // then
-        assertTopic(appendRequest);
+        assertPartition(appendRequest);
         assertTerm(appendRequest);
         assertSocketAddress(appendRequest);
         assertThat(appendRequest.getPreviousEventPosition()).isEqualTo(111);
@@ -233,7 +233,7 @@ public class RaftProtocolMessageTest
         appendResponse = writeAndRead(appendResponse);
 
         // then
-        assertTopic(appendResponse);
+        assertPartition(appendResponse);
         assertTerm(appendResponse);
         assertSocketAddress(appendResponse);
         assertThat(appendResponse.getPreviousEventPosition()).isEqualTo(111);
@@ -241,10 +241,9 @@ public class RaftProtocolMessageTest
     }
 
 
-    protected void assertTopic(final HasTopic hasTopic)
+    protected void assertPartition(final HasPartition hasPartition)
     {
-        assertThat(hasTopic.getTopicName()).isEqualTo(logStream.getTopicName());
-        assertThat(hasTopic.getPartitionId()).isEqualTo(logStream.getPartitionId());
+        assertThat(hasPartition.getPartitionId()).isEqualTo(logStream.getPartitionId());
     }
 
     protected void assertTerm(final HasTerm hasTerm)

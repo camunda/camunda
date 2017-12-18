@@ -27,7 +27,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class AppendRequest extends AbstractRaftMessage implements HasSocketAddress, HasTerm, HasTopic
+public class AppendRequest extends AbstractRaftMessage implements HasSocketAddress, HasTerm, HasPartition
 {
 
     protected final AppendRequestDecoder bodyDecoder = new AppendRequestDecoder();
@@ -41,14 +41,12 @@ public class AppendRequest extends AbstractRaftMessage implements HasSocketAddre
     protected long commitPosition;
 
     // read
-    protected final DirectBuffer readTopicName = new UnsafeBuffer(0, 0);
     protected final DirectBuffer readHost = new UnsafeBuffer(0, 0);
     protected final SocketAddress readSocketAdress = new SocketAddress();
     protected final DirectBuffer readData = new UnsafeBuffer(0, 0);
     protected final LoggedEventImpl readEvent = new LoggedEventImpl();
 
     // write
-    private DirectBuffer writeTopicName;
     private SocketAddress writeSocketAddress;
     private LoggedEventImpl writeEvent;
 
@@ -65,13 +63,11 @@ public class AppendRequest extends AbstractRaftMessage implements HasSocketAddre
         previousEventTerm = previousEventTermNullValue();
         commitPosition = commitPositionNullValue();
 
-        readTopicName.wrap(0, 0);
         readHost.wrap(0, 0);
         readSocketAdress.reset();
         readData.wrap(0, 0);
         readEvent.wrap(null, -1);
 
-        writeTopicName = null;
         writeSocketAddress = null;
         writeEvent = null;
 
@@ -136,12 +132,6 @@ public class AppendRequest extends AbstractRaftMessage implements HasSocketAddre
     }
 
     @Override
-    public DirectBuffer getTopicName()
-    {
-        return readTopicName;
-    }
-
-    @Override
     public SocketAddress getSocketAddress()
     {
         return readSocketAdress;
@@ -172,7 +162,6 @@ public class AppendRequest extends AbstractRaftMessage implements HasSocketAddre
         partitionId = logStream.getPartitionId();
         term = raft.getTerm();
         commitPosition = logStream.getCommitPosition();
-        writeTopicName = logStream.getTopicName();
 
         writeSocketAddress = raft.getSocketAddress();
 
@@ -184,14 +173,8 @@ public class AppendRequest extends AbstractRaftMessage implements HasSocketAddre
     {
         int length = headerEncoder.encodedLength() +
             bodyEncoder.sbeBlockLength() +
-            topicNameHeaderLength() +
             hostHeaderLength() +
             dataHeaderLength();
-
-        if (writeTopicName != null)
-        {
-            length += writeTopicName.capacity();
-        }
 
         if (writeSocketAddress != null)
         {
@@ -226,9 +209,6 @@ public class AppendRequest extends AbstractRaftMessage implements HasSocketAddre
         readSocketAdress.port(bodyDecoder.port());
 
         offset += bodyDecoder.sbeBlockLength();
-
-        offset += wrapVarData(buffer, offset, readTopicName, topicNameHeaderLength(), bodyDecoder.hostLength());
-        bodyDecoder.limit(offset);
 
         offset += wrapVarData(buffer, offset, readHost, hostHeaderLength(), bodyDecoder.hostLength());
         bodyDecoder.limit(offset);
@@ -265,12 +245,6 @@ public class AppendRequest extends AbstractRaftMessage implements HasSocketAddre
             .previousEventPosition(previousEventPosition)
             .previousEventTerm(previousEventTerm)
             .commitPosition(commitPosition);
-
-
-        if (writeTopicName != null)
-        {
-            bodyEncoder.putTopicName(writeTopicName, 0, writeTopicName.capacity());
-        }
 
         if (writeSocketAddress != null)
         {

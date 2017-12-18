@@ -41,7 +41,6 @@
     <field name="partitionId" id="0" type="uint16"/>
     <field name="term" id="1" type="uint16"/>
     <field name="port" id="2" type="uint16"/>
-    <data name="topicName" id="3" type="varDataEncoding"/>
     <data name="host" id="4" type="varDataEncoding"/>
   </sbe:message>
 
@@ -60,7 +59,6 @@
     <field name="lastEventPosition" id="2" type="uint64"/>
     <field name="lastEventTerm" id="3" type="int32"/>
     <field name="port" id="4" type="uint16"/>
-    <data name="topicName" id="5" type="varDataEncoding"/>
     <data name="host" id="6" type="varDataEncoding"/>
   </sbe:message>
 
@@ -75,7 +73,6 @@
     <field name="lastEventPosition" id="2" type="uint64"/>
     <field name="lastEventTerm" id="3" type="int32"/>
     <field name="port" id="4" type="uint16"/>
-    <data name="topicName" id="5" type="varDataEncoding"/>
     <data name="host" id="6" type="varDataEncoding"/>
   </sbe:message>
 
@@ -91,7 +88,6 @@
     <field name="previousEventTerm" id="3" type="int32"/>
     <field name="commitPosition" id="4" type="uint64"/>
     <field name="port" id="5" type="uint16"/>
-    <data name="topicName" id="6" type="varDataEncoding"/>
     <data name="host" id="7" type="varDataEncoding"/>
     <data name="data" id="8" type="varDataEncoding"/>
   </sbe:message>
@@ -102,7 +98,6 @@
     <field name="succeeded" id="2" type="BooleanType"/>
     <field name="previousEventPosition" id="3" type="uint64"/>
     <field name="port" id="4" type="uint16"/>
-    <data name="topicName" id="5" type="varDataEncoding"/>
     <data name="host" id="6" type="varDataEncoding"/>
   </sbe:message>
 

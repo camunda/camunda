@@ -26,7 +26,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class VoteRequest extends AbstractRaftMessage implements HasSocketAddress, HasTerm, HasTopic
+public class VoteRequest extends AbstractRaftMessage implements HasSocketAddress, HasTerm, HasPartition
 {
 
     private final VoteRequestDecoder bodyDecoder = new VoteRequestDecoder();
@@ -39,12 +39,10 @@ public class VoteRequest extends AbstractRaftMessage implements HasSocketAddress
     private int lastEventTerm;
 
     // read
-    private final DirectBuffer readTopicName = new UnsafeBuffer(0, 0);
     private final DirectBuffer readHost = new UnsafeBuffer(0, 0);
     private final SocketAddress readSocketAddress = new SocketAddress();
 
     // write
-    private DirectBuffer writeTopicName;
     private SocketAddress writeSocketAddress;
 
     public VoteRequest()
@@ -59,20 +57,12 @@ public class VoteRequest extends AbstractRaftMessage implements HasSocketAddress
         lastEventPosition = lastEventPositionNullValue();
         lastEventTerm = lastEventTermNullValue();
 
-        readTopicName.wrap(0, 0);
         readHost.wrap(0, 0);
         readSocketAddress.reset();
 
-        writeTopicName = null;
         writeSocketAddress = null;
 
         return this;
-    }
-
-    @Override
-    public DirectBuffer getTopicName()
-    {
-        return readTopicName;
     }
 
     @Override
@@ -137,7 +127,6 @@ public class VoteRequest extends AbstractRaftMessage implements HasSocketAddress
     {
         final LogStream logStream = raft.getLogStream();
 
-        writeTopicName = logStream.getTopicName();
         partitionId = logStream.getPartitionId();
         term = raft.getTerm();
 
@@ -151,8 +140,6 @@ public class VoteRequest extends AbstractRaftMessage implements HasSocketAddress
     {
         return headerEncoder.encodedLength() +
             bodyEncoder.sbeBlockLength() +
-            topicNameHeaderLength() +
-            writeTopicName.capacity() +
             hostHeaderLength() +
             writeSocketAddress.hostLength();
     }
@@ -177,9 +164,6 @@ public class VoteRequest extends AbstractRaftMessage implements HasSocketAddress
         readSocketAddress.port(bodyDecoder.port());
 
         offset += bodyDecoder.sbeBlockLength();
-
-        offset += wrapVarData(buffer, offset, readTopicName, topicNameHeaderLength(), bodyDecoder.topicNameLength());
-        bodyDecoder.limit(offset);
 
         offset += wrapVarData(buffer, offset, readHost, hostHeaderLength(), bodyDecoder.hostLength());
         bodyDecoder.limit(offset);
@@ -206,7 +190,6 @@ public class VoteRequest extends AbstractRaftMessage implements HasSocketAddress
             .lastEventPosition(lastEventPosition)
             .lastEventTerm(lastEventTerm)
             .port(writeSocketAddress.port())
-            .putTopicName(writeTopicName, 0, writeTopicName.capacity())
             .putHost(writeSocketAddress.getHostBuffer(), 0, writeSocketAddress.hostLength());
     }
 }
