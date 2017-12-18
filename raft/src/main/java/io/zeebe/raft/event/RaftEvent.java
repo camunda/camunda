@@ -61,7 +61,6 @@ public class RaftEvent
         return
             logStreamWriter
                 .positionAsKey()
-                .raftTermId(raft.getTerm())
                 .metadataWriter(metadata)
                 .valueWriter(configuration)
                 .tryWrite();

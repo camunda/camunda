@@ -49,7 +49,6 @@ public class InitialEvent
 
         return logStreamWriter
             .positionAsKey()
-            .raftTermId(raft.getTerm())
             .metadataWriter(metadata)
             .value(EMPTY_OBJECT)
             .tryWrite();
