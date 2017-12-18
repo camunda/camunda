@@ -221,7 +221,7 @@ public class RaftRule extends ExternalResource
         return getState() == LEADER;
     }
 
-    public long writeEvent(final int term, final String message)
+    public long writeEvent(final String message)
     {
 
         final long[] writtenPosition = new long[1];
@@ -230,7 +230,7 @@ public class RaftRule extends ExternalResource
 
         final DirectBuffer value = wrapString(message);
 
-        TestUtil.doRepeatedly(() -> writer.positionAsKey().raftTermId(term).metadataWriter(metadata.reset()).value(value).tryWrite())
+        TestUtil.doRepeatedly(() -> writer.positionAsKey().metadataWriter(metadata.reset()).value(value).tryWrite())
                 .until(position ->
                 {
                     if (position != null && position >= 0)
@@ -242,23 +242,18 @@ public class RaftRule extends ExternalResource
                     {
                         return false;
                     }
-                }, "Failed to write event with term {} and message {}", term, message);
+                }, "Failed to write event with message {}", message);
 
         return writtenPosition[0];
     }
 
     public long writeEvents(final String... messages)
     {
-        return writeEvents(getTerm(), messages);
-    }
-
-    public long writeEvents(final int term, final String... messages)
-    {
         long position = 0;
 
         for (final String message : messages)
         {
-            position = writeEvent(term, message);
+            position = writeEvent(message);
         }
 
         return position;
