@@ -20,6 +20,15 @@
   td {
     border-bottom: 1px solid #f0f0f0;
     padding: .4em .6em;
+    
+    &:first-child {
+      padding-left: 0;
+    }
+    
+    &:last-child {
+      padding-right: 0;
+    }
+    
   }
   
 }
