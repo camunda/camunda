@@ -14,7 +14,8 @@ export default class DateFilter extends React.Component {
 
     this.state = {
       startDate: moment(),
-      endDate: moment()
+      endDate: moment(),
+      validDate: true
     };
   }
 
@@ -45,7 +46,8 @@ export default class DateFilter extends React.Component {
           <DateFields format='YYYY-MM-DD'
                     onDateChange={this.onDateChange}
                     startDate={this.state.startDate}
-                    endDate={this.state.endDate} />
+                    endDate={this.state.endDate}
+                    disableAddButton = {this.disableAddButton} />
         </div>
         <div className='DateFilter__buttons'>
           <div className='DateFilter__buttonRow'>
@@ -74,7 +76,7 @@ export default class DateFilter extends React.Component {
       </Modal.Content>
       <Modal.Actions>
         <Button onClick={this.props.close}>Cancel</Button>
-        <Button type='primary' color='blue' onClick={this.createFilter}>Add Filter</Button>
+        <Button type='primary' color='blue' disabled={!this.state.validDate} onClick={this.createFilter}>Add Filter</Button>
       </Modal.Actions>
     </Modal>
     );
@@ -90,6 +92,12 @@ export default class DateFilter extends React.Component {
 
   setDates = dates => {
     this.setState(dates);
+  }
+
+  disableAddButton = (isValid) => {
+    this.setState({
+      validDate: isValid
+    })
   }
 
   onDateChange = (name, date) => {

@@ -58,7 +58,9 @@ it('should contain a button to abort the filter creation', () => {
 it('should have a create filter button', () => {
   const spy = jest.fn();
   const node = mount(<DateFilter addFilter={spy}/>);
-
+  node.setState({
+    validDate: true
+  });
   const addButton = node.find('button').at(1);
 
   addButton.simulate('click');

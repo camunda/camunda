@@ -18,7 +18,7 @@ it('should have field with value equal to formated date', () => {
 
 it('should trigger onDateChange callback when input changes to valid date', () => {
   const spy = jest.fn();
-  const node = mount(<DateInput date={moment()} format='YYYY-MM-DD' onDateChange={spy} />);
+  const node = mount(<DateInput date={moment()} format='YYYY-MM-DD' onDateChange={spy} disableAddButton = {jest.fn()}/>);
 
   node.simulate('change', {
     target: {
@@ -32,7 +32,7 @@ it('should trigger onDateChange callback when input changes to valid date', () =
 
 it('should add error class to true when input changes to invalid date', () => {
   const spy = jest.fn();
-  const node = mount(<DateInput date={moment()} format='YYYY-MM-DD' onDateChange={spy} />);
+  const node = mount(<DateInput date={moment()} format='YYYY-MM-DD' onDateChange={spy} disableAddButton = {jest.fn()}/>);
 
   node.simulate('change', {
     target: {
