@@ -37,11 +37,15 @@ export default class NodeFilter extends React.Component {
   }
 
   createFilter = () => {
+    const values = [];
+    this.state.selectedNodes.forEach((node) => {
+      values.push(node.id);
+    });
     this.props.addFilter({
       type: 'executedFlowNodes',
       data: {
         operator: 'in',
-        values: this.state.selectedNodes
+        values
       }
     });
   }
@@ -61,7 +65,7 @@ export default class NodeFilter extends React.Component {
       previewList.push(
         <li key={idx} className='NodeFilter__preview-item'>
           <span key={idx}>
-            {' '}<span className='NodeFilter__preview-item-value'>{selectedNode.toString()}</span>{' '}
+            {' '}<span className='NodeFilter__preview-item-value'>{selectedNode.name.toString()}</span>{' '}
             {idx < this.state.selectedNodes.length - 1 && this.createOperator('or')}
           </span>
         </li>

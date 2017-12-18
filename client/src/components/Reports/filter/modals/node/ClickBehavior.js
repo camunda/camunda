@@ -43,7 +43,11 @@ export default class ClickBehavior extends React.Component {
   setupEventListeners() {
     this.props.viewer.on('element.click', ({element}) => {
       if(element.businessObject.$instanceOf('bpmn:FlowNode')) {
-        this.props.onClick(element.businessObject.id);
+        const node = {
+          "id": element.businessObject.id,
+          "name": element.businessObject.name
+        }
+        this.props.onClick(node);
       }
     });
   }

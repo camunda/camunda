@@ -48,26 +48,46 @@ it('should display a diagram', async () => {
 it('should add an unselected node to the selectedNodes on toggle', () => {
   const node = mount(<NodeFilter processDefinitionId='procDefId' />);
 
-  node.instance().toggleNode('node1');
+  const flowNode = {
+    name: 'foo',
+    id: 'bar'
+  }
 
-  expect(node.state().selectedNodes).toContain('node1');
+  node.instance().toggleNode(flowNode);
+
+  expect(node.state().selectedNodes).toContain(flowNode);
 });
 
 it('should remove a selected node from the selectedNodes on toggle', () => {
   const node = mount(<NodeFilter processDefinitionId='procDefId' />);
 
-  node.instance().toggleNode('node1');
-  node.instance().toggleNode('node1');
+  const flowNode = {
+    name: 'foo',
+    id: 'bar'
+  }
 
-  expect(node.state().selectedNodes).not.toContain('node1');
+  node.instance().toggleNode(flowNode);
+  node.instance().toggleNode(flowNode);
+
+  expect(node.state().selectedNodes).not.toContain(flowNode);
 });
 
 it('should create a new filter', () => {
   const spy = jest.fn();
   const node = mount(<NodeFilter processDefinitionId='procDefId' addFilter={spy} />);
 
+  const flowNode1 = {
+    name: 'foo',
+    id: 'bar'
+  }
+
+  const flowNode2 = {
+    name: 'foo',
+    id: 'bar'
+  }
+
   node.setState({
-    selectedNodes: ['node1', 'node2']
+    selectedNodes: [flowNode1, flowNode2]
   });
 
   node.find('button[type="primary"]').simulate('click');
@@ -76,7 +96,7 @@ it('should create a new filter', () => {
     type: 'executedFlowNodes',
     data: {
       operator: 'in',
-      values: ['node1', 'node2']
+      values: [flowNode1.id, flowNode2.id]
     }
   });
 });
@@ -86,7 +106,7 @@ it('should disable create filter button if no node was selected', () => {
   node.setState({
     selectedNodes: []
   });
-  
+
   const buttons = node.find("#modal_actions button");
   expect(buttons.at(0).prop("disabled")).toBeFalsy(); // abort
   expect(buttons.at(1).prop("disabled")).toBeTruthy(); // create filter
@@ -94,20 +114,35 @@ it('should disable create filter button if no node was selected', () => {
 
 it('should create preview of selected node', () => {
   const node = mount(<NodeFilter processDefinitionId='procDefId' />);
-  
-    node.instance().toggleNode('node1');
-  
-    expect(node.find('#modal_content')).toIncludeText('node1');
+
+  const flowNode = {
+    name: 'foo',
+    id: 'bar'
+  }
+
+  node.instance().toggleNode(flowNode);
+
+  expect(node.find('#modal_content')).toIncludeText(flowNode.name);
 });
 
 it('should create preview of selected nodes linked by or', () => {
   const node = mount(<NodeFilter processDefinitionId='procDefId' />);
-  
-    node.instance().toggleNode('node1');
-    node.instance().toggleNode('node2');
-  
+
+    const flowNode1 = {
+      name: 'foo',
+      id: 'bar'
+    }
+
+    const flowNode2 = {
+      name: 'foo',
+      id: 'bar'
+    }
+
+    node.instance().toggleNode(flowNode1);
+    node.instance().toggleNode(flowNode2);
+
     const content = node.find('#modal_content');
-    expect(content).toIncludeText('node1');
+    expect(content).toIncludeText(flowNode1.name);
     expect(content).toIncludeText('or');
-    expect(content).toIncludeText('node2');
+    expect(content).toIncludeText(flowNode2.name);
 });
