@@ -23,23 +23,26 @@ jest.mock('components', () => {return {
 
 
 it('renders without crashing', () => {
+  getToken.mockReturnValue(true);
+
   shallow(<Header />);
 });
 
 it('includes the name provided as property', () => {
   const name = 'Awesome App';
+  getToken.mockReturnValue(true);
+
 
   const node = mount(<Header name={name} />);
   expect(node).toIncludeText(name);
 });
 
-it('does not render the navigation or logout button if the user is not logged in', () => {
+it('does not render the header if the user is not logged in', () => {
   getToken.mockReturnValue(false);
 
   const node = mount(<Header />);
 
-  expect(node).not.toIncludeText('HeaderNav');
-  expect(node).not.toIncludeText('logout');
+  expect(node.getDOMNode()).toBe(null);
 });
 
 it('does render the navigation and the logout button if the user is logged in', () => {
