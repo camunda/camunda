@@ -119,7 +119,7 @@ it('should close after pressing Esc', () => {
   expect(node.state('open')).toBe(false);
 });
 
-it('should change focus after pressing an arrow key', () => {
+it('should not change focus after pressing an arrow key if closed', () => {
 
   const node = mount(<Dropdown label='Click me'>
     <Dropdown.Option>foo</Dropdown.Option>
@@ -127,6 +127,21 @@ it('should change focus after pressing an arrow key', () => {
   </Dropdown>);
 
   node.find('button').first().getDOMNode().focus();
+
+  node.simulate('keyDown', {key: 'ArrowDown'});
+  expect(document.activeElement.textContent).toBe("Click me");
+});
+
+it('should change focus after pressing an arrow key if opened', () => {
+
+  const node = mount(<Dropdown label='Click me'>
+    <Dropdown.Option>foo</Dropdown.Option>
+    <Dropdown.Option>bar</Dropdown.Option>
+  </Dropdown>);
+
+  node.find('button').first().getDOMNode().focus();
+
+  node.instance().setState({open: true});
 
   node.simulate('keyDown', {key: 'ArrowDown'});
   expect(document.activeElement.textContent).toBe("foo");
