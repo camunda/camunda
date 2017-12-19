@@ -431,7 +431,6 @@ public class TestStreams
                 writer.positionAsKey();
             }
 
-            writer.raftTermId(logStream.getTerm());
             writer.metadataWriter(metadata);
             writer.valueWriter(value);
 

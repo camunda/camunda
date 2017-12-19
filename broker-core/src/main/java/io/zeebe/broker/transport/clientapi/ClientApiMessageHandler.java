@@ -158,7 +158,6 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
         }
 
         final long eventPosition = logStreamWriter
-                .raftTermId(logStream.getTerm())
                 .metadataWriter(eventMetadata)
                 .value(buffer, eventOffset, eventLength)
                 .tryWrite();

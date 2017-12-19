@@ -122,7 +122,6 @@ public class WorkflowRequestMessageHandler
 
         final long eventPosition = logStreamWriter
                 .key(key)
-                .raftTermId(logStream.getTerm())
                 .metadataWriter(eventMetadata)
                 .valueWriter(workflowEvent)
                 .tryWrite();

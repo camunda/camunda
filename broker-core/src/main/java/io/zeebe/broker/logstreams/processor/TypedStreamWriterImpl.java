@@ -75,7 +75,6 @@ public class TypedStreamWriterImpl implements TypedStreamWriter, TypedBatchWrite
     public long writeFollowupEvent(long key, UnpackedObject event, Consumer<BrokerEventMetadata> additionalMetadata)
     {
         writer.reset();
-        writer.raftTermId(stream.getTerm());
         writer.producerId(producerId);
 
         if (sourcePartitionId >= 0)
