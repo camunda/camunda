@@ -131,7 +131,10 @@ export default class Report extends React.Component {
   }
 
   cancel = async () => {
-    const reportResult = await getReportData(this.id);
+    let reportResult = await getReportData(this.id);
+    if (!reportResult) {
+      reportResult = {data: this.state.originalData};
+    }
     this.setState({
       name : this.state.originalName,
       data: {...this.state.originalData},
