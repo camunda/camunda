@@ -55,7 +55,7 @@ public class  VariableInstanceFetcher
 
     long requestEnd = System.currentTimeMillis();
     logger.debug(
-      "Fetched [{}] process definitions within [{}] ms",
+      "Fetched [{}] variables within [{}] ms",
       entries.size(),
       requestEnd - requestStart
     );

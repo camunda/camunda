@@ -73,7 +73,7 @@ public class ConfigurationService {
   private Integer engineJobExecutorQueueSize;
   private Integer engineJobExecutorThreadCount;
   private String hpiEndpoint;
-  private Integer importRestIntervalMs;
+  private Integer importResetIntervalValue;
   private Integer elasticsearchScrollTimeout;
   private Integer elasticsearchConnectionTimeout;
   private Integer engineConnectTimeout;
@@ -789,10 +789,10 @@ public class ConfigurationService {
   }
 
   public Integer getImportResetIntervalValue() {
-    if (importRestIntervalMs == null) {
-      importRestIntervalMs = jsonContext.read(ConfigurationServiceConstants.IMPORT_RESET_INTERVAL_VALUE);
+    if (importResetIntervalValue == null) {
+      importResetIntervalValue = jsonContext.read(ConfigurationServiceConstants.IMPORT_RESET_INTERVAL_VALUE);
     }
-    return importRestIntervalMs;
+    return importResetIntervalValue;
   }
 
   public String getHviCountEndpoint() {
@@ -1049,8 +1049,8 @@ public class ConfigurationService {
     this.hpiEndpoint = hpiEndpoint;
   }
 
-  public void setImportRestIntervalMs(Integer importRestIntervalMs) {
-    this.importRestIntervalMs = importRestIntervalMs;
+  public void setImportResetIntervalValue(Integer importResetIntervalValue) {
+    this.importResetIntervalValue = importResetIntervalValue;
   }
 
   public void setElasticsearchScrollTimeout(Integer elasticsearchScrollTimeout) {

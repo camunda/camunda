@@ -91,7 +91,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
   }
 
-  public void scheduleAllJobsAndImportEngineEntitiesWithoutReset() {
+  public void scheduleAllJobsAndImportEngineEntitiesWithoutReset() throws InterruptedException {
     ElasticsearchImportJobExecutor elasticsearchImportJobExecutor = getElasticsearchImportJobExecutor();
     EngineImportJobExecutor engineImportJobExecutor = getEngineImportJobExecutor();
     engineImportJobExecutor.startExecutingImportJobs();
@@ -100,7 +100,9 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     for (EngineImportJobScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
       if (scheduler.isEnabled()) {
         scheduleImportAndWaitUntilIsFinished(scheduler);
+
         // we need another round for the scroll based import index handlers
+        this.waitForBackoff();
         scheduleImportAndWaitUntilIsFinished(scheduler);
       }
     }

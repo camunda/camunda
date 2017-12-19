@@ -24,7 +24,7 @@ public class ImportProgressReporter {
    * @throws OptimizeException if there were problems while trying to fetch the historic activity instance count
    * or the process definition count from the engine.
    */
-  public long computeImportProgress() throws OptimizeException {
+  public long computeImportProgress() {
     double progress = computeProgress();
     return Math.round(progress);
   }

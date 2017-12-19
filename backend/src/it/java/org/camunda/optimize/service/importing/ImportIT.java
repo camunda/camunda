@@ -630,7 +630,7 @@ public class ImportIT  {
   }
 
   @Test
-  public void importProgressContinuesAfterResetOnceNewDataAppears() throws Exception {
+  public void importProgressContinuesAfterRestartOnceNewDataAppears() throws Exception {
     ProcessInstanceEngineDto process1 = deployAndStartSimpleServiceTask();
     ProcessInstanceEngineDto process2 = deployAndStartSimpleServiceTask();
     engineRule.waitForAllProcessesToFinish();
@@ -652,6 +652,59 @@ public class ImportIT  {
     result = evaluateReport(reportData);
 
     assertThat(result.getResult().size(), is(1));
+    assertThat(embeddedOptimizeRule.getProgressValue(), is(100L));
+
+    //when
+    ProcessInstanceEngineDto targetProcess = process2;
+    ProcessInstanceEngineDto process3 = engineRule.startProcessInstance(targetProcess.getDefinitionId());
+    assertThat(targetProcess.getId(), is(not(process3.getId())));
+    assertThat(targetProcess.getDefinitionId(), is(process3.getDefinitionId()));
+
+    engineRule.waitForAllProcessesToFinish();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntitiesWithoutReset();
+
+    reportData = createDefaultReportData(targetProcess.getDefinitionId());
+    result = evaluateReport(reportData);
+
+    assertThat(result.getResult().size(), is(2));
+    assertThat(embeddedOptimizeRule.getProgressValue(), is(100L));
+
+    //after
+    embeddedOptimizeRule.getConfigurationService().setMaximumBackoff(initialBackoff);
+    embeddedOptimizeRule.getConfigurationService().setBackoffEnabled(false);
+    embeddedOptimizeRule.reloadConfiguration();
+  }
+
+  @Test
+  public void importProgressContinuesAfterResetOnceNewDataAppears() throws Exception {
+    ProcessInstanceEngineDto process1 = deployAndStartSimpleServiceTask();
+    ProcessInstanceEngineDto process2 = deployAndStartSimpleServiceTask();
+    engineRule.waitForAllProcessesToFinish();
+
+    int initialResetValue = embeddedOptimizeRule.getConfigurationService().getImportResetIntervalValue();
+    String initialUnit = embeddedOptimizeRule.getConfigurationService().getImportResetIntervalUnit();
+    long initialBackoff = embeddedOptimizeRule.getConfigurationService().getMaximumBackoff();
+
+    embeddedOptimizeRule.getConfigurationService().setImportResetIntervalUnit("SECONDS");
+    embeddedOptimizeRule.getConfigurationService().setImportResetIntervalValue(1);
+    embeddedOptimizeRule.getConfigurationService().setMaximumBackoff(2l);
+    embeddedOptimizeRule.getConfigurationService().setBackoffEnabled(true);
+    embeddedOptimizeRule.reloadConfiguration();
+
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntitiesWithoutReset();
+
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    ReportDataDto reportData = createDefaultReportData(process1.getDefinitionId());
+    RawDataReportResultDto result = evaluateReport(reportData);
+
+    assertThat(result.getResult().size(), is(1));
+
+    reportData = createDefaultReportData(process2.getDefinitionId());
+    result = evaluateReport(reportData);
+
+    assertThat(result.getResult().size(), is(1));
+    assertThat(embeddedOptimizeRule.getProgressValue(), is(100L));
 
     //when
     ProcessInstanceEngineDto targetProcess = process2;
@@ -661,15 +714,23 @@ public class ImportIT  {
 
     engineRule.waitForAllProcessesToFinish();
 
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntitiesWithoutReset();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    //wait for backoff before starting next round
     embeddedOptimizeRule.waitForBackoff();
+    //once new round starts reset will happen instead of restart
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntitiesWithoutReset();
 
     reportData = createDefaultReportData(targetProcess.getDefinitionId());
     result = evaluateReport(reportData);
 
     assertThat(result.getResult().size(), is(2));
+    assertThat(embeddedOptimizeRule.getProgressValue(), is(100L));
 
     //after
+    embeddedOptimizeRule.getConfigurationService().setImportResetIntervalUnit(initialUnit);
+    embeddedOptimizeRule.getConfigurationService().setImportResetIntervalValue(initialResetValue);
     embeddedOptimizeRule.getConfigurationService().setMaximumBackoff(initialBackoff);
     embeddedOptimizeRule.getConfigurationService().setBackoffEnabled(false);
     embeddedOptimizeRule.reloadConfiguration();
@@ -680,7 +741,7 @@ public class ImportIT  {
     deployAndStartSimpleServiceTask();
     deployAndStartSimpleServiceTask();
     engineRule.waitForAllProcessesToFinish();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntitiesWithoutReset();
 
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
     assertThat(embeddedOptimizeRule.getProgressValue(), is(100L));

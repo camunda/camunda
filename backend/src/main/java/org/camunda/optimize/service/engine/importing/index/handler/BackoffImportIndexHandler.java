@@ -124,7 +124,7 @@ public abstract class BackoffImportIndexHandler<PAGE extends ImportPage, INDEX>
     );
   }
 
-  private boolean isReadyToFetchNextPage() {
+  protected boolean isReadyToFetchNextPage() {
     boolean isReady = dateUntilPaginationIsBlocked.isBefore(OffsetDateTime.now());
     logger.debug("is ready to fetch next page [{}]", isReady);
     return isReady;
