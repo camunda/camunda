@@ -61,7 +61,7 @@ export default class ReportView extends React.Component {
 
   buildInstructionMessage = (field) => {
     return (
-      <ReportBlankSlate message={'To display a report, please choose an option for ”' + field + '”.'} />
+      <ReportBlankSlate message={'To display a report, please select an option for ”' + field + '”.'} />
     );
   }
   
