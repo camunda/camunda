@@ -1,5 +1,5 @@
 import React from 'react';
-import {EntityList} from '../EntityList';
+import {EntityList} from 'components';
 
 export default function Dashboards() {
   return <EntityList
