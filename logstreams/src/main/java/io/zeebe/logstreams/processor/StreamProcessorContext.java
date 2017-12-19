@@ -28,16 +28,13 @@ public class StreamProcessorContext
     protected StreamProcessor streamProcessor;
     protected boolean isReadOnlyProcessor;
 
-    protected LogStream sourceStream;
-    protected LogStream targetStream;
+    protected LogStream logStream;
 
-    protected LogStreamReader sourceLogStreamReader;
-    protected LogStreamReader targetLogStreamReader;
+    protected LogStreamReader logStreamReader;
     protected LogStreamWriter logStreamWriter;
 
     protected SnapshotPolicy snapshotPolicy;
     protected SnapshotStorage snapshotStorage;
-    protected SnapshotPositionProvider snapshotPositionProvider;
 
     protected ActorScheduler actorScheduler;
 
@@ -46,19 +43,14 @@ public class StreamProcessorContext
 
     protected DeferredCommandContext streamProcessorCmdContext;
 
-    public LogStream getSourceStream()
+    public LogStream getLogStream()
     {
-        return sourceStream;
+        return logStream;
     }
 
-    public void setSourceStream(LogStream sourceStream)
+    public void setLogStream(LogStream logstream)
     {
-        this.sourceStream = sourceStream;
-    }
-
-    public void setTargetStream(LogStream targetStream)
-    {
-        this.targetStream = targetStream;
+        this.logStream = logstream;
     }
 
     public StreamProcessor getStreamProcessor()
@@ -69,11 +61,6 @@ public class StreamProcessorContext
     public void setStreamProcessor(StreamProcessor streamProcessor)
     {
         this.streamProcessor = streamProcessor;
-    }
-
-    public LogStream getTargetStream()
-    {
-        return targetStream;
     }
 
     public String getName()
@@ -106,14 +93,14 @@ public class StreamProcessorContext
         this.actorScheduler = actorScheduler;
     }
 
-    public void setSourceLogStreamReader(LogStreamReader sourceLogStreamReader)
+    public void setLogStreamReader(LogStreamReader logStreamReader)
     {
-        this.sourceLogStreamReader = sourceLogStreamReader;
+        this.logStreamReader = logStreamReader;
     }
 
-    public LogStreamReader getSourceLogStreamReader()
+    public LogStreamReader getLogStreamReader()
     {
-        return sourceLogStreamReader;
+        return logStreamReader;
     }
 
     public LogStreamWriter getLogStreamWriter()
@@ -144,26 +131,6 @@ public class StreamProcessorContext
     public void setSnapshotStorage(SnapshotStorage snapshotStorage)
     {
         this.snapshotStorage = snapshotStorage;
-    }
-
-    public SnapshotPositionProvider getSnapshotPositionProvider()
-    {
-        return snapshotPositionProvider;
-    }
-
-    public void setSnapshotPositionProvider(SnapshotPositionProvider snapshotPositionProvider)
-    {
-        this.snapshotPositionProvider = snapshotPositionProvider;
-    }
-
-    public LogStreamReader getTargetLogStreamReader()
-    {
-        return targetLogStreamReader;
-    }
-
-    public void setTargetLogStreamReader(LogStreamReader targetLogStreamReader)
-    {
-        this.targetLogStreamReader = targetLogStreamReader;
     }
 
     public DeferredCommandContext getStreamProcessorCmdQueue()

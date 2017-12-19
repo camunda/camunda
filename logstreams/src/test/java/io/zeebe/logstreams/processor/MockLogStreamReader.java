@@ -28,7 +28,7 @@ public class MockLogStreamReader implements LogStreamReader
 {
 
     protected LogStream mockingLog;
-    protected int iteratorPosition = -1;
+    protected int iteratorPosition = 0;
     protected long position;
 
     protected List<Entry> events = new ArrayList<>();
@@ -51,15 +51,16 @@ public class MockLogStreamReader implements LogStreamReader
     public boolean hasNext()
     {
         hasNextInvocations++;
-        return iteratorPosition < events.size() - 1;
+        return iteratorPosition <= events.size() - 1;
     }
 
     @Override
     public LoggedEvent next()
     {
+        final Entry entry = events.get(iteratorPosition);
         iteratorPosition++;
-        position = events.get(iteratorPosition).position;
-        return events.get(iteratorPosition).event;
+        position = entry.position;
+        return entry.event;
     }
 
     @Override
@@ -85,24 +86,24 @@ public class MockLogStreamReader implements LogStreamReader
     public boolean seek(long position)
     {
         this.iteratorPosition = -1;
+        boolean found = false;
 
-        while (iteratorPosition < events.size() - 1)
+        Entry nextEntry = new Entry();
+        nextEntry.position = -1;
+        while (iteratorPosition < events.size() - 1
+               && nextEntry.position < position)
         {
-            final Entry nextEntry = events.get(iteratorPosition + 1);
-            if (nextEntry.position == position)
-            {
-                return true;
-            }
-            else if (nextEntry.position > position)
-            {
-                return false;
-            }
-
             this.iteratorPosition++;
+            nextEntry = events.get(iteratorPosition);
+            found = nextEntry.position == position;
         }
 
+        if (iteratorPosition < 0)
+        {
+            iteratorPosition = 0;
+        }
         this.position = position;
-        return false;
+        return found;
     }
 
     @Override

@@ -34,15 +34,9 @@ public class TestStreamProcessorBuilder extends StreamProcessorBuilder
     }
 
     @Override
-    public TestStreamProcessorBuilder sourceStream(LogStream stream)
+    public TestStreamProcessorBuilder logStream(LogStream stream)
     {
-        return (TestStreamProcessorBuilder) super.sourceStream(stream);
-    }
-
-    @Override
-    public TestStreamProcessorBuilder targetStream(LogStream stream)
-    {
-        return (TestStreamProcessorBuilder) super.targetStream(stream);
+        return (TestStreamProcessorBuilder) super.logStream(stream);
     }
 
     @Override
@@ -64,12 +58,6 @@ public class TestStreamProcessorBuilder extends StreamProcessorBuilder
     }
 
     @Override
-    public TestStreamProcessorBuilder snapshotPositionProvider(SnapshotPositionProvider snapshotPositionProvider)
-    {
-        return (TestStreamProcessorBuilder) super.snapshotPositionProvider(snapshotPositionProvider);
-    }
-
-    @Override
     public TestStreamProcessorBuilder streamProcessorCmdQueue(DeferredCommandContext streamProcessorCmdQueue)
     {
         return (TestStreamProcessorBuilder) super.streamProcessorCmdQueue(streamProcessorCmdQueue);
@@ -87,15 +75,9 @@ public class TestStreamProcessorBuilder extends StreamProcessorBuilder
         return (TestStreamProcessorBuilder) super.reprocessingEventFilter(eventFilter);
     }
 
-    public TestStreamProcessorBuilder sourceLogStreamReader(LogStreamReader sourceLogStreamReader)
+    public TestStreamProcessorBuilder logStreamReader(LogStreamReader logStreamReader)
     {
-        this.sourceLogStreamReader = sourceLogStreamReader;
-        return this;
-    }
-
-    public TestStreamProcessorBuilder targetLogStreamReader(LogStreamReader targetLogStreamReader)
-    {
-        this.targetLogStreamReader = targetLogStreamReader;
+        this.logStreamReader = logStreamReader;
         return this;
     }
 

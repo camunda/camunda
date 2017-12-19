@@ -28,10 +28,15 @@ public class LogIntegrationTestUtil
 
     public static void writeLogEvents(final LogStream log, final int workCount, int messageSize, final int offset)
     {
+        writeLogEventsAndReturnPosition(log, workCount, messageSize, offset);
+    }
+
+    public static long[] writeLogEventsAndReturnPosition(final LogStream log, final int workCount, int messageSize, final int offset)
+    {
         final LogStreamWriter writer = new LogStreamWriterImpl(log);
 
         final UnsafeBuffer msg = new UnsafeBuffer(ByteBuffer.allocate(messageSize));
-
+        final long[] positions = new long[workCount];
         for (int i = 0; i < workCount; i++)
         {
             msg.putInt(0, offset + i);
@@ -40,11 +45,14 @@ public class LogIntegrationTestUtil
                 .key(offset + i)
                 .value(msg);
 
-            while (writer.tryWrite() < 0)
+            long position = -1;
+            while (position < 0)
             {
-                // spin
+                position = writer.tryWrite();
             }
+            positions[i] = position;
         }
+        return positions;
     }
 
     public static void waitUntilWrittenKey(final LogStream log, final int key)

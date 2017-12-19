@@ -44,7 +44,7 @@ public interface EventProcessor
     }
 
     /**
-     * (Optional) Write an event to the target log stream that is caused by the
+     * (Optional) Write an event to the log stream that is caused by the
      * processed event. Note that the controller may invoke this method multiple
      * times if the write operation fails.
      *

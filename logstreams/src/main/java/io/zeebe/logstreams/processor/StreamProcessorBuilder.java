@@ -31,17 +31,14 @@ public class StreamProcessorBuilder
 
     protected StreamProcessor streamProcessor;
 
-    protected LogStream sourceStream;
-    protected LogStream targetStream;
+    protected LogStream logStream;
 
     protected ActorScheduler actorScheduler;
 
     protected SnapshotPolicy snapshotPolicy;
     protected SnapshotStorage snapshotStorage;
-    protected SnapshotPositionProvider snapshotPositionProvider;
 
-    protected LogStreamReader sourceLogStreamReader;
-    protected LogStreamReader targetLogStreamReader;
+    protected LogStreamReader logStreamReader;
     protected LogStreamWriter logStreamWriter;
 
     protected EventFilter eventFilter;
@@ -58,15 +55,9 @@ public class StreamProcessorBuilder
         this.streamProcessor = streamProcessor;
     }
 
-    public StreamProcessorBuilder sourceStream(LogStream stream)
+    public StreamProcessorBuilder logStream(LogStream stream)
     {
-        this.sourceStream = stream;
-        return this;
-    }
-
-    public StreamProcessorBuilder targetStream(LogStream stream)
-    {
-        this.targetStream = stream;
+        this.logStream = stream;
         return this;
     }
 
@@ -85,12 +76,6 @@ public class StreamProcessorBuilder
     public StreamProcessorBuilder snapshotStorage(SnapshotStorage snapshotStorage)
     {
         this.snapshotStorage = snapshotStorage;
-        return this;
-    }
-
-    public StreamProcessorBuilder snapshotPositionProvider(SnapshotPositionProvider snapshotPositionProvider)
-    {
-        this.snapshotPositionProvider = snapshotPositionProvider;
         return this;
     }
 
@@ -127,8 +112,7 @@ public class StreamProcessorBuilder
     protected void initContext()
     {
         Objects.requireNonNull(streamProcessor, "No stream processor provided.");
-        Objects.requireNonNull(sourceStream, "No source stream provided.");
-        Objects.requireNonNull(targetStream, "No target stream provided.");
+        Objects.requireNonNull(logStream, "No log stream provided.");
         Objects.requireNonNull(actorScheduler, "No task scheduler provided.");
         Objects.requireNonNull(snapshotStorage, "No snapshot storage provided.");
 
@@ -142,20 +126,7 @@ public class StreamProcessorBuilder
             snapshotPolicy = new TimeBasedSnapshotPolicy(Duration.ofMinutes(1));
         }
 
-        if (snapshotPositionProvider == null)
-        {
-            if (sourceStream.getPartitionId() == targetStream.getPartitionId() && sourceStream.getTopicName().equals(targetStream.getTopicName()))
-            {
-                snapshotPositionProvider = new LastProcessedEventPositionProvider();
-            }
-            else
-            {
-                snapshotPositionProvider = new LastWrittenEventPositionProvider();
-            }
-        }
-
-        sourceLogStreamReader = new BufferedLogStreamReader();
-        targetLogStreamReader = new BufferedLogStreamReader();
+        logStreamReader = new BufferedLogStreamReader();
 
         if (readOnly)
         {
@@ -179,18 +150,15 @@ public class StreamProcessorBuilder
         ctx.setStreamProcessor(streamProcessor);
         ctx.setStreamProcessorCmdQueue(streamProcessorCmdQueue);
 
-        ctx.setSourceStream(sourceStream);
-        ctx.setTargetStream(targetStream);
+        ctx.setLogStream(logStream);
 
         ctx.setTaskScheduler(actorScheduler);
 
-        ctx.setSourceLogStreamReader(sourceLogStreamReader);
-        ctx.setTargetLogStreamReader(targetLogStreamReader);
+        ctx.setLogStreamReader(logStreamReader);
         ctx.setLogStreamWriter(logStreamWriter);
 
         ctx.setSnapshotPolicy(snapshotPolicy);
         ctx.setSnapshotStorage(snapshotStorage);
-        ctx.setSnapshotPositionProvider(snapshotPositionProvider);
 
         ctx.setEventFilter(eventFilter);
         ctx.setReprocessingEventFilter(reprocessingEventFilter);

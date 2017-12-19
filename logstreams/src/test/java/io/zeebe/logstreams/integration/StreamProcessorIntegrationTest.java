@@ -15,58 +15,40 @@
  */
 package io.zeebe.logstreams.integration;
 
-import static io.zeebe.logstreams.integration.util.LogIntegrationTestUtil.readLogAndAssertEvents;
-import static io.zeebe.logstreams.integration.util.LogIntegrationTestUtil.waitUntilWrittenEvents;
-import static io.zeebe.logstreams.integration.util.LogIntegrationTestUtil.waitUntilWrittenKey;
-import static io.zeebe.logstreams.integration.util.LogIntegrationTestUtil.writeLogEvents;
-import static io.zeebe.test.util.TestUtil.waitUntil;
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
-import static org.assertj.core.api.Assertions.assertThat;
+import io.zeebe.logstreams.LogStreams;
+import io.zeebe.logstreams.impl.LogStreamController;
+import io.zeebe.logstreams.integration.util.ControllableFsLogStorage;
+import io.zeebe.logstreams.integration.util.ControllableFsLogStreamBuilder;
+import io.zeebe.logstreams.integration.util.Counter;
+import io.zeebe.logstreams.log.*;
+import io.zeebe.logstreams.processor.EventProcessor;
+import io.zeebe.logstreams.processor.StreamProcessor;
+import io.zeebe.logstreams.processor.StreamProcessorContext;
+import io.zeebe.logstreams.processor.StreamProcessorController;
+import io.zeebe.logstreams.snapshot.SerializableWrapper;
+import io.zeebe.logstreams.spi.*;
+import io.zeebe.test.util.AutoCloseableRule;
+import io.zeebe.test.util.TestUtil;
+import io.zeebe.util.actor.ActorScheduler;
+import io.zeebe.util.actor.ActorSchedulerBuilder;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.*;
+import org.junit.rules.TemporaryFolder;
+import org.mockito.Mockito;
 
-import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.LongFunction;
+import java.util.function.Predicate;
 
-import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.mockito.Mockito;
-
-import io.zeebe.logstreams.LogStreams;
-import io.zeebe.logstreams.impl.LogStreamController;
-import io.zeebe.logstreams.integration.util.ControllableFsLogStorage;
-import io.zeebe.logstreams.integration.util.ControllableFsLogStreamBuilder;
-import io.zeebe.logstreams.integration.util.Counter;
-import io.zeebe.logstreams.log.BufferedLogStreamReader;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamBatchWriter;
-import io.zeebe.logstreams.log.LogStreamBatchWriterImpl;
-import io.zeebe.logstreams.log.LogStreamReader;
-import io.zeebe.logstreams.log.LogStreamWriter;
-import io.zeebe.logstreams.log.LogStreamWriterImpl;
-import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.processor.EventProcessor;
-import io.zeebe.logstreams.processor.StreamProcessor;
-import io.zeebe.logstreams.processor.StreamProcessorContext;
-import io.zeebe.logstreams.processor.StreamProcessorController;
-import io.zeebe.logstreams.snapshot.SerializableWrapper;
-import io.zeebe.logstreams.spi.ReadableSnapshot;
-import io.zeebe.logstreams.spi.SnapshotPolicy;
-import io.zeebe.logstreams.spi.SnapshotStorage;
-import io.zeebe.logstreams.spi.SnapshotSupport;
-import io.zeebe.logstreams.spi.SnapshotWriter;
-import io.zeebe.test.util.AutoCloseableRule;
-import io.zeebe.test.util.TestUtil;
-import io.zeebe.util.actor.ActorScheduler;
-import io.zeebe.util.actor.ActorSchedulerBuilder;
+import static io.zeebe.logstreams.integration.util.LogIntegrationTestUtil.*;
+import static io.zeebe.test.util.TestUtil.waitUntil;
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class StreamProcessorIntegrationTest
 {
@@ -84,11 +66,11 @@ public class StreamProcessorIntegrationTest
 
     private ActorScheduler actorScheduler;
 
-    private LogStream sourceLogStream;
-    private LogStream targetLogStream;
+    private LogStream logStream;
 
     private ControllableSnapshotStorage snapshotStorage;
     private SerializableWrapper<Counter> resourceCounter;
+    private StreamProcessorController streamProcessorController;
 
     private String logPath;
 
@@ -105,22 +87,14 @@ public class StreamProcessorIntegrationTest
 
         snapshotStorage = new ControllableSnapshotStorage(LogStreams.createFsSnapshotStore(logPath).build());
 
-        sourceLogStream = LogStreams.createFsLogStream(wrapString("source"), 0)
+        logStream = LogStreams.createFsLogStream(wrapString("source"), 0)
                 .logRootPath(logPath)
                 .deleteOnClose(true)
                 .logSegmentSize(1024 * 1024 * 16)
                 .actorScheduler(actorScheduler)
                 .build();
 
-        targetLogStream = LogStreams.createFsLogStream(wrapString("target"), 1)
-                .logRootPath(logPath)
-                .deleteOnClose(true)
-                .logSegmentSize(1024 * 1024 * 16)
-                .actorScheduler(actorScheduler)
-                .build();
-
-        sourceLogStream.open();
-        targetLogStream.open();
+        logStream.open();
 
         controllers = new ArrayList<>();
     }
@@ -128,13 +102,17 @@ public class StreamProcessorIntegrationTest
     @After
     public void destroy() throws Exception
     {
+        resourceCounter.reset();
         for (StreamProcessorController controller : controllers)
         {
             controller.closeAsync().get();
         }
+        if (streamProcessorController != null)
+        {
+            streamProcessorController.closeAsync().get();
+        }
 
-        sourceLogStream.close();
-        targetLogStream.close();
+        logStream.close();
 
         actorScheduler.close();
 
@@ -146,349 +124,325 @@ public class StreamProcessorIntegrationTest
     }
 
     @Test
-    public void shouldCopyEventsToTargetStream() throws InterruptedException, ExecutionException
+    public void shouldProcessAndWriteEventsToStream() throws InterruptedException, ExecutionException
     {
+        // given
         final StreamProcessorController streamProcessorController = LogStreams
-            .createStreamProcessor("copy-processor", STREAM_PROCESSOR_ID, new CopyStreamProcessor(resourceCounter))
-            .sourceStream(sourceLogStream)
-            .targetStream(targetLogStream)
+            .createStreamProcessor("increment-processor", STREAM_PROCESSOR_ID, new SimpleProducerProcessor())
+            .logStream(logStream)
             .actorScheduler(actorScheduler)
             .snapshotPolicy(NO_SNAPSHOT_POLICY)
             .snapshotStorage(snapshotStorage)
             .build();
-
-        sourceLogStream.setCommitPosition(Long.MAX_VALUE);
-        targetLogStream.setCommitPosition(Long.MAX_VALUE);
-
+        logStream.setCommitPosition(Long.MAX_VALUE);
         streamProcessorController.openAsync().get();
 
-        writeLogEvents(sourceLogStream, WORK_COUNT, MSG_SIZE, 0);
+        // when
+        writeLogEvents(logStream, 1, MSG_SIZE, 0);
 
-        final LogStreamReader logReader = new BufferedLogStreamReader(targetLogStream, true);
-        readLogAndAssertEvents(logReader, WORK_COUNT, MSG_SIZE);
-
-        streamProcessorController.closeAsync().get();
-        logReader.close();
+        // then
+        waitUntilWrittenKey(logStream, WORK_COUNT);
+        assertThat(resourceCounter.getObject().getCount()).isEqualTo(WORK_COUNT);
     }
 
     @Test
-    public void shouldWriteEventsToSourceStream() throws InterruptedException, ExecutionException
+    public void shouldCreateSnapshotOnProcessingAndWritingEventsToStream() throws InterruptedException, ExecutionException
     {
-        final StreamProcessor streamProcessor = new StreamProcessor()
-        {
-            @Override
-            public EventProcessor onEvent(LoggedEvent event)
-            {
-                return new EventProcessor()
-                {
-                    @Override
-                    public void processEvent()
-                    {
-                        final Counter counter = resourceCounter.getObject();
-                        counter.increment();
-                    }
-
-                    @Override
-                    public long writeEvent(LogStreamWriter writer)
-                    {
-                        final long nextKey = event.getKey() + 1;
-                        if (nextKey < WORK_COUNT)
-                        {
-                            return writer.key(nextKey).value(event.getValueBuffer(), event.getValueOffset(), event.getValueLength()).tryWrite();
-                        }
-                        else
-                        {
-                            return 0;
-                        }
-                    }
-                };
-            }
-
-            @Override
-            public SnapshotSupport getStateResource()
-            {
-                return resourceCounter;
-            }
-        };
-
+        // given
         final AtomicBoolean isSnapshotPoint = new AtomicBoolean(false);
 
         final StreamProcessorController streamProcessorController = LogStreams
-            .createStreamProcessor("increment-processor", STREAM_PROCESSOR_ID, streamProcessor)
-            .sourceStream(sourceLogStream)
-            .targetStream(sourceLogStream)
+            .createStreamProcessor("increment-processor", STREAM_PROCESSOR_ID, new SimpleProducerProcessor())
+            .logStream(logStream)
             .actorScheduler(actorScheduler)
             .snapshotPolicy(position -> isSnapshotPoint.getAndSet(false))
             .snapshotStorage(snapshotStorage)
             .build();
 
-        sourceLogStream.setCommitPosition(Long.MAX_VALUE);
-
+        logStream.setCommitPosition(Long.MAX_VALUE);
         streamProcessorController.openAsync().get();
+        writeLogEvents(logStream, 1, MSG_SIZE, 0);
+        waitUntilWrittenKey(logStream, WORK_COUNT / 2);
 
-        // just write one initial event
-        writeLogEvents(sourceLogStream, 1, MSG_SIZE, 0);
-        waitUntilWrittenKey(sourceLogStream, WORK_COUNT / 2);
-
+        // when
         isSnapshotPoint.set(true);
+        waitUntilWrittenKey(logStream, WORK_COUNT);
 
-        waitUntilWrittenKey(sourceLogStream, WORK_COUNT);
-
-        while (resourceCounter.getObject().getCount() < WORK_COUNT)
-        {
-            // wait until last event is processed
-        }
+        // then
+        assertThat(snapshotStorage.isSnapshotCreated()).isTrue();
         assertThat(resourceCounter.getObject().getCount()).isEqualTo(WORK_COUNT);
-
-        snapshotStorage.readOnly();
-        streamProcessorController.closeAsync().get();
-
-        // reset the resource manually to ensure that recovery happens
-        resourceCounter.getObject().reset();
-        assertThat(resourceCounter.getObject().getCount()).isEqualTo(0);
-
-        streamProcessorController.openAsync().get();
-
-        while (resourceCounter.getObject().getCount() < WORK_COUNT)
-        {
-            // wait until last event is processed again
-        }
-        assertThat(resourceCounter.getObject().getCount()).isEqualTo(WORK_COUNT);
-
-        streamProcessorController.closeAsync().get();
     }
 
     @Test
-    public void shouldRecoverFromSnapshot() throws Exception
+    public void shouldReprocessEvents() throws InterruptedException, ExecutionException
     {
-        final StreamProcessorController streamProcessorController = LogStreams
-            .createStreamProcessor("copy-processor", STREAM_PROCESSOR_ID, new CopyStreamProcessor(resourceCounter))
-            .sourceStream(sourceLogStream)
-            .targetStream(targetLogStream)
-            .actorScheduler(actorScheduler)
-            .snapshotPolicy(NO_SNAPSHOT_POLICY)
-            .snapshotStorage(snapshotStorage)
-            .build();
-
-        sourceLogStream.setCommitPosition(Long.MAX_VALUE);
-        targetLogStream.setCommitPosition(Long.MAX_VALUE);
-
-        streamProcessorController.openAsync().get();
-
-        writeLogEvents(sourceLogStream, WORK_COUNT, MSG_SIZE, 0);
-        waitUntilWrittenKey(targetLogStream, WORK_COUNT);
-
-        assertThat(resourceCounter.getObject().getCount()).isEqualTo(WORK_COUNT);
-
-        streamProcessorController.closeAsync().get();
-
-        // reset the resource manually to ensure that recovery happens
-        resourceCounter.getObject().reset();
-        assertThat(resourceCounter.getObject().getCount()).isEqualTo(0);
-
-        streamProcessorController.openAsync().get();
-
-        // write one more event to verify that the processor resume on snapshot position
-        writeLogEvents(sourceLogStream, 1, MSG_SIZE, WORK_COUNT);
-        waitUntilWrittenKey(targetLogStream, WORK_COUNT + 1);
-
-        assertThat(resourceCounter.getObject().getCount()).isEqualTo(WORK_COUNT + 1);
-
-        streamProcessorController.closeAsync().get();
-    }
-
-    @Test
-    public void shouldRecoverFromSnapshotAndReprocessEvents() throws FileNotFoundException, Exception
-    {
+        // given
         final AtomicBoolean isSnapshotPoint = new AtomicBoolean(false);
-
         final StreamProcessorController streamProcessorController = LogStreams
-            .createStreamProcessor("copy-processor", STREAM_PROCESSOR_ID, new CopyStreamProcessor(resourceCounter))
-            .sourceStream(sourceLogStream)
-            .targetStream(targetLogStream)
+            .createStreamProcessor("increment-processor", STREAM_PROCESSOR_ID, new SimpleProducerProcessor())
+            .logStream(logStream)
             .actorScheduler(actorScheduler)
-            .snapshotPolicy(pos -> isSnapshotPoint.getAndSet(false))
+            .snapshotPolicy(position -> isSnapshotPoint.getAndSet(false))
+            .snapshotStorage(snapshotStorage)
+            .build();
+        logStream.setCommitPosition(Long.MAX_VALUE);
+        streamProcessorController.openAsync().get();
+        writeLogEvents(logStream, 1, MSG_SIZE, 0);
+        waitUntilWrittenKey(logStream, WORK_COUNT / 2);
+        isSnapshotPoint.set(true);
+        waitUntilWrittenKey(logStream, WORK_COUNT);
+
+        // when
+        snapshotStorage.readOnly();
+        streamProcessorController.closeAsync().get();
+        resourceCounter.getObject().reset();
+        streamProcessorController.openAsync().get();
+
+        // then
+        // state is recovered
+        assertThat(resourceCounter.getObject().getCount()).isGreaterThan(WORK_COUNT / 2);
+        waitUntilCounterReached(WORK_COUNT);
+        assertThat(resourceCounter.getObject().getCount()).isEqualTo(WORK_COUNT);
+
+        streamProcessorController.closeAsync().get();
+    }
+
+    @Test
+    public void shouldReprocessEventsAndProcessNewEvents() throws InterruptedException, ExecutionException
+    {
+        // given
+        final AtomicBoolean isSnapshotPoint = new AtomicBoolean(false);
+        final StreamProcessorController streamProcessorController = LogStreams
+            .createStreamProcessor("increment-processor", STREAM_PROCESSOR_ID, new SimpleProducerProcessor())
+            .logStream(logStream)
+            .actorScheduler(actorScheduler)
+            .snapshotPolicy(position -> isSnapshotPoint.getAndSet(false))
             .snapshotStorage(snapshotStorage)
             .build();
 
-        sourceLogStream.setCommitPosition(Long.MAX_VALUE);
-        targetLogStream.setCommitPosition(Long.MAX_VALUE);
-
+        logStream.setCommitPosition(Long.MAX_VALUE);
         streamProcessorController.openAsync().get();
-
-        writeLogEvents(sourceLogStream, WORK_COUNT / 2, MSG_SIZE, 0);
-        waitUntilWrittenKey(targetLogStream, WORK_COUNT / 2);
-
+        writeLogEvents(logStream, 1, MSG_SIZE, 0);
+        waitUntilWrittenKey(logStream, WORK_COUNT / 2);
         isSnapshotPoint.set(true);
+        waitUntilWrittenKey(logStream, WORK_COUNT);
 
-        writeLogEvents(sourceLogStream, WORK_COUNT / 2, MSG_SIZE, WORK_COUNT / 2);
-        waitUntilWrittenKey(targetLogStream, WORK_COUNT);
-
-        assertThat(resourceCounter.getObject().getCount()).isEqualTo(WORK_COUNT);
-
+        // when
         snapshotStorage.readOnly();
         streamProcessorController.closeAsync().get();
-
-        // reset the resource manually to ensure that recovery happens
         resourceCounter.getObject().reset();
-        assertThat(resourceCounter.getObject().getCount()).isEqualTo(0);
-
         streamProcessorController.openAsync().get();
 
-        // write one more event to verify that the processor resume on snapshot position
-        writeLogEvents(sourceLogStream, 1, MSG_SIZE, WORK_COUNT);
-        waitUntilWrittenKey(targetLogStream, WORK_COUNT + 1);
+        // then
+        waitUntilCounterReached(WORK_COUNT);
 
+        // when
+        writeLogEvents(logStream, 1, MSG_SIZE, WORK_COUNT);
+        waitUntilWrittenKey(logStream, WORK_COUNT + 1);
+
+        // then
         assertThat(resourceCounter.getObject().getCount()).isEqualTo(WORK_COUNT + 1);
 
         streamProcessorController.closeAsync().get();
     }
 
     @Test
-    public void shouldRecoverWithoutSnapshot() throws FileNotFoundException, Exception
+    public void shouldRecoverWithoutSnapshot() throws Exception
     {
-        final StreamProcessorController streamProcessorController = LogStreams
-            .createStreamProcessor("copy-processor", STREAM_PROCESSOR_ID, new CopyStreamProcessor(resourceCounter))
-            .sourceStream(sourceLogStream)
-            .targetStream(targetLogStream)
+        // given
+        streamProcessorController = LogStreams
+            .createStreamProcessor("increment-processor", STREAM_PROCESSOR_ID, new SimpleProducerProcessor())
+            .logStream(logStream)
             .actorScheduler(actorScheduler)
             .snapshotPolicy(NO_SNAPSHOT_POLICY)
             .snapshotStorage(snapshotStorage)
             .build();
 
-        sourceLogStream.setCommitPosition(Long.MAX_VALUE);
-        targetLogStream.setCommitPosition(Long.MAX_VALUE);
-
+        logStream.setCommitPosition(Long.MAX_VALUE);
         streamProcessorController.openAsync().get();
-
-        writeLogEvents(sourceLogStream, WORK_COUNT, MSG_SIZE, 0);
-        waitUntilWrittenKey(targetLogStream, WORK_COUNT);
-
-        assertThat(resourceCounter.getObject().getCount()).isEqualTo(WORK_COUNT);
-
+        writeLogEvents(logStream, 1, MSG_SIZE, 0);
+        waitUntilWrittenKey(logStream, WORK_COUNT);
         snapshotStorage.readOnly();
         streamProcessorController.closeAsync().get();
 
-        // reset the resource manually to ensure that recovery happens
+        // when
         resourceCounter.getObject().reset();
-        assertThat(resourceCounter.getObject().getCount()).isEqualTo(0);
-
         streamProcessorController.openAsync().get();
+        writeLogEvents(logStream, 1, MSG_SIZE, WORK_COUNT);
+        waitUntilWrittenKey(logStream, WORK_COUNT + 1);
+        waitUntilCounterReached(WORK_COUNT + 1);
 
-        // write one more event to verify that the processor resume on snapshot position
-        writeLogEvents(sourceLogStream, 1, MSG_SIZE, WORK_COUNT);
-        waitUntilWrittenKey(targetLogStream, WORK_COUNT + 1);
-
+        // then
         assertThat(resourceCounter.getObject().getCount()).isEqualTo(WORK_COUNT + 1);
-
-        streamProcessorController.closeAsync().get();
     }
 
+
+
     @Test
-    public void shouldRecoverWithTwoProcessors() throws FileNotFoundException, Exception
+    public void shouldProcessWithTwoProcessors() throws Exception
     {
+        // given
         final SerializableWrapper<Counter> resourceCounter2 = new SerializableWrapper<>(new Counter());
 
+        final StreamProcessorController streamProcessorController1 = LogStreams
+            .createStreamProcessor("processor-1", 1,
+                new ProducerProcessor(resourceCounter, aLong -> aLong < 2 * WORK_COUNT && (aLong % 2) == 0, value -> value + 1))
+            .logStream(logStream)
+            .actorScheduler(actorScheduler)
+            .snapshotPolicy(NO_SNAPSHOT_POLICY)
+            .snapshotStorage(snapshotStorage)
+            .build();
+
+        final StreamProcessorController streamProcessorController2 = LogStreams
+            .createStreamProcessor("processor-2", 2,
+                new ProducerProcessor(resourceCounter2, aLong -> aLong < 2 * WORK_COUNT && (aLong % 2) != 0, value -> value + 1))
+            .logStream(logStream)
+            .actorScheduler(actorScheduler)
+            .snapshotPolicy(NO_SNAPSHOT_POLICY)
+            .snapshotStorage(snapshotStorage)
+            .build();
+
+        logStream.setCommitPosition(Long.MAX_VALUE);
+        logStream.setCommitPosition(Long.MAX_VALUE);
+
+        // when
+        CompletableFuture.allOf(streamProcessorController1.openAsync(), streamProcessorController2.openAsync()).get();
+
+        writeLogEvents(logStream, 1, MSG_SIZE, 0);
+        waitUntilWrittenEvents(logStream, 2 * WORK_COUNT);
+
+        // then
+        assertThat(resourceCounter.getObject().getCount()).isEqualTo(2 * WORK_COUNT);
+        assertThat(resourceCounter2.getObject().getCount()).isEqualTo(2 * WORK_COUNT);
+        CompletableFuture.allOf(streamProcessorController1.closeAsync(), streamProcessorController2.closeAsync()).get();
+    }
+
+    @Test
+    public void shouldReprocessWithTwoProcessors() throws Exception
+    {
+        // given
+        final SerializableWrapper<Counter> resourceCounter2 = new SerializableWrapper<>(new Counter());
         final AtomicBoolean isSnapshotPoint1 = new AtomicBoolean(false);
         final AtomicBoolean isSnapshotPoint2 = new AtomicBoolean(false);
 
         final StreamProcessorController streamProcessorController1 = LogStreams
-            .createStreamProcessor("processor-1", 1, new CopyStreamProcessor(resourceCounter))
-            .sourceStream(sourceLogStream)
-            .targetStream(targetLogStream)
+            .createStreamProcessor("processor-1", 1,
+                new ProducerProcessor(resourceCounter, aLong -> aLong < 2 * WORK_COUNT && (aLong % 2) == 0, value -> value + 1))
+            .logStream(logStream)
             .actorScheduler(actorScheduler)
             .snapshotPolicy(pos -> isSnapshotPoint1.getAndSet(false))
             .snapshotStorage(snapshotStorage)
             .build();
 
         final StreamProcessorController streamProcessorController2 = LogStreams
-            .createStreamProcessor("processor-2", 2, new CopyStreamProcessor(resourceCounter2))
-            .sourceStream(sourceLogStream)
-            .targetStream(targetLogStream)
+            .createStreamProcessor("processor-2", 2,
+                new ProducerProcessor(resourceCounter2, aLong -> aLong < 2 * WORK_COUNT && (aLong % 2) != 0, value -> value + 1))
+            .logStream(logStream)
             .actorScheduler(actorScheduler)
             .snapshotPolicy(pos -> isSnapshotPoint2.getAndSet(false))
             .snapshotStorage(snapshotStorage)
             .build();
 
-        sourceLogStream.setCommitPosition(Long.MAX_VALUE);
-        targetLogStream.setCommitPosition(Long.MAX_VALUE);
-
+        logStream.setCommitPosition(Long.MAX_VALUE);
+        logStream.setCommitPosition(Long.MAX_VALUE);
         CompletableFuture.allOf(streamProcessorController1.openAsync(), streamProcessorController2.openAsync()).get();
 
-        writeLogEvents(sourceLogStream, WORK_COUNT / 2, MSG_SIZE, 0);
-        waitUntilWrittenEvents(targetLogStream, WORK_COUNT);
-
+        writeLogEvents(logStream, 1, MSG_SIZE, 0);
+        waitUntilWrittenEvents(logStream, WORK_COUNT / 2);
         isSnapshotPoint1.set(true);
-
-        writeLogEvents(sourceLogStream, WORK_COUNT / 2, MSG_SIZE, WORK_COUNT / 2);
-        waitUntilWrittenEvents(targetLogStream, 2 * WORK_COUNT);
-
+        waitUntilWrittenEvents(logStream, WORK_COUNT);
         isSnapshotPoint2.set(true);
-
-        // write one more event to create the snapshot
-        writeLogEvents(sourceLogStream, 1, MSG_SIZE, WORK_COUNT);
-        waitUntilWrittenEvents(targetLogStream, 2 * WORK_COUNT + 2);
-
-        assertThat(resourceCounter.getObject().getCount()).isEqualTo(WORK_COUNT + 1);
-        assertThat(resourceCounter2.getObject().getCount()).isEqualTo(WORK_COUNT + 1);
+        waitUntilWrittenEvents(logStream, WORK_COUNT * 2);
+        writeLogEvents(logStream, 1, MSG_SIZE, 2 * WORK_COUNT);
+        waitUntilWrittenEvents(logStream, 2 * WORK_COUNT + 1);
 
         snapshotStorage.readOnly();
         CompletableFuture.allOf(streamProcessorController1.closeAsync(), streamProcessorController2.closeAsync()).get();
 
-        // reset the resource manually to ensure that recovery happens
+        // when
         resourceCounter.getObject().reset();
         resourceCounter2.getObject().reset();
-        assertThat(resourceCounter.getObject().getCount()).isEqualTo(0);
-        assertThat(resourceCounter2.getObject().getCount()).isEqualTo(0);
-
         CompletableFuture.allOf(streamProcessorController1.openAsync(), streamProcessorController2.openAsync()).get();
 
-        // write one more event to verify that the processors resume on snapshot position
-        writeLogEvents(sourceLogStream, 1, MSG_SIZE, WORK_COUNT + 1);
-        waitUntilWrittenEvents(targetLogStream, 2 * WORK_COUNT + 4);
+        // then
+        assertThat(resourceCounter.getObject().getCount()).isGreaterThan(WORK_COUNT / 2);
+        assertThat(resourceCounter2.getObject().getCount()).isGreaterThan(WORK_COUNT);
 
-        assertThat(resourceCounter.getObject().getCount()).isEqualTo(WORK_COUNT + 2);
-        assertThat(resourceCounter2.getObject().getCount()).isEqualTo(WORK_COUNT + 2);
+        // when
+        writeLogEvents(logStream, 1, MSG_SIZE, 2 * WORK_COUNT + 1);
+        waitUntilWrittenEvents(logStream, 2 * WORK_COUNT + 2);
+
+        while (resourceCounter.getObject().getCount() < 2 * WORK_COUNT + 2
+               || resourceCounter2.getObject().getCount() < 2 * WORK_COUNT + 2)
+        {
+            Thread.sleep(20);
+            // wait until last event is re-processed again
+        }
+
+        // then
+        assertThat(resourceCounter.getObject().getCount()).isEqualTo(2 * WORK_COUNT + 2);
+        assertThat(resourceCounter2.getObject().getCount()).isEqualTo(2 * WORK_COUNT + 2);
 
         CompletableFuture.allOf(streamProcessorController1.closeAsync(), streamProcessorController2.closeAsync()).get();
     }
 
     @Test
-    public void shouldRecoverWithEventBatches() throws FileNotFoundException, Exception
+    public void shouldProcessWithEventBatches() throws Exception
     {
+        // given
         final StreamProcessorController streamProcessorController = LogStreams
             .createStreamProcessor("copy-event-batch-processor", STREAM_PROCESSOR_ID, new EventBatchStreamProcessor(resourceCounter))
-            .sourceStream(sourceLogStream)
-            .targetStream(targetLogStream)
+            .logStream(logStream)
             .actorScheduler(actorScheduler)
             .snapshotPolicy(NO_SNAPSHOT_POLICY)
             .snapshotStorage(snapshotStorage)
             .build();
 
-        sourceLogStream.setCommitPosition(Long.MAX_VALUE);
-        targetLogStream.setCommitPosition(Long.MAX_VALUE);
+        logStream.setCommitPosition(Long.MAX_VALUE);
+        logStream.setCommitPosition(Long.MAX_VALUE);
 
         streamProcessorController.openAsync().get();
 
-        writeLogEvents(sourceLogStream, WORK_COUNT, MSG_SIZE, 0);
-        waitUntilWrittenKey(targetLogStream, WORK_COUNT);
+        // when
+        writeLogEvents(logStream, 1, MSG_SIZE, 1);
+        waitUntilWrittenKey(logStream, WORK_COUNT);
 
-        assertThat(resourceCounter.getObject().getCount()).isEqualTo(WORK_COUNT);
+        // then
+        assertThat(resourceCounter.getObject().getCount()).isGreaterThan(WORK_COUNT / 2).isLessThan(WORK_COUNT);
 
+        streamProcessorController.closeAsync().get();
+    }
+
+    @Test
+    public void shouldRecoverWithEventBatches() throws Exception
+    {
+        // given
+        final StreamProcessorController streamProcessorController = LogStreams
+            .createStreamProcessor("copy-event-batch-processor", STREAM_PROCESSOR_ID, new EventBatchStreamProcessor(resourceCounter))
+            .logStream(logStream)
+            .actorScheduler(actorScheduler)
+            .snapshotPolicy(NO_SNAPSHOT_POLICY)
+            .snapshotStorage(snapshotStorage)
+            .build();
+
+        logStream.setCommitPosition(Long.MAX_VALUE);
+        logStream.setCommitPosition(Long.MAX_VALUE);
+
+        streamProcessorController.openAsync().get();
+        writeLogEvents(logStream, 1, MSG_SIZE, 1);
+        waitUntilWrittenKey(logStream, WORK_COUNT);
         snapshotStorage.readOnly();
         streamProcessorController.closeAsync().get();
 
-        // reset the resource manually to ensure that recovery happens
+        // when
         resourceCounter.getObject().reset();
-        assertThat(resourceCounter.getObject().getCount()).isEqualTo(0);
-
         streamProcessorController.openAsync().get();
+        writeLogEvents(logStream, 1, MSG_SIZE, WORK_COUNT);
+        waitUntilWrittenKey(logStream, WORK_COUNT + 1);
+        waitUntilCounterReached(WORK_COUNT + 1);
 
-        // write one more event to verify that the processor resume on snapshot position
-        writeLogEvents(sourceLogStream, 1, MSG_SIZE, WORK_COUNT);
-        waitUntilWrittenKey(targetLogStream, WORK_COUNT + 1);
-
-        assertThat(resourceCounter.getObject().getCount()).isEqualTo(WORK_COUNT + 1);
+        // then
+        assertThat(resourceCounter.getObject().getCount()).isGreaterThan(WORK_COUNT + 1);
 
         streamProcessorController.closeAsync().get();
     }
@@ -496,65 +450,125 @@ public class StreamProcessorIntegrationTest
     @Test
     public void shouldRecoverAfterLogStreamFailure() throws InterruptedException, ExecutionException
     {
-        final LogStream controllableTargetLogStream = new ControllableFsLogStreamBuilder(wrapString("target-controllable"), 3)
+        // given
+        final LogStream controllablelogStream = new ControllableFsLogStreamBuilder(wrapString("controllable-logstream"), 3)
                 .logRootPath(tempFolder.getRoot().getAbsolutePath())
                 .deleteOnClose(true)
                 .logSegmentSize(1024 * 1024 * 16)
                 .actorScheduler(actorScheduler)
                 .build();
 
-        final ControllableFsLogStorage controllableTargetLogStorage = (ControllableFsLogStorage) controllableTargetLogStream.getLogStorage();
-        final LogStreamController targetLogStreamController = controllableTargetLogStream.getLogStreamController();
+        final ControllableFsLogStorage controllableLogStorage = (ControllableFsLogStorage) controllablelogStream.getLogStorage();
+        final LogStreamController logStreamController = controllablelogStream.getLogStreamController();
 
         final AtomicBoolean isSnapshotPoint = new AtomicBoolean(false);
 
         final StreamProcessorController streamProcessorController = LogStreams
-            .createStreamProcessor("copy-processor", STREAM_PROCESSOR_ID, new CopyStreamProcessor(resourceCounter))
-            .sourceStream(sourceLogStream)
-            .targetStream(controllableTargetLogStream)
+            .createStreamProcessor("processor", STREAM_PROCESSOR_ID, new SimpleProducerProcessor())
+            .logStream(controllablelogStream)
             .actorScheduler(actorScheduler)
             .snapshotPolicy(position -> isSnapshotPoint.getAndSet(false))
             .snapshotStorage(snapshotStorage)
             .build();
 
-        sourceLogStream.setCommitPosition(Long.MAX_VALUE);
-        controllableTargetLogStream.setCommitPosition(Long.MAX_VALUE);
-
-        controllableTargetLogStream.open();
+        controllablelogStream.setCommitPosition(Long.MAX_VALUE);
+        controllablelogStream.open();
         streamProcessorController.openAsync().get();
 
-        writeLogEvents(sourceLogStream, WORK_COUNT / 2, MSG_SIZE, 0);
-        waitUntilWrittenKey(controllableTargetLogStream, WORK_COUNT / 2);
+        writeLogEvents(controllablelogStream, 1, MSG_SIZE, 0);
+        waitUntilWrittenKey(controllablelogStream, WORK_COUNT / 2);
 
         isSnapshotPoint.set(true);
 
-        writeLogEvents(sourceLogStream, WORK_COUNT / 2, MSG_SIZE, WORK_COUNT / 2);
-        waitUntilWrittenKey(controllableTargetLogStream, (int) (WORK_COUNT * 0.75));
+        waitUntilWrittenKey(controllablelogStream, (int) (WORK_COUNT * 0.75));
 
-        controllableTargetLogStorage.setFailure(true);
+        // when
+        controllableLogStorage.setFailure(true);
 
+        // then
         TestUtil.waitUntil(() -> streamProcessorController.isFailed());
 
-        controllableTargetLogStorage.setFailure(false);
-
-        // reset the resource manually to ensure that recovery happens
-        resourceCounter.getObject().reset();
-        assertThat(resourceCounter.getObject().getCount()).isEqualTo(0);
-
+        // when
+        resourceCounter.reset();
+        controllableLogStorage.setFailure(false);
         // notify the controller that the log storage is recovered
-        targetLogStreamController.recover();
+        logStreamController.recover();
 
+        // then
+        // last event should be processed again
         // verify that the stream processor recover and resume processing
-        waitUntilWrittenKey(controllableTargetLogStream, WORK_COUNT);
+        waitUntilWrittenKey(controllablelogStream, WORK_COUNT);
+        waitUntilCounterReached(WORK_COUNT);
+
 
         assertThat(resourceCounter.getObject().getCount()).isEqualTo(WORK_COUNT);
 
         streamProcessorController.closeAsync().get();
-        controllableTargetLogStream.close();
+        controllablelogStream.close();
     }
 
     @Test
-    @Ignore
+    public void shouldRecoverAfterLogStreamFailureWithSimpleVisitorProcessor() throws InterruptedException, ExecutionException
+    {
+        // given
+        final LogStream controllablelogStream = new ControllableFsLogStreamBuilder(wrapString("controllable-logstream"), 3)
+            .logRootPath(tempFolder.getRoot().getAbsolutePath())
+            .deleteOnClose(true)
+            .logSegmentSize(1024 * 1024 * 16)
+            .actorScheduler(actorScheduler)
+            .build();
+
+        final ControllableFsLogStorage controllableLogStorage = (ControllableFsLogStorage) controllablelogStream.getLogStorage();
+        final LogStreamController logStreamController = controllablelogStream.getLogStreamController();
+
+        final AtomicBoolean isSnapshotPoint = new AtomicBoolean(false);
+
+        final StreamProcessorController streamProcessorController = LogStreams
+            .createStreamProcessor("processor", STREAM_PROCESSOR_ID, new SimpleVisitorProcessor())
+            .logStream(controllablelogStream)
+            .actorScheduler(actorScheduler)
+            .snapshotPolicy(position -> isSnapshotPoint.getAndSet(false))
+            .snapshotStorage(snapshotStorage)
+            .build();
+
+        controllablelogStream.setCommitPosition(Long.MAX_VALUE);
+        controllablelogStream.open();
+        streamProcessorController.openAsync().get();
+
+        writeLogEvents(controllablelogStream, WORK_COUNT / 2, MSG_SIZE, 0);
+        waitUntilWrittenKey(controllablelogStream, WORK_COUNT / 2);
+        isSnapshotPoint.set(true);
+
+        // when
+        writeLogEvents(controllablelogStream, WORK_COUNT / 2, MSG_SIZE, WORK_COUNT / 2);
+        controllableLogStorage.setFailure(true);
+        waitUntilWrittenKey(controllablelogStream, (int) (WORK_COUNT * 0.75));
+
+        // then
+        TestUtil.waitUntil(() -> streamProcessorController.isFailed());
+
+        // when
+        controllableLogStorage.setFailure(false);
+        // notify the controller that the log storage is recovered
+        resourceCounter.reset();
+        final BufferedLogStreamReader reader = new BufferedLogStreamReader(controllablelogStream, true);
+        final int eventCount = countEvents(reader);
+        logStreamController.recover();
+        writeLogEvents(controllablelogStream, WORK_COUNT - eventCount, MSG_SIZE, eventCount + 1);
+
+        // then
+        // verify that the stream processor recover and resume processing
+        waitUntilWrittenKey(controllablelogStream, WORK_COUNT);
+        assertThat(countEvents(reader)).isEqualTo(WORK_COUNT);
+
+        waitUntilCounterReached(WORK_COUNT);
+        assertThat(resourceCounter.getObject().getCount()).isEqualTo(WORK_COUNT);
+
+        streamProcessorController.closeAsync().get();
+        controllablelogStream.close();
+    }
+
+    @Test
     public void shouldReceoverWithIntermediateIndexingState() throws InterruptedException, ExecutionException
     {
         // given
@@ -563,21 +577,20 @@ public class StreamProcessorIntegrationTest
 
         final StreamProcessorController streamProcessorController = LogStreams
                 .createStreamProcessor("test", STREAM_PROCESSOR_ID, streamProcessor)
-                .sourceStream(sourceLogStream)
-                .targetStream(sourceLogStream)
+                .logStream(logStream)
                 .actorScheduler(actorScheduler)
                 .snapshotPolicy(p -> true)
                 .snapshotStorage(snapshotStorage)
                 .build();
         manage(streamProcessorController);
 
-        sourceLogStream.setCommitPosition(Long.MAX_VALUE);
+        logStream.setCommitPosition(Long.MAX_VALUE);
 
-        final LogStreamReader logReader = newLogReader(sourceLogStream);
+        final LogStreamReader logReader = newLogReader(logStream);
 
         streamProcessorController.openAsync().get();
 
-        writeLogEvents(sourceLogStream, 2, MSG_SIZE, 1);
+        writeLogEvents(logStream, 2, MSG_SIZE, 1);
         logReader.seekToFirstEvent();
         waitUntil(() -> logReader.hasNext());
         final long firstEventPosition = logReader.next().getPosition();
@@ -593,7 +606,7 @@ public class StreamProcessorIntegrationTest
         final long newEventKey = Integer.MAX_VALUE;
         streamProcessor.blockOnKey(-1);
 
-        final LogStreamWriter writer = new LogStreamWriterImpl(sourceLogStream);
+        final LogStreamWriter writer = new LogStreamWriterImpl(logStream);
 
         // write one more event to verify that the processor resume on snapshot position
         final long newEventPosition = TestUtil.doRepeatedly(() ->
@@ -605,6 +618,7 @@ public class StreamProcessorIntegrationTest
         })
                 .until(p -> p >= 0);
 
+        // then
         streamProcessorController.openAsync().get();
 
         waitUntil(() -> streamProcessor.successfullyHandledEvents.contains(newEventPosition));
@@ -613,7 +627,7 @@ public class StreamProcessorIntegrationTest
     }
 
 
-    protected LogStreamReader newLogReader(LogStream stream)
+    private LogStreamReader newLogReader(LogStream stream)
     {
         final BufferedLogStreamReader reader = new BufferedLogStreamReader(stream, true);
         autoCloseableRule.manage(reader);
@@ -629,19 +643,18 @@ public class StreamProcessorIntegrationTest
         final StreamProcessorController streamProcessorController = LogStreams
                 .createStreamProcessor("copy-processor", STREAM_PROCESSOR_ID, streamProcessor)
                 .readOnly(true)
-                .sourceStream(sourceLogStream)
-                .targetStream(targetLogStream)
+                .logStream(logStream)
                 .actorScheduler(actorScheduler)
                 .snapshotPolicy(NO_SNAPSHOT_POLICY)
                 .snapshotStorage(snapshotStorage)
                 .build();
 
-        sourceLogStream.setCommitPosition(Long.MAX_VALUE);
-        targetLogStream.setCommitPosition(Long.MAX_VALUE);
+        logStream.setCommitPosition(Long.MAX_VALUE);
+        logStream.setCommitPosition(Long.MAX_VALUE);
 
         streamProcessorController.openAsync().get();
 
-        writeLogEvents(sourceLogStream, WORK_COUNT, MSG_SIZE, 0);
+        writeLogEvents(logStream, WORK_COUNT, MSG_SIZE, 0);
 
         // when
         TestUtil.waitUntil(() -> streamProcessorController.isFailed());
@@ -658,92 +671,47 @@ public class StreamProcessorIntegrationTest
     @Test
     public void shouldReadCommittedEntries() throws InterruptedException, ExecutionException
     {
-        final StreamProcessorController streamProcessorController = LogStreams
-                .createStreamProcessor("copy-processor", STREAM_PROCESSOR_ID, new CopyStreamProcessor(resourceCounter))
-                .sourceStream(sourceLogStream)
-                .targetStream(targetLogStream)
+        // given
+        streamProcessorController = LogStreams
+                .createStreamProcessor("processor", STREAM_PROCESSOR_ID, new SimpleProducerProcessor())
+                .logStream(logStream)
                 .actorScheduler(actorScheduler)
                 .snapshotPolicy(NO_SNAPSHOT_POLICY)
                 .snapshotStorage(snapshotStorage)
                 .build();
-
+        logStream.setCommitPosition(-1);
         streamProcessorController.openAsync().get();
+        final long[] positions = writeLogEventsAndReturnPosition(logStream, 1, MSG_SIZE, 0);
 
-        final int keyOffset = 0;
-        writeLogEvents(sourceLogStream, WORK_COUNT, MSG_SIZE, keyOffset);
-        waitUntilWrittenKey(sourceLogStream, WORK_COUNT + keyOffset);
-
-        final BufferedLogStreamReader sourceReader = new BufferedLogStreamReader(sourceLogStream, true);
+        // when
+        final BufferedLogStreamReader sourceReader = new BufferedLogStreamReader(logStream, true);
         autoCloseableRule.manage(sourceReader);
 
-        sourceReader.seekToFirstEvent();
+        // then
+        waitUntil(() -> logStream.getCurrentAppenderPosition() > positions[0]);
+        int eventCount = countEvents(sourceReader);
+        assertThat(eventCount).isEqualTo(1);
 
-        int events = 0;
-        while (sourceReader.hasNext() && events <= (WORK_COUNT / 2))
-        {
-            sourceReader.next();
-            events += 1;
-        }
+        // when
+        logStream.setCommitPosition(positions[0]);
+        waitUntilCounterReached(1);
 
-        sourceLogStream.setCommitPosition(sourceReader.getPosition());
-        waitUntilWrittenKey(targetLogStream, WORK_COUNT / 2);
+        // then controller can read event and create new one
+        eventCount = countEvents(sourceReader);
+        assertThat(eventCount).isEqualTo(2);
 
-        sourceReader.seekToLastEvent();
+        // when
+        logStream.setCommitPosition(Long.MAX_VALUE);
 
-        sourceLogStream.setCommitPosition(sourceReader.getPosition());
-        waitUntilWrittenKey(targetLogStream, WORK_COUNT);
-
-        targetLogStream.setCommitPosition(Long.MAX_VALUE);
-
-        streamProcessorController.closeAsync().get();
-        sourceReader.close();
-    }
-
-
-    private class CopyStreamProcessor implements StreamProcessor
-    {
-        private final SerializableWrapper<Counter> resourceCounter;
-
-        CopyStreamProcessor(SerializableWrapper<Counter> resourceCounter)
-        {
-            this.resourceCounter = resourceCounter;
-        }
-
-        @Override
-        public EventProcessor onEvent(LoggedEvent event)
-        {
-            return new EventProcessor()
-            {
-                @Override
-                public void processEvent()
-                {
-                    final Counter counter = resourceCounter.getObject();
-                    counter.increment();
-                }
-
-                @Override
-                public long writeEvent(LogStreamWriter writer)
-                {
-                    return writer
-                            .key(event.getKey())
-                            .value(event.getValueBuffer(), event.getValueOffset(), event.getValueLength())
-                            .tryWrite();
-                }
-            };
-        }
-
-        @Override
-        public SnapshotSupport getStateResource()
-        {
-            return resourceCounter;
-        }
+        // then
+        waitUntilCounterReached(WORK_COUNT);
     }
 
     private class EventBatchStreamProcessor implements StreamProcessor
     {
         private final SerializableWrapper<Counter> resourceCounter;
 
-        private LogStreamBatchWriter batchWriter = new LogStreamBatchWriterImpl(targetLogStream);
+        private LogStreamBatchWriter batchWriter = new LogStreamBatchWriterImpl(logStream);
 
         EventBatchStreamProcessor(SerializableWrapper<Counter> resourceCounter)
         {
@@ -767,13 +735,13 @@ public class StreamProcessorIntegrationTest
                 {
                     return batchWriter
                         .producerId(STREAM_PROCESSOR_ID)
-                        .sourceEvent(sourceLogStream.getPartitionId(), event.getPosition())
+                        .sourceEvent(logStream.getPartitionId(), event.getPosition())
                         .event()
-                            .key(1L)
+                            .key(event.getKey() * 2)
                             .value(wrapString("event-1"))
                             .done()
                         .event()
-                            .key(event.getKey())
+                            .key(event.getKey() * 2 + 1)
                             .value(wrapString("event-2"))
                             .done()
                          .tryWrite();
@@ -908,11 +876,11 @@ public class StreamProcessorIntegrationTest
 
     }
 
-
     protected class ControllableSnapshotStorage implements SnapshotStorage
     {
         private final SnapshotStorage snapshotStorage;
         private boolean readOnly = false;
+        private boolean snapshotCreated = false;
 
         public ControllableSnapshotStorage(SnapshotStorage snapshotStorage)
         {
@@ -933,6 +901,7 @@ public class StreamProcessorIntegrationTest
         @Override
         public SnapshotWriter createSnapshot(String name, long logPosition) throws Exception
         {
+            snapshotCreated = true;
             if (readOnly)
             {
                 return Mockito.mock(SnapshotWriter.class);
@@ -955,6 +924,150 @@ public class StreamProcessorIntegrationTest
                 return snapshotStorage.purgeSnapshot(name);
             }
         }
+
+        public boolean isSnapshotCreated()
+        {
+            return snapshotCreated;
+        }
     }
 
+    private class SimpleProducerProcessor implements StreamProcessor
+    {
+
+        @Override
+        public EventProcessor onEvent(LoggedEvent event)
+        {
+            return new EventProcessor()
+            {
+                @Override
+                public void processEvent()
+                {
+                    final Counter c = resourceCounter.getObject();
+                    c.increment();
+                }
+
+                @Override
+                public long writeEvent(LogStreamWriter writer)
+                {
+                    final long nextKey = event.getKey() + 1;
+                    if (nextKey < WORK_COUNT)
+                    {
+                        return writer.key(nextKey)
+                            .value(event.getValueBuffer(), event.getValueOffset(), event.getValueLength())
+                            .tryWrite();
+                    }
+                    else
+                    {
+                        return 0;
+                    }
+                }
+            };
+        }
+
+        @Override
+        public SnapshotSupport getStateResource()
+        {
+            return resourceCounter;
+        }
+    };
+
+    private class SimpleVisitorProcessor implements StreamProcessor
+    {
+        @Override
+        public EventProcessor onEvent(LoggedEvent event)
+        {
+            return new EventProcessor()
+            {
+                @Override
+                public void processEvent()
+                {
+                    final Counter c = resourceCounter.getObject();
+                    c.increment();
+                }
+            };
+        }
+
+        @Override
+        public SnapshotSupport getStateResource()
+        {
+            return resourceCounter;
+        }
+    };
+
+    private class ProducerProcessor implements StreamProcessor
+    {
+        private final Predicate<Long> shouldWrite;
+        private final LongFunction<Long> newKeyProducer;
+        private SerializableWrapper<Counter> counter;
+
+        ProducerProcessor(SerializableWrapper<Counter> counter, Predicate<Long> shouldWrite, LongFunction<Long> newKeyProducer)
+        {
+            this.counter = counter;
+            this.shouldWrite = shouldWrite;
+            this.newKeyProducer = newKeyProducer;
+        }
+
+        @Override
+        public EventProcessor onEvent(LoggedEvent event)
+        {
+            return new EventProcessor()
+            {
+                @Override
+                public void processEvent()
+                {
+                    final Counter c = counter.getObject();
+                    c.increment();
+                }
+
+                @Override
+                public long writeEvent(LogStreamWriter writer)
+                {
+                    final long nextKey = newKeyProducer.apply(event.getKey());
+                    if (shouldWrite.test(nextKey))
+                    {
+                        return writer.key(nextKey)
+                            .value(event.getValueBuffer(), event.getValueOffset(), event.getValueLength())
+                            .tryWrite();
+                    }
+                    else
+                    {
+                        return 0;
+                    }
+                }
+            };
+        }
+
+        @Override
+        public SnapshotSupport getStateResource()
+        {
+            return counter;
+        }
+    };
+
+    public void waitUntilCounterReached(int workCount) throws InterruptedException
+    {
+        while (resourceCounter.getObject().getCount() < workCount)
+        {
+            Thread.sleep(100);
+            // wait until last event is re-processed again
+        }
+    }
+
+    private int countEvents(BufferedLogStreamReader sourceReader)
+    {
+        sourceReader.seekToFirstEvent();
+        int eventCount = 0;
+        long lastPos = -1;
+        long lastKey = -1;
+        while (sourceReader.hasNext())
+        {
+            final LoggedEvent next = sourceReader.next();
+            assertThat(next.getPosition()).isGreaterThan(lastPos);
+            lastPos = next.getPosition();
+            assertThat(next.getKey()).isGreaterThan(lastKey);
+            lastKey = next.getKey();
+            eventCount++;
+        }
+        return eventCount;
+    }
 }
