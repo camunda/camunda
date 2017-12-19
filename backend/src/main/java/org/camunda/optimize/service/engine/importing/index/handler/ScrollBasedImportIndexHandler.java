@@ -10,7 +10,6 @@ import org.elasticsearch.action.update.UpdateRequestBuilder;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
-import org.elasticsearch.search.SearchContextMissingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -193,6 +192,7 @@ public abstract class ScrollBasedImportIndexHandler
     resetScroll();
     resetElasticsearchTrackingType();
     importIndex = 0L;
+    this.maxEntityCount = 0L;
     updateMaxEntityCount();
   }
 
