@@ -2,6 +2,7 @@ import React from 'react';
 
 import {ErrorBoundary} from 'components';
 import {reportLabelMap} from 'services';
+import ReportBlankSlate from './ReportBlankSlate';
 
 import {Number, Json, Table, Heatmap, Chart} from './views';
 
@@ -14,7 +15,7 @@ export default class ReportView extends React.Component {
       return this.checkProcDefAndRenderReport(this.props.report);
     } else {
       return (
-        <p>{defaultErrorMessage}</p>
+        <div className='Message Message--error'>{defaultErrorMessage}</div>
       );
     }
 
@@ -59,8 +60,11 @@ export default class ReportView extends React.Component {
   }
 
   buildInstructionMessage = (field) => {
-    return <p>Cannot display data for the given report builder settings. Please choose an option for '{field}'!</p>;
+    return (
+      <ReportBlankSlate message={'To display a report, please choose an option for ”' + field + '”.'} />
+    );
   }
+  
 
   isEmpty = (str) => {
     return (!str || 0 === str.length);

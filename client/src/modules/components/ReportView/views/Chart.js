@@ -1,5 +1,6 @@
 import React from 'react';
 import ChartRenderer from 'chart.js';
+import ReportBlankSlate from '../ReportBlankSlate';
 
 const colors = [
   '#b5152b',
@@ -20,7 +21,7 @@ export default class Chart extends React.Component {
     let errorMessageFragment = null;
     if(!data || typeof data !== 'object') {
       this.destroyChart();
-      errorMessageFragment = <p>{errorMessage}</p>;
+      errorMessageFragment = <ReportBlankSlate message={errorMessage} />;
     }
 
     return (<div style={{height: '100%', width: '100%'}}>

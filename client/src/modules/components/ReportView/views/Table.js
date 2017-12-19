@@ -1,10 +1,11 @@
 import React from 'react';
+import ReportBlankSlate from '../ReportBlankSlate';
 
 import {Table as TableRenderer} from 'components';
 
 export default function Table({data, labels, errorMessage}) {
   if(!data || typeof data !== 'object') {
-    return <p>{errorMessage}</p>;
+    return <ReportBlankSlate message={errorMessage} />;
   }
 
   return (

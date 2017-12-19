@@ -23,6 +23,11 @@ jest.mock('services', () => {return {
   }
 }});
 
+jest.mock('./ReportBlankSlate', () => {return (props) => {
+    return <div className='message'>{props.message}</div>;
+  }
+});
+
 it('should display a number if visualization is number', () => {
   const report = {
     data: {
@@ -100,7 +105,7 @@ it('should instruct to add a process definition id if not available', () => {
 
   const node = mount(<ReportView report={report}/>);
 
-  expect(node).toIncludeText('Please choose an option for \'Process definition\'!');
+  expect(node.find('.message')).toIncludeText('Process definition');
 });
 
 it('should instruct to add view option if not available', () => {
@@ -120,7 +125,7 @@ it('should instruct to add view option if not available', () => {
 
   const node = mount(<ReportView report={report}/>);
 
-  expect(node).toIncludeText('Please choose an option for \'View\'!');
+  expect(node.find('.message')).toIncludeText('View');
 });
 
 it('should instruct to add group by option if not available', () => {
@@ -140,7 +145,7 @@ it('should instruct to add group by option if not available', () => {
 
   const node = mount(<ReportView report={report}/>);
 
-  expect(node).toIncludeText('Please choose an option for \'Group by\'!');
+  expect(node.find('.message')).toIncludeText('Group by');
 });
 
 it('should instruct to add visualization option if not available', () => {
@@ -160,7 +165,7 @@ it('should instruct to add visualization option if not available', () => {
 
   const node = mount(<ReportView report={report}/>);
 
-  expect(node).toIncludeText('Please choose an option for \'Visualize as\'!');
+  expect(node.find('.message')).toIncludeText('Visualize as');
 });
 
 it('should not add instruction for group by if operation is raw data', () => {
