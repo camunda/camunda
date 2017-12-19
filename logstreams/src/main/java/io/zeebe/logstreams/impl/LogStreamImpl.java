@@ -623,7 +623,8 @@ public final class LogStreamImpl implements LogStream
         {
             if (writeBuffer == null)
             {
-                final BufferedLogStreamReader logReader = new BufferedLogStreamReader(getLogStorage(), getBlockIndex());
+                final BufferedLogStreamReader logReader = new BufferedLogStreamReader(true);
+                logReader.wrap(getLogStorage(), getBlockIndex());
 
                 writeBuffer = initWriteBuffer(writeBuffer, logReader, logName, writeBufferSize);
 
