@@ -72,7 +72,8 @@ export default class NodeFilter extends React.Component {
       )
     });
     return <ul className='NodeFilter__preview'>
-              <span className='NodeFilter__preview-introduction'>This is the filter you are about to create: executed flow node</span>{' '}
+              <span className='NodeFilter__preview-introduction'>This is the filter you are about to create: </span>{' '}
+              <span className='NodeFilter__parameter-name'>Executed Flow Node</span> is{' '}
               {previewList}
             </ul>;
   }

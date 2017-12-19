@@ -24,7 +24,7 @@ export default class FilterList extends React.Component {
         list.push(<li key={i} className='FilterList__item'>
           <Button onClick={() => this.props.deleteFilter(filter, nextFilter)} className='FilterList__deleteButton'>×</Button>
           <span className='FilterList__item-content'>
-            Start Date between
+            <span className='FilterList__parameter-name'>Start Date </span> between
             {' '}<span className='FilterList__value'>{moment(filter.data.value).format('YYYY-MM-DD')}</span>{' '}
             {this.createOperator('and')}
             {' '}<span className='FilterList__value'>{moment(nextFilter.data.value).format('YYYY-MM-DD')}</span>{' '}
@@ -39,7 +39,7 @@ export default class FilterList extends React.Component {
           list.push(<li key={i} className='FilterList__item'>
             <Button onClick={() => this.props.deleteFilter(filter)}  className='FilterList__deleteButton'>×</Button>
             <span className='FilterList__item-content'>
-              <span className='FilterList__variable-name'>{name}</span>
+              <span className='FilterList__parameter-name'>{name}</span>
                 {(operator === 'in' || operator === '=') && this.createOperator('is')}
                 {operator === 'not in' && (
                   values.length === 1 ? this.createOperator('is not') : this.createOperator('is neither')
@@ -64,7 +64,8 @@ export default class FilterList extends React.Component {
           list.push(<li key={i} className='FilterList__item'>
             <Button onClick={() => this.props.deleteFilter(filter)}  className='FilterList__deleteButton'>×</Button>
             <span className='FilterList__item-content'>
-              executed flow node {values.map((value, idx) => {
+              <span className='FilterList__parameter-name'>Executed Flow Node</span> is{' '}
+              {values.map((value, idx) => {
                 return <span key={idx}>
                   <span className='FilterList__value'>{value.toString()}</span>
                   {idx < values.length - 1 && this.createOperator('or')}

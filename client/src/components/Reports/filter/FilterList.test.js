@@ -127,7 +127,7 @@ it('should display a simple flow node filter', () => {
 
   const node = mount(<FilterList data={data} />);
 
-  expect(node).toIncludeText('executed flow node flowNode');
+  expect(node).toIncludeText('Executed Flow Node is flowNode');
 });
 
 it('should display a flow node filter with multiple selected nodes', () => {
@@ -141,5 +141,5 @@ it('should display a flow node filter with multiple selected nodes', () => {
 
   const node = mount(<FilterList data={data} />);
 
-  expect(node).toIncludeText('executed flow node flowNode1 or flowNode2');
+  expect(node).toIncludeText('Executed Flow Node is flowNode1 or flowNode2');
 });
