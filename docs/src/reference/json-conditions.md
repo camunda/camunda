@@ -1,26 +1,10 @@
-# JSON
+# JSON Conditions
 
-Zeebe uses JSON for:
-
-* User-provided payload
-* Internal data
-* API and protocol messages
-
-
-
-## Message Pack
-
-For performance reasons JSON is represented using MessagePack, which is a binary representation of JSON. Using MessagePack allows the broker to traverse a JSON document on the binary level without interpreting it as a string and without needing to "parse" it.
-
-As a user, you do not need to deal with MessagePack directly. The clients take care of converting between MessagePack and JSON.
-
-## Conditions
-
-Conditions can be used for exclusive gateways (i.e., conditional flows) to determine the following task.  
+Conditions can be used for conditional flows to determine the following task.
 
 A condition is a boolean expression with a JavaScript-like syntax.
 It allows to compare properties of the workflow instance payload with other properties or literals (e.g., numbers, strings, etc.).
-The payload properties are selected using JSON Path.
+The payload properties are selected using [JSON Path](http://goessner.net/articles/JsonPath/).
 
 ```
 $.totalPrice > 100
@@ -71,7 +55,7 @@ If the property doesn't exist, then the JSON Path evaluation fails.
 
 <table style="width:100%">
   <tr>
-    <th>Operator</th>  
+    <th>Operator</th>
     <th>Description</th>
     <th>Example</th
   </tr>
@@ -121,7 +105,7 @@ If the values of an operator have different types, then the evaluation fails.
 
 <table style="width:100%">
   <tr>
-    <th>Operator</th>  
+    <th>Operator</th>
     <th>Description</th>
     <th>Example</th
   </tr>

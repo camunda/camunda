@@ -1,23 +1,25 @@
 # Client / Server
 
-Zeebe uses a client / server architecture. There are two main components: the broker and the client.
+Zeebe uses a client / server architecture. There are two main components: *Broker* and *Client*.
 
 ![client-server](/basics/client-server.png)
 
-## The Broker
+## Broker
 
-The broker, also known as the "server", has two main responsibilities:
+A Zeebe broker (server) has three main responsibilities:
 
-1. Storing and managing data
+1. Storing and managing workflow data
 
-2. Distributing work to clients and allowing them to subscribe to events
+2. Distributing work items to clients
 
-Usually, users run more than a single broker. Zeebe, being a distributed system, brokers from a peer-to-peer network. In this network, all nodes are equal and there are no special "master" nodes. Also, there is no single point of failure.
+3. Exposing a workflow event stream to clients via publish-subscribe
 
-Running a network of brokers allows you to scale both the storage and computing resources. In addition, it provides fault tolerance since Zeebe creates multiple copies of its data on different machines.
+A Zeebe setup typically consists of more than one broker. Adding brokers scales storage and computing resources. In addition, it provides fault tolerance since Zeebe keeps multiple copies of its data on different brokers.
 
-## The Client
+Brokers form a peer-to-peer network in which there is no single point of failure. This is possible because all brokers perform the same kind of tasks and the responsibiltiies of an unavailable broker are transparently reassigned in the network.
+
+## Client
 
 Clients are libraries which you embed into your application to connect to the broker.
 
-Clients connect to the broker using Zeebe's binary APIs and protocols. The protocols are programming language agnostic, which makes it possible to write clients in different programming languages.
+Clients connect to the broker using Zeebe's binary protocols. The protocols are programming-language-agnostic, which makes it possible to write clients in different programming languages. There is a number of clients readily available.

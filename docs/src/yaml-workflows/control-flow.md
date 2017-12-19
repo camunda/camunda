@@ -67,4 +67,4 @@ By default, a task after a conditional flow (e.g. _ship-parcel-with-insurance_) 
 If the workflow instance should end after the task then the task must have the property `end: true`.
 In case that the workflow instance should continue with another task, the task must define the next task using the property `goto`.
 
-Read more about [conditions](basics/json.html#conditions).
+Read more about [conditions](reference/json-conditions.html).

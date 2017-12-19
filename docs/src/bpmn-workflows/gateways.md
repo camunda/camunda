@@ -27,4 +27,4 @@ XML representation:
 <bpmn:sequenceFlow id="else" name="else" sourceRef="exclusiveGateway" targetRef="shipParcel" />
 ```
 
-Read more about [conditions](basics/json.html#conditions).
+Read more about [conditions](reference/json-conditions.html).
