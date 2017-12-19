@@ -21,6 +21,11 @@
   margin-bottom: 24px;
 }
 
+.ControlPanel__item--select {
+  width: 15%;
+  min-width: 200px;
+}
+
 .ControlPanel__item--filter {
   display: inline;
   padding-top: 27px;
@@ -32,4 +37,8 @@
   position: absolute;
   top: 0;
   left: 0;
+}
+
+.ControlPanel__select {
+  width: 100%;
 }
