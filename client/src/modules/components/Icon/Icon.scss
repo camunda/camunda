@@ -1,0 +1,41 @@
+.Icon {
+  display: inline-block;  
+  width: 1em;
+  height: 1em;
+  background-repeat: no-repeat;
+  background-size: cover;
+  vertical-align: text-bottom;
+  
+  &:not(:last-child) {
+    margin-right: .65em;
+  }
+  
+}
+
+.Icon--plus {
+  background-image: url('./icons/plus.svg');
+}
+
+.Icon--close {
+  background-image: url('./icons/close.svg');
+}
+
+.Icon--edit {
+  background-image: url('./icons/edit.svg');
+}
+
+.Icon--svg {
+  
+  svg {
+    max-height: 1em;
+    max-width: 1em;
+  }
+  
+}
+
+
+.Button {
+  .Icon {
+    margin-right: .65em;
+  }
+}
