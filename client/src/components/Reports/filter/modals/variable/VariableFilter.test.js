@@ -19,7 +19,8 @@ jest.mock('components', () => {
   Select,
   Button: props => <button {...props}>{props.children}</button>,
   Input: props => <input {...props}/>,
-  ControlGroup: props => <div>{props.children}</div>
+  ControlGroup: props => <div>{props.children}</div>,
+  ButtonGroup: props => <div {...props}>{props.children}</div>
 }});
 
 jest.mock('./service', () => {
@@ -60,11 +61,11 @@ it('should display available variables', () => {
 
 it('should disable add filter button if no variable is selected', () => {
   const node = mount(<VariableFilter processDefinitionId='procDefId' />);
-  
+
   node.setState({
     variables: [{name: 'foo', type: 'String'}, {name: 'bar', type: 'String'}]
   });
-  
+
   const buttons = node.find("#modal_actions button");
   expect(buttons.at(0).prop("disabled")).toBeFalsy(); // abort
   expect(buttons.at(1).prop("disabled")).toBeTruthy(); // create filter
@@ -72,13 +73,13 @@ it('should disable add filter button if no variable is selected', () => {
 
 it('should enable add filter button if variable selection is valid', () => {
   const node = mount(<VariableFilter processDefinitionId='procDefId' />);
-  
+
   node.setState({
     variables: [{name: 'foo', type: 'String'}, {name: 'bar', type: 'String'}],
-    values : ['bar'], 
+    values : ['bar'],
     selectedVariableIdx: 1,
   });
-  
+
   const buttons = node.find("#modal_actions button");
   expect(buttons.at(0).prop("disabled")).toBeFalsy(); // abort
   expect(buttons.at(1).prop("disabled")).toBeFalsy(); // create filter
@@ -183,13 +184,13 @@ describe('number variables', () => {
 
   it('should disable add filter button if provided value is invalid', () => {
     const node = mount(<VariableFilter processDefinitionId='procDefId' />);
-    
+
     node.setState({
       variables: [{name: 'foo', type: 'Float'}],
       selectedVariableIdx: 0,
       values: ['123xxxx']
     });
-    
+
     const buttons = node.find("#modal_actions button");
     expect(buttons.at(0).prop("disabled")).toBeFalsy(); // abort
     expect(buttons.at(1).prop("disabled")).toBeTruthy(); // create filter
@@ -197,13 +198,13 @@ describe('number variables', () => {
 
   it('should disable add filter button if variable is integer but provided input is float', () => {
     const node = mount(<VariableFilter processDefinitionId='procDefId' />);
-    
+
     node.setState({
       variables: [{name: 'foo', type: 'Integer'}],
       selectedVariableIdx: 0,
       values: ['123.23']
     });
-    
+
     const buttons = node.find("#modal_actions button");
     expect(buttons.at(0).prop("disabled")).toBeFalsy(); // abort
     expect(buttons.at(1).prop("disabled")).toBeTruthy(); // create filter
@@ -288,13 +289,13 @@ it('should create a new filter', () => {
 
   it('should disable add filter button if no value is selected', () => {
     const node = mount(<VariableFilter processDefinitionId='procDefId' />);
-    
+
     node.setState({
       variables: [{name: 'foo', type: 'String'}],
       selectedVariableIdx: 0,
       availableValues: []
     });
-    
+
     const buttons = node.find("#modal_actions button");
     expect(buttons.at(0).prop("disabled")).toBeFalsy(); // abort
     expect(buttons.at(1).prop("disabled")).toBeTruthy(); // create filter

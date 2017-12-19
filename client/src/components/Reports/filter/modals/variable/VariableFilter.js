@@ -1,5 +1,5 @@
 import React from 'react';
-import {Modal, Button, Select, Input, ControlGroup} from 'components';
+import {Modal, Button, Select, Input, ControlGroup, ButtonGroup} from 'components';
 
 import {loadVariables, loadValues} from './service';
 import './VariableFilter.css';
@@ -89,12 +89,12 @@ export default class VariableFilter extends React.Component {
               })}
             </Select>
           </ControlGroup>
-            <div className='VariableFilter__operatorButtons'>
+            <ButtonGroup className='VariableFilter__operatorButtons'>
               {this.variableIsSelected() && this.renderOperatorButtons(
                 variables[selectedVariableIdx].type,
                 operator
               )}
-            </div>
+            </ButtonGroup>
           <div className='VariableFilter__valueFields'>
             {this.variableIsSelected() && this.renderValueFields(
               variables[selectedVariableIdx].type,
@@ -119,10 +119,10 @@ export default class VariableFilter extends React.Component {
     if(variable && this.typeIsNumeric(variable.type)) {
       // match float number: https://stackoverflow.com/a/10256077
       // match integer: https://stackoverflow.com/a/1779019
-      const matcher = this.typeIsFloating(variable.type)? /^[+-]?\d+(\.\d+)?$/ : /^[+-]?\d+?$/; 
-      const containsOnlyValidNumbers = 
+      const matcher = this.typeIsFloating(variable.type)? /^[+-]?\d+(\.\d+)?$/ : /^[+-]?\d+?$/;
+      const containsOnlyValidNumbers =
           this.state.values
-            .every(value => matcher.test(value) ); 
+            .every(value => matcher.test(value) );
       isValid = isValid && containsOnlyValidNumbers;
     }
 

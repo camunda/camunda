@@ -1,7 +1,7 @@
 import React from 'react';
 import moment from 'moment';
 
-import {Modal, Button} from 'components';
+import {Modal, Button, ButtonGroup} from 'components';
 
 import './DateFilter.css';
 
@@ -50,28 +50,28 @@ export default class DateFilter extends React.Component {
                     disableAddButton = {this.disableAddButton} />
         </div>
         <div className='DateFilter__buttons'>
-          <div className='DateFilter__buttonRow'>
+          <ButtonGroup className='DateFilter__buttonRow'>
             {this.getDateButtons([
               DateButton.TODAY,
               DateButton.YESTERDAY,
               DateButton.PAST7,
               DateButton.PAST30
             ])}
-          </div>
-          <div className='DateFilter__buttonRow'>
+          </ButtonGroup>
+          <ButtonGroup className='DateFilter__buttonRow'>
             {this.getDateButtons([
               DateButton.THIS_WEEK,
               DateButton.THIS_MONTH,
               DateButton.THIS_YEAR
             ])}
-          </div>
-          <div className='DateFilter__buttonRow'>
+          </ButtonGroup>
+          <ButtonGroup className='DateFilter__buttonRow'>
             {this.getDateButtons([
               DateButton.LAST_WEEK,
               DateButton.LAST_MONTH,
               DateButton.LAST_YEAR
             ])}
-          </div>
+          </ButtonGroup>
         </div>
       </Modal.Content>
       <Modal.Actions>

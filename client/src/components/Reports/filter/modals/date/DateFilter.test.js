@@ -17,7 +17,8 @@ jest.mock('components', () =>{
 
   return {
   Modal,
-  Button: props => <button {...props}>{props.children}</button>
+  Button: props => <button {...props}>{props.children}</button>,
+  ButtonGroup: props => <div {...props}>{props.children}</div>
 }});
 
 it('should contain a modal', () => {
