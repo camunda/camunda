@@ -285,7 +285,7 @@ describe('edit mode', async () => {
     expect(node).toHaveState('name', 'name');
   });
 
-  it('should should use original data as result data if report cant be evaluated on cancel', async () => {
+  it('should use original data as result data if report cant be evaluated on cancel', async () => {
     const node = mount(<Report {...props} />);
 
     await node.instance().loadReport();
@@ -300,7 +300,7 @@ describe('edit mode', async () => {
     );
     getReportData.mockReturnValueOnce(null);
     await node.instance().cancel();
-    
+
     expect(node.state().reportResult.data.processDefinitionId).toEqual('123');
   });
 });
