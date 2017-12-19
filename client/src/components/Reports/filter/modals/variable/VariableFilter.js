@@ -89,12 +89,14 @@ export default class VariableFilter extends React.Component {
               })}
             </Select>
           </ControlGroup>
+          <div className='VariableFilter__buttonRow'>
             <ButtonGroup className='VariableFilter__operatorButtons'>
               {this.variableIsSelected() && this.renderOperatorButtons(
                 variables[selectedVariableIdx].type,
                 operator
               )}
             </ButtonGroup>
+          </div>
           <div className='VariableFilter__valueFields'>
             {this.variableIsSelected() && this.renderValueFields(
               variables[selectedVariableIdx].type,

@@ -50,28 +50,34 @@ export default class DateFilter extends React.Component {
                     disableAddButton = {this.disableAddButton} />
         </div>
         <div className='DateFilter__buttons'>
-          <ButtonGroup className='DateFilter__buttonRow'>
-            {this.getDateButtons([
-              DateButton.TODAY,
-              DateButton.YESTERDAY,
-              DateButton.PAST7,
-              DateButton.PAST30
-            ])}
-          </ButtonGroup>
-          <ButtonGroup className='DateFilter__buttonRow'>
-            {this.getDateButtons([
-              DateButton.THIS_WEEK,
-              DateButton.THIS_MONTH,
-              DateButton.THIS_YEAR
-            ])}
-          </ButtonGroup>
-          <ButtonGroup className='DateFilter__buttonRow'>
-            {this.getDateButtons([
-              DateButton.LAST_WEEK,
-              DateButton.LAST_MONTH,
-              DateButton.LAST_YEAR
-            ])}
-          </ButtonGroup>
+          <div className='DateFilter__buttonRow'>
+            <ButtonGroup className='DateFilter__buttonRow'>
+              {this.getDateButtons([
+                DateButton.TODAY,
+                DateButton.YESTERDAY,
+                DateButton.PAST7,
+                DateButton.PAST30
+              ])}
+            </ButtonGroup>
+          </div>
+          <div className='DateFilter__buttonRow'>
+            <ButtonGroup className='DateFilter__buttonRow'>
+              {this.getDateButtons([
+                DateButton.THIS_WEEK,
+                DateButton.THIS_MONTH,
+                DateButton.THIS_YEAR
+              ])}
+            </ButtonGroup>
+          </div>
+          <div classname='DateFilter__buttonRow'>
+            <ButtonGroup className='DateFilter__buttonRow'>
+              {this.getDateButtons([
+                DateButton.LAST_WEEK,
+                DateButton.LAST_MONTH,
+                DateButton.LAST_YEAR
+              ])}
+            </ButtonGroup>
+          </div>
         </div>
       </Modal.Content>
       <Modal.Actions>
