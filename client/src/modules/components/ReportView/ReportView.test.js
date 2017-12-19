@@ -2,10 +2,11 @@ import React from 'react';
 import {mount} from 'enzyme';
 
 import ReportView from './ReportView';
-import {Number} from './views';
+import {Number, Table} from './views';
 
 jest.mock('./views', () => {return {
   Number: props => <div>Number: {props.data}</div>,
+  Table: props => <div> Table: {JSON.stringify(props.data)}</div>,
   Json: props => <div>JSON: {JSON.stringify(props.data)}</div>
 }});
 
@@ -186,4 +187,53 @@ it('should not add instruction for group by if operation is raw data', () => {
   const node = mount(<ReportView report={report}/>);
 
   expect(node).not.toIncludeText('Please choose an option for');
+});
+
+it('should adjust date shown in table to unit', () => {
+  const report = {
+    data: {
+      processDefinitionId: '123',
+      view : {
+        operation: 'rawData'
+      },
+      groupBy : {
+        type: 'processInstance',
+        unit: 'day'
+      },
+      visualization: 'table'
+    },
+    result: {
+      '2015-03-25T12:00:00Z': 2,
+      '2015-03-26T12:00:00Z': 3
+    }
+  }
+
+  const node = mount(<ReportView report={report}/>);
+
+  expect(node.find(Table)).not.toIncludeText('2015-03-25T12:00:00Z');
+  expect(node.find(Table)).toIncludeText('2015-03-25');
+});
+
+it('should display custom format if not able to parse date', () => {
+  const report = {
+    data: {
+      processDefinitionId: '123',
+      view : {
+        operation: 'rawData'
+      },
+      groupBy : {
+        type: 'processInstance',
+        unit: 'day'
+      },
+      visualization: 'table'
+    },
+    result: {
+      '25. März 2015': 2
+    }
+  }
+
+  const node = mount(<ReportView report={report}/>);
+
+  expect(node.find(Table)).not.toIncludeText('2015-03-25');
+  expect(node.find(Table)).toIncludeText('25. März 2015');
 });

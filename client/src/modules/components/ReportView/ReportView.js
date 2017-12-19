@@ -2,6 +2,7 @@ import React from 'react';
 
 import {ErrorBoundary} from 'components';
 import {reportLabelMap} from 'services';
+import moment from 'moment';
 import ReportBlankSlate from './ReportBlankSlate';
 
 import {Number, Json, Table, Heatmap, Chart} from './views';
@@ -64,7 +65,6 @@ export default class ReportView extends React.Component {
       <ReportBlankSlate message={'To display a report, please select an option for ”' + field + '”.'} />
     );
   }
-  
 
   isEmpty = (str) => {
     return (!str || 0 === str.length);
@@ -82,9 +82,10 @@ export default class ReportView extends React.Component {
       case 'table':
         const viewLabel = reportLabelMap.objectToLabel(data.view, reportLabelMap.view);
         const groupByLabel = reportLabelMap.objectToLabel(data.groupBy, reportLabelMap.groupBy);
+        const formattedResult = this.formatResult(data, result);
         config = {
           component: Table,
-          props: {data: result, labels: [groupByLabel, viewLabel]}
+          props: {data: formattedResult, labels: [groupByLabel, viewLabel]}
         }; break;
       case 'heat':
         config = {
@@ -96,7 +97,7 @@ export default class ReportView extends React.Component {
       case 'pie':
         config = {
           component: Chart,
-          props: {data: result, type: data.visualization}
+          props: {data: result, type: data.visualization, isTimeSeries: data.groupBy.unit}
         }; break;
       default:
         config = {
@@ -115,5 +116,38 @@ export default class ReportView extends React.Component {
     return (<ErrorBoundary>
       <Component {...config.props} />
     </ErrorBoundary>);
+  }
+
+  formatResult = (data, result) => {
+    const groupBy = data.groupBy;
+    if (!groupBy.unit || !result) {
+      // the result data is no time series
+      return result;
+    }
+    let dateFormat;
+    switch(groupBy.unit) {
+      case 'hour':
+        dateFormat = 'YYYY-MM-DD HH:00:00';
+        break;
+      case 'day':
+      case 'week':
+        dateFormat = 'YYYY-MM-DD';
+        break;
+      case 'month':
+        dateFormat = 'MMM YYYY';
+        break;
+      case 'year':
+        dateFormat = 'YYYY';
+        break;
+      default:
+        dateFormat = 'YYYY-MM-DD HH:MM:SS';
+    }
+    const formattedResult = {};
+      Object.keys(result).forEach(key => {
+        const date = Date.parse(key);
+        const formattedDate = date? moment(new Date(date)).format(dateFormat): key;
+        formattedResult[formattedDate] = result[key];
+      });
+    return formattedResult;
   }
 }

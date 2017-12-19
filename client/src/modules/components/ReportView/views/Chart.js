@@ -31,22 +31,23 @@ export default class Chart extends React.Component {
   }
 
   componentDidMount() {
-    const {data, type} = this.props;
+    const {data, type, isTimeSeries} = this.props;
 
     if(!data || typeof data !== 'object') {
       return;
     }
-    this.createNewChart(data, type);
+    this.createNewChart(data, type, isTimeSeries);
   }
 
   componentWillReceiveProps(nextProps) {
     const newType = nextProps.type;
     const data = nextProps.data;
+    const isTimeSeries = nextProps.isTimeSeries;
 
     if(!data || typeof data !== 'object') {
       return;
     }
-    this.createNewChart(data, newType);
+    this.createNewChart(data, newType, isTimeSeries);
   }
 
   destroyChart = () => {
@@ -55,9 +56,23 @@ export default class Chart extends React.Component {
     }
   }
 
-  createNewChart = (data, type) => {
+  createNewChart = (data, type, isTimeSeries) => {
     this.destroyChart();
 
+    this.chart = new ChartRenderer(this.container, {
+      type,
+      data: {
+        labels: Object.keys(data),
+        datasets: [{
+          data: Object.values(data),
+          ...this.createDatasetOptions(type)
+        }]
+      },
+      ...this.createChartOptions(type, isTimeSeries)
+    });
+  }
+
+  createDatasetOptions = (type) => {
     let datasetOptions;
     switch(type) {
       case 'pie':
@@ -83,25 +98,41 @@ export default class Chart extends React.Component {
         };
         break;
     }
-    
+    return datasetOptions;
+  }
 
-    this.chart = new ChartRenderer(this.container, {
-      type,
-      data: {
-        labels: Object.keys(data),
-        datasets: [{
-          data: Object.values(data),
-          ...datasetOptions
-        }]
-      },
-      options: {
-        legend: {
-          display: type === 'pie'
-        },
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: false
-      }
-    });
+  createChartOptions = (type, isTimeSeries) => {
+    let options;
+    switch(type) {
+      case 'pie':
+        options = {
+          legend: {
+            display: true
+          }
+        };
+        break;
+      case 'line':
+      case 'bar':
+        options = {
+          legend : {
+            display: false
+          },
+          scales:  isTimeSeries && {
+            xAxes: [{
+                type : 'time'
+            }]
+          },
+        }
+        break;
+      default:
+        options = {};
+    }
+    options  = {
+      ...options,
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false
+    };
+    return {options};
   }
 }
