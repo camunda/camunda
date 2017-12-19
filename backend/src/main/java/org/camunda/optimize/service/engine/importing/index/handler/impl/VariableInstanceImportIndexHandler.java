@@ -10,6 +10,7 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.indices.TermsLookup;
+import org.elasticsearch.search.SearchContextMissingException;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
@@ -40,7 +41,6 @@ import static org.elasticsearch.index.query.QueryBuilders.termsLookupQuery;
 public class VariableInstanceImportIndexHandler extends ScrollBasedImportIndexHandler {
 
   private VariableInstanceCountFetcher variableInstanceCountFetcher;
-  private String scrollId;
 
   public VariableInstanceImportIndexHandler(EngineContext engineContext) {
     this.engineContext = engineContext;
@@ -52,10 +52,6 @@ public class VariableInstanceImportIndexHandler extends ScrollBasedImportIndexHa
     super.init();
   }
 
-  @Override
-  public void resetScroll() {
-    scrollId = null;
-  }
 
   @Override
   public long fetchMaxEntityCount() {
@@ -77,17 +73,9 @@ public class VariableInstanceImportIndexHandler extends ScrollBasedImportIndexHa
     return result;
   }
 
-  @Override
-  public Set<String> fetchNextPageOfProcessInstanceIds() {
-    logger.debug("Fetching process instance ids ");
-    if (scrollId == null) {
-      return performInitialSearchQuery();
-    } else {
-      return performScrollQuery();
-    }
-  }
 
-  private Set<String> performScrollQuery() {
+
+  protected Set<String> performScrollQuery() {
     logger.debug("Performing scroll search query!");
     Set<String> result = new HashSet<>();
     SearchResponse scrollResp =
@@ -105,7 +93,7 @@ public class VariableInstanceImportIndexHandler extends ScrollBasedImportIndexHa
     return result;
   }
 
-  private Set<String> performInitialSearchQuery() {
+  protected Set<String> performInitialSearchQuery() {
     logger.debug("Performing initial search query!");
     performRefresh();
     Set<String> result = new HashSet<>();

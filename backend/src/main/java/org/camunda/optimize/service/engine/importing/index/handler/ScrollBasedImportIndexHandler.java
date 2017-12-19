@@ -10,6 +10,7 @@ import org.elasticsearch.action.update.UpdateRequestBuilder;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
+import org.elasticsearch.search.SearchContextMissingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +40,7 @@ public abstract class ScrollBasedImportIndexHandler
   protected Client esclient;
 
   protected EngineContext engineContext;
+  protected String scrollId;
 
   @Override
   protected void init() {
@@ -48,9 +50,30 @@ public abstract class ScrollBasedImportIndexHandler
   private Long maxEntityCount = 0L;
   private Long importIndex = 0L;
 
-  protected abstract Set<String> fetchNextPageOfProcessInstanceIds();
+  protected Set<String> fetchNextPageOfProcessInstanceIds() {
+    if (scrollId == null) {
+      return performInitialSearchQuery();
+    } else {
+      Set<String> ids;
+      try {
+        ids = performScrollQuery();
+      } catch (Exception e) {
+        //scroll got lost, try again after reset
+        this.resetScroll();
+        ids = performInitialSearchQuery();
+      }
 
-  protected abstract void resetScroll();
+      return ids;
+    }
+  }
+
+  protected abstract Set<String> performScrollQuery();
+
+  protected abstract Set<String> performInitialSearchQuery();
+
+  protected void resetScroll() {
+    scrollId = null;
+  }
 
   protected abstract long fetchMaxEntityCount();
 

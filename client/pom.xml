@@ -40,7 +40,7 @@
                 <phase>generate-sources</phase>
                 <configuration>
                   <tasks>
-                    <exec executable="/bin/sh" failonerror="true">
+                    <exec executable="/bin/bash" failonerror="true">
                       <arg value="build_client.sh" />
                       <arg value="${project.basedir}" />
                     </exec>

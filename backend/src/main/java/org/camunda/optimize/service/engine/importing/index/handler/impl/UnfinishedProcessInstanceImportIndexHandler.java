@@ -32,7 +32,7 @@ import static org.elasticsearch.index.query.QueryBuilders.termsLookupQuery;
 public class UnfinishedProcessInstanceImportIndexHandler extends ScrollBasedImportIndexHandler {
 
   private UnfinishedProcessInstanceCountFetcher unfinishedProcessInstanceCountFetcher;
-  private String scrollId;
+
 
   public UnfinishedProcessInstanceImportIndexHandler(EngineContext engineContext) {
     this.engineContext = engineContext;
@@ -45,26 +45,11 @@ public class UnfinishedProcessInstanceImportIndexHandler extends ScrollBasedImpo
   }
 
   @Override
-  public void resetScroll() {
-    scrollId = null;
-  }
-
-  @Override
   public long fetchMaxEntityCount() {
     return unfinishedProcessInstanceCountFetcher.fetchUnfinishedHistoricProcessInstanceCount();
   }
 
-  @Override
-  public Set<String> fetchNextPageOfProcessInstanceIds() {
-    logger.debug("Scrolling unfinished process instance ids");
-    if (scrollId == null) {
-      return performInitialSearchQuery();
-    } else {
-      return performScrollQuery();
-    }
-  }
-
-  private Set<String> performScrollQuery() {
+  protected Set<String> performScrollQuery() {
     logger.debug("Performing scroll search query!");
     Set<String> result = new HashSet<>();
     SearchResponse scrollResp =
@@ -82,7 +67,7 @@ public class UnfinishedProcessInstanceImportIndexHandler extends ScrollBasedImpo
     return result;
   }
 
-  private Set<String> performInitialSearchQuery() {
+  protected Set<String> performInitialSearchQuery() {
     logger.debug("Performing initial search query!");
     performRefresh();
     Set<String> result = new HashSet<>();
