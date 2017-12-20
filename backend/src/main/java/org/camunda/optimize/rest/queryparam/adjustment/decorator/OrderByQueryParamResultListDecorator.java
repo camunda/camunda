@@ -9,9 +9,11 @@ public class OrderByQueryParamResultListDecorator<T> extends AdjustedResultListD
   private String queryParamValueToOrderBy;
   private Comparator<T> comparator;
 
-  public OrderByQueryParamResultListDecorator(QueryParameterAdjustedResultList<T> decoratedList,
-                                              String queryParamValueToOrderBy,
-                                              Comparator<T> comparator) {
+  public OrderByQueryParamResultListDecorator(
+      QueryParameterAdjustedResultList<T> decoratedList,
+      String queryParamValueToOrderBy,
+      Comparator<T> comparator
+  ) {
     super(decoratedList);
     this.queryParamValueToOrderBy = queryParamValueToOrderBy;
     this.comparator = comparator;

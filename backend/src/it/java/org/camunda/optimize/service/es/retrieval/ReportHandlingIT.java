@@ -270,6 +270,44 @@ public class ReportHandlingIT {
   }
 
   @Test
+  public void resultListIsSortedByName() throws IOException {
+    // given
+    String id1 = createNewReport();
+    shiftTimeByOneSecond();
+    String id2 = createNewReport();
+    shiftTimeByOneSecond();
+    String id3 = createNewReport();
+    shiftTimeByOneSecond();
+
+    ReportDefinitionDto updatedReport = new ReportDefinitionDto();
+    updatedReport.setName("B");
+    updateReport(id1, updatedReport);
+    updatedReport.setName("A");
+    updateReport(id2, updatedReport);
+
+    // when
+    Map<String, Object> queryParam = new HashMap<>();
+    queryParam.put("orderBy", "name");
+    List<ReportDefinitionDto> reports = getAllReportsWithQueryParam(queryParam);
+
+    // then
+    assertThat(reports.size(), is(3));
+    assertThat(reports.get(0).getId(), is(id3));
+    assertThat(reports.get(1).getId(), is(id1));
+    assertThat(reports.get(2).getId(), is(id2));
+
+    // when
+    queryParam.put("sortOrder", "asc");
+    reports = getAllReportsWithQueryParam(queryParam);
+
+    // then
+    assertThat(reports.size(), is(3));
+    assertThat(reports.get(0).getId(), is(id2));
+    assertThat(reports.get(1).getId(), is(id1));
+    assertThat(reports.get(2).getId(), is(id3));
+  }
+
+  @Test
   public void resultListIsSortedByLastModified() throws IOException {
     // given
     String id1 = createNewReport();
