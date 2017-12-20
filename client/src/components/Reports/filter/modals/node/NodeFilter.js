@@ -80,7 +80,7 @@ export default class NodeFilter extends React.Component {
 
   render() {
     return (<Modal open={true} onClose={this.props.close} className='NodeFilter__modal'>
-      <Modal.Header>New Flownode Filter</Modal.Header>
+      <Modal.Header>Add Flow Node Filter</Modal.Header>
       <Modal.Content>
         {this.createPreviewList()}
         {this.state.xml && (
@@ -93,7 +93,7 @@ export default class NodeFilter extends React.Component {
       </Modal.Content>
       <Modal.Actions>
         <Button onClick={this.props.close}>Cancel</Button>
-        <Button type='primary' color='blue' disabled={!this.isNodeSelected()} onClick={this.createFilter}>Create Filter</Button>
+        <Button type='primary' color='blue' disabled={!this.isNodeSelected()} onClick={this.createFilter}>Add Filter</Button>
       </Modal.Actions>
     </Modal>);
   }

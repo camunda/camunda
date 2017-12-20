@@ -39,7 +39,7 @@ export default class DateFilter extends React.Component {
 
   render() {
     return (<Modal open={true} onClose={this.props.close} className='DateFilter__modal'>
-      <Modal.Header>Start Date Filter</Modal.Header>
+      <Modal.Header>Add Start Date Filter</Modal.Header>
       <Modal.Content>
         <div className='DateFilter__inputs'>
           <label className='DateFilter__input-label'>Select start and end dates to filter by:</label>
