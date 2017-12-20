@@ -73,7 +73,7 @@ public class BranchAnalysisQueryIT {
   private static final String END_EVENT_ID = "endEvent";
   private static final String USER_TASK_ID = "userTask";
 
-  private String deploySimpleGatewayProcessDefinition() throws IOException, OptimizeException {
+  private String deploySimpleGatewayProcessDefinition() throws Exception {
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
       .startEvent(START_EVENT_ID)
       .exclusiveGateway(SPLITTING_GATEWAY_ID)
@@ -93,7 +93,7 @@ public class BranchAnalysisQueryIT {
     return processDefinitionId;
   }
 
-  private String deploySimpleGatewayProcessWithUserTask() throws IOException, OptimizeException {
+  private String deploySimpleGatewayProcessWithUserTask() throws Exception {
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
       .startEvent(START_EVENT_ID)
       .exclusiveGateway(SPLITTING_GATEWAY_ID)
@@ -465,7 +465,7 @@ public class BranchAnalysisQueryIT {
   }
 
   @Test
-  public void variableFilterWorkInBranchAnalysis() throws IOException, OptimizeException {
+  public void variableFilterWorkInBranchAnalysis() throws Exception {
     //given
     String processDefinitionId = deploySimpleGatewayProcessDefinition();
     startSimpleGatewayProcessAndTakeTask1(processDefinitionId);
@@ -499,7 +499,7 @@ public class BranchAnalysisQueryIT {
   }
 
   @Test
-  public void executedFlowNodeFilterWorksInBranchAnalysis() throws IOException, OptimizeException {
+  public void executedFlowNodeFilterWorksInBranchAnalysis() throws Exception {
     //given
     String processDefinitionId = deploySimpleGatewayProcessDefinition();
     startSimpleGatewayProcessAndTakeTask1(processDefinitionId);
@@ -548,7 +548,7 @@ public class BranchAnalysisQueryIT {
   }
 
   @Test
-  public void shortcutInExclusiveGatewayDoesNotDistortBranchAnalysis() throws IOException, OptimizeException {
+  public void shortcutInExclusiveGatewayDoesNotDistortBranchAnalysis() throws Exception {
     // given
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
     .startEvent("startEvent")
@@ -597,7 +597,7 @@ public class BranchAnalysisQueryIT {
   }
 
   @Test
-  public void shortcutInMergingFlowNodeDoesNotDistortBranchAnalysis() throws IOException, OptimizeException {
+  public void shortcutInMergingFlowNodeDoesNotDistortBranchAnalysis() throws Exception {
     // given
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
     .startEvent("startEvent")
@@ -646,7 +646,7 @@ public class BranchAnalysisQueryIT {
   }
 
   @Test
-  public void endEventDirectlyAfterGateway() throws IOException, OptimizeException {
+  public void endEventDirectlyAfterGateway() throws Exception {
     // given
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
     .startEvent("startEvent")

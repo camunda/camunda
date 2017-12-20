@@ -48,7 +48,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
    *
    * NOTE: this will not store indexes in the ES.
    */
-  public void scheduleAllJobsAndImportEngineEntities() throws OptimizeException {
+  public void scheduleAllJobsAndImportEngineEntities() throws InterruptedException {
 
     ElasticsearchImportJobExecutor elasticsearchImportJobExecutor = getElasticsearchImportJobExecutor();
     EngineImportJobExecutor engineImportJobExecutor = getEngineImportJobExecutor();
@@ -63,8 +63,11 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
     for (EngineImportJobScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
       if (scheduler.isEnabled()) {
+        logger.debug("scheduling first import round");
         scheduleImportAndWaitUntilIsFinished(scheduler);
-        // we need another round for the scroll based import index handlers
+        // we need another round for the scroll based import index handler
+        logger.debug("scheduling second import round");
+        this.waitForBackoff();
         scheduleImportAndWaitUntilIsFinished(scheduler);
       }
     }
@@ -91,7 +94,20 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
   }
 
-  public void scheduleAllJobsAndImportEngineEntitiesWithoutReset() throws InterruptedException {
+  /**
+   * use this method if you want to rely on backoff and reset implementation provided
+   * by optimize itself. It will perform 3 import rounds in total to ensure that:
+   *
+   * 1. backoff\reset has happened
+   * 2. PI are imported
+   * 3. Scrolling entities are imported
+   *
+   * NOTE: you have to adjust backoff and reset times manually in your test before
+   * invoking this method
+   *
+   * @throws InterruptedException
+   */
+  public void importWithoutReset() throws InterruptedException {
     ElasticsearchImportJobExecutor elasticsearchImportJobExecutor = getElasticsearchImportJobExecutor();
     EngineImportJobExecutor engineImportJobExecutor = getEngineImportJobExecutor();
     engineImportJobExecutor.startExecutingImportJobs();
@@ -99,9 +115,17 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
     for (EngineImportJobScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
       if (scheduler.isEnabled()) {
+        //reset should happen
+        this.waitForBackoff();
         scheduleImportAndWaitUntilIsFinished(scheduler);
 
-        // we need another round for the scroll based import index handlers
+        //first round is through, update indexes in ES
+        logger.debug("scheduling second import round");
+        this.waitForBackoff();
+        scheduleImportAndWaitUntilIsFinished(scheduler);
+
+        //scroll based imports are through
+        logger.debug("scheduling third import round");
         this.waitForBackoff();
         scheduleImportAndWaitUntilIsFinished(scheduler);
       }

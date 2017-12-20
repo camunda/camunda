@@ -42,7 +42,7 @@ public class VariableRetrievalIT {
 
 
   @Test
-  public void getVariables() throws IOException, OptimizeException {
+  public void getVariables() throws Exception {
     // given
     String processDefinitionId = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
@@ -113,7 +113,7 @@ public class VariableRetrievalIT {
   }
 
   @Test
-  public void variablesDoNotContainDuplicates() throws IOException, OptimizeException {
+  public void variablesDoNotContainDuplicates() throws Exception {
     // given
     String processDefinitionId = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
@@ -132,7 +132,7 @@ public class VariableRetrievalIT {
   }
 
   @Test
-  public void variableWithSameNameAndDifferentType() throws IOException, OptimizeException {
+  public void variableWithSameNameAndDifferentType() throws Exception {
     // given
     String processDefinitionId = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
@@ -153,7 +153,7 @@ public class VariableRetrievalIT {
   }
 
   @Test
-  public void allPrimitiveTypesCanBeRead() throws IOException, OptimizeException {
+  public void allPrimitiveTypesCanBeRead() throws Exception {
     // given
     Map<String, Object> variables = new HashMap<>();
     variables.put("dateVar", new Date());

@@ -74,7 +74,7 @@ public class MultipleEngineSupportIT {
   }
 
   @Test
-  public void importProgressReporterStartAndEndImportState() throws IOException, OptimizeException {
+  public void importProgressReporterStartAndEndImportState() throws Exception {
     // given
     addSecondEngineToConfiguration();
 
@@ -106,7 +106,7 @@ public class MultipleEngineSupportIT {
   }
 
   @Test
-  public void importProgressReflectsIfImportProgressOfAllEngines() throws IOException, OptimizeException {
+  public void importProgressReflectsIfImportProgressOfAllEngines() throws Exception {
     // given
     addSecondEngineToConfiguration();
     defaultEngineRule.deployAndStartProcess(
@@ -159,7 +159,7 @@ public class MultipleEngineSupportIT {
   }
 
   @Test
-  public void connectionStatusCheck() throws IOException, OptimizeException {
+  public void connectionStatusCheck() throws Exception {
     // given
     addSecondEngineToConfiguration();
 
@@ -180,7 +180,7 @@ public class MultipleEngineSupportIT {
   }
 
   @Test
-  public void connectionStatusCheckWithOneEngineDown() throws IOException, OptimizeException {
+  public void connectionStatusCheckWithOneEngineDown() throws Exception {
     // given
     addNonExistingSecondEngineToConfiguration();
     embeddedOptimizeRule.reloadConfiguration();
@@ -202,7 +202,7 @@ public class MultipleEngineSupportIT {
   }
 
   @Test
-  public void allProcessDefinitionXmlsAreImported() throws OptimizeException {
+  public void allProcessDefinitionXmlsAreImported() throws Exception {
     // given
     addSecondEngineToConfiguration();
     deployAndStartSimpleProcessDefinitionForAllEngines();
@@ -244,7 +244,7 @@ public class MultipleEngineSupportIT {
   }
 
   @Test
-  public void allProcessDefinitionsAreImported() throws OptimizeException {
+  public void allProcessDefinitionsAreImported() throws Exception {
     // given
     addSecondEngineToConfiguration();
     deployAndStartSimpleProcessDefinitionForAllEngines();
@@ -274,7 +274,7 @@ public class MultipleEngineSupportIT {
   }
 
   @Test
-  public void allProcessInstancesEventAndVariablesAreImported() throws OptimizeException {
+  public void allProcessInstancesEventAndVariablesAreImported() throws Exception {
     // given
     addSecondEngineToConfiguration();
     deployAndStartSimpleProcessDefinitionForAllEngines();
@@ -314,7 +314,7 @@ public class MultipleEngineSupportIT {
   }
 
   @Test
-  public void allProcessInstancesEventAndVariablesAreImportedWithAuthentication() throws OptimizeException {
+  public void allProcessInstancesEventAndVariablesAreImportedWithAuthentication() throws Exception {
     // given
     secondEngineRule.addUser("demo", "demo");
     addSecureEngineToConfiguration("anotherEngine");
@@ -417,7 +417,7 @@ public class MultipleEngineSupportIT {
   }
 
   @Test
-  public void afterRestartOfOptimizeRightImportIndexIsUsed() throws OptimizeException {
+  public void afterRestartOfOptimizeRightImportIndexIsUsed() throws Exception {
     // given
     addSecondEngineToConfiguration();
     deployAndStartSimpleProcessDefinitionForAllEngines();

@@ -60,7 +60,7 @@ public class ProcessDefinitionBaseImportIT {
       .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
 
   @Test
-  public void importProgressReporterStartAndEndImportState() throws IOException, OptimizeException {
+  public void importProgressReporterStartAndEndImportState() throws Exception {
     createAndSetProcessDefinition(createSimpleServiceTaskProcess());
 
     // then
@@ -74,7 +74,7 @@ public class ProcessDefinitionBaseImportIT {
   }
 
   @Test
-  public void importProgressTakesOnlyProcessDefinitionToImportIntoAccount() throws OptimizeException, IOException {
+  public void importProgressTakesOnlyProcessDefinitionToImportIntoAccount() throws Exception {
     // given
     deployAndStartSimpleServiceTask();
     createAndSetProcessDefinition(createSimpleServiceTaskProcess());
@@ -87,7 +87,7 @@ public class ProcessDefinitionBaseImportIT {
   }
 
   @Test
-  public void importOnlyDataToGivenProcessDefinitionId() throws IOException, OptimizeException {
+  public void importOnlyDataToGivenProcessDefinitionId() throws Exception {
     // given
     deployAndStartSimpleServiceTask();
     String processDefinitionId = createAndSetProcessDefinition(createSimpleServiceTaskProcess());
@@ -102,7 +102,7 @@ public class ProcessDefinitionBaseImportIT {
   }
 
   @Test
-  public void latestImportIndexAfterRestartOfOptimize() throws OptimizeException, IOException {
+  public void latestImportIndexAfterRestartOfOptimize() throws Exception {
     // given
     createAndSetProcessDefinition(createSimpleServiceTaskProcess());
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
@@ -121,7 +121,7 @@ public class ProcessDefinitionBaseImportIT {
   }
 
   @Test
-  public void itIsPossibleToResetTheImportIndex() throws OptimizeException, IOException {
+  public void itIsPossibleToResetTheImportIndex() throws Exception {
     // given
     createAndSetProcessDefinition(createSimpleServiceTaskProcess());
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
@@ -140,7 +140,7 @@ public class ProcessDefinitionBaseImportIT {
   }
 
   @Test
-  public void unfinishedActivitiesAreNotSkippedDuringImport() throws OptimizeException, IOException {
+  public void unfinishedActivitiesAreNotSkippedDuringImport() throws Exception {
     // given
     createAndSetProcessDefinition(createSimpleUserTaskProcess());
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
@@ -325,7 +325,7 @@ public class ProcessDefinitionBaseImportIT {
   }
 
   @Test
-  public void importProgressReporterIntermediateImportState() throws OptimizeException, IOException {
+  public void importProgressReporterIntermediateImportState() throws Exception {
     // given
     embeddedOptimizeRule.resetImportStartIndexes();
     createAndSetProcessDefinition(createSimpleServiceTaskProcess());

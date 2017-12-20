@@ -200,7 +200,7 @@ public class VariableValueRetrievalIT {
 
 
   @Test
-  public void valuesListIsCutByMaxResults() throws IOException, OptimizeException {
+  public void valuesListIsCutByMaxResults() throws Exception {
     // given
     String processDefinitionId = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();

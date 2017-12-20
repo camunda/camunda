@@ -44,8 +44,10 @@ public class ImportProgressReporter {
           computedProgress
       );
     }
+
     totalProgress = totalProgress/handlersWithData;
     totalProgress = Math.ceil(totalProgress);
+    logger.debug("total progress [{}]%", totalProgress);
     return totalProgress;
   }
 

@@ -128,7 +128,7 @@ public class ProcessDefinitionRetrievalIT {
   }
 
   @Test
-  public void getProcessDefinitionsWithSeveralEventsForSameDefinitionDeployed() throws IOException, OptimizeException {
+  public void getProcessDefinitionsWithSeveralEventsForSameDefinitionDeployed() throws Exception {
     // given
     String processId = PROCESS_DEFINITION_KEY + System.currentTimeMillis();
     String processDefinitionId = deploySimpleServiceTaskProcessDefinition(processId);
@@ -185,7 +185,7 @@ public class ProcessDefinitionRetrievalIT {
   }
 
   @Test
-  public void testGetProcessDefinitionsXml() throws IOException, OptimizeException {
+  public void testGetProcessDefinitionsXml() throws Exception {
     // given
     List<String> ids = new ArrayList<>();
     for (int i = 0; i < 11; i++) {

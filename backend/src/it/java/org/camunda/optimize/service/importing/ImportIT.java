@@ -17,7 +17,6 @@ import org.camunda.optimize.dto.optimize.query.variable.VariableRetrievalDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
 import org.camunda.optimize.service.engine.importing.index.handler.DefinitionBasedImportIndexHandler;
-import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.util.configuration.EngineConfiguration;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -88,7 +87,7 @@ public class ImportIT  {
   }
 
   @Test
-  public void importProgressReporterStartAndEndImportState() throws OptimizeException {
+  public void importProgressReporterStartAndEndImportState() throws Exception {
     // when
     deployAndStartSimpleServiceTask();
     embeddedOptimizeRule.resetImportStartIndexes();
@@ -119,7 +118,7 @@ public class ImportIT  {
   }
 
   @Test
-  public void importProgressReporterIntermediateImportState() throws OptimizeException {
+  public void importProgressReporterIntermediateImportState() throws Exception {
     // given
     deployAndStartSimpleServiceTask();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
@@ -137,7 +136,7 @@ public class ImportIT  {
   }
 
   @Test
-  public void importProgressReporterConsidersOnlyFinishedHistoricalActivityInstances() throws OptimizeException {
+  public void importProgressReporterConsidersOnlyFinishedHistoricalActivityInstances() throws Exception {
     // given
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .name("aProcessName")
@@ -224,7 +223,7 @@ public class ImportIT  {
   }
 
   @Test
-  public void unfinishedActivitiesAreNotSkippedDuringImport() throws OptimizeException {
+  public void unfinishedActivitiesAreNotSkippedDuringImport() throws Exception {
     // given
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
         .startEvent()
@@ -248,7 +247,7 @@ public class ImportIT  {
   }
 
   @Test
-  public void unfinishedProcessesIndexedAfterFinish() throws OptimizeException {
+  public void unfinishedProcessesIndexedAfterFinish() throws Exception {
     // given
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
         .startEvent()
@@ -334,7 +333,7 @@ public class ImportIT  {
   }
 
   @Test
-  public void variablesWithComplexTypeAreNotImported() throws OptimizeException {
+  public void variablesWithComplexTypeAreNotImported() throws Exception {
     // given
     ComplexVariableDto complexVariableDto = new ComplexVariableDto();
     complexVariableDto.setType("Object");
@@ -486,7 +485,7 @@ public class ImportIT  {
   }
 
   @Test
-  public void latestImportIndexAfterRestartOfOptimize() throws OptimizeException {
+  public void latestImportIndexAfterRestartOfOptimize() throws Exception {
     // given
     deployAndStartSimpleServiceTask();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
@@ -505,7 +504,7 @@ public class ImportIT  {
   }
 
   @Test
-  public void indexAfterRestartOfOptimizeHasCorrectProcessDefinitionsToImport() throws OptimizeException {
+  public void indexAfterRestartOfOptimizeHasCorrectProcessDefinitionsToImport() throws Exception {
     // given
     deployAndStartSimpleServiceTask();
     deployAndStartSimpleServiceTask();
@@ -526,7 +525,7 @@ public class ImportIT  {
   }
 
   @Test
-  public void afterRestartOfOptimizeAlsoNewDataIsImported() throws OptimizeException {
+  public void afterRestartOfOptimizeAlsoNewDataIsImported() throws Exception {
     // given
     deployAndStartSimpleServiceTask();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
@@ -550,7 +549,7 @@ public class ImportIT  {
   }
 
   @Test
-  public void itIsPossibleToResetTheImportIndex() throws OptimizeException {
+  public void itIsPossibleToResetTheImportIndex() throws Exception {
     // given
     deployAndStartSimpleServiceTask();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
@@ -633,13 +632,13 @@ public class ImportIT  {
   public void importProgressContinuesAfterRestartOnceNewDataAppears() throws Exception {
     ProcessInstanceEngineDto process1 = deployAndStartSimpleServiceTask();
     ProcessInstanceEngineDto process2 = deployAndStartSimpleServiceTask();
-    engineRule.waitForAllProcessesToFinish();
+
     long initialBackoff = embeddedOptimizeRule.getConfigurationService().getMaximumBackoff();
     embeddedOptimizeRule.getConfigurationService().setMaximumBackoff(2l);
     embeddedOptimizeRule.getConfigurationService().setBackoffEnabled(true);
     embeddedOptimizeRule.reloadConfiguration();
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntitiesWithoutReset();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
 
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
@@ -660,8 +659,7 @@ public class ImportIT  {
     assertThat(targetProcess.getId(), is(not(process3.getId())));
     assertThat(targetProcess.getDefinitionId(), is(process3.getDefinitionId()));
 
-    engineRule.waitForAllProcessesToFinish();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntitiesWithoutReset();
+    embeddedOptimizeRule.importWithoutReset();
 
     reportData = createDefaultReportData(targetProcess.getDefinitionId());
     result = evaluateReport(reportData);
@@ -679,7 +677,6 @@ public class ImportIT  {
   public void importProgressContinuesAfterResetOnceNewDataAppears() throws Exception {
     ProcessInstanceEngineDto process1 = deployAndStartSimpleServiceTask();
     ProcessInstanceEngineDto process2 = deployAndStartSimpleServiceTask();
-    engineRule.waitForAllProcessesToFinish();
 
     int initialResetValue = embeddedOptimizeRule.getConfigurationService().getImportResetIntervalValue();
     String initialUnit = embeddedOptimizeRule.getConfigurationService().getImportResetIntervalUnit();
@@ -691,7 +688,7 @@ public class ImportIT  {
     embeddedOptimizeRule.getConfigurationService().setBackoffEnabled(true);
     embeddedOptimizeRule.reloadConfiguration();
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntitiesWithoutReset();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
 
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
@@ -712,15 +709,8 @@ public class ImportIT  {
     assertThat(targetProcess.getId(), is(not(process3.getId())));
     assertThat(targetProcess.getDefinitionId(), is(process3.getDefinitionId()));
 
-    engineRule.waitForAllProcessesToFinish();
-
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntitiesWithoutReset();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-
-    //wait for backoff before starting next round
-    embeddedOptimizeRule.waitForBackoff();
     //once new round starts reset will happen instead of restart
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntitiesWithoutReset();
+    embeddedOptimizeRule.importWithoutReset();
 
     reportData = createDefaultReportData(targetProcess.getDefinitionId());
     result = evaluateReport(reportData);
@@ -741,7 +731,7 @@ public class ImportIT  {
     deployAndStartSimpleServiceTask();
     deployAndStartSimpleServiceTask();
     engineRule.waitForAllProcessesToFinish();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntitiesWithoutReset();
+    embeddedOptimizeRule.importWithoutReset();
 
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
     assertThat(embeddedOptimizeRule.getProgressValue(), is(100L));
