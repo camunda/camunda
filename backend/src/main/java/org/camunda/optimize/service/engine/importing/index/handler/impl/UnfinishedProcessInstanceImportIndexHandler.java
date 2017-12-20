@@ -19,6 +19,7 @@ import javax.annotation.PostConstruct;
 import java.util.HashSet;
 import java.util.Set;
 
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.END_DATE;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_INSTANCE_ID;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.START_DATE;
 import static org.camunda.optimize.service.es.schema.type.UnfinishedProcessInstanceTrackingType.PROCESS_INSTANCE_IDS;
@@ -107,7 +108,7 @@ public class UnfinishedProcessInstanceImportIndexHandler extends ScrollBasedImpo
       PROCESS_INSTANCE_IDS);
     BoolQueryBuilder query = QueryBuilders.boolQuery();
     query
-      .mustNot(existsQuery(START_DATE))
+      .mustNot(existsQuery(END_DATE))
       .mustNot(termsLookupQuery(PROCESS_INSTANCE_ID, termsLookup));
     if (configurationService.getProcessDefinitionIdsToImport() != null &&
       !configurationService.getProcessDefinitionIdsToImport().isEmpty()) {
