@@ -19,7 +19,7 @@ $modal-padding-h: 20px;
   flex-direction: column;
 
   /* TODO: make responsive */
-  width: 950px;
+  width: 650px;
   margin: 0 0 0 -475px;
 
   border-radius: 3px;
@@ -30,6 +30,11 @@ $modal-padding-h: 20px;
     outline: none;
   }
 
+}
+
+
+.Modal__container--large {
+  width: 950px;
 }
 
 .Modal__header {

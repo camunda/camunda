@@ -63,8 +63,10 @@ export default class Modal extends React.Component {
     if(open) {
       return ReactDOM.createPortal(
         <div className='Modal' onClick={this.onBackdropClick}>
-          <div className={`Modal__container ${this.props.className || ''}`} tabIndex="-1" ref={this.storeContainer}
-                onClick={this.catchClick} onKeyDown={this.handleKeyPress}>
+          <div className={(`Modal__container ${this.props.className || ''}`) + (this.props.size ? ' Modal__container--' + this.props.size : '')} 
+              tabIndex="-1" 
+              ref={this.storeContainer}
+              onClick={this.catchClick} onKeyDown={this.handleKeyPress}>
             {children}
           </div>
         </div>,
