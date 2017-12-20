@@ -170,7 +170,7 @@ export default class Report extends React.Component {
   renderEditMode = () => {
     const {name, lastModifier, lastModified, data, reportResult} = this.state;
     return (
-      <div className='Report'>
+      <div className='Report' style={{height: '100%', width:'100%'}}>
         <div className='Report__header'>
           <div className='Report__name-container'>
             <Input id='name' type='text' onChange={this.updateName} value={name || ''} className='Report__name-input' placeholder='Report Name'></Input>
@@ -183,45 +183,18 @@ export default class Report extends React.Component {
         </div>
 
         <ControlPanel {...data} onChange={this.updateReport} />
-        <div className='Report__content' style={this.retrieveReportViewDimensions()}>
+        <div className='Report__content' style={{height: '100%', width: '100%'}}>
           <ReportView report={reportResult} />
         </div>
       </div>
     )
   }
 
-  retrieveReportViewDimensions = () => {
-    const dimensions =  {height: '100%', width: '100%'};
-    
-    if(this.state.reportResult && this.state.reportResult.data) {
-      const data = this.state.reportResult.data;
-      switch(data.visualization) {
-        case 'table':
-          dimensions.height = '100%';
-          dimensions.width = '100%';
-          break;
-        case 'heat':
-          dimensions.height = '750px';
-          dimensions.width = '100%';
-          break;
-        case 'bar':
-        case 'line':
-        case 'pie':
-          dimensions.height = '400px';
-          dimensions.width = '1000px';
-          break;
-        default:
-          // is already defined;
-      }
-    }
-    return dimensions;
-  }
-
   renderViewMode = () => {
     const {name, lastModifier, lastModified, reportResult, shareModalVisible, deleteModalVisible} = this.state;
 
     return (
-      <div className='Report'>
+      <div className='Report' style={{height: '100%', width:'100%'}}>
         <div className='Report__header'>
           <div className='Report__name-container'>
             <h1 className='Report__name'>{name}</h1>
@@ -252,7 +225,7 @@ export default class Report extends React.Component {
             <Button className="Report__delete-report-modal-button" onClick={this.deleteReport}>Delete</Button>
           </Modal.Actions>
         </Modal>
-        <div className='Report__content' style={this.retrieveReportViewDimensions()}>
+        <div className='Report__content' style={{height: '100%', width:'100%'}}>
           <ReportView report={reportResult} />
         </div>
       </div>
@@ -272,7 +245,7 @@ export default class Report extends React.Component {
       return <Redirect to='/reports' />;
     }
 
-    return (<div>
+    return (<div style={{height: '100%', width:'100%'}}>
       {viewMode === 'edit' ? (this.renderEditMode()) : (this.renderViewMode())}
     </div>);
   }

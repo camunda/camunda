@@ -97,7 +97,7 @@ export default class ReportView extends React.Component {
       case 'pie':
         config = {
           component: Chart,
-          props: {data: result, type: data.visualization, isTimeSeries: data.groupBy.unit}
+          props: {data: result, type: data.visualization, timeUnit: data.groupBy.unit}
         }; break;
       default:
         config = {

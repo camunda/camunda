@@ -31,23 +31,23 @@ export default class Chart extends React.Component {
   }
 
   componentDidMount() {
-    const {data, type, isTimeSeries} = this.props;
+    const {data, type, timeUnit} = this.props;
 
     if(!data || typeof data !== 'object') {
       return;
     }
-    this.createNewChart(data, type, isTimeSeries);
+    this.createNewChart(data, type, timeUnit);
   }
 
   componentWillReceiveProps(nextProps) {
     const newType = nextProps.type;
     const data = nextProps.data;
-    const isTimeSeries = nextProps.isTimeSeries;
+    const timeUnit = nextProps.timeUnit;
 
     if(!data || typeof data !== 'object') {
       return;
     }
-    this.createNewChart(data, newType, isTimeSeries);
+    this.createNewChart(data, newType, timeUnit);
   }
 
   destroyChart = () => {
@@ -56,7 +56,7 @@ export default class Chart extends React.Component {
     }
   }
 
-  createNewChart = (data, type, isTimeSeries) => {
+  createNewChart = (data, type, timeUnit) => {
     this.destroyChart();
 
     this.chart = new ChartRenderer(this.container, {
@@ -68,7 +68,7 @@ export default class Chart extends React.Component {
           ...this.createDatasetOptions(type)
         }]
       },
-      ...this.createChartOptions(type, isTimeSeries)
+      ...this.createChartOptions(type, timeUnit)
     });
   }
 
@@ -101,7 +101,7 @@ export default class Chart extends React.Component {
     return datasetOptions;
   }
 
-  createChartOptions = (type, isTimeSeries) => {
+  createChartOptions = (type, timeUnit) => {
     let options;
     switch(type) {
       case 'pie':
@@ -117,9 +117,12 @@ export default class Chart extends React.Component {
           legend : {
             display: false
           },
-          scales:  isTimeSeries && {
+          scales:  timeUnit && {
             xAxes: [{
-                type : 'time'
+                type : 'time',
+                time: {
+                  unit: timeUnit
+                }
             }]
           },
         }

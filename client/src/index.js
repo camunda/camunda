@@ -23,9 +23,9 @@ import {
 import {ErrorBoundary} from 'components';
 
 ReactDOM.render(<Router>
-  <div>
+  <div style={{height: '100%', width:'100%'}}>
     <Header name="Camunda Optimize" />
-    <main>
+    <main style={{height: '100%', width:'100%'}}>
       <ErrorBoundary>
         <Route exact path="/login" component={Login} />
         <PrivateRoute exact path="/" component={Home} />
