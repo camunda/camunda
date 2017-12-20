@@ -30,7 +30,8 @@ export default class Dashboard extends React.Component {
       originalName: null,
       reports: [],
       originalReports : [],
-      modalVisible: false,
+      shareModalVisible: false,
+      deleteModalVisible: false,
       addButtonVisible: true
     };
 
@@ -113,15 +114,25 @@ export default class Dashboard extends React.Component {
     });
   }
 
-  showModal = () => {
+  showShareModal = () => {
     this.setState({
-      modalVisible: true
+      shareModalVisible: true
     });
   }
-
-  closeModal = () => {
+  closeShareModal = () => {
     this.setState({
-      modalVisible: false
+      shareModalVisible: false
+    });
+  }
+  
+  showDeleteModal = () => {
+    this.setState({
+      deleteModalVisible: true
+    });
+  }
+  closeDeleteModal = () => {
+    this.setState({
+      deleteModalVisible: false
     });
   }
 
@@ -165,7 +176,7 @@ export default class Dashboard extends React.Component {
 
 
   renderViewMode = (state) => {
-    const {name, lastModifier, lastModified, modalVisible} = state;
+    const {name, lastModifier, lastModified, shareModalVisible, deleteModalVisible} = state;
 
     return (
       <div className='Dashboard'>
@@ -176,11 +187,11 @@ export default class Dashboard extends React.Component {
           </div>
           <div className='Dashboard__tools'>
             <Link className='Button Dashboard__tool-button Dashboard__edit-button' to={`/dashboard/${this.id}/edit`}>Edit</Link>
-            <Button onClick={this.deleteDashboard} className='Dashboard__tool-button Dashboard__delete-button'>Delete</Button>
-            <Button onClick={this.showModal} className='Dashboard__tool-button Dashboard__share-button'>Share</Button>
+            <Button onClick={this.showDeleteModal} className='Dashboard__tool-button Dashboard__delete-button'>Delete</Button>
+            <Button onClick={this.showShareModal} className='Dashboard__tool-button Dashboard__share-button'>Share</Button>
           </div>
         </div>
-        <Modal open={modalVisible} onClose={this.closeModal} className='Dashboard__share-modal'>
+        <Modal open={shareModalVisible} onClose={this.closeShareModal} className='Dashboard__share-modal'>
           <Modal.Header>Share {this.state.name}</Modal.Header>
           <Modal.Content>
             <ControlGroup>
@@ -188,7 +199,17 @@ export default class Dashboard extends React.Component {
             </ControlGroup>
           </Modal.Content>
           <Modal.Actions>
-            <Button className="Dashboard__close-share-modal-button" onClick={this.closeModal}>Close</Button>
+            <Button className="Dashboard__close-share-modal-button" onClick={this.closeShareModal}>Close</Button>
+          </Modal.Actions>
+        </Modal>
+        <Modal open={deleteModalVisible} onClose={this.closeDeleteModal} className='Dashboard__delete-modal'>
+          <Modal.Header>You are about to delete {this.state.name}</Modal.Header>
+          <Modal.Content>
+            <p>Are you sure you want to proceed?</p>
+          </Modal.Content>
+          <Modal.Actions>
+            <Button className="Dashboard__close-delete-modal-button" onClick={this.closeDeleteModal}>Close</Button>
+            <Button className="Dashboard__delete-dashboard-modal-button" onClick={this.deleteDashboard}>Delete</Button>
           </Modal.Actions>
         </Modal>
         <DashboardView reports={this.state.reports} />

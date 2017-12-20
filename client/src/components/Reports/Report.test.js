@@ -104,21 +104,38 @@ it('should provide a link to edit mode in view mode', () => {
   expect(node.find('.Report__edit-button')).toBePresent();
 });
 
+it('should open a deletion modal on delete button click', async () => {
+  const node = mount(<Report {...props} />);
+  node.setState({
+    loaded: true
+  });
+
+  await node.find('.Report__delete-button').first().simulate('click');
+
+  expect(node).toHaveState('deleteModalVisible', true);
+});
+
 
 it('should remove a report when delete button is clicked', () => {
   const node = mount(<Report {...props} />);
-  node.setState({loaded: true});
+  node.setState({
+    loaded: true,
+    deleteModalVisible: true
+  });
 
-  node.find('.Report__delete-button').first().simulate('click');
+  node.find('.Report__delete-report-modal-button').first().simulate('click');
 
   expect(remove).toHaveBeenCalledWith('1');
 });
 
 it('should redirect to the report list on report deletion', async () => {
   const node = mount(<Report {...props} />);
-  node.setState({loaded: true});
+  node.setState({
+    loaded: true,
+    deleteModalVisible: true
+  });
 
-  await node.find('.Report__delete-button').first().simulate('click');
+  await node.find('.Report__delete-report-modal-button').first().simulate('click');
 
   expect(node).toIncludeText('REDIRECT to /reports');
 });

@@ -41,9 +41,19 @@ jest.mock('moment', () => (...params) => {
 });
 
 jest.mock('components', () => {
+  const Modal = props => <div id='Modal'>{props.open && props.children}</div>;
+  Modal.Header = props => <div id='modal_header'>{props.children}</div>;
+  Modal.Content = props => <div id='modal_content'>{props.children}</div>;
+  Modal.Actions = props => <div id='modal_actions'>{props.children}</div>;
+
   return {
+    Modal,
     Table: {
-      renderCell: cell => <span>{JSON.stringify(cell)}</span>
+      renderCell: cell => {
+        return (cell.onClick) ?
+        <button onClick={cell.onClick} className={cell.className}>{cell.content}</button> :
+        <span>{JSON.stringify(cell)}</span>
+      }
     },
     Button: props => <button {...props}>{props.children}</button>
   }
@@ -143,7 +153,7 @@ it('should display all operations per default', () => {
   });
 
   expect(node.find('.EntityList__createButton')).toBePresent();
-  expect(node).toIncludeText('EntityList__deleteButton');
+  expect(node.find('.EntityList__deleteButton')).toBePresent();
   expect(node).toIncludeText('EntityList__editLink');
 });
 
@@ -186,7 +196,7 @@ it('should display a delete button if specified', () => {
     data: [sampleEntity]
   });
 
-  expect(node).toIncludeText('EntityList__deleteButton');
+  expect(node.find('.EntityList__deleteButton')).toBePresent();
 });
 
 
@@ -204,4 +214,16 @@ it('should be able to sort by date', async () => {
   await node.instance().loadEntities();
   expect(load).toBeCalledWith('endpoint', undefined, 'lastModified');
   expect(node.state().data[0]).toEqual(sampleEntity2);
+});
+
+it('should open deletion modal on delete button click', () => {
+  const node = mount(<EntityList api='endpoint' label='Dashboard' operations={['delete']}/>);
+  node.setState({
+    loaded: true,
+    data: [sampleEntity]
+  });
+
+  node.find('.EntityList__deleteButton').simulate('click');
+
+  expect(node.find('.EntityList__delete-modal')).toBePresent();
 });

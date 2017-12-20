@@ -21,7 +21,8 @@ export default class Report extends React.Component {
       loaded: false,
       redirect: false,
       originalName: null,
-      modalVisible: false
+      shareModalVisible: false,
+      deleteModalVisible: false
     };
 
     this.loadReport();
@@ -142,18 +143,29 @@ export default class Report extends React.Component {
     });
   }
 
-  showModal = () => {
+  showShareModal = () => {
     this.setState({
-      modalVisible: true
+      shareModalVisible: true
     });
   }
 
-  closeModal = () => {
+  closeShareModal = () => {
     this.setState({
-      modalVisible: false
+      shareModalVisible: false
     });
   }
 
+  showDeleteModal = () => {
+    this.setState({
+      deleteModalVisible: true
+    });
+  }
+
+  closeDeleteModal = () => {
+    this.setState({
+      deleteModalVisible: false
+    });
+  }
 
   renderEditMode = () => {
     const {name, lastModifier, lastModified, data, reportResult} = this.state;
@@ -206,7 +218,7 @@ export default class Report extends React.Component {
   }
 
   renderViewMode = () => {
-    const {name, lastModifier, lastModified, reportResult, modalVisible} = this.state;
+    const {name, lastModifier, lastModified, reportResult, shareModalVisible, deleteModalVisible} = this.state;
 
     return (
       <div className='Report'>
@@ -217,17 +229,27 @@ export default class Report extends React.Component {
           </div>
           <div className='Report__tools'>
             <Link className='Button Report__tool-button Report__edit-button' to={`/report/${this.id}/edit`}>Edit</Link>
-            <Button className='Report__tool-button Report__delete-button' onClick={this.deleteReport}>Delete</Button>
-            <Button onClick={this.showModal} className='Report__tool-button Report__share-button'>Share</Button>
+            <Button className='Report__tool-button Report__delete-button' onClick={this.showDeleteModal}>Delete</Button>
+            <Button onClick={this.showShareModal} className='Report__tool-button Report__share-button'>Share</Button>
           </div>
         </div>
-        <Modal open={modalVisible} onClose={this.closeModal} className='Report__share-modal'>
+        <Modal open={shareModalVisible} onClose={this.closeShareModal} className='Report__share-modal'>
           <Modal.Header>Share {this.state.name}</Modal.Header>
           <Modal.Content>
             <CopyToClipboard value={document.URL} />
           </Modal.Content>
           <Modal.Actions>
-            <Button className="Report__close-share-modal-button" onClick={this.closeModal}>Close</Button>
+            <Button className="Report__close-share-modal-button" onClick={this.closeShareModal}>Close</Button>
+          </Modal.Actions>
+        </Modal>
+        <Modal open={deleteModalVisible} onClose={this.closeDeleteModal} className='Report__delete-modal'>
+          <Modal.Header>You are about to delete {this.state.name}</Modal.Header>
+          <Modal.Content>
+            <p>Are you sure you want to proceed?</p>
+          </Modal.Content>
+          <Modal.Actions>
+            <Button className="Report__close-delete-modal-button" onClick={this.closeDeleteModal}>Close</Button>
+            <Button className="Report__delete-report-modal-button" onClick={this.deleteReport}>Delete</Button>
           </Modal.Actions>
         </Modal>
         <div className='Report__content' style={this.retrieveReportViewDimensions()}>

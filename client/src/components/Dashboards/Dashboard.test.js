@@ -115,18 +115,24 @@ it('should provide a link to edit mode in view mode', () => {
 
 it('should remove a dashboard when delete button is clicked', () => {
   const node = mount(<Dashboard {...props} />);
-  node.setState({loaded: true});
+  node.setState({
+    loaded: true,
+    deleteModalVisible: true
+  });
 
-  node.find('.Dashboard__delete-button').first().simulate('click');
+  node.find('.Dashboard__delete-dashboard-modal-button').first().simulate('click');
 
   expect(remove).toHaveBeenCalledWith('1');
 });
 
 it('should redirect to the dashboard list on dashboard deletion', async () => {
   const node = mount(<Dashboard {...props} />);
-  node.setState({loaded: true});
+  node.setState({
+    loaded: true,
+    deleteModalVisible: true
+  });
 
-  await node.find('.Dashboard__delete-button').first().simulate('click');
+  await node.find('.Dashboard__delete-dashboard-modal-button').first().simulate('click');
 
   expect(node).toIncludeText('REDIRECT to /dashboards');
 });

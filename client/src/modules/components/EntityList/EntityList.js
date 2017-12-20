@@ -2,7 +2,7 @@ import React from 'react';
 import moment from 'moment';
 import {Redirect, Link} from 'react-router-dom';
 
-import {Table, Button} from 'components';
+import {Table, Button, Modal} from 'components';
 
 import {load, create, remove} from './service';
 
@@ -15,7 +15,9 @@ export default class EntityList extends React.Component {
     this.state = {
       data: [],
       redirectToEntity: false,
-      loaded: false
+      loaded: false,
+      deleteModalVisible: false,
+      deleteModalEntity: {}
     };
 
     this.loadEntities();
@@ -41,7 +43,22 @@ export default class EntityList extends React.Component {
     this.setState({
       data: this.state.data.filter(entity => entity.id !== id)
     });
+    this.closeDeleteModal();
   };
+
+  showDeleteModal = ({id, name}) => evt => {
+    this.setState({
+      deleteModalVisible: true,
+      deleteModalEntity: {id, name}
+    })
+  }
+
+  closeDeleteModal = () => {
+    this.setState({
+      deleteModalVisible: false,
+      deleteModalEntity: {}
+    })
+  }
 
   formatData = data => data.map(({name, id, lastModified, lastModifier}) => {
     const entry = [
@@ -52,7 +69,7 @@ export default class EntityList extends React.Component {
     if(this.props.operations.includes('delete')) {
       entry.push({
         content: 'Delete',
-        onClick: this.deleteEntity(id),
+        onClick: this.showDeleteModal({id, name}),
         className: 'Button Button--small EntityList__deleteButton'
       });
     }
@@ -67,10 +84,26 @@ export default class EntityList extends React.Component {
     return entry;
   })
 
+  renderModal = () => {
+    const {deleteModalVisible, deleteModalEntity} = this.state;
+    return (
+      <Modal open={deleteModalVisible} onClose={this.closeDeleteModal} className='EntityList__delete-modal'>
+        <Modal.Header>You are about to delete {deleteModalEntity.name}</Modal.Header>
+        <Modal.Content>
+          <p>Are you sure you want to proceed?</p>
+        </Modal.Content>
+        <Modal.Actions>
+          <Button className="EntityList__close-delete-modal-button" onClick={this.closeDeleteModal}>Close</Button>
+          <Button className="EntityList__delete-entity-modal-button" onClick={this.deleteEntity(deleteModalEntity.id)}>Delete</Button>
+        </Modal.Actions>
+      </Modal>
+    )
+  }
+
   render() {
     const {redirectToEntity, loaded} = this.state;
     const {includeViewAllLink} = this.props;
-
+    const modal = this.renderModal();
     const isListEmpty = (this.state.data.length === 0);
 
     let createButton = null;
@@ -116,6 +149,7 @@ export default class EntityList extends React.Component {
           </div>
         </div>
         {list}
+        {modal}
         {this.props.children}
         {(includeViewAllLink && !isListEmpty) ? <Link to={`/${this.props.api}s`} className='small'>View all {`${this.props.label}`}s…</Link> : ''}
       </section>);
