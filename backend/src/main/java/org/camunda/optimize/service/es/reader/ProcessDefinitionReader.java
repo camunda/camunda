@@ -1,8 +1,12 @@
 package org.camunda.optimize.service.es.reader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.camunda.bpm.model.bpmn.Bpmn;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.bpm.model.bpmn.instance.FlowNode;
 import org.camunda.optimize.dto.optimize.query.ExtendedProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.ProcessDefinitionGroupOptimizeDto;
+import org.camunda.optimize.dto.optimize.rest.FlowNodeNamesDto;
 import org.camunda.optimize.service.es.schema.type.ProcessDefinitionType;
 import org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -20,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -171,6 +176,25 @@ public class ProcessDefinitionReader {
           .get();
     } while (scrollResp.getHits().getHits().length != 0);
 
+    return result;
+  }
+
+  public FlowNodeNamesDto getFlowNodeNames(String processDefinitionId, List<String> nodeIds) {
+    FlowNodeNamesDto result = new FlowNodeNamesDto();
+
+    String processDefinitionXml = this.getProcessDefinitionXml(processDefinitionId);
+    if (processDefinitionXml != null) {
+      BpmnModelInstance model = Bpmn.readModelFromStream(new ByteArrayInputStream(processDefinitionXml.getBytes()));
+      for (FlowNode node : model.getModelElementsByType(FlowNode.class)) {
+        if (nodeIds != null && !nodeIds.isEmpty()) {
+          if (nodeIds.contains(node.getId())) {
+            result.getFlowNodeNames().put(node.getId(), node.getName());
+          }
+        } else {
+          result.getFlowNodeNames().put(node.getId(), node.getName());
+        }
+      }
+    }
     return result;
   }
 }

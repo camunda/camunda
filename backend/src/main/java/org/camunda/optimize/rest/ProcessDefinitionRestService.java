@@ -7,6 +7,7 @@ import org.camunda.optimize.dto.optimize.query.ExtendedProcessDefinitionOptimize
 import org.camunda.optimize.dto.optimize.query.HeatMapQueryDto;
 import org.camunda.optimize.dto.optimize.query.HeatMapResponseDto;
 import org.camunda.optimize.dto.optimize.query.ProcessDefinitionGroupOptimizeDto;
+import org.camunda.optimize.dto.optimize.rest.FlowNodeNamesDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.es.reader.BranchAnalysisReader;
 import org.camunda.optimize.service.es.reader.DurationHeatMapReader;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Component;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.NotFoundException;
+import javax.ws.rs.OPTIONS;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
@@ -54,6 +56,14 @@ public class ProcessDefinitionRestService {
 
   @Autowired
   private DurationHeatmapTargetValueWriter targetValueWriter;
+
+  @POST
+  @Path("/{id}/flowNodeNames")
+  @Produces(MediaType.APPLICATION_JSON)
+  @Consumes(MediaType.APPLICATION_JSON)
+  public FlowNodeNamesDto getFlowNodeNames(@PathParam("id") String processDefinitionId, List<String> nodeIds) {
+    return processDefinitionReader.getFlowNodeNames(processDefinitionId, nodeIds);
+  }
 
   /**
    * Retrieves all process definition stored in Optimize.
