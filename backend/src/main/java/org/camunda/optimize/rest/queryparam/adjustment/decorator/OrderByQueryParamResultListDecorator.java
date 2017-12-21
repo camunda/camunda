@@ -6,6 +6,7 @@ import java.util.List;
 
 public class OrderByQueryParamResultListDecorator<T> extends AdjustedResultListDecorator<T> {
 
+  public static final String ORDER_BY = "orderBy";
   private String queryParamValueToOrderBy;
   private Comparator<T> comparator;
 
@@ -23,8 +24,8 @@ public class OrderByQueryParamResultListDecorator<T> extends AdjustedResultListD
   public List<T> adjustList() {
     List<T> resultList = decoratedList.adjustList();
     MultivaluedMap<String, String> queryParameters = decoratedList.getQueryParameters();
-    if (queryParameters.containsKey("orderBy")) {
-      String orderBy = queryParameters.getFirst("orderBy");
+    if (queryParameters.containsKey(ORDER_BY)) {
+      String orderBy = queryParameters.getFirst(ORDER_BY);
       if (orderBy.equals(queryParamValueToOrderBy)) {
         resultList.sort(comparator);
       }

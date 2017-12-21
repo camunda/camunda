@@ -328,6 +328,15 @@ public class ReportHandlingIT {
     assertThat(reports.get(0).getId(), is(id1));
     assertThat(reports.get(1).getId(), is(id3));
     assertThat(reports.get(2).getId(), is(id2));
+
+    //when
+    queryParam.put("sortOrder", "asc");
+    reports = getAllReportsWithQueryParam(queryParam);
+    // then
+    assertThat(reports.size(), is(3));
+    assertThat(reports.get(0).getId(), is(id2));
+    assertThat(reports.get(1).getId(), is(id3));
+    assertThat(reports.get(2).getId(), is(id1));
   }
 
   @Test
