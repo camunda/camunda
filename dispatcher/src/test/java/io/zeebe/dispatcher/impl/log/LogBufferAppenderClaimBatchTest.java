@@ -24,7 +24,7 @@ import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.framedLength;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.typeOffset;
 import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.PARTITION_TAIL_COUNTER_OFFSET;
-import static org.mockito.Matchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;

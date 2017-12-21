@@ -18,7 +18,7 @@ package io.zeebe.dispatcher.impl.log;
 import static org.assertj.core.api.Assertions.*;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.*;
 import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.*;
-import static org.mockito.Matchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.*;
 import static org.agrona.BitUtil.*;
 
