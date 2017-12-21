@@ -61,7 +61,7 @@ public class ControllableTaskScheduler extends ExternalResource implements Actor
                 for (int i = 0; i < actorRefList.size() && isRunning.get(); i++)
                 {
                     final ActorReferenceImpl actorRef = actorRefList.get(i);
-                    if (actorRef != null)
+                    if (actorRef != null && !actorRef.isClosed())
                     {
                         try
                         {
