@@ -34,12 +34,13 @@ import io.zeebe.broker.workflow.data.DeploymentEvent;
 import io.zeebe.broker.workflow.data.DeploymentState;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.transport.ClientRequest;
+import io.zeebe.util.CloseableSilently;
 import io.zeebe.util.time.ClockUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.LongArrayList;
 import org.slf4j.Logger;
 
-public class PendingDeploymentCheck implements Runnable
+public class PendingDeploymentCheck implements Runnable, CloseableSilently
 {
     private static final Logger LOG = Loggers.SYSTEM_LOGGER;
 
@@ -80,6 +81,12 @@ public class PendingDeploymentCheck implements Runnable
 
             checkPendingWorkflows();
         }
+    }
+
+    @Override
+    public void close()
+    {
+        reader.close();
     }
 
     private void checkPendingRequests()

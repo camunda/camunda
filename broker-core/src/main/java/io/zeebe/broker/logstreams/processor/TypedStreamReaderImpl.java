@@ -68,4 +68,10 @@ public class TypedStreamReaderImpl implements TypedStreamReader
         return event;
     }
 
+    @Override
+    public void close()
+    {
+        reader.close();
+    }
+
 }

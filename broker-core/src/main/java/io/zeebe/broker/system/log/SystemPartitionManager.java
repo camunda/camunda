@@ -67,6 +67,7 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
         .build();
 
     private ScheduledCommand command;
+    private ResolvePendingPartitionsCommand resolvePendingPartitionsCommand;
 
     private AtomicReference<PartitionResponder> partitionResponderRef = new AtomicReference<>();
 
@@ -117,12 +118,11 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
         final PendingPartitionsIndex partitionsIndex = new PendingPartitionsIndex();
         final TopicsIndex topicsIndex = new TopicsIndex();
 
-        final ResolvePendingPartitionsCommand cmd =
-                new ResolvePendingPartitionsCommand(
-                        partitionsIndex,
-                        partitionManager,
-                        streamEnvironment.buildStreamReader(),
-                        streamEnvironment.buildStreamWriter());
+        resolvePendingPartitionsCommand = new ResolvePendingPartitionsCommand(
+                partitionsIndex,
+                partitionManager,
+                streamEnvironment.buildStreamReader(),
+                streamEnvironment.buildStreamWriter());
 
         final TypedStreamProcessor streamProcessor =
                 buildTopicCreationProcessor(
@@ -131,7 +131,7 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
                         topicsIndex,
                         partitionsIndex,
                         Duration.ofSeconds(systemConfiguration.getPartitionCreationTimeoutSeconds()));
-        command = executor.scheduleAtFixedRate(() -> streamProcessor.runAsync(cmd), Duration.ofMillis(100));
+        command = executor.scheduleAtFixedRate(() -> streamProcessor.runAsync(resolvePendingPartitionsCommand), Duration.ofMillis(100));
 
         final StreamProcessorService streamProcessorService = new StreamProcessorService(
             CREATE_TOPICS_PROCESSOR,
@@ -202,6 +202,7 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
         if (command != null)
         {
             command.cancel();
+            resolvePendingPartitionsCommand.close();
         }
         partitionResponderRef.set(null);
     }

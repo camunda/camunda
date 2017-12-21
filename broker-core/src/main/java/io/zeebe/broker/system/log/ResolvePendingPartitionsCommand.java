@@ -25,10 +25,11 @@ import io.zeebe.broker.logstreams.processor.TypedEvent;
 import io.zeebe.broker.logstreams.processor.TypedStreamReader;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.system.log.PendingPartitionsIndex.PendingPartition;
+import io.zeebe.util.CloseableSilently;
 import io.zeebe.util.collection.IntIterator;
 import io.zeebe.util.time.ClockUtil;
 
-public class ResolvePendingPartitionsCommand implements Runnable
+public class ResolvePendingPartitionsCommand implements Runnable, CloseableSilently
 {
     protected final PendingPartitionsIndex partitions;
     protected final PartitionManager partitionManager;
@@ -59,6 +60,12 @@ public class ResolvePendingPartitionsCommand implements Runnable
 
         checkCompletedCreation();
         checkExpiredCreation();
+    }
+
+    @Override
+    public void close()
+    {
+        reader.close();
     }
 
     private void checkExpiredCreation()

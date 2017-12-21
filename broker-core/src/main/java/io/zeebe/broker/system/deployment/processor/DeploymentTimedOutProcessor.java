@@ -136,4 +136,11 @@ public class DeploymentTimedOutProcessor implements TypedEventProcessor<Deployme
             pendingDeployments.put(event.getKey(), event.getPosition(), -1L, deploymentEvent.getTopicName());
         }
     }
+
+    @Override
+    public void onClose()
+    {
+        reader.close();
+    }
+
 }

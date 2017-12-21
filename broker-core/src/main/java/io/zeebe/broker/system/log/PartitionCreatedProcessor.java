@@ -98,4 +98,11 @@ public class PartitionCreatedProcessor implements TypedEventProcessor<PartitionE
             topics.put(topicName, remainingPartitions - 1, topics.getRequestPosition());
         }
     }
+
+    @Override
+    public void onClose()
+    {
+        reader.close();
+    }
+
 }

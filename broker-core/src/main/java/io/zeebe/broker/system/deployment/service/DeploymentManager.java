@@ -74,6 +74,7 @@ public class DeploymentManager implements Service<DeploymentManager>
     private ScheduledExecutor scheduledExecutor;
 
     private ScheduledCommand scheduledChecker;
+    private PendingDeploymentCheck pendingDeploymentCheck;
 
     private final ServiceGroupReference<LogStream> systemStreamGroupReference = ServiceGroupReference.<LogStream>create()
             .onAdd((name, stream) -> installDeploymentStreamProcessor(stream, name))
@@ -151,14 +152,14 @@ public class DeploymentManager implements Service<DeploymentManager>
             final PendingDeployments pendingDeployments,
             final PendingWorkflows pendingWorkflows)
     {
-        final PendingDeploymentCheck command = new PendingDeploymentCheck(
+        pendingDeploymentCheck = new PendingDeploymentCheck(
                workflowRequestSender,
                streamEnvironment.buildStreamReader(),
                streamEnvironment.buildStreamWriter(),
                pendingDeployments,
                pendingWorkflows);
 
-        return scheduledExecutor.scheduleAtFixedRate(() -> streamProcessor.runAsync(command), Duration.ofMillis(250));
+        return scheduledExecutor.scheduleAtFixedRate(() -> streamProcessor.runAsync(pendingDeploymentCheck), Duration.ofMillis(250));
     }
 
     @Override
@@ -167,6 +168,7 @@ public class DeploymentManager implements Service<DeploymentManager>
         if (scheduledChecker != null)
         {
             scheduledChecker.cancel();
+            pendingDeploymentCheck.close();
         }
     }
 
