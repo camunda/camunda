@@ -61,7 +61,10 @@ public class ProcessDefinitionRestService {
   @Path("/{id}/flowNodeNames")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public FlowNodeNamesDto getFlowNodeNames(@PathParam("id") String processDefinitionId, List<String> nodeIds) {
+  public FlowNodeNamesDto getFlowNodeNames(
+      @PathParam("id") String processDefinitionId,
+      List<String> nodeIds
+  ) {
     return processDefinitionReader.getFlowNodeNames(processDefinitionId, nodeIds);
   }
 

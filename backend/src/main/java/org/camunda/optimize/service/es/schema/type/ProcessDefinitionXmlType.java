@@ -12,6 +12,7 @@ public class ProcessDefinitionXmlType extends StrictTypeMappingCreator {
   public static final String ID = "id";
   public static final String BPMN_20_XML = "bpmn20Xml";
   public static final String ENGINE = "engine";
+  public static final String FLOW_NODE_NAMES = "flowNodeNames";
 
   @Override
   public String getType() {
@@ -26,6 +27,10 @@ public class ProcessDefinitionXmlType extends StrictTypeMappingCreator {
       .endObject()
       .startObject(ENGINE)
         .field("type", "keyword")
+      .endObject()
+      .startObject(FLOW_NODE_NAMES)
+        .field("type", "object")
+        .field("enabled", "false")
       .endObject()
       .startObject(BPMN_20_XML)
         .field("type", "text")

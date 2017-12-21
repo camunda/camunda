@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.FlowNode;
+import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionXmlOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.ExtendedProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.ProcessDefinitionGroupOptimizeDto;
 import org.camunda.optimize.dto.optimize.rest.FlowNodeNamesDto;
@@ -119,20 +120,30 @@ public class ProcessDefinitionReader {
   }
 
   public String getProcessDefinitionXml(String processDefinitionId) {
+    return getProcessDefinitionXmlDto(processDefinitionId).getBpmn20Xml();
+  }
+
+  public ProcessDefinitionXmlOptimizeDto getProcessDefinitionXmlDto(String processDefinitionId) {
     GetResponse response = esclient.prepareGet(
         configurationService.getOptimizeIndex(configurationService.getProcessDefinitionXmlType()),
         configurationService.getProcessDefinitionXmlType(),
         processDefinitionId)
         .get();
 
-    String xml = null;
+    ProcessDefinitionXmlOptimizeDto xml = null;
     if (response.isExists()) {
-      xml = response.getSource().get(ProcessDefinitionXmlType.BPMN_20_XML).toString();
+      xml = new ProcessDefinitionXmlOptimizeDto ();
+
+      xml.setBpmn20Xml(response.getSource().get(ProcessDefinitionXmlType.BPMN_20_XML).toString());
+      xml.setId(response.getSource().get(ProcessDefinitionXmlType.ID).toString());
+      xml.setEngine(response.getSource().get(ProcessDefinitionXmlType.ENGINE).toString());
+      xml.setFlowNodeNames((Map<String, String>) response.getSource().get(ProcessDefinitionXmlType.FLOW_NODE_NAMES));
     } else {
       logger.warn("Could not find process definition xml with id {}", processDefinitionId);
     }
     return xml;
   }
+
 
   public List<ProcessDefinitionGroupOptimizeDto> getProcessDefinitionsGroupedByKey() {
     Map<String, ProcessDefinitionGroupOptimizeDto> resultMap = new HashMap<>();
@@ -181,19 +192,13 @@ public class ProcessDefinitionReader {
 
   public FlowNodeNamesDto getFlowNodeNames(String processDefinitionId, List<String> nodeIds) {
     FlowNodeNamesDto result = new FlowNodeNamesDto();
-
-    String processDefinitionXml = this.getProcessDefinitionXml(processDefinitionId);
-    if (processDefinitionXml != null) {
-      BpmnModelInstance model = Bpmn.readModelFromStream(new ByteArrayInputStream(processDefinitionXml.getBytes()));
-      for (FlowNode node : model.getModelElementsByType(FlowNode.class)) {
-        if (nodeIds != null && !nodeIds.isEmpty()) {
-          if (nodeIds.contains(node.getId())) {
-            result.getFlowNodeNames().put(node.getId(), node.getName());
-          }
-        } else {
-          result.getFlowNodeNames().put(node.getId(), node.getName());
-        }
+    ProcessDefinitionXmlOptimizeDto processDefinitionXmlDto = getProcessDefinitionXmlDto(processDefinitionId);
+    if (nodeIds != null && !nodeIds.isEmpty()) {
+      for (String id : nodeIds) {
+        result.getFlowNodeNames().put(id, processDefinitionXmlDto.getFlowNodeNames().get(id));
       }
+    } else {
+      result.setFlowNodeNames(processDefinitionXmlDto.getFlowNodeNames());
     }
     return result;
   }

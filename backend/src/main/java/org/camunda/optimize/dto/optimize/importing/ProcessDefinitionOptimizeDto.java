@@ -4,8 +4,12 @@ import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.query.KeyProcessDefinitionOptimizeDto;
 
 import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
 
-public class ProcessDefinitionOptimizeDto extends KeyProcessDefinitionOptimizeDto implements Serializable, OptimizeDto {
+public class ProcessDefinitionOptimizeDto
+    extends KeyProcessDefinitionOptimizeDto
+    implements Serializable, OptimizeDto {
 
   protected String id;
   protected String name;

@@ -35,9 +35,6 @@ import static org.junit.Assert.assertThat;
 @ContextConfiguration(locations = {"/rest/restTestApplicationContext.xml"})
 public class ProcessDefinitionRetrievalIT {
 
-  public static final String A_START = "aStart";
-  public static final String A_TASK = "aTask";
-  public static final String AN_END = "anEnd";
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
@@ -52,76 +49,6 @@ public class ProcessDefinitionRetrievalIT {
   public void setUp() {
   }
 
-  @Test
-  public void getProcessDefinitionsMapping() throws Exception {
-    String processId = PROCESS_DEFINITION_KEY + System.currentTimeMillis();
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(processId)
-        .startEvent(A_START)
-          .serviceTask(A_TASK)
-            .camundaExpression("${true}")
-        .endEvent(AN_END)
-        .done();
-    String processDefinitionId = engineRule.deployProcessAndGetId(modelInstance);
-
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-
-    // when
-
-    Response response =
-        embeddedOptimizeRule.target("process-definition/" + processDefinitionId + "/flowNodeNames")
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
-            .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
-            .post(null);
-
-    FlowNodeNamesDto result = response.readEntity(FlowNodeNamesDto.class);
-    assertThat(result, is(notNullValue()));
-    assertThat(result.getFlowNodeNames(), is(notNullValue()));
-
-    assertThat(result.getFlowNodeNames().values().size(), is(3));
-    assertThat(result.getFlowNodeNames().values().contains(A_START), is(true));
-    assertThat(result.getFlowNodeNames().values().contains(A_TASK), is(true));
-    assertThat(result.getFlowNodeNames().values().contains(AN_END), is(true));
-  }
-
-  @Test
-  public void getFilteredProcessDefinitionsMapping() throws Exception {
-    String processId = PROCESS_DEFINITION_KEY + System.currentTimeMillis();
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(processId)
-        .startEvent(A_START)
-          .serviceTask(A_TASK)
-            .camundaExpression("${true}")
-        .endEvent(AN_END)
-        .done();
-    String processDefinitionId = engineRule.deployProcessAndGetId(modelInstance);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-
-    StartEvent start = modelInstance.getModelElementsByType(StartEvent.class).iterator().next();
-
-    List<String> ids = new ArrayList<>();
-    ids.add(start.getId());
-
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-
-    // when
-    Response response =
-        embeddedOptimizeRule.target("process-definition/" + processDefinitionId + "/flowNodeNames")
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
-            .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
-            .post(Entity.json(ids));
-
-    FlowNodeNamesDto result = response.readEntity(FlowNodeNamesDto.class);
-    assertThat(result, is(notNullValue()));
-    assertThat(result.getFlowNodeNames(), is(notNullValue()));
-
-    assertThat(result.getFlowNodeNames().values().size(), is(1));
-    assertThat(result.getFlowNodeNames().values().contains(A_START), is(true));
-  }
 
   @Test
   public void getProcessDefinitionsWithMoreThenTen() throws Exception {

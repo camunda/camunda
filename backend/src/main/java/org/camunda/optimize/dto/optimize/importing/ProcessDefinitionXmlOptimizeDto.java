@@ -2,11 +2,23 @@ package org.camunda.optimize.dto.optimize.importing;
 
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class ProcessDefinitionXmlOptimizeDto implements OptimizeDto {
 
   protected String id;
   protected String bpmn20Xml;
   protected String engine;
+  protected Map<String, String> flowNodeNames = new HashMap<>();
+
+  public Map<String, String> getFlowNodeNames() {
+    return flowNodeNames;
+  }
+
+  public void setFlowNodeNames(Map<String, String> flowNodeNames) {
+    this.flowNodeNames = flowNodeNames;
+  }
 
   public String getId() {
     return id;
