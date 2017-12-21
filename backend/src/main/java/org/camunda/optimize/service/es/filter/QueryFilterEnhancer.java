@@ -3,9 +3,11 @@ package org.camunda.optimize.service.es.filter;
 import org.camunda.optimize.dto.optimize.query.report.filter.DateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.RollingDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.VariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.data.DateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.data.ExecutedFlowNodeFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.data.RollingDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.data.VariableFilterDataDto;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,12 +28,27 @@ public class QueryFilterEnhancer {
   @Autowired
   private ExecutedFlowNodeQueryFilter executedFlowNodeQueryFilter;
 
+  @Autowired
+  private RollingDateQueryFilter rollingDateQueryFilter;
+
   public void addFilterToQuery(BoolQueryBuilder query, List<FilterDto> filter) {
     if (filter != null) {
       dateQueryFilter.addFilters(query, extractDateFilters(filter));
       variableQueryFilter.addFilters(query, extractVariableFilters(filter));
       executedFlowNodeQueryFilter.addFilters(query, extractExecutedFlowNodeFilters(filter));
+      rollingDateQueryFilter.addFilters(query, extractRollingDateFilter(filter));
     }
+  }
+
+  private List<RollingDateFilterDataDto> extractRollingDateFilter(List<FilterDto> filter) {
+    return filter
+        .stream()
+        .filter(RollingDateFilterDto.class::isInstance)
+        .map(dateFilter -> {
+          RollingDateFilterDto dateFilterDto = (RollingDateFilterDto) dateFilter;
+          return dateFilterDto.getData();
+        })
+        .collect(Collectors.toList());
   }
 
   private List<DateFilterDataDto> extractDateFilters(List<FilterDto> filter) {

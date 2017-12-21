@@ -9,8 +9,10 @@ import org.camunda.optimize.dto.optimize.query.report.ViewDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.DateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.RollingDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.VariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.data.DateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.data.RollingDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.data.VariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.util.ExecutedFlowNodeFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.result.raw.RawDataProcessInstanceDto;
@@ -20,6 +22,7 @@ import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.test.util.DateUtilHelper;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
@@ -311,6 +314,44 @@ public class RawDataReportEvaluationIT {
     RawDataProcessInstanceDto rawDataProcessInstanceDto = result.getResult().get(0);
     assertThat(rawDataProcessInstanceDto.getProcessDefinitionId(), is(processDefinitionId));
   }
+
+  @Test
+  public void rollingDateFilterInReport() throws Exception {
+    // given
+    ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
+    OffsetDateTime past = engineRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
+    String processDefinitionId = processInstance.getDefinitionId();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    ReportDataDto reportData = createDefaultReportData(processDefinitionId);
+    reportData.setFilter(DateUtilHelper.createRollingDateFilter(1L, "days"));
+    RawDataReportResultDto result = evaluateReport(reportData);
+
+    ReportDataDto resultDataDto = result.getData();
+    assertThat(resultDataDto.getProcessDefinitionId(), is(processDefinitionId));
+    assertThat(resultDataDto.getView(), is(notNullValue()));
+    assertThat(resultDataDto.getView().getOperation(), is(VIEW_RAW_DATA_OPERATION));
+    assertThat(result.getResult(), is(notNullValue()));
+    assertThat(result.getResult().size(), is(1));
+    RawDataProcessInstanceDto rawDataProcessInstanceDto = result.getResult().get(0);
+    assertThat(rawDataProcessInstanceDto.getProcessInstanceId(), is(processInstance.getId()));
+
+    // when
+    reportData = createDefaultReportData(processDefinitionId);
+    reportData.setFilter(DateUtilHelper.createRollingDateFilter(1L, "nanos"));
+    result = evaluateReport(reportData);
+
+    // then
+    resultDataDto = result.getData();
+    assertThat(resultDataDto.getProcessDefinitionId(), is(processDefinitionId));
+    assertThat(resultDataDto.getView(), is(notNullValue()));
+    assertThat(resultDataDto.getView().getOperation(), is(VIEW_RAW_DATA_OPERATION));
+    assertThat(result.getResult(), is(notNullValue()));
+    assertThat(result.getResult().size(), is(0));
+  }
+
 
   @Test
   public void dateFilterInReport() throws Exception {

@@ -3,9 +3,12 @@ package org.camunda.optimize.test.util;
 import org.camunda.optimize.dto.optimize.query.HeatMapQueryDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.DateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.RollingDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.data.DateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.data.RollingDateFilterDataDto;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -29,6 +32,17 @@ public class DateUtilHelper {
     DateFilterDto dateFilterDto = new DateFilterDto();
     dateFilterDto.setData(date);
     return Collections.singletonList(dateFilterDto);
+  }
+
+  public static List<FilterDto> createRollingDateFilter(Long value, String unit) {
+    List<FilterDto> result = new ArrayList<>();
+    RollingDateFilterDto filter = new RollingDateFilterDto();
+    RollingDateFilterDataDto filterData = new RollingDateFilterDataDto();
+    filterData.setUnit(unit);
+    filterData.setValue(value);
+    filter.setData(filterData);
+    result.add(filter);
+    return result;
   }
 
 }
