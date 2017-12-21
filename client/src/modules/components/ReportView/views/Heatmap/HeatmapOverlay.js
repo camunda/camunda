@@ -1,13 +1,14 @@
 import React from 'react';
 
 import {getHeatmap} from './service';
+import Tooltip from './Tooltip';
 
 export default class HeatmapOverlay extends React.Component {
 
   heatmap = undefined;
 
   render() {
-    return null;
+    return <Tooltip {...this.props} />;
   }
 
   componentDidMount() {
@@ -28,6 +29,6 @@ export default class HeatmapOverlay extends React.Component {
     }
     viewer.get('canvas')._viewport.appendChild(heatmap);
     this.heatmap = heatmap;
-  }
+  }  
   
 }
