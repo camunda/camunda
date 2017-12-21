@@ -120,7 +120,8 @@ public class ProcessDefinitionReader {
   }
 
   public String getProcessDefinitionXml(String processDefinitionId) {
-    return getProcessDefinitionXmlDto(processDefinitionId).getBpmn20Xml();
+    ProcessDefinitionXmlOptimizeDto processDefinitionXmlDto = getProcessDefinitionXmlDto(processDefinitionId);
+    return processDefinitionXmlDto == null ? null : processDefinitionXmlDto.getBpmn20Xml();
   }
 
   public ProcessDefinitionXmlOptimizeDto getProcessDefinitionXmlDto(String processDefinitionId) {
@@ -136,7 +137,9 @@ public class ProcessDefinitionReader {
 
       xml.setBpmn20Xml(response.getSource().get(ProcessDefinitionXmlType.BPMN_20_XML).toString());
       xml.setId(response.getSource().get(ProcessDefinitionXmlType.ID).toString());
-      xml.setEngine(response.getSource().get(ProcessDefinitionXmlType.ENGINE).toString());
+      if (response.getSource().get(ProcessDefinitionXmlType.ENGINE) != null) {
+        xml.setEngine(response.getSource().get(ProcessDefinitionXmlType.ENGINE).toString());
+      }
       xml.setFlowNodeNames((Map<String, String>) response.getSource().get(ProcessDefinitionXmlType.FLOW_NODE_NAMES));
     } else {
       logger.warn("Could not find process definition xml with id {}", processDefinitionId);
