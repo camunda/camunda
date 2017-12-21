@@ -15,20 +15,26 @@
  */
 package io.zeebe.gossip;
 
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
+
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import io.zeebe.clustering.gossip.GossipEventType;
 import io.zeebe.gossip.dissemination.DisseminationComponent;
 import io.zeebe.gossip.failuredetection.*;
-import io.zeebe.gossip.membership.MembershipList;
+import io.zeebe.gossip.membership.*;
 import io.zeebe.gossip.protocol.*;
 import io.zeebe.transport.*;
 import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.actor.Actor;
+import org.agrona.DirectBuffer;
+import org.slf4j.Logger;
 
-public class Gossip implements Actor, GossipController
+public class Gossip implements Actor, GossipController, GossipPublisher
 {
+    private static final Logger LOG = Loggers.GOSSIP_LOGGER;
+
     private final SubscriptionController subscriptionController;
     private final PingController pingController;
     private final MembershipList memberList;
@@ -40,6 +46,8 @@ public class Gossip implements Actor, GossipController
 
     private final DeferredCommandContext deferredCommands = new DeferredCommandContext();
 
+    private GossipEventFactory gossipEventFactory;
+
     public Gossip(
             final SocketAddress socketAddress,
             final BufferingServerTransport serverTransport,
@@ -49,7 +57,7 @@ public class Gossip implements Actor, GossipController
         memberList = new MembershipList(socketAddress, configuration);
         disseminationComponent = new DisseminationComponent(configuration, memberList);
 
-        final GossipEventFactory gossipEventFactory = new GossipEventFactory(configuration, memberList, disseminationComponent);
+        gossipEventFactory = new GossipEventFactory(configuration, memberList, disseminationComponent);
 
         final GossipEventSender gossipEventSender = new GossipEventSender(clientTransport, serverTransport, memberList, disseminationComponent, gossipEventFactory);
 
@@ -85,6 +93,41 @@ public class Gossip implements Actor, GossipController
     }
 
     @Override
+    public void publishEvent(DirectBuffer type, DirectBuffer payload, int offset, int length)
+    {
+        // TODO maybe, we should copy the payload and type because of the async behavior
+        deferredCommands.runAsync(() ->
+        {
+            if (LOG.isTraceEnabled())
+            {
+                LOG.trace("Spread custom event of type '{}'", bufferAsString(type));
+            }
+
+            final Member self = memberList.self();
+
+            GossipTerm currentTerm = self.getTermForEventType(type);
+            if (currentTerm == null)
+            {
+                currentTerm = new GossipTerm()
+                        .epoch(self.getTerm().getEpoch())
+                        .heartbeat(0);
+
+                self.addTermForEventType(type, currentTerm);
+            }
+            else
+            {
+                currentTerm.increment();
+            }
+
+            disseminationComponent.addCustomEvent()
+                .senderAddress(self.getAddress())
+                .senderGossipTerm(currentTerm)
+                .type(type)
+                .payload(payload, offset, length);
+        });
+    }
+
+    @Override
     public int doWork() throws Exception
     {
         int workCount = 0;
@@ -116,6 +159,18 @@ public class Gossip implements Actor, GossipController
     public void removeMembershipListener(GossipMembershipListener listener)
     {
         deferredCommands.runAsync(() -> memberList.removeListener(listener));
+    }
+
+    @Override
+    public void addCustomEventListener(GossipCustomEventListener listener)
+    {
+        deferredCommands.runAsync(() -> gossipEventFactory.addCustomEventListener(listener));
+    }
+
+    @Override
+    public void removeCustomEventListener(GossipCustomEventListener listener)
+    {
+        deferredCommands.runAsync(() -> gossipEventFactory.removeCustomEventListener(listener));
     }
 
 }

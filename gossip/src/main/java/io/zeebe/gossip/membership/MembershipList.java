@@ -81,14 +81,14 @@ public class MembershipList implements Iterable<Member>
         final Member member = get(id);
         if (member != null)
         {
-            final boolean isZombi = member.getStatus() == MembershipStatus.DEAD;
+            final boolean isUndead = member.getStatus() == MembershipStatus.DEAD;
 
             member
                 .setStatus(MembershipStatus.ALIVE)
                 .setGossipTerm(gossipTerm)
                 .setSuspictionTimeout(-1L);
 
-            if (isZombi)
+            if (isUndead)
             {
                 aliveMemberSize += 1;
 

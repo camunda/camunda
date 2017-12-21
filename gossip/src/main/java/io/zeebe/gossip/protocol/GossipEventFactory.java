@@ -15,8 +15,12 @@
  */
 package io.zeebe.gossip.protocol;
 
-import io.zeebe.gossip.GossipConfiguration;
-import io.zeebe.gossip.Loggers;
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import io.zeebe.gossip.*;
 import io.zeebe.gossip.dissemination.DisseminationComponent;
 import io.zeebe.gossip.membership.*;
 import org.slf4j.Logger;
@@ -26,6 +30,9 @@ public class GossipEventFactory
     private final GossipConfiguration configuration;
     private final MembershipList memberList;
     private final DisseminationComponent disseminationComponent;
+
+    private final List<GossipCustomEventListener> customEventListeners = new ArrayList<>();
+    private final CustomEventListenersConsumer customEventListenersConsumer = new CustomEventListenersConsumer(customEventListeners);
 
     public GossipEventFactory(GossipConfiguration configuration, MembershipList memberList, DisseminationComponent disseminationComponent)
     {
@@ -42,6 +49,11 @@ public class GossipEventFactory
                                new MembershipEventLogger()
                                    .andThen(new MembershipUpdater(memberList, disseminationComponent))
                                    .andThen(disseminationComponent),
+                               disseminationComponent,
+                               new CustomEventLogger()
+                                   .andThen(new CustomEventUpdateChecker(memberList))
+                                   .andThen(customEventListenersConsumer)
+                                   .andThen(disseminationComponent),
                                configuration.getMaxMembershipEventsPerMessage());
     }
 
@@ -52,7 +64,50 @@ public class GossipEventFactory
         return new GossipEvent(new MembershipEventListSupplier(memberList),
                                new MembershipEventLogger()
                                    .andThen(new MembershipUpdater(memberList, disseminationComponent)),
+                               disseminationComponent,
+                               new CustomEventLogger(),
                                configuration.getMaxMembershipEventsPerMessage());
+    }
+
+    public void addCustomEventListener(GossipCustomEventListener listener)
+    {
+        this.customEventListeners.add(listener);
+    }
+
+    public void removeCustomEventListener(GossipCustomEventListener listener)
+    {
+        this.customEventListeners.remove(listener);
+    }
+
+    private static final class CustomEventListenersConsumer implements CustomEventConsumer
+    {
+        private static final Logger LOG = Loggers.GOSSIP_LOGGER;
+
+        private final List<GossipCustomEventListener> customEventListeners;
+
+        CustomEventListenersConsumer(List<GossipCustomEventListener> customEventListeners)
+        {
+            this.customEventListeners = customEventListeners;
+        }
+
+        @Override
+        public boolean consumeCustomEvent(CustomEvent event)
+        {
+            // TODO copy the event because the listeners may / should work async
+            for (GossipCustomEventListener listener : customEventListeners)
+            {
+                try
+                {
+                    listener.onEvent(event.getType(), event.getSenderAddress(), event.getPayload());
+                }
+                catch (Throwable t)
+                {
+                    LOG.warn("Custom event listener '{}' failed", listener.getClass(), t);
+                }
+            }
+
+            return true;
+        }
     }
 
     private static final class MembershipEventLogger implements MembershipEventConsumer
@@ -64,13 +119,29 @@ public class GossipEventFactory
         {
             if (LOG.isTraceEnabled())
             {
-                LOG.trace("Receive membership event with address: '{}', type: {}, gossip-term: {}",
+                LOG.trace("Received membership event with address: '{}', type: {}, gossip-term: {}",
                           event.getAddress(), event.getType(), event.getGossipTerm());
             }
 
             return true;
         }
+    }
 
+    private static final class CustomEventLogger implements CustomEventConsumer
+    {
+        private static final Logger LOG = Loggers.GOSSIP_LOGGER;
+
+        @Override
+        public boolean consumeCustomEvent(CustomEvent event)
+        {
+            if (LOG.isTraceEnabled())
+            {
+                LOG.trace("Received custom event of type '{}', sender-address: '{}', gossip-term: {}",
+                          bufferAsString(event.getType()), event.getSenderAddress(), event.getSenderGossipTerm());
+            }
+
+            return true;
+        }
     }
 
 }

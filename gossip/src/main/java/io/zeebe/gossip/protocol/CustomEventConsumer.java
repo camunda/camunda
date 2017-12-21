@@ -15,14 +15,21 @@
  */
 package io.zeebe.gossip.protocol;
 
-import java.util.Iterator;
-
-public interface MembershipEventSupplier
+@FunctionalInterface
+public interface CustomEventConsumer
 {
-    int membershipEventSize();
+    boolean consumeCustomEvent(CustomEvent event);
 
-    Iterator<MembershipEvent> membershipEventViewIterator(int max);
-
-    Iterator<MembershipEvent> membershipEventDrainIterator(int max);
-
+    default CustomEventConsumer andThen(CustomEventConsumer nextConsumer)
+    {
+        return event ->
+        {
+            boolean changed = consumeCustomEvent(event);
+            if (changed)
+            {
+                changed = nextConsumer.consumeCustomEvent(event);
+            }
+            return changed;
+        };
+    }
 }

@@ -15,19 +15,26 @@
  */
 package io.zeebe.gossip.membership;
 
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import io.zeebe.transport.SocketAddress;
+import io.zeebe.util.buffer.BufferUtil;
+import org.agrona.DirectBuffer;
 
 public class Member
 {
     private final String id;
-
     private final SocketAddress address;
 
     private final GossipTerm term = new GossipTerm();
-
     private MembershipStatus status = MembershipStatus.ALIVE;
 
     private long suspictionTimeout = -1L;
+
+    private final List<GossipTermEventTypeTuple> gossipTermByEventType = new ArrayList<>();
 
     public Member(SocketAddress address)
     {
@@ -77,6 +84,24 @@ public class Member
     {
         this.suspictionTimeout = suspictionTimeout;
         return this;
+    }
+
+    public GossipTerm getTermForEventType(DirectBuffer eventType)
+    {
+        for (GossipTermEventTypeTuple tuple : gossipTermByEventType)
+        {
+            if (BufferUtil.equals(eventType, tuple.getEventType()))
+            {
+                return tuple.getGossipTerm();
+            }
+        }
+        return null;
+    }
+
+    public void addTermForEventType(DirectBuffer type, GossipTerm gossipTerm)
+    {
+        final GossipTermEventTypeTuple tuple = new GossipTermEventTypeTuple(type, gossipTerm);
+        gossipTermByEventType.add(tuple);
     }
 
     @Override
@@ -132,5 +157,37 @@ public class Member
         return true;
     }
 
+    private class GossipTermEventTypeTuple
+    {
+        private final GossipTerm gossipTerm = new GossipTerm();
+        private final DirectBuffer eventType;
 
+        GossipTermEventTypeTuple(DirectBuffer eventType, GossipTerm gossipTerm)
+        {
+            this.eventType = BufferUtil.cloneBuffer(eventType);
+            this.gossipTerm.epoch(gossipTerm.getEpoch()).heartbeat(gossipTerm.getHeartbeat());
+        }
+
+        public GossipTerm getGossipTerm()
+        {
+            return gossipTerm;
+        }
+
+        public DirectBuffer getEventType()
+        {
+            return eventType;
+        }
+
+        @Override
+        public String toString()
+        {
+            final StringBuilder builder = new StringBuilder();
+            builder.append("[eventType=");
+            builder.append(bufferAsString(eventType));
+            builder.append(", gossipTerm=");
+            builder.append(gossipTerm);
+            builder.append("]");
+            return builder.toString();
+        }
+    }
 }

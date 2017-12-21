@@ -19,7 +19,11 @@ import org.agrona.DirectBuffer;
 
 public interface GossipPublisher
 {
+    void publishEvent(DirectBuffer type, DirectBuffer payload, int offset, int length);
 
-    void sendMessage(int type, DirectBuffer buffer, int offset, int length);
+    default void publishEvent(DirectBuffer type, DirectBuffer payload)
+    {
+        publishEvent(type, payload, 0, payload.capacity());
+    }
 
 }

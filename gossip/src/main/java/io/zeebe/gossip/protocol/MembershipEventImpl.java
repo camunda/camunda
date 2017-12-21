@@ -21,13 +21,29 @@ import io.zeebe.transport.SocketAddress;
 
 public class MembershipEventImpl implements MembershipEvent
 {
-    private MembershipEventType type = MembershipEventType.NULL_VAL;
-    private GossipTerm gossipTerm = new GossipTerm();
-    private SocketAddress address = new SocketAddress();
+    private final GossipTerm gossipTerm = new GossipTerm();
+    private final SocketAddress address = new SocketAddress();
 
-    public void type(MembershipEventType type)
+    private MembershipEventType type = MembershipEventType.NULL_VAL;
+
+    public MembershipEventImpl type(MembershipEventType type)
     {
         this.type = type;
+        return this;
+    }
+
+    public MembershipEventImpl address(SocketAddress address)
+    {
+        this.address.host(address.getHostBuffer(), 0, address.hostLength());
+        this.address.port(address.port());
+        return this;
+    }
+
+    public MembershipEventImpl gossipTerm(GossipTerm term)
+    {
+        this.gossipTerm.epoch(term.getEpoch()).heartbeat(term.getHeartbeat());
+
+        return this;
     }
 
     @Override

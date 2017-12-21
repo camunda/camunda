@@ -22,27 +22,38 @@ import io.zeebe.gossip.GossipMath;
 import io.zeebe.gossip.membership.MembershipList;
 import io.zeebe.gossip.protocol.*;
 
-public class DisseminationComponent implements MembershipEventSupplier, MembershipEventConsumer
+public class DisseminationComponent implements MembershipEventSupplier, MembershipEventConsumer, CustomEventSupplier, CustomEventConsumer
 {
     private final GossipConfiguration configuration;
     private final MembershipList memberList;
 
-    private final MembershipEventBuffer membershipEventBuffer;
+    private final EventBuffer<MembershipEventImpl> membershipEventBuffer;
+    private final EventBuffer<CustomEventImpl> customEventBuffer;
 
-    private final MembershipEventIterator viewIterator = new MembershipEventIterator(false);
-    private final MembershipEventIterator incrementSpreadCountIterator = new MembershipEventIterator(true);
+    private final EventIterator<MembershipEvent, MembershipEventImpl> membershipEventViewIterator = new EventIterator<>(false);
+    private final EventIterator<MembershipEvent, MembershipEventImpl> membershipEventDrainIterator = new EventIterator<>(true);
+
+    private final EventIterator<CustomEvent, CustomEventImpl> customEventViewIterator = new EventIterator<>(false);
+    private final EventIterator<CustomEvent, CustomEventImpl> customEventDrainIterator = new EventIterator<>(true);
 
     public DisseminationComponent(GossipConfiguration configuration, MembershipList memberList)
     {
         this.configuration = configuration;
         this.memberList = memberList;
 
-        this.membershipEventBuffer = new MembershipEventBuffer(32);
+        // TODO event buffer should be expandable or use back pressure
+        this.membershipEventBuffer = new EventBuffer<>(() -> new BufferedEvent<>(new MembershipEventImpl()), 32);
+        this.customEventBuffer = new EventBuffer<>(() -> new BufferedEvent<>(new CustomEventImpl()), 32);
     }
 
-    public BufferedMembershipEvent addMembershipEvent()
+    public MembershipEventImpl addMembershipEvent()
     {
-        return membershipEventBuffer.add();
+        return membershipEventBuffer.add().getEvent();
+    }
+
+    public CustomEventImpl addCustomEvent()
+    {
+        return customEventBuffer.add().getEvent();
     }
 
     @Override
@@ -52,28 +63,63 @@ public class DisseminationComponent implements MembershipEventSupplier, Membersh
     }
 
     @Override
-    public Iterator<MembershipEvent> membershipEventsView(int limit)
+    public Iterator<MembershipEvent> membershipEventViewIterator(int limit)
     {
-        viewIterator.wrap(membershipEventBuffer.iterator(limit));
+        membershipEventViewIterator.wrap(membershipEventBuffer.iterator(limit));
 
-        return viewIterator;
+        return membershipEventViewIterator;
     }
 
     @Override
-    public Iterator<MembershipEvent> drainMembershipEvents(int limit)
+    public Iterator<MembershipEvent> membershipEventDrainIterator(int limit)
     {
-        incrementSpreadCountIterator.wrap(membershipEventBuffer.iterator(limit));
+        membershipEventDrainIterator.wrap(membershipEventBuffer.iterator(limit));
 
-        return incrementSpreadCountIterator;
+        return membershipEventDrainIterator;
+    }
+
+
+    @Override
+    public int customEventSize()
+    {
+        return customEventBuffer.size();
+    }
+
+    @Override
+    public Iterator<CustomEvent> customEventViewIterator(int max)
+    {
+        customEventViewIterator.wrap(customEventBuffer.iterator(max));
+
+        return customEventViewIterator;
+    }
+
+    @Override
+    public Iterator<CustomEvent> customEventDrainIterator(int max)
+    {
+        customEventDrainIterator.wrap(customEventBuffer.iterator(max));
+
+        return customEventDrainIterator;
     }
 
     @Override
     public boolean consumeMembershipEvent(MembershipEvent event)
     {
         addMembershipEvent()
-            .address(event.getAddress())
             .type(event.getType())
+            .address(event.getAddress())
             .gossipTerm(event.getGossipTerm());
+
+        return true;
+    }
+
+    @Override
+    public boolean consumeCustomEvent(CustomEvent event)
+    {
+        addCustomEvent()
+            .senderAddress(event.getSenderAddress())
+            .senderGossipTerm(event.getSenderGossipTerm())
+            .type(event.getType())
+            .payload(event.getPayload());
 
         return true;
     }
@@ -86,20 +132,21 @@ public class DisseminationComponent implements MembershipEventSupplier, Membersh
         final int spreadLimit = GossipMath.gossipPeriodsToSpread(multiplier, clusterSize);
 
         membershipEventBuffer.removeEventsWithSpreadCountGreaterThan(spreadLimit);
+        customEventBuffer.removeEventsWithSpreadCountGreaterThan(spreadLimit);
     }
 
-    private class MembershipEventIterator implements Iterator<MembershipEvent>
+    private class EventIterator<T, U extends T> implements Iterator<T>
     {
         private final boolean incrementSpreadCount;
 
-        private Iterator<BufferedMembershipEvent> iterator;
+        private Iterator<BufferedEvent<U>> iterator;
 
-        MembershipEventIterator(boolean incrementSpreadCount)
+        EventIterator(boolean incrementSpreadCount)
         {
             this.incrementSpreadCount = incrementSpreadCount;
         }
 
-        public void wrap(Iterator<BufferedMembershipEvent> iterator)
+        public void wrap(Iterator<BufferedEvent<U>> iterator)
         {
             this.iterator = iterator;
         }
@@ -111,16 +158,16 @@ public class DisseminationComponent implements MembershipEventSupplier, Membersh
         }
 
         @Override
-        public MembershipEvent next()
+        public T next()
         {
-            final BufferedMembershipEvent event = iterator.next();
+            final BufferedEvent<U> event = iterator.next();
 
             if (incrementSpreadCount)
             {
                 event.incrementSpreadCount();
             }
 
-            return event;
+            return event.getEvent();
         }
     }
 

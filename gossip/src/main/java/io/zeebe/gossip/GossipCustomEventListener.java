@@ -15,9 +15,10 @@
  */
 package io.zeebe.gossip;
 
+import io.zeebe.transport.SocketAddress;
 import org.agrona.DirectBuffer;
 
-public interface GossipMessageListener
+public interface GossipCustomEventListener
 {
-    void onMessage(int type, DirectBuffer buffer, int offset, int length);
+    void onEvent(DirectBuffer type, SocketAddress sender, DirectBuffer payload);
 }

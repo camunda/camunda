@@ -39,7 +39,7 @@ public class MembershipEventListSupplier implements MembershipEventSupplier
     }
 
     @Override
-    public Iterator<MembershipEvent> membershipEventsView(int max)
+    public Iterator<MembershipEvent> membershipEventViewIterator(int max)
     {
         iterator.reset();
 
@@ -47,9 +47,9 @@ public class MembershipEventListSupplier implements MembershipEventSupplier
     }
 
     @Override
-    public Iterator<MembershipEvent> drainMembershipEvents(int max)
+    public Iterator<MembershipEvent> membershipEventDrainIterator(int max)
     {
-        return membershipEventsView(max);
+        return membershipEventViewIterator(max);
     }
 
     private class MembershipEventIterator implements Iterator<MembershipEvent>

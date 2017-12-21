@@ -30,4 +30,7 @@ public interface GossipController
 
     void removeMembershipListener(GossipMembershipListener listener);
 
+    void addCustomEventListener(GossipCustomEventListener listener);
+
+    void removeCustomEventListener(GossipCustomEventListener listener);
 }

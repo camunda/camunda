@@ -16,30 +16,32 @@
 package io.zeebe.gossip.dissemination;
 
 import java.util.*;
+import java.util.function.Supplier;
 
-public class MembershipEventBuffer
+public class EventBuffer<T>
 {
     private final EventIterator iterator = new EventIterator();
 
-    private final BufferedMembershipEvent[] buffer;
+    private final BufferedEvent<T>[] buffer;
 
     private int size = 0;
 
-    public MembershipEventBuffer(int capacity)
+    @SuppressWarnings("unchecked")
+    public EventBuffer(Supplier<BufferedEvent<T>> eventFactory, int capacity)
     {
-        this.buffer = new BufferedMembershipEvent[capacity];
+        this.buffer = new BufferedEvent[capacity];
 
         for (int i = 0; i < capacity; i++)
         {
-            buffer[i] = new BufferedMembershipEvent();
+            buffer[i] = eventFactory.get();
         }
     }
 
-    public BufferedMembershipEvent add()
+    public BufferedEvent<T> add()
     {
         for (int i = 0; i < buffer.length; i++)
         {
-            final BufferedMembershipEvent event = buffer[i];
+            final BufferedEvent<T> event = buffer[i];
             if (!event.isSet())
             {
                 event.recycle();
@@ -61,17 +63,17 @@ public class MembershipEventBuffer
     {
         for (int i = 0; i < buffer.length; i++)
         {
-            final BufferedMembershipEvent event = buffer[i];
+            final BufferedEvent<T> event = buffer[i];
             event.clear();
         }
     }
 
     public void removeEventsWithSpreadCountGreaterThan(int spreadCount)
     {
-        final Iterator<BufferedMembershipEvent> it = iterator(Integer.MAX_VALUE);
+        final Iterator<BufferedEvent<T>> it = iterator(Integer.MAX_VALUE);
         while (it.hasNext())
         {
-            final BufferedMembershipEvent event = it.next();
+            final BufferedEvent<T> event = it.next();
 
             if (event.getSpreadCount() > spreadCount)
             {
@@ -87,14 +89,14 @@ public class MembershipEventBuffer
         Arrays.sort(buffer);
     }
 
-    public Iterator<BufferedMembershipEvent> iterator(int limit)
+    public Iterator<BufferedEvent<T>> iterator(int limit)
     {
         iterator.reset(limit);
 
         return iterator;
     }
 
-    private class EventIterator implements Iterator<BufferedMembershipEvent>
+    private class EventIterator implements Iterator<BufferedEvent<T>>
     {
         private int index = 0;
         private int count = 0;
@@ -113,7 +115,7 @@ public class MembershipEventBuffer
         {
             for (int i = index; i < buffer.length && count < limit; i++)
             {
-                final BufferedMembershipEvent event = buffer[i];
+                final BufferedEvent<T> event = buffer[i];
 
                 if (event.isSet())
                 {
@@ -125,11 +127,11 @@ public class MembershipEventBuffer
         }
 
         @Override
-        public BufferedMembershipEvent next()
+        public BufferedEvent<T> next()
         {
             if (hasNext())
             {
-                final BufferedMembershipEvent event = buffer[index];
+                final BufferedEvent<T> event = buffer[index];
 
                 count += 1;
                 index += 1;
