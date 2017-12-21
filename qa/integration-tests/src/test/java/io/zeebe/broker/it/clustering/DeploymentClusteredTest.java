@@ -84,7 +84,6 @@ public class DeploymentClusteredTest
     @Test
     // FIXME: https://github.com/zeebe-io/zeebe/issues/557
     @Category(io.zeebe.UnstableTest.class)
-    @Ignore("https://github.com/zeebe-io/zeebe/issues/592")
     public void shouldDeployWorkflowAndCreateInstances()
     {
         // given
