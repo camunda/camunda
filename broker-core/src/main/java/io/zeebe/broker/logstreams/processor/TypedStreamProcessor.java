@@ -84,8 +84,7 @@ public class TypedStreamProcessor implements StreamProcessor
         this.eventProcessorWrapper = new DelegatingEventProcessor(
                 context.getId(),
                 output,
-                context.getSourceStream(),
-                context.getTargetStream(),
+                context.getLogStream(),
                 eventRegistry);
 
         cmdQueue = context.getStreamProcessorCmdQueue();
@@ -190,7 +189,7 @@ public class TypedStreamProcessor implements StreamProcessor
     {
 
         protected final int streamProcessorId;
-        protected final LogStream sourceStream;
+        protected final LogStream logStream;
         protected final TypedStreamWriterImpl writer;
         protected final TypedResponseWriterImpl responseWriter;
 
@@ -200,14 +199,13 @@ public class TypedStreamProcessor implements StreamProcessor
         public DelegatingEventProcessor(
                 int streamProcessorId,
                 ServerOutput output,
-                LogStream sourceLog,
-                LogStream targetLog,
+                LogStream logStream,
                 EnumMap<EventType, Class<? extends UnpackedObject>> eventRegistry)
         {
             this.streamProcessorId = streamProcessorId;
-            this.sourceStream = sourceLog;
-            this.writer =  new TypedStreamWriterImpl(targetLog, eventRegistry);
-            this.responseWriter = new TypedResponseWriterImpl(output, sourceLog.getPartitionId());
+            this.logStream = logStream;
+            this.writer =  new TypedStreamWriterImpl(logStream, eventRegistry);
+            this.responseWriter = new TypedResponseWriterImpl(output, logStream.getPartitionId());
         }
 
         public void wrap(TypedEventProcessor eventProcessor, TypedEventImpl event)
@@ -231,7 +229,7 @@ public class TypedStreamProcessor implements StreamProcessor
         @Override
         public long writeEvent(LogStreamWriter writer)
         {
-            this.writer.configureSourceContext(streamProcessorId, sourceStream.getPartitionId(), event.getPosition());
+            this.writer.configureSourceContext(streamProcessorId, logStream.getPartitionId(), event.getPosition());
             return eventProcessor.writeEvent(event, this.writer);
         }
 

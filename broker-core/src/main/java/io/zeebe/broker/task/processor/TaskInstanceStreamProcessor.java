@@ -104,11 +104,11 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
     @Override
     public void onOpen(StreamProcessorContext context)
     {
-        final LogStream sourceStream = context.getSourceStream();
-        logStreamTopicName = sourceStream.getTopicName();
-        logStreamPartitionId = sourceStream.getPartitionId();
+        final LogStream logStream = context.getLogStream();
+        logStreamTopicName = logStream.getTopicName();
+        logStreamPartitionId = logStream.getPartitionId();
 
-        targetStream = context.getTargetStream();
+        targetStream = logStream;
     }
 
     @Override

@@ -24,8 +24,6 @@ import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
-import org.agrona.DirectBuffer;
-
 import io.zeebe.broker.event.TopicSubscriptionServiceNames;
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
 import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
@@ -50,6 +48,7 @@ import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.util.DeferredCommandContext;
+import org.agrona.DirectBuffer;
 
 public class TopicSubscriptionManagementProcessor implements StreamProcessor
 {
@@ -58,7 +57,7 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
 
     protected final SnapshotSupport snapshotResource;
 
-    protected LogStream targetStream;
+    protected LogStream logStream;
     protected int logStreamPartitionId;
     protected final ServiceName<LogStream> streamServiceName;
 
@@ -102,10 +101,10 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
     {
         this.cmdContext = context.getStreamProcessorCmdQueue();
 
-        final LogStream sourceStream = context.getSourceStream();
-        this.logStreamPartitionId = sourceStream.getPartitionId();
+        final LogStream logStream = context.getLogStream();
+        this.logStreamPartitionId = logStream.getPartitionId();
 
-        targetStream = context.getTargetStream();
+        this.logStream = logStream;
     }
 
     @Override
@@ -120,9 +119,9 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
         return snapshotResource;
     }
 
-    public LogStream getTargetStream()
+    public LogStream getLogStream()
     {
-        return targetStream;
+        return logStream;
     }
 
     @Override
@@ -260,8 +259,7 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
             .readOnly(true);
 
         return serviceContext.createService(serviceName, streamProcessorService)
-            .dependency(streamServiceName, streamProcessorService.getSourceStreamInjector())
-            .dependency(streamServiceName, streamProcessorService.getTargetStreamInjector())
+            .dependency(streamServiceName, streamProcessorService.getLogStreamInjector())
             .dependency(SNAPSHOT_STORAGE_SERVICE, streamProcessorService.getSnapshotStorageInjector())
             .dependency(ACTOR_SCHEDULER_SERVICE, streamProcessorService.getActorSchedulerInjector())
             .install()

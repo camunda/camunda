@@ -88,8 +88,7 @@ public class TaskInstanceStreamProcessorTest
         streamProcessor = new TaskInstanceStreamProcessor(mockResponseWriter, mockSubscribedEventWriter, mockTaskSubscriptionManager);
 
         final StreamProcessorContext context = new StreamProcessorContext();
-        context.setSourceStream(mockLogStream);
-        context.setTargetStream(mockLogStream);
+        context.setLogStream(mockLogStream);
 
         mockController.initStreamProcessor(streamProcessor, context);
 

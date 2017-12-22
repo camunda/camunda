@@ -60,11 +60,11 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
 
     protected DeferredCommandContext cmdQueue;
 
-    protected LogStreamReader targetLogStreamReader;
-    protected LogStreamWriter targetLogStreamWriter;
+    protected LogStreamReader logStreamReader;
+    protected LogStreamWriter logStreamWriter;
 
-    protected LogStream targetStream;
-    protected int targetLogStreamPartitionId;
+    protected LogStream logStream;
+    protected int logStreamPartitionId;
     protected int streamProcessorId;
 
     protected final BrokerEventMetadata targetEventMetadata = new BrokerEventMetadata();
@@ -85,11 +85,11 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
     {
         streamProcessorId = context.getId();
         cmdQueue = context.getStreamProcessorCmdQueue();
-        targetLogStreamReader = context.getTargetLogStreamReader();
-        targetLogStreamWriter = context.getLogStreamWriter();
+        logStreamReader = context.getLogStreamReader();
+        logStreamWriter = context.getLogStreamWriter();
 
-        targetStream = context.getTargetStream();
-        targetLogStreamPartitionId = targetStream.getPartitionId();
+        logStream = context.getLogStream();
+        logStreamPartitionId = logStream.getPartitionId();
 
         // restore map from snapshot
         expirationMap = mapSnapshotSupport.getZbMap();
@@ -257,11 +257,11 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
 
         protected LoggedEvent findEvent(long position)
         {
-            final boolean found = targetLogStreamReader.seek(position);
+            final boolean found = logStreamReader.seek(position);
 
-            if (found && targetLogStreamReader.hasNext())
+            if (found && logStreamReader.hasNext())
             {
-                return targetLogStreamReader.next();
+                return logStreamReader.next();
             }
             else
             {
@@ -281,9 +281,9 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
                 .protocolVersion(Protocol.PROTOCOL_VERSION)
                 .eventType(TASK_EVENT);
 
-            final long position = targetLogStreamWriter
+            final long position = logStreamWriter
                     .producerId(streamProcessorId)
-                    .sourceEvent(targetLogStreamPartitionId, lockedEvent.getPosition())
+                    .sourceEvent(logStreamPartitionId, lockedEvent.getPosition())
                     .key(eventKey)
                     .metadataWriter(targetEventMetadata)
                     .valueWriter(taskEvent)

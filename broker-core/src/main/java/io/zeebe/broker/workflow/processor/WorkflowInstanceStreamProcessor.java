@@ -119,7 +119,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
     protected final CreateWorkflowResponseSender workflowResponseSender;
 
-    protected LogStream targetStream;
+    protected LogStream logStream;
 
     public WorkflowInstanceStreamProcessor(
             CommandResponseWriter responseWriter,
@@ -164,15 +164,15 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
     @Override
     public void onOpen(StreamProcessorContext context)
     {
-        final LogStream sourceStream = context.getSourceStream();
-        this.logStreamPartitionId = sourceStream.getPartitionId();
+        final LogStream logstream = context.getLogStream();
+        this.logStreamPartitionId = logstream.getPartitionId();
         this.streamProcessorId = context.getId();
 
-        this.logStreamReader.wrap(sourceStream);
-        this.logStreamBatchWriter = new LogStreamBatchWriterImpl(context.getTargetStream());
+        this.logStreamReader.wrap(logstream);
+        this.logStreamBatchWriter = new LogStreamBatchWriterImpl(logstream);
         this.incidentEventWriter = new IncidentEventWriter(sourceEventMetadata, workflowInstanceEvent);
 
-        this.targetStream = context.getTargetStream();
+        this.logStream = logstream;
     }
 
     @Override
@@ -492,7 +492,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             {
                 logStreamBatchWriter
                     .producerId(streamProcessorId)
-                    .raftTermId(targetStream.getTerm())
+                    .raftTermId(logStream.getTerm())
                     .sourceEvent(logStreamPartitionId, eventPosition);
 
                 targetEventMetadata.reset();
@@ -1175,7 +1175,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         {
             logStreamBatchWriter
                 .producerId(streamProcessorId)
-                .raftTermId(targetStream.getTerm())
+                .raftTermId(logStream.getTerm())
                 .sourceEvent(logStreamPartitionId, eventPosition);
 
             if (taskKey > 0)

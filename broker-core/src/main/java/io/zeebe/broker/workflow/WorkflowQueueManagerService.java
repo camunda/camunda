@@ -96,8 +96,7 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
                 .eventFilter(WorkflowInstanceStreamProcessor.eventFilter());
 
         serviceContext.createService(streamProcessorServiceName, workflowStreamProcessorService)
-                .dependency(logStreamServiceName, workflowStreamProcessorService.getSourceStreamInjector())
-                .dependency(logStreamServiceName, workflowStreamProcessorService.getTargetStreamInjector())
+                .dependency(logStreamServiceName, workflowStreamProcessorService.getLogStreamInjector())
                 .dependency(SNAPSHOT_STORAGE_SERVICE, workflowStreamProcessorService.getSnapshotStorageInjector())
                 .dependency(ACTOR_SCHEDULER_SERVICE, workflowStreamProcessorService.getActorSchedulerInjector())
                 .install();
@@ -119,8 +118,7 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
                 .eventFilter(IncidentStreamProcessor.eventFilter());
 
         serviceContext.createService(streamProcessorServiceName, incidentStreamProcessorService)
-                .dependency(logStreamServiceName, incidentStreamProcessorService.getSourceStreamInjector())
-                .dependency(logStreamServiceName, incidentStreamProcessorService.getTargetStreamInjector())
+                .dependency(logStreamServiceName, incidentStreamProcessorService.getLogStreamInjector())
                 .dependency(SNAPSHOT_STORAGE_SERVICE, incidentStreamProcessorService.getSnapshotStorageInjector())
                 .dependency(ACTOR_SCHEDULER_SERVICE, incidentStreamProcessorService.getActorSchedulerInjector())
                 .install();

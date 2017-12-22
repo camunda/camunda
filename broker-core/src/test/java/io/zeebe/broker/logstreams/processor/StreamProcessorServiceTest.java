@@ -182,8 +182,7 @@ public class StreamProcessorServiceTest
         final LogStream logStream = mock(LogStream.class);
         when(logStream.getTopicName()).thenReturn(BufferUtil.wrapString(ClientApiRule.DEFAULT_TOPIC_NAME));
         when(logStream.getPartitionId()).thenReturn(0);
-        streamProcessorService.getSourceStreamInjector().inject(logStream);
-        streamProcessorService.getTargetStreamInjector().inject(logStream);
+        streamProcessorService.getLogStreamInjector().inject(logStream);
 
         streamProcessorService.getSnapshotStorageInjector().inject(mock(SnapshotStorage.class));
     }

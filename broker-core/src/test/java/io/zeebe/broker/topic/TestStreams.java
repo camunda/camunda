@@ -176,8 +176,7 @@ public class TestStreams
         final SuspendableStreamProcessor processor = new SuspendableStreamProcessor(streamProcessor);
 
         final StreamProcessorController streamProcessorController = LogStreams.createStreamProcessor(streamProcessor.toString(), streamProcessorId, processor)
-            .sourceStream(stream)
-            .targetStream(stream)
+            .logStream(stream)
             .snapshotStorage(getSnapshotStorage())
             .actorScheduler(actorScheduler)
             .build();

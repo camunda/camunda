@@ -106,7 +106,7 @@ public class IncidentStreamProcessor implements StreamProcessor
     @Override
     public void onOpen(StreamProcessorContext context)
     {
-        logStreamReader = new BufferedLogStreamReader(context.getSourceStream());
+        logStreamReader = new BufferedLogStreamReader(context.getLogStream());
     }
 
     @Override

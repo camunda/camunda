@@ -23,11 +23,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import io.zeebe.broker.clustering.management.PartitionManager;
 import io.zeebe.broker.logstreams.LogStreamServiceNames;
-import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
-import io.zeebe.broker.logstreams.processor.StreamProcessorService;
-import io.zeebe.broker.logstreams.processor.TypedEventStreamProcessorBuilder;
-import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
-import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
+import io.zeebe.broker.logstreams.processor.*;
 import io.zeebe.broker.system.SystemConfiguration;
 import io.zeebe.broker.system.SystemServiceNames;
 import io.zeebe.broker.system.deployment.processor.PartitionCollector;
@@ -35,12 +31,7 @@ import io.zeebe.broker.system.executor.ScheduledCommand;
 import io.zeebe.broker.system.executor.ScheduledExecutor;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.clientapi.EventType;
-import io.zeebe.servicecontainer.Injector;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceGroupReference;
-import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerTransport;
 
@@ -101,8 +92,7 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
             .eventFilter(streamProcessor.buildTypeFilter());
 
         serviceContext.createService(SystemServiceNames.systemProcessorName(streamProcessorService.getName()), streamProcessorService)
-            .dependency(logStreamName, streamProcessorService.getSourceStreamInjector())
-            .dependency(logStreamName, streamProcessorService.getTargetStreamInjector())
+            .dependency(logStreamName, streamProcessorService.getLogStreamInjector())
             .dependency(LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE, streamProcessorService.getSnapshotStorageInjector())
             .dependency(SystemServiceNames.ACTOR_SCHEDULER_SERVICE, streamProcessorService.getActorSchedulerInjector())
             .install();
@@ -140,8 +130,7 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
             .eventFilter(streamProcessor.buildTypeFilter());
 
         serviceContext.createService(SystemServiceNames.systemProcessorName(streamProcessorService.getName()), streamProcessorService)
-            .dependency(logStreamName, streamProcessorService.getSourceStreamInjector())
-            .dependency(logStreamName, streamProcessorService.getTargetStreamInjector())
+            .dependency(logStreamName, streamProcessorService.getLogStreamInjector())
             .dependency(LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE, streamProcessorService.getSnapshotStorageInjector())
             .dependency(SystemServiceNames.ACTOR_SCHEDULER_SERVICE, streamProcessorService.getActorSchedulerInjector())
             .install();

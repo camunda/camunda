@@ -24,7 +24,6 @@ import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.processor.*;
 import io.zeebe.logstreams.snapshot.TimeBasedSnapshotPolicy;
-import io.zeebe.logstreams.spi.SnapshotPositionProvider;
 import io.zeebe.logstreams.spi.SnapshotStorage;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
@@ -33,8 +32,7 @@ import io.zeebe.util.actor.ActorScheduler;
 
 public class StreamProcessorService implements Service<StreamProcessorController>
 {
-    private final Injector<LogStream> sourceStreamInjector = new Injector<>();
-    private final Injector<LogStream> targetStreamInjector = new Injector<>();
+    private final Injector<LogStream> logStreamInjector = new Injector<>();
     private final Injector<SnapshotStorage> snapshotStorageInjector = new Injector<>();
     private final Injector<ActorScheduler> actorSchedulerInjector = new Injector<>();
 
@@ -57,8 +55,6 @@ public class StreamProcessorService implements Service<StreamProcessorController
         return true;
     };
 
-
-    protected SnapshotPositionProvider snapshotPositionProvider;
 
     private StreamProcessorController streamProcessorController;
 
@@ -87,17 +83,10 @@ public class StreamProcessorService implements Service<StreamProcessorController
         return this;
     }
 
-    public StreamProcessorService snapshotPositionProvider(SnapshotPositionProvider snapshotPositionProvider)
-    {
-        this.snapshotPositionProvider = snapshotPositionProvider;
-        return this;
-    }
-
     @Override
     public void start(ServiceStartContext ctx)
     {
-        final LogStream sourceStream = sourceStreamInjector.getValue();
-        final LogStream targetStream = targetStreamInjector.getValue();
+        final LogStream logStream = logStreamInjector.getValue();
 
         final SnapshotStorage snapshotStorage = snapshotStorageInjector.getValue();
 
@@ -117,11 +106,9 @@ public class StreamProcessorService implements Service<StreamProcessorController
         }
 
         streamProcessorController = LogStreams.createStreamProcessor(name, id, streamProcessor)
-            .sourceStream(sourceStream)
-            .targetStream(targetStream)
+            .logStream(logStream)
             .snapshotStorage(snapshotStorage)
             .snapshotPolicy(new TimeBasedSnapshotPolicy(Duration.ofMinutes(15)))
-            .snapshotPositionProvider(snapshotPositionProvider)
             .actorScheduler(actorScheduler)
             .eventFilter(eventFilter)
             .reprocessingEventFilter(reprocessingEventFilter)
@@ -153,14 +140,9 @@ public class StreamProcessorService implements Service<StreamProcessorController
         return actorSchedulerInjector;
     }
 
-    public Injector<LogStream> getSourceStreamInjector()
+    public Injector<LogStream> getLogStreamInjector()
     {
-        return sourceStreamInjector;
-    }
-
-    public Injector<LogStream> getTargetStreamInjector()
-    {
-        return targetStreamInjector;
+        return logStreamInjector;
     }
 
     public StreamProcessorController getStreamProcessorController()

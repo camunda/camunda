@@ -21,9 +21,6 @@ import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.agrona.DirectBuffer;
-
-import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
 import io.zeebe.broker.logstreams.processor.NoopSnapshotSupport;
 import io.zeebe.broker.transport.clientapi.SubscribedEventWriter;
@@ -36,7 +33,9 @@ import io.zeebe.logstreams.processor.StreamProcessorContext;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.clientapi.SubscriptionType;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.util.collection.LongRingBuffer;
+import org.agrona.DirectBuffer;
 
 public class TopicSubscriptionPushProcessor implements StreamProcessor, EventProcessor
 {
@@ -86,10 +85,10 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
     public void onOpen(StreamProcessorContext context)
     {
 
-        final LogStreamReader logReader = context.getSourceLogStreamReader();
+        final LogStreamReader logReader = context.getLogStreamReader();
 
-        final LogStream sourceStream = context.getSourceStream();
-        this.logStreamPartitionId = sourceStream.getPartitionId();
+        final LogStream logStream = context.getLogStream();
+        this.logStreamPartitionId = logStream.getPartitionId();
 
         setToStartPosition(logReader);
     }

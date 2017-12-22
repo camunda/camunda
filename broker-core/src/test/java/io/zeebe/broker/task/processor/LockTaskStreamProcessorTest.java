@@ -32,16 +32,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-
 import io.zeebe.broker.task.CreditsRequest;
 import io.zeebe.broker.task.data.TaskEvent;
 import io.zeebe.broker.task.data.TaskState;
@@ -54,6 +44,15 @@ import io.zeebe.logstreams.processor.StreamProcessorContext;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.util.time.ClockUtil;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 public class LockTaskStreamProcessorTest
 {
@@ -99,8 +98,7 @@ public class LockTaskStreamProcessorTest
         anotherSubscription.setCredits(2);
 
         final StreamProcessorContext context = new StreamProcessorContext();
-        context.setSourceStream(mockLogStream);
-        context.setTargetStream(mockLogStream);
+        context.setLogStream(mockLogStream);
 
         mockController.initStreamProcessor(streamProcessor, context);
     }

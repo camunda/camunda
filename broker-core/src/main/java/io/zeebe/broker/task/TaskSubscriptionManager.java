@@ -205,8 +205,7 @@ public class TaskSubscriptionManager implements Actor, TransportListener
             .reprocessingEventFilter(LockTaskStreamProcessor.reprocessingEventFilter(newTaskTypeBuffer));
 
         serviceContext.createService(streamProcessorServiceName, streamProcessorService)
-            .dependency(logStreamServiceName, streamProcessorService.getSourceStreamInjector())
-            .dependency(logStreamServiceName, streamProcessorService.getTargetStreamInjector())
+            .dependency(logStreamServiceName, streamProcessorService.getLogStreamInjector())
             .dependency(SNAPSHOT_STORAGE_SERVICE, streamProcessorService.getSnapshotStorageInjector())
             .dependency(ACTOR_SCHEDULER_SERVICE, streamProcessorService.getActorSchedulerInjector())
             .install()

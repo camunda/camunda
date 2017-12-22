@@ -113,10 +113,10 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
     {
         cmdQueue = context.getStreamProcessorCmdQueue();
 
-        final LogStream sourceStream = context.getSourceStream();
-        logStreamPartitionId = sourceStream.getPartitionId();
+        final LogStream logStream = context.getLogStream();
+        logStreamPartitionId = logStream.getPartitionId();
 
-        targetStream = context.getTargetStream();
+        targetStream = logStream;
     }
 
     public CompletableFuture<Void> addSubscription(TaskSubscription subscription)

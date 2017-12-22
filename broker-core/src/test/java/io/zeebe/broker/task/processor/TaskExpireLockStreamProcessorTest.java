@@ -68,12 +68,10 @@ public class TaskExpireLockStreamProcessorTest
     private TaskExpireLockStreamProcessor streamProcessor;
 
     private LogStreamWriter mockLogStreamWriter;
+    private LogStreamReader mockLogStreamReader;
 
     @Mock
-    private LogStream mockTargetLogStream;
-
-    @Mock
-    private LogStreamReader mockTargetLogStreamReader;
+    private LogStream mockLogStream;
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -96,19 +94,18 @@ public class TaskExpireLockStreamProcessorTest
 
         MockitoAnnotations.initMocks(this);
 
-        when(mockTargetLogStream.getTopicName()).thenReturn(TARGET_LOG_STREAM_TOPIC_NAME);
-        when(mockTargetLogStream.getPartitionId()).thenReturn(TARGET_LOG_STREAM_PARTITION_ID);
-        when(mockTargetLogStream.getTerm()).thenReturn(TARGET_LOG_STREAM_TERM);
+        when(mockLogStream.getTopicName()).thenReturn(TARGET_LOG_STREAM_TOPIC_NAME);
+        when(mockLogStream.getPartitionId()).thenReturn(TARGET_LOG_STREAM_PARTITION_ID);
+        when(mockLogStream.getTerm()).thenReturn(TARGET_LOG_STREAM_TERM);
 
         streamProcessor = new TaskExpireLockStreamProcessor();
 
         final StreamProcessorContext streamProcessorContext = new StreamProcessorContext();
         streamProcessorContext.setId(STREAM_PROCESSOR_ID);
-        streamProcessorContext.setTargetStream(mockTargetLogStream);
-        streamProcessorContext.setTargetLogStreamReader(mockTargetLogStreamReader);
+        streamProcessorContext.setLogStream(mockLogStream);
 
         mockController.initStreamProcessor(streamProcessor, streamProcessorContext);
-
+        mockLogStreamReader = streamProcessorContext.getLogStreamReader();
         mockLogStreamWriter = streamProcessorContext.getLogStreamWriter();
     }
 
@@ -130,9 +127,9 @@ public class TaskExpireLockStreamProcessorTest
 
         mockController.processEvent(lockedEvent);
 
-        when(mockTargetLogStreamReader.seek(INITIAL_POSITION)).thenReturn(true);
-        when(mockTargetLogStreamReader.hasNext()).thenReturn(true);
-        when(mockTargetLogStreamReader.next()).thenReturn(lockedEvent);
+        when(mockLogStreamReader.seek(INITIAL_POSITION)).thenReturn(true);
+        when(mockLogStreamReader.hasNext()).thenReturn(true);
+        when(mockLogStreamReader.next()).thenReturn(lockedEvent);
 
         // when
         streamProcessor.checkLockExpirationAsync();
@@ -171,10 +168,10 @@ public class TaskExpireLockStreamProcessorTest
         mockController.processEvent(lockedEvent);
         mockController.processEvent(secondLockedEvent);
 
-        when(mockTargetLogStreamReader.seek(INITIAL_POSITION)).thenReturn(true);
-        when(mockTargetLogStreamReader.seek(INITIAL_POSITION + 1)).thenReturn(true);
-        when(mockTargetLogStreamReader.hasNext()).thenReturn(true);
-        when(mockTargetLogStreamReader.next()).thenReturn(lockedEvent, secondLockedEvent);
+        when(mockLogStreamReader.seek(INITIAL_POSITION)).thenReturn(true);
+        when(mockLogStreamReader.seek(INITIAL_POSITION + 1)).thenReturn(true);
+        when(mockLogStreamReader.hasNext()).thenReturn(true);
+        when(mockLogStreamReader.next()).thenReturn(lockedEvent, secondLockedEvent);
 
         // when
         streamProcessor.checkLockExpirationAsync();
@@ -227,9 +224,9 @@ public class TaskExpireLockStreamProcessorTest
 
         mockController.processEvent(lockedEvent);
 
-        when(mockTargetLogStreamReader.seek(INITIAL_POSITION)).thenReturn(true);
-        when(mockTargetLogStreamReader.hasNext()).thenReturn(true);
-        when(mockTargetLogStreamReader.next()).thenReturn(lockedEvent);
+        when(mockLogStreamReader.seek(INITIAL_POSITION)).thenReturn(true);
+        when(mockLogStreamReader.hasNext()).thenReturn(true);
+        when(mockLogStreamReader.next()).thenReturn(lockedEvent);
 
         // when
         doAnswer(invocationOnMock -> -1).when(mockLogStreamWriter).tryWrite();
@@ -258,9 +255,9 @@ public class TaskExpireLockStreamProcessorTest
 
         mockController.processEvent(lockedEvent);
 
-        when(mockTargetLogStreamReader.seek(INITIAL_POSITION)).thenReturn(true);
-        when(mockTargetLogStreamReader.hasNext()).thenReturn(true);
-        when(mockTargetLogStreamReader.next()).thenReturn(lockedEvent);
+        when(mockLogStreamReader.seek(INITIAL_POSITION)).thenReturn(true);
+        when(mockLogStreamReader.hasNext()).thenReturn(true);
+        when(mockLogStreamReader.next()).thenReturn(lockedEvent);
 
         // when
         streamProcessor.checkLockExpirationAsync();
@@ -363,8 +360,8 @@ public class TaskExpireLockStreamProcessorTest
         mockController.processEvent(2L, event -> event
                 .setState(TaskState.LOCKED));
 
-        when(mockTargetLogStreamReader.seek(INITIAL_POSITION)).thenReturn(false);
-        when(mockTargetLogStreamReader.hasNext()).thenReturn(false);
+        when(mockLogStreamReader.seek(INITIAL_POSITION)).thenReturn(false);
+        when(mockLogStreamReader.hasNext()).thenReturn(false);
 
         // when
         streamProcessor.checkLockExpirationAsync();

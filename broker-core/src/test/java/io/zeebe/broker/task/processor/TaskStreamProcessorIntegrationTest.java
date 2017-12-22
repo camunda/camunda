@@ -48,7 +48,10 @@ import io.zeebe.test.util.agent.ControllableTaskScheduler;
 import io.zeebe.util.time.ClockUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.rules.Timeout;
 import org.mockito.Mock;
@@ -119,24 +122,21 @@ public class TaskStreamProcessorIntegrationTest
 
         final StreamProcessor taskInstanceStreamProcessor = new TaskInstanceStreamProcessor(mockResponseWriter, mockSubscribedEventWriter, mockTaskSubscriptionManager);
         taskInstanceStreamProcessorController = LogStreams.createStreamProcessor("task-instance", 0, taskInstanceStreamProcessor)
-            .sourceStream(logStream)
-            .targetStream(logStream)
+            .logStream(logStream)
             .snapshotStorage(snapshotStorage)
             .actorScheduler(taskScheduler)
             .build();
 
         lockTaskStreamProcessor = new LockTaskStreamProcessor(TASK_TYPE_BUFFER);
         taskSubscriptionStreamProcessorController = LogStreams.createStreamProcessor("task-lock", 1, lockTaskStreamProcessor)
-            .sourceStream(logStream)
-            .targetStream(logStream)
+            .logStream(logStream)
             .snapshotStorage(snapshotStorage)
             .actorScheduler(taskScheduler)
             .build();
 
         taskExpireLockStreamProcessor = new TaskExpireLockStreamProcessor();
         taskExpireLockStreamProcessorController = LogStreams.createStreamProcessor("task-expire-lock", 2, taskExpireLockStreamProcessor)
-                .sourceStream(logStream)
-                .targetStream(logStream)
+                .logStream(logStream)
                 .snapshotStorage(snapshotStorage)
                 .actorScheduler(taskScheduler)
                 .build();

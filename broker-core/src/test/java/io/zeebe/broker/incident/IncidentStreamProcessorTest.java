@@ -75,8 +75,7 @@ public class IncidentStreamProcessorTest
         final IncidentStreamProcessor incidentStreamProcessor = new IncidentStreamProcessor();
         streamProcessorController = LogStreams
                 .createStreamProcessor("incident", 0, incidentStreamProcessor)
-                .sourceStream(logStream)
-                .targetStream(logStream)
+                .logStream(logStream)
                 .snapshotStorage(snapshotStorage)
                 .actorScheduler(agentRunnerService)
                 .build();

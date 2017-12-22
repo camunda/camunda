@@ -23,8 +23,6 @@ import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
-import org.agrona.collections.Int2ObjectHashMap;
-
 import io.zeebe.broker.event.TopicSubscriptionServiceNames;
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
 import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
@@ -36,20 +34,16 @@ import io.zeebe.broker.transport.clientapi.SubscribedEventWriter;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.processor.StreamProcessor;
 import io.zeebe.logstreams.processor.StreamProcessorController;
-import io.zeebe.servicecontainer.Injector;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceGroupReference;
-import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.ServerOutput;
-import io.zeebe.transport. ServerTransport;
+import io.zeebe.transport.ServerTransport;
 import io.zeebe.transport.TransportListener;
 import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.actor.Actor;
 import io.zeebe.util.actor.ActorReference;
 import io.zeebe.util.actor.ActorScheduler;
+import org.agrona.collections.Int2ObjectHashMap;
 
 public class TopicSubscriptionService implements Service<TopicSubscriptionService>, Actor, TransportListener
 {
@@ -158,8 +152,7 @@ public class TopicSubscriptionService implements Service<TopicSubscriptionServic
             .eventFilter(eventFilter);
 
         return serviceContext.createService(processorName, streamProcessorService)
-            .dependency(logStreamName, streamProcessorService.getSourceStreamInjector())
-            .dependency(logStreamName, streamProcessorService.getTargetStreamInjector())
+            .dependency(logStreamName, streamProcessorService.getLogStreamInjector())
             .dependency(SNAPSHOT_STORAGE_SERVICE, streamProcessorService.getSnapshotStorageInjector())
             .dependency(ACTOR_SCHEDULER_SERVICE, streamProcessorService.getActorSchedulerInjector())
             .install();

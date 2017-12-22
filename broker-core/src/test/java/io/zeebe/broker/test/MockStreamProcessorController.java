@@ -47,7 +47,7 @@ import org.junit.rules.ExternalResource;
 public class MockStreamProcessorController<T extends UnpackedObject> extends ExternalResource
 {
     protected LogStreamWriter mockLogStreamWriter;
-    protected LogStreamReader mockSourceStreamReader;
+    protected LogStreamReader mockLogStreamReader;
 
     protected DeferredCommandContext cmdQueue;
 
@@ -101,7 +101,7 @@ public class MockStreamProcessorController<T extends UnpackedObject> extends Ext
     protected void before() throws Throwable
     {
         mockLogStreamWriter = mock(LogStreamWriter.class, new FluentAnswer());
-        mockSourceStreamReader = mock(LogStreamReader.class);
+        mockLogStreamReader = mock(LogStreamReader.class);
 
         doAnswer(invocation ->
         {
@@ -164,7 +164,7 @@ public class MockStreamProcessorController<T extends UnpackedObject> extends Ext
 
         context.setStreamProcessorCmdQueue(cmdQueue);
         context.setLogStreamWriter(mockLogStreamWriter);
-        context.setSourceLogStreamReader(mockSourceStreamReader);
+        context.setLogStreamReader(mockLogStreamReader);
 
         streamProcessor.onOpen(context);
     }

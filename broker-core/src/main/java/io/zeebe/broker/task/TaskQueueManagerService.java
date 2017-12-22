@@ -97,8 +97,7 @@ public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQ
 
         serviceContext.createService(streamProcessorServiceName, taskInstanceStreamProcessorService)
               .group(TASK_QUEUE_STREAM_PROCESSOR_SERVICE_GROUP_NAME)
-              .dependency(logStreamServiceName, taskInstanceStreamProcessorService.getSourceStreamInjector())
-              .dependency(logStreamServiceName, taskInstanceStreamProcessorService.getTargetStreamInjector())
+              .dependency(logStreamServiceName, taskInstanceStreamProcessorService.getLogStreamInjector())
               .dependency(SNAPSHOT_STORAGE_SERVICE, taskInstanceStreamProcessorService.getSnapshotStorageInjector())
               .dependency(ACTOR_SCHEDULER_SERVICE, taskInstanceStreamProcessorService.getActorSchedulerInjector())
               .install();
@@ -120,8 +119,7 @@ public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQ
                 .eventFilter(TaskExpireLockStreamProcessor.eventFilter());
 
         serviceContext.createService(expireLockStreamProcessorServiceName, expireLockStreamProcessorService)
-            .dependency(logStreamServiceName, expireLockStreamProcessorService.getSourceStreamInjector())
-            .dependency(logStreamServiceName, expireLockStreamProcessorService.getTargetStreamInjector())
+            .dependency(logStreamServiceName, expireLockStreamProcessorService.getLogStreamInjector())
             .dependency(SNAPSHOT_STORAGE_SERVICE, expireLockStreamProcessorService.getSnapshotStorageInjector())
             .dependency(ACTOR_SCHEDULER_SERVICE, expireLockStreamProcessorService.getActorSchedulerInjector())
             .install()
