@@ -96,7 +96,7 @@ public class StreamProcessorController implements Actor
     protected final SnapshotPolicy snapshotPolicy;
     protected final SnapshotStorage snapshotStorage;
 
-    protected final LogStreamFailureListener recoverLogStreamFailureListener = new TargetLogStreamFailureListener();
+    protected final LogStreamFailureListener logStreamFailureListener = new StreamFailureListener();
 
     protected final ActorScheduler actorScheduler;
     protected ActorReference actorRef;
@@ -250,8 +250,8 @@ public class StreamProcessorController implements Actor
             logStreamReader.wrap(logStream);
             logStreamWriter.wrap(logStream);
 
-            logStream.removeFailureListener(recoverLogStreamFailureListener);
-            logStream.registerFailureListener(recoverLogStreamFailureListener);
+            logStream.removeFailureListener(logStreamFailureListener);
+            logStream.registerFailureListener(logStreamFailureListener);
 
             context.take(TRANSITION_DEFAULT);
         }
@@ -655,7 +655,7 @@ public class StreamProcessorController implements Actor
             streamProcessor.onClose();
 
             streamProcessorContext.getLogStreamReader().close();
-            streamProcessorContext.getLogStream().removeFailureListener(recoverLogStreamFailureListener);
+            streamProcessorContext.getLogStream().removeFailureListener(logStreamFailureListener);
 
             context.take(TRANSITION_DEFAULT);
         }
@@ -684,7 +684,7 @@ public class StreamProcessorController implements Actor
         }
     }
 
-    private class TargetLogStreamFailureListener implements LogStreamFailureListener
+    private class StreamFailureListener implements LogStreamFailureListener
     {
         @Override
         public void onFailed(long failedPosition)
