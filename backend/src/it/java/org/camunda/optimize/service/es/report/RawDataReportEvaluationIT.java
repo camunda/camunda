@@ -315,6 +315,45 @@ public class RawDataReportEvaluationIT {
     assertThat(rawDataProcessInstanceDto.getProcessDefinitionId(), is(processDefinitionId));
   }
 
+  //test that basic support for filter is there
+  @Test
+  public void durationFilterInReport() throws Exception {
+    // given
+    ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
+    OffsetDateTime past = engineRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
+    String processDefinitionId = processInstance.getDefinitionId();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    ReportDataDto reportData = createDefaultReportData(processDefinitionId);
+    reportData.setFilter(DateUtilHelper.createDurationFilter(">", 1, "Days"));
+    RawDataReportResultDto result = evaluateReport(reportData);
+
+    // then
+    ReportDataDto resultDataDto = result.getData();
+    assertThat(resultDataDto.getProcessDefinitionId(), is(processDefinitionId));
+    assertThat(resultDataDto.getView(), is(notNullValue()));
+    assertThat(resultDataDto.getView().getOperation(), is(VIEW_RAW_DATA_OPERATION));
+    assertThat(result.getResult(), is(notNullValue()));
+    assertThat(result.getResult().size(), is(0));
+
+    // when
+    reportData = createDefaultReportData(processDefinitionId);
+    reportData.setFilter(DateUtilHelper.createDurationFilter("<", 1, "Days"));
+    result = evaluateReport(reportData);
+
+    // then
+    resultDataDto = result.getData();
+    assertThat(resultDataDto.getProcessDefinitionId(), is(processDefinitionId));
+    assertThat(resultDataDto.getView(), is(notNullValue()));
+    assertThat(resultDataDto.getView().getOperation(), is(VIEW_RAW_DATA_OPERATION));
+    assertThat(result.getResult(), is(notNullValue()));
+    assertThat(result.getResult().size(), is(1));
+    RawDataProcessInstanceDto rawDataProcessInstanceDto = result.getResult().get(0);
+    assertThat(rawDataProcessInstanceDto.getProcessInstanceId(), is(processInstance.getId()));
+  }
+
   @Test
   public void rollingDateFilterInReport() throws Exception {
     // given

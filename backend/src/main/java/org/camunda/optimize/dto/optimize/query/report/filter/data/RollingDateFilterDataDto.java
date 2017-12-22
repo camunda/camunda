@@ -5,8 +5,8 @@ package org.camunda.optimize.dto.optimize.query.report.filter.data;
  */
 public class RollingDateFilterDataDto implements FilterDataDto  {
 
-  private Long value;
-  private String unit;
+  protected Long value;
+  protected String unit;
 
   public Long getValue() {
     return value;

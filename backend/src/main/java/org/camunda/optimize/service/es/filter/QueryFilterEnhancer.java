@@ -1,11 +1,13 @@
 package org.camunda.optimize.service.es.filter;
 
 import org.camunda.optimize.dto.optimize.query.report.filter.DateFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.DurationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.RollingDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.VariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.data.DateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.data.DurationFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.data.ExecutedFlowNodeFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.data.RollingDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.data.VariableFilterDataDto;
@@ -31,13 +33,28 @@ public class QueryFilterEnhancer {
   @Autowired
   private RollingDateQueryFilter rollingDateQueryFilter;
 
+  @Autowired
+  private DurationQueryFilter durationQueryFilter;
+
   public void addFilterToQuery(BoolQueryBuilder query, List<FilterDto> filter) {
     if (filter != null) {
       dateQueryFilter.addFilters(query, extractDateFilters(filter));
       variableQueryFilter.addFilters(query, extractVariableFilters(filter));
       executedFlowNodeQueryFilter.addFilters(query, extractExecutedFlowNodeFilters(filter));
       rollingDateQueryFilter.addFilters(query, extractRollingDateFilter(filter));
+      durationQueryFilter.addFilters(query, extractDurationFilters(filter));
     }
+  }
+
+  private List<DurationFilterDataDto> extractDurationFilters(List<FilterDto> filter) {
+    return filter
+        .stream()
+        .filter(DurationFilterDto.class::isInstance)
+        .map(dateFilter -> {
+          DurationFilterDto dateFilterDto = (DurationFilterDto) dateFilter;
+          return dateFilterDto.getData();
+        })
+        .collect(Collectors.toList());
   }
 
   private List<RollingDateFilterDataDto> extractRollingDateFilter(List<FilterDto> filter) {

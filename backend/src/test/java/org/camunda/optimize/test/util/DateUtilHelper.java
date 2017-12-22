@@ -2,12 +2,16 @@ package org.camunda.optimize.test.util;
 
 import org.camunda.optimize.dto.optimize.query.HeatMapQueryDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.DateFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.DurationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.RollingDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.data.DateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.data.DurationFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.data.RollingDateFilterDataDto;
 
 import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -45,4 +49,18 @@ public class DateUtilHelper {
     return result;
   }
 
+  public static List<FilterDto> createDurationFilter(String operator, int i, String unit) {
+    List<FilterDto> result = new ArrayList<>();
+
+    DurationFilterDto filter = new DurationFilterDto();
+
+    DurationFilterDataDto filterData = new DurationFilterDataDto();
+    filterData.setOperator(operator);
+    filterData.setUnit(unit);
+    filterData.setValue(Long.valueOf(i));
+
+    filter.setData(filterData);
+    result.add(filter);
+    return result;
+  }
 }
