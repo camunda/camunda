@@ -23,8 +23,8 @@ import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedFramedLeng
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.*;
 import static io.zeebe.util.StringUtil.getBytes;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
@@ -530,7 +530,7 @@ public class LogStreamBatchWriterTest
             .tryWrite();
     }
 
-    private Answer<?> claimFragment()
+    private Answer<Long> claimFragment()
     {
         return invocation ->
         {
@@ -541,7 +541,7 @@ public class LogStreamBatchWriterTest
             final int batchLength = length + fragmentCount * (HEADER_LENGTH + FRAME_ALIGNMENT) + FRAME_ALIGNMENT;
             claimedBatch.wrap(writeBuffer, PARTITION_ID, PARTITION_OFFSET, alignedFramedLength(batchLength));
 
-            return alignedFramedLength(length);
+            return Long.valueOf(alignedFramedLength(length));
         };
     }
 

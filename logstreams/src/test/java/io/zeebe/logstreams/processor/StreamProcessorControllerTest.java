@@ -38,9 +38,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 public class StreamProcessorControllerTest
@@ -1078,7 +1078,6 @@ public class StreamProcessorControllerTest
     {
         // given
         when(mockEventProcessor.executeSideEffects()).thenReturn(true);
-        when(mockEventProcessor.writeEvent(mockLogStreamWriter)).thenReturn(anyLong());
 
         when(mockSnapshotStorage.getLastSnapshot(STREAM_PROCESSOR_NAME)).thenReturn(mockReadableSnapshot);
         when(mockReadableSnapshot.getPosition()).thenReturn(5L);
@@ -1131,7 +1130,6 @@ public class StreamProcessorControllerTest
     {
         // given
         when(mockEventProcessor.executeSideEffects()).thenReturn(true);
-        when(mockEventProcessor.writeEvent(mockLogStreamWriter)).thenReturn(anyLong());
 
         when(mockSnapshotStorage.getLastSnapshot(STREAM_PROCESSOR_NAME)).thenReturn(mockReadableSnapshot);
         when(mockReadableSnapshot.getPosition()).thenReturn(5L);
