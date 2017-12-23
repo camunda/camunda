@@ -58,23 +58,28 @@ public class ZeebeMockitoAnnotationEngine implements AnnotationEngine, org.mocki
      *
      * @see org.mockito.plugins.AnnotationEngine#process(Class, Object)
      */
-    public void process(Class<?> clazz, Object testInstance) {
-        processFluentMockAnnotations(testInstance.getClass(), testInstance);
+    public void process(Class<?> clazz, Object testInstance)
+    {
         processIndependentAnnotations(testInstance.getClass(), testInstance);
         processInjectMocks(testInstance.getClass(), testInstance);
     }
 
-    private void processInjectMocks(final Class<?> clazz, final Object testInstance) {
+    private void processInjectMocks(final Class<?> clazz, final Object testInstance)
+    {
         Class<?> classContext = clazz;
-        while (classContext != Object.class) {
+        while (classContext != Object.class)
+        {
             injectMocks(testInstance);
             classContext = classContext.getSuperclass();
         }
     }
 
-    private void processIndependentAnnotations(final Class<?> clazz, final Object testInstance) {
+    private void processIndependentAnnotations(final Class<?> clazz, final Object testInstance)
+    {
         Class<?> classContext = clazz;
-        while (classContext != Object.class) {
+        while (classContext != Object.class)
+        {
+            processFluentMockAnnotations(classContext, testInstance);
             //this will create @Mocks, @Captors, etc:
             delegate.process(classContext, testInstance);
             //this will create @Spies:
@@ -86,20 +91,20 @@ public class ZeebeMockitoAnnotationEngine implements AnnotationEngine, org.mocki
 
     private void processFluentMockAnnotations(final Class<?> clazz, final Object testInstance)
     {
-        Field[] fields = clazz.getDeclaredFields();
+        final Field[] fields = clazz.getDeclaredFields();
         for (Field field : fields)
         {
-            boolean alreadyAssigned = false;
             for (Annotation annotation : field.getAnnotations())
             {
                 if (annotation instanceof FluentMock)
                 {
-                    Object mock = Mockito.mock(field.getType(), withSettings().name(field.getName()).defaultAnswer(new FluentAnswer()));
+                    final Object mock = Mockito.mock(field.getType(), withSettings().name(field.getName()).defaultAnswer(new FluentAnswer()));
                     try
                     {
                         setField(testInstance, field, mock);
                     }
-                    catch (Exception e) {
+                    catch (Exception e)
+                    {
                         throw new MockitoException("Problems setting field " + field.getName() + " annotated with " + annotation, e);
                     }
 
@@ -118,23 +123,20 @@ public class ZeebeMockitoAnnotationEngine implements AnnotationEngine, org.mocki
      * @param testClassInstance
      *            Test class, usually <code>this</code>
      */
-    public void injectMocks(final Object testClassInstance) {
+    public void injectMocks(final Object testClassInstance)
+    {
         Class<?> clazz = testClassInstance.getClass();
-        Set<Field> mockDependentFields = new HashSet<>();
-        Set<Object> mocks = newMockSafeHashSet();
+        final Set<Field> mockDependentFields = new HashSet<>();
+        final Set<Object> mocks = newMockSafeHashSet();
 
-        while (clazz != Object.class) {
+        while (clazz != Object.class)
+        {
             new InjectMocksScanner(clazz).addTo(mockDependentFields);
             new MockScanner(testClassInstance, clazz).addPreparedMocks(mocks);
-            onInjection(testClassInstance, clazz, mockDependentFields, mocks);
             clazz = clazz.getSuperclass();
         }
 
         new DefaultInjectionEngine().injectMocksOnFields(mockDependentFields, mocks, testClassInstance);
-    }
-
-    protected void onInjection(Object testClassInstance, Class<?> clazz, Set<Field> mockDependentFields, Set<Object> mocks) {
-
     }
 
 }
