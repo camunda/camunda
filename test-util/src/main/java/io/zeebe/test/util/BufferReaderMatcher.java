@@ -31,22 +31,22 @@ import org.mockito.ArgumentMatcher;
  *
  * @param <T>
  */
-public class BufferReaderMatcher<T extends BufferReader> extends ArgumentMatcher<T>
+public class BufferReaderMatcher<T extends BufferReader> implements ArgumentMatcher<T>
 {
     protected List<BufferReaderMatch<T>> propertyMatchers = new ArrayList<>();
 
     @Override
     @SuppressWarnings("unchecked")
-    public boolean matches(Object argument)
+    public boolean matches(T argument)
     {
-        if (argument == null || !(argument instanceof BufferReader))
+        if (argument == null)
         {
             return false;
         }
 
         for (BufferReaderMatch<T> matcher : propertyMatchers)
         {
-            if (!matcher.matches((T) argument))
+            if (!matcher.matches(argument))
             {
                 return false;
             }

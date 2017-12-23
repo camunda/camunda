@@ -32,7 +32,7 @@ import org.agrona.concurrent.UnsafeBuffer;
  *
  * @author Lindhauer
  */
-public class BufferWriterMatcher<T extends BufferReader> extends ArgumentMatcher<BufferWriter>
+public class BufferWriterMatcher<T extends BufferReader> implements ArgumentMatcher<BufferWriter>
 {
     protected T reader;
 
@@ -44,17 +44,15 @@ public class BufferWriterMatcher<T extends BufferReader> extends ArgumentMatcher
     }
 
     @Override
-    public boolean matches(Object argument)
+    public boolean matches(BufferWriter argument)
     {
-        if (argument == null || !(argument instanceof BufferWriter))
+        if (argument == null)
         {
             return false;
         }
 
-        final BufferWriter writer = (BufferWriter) argument;
-
-        final UnsafeBuffer buffer = new UnsafeBuffer(new byte[writer.getLength()]);
-        writer.write(buffer, 0);
+        final UnsafeBuffer buffer = new UnsafeBuffer(new byte[argument.getLength()]);
+        argument.write(buffer, 0);
 
         reader.wrap(buffer, 0, buffer.capacity());
 

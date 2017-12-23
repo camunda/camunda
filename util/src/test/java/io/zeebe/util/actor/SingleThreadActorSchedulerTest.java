@@ -16,7 +16,7 @@
 package io.zeebe.util.actor;
 
 import static io.zeebe.util.TestUtil.waitUntil;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import java.util.concurrent.atomic.AtomicInteger;

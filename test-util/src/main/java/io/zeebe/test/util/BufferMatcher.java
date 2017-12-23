@@ -21,25 +21,23 @@ import org.mockito.ArgumentMatcher;
 
 import org.agrona.DirectBuffer;
 
-public class BufferMatcher extends ArgumentMatcher<DirectBuffer>
+public class BufferMatcher implements ArgumentMatcher<DirectBuffer>
 {
     protected byte[] expectedBytes;
     protected int position = 0;
 
     @Override
-    public boolean matches(Object argument)
+    public boolean matches(DirectBuffer argument)
     {
-        if (argument == null || !(argument instanceof DirectBuffer))
+        if (argument == null)
         {
             return false;
         }
 
         final byte[] actualBytes = new byte[expectedBytes.length];
 
-        final DirectBuffer buffer = (DirectBuffer) argument;
-
         // TODO: try-catch in case buffer has not expected size
-        buffer.getBytes(position, actualBytes, 0, actualBytes.length);
+        argument.getBytes(position, actualBytes, 0, actualBytes.length);
 
         return Arrays.equals(expectedBytes, actualBytes);
     }
