@@ -229,7 +229,7 @@ public class TaskExpireLockStreamProcessorTest
         when(mockLogStreamReader.next()).thenReturn(lockedEvent);
 
         // when
-        doAnswer(invocationOnMock -> -1).when(mockLogStreamWriter).tryWrite();
+        doAnswer(invocationOnMock -> -1L).when(mockLogStreamWriter).tryWrite();
         streamProcessor.checkLockExpirationAsync();
 
         mockController.drainCommandQueue();
