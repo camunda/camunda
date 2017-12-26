@@ -9,7 +9,7 @@
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zb-parent</artifactId>
-    <version>0.2.0</version>
+    <version>0.3.0</version>
     <!-- do not remove empty tag - http://jira.codehaus.org/browse/MNG-4687 -->
     <relativePath />
   </parent>
@@ -32,32 +32,32 @@
       <groupId>io.zeebe</groupId>
       <artifactId>zb-util</artifactId>
     </dependency>
-        
+
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zb-msgpack-json-path</artifactId>
     </dependency>
-    
+
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zb-msgpack-json-el</artifactId>
     </dependency>
-        
+
     <dependency>
       <groupId>org.agrona</groupId>
       <artifactId>agrona</artifactId>
     </dependency>
-    
+
      <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
     </dependency>
-    
+
     <dependency>
       <groupId>com.fasterxml.jackson.dataformat</groupId>
       <artifactId>jackson-dataformat-yaml</artifactId>
     </dependency>
-   
+
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
