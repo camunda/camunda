@@ -3,13 +3,14 @@
 WORKDIR=${1:?Please provide a work dir}
 REMOTE_HOST=${2:?Please provide remote host}
 REMOTE_USERNAME=${3:?Please provide remote host}
+VERSION=$(grep -oe '[0-9]\+\.[0-9]\+\.[0-9]\+-SNAPSHOT' pom.xml)
 
 mkdir -p ${WORKDIR}
 
 ssh ${REMOTE_USERNAME}@${REMOTE_HOST} "rm -Rf ${WORKDIR} ; mkdir ${WORKDIR}"
 
 # copy distribution to remote
-scp ../../dist/target/zeebe-distribution-0.6.0-SNAPSHOT.tar.gz ${REMOTE_USERNAME}@${REMOTE_HOST}:~/${WORKDIR}/zeebe-distribution.tar.gz
+scp ../../dist/target/zeebe-distribution-${VERSION}.tar.gz ${REMOTE_USERNAME}@${REMOTE_HOST}:~/${WORKDIR}/zeebe-distribution.tar.gz
 
 # extract and start in background
 # PID is saved in file
