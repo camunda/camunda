@@ -43,18 +43,18 @@ public class MsgPackReader
 
     public int readMapHeader()
     {
-        final byte mapHeaderByte = buffer.getByte(offset);
+        final byte headerByte = buffer.getByte(offset);
         ++offset;
 
         final int mapSize;
 
-        if (isFixedMap(mapHeaderByte))
+        if (isFixedMap(headerByte))
         {
-            mapSize = mapHeaderByte & (byte) 0x0F;
+            mapSize = headerByte & (byte) 0x0F;
         }
         else
         {
-            switch (mapHeaderByte)
+            switch (headerByte)
             {
                 case MAP16:
                     mapSize = buffer.getShort(offset, BYTE_ORDER) & 0xffff;
@@ -67,7 +67,7 @@ public class MsgPackReader
                     break;
 
                 default:
-                    throw new RuntimeException("Not a map");
+                    throw exceptionOnUnknownHeader("map", headerByte);
             }
         }
 
@@ -100,7 +100,7 @@ public class MsgPackReader
                     break;
 
                 default:
-                    throw new RuntimeException("Not an array");
+                    throw exceptionOnUnknownHeader("array", headerByte);
             }
         }
 
@@ -138,7 +138,7 @@ public class MsgPackReader
                     break;
 
                 default:
-                    throw new RuntimeException("Not a string");
+                    throw exceptionOnUnknownHeader("string", headerByte);
             }
         }
         return stringLength;
@@ -169,7 +169,7 @@ public class MsgPackReader
                 break;
 
             default:
-                throw new RuntimeException("Not binary");
+                throw exceptionOnUnknownHeader("binary", headerByte);
         }
 
         return length;
@@ -181,18 +181,18 @@ public class MsgPackReader
      */
     public long readInteger()
     {
-        final byte b = buffer.getByte(offset);
+        final byte headerByte = buffer.getByte(offset);
         ++offset;
 
         final long val;
 
-        if (isFixInt(b))
+        if (isFixInt(headerByte))
         {
-            val = b;
+            val = headerByte;
         }
         else
         {
-            switch (b)
+            switch (headerByte)
             {
                 case UINT8:
                     val = buffer.getByte(offset) & 0xffL;
@@ -235,7 +235,7 @@ public class MsgPackReader
                     break;
 
                 default:
-                    throw new RuntimeException("Not a long.");
+                    throw exceptionOnUnknownHeader("long", headerByte);
             }
         }
 
@@ -248,11 +248,11 @@ public class MsgPackReader
      */
     public strictfp double readFloat()
     {
-        final byte b = buffer.getByte(offset);
+        final byte headerByte = buffer.getByte(offset);
         ++offset;
         final double value;
 
-        switch (b)
+        switch (headerByte)
         {
             case FLOAT32:
                 value = buffer.getFloat(offset, BYTE_ORDER);
@@ -263,7 +263,7 @@ public class MsgPackReader
                 offset += 8;
                 break;
             default:
-                throw new RuntimeException("Not a float");
+                throw exceptionOnUnknownHeader("float", headerByte);
         }
 
         return value;
@@ -271,12 +271,12 @@ public class MsgPackReader
 
     public boolean readBoolean()
     {
-        final byte b = buffer.getByte(offset);
+        final byte headerByte = buffer.getByte(offset);
         ++offset;
 
         final boolean theBool;
 
-        switch (b)
+        switch (headerByte)
         {
             case TRUE:
                 theBool = true;
@@ -287,7 +287,7 @@ public class MsgPackReader
                 break;
 
             default:
-                throw new RuntimeException("Not a boolean value");
+                throw exceptionOnUnknownHeader("boolean", headerByte);
         }
 
         return theBool;
@@ -481,6 +481,11 @@ public class MsgPackReader
     public boolean hasNext()
     {
         return offset < buffer.capacity();
+    }
+
+    protected RuntimeException exceptionOnUnknownHeader(final String name, final byte headerByte)
+    {
+        return new RuntimeException(String.format("Unable to determine %s type, found unknown header byte 0x%02x", name, headerByte));
     }
 
 }

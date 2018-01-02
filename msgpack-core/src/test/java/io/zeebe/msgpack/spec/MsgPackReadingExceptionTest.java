@@ -44,38 +44,39 @@ public class MsgPackReadingExceptionTest
     @Parameters(name = "{0}")
     public static Iterable<Object[]> data()
     {
+        final String template = "Unable to determine %s type, found unknown header byte 0xc1";
         return Arrays.asList(new Object[][] {
             {
-                "Not a long",
-                codeUnderTest((r) -> r.readInteger())
+                String.format(template, "long"),
+                codeUnderTest(MsgPackReader::readInteger)
             },
             {
-                "Not an array",
-                codeUnderTest((r) -> r.readArrayHeader())
+                String.format(template, "array"),
+                codeUnderTest(MsgPackReader::readArrayHeader)
             },
             {
-                "Not binary",
-                codeUnderTest((r) -> r.readBinaryLength())
+                String.format(template, "binary"),
+                codeUnderTest(MsgPackReader::readBinaryLength)
             },
             {
-                "Not a boolean",
-                codeUnderTest((r) -> r.readBoolean())
+                String.format(template, "boolean"),
+                codeUnderTest(MsgPackReader::readBoolean)
             },
             {
-                "Not a float",
-                codeUnderTest((r) -> r.readFloat())
+                String.format(template, "float"),
+                codeUnderTest(MsgPackReader::readFloat)
             },
             {
-                "Not a map",
-                codeUnderTest((r) -> r.readMapHeader())
+                String.format(template, "map"),
+                codeUnderTest(MsgPackReader::readMapHeader)
             },
             {
-                "Not a string",
-                codeUnderTest((r) -> r.readStringLength())
+                String.format(template, "string"),
+                codeUnderTest(MsgPackReader::readStringLength)
             },
             {
                 "Unsupported token format",
-                codeUnderTest((r) -> r.readToken())
+                codeUnderTest(MsgPackReader::readToken)
             }
         });
     }
