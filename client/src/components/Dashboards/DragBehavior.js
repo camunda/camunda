@@ -41,7 +41,7 @@ export default class DragBehavior extends React.Component {
     // make sure report card is topmost element
     this.reportCard.parentNode.appendChild(this.reportCard);
 
-    this.reportCard.style.boxShadow = '5px 5px 5px lightgray';
+    this.reportCard.classList.add('DragBehavior--dragging');
 
     this.props.onDragStart();
   }
@@ -104,7 +104,7 @@ export default class DragBehavior extends React.Component {
       this.reportCard.style.top = (this.props.report.position.y * outerHeight + margin / 2 - 1) + 'px';
     }
 
-    this.reportCard.style.boxShadow = 'none';
+    this.reportCard.classList.remove('DragBehavior--dragging');
     this.props.onDragEnd();
   }
 

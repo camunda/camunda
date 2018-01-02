@@ -6,3 +6,7 @@
   right: 0;
   cursor: grab;
 }
+
+.DragBehavior--dragging {
+  box-shadow: 5px 5px 5px lightgray;
+}
