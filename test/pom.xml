@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Test</name>
   <artifactId>zeebe-test</artifactId>
-  <version>0.6.0</version>
+  <version>0.7.0-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <parent>
@@ -80,7 +80,7 @@
     <url>https://github.com/zeebe-io/zeebe-test</url>
     <connection>scm:git:git@github.com:zeebe-io/zeebe-test.git</connection>
     <developerConnection>scm:git:git@github.com:zeebe-io/zeebe-test.git</developerConnection>
-    <tag>0.6.0</tag>
+    <tag>HEAD</tag>
   </scm>
 
 </project>
