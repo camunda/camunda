@@ -24,7 +24,7 @@ const props = {
   reports: []
 };
 
-it('should cal the dragStart callback when starting to drag', () => {
+it('should call the dragStart callback when starting to drag', () => {
   const spy = jest.fn();
   const node = mount(<div className='DashboardObject'><DragBehavior onDragStart={spy} /></div>);
 
@@ -33,13 +33,13 @@ it('should cal the dragStart callback when starting to drag', () => {
   expect(spy).toHaveBeenCalled();
 });
 
-it('should add a boxShadow to the surrounding dashboard object', () => {
+it('should add dragging CSS class to surrounding dashboard object', () => {
   const spy = jest.fn();
   const node = mount(<div className='DashboardObject'><DragBehavior onDragStart={spy} /></div>);
 
   node.find(DragBehavior).instance().startDragging({preventDefault: jest.fn()});
 
-  expect(node.getDOMNode().style.boxShadow).toBeTruthy();
+  expect(node.getDOMNode().className).toContain('DragBehavior--dragging');
 });
 
 it('should update the x and y position of the report when dragging', () => {
