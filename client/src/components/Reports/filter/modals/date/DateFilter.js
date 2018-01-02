@@ -69,7 +69,7 @@ export default class DateFilter extends React.Component {
               ])}
             </ButtonGroup>
           </div>
-          <div classname='DateFilter__buttonRow'>
+          <div className='DateFilter__buttonRow'>
             <ButtonGroup className='DateFilter__buttonRow'>
               {this.getDateButtons([
                 DateButton.LAST_WEEK,
