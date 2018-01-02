@@ -55,13 +55,33 @@ it('should update the x and y position of the report when dragging', () => {
     screenY: 0
   });
 
-  node.find(DragBehavior).instance().updateCardPosition({
+  node.find(DragBehavior).instance().saveMouseAndUpdateCardPosition({
     screenX: 5,
     screenY: 5
   });
 
   expect(node.getDOMNode().style.top).toBe('15px');
   expect(node.getDOMNode().style.left).toBe('15px');
+});
+
+it('should update the x and y position of the report when scrolling', () => {
+  const spy = jest.fn();
+  const node = mount(<div className='DashboardObject' style={{
+    top: '10px',
+    left: '10px'
+  }}><DragBehavior onDragStart={spy} /></div>);
+
+  node.find(DragBehavior).instance().startDragging({
+    preventDefault: jest.fn(),
+    screenX: 0,
+    screenY: 0
+  });
+
+  window.pageYOffset = 5;
+  node.find(DragBehavior).instance().updateCardPosition();
+
+  expect(node.getDOMNode().style.top).toBe('15px');
+  expect(node.getDOMNode().style.left).toBe('10px');
 });
 
 it('should snap the report to the closest grid position', () => {
@@ -76,7 +96,7 @@ it('should snap the report to the closest grid position', () => {
     screenY: 0
   });
 
-  node.find(DragBehavior).instance().updateCardPosition({
+  node.find(DragBehavior).instance().saveMouseAndUpdateCardPosition({
     screenX: 33,
     screenY: 8
   });
@@ -100,7 +120,7 @@ it('should call the update report callback on drop', () => {
     screenY: 0
   });
 
-  node.find(DragBehavior).instance().updateCardPosition({
+  node.find(DragBehavior).instance().saveMouseAndUpdateCardPosition({
     screenX: 33,
     screenY: 8
   });
@@ -129,7 +149,7 @@ it('should call the dragEnd callback on drop', () => {
     screenY: 0
   });
 
-  node.find(DragBehavior).instance().updateCardPosition({
+  node.find(DragBehavior).instance().saveMouseAndUpdateCardPosition({
     screenX: 33,
     screenY: 8
   });
@@ -161,7 +181,7 @@ it('should not update the report when it is dropped somewhere where is no space'
     screenY: 0
   });
 
-  node.find(DragBehavior).instance().updateCardPosition({
+  node.find(DragBehavior).instance().saveMouseAndUpdateCardPosition({
     screenX: 20,
     screenY: 10
   });

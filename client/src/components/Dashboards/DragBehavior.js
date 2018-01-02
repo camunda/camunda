@@ -31,12 +31,21 @@ export default class DragBehavior extends React.Component {
       x: evt.screenX,
       y: evt.screenY
     };
+    this.lastMousePosition = {
+      x: evt.screenX,
+      y: evt.screenY
+    };
     this.cardStartPosition = {
       x: parseInt(this.reportCard.style.left, 10),
       y: parseInt(this.reportCard.style.top, 10)
     };
+    this.startScrollPosition = {
+      x: window.pageXOffset,
+      y: window.pageYOffset
+    };
 
-    document.body.addEventListener('mousemove', this.updateCardPosition);
+    document.body.addEventListener('mousemove', this.saveMouseAndUpdateCardPosition);
+    window.addEventListener('scroll', this.updateCardPosition);
 
     // make sure report card is topmost element
     this.reportCard.parentNode.appendChild(this.reportCard);
@@ -46,9 +55,16 @@ export default class DragBehavior extends React.Component {
     this.props.onDragStart();
   }
 
-  updateCardPosition = evt => {
-    this.reportCard.style.left = this.cardStartPosition.x + evt.screenX - this.mouseStartPosition.x + 'px';
-    this.reportCard.style.top = this.cardStartPosition.y + evt.screenY - this.mouseStartPosition.y + 'px';
+  saveMouseAndUpdateCardPosition = evt => {
+    this.lastMousePosition.x = evt.screenX;
+    this.lastMousePosition.y = evt.screenY;
+
+    this.updateCardPosition();
+  }
+
+  updateCardPosition = () => {
+    this.reportCard.style.left = this.cardStartPosition.x + this.lastMousePosition.x - this.mouseStartPosition.x + window.pageXOffset - this.startScrollPosition.x + 'px';
+    this.reportCard.style.top = this.cardStartPosition.y + this.lastMousePosition.y - this.mouseStartPosition.y + window.pageYOffset - this.startScrollPosition.y + 'px';
   }
 
   stopDragging = () => {
@@ -60,7 +76,8 @@ export default class DragBehavior extends React.Component {
     const {columns, outerWidth, outerHeight, innerWidth} = this.props.tileDimensions;
     const margin = outerWidth - innerWidth;
 
-    document.body.removeEventListener('mousemove', this.updateCardPosition);
+    document.body.removeEventListener('mousemove', this.saveMouseAndUpdateCardPosition);
+    window.removeEventListener('scroll', this.updateCardPosition);
 
     // -- snap in position --
     // calculate move delta

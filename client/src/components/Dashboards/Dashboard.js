@@ -124,7 +124,7 @@ export default class Dashboard extends React.Component {
       shareModalVisible: false
     });
   }
-  
+
   showDeleteModal = () => {
     this.setState({
       deleteModalVisible: true
@@ -167,7 +167,7 @@ export default class Dashboard extends React.Component {
           <DragBehavior key='DragBehavior' reports={this.state.reports} updateReport={this.updateReport} onDragStart={this.hideAddButton} onDragEnd={this.showAddButton} />,
           <DeleteButton key='DeleteButton' deleteReport={this.deleteReport} />
         ]}>
-          <Grid />
+          <Grid reports={this.state.reports} />
           <AddButton addReport={this.addReport} visible={this.state.addButtonVisible} />
         </DashboardView>
       </div>
