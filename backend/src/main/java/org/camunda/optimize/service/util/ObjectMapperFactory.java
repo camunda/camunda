@@ -44,7 +44,8 @@ public class ObjectMapperFactory {
           )
           .featuresToEnable(
               JsonParser.Feature.ALLOW_COMMENTS,
-              SerializationFeature.INDENT_OUTPUT
+              SerializationFeature.INDENT_OUTPUT,
+              DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY
           )
           .build();
     }
