@@ -1,7 +1,7 @@
 import React from 'react';
 
 import './DragBehavior.css';
-import { getOccupiedTiles } from './service';
+import { getOccupiedTiles } from '../service';
 
 export default class DragBehavior extends React.Component {
   render() {

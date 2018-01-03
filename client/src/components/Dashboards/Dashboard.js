@@ -7,12 +7,12 @@ import {Button, Modal, Input, ControlGroup, CopyToClipboard} from 'components';
 
 import {loadDashboard, remove, update} from './service';
 
-import DashboardView from './DashboardView';
-import AddButton from './AddButton';
-import Grid from './Grid';
-import DeleteButton from './DeleteButton';
-import DragBehavior from './DragBehavior';
-import ResizeHandle from './ResizeHandle';
+import {DashboardView} from './DashboardView';
+import {AddButton} from './AddButton';
+import {Grid} from './Grid';
+import {DeleteButton} from './DeleteButton';
+import {DragBehavior} from './DragBehavior';
+import {ResizeHandle} from './ResizeHandle';
 
 import './Dashboard.css';
 

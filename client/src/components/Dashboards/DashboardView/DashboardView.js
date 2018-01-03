@@ -1,7 +1,7 @@
 import React from 'react';
 
-import DashboardReport from './DashboardReport';
-import DashboardObject from './DashboardObject';
+import {DashboardReport} from '../DashboardReport';
+import {DashboardObject} from '../DashboardObject';
 
 import './DashboardView.css';
 

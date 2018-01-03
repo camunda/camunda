@@ -3,7 +3,7 @@ import {mount} from 'enzyme';
 
 import DragBehavior from './DragBehavior';
 
-jest.mock('./service', () => {return {
+jest.mock('../service', () => {return {
   getOccupiedTiles: jest.fn().mockReturnValue({})
 }});
 

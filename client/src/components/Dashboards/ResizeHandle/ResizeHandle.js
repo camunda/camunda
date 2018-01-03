@@ -1,7 +1,7 @@
 import React from 'react';
 
 import './ResizeHandle.css';
-import { getOccupiedTiles } from './service';
+import { getOccupiedTiles } from '../service';
 
 export default class ResizeHandle extends React.Component {
   render() {

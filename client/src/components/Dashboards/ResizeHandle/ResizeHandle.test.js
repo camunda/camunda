@@ -3,7 +3,7 @@ import {mount} from 'enzyme';
 
 import ResizeHandle from './ResizeHandle';
 
-jest.mock('./service', () => {return {
+jest.mock('../service', () => {return {
   getOccupiedTiles: jest.fn().mockReturnValue({})
 }});
 

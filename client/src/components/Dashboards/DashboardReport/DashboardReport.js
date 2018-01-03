@@ -1,6 +1,6 @@
 import React from 'react';
 
-import {loadReport} from './service';
+import {loadReport} from '../service';
 
 import {ReportView} from 'components';
 

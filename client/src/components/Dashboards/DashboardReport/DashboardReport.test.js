@@ -2,9 +2,9 @@ import React from 'react';
 import {mount} from 'enzyme';
 
 import DashboardReport from './DashboardReport';
-import {loadReport} from './service';
+import {loadReport} from '../service';
 
-jest.mock('./service', () => {return {
+jest.mock('../service', () => {return {
   loadReport: jest.fn()
 }});
 jest.mock('components', () => {return {

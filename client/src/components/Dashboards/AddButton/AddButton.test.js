@@ -2,7 +2,7 @@ import React from 'react';
 import {mount} from 'enzyme';
 
 import AddButton from './AddButton';
-import {loadReports} from './service';
+import {loadReports} from '../service';
 
 jest.mock('components', () => {
   const Modal = props => <div id='Modal'>{props.open && props.children}</div>;
@@ -21,12 +21,12 @@ jest.mock('components', () => {
   };
 });
 
-jest.mock('./service', () => {return {
+jest.mock('../service', () => {return {
   loadReports: jest.fn().mockReturnValue([]),
   getOccupiedTiles: jest.fn().mockReturnValue({0:{0: true}, 1:{0: true}, 2:{0: true}, 3:{0: true}, 4:{0: true}})
 }});
 
-jest.mock('./DashboardObject', () => ({children}) => <div className="DashboardObject">{children}</div>);
+jest.mock('../DashboardObject', () => {return {DashboardObject: ({children}) => <div className="DashboardObject">{children}</div>}});
 
 const props = {
   tileDimensions: {

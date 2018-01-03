@@ -44,13 +44,13 @@ jest.mock('moment', () => () => {
   }
 });
 
-jest.mock('./DashboardView', () => ({children, reportAddons}) => <div className='DashboardView'>{children} Addons: {reportAddons}</div>);
+jest.mock('./DashboardView', () => {return {DashboardView: ({children, reportAddons}) => <div className='DashboardView'>{children} Addons: {reportAddons}</div>}});
 
-jest.mock('./AddButton', () => ({visible}) => <div>AddButton visible: {''+visible}</div>);
-jest.mock('./Grid', () => () => <div>Grid</div>);
-jest.mock('./DeleteButton', () => () => <button>DeleteButton</button>);
-jest.mock('./DragBehavior', () => () => <div>DragBehavior</div>);
-jest.mock('./ResizeHandle', () => () => <div>ResizeHandle</div>);
+jest.mock('./AddButton', () => {return {AddButton: ({visible}) => <div>AddButton visible: {''+visible}</div>}});
+jest.mock('./Grid', () => {return {Grid: () => <div>Grid</div>}});
+jest.mock('./DeleteButton', () => {return {DeleteButton: () => <button>DeleteButton</button>}});
+jest.mock('./DragBehavior', () => {return {DragBehavior: () => <div>DragBehavior</div>}});
+jest.mock('./ResizeHandle', () => {return {ResizeHandle: () => <div>ResizeHandle</div>}});
 
 const props = {
   match: {params: {id: '1'}}
