@@ -299,8 +299,15 @@ public class BufferedLogStreamReader implements LogStreamReader
             bufferOffset -= offsetToCopy;
 
             // update event offsets
-            wrapNextEvent(nextEvent.getFragmentOffset() - offsetToCopy);
-            wrapReturnedEvent(returnedEvent.getFragmentOffset() - offsetToCopy);
+            if (isNextEventInitialized())
+            {
+                wrapNextEvent(nextEvent.getFragmentOffset() - offsetToCopy);
+            }
+
+            if (isReturnedEventInitialized())
+            {
+                wrapReturnedEvent(returnedEvent.getFragmentOffset() - offsetToCopy);
+            }
         }
         else
         {
