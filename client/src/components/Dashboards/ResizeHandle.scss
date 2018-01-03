@@ -1,0 +1,18 @@
+.ResizeHandle {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 35px;
+  height: 35px;
+  cursor: nwse-resize;
+  padding: 5px;
+}
+
+.ResizeHandle::after {
+  content: '';
+  width: 20px;
+  height: 20px;
+  display: block;
+  border-bottom: 3px solid gray;
+  border-right: 3px solid gray;
+}

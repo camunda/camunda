@@ -40,5 +40,13 @@ export default class BPMNDiagram extends React.Component {
 
       this.setState({loaded: true});
     });
+
+    const dashboardObject = this.container.closest('.DashboardObject');
+    if(dashboardObject) {
+      // if the diagram is on a dashboard, react to changes of the dashboard objects size
+      new MutationObserver(() => {
+        this.viewer.get('canvas').zoom('fit-viewport');
+      }).observe(dashboardObject, {attributes: true});
+    }
   }
 }

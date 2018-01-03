@@ -12,6 +12,7 @@ import AddButton from './AddButton';
 import Grid from './Grid';
 import DeleteButton from './DeleteButton';
 import DragBehavior from './DragBehavior';
+import ResizeHandle from './ResizeHandle';
 
 import './Dashboard.css';
 
@@ -165,7 +166,8 @@ export default class Dashboard extends React.Component {
         </div>
         <DashboardView reports={this.state.reports} reportAddons={[
           <DragBehavior key='DragBehavior' reports={this.state.reports} updateReport={this.updateReport} onDragStart={this.hideAddButton} onDragEnd={this.showAddButton} />,
-          <DeleteButton key='DeleteButton' deleteReport={this.deleteReport} />
+          <DeleteButton key='DeleteButton' deleteReport={this.deleteReport} />,
+          <ResizeHandle key='ResizeHandle' reports={this.state.reports} updateReport={this.updateReport} onResizeStart={this.hideAddButton} onResizeEnd={this.showAddButton} />
         ]}>
           <Grid reports={this.state.reports} />
           <AddButton addReport={this.addReport} visible={this.state.addButtonVisible} />

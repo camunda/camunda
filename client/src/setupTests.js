@@ -12,8 +12,12 @@ const localStorageMock = {
   setItem: jest.fn(),
   removeItem: jest.fn()
 };
-global.localStorage = localStorageMock
+global.localStorage = localStorageMock;
 
 document.execCommand = jest.fn();
+
+global.MutationObserver = class MutationObserver {
+  observe() {}
+}
 
 objectValuesShim();

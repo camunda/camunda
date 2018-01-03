@@ -50,6 +50,7 @@ jest.mock('./AddButton', () => ({visible}) => <div>AddButton visible: {''+visibl
 jest.mock('./Grid', () => () => <div>Grid</div>);
 jest.mock('./DeleteButton', () => () => <button>DeleteButton</button>);
 jest.mock('./DragBehavior', () => () => <div>DragBehavior</div>);
+jest.mock('./ResizeHandle', () => () => <div>ResizeHandle</div>);
 
 const props = {
   match: {params: {id: '1'}}
@@ -254,5 +255,14 @@ describe('edit mode', async () => {
     node.setState({loaded: true});
 
     expect(node).toIncludeText('DragBehavior');
+  });
+
+  it('should add a resize handle', () => {
+    props.match.params.viewMode = 'edit';
+
+    const node = mount(<Dashboard {...props} />);
+    node.setState({loaded: true});
+
+    expect(node).toIncludeText('ResizeHandle');
   });
 });

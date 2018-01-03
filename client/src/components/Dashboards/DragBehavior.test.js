@@ -70,7 +70,7 @@ it('should update the x and y position of the report when scrolling', () => {
     top: '10px',
     left: '10px'
   }}><DragBehavior onDragStart={spy} /></div>);
-
+  window.pageYOffset = 0;
   node.find(DragBehavior).instance().startDragging({
     preventDefault: jest.fn(),
     screenX: 0,

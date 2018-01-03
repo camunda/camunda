@@ -83,7 +83,7 @@ export default class DragBehavior extends React.Component {
     // calculate move delta
     const delta = {
       x: parseInt(this.reportCard.style.left, 10) - this.cardStartPosition.x,
-      y: parseInt(this.reportCard.style.top, 10) - this.cardStartPosition.y,
+      y: parseInt(this.reportCard.style.top, 10) - this.cardStartPosition.y
     };
 
     // map into tile units
