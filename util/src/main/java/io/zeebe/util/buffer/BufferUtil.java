@@ -188,6 +188,7 @@ public final class BufferUtil
     public static String bytesAsHexString(final byte[] bytes, final int wrap)
     {
         final StringBuilder builder = new StringBuilder(bytes.length * 3);
+        final StringBuilder asciiBuilder = new StringBuilder(wrap);
 
         int position = 0;
         for (final byte b : bytes)
@@ -195,18 +196,26 @@ public final class BufferUtil
             builder
                 .append(HEX_CODE[(b >> 4) & 0xF])
                 .append(HEX_CODE[(b & 0xF)]);
+            asciiBuilder.append((char) b);
 
             position++;
 
             if (wrap > 0 && position % wrap == 0)
             {
-                builder.append('\n');
+                builder.append(" |")
+                       .append(asciiBuilder.toString())
+                       .append("|\n");
+                asciiBuilder.delete(0, wrap);
             }
             else
             {
                 builder.append(' ');
             }
         }
+
+        builder.append(" |")
+               .append(asciiBuilder.toString())
+               .append("|\n");
 
         return builder.toString();
     }
