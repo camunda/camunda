@@ -23,7 +23,6 @@ import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,8 +33,6 @@ public class UnpackedObject extends ObjectValue implements Recyclable, BufferRea
 
     protected final MsgPackReader reader = new MsgPackReader();
     protected final MsgPackWriter writer = new MsgPackWriter();
-
-    protected final UnsafeBuffer view = new UnsafeBuffer(0, 0);
 
     public void wrap(DirectBuffer buff)
     {
@@ -48,7 +45,6 @@ public class UnpackedObject extends ObjectValue implements Recyclable, BufferRea
         int retries = 0;
         int readerOffset = 0;
         boolean successful = false;
-        view.wrap(buff, offset, length);
 
         while (!successful)
         {
@@ -60,18 +56,20 @@ public class UnpackedObject extends ObjectValue implements Recyclable, BufferRea
 
                 if (retries > 0)
                 {
-                    final String lastReadByteBeforeException = String.format("0x%02x", readerOffset < length ? view.getByte(readerOffset) : 0);
+                    final DirectBuffer buffer = reader.buffer;
+                    final String lastReadByteBeforeException = String.format("0x%02x", readerOffset < length ? buffer.getByte(readerOffset) : 0);
                     LOG.warn("Retry {} was successful. Reader previously stuck at offset {} of length {} with last read byte {}. Buffer:\n{}",
-                            retries, readerOffset, length, lastReadByteBeforeException, BufferUtil.bufferAsHexString(view, 32));
+                            retries, readerOffset, length, lastReadByteBeforeException, BufferUtil.bufferAsHexString(buffer, 32));
 
                 }
             }
             catch (final Exception e)
             {
+                final DirectBuffer buffer = reader.buffer;
                 readerOffset = reader.getOffset() - 1;
-                final String lastReadByteBeforeException = String.format("0x%02x", readerOffset < length ? view.getByte(readerOffset) : 0);
+                final String lastReadByteBeforeException = String.format("0x%02x", readerOffset < length ? buffer.getByte(readerOffset) : 0);
                 LOG.error("Retry {} could not deserialize object. Deserialization stuck at offset {} of length {} with last read byte {}. Buffer:\n{}",
-                        retries, readerOffset, length, lastReadByteBeforeException, BufferUtil.bufferAsHexString(view, 32), e);
+                        retries, readerOffset, length, lastReadByteBeforeException, BufferUtil.bufferAsHexString(buffer, 32), e);
 
                 retries++;
 
