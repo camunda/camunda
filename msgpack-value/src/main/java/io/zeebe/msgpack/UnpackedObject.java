@@ -19,14 +19,23 @@ import io.zeebe.msgpack.spec.MsgPackReader;
 import io.zeebe.msgpack.spec.MsgPackWriter;
 import io.zeebe.msgpack.value.ObjectValue;
 import io.zeebe.util.buffer.BufferReader;
+import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class UnpackedObject extends ObjectValue implements Recyclable, BufferReader, BufferWriter
 {
+
+    private static final Logger LOG = LoggerFactory.getLogger("io.zeebe.msgpack");
+
     protected final MsgPackReader reader = new MsgPackReader();
     protected final MsgPackWriter writer = new MsgPackWriter();
+
+    protected final UnsafeBuffer view = new UnsafeBuffer(0, 0);
 
     public void wrap(DirectBuffer buff)
     {
@@ -36,14 +45,41 @@ public class UnpackedObject extends ObjectValue implements Recyclable, BufferRea
     @Override
     public void wrap(DirectBuffer buff, int offset, int length)
     {
-        reader.wrap(buff, offset, length);
-        try
+        int retries = 0;
+        int readerOffset = 0;
+        boolean successful = false;
+        view.wrap(buff, offset, length);
+
+        while (!successful)
         {
-            read(reader);
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException("Could not deserialize object. Deserialization stuck at offset " + reader.getOffset() + " of length " + length, e);
+            reader.wrap(buff, offset, length);
+            try
+            {
+                read(reader);
+                successful = true;
+
+                if (retries > 0)
+                {
+                    final String lastReadByteBeforeException = String.format("0x%02x", readerOffset < length ? view.getByte(readerOffset) : 0);
+                    LOG.warn("Retry {} was successful. Reader previously stuck at offset {} of length {} with last read byte {}. Buffer:\n{}",
+                            retries, readerOffset, length, lastReadByteBeforeException, BufferUtil.bufferAsHexString(view, 32));
+
+                }
+            }
+            catch (final Exception e)
+            {
+                readerOffset = reader.getOffset() - 1;
+                final String lastReadByteBeforeException = String.format("0x%02x", readerOffset < length ? view.getByte(readerOffset) : 0);
+                LOG.error("Retry {} could not deserialize object. Deserialization stuck at offset {} of length {} with last read byte {}. Buffer:\n{}",
+                        retries, readerOffset, length, lastReadByteBeforeException, BufferUtil.bufferAsHexString(view, 32), e);
+
+                retries++;
+
+                if (retries > 9)
+                {
+                    throw new RuntimeException("Could not deserialize object. Deserialization stuck at offset " + reader.getOffset() + " of length " + length, e);
+                }
+            }
         }
     }
 

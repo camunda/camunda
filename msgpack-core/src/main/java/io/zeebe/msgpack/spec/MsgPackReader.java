@@ -485,7 +485,7 @@ public class MsgPackReader
 
     protected RuntimeException exceptionOnUnknownHeader(final String name, final byte headerByte)
     {
-        return new RuntimeException(String.format("Unable to determine %s type, found unknown header byte 0x%02x", name, headerByte));
+        return new RuntimeException(String.format("Unable to determine %s type, found unknown header byte 0x%02x at reader offset %d", name, headerByte, offset - 1));
     }
 
 }
