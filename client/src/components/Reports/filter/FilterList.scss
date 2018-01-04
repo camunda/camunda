@@ -16,16 +16,11 @@
   &:first-child {
     margin-left: 0;
   }
-  
+
   &:last-child {
     margin-right: 20px;
   }
 
-}
-
-.FilterList__item-content {
-  padding: 0 4px;
-  font-size: .875em;
 }
 
 .FilterList__itemConnector {
@@ -33,15 +28,6 @@
   display: inline-block;
   margin: 0 .5em;
 }
-
-.FilterList__deleteButton,
-.FilterList__deleteButton:hover,
-.FilterList__deleteButton:active {
-  border: 1px solid transparent;
-  border-radius: 0;
-  border-right: 1px solid #ccc;
-}
-
 
 .FilterList__parameter-name {
   font-style: italic;

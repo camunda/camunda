@@ -15,3 +15,4 @@ export {ErrorBoundary} from './ErrorBoundary';
 export {Logo} from './Logo';
 export {EntityList} from './EntityList'
 export {Icon} from './Icon';
+export {ActionItem} from './ActionItem';

@@ -1,7 +1,7 @@
 import React from 'react';
 import moment from 'moment';
 
-import {Button} from 'components';
+import {ActionItem} from 'components';
 
 import './FilterList.css';
 
@@ -22,13 +22,12 @@ export default class FilterList extends React.Component {
         const nextFilter = this.props.data[i + 1];
 
         list.push(<li key={i} className='FilterList__item'>
-          <Button onClick={() => this.props.deleteFilter(filter, nextFilter)} className='FilterList__deleteButton'>×</Button>
-          <span className='FilterList__item-content'>
+          <ActionItem onClick={() => this.props.deleteFilter(filter, nextFilter)}>
             <span className='FilterList__parameter-name'>Start Date </span> between
             {' '}<span className='FilterList__value'>{moment(filter.data.value).format('YYYY-MM-DD')}</span>{' '}
             {this.createOperator('and')}
-            {' '}<span className='FilterList__value'>{moment(nextFilter.data.value).format('YYYY-MM-DD')}</span>{' '}
-          </span>
+            {' '}<span className='FilterList__value'>{moment(nextFilter.data.value).format('YYYY-MM-DD')}</span>
+          </ActionItem>
         </li>);
 
         i++;
@@ -37,15 +36,14 @@ export default class FilterList extends React.Component {
           const {name, operator, values} = filter.data;
 
           list.push(<li key={i} className='FilterList__item'>
-            <Button onClick={() => this.props.deleteFilter(filter)}  className='FilterList__deleteButton'>×</Button>
-            <span className='FilterList__item-content'>
+            <ActionItem onClick={() => this.props.deleteFilter(filter)}>
               <span className='FilterList__parameter-name'>{name}</span>
-                {(operator === 'in' || operator === '=') && this.createOperator('is')}
-                {operator === 'not in' && (
-                  values.length === 1 ? this.createOperator('is not') : this.createOperator('is neither')
-                )}
-                {operator === '<' && this.createOperator('is less than')}
-                {operator === '>' && this.createOperator('is greater than')}
+              {(operator === 'in' || operator === '=') && this.createOperator('is')}
+              {operator === 'not in' && (
+                values.length === 1 ? this.createOperator('is not') : this.createOperator('is neither')
+              )}
+              {operator === '<' && this.createOperator('is less than')}
+              {operator === '>' && this.createOperator('is greater than')}
               {values.map((value, idx) => {
                 return <span key={idx}>
                   <span className='FilterList__value'>{value.toString()}</span>
@@ -54,7 +52,7 @@ export default class FilterList extends React.Component {
                   )}
                 </span>
               })}
-            </span>
+            </ActionItem>
           </li>);
         }
 
@@ -62,8 +60,7 @@ export default class FilterList extends React.Component {
           const {values} = filter.data;
 
           list.push(<li key={i} className='FilterList__item'>
-            <Button onClick={() => this.props.deleteFilter(filter)}  className='FilterList__deleteButton'>×</Button>
-            <span className='FilterList__item-content'>
+            <ActionItem onClick={() => this.props.deleteFilter(filter)}>
               <span className='FilterList__parameter-name'>Executed Flow Node</span> is{' '}
               {values.map((value, idx) => {
                 return <span key={idx}>
@@ -71,7 +68,7 @@ export default class FilterList extends React.Component {
                   {idx < values.length - 1 && this.createOperator('or')}
                 </span>
               })}
-            </span>
+            </ActionItem>
           </li>);
         }
       }

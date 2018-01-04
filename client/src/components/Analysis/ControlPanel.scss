@@ -1,0 +1,57 @@
+.ControlPanel {
+  background-color: #f4f4f4;
+  border-radius: 8px;
+  border: 1px solid #dfdfdf;
+  padding: 12px 12px 0 12px;
+}
+
+
+.ControlPanel__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: inline;
+}
+
+.ControlPanel__item {
+  display: inline-block;
+  position: relative;
+  padding-top: 22px;
+  padding-right: 20px;
+  margin-bottom: 24px;
+}
+
+.ControlPanel__item--select {
+  width: 15%;
+  min-width: 200px;
+}
+
+.ControlPanel__item--filter {
+  display: inline;
+  padding-top: 27px;
+}
+
+.ControlPanel__label {
+  color: #626262;
+  font-size: .875em;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.ControlPanel__select {
+  width: 100%;
+}
+
+.ControlPanel__config {
+  color: #333;
+  background-color: #f8f8f8;
+  border: 1px solid #bbb;
+  border-radius: 3px;
+  display: inline-block;
+  cursor: default;
+}
+
+.ControlPanel__config--hover {
+  background-color: rgba(48, 116, 142, 0.6);
+}

@@ -19,6 +19,7 @@ export default function Header({name}) {
       <HeaderNav>
         <HeaderNav.Item name='Dashboards' linksTo='/dashboards' active='/dashboard' />
         <HeaderNav.Item name='Reports' linksTo='/reports' active='/report' />
+        <HeaderNav.Item name='Analysis' linksTo='/analysis' active='/analysis' />
       </HeaderNav>
       <LogoutButton />
   </header> : '')

@@ -1,3 +1,4 @@
+export {Analysis} from './Analysis';
 export {Footer} from './Footer';
 export {Header, LogoutButton} from './Header';
 export {Home} from './Home';

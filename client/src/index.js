@@ -17,7 +17,8 @@ import {
   Dashboards,
   Reports,
   Report,
-  Dashboard
+  Dashboard,
+  Analysis
 } from './components';
 
 import {ErrorBoundary} from 'components';
@@ -33,6 +34,7 @@ ReactDOM.render(<Router>
         <PrivateRoute exact path="/reports" component={Reports} />
         <PrivateRoute path="/report/:id/:viewMode?" component={Report} />
         <PrivateRoute path="/dashboard/:id/:viewMode?" component={Dashboard} />
+        <PrivateRoute path="/analysis" component={Analysis} />
       </ErrorBoundary>
     </main>
     <Footer version="2.0.0" />

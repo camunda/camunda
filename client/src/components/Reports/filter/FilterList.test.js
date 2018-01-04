@@ -5,7 +5,7 @@ import FilterList from './FilterList';
 import {mount} from 'enzyme';
 
 jest.mock('components', () => {return {
-  Button: props => <button {...props}>{props.children}</button>
+  ActionItem: props => <button {...props}>{props.children}</button>
 }});
 
 it('should render an unordered list', () => {

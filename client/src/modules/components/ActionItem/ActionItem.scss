@@ -1,0 +1,12 @@
+.ActionItem__button,
+.ActionItem__button:hover,
+.ActionItem__button:active {
+  border: 1px solid transparent;
+  border-radius: 0;
+  border-right: 1px solid #ccc;
+}
+
+.ActionItem__content {
+  padding: 0 4px;
+  font-size: .875em;
+}
