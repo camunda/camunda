@@ -15,18 +15,17 @@
  */
 package io.zeebe.util.actor;
 
-import static org.agrona.UnsafeAccess.UNSAFE;
-
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import io.zeebe.util.DeferredCommandContext;
-import io.zeebe.util.LogUtil;
 import org.agrona.ErrorHandler;
 import org.agrona.concurrent.IdleStrategy;
+
+import io.zeebe.util.DeferredCommandContext;
+import io.zeebe.util.LogUtil;
 
 /**
  * Invokes the given actors in a loop. The amount of invocations depends on the
@@ -200,7 +199,6 @@ public class ActorRunner implements Runnable
         deferredCommands.runAsync(() ->
         {
             actors.add(actor);
-            UNSAFE.fullFence();
         });
     }
 
@@ -209,7 +207,6 @@ public class ActorRunner implements Runnable
         deferredCommands.runAsync(() ->
         {
             actors.remove(actor);
-            UNSAFE.fullFence();
             removeCallback.accept(actor);
         });
     }
