@@ -31,6 +31,13 @@ it('should import the provided xml', () => {
   expect(node.instance().viewer.importXML.mock.calls[0][0]).toBe(diagramXml);
 });
 
+it('should import an updated xml', () => {
+  const node = mount(<BPMNDiagram xml={diagramXml} />);
+
+  node.setProps({xml: 'some other xml'});
+  expect(node.instance().viewer.importXML.mock.calls[1][0]).toBe('some other xml');
+});
+
 it('should resize the diagram to fit the container initially', () => {
   const node = mount(<BPMNDiagram xml={diagramXml} />);
 

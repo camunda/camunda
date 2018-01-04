@@ -42,4 +42,15 @@ export default class Heatmap extends React.Component {
       </BPMNDiagram>
     </div>);
   }
+
+  async componentWillReceiveProps(nextProps) {
+    if(nextProps.process !== this.props.process) {
+      this.setState({xml: null});
+      if(nextProps.process) {
+        this.setState({
+          xml: await loadProcessDefinitionXml(nextProps.process)
+        });
+      }
+    }
+  }
 }

@@ -29,10 +29,15 @@ export default class BPMNDiagram extends React.Component {
     </div>;
   }
 
-  componentDidMount() {
-    this.viewer.attachTo(this.container);
+  componentDidUpdate(prevProps) {
+    if(prevProps.xml !== this.props.xml) {
+      this.setState({loaded: false});
+      this.importXML(this.props.xml);
+    }
+  }
 
-    this.viewer.importXML(this.props.xml, (err) => {
+  importXML(xml) {
+    this.viewer.importXML(xml, (err) => {
       const canvas = this.viewer.get('canvas');
 
       canvas.resized();
@@ -40,6 +45,12 @@ export default class BPMNDiagram extends React.Component {
 
       this.setState({loaded: true});
     });
+  }
+
+  componentDidMount() {
+    this.viewer.attachTo(this.container);
+
+    this.importXML(this.props.xml);
 
     const dashboardObject = this.container.closest('.DashboardObject');
     if(dashboardObject) {

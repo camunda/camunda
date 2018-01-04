@@ -22,6 +22,14 @@ it('should load the process definition xml', () => {
   expect(loadProcessDefinitionXml).toHaveBeenCalledWith('a');
 });
 
+it('should load an updated process definition xml', () => {
+  const node = mount(<Heatmap process='a' data={data} />);
+
+  node.setProps({process: 'b'});
+
+  expect(loadProcessDefinitionXml).toHaveBeenCalledWith('b');
+});
+
 it('should display a loading indication while loading', () => {
   const node = mount(<Heatmap process='a' data={data} />);
 
