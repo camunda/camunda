@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -163,6 +164,7 @@ public class DynamicActorSchedulerTest
     }
 
     @Test
+    @Ignore("disable rescheduling of actors to test if related to bug https://github.com/zeebe-io/zeebe/issues/596")
     public void shouldBalanceWorkload() throws Exception
     {
         // given

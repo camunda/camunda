@@ -145,6 +145,7 @@ public class ActorSchedulerRunnable implements Runnable
 
     private void doWork()
     {
+        /* disable rescheduling of actors to test if related to bug https://github.com/zeebe-io/zeebe/issues/596
         if (runners.length > 1)
         {
             final long now = System.currentTimeMillis();
@@ -156,6 +157,7 @@ public class ActorSchedulerRunnable implements Runnable
                 nextSchedulingTime = now + waitTime;
             }
         }
+        */
 
         ActorReferenceImpl unclaimedActor = null;
         while ((unclaimedActor = unclaimedActors.poll()) != null)
