@@ -17,9 +17,12 @@ package io.zeebe.logstreams.log;
 
 import static io.zeebe.util.StringUtil.getBytes;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 import java.util.NoSuchElementException;
 
+import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.util.LogStreamReaderRule;
 import io.zeebe.logstreams.util.LogStreamRule;
 import io.zeebe.logstreams.util.LogStreamWriterRule;
@@ -428,6 +431,22 @@ public class LogStreamReaderTest
         reader.seekToFirstEvent();
         readerRule.assertEvents(eventCount, EVENT_VALUE);
         assertThat(reader.hasNext()).isFalse();
+    }
+
+    @Test
+    public void shouldLimitAllocate()
+    {
+        // mock logStorage to always return insufficient capacity to increase buffer til max
+        final LogStream logStream = logStreamRule.getLogStream();
+        final LogStorage logStorage = mock(LogStorage.class);
+        when(logStorage.read(any(), anyLong(), any())).thenReturn(LogStorage.OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY);
+
+        // then
+        expectedException.expect(RuntimeException.class);
+        expectedException.expectMessage("Next fragment requires more space then the maximal buffer capacity of " + BufferedLogStreamReader.MAX_BUFFER_CAPACITY);
+
+        // when
+        ((BufferedLogStreamReader) reader).wrap(logStorage, logStream.getLogBlockIndex());
     }
 
 }

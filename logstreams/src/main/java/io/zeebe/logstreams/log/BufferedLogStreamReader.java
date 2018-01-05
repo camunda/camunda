@@ -33,6 +33,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 public class BufferedLogStreamReader implements LogStreamReader
 {
     public static final int DEFAULT_INITIAL_BUFFER_CAPACITY = 32 * 1024;
+    public static final int MAX_BUFFER_CAPACITY = 128 * 1024 * 1024; // 128MB
 
     private static final int UNINITIALIZED = -1;
     private static final long FIRST_POSITION = Long.MIN_VALUE;
@@ -102,7 +103,7 @@ public class BufferedLogStreamReader implements LogStreamReader
         wrap(logStorage, logBlockIndex, FIRST_POSITION);
     }
 
-    public void wrap(LogStorage logStorage, final LogBlockIndex logBlockIndex, final long position)
+    public void wrap(final LogStorage logStorage, final LogBlockIndex logBlockIndex, final long position)
     {
         this.logStorage = logStorage;
         this.logBlockIndex = logBlockIndex;
@@ -243,6 +244,11 @@ public class BufferedLogStreamReader implements LogStreamReader
 
     private void allocateBuffer(final int capacity)
     {
+        if (!isClosed() && this.allocatedBuffer.capacity() == MAX_BUFFER_CAPACITY && capacity >= MAX_BUFFER_CAPACITY)
+        {
+            throw new RuntimeException("Next fragment requires more space then the maximal buffer capacity of " + BufferedLogStreamReader.MAX_BUFFER_CAPACITY);
+        }
+
         final AllocatedBuffer newAllocatedBuffer = bufferAllocator.allocate(capacity);
         final ByteBuffer newByteBuffer = newAllocatedBuffer.getRawBuffer();
 
@@ -329,7 +335,9 @@ public class BufferedLogStreamReader implements LogStreamReader
         if (result == LogStorage.OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY)
         {
             // it was not possible to read the block in the existing buffer => expand buffer
-            allocateBuffer(2 * byteBuffer.capacity());
+            long nextCapacity = 2L * (long) byteBuffer.capacity();
+            nextCapacity = Math.min(nextCapacity, MAX_BUFFER_CAPACITY);
+            allocateBuffer((int) nextCapacity);
 
             // retry to read the next block
             return readBlockIntoBuffer(blockAddress);
