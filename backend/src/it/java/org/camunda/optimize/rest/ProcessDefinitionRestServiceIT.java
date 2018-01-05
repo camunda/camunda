@@ -44,7 +44,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
  * @author Askar Akhmerov
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {"/rest/restTestApplicationContext.xml"})
+@ContextConfiguration(locations = {"/it/it-applicationContext.xml"})
 public class ProcessDefinitionRestServiceIT {
   private static final String DIAGRAM = "org/camunda/optimize/service/es/reader/gateway_process.bpmn";
   private static final String PROCESS_DEFINITION_ID_2 = "procDef2";

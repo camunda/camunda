@@ -25,9 +25,9 @@
 
   <util:list id="registeredPlugins" value-type="org.camunda.optimize.plugin.importing.variable.VariableImportAdapter"/>
 
-  <bean id="transportClient"  class="org.camunda.optimize.test.unit.factory.MockTransportClientFactory"/>
+  <bean id="transportClient"  class="org.camunda.optimize.test.it.factory.SpyTransportClientFactory"/>
 
-  <bean id="schemaInitializer"  class="org.camunda.optimize.test.unit.factory.MockSchemaInitializerFactory"/>
+  <bean id="schemaInitializer"  class="org.camunda.optimize.service.es.ElasticSearchSchemaInitializer"/>
 
   <bean id="objectMapper"
         class="com.fasterxml.jackson.databind.ObjectMapper"

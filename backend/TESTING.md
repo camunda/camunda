@@ -108,7 +108,7 @@ public class YourCustomIT  {
 
 Note, that there are two kind of integration tests:
 * Backend end to end test: Data is added to the engine, imported to Optimize and a query executed. Therefore, all three rules are needed.
-* Rest service tests: The idea is just to test the rest endpoint. Data is added to elasticsearch manually, a rest request is performed against Optimize and the result validated. Therefore, only the *EmbeddedOptimizeRule* and the *ElasticSearchIntegrationTestRule* are needed here. Also use the application context */rest/restTestApplicationContext.xml* for this kind of tests.
+* Rest service tests: The idea is just to test the rest endpoint. Data is added to elasticsearch manually, a rest request is performed against Optimize and the result validated. Therefore, only the *EmbeddedOptimizeRule* and the *ElasticSearchIntegrationTestRule* are needed here. Also use the application context */it/it-applicationContext.xml* for this kind of tests.
 
 ### Working with snapshots 
 

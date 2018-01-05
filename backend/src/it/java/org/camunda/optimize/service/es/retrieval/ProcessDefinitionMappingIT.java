@@ -29,7 +29,7 @@ import static org.junit.Assert.assertThat;
  * @author Askar Akhmerov
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {"/rest/restTestApplicationContext.xml"})
+@ContextConfiguration(locations = {"/it/it-applicationContext.xml"})
 public class ProcessDefinitionMappingIT {
   public static final String A_START = "aStart";
   public static final String A_TASK = "aTask";

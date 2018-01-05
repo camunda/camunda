@@ -35,7 +35,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {"/rest/restTestApplicationContext.xml"})
+@ContextConfiguration(locations = {"/it/it-applicationContext.xml"})
 public class DateQueryFilterIT {
 
   private Logger logger = LoggerFactory.getLogger(DateQueryFilterIT.class);

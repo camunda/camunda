@@ -46,7 +46,7 @@ import static org.junit.Assert.assertThat;
  * @author Askar Akhmerov
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {"/rest/restTestApplicationContext.xml"})
+@ContextConfiguration(locations = {"/it/it-applicationContext.xml"})
 public class BranchAnalysisQueryIT {
   private Logger logger = LoggerFactory.getLogger(BranchAnalysisQueryIT.class);
   private static final String PROCESS_DEFINITION_ID = "procDef1";
