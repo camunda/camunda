@@ -19,6 +19,7 @@ import static org.agrona.BitUtil.SIZE_OF_CHAR;
 import static org.assertj.core.api.Assertions.assertThat;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -31,11 +32,13 @@ public class ExpendableBufferCacheTest
     private ExpandableBufferCache cache;
     private Map<Long, DirectBuffer> lookupMap = new HashMap<>();
 
+    private int initialBufferCapacity;
+
     @Before
     public void init()
     {
         final int capacity = 3;
-        final int initialBufferCapacity = 5 * SIZE_OF_CHAR;
+        initialBufferCapacity = 5 * SIZE_OF_CHAR;
 
         cache = new ExpandableBufferCache(capacity, initialBufferCapacity, lookupMap::get);
 
@@ -140,11 +143,24 @@ public class ExpendableBufferCacheTest
     @Test
     public void shouldExpandBuffer()
     {
+        final DirectBuffer bigValue = wrapString(String.join("", Collections.nCopies(initialBufferCapacity + 1, "a")));
         cache.put(1L, wrapString("foo"));      // < initial buffer capacity
-        cache.put(2L, wrapString("baaaaaar")); // > initial buffer capacity
+        cache.put(2L, bigValue);                // > initial buffer capacity
+        cache.put(3L, wrapString("foo"));      // < initial buffer capacity
+        cache.put(3L, bigValue);                // > initial buffer capacity
 
         assertThat(cache.get(1L)).isEqualTo(wrapString("foo"));
-        assertThat(cache.get(2L)).isEqualTo(wrapString("baaaaaar"));
+        assertThat(cache.get(2L)).isEqualTo(bigValue);
+        assertThat(cache.get(3L)).isEqualTo(bigValue);
+    }
+
+    @Test
+    public void shouldIgnoreOldDataOfBiggerValues()
+    {
+        cache.put(1L, wrapString("foobar")); // initial value
+        cache.put(1L, wrapString("elf"));    // smaller value
+
+        assertThat(cache.get(1L)).isEqualTo(wrapString("elf"));
     }
 
 }

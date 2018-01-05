@@ -132,12 +132,9 @@ public class ExpandableBufferCache
 
     private void copyBuffer(final DirectBuffer source, final MutableDirectBuffer target)
     {
-        final ByteBuffer byteBuffer = target.byteBuffer();
-        byteBuffer.clear();
-
-        source.getBytes(0, byteBuffer, source.capacity());
+        source.getBytes(0, target, 0, source.capacity());
         // use the limit to indicate the buffer length
-        byteBuffer.limit(source.capacity());
+        target.byteBuffer().limit(source.capacity());
     }
 
     private void makeMostRecent(long key, MutableDirectBuffer value, int fromIndex)
