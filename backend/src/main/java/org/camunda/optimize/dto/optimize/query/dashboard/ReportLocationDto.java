@@ -3,17 +3,8 @@ package org.camunda.optimize.dto.optimize.query.dashboard;
 public class ReportLocationDto {
 
   protected String id;
-  protected String name;
   protected PositionDto position;
   protected DimensionDto dimensions;
-
-  public String getName() {
-    return name;
-  }
-
-  public void setName(String name) {
-    this.name = name;
-  }
 
   public String getId() {
     return id;
