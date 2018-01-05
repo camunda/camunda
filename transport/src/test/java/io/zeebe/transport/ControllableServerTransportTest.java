@@ -26,7 +26,7 @@ import org.junit.Test;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
-import io.zeebe.test.util.agent.ControllableTaskScheduler;
+import io.zeebe.test.util.agent.ManualActorScheduler;
 
 public class ControllableServerTransportTest
 {
@@ -40,7 +40,7 @@ public class ControllableServerTransportTest
     protected ServerTransport serverTransport;
 
     @Rule
-    public ControllableTaskScheduler scheduler = new ControllableTaskScheduler();
+    public ManualActorScheduler scheduler = new ManualActorScheduler();
 
     @Before
     public void setUp()

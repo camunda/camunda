@@ -26,7 +26,7 @@ import org.junit.Test;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
-import io.zeebe.test.util.agent.ControllableTaskScheduler;
+import io.zeebe.test.util.agent.ManualActorScheduler;
 import io.zeebe.util.buffer.DirectBufferWriter;
 import io.zeebe.util.time.ClockUtil;
 
@@ -41,7 +41,7 @@ public class ControllableClientTransportTest
     public static final int MESSAGES_REQUIRED_TO_SATURATE_SEND_BUFFER = SEND_BUFFER_SIZE / BUF1.capacity();
 
     @Rule
-    public ControllableTaskScheduler scheduler = new ControllableTaskScheduler();
+    public ManualActorScheduler scheduler = new ManualActorScheduler();
 
     protected ClientTransport clientTransport;
 
