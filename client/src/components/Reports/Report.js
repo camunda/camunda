@@ -216,13 +216,13 @@ export default class Report extends React.Component {
           </Modal.Actions>
         </Modal>
         <Modal open={deleteModalVisible} onClose={this.closeDeleteModal} className='Report__delete-modal'>
-          <Modal.Header>You are about to delete {this.state.name}</Modal.Header>
+          <Modal.Header>Delete {this.state.name}</Modal.Header>
           <Modal.Content>
-            <p>Are you sure you want to proceed?</p>
+            <p>You are about to delete {this.state.name}. Are you sure you want to proceed?</p>
           </Modal.Content>
           <Modal.Actions>
             <Button className="Report__close-delete-modal-button" onClick={this.closeDeleteModal}>Close</Button>
-            <Button className="Report__delete-report-modal-button" onClick={this.deleteReport}>Delete</Button>
+            <Button type="primary" color="red" className="Report__delete-report-modal-button" onClick={this.deleteReport}>Delete</Button>
           </Modal.Actions>
         </Modal>
         <div className='Report__content' style={{height: '100%', width:'100%'}}>

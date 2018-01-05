@@ -88,13 +88,13 @@ export default class EntityList extends React.Component {
     const {deleteModalVisible, deleteModalEntity} = this.state;
     return (
       <Modal open={deleteModalVisible} onClose={this.closeDeleteModal} className='EntityList__delete-modal'>
-        <Modal.Header>You are about to delete {deleteModalEntity.name}</Modal.Header>
+        <Modal.Header>Delete {deleteModalEntity.name}</Modal.Header>
         <Modal.Content>
-          <p>Are you sure you want to proceed?</p>
+          <p>You are about to delete {deleteModalEntity.name}. Are you sure you want to proceed?</p>
         </Modal.Content>
         <Modal.Actions>
           <Button className="EntityList__close-delete-modal-button" onClick={this.closeDeleteModal}>Close</Button>
-          <Button className="EntityList__delete-entity-modal-button" onClick={this.deleteEntity(deleteModalEntity.id)}>Delete</Button>
+          <Button type="primary" color="red" className="EntityList__delete-entity-modal-button" onClick={this.deleteEntity(deleteModalEntity.id)}>Delete</Button>
         </Modal.Actions>
       </Modal>
     )

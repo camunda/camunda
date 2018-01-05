@@ -47,6 +47,9 @@ $modal-padding-h: 20px;
 .Modal__heading {
   font-size: 1.25em;
   padding-right: 36px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .Modal__close-button {
