@@ -196,7 +196,16 @@ public final class BufferUtil
             builder
                 .append(HEX_CODE[(b >> 4) & 0xF])
                 .append(HEX_CODE[(b & 0xF)]);
-            asciiBuilder.append((char) b);
+
+            // check if byte is ASCII character range other wise use . as placeholder
+            if (b > 31 && b < 126)
+            {
+                asciiBuilder.append((char) b);
+            }
+            else
+            {
+                asciiBuilder.append('.');
+            }
 
             position++;
 
@@ -213,9 +222,18 @@ public final class BufferUtil
             }
         }
 
-        builder.append(" |")
-               .append(asciiBuilder.toString())
-               .append("|\n");
+        final String s = builder.toString();
+        for (int i = 0; i < s.length() % 3 * wrap; i++)
+        {
+            builder.append(' ');
+        }
+
+        if (asciiBuilder.length() > 0)
+        {
+            builder.append(" |")
+                   .append(asciiBuilder.toString())
+                   .append("|\n");
+        }
 
         return builder.toString();
     }
