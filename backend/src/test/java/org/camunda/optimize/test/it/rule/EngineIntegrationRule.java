@@ -52,8 +52,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
@@ -79,6 +77,7 @@ public class EngineIntegrationRule extends TestWatcher {
   private static final int MAX_WAIT = 10;
   public static final String COUNT = "count";
   public static final String DEFAULT_PROPERTIES_PATH = "integration-rules.properties";
+  private static final CloseableHttpClient closeableHttpClient = HttpClientBuilder.create().build();
   private String propertiesPath;
 
   private Properties properties;
@@ -142,8 +141,6 @@ public class EngineIntegrationRule extends TestWatcher {
       response.close();
     } catch (IOException e) {
       logger.error("Error during purge request", e);
-    } finally {
-      closeClient(client);
     }
   }
 
@@ -180,8 +177,6 @@ public class EngineIntegrationRule extends TestWatcher {
       }
     } catch (IOException e) {
       logger.error("Error while trying to finish the user task!!", e);
-    } finally {
-      closeClient(client);
     }
   }
 
@@ -233,8 +228,6 @@ public class EngineIntegrationRule extends TestWatcher {
       return procDefs.get(0).getId();
     } catch (IOException e) {
       throw new OptimizeRuntimeException("Could not fetch the process definition!", e);
-    } finally {
-      closeClient(client);
     }
   }
 
@@ -248,15 +241,8 @@ public class EngineIntegrationRule extends TestWatcher {
       processInstanceDto = startProcessInstance(procDefs.get(0).getId(), client, variables);
     } catch (IOException e) {
       logger.error("Could not start the given process model!", e);
-    } finally {
-      closeClient(client);
     }
     return processInstanceDto;
-  }
-
-  public void startProcessInstanceWithProcessInstanceId(String processInstanceId) {
-    String definitionId = getProcessDefinitionIdOfProcessInstanceId(processInstanceId);
-    startProcessInstance(definitionId);
   }
 
   public HistoricProcessInstanceDto getHistoricProcessInstance(String processInstanceId) {
@@ -270,19 +256,12 @@ public class EngineIntegrationRule extends TestWatcher {
       response.close();
     } catch (IOException e) {
       logger.error("Could not get process definition for process instance: " + processInstanceId, e );
-    } finally {
-      closeClient(client);
     }
     return processInstanceDto;
   }
 
-  private CloseableHttpClient getHttpClient() {
-    CloseableHttpClient closeableHttpClient = HttpClientBuilder.create().build();
+  public CloseableHttpClient getHttpClient() {
     return closeableHttpClient;
-  }
-
-  public String getProcessDefinitionIdOfProcessInstanceId(String processInstanceId) {
-    return getHistoricProcessInstance(processInstanceId).getProcessDefinitionId();
   }
 
   public ProcessInstanceEngineDto startProcessInstance(String processDefinitionId) {
@@ -292,18 +271,8 @@ public class EngineIntegrationRule extends TestWatcher {
       processInstanceDto = startProcessInstance(processDefinitionId, client, new HashMap<>());
     } catch (IOException e) {
       logger.error("Could not start the given process model!", e);
-    } finally {
-      closeClient(client);
     }
     return processInstanceDto;
-  }
-
-  private void closeClient(CloseableHttpClient client) {
-    try {
-      client.close();
-    } catch (IOException e) {
-      logger.error("Could not close client!", e);
-    }
   }
 
   public ProcessInstanceEngineDto deployAndStartProcess(BpmnModelInstance bpmnModelInstance) {
@@ -314,7 +283,6 @@ public class EngineIntegrationRule extends TestWatcher {
     CloseableHttpClient client = getHttpClient();
     DeploymentDto deploymentDto = deployProcess(modelInstance, client);
     String processDefinitionId = getProcessDefinitionId(deploymentDto, client);
-    closeClient(client);
     return processDefinitionId;
   }
 
@@ -408,7 +376,6 @@ public class EngineIntegrationRule extends TestWatcher {
   public ProcessInstanceEngineDto startProcessInstance(String processDefinitionId, Map<String, Object> variables) throws IOException {
     CloseableHttpClient client = getHttpClient();
     ProcessInstanceEngineDto processInstanceDto = startProcessInstance(processDefinitionId, client, variables);
-    closeClient(client);
     return processInstanceDto;
   }
 
@@ -491,7 +458,6 @@ public class EngineIntegrationRule extends TestWatcher {
       }
       response.close();
     }
-    client.close();
   }
 
   public void addUser(String username, String password) {

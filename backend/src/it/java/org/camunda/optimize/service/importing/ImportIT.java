@@ -1,7 +1,6 @@
 package org.camunda.optimize.service.importing;
 
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
@@ -576,9 +575,8 @@ public class ImportIT  {
             .camundaExpression("${true}")
         .endEvent()
         .done();
-    CloseableHttpClient client = HttpClientBuilder.create().build();
+    CloseableHttpClient client = engineRule.getHttpClient();
     engineRule.deployProcess(subProcess, client);
-    client.close();
 
     BpmnModelInstance model = Bpmn.createExecutableProcess(TEST_MI_PROCESS)
         .name("MultiInstance")

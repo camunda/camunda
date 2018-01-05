@@ -3,13 +3,11 @@ package org.camunda.optimize.service.importing;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.rest.engine.dto.DeploymentDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -18,7 +16,6 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -278,13 +275,12 @@ public class ProcessDefinitionBaseImportIT {
   }
 
   private String createAndStartProcessDefinition(BpmnModelInstance modelInstance) throws IOException {
-    CloseableHttpClient client = HttpClientBuilder.create().build();
+    CloseableHttpClient client = engineRule.getHttpClient();
     DeploymentDto deploymentDto = engineRule.deployProcess(modelInstance, client);
     List<ProcessDefinitionEngineDto> list = engineRule.getAllProcessDefinitions(deploymentDto, client);
     assertThat(list.size(), is(1));
     String processDefinitionId = list.get(0).getId();
     engineRule.startProcessInstance(processDefinitionId, client);
-    client.close();
     return processDefinitionId;
   }
 
