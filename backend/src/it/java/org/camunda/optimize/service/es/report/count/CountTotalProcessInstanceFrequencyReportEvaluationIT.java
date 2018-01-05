@@ -17,6 +17,7 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.test.util.ReportDataHelper;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -46,6 +47,7 @@ import static org.hamcrest.core.IsNull.notNullValue;
 @ContextConfiguration(locations = {"/it/it-applicationContext.xml"})
 public class CountTotalProcessInstanceFrequencyReportEvaluationIT {
 
+  public static final String PROCESS_DEFINITION_ID = "123";
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
@@ -66,7 +68,7 @@ public class CountTotalProcessInstanceFrequencyReportEvaluationIT {
 
     // when
     String processDefinitionId = processInstanceDto.getDefinitionId();
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createPiFrequencyCountGroupedByNone(processDefinitionId);
     NumberReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -91,7 +93,7 @@ public class CountTotalProcessInstanceFrequencyReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = createDefaultReportData(engineDto.getDefinitionId());
+    ReportDataDto reportData = ReportDataHelper.createPiFrequencyCountGroupedByNone(engineDto.getDefinitionId());
     NumberReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -108,7 +110,7 @@ public class CountTotalProcessInstanceFrequencyReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = createDefaultReportData(engineDto.getDefinitionId());
+    ReportDataDto reportData = ReportDataHelper.createPiFrequencyCountGroupedByNone(engineDto.getDefinitionId());
     NumberReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -125,7 +127,7 @@ public class CountTotalProcessInstanceFrequencyReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createPiFrequencyCountGroupedByNone(processDefinitionId);
     reportData.setFilter(createDateFilter("<", "start_date", past));
     NumberReportResultDto result = evaluateReport(reportData);
 
@@ -134,7 +136,7 @@ public class CountTotalProcessInstanceFrequencyReportEvaluationIT {
     assertThat(result.getResult(), is(0L));
 
     // when
-    reportData = createDefaultReportData(processDefinitionId);
+    reportData = ReportDataHelper.createPiFrequencyCountGroupedByNone(processDefinitionId);
     reportData.setFilter(createDateFilter(">=", "start_date", past));
     result = evaluateReport(reportData);
 
@@ -166,7 +168,7 @@ public class CountTotalProcessInstanceFrequencyReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createPiFrequencyCountGroupedByNone(processDefinitionId);
     reportData.setFilter(createVariableFilter());
     NumberReportResultDto result = evaluateReport(reportData);
 
@@ -199,7 +201,7 @@ public class CountTotalProcessInstanceFrequencyReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createPiFrequencyCountGroupedByNone(processDefinitionId);
     List<ExecutedFlowNodeFilterDto> flowNodeFilter = ExecutedFlowNodeFilterBuilder.construct()
           .id("task1")
           .build();
@@ -214,7 +216,7 @@ public class CountTotalProcessInstanceFrequencyReportEvaluationIT {
   @Test
   public void optimizeExceptionOnViewPropertyIsNull() throws Exception {
     // given
-    ReportDataDto dataDto = createDefaultReportData("123");
+    ReportDataDto dataDto = ReportDataHelper.createPiFrequencyCountGroupedByNone(PROCESS_DEFINITION_ID);
     dataDto.getView().setProperty(null);
 
     //when
@@ -227,7 +229,7 @@ public class CountTotalProcessInstanceFrequencyReportEvaluationIT {
   @Test
   public void optimizeExceptionOnGroupByTypeIsNull() throws Exception {
     // given
-    ReportDataDto dataDto = createDefaultReportData("123");
+    ReportDataDto dataDto = ReportDataHelper.createPiFrequencyCountGroupedByNone(PROCESS_DEFINITION_ID);
     dataDto.getGroupBy().setType(null);
 
     //when
@@ -288,20 +290,6 @@ public class CountTotalProcessInstanceFrequencyReportEvaluationIT {
     return processDefinitionId;
   }
 
-  private ReportDataDto createDefaultReportData(String processDefinitionId) {
-    ReportDataDto reportData = new ReportDataDto();
-    reportData.setProcessDefinitionId(processDefinitionId);
-    reportData.setVisualization("heat");
-    ViewDto view = new ViewDto();
-    view.setOperation(VIEW_COUNT_OPERATION);
-    view.setEntity(VIEW_PROCESS_INSTANCE_ENTITY);
-    view.setProperty(VIEW_FREQUENCY_PROPERTY);
-    reportData.setView(view);
-    GroupByDto groupByDto = new GroupByDto();
-    groupByDto.setType(GROUP_BY_NONE_TYPE);
-    reportData.setGroupBy(groupByDto);
-    return reportData;
-  }
 
   private NumberReportResultDto evaluateReport(ReportDataDto reportData) {
     Response response = evaluateReportAndReturnResponse(reportData);

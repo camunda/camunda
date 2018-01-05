@@ -1,14 +1,15 @@
 package org.camunda.optimize.qa.performance.steps;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
-import org.camunda.optimize.dto.optimize.query.HeatMapQueryDto;
-import org.camunda.optimize.dto.optimize.query.HeatMapResponseDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
+import org.camunda.optimize.dto.optimize.query.report.result.MapReportResultDto;
 import org.camunda.optimize.qa.performance.framework.PerfTestContext;
 import org.camunda.optimize.qa.performance.framework.PerfTestStep;
 import org.camunda.optimize.qa.performance.framework.PerfTestStepResult;
@@ -23,6 +24,7 @@ import java.util.List;
 abstract class GetHeatMapStep extends PerfTestStep {
 
   private Logger logger = LoggerFactory.getLogger(this.getClass());
+
   private List<FilterDto> filter;
 
   GetHeatMapStep(List<FilterDto> filter) {
@@ -30,7 +32,7 @@ abstract class GetHeatMapStep extends PerfTestStep {
   }
 
   @Override
-  public PerfTestStepResult<HeatMapResponseDto> execute(PerfTestContext context) {
+  public PerfTestStepResult<MapReportResultDto> execute(PerfTestContext context) {
     objectMapper = initMapper(context);
     CloseableHttpClient client = HttpClientBuilder.create().build();
     try {
@@ -46,7 +48,7 @@ abstract class GetHeatMapStep extends PerfTestStep {
     }
   }
 
-  private PerfTestStepResult<HeatMapResponseDto> getHeatmap(PerfTestContext context, CloseableHttpClient client) throws IOException {
+  private PerfTestStepResult<MapReportResultDto> getHeatmap(PerfTestContext context, CloseableHttpClient client) throws IOException {
 
     HttpPost post = setupPostRequest(context);
 
@@ -57,25 +59,28 @@ abstract class GetHeatMapStep extends PerfTestStep {
     }
     String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
 
-    PerfTestStepResult<HeatMapResponseDto> result = new PerfTestStepResult<>();
-    HeatMapResponseDto responseDto = objectMapper.readValue(responseString, HeatMapResponseDto.class);
+    PerfTestStepResult<MapReportResultDto> result = new PerfTestStepResult<>();
+    MapReportResultDto responseDto = objectMapper.readValue(responseString, MapReportResultDto.class);
     result.setResult(responseDto);
     this.getClass().getSimpleName();
 
     return result;
   }
 
-  private HttpPost setupPostRequest(PerfTestContext context) throws UnsupportedEncodingException, com.fasterxml.jackson.core.JsonProcessingException {
+  private HttpPost setupPostRequest(PerfTestContext context) throws UnsupportedEncodingException, JsonProcessingException {
     HttpPost post = new HttpPost(getRestEndpoint(context));
     post.addHeader("content-type", "application/json");
     post.addHeader("Authorization", "Bearer " + context.getConfiguration().getAuthorizationToken());
-    HeatMapQueryDto queryDto = new HeatMapQueryDto();
+
     String processDefinitionId = (String) context.getParameter("processDefinitionId");
-    queryDto.setProcessDefinitionId(processDefinitionId);
-    queryDto.setFilter(filter);
-    post.setEntity(new StringEntity(objectMapper.writeValueAsString(queryDto)));
+    ReportDataDto reportData = createRequest(processDefinitionId);
+    reportData.setFilter(filter);
+
+    post.setEntity(new StringEntity(objectMapper.writeValueAsString(reportData)));
     return post;
   }
+
+  protected abstract ReportDataDto createRequest(String processDefinitionId);
 
   abstract String getRestEndpoint(PerfTestContext context);
 }

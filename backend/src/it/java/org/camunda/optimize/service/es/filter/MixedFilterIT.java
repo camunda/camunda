@@ -2,17 +2,20 @@ package org.camunda.optimize.service.es.filter;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.dto.optimize.query.HeatMapQueryDto;
-import org.camunda.optimize.dto.optimize.query.HeatMapResponseDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.ExecutedFlowNodeFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.VariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.data.VariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.util.ExecutedFlowNodeFilterBuilder;
+import org.camunda.optimize.dto.optimize.query.report.result.raw.RawDataReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.camunda.optimize.test.util.DateUtilHelper;
+import org.camunda.optimize.test.util.ReportDataHelper;
+import org.hamcrest.MatcherAssert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -22,12 +25,11 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +52,27 @@ public class MixedFilterIT {
   @Rule
   public RuleChain chain = RuleChain
       .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
+
+  private RawDataReportResultDto evaluateReportWithFilter(String processDefinitionId, List<FilterDto> filter) {
+    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
+    reportData.setFilter(filter);
+    return evaluateReport(reportData);
+  }
+
+  private RawDataReportResultDto evaluateReport(ReportDataDto reportData) {
+    Response response = evaluateReportAndReturnResponse(reportData);
+    MatcherAssert.assertThat(response.getStatus(), is(200));
+    return response.readEntity(RawDataReportResultDto.class);
+  }
+
+  private Response evaluateReportAndReturnResponse(ReportDataDto reportData) {
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+    return embeddedOptimizeRule.target("report/evaluate")
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+        .post(Entity.json(reportData));
+  }
+
 
   @Test
   public void applyAllPossibleFilters() throws Exception {
@@ -81,33 +104,21 @@ public class MixedFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
+    List<FilterDto> filterList = new ArrayList<>();
+
     VariableFilterDto filter = createVariableFilter(IN, "var", STRING_TYPE, "value");
-    HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-    DateUtilHelper.addDateFilter("<", "start_date", date, queryDto);
+    filterList.add(filter);
+
     List<ExecutedFlowNodeFilterDto> flowNodeFilter = ExecutedFlowNodeFilterBuilder.construct()
           .id(USER_TASK_ACTIVITY_ID)
           .build();
-    queryDto.getFilter().addAll(flowNodeFilter);
-    HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
+
+    filterList.addAll(flowNodeFilter);
+    filterList.addAll(DateUtilHelper.createDateFilter("<", "start_date", date));
+    RawDataReportResultDto rawDataReportResultDto = evaluateReportWithFilter(processDefinitionId, filterList);
 
     // then
-    assertThat(testDefinition.getPiCount(), is(1L));
-  }
-
-  private Response getResponse(HeatMapQueryDto dto) {
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-    Entity<HeatMapQueryDto> entity = Entity.entity(dto, MediaType.APPLICATION_JSON);
-    return embeddedOptimizeRule.target("process-definition/heatmap/frequency")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
-        .post(entity);
-  }
-
-  private HeatMapResponseDto getHeatMapResponseDto(HeatMapQueryDto dto) {
-    Response response = getResponse(dto);
-
-    // then the status code is okay
-    return response.readEntity(HeatMapResponseDto.class);
+    assertThat(rawDataReportResultDto.getResult().size(), is(1));
   }
 
   private VariableFilterDto createVariableFilter(String operator, String variableName, String variableType, String variableValue) {
@@ -120,14 +131,6 @@ public class MixedFilterIT {
     variableFilterDto.setData(data);
 
     return variableFilterDto;
-  }
-
-  private HeatMapQueryDto createHeatMapQueryWithVariableFilter(String processDefinitionId, VariableFilterDto variableFilter) {
-    HeatMapQueryDto dto = new HeatMapQueryDto();
-
-    dto.getFilter().add(variableFilter);
-    dto.setProcessDefinitionId(processDefinitionId);
-    return dto;
   }
 
   private String deploySimpleProcessDefinition() throws IOException {

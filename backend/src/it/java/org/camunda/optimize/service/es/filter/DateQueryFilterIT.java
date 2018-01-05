@@ -2,30 +2,27 @@ package org.camunda.optimize.service.es.filter;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.dto.optimize.query.HeatMapQueryDto;
-import org.camunda.optimize.dto.optimize.query.HeatMapResponseDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.data.DateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.result.raw.RawDataReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.camunda.optimize.test.util.DateUtilHelper;
+import org.camunda.optimize.test.util.ReportDataHelper;
+import org.hamcrest.MatcherAssert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Date;
 
 import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.GREATER_THAN;
 import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.GREATER_THAN_EQUALS;
@@ -38,9 +35,6 @@ import static org.junit.Assert.assertThat;
 @ContextConfiguration(locations = {"/it/it-applicationContext.xml"})
 public class DateQueryFilterIT {
 
-  private Logger logger = LoggerFactory.getLogger(DateQueryFilterIT.class);
-
-  private static final String TEST_DEFINITION = "testDefinition";
   private static final String TEST_ACTIVITY = "testActivity";
   private static final long TIME_OFFSET_MILLS = 2000L;
 
@@ -52,94 +46,75 @@ public class DateQueryFilterIT {
   public RuleChain chain = RuleChain
       .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
 
+
+  private OffsetDateTime past;
+  private String processDefinitionId;
+
   @Test
-  public void testGetHeatMapWithLtStartDateCriteria() throws Exception {
+  public void testGetReportWithLtStartDateCriteria() throws Exception {
     //given
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    OffsetDateTime past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getStartTime();
-    String processDefinitionId = processInstanceDto.getDefinitionId();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    startAndImportSimpleProcess();
 
     // when
     String operator = GREATER_THAN;
     String type = "start_date";
 
     //when
-    HeatMapQueryDto dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, past.plus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS));
-    HeatMapResponseDto resultMap = getHeatMapResponseDto(dto);
+    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
+    reportData.setFilter(DateUtilHelper.createDateFilter(operator, type, past.plus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS)));
+    RawDataReportResultDto result = evaluateReport(reportData);
 
     //then
-    assertResults(resultMap, 0,0L);
+    assertResults(result, 0);
 
     //when
-    dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, past);
-    resultMap = getHeatMapResponseDto(dto);
+    reportData.setFilter(DateUtilHelper.createDateFilter(operator, type, past));
+    result = evaluateReport(reportData);
     //then
-    assertResults(resultMap, 0,0L);
+    assertResults(result, 0);
 
     //when
-    dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, past.minus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS));
-    resultMap = getHeatMapResponseDto(dto);
+    reportData.setFilter(DateUtilHelper.createDateFilter(operator, type, past.minus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS)));
+    result = evaluateReport(reportData);
     //then
-    assertResults(resultMap, 3, TEST_ACTIVITY, 1L, 1L);
-  }
-
-  private HeatMapResponseDto getHeatMapResponseDto(HeatMapQueryDto dto) {
-
-    Response response = getResponse(dto);
-
-    // then the status code is okay
-    return response.readEntity(HeatMapResponseDto.class);
-  }
-
-  private Response getResponse(HeatMapQueryDto dto) {
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-    Entity<HeatMapQueryDto> entity = Entity.entity(dto, MediaType.APPLICATION_JSON);
-    return embeddedOptimizeRule.target("process-definition/heatmap/frequency")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
-        .post(entity);
+    assertResults(result, 1);
   }
 
   @Test
   public void testGetHeatMapWithLteStartDateCriteria() throws Exception {
     //given
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    OffsetDateTime past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getStartTime();
-    String processDefinitionId = processInstanceDto.getDefinitionId();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    startAndImportSimpleProcess();
 
     String operator = GREATER_THAN_EQUALS;
     String type = "start_date";
 
     //when
-    HeatMapQueryDto dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, past.plus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS));
-    HeatMapResponseDto resultMap = getHeatMapResponseDto(dto);
+    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
+    reportData.setFilter(DateUtilHelper.createDateFilter(operator, type, past.plus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS)));
+    RawDataReportResultDto result = evaluateReport(reportData);
 
     //then
-    assertResults(resultMap, 0, 0L);
-
-    //when
-    dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, past);
-    resultMap = getHeatMapResponseDto(dto);
-    //then
-    assertResults(resultMap, 3, 1L);
+    assertResults(result, 0);
 
     //when
-    dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, past.minus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS));
-    resultMap = getHeatMapResponseDto(dto);
+    reportData.setFilter(DateUtilHelper.createDateFilter(operator, type, past));
+    result = evaluateReport(reportData);
     //then
-    assertResults(resultMap, 3, TEST_ACTIVITY, 1L, 1L);
+    assertResults(result, 1);
+
+    //when
+    reportData.setFilter(DateUtilHelper.createDateFilter(operator, type, past.minus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS)));
+    result = evaluateReport(reportData);
+    //then
+    assertResults(result, 1);
   }
 
   @Test
   public void testGetHeatMapWithLteEndDateCriteria() throws Exception {
     //given
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    OffsetDateTime past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getEndTime();
-    String processDefinitionId = processInstanceDto.getDefinitionId();
+    past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getEndTime();
+    processDefinitionId = processInstanceDto.getDefinitionId();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
@@ -147,101 +122,98 @@ public class DateQueryFilterIT {
     String type = "end_date";
 
     //when
-    HeatMapQueryDto dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, past.plus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS));
-    HeatMapResponseDto resultMap = getHeatMapResponseDto(dto);
+    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
+    reportData.setFilter(DateUtilHelper.createDateFilter(operator, type, past.plus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS)));
+    RawDataReportResultDto result = evaluateReport(reportData);
 
     //then
-    assertResults(resultMap, 0, 0L);
-
-    //when
-    dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, past);
-    resultMap = getHeatMapResponseDto(dto);
-    //then
-    assertResults(resultMap, 3, TEST_ACTIVITY, 1L, 1L);
+    assertResults(result, 0);
 
     //when
-    dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, past.minus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS));
-    resultMap = getHeatMapResponseDto(dto);
+    reportData.setFilter(DateUtilHelper.createDateFilter(operator, type, past));
+    result = evaluateReport(reportData);
     //then
-    assertResults(resultMap, 3, TEST_ACTIVITY, 1L, 1L);
+    assertResults(result, 1);
+
+    //when
+    reportData.setFilter(DateUtilHelper.createDateFilter(operator, type, past.minus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS)));
+    result = evaluateReport(reportData);
+    //then
+    assertResults(result, 1);
   }
 
   @Test
   public void testGetHeatMapWithGtStartDateCriteria() throws Exception {
     //given
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    OffsetDateTime past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getStartTime();
-    String processDefinitionId = processInstanceDto.getDefinitionId();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    startAndImportSimpleProcess();
 
     String operator = LESS_THAN;
     String type = "start_date";
 
     //when
-    HeatMapQueryDto dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, past.plus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS));
-    HeatMapResponseDto resultMap = getHeatMapResponseDto(dto);
+    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
+    reportData.setFilter(DateUtilHelper.createDateFilter(operator, type, past.plus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS)));
+    RawDataReportResultDto result = evaluateReport(reportData);
 
     //then
-    assertResults(resultMap, 3, TEST_ACTIVITY, 1L, 1L);
-
-    //when
-    dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, past);
-    resultMap = getHeatMapResponseDto(dto);
-    //then
-    assertResults(resultMap, 0, 0L);
+    assertResults(result, 1);
 
     //when
-    dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, past.minus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS));
-    resultMap = getHeatMapResponseDto(dto);
+    reportData.setFilter(DateUtilHelper.createDateFilter(operator, type, past));
+    result = evaluateReport(reportData);
     //then
-    assertResults(resultMap, 0, 0L);
+    assertResults(result, 0);
+
+    //when
+    reportData.setFilter(DateUtilHelper.createDateFilter(operator, type, past.minus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS)));
+    result = evaluateReport(reportData);
+    //then
+    assertResults(result, 0);
   }
 
   @Test
   public void testGetHeatMapWithMixedDateCriteria() throws Exception {
     //given
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    OffsetDateTime past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getStartTime();
-    String processDefinitionId = processInstanceDto.getDefinitionId();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    startAndImportSimpleProcess();
 
     String operator = GREATER_THAN;
     String type = "start_date";
 
-    HeatMapQueryDto dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, past.minus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS));
+    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
+    reportData.setFilter(DateUtilHelper.createDateFilter(operator, type, past.minus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS)));
+
     operator = LESS_THAN;
     type = "end_date";
-    DateUtilHelper.addDateFilter(operator, type, past.plus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS), dto);
+    DateUtilHelper.addDateFilter(operator, type, past.plus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS), reportData);
 
     //when
-    HeatMapResponseDto resultMap = getHeatMapResponseDto(dto);
+    RawDataReportResultDto result = evaluateReport(reportData);
 
     //then
-    assertResults(resultMap, 3, 1L);
+    assertResults(result, 1);
 
     //given
     operator = GREATER_THAN;
     type = "start_date";
-    dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, past.minus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS));
+    reportData.setFilter(DateUtilHelper.createDateFilter(operator, type, past.minus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS)));
+
     operator = LESS_THAN;
     type = "end_date";
-    DateUtilHelper.addDateFilter(operator, type, past, dto);
+    DateUtilHelper.addDateFilter(operator, type, past, reportData);
 
     //when
-    resultMap = getHeatMapResponseDto(dto);
+    result = evaluateReport(reportData);
 
     //then
-    assertResults(resultMap, 0, 0L);
+    assertResults(result, 0);
   }
 
   @Test
   public void testGetHeatMapWithGtEndDateCriteria() throws Exception {
     //given
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    OffsetDateTime past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getEndTime();
-    String processDefinitionId = processInstanceDto.getDefinitionId();
+    past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getEndTime();
+    processDefinitionId = processInstanceDto.getDefinitionId();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
@@ -249,96 +221,80 @@ public class DateQueryFilterIT {
     String type = "end_date";
 
     //when
-    HeatMapQueryDto dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, past.plus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS));
-    HeatMapResponseDto resultMap = getHeatMapResponseDto(dto);
+    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
+    reportData.setFilter(DateUtilHelper.createDateFilter(operator, type, past.plus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS)));
+    RawDataReportResultDto result = evaluateReport(reportData);
 
     //then
-    assertResults(resultMap, 3, TEST_ACTIVITY, 1L, 1L);
-
-    //when
-    dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, past);
-    resultMap = getHeatMapResponseDto(dto);
-    //then
-    assertResults(resultMap, 0, 0L);
+    assertResults(result, 1);
 
     //when
-    dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, past.minus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS));
-    resultMap = getHeatMapResponseDto(dto);
+    reportData.setFilter(DateUtilHelper.createDateFilter(operator, type, past));
+    result = evaluateReport(reportData);
     //then
-    assertResults(resultMap, 0, 0L);
+    assertResults(result, 0);
+
+    //when
+    reportData.setFilter(DateUtilHelper.createDateFilter(operator, type, past.minus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS)));
+    result = evaluateReport(reportData);
+    //then
+    assertResults(result, 0);
   }
 
   @Test
   public void testGetHeatMapWithGteStartDateCriteria() throws Exception {
     //given
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    OffsetDateTime past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getStartTime();
-    String processDefinitionId = processInstanceDto.getDefinitionId();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    startAndImportSimpleProcess();
 
     String operator = LESS_THAN_EQUALS;
     String type = "start_date";
 
     //when
-    HeatMapQueryDto dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, past.plus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS));
-    HeatMapResponseDto resultMap = getHeatMapResponseDto(dto);
+    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
+    reportData.setFilter(DateUtilHelper.createDateFilter(operator, type, past.plus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS)));
+    RawDataReportResultDto result = evaluateReport(reportData);
 
     //then
-    assertResults(resultMap, 3, TEST_ACTIVITY, 1L, 1L);
+    assertResults(result, 1);
 
     //when
-    dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, past);
-    resultMap = getHeatMapResponseDto(dto);
+    reportData.setFilter(DateUtilHelper.createDateFilter(operator, type, past));
+    result = evaluateReport(reportData);
     //then
-    assertResults(resultMap, 3, TEST_ACTIVITY, 1L, 1L);
+    assertResults(result, 1);
 
     //when
-    dto = createHeatMapQueryWithDateFilter(processDefinitionId, operator, type, past.minus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS));
-    resultMap = getHeatMapResponseDto(dto);
+    reportData.setFilter(DateUtilHelper.createDateFilter(operator, type, past.minus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS)));
+    result = evaluateReport(reportData);
     //then
-    assertResults(resultMap, 0, 0L);
+    assertResults(result, 0);
   }
 
-  @Test
-  public void testValidationExceptionOnNullDto() {
-    //when
-    assertThat(getResponse(null).getStatus(),is(500));
+  private void startAndImportSimpleProcess() throws InterruptedException {
+    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
+    past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getStartTime();
+    processDefinitionId = processInstanceDto.getDefinitionId();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
   }
 
-  @Test
-  public void testValidationExceptionOnNullProcessDefinition() {
 
-    //when
-    assertThat(getResponse( new HeatMapQueryDto()).getStatus(),is(500));
+  public void assertResults(RawDataReportResultDto resultMap, int size) {
+    assertThat(resultMap.getResult().size(), is(size));
   }
 
-  @Test
-  public void testValidationExceptionOnNullFilterField() {
-
-    //when
-    HeatMapQueryDto dto = new HeatMapQueryDto();
-    dto.setProcessDefinitionId(TEST_DEFINITION);
-    DateUtilHelper.addDateFilter("blah", DateFilterDataDto.START_DATE, null, dto);
-    assertThat(getResponse(dto).getStatus(),is(500));
+  private RawDataReportResultDto evaluateReport(ReportDataDto reportData) {
+    Response response = evaluateReportAndReturnResponse(reportData);
+    MatcherAssert.assertThat(response.getStatus(), is(200));
+    return response.readEntity(RawDataReportResultDto.class);
   }
 
-  private void assertResults(HeatMapResponseDto resultMap, int size, long piCount) {
-    assertThat(resultMap.getFlowNodes().size(), is(size));
-    assertThat(resultMap.getPiCount(), is(piCount));
-  }
-
-  public void assertResults(HeatMapResponseDto resultMap, int size, String activity, Long activityCount, Long piCount) {
-    this.assertResults(resultMap, size, piCount);
-    assertThat(resultMap.getFlowNodes().get(activity), is(activityCount));
-  }
-
-  private HeatMapQueryDto createHeatMapQueryWithDateFilter(String processDefinitionId, String operator, String type, OffsetDateTime dateValue) {
-    logger.debug("Preparing query on [{}] with operator [{}], type [{}], date [{}]", processDefinitionId, operator, type, dateValue);
-    HeatMapQueryDto dto = new HeatMapQueryDto();
-    dto.setProcessDefinitionId(processDefinitionId);
-    DateUtilHelper.addDateFilter(operator, type, dateValue, dto);
-    return dto;
+  private Response evaluateReportAndReturnResponse(ReportDataDto reportData) {
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+    return embeddedOptimizeRule.target("report/evaluate")
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+        .post(Entity.json(reportData));
   }
 
 

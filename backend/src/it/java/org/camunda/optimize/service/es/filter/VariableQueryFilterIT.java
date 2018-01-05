@@ -2,14 +2,16 @@ package org.camunda.optimize.service.es.filter;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.dto.optimize.query.HeatMapQueryDto;
-import org.camunda.optimize.dto.optimize.query.HeatMapResponseDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.VariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.data.VariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.result.raw.RawDataReportResultDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.test.util.ReportDataHelper;
+import org.hamcrest.MatcherAssert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -20,7 +22,6 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.text.ParseException;
@@ -74,6 +75,41 @@ public class VariableQueryFilterIT {
   private final String[] NUMERIC_TYPES =
     {INTEGER_TYPE, SHORT_TYPE, LONG_TYPE, DOUBLE_TYPE};
 
+  private RawDataReportResultDto evaluateReport(ReportDataDto reportData) {
+    Response response = evaluateReportAndReturnResponse(reportData);
+    MatcherAssert.assertThat(response.getStatus(), is(200));
+    return response.readEntity(RawDataReportResultDto.class);
+  }
+
+  private Response evaluateReportWithFilterAndGetResponse(String processDefinitionId, VariableFilterDto dto) {
+    List<FilterDto> filterList = new ArrayList<>();
+    filterList.add(dto);
+
+    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
+    reportData.setFilter(filterList);
+    return evaluateReportAndReturnResponse(reportData);
+  }
+
+  private Response evaluateReportAndReturnResponse(ReportDataDto reportData) {
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+    return embeddedOptimizeRule.target("report/evaluate")
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+        .post(Entity.json(reportData));
+  }
+
+  private RawDataReportResultDto evaluateReportWithFilter(String processDefinitionId, VariableFilterDto filter) {
+    List<FilterDto> filterList = new ArrayList<>();
+    filterList.add(filter);
+    return this.evaluateReportWithFilter(processDefinitionId, filterList);
+  }
+
+  private RawDataReportResultDto evaluateReportWithFilter(String processDefinitionId, List<FilterDto> filter) {
+    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
+    reportData.setFilter(filter);
+    return evaluateReport(reportData);
+  }
+
   @Test
   public void simpleVariableFilter() throws Exception {
     // given
@@ -88,12 +124,13 @@ public class VariableQueryFilterIT {
 
     // when
     VariableFilterDto filter = createVariableFilter(IN, "var", STRING_TYPE, "value");
-    HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-    HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
+    RawDataReportResultDto result = evaluateReportWithFilter(processDefinitionId, filter);
 
     // then
-    assertResults(testDefinition, 2, 1L);
+    assertResults(result, 1);
   }
+
+
 
   @Test
   public void severalVariablesInSameProcessInstanceShouldNotAffectFilter() throws Exception {
@@ -109,11 +146,10 @@ public class VariableQueryFilterIT {
 
     // when
     VariableFilterDto filter = createVariableFilter(NOT_IN, "stringVar", STRING_TYPE, "aStringValue");
-    HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-    HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
+    RawDataReportResultDto result = evaluateReportWithFilter(processDefinitionId, filter);
 
     // then
-    assertResults(testDefinition, 0, 0L);
+    assertResults(result, 0);
   }
 
   @Test
@@ -130,11 +166,10 @@ public class VariableQueryFilterIT {
 
     // when
     VariableFilterDto filter = createVariableFilter(IN, "stringVar", STRING_TYPE, "aStringValue");
-    HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-    HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
+    RawDataReportResultDto result = evaluateReportWithFilter(processDefinitionId, filter);
 
     // then
-    assertResults(testDefinition, 2, 1L);
+    assertResults(result,  1);
   }
 
   @Test
@@ -153,11 +188,10 @@ public class VariableQueryFilterIT {
 
     // when
     VariableFilterDto filter = createVariableFilter(NOT_IN, "anotherStringVar", STRING_TYPE, "aStringValue");
-    HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-    HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
+    RawDataReportResultDto result = evaluateReportWithFilter(processDefinitionId, filter);
 
     // then
-    assertResults(testDefinition, 2, 2L);
+    assertResults(result,  2);
   }
 
   @Test
@@ -176,11 +210,10 @@ public class VariableQueryFilterIT {
     // when
     VariableFilterDto filter = createVariableFilter(IN, "stringVar", STRING_TYPE, "aStringValue");
     filter.getData().getValues().add("anotherValue");
-    HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-    HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
+    RawDataReportResultDto result = evaluateReportWithFilter(processDefinitionId, filter);
 
     // then
-    assertResults(testDefinition, 2, 2L);
+    assertResults(result, 2);
   }
 
   @Test
@@ -196,11 +229,10 @@ public class VariableQueryFilterIT {
 
     // when
     VariableFilterDto filter = createVariableFilter(IN, "stringVar", STRING_TYPE, "value");
-    HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-    HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
+    RawDataReportResultDto result = evaluateReportWithFilter(processDefinitionId, filter);
 
     // then
-    assertResults(testDefinition, 2, 1L);
+    assertResults(result, 1);
   }
 
   @Test
@@ -217,11 +249,10 @@ public class VariableQueryFilterIT {
 
     // when
     VariableFilterDto filter = createVariableFilter(IN, "var", STRING_TYPE, "1");
-    HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-    HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
+    RawDataReportResultDto result = evaluateReportWithFilter(processDefinitionId, filter);
 
     // then
-    assertResults(testDefinition, 2, 1L);
+    assertResults(result, 1);
   }
 
   @Test
@@ -240,11 +271,10 @@ public class VariableQueryFilterIT {
 
     // when
     VariableFilterDto filter = createVariableFilter(NOT_IN, "var", STRING_TYPE, "value");
-    HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-    HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
+    RawDataReportResultDto result = evaluateReportWithFilter(processDefinitionId, filter);
 
     // then
-    assertResults(testDefinition, 2, 2L);
+    assertResults(result, 2);
   }
 
   @Test
@@ -264,11 +294,10 @@ public class VariableQueryFilterIT {
     // when
     VariableFilterDto filter = createVariableFilter(NOT_IN, "var", STRING_TYPE, "1");
     filter.getData().getValues().add("2");
-    HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-    HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
+    RawDataReportResultDto result = evaluateReportWithFilter(processDefinitionId, filter);
 
     // then
-    assertResults(testDefinition, 2, 1L);
+    assertResults(result, 1);
   }
 
   @Test
@@ -287,11 +316,10 @@ public class VariableQueryFilterIT {
 
     // when
     VariableFilterDto filter = createVariableFilter(EQUALS, "var", BOOLEAN_TYPE, "false");
-    HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-    HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
+    RawDataReportResultDto result = evaluateReportWithFilter(processDefinitionId, filter);
 
     // then
-    assertResults(testDefinition, 2, 2L);
+    assertResults(result, 2);
   }
 
   @Test
@@ -310,11 +338,10 @@ public class VariableQueryFilterIT {
 
     // when
     VariableFilterDto filter = createVariableFilter(EQUALS, "var", BOOLEAN_TYPE, "true");
-    HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-    HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
+    RawDataReportResultDto result = evaluateReportWithFilter(processDefinitionId, filter);
 
     // then
-    assertResults(testDefinition, 2, 2L);
+    assertResults(result, 2);
   }
 
   @Test
@@ -333,11 +360,10 @@ public class VariableQueryFilterIT {
 
     // when
     VariableFilterDto filter = createVariableFilter(NOT_IN, "var", BOOLEAN_TYPE, "true");
-    HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-    HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
+    RawDataReportResultDto result = evaluateReportWithFilter(processDefinitionId, filter);
 
     // then
-    assertResults(testDefinition, 2, 3L);
+    assertResults(result, 3);
   }
 
   @Test
@@ -358,11 +384,10 @@ public class VariableQueryFilterIT {
 
       // when
       VariableFilterDto filter = createVariableFilter(LESS_THAN, "var", variableType, "5");
-      HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-      HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
+      RawDataReportResultDto result = evaluateReportWithFilter(processDefinitionId, filter);
 
       // then
-      assertResults(testDefinition, 2, 2L);
+      assertResults(result, 2);
 
       resetIndexesAndClean();
     }
@@ -391,11 +416,10 @@ public class VariableQueryFilterIT {
       // when
       VariableFilterDto filter = createVariableFilter(IN, "var", variableType, "1");
       filter.getData().getValues().add("2");
-      HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-      HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
+      RawDataReportResultDto result = evaluateReportWithFilter(processDefinitionId, filter);
 
       // then
-      assertResults(testDefinition, 2, 2L);
+      assertResults(result, 2);
 
       resetIndexesAndClean();
     }
@@ -420,11 +444,10 @@ public class VariableQueryFilterIT {
       // when
       VariableFilterDto filter = createVariableFilter(NOT_IN, "var", variableType, "1");
       filter.getData().getValues().add("2");
-      HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-      HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
+      RawDataReportResultDto result = evaluateReportWithFilter(processDefinitionId, filter);
 
       // then
-      assertResults(testDefinition, 2, 1L);
+      assertResults(result,  1);
     }
 
   }
@@ -448,11 +471,10 @@ public class VariableQueryFilterIT {
 
       // when
       VariableFilterDto filter = createVariableFilter(LESS_THAN_EQUALS, "var", variableType, "2");
-      HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-      HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
+      RawDataReportResultDto result = evaluateReportWithFilter(processDefinitionId, filter);
 
       // then
-      assertResults(testDefinition, 2, 2L);
+      assertResults(result, 2);
 
       resetIndexesAndClean();
     }
@@ -476,11 +498,10 @@ public class VariableQueryFilterIT {
 
       // when
       VariableFilterDto filter = createVariableFilter(GREATER_THAN, "var", variableType, "1");
-      HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-      HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
+      RawDataReportResultDto result = evaluateReportWithFilter(processDefinitionId, filter);
 
       // then
-      assertResults(testDefinition, 2, 2L);
+      assertResults(result, 2);
 
       resetIndexesAndClean();
     }
@@ -504,11 +525,10 @@ public class VariableQueryFilterIT {
 
       // when
       VariableFilterDto filter = createVariableFilter(GREATER_THAN_EQUALS, "var", variableType, "2");
-      HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-      HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
+      RawDataReportResultDto result = evaluateReportWithFilter(processDefinitionId, filter);
 
       // then
-      assertResults(testDefinition, 2, 2L);
+      assertResults(result, 2);
 
       resetIndexesAndClean();
     }
@@ -532,11 +552,10 @@ public class VariableQueryFilterIT {
 
       // when
       VariableFilterDto filter = createVariableFilter(IN, "var", variableType, "2");
-      HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-      HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
+      RawDataReportResultDto result = evaluateReportWithFilter(processDefinitionId, filter);
 
       // then
-      assertResults(testDefinition, 2, 1L);
+      assertResults(result, 1);
 
       resetIndexesAndClean();
     }
@@ -560,11 +579,10 @@ public class VariableQueryFilterIT {
 
       // when
       VariableFilterDto filter = createVariableFilter(NOT_IN, "var", variableType, "2");
-      HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-      HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
+      RawDataReportResultDto result = evaluateReportWithFilter(processDefinitionId, filter);
 
       // then
-      assertResults(testDefinition, 2, 2L);
+      assertResults(result, 2);
     }
   }
 
@@ -588,11 +606,10 @@ public class VariableQueryFilterIT {
       VariableFilterDto filter = createVariableFilter(GREATER_THAN, "var", variableType, "1");
       VariableFilterDto filter2 = createVariableFilter(LESS_THAN, "var", variableType, "10");
       List<FilterDto> filters = Stream.of(filter, filter2).collect(Collectors.toList());
-      HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilters(processDefinitionId, filters);
-      HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
+      RawDataReportResultDto result = evaluateReportWithFilter(processDefinitionId, filters);
 
       // then
-      assertResults(testDefinition, 2, 1L);
+      assertResults(result, 1);
 
       resetIndexesAndClean();
     }
@@ -618,11 +635,9 @@ public class VariableQueryFilterIT {
       VariableFilterDto filter = createVariableFilter(LESS_THAN, "var", variableType, "2");
       VariableFilterDto filter2 = createVariableFilter(GREATER_THAN, "var", variableType, "2");
       List<FilterDto> filters = Stream.of(filter, filter2).collect(Collectors.toList());
-      HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilters(processDefinitionId, filters);
-      HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
-
+      RawDataReportResultDto result = evaluateReportWithFilter(processDefinitionId, filters);
       // then
-      assertResults(testDefinition, 0, 0L);
+      assertResults(result, 0);
       elasticSearchRule.cleanAndVerify();
     }
   }
@@ -643,11 +658,10 @@ public class VariableQueryFilterIT {
 
     // when
     VariableFilterDto filter = createVariableFilter(LESS_THAN, "var", DATE_TYPE, nowDateAsString());
-    HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-    HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
+    RawDataReportResultDto result = evaluateReportWithFilter(processDefinitionId, filter);
 
     // then
-    assertResults(testDefinition, 2, 2L);
+    assertResults(result, 2);
   }
 
   @Test
@@ -668,11 +682,10 @@ public class VariableQueryFilterIT {
 
     // when
     VariableFilterDto filter = createVariableFilter(LESS_THAN_EQUALS, "var", DATE_TYPE, nowAsString);
-    HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-    HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
+    RawDataReportResultDto result = evaluateReportWithFilter(processDefinitionId, filter);
 
     // then
-    assertResults(testDefinition, 2, 2L);
+    assertResults(result, 2);
   }
 
   @Test
@@ -693,11 +706,10 @@ public class VariableQueryFilterIT {
 
     // when
     VariableFilterDto filter = createVariableFilter(GREATER_THAN, "var", DATE_TYPE, nowMinusTwoSecondsAsString);
-    HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-    HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
+    RawDataReportResultDto result = evaluateReportWithFilter(processDefinitionId, filter);
 
     // then
-    assertResults(testDefinition, 2, 2L);
+    assertResults(result, 2);
   }
   @Test
   public void dateGreaterThanEqualVariableFilter() throws Exception {
@@ -717,11 +729,10 @@ public class VariableQueryFilterIT {
 
     // when
     VariableFilterDto filter = createVariableFilter(GREATER_THAN_EQUALS, "var", DATE_TYPE, nowAsString);
-    HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-    HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
+    RawDataReportResultDto result = evaluateReportWithFilter(processDefinitionId, filter);
 
     // then
-    assertResults(testDefinition, 2, 2L);
+    assertResults(result, 2);
   }
 
   @Test
@@ -742,11 +753,10 @@ public class VariableQueryFilterIT {
 
     // when
     VariableFilterDto filter = createVariableFilter(IN, "var", DATE_TYPE, nowAsString);
-    HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-    HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
+    RawDataReportResultDto result = evaluateReportWithFilter(processDefinitionId, filter);
 
     // then
-    assertResults(testDefinition, 2, 1L);
+    assertResults(result, 1);
   }
 
   @Test
@@ -768,11 +778,10 @@ public class VariableQueryFilterIT {
 
     // when
     VariableFilterDto filter = createVariableFilter(NOT_IN, "var", DATE_TYPE, nowAsString);
-    HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(processDefinitionId, filter);
-    HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
+    RawDataReportResultDto result = evaluateReportWithFilter(processDefinitionId, filter);
 
     // then
-    assertResults(testDefinition, 2, 2L);
+    assertResults(result, 2);
   }
 
   @Test
@@ -795,11 +804,10 @@ public class VariableQueryFilterIT {
     VariableFilterDto filter = createVariableFilter(GREATER_THAN, "var", DATE_TYPE, dateTimeFormatter.format(nowMinus2Seconds));
     VariableFilterDto filter2 = createVariableFilter(LESS_THAN, "var", DATE_TYPE, dateTimeFormatter.format(nowPlus10Seconds));
     List<FilterDto> filters = Stream.of(filter, filter2).collect(Collectors.toList());
-    HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilters(processDefinitionId, filters);
-    HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
+    RawDataReportResultDto result = evaluateReportWithFilter(processDefinitionId, filters);
 
     // then
-    assertResults(testDefinition, 2, 1L);
+    assertResults(result, 1);
   }
 
   @Test
@@ -822,19 +830,16 @@ public class VariableQueryFilterIT {
     VariableFilterDto filter = createVariableFilter(LESS_THAN, "var", DATE_TYPE, nowAsString);
     VariableFilterDto filter2 = createVariableFilter(GREATER_THAN, "var", DATE_TYPE, nowAsString);
     List<FilterDto> filters = Stream.of(filter, filter2).collect(Collectors.toList());
-    HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilters(processDefinitionId, filters);
-    HeatMapResponseDto testDefinition = getHeatMapResponseDto(queryDto);
+    RawDataReportResultDto result = evaluateReportWithFilter(processDefinitionId, filters);
 
     // then
-    assertResults(testDefinition, 0, 0L);
+    assertResults(result, 0);
   }
 
   @Test
   public void validationExceptionOnNullValueField() {
 
     //given
-    HeatMapQueryDto dto = new HeatMapQueryDto();
-    dto.setProcessDefinitionId(TEST_DEFINITION);
 
     VariableFilterDataDto data = new VariableFilterDataDto();
     data.setName("foo");
@@ -843,21 +848,20 @@ public class VariableQueryFilterIT {
     data.setValues(null);
     VariableFilterDto variableFilterDto = new VariableFilterDto();
     variableFilterDto.setData(data);
-    dto.setFilter(Collections.singletonList(variableFilterDto));
 
     // when
-    Response response = getResponse(dto);
+    Response response = evaluateReportWithFilterAndGetResponse(TEST_DEFINITION, variableFilterDto);
 
     // then
     assertThat(response.getStatus(),is(500));
   }
 
+
+
   @Test
   public void validationExceptionOnNullTypeField() {
 
     //given
-    HeatMapQueryDto dto = new HeatMapQueryDto();
-    dto.setProcessDefinitionId(TEST_DEFINITION);
 
     VariableFilterDataDto data = new VariableFilterDataDto();
     data.setName("foo");
@@ -866,10 +870,9 @@ public class VariableQueryFilterIT {
     data.setValues(Collections.singletonList("foo"));
     VariableFilterDto variableFilterDto = new VariableFilterDto();
     variableFilterDto.setData(data);
-    dto.setFilter(Collections.singletonList(variableFilterDto));
 
     // when
-    Response response = getResponse(dto);
+    Response response = evaluateReportWithFilterAndGetResponse(TEST_DEFINITION, variableFilterDto);
 
     // then
     assertThat(response.getStatus(),is(500));
@@ -879,8 +882,6 @@ public class VariableQueryFilterIT {
   public void validationExceptionOnNullNameField() {
 
     //given
-    HeatMapQueryDto dto = new HeatMapQueryDto();
-    dto.setProcessDefinitionId(TEST_DEFINITION);
 
     VariableFilterDataDto data = new VariableFilterDataDto();
     data.setName(null);
@@ -889,10 +890,9 @@ public class VariableQueryFilterIT {
     data.setValues(Collections.singletonList("foo"));
     VariableFilterDto variableFilterDto = new VariableFilterDto();
     variableFilterDto.setData(data);
-    dto.setFilter(Collections.singletonList(variableFilterDto));
 
     // when
-    Response response = getResponse(dto);
+    Response response = evaluateReportWithFilterAndGetResponse(TEST_DEFINITION, variableFilterDto);
 
     // then
     assertThat(response.getStatus(),is(500));
@@ -902,8 +902,6 @@ public class VariableQueryFilterIT {
   public void validationExceptionOnNullOperatorField() {
 
     //given
-    HeatMapQueryDto dto = new HeatMapQueryDto();
-    dto.setProcessDefinitionId(TEST_DEFINITION);
 
     VariableFilterDataDto data = new VariableFilterDataDto();
     data.setName("foo");
@@ -912,10 +910,9 @@ public class VariableQueryFilterIT {
     data.setValues(Collections.singletonList("foo"));
     VariableFilterDto variableFilterDto = new VariableFilterDto();
     variableFilterDto.setData(data);
-    dto.setFilter(Collections.singletonList(variableFilterDto));
 
     // when
-    Response response = getResponse(dto);
+    Response response = evaluateReportWithFilterAndGetResponse(TEST_DEFINITION, variableFilterDto);
 
     // then
     assertThat(response.getStatus(),is(500));
@@ -967,27 +964,8 @@ public class VariableQueryFilterIT {
     return value;
   }
 
-  private HeatMapQueryDto createHeatMapQueryWithVariableFilter(String processDefinitionId, VariableFilterDto variable) {
-    return createHeatMapQueryWithVariableFilters(processDefinitionId, Collections.singletonList(variable));
-  }
-
-  private HeatMapQueryDto createHeatMapQueryWithVariableFilters(String processDefinitionId, List<FilterDto> variables) {
-    HeatMapQueryDto dto = new HeatMapQueryDto();
-    dto.setProcessDefinitionId(processDefinitionId);
-    dto.setFilter(variables);
-    return dto;
-  }
-
-  private void assertResults(HeatMapResponseDto resultMap, int size, long piCount) {
-    assertThat("flow nodes count", resultMap.getFlowNodes().size(), is(size));
-    assertThat("PI count", resultMap.getPiCount(), is(piCount));
-  }
-
-  private HeatMapResponseDto getHeatMapResponseDto(HeatMapQueryDto dto) {
-    Response response = getResponse(dto);
-
-    // then the status code is okay
-    return response.readEntity(HeatMapResponseDto.class);
+  private void assertResults(RawDataReportResultDto report, int piCount) {
+    assertThat("PI count", report.getResult().size(), is(piCount));
   }
 
   private String deploySimpleProcessDefinition() throws IOException {
@@ -999,13 +977,6 @@ public class VariableQueryFilterIT {
     return processDefinitionId;
   }
 
-  private Response getResponse(HeatMapQueryDto dto) {
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-    Entity<HeatMapQueryDto> entity = Entity.entity(dto, MediaType.APPLICATION_JSON);
-    return embeddedOptimizeRule.target("process-definition/heatmap/frequency")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
-        .post(entity);
-  }
+
 
 }

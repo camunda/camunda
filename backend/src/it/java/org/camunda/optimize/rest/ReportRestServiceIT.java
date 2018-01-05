@@ -6,6 +6,7 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ViewDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
+import org.camunda.optimize.test.util.ReportDataHelper;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -248,7 +249,7 @@ public class ReportRestServiceIT {
   public void evaluateUnsavedReport() throws Exception {
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
-    ReportDataDto reportDataDto = createDefaultReportData("someRandomId");
+    ReportDataDto reportDataDto = ReportDataHelper.createReportDataViewRawAsTable("someRandomId");
 
     // then
     Response response = embeddedOptimizeRule.target("report/evaluate")
@@ -262,7 +263,7 @@ public class ReportRestServiceIT {
 
   private String createAndStoreDefaultReportDefinition(String processDefinitionId) {
     String id = createNewReportHelper();
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
     ReportDefinitionDto report = new ReportDefinitionDto();
     report.setData(reportData);
     report.setId("something");
@@ -274,14 +275,6 @@ public class ReportRestServiceIT {
     report.setOwner("something");
     updateReport(id, report);
     return id;
-  }
-
-  private ReportDataDto createDefaultReportData(String processDefinitionId) {
-    ReportDataDto reportData = new ReportDataDto();
-    reportData.setProcessDefinitionId(processDefinitionId);
-    reportData.setVisualization("table");
-    reportData.setView(new ViewDto(VIEW_RAW_DATA_OPERATION));
-    return reportData;
   }
 
   private String createNewReportHelper() {

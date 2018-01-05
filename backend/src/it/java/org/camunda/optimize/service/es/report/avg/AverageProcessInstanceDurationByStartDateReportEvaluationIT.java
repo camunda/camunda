@@ -20,6 +20,7 @@ import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.test.util.ReportDataHelper;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
@@ -65,6 +66,7 @@ import static org.hamcrest.core.IsNull.notNullValue;
 @ContextConfiguration(locations = {"/it/it-applicationContext.xml"})
 public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
 
+  public static final String PROCESS_DEFINITION_ID = "123";
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
@@ -87,7 +89,7 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
 
     // when
     String processDefinitionId = processInstanceDto.getDefinitionId();
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId, DATE_UNIT_DAY);
+    ReportDataDto reportData = ReportDataHelper.createAvgPIDurationGroupByStartDateReport(processDefinitionId, DATE_UNIT_DAY);
     MapReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -157,7 +159,7 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
 
     // when
     String processDefinitionId = processInstanceDto.getDefinitionId();
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId, DATE_UNIT_DAY);
+    ReportDataDto reportData = ReportDataHelper.createAvgPIDurationGroupByStartDateReport(processDefinitionId, DATE_UNIT_DAY);
     MapReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -190,7 +192,7 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
 
     // when
     String processDefinitionId = processInstanceDto.getDefinitionId();
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId, DATE_UNIT_DAY);
+    ReportDataDto reportData = ReportDataHelper.createAvgPIDurationGroupByStartDateReport(processDefinitionId, DATE_UNIT_DAY);
     MapReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -246,7 +248,7 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
 
     // when
     String processDefinitionId = processInstanceDto.getDefinitionId();
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId, DATE_UNIT_DAY);
+    ReportDataDto reportData = ReportDataHelper.createAvgPIDurationGroupByStartDateReport(processDefinitionId, DATE_UNIT_DAY);
     MapReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -277,7 +279,7 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
 
     // when
     String processDefinitionId = processInstanceDtos.get(0).getDefinitionId();
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId, DATE_UNIT_HOUR);
+    ReportDataDto reportData = ReportDataHelper.createAvgPIDurationGroupByStartDateReport(processDefinitionId, DATE_UNIT_HOUR);
     MapReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -339,7 +341,7 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
 
     // when
     String processDefinitionId = processInstanceDtos.get(0).getDefinitionId();
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId, DATE_UNIT_DAY);
+    ReportDataDto reportData = ReportDataHelper.createAvgPIDurationGroupByStartDateReport(processDefinitionId, DATE_UNIT_DAY);
     MapReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -359,7 +361,7 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
 
     // when
     String processDefinitionId = processInstanceDtos.get(0).getDefinitionId();
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId, DATE_UNIT_WEEK);
+    ReportDataDto reportData = ReportDataHelper.createAvgPIDurationGroupByStartDateReport(processDefinitionId, DATE_UNIT_WEEK);
     MapReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -379,7 +381,7 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
 
     // when
     String processDefinitionId = processInstanceDtos.get(0).getDefinitionId();
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId, DATE_UNIT_MONTH);
+    ReportDataDto reportData = ReportDataHelper.createAvgPIDurationGroupByStartDateReport(processDefinitionId, DATE_UNIT_MONTH);
     MapReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -399,7 +401,7 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
 
     // when
     String processDefinitionId = processInstanceDtos.get(0).getDefinitionId();
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId, DATE_UNIT_YEAR);
+    ReportDataDto reportData = ReportDataHelper.createAvgPIDurationGroupByStartDateReport(processDefinitionId, DATE_UNIT_YEAR);
     MapReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -420,7 +422,7 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
 
     // when
     String processDefinitionId = processInstanceDto.getDefinitionId();
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId, DATE_UNIT_DAY);
+    ReportDataDto reportData = ReportDataHelper.createAvgPIDurationGroupByStartDateReport(processDefinitionId, DATE_UNIT_DAY);
     MapReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -444,7 +446,7 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId, DATE_UNIT_DAY);
+    ReportDataDto reportData = ReportDataHelper.createAvgPIDurationGroupByStartDateReport(processDefinitionId, DATE_UNIT_DAY);
     reportData.setFilter(createDateFilter("<", "start_date", past));
     MapReportResultDto result = evaluateReport(reportData);
 
@@ -453,7 +455,7 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
     assertThat(result.getResult().size(), is(0));
 
     // when
-    reportData = createDefaultReportData(processDefinitionId, DATE_UNIT_DAY);
+    reportData = ReportDataHelper.createAvgPIDurationGroupByStartDateReport(processDefinitionId, DATE_UNIT_DAY);
     reportData.setFilter(createDateFilter(">=", "start_date", past));
     result = evaluateReport(reportData);
 
@@ -488,7 +490,7 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId, DATE_UNIT_DAY);
+    ReportDataDto reportData = ReportDataHelper.createAvgPIDurationGroupByStartDateReport(processDefinitionId, DATE_UNIT_DAY);
     reportData.setFilter(createVariableFilter());
     MapReportResultDto result = evaluateReport(reportData);
 
@@ -523,7 +525,7 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId, DATE_UNIT_DAY);
+    ReportDataDto reportData = ReportDataHelper.createAvgPIDurationGroupByStartDateReport(processDefinitionId, DATE_UNIT_DAY);
     List<ExecutedFlowNodeFilterDto> flowNodeFilter = ExecutedFlowNodeFilterBuilder.construct()
           .id("task1")
           .build();
@@ -538,7 +540,7 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
   @Test
   public void optimizeExceptionOnGroupByTypeIsNull() throws Exception {
     // given
-    ReportDataDto dataDto = createDefaultReportData("123", DATE_UNIT_DAY);
+    ReportDataDto dataDto = ReportDataHelper.createAvgPIDurationGroupByStartDateReport(PROCESS_DEFINITION_ID, DATE_UNIT_DAY);
     dataDto.getGroupBy().setType(null);
 
     //when
@@ -551,7 +553,7 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
   @Test
   public void optimizeExceptionOnGroupByUnitIsNull() throws Exception {
     // given
-    ReportDataDto dataDto = createDefaultReportData("123", DATE_UNIT_DAY);
+    ReportDataDto dataDto = ReportDataHelper.createAvgPIDurationGroupByStartDateReport(PROCESS_DEFINITION_ID, DATE_UNIT_DAY);
     dataDto.getGroupBy().setUnit(null);
 
     //when
@@ -643,7 +645,7 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
 
   private String createAndStoreDefaultReportDefinition(String processDefinitionId, String dateInterval) {
     String id = createNewReport();
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId, dateInterval);
+    ReportDataDto reportData = ReportDataHelper.createAvgPIDurationGroupByStartDateReport(processDefinitionId, dateInterval);
     ReportDefinitionDto report = new ReportDefinitionDto();
     report.setData(reportData);
     report.setId(id);
@@ -671,21 +673,6 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
     return embeddedOptimizeRule.getDateTimeFormatter().format(time.withOffsetSameInstant(ZoneOffset.UTC));
   }
 
-  private ReportDataDto createDefaultReportData(String processDefinitionId, String dateInterval) {
-    ReportDataDto reportData = new ReportDataDto();
-    reportData.setProcessDefinitionId(processDefinitionId);
-    reportData.setVisualization("table");
-    ViewDto view = new ViewDto();
-    view.setOperation(VIEW_AVERAGE_OPERATION);
-    view.setEntity(VIEW_PROCESS_INSTANCE_ENTITY);
-    view.setProperty(VIEW_DURATION_PROPERTY);
-    reportData.setView(view);
-    GroupByDto groupByDto = new GroupByDto();
-    groupByDto.setType(GROUP_BY_START_DATE_TYPE);
-    groupByDto.setUnit(dateInterval);
-    reportData.setGroupBy(groupByDto);
-    return reportData;
-  }
 
   private MapReportResultDto evaluateReport(ReportDataDto reportData) {
     Response response = evaluateReportAndReturnResponse(reportData);

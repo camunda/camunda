@@ -2,7 +2,6 @@ package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.query.BranchAnalysisDto;
 import org.camunda.optimize.dto.optimize.query.BranchAnalysisQueryDto;
-import org.camunda.optimize.dto.optimize.query.DurationHeatmapTargetValueDto;
 import org.camunda.optimize.dto.optimize.query.ExtendedProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.HeatMapQueryDto;
 import org.camunda.optimize.dto.optimize.query.HeatMapResponseDto;
@@ -10,11 +9,8 @@ import org.camunda.optimize.dto.optimize.query.ProcessDefinitionGroupOptimizeDto
 import org.camunda.optimize.dto.optimize.rest.FlowNodeNamesDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.es.reader.BranchAnalysisReader;
-import org.camunda.optimize.service.es.reader.DurationHeatMapReader;
-import org.camunda.optimize.service.es.reader.DurationHeatmapTargetValueReader;
 import org.camunda.optimize.service.es.reader.FrequencyHeatMapReader;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
-import org.camunda.optimize.service.es.writer.DurationHeatmapTargetValueWriter;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -22,9 +18,7 @@ import org.springframework.stereotype.Component;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.NotFoundException;
-import javax.ws.rs.OPTIONS;
 import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -43,19 +37,11 @@ public class ProcessDefinitionRestService {
   private FrequencyHeatMapReader frequencyHeatMapReader;
 
   @Autowired
-  private DurationHeatMapReader durationHeatMapReader;
-
-  @Autowired
   private BranchAnalysisReader branchAnalysisReader;
 
   @Autowired
   private ProcessDefinitionReader processDefinitionReader;
 
-  @Autowired
-  private DurationHeatmapTargetValueReader targetValueReader;
-
-  @Autowired
-  private DurationHeatmapTargetValueWriter targetValueWriter;
 
   @POST
   @Path("/{id}/flowNodeNames")
@@ -153,61 +139,6 @@ public class ProcessDefinitionRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   public HeatMapResponseDto getFrequencyHeatMap(HeatMapQueryDto to) {
     return frequencyHeatMapReader.getHeatMap(to);
-  }
-
-  /**
-   * Get the duration heat map of a certain process definition.
-   *
-   * @param processDefinitionId Telling of which process definition the heat map is requested.
-   * @return the duration heat map.
-   */
-  @GET
-  @Path("/{id}/heatmap/duration")
-  @Produces(MediaType.APPLICATION_JSON)
-  public HeatMapResponseDto getDurationHeatMap(@PathParam("id") String processDefinitionId) {
-    return durationHeatMapReader.getHeatMap(processDefinitionId);
-  }
-
-  /**
-   * Get the duration heat map of a certain process definition.
-   *
-   * @return the duration heat map.
-   */
-  @POST
-  @Path("/heatmap/duration")
-  @Produces(MediaType.APPLICATION_JSON)
-  @Consumes(MediaType.APPLICATION_JSON)
-  public HeatMapResponseDto getDurationHeatMap(HeatMapQueryDto to) {
-    return durationHeatMapReader.getHeatMap(to);
-  }
-
-  /**
-   * Retrieves all target values that are stored to the stated process definition.
-   *
-   * @param processDefinitionId The process definition you want to have the target values for.
-   * @return all target values to the process definition that are stored in elasticsearch.
-   */
-  @GET
-  @Path("/{id}/heatmap/duration/target-value-comparison")
-  @Produces(MediaType.APPLICATION_JSON)
-  @Consumes(MediaType.APPLICATION_JSON)
-  public DurationHeatmapTargetValueDto getTargetValueComparison(@PathParam("id") String processDefinitionId) {
-    return targetValueReader.getTargetValues(processDefinitionId);
-  }
-
-  /**
-   * Stores the given target values of a duration heatmap related to the given process definition in elasticsearch.
-   * <p>
-   * Note: Storing the values to the same process definition does overwrite the old values.
-   *
-   * @param targetValueDto target values related to a certain process definition
-   */
-  @PUT
-  @Path("/heatmap/duration/target-value")
-  @Produces(MediaType.APPLICATION_JSON)
-  @Consumes(MediaType.APPLICATION_JSON)
-  public void persistTargetValues(DurationHeatmapTargetValueDto targetValueDto) {
-    targetValueWriter.persistTargetValue(targetValueDto);
   }
 
   /**

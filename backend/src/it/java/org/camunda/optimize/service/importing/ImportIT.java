@@ -20,6 +20,7 @@ import org.camunda.optimize.service.util.configuration.EngineConfiguration;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.test.util.ReportDataHelper;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.SearchHit;
@@ -640,12 +641,12 @@ public class ImportIT  {
 
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
-    ReportDataDto reportData = createDefaultReportData(process1.getDefinitionId());
+    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(process1.getDefinitionId());
     RawDataReportResultDto result = evaluateReport(reportData);
 
     assertThat(result.getResult().size(), is(1));
 
-    reportData = createDefaultReportData(process2.getDefinitionId());
+    reportData = ReportDataHelper.createReportDataViewRawAsTable(process2.getDefinitionId());
     result = evaluateReport(reportData);
 
     assertThat(result.getResult().size(), is(1));
@@ -659,7 +660,7 @@ public class ImportIT  {
 
     embeddedOptimizeRule.importWithoutReset();
 
-    reportData = createDefaultReportData(targetProcess.getDefinitionId());
+    reportData = ReportDataHelper.createReportDataViewRawAsTable(targetProcess.getDefinitionId());
     result = evaluateReport(reportData);
 
     assertThat(result.getResult().size(), is(2));
@@ -690,12 +691,12 @@ public class ImportIT  {
 
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
-    ReportDataDto reportData = createDefaultReportData(process1.getDefinitionId());
+    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(process1.getDefinitionId());
     RawDataReportResultDto result = evaluateReport(reportData);
 
     assertThat(result.getResult().size(), is(1));
 
-    reportData = createDefaultReportData(process2.getDefinitionId());
+    reportData = ReportDataHelper.createReportDataViewRawAsTable(process2.getDefinitionId());
     result = evaluateReport(reportData);
 
     assertThat(result.getResult().size(), is(1));
@@ -710,7 +711,7 @@ public class ImportIT  {
     //once new round starts reset will happen instead of restart
     embeddedOptimizeRule.importWithoutReset();
 
-    reportData = createDefaultReportData(targetProcess.getDefinitionId());
+    reportData = ReportDataHelper.createReportDataViewRawAsTable(targetProcess.getDefinitionId());
     result = evaluateReport(reportData);
 
     assertThat(result.getResult().size(), is(2));
@@ -737,14 +738,6 @@ public class ImportIT  {
     embeddedOptimizeRule.restartImportCycle();
     
     assertThat(embeddedOptimizeRule.getProgressValue(), is(100L));
-  }
-
-  private ReportDataDto createDefaultReportData(String processDefinitionId) {
-    ReportDataDto reportData = new ReportDataDto();
-    reportData.setProcessDefinitionId(processDefinitionId);
-    reportData.setVisualization("table");
-    reportData.setView(new ViewDto(VIEW_RAW_DATA_OPERATION));
-    return reportData;
   }
 
   private RawDataReportResultDto evaluateReport(ReportDataDto reportData) {

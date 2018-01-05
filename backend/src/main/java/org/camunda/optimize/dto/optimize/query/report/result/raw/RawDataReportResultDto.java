@@ -1,6 +1,5 @@
 package org.camunda.optimize.dto.optimize.query.report.result.raw;
 
-import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.result.ReportResultDto;
 
 import java.util.List;

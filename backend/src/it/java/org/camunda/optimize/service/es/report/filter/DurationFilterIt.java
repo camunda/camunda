@@ -13,6 +13,7 @@ import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.camunda.optimize.test.util.DateUtilHelper;
+import org.camunda.optimize.test.util.ReportDataHelper;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -55,14 +56,6 @@ public class DurationFilterIt {
       .around(engineRule)
       .around(embeddedOptimizeRule)
       .around(engineDatabaseRule);
-
-  private ReportDataDto createDefaultReportData(String processDefinitionId) {
-    ReportDataDto reportData = new ReportDataDto();
-    reportData.setProcessDefinitionId(processDefinitionId);
-    reportData.setVisualization("table");
-    reportData.setView(new ViewDto(VIEW_RAW_DATA_OPERATION));
-    return reportData;
-  }
 
   private ProcessInstanceEngineDto deployAndStartSimpleProcess() {
     return deployAndStartSimpleProcessWithVariables(new HashMap<>());
@@ -112,7 +105,7 @@ public class DurationFilterIt {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
     reportData.setFilter(DateUtilHelper.createDurationFilter("<", 1, "Days"));
     RawDataReportResultDto result = evaluateReport(reportData);
 
@@ -137,7 +130,7 @@ public class DurationFilterIt {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
     reportData.setFilter(DateUtilHelper.createDurationFilter("=<", 1, "Days"));
     RawDataReportResultDto result = evaluateReport(reportData);
 
@@ -163,7 +156,7 @@ public class DurationFilterIt {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
     reportData.setFilter(DateUtilHelper.createDurationFilter(">", 1, "Seconds"));
     RawDataReportResultDto result = evaluateReport(reportData);
 
@@ -189,7 +182,7 @@ public class DurationFilterIt {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
     reportData.setFilter(DateUtilHelper.createDurationFilter(">=", 2, "Seconds"));
     RawDataReportResultDto result = evaluateReport(reportData);
 
@@ -215,7 +208,7 @@ public class DurationFilterIt {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
     List<FilterDto> gte = DateUtilHelper.createDurationFilter(">=", 2, "Seconds");
     List<FilterDto> lt = DateUtilHelper.createDurationFilter("<", 1, "Days");
     gte.addAll(lt);
@@ -241,7 +234,7 @@ public class DurationFilterIt {
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
     reportData.setFilter(DateUtilHelper.createDurationFilter(">=", 2, null));
 
 

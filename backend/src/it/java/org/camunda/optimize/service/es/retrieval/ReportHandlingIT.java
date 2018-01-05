@@ -16,6 +16,7 @@ import org.camunda.optimize.dto.optimize.query.report.result.raw.RawDataReportRe
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
+import org.camunda.optimize.test.util.ReportDataHelper;
 import org.elasticsearch.action.get.GetResponse;
 import org.junit.After;
 import org.junit.Rule;
@@ -53,6 +54,7 @@ import static org.hamcrest.core.IsNull.notNullValue;
 @ContextConfiguration(locations = {"/it/it-applicationContext.xml"})
 public class ReportHandlingIT {
 
+  public static final String FOO_PROCESS_DEFINITION_ID = "fooProcessDefinitionId";
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 
@@ -249,7 +251,7 @@ public class ReportHandlingIT {
   public void reportEvaluationReturnsMetaData() throws Exception {
     // given
     String reportId = createNewReport();
-    ReportDataDto reportData = createDefaultReportData();
+    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(FOO_PROCESS_DEFINITION_ID);
     ReportDefinitionDto report = new ReportDefinitionDto();
     report.setData(reportData);
     report.setName("name");
@@ -457,14 +459,6 @@ public class ReportHandlingIT {
         .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
         .put(Entity.json(updatedReport));
     assertThat(response.getStatus(), is(204));
-  }
-
-  private ReportDataDto createDefaultReportData() {
-    ReportDataDto reportData = new ReportDataDto();
-    reportData.setProcessDefinitionId("fooProcessDefinitionId");
-    reportData.setVisualization("table");
-    reportData.setView(new ViewDto(VIEW_RAW_DATA_OPERATION));
-    return reportData;
   }
 
   private RawDataReportResultDto evaluateRawDataReportById(String reportId) {

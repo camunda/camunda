@@ -2,15 +2,18 @@ package org.camunda.optimize.service.es.filter;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.dto.optimize.query.HeatMapQueryDto;
-import org.camunda.optimize.dto.optimize.query.HeatMapResponseDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.ExecutedFlowNodeFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.data.ExecutedFlowNodeFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.util.ExecutedFlowNodeFilterBuilder;
+import org.camunda.optimize.dto.optimize.query.report.result.raw.RawDataReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.test.util.ReportDataHelper;
+import org.hamcrest.MatcherAssert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -20,22 +23,22 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"/it/it-applicationContext.xml"})
 public class ExecutedFlowNodeQueryFilterIT {
 
+  public static final String TEST_DEFINITION = "TestDefinition";
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
@@ -45,6 +48,34 @@ public class ExecutedFlowNodeQueryFilterIT {
 
   private final static String USER_TASK_ACTIVITY_ID = "User-Task";
   private final static String USER_TASK_ACTIVITY_ID_2 = "User-Task2";
+
+  private RawDataReportResultDto evaluateReportWithFilter(String processDefinitionId, List<FilterDto> filter) {
+    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
+    reportData.setFilter(filter);
+    return evaluateReport(reportData);
+  }
+
+  private RawDataReportResultDto evaluateReport(ReportDataDto reportData) {
+    Response response = evaluateReportAndReturnResponse(reportData);
+    MatcherAssert.assertThat(response.getStatus(), is(200));
+    return response.readEntity(RawDataReportResultDto.class);
+  }
+
+  private Response evaluateReportAndReturnResponse(String processDefinitionId, ExecutedFlowNodeFilterDto filterDto) {
+    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
+    List<FilterDto> filter = new ArrayList<>();
+    filter.add(filterDto);
+    reportData.setFilter(filter);
+    return evaluateReportAndReturnResponse(reportData);
+  }
+
+  private Response evaluateReportAndReturnResponse(ReportDataDto reportData) {
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+    return embeddedOptimizeRule.target("report/evaluate")
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+        .post(Entity.json(reportData));
+  }
 
   @Test
   public void filterByOneFlowNode() throws Exception {
@@ -61,11 +92,10 @@ public class ExecutedFlowNodeQueryFilterIT {
           .id(USER_TASK_ACTIVITY_ID)
           .inOperator()
           .build();
-    HeatMapQueryDto queryDto = createHeatMapQueryWithFLowNodeFilter(processDefinitionId, executedFlowNodes);
-    HeatMapResponseDto resultMap = getHeatMapResponseDto(queryDto);
 
+    RawDataReportResultDto result = getRawDataReportResultDto(processDefinitionId, executedFlowNodes);
     // then
-    assertResults(resultMap, USER_TASK_ACTIVITY_ID, 1L);
+    assertResults(result, 1);
   }
 
   @Test
@@ -83,12 +113,11 @@ public class ExecutedFlowNodeQueryFilterIT {
           .id(USER_TASK_ACTIVITY_ID)
           .notInOperator()
           .build();
-    HeatMapQueryDto queryDto = createHeatMapQueryWithFLowNodeFilter(processDefinitionId, executedFlowNodes);
-    HeatMapResponseDto resultMap = getHeatMapResponseDto(queryDto);
+
+    RawDataReportResultDto result = getRawDataReportResultDto(processDefinitionId, executedFlowNodes);
 
     // then
-    assertThat(resultMap.getFlowNodes().get(USER_TASK_ACTIVITY_ID), is(nullValue()));
-    assertThat(resultMap.getPiCount(), is(1L));
+    assertResults(result, 1);
   }
 
   @Test
@@ -110,11 +139,10 @@ public class ExecutedFlowNodeQueryFilterIT {
           .id(USER_TASK_ACTIVITY_ID)
           .inOperator()
           .build();
-    HeatMapQueryDto queryDto = createHeatMapQueryWithFLowNodeFilter(processDefinitionId, executedFlowNodes);
-    HeatMapResponseDto resultMap = getHeatMapResponseDto(queryDto);
+    RawDataReportResultDto result = getRawDataReportResultDto(processDefinitionId, executedFlowNodes);
 
     // then
-    assertResults(resultMap, USER_TASK_ACTIVITY_ID, 3L);
+    assertResults(result, 3);
   }
   
   @Test
@@ -137,12 +165,10 @@ public class ExecutedFlowNodeQueryFilterIT {
           .id(USER_TASK_ACTIVITY_ID)
           .notInOperator()
           .build();
-    HeatMapQueryDto queryDto = createHeatMapQueryWithFLowNodeFilter(processDefinitionId, executedFlowNodes);
-    HeatMapResponseDto resultMap = getHeatMapResponseDto(queryDto);
+    RawDataReportResultDto result = getRawDataReportResultDto(processDefinitionId, executedFlowNodes);
 
     // then
-    assertThat(resultMap.getFlowNodes().get(USER_TASK_ACTIVITY_ID), is(nullValue()));
-    assertThat(resultMap.getPiCount(), is(2L));
+    assertResults(result, 2);
   }
 
   @Test
@@ -167,12 +193,10 @@ public class ExecutedFlowNodeQueryFilterIT {
           .and()
           .id(USER_TASK_ACTIVITY_ID_2)
           .build();
-    HeatMapQueryDto queryDto = createHeatMapQueryWithFLowNodeFilter(processDefinitionId, executedFlowNodes);
-    HeatMapResponseDto resultMap = getHeatMapResponseDto(queryDto);
+    RawDataReportResultDto result = getRawDataReportResultDto(processDefinitionId, executedFlowNodes);
 
     // then
-    assertResults(resultMap, USER_TASK_ACTIVITY_ID, 2L);
-    assertResults(resultMap, USER_TASK_ACTIVITY_ID_2, 2L);
+    assertResults(result, 2);
   }
 
   @Test
@@ -200,13 +224,10 @@ public class ExecutedFlowNodeQueryFilterIT {
           .id(USER_TASK_ACTIVITY_ID_2)
           .notInOperator()
           .build();
-    HeatMapQueryDto queryDto = createHeatMapQueryWithFLowNodeFilter(processDefinitionId, executedFlowNodes);
-    HeatMapResponseDto resultMap = getHeatMapResponseDto(queryDto);
+    RawDataReportResultDto result = getRawDataReportResultDto(processDefinitionId, executedFlowNodes);
 
     // then
-    assertThat(resultMap.getFlowNodes().get(USER_TASK_ACTIVITY_ID), is(1L));
-    assertThat(resultMap.getFlowNodes().get(USER_TASK_ACTIVITY_ID_2), is(nullValue()));
-    assertThat(resultMap.getPiCount(), is(1L));
+    assertResults(result, 1);
 
     // when
     executedFlowNodes = ExecutedFlowNodeFilterBuilder.construct()
@@ -216,13 +237,16 @@ public class ExecutedFlowNodeQueryFilterIT {
           .id(USER_TASK_ACTIVITY_ID_2)
           .notInOperator()
           .build();
-    queryDto = createHeatMapQueryWithFLowNodeFilter(processDefinitionId, executedFlowNodes);
-    resultMap = getHeatMapResponseDto(queryDto);
+    result = getRawDataReportResultDto(processDefinitionId, executedFlowNodes);
 
     // then
-    assertThat(resultMap.getFlowNodes().get(USER_TASK_ACTIVITY_ID), is(nullValue()));
-    assertThat(resultMap.getFlowNodes().get(USER_TASK_ACTIVITY_ID_2), is(nullValue()));
-    assertThat(resultMap.getPiCount(), is(2L));
+    assertResults(result, 2);
+  }
+
+  private RawDataReportResultDto getRawDataReportResultDto(String processDefinitionId, List<ExecutedFlowNodeFilterDto> executedFlowNodes) {
+    ArrayList<FilterDto> filter = new ArrayList<>();
+    filter.addAll(executedFlowNodes);
+    return evaluateReportWithFilter(processDefinitionId, filter);
   }
 
   @Test
@@ -247,13 +271,10 @@ public class ExecutedFlowNodeQueryFilterIT {
           .ids(USER_TASK_ACTIVITY_ID, USER_TASK_ACTIVITY_ID_2)
           .inOperator()
           .build();
-    HeatMapQueryDto queryDto = createHeatMapQueryWithFLowNodeFilter(processDefinitionId, executedFlowNodes);
-    HeatMapResponseDto resultMap = getHeatMapResponseDto(queryDto);
+    RawDataReportResultDto result = getRawDataReportResultDto(processDefinitionId, executedFlowNodes);
 
     // then
-    assertThat(resultMap.getFlowNodes().get(USER_TASK_ACTIVITY_ID), is(3L));
-    assertThat(resultMap.getFlowNodes().get(USER_TASK_ACTIVITY_ID_2), is(2L));
-    assertThat(resultMap.getPiCount(), is(3L));
+    assertResults(result, 3);
   }
 
   @Test
@@ -285,14 +306,10 @@ public class ExecutedFlowNodeQueryFilterIT {
           .ids("UserTask-PathA", "FinalUserTask")
           .notInOperator()
           .build();
-    HeatMapQueryDto queryDto = createHeatMapQueryWithFLowNodeFilter(processDefinitionId, executedFlowNodes);
-    HeatMapResponseDto resultMap = getHeatMapResponseDto(queryDto);
+    RawDataReportResultDto result = getRawDataReportResultDto(processDefinitionId, executedFlowNodes);
 
     // then
-    assertThat(resultMap.getFlowNodes().get("UserTask-PathA"), is(nullValue()));
-    assertThat(resultMap.getFlowNodes().get("UserTask-PathB"), is(1L));
-    assertThat(resultMap.getFlowNodes().get("FinalUserTask"), is(nullValue()));
-    assertThat(resultMap.getPiCount(), is(3L));
+    assertResults(result, 3);
   }
 
   @Test
@@ -333,14 +350,10 @@ public class ExecutedFlowNodeQueryFilterIT {
           .and()
             .id("FinalUserTask")
           .build();
-    HeatMapQueryDto queryDto = createHeatMapQueryWithFLowNodeFilter(processDefinitionId, executedFlowNodes);
-    HeatMapResponseDto resultMap = getHeatMapResponseDto(queryDto);
+    RawDataReportResultDto result = getRawDataReportResultDto(processDefinitionId, executedFlowNodes);
 
     // then
-    assertThat(resultMap.getFlowNodes().get("UserTask-PathA"), is(2L));
-    assertThat(resultMap.getFlowNodes().get("UserTask-PathB"), is(1L));
-    assertThat(resultMap.getFlowNodes().get("FinalUserTask"), is(3L));
-    assertThat(resultMap.getPiCount(), is(3L));
+    assertResults(result,3);
   }
 
   @Test
@@ -377,14 +390,10 @@ public class ExecutedFlowNodeQueryFilterIT {
             .id("UserTask-PathB")
             .inOperator()
           .build();
-    HeatMapQueryDto queryDto = createHeatMapQueryWithFLowNodeFilter(processDefinitionId, executedFlowNodes);
-    HeatMapResponseDto resultMap = getHeatMapResponseDto(queryDto);
+    RawDataReportResultDto result = getRawDataReportResultDto(processDefinitionId, executedFlowNodes);
 
     // then
-    assertThat(resultMap.getFlowNodes().get("UserTask-PathA"), is(nullValue()));
-    assertThat(resultMap.getFlowNodes().get("UserTask-PathB"), is(1L));
-    assertThat(resultMap.getFlowNodes().get("FinalUserTask"), is(nullValue()));
-    assertThat(resultMap.getPiCount(), is(1L));
+    assertResults(result, 1);
   }
 
   private String deployProcessWIthGatewayAndOneUserTaskEachBranch() throws IOException {
@@ -423,27 +432,22 @@ public class ExecutedFlowNodeQueryFilterIT {
     List<ExecutedFlowNodeFilterDto> executedFlowNodes = ExecutedFlowNodeFilterBuilder.construct()
           .id(USER_TASK_ACTIVITY_ID)
           .build();
-    HeatMapQueryDto queryDto = createHeatMapQueryWithFLowNodeFilter(processDefinitionId, executedFlowNodes);
-    HeatMapResponseDto resultMap = getHeatMapResponseDto(queryDto);
+    RawDataReportResultDto result = getRawDataReportResultDto(processDefinitionId, executedFlowNodes);
 
     // then
-    assertResults(resultMap, USER_TASK_ACTIVITY_ID, 2L);
+    assertResults(result, 2);
   }
 
   @Test
   public void validationExceptionOnNullOperatorField() {
     //given
-    HeatMapQueryDto dto = new HeatMapQueryDto();
-    dto.setProcessDefinitionId("TestDefinition");
     ExecutedFlowNodeFilterDto executedFlowNodeFilter = new ExecutedFlowNodeFilterDto();
     ExecutedFlowNodeFilterDataDto flowNodeFilter = new ExecutedFlowNodeFilterDataDto();
     flowNodeFilter.setValues(Collections.singletonList("foo"));
     executedFlowNodeFilter.setData(flowNodeFilter);
 
-    dto.getFilter().add(executedFlowNodeFilter);
-
     // when
-    Response response = getResponse(dto);
+    Response response = evaluateReportAndReturnResponse(TEST_DEFINITION, executedFlowNodeFilter);
 
     // then
     assertThat(response.getStatus(),is(500));
@@ -452,34 +456,23 @@ public class ExecutedFlowNodeQueryFilterIT {
   @Test
   public void validationExceptionOnNullValueField() {
     //given
-    HeatMapQueryDto dto = new HeatMapQueryDto();
-    dto.setProcessDefinitionId("TestDefinition");
     ExecutedFlowNodeFilterDto executedFlowNodeFilter = new ExecutedFlowNodeFilterDto();
     ExecutedFlowNodeFilterDataDto flowNodeFilter = new ExecutedFlowNodeFilterDataDto();
     flowNodeFilter.setValues(null);
     executedFlowNodeFilter.setData(flowNodeFilter);
 
-    dto.getFilter().add(executedFlowNodeFilter);
 
     // when
-    Response response = getResponse(dto);
+    Response response = evaluateReportAndReturnResponse(TEST_DEFINITION, executedFlowNodeFilter);
 
     // then
     assertThat(response.getStatus(),is(500));
   }
 
-  private void assertResults(HeatMapResponseDto resultMap, String activityId, long piCount) {
-    assertThat(resultMap.getFlowNodes().get(activityId), is(piCount));
-    assertThat(resultMap.getPiCount(), is(piCount));
+  private void assertResults(RawDataReportResultDto resultDto, int piCount) {
+    assertThat(resultDto.getResult().size(), is(piCount));
   }
 
-  private HeatMapQueryDto createHeatMapQueryWithFLowNodeFilter(String processDefinitionId,
-                                                               List<ExecutedFlowNodeFilterDto> executedFlowNodes) {
-    HeatMapQueryDto dto = new HeatMapQueryDto();
-    dto.setProcessDefinitionId(processDefinitionId);
-    dto.getFilter().addAll(executedFlowNodes);
-    return dto;
-  }
 
   private String deployProcessDefinitionWithTwoUserTasks() throws IOException {
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
@@ -506,19 +499,5 @@ public class ExecutedFlowNodeQueryFilterIT {
     return processDefinitionId;
   }
 
-  private HeatMapResponseDto getHeatMapResponseDto(HeatMapQueryDto dto) {
-    Response response = getResponse(dto);
 
-    // then the status code is okay
-    return response.readEntity(HeatMapResponseDto.class);
-  }
-
-  private Response getResponse(HeatMapQueryDto dto) {
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-    Entity<HeatMapQueryDto> entity = Entity.entity(dto, MediaType.APPLICATION_JSON);
-    return embeddedOptimizeRule.target("process-definition/heatmap/frequency")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
-        .post(entity);
-  }
 }

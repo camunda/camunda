@@ -3,9 +3,7 @@ package org.camunda.optimize.service.es.report.count;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.builder.AbstractServiceTaskBuilder;
-import org.camunda.optimize.dto.optimize.query.report.GroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.ViewDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.DateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
@@ -18,6 +16,7 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.test.util.ReportDataHelper;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -30,12 +29,10 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_FLOW_NODE_TYPE;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_COUNT_OPERATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_FLOW_NODE_ENTITY;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_FREQUENCY_PROPERTY;
@@ -69,7 +66,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
 
     // when
     String processDefinitionId = processInstanceDto.getDefinitionId();
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNode(processDefinitionId);
     MapReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -95,7 +92,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = createDefaultReportData(engineDto.getDefinitionId());
+    ReportDataDto reportData = ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNode(engineDto.getDefinitionId());
     MapReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -118,7 +115,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId1);
+    ReportDataDto reportData = ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNode(processDefinitionId1);
     MapReportResultDto result1 = evaluateReport(reportData);
     reportData.setProcessDefinitionId(processDefinitionId2);
     MapReportResultDto result2 = evaluateReport(reportData);
@@ -161,7 +158,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNode(processDefinitionId);
     MapReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -181,7 +178,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNode(processDefinitionId);
     reportData.setFilter(createDateFilter("<", "start_date", past));
     MapReportResultDto result = evaluateReport(reportData);
 
@@ -191,7 +188,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     assertThat(flowNodeIdToExecutionFrequency.size(), is(0));
 
     // when
-    reportData = createDefaultReportData(processDefinitionId);
+    reportData = ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNode(processDefinitionId);
     reportData.setFilter(createDateFilter(">=", "start_date", past));
     result = evaluateReport(reportData);
 
@@ -225,7 +222,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNode(processDefinitionId);
     reportData.setFilter(createVariableFilter());
     MapReportResultDto result = evaluateReport(reportData);
 
@@ -261,7 +258,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNode(processDefinitionId);
     List<ExecutedFlowNodeFilterDto> flowNodeFilter = ExecutedFlowNodeFilterBuilder.construct()
           .id("task1")
           .build();
@@ -279,7 +276,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
   @Test
   public void optimizeExceptionOnViewEntityIsNull() throws Exception {
     // given
-    ReportDataDto dataDto = createDefaultReportData("123");
+    ReportDataDto dataDto = ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNode("123");
     dataDto.getView().setEntity(null);
 
     //when
@@ -292,7 +289,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
   @Test
   public void optimizeExceptionOnViewPropertyIsNull() throws Exception {
     // given
-    ReportDataDto dataDto = createDefaultReportData("123");
+    ReportDataDto dataDto = ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNode("123");
     dataDto.getView().setProperty(null);
 
     //when
@@ -305,7 +302,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
   @Test
   public void optimizeExceptionOnGroupByTypeIsNull() throws Exception {
     // given
-    ReportDataDto dataDto = createDefaultReportData("123");
+    ReportDataDto dataDto = ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNode("123");
     dataDto.getGroupBy().setType(null);
 
     //when
@@ -366,20 +363,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     return processDefinitionId;
   }
 
-  private ReportDataDto createDefaultReportData(String processDefinitionId) {
-    ReportDataDto reportData = new ReportDataDto();
-    reportData.setProcessDefinitionId(processDefinitionId);
-    reportData.setVisualization("heat");
-    ViewDto view = new ViewDto();
-    view.setOperation(VIEW_COUNT_OPERATION);
-    view.setEntity(VIEW_FLOW_NODE_ENTITY);
-    view.setProperty(VIEW_FREQUENCY_PROPERTY);
-    reportData.setView(view);
-    GroupByDto groupByDto = new GroupByDto();
-    groupByDto.setType(GROUP_BY_FLOW_NODE_TYPE);
-    reportData.setGroupBy(groupByDto);
-    return reportData;
-  }
+
 
   private MapReportResultDto evaluateReport(ReportDataDto reportData) {
     Response response = evaluateReportAndReturnResponse(reportData);

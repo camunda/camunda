@@ -20,6 +20,7 @@ import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.test.util.ReportDataHelper;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -49,6 +50,7 @@ import static org.hamcrest.core.IsNull.notNullValue;
 @ContextConfiguration(locations = {"/it/it-applicationContext.xml"})
 public class AverageTotalProcessInstanceDurationReportEvaluationIT {
 
+  public static final String PROCESS_DEFINITION_ID = "123";
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
@@ -74,7 +76,7 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
 
     // when
     String processDefinitionId = processInstanceDto.getDefinitionId();
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createAvgPiDurationHeatMapGroupByNone(processDefinitionId);
     NumberReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -140,7 +142,7 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
 
     // when
     String processDefinitionId = processInstanceDto.getDefinitionId();
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createAvgPiDurationHeatMapGroupByNone(processDefinitionId);
     NumberReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -151,7 +153,7 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
   @Test
   public void noAvailableProcessInstancesReturnsZero() throws Exception {
     // when
-    ReportDataDto reportData = createDefaultReportData("fooProcessDefinitionId");
+    ReportDataDto reportData = ReportDataHelper.createAvgPiDurationHeatMapGroupByNone("fooProcessDefinitionId");
     NumberReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -174,7 +176,7 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = createDefaultReportData(processInstanceDto.getDefinitionId());
+    ReportDataDto reportData = ReportDataHelper.createAvgPiDurationHeatMapGroupByNone(processInstanceDto.getDefinitionId());
     NumberReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -195,7 +197,7 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createAvgPiDurationHeatMapGroupByNone(processDefinitionId);
     reportData.setFilter(createDateFilter("<", "start_date", past));
     NumberReportResultDto result = evaluateReport(reportData);
 
@@ -204,7 +206,7 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
     assertThat(result.getResult(), is(0L));
 
     // when
-    reportData = createDefaultReportData(processDefinitionId);
+    reportData = ReportDataHelper.createAvgPiDurationHeatMapGroupByNone(processDefinitionId);
     reportData.setFilter(createDateFilter(">=", "start_date", past));
     result = evaluateReport(reportData);
 
@@ -239,7 +241,7 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createAvgPiDurationHeatMapGroupByNone(processDefinitionId);
     reportData.setFilter(createVariableFilter());
     NumberReportResultDto result = evaluateReport(reportData);
 
@@ -275,7 +277,7 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createAvgPiDurationHeatMapGroupByNone(processDefinitionId);
     List<ExecutedFlowNodeFilterDto> flowNodeFilter = ExecutedFlowNodeFilterBuilder.construct()
           .id("task1")
           .build();
@@ -289,7 +291,7 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
   @Test
   public void optimizeExceptionOnViewPropertyIsNull() throws Exception {
     // given
-    ReportDataDto dataDto = createDefaultReportData("123");
+    ReportDataDto dataDto = ReportDataHelper.createAvgPiDurationHeatMapGroupByNone(PROCESS_DEFINITION_ID);
     dataDto.getView().setProperty(null);
 
     //when
@@ -302,7 +304,7 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
   @Test
   public void optimizeExceptionOnGroupByTypeIsNull() throws Exception {
     // given
-    ReportDataDto dataDto = createDefaultReportData("123");
+    ReportDataDto dataDto = ReportDataHelper.createAvgPiDurationHeatMapGroupByNone(PROCESS_DEFINITION_ID);
     dataDto.getGroupBy().setType(null);
 
     //when
@@ -362,21 +364,6 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
     return engineRule.deployProcessAndGetId(modelInstance);
   }
 
-  private ReportDataDto createDefaultReportData(String processDefinitionId) {
-    ReportDataDto reportData = new ReportDataDto();
-    reportData.setProcessDefinitionId(processDefinitionId);
-    reportData.setVisualization("heat");
-    ViewDto view = new ViewDto();
-    view.setOperation(VIEW_AVERAGE_OPERATION);
-    view.setEntity(VIEW_PROCESS_INSTANCE_ENTITY);
-    view.setProperty(VIEW_DURATION_PROPERTY);
-    reportData.setView(view);
-    GroupByDto groupByDto = new GroupByDto();
-    groupByDto.setType(GROUP_BY_NONE_TYPE);
-    reportData.setGroupBy(groupByDto);
-    return reportData;
-  }
-
   private NumberReportResultDto evaluateReport(ReportDataDto reportData) {
     Response response = evaluateReportAndReturnResponse(reportData);
     assertThat(response.getStatus(), is(200));
@@ -394,7 +381,7 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
 
   private String createAndStoreDefaultReportDefinition(String processDefinitionId) {
     String id = createNewReport();
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createAvgPiDurationHeatMapGroupByNone(processDefinitionId);
     ReportDefinitionDto report = new ReportDefinitionDto();
     report.setData(reportData);
     report.setId(id);

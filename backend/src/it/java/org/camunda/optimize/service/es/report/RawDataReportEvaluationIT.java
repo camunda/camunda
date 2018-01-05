@@ -23,6 +23,7 @@ import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.camunda.optimize.test.util.DateUtilHelper;
+import org.camunda.optimize.test.util.ReportDataHelper;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
@@ -78,7 +79,7 @@ public class RawDataReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
     RawDataReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -131,7 +132,7 @@ public class RawDataReportEvaluationIT {
 
   private String createAndStoreDefaultReportDefinition(String processDefinitionId) {
     String id = createNewReport();
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
     ReportDefinitionDto report = new ReportDefinitionDto();
     report.setData(reportData);
     report.setId("something");
@@ -155,7 +156,7 @@ public class RawDataReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
     RawDataReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -194,7 +195,7 @@ public class RawDataReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
     RawDataReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -228,7 +229,7 @@ public class RawDataReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
     RawDataReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -272,7 +273,7 @@ public class RawDataReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
     RawDataReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -304,7 +305,7 @@ public class RawDataReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
     RawDataReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -326,7 +327,7 @@ public class RawDataReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
     reportData.setFilter(DateUtilHelper.createDurationFilter(">", 1, "Days"));
     RawDataReportResultDto result = evaluateReport(reportData);
 
@@ -339,7 +340,7 @@ public class RawDataReportEvaluationIT {
     assertThat(result.getResult().size(), is(0));
 
     // when
-    reportData = createDefaultReportData(processDefinitionId);
+    reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
     reportData.setFilter(DateUtilHelper.createDurationFilter("<", 1, "Days"));
     result = evaluateReport(reportData);
 
@@ -364,7 +365,7 @@ public class RawDataReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
     reportData.setFilter(DateUtilHelper.createRollingDateFilter(1L, "days"));
     RawDataReportResultDto result = evaluateReport(reportData);
 
@@ -378,7 +379,7 @@ public class RawDataReportEvaluationIT {
     assertThat(rawDataProcessInstanceDto.getProcessInstanceId(), is(processInstance.getId()));
 
     // when
-    reportData = createDefaultReportData(processDefinitionId);
+    reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
     reportData.setFilter(DateUtilHelper.createRollingDateFilter(1L, "nanos"));
     result = evaluateReport(reportData);
 
@@ -402,8 +403,8 @@ public class RawDataReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId);
-    reportData.setFilter(createDateFilter("<", "start_date", past));
+    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
+    reportData.setFilter(DateUtilHelper.createDateFilter("<", "start_date", past));
     RawDataReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -415,8 +416,8 @@ public class RawDataReportEvaluationIT {
     assertThat(result.getResult().size(), is(0));
 
     // when
-    reportData = createDefaultReportData(processDefinitionId);
-    reportData.setFilter(createDateFilter(">=", "start_date", past));
+    reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
+    reportData.setFilter(DateUtilHelper.createDateFilter(">=", "start_date", past));
     result = evaluateReport(reportData);
 
     // then
@@ -428,25 +429,6 @@ public class RawDataReportEvaluationIT {
     assertThat(result.getResult().size(), is(1));
     RawDataProcessInstanceDto rawDataProcessInstanceDto = result.getResult().get(0);
     assertThat(rawDataProcessInstanceDto.getProcessInstanceId(), is(processInstance.getId()));
-  }
-
-  private ReportDataDto createDefaultReportData(String processDefinitionId) {
-    ReportDataDto reportData = new ReportDataDto();
-    reportData.setProcessDefinitionId(processDefinitionId);
-    reportData.setVisualization("table");
-    reportData.setView(new ViewDto(VIEW_RAW_DATA_OPERATION));
-    return reportData;
-  }
-
-  public List<FilterDto> createDateFilter(String operator, String type, OffsetDateTime dateValue) {
-    DateFilterDataDto date = new DateFilterDataDto();
-    date.setOperator(operator);
-    date.setType(type);
-    date.setValue(dateValue);
-
-    DateFilterDto dateFilterDto = new DateFilterDto();
-    dateFilterDto.setData(date);
-    return Collections.singletonList(dateFilterDto);
   }
 
   @Test
@@ -461,7 +443,7 @@ public class RawDataReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
     reportData.setFilter(createVariableFilter());
     RawDataReportResultDto result = evaluateReport(reportData);
 
@@ -498,7 +480,7 @@ public class RawDataReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = createDefaultReportData(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
     List<ExecutedFlowNodeFilterDto> flowNodeFilter = ExecutedFlowNodeFilterBuilder.construct()
           .id("task1")
           .build();
@@ -526,7 +508,7 @@ public class RawDataReportEvaluationIT {
   public void missingProcessDefinition() {
 
     //when
-    ReportDataDto dataDto = createDefaultReportData(null);
+    ReportDataDto dataDto = ReportDataHelper.createReportDataViewRawAsTable(null);
     Response response = evaluateReportAndReturnResponse(dataDto);
 
     // then
@@ -536,7 +518,7 @@ public class RawDataReportEvaluationIT {
   @Test
   public void missingViewField() {
     //when
-    ReportDataDto dataDto = createDefaultReportData(null);
+    ReportDataDto dataDto = ReportDataHelper.createReportDataViewRawAsTable(null);
     dataDto.setView(null);
     Response response = evaluateReportAndReturnResponse(dataDto);
 
@@ -547,7 +529,7 @@ public class RawDataReportEvaluationIT {
   @Test
   public void missingOperationField() throws Exception {
     //when
-    ReportDataDto dataDto = createDefaultReportData(null);
+    ReportDataDto dataDto = ReportDataHelper.createReportDataViewRawAsTable(null);
     dataDto.getView().setOperation(null);
     Response response = evaluateReportAndReturnResponse(dataDto);
 
@@ -558,7 +540,7 @@ public class RawDataReportEvaluationIT {
   @Test
   public void missingVisualizationField() throws Exception {
     //when
-    ReportDataDto dataDto = createDefaultReportData(null);
+    ReportDataDto dataDto = ReportDataHelper.createReportDataViewRawAsTable(null);
     dataDto.setVisualization(null);
     Response response = evaluateReportAndReturnResponse(dataDto);
 
