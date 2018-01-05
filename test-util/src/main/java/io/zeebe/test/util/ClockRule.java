@@ -1,0 +1,57 @@
+/*
+ * Copyright © 2017 camunda services GmbH (info@camunda.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.zeebe.test.util;
+
+import java.time.Duration;
+
+import io.zeebe.util.time.ClockUtil;
+import org.junit.rules.ExternalResource;
+
+public final class ClockRule extends ExternalResource
+{
+    private final boolean pinCurrentTime;
+
+    private ClockRule(boolean pinCurrentTime)
+    {
+        this.pinCurrentTime = pinCurrentTime;
+    }
+
+    public static ClockRule pinCurrentTime()
+    {
+        return new ClockRule(true);
+    }
+
+    @Override
+    protected void before() throws Throwable
+    {
+        if (pinCurrentTime)
+        {
+            ClockUtil.pinCurrentTime();
+        }
+    }
+
+    @Override
+    protected void after()
+    {
+        ClockUtil.reset();
+    };
+
+    public void addTime(Duration durationToAdd)
+    {
+        ClockUtil.addTime(durationToAdd);
+    }
+
+}

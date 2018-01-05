@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import io.zeebe.util.actor.*;
 import org.junit.rules.ExternalResource;
 
-public class ControllableTaskScheduler extends ExternalResource implements ActorScheduler
+public class ManualActorScheduler extends ExternalResource implements ActorScheduler
 {
     protected static final int MAX_WORK_COUNT = 1_000_000;
 
