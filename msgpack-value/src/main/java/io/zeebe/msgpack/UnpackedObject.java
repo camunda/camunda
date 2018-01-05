@@ -23,6 +23,7 @@ import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,6 +34,8 @@ public class UnpackedObject extends ObjectValue implements Recyclable, BufferRea
 
     protected final MsgPackReader reader = new MsgPackReader();
     protected final MsgPackWriter writer = new MsgPackWriter();
+
+    protected final UnsafeBuffer view = new UnsafeBuffer(0, 0);
 
     public void wrap(DirectBuffer buff)
     {
@@ -46,6 +49,9 @@ public class UnpackedObject extends ObjectValue implements Recyclable, BufferRea
         int readerOffset = 0;
         boolean successful = false;
 
+        view.wrap(buff, offset, length);
+        final String bufferOnFirstInvocation = BufferUtil.bufferAsHexString(view, 32);
+
         while (!successful)
         {
             reader.wrap(buff, offset, length);
@@ -58,8 +64,8 @@ public class UnpackedObject extends ObjectValue implements Recyclable, BufferRea
                 {
                     final DirectBuffer buffer = reader.buffer;
                     final String lastReadByteBeforeException = String.format("0x%02x", readerOffset < length ? buffer.getByte(readerOffset) : 0);
-                    LOG.warn("Retry {} was successful. Reader previously stuck at offset {} of length {} with last read byte {}. Buffer:\n{}",
-                            retries, readerOffset, length, lastReadByteBeforeException, BufferUtil.bufferAsHexString(buffer, 32));
+                    LOG.warn("Retry {} was successful. Reader previously stuck at offset {} of length {} with last read byte {}.\nBuffer on first invocation:\n{}\nBuffer after last invocation:\n{}",
+                            retries, readerOffset, length, lastReadByteBeforeException, bufferOnFirstInvocation, BufferUtil.bufferAsHexString(buffer, 32));
 
                 }
             }
@@ -68,8 +74,8 @@ public class UnpackedObject extends ObjectValue implements Recyclable, BufferRea
                 final DirectBuffer buffer = reader.buffer;
                 readerOffset = reader.getOffset() - 1;
                 final String lastReadByteBeforeException = String.format("0x%02x", readerOffset < length ? buffer.getByte(readerOffset) : 0);
-                LOG.error("Retry {} could not deserialize object. Deserialization stuck at offset {} of length {} with last read byte {}. Buffer:\n{}",
-                        retries, readerOffset, length, lastReadByteBeforeException, BufferUtil.bufferAsHexString(buffer, 32), e);
+                LOG.error("Retry {} could not deserialize object. Deserialization stuck at offset {} of length {} with last read byte {}.\nBuffer on first invocation:\n{}\nBuffer after last invocation:\n{}",
+                        retries, readerOffset, length, lastReadByteBeforeException, bufferOnFirstInvocation, BufferUtil.bufferAsHexString(buffer, 32), e);
 
                 retries++;
 
