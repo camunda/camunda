@@ -19,11 +19,10 @@ import java.util.concurrent.CompletableFuture;
 
 import io.zeebe.gossip.Loggers;
 import io.zeebe.transport.*;
-import io.zeebe.util.actor.Actor;
 import io.zeebe.util.state.*;
 import org.slf4j.Logger;
 
-public class SubscriptionController implements Actor
+public class SubscriptionController
 {
     private static final Logger LOG = Loggers.GOSSIP_LOGGER;
 
@@ -54,8 +53,7 @@ public class SubscriptionController implements Actor
                 .build();
     }
 
-    @Override
-    public int doWork() throws Exception
+    public int doWork()
     {
         return stateMachine.doWork();
     }

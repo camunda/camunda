@@ -18,7 +18,6 @@ package io.zeebe.gossip.protocol;
 import java.util.concurrent.*;
 
 import io.zeebe.clustering.gossip.GossipEventType;
-import io.zeebe.gossip.dissemination.DisseminationComponent;
 import io.zeebe.gossip.membership.MembershipList;
 import io.zeebe.transport.*;
 import org.agrona.DirectBuffer;
@@ -32,33 +31,33 @@ public class GossipEventSender
     private final ClientTransport clientTransport;
     private final ServerTransport serverTransport;
 
-    private final DisseminationComponent disseminationComponent;
-    private final MembershipList memberList;
+    private final MembershipList membershipList;
 
     private final GossipEvent gossipFailureDetectionEvent;
-    private final GossipEvent gossipSyncEvent;
+    private final GossipEvent gossipSyncRequestEvent;
+    private final GossipEvent gossipSyncResponseEvent;
 
     public GossipEventSender(
             ClientTransport clientTransport,
             ServerTransport serverTransport,
-            MembershipList memberList,
-            DisseminationComponent disseminationComponent,
-            GossipEventFactory eventFactory)
+            MembershipList membershipList,
+            GossipEventFactory gossipEventFactory)
     {
         this.clientTransport = clientTransport;
         this.serverTransport = serverTransport;
-        this.disseminationComponent = disseminationComponent;
-        this.memberList = memberList;
+        this.membershipList = membershipList;
 
-        this.gossipFailureDetectionEvent = eventFactory.createFailureDetectionEvent();
-        this.gossipSyncEvent = eventFactory.createSyncEvent();
+        this.gossipFailureDetectionEvent = gossipEventFactory.createFailureDetectionEvent();
+        this.gossipSyncRequestEvent = gossipEventFactory.createSyncRequestEvent();
+        this.gossipSyncResponseEvent = gossipEventFactory.createSyncResponseEvent();
     }
 
     public ClientRequest sendPing(SocketAddress receiver)
     {
         gossipFailureDetectionEvent
-            .reset()
-            .eventType(GossipEventType.PING);
+                .reset()
+                .eventType(GossipEventType.PING)
+                .sender(membershipList.self().getAddress());
 
         return sendEventTo(gossipFailureDetectionEvent, receiver);
     }
@@ -68,42 +67,44 @@ public class GossipEventSender
         gossipFailureDetectionEvent
             .reset()
             .eventType(GossipEventType.PING_REQ)
-            .probeMember(probeMember);
+            .probeMember(probeMember)
+            .sender(membershipList.self().getAddress());
 
         return sendEventTo(gossipFailureDetectionEvent, receiver);
     }
 
     public ClientRequest sendSyncRequest(SocketAddress receiver)
     {
-        gossipSyncEvent
+        gossipSyncRequestEvent
             .reset()
-            .eventType(GossipEventType.SYNC_REQUEST);
+            .eventType(GossipEventType.SYNC_REQUEST)
+            .sender(membershipList.self().getAddress());
 
-        return sendEventTo(gossipSyncEvent, receiver);
+        return sendEventTo(gossipSyncRequestEvent, receiver);
     }
 
     public void responseAck(long requestId, int streamId)
     {
         gossipFailureDetectionEvent
             .reset()
-            .eventType(GossipEventType.ACK);
+            .eventType(GossipEventType.ACK)
+            .sender(membershipList.self().getAddress());
 
         responseTo(gossipFailureDetectionEvent, requestId, streamId);
     }
 
     public void responseSync(long requestId, int streamId)
     {
-        gossipSyncEvent
+        gossipSyncResponseEvent
             .reset()
-            .eventType(GossipEventType.SYNC_RESPONSE);
+            .eventType(GossipEventType.SYNC_RESPONSE)
+            .sender(membershipList.self().getAddress());
 
-        responseTo(gossipSyncEvent, requestId, streamId);
+        responseTo(gossipSyncResponseEvent, requestId, streamId);
     }
 
     private ClientRequest sendEventTo(GossipEvent event, SocketAddress receiver)
     {
-        prepareGossipEvent(event);
-
         final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(receiver);
 
         try
@@ -121,8 +122,6 @@ public class GossipEventSender
 
     private void responseTo(GossipEvent event, long requestId, int streamId)
     {
-        prepareGossipEvent(event);
-
         serverResponse
             .reset()
             .writer(event)
@@ -137,13 +136,6 @@ public class GossipEventSender
         {
             // ignore
         }
-    }
-
-    private void prepareGossipEvent(GossipEvent event)
-    {
-        disseminationComponent.clearSpreadEvents();
-
-        event.sender(memberList.self().getAddress());
     }
 
     private static class FailedClientRequest implements ClientRequest

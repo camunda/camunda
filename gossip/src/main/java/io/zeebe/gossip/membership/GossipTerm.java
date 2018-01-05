@@ -55,6 +55,11 @@ public class GossipTerm
         heartbeat += 1;
     }
 
+    public GossipTerm wrap(GossipTerm otherTerm)
+    {
+        return epoch(otherTerm.getEpoch()).heartbeat(otherTerm.getHeartbeat());
+    }
+
     public boolean isGreaterThan(GossipTerm otherTerm)
     {
         return epoch > otherTerm.epoch || (epoch == otherTerm.epoch && heartbeat > otherTerm.heartbeat);

@@ -26,12 +26,11 @@ import io.zeebe.gossip.membership.MembershipList;
 import io.zeebe.gossip.protocol.*;
 import io.zeebe.transport.ClientRequest;
 import io.zeebe.transport.SocketAddress;
-import io.zeebe.util.actor.Actor;
 import io.zeebe.util.state.*;
 import io.zeebe.util.time.ClockUtil;
 import org.slf4j.Logger;
 
-public class JoinController implements Actor
+public class JoinController
 {
     private static final Logger LOG = Loggers.GOSSIP_LOGGER;
 
@@ -42,13 +41,13 @@ public class JoinController implements Actor
     private static final int TRANSITION_JOIN = 4;
     private static final int TRANSITION_LEAVE = 5;
 
-    private final GossipConfiguration config;
+    private final GossipConfiguration configuration;
 
     private final StateMachine<Context> stateMachine;
 
     public JoinController(GossipContext context)
     {
-        this.config = context.getConfiguration();
+        this.configuration = context.getConfiguration();
 
         final WaitState<Context> awaitJoinState = ctx ->
         { };
@@ -59,12 +58,12 @@ public class JoinController implements Actor
         final WaitState<Context> leftState = ctx ->
         { };
 
-        final SendJoinState sendJoinState = new SendJoinState(context.getDisseminationComponent(), context.getMemberList().self(), context.getGossipEventSender());
+        final SendJoinState sendJoinState = new SendJoinState(context.getDisseminationComponent(), context.getMembershipList().self(), context.getGossipEventSender());
         final AwaitJoinResponseState awaitJoinResponseState = new AwaitJoinResponseState(context.getGossipEventFactory());
         final SendSyncRequestState sendSyncRequestState = new SendSyncRequestState(context.getGossipEventSender());
         final AwaitSyncResponseState awaitSyncResponseState = new AwaitSyncResponseState();
         final AwaitNextJoinIntervalState awaitRetryState = new AwaitNextJoinIntervalState();
-        final LeaveState leaveState = new LeaveState(context.getDisseminationComponent(), context.getGossipEventSender(), context.getMemberList());
+        final LeaveState leaveState = new LeaveState(context.getDisseminationComponent(), context.getGossipEventSender(), context.getMembershipList());
         final AwaitLeaveResponseState awaitLeaveResponseState = new AwaitLeaveResponseState(context.getGossipEventFactory());
 
         this.stateMachine = StateMachine.<Context> builder(sm -> new Context(sm, context.getGossipEventFactory()))
@@ -76,7 +75,6 @@ public class JoinController implements Actor
                 .from(sendSyncRequestState).take(TRANSITION_DEFAULT).to(awaitSyncResponseState)
                 .from(awaitSyncResponseState).take(TRANSITION_DEFAULT).to(joinedState)
                 .from(awaitSyncResponseState).take(TRANSITION_FAIL).to(awaitRetryState)
-                .from(awaitSyncResponseState).take(TRANSITION_TIMEOUT).to(awaitRetryState)
                 .from(awaitRetryState).take(TRANSITION_DEFAULT).to(sendJoinState)
                 .from(awaitRetryState).take(TRANSITION_JOIN).to(sendJoinState)
                 .from(joinedState).take(TRANSITION_LEAVE).to(leaveState)
@@ -87,8 +85,7 @@ public class JoinController implements Actor
                 .build();
     }
 
-    @Override
-    public int doWork() throws Exception
+    public int doWork()
     {
         return stateMachine.doWork();
     }
@@ -142,7 +139,7 @@ public class JoinController implements Actor
         Context(StateMachine<Context> stateMachine, GossipEventFactory eventFactory)
         {
             super(stateMachine);
-            this.syncResponse = new GossipEventResponse(eventFactory.createSyncEvent());
+            this.syncResponse = eventFactory.createSyncResponse();
             clear();
         }
 
@@ -173,23 +170,23 @@ public class JoinController implements Actor
         {
             self.getTerm().increment();
 
-            disseminationComponent.addMembershipEvent()
-                .address(self.getAddress())
-                .type(MembershipEventType.JOIN)
-                .gossipTerm(self.getTerm());
-
             for (SocketAddress contactPoint : context.contactPoints)
             {
                 if (!self.getAddress().equals(contactPoint))
                 {
                     LOG.trace("Spread JOIN event to contact point '{}'", contactPoint);
 
+                    disseminationComponent.addMembershipEvent()
+                        .address(self.getAddress())
+                        .type(MembershipEventType.JOIN)
+                        .gossipTerm(self.getTerm());
+
                     final ClientRequest request = gossipEventSender.sendPing(contactPoint);
                     context.requests.add(request);
                 }
             }
 
-            context.timeout = ClockUtil.getCurrentTimeInMillis() + config.getJoinTimeout();
+            context.timeout = ClockUtil.getCurrentTimeInMillis() + configuration.getJoinTimeout();
             context.take(TRANSITION_DEFAULT);
         }
     }
@@ -200,7 +197,7 @@ public class JoinController implements Actor
 
         AwaitJoinResponseState(GossipEventFactory eventFactory)
         {
-            this.response = new GossipEventResponse(eventFactory.createFailureDetectionEvent());
+            this.response = eventFactory.createAckResponse();
         }
 
         @Override
@@ -218,7 +215,7 @@ public class JoinController implements Actor
                 if (response.isReceived())
                 {
                     contactPoint = context.contactPoints.get(r);
-                    LOG.trace("Received response from contact point '{}'", contactPoint);
+                    LOG.trace("Received join response from contact point '{}'", contactPoint);
 
                     response.process();
                 }
@@ -231,9 +228,9 @@ public class JoinController implements Actor
             }
             else if (currentTime >= context.timeout)
             {
-                LOG.warn("Failed to contact any of '{}'. Try again in {}ms", context.contactPoints, config.getJoinInterval());
+                LOG.info("Failed to contact any of '{}'. Try again in {}ms", context.contactPoints, configuration.getJoinInterval());
 
-                context.nextJoinInterval = currentTime + config.getJoinInterval();
+                context.nextJoinInterval = currentTime + configuration.getJoinInterval();
                 context.take(TRANSITION_TIMEOUT);
             }
         }
@@ -262,7 +259,7 @@ public class JoinController implements Actor
 
             final ClientRequest request = gossipEventSender.sendSyncRequest(context.contactPoint);
 
-            context.syncResponse.wrap(request, config.getSyncTimeout());
+            context.syncResponse.wrap(request, configuration.getSyncTimeout());
             context.take(TRANSITION_DEFAULT);
         }
     }
@@ -285,18 +282,12 @@ public class JoinController implements Actor
                 context.clear();
                 context.take(TRANSITION_DEFAULT);
             }
-            else if (response.isFailed())
+            else if (response.isFailed() || response.isTimedOut())
             {
-                LOG.trace("Failed to receive SYNC response from '{}'", context.contactPoint);
+                LOG.debug("Failed to receive SYNC response from '{}'. Try again in {}ms", context.contactPoint, configuration.getJoinInterval());
 
+                context.nextJoinInterval = ClockUtil.getCurrentTimeInMillis() + configuration.getJoinInterval();
                 context.take(TRANSITION_FAIL);
-            }
-            else if (response.isTimedOut())
-            {
-                LOG.warn("Doesn't receive SYNC response from '{}'. Try again in {}ms", context.contactPoint, config.getJoinInterval());
-
-                context.nextJoinInterval = ClockUtil.getCurrentTimeInMillis() + config.getJoinInterval();
-                context.take(TRANSITION_TIMEOUT);
             }
         }
 
@@ -345,7 +336,7 @@ public class JoinController implements Actor
                 .gossipTerm(self.getTerm());
 
             final int clusterSize = membershipList.size();
-            final int multiplier = config.getRetransmissionMultiplier();
+            final int multiplier = configuration.getRetransmissionMultiplier();
             final int spreadCount = Math.min(GossipMath.gossipPeriodsToSpread(multiplier, clusterSize), clusterSize);
 
             final List<Member> members = new ArrayList<>(membershipList.getMembersView());
@@ -363,7 +354,7 @@ public class JoinController implements Actor
                 context.requests.add(clientRequest);
             }
 
-            context.timeout = ClockUtil.getCurrentTimeInMillis() + config.getLeaveTimeout();
+            context.timeout = ClockUtil.getCurrentTimeInMillis() + configuration.getLeaveTimeout();
             context.take(TRANSITION_DEFAULT);
         }
     }
@@ -374,7 +365,7 @@ public class JoinController implements Actor
 
         AwaitLeaveResponseState(GossipEventFactory gossipEventFactory)
         {
-            this.response = new GossipEventResponse(gossipEventFactory.createFailureDetectionEvent());
+            this.response = gossipEventFactory.createAckResponse();
         }
 
         @Override
@@ -399,7 +390,7 @@ public class JoinController implements Actor
             }
             else if (ClockUtil.getCurrentTimeInMillis() >= context.timeout)
             {
-                LOG.info("Left cluster but timeout is reached before LEAVE event is spread to all members");
+                LOG.info("Left cluster but timeout is reached before event is confirmed by all members");
 
                 context.future.complete(null);
                 context.take(TRANSITION_TIMEOUT);

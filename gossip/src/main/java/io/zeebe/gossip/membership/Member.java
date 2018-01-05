@@ -15,13 +15,12 @@
  */
 package io.zeebe.gossip.membership;
 
-import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
-
 import java.util.ArrayList;
 import java.util.List;
 
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.buffer.BufferUtil;
+import io.zeebe.util.collection.Tuple;
 import org.agrona.DirectBuffer;
 
 public class Member
@@ -32,9 +31,9 @@ public class Member
     private final GossipTerm term = new GossipTerm();
     private MembershipStatus status = MembershipStatus.ALIVE;
 
-    private long suspictionTimeout = -1L;
+    private long suspicionTimeout = -1L;
 
-    private final List<GossipTermEventTypeTuple> gossipTermByEventType = new ArrayList<>();
+    private final List<Tuple<DirectBuffer, GossipTerm>> gossipTermByEventType = new ArrayList<>();
 
     public Member(SocketAddress address)
     {
@@ -62,9 +61,9 @@ public class Member
         return term;
     }
 
-    public long getSuspectTimeout()
+    public long getSuspicionTimeout()
     {
-        return suspictionTimeout;
+        return suspicionTimeout;
     }
 
     public Member setStatus(MembershipStatus status)
@@ -75,24 +74,23 @@ public class Member
 
     public Member setGossipTerm(GossipTerm term)
     {
-        this.term.epoch(term.getEpoch());
-        this.term.heartbeat(term.getHeartbeat());
+        this.term.wrap(term);
         return this;
     }
 
-    public Member setSuspictionTimeout(long suspictionTimeout)
+    public Member setSuspicionTimeout(long suspicionTimeout)
     {
-        this.suspictionTimeout = suspictionTimeout;
+        this.suspicionTimeout = suspicionTimeout;
         return this;
     }
 
     public GossipTerm getTermForEventType(DirectBuffer eventType)
     {
-        for (GossipTermEventTypeTuple tuple : gossipTermByEventType)
+        for (Tuple<DirectBuffer, GossipTerm> tuple : gossipTermByEventType)
         {
-            if (BufferUtil.equals(eventType, tuple.getEventType()))
+            if (BufferUtil.equals(eventType, tuple.getRight()))
             {
-                return tuple.getGossipTerm();
+                return tuple.getLeft();
             }
         }
         return null;
@@ -100,7 +98,8 @@ public class Member
 
     public void addTermForEventType(DirectBuffer type, GossipTerm gossipTerm)
     {
-        final GossipTermEventTypeTuple tuple = new GossipTermEventTypeTuple(type, gossipTerm);
+        final GossipTerm term = new GossipTerm().wrap(gossipTerm);
+        final Tuple<DirectBuffer, GossipTerm> tuple = new Tuple<>(BufferUtil.cloneBuffer(type), term);
         gossipTermByEventType.add(tuple);
     }
 
@@ -155,39 +154,5 @@ public class Member
             return false;
         }
         return true;
-    }
-
-    private class GossipTermEventTypeTuple
-    {
-        private final GossipTerm gossipTerm = new GossipTerm();
-        private final DirectBuffer eventType;
-
-        GossipTermEventTypeTuple(DirectBuffer eventType, GossipTerm gossipTerm)
-        {
-            this.eventType = BufferUtil.cloneBuffer(eventType);
-            this.gossipTerm.epoch(gossipTerm.getEpoch()).heartbeat(gossipTerm.getHeartbeat());
-        }
-
-        public GossipTerm getGossipTerm()
-        {
-            return gossipTerm;
-        }
-
-        public DirectBuffer getEventType()
-        {
-            return eventType;
-        }
-
-        @Override
-        public String toString()
-        {
-            final StringBuilder builder = new StringBuilder();
-            builder.append("[eventType=");
-            builder.append(bufferAsString(eventType));
-            builder.append(", gossipTerm=");
-            builder.append(gossipTerm);
-            builder.append("]");
-            return builder.toString();
-        }
     }
 }

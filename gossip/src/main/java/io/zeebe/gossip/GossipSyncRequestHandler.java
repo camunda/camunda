@@ -15,14 +15,13 @@
  */
 package io.zeebe.gossip;
 
-import io.zeebe.gossip.membership.Member;
+import io.zeebe.gossip.dissemination.GossipSyncRequest;
 
 /**
- * Listen on gossip membership updates.
+ * Handle Gossip sync requests and provide data for custom events.
  */
-public interface GossipMembershipListener
+@FunctionalInterface
+public interface GossipSyncRequestHandler
 {
-    void onAdd(Member member);
-
-    void onRemove(Member member);
+    void onSyncRequest(GossipSyncRequest request);
 }

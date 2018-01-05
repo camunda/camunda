@@ -16,17 +16,20 @@
 package io.zeebe.gossip;
 
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
-import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
-import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import io.zeebe.gossip.GossipRule.ReceivedCustomEvent;
 import io.zeebe.gossip.protocol.CustomEvent;
+import io.zeebe.gossip.util.GossipClusterRule;
+import io.zeebe.gossip.util.GossipRule;
+import io.zeebe.gossip.util.GossipRule.ReceivedCustomEvent;
+import io.zeebe.gossip.util.GossipRule.RecordingCustomEventListener;
 import io.zeebe.test.util.BufferAssert;
-import io.zeebe.test.util.agent.ControllableTaskScheduler;
+import io.zeebe.test.util.ClockRule;
+import io.zeebe.test.util.agent.ManualActorScheduler;
 import org.agrona.DirectBuffer;
 import org.junit.*;
 
@@ -34,7 +37,7 @@ public class CustomEventTest
 {
     private static final GossipConfiguration CONFIGURATION = new GossipConfiguration();
 
-    private ControllableTaskScheduler actorScheduler = new ControllableTaskScheduler();
+    private ManualActorScheduler actorScheduler = new ManualActorScheduler();
 
     private GossipRule gossip1 = new GossipRule(() -> actorScheduler, CONFIGURATION, "localhost", 8001);
     private GossipRule gossip2 = new GossipRule(() -> actorScheduler, CONFIGURATION, "localhost", 8002);
@@ -96,6 +99,9 @@ public class CustomEventTest
         final DirectBuffer type = wrapString("CUST");
         final DirectBuffer payload = wrapString("PAYLOAD");
 
+        final RecordingCustomEventListener customEventListener = new RecordingCustomEventListener();
+        gossip2.getController().addCustomEventListener(type, customEventListener);
+
         // when
         gossip1.getPushlisher().publishEvent(type, payload);
 
@@ -106,14 +112,9 @@ public class CustomEventTest
         actorScheduler.waitUntilDone();
 
         // then
-        assertThat(gossip2.getCustomEventListenerInvocations().count()).isEqualTo(1);
-        assertThat(gossip3.getCustomEventListenerInvocations().count()).isEqualTo(1);
+        assertThat(customEventListener.getInvocations().count()).isEqualTo(1);
 
-        final ReceivedCustomEvent customEvent = gossip2.getCustomEventListenerInvocations().findFirst().get();
-
-        BufferAssert.assertThatBuffer(customEvent.getType())
-            .hasCapacity(type.capacity())
-            .hasBytes(type);
+        final ReceivedCustomEvent customEvent = customEventListener.getInvocations().findFirst().get();
 
         assertThat(customEvent.getSender()).isEqualTo(gossip1.getAddress());
 
@@ -132,6 +133,12 @@ public class CustomEventTest
         final DirectBuffer payload1 = wrapString("PAYLOAD_1");
         final DirectBuffer payload2 = wrapString("PAYLOAD_2");
 
+        final RecordingCustomEventListener customEventListener1 = new RecordingCustomEventListener();
+        gossip2.getController().addCustomEventListener(type1, customEventListener1);
+
+        final RecordingCustomEventListener customEventListener2 = new RecordingCustomEventListener();
+        gossip2.getController().addCustomEventListener(type2, customEventListener2);
+
         // when
         gossip1.getPushlisher().publishEvent(type1, payload1);
         gossip1.getPushlisher().publishEvent(type2, payload2);
@@ -143,15 +150,13 @@ public class CustomEventTest
         actorScheduler.waitUntilDone();
 
         // then
-        assertThat(gossip2.getCustomEventListenerInvocations().count()).isEqualTo(2);
+        assertThat(customEventListener1.getInvocations().count()).isEqualTo(1);
+        final ReceivedCustomEvent customEvent1 = customEventListener1.getInvocations().findFirst().get();
+        BufferAssert.assertThatBuffer(customEvent1.getPayload()).hasBytes(payload1);
 
-        final List<ReceivedCustomEvent> invocations = gossip2.getCustomEventListenerInvocations().collect(toList());
-
-        BufferAssert.assertThatBuffer(invocations.get(0).getType()).hasBytes(type1);
-        BufferAssert.assertThatBuffer(invocations.get(0).getPayload()).hasBytes(payload1);
-
-        BufferAssert.assertThatBuffer(invocations.get(1).getType()).hasBytes(type2);
-        BufferAssert.assertThatBuffer(invocations.get(1).getPayload()).hasBytes(payload2);
+        assertThat(customEventListener2.getInvocations().count()).isEqualTo(1);
+        final ReceivedCustomEvent customEvent2 = customEventListener2.getInvocations().findFirst().get();
+        BufferAssert.assertThatBuffer(customEvent2.getPayload()).hasBytes(payload2);
     }
 
     @Test
@@ -160,6 +165,9 @@ public class CustomEventTest
         // given
         final DirectBuffer type = wrapString("CUST");
         final DirectBuffer payload = wrapString("PAYLOAD");
+
+        final AtomicBoolean invoked = new AtomicBoolean(false);
+        gossip1.getController().addCustomEventListener(type, (s, p) -> invoked.set(true));
 
         // when
         gossip1.getPushlisher().publishEvent(type, payload);
@@ -171,7 +179,7 @@ public class CustomEventTest
         actorScheduler.waitUntilDone();
 
         // then
-        assertThat(gossip1.getCustomEventListenerInvocations().count()).isEqualTo(0);
+        assertThat(invoked.get()).isFalse();
     }
 
     @Test
@@ -212,9 +220,9 @@ public class CustomEventTest
 
         final AtomicInteger counter = new AtomicInteger(0);
 
-        gossip2.getController().addCustomEventListener((t, s, p) -> counter.incrementAndGet());
-        gossip2.getController().addCustomEventListener((t, s, p) -> counter.incrementAndGet());
-        gossip2.getController().addCustomEventListener((t, s, p) -> counter.incrementAndGet());
+        gossip2.getController().addCustomEventListener(type, (s, p) -> counter.incrementAndGet());
+        gossip2.getController().addCustomEventListener(type, (s, p) -> counter.incrementAndGet());
+        gossip2.getController().addCustomEventListener(type, (s, p) -> counter.incrementAndGet());
 
         // when
         gossip1.getPushlisher().publishEvent(type, payload);
@@ -238,11 +246,11 @@ public class CustomEventTest
 
         final AtomicInteger counter = new AtomicInteger(0);
 
-        final GossipCustomEventListener listener = (t, s, p) -> counter.incrementAndGet();
+        final GossipCustomEventListener listener = (s, p) -> counter.incrementAndGet();
 
-        gossip2.getController().addCustomEventListener((t, s, p) -> counter.incrementAndGet());
-        gossip2.getController().addCustomEventListener(listener);
-        gossip2.getController().addCustomEventListener((t, s, p) -> counter.incrementAndGet());
+        gossip2.getController().addCustomEventListener(type, (s, p) -> counter.incrementAndGet());
+        gossip2.getController().addCustomEventListener(type, listener);
+        gossip2.getController().addCustomEventListener(type, (s, p) -> counter.incrementAndGet());
 
         // when
         gossip2.getController().removeCustomEventListener(listener);
@@ -268,13 +276,13 @@ public class CustomEventTest
 
         final AtomicInteger counter = new AtomicInteger(0);
 
-        gossip2.getController().addCustomEventListener((t, s, p) ->
+        gossip2.getController().addCustomEventListener(type, (s, p) ->
         {
             throw new RuntimeException("expected");
         });
 
-        gossip2.getController().addCustomEventListener((t, s, p) -> counter.incrementAndGet());
-        gossip2.getController().addCustomEventListener((t, s, p) -> counter.incrementAndGet());
+        gossip2.getController().addCustomEventListener(type, (s, p) -> counter.incrementAndGet());
+        gossip2.getController().addCustomEventListener(type, (s, p) -> counter.incrementAndGet());
 
         // when
         gossip1.getPushlisher().publishEvent(type, payload);

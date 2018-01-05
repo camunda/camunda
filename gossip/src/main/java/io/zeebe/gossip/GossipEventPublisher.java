@@ -15,23 +15,30 @@
  */
 package io.zeebe.gossip;
 
-import io.zeebe.transport.SocketAddress;
 import org.agrona.DirectBuffer;
 
 /**
- * Listen on custom gossip events.
+ * Publish custom events via Gossip's infection-style protocol.
  */
-@FunctionalInterface
-public interface GossipCustomEventListener
+public interface GossipEventPublisher
 {
     /**
-     * Handle the custom event. If the event is handled asynchronously then the
-     * data should be copied (another invocation reuse the same data).
+     * Publish a custom event.
      *
-     * @param sender
-     *            the (original) sender of the event
+     * @param type
+     *            the type of the event
      * @param payload
      *            the event as payload
+     * @param offset
+     *            the payload buffer's offset
+     * @param length
+     *            the payload buffer's length
      */
-    void onEvent(SocketAddress sender, DirectBuffer payload);
+    void publishEvent(DirectBuffer type, DirectBuffer payload, int offset, int length);
+
+    default void publishEvent(DirectBuffer type, DirectBuffer payload)
+    {
+        publishEvent(type, payload, 0, payload.capacity());
+    }
+
 }

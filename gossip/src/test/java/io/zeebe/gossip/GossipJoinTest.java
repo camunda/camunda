@@ -23,7 +23,10 @@ import java.util.concurrent.CompletableFuture;
 import io.zeebe.clustering.gossip.GossipEventType;
 import io.zeebe.clustering.gossip.MembershipEventType;
 import io.zeebe.gossip.protocol.MembershipEvent;
-import io.zeebe.test.util.agent.ControllableTaskScheduler;
+import io.zeebe.gossip.util.GossipClusterRule;
+import io.zeebe.gossip.util.GossipRule;
+import io.zeebe.test.util.ClockRule;
+import io.zeebe.test.util.agent.ManualActorScheduler;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -31,7 +34,7 @@ public class GossipJoinTest
 {
     private static final GossipConfiguration CONFIGURATION = new GossipConfiguration();
 
-    private ControllableTaskScheduler actorScheduler = new ControllableTaskScheduler();
+    private ManualActorScheduler actorScheduler = new ManualActorScheduler();
 
     private GossipRule gossip1 = new GossipRule(() -> actorScheduler, CONFIGURATION, "localhost", 8001);
     private GossipRule gossip2 = new GossipRule(() -> actorScheduler, CONFIGURATION, "localhost", 8002);

@@ -19,18 +19,29 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import io.zeebe.transport.SocketAddress;
+import org.agrona.DirectBuffer;
 
 public interface GossipController
 {
+    /**
+     * Join an existing cluster.
+     *
+     * @param contactPoints known contact points of the cluster
+     */
     CompletableFuture<Void> join(List<SocketAddress> contactPoints);
 
+    /**
+     * Leave the current cluster.
+     */
     CompletableFuture<Void> leave();
 
     void addMembershipListener(GossipMembershipListener listener);
 
     void removeMembershipListener(GossipMembershipListener listener);
 
-    void addCustomEventListener(GossipCustomEventListener listener);
+    void addCustomEventListener(DirectBuffer eventType, GossipCustomEventListener listener);
 
     void removeCustomEventListener(GossipCustomEventListener listener);
+
+    void registerSyncRequestHandler(DirectBuffer eventType, GossipSyncRequestHandler handler);
 }

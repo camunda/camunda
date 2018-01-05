@@ -18,8 +18,20 @@ package io.zeebe.gossip.protocol;
 @FunctionalInterface
 public interface MembershipEventConsumer
 {
+    /**
+     * Consume the given event.
+     *
+     * @return <code>true</code> when the event is new (i.e. the internal state
+     *         has changed).
+     */
     boolean consumeMembershipEvent(MembershipEvent event);
 
+    /**
+     * Return a composed consumer that invoke this consumer followed by the
+     * given consumer. The next consumer if only invoked when the previous
+     * consumer returns <code>true</code>.
+     *
+     */
     default MembershipEventConsumer andThen(MembershipEventConsumer nextConsumer)
     {
         return event ->

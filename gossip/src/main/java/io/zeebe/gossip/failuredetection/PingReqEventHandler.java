@@ -20,29 +20,27 @@ import io.zeebe.gossip.membership.Member;
 import io.zeebe.gossip.membership.MembershipList;
 import io.zeebe.gossip.protocol.*;
 import io.zeebe.transport.ClientRequest;
-import io.zeebe.util.actor.Actor;
 import io.zeebe.util.state.*;
 import org.slf4j.Logger;
 
-public class PingReqEventHandler implements Actor, GossipEventConsumer
+public class PingReqEventHandler implements GossipEventConsumer
 {
     private static final Logger LOG = Loggers.GOSSIP_LOGGER;
 
     private static final int TRANSITION_DEFAULT = 0;
     private static final int TRANSITION_ACK_RECEIVED = 1;
-    private static final int TRANSITION_FAIL = 2;
-    private static final int TRANSITION_PING_REQ_RECEIVED = 3;
+    private static final int TRANSITION_PING_REQ_RECEIVED = 2;
+    private static final int TRANSITION_FAIL = 3;
 
-    private final GossipConfiguration config;
-
-    private final MembershipList memberList;
+    private final GossipConfiguration configuration;
+    private final MembershipList membershipList;
 
     private final StateMachine<Context> stateMachine;
 
     public PingReqEventHandler(GossipContext context)
     {
-        this.config = context.getConfiguration();
-        this.memberList = context.getMemberList();
+        this.configuration = context.getConfiguration();
+        this.membershipList = context.getMembershipList();
 
         final WaitState<Context> awaitPingReqState = ctx ->
         { };
@@ -64,32 +62,32 @@ public class PingReqEventHandler implements Actor, GossipEventConsumer
     @Override
     public void accept(GossipEvent event, long requestId, int streamId)
     {
-        final Member sender = memberList.get(event.getSender());
-        final Member member = memberList.get(event.getProbeMember());
-        if (member != null)
+        final Member sender = membershipList.get(event.getSender());
+        final Member probeMember = membershipList.get(event.getProbeMember());
+        if (probeMember != null)
         {
             final boolean success = stateMachine.tryTake(TRANSITION_PING_REQ_RECEIVED);
             if (success)
             {
                 final Context context = stateMachine.getContext();
                 context.sender = sender;
-                context.suspiciousMember = member;
+                context.suspiciousMember = probeMember;
                 context.requestId = requestId;
                 context.streamId = streamId;
             }
             else
             {
-                // currently, we process only one request at a time
-                // - if another request is received then it's rejected until the pending request is done
+                // TODO buffer incoming PING-REQ request
                 LOG.trace("Reject PING-REQ from '{}' because the previous request isn't completed yet", sender);
-
-                // TODO buffer incoming request to reduce false-positive failure detection
             }
+        }
+        else
+        {
+            LOG.debug("Reject PING-REQ for unknown member '{}'", probeMember);
         }
     }
 
-    @Override
-    public int doWork() throws Exception
+    public int doWork()
     {
         return stateMachine.doWork();
     }
@@ -106,7 +104,7 @@ public class PingReqEventHandler implements Actor, GossipEventConsumer
         Context(StateMachine<Context> stateMachine, GossipEventFactory eventFactory)
         {
             super(stateMachine);
-            this.ackResponse = new GossipEventResponse(eventFactory.createFailureDetectionEvent());
+            this.ackResponse = eventFactory.createAckResponse();
         }
     }
 
@@ -125,7 +123,7 @@ public class PingReqEventHandler implements Actor, GossipEventConsumer
             LOG.trace("Forward PING to '{}'", context.suspiciousMember.getId());
 
             final ClientRequest request = gossipEventSender.sendPing(context.suspiciousMember.getAddress());
-            context.ackResponse.wrap(request, config.getProbeTimeout());
+            context.ackResponse.wrap(request, configuration.getProbeTimeout());
 
             context.take(TRANSITION_DEFAULT);
         }
@@ -138,7 +136,10 @@ public class PingReqEventHandler implements Actor, GossipEventConsumer
         {
             if (context.ackResponse.isReceived())
             {
-                LOG.trace("Received ACK from '{}'", context.suspiciousMember.getAddress());
+                if (LOG.isTraceEnabled())
+                {
+                    LOG.trace("Received ACK from '{}'", context.suspiciousMember.getAddress());
+                }
 
                 context.ackResponse.process();
 
@@ -146,7 +147,10 @@ public class PingReqEventHandler implements Actor, GossipEventConsumer
             }
             else if (context.ackResponse.isFailed() || context.ackResponse.isTimedOut())
             {
-                LOG.trace("Doesn't receive ACK from '{}'", context.suspiciousMember.getAddress());
+                if (LOG.isTraceEnabled())
+                {
+                    LOG.trace("Doesn't receive ACK from '{}'", context.suspiciousMember.getAddress());
+                }
 
                 context.take(TRANSITION_FAIL);
             }

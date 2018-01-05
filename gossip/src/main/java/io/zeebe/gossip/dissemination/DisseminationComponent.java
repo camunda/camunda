@@ -17,41 +17,68 @@ package io.zeebe.gossip.dissemination;
 
 import java.util.Iterator;
 
-import io.zeebe.gossip.GossipConfiguration;
-import io.zeebe.gossip.GossipMath;
+import io.zeebe.gossip.*;
+import io.zeebe.gossip.membership.Member;
 import io.zeebe.gossip.membership.MembershipList;
 import io.zeebe.gossip.protocol.*;
+import io.zeebe.util.collection.ReusableObjectList;
 
 public class DisseminationComponent implements MembershipEventSupplier, MembershipEventConsumer, CustomEventSupplier, CustomEventConsumer
 {
     private final GossipConfiguration configuration;
     private final MembershipList memberList;
 
-    private final EventBuffer<MembershipEventImpl> membershipEventBuffer;
-    private final EventBuffer<CustomEventImpl> customEventBuffer;
+    private final ReusableObjectList<BufferedEvent<MembershipEvent>> membershipEventBuffer;
+    private final ReusableObjectList<BufferedEvent<CustomEvent>> customEventBuffer;
 
-    private final EventIterator<MembershipEvent, MembershipEventImpl> membershipEventViewIterator = new EventIterator<>(false);
-    private final EventIterator<MembershipEvent, MembershipEventImpl> membershipEventDrainIterator = new EventIterator<>(true);
+    private final BufferedEventIterator<MembershipEvent> membershipEventViewIterator = new BufferedEventIterator<>(false);
+    private final BufferedEventIterator<MembershipEvent> membershipEventDrainIterator = new BufferedEventIterator<>(true);
 
-    private final EventIterator<CustomEvent, CustomEventImpl> customEventViewIterator = new EventIterator<>(false);
-    private final EventIterator<CustomEvent, CustomEventImpl> customEventDrainIterator = new EventIterator<>(true);
+    private final BufferedEventIterator<CustomEvent> customEventViewIterator = new BufferedEventIterator<>(false);
+    private final BufferedEventIterator<CustomEvent> customEventDrainIterator = new BufferedEventIterator<>(true);
 
     public DisseminationComponent(GossipConfiguration configuration, MembershipList memberList)
     {
         this.configuration = configuration;
         this.memberList = memberList;
 
-        // TODO event buffer should be expandable or use back pressure
-        this.membershipEventBuffer = new EventBuffer<>(() -> new BufferedEvent<>(new MembershipEventImpl()), 32);
-        this.customEventBuffer = new EventBuffer<>(() -> new BufferedEvent<>(new CustomEventImpl()), 32);
+        this.membershipEventBuffer = new ReusableObjectList<>(() -> new BufferedEvent<>(new MembershipEvent()));
+        this.customEventBuffer = new ReusableObjectList<>(() -> new BufferedEvent<>(new CustomEvent()));
+
+        memberList.addListener(new GossipMembershipListener()
+        {
+
+            @Override
+            public void onRemove(Member member)
+            {
+                updateEventSpreadLimit();
+            }
+
+            @Override
+            public void onAdd(Member member)
+            {
+                updateEventSpreadLimit();
+            }
+        });
     }
 
-    public MembershipEventImpl addMembershipEvent()
+    private void updateEventSpreadLimit()
+    {
+        final int clusterSize = 1 + memberList.size();
+        final int multiplier = configuration.getRetransmissionMultiplier();
+
+        final int spreadLimit = GossipMath.gossipPeriodsToSpread(multiplier, clusterSize);
+
+        membershipEventDrainIterator.setSpreadLimit(spreadLimit);
+        customEventDrainIterator.setSpreadLimit(spreadLimit);
+    }
+
+    public MembershipEvent addMembershipEvent()
     {
         return membershipEventBuffer.add().getEvent();
     }
 
-    public CustomEventImpl addCustomEvent()
+    public CustomEvent addCustomEvent()
     {
         return customEventBuffer.add().getEvent();
     }
@@ -63,17 +90,17 @@ public class DisseminationComponent implements MembershipEventSupplier, Membersh
     }
 
     @Override
-    public Iterator<MembershipEvent> membershipEventViewIterator(int limit)
+    public Iterator<MembershipEvent> membershipEventViewIterator(int max)
     {
-        membershipEventViewIterator.wrap(membershipEventBuffer.iterator(limit));
+        membershipEventViewIterator.wrap(membershipEventBuffer.iterator(), max);
 
         return membershipEventViewIterator;
     }
 
     @Override
-    public Iterator<MembershipEvent> membershipEventDrainIterator(int limit)
+    public Iterator<MembershipEvent> membershipEventDrainIterator(int max)
     {
-        membershipEventDrainIterator.wrap(membershipEventBuffer.iterator(limit));
+        membershipEventDrainIterator.wrap(membershipEventBuffer.iterator(), max);
 
         return membershipEventDrainIterator;
     }
@@ -88,7 +115,7 @@ public class DisseminationComponent implements MembershipEventSupplier, Membersh
     @Override
     public Iterator<CustomEvent> customEventViewIterator(int max)
     {
-        customEventViewIterator.wrap(customEventBuffer.iterator(max));
+        customEventViewIterator.wrap(customEventBuffer.iterator(), max);
 
         return customEventViewIterator;
     }
@@ -96,7 +123,7 @@ public class DisseminationComponent implements MembershipEventSupplier, Membersh
     @Override
     public Iterator<CustomEvent> customEventDrainIterator(int max)
     {
-        customEventDrainIterator.wrap(customEventBuffer.iterator(max));
+        customEventDrainIterator.wrap(customEventBuffer.iterator(), max);
 
         return customEventDrainIterator;
     }
@@ -122,53 +149,6 @@ public class DisseminationComponent implements MembershipEventSupplier, Membersh
             .payload(event.getPayload());
 
         return true;
-    }
-
-    public void clearSpreadEvents()
-    {
-        final int clusterSize = 1 + memberList.size();
-        final int multiplier = configuration.getRetransmissionMultiplier();
-
-        final int spreadLimit = GossipMath.gossipPeriodsToSpread(multiplier, clusterSize);
-
-        membershipEventBuffer.removeEventsWithSpreadCountGreaterThan(spreadLimit);
-        customEventBuffer.removeEventsWithSpreadCountGreaterThan(spreadLimit);
-    }
-
-    private class EventIterator<T, U extends T> implements Iterator<T>
-    {
-        private final boolean incrementSpreadCount;
-
-        private Iterator<BufferedEvent<U>> iterator;
-
-        EventIterator(boolean incrementSpreadCount)
-        {
-            this.incrementSpreadCount = incrementSpreadCount;
-        }
-
-        public void wrap(Iterator<BufferedEvent<U>> iterator)
-        {
-            this.iterator = iterator;
-        }
-
-        @Override
-        public boolean hasNext()
-        {
-            return iterator.hasNext();
-        }
-
-        @Override
-        public T next()
-        {
-            final BufferedEvent<U> event = iterator.next();
-
-            if (incrementSpreadCount)
-            {
-                event.incrementSpreadCount();
-            }
-
-            return event.getEvent();
-        }
     }
 
 }

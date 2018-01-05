@@ -21,7 +21,17 @@ public interface CustomEventSupplier
 {
     int customEventSize();
 
+    /**
+     * Return an iterator for custom events which returns at most the given
+     * amount of events.
+     */
     Iterator<CustomEvent> customEventViewIterator(int max);
 
+    /**
+     * Return an iterator for custom events which returns at most the given
+     * amount of events. In contrast to {@link #customEventViewIterator(int)},
+     * the returned events should be removed afterwards (depending on the spread
+     * count).
+     */
     Iterator<CustomEvent> customEventDrainIterator(int max);
 }

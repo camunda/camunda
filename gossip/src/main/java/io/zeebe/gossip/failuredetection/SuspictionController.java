@@ -32,13 +32,13 @@ public class SuspictionController
 
     private static final int TRANSITION_DEFAULT = 0;
 
-    private final MembershipList memberList;
+    private final MembershipList membershipList;
 
     private final StateMachine<SimpleStateMachineContext> stateMachine;
 
     public SuspictionController(GossipContext context)
     {
-        this.memberList = context.getMemberList();
+        this.membershipList = context.getMembershipList();
 
         // check suspicion in the same interval as probing
         final int checkInterval = context.getConfiguration().getProbeInterval();
@@ -97,16 +97,16 @@ public class SuspictionController
 
             final long currentTime = ClockUtil.getCurrentTimeInMillis();
 
-            final Iterator<Member> members = memberList.iterator();
-            while (members.hasNext())
+            final Iterator<Member> memberIterator = membershipList.iterator();
+            while (memberIterator.hasNext())
             {
-                final Member member = members.next();
+                final Member member = memberIterator.next();
 
-                if (member.getStatus() == MembershipStatus.SUSPECT && currentTime >= member.getSuspectTimeout())
+                if (member.getStatus() == MembershipStatus.SUSPECT && currentTime >= member.getSuspicionTimeout())
                 {
                     LOG.info("Remove suspicious member '{}'", member.getId());
 
-                    members.remove();
+                    memberIterator.remove();
 
                     LOG.trace("Spread CONFIRM event about '{}'", member.getId());
 

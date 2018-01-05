@@ -50,7 +50,7 @@ public class GossipContext
         return configuration;
     }
 
-    public MembershipList getMemberList()
+    public MembershipList getMembershipList()
     {
         return memberList;
     }

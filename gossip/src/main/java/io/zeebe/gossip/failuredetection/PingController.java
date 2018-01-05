@@ -24,12 +24,11 @@ import io.zeebe.gossip.dissemination.DisseminationComponent;
 import io.zeebe.gossip.membership.*;
 import io.zeebe.gossip.protocol.*;
 import io.zeebe.transport.ClientRequest;
-import io.zeebe.util.actor.Actor;
 import io.zeebe.util.state.*;
 import io.zeebe.util.time.ClockUtil;
 import org.slf4j.Logger;
 
-public class PingController implements Actor
+public class PingController
 {
     private static final Logger LOG = Loggers.GOSSIP_LOGGER;
 
@@ -38,9 +37,9 @@ public class PingController implements Actor
     private static final int TRANSITION_TIMEOUT = 2;
     private static final int TRANSITION_FAIL = 3;
 
-    private final GossipConfiguration config;
+    private final GossipConfiguration configuration;
 
-    private final MembershipList memberList;
+    private final MembershipList membershipList;
     private final RoundRobinMemberIterator propbeMemberIterator;
     private final RoundRobinMemberIterator indirectProbeMemberIterator;
 
@@ -48,11 +47,11 @@ public class PingController implements Actor
 
     public PingController(GossipContext context)
     {
-        this.config = context.getConfiguration();
+        this.configuration = context.getConfiguration();
 
-        this.memberList = context.getMemberList();
-        this.propbeMemberIterator = new RoundRobinMemberIterator(memberList);
-        this.indirectProbeMemberIterator = new RoundRobinMemberIterator(memberList);
+        this.membershipList = context.getMembershipList();
+        this.propbeMemberIterator = new RoundRobinMemberIterator(membershipList);
+        this.indirectProbeMemberIterator = new RoundRobinMemberIterator(membershipList);
 
         final AwaitNextIntervalState awaitNextIntervalState = new AwaitNextIntervalState();
         final SendPingState sendPingState = new SendPingState(context.getGossipEventSender());
@@ -61,7 +60,7 @@ public class PingController implements Actor
         final AwaitIndirectAckState awaitIndirectAckState = new AwaitIndirectAckState();
         final SuspectMemberState markAsSuspectState = new SuspectMemberState(context.getDisseminationComponent());
 
-        this.stateMachine = StateMachine.<Context> builder(sm -> new Context(sm, context.getGossipEventFactory(), config.getProbeIndirectNodes()))
+        this.stateMachine = StateMachine.<Context> builder(sm -> new Context(sm, context.getGossipEventFactory(), configuration.getProbeIndirectNodes()))
                 .initialState(awaitNextIntervalState)
                 .from(awaitNextIntervalState).take(TRANSITION_DEFAULT).to(sendPingState)
                 .from(sendPingState).take(TRANSITION_DEFAULT).to(awaitAckState)
@@ -74,8 +73,7 @@ public class PingController implements Actor
                 .build();
     }
 
-    @Override
-    public int doWork() throws Exception
+    public int doWork()
     {
         return stateMachine.doWork();
     }
@@ -92,7 +90,7 @@ public class PingController implements Actor
         {
             super(stateMachine);
 
-            this.ackResponse = new GossipEventResponse(eventFactory.createFailureDetectionEvent());
+            this.ackResponse = eventFactory.createAckResponse();
             this.indirectRequests = new ArrayList<>(probeIndirectNodes);
         }
     }
@@ -106,7 +104,7 @@ public class PingController implements Actor
 
             if (currentTime >= context.nextInterval)
             {
-                context.nextInterval = currentTime + config.getProbeInterval();
+                context.nextInterval = currentTime + configuration.getProbeInterval();
 
                 if (propbeMemberIterator.hasNext())
                 {
@@ -134,7 +132,7 @@ public class PingController implements Actor
             LOG.trace("Send PING to '{}'", member.getId());
 
             final ClientRequest request = gossipEventSender.sendPing(member.getAddress());
-            context.ackResponse.wrap(request, config.getProbeTimeout());
+            context.ackResponse.wrap(request, configuration.getProbeTimeout());
 
             context.take(TRANSITION_DEFAULT);
         }
@@ -182,7 +180,7 @@ public class PingController implements Actor
         {
             final Member suspiciousMember = context.probeMember;
 
-            final int probeNodes = Math.min(config.getProbeIndirectNodes(), memberList.size() - 1);
+            final int probeNodes = Math.min(configuration.getProbeIndirectNodes(), membershipList.size() - 1);
 
             for (int n = 0; n < probeNodes;)
             {
@@ -190,7 +188,7 @@ public class PingController implements Actor
 
                 if (member != suspiciousMember)
                 {
-                    LOG.debug("Send PING-REQ to '{}' to probe '{}'", member.getId(), suspiciousMember.getId());
+                    LOG.trace("Send PING-REQ to '{}' to probe '{}'", member.getId(), suspiciousMember.getId());
 
                     final ClientRequest request = gossipEventSender.sendPingReq(member.getAddress(), suspiciousMember.getAddress());
                     context.indirectRequests.add(request);
@@ -199,7 +197,7 @@ public class PingController implements Actor
                 }
             }
 
-            context.pingReqTimeout = ClockUtil.getCurrentTimeInMillis() + config.getProbeIndirectTimeout();
+            context.pingReqTimeout = ClockUtil.getCurrentTimeInMillis() + configuration.getProbeIndirectTimeout();
             context.take(TRANSITION_DEFAULT);
         }
     }
@@ -218,7 +216,7 @@ public class PingController implements Actor
 
                 if (context.ackResponse.isReceived())
                 {
-                    LOG.trace("Received ACK from '{}'", context.probeMember.getId());
+                    LOG.trace("Received ACK of PING-REQ from '{}'", context.probeMember.getId());
 
                     context.ackResponse.process();
 
@@ -232,7 +230,7 @@ public class PingController implements Actor
             }
             else if (ClockUtil.getCurrentTimeInMillis() >= context.pingReqTimeout)
             {
-                LOG.trace("Doesn't receive any ACK to probe '{}'", context.probeMember.getId());
+                LOG.trace("Doesn't receive any ACK of PING-REQ to probe '{}'", context.probeMember.getId());
 
                 context.take(TRANSITION_TIMEOUT);
             }
@@ -264,13 +262,12 @@ public class PingController implements Actor
             {
                 LOG.debug("Spread SUSPECT event of member '{}'", probeMember.getId());
 
-                memberList.suspectMember(probeMember.getId(), probeMember.getTerm());
+                membershipList.suspectMember(probeMember.getAddress(), probeMember.getTerm());
 
                 disseminationComponent.addMembershipEvent()
                     .address(probeMember.getAddress())
                     .type(MembershipEventType.SUSPECT)
                     .gossipTerm(probeMember.getTerm());
-
             }
 
             context.take(TRANSITION_DEFAULT);

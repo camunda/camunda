@@ -18,5 +18,8 @@ package io.zeebe.gossip.protocol;
 @FunctionalInterface
 public interface GossipEventConsumer
 {
+    /**
+     * Consume the received gossip event (e.g. send a ACK response).
+     */
     void accept(GossipEvent event, long requestId, int streamId);
 }

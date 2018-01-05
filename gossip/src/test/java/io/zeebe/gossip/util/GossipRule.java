@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.gossip;
+package io.zeebe.gossip.util;
 
 import static java.util.stream.Collectors.toList;
 import static org.mockito.ArgumentMatchers.any;
@@ -28,6 +28,7 @@ import java.util.stream.Stream;
 import io.zeebe.clustering.gossip.GossipEventType;
 import io.zeebe.clustering.gossip.MembershipEventType;
 import io.zeebe.dispatcher.*;
+import io.zeebe.gossip.*;
 import io.zeebe.gossip.membership.Member;
 import io.zeebe.gossip.protocol.*;
 import io.zeebe.transport.*;
@@ -63,7 +64,6 @@ public class GossipRule extends ExternalResource
     private ClientOutput spyClientOutput;
 
     private LocalMembershipListener localMembershipListener;
-    private CustomEventListenerInvocations customEventListenerInvocations;
     private ReceivedEventsCollector receivedEventsCollector = new ReceivedEventsCollector();
 
     public GossipRule(final Supplier<ActorScheduler> actionSchedulerSupplier, final GossipConfiguration configuration, final String host, final int port)
@@ -138,9 +138,6 @@ public class GossipRule extends ExternalResource
         localMembershipListener = new LocalMembershipListener();
         gossip.addMembershipListener(localMembershipListener);
 
-        customEventListenerInvocations = new CustomEventListenerInvocations();
-        gossip.addCustomEventListener(customEventListenerInvocations);
-
         serverReceiveBuffer.openSubscriptionAsync("received-events-collector").thenAccept(sub ->
         {
             testSubscriptionActorRef = actorScheduler.schedule(() -> sub.poll(receivedEventsCollector, 32));
@@ -185,7 +182,7 @@ public class GossipRule extends ExternalResource
         return gossip;
     }
 
-    public GossipPublisher getPushlisher()
+    public GossipEventPublisher getPushlisher()
     {
         return gossip;
     }
@@ -247,11 +244,6 @@ public class GossipRule extends ExternalResource
         return localMembershipListener.getMember(member.memberId);
     }
 
-    public Stream<ReceivedCustomEvent> getCustomEventListenerInvocations()
-    {
-        return customEventListenerInvocations.receivedEvents.stream();
-    }
-
     private static class ReceivedEventsCollector implements ClientInputListener, FragmentHandler
     {
         private class ReceivedEvent
@@ -261,7 +253,7 @@ public class GossipRule extends ExternalResource
 
             private final GossipEvent gossipEvent = new GossipEvent(null, event ->
             {
-                final MembershipEventImpl membershipEvent = new MembershipEventImpl()
+                final MembershipEvent membershipEvent = new MembershipEvent()
                         .type(event.getType())
                         .gossipTerm(event.getGossipTerm())
                         .address(event.getAddress());
@@ -271,7 +263,7 @@ public class GossipRule extends ExternalResource
                 return true;
             }, null, event ->
             {
-                final CustomEventImpl customEvent = new CustomEventImpl()
+                final CustomEvent customEvent = new CustomEvent()
                         .senderGossipTerm(event.getSenderGossipTerm())
                         .senderAddress(event.getSenderAddress())
                         .type(event.getType())
@@ -280,7 +272,7 @@ public class GossipRule extends ExternalResource
                 customEvents.add(customEvent);
 
                 return true;
-            }, 0);
+            }, 0, 0);
 
             ReceivedEvent(DirectBuffer buffer, int offset, int length)
             {
@@ -364,20 +356,13 @@ public class GossipRule extends ExternalResource
 
     public static final class ReceivedCustomEvent
     {
-        private final DirectBuffer type;
         private final SocketAddress sender;
         private final DirectBuffer payload;
 
-        public ReceivedCustomEvent(DirectBuffer type, SocketAddress sender, DirectBuffer payload)
+        public ReceivedCustomEvent(SocketAddress sender, DirectBuffer payload)
         {
-            this.type = BufferUtil.cloneBuffer(type);
             this.sender = new SocketAddress(sender);
             this.payload = BufferUtil.cloneBuffer(payload);
-        }
-
-        public DirectBuffer getType()
-        {
-            return type;
         }
 
         public SocketAddress getSender()
@@ -391,16 +376,21 @@ public class GossipRule extends ExternalResource
         }
     }
 
-    private static class CustomEventListenerInvocations implements GossipCustomEventListener
+    public static final class RecordingCustomEventListener implements GossipCustomEventListener
     {
         private final List<ReceivedCustomEvent> receivedEvents = new ArrayList<>();
 
         @Override
-        public void onEvent(DirectBuffer type, SocketAddress sender, DirectBuffer payload)
+        public void onEvent(SocketAddress sender, DirectBuffer payload)
         {
-            final ReceivedCustomEvent event = new ReceivedCustomEvent(type, sender, payload);
+            final ReceivedCustomEvent event = new ReceivedCustomEvent(sender, payload);
 
             receivedEvents.add(event);
+        }
+
+        public Stream<ReceivedCustomEvent> getInvocations()
+        {
+            return receivedEvents.stream();
         }
     }
 

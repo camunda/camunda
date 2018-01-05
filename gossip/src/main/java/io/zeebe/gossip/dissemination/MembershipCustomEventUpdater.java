@@ -13,18 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.gossip.membership;
+package io.zeebe.gossip.dissemination;
 
+import io.zeebe.gossip.membership.*;
 import io.zeebe.gossip.protocol.CustomEvent;
 import io.zeebe.gossip.protocol.CustomEventConsumer;
 import io.zeebe.transport.SocketAddress;
 import org.agrona.DirectBuffer;
 
-public class CustomEventUpdateChecker implements CustomEventConsumer
+public class MembershipCustomEventUpdater implements CustomEventConsumer
 {
     private final MembershipList membershipList;
 
-    public CustomEventUpdateChecker(MembershipList membershipList)
+    public MembershipCustomEventUpdater(MembershipList membershipList)
     {
         this.membershipList = membershipList;
     }
@@ -51,16 +52,10 @@ public class CustomEventUpdateChecker implements CustomEventConsumer
             }
             else if (senderGossipTerm.isGreaterThan(currentTerm))
             {
-                currentTerm
-                    .epoch(senderGossipTerm.getEpoch())
-                    .heartbeat(senderGossipTerm.getHeartbeat());
+                currentTerm.wrap(senderGossipTerm);
 
                 isNew = true;
             }
-        }
-        else
-        {
-            // ignore
         }
 
         return isNew;

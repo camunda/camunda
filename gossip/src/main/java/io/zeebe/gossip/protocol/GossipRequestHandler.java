@@ -19,7 +19,6 @@ import java.util.EnumMap;
 import java.util.Map;
 
 import io.zeebe.clustering.gossip.*;
-import io.zeebe.gossip.GossipContext;
 import io.zeebe.gossip.Loggers;
 import io.zeebe.transport.*;
 import org.agrona.DirectBuffer;
@@ -35,7 +34,7 @@ public class GossipRequestHandler implements ServerRequestHandler
 
     private final Map<GossipEventType, GossipEventConsumer> consumers = new EnumMap<>(GossipEventType.class);
 
-    public GossipRequestHandler(GossipContext context, GossipEventFactory eventFactory)
+    public GossipRequestHandler(GossipEventFactory eventFactory)
     {
         this.gossipEvent = eventFactory.createFailureDetectionEvent();
     }
@@ -55,6 +54,7 @@ public class GossipRequestHandler implements ServerRequestHandler
 
         if (GossipEventDecoder.SCHEMA_ID == schemaId && GossipEventDecoder.TEMPLATE_ID == templateId)
         {
+            // process the received event (i.e. consumer membership and custom events)
             gossipEvent.wrap(buffer, offset, length);
 
             final GossipEventType eventType = gossipEvent.getEventType();

@@ -13,29 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.gossip.membership;
+package io.zeebe.gossip.dissemination;
 
 import java.util.Iterator;
 
 import io.zeebe.clustering.gossip.MembershipEventType;
+import io.zeebe.gossip.membership.*;
 import io.zeebe.gossip.protocol.*;
 import io.zeebe.transport.SocketAddress;
 
-public class MembershipEventListSupplier implements MembershipEventSupplier
+public class MembershipListEventSupplier implements MembershipEventSupplier
 {
-    private final MembershipList memberList;
+    private final MembershipList membershipList;
     private final MembershipEventIterator iterator;
 
-    public MembershipEventListSupplier(MembershipList memberList)
+    public MembershipListEventSupplier(MembershipList membershipList)
     {
-        this.memberList = memberList;
-        this.iterator = new MembershipEventIterator(memberList);
+        this.membershipList = membershipList;
+        this.iterator = new MembershipEventIterator(membershipList);
     }
 
     @Override
     public int membershipEventSize()
     {
-        return 1 + memberList.size();
+        return 1 + membershipList.size();
     }
 
     @Override
@@ -54,21 +55,21 @@ public class MembershipEventListSupplier implements MembershipEventSupplier
 
     private class MembershipEventIterator implements Iterator<MembershipEvent>
     {
-        private final MembershipEventImpl membershipEvent = new MembershipEventImpl();
+        private final MembershipEvent membershipEvent = new MembershipEvent();
 
         private final Member self;
 
         private Iterator<Member> iterator;
         private int index = 0;
 
-        MembershipEventIterator(MembershipList memberList)
+        MembershipEventIterator(MembershipList membershipList)
         {
-            this.self = memberList.self();
+            this.self = membershipList.self();
         }
 
         public void reset()
         {
-            iterator = memberList.iterator();
+            iterator = membershipList.iterator();
             index = 0;
         }
 
@@ -97,14 +98,10 @@ public class MembershipEventListSupplier implements MembershipEventSupplier
                 membershipEvent.type(eventType);
 
                 final GossipTerm gossipTerm = member.getTerm();
-                membershipEvent.getGossipTerm()
-                    .epoch(gossipTerm.getEpoch())
-                    .heartbeat(gossipTerm.getHeartbeat());
+                membershipEvent.getGossipTerm().wrap(gossipTerm);
 
                 final SocketAddress address = member.getAddress();
-                membershipEvent.getAddress()
-                    .port(address.port())
-                    .host(address.getHostBuffer(), 0, address.hostLength());
+                membershipEvent.getAddress().wrap(address);
             }
 
             index += 1;
@@ -126,4 +123,5 @@ public class MembershipEventListSupplier implements MembershipEventSupplier
         }
 
     }
+
 }

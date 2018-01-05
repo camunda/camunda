@@ -15,12 +15,13 @@
  */
 package io.zeebe.gossip.dissemination;
 
-public class BufferedEvent<T> implements Comparable<BufferedEvent<T>>
-{
-    private boolean isSet = false;
-    private int spreadCount = 0;
+import io.zeebe.util.collection.Reusable;
 
+public class BufferedEvent<T> implements Reusable, Comparable<BufferedEvent<T>>
+{
     private final T event;
+
+    private int spreadCount = 0;
 
     public BufferedEvent(T event)
     {
@@ -42,37 +43,16 @@ public class BufferedEvent<T> implements Comparable<BufferedEvent<T>>
         this.spreadCount += 1;
     }
 
-    public boolean isSet()
+    @Override
+    public void reset()
     {
-        return isSet;
-    }
-
-    public void clear()
-    {
-        this.isSet = false;
         this.spreadCount = 0;
-    }
-
-    public void recycle()
-    {
-        this.isSet = true;
     }
 
     @Override
     public int compareTo(BufferedEvent<T> o)
     {
-        if (isSet && !o.isSet)
-        {
-            return -1;
-        }
-        else if (!isSet && o.isSet)
-        {
-            return 1;
-        }
-        else
-        {
-            return spreadCount - o.spreadCount;
-        }
+        return spreadCount - o.spreadCount;
     }
 
 }

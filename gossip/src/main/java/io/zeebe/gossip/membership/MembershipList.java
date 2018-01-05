@@ -33,7 +33,7 @@ public class MembershipList implements Iterable<Member>
 
     private final List<GossipMembershipListener> listeners = new ArrayList<>();
 
-    private final MembershipIterator iterator = new MembershipIterator();
+    private final AliveMembershipIterator iterator = new AliveMembershipIterator();
 
     public MembershipList(SocketAddress address, GossipConfiguration configuration)
     {
@@ -51,34 +51,65 @@ public class MembershipList implements Iterable<Member>
         return get(address) != null;
     }
 
+    public Member get(SocketAddress address)
+    {
+        for (Member member : members)
+        {
+            if (member.getAddress().equals(address))
+            {
+                return member;
+            }
+        }
+        return null;
+    }
+
+    public Member getMemberOrSelf(SocketAddress address)
+    {
+        if (address.equals(self.getAddress()))
+        {
+            return self;
+        }
+        else
+        {
+            return get(address);
+        }
+    }
+
     public Member newMember(SocketAddress address, GossipTerm term)
     {
         final Member member = new Member(address);
-        member.getTerm().epoch(term.getEpoch()).heartbeat(term.getHeartbeat());
+        member.getTerm().wrap(term);
 
         members.add(member);
         aliveMemberSize += 1;
 
-        listeners.forEach(c -> c.onAdd(member));
+        for (GossipMembershipListener listener : listeners)
+        {
+            listener.onAdd(member);
+        }
 
         return member;
     }
 
-    public void removeMember(String id)
+    public void removeMember(SocketAddress address)
     {
-        final Member member = get(id);
+        final Member member = get(address);
         if (member != null)
         {
+            // keep the member in the list (for now) to avoid that an old ALIVE event add it again
             member.setStatus(MembershipStatus.DEAD);
             aliveMemberSize -= 1;
 
-            listeners.forEach(c -> c.onRemove(member));
+            for (GossipMembershipListener listener : listeners)
+            {
+                listener.onRemove(member);
+            }
         }
     }
 
-    public void aliveMember(String id, GossipTerm gossipTerm)
+    public void aliveMember(SocketAddress address, GossipTerm gossipTerm)
     {
-        final Member member = get(id);
+        final Member member = get(address);
         if (member != null)
         {
             final boolean isUndead = member.getStatus() == MembershipStatus.DEAD;
@@ -86,26 +117,29 @@ public class MembershipList implements Iterable<Member>
             member
                 .setStatus(MembershipStatus.ALIVE)
                 .setGossipTerm(gossipTerm)
-                .setSuspictionTimeout(-1L);
+                .setSuspicionTimeout(-1L);
 
             if (isUndead)
             {
                 aliveMemberSize += 1;
 
-                listeners.forEach(c -> c.onAdd(member));
+                for (GossipMembershipListener listener : listeners)
+                {
+                    listener.onAdd(member);
+                }
             }
         }
     }
 
-    public void suspectMember(String id, GossipTerm gossipTerm)
+    public void suspectMember(SocketAddress address, GossipTerm gossipTerm)
     {
-        final Member member = get(id);
+        final Member member = get(address);
         if (member != null)
         {
             member
                 .setStatus(MembershipStatus.SUSPECT)
                 .setGossipTerm(gossipTerm)
-                .setSuspictionTimeout(calculateSuspictionTimeout());
+                .setSuspicionTimeout(calculateSuspictionTimeout());
         }
     }
 
@@ -118,34 +152,6 @@ public class MembershipList implements Iterable<Member>
         final long timeout = GossipMath.suspicionTimeout(multiplier, clusterSize, probeInterval);
 
         return ClockUtil.getCurrentTimeInMillis() + timeout;
-    }
-
-    public Member get(String id)
-    {
-        for (int m = 0; m < members.size(); m++)
-        {
-            final Member member = members.get(m);
-
-            if (member.getId().equals(id))
-            {
-                return member;
-            }
-        }
-        return null;
-    }
-
-    public Member get(SocketAddress address)
-    {
-        for (int m = 0; m < members.size(); m++)
-        {
-            final Member member = members.get(m);
-
-            if (member.getAddress().equals(address))
-            {
-                return member;
-            }
-        }
-        return null;
     }
 
     public int size()
@@ -188,19 +194,21 @@ public class MembershipList implements Iterable<Member>
         return iterator;
     }
 
-    private class MembershipIterator implements Iterator<Member>
+    private class AliveMembershipIterator implements Iterator<Member>
     {
         private int index = 0;
+        private int aliveCount = 0;
 
         public void reset()
         {
             index = 0;
+            aliveCount = 0;
         }
 
         @Override
         public boolean hasNext()
         {
-            return index < aliveMemberSize;
+            return aliveCount < aliveMemberSize;
         }
 
         @Override
@@ -217,6 +225,8 @@ public class MembershipList implements Iterable<Member>
                 }
                 while (member.getStatus() == MembershipStatus.DEAD);
 
+                aliveCount += 1;
+
                 return member;
             }
             else
@@ -231,7 +241,7 @@ public class MembershipList implements Iterable<Member>
             index -= 1;
 
             final Member member = members.get(index);
-            removeMember(member.getId());
+            removeMember(member.getAddress());
         }
 
     }

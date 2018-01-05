@@ -17,97 +17,121 @@ package io.zeebe.gossip.protocol;
 
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Iterator;
 
-import io.zeebe.gossip.*;
-import io.zeebe.gossip.dissemination.DisseminationComponent;
-import io.zeebe.gossip.membership.*;
+import io.zeebe.gossip.GossipConfiguration;
+import io.zeebe.gossip.Loggers;
+import io.zeebe.gossip.dissemination.*;
+import io.zeebe.gossip.membership.MembershipList;
 import org.slf4j.Logger;
 
 public class GossipEventFactory
 {
     private final GossipConfiguration configuration;
-    private final MembershipList memberList;
+    private final MembershipList membershipList;
     private final DisseminationComponent disseminationComponent;
+    private final CustomEventSupplier customEventSyncResponseSupplier;
+    private final CustomEventConsumer customEventListenerConsumer;
 
-    private final List<GossipCustomEventListener> customEventListeners = new ArrayList<>();
-    private final CustomEventListenersConsumer customEventListenersConsumer = new CustomEventListenersConsumer(customEventListeners);
+    private final MembershipEventUpdater membershipEventUpdater;
+    private final MembershipCustomEventUpdater membershipCustomEventUpdater;
 
-    public GossipEventFactory(GossipConfiguration configuration, MembershipList memberList, DisseminationComponent disseminationComponent)
+    // for failure analysis and tests
+    private final MembershipEventLogger membershipEventLogger = new MembershipEventLogger();
+    private final CustomEventLogger customEventLogger = new CustomEventLogger();
+
+
+    public GossipEventFactory(
+            GossipConfiguration configuration,
+            MembershipList membershipList,
+            DisseminationComponent disseminationComponent,
+            CustomEventSupplier customEventSyncResponseSupplier,
+            CustomEventConsumer customEventListenerConsumer)
     {
         this.configuration = configuration;
-        this.memberList = memberList;
+        this.membershipList = membershipList;
         this.disseminationComponent = disseminationComponent;
+        this.customEventSyncResponseSupplier = customEventSyncResponseSupplier;
+        this.customEventListenerConsumer = customEventListenerConsumer;
+
+        this.membershipEventUpdater = new MembershipEventUpdater(membershipList, disseminationComponent);
+        this.membershipCustomEventUpdater = new MembershipCustomEventUpdater(membershipList);
     }
 
+    /**
+     * Create a gossip event for PING, ACK or PING-REQ.
+     */
     public GossipEvent createFailureDetectionEvent()
     {
-        // send the events from the dissemination component as payload
-        // - update membership list with response and add events to the dissemination component
-        return new GossipEvent(disseminationComponent,
-                               new MembershipEventLogger()
-                                   .andThen(new MembershipUpdater(memberList, disseminationComponent))
-                                   .andThen(disseminationComponent),
-                               disseminationComponent,
-                               new CustomEventLogger()
-                                   .andThen(new CustomEventUpdateChecker(memberList))
-                                   .andThen(customEventListenersConsumer)
-                                   .andThen(disseminationComponent),
-                               configuration.getMaxMembershipEventsPerMessage());
+        // read events from dissemination buffer
+        final MembershipEventSupplier membershipEventSupplier = disseminationComponent;
+        final CustomEventSupplier customEventSupplier = disseminationComponent;
+
+        // update membership list and add events to dissemination buffer if membership has changed
+        final MembershipEventConsumer membershipEventConsumer = membershipEventLogger
+               .andThen(membershipEventUpdater)
+               .andThen(disseminationComponent);
+
+        // update custom event references in membership list
+        // if an event is new then invoke the listeners and add it to dissemination buffer
+        final CustomEventConsumer customEventConsumer = customEventLogger
+               .andThen(membershipCustomEventUpdater)
+               .andThen(customEventListenerConsumer)
+               .andThen(disseminationComponent);
+
+        return new GossipEvent(
+            membershipEventSupplier,
+            membershipEventConsumer,
+            customEventSupplier,
+            customEventConsumer,
+            configuration.getMaxMembershipEventsPerMessage(),
+            configuration.getMaxCustomEventsPerMessage());
     }
 
-    public GossipEvent createSyncEvent()
+    public GossipEvent createSyncRequestEvent()
     {
-        // send the complete membership list as payload
-        // - update membership list with response
-        return new GossipEvent(new MembershipEventListSupplier(memberList),
-                               new MembershipEventLogger()
-                                   .andThen(new MembershipUpdater(memberList, disseminationComponent)),
-                               disseminationComponent,
-                               new CustomEventLogger(),
-                               configuration.getMaxMembershipEventsPerMessage());
+        // sync request should not contain any data
+        return new GossipEvent(
+            new EmptyMembershipEventSupplier(),
+            event -> false,
+            new EmptyCustomEventSupplier(),
+            event -> false,
+            0, 0);
     }
 
-    public void addCustomEventListener(GossipCustomEventListener listener)
+    public GossipEvent createSyncResponseEvent()
     {
-        this.customEventListeners.add(listener);
+        // add all members from list as events
+        final MembershipEventSupplier membershipEventSupplier = new MembershipListEventSupplier(membershipList);
+
+        // get custom events from registered sync handlers
+        final CustomEventSupplier customEventSupplier = customEventSyncResponseSupplier;
+
+        // update membership list
+        final MembershipEventConsumer membershipEventConsumer = membershipEventLogger
+               .andThen(membershipEventUpdater);
+
+        // update custom event references in membership list and invoke the listeners
+        final CustomEventConsumer customEventConsumer = customEventLogger
+               .andThen(membershipCustomEventUpdater)
+               .andThen(customEventListenerConsumer);
+
+        return new GossipEvent(membershipEventSupplier,
+                               membershipEventConsumer,
+                               customEventSupplier,
+                               customEventConsumer,
+                               Integer.MAX_VALUE,
+                               Integer.MAX_VALUE);
     }
 
-    public void removeCustomEventListener(GossipCustomEventListener listener)
+    public GossipEventResponse createAckResponse()
     {
-        this.customEventListeners.remove(listener);
+        return new GossipEventResponse(createFailureDetectionEvent());
     }
 
-    private static final class CustomEventListenersConsumer implements CustomEventConsumer
+    public GossipEventResponse createSyncResponse()
     {
-        private static final Logger LOG = Loggers.GOSSIP_LOGGER;
-
-        private final List<GossipCustomEventListener> customEventListeners;
-
-        CustomEventListenersConsumer(List<GossipCustomEventListener> customEventListeners)
-        {
-            this.customEventListeners = customEventListeners;
-        }
-
-        @Override
-        public boolean consumeCustomEvent(CustomEvent event)
-        {
-            // TODO copy the event because the listeners may / should work async
-            for (GossipCustomEventListener listener : customEventListeners)
-            {
-                try
-                {
-                    listener.onEvent(event.getType(), event.getSenderAddress(), event.getPayload());
-                }
-                catch (Throwable t)
-                {
-                    LOG.warn("Custom event listener '{}' failed", listener.getClass(), t);
-                }
-            }
-
-            return true;
-        }
+        return new GossipEventResponse(createSyncResponseEvent());
     }
 
     private static final class MembershipEventLogger implements MembershipEventConsumer
@@ -141,6 +165,67 @@ public class GossipEventFactory
             }
 
             return true;
+        }
+    }
+
+    private static final class EmptyMembershipEventSupplier implements MembershipEventSupplier
+    {
+        private static final Iterator<MembershipEvent> ITERATOR = new EmptyIterator<>();
+
+        @Override
+        public int membershipEventSize()
+        {
+            return 0;
+        }
+
+        @Override
+        public Iterator<MembershipEvent> membershipEventViewIterator(int max)
+        {
+            return ITERATOR;
+        }
+
+        @Override
+        public Iterator<MembershipEvent> membershipEventDrainIterator(int max)
+        {
+            return ITERATOR;
+        }
+    }
+
+    private static final class EmptyCustomEventSupplier implements CustomEventSupplier
+    {
+        private static final Iterator<CustomEvent> ITERATOR = new EmptyIterator<>();
+
+        @Override
+        public int customEventSize()
+        {
+            return 0;
+        }
+
+        @Override
+        public Iterator<CustomEvent> customEventViewIterator(int max)
+        {
+            return ITERATOR;
+        }
+
+        @Override
+        public Iterator<CustomEvent> customEventDrainIterator(int max)
+        {
+            return ITERATOR;
+        }
+    }
+
+    private static final class EmptyIterator<T> implements Iterator<T>
+    {
+        @Override
+        public boolean hasNext()
+        {
+            return false;
+        }
+
+        @Override
+        public T next()
+        {
+            return null;
         }
     }
 
