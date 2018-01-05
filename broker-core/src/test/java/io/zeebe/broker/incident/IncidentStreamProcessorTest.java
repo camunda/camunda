@@ -38,7 +38,7 @@ import io.zeebe.logstreams.log.*;
 import io.zeebe.logstreams.processor.StreamProcessorController;
 import io.zeebe.logstreams.spi.SnapshotStorage;
 import io.zeebe.protocol.clientapi.EventType;
-import io.zeebe.test.util.agent.ControllableTaskScheduler;
+import io.zeebe.test.util.agent.ManualActorScheduler;
 import io.zeebe.util.buffer.BufferWriter;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -48,7 +48,7 @@ import org.junit.rules.TemporaryFolder;
 public class IncidentStreamProcessorTest
 {
     @Rule
-    public ControllableTaskScheduler agentRunnerService = new ControllableTaskScheduler();
+    public ManualActorScheduler agentRunnerService = new ManualActorScheduler();
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();

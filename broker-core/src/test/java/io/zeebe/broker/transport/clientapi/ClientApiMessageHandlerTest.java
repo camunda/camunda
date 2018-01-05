@@ -39,7 +39,7 @@ import io.zeebe.logstreams.log.*;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.*;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
-import io.zeebe.test.util.agent.ControllableTaskScheduler;
+import io.zeebe.test.util.agent.ManualActorScheduler;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.SocketAddress;
 import org.agrona.DirectBuffer;
@@ -93,7 +93,7 @@ public class ClientApiMessageHandlerTest
     public TemporaryFolder tempFolder = new TemporaryFolder();
 
     @Rule
-    public ControllableTaskScheduler agentRunnerService = new ControllableTaskScheduler();
+    public ManualActorScheduler agentRunnerService = new ManualActorScheduler();
 
     protected BufferingServerOutput serverOutput;
 

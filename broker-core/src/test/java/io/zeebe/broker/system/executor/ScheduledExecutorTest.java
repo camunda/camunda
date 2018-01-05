@@ -23,7 +23,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import io.zeebe.test.util.agent.ControllableTaskScheduler;
+import io.zeebe.test.util.agent.ManualActorScheduler;
 import io.zeebe.util.time.ClockUtil;
 import org.junit.After;
 import org.junit.Before;
@@ -35,7 +35,7 @@ public class ScheduledExecutorTest
     private final Instant now = Instant.now();
 
     @Rule
-    public ControllableTaskScheduler agentRunnerService = new ControllableTaskScheduler();
+    public ManualActorScheduler agentRunnerService = new ManualActorScheduler();
 
     private ScheduledExecutorImpl executor;
 

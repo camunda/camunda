@@ -44,7 +44,7 @@ import io.zeebe.logstreams.spi.SnapshotStorage;
 import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.test.util.FluentMock;
-import io.zeebe.test.util.agent.ControllableTaskScheduler;
+import io.zeebe.test.util.agent.ManualActorScheduler;
 import io.zeebe.util.time.ClockUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -76,7 +76,7 @@ public class TaskStreamProcessorIntegrationTest
     private StreamProcessorController taskExpireLockStreamProcessorController;
 
     @Rule
-    public ControllableTaskScheduler taskScheduler = new ControllableTaskScheduler();
+    public ManualActorScheduler taskScheduler = new ManualActorScheduler();
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
