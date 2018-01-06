@@ -206,8 +206,10 @@ public class ActorRunner implements Runnable
     {
         deferredCommands.runAsync(() ->
         {
-            actors.remove(actor);
-            removeCallback.accept(actor);
+            if (actors.remove(actor))
+            {
+                removeCallback.accept(actor);
+            }
         });
     }
 
