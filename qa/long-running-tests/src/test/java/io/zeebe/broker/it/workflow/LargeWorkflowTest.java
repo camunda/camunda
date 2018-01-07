@@ -50,8 +50,6 @@ public class LargeWorkflowTest
     {
         final Properties p = new Properties();
         p.setProperty(ClientProperties.CLIENT_REQUEST_TIMEOUT_SEC, "180");
-        p.setProperty(ClientProperties.CLIENT_TASK_EXECUTION_THREADS, "4");
-        p.setProperty(ClientProperties.CLIENT_MAXREQUESTS, "256");
 
         return p;
     }, true);
@@ -112,7 +110,6 @@ public class LargeWorkflowTest
                   .taskType("reserveOrderItems")
                   .lockOwner("test")
                   .lockTime(Duration.ofMinutes(5))
-                  .taskFetchSize(128)
                   .handler(getTaskHandler(expectedTasks, finished, completed)).open();
 
         // create workflow instances
@@ -153,7 +150,6 @@ public class LargeWorkflowTest
                       .taskType("reserveOrderItems" + i)
                       .lockOwner("test")
                       .lockTime(Duration.ofMinutes(5))
-                      .taskFetchSize(128)
                       .handler(getTaskHandler(expectedTasks, finished, completed)).open();
         }
 
