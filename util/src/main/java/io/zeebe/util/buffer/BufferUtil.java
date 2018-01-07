@@ -28,7 +28,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 public final class BufferUtil
 {
     public static final int NO_WRAP = 0;
-    public static final int DEFAULT_WRAP = 4; // 4 bytes == 32 bits == default wide of a frame diagram
+    public static final int DEFAULT_WRAP = 16; // bytes
 
     private static final char[] HEX_CODE = "0123456789ABCDEF".toCharArray();
 
@@ -187,52 +187,50 @@ public final class BufferUtil
 
     public static String bytesAsHexString(final byte[] bytes, final int wrap)
     {
-        final StringBuilder builder = new StringBuilder(bytes.length * 3);
+        final int length = bytes.length;
+
+        final StringBuilder builder = new StringBuilder(length * 4);
+        final StringBuilder hexBuilder = new StringBuilder(wrap * 3);
         final StringBuilder asciiBuilder = new StringBuilder(wrap);
 
-        int position = 0;
-        for (final byte b : bytes)
+        for (int line = 0; line <= (length / wrap); line++)
         {
-            builder
-                .append(HEX_CODE[(b >> 4) & 0xF])
-                .append(HEX_CODE[(b & 0xF)]);
-
-            // check if byte is ASCII character range other wise use . as placeholder
-            if (b > 31 && b < 126)
+            builder.append(String.format("0x%08x: ", line * wrap));
+            for (int i = 0; i < wrap; i++)
             {
-                asciiBuilder.append((char) b);
-            }
-            else
-            {
-                asciiBuilder.append('.');
-            }
+                final int index = (line * wrap) + i;
 
-            position++;
+                if (index < length)
+                {
+                    final byte b = bytes[index];
+                    hexBuilder
+                            .append(HEX_CODE[(b >> 4) & 0xF])
+                            .append(HEX_CODE[(b & 0xF)])
+                            .append(' ');
 
-            if (wrap > 0 && position % wrap == 0)
-            {
-                builder.append(" |")
-                       .append(asciiBuilder.toString())
-                       .append("|\n");
-                asciiBuilder.delete(0, wrap);
+                    // check if byte is ASCII character range other wise use . as placeholder
+                    if (b > 31 && b < 126)
+                    {
+                        asciiBuilder.append((char) b);
+                    }
+                    else
+                    {
+                        asciiBuilder.append('.');
+                    }
+                }
+                else
+                {
+                    // padding
+                    hexBuilder.append("   ");
+                }
             }
-            else
-            {
-                builder.append(' ');
-            }
-        }
-
-        final String s = builder.toString();
-        for (int i = 0; i < s.length() % 3 * wrap; i++)
-        {
-            builder.append(' ');
-        }
-
-        if (asciiBuilder.length() > 0)
-        {
-            builder.append(" |")
+            builder.append(hexBuilder.toString())
+                   .append('|')
                    .append(asciiBuilder.toString())
                    .append("|\n");
+
+            asciiBuilder.delete(0, asciiBuilder.length());
+            hexBuilder.delete(0, hexBuilder.length());
         }
 
         return builder.toString();
