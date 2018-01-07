@@ -29,7 +29,8 @@ receiveBufferSize = 16
 # System Configuration --------------------------------
 
 [threading]
-#numberOfThreads = 2
+# limit broker threads to use half of the available cores on our test machine
+numberOfThreads = 6
 maxIdleTimeMs = 100
 idleStrategy = "BUSY_SPIN"
 
