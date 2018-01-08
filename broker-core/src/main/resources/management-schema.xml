@@ -40,7 +40,6 @@
     <sbe:message name="InvitationResponse" id="1">
         <field name="term" id="1" type="uint16"/>
     </sbe:message>
-    
     <!-- if you add more requests then think about a general req/resp message -->
     
     <sbe:message name="CreateWorkflowRequest" id="3">

@@ -26,15 +26,16 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import io.zeebe.broker.Loggers;
-import io.zeebe.broker.clustering.gossip.data.Peer;
-import io.zeebe.broker.clustering.gossip.data.PeerList;
-import io.zeebe.broker.clustering.gossip.data.PeerListIterator;
-import io.zeebe.broker.clustering.management.config.ClusterManagementConfig;
+import io.zeebe.broker.clustering.handler.Topology;
 import io.zeebe.broker.clustering.management.handler.ClusterManagerFragmentHandler;
+import io.zeebe.broker.clustering.management.memberList.ClusterMemberListManager;
+import io.zeebe.broker.clustering.management.memberList.MemberRaftComposite;
 import io.zeebe.broker.clustering.management.message.CreatePartitionMessage;
 import io.zeebe.broker.clustering.management.message.InvitationRequest;
 import io.zeebe.broker.clustering.management.message.InvitationResponse;
@@ -42,6 +43,8 @@ import io.zeebe.broker.clustering.raft.RaftPersistentFileStorage;
 import io.zeebe.broker.clustering.raft.RaftService;
 import io.zeebe.broker.logstreams.LogStreamsManager;
 import io.zeebe.broker.transport.TransportServiceNames;
+import io.zeebe.broker.transport.cfg.SocketBindingCfg;
+import io.zeebe.broker.transport.cfg.TransportComponentCfg;
 import io.zeebe.logstreams.impl.log.fs.FsLogStorage;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.Protocol;
@@ -74,19 +77,19 @@ public class ClusterManager implements Actor
     private final InvitationResponse invitationResponse;
     private final CreatePartitionMessage createPartitionMessage = new CreatePartitionMessage();
 
-    private ClusterManagementConfig config;
+    private TransportComponentCfg transportComponentCfg;
 
-    //    private final MessageWriter messageWriter;
     private final ServerResponse response = new ServerResponse();
     private final ServerInputSubscription inputSubscription;
 
     private final LogStreamsManager logStreamsManager;
+    private final ClusterMemberListManager clusterMemberListManager;
 
-    public ClusterManager(final ClusterManagerContext context, final ServiceContainer serviceContainer, final ClusterManagementConfig config)
+    public ClusterManager(final ClusterManagerContext context, final ServiceContainer serviceContainer, final TransportComponentCfg transportComponentCfg)
     {
         this.context = context;
         this.serviceContainer = serviceContainer;
-        this.config = config;
+        this.transportComponentCfg = transportComponentCfg;
         this.rafts = new CopyOnWriteArrayList<>();
         this.startLogStreamServiceControllers = new CopyOnWriteArrayList<>();
         this.commandQueue = new DeferredCommandContext();
@@ -101,20 +104,23 @@ public class ClusterManager implements Actor
                                    .openSubscription("cluster-management", fragmentHandler, fragmentHandler)
                                    .join();
 
-        context.getPeers().registerListener(this::addPeer);
+        clusterMemberListManager = new ClusterMemberListManager(context, transportComponentCfg, this::inviteUpdatedMember);
     }
 
     public void open()
     {
+        clusterMemberListManager.publishNodeAPIAddresses();
+
         final LogStreamsManager logStreamManager = context.getLogStreamsManager();
 
-        final File storageDirectory = new File(config.directory);
+        final File storageDirectory = new File(transportComponentCfg.management.directory);
 
         if (!storageDirectory.exists())
         {
             try
             {
-                storageDirectory.getParentFile().mkdirs();
+                storageDirectory.getParentFile()
+                                .mkdirs();
                 Files.createDirectory(storageDirectory.toPath());
             }
             catch (final IOException e)
@@ -123,7 +129,8 @@ public class ClusterManager implements Actor
             }
         }
 
-        final SocketAddress socketAddress = context.getLocalPeer().replicationEndpoint();
+        final SocketBindingCfg replicationApi = transportComponentCfg.replicationApi;
+        final SocketAddress socketAddress = new SocketAddress(replicationApi.host, replicationApi.port);
         final File[] storageFiles = storageDirectory.listFiles();
 
         if (storageFiles != null && storageFiles.length > 0)
@@ -151,8 +158,7 @@ public class ClusterManager implements Actor
         }
         else
         {
-            final boolean isBootstrappingBroker = context.getPeers().sizeVolatile() == 1;
-            if (isBootstrappingBroker)
+            if (transportComponentCfg.gossip.initialContactPoints.length == 0)
             {
                 LOG.debug("Broker bootstraps the system topic");
                 createPartition(Protocol.SYSTEM_TOPIC_BUF, Protocol.SYSTEM_PARTITION);
@@ -167,18 +173,19 @@ public class ClusterManager implements Actor
     }
 
     @Override
-    public int doWork() throws Exception
+    public int doWork()
     {
-        int workcount = 0;
+        int workCount = 0;
 
-        workcount += commandQueue.doWork();
-        workcount += inputSubscription.poll();
+        workCount += commandQueue.doWork();
+        workCount += clusterMemberListManager.doWork();
+        workCount += inputSubscription.poll();
 
         int i = 0;
         while (i < activeRequestControllers.size())
         {
             final RequestResponseController requestController = activeRequestControllers.get(i);
-            workcount += requestController.doWork();
+            workCount += requestController.doWork();
 
             if (requestController.isFailed() || requestController.isResponseAvailable())
             {
@@ -197,141 +204,74 @@ public class ClusterManager implements Actor
 
         for (int j = 0; j < startLogStreamServiceControllers.size(); j++)
         {
-            workcount += startLogStreamServiceControllers.get(j).doWork();
+            workCount += startLogStreamServiceControllers.get(j)
+                                                         .doWork();
         }
 
-        return workcount;
+        return workCount;
     }
 
-    public void addPeer(final Peer peer)
+    private void inviteUpdatedMember(SocketAddress updatedMember)
     {
-        final Peer copy = new Peer();
-        copy.wrap(peer);
-
-        LOG.debug("Peer {} joined the cluster", copy.managementEndpoint());
-
-        commandQueue.runAsync(() ->
+        LOG.debug("Send raft invitations to member {}.", updatedMember);
+        for (Raft raft : rafts)
         {
-
-            for (int i = 0; i < rafts.size(); i++)
+            if (raft.getState() == RaftState.LEADER)
             {
-                final Raft raft = rafts.get(i);
-
-                // only send an invitation request if we are currently leader of the raft group
-                if (raft.getState() == RaftState.LEADER)
-                {
-                    invitePeerToRaft(raft, copy);
-                }
+                // TODO don't invite all members
+                inviteMemberToRaft(updatedMember, raft);
             }
-
-        });
+        }
     }
 
-    protected void invitePeerToRaft(Raft raft, Peer peer)
+    /**
+     * Invites the member to the RAFT group.
+     */
+    protected void inviteMemberToRaft(SocketAddress member, Raft raft)
     {
         // TODO(menski): implement replication factor
         // TODO: if this should be garbage free, we have to limit
         // the number of concurrent invitations.
         final List<SocketAddress> members = new ArrayList<>();
         members.add(raft.getSocketAddress());
-        raft.getMembers().forEach(raftMember -> members.add(raftMember.getRemoteAddress().getAddress()));
+        raft.getMembers()
+            .forEach(raftMember -> members.add(raftMember.getRemoteAddress()
+                                                         .getAddress()));
 
         final LogStream logStream = raft.getLogStream();
-        final InvitationRequest invitationRequest = new InvitationRequest()
-            .topicName(logStream.getTopicName())
-            .partitionId(logStream.getPartitionId())
-            .term(raft.getTerm())
-            .members(members);
+        final InvitationRequest invitationRequest = new InvitationRequest().topicName(logStream.getTopicName())
+                                                                           .partitionId(logStream.getPartitionId())
+                                                                           .term(raft.getTerm())
+                                                                           .members(members);
 
-        LOG.debug("Send invitation request to {} for partition {} in term {}", peer.managementEndpoint(), logStream.getPartitionId(), raft.getTerm());
+        LOG.debug("Send invitation request to {} for partition {} in term {}", member, logStream.getPartitionId(), raft.getTerm());
 
         final RequestResponseController requestController = new RequestResponseController(context.getClientTransport());
-        requestController.open(peer.managementEndpoint(), invitationRequest, null);
+
+        requestController.open(member, invitationRequest, (buffer, offset, length) ->
+            LOG.debug("Got invitation response from {} for partition id {}.",
+                      member,
+                      logStream.getPartitionId()));
         activeRequestControllers.add(requestController);
-    }
-
-    public void addRaft(final ServiceName<Raft> raftServiceName, final Raft raft)
-    {
-        // this must be determined before we cross the async boundary to avoid race conditions
-        final boolean isRaftCreator = raft.getMemberSize() == 0;
-
-        commandQueue.runAsync(() ->
-        {
-            context.getLocalPeer().addRaft(raft);
-            rafts.add(raft);
-            startLogStreamServiceControllers.add(new StartLogStreamServiceController(raftServiceName, raft, serviceContainer));
-
-            if (isRaftCreator)
-            {
-                // invite every known peer
-                // TODO: not garbage-free, but required to avoid shared state and conflicting iterator use
-                // this should be resolved when we rewrite gossip
-                final PeerList knownPeers = context.getPeers().copy();
-                final PeerListIterator it = knownPeers.iterator();
-
-                while (it.hasNext())
-                {
-                    final Peer nextPeer = it.next();
-                    if (!nextPeer.equals(context.getLocalPeer()))
-                    {
-                        invitePeerToRaft(raft, nextPeer);
-                    }
-                }
-            }
-        });
-    }
-
-    public void removeRaft(final Raft raft)
-    {
-        final LogStream logStream = raft.getLogStream();
-        final int partitionId = logStream.getPartitionId();
-
-        commandQueue.runAsync(() ->
-        {
-            for (int i = 0; i < rafts.size(); i++)
-            {
-                final Raft r = rafts.get(i);
-                final LogStream stream = r.getLogStream();
-                if (partitionId == stream.getPartitionId())
-                {
-                    context.getLocalPeer().removeRaft(raft);
-                    rafts.remove(i);
-                    break;
-                }
-            }
-
-            for (int i = 0; i < startLogStreamServiceControllers.size(); i++)
-            {
-                final Raft r = startLogStreamServiceControllers.get(i).getRaft();
-                final LogStream stream = r.getLogStream();
-                if (partitionId == stream.getPartitionId())
-                {
-                    startLogStreamServiceControllers.remove(i);
-                    break;
-                }
-            }
-        });
     }
 
     public void createRaft(final SocketAddress socketAddress, final LogStream logStream, final List<SocketAddress> members)
     {
         final FsLogStorage logStorage = (FsLogStorage) logStream.getLogStorage();
-        final String path = logStorage.getConfig().getPath();
+        final String path = logStorage.getConfig()
+                                      .getPath();
 
-        final RaftPersistentFileStorage storage = new RaftPersistentFileStorage(String.format("%s%s.meta", config.directory, logStream.getLogName()));
-        storage
-            .setLogStream(logStream)
-            .setLogDirectory(path)
-            .save();
+        final String directory = transportComponentCfg.management.directory;
+        final RaftPersistentFileStorage storage = new RaftPersistentFileStorage(String.format("%s%s.meta", directory, logStream.getLogName()));
+        storage.setLogStream(logStream)
+               .setLogDirectory(path)
+               .save();
 
         createRaft(socketAddress, logStream, members, storage);
     }
 
-    public void createRaft(
-            final SocketAddress socketAddress,
-            final LogStream logStream,
-            final List<SocketAddress> members,
-            final RaftPersistentStorage persistentStorage)
+    public void createRaft(final SocketAddress socketAddress, final LogStream logStream, final List<SocketAddress> members,
+                           final RaftPersistentStorage persistentStorage)
     {
         final RaftService raftService = new RaftService(socketAddress, logStream, members, persistentStorage);
 
@@ -340,8 +280,10 @@ public class ClusterManager implements Actor
         serviceContainer.createService(raftServiceName, raftService)
                         .group(RAFT_SERVICE_GROUP)
                         .dependency(ACTOR_SCHEDULER_SERVICE, raftService.getActorSchedulerInjector())
-                        .dependency(TransportServiceNames.bufferingServerTransport(TransportServiceNames.REPLICATION_API_SERVER_NAME), raftService.getServerTransportInjector())
-                        .dependency(TransportServiceNames.clientTransport(TransportServiceNames.REPLICATION_API_CLIENT_NAME), raftService.getClientTransportInjector())
+                        .dependency(TransportServiceNames.bufferingServerTransport(TransportServiceNames.REPLICATION_API_SERVER_NAME),
+                                    raftService.getServerTransportInjector())
+                        .dependency(TransportServiceNames.clientTransport(TransportServiceNames.REPLICATION_API_CLIENT_NAME),
+                                    raftService.getClientTransportInjector())
                         .install();
     }
 
@@ -365,17 +307,13 @@ public class ClusterManager implements Actor
     {
         final LogStream logStream = logStreamsManager.createLogStream(topicName, partitionId);
 
-        final SocketAddress socketAddress = context.getLocalPeer().replicationEndpoint();
+        final SocketBindingCfg replicationApi = transportComponentCfg.replicationApi;
+        final SocketAddress socketAddress = new SocketAddress(replicationApi.host, replicationApi.port);
         createRaft(socketAddress, logStream, members);
     }
 
-    public boolean onInvitationRequest(
-        final DirectBuffer buffer,
-        final int offset,
-        final int length,
-        final ServerOutput output,
-        final RemoteAddress requestAddress,
-        final long requestId)
+    public boolean onInvitationRequest(final DirectBuffer buffer, final int offset, final int length, final ServerOutput output,
+                                       final RemoteAddress requestAddress, final long requestId)
     {
         invitationRequest.reset();
         invitationRequest.wrap(buffer, offset, length);
@@ -396,10 +334,7 @@ public class ClusterManager implements Actor
         return output.sendResponse(response);
     }
 
-    public void onCreatePartitionMessage(
-            final DirectBuffer buffer,
-            final int offset,
-            final int length)
+    public void onCreatePartitionMessage(final DirectBuffer buffer, final int offset, final int length)
     {
         createPartitionMessage.wrap(buffer, offset, length);
 
@@ -418,4 +353,84 @@ public class ClusterManager implements Actor
         }
     }
 
+    public CompletableFuture<Topology> requestTopology()
+    {
+        return clusterMemberListManager.createTopology();
+    }
+
+    /**
+     * This method is called, if a new RAFT is added to the service group.
+     */
+    public void addRaftCallback(final ServiceName<Raft> raftServiceName, final Raft raft)
+    {
+        // this must be determined before we cross the async boundary to avoid race conditions
+        final boolean isRaftCreator = raft.getMemberSize() == 0;
+
+        raft.registerRaftStateListener(clusterMemberListManager);
+
+        commandQueue.runAsync(() ->
+        {
+            LOG.trace("ADD raft {} for partition {} state {}.", raft.getSocketAddress(), raft.getLogStream()
+                                                                                             .getPartitionId(), raft.getState());
+            rafts.add(raft);
+
+            // add raft only when member or candidate
+            context.getMemberListService()
+                   .addRaft(raft);
+
+            startLogStreamServiceControllers.add(new StartLogStreamServiceController(raftServiceName, raft, serviceContainer));
+
+            if (isRaftCreator)
+            {
+                final Iterator<MemberRaftComposite> iterator = context.getMemberListService()
+                                                                      .iterator();
+                while (iterator.hasNext())
+                {
+                    final MemberRaftComposite next = iterator.next();
+                    if (!next.getMember()
+                             .getAddress()
+                             .equals(transportComponentCfg.managementApi.toSocketAddress()))
+                    {
+                        // TODO don't invite all members to raft
+                        inviteMemberToRaft(next.getMember().getAddress(), raft);
+                    }
+                }
+            }
+        });
+    }
+
+    /**
+     * This method is called, if a RAFT is removed from the service group.
+     */
+    public void removeRaftCallback(final Raft raft)
+    {
+        final LogStream logStream = raft.getLogStream();
+        final int partitionId = logStream.getPartitionId();
+
+        commandQueue.runAsync(() ->
+        {
+            for (int i = 0; i < rafts.size(); i++)
+            {
+                final Raft r = rafts.get(i);
+                final LogStream stream = r.getLogStream();
+                if (partitionId == stream.getPartitionId())
+                {
+                    rafts.remove(i);
+                    break;
+                }
+            }
+
+            for (int i = 0; i < startLogStreamServiceControllers.size(); i++)
+            {
+                final Raft r = startLogStreamServiceControllers.get(i)
+                                                               .getRaft();
+                final LogStream stream = r.getLogStream();
+                if (partitionId == stream.getPartitionId())
+                {
+                    startLogStreamServiceControllers.remove(i);
+                    break;
+                }
+            }
+        });
+    }
 }

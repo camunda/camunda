@@ -19,12 +19,7 @@ package io.zeebe.broker.transport;
 
 import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
 import static io.zeebe.broker.system.SystemServiceNames.COUNTERS_MANAGER_SERVICE;
-import static io.zeebe.broker.transport.TransportServiceNames.CLIENT_API_MESSAGE_HANDLER;
-import static io.zeebe.broker.transport.TransportServiceNames.CLIENT_API_SERVER_NAME;
-import static io.zeebe.broker.transport.TransportServiceNames.MANAGEMENT_API_CLIENT_NAME;
-import static io.zeebe.broker.transport.TransportServiceNames.MANAGEMENT_API_SERVER_NAME;
-import static io.zeebe.broker.transport.TransportServiceNames.REPLICATION_API_CLIENT_NAME;
-import static io.zeebe.broker.transport.TransportServiceNames.REPLICATION_API_SERVER_NAME;
+import static io.zeebe.broker.transport.TransportServiceNames.*;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.CompletableFuture;
@@ -114,8 +109,8 @@ public class TransportComponent implements Component
             .dependency(ACTOR_SCHEDULER_SERVICE, controlMessageHandlerManagerService.getActorSchedulerInjector())
             .dependency(TaskQueueServiceNames.TASK_QUEUE_SUBSCRIPTION_MANAGER, controlMessageHandlerManagerService.getTaskSubscriptionManagerInjector())
             .dependency(TopicSubscriptionServiceNames.TOPIC_SUBSCRIPTION_SERVICE, controlMessageHandlerManagerService.getTopicSubscriptionServiceInjector())
-            .dependency(ClusterServiceNames.GOSSIP_SERVICE, controlMessageHandlerManagerService.getGossipInjector())
             .dependency(SystemServiceNames.SYSTEM_LOG_MANAGER, controlMessageHandlerManagerService.getSystemPartitionManagerInjector())
+            .dependency(ClusterServiceNames.CLUSTER_MANAGER_SERVICE, controlMessageHandlerManagerService.getClusterManagerInjector())
             .install();
 
         context.addRequiredStartAction(replactionApiFuture);

@@ -21,11 +21,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.time.Duration;
 import java.util.Properties;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-
 import io.zeebe.client.cmd.ClientException;
 import io.zeebe.client.event.TaskEvent;
 import io.zeebe.client.event.impl.TaskEventImpl;
@@ -35,6 +30,10 @@ import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.time.ClockUtil;
+import org.junit.After;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 public class ZeebeClientTopologyTimeoutTest
 {

@@ -17,7 +17,9 @@
  */
 package io.zeebe.broker.transport.cfg;
 
+
 import io.zeebe.broker.system.ComponentConfiguration;
+import io.zeebe.transport.SocketAddress;
 
 public class SocketBindingCfg extends ComponentConfiguration
 {
@@ -66,5 +68,10 @@ public class SocketBindingCfg extends ComponentConfiguration
             returnValue = defaultValue;
         }
         return returnValue;
+    }
+
+    public SocketAddress toSocketAddress()
+    {
+        return new SocketAddress(host, port);
     }
 }

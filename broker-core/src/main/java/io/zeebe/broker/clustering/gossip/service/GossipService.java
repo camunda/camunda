@@ -17,50 +17,63 @@
  */
 package io.zeebe.broker.clustering.gossip.service;
 
-import java.io.File;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
-import io.zeebe.broker.clustering.gossip.Gossip;
-import io.zeebe.broker.clustering.gossip.GossipContext;
-import io.zeebe.broker.clustering.gossip.config.GossipConfiguration;
+import io.zeebe.broker.transport.cfg.TransportComponentCfg;
+import io.zeebe.gossip.Gossip;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
-import io.zeebe.util.LangUtil;
+import io.zeebe.transport.BufferingServerTransport;
+import io.zeebe.transport.ClientTransport;
+import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.actor.ActorReference;
 import io.zeebe.util.actor.ActorScheduler;
 
 public class GossipService implements Service<Gossip>
 {
     private final Injector<ActorScheduler> actorSchedulerInjector = new Injector<>();
-    private final Injector<GossipContext> gossipContextInjector = new Injector<>();
+    private final Injector<ClientTransport> clientTransportInjector = new Injector<>();
+    private final Injector<BufferingServerTransport> bufferingServerTransportInjector = new Injector<>();
 
     private Gossip gossip;
-    private GossipContext gossipContext;
     private ActorReference actorRef;
+    private final TransportComponentCfg transportComponentCfg;
+
+    public GossipService(TransportComponentCfg transportComponentCfg)
+    {
+        this.transportComponentCfg = transportComponentCfg;
+    }
 
     @Override
     public void start(ServiceStartContext startContext)
     {
         final ActorScheduler actorScheduler = actorSchedulerInjector.getValue();
-        this.gossipContext = gossipContextInjector.getValue();
-        startContext.run(() ->
-        {
-            //create a gossip folder
-            final GossipConfiguration configuration = gossipContext.getConfig();
-            createFile(configuration.fileName());
+        final SocketAddress host = new SocketAddress(transportComponentCfg.managementApi.host, transportComponentCfg.managementApi.port);
 
-            this.gossip = new Gossip(gossipContext);
-            gossip.open();
-            actorRef = actorScheduler.schedule(gossip);
-        });
+        this.gossip = new Gossip(host, bufferingServerTransportInjector.getValue(),
+                                 clientTransportInjector.getValue(), transportComponentCfg.gossip);
+
+        final List<SocketAddress> collect = Arrays.stream(transportComponentCfg.gossip.initialContactPoints)
+                                                  .map(SocketAddress::from)
+                                                  .collect(Collectors.toList());
+
+        if (!collect.isEmpty())
+        {
+            gossip.join(collect);
+        }
+
+        actorRef = actorScheduler.schedule(gossip);
     }
 
     @Override
     public void stop(ServiceStopContext stopContext)
     {
-        actorRef.close();
-        gossip.close();
+        stopContext.async(gossip.leave()
+                                .whenComplete((v, t) -> actorRef.close()));
     }
 
     @Override
@@ -69,30 +82,18 @@ public class GossipService implements Service<Gossip>
         return gossip;
     }
 
-    public Injector<GossipContext> getGossipContextInjector()
-    {
-        return gossipContextInjector;
-    }
-
     public Injector<ActorScheduler> getActorSchedulerInjector()
     {
         return actorSchedulerInjector;
     }
 
-    private void createFile(String file)
+    public Injector<ClientTransport> getClientTransportInjector()
     {
-        final File f = new File(file);
-        if (!f.exists())
-        {
-            try
-            {
-                f.getParentFile().mkdirs();
-                f.createNewFile();
-            }
-            catch (Exception e)
-            {
-                LangUtil.rethrowUnchecked(e);
-            }
-        }
+        return clientTransportInjector;
+    }
+
+    public Injector<BufferingServerTransport> getBufferingServerTransportInjector()
+    {
+        return bufferingServerTransportInjector;
     }
 }

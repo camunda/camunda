@@ -112,7 +112,7 @@ public class SystemContext implements AutoCloseable
         try
         {
             final CompletableFuture<?>[] startActions = requiredStartActions.toArray(new CompletableFuture[requiredStartActions.size()]);
-            CompletableFuture.allOf(startActions).get(10, TimeUnit.SECONDS);
+            CompletableFuture.allOf(startActions).get(500, TimeUnit.SECONDS);
         }
         catch (Exception e)
         {

@@ -100,14 +100,18 @@ public class ResolvePendingPartitionsCommand implements Runnable, CloseableSilen
 
             final IntIterator partitionsLeadByMember = currentMember.getLeadingPartitions();
 
+
             while (partitionsLeadByMember.hasNext())
             {
-                final int currentPartition = partitionsLeadByMember.nextInt();
 
+                final int currentPartition = partitionsLeadByMember.nextInt();
+//                Loggers.CLUSTERING_LOGGER.debug("Member {} leads partition {}.", currentMember.getManagementAddress(), currentPartition);
                 final PendingPartition partition = partitions.get(currentPartition);
 
                 if (partition != null)
                 {
+
+//                    Loggers.CLUSTERING_LOGGER.debug("Found partition {}.", partition);
                     final TypedEvent<PartitionEvent> event =
                             reader.readValue(partition.getPosition(), PartitionEvent.class);
 

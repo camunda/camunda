@@ -19,7 +19,7 @@ package io.zeebe.broker.clustering.management.service;
 
 import io.zeebe.broker.clustering.management.ClusterManager;
 import io.zeebe.broker.clustering.management.ClusterManagerContext;
-import io.zeebe.broker.clustering.management.config.ClusterManagementConfig;
+import io.zeebe.broker.transport.cfg.TransportComponentCfg;
 import io.zeebe.raft.Raft;
 import io.zeebe.servicecontainer.*;
 import io.zeebe.util.actor.ActorReference;
@@ -31,20 +31,20 @@ public class ClusterManagerService implements Service<ClusterManager>
     private Injector<ActorScheduler> actorSchedulerInjector = new Injector<>();
 
     private ClusterManager clusterManager;
-    private ClusterManagementConfig config;
+    private TransportComponentCfg config;
     private ServiceContainer serviceContainer;
 
     private ActorReference actorRef;
 
-    public ClusterManagerService(final ServiceContainer serviceContainer, final ClusterManagementConfig config)
+    public ClusterManagerService(final ServiceContainer serviceContainer, final TransportComponentCfg config)
     {
         this.serviceContainer = serviceContainer;
         this.config = config;
     }
 
     private final ServiceGroupReference<Raft> raftGroupReference = ServiceGroupReference.<Raft>create()
-            .onAdd((name, raft) -> clusterManager.addRaft(name, raft))
-            .onRemove((name, raft) -> clusterManager.removeRaft(raft))
+            .onAdd((name, raft) -> clusterManager.addRaftCallback(name, raft))
+            .onRemove((name, raft) -> clusterManager.removeRaftCallback(raft))
             .build();
 
     @Override
@@ -54,6 +54,7 @@ public class ClusterManagerService implements Service<ClusterManager>
         {
             final ClusterManagerContext context = clusterManagementContextInjector.getValue();
             final ActorScheduler actorScheduler = actorSchedulerInjector.getValue();
+
 
             clusterManager = new ClusterManager(context, serviceContainer, config);
             clusterManager.open();

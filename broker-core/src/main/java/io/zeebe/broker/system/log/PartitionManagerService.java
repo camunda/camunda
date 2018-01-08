@@ -17,15 +17,18 @@
  */
 package io.zeebe.broker.system.log;
 
-import io.zeebe.broker.clustering.gossip.data.PeerList;
+import io.zeebe.broker.clustering.management.memberList.MemberListService;
 import io.zeebe.broker.clustering.management.PartitionManager;
 import io.zeebe.broker.clustering.management.PartitionManagerImpl;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.Injector;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.transport.ClientTransport;
 
 public class PartitionManagerService implements Service<PartitionManager>
 {
-    private final Injector<PeerList> peerListInjector = new Injector<>();
+    private final Injector<MemberListService> memberListServiceInjector = new Injector<>();
     private final Injector<ClientTransport> managementClientInjector = new Injector<>();
 
     private PartitionManager service;
@@ -33,10 +36,9 @@ public class PartitionManagerService implements Service<PartitionManager>
     @Override
     public void start(ServiceStartContext startContext)
     {
-        final PeerList peerList = peerListInjector.getValue();
         final ClientTransport managementClient = managementClientInjector.getValue();
 
-        service = new PartitionManagerImpl(peerList, managementClient);
+        service = new PartitionManagerImpl(memberListServiceInjector.getValue(), managementClient);
     }
 
     @Override
@@ -50,9 +52,9 @@ public class PartitionManagerService implements Service<PartitionManager>
         return service;
     }
 
-    public Injector<PeerList> getPeerListInjector()
+    public Injector<MemberListService> getMemberListServiceInjector()
     {
-        return peerListInjector;
+        return memberListServiceInjector;
     }
 
     public Injector<ClientTransport> getManagementClientInjector()

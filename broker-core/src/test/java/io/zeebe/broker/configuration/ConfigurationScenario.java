@@ -17,13 +17,13 @@
  */
 package io.zeebe.broker.configuration;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.zeebe.broker.clustering.gossip.config.GossipConfiguration;
+import io.zeebe.broker.clustering.gossip.service.ZbGossipConfig;
 import io.zeebe.broker.clustering.management.config.ClusterManagementConfig;
 import io.zeebe.broker.event.processor.SubscriptionCfg;
 import io.zeebe.broker.logstreams.cfg.LogStreamsCfg;
@@ -59,7 +59,7 @@ public class ConfigurationScenario
 
     public ConfigurationScenario gossip(String parent, String child)
     {
-        withConfiguration("network.gossip", GossipConfiguration.class, parent, child);
+        withConfiguration("network.gossip", ZbGossipConfig.class, parent, child);
         return this;
     }
 

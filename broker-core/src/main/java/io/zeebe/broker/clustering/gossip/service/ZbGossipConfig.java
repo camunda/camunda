@@ -15,14 +15,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.clustering.gossip.data;
+package io.zeebe.broker.clustering.gossip.service;
 
-public interface PeerSelector
+import io.zeebe.gossip.GossipConfiguration;
+
+/**
+ *
+ */
+public class ZbGossipConfig extends GossipConfiguration
 {
-    boolean next(Peer dst, Peer[] exclusions);
-
-    int next(int max, Peer[] dst, Peer[] exclusions);
-
-    void close();
-
+    public String[] initialContactPoints = new String[0];
 }

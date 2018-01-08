@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.system.log;
 
+import io.zeebe.broker.Loggers;
 import org.agrona.DirectBuffer;
 
 import io.zeebe.broker.logstreams.processor.TypedEvent;
@@ -48,6 +49,7 @@ public class PartitionCreatedProcessor implements TypedEventProcessor<PartitionE
 
         final boolean topicCreationComplete = topics.getRemainingPartitions() == 1; // == 1 because this is the last partition
 
+        Loggers.CLUSTERING_LOGGER.debug("Remaining partitions {}.", topics.getRemainingPartitions());
         if (topicCreationComplete)
         {
             createRequest = reader.readValue(topics.getRequestPosition(), TopicEvent.class);

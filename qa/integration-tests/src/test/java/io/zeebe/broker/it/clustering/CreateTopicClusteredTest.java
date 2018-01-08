@@ -15,29 +15,35 @@
  */
 package io.zeebe.broker.it.clustering;
 
+import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.InputStream;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
-
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.rules.Timeout;
+import java.util.stream.Collectors;
 
 import io.zeebe.broker.Broker;
+import io.zeebe.broker.Loggers;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.clustering.impl.TopicLeader;
+import io.zeebe.client.event.Event;
 import io.zeebe.client.event.TaskEvent;
+import io.zeebe.client.topic.Topic;
+import io.zeebe.client.topic.Topics;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.SocketAddress;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.Timeout;
 
 public class CreateTopicClusteredTest
 {
+    private static final int PARTITION_COUNT = 5;
+
     private static final String BROKER1_CONFIG = "zeebe.cluster.1.cfg.toml";
     private static final String BROKER2_CONFIG = "zeebe.cluster.2.cfg.toml";
     private static final String BROKER3_CONFIG = "zeebe.cluster.3.cfg.toml";
@@ -55,20 +61,89 @@ public class CreateTopicClusteredTest
     @Rule
     public Timeout timeout = new Timeout(30, TimeUnit.SECONDS);
 
+    private ZeebeClient client;
+    private final Map<SocketAddress, Broker> brokers = new HashMap<>();
+
+    @Before
+    public void setUp()
+    {
+        client = clientRule.getClient();
+
+        brokers.put(BROKER1_ADDRESS, startBroker(BROKER1_CONFIG));
+        brokers.put(BROKER2_ADDRESS, startBroker(BROKER2_CONFIG));
+        brokers.put(BROKER3_ADDRESS,  startBroker(BROKER3_CONFIG));
+
+        doRepeatedly(() -> client.requestTopology().execute().getBrokers())
+            .until(topologyBroker -> topologyBroker != null && topologyBroker.size() == 3);
+    }
+
     @Test
-    // FIXME: https://github.com/zeebe-io/zeebe/issues/561
-    @Category(io.zeebe.UnstableTest.class)
     public void shouldCreateTopic()
     {
         // given
-        startBroker(BROKER1_CONFIG);
-        startBroker(BROKER2_CONFIG);
-        startBroker(BROKER3_CONFIG);
-
-        final ZeebeClient client = clientRule.getClient();
 
         // when
-        client.topics().create("foo", 2).execute();
+        final Event topicEvent = client.topics()
+                                .create("foo", PARTITION_COUNT)
+                                .execute();
+
+        final List<SocketAddress> topicLeaders =
+            doRepeatedly(() -> client.requestTopology()
+                                     .execute()
+                                     .getTopicLeaders())
+                .until(leaders -> leaders != null && leaders.size() >= PARTITION_COUNT)
+                .stream()
+                .filter((topicLeader -> topicLeader.getTopicName().equals("foo")))
+                .map((topicLeader -> topicLeader.getSocketAddress()))
+                .collect(Collectors.toList());
+
+        // then
+        assertThat(topicEvent.getState()).isEqualTo("CREATED");
+        assertThat(topicLeaders.size()).isEqualTo(PARTITION_COUNT);
+        assertThat(topicLeaders).contains(brokers.keySet().toArray(new SocketAddress[3]));
+    }
+
+    @Test
+    public void shouldRequestTopicsAfterTopicCreation()
+    {
+        // given
+        client.topics()
+              .create("foo", PARTITION_COUNT)
+              .execute();
+
+        doRepeatedly(() -> client.requestTopology()
+                                 .execute()
+                                 .getTopicLeaders()).until(leaders -> leaders != null && leaders.size() >= PARTITION_COUNT);
+        // when
+        final Topics topicsResponse = doRepeatedly(() -> client.topics()
+                                                      .getTopics()
+                                                      .execute()).until((topics -> topics.getTopics()
+                                                                                         .size() == 1));
+        final List<Topic> topics = topicsResponse.getTopics();
+
+        // then
+        assertThat(topics.size()).isEqualTo(1);
+        assertThat(topics.get(0).getName()).isEqualTo("foo");
+        final List<Integer> partitions = topics.get(0)
+                                                 .getPartitions()
+                                                 .stream()
+                                                 .map((partition -> partition.getId()))
+                                                 .collect(Collectors.toList());
+
+        assertThat(partitions.size()).isEqualTo(5);
+        assertThat(partitions).containsExactlyInAnyOrder(1, 2, 3, 4, 5);
+    }
+
+    @Test
+    public void shouldCreateTaskAfterTopicCreation()
+    {
+        // given
+
+        // when
+        client.topics().create("foo", PARTITION_COUNT).execute();
+        doRepeatedly(() -> client.requestTopology()
+                                 .execute()
+                                 .getTopicLeaders()).until(leaders -> leaders != null && leaders.size() >= PARTITION_COUNT);
 
         // then
         final TaskEvent taskEvent = client.tasks().create("foo", "bar").execute();
@@ -78,45 +153,40 @@ public class CreateTopicClusteredTest
     }
 
     @Test
-    // FIXME: https://github.com/zeebe-io/zeebe/issues/558
-    @Category(io.zeebe.UnstableTest.class)
-    public void shouldReplicateNewTopic() throws InterruptedException
+    @Ignore("https://github.com/zeebe-io/zeebe/issues/617")
+    public void shouldChooseNewLeaderForCreatedTopicAfterLeaderDies()
     {
         // given
-        final Map<SocketAddress, Broker> brokers = new HashMap<>();
-
-        final Broker broker1 = startBroker(BROKER1_CONFIG);
-        final Broker broker2 = startBroker(BROKER2_CONFIG);
-        final Broker broker3 = startBroker(BROKER3_CONFIG);
-        brokers.put(BROKER1_ADDRESS, broker1);
-        brokers.put(BROKER2_ADDRESS, broker2);
-        brokers.put(BROKER3_ADDRESS, broker3);
-
-        final ZeebeClient client = clientRule.getClient();
-        final TopologyObserver observer = new TopologyObserver(client);
-
-        // wait till all members are known before we create the partition => workaround for https://github.com/zeebe-io/zeebe/issues/534
-        observer.waitForBroker(BROKER1_ADDRESS);
-        observer.waitForBroker(BROKER2_ADDRESS);
-        observer.waitForBroker(BROKER3_ADDRESS);
-
-        client.topics().create("foo", 1).execute();
+        final int partitionsCount = 1;
+        client.topics().create("foo", partitionsCount).execute();
         final TaskEvent taskEvent = client.tasks().create("foo", "bar").execute();
         final int partitionId = taskEvent.getMetadata().getPartitionId();
 
-
-        final SocketAddress currentLeaderAddress = observer.waitForLeader(partitionId);
+        final Optional<TopicLeader> topicLeader = doRepeatedly(() -> client.requestTopology()
+                                                                         .execute()
+                                                                         .getTopicLeaders()).until(leaders -> leaders != null && leaders.size() >= partitionsCount)
+                                                                                            .stream()
+                                                                                            .filter((leader) -> leader.getPartitionId() == partitionId)
+                                                                                            .findAny();
+        final SocketAddress currentLeaderAddress = topicLeader.get().getSocketAddress();
         final Broker currentLeader = brokers.get(currentLeaderAddress);
 
         final Set<SocketAddress> expectedFollowers = new HashSet<>(brokers.keySet());
         expectedFollowers.remove(currentLeaderAddress);
 
         // when
+        Loggers.CLUSTERING_LOGGER.debug("Close leader {}", currentLeaderAddress);
         currentLeader.close();
 
         // then
-        final SocketAddress newLeader = observer.waitForLeader(partitionId, expectedFollowers);
-        assertThat(expectedFollowers).contains(newLeader);
+        final Optional<TopicLeader> newLeader = doRepeatedly(() -> client.requestTopology()
+                                                                         .execute()
+                                                                         .getTopicLeaders()).until(leaders -> leaders != null && leaders.size() >= partitionsCount)
+                                                                                            .stream()
+                                                                                            .filter((leader) -> leader.getPartitionId() == partitionId)
+                                                                                            .findAny();
+        final SocketAddress newLeaderAddress = newLeader.get().getSocketAddress();
+        assertThat(expectedFollowers).contains(newLeaderAddress);
     }
 
     protected Broker startBroker(String configFile)

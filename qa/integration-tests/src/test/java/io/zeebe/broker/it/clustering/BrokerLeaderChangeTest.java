@@ -19,63 +19,46 @@ import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.time.Duration;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.client.TasksClient;
 import io.zeebe.client.TopicsClient;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.clustering.impl.ClientTopologyManager;
+import io.zeebe.client.clustering.impl.TopicLeader;
 import io.zeebe.client.event.TaskEvent;
 import io.zeebe.client.event.TopicSubscription;
-import io.zeebe.client.impl.ZeebeClientImpl;
 import io.zeebe.client.task.TaskSubscription;
+import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.SocketAddress;
+import org.junit.*;
+import org.junit.rules.Timeout;
 
-@Ignore("Unreliable cause of multiple problems: " +
-    "https://github.com/zeebe-io/zeebe/issues/292 " +
-    "https://github.com/zeebe-io/zeebe/issues/313 " +
-    "https://github.com/zeebe-io/zeebe/issues/314 " +
-    "https://github.com/zeebe-io/zeebe/issues/315")
 public class BrokerLeaderChangeTest
 {
-    // TODO: remove logging after test becomes stable
-    public static final Logger LOG = LoggerFactory.getLogger(BrokerLeaderChangeTest.class);
-
     public static final String BROKER_1_TOML = "zeebe.cluster.1.cfg.toml";
     public static final SocketAddress BROKER_1_CLIENT_ADDRESS = new SocketAddress("localhost", 51015);
 
     public static final String BROKER_2_TOML = "zeebe.cluster.2.cfg.toml";
     public static final SocketAddress BROKER_2_CLIENT_ADDRESS = new SocketAddress("localhost", 41015);
-    public static final SocketAddress BROKER_2_RAFT_ADDRESS = new SocketAddress("localhost", 41017);
 
     public static final String BROKER_3_TOML = "zeebe.cluster.3.cfg.toml";
     public static final SocketAddress BROKER_3_CLIENT_ADDRESS = new SocketAddress("localhost", 31015);
-    public static final SocketAddress BROKER_3_RAFT_ADDRESS = new SocketAddress("localhost", 31017);
 
     public static final String TASK_TYPE = "testTask";
 
     @Rule
-    public ClientRule clientRule = new ClientRule();
+    public AutoCloseableRule closeables = new AutoCloseableRule();
+
+    @Rule
+    public ClientRule clientRule = new ClientRule(false);
 
     protected final Map<SocketAddress, Broker> brokers = new HashMap<>();
 
@@ -106,128 +89,51 @@ public class BrokerLeaderChangeTest
     }
 
     @Test
-    public void test() throws Exception
+    @Ignore("https://github.com/zeebe-io/zeebe/issues/617")
+    public void shouldChangeLeaderAfterLeaderDies()
     {
-        // start first broker
-        startBroker(BROKER_1_CLIENT_ADDRESS, BROKER_1_TOML);
+        // given
+        brokers.put(BROKER_1_CLIENT_ADDRESS, startBroker(BROKER_1_TOML));
+        brokers.put(BROKER_2_CLIENT_ADDRESS, startBroker(BROKER_2_TOML));
+        brokers.put(BROKER_3_CLIENT_ADDRESS,  startBroker(BROKER_3_TOML));
 
-        final TopologyObserver topologyObserver = new TopologyObserver(client);
-        topologyObserver.waitForBroker(BROKER_1_CLIENT_ADDRESS);
+        doRepeatedly(() -> client.requestTopology().execute().getBrokers())
+            .until(topologyBroker -> topologyBroker != null && topologyBroker.size() == 3);
 
-        final RaftMemberObserver raftMemberObserver = new RaftMemberObserver();
+        client.topics().create(clientRule.getDefaultTopic(), 2).execute();
+        final Optional<TopicLeader> topicLeader = doRepeatedly(() -> client.requestTopology()
+                                                                     .execute()
+                                                                     .getTopicLeaders()).until(leaders -> leaders != null && leaders.size() >= 2)
+                                                                                        .stream()
+                                                                                        .filter((leader) -> leader.getPartitionId() == partition)
+                                                                                        .findAny();
 
-        // start second broker
-        startBroker(BROKER_2_CLIENT_ADDRESS, BROKER_2_TOML);
-        topologyObserver.waitForBroker(BROKER_2_CLIENT_ADDRESS);
-        raftMemberObserver.waitForRaftMember(BROKER_2_RAFT_ADDRESS);
+        final SocketAddress leaderAddress = topicLeader.get().getSocketAddress();
+        final TaskEvent taskEvent = taskClient.create(clientRule.getDefaultTopic(), TASK_TYPE)
+                                              .execute();
 
-        // start third broker
-        startBroker(BROKER_3_CLIENT_ADDRESS, BROKER_3_TOML);
-        topologyObserver.waitForBroker(BROKER_3_CLIENT_ADDRESS);
-        raftMemberObserver.waitForRaftMember(BROKER_3_RAFT_ADDRESS);
+        // when
+        brokers.remove(leaderAddress).close();
+        doRepeatedly(() -> client.requestTopology().execute().getBrokers())
+            .until(topologyBroker -> topologyBroker != null && topologyBroker.size() == 2);
 
-        // force topology manager refresh so that all brokers are known
-        refreshTopologyNow();
+        // then
+        final Optional<TopicLeader> newLeader = doRepeatedly(() -> client.requestTopology()
+                                                                         .execute()
+                                                                         .getTopicLeaders()).until(leaders -> leaders != null && leaders.size() >= 2)
+                                                                                            .stream()
+                                                                                            .filter((leader) -> leader.getPartitionId() == partition)
+                                                                                            .findAny();
 
-        // wait for topic leader
-        SocketAddress leader = topologyObserver.waitForLeader(partition, brokers.keySet());
+        assertThat(newLeader.get().getSocketAddress()).isNotEqualTo(leaderAddress);
 
-        // create task on leader
-        LOG.info("Creating task for type {}", TASK_TYPE);
-        final TaskEvent taskEvent = taskClient
-            .create(clientRule.getDefaultTopic(), TASK_TYPE)
-            .execute();
-
-        LOG.info("Task created with key {}", taskEvent.getMetadata().getKey());
-
-        // close topic subscription
-        raftMemberObserver.close();
-
-        // stop leader
-        brokers.remove(leader).close();
-        LOG.info("Leader {} is shutdown", leader);
-
-        // wait for other broker become leader
-        leader = topologyObserver.waitForLeader(partition, brokers.keySet());
-        LOG.info("Leader changed to {}", leader);
-
-        // complete task and wait for completed event
+        // when
         final TaskCompleter taskCompleter = new TaskCompleter(taskEvent);
+
+        // then
         taskCompleter.waitForTaskCompletion();
 
         taskCompleter.close();
-    }
-
-    private void refreshTopologyNow() throws ExecutionException, InterruptedException
-    {
-        final ZeebeClientImpl client = (ZeebeClientImpl) this.client;
-        final ClientTopologyManager topologyManager = client.getTopologyManager();
-        topologyManager.refreshNow().get();
-        LOG.info("Topology refreshed: {}", topologyManager.getTopology());
-    }
-
-    protected void startBroker(final SocketAddress socketAddress, final String configFilePath)
-    {
-        LOG.info("starting broker {} with config {}", socketAddress, configFilePath);
-
-        try (InputStream config = BrokerLeaderChangeTest.class.getClassLoader().getResourceAsStream(configFilePath))
-        {
-            assertThat(config).isNotNull();
-            brokers.put(socketAddress, new Broker(config));
-        }
-        catch (final IOException e)
-        {
-            throw new RuntimeException("Unable to read configuration", e);
-        }
-    }
-
-    class RaftMemberObserver
-    {
-
-        private final ConcurrentHashMap.KeySetView<SocketAddress, Boolean> raftMembers;
-        private final TopicSubscription subscription;
-
-        RaftMemberObserver()
-        {
-            raftMembers = ConcurrentHashMap.newKeySet();
-            subscription = doRepeatedly(() -> topicClient.newSubscription(clientRule.getDefaultTopic())
-                .name("raftObserver")
-                .startAtHeadOfTopic()
-                .forcedStart()
-                .raftEventHandler(event ->
-                {
-                    final List<SocketAddress> members = event.getMembers();
-                    if (members != null)
-                    {
-                        raftMembers.retainAll(members);
-                        raftMembers.addAll(members);
-                    }
-                })
-                .open()
-            )
-                .until(Objects::nonNull, "Failed to open topic subscription for raft events");
-        }
-
-        boolean isRaftMember(final SocketAddress socketAddress)
-        {
-            return raftMembers.contains(socketAddress);
-        }
-
-        void waitForRaftMember(final SocketAddress socketAddress)
-        {
-            waitUntil(() -> isRaftMember(socketAddress), 100,
-                "Failed to wait for %s become part of the raft group", socketAddress);
-        }
-
-        void close()
-        {
-            if (!subscription.isClosed())
-            {
-                subscription.close();
-                LOG.info("Raft subscription closed");
-            }
-        }
-
     }
 
     class TaskCompleter
@@ -240,7 +146,6 @@ public class BrokerLeaderChangeTest
         TaskCompleter(TaskEvent task)
         {
             final long eventKey = task.getMetadata().getKey();
-            LOG.info("Completing task wit key {}", eventKey);
 
             taskSubscription = doRepeatedly(() -> taskClient.newTaskSubscription(clientRule.getDefaultTopic())
                 .taskType(TASK_TYPE)
@@ -276,7 +181,6 @@ public class BrokerLeaderChangeTest
         void waitForTaskCompletion()
         {
             waitUntil(isTaskCompleted::get, 100, "Failed to wait for task completion");
-            LOG.info("Task completed");
         }
 
         void close()
@@ -292,6 +196,14 @@ public class BrokerLeaderChangeTest
             }
         }
 
+    }
+
+    protected Broker startBroker(String configFile)
+    {
+        final InputStream config = this.getClass().getClassLoader().getResourceAsStream(configFile);
+        final Broker broker = new Broker(config);
+        closeables.manage(broker);
+        return broker;
     }
 
 }

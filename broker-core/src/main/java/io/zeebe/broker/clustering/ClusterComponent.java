@@ -24,19 +24,19 @@ import static io.zeebe.broker.system.SystemServiceNames.WORKFLOW_REQUEST_MESSAGE
 import static io.zeebe.broker.transport.TransportServiceNames.MANAGEMENT_API_CLIENT_NAME;
 import static io.zeebe.broker.transport.TransportServiceNames.MANAGEMENT_API_SERVER_NAME;
 
-import io.zeebe.broker.clustering.gossip.service.*;
+import io.zeebe.broker.clustering.gossip.service.GossipService;
+import io.zeebe.broker.clustering.management.memberList.MemberListService;
 import io.zeebe.broker.clustering.management.service.ClusterManagerContextService;
 import io.zeebe.broker.clustering.management.service.ClusterManagerService;
-import io.zeebe.broker.system.*;
+import io.zeebe.broker.system.Component;
+import io.zeebe.broker.system.ConfigurationManager;
+import io.zeebe.broker.system.SystemContext;
 import io.zeebe.broker.transport.TransportServiceNames;
-import io.zeebe.broker.transport.cfg.SocketBindingCfg;
 import io.zeebe.broker.transport.cfg.TransportComponentCfg;
 import io.zeebe.servicecontainer.ServiceContainer;
-import io.zeebe.transport.SocketAddress;
 
 public class ClusterComponent implements Component
 {
-    public static final String WORKER_NAME = "management-worker.0";
 
     @Override
     public void init(final SystemContext context)
@@ -45,50 +45,26 @@ public class ClusterComponent implements Component
         final ConfigurationManager configurationManager = context.getConfigurationManager();
         final TransportComponentCfg config = configurationManager.readEntry("network", TransportComponentCfg.class);
 
-        initLocalPeer(serviceContainer, config);
-        initPeers(serviceContainer, config);
+        initMemberList(serviceContainer);
         initGossip(serviceContainer, config);
         initClusterManager(serviceContainer, config);
     }
 
-    protected void initLocalPeer(final ServiceContainer serviceContainer, final TransportComponentCfg config)
+    protected void initMemberList(final ServiceContainer serviceContainer)
     {
-        final SocketAddress clientEndpoint = createEndpoint(config, config.clientApi);
-        final SocketAddress managementEndpoint = createEndpoint(config, config.managementApi);
-        final SocketAddress replicationEndpoint = createEndpoint(config, config.replicationApi);
+        final MemberListService memberListService = new MemberListService();
+        serviceContainer.createService(MEMBER_LIST_SERVICE, memberListService)
+                        .install();
 
-        final LocalPeerService localPeerService = new LocalPeerService(clientEndpoint, managementEndpoint, replicationEndpoint);
-        serviceContainer.createService(PEER_LOCAL_SERVICE, localPeerService).install();
-    }
-
-    protected void initPeers(final ServiceContainer serviceContainer, final TransportComponentCfg config)
-    {
-        final PeerListService peersService = new PeerListService(config.gossip);
-        serviceContainer.createService(PEER_LIST_SERVICE, peersService)
-            .dependency(PEER_LOCAL_SERVICE, peersService.getLocalPeerInjector())
-            .install();
     }
 
     protected void initGossip(final ServiceContainer serviceContainer, final TransportComponentCfg config)
     {
-        final PeerSelectorService peerSelectorService = new PeerSelectorService();
-        serviceContainer.createService(GOSSIP_PEER_SELECTOR_SERVICE, peerSelectorService)
-            .dependency(PEER_LIST_SERVICE, peerSelectorService.getPeerListInjector())
-            .install();
-
-        final GossipContextService gossipContextService = new GossipContextService(config.gossip);
-        serviceContainer.createService(GOSSIP_CONTEXT_SERVICE, gossipContextService)
-            .dependency(PEER_LIST_SERVICE, gossipContextService.getPeerListInjector())
-            .dependency(PEER_LOCAL_SERVICE, gossipContextService.getLocalPeerInjector())
-            .dependency(GOSSIP_PEER_SELECTOR_SERVICE, gossipContextService.getPeerSelectorInjector())
-            .dependency(TransportServiceNames.clientTransport(TransportServiceNames.MANAGEMENT_API_CLIENT_NAME), gossipContextService.getClientTransportInjector())
-            .dependency(TransportServiceNames.bufferingServerTransport(TransportServiceNames.MANAGEMENT_API_SERVER_NAME), gossipContextService.getManagementApiTransportInjector())
-            .install();
-
-        final GossipService gossipService = new GossipService();
+        final GossipService gossipService = new GossipService(config);
         serviceContainer.createService(GOSSIP_SERVICE, gossipService)
             .dependency(ACTOR_SCHEDULER_SERVICE, gossipService.getActorSchedulerInjector())
-            .dependency(GOSSIP_CONTEXT_SERVICE, gossipService.getGossipContextInjector())
+            .dependency(TransportServiceNames.clientTransport(TransportServiceNames.MANAGEMENT_API_CLIENT_NAME), gossipService.getClientTransportInjector())
+            .dependency(TransportServiceNames.bufferingServerTransport(TransportServiceNames.MANAGEMENT_API_SERVER_NAME), gossipService.getBufferingServerTransportInjector())
             .install();
     }
 
@@ -98,34 +74,19 @@ public class ClusterComponent implements Component
         serviceContainer.createService(CLUSTER_MANAGER_CONTEXT_SERVICE, clusterManagementContextService)
             .dependency(TransportServiceNames.bufferingServerTransport(MANAGEMENT_API_SERVER_NAME), clusterManagementContextService.getManagementApiTransportInjector())
             .dependency(TransportServiceNames.clientTransport(MANAGEMENT_API_CLIENT_NAME), clusterManagementContextService.getClientTransportInjector())
-            .dependency(PEER_LIST_SERVICE, clusterManagementContextService.getPeerListInjector())
-            .dependency(PEER_LOCAL_SERVICE, clusterManagementContextService.getLocalPeerInjector())
+            .dependency(MEMBER_LIST_SERVICE, clusterManagementContextService.getMemberListServiceInjector())
             .dependency(ACTOR_SCHEDULER_SERVICE, clusterManagementContextService.getActorSchedulerInjector())
             .dependency(LOG_STREAMS_MANAGER_SERVICE, clusterManagementContextService.getLogStreamsManagerInjector())
             .dependency(WORKFLOW_REQUEST_MESSAGE_HANDLER_SERVICE, clusterManagementContextService.getWorkflowRequestMessageHandlerInjector())
+            .dependency(GOSSIP_SERVICE, clusterManagementContextService.getGossipInjector())
             .install();
 
-        final ClusterManagerService clusterManagerService = new ClusterManagerService(serviceContainer, config.management);
+        final ClusterManagerService clusterManagerService = new ClusterManagerService(serviceContainer, config);
         serviceContainer.createService(CLUSTER_MANAGER_SERVICE, clusterManagerService)
             .dependency(CLUSTER_MANAGER_CONTEXT_SERVICE, clusterManagerService.getClusterManagementContextInjector())
             .dependency(ACTOR_SCHEDULER_SERVICE, clusterManagerService.getActorSchedulerInjector())
             .groupReference(RAFT_SERVICE_GROUP, clusterManagerService.getRaftGroupReference())
             .install();
-    }
-
-    protected SocketAddress createEndpoint(final TransportComponentCfg config, final SocketBindingCfg socketConfig)
-    {
-        final int port = socketConfig.getPort();
-        final String host = socketConfig.getHost(config.host);
-
-        final SocketAddress endpoint = new SocketAddress();
-        endpoint
-            .host(host)
-            .port(port);
-
-        return new SocketAddress()
-                .host(host)
-                .port(port);
     }
 
 }

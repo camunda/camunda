@@ -17,10 +17,10 @@
  */
 package io.zeebe.broker.clustering.management;
 
-import io.zeebe.broker.clustering.gossip.data.Peer;
-import io.zeebe.broker.clustering.gossip.data.PeerList;
+import io.zeebe.broker.clustering.management.memberList.MemberListService;
 import io.zeebe.broker.logstreams.LogStreamsManager;
 import io.zeebe.broker.system.deployment.handler.WorkflowRequestMessageHandler;
+import io.zeebe.gossip.Gossip;
 import io.zeebe.transport.BufferingServerTransport;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.util.actor.ActorScheduler;
@@ -28,12 +28,12 @@ import io.zeebe.util.actor.ActorScheduler;
 public class ClusterManagerContext
 {
     private ActorScheduler actorScheduler;
-    private Peer localPeer;
-    private PeerList peers;
     private LogStreamsManager logStreamsManager;
     private WorkflowRequestMessageHandler workflowRequestMessageHandler;
     private ClientTransport clientTransport;
     private BufferingServerTransport serverTransport;
+    private Gossip gossip;
+    private MemberListService memberListService;
 
     public ActorScheduler getActorScheduler()
     {
@@ -45,14 +45,24 @@ public class ClusterManagerContext
         this.actorScheduler = actorScheduler;
     }
 
-    public Peer getLocalPeer()
+    public Gossip getGossip()
     {
-        return localPeer;
+        return gossip;
     }
 
-    public void setLocalPeer(Peer localPeer)
+    public void setGossip(Gossip gossip)
     {
-        this.localPeer = localPeer;
+        this.gossip = gossip;
+    }
+
+    public MemberListService getMemberListService()
+    {
+        return memberListService;
+    }
+
+    public void setMemberListService(MemberListService memberListService)
+    {
+        this.memberListService = memberListService;
     }
 
     public BufferingServerTransport getServerTransport()
@@ -73,16 +83,6 @@ public class ClusterManagerContext
     public void setClientTransport(ClientTransport clientTransport)
     {
         this.clientTransport = clientTransport;
-    }
-
-    public PeerList getPeers()
-    {
-        return peers;
-    }
-
-    public void setPeers(PeerList peers)
-    {
-        this.peers = peers;
     }
 
     public LogStreamsManager getLogStreamsManager()
