@@ -26,6 +26,7 @@
     <version.zb-msgpack>${project.version}</version.zb-msgpack>
     <version.zb-protocol>${project.version}</version.zb-protocol>
     <version.zb-raft>${project.version}</version.zb-raft>
+    <version.zb-gossip>${project.version}</version.zb-gossip>
     <version.zb-service-container>${project.version}</version.zb-service-container>
     <version.zb-transport>${project.version}</version.zb-transport>
     <version.zb-util>${project.version}</version.zb-util>
@@ -108,6 +109,12 @@
         <groupId>io.zeebe</groupId>
         <artifactId>zb-raft</artifactId>
         <version>${version.zb-raft}</version>
+      </dependency>
+      
+      <dependency>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zb-gossip</artifactId>
+        <version>${version.zb-gossip}</version>
       </dependency>
 
       <dependency>
