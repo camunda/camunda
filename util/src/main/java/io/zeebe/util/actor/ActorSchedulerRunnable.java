@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Function;
 
-import org.slf4j.MDC;
+import io.zeebe.util.LogUtil;
 
 /**
  * The scheduler tries to balance the workload between the given runners
@@ -106,18 +106,7 @@ public class ActorSchedulerRunnable implements Runnable
     @Override
     public void run()
     {
-        final Map<String, String> currentContext = MDC.getCopyOfContextMap();
-        MDC.setContextMap(diagnosticContext);
-
-        try
-        {
-            doWorkUntilClosed();
-        }
-        finally
-        {
-            MDC.setContextMap(currentContext);
-        }
-
+        LogUtil.doWithMDC(diagnosticContext, this::doWorkUntilClosed);
     }
 
     private void doWorkUntilClosed()

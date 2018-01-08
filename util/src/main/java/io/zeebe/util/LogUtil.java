@@ -35,7 +35,14 @@ public class LogUtil
         }
         finally
         {
-            MDC.setContextMap(currentContext);
+            if (currentContext != null)
+            {
+                MDC.setContextMap(currentContext);
+            }
+            else
+            {
+                MDC.clear();
+            }
         }
     }
 }
