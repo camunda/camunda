@@ -99,44 +99,6 @@ public class LargeWorkflowTest
     {
         final WorkflowsClient workflowService = clientRule.workflows();
 
-        final int taskCount = 10;
-        final int expectedTasks = CREATION_TIMES * taskCount;
-        final CompletableFuture<Void> finished = new CompletableFuture<>();
-        final AtomicLong completed = new AtomicLong(0);
-
-        // open task subscription for all tasks
-        clientRule.tasks()
-                  .newTaskSubscription(clientRule.getDefaultTopic())
-                  .taskType("reserveOrderItems")
-                  .lockOwner("test")
-                  .lockTime(Duration.ofMinutes(5))
-                  .handler(getTaskHandler(expectedTasks, finished, completed)).open();
-
-        // create workflow instances
-        final List<Future<WorkflowInstanceEvent>> futures = new ArrayList<>();
-        for (int i = 0; i < CREATION_TIMES; i++)
-        {
-            final Future<WorkflowInstanceEvent> future =
-                workflowService.create(clientRule.getDefaultTopic())
-                               .bpmnProcessId("extended-order-process")
-                               .latestVersion()
-                               .payload("{ \"orderId\": 31243, \"orderStatus\": \"NEW\", \"orderItems\": [435, 182, 376] }")
-                               .executeAsync();
-
-            futures.add(future);
-        }
-
-        waitForWorkflowInstanceCreation(futures);
-
-        // wait for task completion
-        finished.get();
-    }
-
-    @Test
-    public void shouldCreateAndCompleteWorkflowInstancesWithFortyTasks() throws Exception
-    {
-        final WorkflowsClient workflowService = clientRule.workflows();
-
         final int taskCount = 40;
         final int expectedTasks = CREATION_TIMES * taskCount;
         final CompletableFuture<Void> finished = new CompletableFuture<>();
