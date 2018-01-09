@@ -37,10 +37,8 @@ export default class NodeFilter extends React.Component {
   }
 
   createFilter = () => {
-    const values = [];
-    this.state.selectedNodes.forEach((node) => {
-      values.push(node.id);
-    });
+    const values = this.state.selectedNodes.map(node => node.id);
+    
     this.props.addFilter({
       type: 'executedFlowNodes',
       data: {
