@@ -13,6 +13,7 @@ export default class Report extends React.Component {
     super(props);
 
     this.id = props.match.params.id;
+    this.isNew = props.isNew;
 
     this.state = {
       name: null,
@@ -167,13 +168,18 @@ export default class Report extends React.Component {
     });
   }
 
+  inputRef = (input) => {
+    this.nameInput = input;
+    this.forceUpdate();
+  }
+
   renderEditMode = () => {
     const {name, lastModifier, lastModified, data, reportResult} = this.state;
     return (
       <div className='Report' style={{height: '100%', width:'100%'}}>
         <div className='Report__header'>
           <div className='Report__name-container'>
-            <Input id='name' type='text' onChange={this.updateName} value={name || ''} className='Report__name-input' placeholder='Report Name'></Input>
+            <Input id='name' type='text' reference={this.inputRef} onChange={this.updateName} value={name || ''} className='Report__name-input' placeholder='Report Name'></Input>
             <div className='Report__metadata'>Last modified {moment(lastModified).format('lll')} by {lastModifier}</div>
           </div>
           <div className='Report__tools'>
@@ -243,6 +249,11 @@ export default class Report extends React.Component {
 
     if(redirect) {
       return <Redirect to='/reports' />;
+    }
+
+    if(this.nameInput && this.isNew) {
+      this.nameInput.select();
+      this.isNew = false;
     }
 
     return (<div style={{height: '100%', width:'100%'}}>

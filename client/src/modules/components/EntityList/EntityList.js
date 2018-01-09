@@ -139,7 +139,7 @@ export default class EntityList extends React.Component {
     }
 
     if(redirectToEntity !== false) {
-      return (<Redirect to={`/${this.props.api}/${redirectToEntity}/edit`} />);
+      return (<Redirect to={`/${this.props.api}/${redirectToEntity}/edit?new`} />);
     } else {
       return (<section className='EntityList'>
         <div className='EntityList__header'>

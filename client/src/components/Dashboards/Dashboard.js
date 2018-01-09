@@ -21,6 +21,7 @@ export default class Dashboard extends React.Component {
     super(props);
 
     this.id = props.match.params.id;
+    this.isNew = props.isNew;
 
     this.state = {
       name: null,
@@ -149,6 +150,11 @@ export default class Dashboard extends React.Component {
     });
   }
 
+  inputRef = (input) => {
+    this.nameInput = input;
+    this.forceUpdate();
+  }
+
   renderEditMode = (state) => {
     const {name, lastModifier, lastModified} = state;
 
@@ -156,7 +162,7 @@ export default class Dashboard extends React.Component {
       <div className='Dashboard'>
         <div className='Dashboard__header'>
           <div className='Dashboard__name-container'>
-            <Input type="text" id={'name'} onChange={this.updateName} value={name || ''} className='Dashboard__name-input' placeholder='Dashboard Name'></Input>
+            <Input type="text" id={'name'} reference={this.inputRef} onChange={this.updateName} value={name || ''} className='Dashboard__name-input' placeholder='Dashboard Name'></Input>
             <div className='Dashboard__metadata'>Last modified {moment(lastModified).format('lll')} by {lastModifier}</div>
           </div>
           <div className='Dashboard__tools'>
@@ -231,6 +237,11 @@ export default class Dashboard extends React.Component {
 
     if(redirect) {
       return <Redirect to='/dashboards' />;
+    }
+
+    if(this.nameInput && this.isNew) {
+      this.nameInput.select();
+      this.isNew = false;
     }
 
     return (<div>
