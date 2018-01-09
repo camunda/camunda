@@ -105,11 +105,13 @@ public class HashTable implements Closeable
 
     public long getBucketAddress(int bucketId)
     {
+        final int capacity = getCapacity();
 
-        if (bucketId >= getCapacity())
+        if (bucketId >= capacity)
         {
-            throw new IllegalArgumentException("Bucket id is larger then capacity!");
+            throw new IllegalArgumentException("Bucket id " + bucketId + " is larger then capacity of " + capacity);
         }
+
         return UNSAFE.getLong(realAddress + (bucketId * SIZE_OF_LONG));
     }
 

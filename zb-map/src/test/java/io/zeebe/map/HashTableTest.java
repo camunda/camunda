@@ -147,7 +147,7 @@ public class HashTableTest
 
         // expect
         expectedException.expect(IllegalArgumentException.class);
-        expectedException.expectMessage("Bucket id is larger then capacity!");
+        expectedException.expectMessage("Bucket id 1 is larger then capacity of 1");
 
         // when
         hashTable.getBucketAddress(1);
