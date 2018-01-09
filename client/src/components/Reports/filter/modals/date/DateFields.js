@@ -26,7 +26,7 @@ export default class DateFields extends React.PureComponent {
       document.removeEventListener('click', this.hidePopup);
       document.removeEventListener('keydown', this.closeOnEscape);
     }
-    this.props.disableAddButton(true);
+    this.props.enableAddButton(true);
   }
 
   componentWillUnmount() {
@@ -51,7 +51,7 @@ export default class DateFields extends React.PureComponent {
             onSubmit={this.submitStart}
             onClick={this.toggleDateRangeForStart}
             date={this.props.startDate}
-            disableAddButton = {this.props.disableAddButton} />
+            enableAddButton = {this.props.enableAddButton} />
         <span className='DateFields__divider'>to</span>
         <DateInput
             className={'DateInput__end' + (this.isFieldSelected('endDate') ? ' DateInput__start--highlight' : '')}
@@ -62,7 +62,7 @@ export default class DateFields extends React.PureComponent {
             onSubmit={this.submitEnd}
             onClick={this.toggleDateRangeForEnd}
             date={this.props.endDate}
-            disableAddButton = {this.props.disableAddButton} />
+            enableAddButton = {this.props.enableAddButton} />
       </div>
       {
         this.state.popupOpen && (

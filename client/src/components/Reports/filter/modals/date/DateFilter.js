@@ -47,7 +47,7 @@ export default class DateFilter extends React.Component {
                     onDateChange={this.onDateChange}
                     startDate={this.state.startDate}
                     endDate={this.state.endDate}
-                    disableAddButton = {this.disableAddButton} />
+                    enableAddButton = {this.enableAddButton} />
         </div>
         <div className='DateFilter__buttons'>
           <div className='DateFilter__buttonRow'>
@@ -100,7 +100,7 @@ export default class DateFilter extends React.Component {
     this.setState(dates);
   }
 
-  disableAddButton = (isValid) => {
+  enableAddButton = (isValid) => {
     this.setState({
       validDate: isValid
     })

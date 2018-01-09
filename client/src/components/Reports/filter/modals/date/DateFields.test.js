@@ -42,7 +42,7 @@ it('should set endDate on date change of end date input field', () => {
 });
 
 it('should select date range popup on date input click', () => {
-  const node = mount(<DateFields format={format} startDate={startDate} endDate={endDate} disableAddButton = {jest.fn()}/>);
+  const node = mount(<DateFields format={format} startDate={startDate} endDate={endDate} enableAddButton = {jest.fn()}/>);
 
   const evt = {nativeEvent: {stopImmediatePropagation: jest.fn()}};
   node.instance().toggleDateRangeForStart(evt);
@@ -53,7 +53,7 @@ it('should select date range popup on date input click', () => {
 });
 
 it('should have DateRange', () => {
-  const node = mount(<DateFields format={format} startDate={startDate} endDate={endDate} disableAddButton = {jest.fn()}/>);
+  const node = mount(<DateFields format={format} startDate={startDate} endDate={endDate} enableAddButton = {jest.fn()}/>);
   node.setState({popupOpen: true});
 
   expect(node).toIncludeText('DateRange');
@@ -61,7 +61,7 @@ it('should have DateRange', () => {
 
 it('should change currently selected date to endDate', () => {
   const spy = jest.fn();
-  const node = mount(<DateFields format={format} startDate={startDate} endDate={endDate} onDateChange={spy} disableAddButton = {jest.fn()}/>);
+  const node = mount(<DateFields format={format} startDate={startDate} endDate={endDate} onDateChange={spy} enableAddButton = {jest.fn()}/>);
   node.setState({popupOpen: true, currentlySelectedField: 'startDate'});
 
   node.instance().endDateField = document.createElement('input');
@@ -72,7 +72,7 @@ it('should change currently selected date to endDate', () => {
 
 it('should selected endDate after second selection', () => {
   const spy = jest.fn();
-  const node = mount(<DateFields format={format} startDate={startDate} endDate={endDate} onDateChange={spy} disableAddButton = {jest.fn()}/>);
+  const node = mount(<DateFields format={format} startDate={startDate} endDate={endDate} onDateChange={spy} enableAddButton = {jest.fn()}/>);
   node.setState({popupOpen: true, currentlySelectedField: 'startDate'});
 
   node.instance().endDateField = document.createElement('input');
