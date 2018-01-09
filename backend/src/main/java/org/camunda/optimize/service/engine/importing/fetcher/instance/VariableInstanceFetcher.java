@@ -42,7 +42,7 @@ public class  VariableInstanceFetcher
     pids.put(INCLUDE_PROCESS_INSTANCE_ID_IN, processInstanceIds);
     Set<String> supportedVariableTypes = new HashSet<>(Arrays.asList(ALL_SUPPORTED_VARIABLE_TYPES));
     pids.put(INCLUDE_VARIABLE_TYPE_IN, supportedVariableTypes);
-    logger.debug("fetching variables for [{}] PIs", processInstanceIds.size():q);
+    logger.debug("fetching variables for [{}] PIs", processInstanceIds.size());
 
     List<HistoricVariableInstanceDto> entries = getEngineClient()
       .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
