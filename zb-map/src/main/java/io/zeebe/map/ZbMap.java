@@ -344,18 +344,18 @@ public abstract class ZbMap<K extends KeyHandler, V extends ValueHandler>
     private void tryShrinkHashTable()
     {
         final float shrinkLimit = hashTable.getCapacity() * HASH_TABLE_SHRINK_LIMIT;
-        final int highestBucketId = bucketBufferArray.getHighestBucketId();
+        final int minimalCapacity = bucketBufferArray.getHighestBucketId() + 1;
 
-        if (highestBucketId < shrinkLimit &&
+        if (minimalCapacity < shrinkLimit &&
             hashTable.getCapacity() != initialTableSize)
         {
-            if (highestBucketId < initialTableSize && hashTable.getCapacity() > initialTableSize)
+            if (minimalCapacity < initialTableSize && hashTable.getCapacity() > initialTableSize)
             {
                 hashTable.resize(initialTableSize);
             }
             else
             {
-                hashTable.resize(highestBucketId);
+                hashTable.resize(minimalCapacity);
             }
         }
     }

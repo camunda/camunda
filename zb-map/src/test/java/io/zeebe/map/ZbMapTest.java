@@ -139,12 +139,12 @@ public class ZbMapTest
         }
 
         // when most of the value are removed
-        for (int i = 63; i > 8; i--)
+        for (int i = 63; i > 7; i--)
         {
             removeValue(zbMap, i);
         }
         // and the after removing the highest bucket id is under 0.25 * hash table size
-        removeValue(zbMap, 8);
+        removeValue(zbMap, 7);
 
         // then table can be shrinked
         // the highest bucket id is in this case 7 that's why the table has to be at least of size 8
@@ -199,6 +199,34 @@ public class ZbMapTest
         assertThat(getValue(zbMap, 4, -1)).isEqualTo(4);
         assertThat(getValue(zbMap, 1, -1)).isEqualTo(1);
         assertThat(getValue(zbMap, 0, -1)).isEqualTo(0);
+    }
+
+    @Test
+    public void shouldNotShrinkHashTableUnderLargestBucketIdPowerOfTwo()
+    {
+        // given
+        zbMap = new ZbMap<SimpleLongKeyHandler, LongValueHandler>(2, 1, SIZE_OF_LONG, SIZE_OF_LONG)
+        { };
+
+        // when
+        putValue(zbMap, 256, 256);
+        putValue(zbMap, 128, 128);
+        putValue(zbMap, 32, 32);
+
+        // then
+        assertThat(zbMap.getHashTable().getCapacity()).isEqualTo(256);
+
+        // when
+        removeValue(zbMap, 256);
+        removeValue(zbMap, 128);
+
+        // then
+        // buckets are removed and merged, but hash table must not shrinked
+        // since highest id is 32 which means the hash table size have to be at least 64
+        assertThat(zbMap.getHashTable().getCapacity()).isEqualTo(64);
+
+        // values are still available
+        assertThat(getValue(zbMap, 32, -1)).isEqualTo(32);
     }
 
     @Test
