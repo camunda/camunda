@@ -51,7 +51,7 @@ public class EngineImportJobSchedulerFactory implements ConfigurationReloadable 
         );
         result.add(scheduler);
       } catch (Exception e) {
-        logger.error("Can't create scheduler for engine [{}]", engineContext, e);
+        logger.error("Can't create scheduler for engine [{}]", engineContext.getEngineAlias(), e);
       }
 
     }
