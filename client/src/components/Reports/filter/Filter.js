@@ -34,12 +34,13 @@ export default class Filter extends React.Component {
   }
 
   addFilter = (...newFilters) => {
-    const filters = this.props.data;
+    const filters = [...this.props.data];
 
     if(newFilters[0].type === "date") {
-      const startDateIndex = filters.findIndex((filter, index) => {
+      const startDateIndex = filters.indexOf(filters.find((filter, index) => {
         return (filter.data.type === "start_date" && filter.data.operator === ">=");
-      });
+      }));
+
       if (typeof(startDateIndex) === "number" && startDateIndex !== -1) {
           filters.splice(startDateIndex, 2);
       }
