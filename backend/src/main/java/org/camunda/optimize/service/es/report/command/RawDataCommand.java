@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.es.report.command;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.result.ReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.result.raw.RawDataProcessInstanceDto;
@@ -93,10 +94,22 @@ public class RawDataCommand extends ReportCommand {
   }
 
   private Map<String, Object> getVariables(ProcessInstanceDto processInstanceDto) {
-    return processInstanceDto
-    .obtainAllVariables()
-    .stream()
-    .collect(Collectors.toMap(VariableInstanceDto::getName, VariableInstanceDto::getValue, (a,b) -> a, TreeMap::new));
+
+    Map<String, Object> result = new TreeMap<>();
+
+    for (VariableInstanceDto instance : processInstanceDto.obtainAllVariables()) {
+      if (instance.getName() != null) {
+        result.put(instance.getName(), instance.getValue());
+      } else {
+        try {
+          logger.debug("Found variable with null name []", objectMapper.writeValueAsString(instance));
+        } catch (JsonProcessingException e) {
+          //nothing to do
+        }
+      }
+
+    }
+    return result;
   }
 
   private List<RawDataProcessInstanceDto> cutRawDataSizeToMaxSize(List<RawDataProcessInstanceDto> rawData) {
