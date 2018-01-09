@@ -208,8 +208,17 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
   }
 
   public void startImportSchedulers() {
-    for (EngineImportJobScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
-      scheduler.start();
+    boolean oneStarted = false;
+
+    while (!oneStarted) {
+      try {
+        for (EngineImportJobScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
+          scheduler.start();
+          oneStarted = true;
+        }
+      } catch (Exception e) {
+        logger.error("can't start scheduler");
+      }
     }
   }
 
