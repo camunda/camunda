@@ -56,4 +56,39 @@ public class VariableInstanceCountFetcher extends AbstractEngineAwareFetcher {
     return totalCount;
   }
 
+  public long fetchTotalProcessInstanceCountIfVariablesAreAvailable(String processDefinitionId) {
+    long totalCount = 0;
+
+    CountDto newCount = getEngineClient()
+        .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
+        .path(configurationService.getHistoricProcessInstanceCountEndpoint())
+        .request()
+        .acceptEncoding(UTF8)
+        .get(CountDto.class);
+    totalCount += newCount.getCount();
+
+    long totalVariableInstances = fetchTotalVariableInstanceCount(processDefinitionId);
+    if (totalVariableInstances == 0L) {
+      totalCount = 0L;
+    }
+
+    return totalCount;
+  }
+
+  private long fetchTotalVariableInstanceCount(String processDefinitionId) {
+    long totalCount = 0;
+
+    CountDto newCount = getEngineClient()
+        .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
+        .queryParam("deserializeValues", "false")
+        .queryParam("processDefinitionId", processDefinitionId)
+        .path(configurationService.getHistoricVariableInstanceCountEndpoint())
+        .request(MediaType.APPLICATION_JSON)
+        .acceptEncoding(UTF8)
+        .get()
+        .readEntity(CountDto.class);
+    totalCount += newCount.getCount();
+
+    return totalCount;
+  }
 }

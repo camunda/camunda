@@ -7,6 +7,7 @@ import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.engine.importing.EngineImportJobSchedulerFactory;
 import org.camunda.optimize.service.engine.importing.EngineImportJobExecutor;
 import org.camunda.optimize.service.engine.importing.EngineImportJobScheduler;
+import org.camunda.optimize.service.engine.importing.index.ProcessDefinitionManager;
 import org.camunda.optimize.service.engine.importing.index.handler.AllEntitiesBasedImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.DefinitionBasedImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandler;
@@ -310,6 +311,8 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     for (ImportIndexHandler importIndexHandler : getIndexProvider().getAllHandlers()) {
       importIndexHandler.resetImportIndex();
     }
+
+    getApplicationContext().getBean(ProcessDefinitionManager.class).reset();
   }
 
   public long getProgressValue() {

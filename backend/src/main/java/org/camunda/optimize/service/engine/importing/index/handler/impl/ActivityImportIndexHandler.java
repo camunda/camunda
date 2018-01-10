@@ -24,7 +24,6 @@ public class ActivityImportIndexHandler extends DefinitionBasedImportIndexHandle
 
   @Override
   protected void init() {
-    this.engineEntityFetcher = beanHelper.getInstance(ProcessDefinitionFetcher.class, this.engineContext);
     this.engineCountFetcher = beanHelper.getInstance(ActivityInstanceCountFetcher.class, this.engineContext);
     super.init();
   }

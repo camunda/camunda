@@ -26,7 +26,6 @@ public class ProcessDefinitionImportIndexHandler extends DefinitionBasedImportIn
 
   @PostConstruct
   public void init() {
-    this.engineEntityFetcher = beanHelper.getInstance(ProcessDefinitionFetcher.class, this.engineContext);
     engineCountFetcher = beanHelper.getInstance(ProcessDefinitionCountFetcher.class, this.engineContext);
     super.init();
   }

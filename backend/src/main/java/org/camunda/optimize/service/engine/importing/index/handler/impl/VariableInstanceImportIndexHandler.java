@@ -1,7 +1,9 @@
 package org.camunda.optimize.service.engine.importing.index.handler.impl;
 
+import org.camunda.optimize.dto.optimize.importing.DefinitionImportInformation;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.fetcher.count.VariableInstanceCountFetcher;
+import org.camunda.optimize.service.engine.importing.index.ProcessDefinitionManager;
 import org.camunda.optimize.service.engine.importing.index.handler.ScrollBasedImportIndexHandler;
 import org.camunda.optimize.service.util.EsHelper;
 import org.elasticsearch.action.search.SearchResponse;
@@ -14,6 +16,7 @@ import org.elasticsearch.search.SearchContextMissingException;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -42,6 +45,9 @@ public class VariableInstanceImportIndexHandler extends ScrollBasedImportIndexHa
 
   private VariableInstanceCountFetcher variableInstanceCountFetcher;
 
+  @Autowired
+  private ProcessDefinitionManager processDefinitionManager;
+
   public VariableInstanceImportIndexHandler(EngineContext engineContext) {
     this.engineContext = engineContext;
   }
@@ -67,12 +73,24 @@ public class VariableInstanceImportIndexHandler extends ScrollBasedImportIndexHa
           .get();
       result = response.getHits().getTotalHits();
     } else {
-      result = variableInstanceCountFetcher.fetchTotalProcessInstanceCountIfVariablesAreAvailable();
+      try {
+        result = variableInstanceCountFetcher.fetchTotalProcessInstanceCountIfVariablesAreAvailable();
+      } catch (Exception e) {
+        result = fetchBasedOnDefinitions();
+      }
     }
 
     return result;
   }
 
+  private Long fetchBasedOnDefinitions() {
+    Long total = 0L;
+
+    for (DefinitionImportInformation info : processDefinitionManager.getAvailableProcessDefinitions(engineContext)) {
+      total = total + variableInstanceCountFetcher.fetchTotalProcessInstanceCountIfVariablesAreAvailable(info.getProcessDefinitionId());
+    }
+    return total;
+  }
 
 
   protected Set<String> performScrollQuery() {

@@ -24,7 +24,6 @@ public class FinishedProcessInstanceImportIndexHandler extends DefinitionBasedIm
 
   @Override
   protected void init() {
-    this.engineEntityFetcher = beanHelper.getInstance(ProcessDefinitionFetcher.class, this.engineContext);
     this.engineCountFetcher = beanHelper.getInstance(FinishedProcessInstanceCountFetcher.class, this.engineContext);
     super.init();
   }
