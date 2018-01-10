@@ -18,10 +18,10 @@ package io.zeebe.raft;
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.transport.SocketAddress;
 
+@FunctionalInterface
 public interface RaftStateListener
 {
 
-    default void onStateChange(final int partitionId, final SocketAddress socketAddress, final RaftState raftState)
-    { }
+    void onStateChange(final int partitionId, final SocketAddress socketAddress, final RaftState raftState);
 
 }
