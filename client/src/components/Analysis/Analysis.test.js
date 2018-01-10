@@ -69,3 +69,14 @@ it('should contain a statistics section if gateway and endEvent is selected', ()
 
   expect(node).toIncludeText('Statistics');
 });
+
+it('should clear the selection when another process definition is selected', async () => {
+  const node = mount(<Analysis />);
+
+  node.instance().updateConfig('processDefinitionId', 'a');
+  node.instance().setState({gateway: 'g', endEvent: 'e'});
+  await node.instance().updateConfig('processDefinitionId', 'b');
+
+  expect(node).toHaveState('gateway', null);
+  expect(node).toHaveState('endEvent', null);
+});
