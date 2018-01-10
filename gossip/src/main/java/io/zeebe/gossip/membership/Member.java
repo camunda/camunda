@@ -88,9 +88,9 @@ public class Member
     {
         for (Tuple<DirectBuffer, GossipTerm> tuple : gossipTermByEventType)
         {
-            if (BufferUtil.equals(eventType, tuple.getRight()))
+            if (BufferUtil.equals(eventType, tuple.getLeft()))
             {
-                return tuple.getLeft();
+                return tuple.getRight();
             }
         }
         return null;

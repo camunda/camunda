@@ -37,9 +37,9 @@ public class CustomEventListenerConsumer implements CustomEventConsumer
     {
         for (Tuple<DirectBuffer, GossipCustomEventListener> tuple : listenersByType)
         {
-            if (BufferUtil.equals(tuple.getRight(), event.getType()))
+            if (BufferUtil.equals(tuple.getLeft(), event.getType()))
             {
-                final GossipCustomEventListener listener = tuple.getLeft();
+                final GossipCustomEventListener listener = tuple.getRight();
 
                 try
                 {

@@ -132,14 +132,14 @@ public class SyncRequestEventHandler implements GossipEventConsumer
             for (Tuple<DirectBuffer, GossipSyncRequestHandler> tuple : handlers)
             {
                 final GossipSyncRequest request = context.requests.add();
-                request.wrap(tuple.getRight());
+                request.wrap(tuple.getLeft());
 
                 if (LOG.isTraceEnabled())
                 {
-                    LOG.trace("Request SYNC data for custom event type '{}'", bufferAsString(tuple.getRight()));
+                    LOG.trace("Request SYNC data for custom event type '{}'", bufferAsString(tuple.getLeft()));
                 }
 
-                final GossipSyncRequestHandler handler = tuple.getLeft();
+                final GossipSyncRequestHandler handler = tuple.getRight();
                 handler.onSyncRequest(request);
             }
 
