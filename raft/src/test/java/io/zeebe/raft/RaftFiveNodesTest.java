@@ -18,6 +18,9 @@ package io.zeebe.raft;
 import static io.zeebe.raft.state.RaftState.LEADER;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.List;
+
+import io.zeebe.raft.state.RaftState;
 import io.zeebe.raft.util.ActorSchedulerRule;
 import io.zeebe.raft.util.RaftClusterRule;
 import io.zeebe.raft.util.RaftRule;
@@ -48,6 +51,9 @@ public class RaftFiveNodesTest
         // then
         cluster.awaitInitialEventCommittedOnAll(leader.getTerm());
         cluster.awaitRaftEventCommittedOnAll(leader.getTerm());
+
+        final List<RaftState> raftStateChanges = leader.getRaftStateChanges();
+        assertThat(raftStateChanges).containsExactly(RaftState.FOLLOWER, RaftState.CANDIDATE, RaftState.LEADER);
     }
 
     @Test

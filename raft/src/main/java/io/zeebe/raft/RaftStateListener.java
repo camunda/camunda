@@ -22,6 +22,6 @@ import io.zeebe.transport.SocketAddress;
 public interface RaftStateListener
 {
 
-    void onStateChange(final int partitionId, final SocketAddress socketAddress, final RaftState raftState);
+    void onStateChange(int partitionId, SocketAddress socketAddress, RaftState raftState);
 
 }

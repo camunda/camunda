@@ -18,6 +18,7 @@ package io.zeebe.raft.util;
 import static io.zeebe.raft.state.RaftState.LEADER;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.file.Files;
 import java.util.*;
@@ -29,6 +30,7 @@ import io.zeebe.logstreams.log.*;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.raft.Raft;
+import io.zeebe.raft.RaftStateListener;
 import io.zeebe.raft.event.RaftConfiguration;
 import io.zeebe.raft.event.RaftConfigurationMember;
 import io.zeebe.raft.state.RaftState;
@@ -39,7 +41,7 @@ import io.zeebe.util.actor.ActorScheduler;
 import org.agrona.DirectBuffer;
 import org.junit.rules.ExternalResource;
 
-public class RaftRule extends ExternalResource
+public class RaftRule extends ExternalResource implements RaftStateListener
 {
 
     public static final FragmentHandler NOOP_FRAGMENT_HANDLER = (buffer, offset, length, streamId, isMarkedFailed) -> FragmentHandler.CONSUME_FRAGMENT_RESULT;
@@ -69,6 +71,8 @@ public class RaftRule extends ExternalResource
     private InMemoryRaftPersistentStorage persistentStorage;
 
     protected ActorReference actorReference;
+
+    protected final List<RaftState> raftStateChanges = new ArrayList<>();
 
     public RaftRule(final ActorSchedulerRule actorSchedulerRule, final String host, final int port, final String topicName, final int partition, final RaftRule... members)
     {
@@ -133,6 +137,7 @@ public class RaftRule extends ExternalResource
         persistentStorage = new InMemoryRaftPersistentStorage(logStream);
 
         raft = new Raft(socketAddress, logStream, serverTransport, clientTransport, persistentStorage);
+        raft.registerRaftStateListener(this);
 
         raft.addMembers(members.stream().map(RaftRule::getSocketAddress).collect(Collectors.toList()));
 
@@ -202,6 +207,19 @@ public class RaftRule extends ExternalResource
     public RaftState getState()
     {
         return raft.getState();
+    }
+
+    @Override
+    public void onStateChange(final int partitionId, final SocketAddress socketAddress, final RaftState raftState)
+    {
+        assertThat(partitionId).isEqualTo(raft.getLogStream().getPartitionId());
+        assertThat(socketAddress).isEqualTo(raft.getSocketAddress());
+        raftStateChanges.add(raftState);
+    }
+
+    public List<RaftState> getRaftStateChanges()
+    {
+        return raftStateChanges;
     }
 
     public InMemoryRaftPersistentStorage getPersistentStorage()
