@@ -69,6 +69,7 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
     private final List<RaftMember> members = new ArrayList<>();
     private Long electionTimeout;
     private Long flushTimeout;
+    private final List<RaftStateListener> raftStateListeners = new ArrayList<>();
 
     // controller
     private final SubscriptionController subscriptionController;
@@ -133,6 +134,21 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
         joinController.open();
     }
 
+    public void registerRaftStateListener(final RaftStateListener listener)
+    {
+        raftStateListeners.add(listener);
+    }
+
+    private void notifyRaftStateListener(final RaftStateListener listener)
+    {
+        listener.onStateChange(logStream.getPartitionId(), socketAddress, state.getState());
+    }
+
+    private void notifyRaftStateListeners()
+    {
+        raftStateListeners.forEach(this::notifyRaftStateListener);
+    }
+
     public String getSubscriptionName()
     {
         return "raft-" + logStream.getLogName();
@@ -156,6 +172,8 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
         resetElectionTimeout();
         resetFlushTimeout();
 
+        notifyRaftStateListeners();
+
         logger.debug("Transitioned to follower in term {}", getTerm());
     }
 
@@ -178,6 +196,8 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
         setTerm(getTerm() + 1);
         setVotedFor(socketAddress);
 
+        notifyRaftStateListeners();
+
         logger.debug("Transitioned to candidate in term {}", getTerm());
     }
 
@@ -194,6 +214,8 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
 
         disableElectionTimeout();
         disableFlushTimeout();
+
+        notifyRaftStateListeners();
 
         logger.debug("Transitioned to leader in term {}", getTerm());
     }
