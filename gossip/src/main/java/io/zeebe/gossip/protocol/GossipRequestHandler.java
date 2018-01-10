@@ -74,10 +74,6 @@ public class GossipRequestHandler implements ServerRequestHandler
                 LOG.warn("No consumer registered for gossip event type '{}'", eventType);
             }
         }
-        else
-        {
-            LOG.warn("Cannot handle request with schema-id '{}' and template-id '{}'", schemaId, templateId);
-        }
 
         return true;
     }
