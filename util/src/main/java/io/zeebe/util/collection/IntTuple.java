@@ -15,15 +15,20 @@
  */
 package io.zeebe.util.collection;
 
-public class Tuple<L, R>
+public class IntTuple<R>
 {
-    private L left;
+    private int left;
     private R right;
 
-    public Tuple(L left, R right)
+    public IntTuple(int left, R right)
     {
-        this.right = right;
         this.left = left;
+        this.right = right;
+    }
+
+    public int getInt()
+    {
+        return left;
     }
 
     public R getRight()
@@ -31,19 +36,14 @@ public class Tuple<L, R>
         return right;
     }
 
-    public L getLeft()
+    public void setInt(int left)
     {
-        return left;
+        this.left = left;
     }
 
     public void setRight(R right)
     {
         this.right = right;
-    }
-
-    public void setLeft(L left)
-    {
-        this.left = left;
     }
 
     @Override
