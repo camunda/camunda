@@ -31,7 +31,9 @@ import io.zeebe.test.util.BufferAssert;
 import io.zeebe.test.util.ClockRule;
 import io.zeebe.test.util.agent.ManualActorScheduler;
 import org.agrona.DirectBuffer;
-import org.junit.*;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 
 public class CustomEventTest
 {
@@ -121,6 +123,47 @@ public class CustomEventTest
         BufferAssert.assertThatBuffer(customEvent.getPayload())
             .hasCapacity(payload.capacity())
             .hasBytes(payload);
+    }
+
+    @Test
+    public void shouldInvokeCustomEventListenerForMoreEvents()
+    {
+        // given
+        final DirectBuffer type = wrapString("CUST");
+
+        final RecordingCustomEventListener customEventListener = new RecordingCustomEventListener();
+        gossip2.getController().addCustomEventListener(type, customEventListener);
+
+        // when
+        final int customEventCount = CONFIGURATION.getMaxCustomEventsPerMessage() + 1;
+        for (int i = 0; i < customEventCount; i++)
+        {
+            final DirectBuffer payload = wrapString("PAYLOAD_" + i);
+            gossip1.getPushlisher().publishEvent(type, payload);
+        }
+
+        final int iterationsToSpread = GossipMath.gossipPeriodsToSpread(CONFIGURATION.getRetransmissionMultiplier(), 3) + 1;
+        for (int i = 0; i < iterationsToSpread; i++)
+        {
+            clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
+            actorScheduler.waitUntilDone();
+        }
+
+
+        // then
+        assertThat(customEventListener.getInvocations().count()).isEqualTo(customEventCount);
+
+        for (int i = 0; i < customEventCount; i++)
+        {
+            final ReceivedCustomEvent customEvent = customEventListener.getInvocations().skip(i).findFirst().get();
+            assertThat(customEvent.getSender()).isEqualTo(gossip1.getAddress());
+
+            final DirectBuffer payload = wrapString("PAYLOAD_" + i);
+
+            BufferAssert.assertThatBuffer(customEvent.getPayload())
+                        .hasCapacity(payload.capacity())
+                        .hasBytes(payload);
+        }
     }
 
     @Test
