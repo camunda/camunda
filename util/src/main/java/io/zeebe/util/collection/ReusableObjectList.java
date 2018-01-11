@@ -138,6 +138,7 @@ public class ReusableObjectList<T extends Reusable> implements Iterable<T>
 
                 if (element.isSet())
                 {
+                    index = i;
                     return true;
                 }
             }
