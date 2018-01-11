@@ -125,7 +125,7 @@ public class GossipLeaveTest
     }
 
     @Test
-    public void shouldCompleteFutureWithFailureWhenNotJoined()
+    public void shouldLeaveWhenNotJoined()
     {
         // given
         gossip3.getController().leave();
@@ -140,6 +140,29 @@ public class GossipLeaveTest
         actorScheduler.waitUntilDone();
 
         // then
-        assertThat(future).isDone().withFailMessage("Not joined");
+        assertThat(future).isDone().hasNotFailed();
+    }
+
+    @Test
+    public void shouldLeaveWhenHaveNoMembers()
+    {
+        // given
+        gossip2.getController().leave();
+        gossip3.getController().leave();
+
+        actorScheduler.waitUntilDone();
+        actorScheduler.waitUntilDone();
+
+        assertThat(gossip1.hasMember(gossip2)).isFalse();
+        assertThat(gossip1.hasMember(gossip3)).isFalse();
+
+        // when
+        final CompletableFuture<Void> future = gossip1.getController().leave();
+
+        actorScheduler.waitUntilDone();
+        actorScheduler.waitUntilDone();
+
+        // then
+        assertThat(future).isDone().hasNotFailed();
     }
 }

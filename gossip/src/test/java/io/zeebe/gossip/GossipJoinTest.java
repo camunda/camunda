@@ -18,6 +18,7 @@ package io.zeebe.gossip;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
+import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 
 import io.zeebe.clustering.gossip.GossipEventType;
@@ -196,7 +197,7 @@ public class GossipJoinTest
         actorScheduler.waitUntilDone();
 
         // then
-        assertThat(future).isDone().withFailMessage("Already joined.");
+        assertThat(future).hasFailedWithThrowableThat().hasMessage("Already joined.");
     }
 
     @Test
@@ -257,6 +258,19 @@ public class GossipJoinTest
                 .get();
 
         assertThat(secondJoinEvent.getGossipTerm().isGreaterThan(leaveEvent.getGossipTerm())).isTrue();
+    }
+
+    @Test
+    public void shouldFailToJoinWithoutContactPoints()
+    {
+        // when
+        final CompletableFuture<Void> future = gossip2.getController().join(Collections.emptyList());
+
+        actorScheduler.waitUntilDone();
+        actorScheduler.waitUntilDone();
+
+        // then
+        assertThat(future).hasFailedWithThrowableThat().hasMessage("Can't join cluster without contact points.");
     }
 
 }

@@ -55,9 +55,6 @@ public class JoinController
         final WaitState<Context> joinedState = ctx ->
         { };
 
-        final WaitState<Context> leftState = ctx ->
-        { };
-
         final SendJoinState sendJoinState = new SendJoinState(context.getDisseminationComponent(), context.getMembershipList().self(), context.getGossipEventSender());
         final AwaitJoinResponseState awaitJoinResponseState = new AwaitJoinResponseState(context.getGossipEventFactory());
         final SendSyncRequestState sendSyncRequestState = new SendSyncRequestState(context.getGossipEventSender());
@@ -69,6 +66,7 @@ public class JoinController
         this.stateMachine = StateMachine.<Context> builder(sm -> new Context(sm, context.getGossipEventFactory()))
                 .initialState(awaitJoinState)
                 .from(awaitJoinState).take(TRANSITION_JOIN).to(sendJoinState)
+                .from(awaitJoinState).take(TRANSITION_LEAVE).to(leaveState)
                 .from(sendJoinState).take(TRANSITION_DEFAULT).to(awaitJoinResponseState)
                 .from(awaitJoinResponseState).take(TRANSITION_RECEIVED).to(sendSyncRequestState)
                 .from(awaitJoinResponseState).take(TRANSITION_TIMEOUT).to(awaitRetryState)
@@ -79,9 +77,8 @@ public class JoinController
                 .from(awaitRetryState).take(TRANSITION_JOIN).to(sendJoinState)
                 .from(joinedState).take(TRANSITION_LEAVE).to(leaveState)
                 .from(leaveState).take(TRANSITION_DEFAULT).to(awaitLeaveResponseState)
-                .from(awaitLeaveResponseState).take(TRANSITION_RECEIVED).to(leftState)
-                .from(awaitLeaveResponseState).take(TRANSITION_TIMEOUT).to(leftState)
-                .from(leftState).take(TRANSITION_JOIN).to(sendJoinState)
+                .from(awaitLeaveResponseState).take(TRANSITION_RECEIVED).to(awaitJoinState)
+                .from(awaitLeaveResponseState).take(TRANSITION_TIMEOUT).to(awaitJoinState)
                 .build();
     }
 
@@ -92,19 +89,26 @@ public class JoinController
 
     public void join(List<SocketAddress> contactPoints, CompletableFuture<Void> future)
     {
-        final boolean success = stateMachine.tryTake(TRANSITION_JOIN);
-        if (success)
+        if (contactPoints == null || contactPoints.isEmpty())
         {
-            LOG.info("Join cluster with known contact points: {}", contactPoints);
-
-            final Context context = stateMachine.getContext();
-            context.contactPoints = new ArrayList<>(contactPoints);
-            context.requests = new ArrayList<>(contactPoints.size());
-            context.future = future;
+            future.completeExceptionally(new IllegalArgumentException("Can't join cluster without contact points."));
         }
         else
         {
-            future.completeExceptionally(new IllegalStateException("Already joined."));
+            final boolean success = stateMachine.tryTake(TRANSITION_JOIN);
+            if (success)
+            {
+                LOG.info("Join cluster with known contact points: {}", contactPoints);
+
+                final Context context = stateMachine.getContext();
+                context.contactPoints = new ArrayList<>(contactPoints);
+                context.requests = new ArrayList<>(contactPoints.size());
+                context.future = future;
+            }
+            else
+            {
+                future.completeExceptionally(new IllegalStateException("Already joined."));
+            }
         }
     }
 
