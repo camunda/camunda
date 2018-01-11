@@ -393,6 +393,8 @@
       </properties>
     </profile>
 
+
+
     <profile>
       <id>it</id>
 
@@ -702,5 +704,61 @@
       </build>
     </profile>
 
+    <profile>
+      <!-- should be activated with IT profile simultaneously,
+       since properties are taken from there -->
+      <id>package-engine</id>
+
+      <build>
+        <plugins>
+
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>unpack-engine</id>
+                <phase>generate-resources</phase>
+                <goals>
+                  <goal>single</goal>
+                </goals>
+                <configuration>
+                  <attach>false</attach>
+                  <descriptors>
+                    <descriptor>unpack-engine-webapps.xml</descriptor>
+                  </descriptors>
+                  <archiveBaseDirectory>/</archiveBaseDirectory>
+                  <appendAssemblyId>false</appendAssemblyId>
+                  <outputDirectory>${engine.runtime}</outputDirectory>
+                  <tarLongFileMode>gnu</tarLongFileMode>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-antrun-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>prepare</id>
+                <phase>generate-resources</phase>
+                <configuration>
+                  <tasks>
+                    <echo message="unpacking engine-rest" />
+                    <unzip src="target/camunda-tomcat/${project.build.finalName}.zip" dest="target/camunda-tomcat/"/>
+                    <delete file="target/camunda-tomcat/${project.build.finalName}.zip"/>
+                  </tasks>
+                </configuration>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+
+        </plugins>
+      </build>
+    </profile>
   </profiles>
 </project>

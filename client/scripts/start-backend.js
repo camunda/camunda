@@ -10,11 +10,6 @@ const {c7ports} = require('./config');
 const isWindows = utils.isWindows;
 const runWithColor = utils.runWithColor;
 
-const engineInitPromise = engine.init().catch(error => {
-  console.error(chalk.red(JSON.stringify(error, null, 2)));
-  shell.exit(0);
-});
-
 let offlineMode = false;
 process.argv.forEach(function (val, index, array) {
   if (val === '--o') {
@@ -25,9 +20,9 @@ process.argv.forEach(function (val, index, array) {
 const mvnCwd = path.resolve(__dirname, '..', '..');
 
 if (!process.env.FAST_BUILD) {
-  const onlineModeMavenCmd = 'mvn clean package -DskipTests';
+  const onlineModeMavenCmd = 'mvn clean package -DskipTests -Pit,skip.fe.build,package-engine';
 
-  const offlineModeMavenCmd = 'mvn clean package -o -DskipTests';
+  const offlineModeMavenCmd = 'mvn clean package -o -DskipTests -Pit,skip.fe.build,package-engine';
   const mvnCleanPackageCmd = offlineMode ? offlineModeMavenCmd : onlineModeMavenCmd;
 
   const mvnCleanPackage = runWithColor(mvnCleanPackageCmd,'maven',chalk.green,{
@@ -43,6 +38,11 @@ function startBackend(code) {
   const distro = path.resolve(mvnCwd, 'distro', 'target');
   const extractDir = path.resolve(distro, 'distro');
   const archive = utils.findFile(distro, '.tar.gz');
+
+  const engineInitPromise = engine.init().catch(error => {
+    console.error(chalk.red(JSON.stringify(error, null, 2)));
+    shell.exit(0);
+  });
 
   console.log('Start extracting', archive);
 

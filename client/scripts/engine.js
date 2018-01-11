@@ -9,7 +9,6 @@ const utils = require('./utils');
 let {c7ports} = require('./config');
 
 const maxConnections = 5;
-const communityUrl = 'https://camunda.org/release/camunda-bpm/tomcat/7.8/camunda-bpm-tomcat-7.8.0.tar.gz';
 const tmpDir = path.resolve(__dirname, '..', 'tmp');
 // it can be configured, but it would pain in ass, so it is better
 // to just remove it than configure it to be inside tmpDir
@@ -35,13 +34,11 @@ exports.init = init;
 function init(ports = c7ports) {
   shell.rm('-rf', tmpDir);
   shell.rm('-rf', databaseDir);
-
-  return download(communityUrl, tmpDir)
-    .then(() => {
-      console.log(chalk.blue(`Engine downloaded to ${tmpDir}!`));
-
-      return utils.runInSequence(ports, startEngine, 1);
-    });
+  const extractTarget = path.resolve(tmpDir, `engine_${ports}`);
+  shell.mkdir('-p', extractTarget);
+  const engineFolder = path.resolve(__dirname, '../..', 'backend/target/camunda-tomcat');
+  shell.cp('-r', engineFolder+ "/*", extractTarget);
+  return utils.runInSequence(ports, startEngine, 1);
 }
 
 function startEngine(c7port) {
@@ -56,24 +53,17 @@ function startEngine(c7port) {
   const taskService = new camAPI.resource('task');
   const variableService = new camAPI.resource('variable');
 
-  return extractEngine()
-    .then(changeServerConfig)
+  return new Promise((resolve, reject) => {
+    changeServerConfig();
+    resolve();
+  })
     .then(startServer)
     .then(deployDefinitions)
     .then(startInstances)
     .then(completeTasks);
 
-  function extractEngine() {
-    const archive = utils.findFile(tmpDir, 'tar.gz');
-
-    console.log(`Extracting ${archive} to ${extractTarget}...`);
-
-    return utils
-      .extract(archive, extractTarget)
-      .then(() => console.log(chalk.green('Engine extracted')));
-  }
-
   function changeServerConfig() {
+
     const configFile = utils.findPath(extractTarget, [
       'server',
       /tomcat/,

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<assembly xmlns="http://maven.apache.org/ASSEMBLY/2.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.0.0 http://maven.apache.org/xsd/assembly-2.0.0.xsd">
+
+  <id>engine-rest</id>
+
+  <formats>
+    <format>zip</format>
+  </formats>
+
+  <baseDirectory>/server/apache-tomcat-8.0.47/webapps</baseDirectory>
+
+  <dependencySets>
+    <dependencySet>
+      <outputDirectory>/engine-rest</outputDirectory>
+      <includes>
+        <include>org.camunda.bpm:camunda-engine-rest</include>
+      </includes>
+      <unpack>true</unpack>
+      <useProjectArtifact>false</useProjectArtifact>
+      <scope>test</scope>
+    </dependencySet>
+
+    <dependencySet>
+      <outputDirectory>/camunda</outputDirectory>
+      <includes>
+        <include>org.camunda.bpm.webapp:camunda-webapp-tomcat</include>
+      </includes>
+      <unpack>true</unpack>
+      <useProjectArtifact>false</useProjectArtifact>
+      <scope>test</scope>
+    </dependencySet>
+
+    <dependencySet>
+      <outputDirectory>/invoice</outputDirectory>
+      <includes>
+        <include>org.camunda.bpm.example:camunda-example-invoice</include>
+      </includes>
+      <unpack>true</unpack>
+      <useProjectArtifact>false</useProjectArtifact>
+      <scope>test</scope>
+    </dependencySet>
+  </dependencySets>
+
+
+</assembly>
