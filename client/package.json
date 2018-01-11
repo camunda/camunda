@@ -36,7 +36,6 @@
   "devDependencies": {
     "camunda-bpm-sdk-js": "camunda/camunda-bpm-sdk-js",
     "chalk": "^2.1.0",
-    "download": "^6.2.5",
     "enzyme": "^3.1.0",
     "enzyme-adapter-react-16": "^1.0.2",
     "jest-enzyme": "^4.0.1",

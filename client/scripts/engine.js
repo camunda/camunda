@@ -1,6 +1,5 @@
 /* eslint no-console: 0 */
 
-const download = require('download');
 const shell = require('shelljs');
 const path = require('path');
 const CamundaClient = require('camunda-bpm-sdk-js').Client;

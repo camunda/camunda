@@ -20,12 +20,12 @@ process.argv.forEach(function (val, index, array) {
 const mvnCwd = path.resolve(__dirname, '..', '..');
 
 if (!process.env.FAST_BUILD) {
-  const onlineModeMavenCmd = 'mvn clean install -DskipTests -Pit,skip.fe.build,package-engine';
+  const onlineModeMavenCmd = 'mvn clean package -DskipTests -Pit,skip.fe.build,package-engine';
 
   const offlineModeMavenCmd = 'mvn clean package -o -DskipTests -Pit,skip.fe.build,package-engine';
   const mvnCleanPackageCmd = offlineMode ? offlineModeMavenCmd : onlineModeMavenCmd;
 
-  const mvnCleanPackage = runWithColor(mvnCleanPackageCmd,'maven',chalk.green,{
+  const mvnCleanPackage = runWithColor(mvnCleanPackageCmd, 'maven', chalk.green, {
     cwd: mvnCwd
   });
 
