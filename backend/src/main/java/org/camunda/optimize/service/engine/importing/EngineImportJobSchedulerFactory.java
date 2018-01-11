@@ -56,7 +56,7 @@ public class EngineImportJobSchedulerFactory implements ConfigurationReloadable 
 
     }
 
-    return result;
+    return result.isEmpty() ? null : result;
   }
 
   private List<EngineImportJobFactory> createFactoryList(EngineContext engineContext) {
