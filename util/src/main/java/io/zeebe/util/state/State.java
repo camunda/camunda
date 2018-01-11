@@ -52,4 +52,9 @@ public interface State<C extends StateMachineContext>
     {
     }
 
+    default boolean isWaitState()
+    {
+        return false;
+    }
+
 }

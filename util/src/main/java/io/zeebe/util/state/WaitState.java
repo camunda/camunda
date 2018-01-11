@@ -26,4 +26,9 @@ public interface WaitState<C extends StateMachineContext> extends State<C>
         return 0;
     }
 
+    @Override
+    default boolean isWaitState()
+    {
+        return true;
+    }
 }

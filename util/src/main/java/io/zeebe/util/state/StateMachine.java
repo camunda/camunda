@@ -114,7 +114,7 @@ public class StateMachine<C extends StateMachineContext>
 
             workCount = currentState.doWork(context);
 
-            if (currentState != stateBefore)
+            if (stateBefore.isWaitState() && currentState != stateBefore)
             {
                 workCount += 1;
             }
