@@ -66,7 +66,7 @@ public class CustomEventListenerConsumer implements CustomEventConsumer
         while (iterator.hasNext())
         {
             final Tuple<DirectBuffer, GossipCustomEventListener> tuple = iterator.next();
-            if (tuple.getLeft() == listener)
+            if (tuple.getRight() == listener)
             {
                 iterator.remove();
             }
