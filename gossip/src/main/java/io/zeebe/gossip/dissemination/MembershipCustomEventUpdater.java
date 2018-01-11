@@ -15,7 +15,9 @@
  */
 package io.zeebe.gossip.dissemination;
 
-import io.zeebe.gossip.membership.*;
+import io.zeebe.gossip.membership.GossipTerm;
+import io.zeebe.gossip.membership.Member;
+import io.zeebe.gossip.membership.MembershipList;
 import io.zeebe.gossip.protocol.CustomEvent;
 import io.zeebe.gossip.protocol.CustomEventConsumer;
 import io.zeebe.transport.SocketAddress;

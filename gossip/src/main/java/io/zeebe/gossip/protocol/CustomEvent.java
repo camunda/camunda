@@ -139,9 +139,9 @@ public class CustomEvent implements Reusable
         builder.append(", senderGossipTerm=");
         builder.append(senderGossipTerm);
         builder.append(", type=");
-        builder.append(bufferAsString(typeView));
+        builder.append(bufferAsString(typeView, 0, typeLength));
         builder.append(", payload=");
-        builder.append(bufferAsString(payloadView));
+        builder.append(bufferAsString(payloadView, 0, payloadLength));
         builder.append("]");
         return builder.toString();
     }

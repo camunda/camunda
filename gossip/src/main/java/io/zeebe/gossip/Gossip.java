@@ -90,7 +90,7 @@ public class Gossip implements Actor, GossipController, GossipEventPublisher
     }
 
     @Override
-    public int doWork() throws Exception
+    public int doWork()
     {
         int workCount = 0;
 
@@ -133,10 +133,6 @@ public class Gossip implements Actor, GossipController, GossipEventPublisher
 
         deferredCommands.runAsync(() ->
         {
-            if (LOG.isTraceEnabled())
-            {
-                LOG.trace("Spread custom event of type '{}'", bufferAsString(type));
-            }
 
             final Member self = membershipList.self();
 
@@ -152,6 +148,11 @@ public class Gossip implements Actor, GossipController, GossipEventPublisher
             else
             {
                 currentTerm.increment();
+            }
+
+            if (LOG.isTraceEnabled())
+            {
+                LOG.trace("Spread custom event of type '{}', in term {}", bufferAsString(type), currentTerm);
             }
 
             disseminationComponent.addCustomEvent()
