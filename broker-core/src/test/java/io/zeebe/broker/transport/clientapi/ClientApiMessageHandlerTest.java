@@ -42,6 +42,8 @@ import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.test.util.agent.ManualActorScheduler;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.SocketAddress;
+import io.zeebe.transport.impl.RemoteAddressImpl;
+
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.*;
@@ -54,7 +56,7 @@ public class ClientApiMessageHandlerTest
 {
     private static final int REQUEST_ID = 5;
     private static final int RAFT_TERM = 10;
-    protected static final RemoteAddress DEFAULT_ADDRESS = new RemoteAddress(21, new SocketAddress("foo", 4242));
+    protected static final RemoteAddress DEFAULT_ADDRESS = new RemoteAddressImpl(21, new SocketAddress("foo", 4242));
 
     protected static final DirectBuffer LOG_STREAM_TOPIC_NAME = wrapString("test-topic");
     protected static final int LOG_STREAM_PARTITION_ID = 1;

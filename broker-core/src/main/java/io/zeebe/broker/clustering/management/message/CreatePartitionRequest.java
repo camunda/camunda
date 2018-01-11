@@ -21,41 +21,41 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-import io.zeebe.clustering.management.CreatePartitionMessageDecoder;
-import io.zeebe.clustering.management.CreatePartitionMessageEncoder;
+import io.zeebe.clustering.management.CreatePartitionRequestDecoder;
+import io.zeebe.clustering.management.CreatePartitionRequestEncoder;
 import io.zeebe.clustering.management.MessageHeaderDecoder;
 import io.zeebe.clustering.management.MessageHeaderEncoder;
 import io.zeebe.util.buffer.BufferReader;
 import io.zeebe.util.buffer.BufferWriter;
 
-public class CreatePartitionMessage implements BufferReader, BufferWriter
+public class CreatePartitionRequest implements BufferReader, BufferWriter
 {
 
     protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
-    protected final CreatePartitionMessageEncoder bodyEncoder = new CreatePartitionMessageEncoder();
+    protected final CreatePartitionRequestEncoder bodyEncoder = new CreatePartitionRequestEncoder();
 
     protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
-    protected final CreatePartitionMessageDecoder bodyDecoder = new CreatePartitionMessageDecoder();
+    protected final CreatePartitionRequestDecoder bodyDecoder = new CreatePartitionRequestDecoder();
 
     protected DirectBuffer topicName = new UnsafeBuffer(0, 0);
-    protected int partitionId = CreatePartitionMessageEncoder.partitionIdNullValue();
+    protected int partitionId = CreatePartitionRequestEncoder.partitionIdNullValue();
 
     @Override
     public int getLength()
     {
         return headerEncoder.encodedLength() +
                 bodyEncoder.sbeBlockLength() +
-                CreatePartitionMessageEncoder.topicNameHeaderLength() +
+                CreatePartitionRequestEncoder.topicNameHeaderLength() +
                 topicName.capacity();
     }
 
-    public CreatePartitionMessage topicName(DirectBuffer topicName)
+    public CreatePartitionRequest topicName(DirectBuffer topicName)
     {
         this.topicName.wrap(topicName);
         return this;
     }
 
-    public CreatePartitionMessage partitionId(int partitionId)
+    public CreatePartitionRequest partitionId(int partitionId)
     {
         this.partitionId = partitionId;
         return this;
@@ -102,7 +102,7 @@ public class CreatePartitionMessage implements BufferReader, BufferWriter
         offset += headerDecoder.blockLength();
 
         final int topicNameLength = bodyDecoder.topicNameLength();
-        offset += CreatePartitionMessageDecoder.topicNameHeaderLength();
+        offset += CreatePartitionRequestDecoder.topicNameHeaderLength();
 
         topicName.wrap(buffer, offset, topicNameLength);
     }

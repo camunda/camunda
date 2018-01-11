@@ -217,7 +217,7 @@ public abstract class EventSubscriber
     class ClosedState implements WaitState<SimpleStateMachineContext>
     {
         @Override
-        public void onEnter()
+        public void onEnter(SimpleStateMachineContext context)
         {
             acquisition.deactivateSubscriber(EventSubscriber.this);
         }

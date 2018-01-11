@@ -19,33 +19,36 @@ package io.zeebe.broker.clustering.management;
 
 import java.util.Iterator;
 
+import org.agrona.DirectBuffer;
+
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.management.memberList.MemberListService;
 import io.zeebe.broker.clustering.management.memberList.MemberRaftComposite;
-import io.zeebe.broker.clustering.management.message.CreatePartitionMessage;
+import io.zeebe.broker.clustering.management.message.CreatePartitionRequest;
 import io.zeebe.broker.clustering.member.Member;
+import io.zeebe.broker.system.log.CloseResolvedRequestsCommand;
+import io.zeebe.transport.ClientRequest;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.SocketAddress;
-import io.zeebe.transport.TransportMessage;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.collection.IntIterator;
-import org.agrona.DirectBuffer;
 
 public class PartitionManagerImpl implements PartitionManager
 {
 
     private final MemberListService memberListService;
-    private final CreatePartitionMessage messageWriter = new CreatePartitionMessage();
-    protected final TransportMessage message = new TransportMessage();
+    private final CreatePartitionRequest messageWriter = new CreatePartitionRequest();
     protected final ClientTransport transport;
 
     protected final MemberIterator memberIterator = new MemberIterator();
+    private final CloseResolvedRequestsCommand closeRequestsCommand;
 
-    public PartitionManagerImpl(MemberListService memberListService, ClientTransport transport)
+    public PartitionManagerImpl(MemberListService memberListService, ClientTransport transport, CloseResolvedRequestsCommand closeRequestsCommand)
     {
         this.memberListService = memberListService;
         this.transport = transport;
+        this.closeRequestsCommand = closeRequestsCommand;
     }
 
     @Override
@@ -59,12 +62,19 @@ public class PartitionManagerImpl implements PartitionManager
 
         final RemoteAddress remoteAddress = transport.registerRemoteAddress(remote);
 
-        message.writer(messageWriter)
-            .remoteAddress(remoteAddress);
-
         Loggers.SYSTEM_LOGGER.info("Creating partition {}/{} at {}", BufferUtil.bufferAsString(topicName), partitionId, remote);
 
-        return transport.getOutput().sendMessage(message);
+        final ClientRequest request = transport.getOutput().sendRequestWithRetry(remoteAddress, messageWriter);
+
+        if (request != null)
+        {
+            closeRequestsCommand.addRequest(request);
+            return true;
+        }
+        else
+        {
+            return false;
+        }
     }
 
     /*

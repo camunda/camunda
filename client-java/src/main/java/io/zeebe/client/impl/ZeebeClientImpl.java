@@ -117,7 +117,8 @@ public class ZeebeClientImpl implements ZeebeClient
             .messageReceiveBuffer(dataFrameReceiveBuffer)
             .requestPoolSize(maxRequests + 16)
             .scheduler(transportActorScheduler)
-            .sendBuffer(sendBuffer);
+            .sendBuffer(sendBuffer)
+            .enableManagedRequests();
 
         if (properties.containsKey(ClientProperties.CLIENT_TCP_CHANNEL_KEEP_ALIVE_PERIOD))
         {
@@ -147,7 +148,7 @@ public class ZeebeClientImpl implements ZeebeClient
 
         final long requestTimeout = Long.parseLong(properties.getProperty(CLIENT_REQUEST_TIMEOUT_SEC));
 
-        topologyManager = new ClientTopologyManager(transport, objectMapper, requestTimeout, contactPoint);
+        topologyManager = new ClientTopologyManager(transport, objectMapper, contactPoint);
 
         subscriptionManager = new SubscriptionManager(
                 this,
@@ -164,13 +165,6 @@ public class ZeebeClientImpl implements ZeebeClient
     }
 
     @Override
-    public void disconnect()
-    {
-        subscriptionManager.closeAllSubscribers();
-        transport.closeAllChannels().join();
-    }
-
-    @Override
     public void close()
     {
         if (isClosed)
@@ -180,7 +174,7 @@ public class ZeebeClientImpl implements ZeebeClient
 
         isClosed = true;
 
-        disconnect();
+        subscriptionManager.closeAllSubscribers();
         subscriptionManager.stop();
 
         topologyManagerActorReference.close();

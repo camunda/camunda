@@ -50,6 +50,7 @@ import io.zeebe.client.cmd.ClientCommandRejectedException;
 import io.zeebe.client.event.DeploymentEvent;
 import io.zeebe.client.event.TaskEvent;
 import io.zeebe.client.event.WorkflowInstanceEvent;
+import io.zeebe.client.task.TaskSubscription;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.raft.Raft;
@@ -359,7 +360,7 @@ public class BrokerRestartTest
         clientRule.tasks().create(clientRule.getDefaultTopic(), "foo").execute();
 
         final RecordingTaskHandler recordingTaskHandler = new RecordingTaskHandler();
-        clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopic())
+        final TaskSubscription subscription = clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopic())
             .taskType("foo")
             .lockTime(Duration.ofSeconds(5))
             .lockOwner("test")
@@ -367,6 +368,7 @@ public class BrokerRestartTest
             .open();
 
         waitUntil(() -> !recordingTaskHandler.getHandledTasks().isEmpty());
+        subscription.close();
 
         // when
         restartBroker(() -> ClockUtil.addTime(Duration.ofSeconds(60)));
@@ -548,7 +550,6 @@ public class BrokerRestartTest
     protected void restartBroker(Runnable onStop)
     {
         eventRecorder.stopRecordingEvents();
-        clientRule.getClient().disconnect();
         brokerRule.stopBroker();
 
         onStop.run();

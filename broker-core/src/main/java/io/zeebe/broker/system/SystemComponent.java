@@ -58,6 +58,7 @@ public class SystemComponent implements Component
         serviceContainer.createService(SystemServiceNames.PARTITION_MANAGER_SERVICE, partitionManagerService)
             .dependency(ClusterServiceNames.MEMBER_LIST_SERVICE, partitionManagerService.getMemberListServiceInjector())
             .dependency(TransportServiceNames.clientTransport(TransportServiceNames.MANAGEMENT_API_CLIENT_NAME), partitionManagerService.getManagementClientInjector())
+            .dependency(EXECUTOR_SERVICE, partitionManagerService.getExecutorServiceInjector())
             .install();
 
         final SystemPartitionManager systemPartitionManager = new SystemPartitionManager(systemConfiguration);

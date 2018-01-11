@@ -48,7 +48,8 @@ public final class APISyncHandler implements GossipSyncRequestHandler
     @Override
     public void onSyncRequest(GossipSyncRequest request)
     {
-        commandQueue.runAsync(() -> {
+        commandQueue.runAsync(() ->
+        {
             LOG.debug("Got API sync request.");
             final Iterator<MemberRaftComposite> iterator = clusterManagerContext.getMemberListService()
                                                                                 .iterator();

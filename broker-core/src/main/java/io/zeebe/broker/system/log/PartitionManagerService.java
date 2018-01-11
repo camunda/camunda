@@ -17,9 +17,13 @@
  */
 package io.zeebe.broker.system.log;
 
-import io.zeebe.broker.clustering.management.memberList.MemberListService;
+import java.time.Duration;
+
 import io.zeebe.broker.clustering.management.PartitionManager;
 import io.zeebe.broker.clustering.management.PartitionManagerImpl;
+import io.zeebe.broker.clustering.management.memberList.MemberListService;
+import io.zeebe.broker.system.executor.ScheduledCommand;
+import io.zeebe.broker.system.executor.ScheduledExecutor;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
@@ -28,22 +32,42 @@ import io.zeebe.transport.ClientTransport;
 
 public class PartitionManagerService implements Service<PartitionManager>
 {
+    private static final Duration ASYNC_INTERVAL = Duration.ofMillis(100);
+
     private final Injector<MemberListService> memberListServiceInjector = new Injector<>();
     private final Injector<ClientTransport> managementClientInjector = new Injector<>();
+    private final Injector<ScheduledExecutor> executorService = new Injector<>();
 
     private PartitionManager service;
+
+    private ScheduledCommand command;
+
+    private ScheduledExecutor executor;
+
+    private CloseResolvedRequestsCommand closeRequestsCmd;
 
     @Override
     public void start(ServiceStartContext startContext)
     {
         final ClientTransport managementClient = managementClientInjector.getValue();
+        executor = executorService.getValue();
 
-        service = new PartitionManagerImpl(memberListServiceInjector.getValue(), managementClient);
+        closeRequestsCmd = new CloseResolvedRequestsCommand();
+        command = executor.scheduleAtFixedRate(closeRequestsCmd, ASYNC_INTERVAL);
+
+        service = new PartitionManagerImpl(memberListServiceInjector.getValue(), managementClient, closeRequestsCmd);
+
     }
 
     @Override
     public void stop(ServiceStopContext stopContext)
     {
+        if (command != null)
+        {
+            command.cancel();
+            closeRequestsCmd.close();
+        }
+
     }
 
     @Override
@@ -60,6 +84,11 @@ public class PartitionManagerService implements Service<PartitionManager>
     public Injector<ClientTransport> getManagementClientInjector()
     {
         return managementClientInjector;
+    }
+
+    public Injector<ScheduledExecutor> getExecutorServiceInjector()
+    {
+        return executorService;
     }
 
 }

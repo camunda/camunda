@@ -104,6 +104,7 @@ public class WorkflowRequestMessageSender
         boolean success = true;
 
         final Iterator<Member> members = partitionManager.getKnownMembers();
+
         while (members.hasNext() && success)
         {
             final Member member = members.next();
@@ -129,7 +130,7 @@ public class WorkflowRequestMessageSender
     {
         final RemoteAddress remoteAddress = managementClient.registerRemoteAddress(addr);
 
-        final ClientRequest clientRequest = output.sendRequest(remoteAddress, request);
+        final ClientRequest clientRequest = output.sendRequestWithRetry(remoteAddress, request);
 
         if (clientRequest != null)
         {

@@ -17,11 +17,20 @@
  */
 package io.zeebe.broker.clustering.management.handler;
 
+import org.agrona.DirectBuffer;
+
 import io.zeebe.broker.clustering.management.ClusterManager;
 import io.zeebe.broker.system.deployment.handler.WorkflowRequestMessageHandler;
-import io.zeebe.clustering.management.*;
-import io.zeebe.transport.*;
-import org.agrona.DirectBuffer;
+import io.zeebe.clustering.management.CreatePartitionRequestDecoder;
+import io.zeebe.clustering.management.CreateWorkflowRequestEncoder;
+import io.zeebe.clustering.management.DeleteWorkflowMessageDecoder;
+import io.zeebe.clustering.management.InvitationRequestEncoder;
+import io.zeebe.clustering.management.InvitationResponseDecoder;
+import io.zeebe.clustering.management.MessageHeaderDecoder;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.ServerMessageHandler;
+import io.zeebe.transport.ServerOutput;
+import io.zeebe.transport.ServerRequestHandler;
 
 public class ClusterManagerFragmentHandler implements ServerMessageHandler, ServerRequestHandler
 {
@@ -57,6 +66,10 @@ public class ClusterManagerFragmentHandler implements ServerMessageHandler, Serv
                 {
                     return workflowRequestMessageHandler.onCreateWorkflowRequest(buffer, offset, length, remoteAddress, requestId);
                 }
+                case CreatePartitionRequestDecoder.TEMPLATE_ID:
+                {
+                    return clusterManager.onCreatePartitionRequest(buffer, offset, length, output, remoteAddress, requestId);
+                }
                 default:
                 {
                     // TODO: send error response
@@ -78,16 +91,11 @@ public class ClusterManagerFragmentHandler implements ServerMessageHandler, Serv
 
         final int schemaId = messageHeaderDecoder.schemaId();
 
-        if (CreatePartitionMessageDecoder.SCHEMA_ID == schemaId)
+        if (CreatePartitionRequestDecoder.SCHEMA_ID == schemaId)
         {
             final int templateId = messageHeaderDecoder.templateId();
             switch (templateId)
             {
-                case CreatePartitionMessageDecoder.TEMPLATE_ID:
-                {
-                    clusterManager.onCreatePartitionMessage(buffer, offset, length);
-                    break;
-                }
                 case DeleteWorkflowMessageDecoder.TEMPLATE_ID:
                 {
                     workflowRequestMessageHandler.onDeleteWorkflowMessage(buffer, offset, length);

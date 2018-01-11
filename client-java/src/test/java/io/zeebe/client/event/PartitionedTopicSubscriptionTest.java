@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -46,6 +47,7 @@ import io.zeebe.test.broker.protocol.brokerapi.ResponseController;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import io.zeebe.test.broker.protocol.brokerapi.data.Topology;
 import io.zeebe.transport.RemoteAddress;
+import io.zeebe.util.time.ClockUtil;
 
 public class PartitionedTopicSubscriptionTest
 {
@@ -78,6 +80,12 @@ public class PartitionedTopicSubscriptionTest
         broker2.setCurrentTopology(topology);
 
         client = clientRule.getClient();
+    }
+
+    @After
+    public void tearDown()
+    {
+        ClockUtil.reset();
     }
 
     @Test
@@ -232,7 +240,7 @@ public class PartitionedTopicSubscriptionTest
     }
 
     @Test
-    public void shouldCloseSubscriptionIfASingleSubscriptionIsAborted()
+    public void shouldCloseSubscriptionIfASingleSubscriptionIsAborted() throws InterruptedException
     {
         // given
         broker1.stubTopicSubscriptionApi(456);
@@ -246,6 +254,8 @@ public class PartitionedTopicSubscriptionTest
 
         // when
         broker1.closeTransport();
+        Thread.sleep(500L); // let subscriber attempt reopening
+        ClockUtil.addTime(Duration.ofSeconds(60)); // make request time out immediately
 
         // then
         waitUntil(() -> subscription.isClosed());

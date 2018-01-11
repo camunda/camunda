@@ -18,6 +18,7 @@ package io.zeebe.client.event;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -30,6 +31,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -51,6 +53,7 @@ import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import io.zeebe.test.util.Conditions;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.RemoteAddress;
+import io.zeebe.util.time.ClockUtil;
 
 public class TopicSubscriptionTest
 {
@@ -75,6 +78,13 @@ public class TopicSubscriptionTest
     public void setUp()
     {
         this.client = clientRule.getClient();
+    }
+
+
+    @After
+    public void tearDown()
+    {
+        ClockUtil.reset();
     }
 
     @Test
@@ -445,25 +455,6 @@ public class TopicSubscriptionTest
     }
 
     @Test
-    public void shouldCloseSubscriptionOnClientDisconnect()
-    {
-        // given
-        broker.stubTopicSubscriptionApi(123L);
-
-        final TopicSubscription subscription = clientRule.topics().newSubscription(clientRule.getDefaultTopicName())
-            .startAtHeadOfTopic()
-            .handler(DO_NOTHING)
-            .name(SUBSCRIPTION_NAME)
-            .open();
-
-        // when
-        client.disconnect();
-
-        // then
-        assertThat(subscription.isClosed()).isTrue();
-    }
-
-    @Test
     public void shouldCloseSubscriptionOnChannelClose() throws InterruptedException
     {
         // given
@@ -477,6 +468,8 @@ public class TopicSubscriptionTest
 
         // when
         broker.closeTransport();
+        Thread.sleep(500L); // let subscriber attempt reopening
+        ClockUtil.addTime(Duration.ofSeconds(60)); // make request time out immediately
 
         // then
         TestUtil.waitUntil(() -> subscription.isClosed());
@@ -513,10 +506,9 @@ public class TopicSubscriptionTest
             .handler(DO_NOTHING)
             .name(SUBSCRIPTION_NAME)
             .open();
+        firstSubscription.close();
 
         broker.closeTransport();
-        TestUtil.waitUntil(() -> !firstSubscription.isOpen());
-        client.disconnect();
 
         broker.bindTransport();
 

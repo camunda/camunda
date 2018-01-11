@@ -31,12 +31,16 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.slf4j.Logger;
+
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.handler.Topology;
 import io.zeebe.broker.clustering.management.handler.ClusterManagerFragmentHandler;
 import io.zeebe.broker.clustering.management.memberList.ClusterMemberListManager;
 import io.zeebe.broker.clustering.management.memberList.MemberRaftComposite;
-import io.zeebe.broker.clustering.management.message.CreatePartitionMessage;
+import io.zeebe.broker.clustering.management.message.CreatePartitionRequest;
 import io.zeebe.broker.clustering.management.message.InvitationRequest;
 import io.zeebe.broker.clustering.management.message.InvitationResponse;
 import io.zeebe.broker.clustering.raft.RaftPersistentFileStorage;
@@ -53,15 +57,19 @@ import io.zeebe.raft.RaftPersistentStorage;
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.transport.*;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.RequestResponseController;
+import io.zeebe.transport.ServerInputSubscription;
+import io.zeebe.transport.ServerOutput;
+import io.zeebe.transport.ServerResponse;
+import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.actor.Actor;
-import org.agrona.DirectBuffer;
-import org.slf4j.Logger;
 
 public class ClusterManager implements Actor
 {
-    public static final Logger LOG = Loggers.CLUSTERING_LOGGER;
+    private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
+    private static final DirectBuffer EMPTY_BUF = new UnsafeBuffer(0, 0);
 
     private final ClusterManagerContext context;
     private final ServiceContainer serviceContainer;
@@ -75,7 +83,7 @@ public class ClusterManager implements Actor
 
     private final InvitationRequest invitationRequest;
     private final InvitationResponse invitationResponse;
-    private final CreatePartitionMessage createPartitionMessage = new CreatePartitionMessage();
+    private final CreatePartitionRequest createPartitionRequest = new CreatePartitionRequest();
 
     private TransportComponentCfg transportComponentCfg;
 
@@ -187,6 +195,11 @@ public class ClusterManager implements Actor
             final RequestResponseController requestController = activeRequestControllers.get(i);
             workCount += requestController.doWork();
 
+            if (requestController.isFailed())
+            {
+                LOG.debug("Invitation request failed");
+            }
+
             if (requestController.isFailed() || requestController.isResponseAvailable())
             {
                 requestController.close();
@@ -246,7 +259,7 @@ public class ClusterManager implements Actor
 
         LOG.debug("Send invitation request to {} for partition {} in term {}", member, logStream.getPartitionId(), raft.getTerm());
 
-        final RequestResponseController requestController = new RequestResponseController(context.getClientTransport());
+        final RequestResponseController requestController = new RequestResponseController(context.getManagementClient());
 
         requestController.open(member, invitationRequest, (buffer, offset, length) ->
             LOG.debug("Got invitation response from {} for partition id {}.",
@@ -334,23 +347,32 @@ public class ClusterManager implements Actor
         return output.sendResponse(response);
     }
 
-    public void onCreatePartitionMessage(final DirectBuffer buffer, final int offset, final int length)
+    public boolean onCreatePartitionRequest(
+            final DirectBuffer buffer, final int offset, final int length,
+            final ServerOutput output, final RemoteAddress requestAddress, final long requestId)
     {
-        createPartitionMessage.wrap(buffer, offset, length);
+        createPartitionRequest.wrap(buffer, offset, length);
 
-        LOG.debug("Received create partition message for partition {}", createPartitionMessage.getPartitionId());
+        LOG.debug("Received create partition request for partition {}", createPartitionRequest.getPartitionId());
 
-        final int partitionId = createPartitionMessage.getPartitionId();
+        final int partitionId = createPartitionRequest.getPartitionId();
 
         if (!partitionExists(partitionId))
         {
-            LOG.debug("Creating partition {}", createPartitionMessage.getPartitionId());
-            createPartition(createPartitionMessage.getTopicName(), partitionId);
+            LOG.debug("Creating partition {}", createPartitionRequest.getPartitionId());
+            createPartition(createPartitionRequest.getTopicName(), partitionId);
         }
         else
         {
-            LOG.debug("Partition {} exists already. Ignoring creation request.", createPartitionMessage.getPartitionId());
+            LOG.debug("Partition {} exists already. Ignoring creation request.", createPartitionRequest.getPartitionId());
         }
+
+        response.reset()
+            .remoteAddress(requestAddress)
+            .requestId(requestId)
+            .buffer(EMPTY_BUF);
+
+        return output.sendResponse(response);
     }
 
     public CompletableFuture<Topology> requestTopology()

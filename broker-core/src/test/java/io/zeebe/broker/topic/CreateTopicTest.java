@@ -23,7 +23,10 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.agrona.DirectBuffer;
@@ -31,7 +34,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import io.zeebe.broker.clustering.management.message.CreatePartitionMessage;
+import io.zeebe.broker.clustering.management.message.CreatePartitionRequest;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ControlMessageType;
@@ -42,7 +45,6 @@ import io.zeebe.transport.ClientOutput;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.SocketAddress;
-import io.zeebe.transport.TransportMessage;
 import io.zeebe.util.buffer.BufferUtil;
 
 public class CreateTopicTest
@@ -170,11 +172,10 @@ public class CreateTopicTest
     {
         // given
         final ClientTransport transport = apiRule.getTransport();
-        final RemoteAddress remoteAddress = transport.registerRemoteAddress(BROKER_MGMT_ADDRESS);
+        final RemoteAddress remoteAddress = transport.registerRemoteAndAwaitChannel(BROKER_MGMT_ADDRESS);
         final ClientOutput output = transport.getOutput();
 
-        final TransportMessage message = new TransportMessage();
-        final CreatePartitionMessage partitionMessage = new CreatePartitionMessage();
+        final CreatePartitionRequest partitionMessage = new CreatePartitionRequest();
 
         final DirectBuffer topicName = BufferUtil.wrapString("foo");
         final int partition1 = 142;
@@ -183,15 +184,12 @@ public class CreateTopicTest
         partitionMessage.topicName(topicName);
         partitionMessage.partitionId(partition1);
 
-        message.remoteAddress(remoteAddress);
-        message.writer(partitionMessage);
-
-        doRepeatedly(() -> output.sendMessage(message)).until(success -> success); // => should create partition
-        doRepeatedly(() -> output.sendMessage(message)).until(success -> success); // => should be rejected/ignored
+        doRepeatedly(() -> output.sendRequest(remoteAddress, partitionMessage)).until(r -> r != null); // => should create partition
+        doRepeatedly(() -> output.sendRequest(remoteAddress, partitionMessage)).until(r -> r != null); // => should be rejected/ignored
 
         // when creating another partition
         partitionMessage.partitionId(partition2);
-        doRepeatedly(() -> output.sendMessage(message)).until(success -> success);
+        doRepeatedly(() -> output.sendRequest(remoteAddress, partitionMessage)).until(r -> r != null);
 
         // then this should be successful (i.e. the rejected request should not have jammed the broker)
         waitUntil(() -> arePublished(partition1, partition2));

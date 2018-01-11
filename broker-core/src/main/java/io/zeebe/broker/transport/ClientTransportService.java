@@ -17,12 +17,16 @@
  */
 package io.zeebe.broker.transport;
 
+import java.util.Collection;
+
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.transport.ClientTransport;
+import io.zeebe.transport.ClientTransportBuilder;
+import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.Transports;
 import io.zeebe.util.actor.ActorScheduler;
 
@@ -31,13 +35,18 @@ public class ClientTransportService implements Service<ClientTransport>
     protected final Injector<ActorScheduler> schedulerInjector = new Injector<>();
     protected final Injector<Dispatcher> receiveBufferInjector = new Injector<>();
     protected final Injector<Dispatcher> sendBufferInjector = new Injector<>();
+
     protected final int requestPoolSize;
+    protected final Collection<SocketAddress> defaultEndpoints;
+    protected final boolean enableManagedRequests;
 
     protected ClientTransport transport;
 
-    public ClientTransportService(int requestPoolSize)
+    public ClientTransportService(int requestPoolSize, boolean enableManagedRequests, Collection<SocketAddress> defaultEndpoints)
     {
         this.requestPoolSize = requestPoolSize;
+        this.defaultEndpoints = defaultEndpoints;
+        this.enableManagedRequests = enableManagedRequests;
     }
 
     @Override
@@ -48,12 +57,24 @@ public class ClientTransportService implements Service<ClientTransport>
         final Dispatcher sendBuffer = sendBufferInjector.getValue();
         final ActorScheduler scheduler = schedulerInjector.getValue();
 
-        transport = Transports.newClientTransport()
+        final ClientTransportBuilder transportBuilder = Transports.newClientTransport();
+        if (enableManagedRequests)
+        {
+            transportBuilder.enableManagedRequests();
+        }
+
+        transport = transportBuilder
             .messageReceiveBuffer(receiveBuffer)
             .sendBuffer(sendBuffer)
             .requestPoolSize(requestPoolSize)
             .scheduler(scheduler)
             .build();
+
+        if (defaultEndpoints != null)
+        {
+            // make transport open and manage channels to the default endpoints
+            defaultEndpoints.forEach(s -> transport.registerRemoteAddress(s));
+        }
     }
 
     @Override

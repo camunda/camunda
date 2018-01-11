@@ -58,7 +58,7 @@
     </sbe:message>
     
     <!-- single message protocol -->
-    <sbe:message name="CreatePartitionMessage" id="2">
+    <sbe:message name="CreatePartitionRequest" id="2">
       <field name="partitionId" id="0" type="uint16"/>
       <data name="topicName" id="1" type="varDataEncoding" />
     </sbe:message>

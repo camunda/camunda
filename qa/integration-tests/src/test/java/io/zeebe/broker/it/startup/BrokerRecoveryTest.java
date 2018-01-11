@@ -562,7 +562,6 @@ public class BrokerRecoveryTest
     protected void restartBroker(Runnable onStop)
     {
         eventRecorder.stopRecordingEvents();
-        clientRule.getClient().disconnect();
         brokerRule.stopBroker();
 
         // delete snapshot files to trigger recovery

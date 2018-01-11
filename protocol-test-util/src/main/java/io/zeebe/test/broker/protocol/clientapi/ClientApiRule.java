@@ -15,7 +15,13 @@
  */
 package io.zeebe.test.broker.protocol.clientapi;
 
-import java.util.*;
+import static io.zeebe.test.util.TestUtil.doRepeatedly;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import org.agrona.DirectBuffer;
@@ -95,6 +101,8 @@ public class ClientApiRule extends ExternalResource
 
         msgPackHelper = new MsgPackHelper();
         streamAddress = transport.registerRemoteAddress(brokerAddress);
+        doRepeatedly(() -> getPartitionIds(Protocol.SYSTEM_TOPIC)).until(l -> l != null, e -> e == null);
+
 
         if (createDefaultTopic)
         {

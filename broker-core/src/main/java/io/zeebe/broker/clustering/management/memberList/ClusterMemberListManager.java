@@ -34,6 +34,8 @@ import io.zeebe.gossip.GossipMembershipListener;
 import io.zeebe.gossip.membership.Member;
 import io.zeebe.raft.RaftStateListener;
 import io.zeebe.raft.state.RaftState;
+import io.zeebe.transport.ClientTransport;
+import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.buffer.BufferUtil;
@@ -145,7 +147,19 @@ public class ClusterMemberListManager implements RaftStateListener
                                                                  .remove(memberAddress);
                 LOG.debug("Remove member {} from member list.", removedMember);
                 deadMembers.add(removedMember);
+
+                deactivateRemote(context.getManagementClient(), removedMember.getManagementApi());
+                deactivateRemote(context.getReplicationClient(), removedMember.getReplicationApi());
             });
+        }
+    }
+
+    protected void deactivateRemote(ClientTransport transport, SocketAddress address)
+    {
+        final RemoteAddress managementRemote = transport.getRemoteAddress(address);
+        if (managementRemote != null)
+        {
+            transport.deactivateRemoteAddress(managementRemote);
         }
     }
 
@@ -178,6 +192,9 @@ public class ClusterMemberListManager implements RaftStateListener
                 LOG.debug("Setting API's for member {} was {}successful.", savedSocketAddress, success ? "" : "not ");
 
                 updatedMemberConsumer.accept(savedSocketAddress);
+
+                context.getManagementClient().registerRemoteAddress(managementApi);
+                context.getReplicationClient().registerRemoteAddress(replicationApi);
             });
         }
     }

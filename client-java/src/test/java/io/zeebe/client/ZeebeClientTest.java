@@ -16,7 +16,9 @@
 package io.zeebe.client;
 
 import static io.zeebe.test.util.TestUtil.waitUntil;
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.fail;
 
 import java.util.Arrays;
 import java.util.List;
@@ -24,6 +26,13 @@ import java.util.Properties;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.TestName;
 
 import io.zeebe.client.clustering.impl.ClientTopologyManager;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
@@ -41,13 +50,8 @@ import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.ServerTransport;
 import io.zeebe.transport.TransportListener;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.TestName;
 
 public class ZeebeClientTest
 {
@@ -79,26 +83,22 @@ public class ZeebeClientTest
     }
 
     @Test
-    public void shouldCloseAllConnectionsOnDisconnect() throws Exception
+    public void shouldCloseAllConnectionsOnClose() throws Exception
     {
         // given
-        final ClientTransport clientTransport = client.getTransport();
+        final ServerTransport serverTransport = broker.getTransport();
 
         final TopicSubscription subscription = openSubscription();
         final LoggingChannelListener channelListener = new LoggingChannelListener();
-        clientTransport.registerChannelListener(channelListener);
+        serverTransport.registerChannelListener(channelListener).join();
 
         // when
-        client.disconnect();
+        client.close();
 
         // then
         assertThat(subscription.isClosed()).isTrue();
         waitUntil(() -> channelListener.connectionState.size() == 1); // listener invocation on close is asynchronous
         assertThat(channelListener.connectionState).containsExactly(ConnectionState.CLOSED);
-
-        // and the subscription is not reopened
-        Thread.sleep(1000L);
-        assertThat(subscription.isClosed()).isTrue();
     }
 
     @Test
@@ -107,13 +107,15 @@ public class ZeebeClientTest
         // given
         final ClientTransport clientTransport = client.getTransport();
 
-        openSubscription();
+        // ensuring an open connection
+        client.requestTopology().execute();
 
         final LoggingChannelListener channelListener = new LoggingChannelListener();
-        clientTransport.registerChannelListener(channelListener);
+        clientTransport.registerChannelListener(channelListener).join();
 
         // when
-        client.disconnect();
+        broker.closeTransport();
+        broker.bindTransport();
 
         // then
         final TopicSubscription newSubscription = openSubscription();
@@ -194,7 +196,7 @@ public class ZeebeClientTest
 
         // then
         exception.expect(ClientException.class);
-        exception.expectMessage("No response received (timeout 3 seconds). " +
+        exception.expectMessage("Cannot execute request (timeout 3 seconds). " +
                 "Request was: [ topic = default-topic, partition = 99, event type = TASK, state = COMPLETE ]");
 
         // when

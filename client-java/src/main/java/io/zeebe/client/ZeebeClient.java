@@ -44,13 +44,6 @@ public interface ZeebeClient extends AutoCloseable
      */
     Request<TopologyResponse> requestTopology();
 
-    /**
-     * Gracefully closes all current connections to all brokers. This includes closing
-     * all open task and topic subscriptions. The client establishes new connections as soon as
-     * new requests are made.
-     */
-    void disconnect();
-
     @Override
     void close();
 

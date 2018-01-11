@@ -17,12 +17,13 @@ package io.zeebe.client.clustering.impl;
 
 import static io.zeebe.util.EnsureUtil.ensureNotNull;
 
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+import org.agrona.DirectBuffer;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import io.zeebe.client.cmd.BrokerErrorException;
-import io.zeebe.client.cmd.ClientException;
 import io.zeebe.client.impl.ControlMessageRequestHandler;
 import io.zeebe.client.impl.Loggers;
 import io.zeebe.protocol.clientapi.ErrorResponseDecoder;
@@ -35,12 +36,13 @@ import io.zeebe.util.state.SimpleStateMachineContext;
 import io.zeebe.util.state.State;
 import io.zeebe.util.state.StateMachine;
 import io.zeebe.util.state.WaitState;
-import io.zeebe.util.time.ClockUtil;
-import org.agrona.DirectBuffer;
 
 public class ClientTopologyController
 {
+
     protected static final int TRANSITION_DEFAULT = 0;
+    private static final int REQUEST_TIMEOUT_MS = 1000; // this should not be a large value
+    // to avoid constantly requesting the topology from an unavailable broker
 
     protected final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     protected final ErrorResponseDecoder errorResponseDecoder = new ErrorResponseDecoder();
@@ -55,19 +57,16 @@ public class ClientTopologyController
     protected final Consumer<Exception> failureCallback;
 
     protected final ControlMessageRequestHandler requestHandler;
-    private final long requestTimeout;
 
     public ClientTopologyController(
             final ClientTransport clientTransport,
             final ObjectMapper objectMapper,
             final Consumer<TopologyResponse> successCallback,
-            final Consumer<Exception> failureCallback,
-            long requestTimeout)
+            final Consumer<Exception> failureCallback)
     {
         output = clientTransport.getOutput();
         this.requestHandler = new ControlMessageRequestHandler(objectMapper);
         requestHandler.configure(new RequestTopologyCmdImpl(null));
-        this.requestTimeout = TimeUnit.SECONDS.toMillis(requestTimeout);
 
         stateMachine = StateMachine.builder(Context::new)
             .initialState(initState)
@@ -106,14 +105,12 @@ public class ClientTopologyController
 
     private class RequestTopologyState implements State<Context>
     {
-
         @Override
         public int doWork(final Context context) throws Exception
         {
             int workCount = 0;
 
-            final ClientRequest request = output.sendRequest(context.remoteAddress, requestHandler);
-            context.timeout = ClockUtil.getCurrentTimeInMillis() + requestTimeout;
+            final ClientRequest request = output.sendRequestWithRetry(context.remoteAddress, requestHandler, REQUEST_TIMEOUT_MS);
             if (request != null)
             {
                 workCount++;
@@ -143,25 +140,13 @@ public class ClientTopologyController
                 {
                     final DirectBuffer response = request.get();
                     final TopologyResponse topologyResponse = decodeTopology(response);
+
                     successCallback.accept(topologyResponse);
                 }
                 catch (Exception e)
                 {
                     Loggers.CLIENT_LOGGER.debug("Topology request failed", e);
                     failureCallback.accept(e);
-                }
-                finally
-                {
-                    context.take(TRANSITION_DEFAULT);
-                    request.close();
-                }
-            }
-            else if (context.isRequestTimedOut())
-            {
-                Loggers.CLIENT_LOGGER.debug("Topology request timed out");
-                try
-                {
-                    failureCallback.accept(new ClientException("Topology request timed out (" + requestTimeout + " seconds)"));
                 }
                 finally
                 {
@@ -220,8 +205,6 @@ public class ClientTopologyController
         // keep during reset to allow automatic refresh with last configuration
         RemoteAddress remoteAddress;
 
-        long timeout;
-
         Context(final StateMachine<?> stateMachine)
         {
             super(stateMachine);
@@ -232,13 +215,6 @@ public class ClientTopologyController
         {
             this.request = null;
             this.remoteAddress = null;
-            this.timeout = Long.MAX_VALUE;
-        }
-
-        public boolean isRequestTimedOut()
-        {
-            final long now = ClockUtil.getCurrentTimeInMillis();
-            return now > timeout;
         }
     }
 

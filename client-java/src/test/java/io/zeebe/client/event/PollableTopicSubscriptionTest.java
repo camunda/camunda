@@ -18,6 +18,9 @@ package io.zeebe.client.event;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
+import java.time.Duration;
+
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -30,6 +33,7 @@ import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.RemoteAddress;
+import io.zeebe.util.time.ClockUtil;
 
 public class PollableTopicSubscriptionTest
 {
@@ -48,6 +52,12 @@ public class PollableTopicSubscriptionTest
     public void setUp()
     {
         this.client = clientRule.getClient();
+    }
+
+    @After
+    public void tearDown()
+    {
+        ClockUtil.reset();
     }
 
     @Test
@@ -151,10 +161,8 @@ public class PollableTopicSubscriptionTest
 
         // when
         broker.closeTransport();
-
-        // * reopening the subscription takes a rather long time (up to 5 topology refreshes,
-        //   with default 500 milliseconds connect timeout)
-        Thread.sleep(5000L);
+        Thread.sleep(500L); // ensuring a reconnection attempt
+        ClockUtil.addTime(Duration.ofSeconds(60)); // let request time out immediately
 
         // then
         TestUtil.waitUntil(() -> subscription.isClosed());

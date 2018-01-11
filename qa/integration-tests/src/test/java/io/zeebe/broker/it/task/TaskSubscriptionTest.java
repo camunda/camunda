@@ -370,32 +370,6 @@ public class TaskSubscriptionTest
     }
 
     @Test
-    public void shouldOpenSubscriptionAfterClientReconnect()
-    {
-        // given
-        final ZeebeClient client = clientRule.getClient();
-
-        clientRule.tasks().create(clientRule.getDefaultTopic(), "foo").execute();
-
-        // when
-        client.disconnect();
-
-        // then
-        final RecordingTaskHandler taskHandler = new RecordingTaskHandler();
-
-        clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopic())
-                .taskType("foo")
-                .lockTime(Duration.ofMinutes(5))
-                .lockOwner("test")
-                .handler(taskHandler)
-                .open();
-
-        waitUntil(() -> !taskHandler.getHandledTasks().isEmpty(), 50, "Failed to open task subscription after reconnect");
-
-        assertThat(taskHandler.getHandledTasks()).hasSize(1);
-    }
-
-    @Test
     public void shouldGiveTaskToSingleSubscription()
     {
         // given

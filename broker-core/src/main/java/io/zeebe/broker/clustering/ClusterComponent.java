@@ -23,6 +23,7 @@ import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
 import static io.zeebe.broker.system.SystemServiceNames.WORKFLOW_REQUEST_MESSAGE_HANDLER_SERVICE;
 import static io.zeebe.broker.transport.TransportServiceNames.MANAGEMENT_API_CLIENT_NAME;
 import static io.zeebe.broker.transport.TransportServiceNames.MANAGEMENT_API_SERVER_NAME;
+import static io.zeebe.broker.transport.TransportServiceNames.REPLICATION_API_CLIENT_NAME;
 
 import io.zeebe.broker.clustering.gossip.service.GossipService;
 import io.zeebe.broker.clustering.management.memberList.MemberListService;
@@ -73,7 +74,8 @@ public class ClusterComponent implements Component
         final ClusterManagerContextService clusterManagementContextService = new ClusterManagerContextService();
         serviceContainer.createService(CLUSTER_MANAGER_CONTEXT_SERVICE, clusterManagementContextService)
             .dependency(TransportServiceNames.bufferingServerTransport(MANAGEMENT_API_SERVER_NAME), clusterManagementContextService.getManagementApiTransportInjector())
-            .dependency(TransportServiceNames.clientTransport(MANAGEMENT_API_CLIENT_NAME), clusterManagementContextService.getClientTransportInjector())
+            .dependency(TransportServiceNames.clientTransport(MANAGEMENT_API_CLIENT_NAME), clusterManagementContextService.getManagementClientInjector())
+            .dependency(TransportServiceNames.clientTransport(REPLICATION_API_CLIENT_NAME), clusterManagementContextService.getReplicationClientInjector())
             .dependency(MEMBER_LIST_SERVICE, clusterManagementContextService.getMemberListServiceInjector())
             .dependency(ACTOR_SCHEDULER_SERVICE, clusterManagementContextService.getActorSchedulerInjector())
             .dependency(LOG_STREAMS_MANAGER_SERVICE, clusterManagementContextService.getLogStreamsManagerInjector())

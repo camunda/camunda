@@ -23,6 +23,12 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
+import org.junit.rules.Timeout;
+
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.clustering.impl.TopologyBroker;
@@ -31,11 +37,6 @@ import io.zeebe.client.topic.Topic;
 import io.zeebe.client.topic.Topics;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.SocketAddress;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.Timeout;
 
 public class CreateTopicClusteredTest
 {
@@ -155,7 +156,8 @@ public class CreateTopicClusteredTest
         final CompletableFuture<TaskEvent> taskCompleted = new CompletableFuture<>();
         client.tasks()
               .newTaskSubscription("foo")
-              .handler((taskClient, lockedEvent) -> {
+              .handler((taskClient, lockedEvent) ->
+              {
                   final TaskEvent completedTask = taskClient.complete(lockedEvent)
                                                       .execute();
                   taskCompleted.complete(completedTask);

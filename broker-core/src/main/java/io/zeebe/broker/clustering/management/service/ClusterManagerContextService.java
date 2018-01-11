@@ -32,8 +32,10 @@ import io.zeebe.util.actor.ActorScheduler;
 
 public class ClusterManagerContextService implements Service<ClusterManagerContext>
 {
-    private final Injector<ClientTransport> clientTransportInjector = new Injector<>();
+    private final Injector<ClientTransport> managementClientInjector = new Injector<>();
+    private final Injector<ClientTransport> replicationClientInjector = new Injector<>();
     private final Injector<BufferingServerTransport> managementApiTransportInjector = new Injector<>();
+
     private final Injector<ActorScheduler> actorSchedulerInjector = new Injector<>();
     private final Injector<LogStreamsManager> logStreamsManagerInjector = new Injector<>();
     private final Injector<WorkflowRequestMessageHandler> workflowRequestMessageHandlerInjector = new Injector<>();
@@ -45,7 +47,7 @@ public class ClusterManagerContextService implements Service<ClusterManagerConte
     @Override
     public void start(ServiceStartContext startContext)
     {
-        final ClientTransport clientTransport = clientTransportInjector.getValue();
+        final ClientTransport clientTransport = managementClientInjector.getValue();
         final BufferingServerTransport serverTransport = managementApiTransportInjector.getValue();
         final ActorScheduler actorScheduler = actorSchedulerInjector.getValue();
         final LogStreamsManager logStreamsManager = logStreamsManagerInjector.getValue();
@@ -54,7 +56,8 @@ public class ClusterManagerContextService implements Service<ClusterManagerConte
         context = new ClusterManagerContext();
         context.setGossip(gossipInjector.getValue());
         context.setActorScheduler(actorScheduler);
-        context.setClientTransport(clientTransport);
+        context.setManagementClient(clientTransport);
+        context.setReplicationClient(replicationClientInjector.getValue());
         context.setServerTransport(serverTransport);
         context.setMemberListService(memberListServiceInjector.getValue());
         context.setLogStreamsManager(logStreamsManager);
@@ -97,9 +100,14 @@ public class ClusterManagerContextService implements Service<ClusterManagerConte
         return managementApiTransportInjector;
     }
 
-    public Injector<ClientTransport> getClientTransportInjector()
+    public Injector<ClientTransport> getManagementClientInjector()
     {
-        return clientTransportInjector;
+        return managementClientInjector;
+    }
+
+    public Injector<ClientTransport> getReplicationClientInjector()
+    {
+        return replicationClientInjector;
     }
 
     public Injector<WorkflowRequestMessageHandler> getWorkflowRequestMessageHandlerInjector()

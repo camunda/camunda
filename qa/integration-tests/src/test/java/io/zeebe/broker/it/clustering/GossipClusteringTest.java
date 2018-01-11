@@ -15,17 +15,19 @@
  */
 package io.zeebe.broker.it.clustering;
 
+import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
 
-import io.zeebe.broker.it.ClientRule;
-import io.zeebe.test.util.AutoCloseableRule;
-import io.zeebe.transport.SocketAddress;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
+
+import io.zeebe.broker.it.ClientRule;
+import io.zeebe.test.util.AutoCloseableRule;
+import io.zeebe.transport.SocketAddress;
 
 /**
  *
@@ -113,7 +115,7 @@ public class GossipClusteringTest
         clusteringRule.restartBroker(ClusteringRule.BROKER_3_CLIENT_ADDRESS);
 
         // then
-        final List<SocketAddress> topologyBrokers = clusteringRule.getBrokersInCluster();
+        final List<SocketAddress> topologyBrokers = doRepeatedly(() -> clusteringRule.getBrokersInCluster()).until(l -> l.size() == 3);
 
         assertThat(topologyBrokers).containsExactlyInAnyOrder(ClusteringRule.BROKER_1_CLIENT_ADDRESS,
                                                               ClusteringRule.BROKER_3_CLIENT_ADDRESS,

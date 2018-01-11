@@ -18,6 +18,7 @@ package io.zeebe.client.impl;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -34,6 +35,7 @@ import io.zeebe.protocol.clientapi.ErrorResponseDecoder;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
 import io.zeebe.transport.ClientRequest;
 import io.zeebe.transport.ClientTransport;
+import io.zeebe.transport.NotConnectedException;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.util.buffer.BufferReader;
 import io.zeebe.util.buffer.BufferUtil;
@@ -129,9 +131,11 @@ public class RequestController implements BufferReader
             .from(executeRequestState).take(TRANSITION_DEFAULT).to(handleResponseState)
             .from(executeRequestState).take(TRANSITION_REFRESH_TOPOLOGY).to(refreshTopologyForRemoteState)
             .from(executeRequestState).take(TRANSITION_FAILED).to(failedState)
+
             .from(handleResponseState).take(TRANSITION_DEFAULT).to(finishedState)
             .from(handleResponseState).take(TRANSITION_FAILED).to(failedState)
             .from(handleResponseState).take(TRANSITION_REFRESH_TOPOLOGY).to(refreshTopologyForRemoteState)
+
             .from(finishedState).take(TRANSITION_DEFAULT).to(closedState)
             .from(failedState).take(TRANSITION_DEFAULT).to(closedState)
             .build();
@@ -175,12 +179,18 @@ public class RequestController implements BufferReader
 
     protected Exception generateTimeoutException(String reason, Set<RemoteAddress> requestReceivers)
     {
+        return generateTimeoutException(reason, requestReceivers, null);
+    }
+
+    protected Exception generateTimeoutException(String reason, Set<RemoteAddress> requestReceivers, Exception cause)
+    {
         return new ClientException(
                 String.format("%s (timeout %d seconds). Request was: %s. Request receivers: %s",
                         reason,
                         TimeUnit.MILLISECONDS.toSeconds(cmdTimeout),
                         currentRequestHandler.describeRequest(),
-                        requestReceivers));
+                        requestReceivers),
+                cause);
     }
 
     @Override
@@ -353,6 +363,13 @@ public class RequestController implements BufferReader
         {
             final ClientRequest request = context.request;
 
+            if (context.isRequestTimedOut())
+            {
+                context.exception = generateTimeoutException("Cannot execute request", context.contactedBrokers);
+                context.take(TRANSITION_FAILED);
+                return 1;
+            }
+
             if (request.isDone())
             {
                 try
@@ -367,6 +384,18 @@ public class RequestController implements BufferReader
                     context.exception = e;
                     context.take(TRANSITION_FAILED);
                 }
+                catch (ExecutionException e)
+                {
+                    if (e.getCause() instanceof NotConnectedException)
+                    {
+                        context.take(TRANSITION_REFRESH_TOPOLOGY);
+                    }
+                    else
+                    {
+                        context.exception = new ClientException("Request not successful", e);
+                        context.take(TRANSITION_FAILED);
+                    }
+                }
                 catch (Exception e)
                 {
                     context.exception = new ClientException("Unexpected exception during response handling", e);
@@ -377,13 +406,6 @@ public class RequestController implements BufferReader
                     request.close();
                 }
 
-                return 1;
-            }
-            else if (context.isRequestTimedOut())
-            {
-                context.exception = generateTimeoutException("No response received", context.contactedBrokers);
-                context.take(TRANSITION_FAILED);
-                request.close();
                 return 1;
             }
             else

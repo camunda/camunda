@@ -30,7 +30,8 @@ public class ClusterManagerContext
     private ActorScheduler actorScheduler;
     private LogStreamsManager logStreamsManager;
     private WorkflowRequestMessageHandler workflowRequestMessageHandler;
-    private ClientTransport clientTransport;
+    private ClientTransport managementClient;
+    private ClientTransport replicationClient;
     private BufferingServerTransport serverTransport;
     private Gossip gossip;
     private MemberListService memberListService;
@@ -75,14 +76,24 @@ public class ClusterManagerContext
         this.serverTransport = serverTransport;
     }
 
-    public ClientTransport getClientTransport()
+    public ClientTransport getManagementClient()
     {
-        return clientTransport;
+        return managementClient;
     }
 
-    public void setClientTransport(ClientTransport clientTransport)
+    public void setManagementClient(ClientTransport clientTransport)
     {
-        this.clientTransport = clientTransport;
+        this.managementClient = clientTransport;
+    }
+
+    public ClientTransport getReplicationClient()
+    {
+        return replicationClient;
+    }
+
+    public void setReplicationClient(ClientTransport replicationClient)
+    {
+        this.replicationClient = replicationClient;
     }
 
     public LogStreamsManager getLogStreamsManager()
