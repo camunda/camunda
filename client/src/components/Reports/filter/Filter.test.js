@@ -125,3 +125,14 @@ it('should disable variable and executed flow node filter if no process definiti
   expect(buttons.at(1).prop("disabled")).toBeTruthy(); // variable filter
   expect(buttons.at(2).prop("disabled")).toBeTruthy(); // flow node filter
 });
+
+it('should remove any previous date and rolling date filters when adding a new date filter', () => {
+  const spy = jest.fn();
+  const previousFilters = [{type: 'date'}, {type: 'rollingDate'}];
+
+  const node = mount(<Filter data={previousFilters} onChange={spy} />);
+
+  node.instance().addFilter({type:'date', value: 'new date'});
+
+  expect(spy.mock.calls[0][1]).toEqual([{type:'date', value: 'new date'}]);
+});

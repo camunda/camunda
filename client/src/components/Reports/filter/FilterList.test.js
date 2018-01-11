@@ -143,3 +143,17 @@ it('should display a flow node filter with multiple selected nodes', () => {
 
   expect(node).toIncludeText('Executed Flow Node is flowNode1 or flowNode2');
 });
+
+it('should display a rolling date filter', () => {
+  const data = [{
+    type: 'rollingDate',
+    data: {
+      value: 18,
+      unit: 'hours'
+    }
+  }];
+
+  const node = mount(<FilterList data={data} />);
+
+  expect(node).toIncludeText('Start Date less than 18 hours ago');
+});

@@ -54,9 +54,7 @@ export default class FilterList extends React.Component {
               })}
             </ActionItem>
           </li>);
-        }
-
-        if(filter.type === 'executedFlowNodes') {
+        } else if(filter.type === 'executedFlowNodes') {
           const {values} = filter.data;
 
           list.push(<li key={i} className='FilterList__item'>
@@ -68,6 +66,17 @@ export default class FilterList extends React.Component {
                   {idx < values.length - 1 && this.createOperator('or')}
                 </span>
               })}
+            </ActionItem>
+          </li>);
+        } else if(filter.type === 'rollingDate') {
+          const {unit, value} = filter.data;
+
+          list.push(<li key={i} className='FilterList__item'>
+            <ActionItem onClick={() => this.props.deleteFilter(filter)}>
+              <span className='FilterList__parameter-name'>Start Date </span>
+              less than
+              {' '}<span className='FilterList__value'>{value.toString()} {unit.slice(0,-1)}{value > 1 && 's'}</span>{' '}
+              ago
             </ActionItem>
           </li>);
         }

@@ -14,3 +14,9 @@ it('should render its children', () => {
 
 expect(node.find('button')).toBePresent();
 });
+
+it('should apply passed classNames', () => {
+  const node = mount(<ButtonGroup className='CustomClass' />);
+
+  expect(node.find('.CustomClass')).toBePresent();
+});
