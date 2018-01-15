@@ -8,7 +8,6 @@ export default function Icon(props) {
   const Tag = props.renderedIn || 'span'; 
   delete filteredProps.renderedIn;
   delete filteredProps.type;
-  delete filteredProps.backgroundImg;  
   
   /* For every icon added:
       1. add {...filteredProps} in the icon source
@@ -24,7 +23,7 @@ export default function Icon(props) {
     close: <svg width="24" height="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" {...filteredProps}><path d="M7.757 12L.686 4.929 4.93.686 12 7.756l7.071-7.07 4.243 4.243-7.07 7.07 7.071 7.072-4.244 4.243L12 16.243l-7.071 7.071-4.243-4.243L7.757 12z" fill-rule="evenodd"/></svg>  
   }
      
-  if (props.backgroundImg) {
+  if (props.renderedIn) {
     return (
       <Tag {...filteredProps} className={'Icon Icon--' + type}>
       </Tag>

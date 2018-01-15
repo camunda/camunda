@@ -9,7 +9,7 @@ it('should render without crashing', () => {
 });
 
 it('should render a tag as provided as a property when using a background image', () => {
-  const node = mount(<Icon renderedIn='i' backgroundImg />);
+  const node = mount(<Icon renderedIn='i' />);
   
   expect(node.find('.Icon')).toHaveTagName('i');
 });
@@ -25,8 +25,8 @@ it('should render a fill attribute according to fill provided as a prop', () => 
   expect(node.find('svg')).toMatchSelector('[fill="red"]');
 })
 
-it('should render an element with a class when "backgroundImg" was provided as a property', () => {
-  const node = mount(<Icon backgroundImg type='plus'/>);
+it('should render an element with a class when "renderedIn" was provided as a property', () => {
+  const node = mount(<Icon renderedIn='i' type='plus'/>);
   
   expect(node.find('.Icon')).toMatchSelector('.Icon--plus');
 });
