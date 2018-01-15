@@ -79,6 +79,17 @@ export default class FilterList extends React.Component {
               ago
             </ActionItem>
           </li>);
+        } else if(filter.type === 'processInstanceDuration') {
+          const {unit, value, operator} = filter.data;
+
+          list.push(<li key={i} className='FilterList__item'>
+            <ActionItem onClick={() => this.props.deleteFilter(filter)}>
+              <span className='FilterList__parameter-name'>Duration</span>
+              {operator === '<' && this.createOperator('is less than')}
+              {operator === '>' && this.createOperator('is more than')}
+              <span className='FilterList__value'>{value.toString()} {unit.slice(0,-1)}{value > 1 && 's'}</span>
+            </ActionItem>
+          </li>);
         }
       }
 

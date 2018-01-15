@@ -2,7 +2,7 @@ import React from 'react';
 
 import {Dropdown} from 'components';
 
-import {DateFilter, VariableFilter, NodeFilter} from './modals';
+import {DateFilter, VariableFilter, NodeFilter, DurationFilter} from './modals';
 
 import FilterList from './FilterList';
 import './Filter.css';
@@ -28,6 +28,7 @@ export default class Filter extends React.Component {
     switch(this.state.newFilterType) {
       case 'date': return DateFilter;
       case 'variable': return VariableFilter;
+      case 'duration': return DurationFilter;
       case 'node': return NodeFilter;
       default: return () => null;
     }
@@ -61,6 +62,7 @@ export default class Filter extends React.Component {
       <FilterList data={this.props.data} deleteFilter={this.deleteFilter} />
       <Dropdown label='Add Filter' id='ControlPanel__filters' className='Filter__dropdown' >
         <Dropdown.Option onClick={this.openNewFilterModal('date')}>Start Date</Dropdown.Option>
+        <Dropdown.Option onClick={this.openNewFilterModal('duration')}>Duration</Dropdown.Option>
         <Dropdown.Option disabled={this.processDefinitionIsNotSelected()} onClick={this.openNewFilterModal('variable')}>Variable</Dropdown.Option>
         <Dropdown.Option disabled={this.processDefinitionIsNotSelected()} onClick={this.openNewFilterModal('node')}>Flow Node</Dropdown.Option>
       </Dropdown>

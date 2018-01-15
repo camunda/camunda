@@ -5,7 +5,7 @@ import Filter from './Filter';
 import {mount} from 'enzyme';
 
 jest.mock('components', () => {
-  const Dropdown = ({children}) => <p id="dropwdown">Dropdown: {children}</p>;
+  const Dropdown = ({children}) => <p id="dropdown">Dropdown: {children}</p>;
   Dropdown.Option = (props) => <button {...props}>{props.children}</button>;
 
   return {Dropdown};
@@ -120,10 +120,10 @@ it('should remove multiple filters from the list of filters', () => {
 it('should disable variable and executed flow node filter if no process definition is available', () => {
   const node = mount(<Filter processDefinitionId="" />);
 
-  const buttons = node.find("#dropwdown button");
-  expect(buttons.at(0).prop("disabled")).toBeFalsy(); // start date filter
-  expect(buttons.at(1).prop("disabled")).toBeTruthy(); // variable filter
-  expect(buttons.at(2).prop("disabled")).toBeTruthy(); // flow node filter
+  const buttons = node.find("#dropdown button");
+  expect(buttons.find('[children="Start Date"]').prop("disabled")).toBeFalsy();
+  expect(buttons.find('[children="Variable"]').prop("disabled")).toBeTruthy();
+  expect(buttons.find('[children="Flow Node"]').prop("disabled")).toBeTruthy();
 });
 
 it('should remove any previous date and rolling date filters when adding a new date filter', () => {

@@ -157,3 +157,18 @@ it('should display a rolling date filter', () => {
 
   expect(node).toIncludeText('Start Date less than 18 hours ago');
 });
+
+it('should display a duration filter', () => {
+  const data = [{
+    type: 'processInstanceDuration',
+    data: {
+      operator: '<',
+      value: 18,
+      unit: 'hours'
+    }
+  }];
+
+  const node = mount(<FilterList data={data} />);
+
+  expect(node).toIncludeText('Duration is less than 18 hours');
+});
