@@ -26,7 +26,7 @@ import io.zeebe.util.state.*;
 import io.zeebe.util.time.ClockUtil;
 import org.slf4j.Logger;
 
-public class SuspictionController
+public class SuspicionController
 {
     private static final Logger LOG = Loggers.GOSSIP_LOGGER;
 
@@ -36,7 +36,7 @@ public class SuspictionController
 
     private final StateMachine<SimpleStateMachineContext> stateMachine;
 
-    public SuspictionController(GossipContext context)
+    public SuspicionController(GossipContext context)
     {
         this.membershipList = context.getMembershipList();
 

@@ -53,7 +53,7 @@ public class Gossip implements Actor, GossipController, GossipEventPublisher
     private final PingController pingController;
     private final PingReqEventHandler pingReqController;
     private final SyncRequestEventHandler syncRequestHandler;
-    private final SuspictionController suspictionController;
+    private final SuspicionController suspicionController;
 
     private CustomEventListenerConsumer customEventListenerConsumer;
 
@@ -75,7 +75,7 @@ public class Gossip implements Actor, GossipController, GossipEventPublisher
         final GossipContext context = new GossipContext(configuration, membershipList, disseminationComponent, gossipEventSender, gossipEventFactory);
 
         joinController = new JoinController(context);
-        suspictionController = new SuspictionController(context);
+        suspicionController = new SuspicionController(context);
 
         pingController = new PingController(context);
         pingReqController = new PingReqEventHandler(context);
@@ -101,7 +101,7 @@ public class Gossip implements Actor, GossipController, GossipEventPublisher
         workCount += pingController.doWork();
         workCount += pingReqController.doWork();
         workCount += syncRequestHandler.doWork();
-        workCount += suspictionController.doWork();
+        workCount += suspicionController.doWork();
 
         return workCount;
     }

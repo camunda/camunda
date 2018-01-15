@@ -139,11 +139,11 @@ public class MembershipList implements Iterable<Member>
             member
                 .setStatus(MembershipStatus.SUSPECT)
                 .setGossipTerm(gossipTerm)
-                .setSuspicionTimeout(calculateSuspictionTimeout());
+                .setSuspicionTimeout(calculateSuspicionTimeout());
         }
     }
 
-    private long calculateSuspictionTimeout()
+    private long calculateSuspicionTimeout()
     {
         final int multiplier = configuration.getSuspicionMultiplier();
         final int clusterSize = 1 + size();
