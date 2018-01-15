@@ -15,24 +15,25 @@
  */
 package io.zeebe.transport.impl.actor;
 
-import java.util.concurrent.CompletableFuture;
+import org.agrona.nio.TransportPoller;
 
-import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.impl.RemoteAddressImpl;
 import io.zeebe.transport.impl.TransportChannel;
 import io.zeebe.transport.impl.TransportContext;
 import io.zeebe.transport.impl.selector.ConnectTransportPoller;
-import org.agrona.nio.TransportPoller;
 
 public class ClientConductor extends Conductor
 {
     private final ConnectTransportPoller connectTransportPoller;
     private final TransportPoller[] closableTransportPoller;
+    private final ClientChannelManager channelManager;
 
     public ClientConductor(ActorContext actorContext, TransportContext context)
     {
         super(actorContext, context);
         this.connectTransportPoller = new ConnectTransportPoller(context.getChannelConnectTimeout());
         closableTransportPoller = new TransportPoller[]{connectTransportPoller};
+        this.channelManager = new ClientChannelManager(this, context.getRemoteAddressList());
     }
 
     @Override
@@ -41,34 +42,30 @@ public class ClientConductor extends Conductor
         int workCount = super.doWork();
 
         workCount += connectTransportPoller.doWork();
+        workCount += channelManager.maintainChannels();
 
         return workCount;
     }
 
-    public CompletableFuture<Void> requestClientChannel(int streamId)
+    public TransportChannel openChannel(RemoteAddressImpl address)
     {
-        return deferred.runAsync((f) ->
+        final TransportChannel channel =
+            channelFactory.buildClientChannel(
+                this,
+                address,
+                transportContext.getMessageMaxLength(),
+                transportContext.getReceiveHandler());
+
+        if (channel.beginConnect())
         {
-            final RemoteAddress remoteAddress = remoteAddressList.getByStreamId(streamId);
+            connectTransportPoller.addChannel(channel);
+            return channel;
+        }
+        else
+        {
+            return null;
+        }
 
-            if (remoteAddress != null)
-            {
-                final TransportChannel channel = channelFactory.buildClientChannel(
-                    this,
-                    remoteAddress,
-                    transportContext.getMessageMaxLength(),
-                    transportContext.getReceiveHandler());
-
-                if (channel.beginConnect(f))
-                {
-                    connectTransportPoller.addChannel(channel);
-                }
-            }
-            else
-            {
-                f.completeExceptionally(new RuntimeException(String.format("Unknown remote for streamId: %d", streamId)));
-            }
-        });
     }
 
     @Override

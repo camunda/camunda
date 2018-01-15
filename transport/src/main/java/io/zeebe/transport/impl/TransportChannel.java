@@ -25,7 +25,6 @@ import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.agrona.DirectBuffer;
@@ -34,7 +33,6 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
-import io.zeebe.transport.RemoteAddress;
 import io.zeebe.util.allocation.AllocatedBuffer;
 import io.zeebe.util.allocation.BufferAllocators;
 import io.zeebe.util.time.ClockUtil;
@@ -50,7 +48,7 @@ public class TransportChannel
     @SuppressWarnings("unused") // used through STATE_FIELD
     private volatile int state = CLOSED;
 
-    private final RemoteAddress remoteAddress;
+    private final RemoteAddressImpl remoteAddress;
     private final AllocatedBuffer allocatedBuffer;
     private final ByteBuffer channelReadBuffer;
     private final UnsafeBuffer channelReadBufferView;
@@ -59,7 +57,6 @@ public class TransportChannel
     private final FragmentHandler readHandler;
 
     private SocketChannel media;
-    private CompletableFuture<Void> openFuture;
 
     protected long beginConnectTimestamp;
 
@@ -67,7 +64,7 @@ public class TransportChannel
 
     public TransportChannel(
             ChannelLifecycleListener listener,
-            RemoteAddress remoteAddress,
+            RemoteAddressImpl remoteAddress,
             int maxMessageSize,
             FragmentHandler readHandler)
     {
@@ -81,7 +78,7 @@ public class TransportChannel
 
     public TransportChannel(
             ChannelLifecycleListener listener,
-            RemoteAddress remoteAddress,
+            RemoteAddressImpl remoteAddress,
             int maxMessageSize,
             FragmentHandler readHandler,
             SocketChannel media)
@@ -219,12 +216,11 @@ public class TransportChannel
         }
     }
 
-    public boolean beginConnect(CompletableFuture<Void> openFuture)
+    public boolean beginConnect()
     {
         if (STATE_FIELD.compareAndSet(this, CLOSED, CONNECTING))
         {
             this.beginConnectTimestamp = ClockUtil.getCurrentTimeInMillis();
-            this.openFuture = openFuture;
 
             try
             {
@@ -238,7 +234,6 @@ public class TransportChannel
             {
                 e.printStackTrace();
                 doClose();
-                openFuture.completeExceptionally(e);
                 return false;
             }
         }
@@ -260,25 +255,18 @@ public class TransportChannel
             try
             {
                 media.finishConnect();
-                openFuture.complete(null);
                 listener.onChannelConnected(this);
             }
             catch (IOException e)
             {
                 e.printStackTrace();
-                openFuture.completeExceptionally(e);
                 doClose();
             }
-        }
-        else
-        {
-            openFuture.completeExceptionally(new IllegalStateException("Channel is not connecting"));
         }
     }
 
     public void failConnect(Exception cause)
     {
-        openFuture.completeExceptionally(cause);
         doClose();
     }
 
@@ -334,7 +322,7 @@ public class TransportChannel
         }
     }
 
-    public RemoteAddress getRemoteAddress()
+    public RemoteAddressImpl getRemoteAddress()
     {
         return remoteAddress;
     }

@@ -16,12 +16,13 @@
 package io.zeebe.transport;
 
 import java.net.InetSocketAddress;
+import java.util.Arrays;
 import java.util.Objects;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.transport.impl.ReceiveBufferHandler;
-import io.zeebe.transport.impl.RemoteAddressList;
+import io.zeebe.transport.impl.RemoteAddressListImpl;
 import io.zeebe.transport.impl.ServerOutputImpl;
 import io.zeebe.transport.impl.ServerReceiveHandler;
 import io.zeebe.transport.impl.ServerSocketBinding;
@@ -44,7 +45,7 @@ public class ServerTransportBuilder
     private ActorScheduler scheduler;
     private InetSocketAddress bindAddress;
     protected FragmentHandler receiveHandler;
-    protected RemoteAddressList remoteAddressList;
+    protected RemoteAddressListImpl remoteAddressList;
     protected ServerControlMessageListener controlMessageListener;
 
     public ServerTransportBuilder bindAddress(InetSocketAddress address)
@@ -86,7 +87,7 @@ public class ServerTransportBuilder
 
     public ServerTransport build(ServerMessageHandler messageHandler, ServerRequestHandler requestHandler)
     {
-        remoteAddressList = new RemoteAddressList();
+        remoteAddressList = new RemoteAddressListImpl();
 
         receiveHandler(new ServerReceiveHandler(output, remoteAddressList, messageHandler, requestHandler, controlMessageListener));
 
@@ -102,7 +103,7 @@ public class ServerTransportBuilder
 
     public BufferingServerTransport buildBuffering(Dispatcher receiveBuffer)
     {
-        remoteAddressList = new RemoteAddressList();
+        remoteAddressList = new RemoteAddressListImpl();
         receiveHandler(new ReceiveBufferHandler(receiveBuffer));
 
         validate();
@@ -141,9 +142,10 @@ public class ServerTransportBuilder
         final Receiver receiver = new Receiver(actorContext, context);
 
         context.setActorReferences(
-                scheduler.schedule(conductor),
-                scheduler.schedule(sender),
-                scheduler.schedule(receiver));
+                Arrays.asList(
+                    scheduler.schedule(conductor),
+                    scheduler.schedule(sender),
+                    scheduler.schedule(receiver)));
     }
 
     protected void validate()

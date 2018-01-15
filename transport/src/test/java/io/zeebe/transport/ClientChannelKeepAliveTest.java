@@ -33,11 +33,9 @@ import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.impl.ControlMessages;
-import io.zeebe.transport.util.RecordingChannelListener;
 import io.zeebe.util.actor.ActorScheduler;
 import io.zeebe.util.actor.ActorSchedulerBuilder;
 import io.zeebe.util.buffer.BufferUtil;
-import io.zeebe.util.buffer.DirectBufferWriter;
 import io.zeebe.util.time.ClockUtil;
 
 public class ClientChannelKeepAliveTest
@@ -114,14 +112,7 @@ public class ClientChannelKeepAliveTest
 
     protected void openChannel(ClientTransport transport, SocketAddress target)
     {
-        final RecordingChannelListener channelListener = new RecordingChannelListener();
-        transport.registerChannelListener(channelListener);
-
-        // make an initial request to open a channel
-        final RemoteAddress remoteAddress = transport.registerRemoteAddress(target);
-        transport.getOutput().sendRequest(remoteAddress, new DirectBufferWriter().wrap(BUF));
-
-        TestUtil.waitUntil(() -> !channelListener.getOpenedConnections().isEmpty());
+        transport.registerRemoteAndAwaitChannel(target);
     }
 
     @After
@@ -145,7 +136,7 @@ public class ClientChannelKeepAliveTest
     {
         // given
         final ClientTransport transport = buildClientTransport(KEEP_ALIVE_PERIOD);
-        ClockUtil.setCurrentTime(Instant.now());
+        ClockUtil.setCurrentTime(1000);
 
         openChannel(transport, ADDRESS);
 

@@ -89,7 +89,8 @@ public class MixedProtocolsTest
             .build(handler, handler);
         closeables.manage(serverTransport);
 
-        final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(addr);
+        final RemoteAddress remoteAddress = clientTransport.registerRemoteAndAwaitChannel(addr);
+
 
         for (int i = 0; i < numRequests; i++)
         {
@@ -113,6 +114,7 @@ public class MixedProtocolsTest
             assertThat(response.getInt(0)).isEqualTo(i);
             request.close();
         }
+
     }
 
     /**

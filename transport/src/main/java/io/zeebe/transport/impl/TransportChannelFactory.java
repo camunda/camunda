@@ -18,7 +18,6 @@ package io.zeebe.transport.impl;
 import java.nio.channels.SocketChannel;
 
 import io.zeebe.dispatcher.FragmentHandler;
-import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.impl.TransportChannel.ChannelLifecycleListener;
 
 public interface TransportChannelFactory
@@ -26,13 +25,13 @@ public interface TransportChannelFactory
 
     TransportChannel buildClientChannel(
             ChannelLifecycleListener listener,
-            RemoteAddress remoteAddress,
+            RemoteAddressImpl remoteAddress,
             int maxMessageSize,
             FragmentHandler readHandler);
 
     TransportChannel buildServerChannel(
             ChannelLifecycleListener listener,
-            RemoteAddress remoteAddress,
+            RemoteAddressImpl remoteAddress,
             int maxMessageSize,
             FragmentHandler readHandler,
             SocketChannel media);

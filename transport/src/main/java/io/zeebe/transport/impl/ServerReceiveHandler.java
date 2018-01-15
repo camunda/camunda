@@ -19,6 +19,7 @@ import org.agrona.DirectBuffer;
 
 import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.RemoteAddressList;
 import io.zeebe.transport.ServerControlMessageListener;
 import io.zeebe.transport.ServerMessageHandler;
 import io.zeebe.transport.ServerOutput;

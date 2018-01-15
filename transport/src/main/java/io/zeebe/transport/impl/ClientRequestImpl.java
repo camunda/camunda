@@ -18,36 +18,20 @@ package io.zeebe.transport.impl;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Consumer;
 
 import org.agrona.DirectBuffer;
-import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.BackoffIdleStrategy;
-import org.agrona.concurrent.IdleStrategy;
-import org.agrona.concurrent.UnsafeBuffer;
 
 import io.zeebe.dispatcher.ClaimedFragment;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.transport.ClientRequest;
 import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.RequestTimeoutException;
 import io.zeebe.transport.impl.ClientRequestPool.RequestIdGenerator;
 import io.zeebe.util.buffer.BufferWriter;
 
 public class ClientRequestImpl implements ClientRequest
 {
-    private static final AtomicIntegerFieldUpdater<ClientRequestImpl> STATE_FIELD = AtomicIntegerFieldUpdater.newUpdater(ClientRequestImpl.class, "state");
-
-    private static final int CLOSED = 1;
-    private static final int AWAITING_RESPONSE = 2;
-    private static final int RESPONSE_AVAILABLE = 3;
-    private static final int FAILED = 5;
-    private static final int TIMED_OUT = 4;
-
-    @SuppressWarnings("unused") // used through STATE_FIELD
-    private volatile int state = CLOSED;
 
     private final TransportHeaderDescriptor transportHeaderDescriptor = new TransportHeaderDescriptor();
     private final RequestResponseHeaderDescriptor requestResponseHeader = new RequestResponseHeaderDescriptor();
@@ -59,14 +43,7 @@ public class ClientRequestImpl implements ClientRequest
 
     private volatile long requestId;
     private RemoteAddress remoteAddress;
-
-    protected String failure;
-    protected Exception failureCause;
-
-    private final MutableDirectBuffer responseBuffer = new ExpandableArrayBuffer();
-    private final UnsafeBuffer responseBufferView = new UnsafeBuffer(0, 0);
-
-    private final IdleStrategy awaitResponseStreategy = new BackoffIdleStrategy(1000, 100, 1, TimeUnit.MILLISECONDS.toNanos(1));
+    private final FutureImpl responseFuture = new FutureImpl();
 
     public ClientRequestImpl(RequestIdGenerator requestIdGenerator, Dispatcher sendBuffer, Consumer<ClientRequestImpl> closeHandler)
     {
@@ -75,11 +52,16 @@ public class ClientRequestImpl implements ClientRequest
         this.closeHandler = closeHandler;
     }
 
-    public boolean open(RemoteAddress remoteAddress, BufferWriter writer)
+    public void init(RemoteAddress remoteAddress)
     {
-        this.remoteAddress = remoteAddress;
+        this.responseFuture.awaitResult();
         this.requestId = requestIdGenerator.getNextRequestId();
+        this.remoteAddress = remoteAddress;
+    }
 
+    public boolean submit(BufferWriter writer)
+    {
+        this.responseFuture.awaitResult();
         final int requiredLength = RequestResponseHeaderDescriptor.framedLength(TransportHeaderDescriptor.framedLength(writer.getLength()));
 
         long claimedOffset;
@@ -110,8 +92,6 @@ public class ClientRequestImpl implements ClientRequest
 
                 writer.write(buffer, writeOffset);
 
-                STATE_FIELD.set(this, AWAITING_RESPONSE);
-
                 sendBufferClaim.commit();
 
                 return true;
@@ -136,9 +116,9 @@ public class ClientRequestImpl implements ClientRequest
     @Override
     public void close()
     {
-        final int prevState = STATE_FIELD.getAndSet(this, CLOSED);
+        final boolean nowClosed = responseFuture.close();
 
-        if (prevState != CLOSED)
+        if (nowClosed)
         {
             remoteAddress = null;
             requestId = -1;
@@ -148,11 +128,7 @@ public class ClientRequestImpl implements ClientRequest
 
     public void fail(String failure, Exception cause)
     {
-        if (STATE_FIELD.compareAndSet(this, AWAITING_RESPONSE, FAILED))
-        {
-            this.failure = failure;
-            this.failureCause = cause;
-        }
+        responseFuture.fail(failure, cause);
     }
 
     @Override
@@ -163,63 +139,41 @@ public class ClientRequestImpl implements ClientRequest
 
     public void processResponse(DirectBuffer buff, int offset, int length)
     {
-        if (STATE_FIELD.get(this) == AWAITING_RESPONSE)
-        {
-            responseBuffer.putBytes(0, buff, offset, length);
-            responseBufferView.wrap(responseBuffer, 0, length);
-
-            STATE_FIELD.compareAndSet(this, AWAITING_RESPONSE, RESPONSE_AVAILABLE);
-        }
+        responseFuture.complete(buff, offset, length);
     }
-
-
 
     @Override
     public DirectBuffer get() throws InterruptedException, ExecutionException
     {
-        try
-        {
-            return get(30, TimeUnit.SECONDS);
-        }
-        catch (TimeoutException e)
-        {
-            throw new RuntimeException(e);
-        }
+        return responseFuture.get();
     }
 
     @Override
     public DirectBuffer join()
     {
-        try
-        {
-            return get();
-        }
-        catch (InterruptedException | ExecutionException e)
-        {
-            throw new RuntimeException(e);
-        }
+        return responseFuture.join();
     }
 
     @Override
     public boolean isCancelled()
     {
-        throw new UnsupportedOperationException();
+        return responseFuture.isCancelled();
     }
 
     @Override
     public boolean isDone()
     {
-        return STATE_FIELD.get(this) != AWAITING_RESPONSE;
+        return responseFuture.isDone();
     }
 
     public boolean isAwaitingResponse()
     {
-        return STATE_FIELD.get(this) == AWAITING_RESPONSE;
+        return responseFuture.isAwaitingResult();
     }
 
     public boolean isFailed()
     {
-        return STATE_FIELD.get(this) == FAILED;
+        return responseFuture.isFailed();
     }
 
     @Override
@@ -231,38 +185,6 @@ public class ClientRequestImpl implements ClientRequest
     @Override
     public DirectBuffer get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException
     {
-        awaitResponseStreategy.reset();
-
-        final long maxWait = System.nanoTime() + unit.toNanos(timeout);
-
-        do
-        {
-            final int state = STATE_FIELD.get(this);
-
-            switch (state)
-            {
-                case RESPONSE_AVAILABLE:
-                    return responseBufferView;
-
-                case TIMED_OUT:
-                    throw new ExecutionException(new RequestTimeoutException());
-
-                case CLOSED:
-                    throw new ExecutionException(new RuntimeException("Request closed; If you see this exception, you should no longer hold this object (reuse)"));
-
-                case FAILED:
-                    throw new ExecutionException("Request failed - " + failure, failureCause);
-
-                default:
-                    awaitResponseStreategy.idle();
-                    break;
-            }
-
-            if (System.nanoTime() >= maxWait)
-            {
-                STATE_FIELD.compareAndSet(this, AWAITING_RESPONSE, TIMED_OUT);
-            }
-        }
-        while (true);
+        return responseFuture.get(timeout, unit);
     }
 }

@@ -16,6 +16,7 @@
 package io.zeebe.transport;
 
 import static io.zeebe.test.util.BufferAssert.assertThatBuffer;
+import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.agrona.DirectBuffer;
@@ -27,6 +28,7 @@ import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.TestUtil;
+import io.zeebe.transport.util.RecordingChannelListener;
 import io.zeebe.transport.util.RecordingMessageHandler;
 import io.zeebe.util.actor.ActorScheduler;
 import io.zeebe.util.actor.ActorSchedulerBuilder;
@@ -112,9 +114,14 @@ public class ServerTransportTest
         final ServerOutput serverOutput = serverTransport.getOutput();
         final ClientOutput clientOutput = clientTransport.getOutput();
 
-        final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(SERVER_ADDRESS);
+        final RecordingChannelListener channelListener = new RecordingChannelListener();
 
-        // connect client by making a request
+        clientTransport.registerChannelListener(channelListener);
+
+        final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(SERVER_ADDRESS);
+        waitUntil(() -> channelListener.getOpenedConnections().size() == 1);
+
+        // make first request
         message.buffer(BUF1).remoteAddress(remoteAddress);
         clientOutput.sendMessage(message);
         TestUtil.waitUntil(() -> serverHandler.numReceivedMessages() == 1);
@@ -124,7 +131,10 @@ public class ServerTransportTest
         // close client channel
         clientTransport.closeAllChannels().join();
 
-        // reconnect by making a new request
+        // wait for reconnect
+        waitUntil(() -> channelListener.getOpenedConnections().size() == 2);
+
+        // make a second request
         clientOutput.sendMessage(message);
         TestUtil.waitUntil(() -> serverHandler.numReceivedMessages() == 2);
         final RemoteAddress secondRemote = serverHandler.getMessage(1).getRemote();

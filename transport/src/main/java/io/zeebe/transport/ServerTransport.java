@@ -15,7 +15,6 @@
  */
 package io.zeebe.transport;
 
-import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 
 import io.zeebe.transport.impl.ServerSocketBinding;
@@ -64,8 +63,7 @@ public class ServerTransport implements AutoCloseable
             .whenComplete((v, t) ->
             {
                 serverSocketBinding.close();
-                Arrays.asList(transportContext.getActorReferences())
-                    .forEach(r -> r.close());
+                transportContext.getActorReferences().forEach(r -> r.close());
             });
     }
 

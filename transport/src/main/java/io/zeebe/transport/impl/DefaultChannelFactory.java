@@ -18,21 +18,20 @@ package io.zeebe.transport.impl;
 import java.nio.channels.SocketChannel;
 
 import io.zeebe.dispatcher.FragmentHandler;
-import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.impl.TransportChannel.ChannelLifecycleListener;
 
 public class DefaultChannelFactory implements TransportChannelFactory
 {
 
     @Override
-    public TransportChannel buildClientChannel(ChannelLifecycleListener listener, RemoteAddress remoteAddress,
+    public TransportChannel buildClientChannel(ChannelLifecycleListener listener, RemoteAddressImpl remoteAddress,
             int maxMessageSize, FragmentHandler readHandler)
     {
         return new TransportChannel(listener, remoteAddress, maxMessageSize, readHandler);
     }
 
     @Override
-    public TransportChannel buildServerChannel(ChannelLifecycleListener listener, RemoteAddress remoteAddress,
+    public TransportChannel buildServerChannel(ChannelLifecycleListener listener, RemoteAddressImpl remoteAddress,
             int maxMessageSize, FragmentHandler readHandler, SocketChannel media)
     {
         return new TransportChannel(listener, remoteAddress, maxMessageSize, readHandler, media);

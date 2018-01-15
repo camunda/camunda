@@ -20,21 +20,22 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.agrona.nio.TransportPoller;
+
 import io.zeebe.transport.TransportListener;
-import io.zeebe.transport.impl.TransportChannelFactory;
 import io.zeebe.transport.impl.ClientRequestPool;
-import io.zeebe.transport.impl.RemoteAddressList;
+import io.zeebe.transport.impl.RemoteAddressListImpl;
 import io.zeebe.transport.impl.TransportChannel;
 import io.zeebe.transport.impl.TransportChannel.ChannelLifecycleListener;
+import io.zeebe.transport.impl.TransportChannelFactory;
 import io.zeebe.transport.impl.TransportContext;
 import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.actor.Actor;
-import org.agrona.nio.TransportPoller;
 
 public abstract class Conductor implements Actor, ChannelLifecycleListener
 {
     protected final DeferredCommandContext deferred = new DeferredCommandContext();
-    protected final RemoteAddressList remoteAddressList;
+    protected final RemoteAddressListImpl remoteAddressList;
     protected final TransportContext transportContext;
 
     private final List<TransportListener> transportListeners = new ArrayList<>();
@@ -161,6 +162,7 @@ public abstract class Conductor implements Actor, ChannelLifecycleListener
     {
         if (closing.compareAndSet(false, true))
         {
+            remoteAddressList.deactivateAll();
             return CompletableFuture.allOf(closeClosableTransportPoller(), closeCurrentChannels());
         }
         else

@@ -15,6 +15,7 @@
  */
 package io.zeebe.transport;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -25,13 +26,15 @@ import io.zeebe.transport.impl.ClientOutputImpl;
 import io.zeebe.transport.impl.ClientReceiveHandler;
 import io.zeebe.transport.impl.ClientRequestPool;
 import io.zeebe.transport.impl.ClientSendFailureHandler;
-import io.zeebe.transport.impl.RemoteAddressList;
+import io.zeebe.transport.impl.RemoteAddressListImpl;
+import io.zeebe.transport.impl.RequestManager;
 import io.zeebe.transport.impl.TransportChannelFactory;
 import io.zeebe.transport.impl.TransportContext;
 import io.zeebe.transport.impl.actor.ClientActorContext;
 import io.zeebe.transport.impl.actor.ClientConductor;
 import io.zeebe.transport.impl.actor.Receiver;
 import io.zeebe.transport.impl.actor.Sender;
+import io.zeebe.util.actor.ActorReference;
 import io.zeebe.util.actor.ActorScheduler;
 
 public class ClientTransportBuilder
@@ -55,6 +58,9 @@ public class ClientTransportBuilder
     private ActorScheduler scheduler;
     protected List<ClientInputListener> listeners;
     protected TransportChannelFactory channelFactory;
+
+    protected boolean enableManagedRequests = false;
+    protected long defaultRequestRetryTimeout = Duration.ofSeconds(15).toMillis();
 
     public ClientTransportBuilder scheduler(ActorScheduler scheduler)
     {
@@ -131,17 +137,42 @@ public class ClientTransportBuilder
         return this;
     }
 
+    /**
+     * Enables APIs like {@link ClientOutput#sendRequestWithRetry(RemoteAddress, io.zeebe.util.buffer.BufferWriter)}.
+     * Requires running another actor, so you can keep this disabled if you don't use the APIs.
+     */
+    public ClientTransportBuilder enableManagedRequests()
+    {
+        this.enableManagedRequests = true;
+        return this;
+    }
+
+    public ClientTransportBuilder defaultRequestRetryTimeout(Duration duration)
+    {
+        this.defaultRequestRetryTimeout = duration.toMillis();
+        return this;
+    }
+
     public ClientTransport build()
     {
         validate();
         final ClientRequestPool clientRequestPool = new ClientRequestPool(requestPoolSize, sendBuffer);
-        final ClientOutput output = new ClientOutputImpl(sendBuffer, clientRequestPool);
-        final RemoteAddressList remoteAddressList = new RemoteAddressList();
+        final RequestManager requestManager = enableManagedRequests ?
+                new RequestManager(clientRequestPool) :
+                null;
+        final ClientOutput output = new ClientOutputImpl(
+                sendBuffer,
+                clientRequestPool,
+                requestManager,
+                defaultRequestRetryTimeout);
+
+        final RemoteAddressListImpl remoteAddressList = new RemoteAddressListImpl();
 
         final TransportContext transportContext =
                 buildTransportContext(
                         output,
                         clientRequestPool,
+                        requestManager,
                         remoteAddressList,
                         new ClientReceiveHandler(clientRequestPool, receiveBuffer, listeners),
                         receiveBuffer);
@@ -152,7 +183,8 @@ public class ClientTransportBuilder
     protected TransportContext buildTransportContext(
             ClientOutput output,
             ClientRequestPool clientRequestPool,
-            RemoteAddressList addressList,
+            RequestManager requestManager,
+            RemoteAddressListImpl addressList,
             FragmentHandler receiveHandler,
             Dispatcher receiveBuffer)
     {
@@ -161,6 +193,7 @@ public class ClientTransportBuilder
         context.setReceiveBuffer(receiveBuffer);
         context.setMessageMaxLength(messageMaxLength);
         context.setClientRequestPool(clientRequestPool);
+        context.setRequestManager(requestManager);
         context.setRemoteAddressList(addressList);
         context.setReceiveHandler(receiveHandler);
         context.setSenderSubscription(sendBuffer.getSubscriptionByName(SEND_BUFFER_SUBSCRIPTION_NAME));
@@ -184,10 +217,19 @@ public class ClientTransportBuilder
         final Sender sender = new Sender(actorContext, context);
         final Receiver receiver = new Receiver(actorContext, context);
 
-        context.setActorReferences(
-            scheduler.schedule(conductor),
-            scheduler.schedule(sender),
-            scheduler.schedule(receiver));
+        final List<ActorReference> actorReferences = new ArrayList<>();
+        actorReferences.add(scheduler.schedule(conductor));
+        actorReferences.add(scheduler.schedule(sender));
+        actorReferences.add(scheduler.schedule(receiver));
+
+        final RequestManager requestManager = context.getRequestManager();
+
+        if (requestManager != null)
+        {
+            actorReferences.add(scheduler.schedule(requestManager));
+        }
+
+        context.setActorReferences(actorReferences);
 
         return new ClientTransport(actorContext, context);
     }

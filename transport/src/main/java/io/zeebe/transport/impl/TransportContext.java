@@ -15,6 +15,8 @@
  */
 package io.zeebe.transport.impl;
 
+import java.util.List;
+
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.dispatcher.Subscription;
@@ -35,11 +37,12 @@ public class TransportContext
 
     private Subscription senderSubscription;
 
-    private RemoteAddressList remoteAddressList;
+    private RemoteAddressListImpl remoteAddressList;
 
     private ClientRequestPool clientRequestPool;
+    private RequestManager requestManager;
 
-    private ActorReference[] actorReferences;
+    private List<ActorReference> actorReferences;
 
     private FragmentHandler receiveHandler;
     private SendFailureHandler sendFailureHandler;
@@ -98,12 +101,12 @@ public class TransportContext
         this.senderSubscription = senderSubscription;
     }
 
-    public RemoteAddressList getRemoteAddressList()
+    public RemoteAddressListImpl getRemoteAddressList()
     {
         return remoteAddressList;
     }
 
-    public void setRemoteAddressList(RemoteAddressList remoteAddressList)
+    public void setRemoteAddressList(RemoteAddressListImpl remoteAddressList)
     {
         this.remoteAddressList = remoteAddressList;
     }
@@ -118,12 +121,12 @@ public class TransportContext
         this.clientRequestPool = clientRequestPool;
     }
 
-    public void setActorReferences(ActorReference... conductorReferences)
+    public void setActorReferences(List<ActorReference> conductorReferences)
     {
         this.actorReferences = conductorReferences;
     }
 
-    public ActorReference[] getActorReferences()
+    public List<ActorReference> getActorReferences()
     {
         return actorReferences;
     }
@@ -186,5 +189,15 @@ public class TransportContext
     public TransportChannelFactory getChannelFactory()
     {
         return channelFactory;
+    }
+
+    public RequestManager getRequestManager()
+    {
+        return requestManager;
+    }
+
+    public void setRequestManager(RequestManager requestManager)
+    {
+        this.requestManager = requestManager;
     }
 }

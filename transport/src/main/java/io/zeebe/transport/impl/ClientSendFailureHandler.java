@@ -43,7 +43,6 @@ public class ClientSendFailureHandler implements SendFailureHandler
             {
                 pendingRequest.fail(failure, cause);
             }
-
         }
     }
 

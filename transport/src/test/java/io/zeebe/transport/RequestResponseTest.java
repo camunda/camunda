@@ -29,6 +29,7 @@ import org.junit.Test;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.test.util.AutoCloseableRule;
+import io.zeebe.transport.util.EchoRequestResponseHandler;
 import io.zeebe.util.actor.ActorScheduler;
 import io.zeebe.util.actor.ActorSchedulerBuilder;
 import io.zeebe.util.buffer.DirectBufferWriter;
@@ -84,21 +85,13 @@ public class RequestResponseTest
             .sendBuffer(serverSendBuffer)
             .bindAddress(addr.toInetSocketAddress())
             .scheduler(actorScheduler)
-            .build(null, (output, remote, buf, offset, length, requestId) ->
-            {
-                response
-                    .reset()
-                    .buffer(buf, offset, length)
-                    .requestId(requestId)
-                    .remoteStreamId(remote.getStreamId());
-                return output.sendResponse(response);
-            });
+            .build(null, new EchoRequestResponseHandler());
         closeables.manage(serverTransport);
 
         final int numRequests = 100_000;
         int numResponsesReceived = 0;
         int numRequestsSent = 0;
-        final RemoteAddress remote = clientTransport.registerRemoteAddress(addr);
+        final RemoteAddress remote = clientTransport.registerRemoteAndAwaitChannel(addr);
 
         while (numResponsesReceived < numRequests)
         {
@@ -118,7 +111,6 @@ public class RequestResponseTest
                 pendingRequests.remove();
             }
         }
-
     }
 
     protected boolean sendRequest(ClientTransport client, RemoteAddress remote, int payload)

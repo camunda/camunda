@@ -31,9 +31,40 @@ public interface ClientOutput
     /**
      * <p>Sends a request according to the request response protocol to a given remote
      *
-     * <p>Returns null if request cannot be currently written due to exhausted capacity.
-     * Throws an exception if the request is not sendable at all (e.g. buffer writer throws exception).
+     * <p>Returns null if request cannot be currently written to the send buffer due to exhausted capacity.
+     *
+     * <p>Throws an exception if the request is not sendable at all (e.g. buffer writer throws exception).
+     *
+     * <p>Returns a future to the response content else.
+     *
+     * <p>The future throws fails with {@link NotConnectedException} if the addressed remote is currently
+     * not connected.
+     *
+     * <p>The returned request object MUST be closed when it is not needed anymore.
+     *
+     * <p>Guarantees:
+     * <ul>
+     * <li>Garbage-free
+     * <li>One intermediary copy of the request (on the send buffer)
      */
     ClientRequest sendRequest(RemoteAddress addr, BufferWriter writer);
+
+    /**
+     * <p>Like {@link #sendRequest(RemoteAddress, BufferWriter)} but retries the request if there is no current connection.
+     * Makes this method more robust in the presence of short intermittent disconnects.
+     *
+     * <p>Guarantees:
+     * <ul>
+     * <li>Not garbage-free
+     * <li>n intermediary copies of the request (one local copy for making retries, one copy on the send buffer per try)
+     *
+     * @param timeout Timeout in milliseconds until the returned future fails if no response is received.
+     */
+    ClientRequest sendRequestWithRetry(RemoteAddress addr, BufferWriter writer, long timeout);
+
+    /**
+     * Same as {@link #sendRequestWithRetry(RemoteAddress, BufferWriter, long)} where the timeout is set to the configured default timeout.
+     */
+    ClientRequest sendRequestWithRetry(RemoteAddress addr, BufferWriter writer);
 
 }

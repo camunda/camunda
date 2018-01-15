@@ -37,37 +37,44 @@ public class ClientRequestPool implements AutoCloseable
 
         for (int i = 0; i < capacity; i++)
         {
-            final ClientRequestImpl request = new ClientRequestImpl(new RequestIdGenerator(i, capacity), sendBuffer, this::onRequestClose);
+            final ClientRequestImpl request = new ClientRequestImpl(new RequestIdGenerator(i, capacity), sendBuffer, this::returnRequest);
             requests[i] = request;
             availableRequests.add(request);
         }
     }
 
-    public ClientRequestImpl open(RemoteAddress remoteAddress, BufferWriter writer)
+    public ClientRequestImpl openRequest(RemoteAddress remote, BufferWriter writer)
     {
-
-        ClientRequestImpl request = availableRequests.poll();
+        ClientRequestImpl request = poll(remote);
 
         if (request != null)
         {
-            boolean requestOpened = false;
+            boolean requestSubmitted = false;
 
             try
             {
-                requestOpened = request.open(remoteAddress, writer);
-            }
-            catch (Exception e)
-            {
-                throw e;
+                requestSubmitted = request.submit(writer);
             }
             finally
             {
-                if (!requestOpened)
+                if (!requestSubmitted)
                 {
-                    availableRequests.add(request);
+                    request.close();
                     request = null;
                 }
             }
+        }
+
+        return request;
+    }
+
+    public ClientRequestImpl poll(RemoteAddress remote)
+    {
+        final ClientRequestImpl request = availableRequests.poll();
+
+        if (request != null)
+        {
+            request.init(remote);
         }
 
         return request;
@@ -118,7 +125,7 @@ public class ClientRequestPool implements AutoCloseable
         }
     }
 
-    public void onRequestClose(ClientRequestImpl requestImpl)
+    public void returnRequest(ClientRequestImpl requestImpl)
     {
         availableRequests.add(requestImpl);
     }

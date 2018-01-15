@@ -26,11 +26,18 @@ public class ClientOutputImpl implements ClientOutput
 {
     protected final Dispatcher sendBuffer;
     protected final ClientRequestPool requestPool;
+    protected final RequestManager requestManager;
+    protected final long defaultRequestRetryTimeout;
 
-    public ClientOutputImpl(Dispatcher sendBuffer, ClientRequestPool requestPool)
+    public ClientOutputImpl(Dispatcher sendBuffer,
+            ClientRequestPool requestPool,
+            RequestManager requestManager,
+            long defaultRequestRetryTimeout)
     {
         this.sendBuffer = sendBuffer;
         this.requestPool = requestPool;
+        this.requestManager = requestManager;
+        this.defaultRequestRetryTimeout = defaultRequestRetryTimeout;
     }
 
     @Override
@@ -42,7 +49,28 @@ public class ClientOutputImpl implements ClientOutput
     @Override
     public ClientRequest sendRequest(RemoteAddress addr, BufferWriter writer)
     {
-        return requestPool.open(addr, writer);
+        return requestPool.openRequest(addr, writer);
+    }
+
+    @Override
+    public ClientRequest sendRequestWithRetry(RemoteAddress addr, BufferWriter writer, long timeout)
+    {
+        ensureRequestManagerEnabled();
+        return requestManager.openRequest(addr, writer, timeout);
+    }
+
+    @Override
+    public ClientRequest sendRequestWithRetry(RemoteAddress addr, BufferWriter writer)
+    {
+        return sendRequestWithRetry(addr, writer, defaultRequestRetryTimeout);
+    }
+
+    private void ensureRequestManagerEnabled()
+    {
+        if (requestManager == null)
+        {
+            throw new UnsupportedOperationException("Managed requests are disabled. Must be enabled on the client transport builder");
+        }
     }
 
 }

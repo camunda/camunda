@@ -15,7 +15,7 @@
  */
 package io.zeebe.transport;
 
-import java.util.Arrays;
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
 import org.agrona.DirectBuffer;
@@ -24,7 +24,6 @@ import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.dispatcher.Subscription;
 import io.zeebe.transport.impl.ClientRequestPool;
-import io.zeebe.transport.impl.RemoteAddressList;
 import io.zeebe.transport.impl.TransportContext;
 import io.zeebe.transport.impl.actor.ActorContext;
 
@@ -58,11 +57,94 @@ public class ClientTransport implements AutoCloseable
     /**
      * Resolve a socket address as a remote to which data can be sent. The return value identifies
      * the remote and remains stable throughout the lifetime of this {@link ClientTransport} object, i.e.
-     * can be cached.
+     * can be cached. Transport will make sure to keep an open channel to this remote until the address
+     * is deactivated or retired.
      */
     public RemoteAddress registerRemoteAddress(SocketAddress addr)
     {
         return remoteAddressList.register(addr);
+    }
+
+    /**
+     * Signals that the remote is no longer in use for the time being. A transport channel will no longer
+     * be managed. A remote address is reactivated when the endpoint is registered again.
+     */
+    public void deactivateRemoteAddress(RemoteAddress remote)
+    {
+        remoteAddressList.deactivate(remote);
+    }
+
+    /**
+     * Signals that the remote is no longer used and that the stream should not be reused on reactivation. That means,
+     * when the endpoint is registered again, it is assigned a different stream id (=> a new remote address is returned).
+     * @param remote
+     */
+    public void retireRemoteAddress(RemoteAddress remote)
+    {
+        remoteAddressList.retire(remote);
+    }
+
+    /**
+     * <p>DO NOT USE in production code as it involves blocking the current thread.
+     *
+     * <p>Not thread-safe
+     *
+     * <p>Like {@link #registerRemoteAddress(SocketAddress)} but blockingly waits for the corresponding channel
+     * to be opened such that it is probable that subsequent requests/messages can be sent. This saves test code
+     * the need to retry sending.
+     */
+    public RemoteAddress registerRemoteAndAwaitChannel(SocketAddress addr)
+    {
+        final RemoteAddress remoteAddress = getRemoteAddress(addr);
+
+        if (remoteAddress != null)
+        {
+            // already registered; assuming a channel is open then
+            return remoteAddress;
+        }
+        else
+        {
+            final Object monitor = new Object();
+
+            final TransportListener listener = new TransportListener()
+            {
+                @Override
+                public void onConnectionEstablished(RemoteAddress remoteAddress)
+                {
+                    synchronized (monitor)
+                    {
+                        if (remoteAddress.getAddress().equals(addr))
+                        {
+                            monitor.notifyAll();
+                            removeChannelListener(this);
+                        }
+                    }
+                }
+
+                @Override
+                public void onConnectionClosed(RemoteAddress remoteAddress)
+                {
+                }
+            };
+
+            transportActorContext.registerListener(listener).join();
+
+            synchronized (monitor)
+            {
+                final RemoteAddress registeredAddress = registerRemoteAddress(addr);
+                try
+                {
+                    monitor.wait(Duration.ofSeconds(10).toMillis());
+                }
+                catch (InterruptedException e)
+                {
+                    throw new RuntimeException(e);
+                }
+
+                return registeredAddress;
+            }
+
+        }
     }
 
     public RemoteAddress getRemoteAddress(SocketAddress addr)
@@ -94,9 +176,9 @@ public class ClientTransport implements AutoCloseable
     /**
      * Registers a listener with callbacks for whenever a connection to a remote gets established or closed.
      */
-    public void registerChannelListener(TransportListener channelListener)
+    public CompletableFuture<Void> registerChannelListener(TransportListener channelListener)
     {
-        transportActorContext.registerListener(channelListener);
+        return transportActorContext.registerListener(channelListener);
     }
 
     public void removeChannelListener(TransportListener listener)
@@ -112,8 +194,7 @@ public class ClientTransport implements AutoCloseable
                 {
                     requestPool.close();
 
-                    Arrays.asList(transportContext.getActorReferences())
-                         .forEach(r -> r.close());
+                    transportContext.getActorReferences().forEach(r -> r.close());
                 });
     }
 

@@ -24,7 +24,6 @@ import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -37,6 +36,7 @@ import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.test.util.AutoCloseableRule;
+import io.zeebe.transport.impl.RemoteAddressImpl;
 import io.zeebe.transport.impl.TransportChannel;
 import io.zeebe.transport.impl.TransportChannel.ChannelLifecycleListener;
 import io.zeebe.transport.impl.TransportChannelFactory;
@@ -111,6 +111,9 @@ public class ClientConnectTimeoutTest
     @Test
     public void shouldFailRequestAfterChannelConnectTimeout()
     {
+        fail("Der Test läuft zwar, ist aber nicht aussagekräfitg, weil nicht der Connecttimeout das Request fehlschlagen lässt, " +
+                "sondern der Sender, weil er keinen Channel hat");
+
         // given
         ClockUtil.setCurrentTime(Instant.now());
         final ClientTransport clientTransport = buildClientTransport(CONNECT_TIMEOUT);
@@ -139,13 +142,15 @@ public class ClientConnectTimeoutTest
         }
         catch (ExecutionException e)
         {
-            assertThat(e).hasMessage("Request failed - Could not open channel");
+            assertThat(e).hasMessage("Request failed - No available channel for remote");
         }
     }
 
     @Test
     public void shouldFailRequestsToDifferentRemotes()
     {
+        fail("Test fails, but is the connect-timeout-Feature required anymore?");
+
         // given
         ClockUtil.setCurrentTime(Instant.now());
         final ClientTransport clientTransport = buildClientTransport(CONNECT_TIMEOUT);
@@ -192,7 +197,7 @@ public class ClientConnectTimeoutTest
         protected AtomicInteger connectingChannels = new AtomicInteger(0);
 
         @Override
-        public TransportChannel buildClientChannel(ChannelLifecycleListener listener, RemoteAddress remoteAddress,
+        public TransportChannel buildClientChannel(ChannelLifecycleListener listener, RemoteAddressImpl remoteAddress,
                 int maxMessageSize, FragmentHandler readHandler)
         {
             return new TransportChannel(listener, remoteAddress, maxMessageSize, readHandler)
@@ -205,9 +210,9 @@ public class ClientConnectTimeoutTest
                 }
 
                 @Override
-                public boolean beginConnect(CompletableFuture<Void> openFuture)
+                public boolean beginConnect()
                 {
-                    final boolean result = super.beginConnect(openFuture);
+                    final boolean result = super.beginConnect();
                     connectingChannels.incrementAndGet();
                     return result;
                 }
@@ -215,7 +220,7 @@ public class ClientConnectTimeoutTest
         }
 
         @Override
-        public TransportChannel buildServerChannel(ChannelLifecycleListener listener, RemoteAddress remoteAddress,
+        public TransportChannel buildServerChannel(ChannelLifecycleListener listener, RemoteAddressImpl remoteAddress,
                 int maxMessageSize, FragmentHandler readHandler, SocketChannel media)
         {
             throw new RuntimeException("client only");

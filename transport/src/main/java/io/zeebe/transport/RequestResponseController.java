@@ -216,7 +216,9 @@ public class RequestResponseController
             context.receiverRemote = transport.registerRemoteAddress(context.receiver);
 
             // TODO: should submit timeout here
-            final ClientRequest request = transport.getOutput().sendRequest(context.receiverRemote, context.requestWriter);
+            final ClientRequest request = transport.getOutput().sendRequestWithRetry(
+                    context.receiverRemote,
+                    context.requestWriter);
 
             if (request != null)
             {

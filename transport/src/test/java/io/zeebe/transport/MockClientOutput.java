@@ -65,4 +65,16 @@ public class MockClientOutput implements ClientOutput
 
         return clientRequest;
     }
+
+    @Override
+    public ClientRequest sendRequestWithRetry(RemoteAddress addr, BufferWriter writer, long timeout)
+    {
+        return sendRequest(addr, writer);
+    }
+
+    @Override
+    public ClientRequest sendRequestWithRetry(RemoteAddress addr, BufferWriter writer)
+    {
+        return sendRequestWithRetry(addr, writer, -1);
+    }
 }

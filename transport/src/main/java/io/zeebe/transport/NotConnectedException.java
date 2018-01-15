@@ -15,10 +15,14 @@
  */
 package io.zeebe.transport;
 
-public interface RemoteAddress
+public class NotConnectedException extends TransportException
 {
 
-    int getStreamId();
+    private static final long serialVersionUID = 1L;
 
-    SocketAddress getAddress();
+    public NotConnectedException(String msg)
+    {
+        super(msg);
+    }
+
 }

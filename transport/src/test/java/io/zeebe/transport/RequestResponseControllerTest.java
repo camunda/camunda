@@ -31,6 +31,7 @@ import org.mockito.Mock;
 import io.zeebe.test.util.BufferAssert;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.test.util.io.FailingBufferWriter;
+import io.zeebe.transport.impl.RemoteAddressImpl;
 import io.zeebe.util.buffer.BufferReader;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.buffer.DirectBufferReader;
@@ -44,7 +45,7 @@ public class RequestResponseControllerTest
     protected static final DirectBuffer BUF2 = BufferUtil.wrapBytes(5, 6, 7, 8);
 
     protected static final SocketAddress RECEIVER = new SocketAddress("123.123.123.123", 1234);
-    protected static final RemoteAddress REMOTE = new RemoteAddress(123, RECEIVER);
+    protected static final RemoteAddress REMOTE = new RemoteAddressImpl(123, RECEIVER);
 
     @Mock
     protected ClientTransport transport;

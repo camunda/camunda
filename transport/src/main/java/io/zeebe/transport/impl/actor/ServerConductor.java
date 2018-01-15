@@ -19,12 +19,13 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
 
-import io.zeebe.transport.RemoteAddress;
+import org.agrona.nio.TransportPoller;
+
 import io.zeebe.transport.SocketAddress;
+import io.zeebe.transport.impl.RemoteAddressImpl;
 import io.zeebe.transport.impl.TransportChannel;
 import io.zeebe.transport.impl.TransportContext;
 import io.zeebe.transport.impl.selector.AcceptTransportPoller;
-import org.agrona.nio.TransportPoller;
 
 public class ServerConductor extends Conductor
 {
@@ -71,7 +72,7 @@ public class ServerConductor extends Conductor
                 }
             }
 
-            RemoteAddress remoteAddress = remoteAddressList.getByAddress(socketAddress);
+            RemoteAddressImpl remoteAddress = remoteAddressList.getByAddress(socketAddress);
 
             if (remoteAddress != null)
             {

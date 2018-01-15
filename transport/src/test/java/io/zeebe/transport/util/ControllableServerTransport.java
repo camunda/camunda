@@ -26,16 +26,16 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import io.zeebe.dispatcher.FragmentHandler;
-import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.SocketAddress;
-import io.zeebe.transport.impl.RemoteAddressList;
+import io.zeebe.transport.impl.RemoteAddressImpl;
+import io.zeebe.transport.impl.RemoteAddressListImpl;
 import io.zeebe.transport.impl.TransportChannel;
 
 public class ControllableServerTransport implements AutoCloseable
 {
     protected Map<SocketAddress, ServerSocketChannel> serverChannels = new HashMap<>();
     protected Map<SocketAddress, List<TransportChannel>> clientChannels = new HashMap<>();
-    protected RemoteAddressList remoteList = new RemoteAddressList();
+    protected RemoteAddressListImpl remoteList = new RemoteAddressListImpl();
 
     public void listenOn(SocketAddress localAddress)
     {
@@ -82,7 +82,7 @@ public class ControllableServerTransport implements AutoCloseable
         {
             final SocketChannel clientChannel = serverChannels.get(localAddress).accept();
             clientChannel.configureBlocking(false);
-            final RemoteAddress remoteAddress = remoteList.register(new SocketAddress((InetSocketAddress) clientChannel.getRemoteAddress()));
+            final RemoteAddressImpl remoteAddress = remoteList.register(new SocketAddress((InetSocketAddress) clientChannel.getRemoteAddress()));
 
             final TransportChannel c = new TransportChannel(
                 null,

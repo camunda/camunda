@@ -91,7 +91,7 @@ public class SingleMessageTest
             }, null);
         closeables.manage(serverTransport);
 
-        final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(addr);
+        final RemoteAddress remoteAddress = clientTransport.registerRemoteAndAwaitChannel(addr);
 
         for (int i = 0; i < numRequests; i++)
         {

@@ -19,13 +19,14 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 
 import io.zeebe.dispatcher.BlockPeek;
 import io.zeebe.dispatcher.Subscription;
+import io.zeebe.transport.NotConnectedException;
+import io.zeebe.transport.Loggers;
 import io.zeebe.transport.impl.ControlMessages;
 import io.zeebe.transport.impl.SendFailureHandler;
 import io.zeebe.transport.impl.TransportChannel;
@@ -40,11 +41,9 @@ import io.zeebe.util.time.ClockUtil;
 
 public class Sender implements Actor
 {
-    private final ActorContext actorContext;
     private final Int2ObjectHashMap<TransportChannel> channelMap = new Int2ObjectHashMap<>();
     private final Subscription senderSubscription;
     private final int maxPeekSize;
-    private final boolean isClient;
     protected final long keepAlivePeriod;
     protected final SendFailureHandler sendFailureHandler;
 
@@ -74,10 +73,8 @@ public class Sender implements Actor
 
     public Sender(ActorContext actorContext, TransportContext context)
     {
-        this.actorContext = actorContext;
         this.senderSubscription = context.getSenderSubscription();
         this.maxPeekSize = context.getMessageMaxLength() * 16;
-        this.isClient = actorContext instanceof ClientActorContext;
         this.sendFailureHandler = context.getSendFailureHandler();
         this.keepAlivePeriod = context.getChannelKeepAlivePeriod();
 
@@ -128,7 +125,6 @@ public class Sender implements Actor
             @Override
             public boolean doWork(SenderContext context)
             {
-                final CompletableFuture<Void> channelFuture = context.channelFuture;
                 final BlockPeek blockPeek = context.blockPeek;
                 final TransportChannel ch = channelMap.get(blockPeek.getStreamId());
 
@@ -139,35 +135,12 @@ public class Sender implements Actor
                 }
                 else
                 {
-                    if (isClient)
-                    {
-                        if (channelFuture == null)
-                        {
-                            context.channelFuture = ((ClientActorContext) actorContext).requestChannel(blockPeek.getStreamId());
-                        }
-                        else if (channelFuture.isCancelled() || channelFuture.isCompletedExceptionally())
-                        {
-                            try
-                            {
-                                channelFuture.get();
-                            }
-                            catch (Exception e)
-                            {
-                                // expected branch due to else-if check
-                                context.failure = "Could not open channel";
-                                context.failureCause = e;
-                            }
-
-                            context.take(DISCARD);
-                        }
-                    }
-                    else
-                    {
-                        context.failure = "Channel is not open";
-                        context.take(DISCARD);
-                    }
+                    context.failure = "No available channel for remote";
+                    context.failureCause = new NotConnectedException(context.failure);
+                    context.take(DISCARD);
                     return false;
                 }
+
             }
         }
 
@@ -226,6 +199,7 @@ public class Sender implements Actor
                 final Iterator<DirectBuffer> messagesIt = blockPeek.iterator();
                 while (messagesIt.hasNext())
                 {
+
                     final DirectBuffer nextMessage = messagesIt.next();
                     sendFailureHandler.onFragment(
                             nextMessage,
@@ -343,14 +317,19 @@ public class Sender implements Actor
 
     public void registerChannel(TransportChannel c)
     {
+        // record the time before submitting the command because this is closer to the point in time the
+        // channel was opened (=> and makes the behavior more predictable in test)
+        final long now = ClockUtil.getCurrentTimeInMillis();
+
         stateMachineAgent.addCommand((ctx) ->
         {
             if (channelMap.isEmpty())
             {
-                lastKeepAlive = ClockUtil.getCurrentTimeInMillis();
+                lastKeepAlive = now;
             }
 
             channelMap.put(c.getStreamId(), c);
+            Loggers.TRANSPORT_LOGGER.debug("Channel opened to remote {}", c.getRemoteAddress());
         });
     }
 
@@ -358,7 +337,6 @@ public class Sender implements Actor
     {
         final BlockPeek blockPeek = new BlockPeek();
 
-        CompletableFuture<Void> channelFuture;
         TransportChannel writeChannel;
         int bytesWritten;
 
@@ -380,7 +358,6 @@ public class Sender implements Actor
         {
             writeChannel = null;
             bytesWritten = 0;
-            channelFuture = null;
             channelIt = null;
             keepAliveBuffer.clear();
             failure = null;
