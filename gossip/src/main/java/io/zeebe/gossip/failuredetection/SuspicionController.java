@@ -44,13 +44,13 @@ public class SuspicionController
         final int checkInterval = context.getConfiguration().getProbeInterval();
 
         final AwaitNextIntervalState awaitNextIntervalState = new AwaitNextIntervalState(checkInterval);
-        final CheckSuspictionTimeoutState checkSuspictionTimeoutState = new CheckSuspictionTimeoutState(context.getDisseminationComponent());
+        final CheckSuspicionTimeoutState checkSuspicionTimeoutState = new CheckSuspicionTimeoutState(context.getDisseminationComponent());
 
         stateMachine = StateMachine.builder()
-                .initialState(awaitNextIntervalState)
-                .from(awaitNextIntervalState).take(TRANSITION_DEFAULT).to(checkSuspictionTimeoutState)
-                .from(checkSuspictionTimeoutState).take(TRANSITION_DEFAULT).to(awaitNextIntervalState)
-                .build();
+                                   .initialState(awaitNextIntervalState)
+                                   .from(awaitNextIntervalState).take(TRANSITION_DEFAULT).to(checkSuspicionTimeoutState)
+                                   .from(checkSuspicionTimeoutState).take(TRANSITION_DEFAULT).to(awaitNextIntervalState)
+                                   .build();
     }
 
     public int doWork()
@@ -81,11 +81,11 @@ public class SuspicionController
         }
     }
 
-    private class CheckSuspictionTimeoutState implements State<SimpleStateMachineContext>
+    private class CheckSuspicionTimeoutState implements State<SimpleStateMachineContext>
     {
         private final DisseminationComponent disseminationComponent;
 
-        CheckSuspictionTimeoutState(DisseminationComponent disseminationComponent)
+        CheckSuspicionTimeoutState(DisseminationComponent disseminationComponent)
         {
             this.disseminationComponent = disseminationComponent;
         }
