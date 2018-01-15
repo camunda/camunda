@@ -199,6 +199,7 @@ public class LogStreamController implements Actor
         @Override
         public void work(LogContext context)
         {
+            LOG.debug("Failing for first event position: {}", context.getFirstEventPosition());
             for (int i = 0; i < failureListeners.size(); i++)
             {
                 final LogStreamFailureListener logStreamWriteErrorListener = failureListeners.get(i);
