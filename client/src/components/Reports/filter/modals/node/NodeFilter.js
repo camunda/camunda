@@ -12,7 +12,7 @@ export default class NodeFilter extends React.Component {
 
     this.state = {
       xml: undefined,
-      selectedNodes: []
+      selectedNodes: (this.props.filterData) ? this.props.filterData.data.values : []
     };
 
     this.loadDiagram();
@@ -38,7 +38,7 @@ export default class NodeFilter extends React.Component {
 
   createFilter = () => {
     const values = this.state.selectedNodes.map(node => node.id);
-    
+
     this.props.addFilter({
       type: 'executedFlowNodes',
       data: {
@@ -63,7 +63,7 @@ export default class NodeFilter extends React.Component {
       previewList.push(
         <li key={idx} className='NodeFilter__preview-item'>
           <span key={idx}>
-            {' '}<span className='NodeFilter__preview-item-value'>{selectedNode.name.toString()}</span>{' '}
+            {' '}<span className='NodeFilter__preview-item-value'>{selectedNode.name}</span>{' '}
             {idx < this.state.selectedNodes.length - 1 && this.createOperator('or')}
           </span>
         </li>
@@ -76,6 +76,12 @@ export default class NodeFilter extends React.Component {
             </ul>;
   }
 
+  getNodes = (nodes) => {
+    this.setState({
+      selectedNodes: nodes
+    })
+  }
+
   render() {
     return (<Modal open={true} onClose={this.props.close} className='NodeFilter__modal'>
       <Modal.Header>Add Flow Node Filter</Modal.Header>
@@ -84,14 +90,14 @@ export default class NodeFilter extends React.Component {
         {this.state.xml && (
           <div className='NodeFilter__diagram-container'>
             <BPMNDiagram xml={this.state.xml}>
-              <ClickBehavior onClick={this.toggleNode} selectedNodes={this.state.selectedNodes}/>
+              <ClickBehavior getNodes={this.getNodes} onClick={this.toggleNode} selectedNodes={this.state.selectedNodes}/>
             </BPMNDiagram>
           </div>
         )}
       </Modal.Content>
       <Modal.Actions>
         <Button onClick={this.props.close}>Cancel</Button>
-        <Button type='primary' color='blue' disabled={!this.isNodeSelected()} onClick={this.createFilter}>Add Filter</Button>
+        <Button type='primary' color='blue' disabled={!this.isNodeSelected()} onClick={this.createFilter}>{(this.props.filterData) ? 'Edit ' : 'Add ' }Filter</Button>
       </Modal.Actions>
     </Modal>);
   }

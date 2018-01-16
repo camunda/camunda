@@ -47,10 +47,27 @@ it('should contain a filter modal when a newFilter should be created', () => {
   expect(node).toIncludeText('DateFilter');
 });
 
+it('should contain an edit filter modal when a filter should be edited', () => {
+  const node = mount(<Filter data={[{type:'rollingDate'}]} />);
+
+  node.instance().openEditFilterModal(0)({target: {className: 'not a button)))'}});
+
+  expect(node).toIncludeText('DateFilter');
+});
+
 it('should contain a FilterModal component based on the selected new Filter', () => {
   const node = mount(<Filter data={[]} />);
 
   node.instance().openNewFilterModal('variable')();
+
+  expect(node).toIncludeText('VariableFilter');
+  expect(node).not.toIncludeText('DateFilter');
+});
+
+it('should contain a EditFilterModal component based on the Filter selected for edition', () => {
+  const node = mount(<Filter data={[{type: 'variable'}]} />);
+
+  node.instance().openEditFilterModal(0)({target: {className: 'not a button)))'}});
 
   expect(node).toIncludeText('VariableFilter');
   expect(node).not.toIncludeText('DateFilter');
@@ -73,6 +90,29 @@ it('should add a filter to the list of filters', () => {
   node.instance().addFilter('Filter 2');
 
   expect(spy.mock.calls[0][1]).toEqual([sampleFilter, 'Filter 2']);
+});
+
+it('should edit the edited filter', () => {
+  const spy = jest.fn();
+  const sampleFilter = {
+      data: {
+        operator : "bar",
+        type : "baz",
+        value : "foo"
+      },
+      type : "qux"
+  }
+
+  const filters = [sampleFilter, 'foo'];
+  const node = mount(<Filter data={filters} onChange={spy} />);
+
+  node.instance().setState({
+    editFilter: sampleFilter
+  })
+
+  node.instance().editFilter('bar');
+
+  expect(spy.mock.calls[0][1]).toEqual(['foo', 'bar']);
 });
 
 it('should add multiple filters to the list of filters', () => {

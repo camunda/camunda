@@ -9,9 +9,9 @@ export default class DurationFilter extends React.Component {
     super(props);
 
     this.state = {
-      value: '7',
-      operator: '>',
-      unit: 'days'
+      value: (this.props.filterData) ? this.props.filterData.data.value.toString() : '7',
+      operator: (this.props.filterData) ? this.props.filterData.data.operator : '>',
+      unit: (this.props.filterData) ? this.props.filterData.data.unit : 'days'
     };
   }
 
@@ -51,7 +51,7 @@ export default class DurationFilter extends React.Component {
       </Modal.Content>
       <Modal.Actions>
         <Button onClick={this.props.close}>Cancel</Button>
-        <Button type='primary' color='blue' disabled={!value.trim() || isNaN(value.trim()) || (+value <= 0)} onClick={this.createFilter}>Add Filter</Button>
+        <Button type='primary' color='blue' disabled={!value.trim() || isNaN(value.trim()) || (+value <= 0)} onClick={this.createFilter}>{(this.props.filterData) ? 'Edit ' : 'Add ' }Filter</Button>
       </Modal.Actions>
     </Modal>
     );

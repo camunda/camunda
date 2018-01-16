@@ -8,6 +8,7 @@ export default class ClickBehavior extends React.Component {
   }
 
   componentDidMount() {
+    this.getNodeObjects();
     this.setupEventListeners();
     this.update();
   }
@@ -38,6 +39,19 @@ export default class ClickBehavior extends React.Component {
       gfx.setAttribute('rx', '14px');
       gfx.setAttribute('ry', '14px');
     });
+  }
+
+  getNodeObjects = () => {
+    const {viewer, selectedNodes} = this.props;
+    const elementRegistry = viewer.get('elementRegistry');
+    const nodes = selectedNodes.map((v) => {
+      if(!(typeof(v) === 'string') && v.$instanceOf('bpmn:FlowNode')) {
+        return v;
+      } else {
+        return elementRegistry.get(v).businessObject;
+      }
+    });
+    this.props.getNodes(nodes);
   }
 
   setupEventListeners() {

@@ -31,7 +31,7 @@ it('should display a single filter entry for two related start dates', () => {
     }
   }];
 
-  const node = mount(<FilterList data={data} />);
+  const node = mount(<FilterList data={data} openEditFilterModal={jest.fn()}/>);
 
   expect(node.find('li').length).toBe(1);
 });
@@ -62,7 +62,7 @@ it('should remove both date filter parts for a date filter entry', () => {
   }];
   const spy = jest.fn();
 
-  const node = mount(<FilterList data={data} deleteFilter={spy} />);
+  const node = mount(<FilterList data={data} deleteFilter={spy} openEditFilterModal={jest.fn()}/>);
 
   node.find('button').simulate('click');
 
@@ -81,7 +81,7 @@ it('should display a simple variable filter', () => {
     }
   }];
 
-  const node = mount(<FilterList data={data} />);
+  const node = mount(<FilterList data={data} openEditFilterModal={jest.fn()}/>);
 
   expect(node).toIncludeText('varName is varValue');
 });
@@ -96,7 +96,7 @@ it('should combine multiple variable values with or', () => {
     }
   }];
 
-  const node = mount(<FilterList data={data} />);
+  const node = mount(<FilterList data={data} openEditFilterModal={jest.fn()}/>);
 
   expect(node).toIncludeText('varName is varValue or varValue2');
 });
@@ -111,7 +111,7 @@ it('should combine multiple variable names with neither/nor for the not in opera
     }
   }];
 
-  const node = mount(<FilterList data={data} />);
+  const node = mount(<FilterList data={data} openEditFilterModal={jest.fn()}/>);
 
   expect(node).toIncludeText('varName is neither varValue nor varValue2');
 });
@@ -125,7 +125,7 @@ it('should display a simple flow node filter', () => {
     }
   }];
 
-  const node = mount(<FilterList data={data} />);
+  const node = mount(<FilterList data={data} openEditFilterModal={jest.fn()}/>);
 
   expect(node).toIncludeText('Executed Flow Node is flowNode');
 });
@@ -139,7 +139,7 @@ it('should display a flow node filter with multiple selected nodes', () => {
     }
   }];
 
-  const node = mount(<FilterList data={data} />);
+  const node = mount(<FilterList data={data} openEditFilterModal={jest.fn()}/>);
 
   expect(node).toIncludeText('Executed Flow Node is flowNode1 or flowNode2');
 });
@@ -153,7 +153,7 @@ it('should display a rolling date filter', () => {
     }
   }];
 
-  const node = mount(<FilterList data={data} />);
+  const node = mount(<FilterList data={data} openEditFilterModal={jest.fn()}a/>);
 
   expect(node).toIncludeText('Start Date less than 18 hours ago');
 });
@@ -168,7 +168,7 @@ it('should display a duration filter', () => {
     }
   }];
 
-  const node = mount(<FilterList data={data} />);
+  const node = mount(<FilterList data={data} openEditFilterModal={jest.fn()}/>);
 
   expect(node).toIncludeText('Duration is less than 18 hours');
 });

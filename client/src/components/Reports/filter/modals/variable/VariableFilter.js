@@ -24,9 +24,22 @@ export default class VariableFilter extends React.Component {
   }
 
   loadAvailableVariables = async () => {
-    this.setState({
-      variables: await loadVariables(this.props.processDefinitionId)
-    });
+    const variables = await loadVariables(this.props.processDefinitionId);
+
+    if(this.props.filterData) {
+      const filterData = this.props.filterData.data;
+      this.setState({
+        variables,
+        selectedVariableIdx: variables.findIndex((v) => v.name === filterData.name),
+        operator: filterData.operator,
+        values: filterData.values
+      });
+      this.loadAvailableValues({name: filterData.name, type: filterData.type})
+    } else {
+      this.setState({
+        variables
+      });
+    }
   }
 
   loadAvailableValues = async ({name, type}) => {
@@ -108,7 +121,7 @@ export default class VariableFilter extends React.Component {
       </Modal.Content>
       <Modal.Actions>
         <Button onClick={this.props.close}>Cancel</Button>
-        <Button type='primary' color='blue' disabled={!this.selectionIsValid()} onClick={this.createFilter}>Add Filter</Button>
+        <Button type='primary' color='blue' disabled={!this.selectionIsValid()} onClick={this.createFilter}>{(this.props.filterData) ? 'Edit ' : 'Add '}Filter</Button>
       </Modal.Actions>
     </Modal>
     );

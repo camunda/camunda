@@ -12,13 +12,26 @@ export default class DateFilter extends React.Component {
   constructor(props) {
     super(props);
 
+    let startDate, endDate, mode, dynamicValue, dynamicUnit;
+
+    if(this.props.filterData) {
+      if(this.props.filterData[0]) {
+        startDate = moment(this.props.filterData[0].data.value);
+        endDate = moment(this.props.filterData[1].data.value);
+      } else {
+        mode = 'dynamic';
+        dynamicValue = this.props.filterData.data.value;
+        dynamicUnit = this.props.filterData.data.unit;
+      }
+    }
+
     this.state = {
-      startDate: moment(),
-      endDate: moment(),
+      startDate: startDate || moment(),
+      endDate: endDate || moment(),
       validDate: true,
-      mode: 'static',
-      dynamicValue: '7',
-      dynamicUnit: 'days'
+      mode: mode || 'static',
+      dynamicValue: dynamicValue || '7',
+      dynamicUnit: dynamicUnit || 'days'
     };
   }
 
@@ -128,7 +141,7 @@ export default class DateFilter extends React.Component {
       </Modal.Content>
       <Modal.Actions>
         <Button onClick={this.props.close}>Cancel</Button>
-        <Button type='primary' color='blue' disabled={!this.state.validDate} onClick={this.createFilter}>Add Filter</Button>
+        <Button type='primary' color='blue' disabled={!this.state.validDate} onClick={this.createFilter}>{(this.props.filterData) ? 'Edit ' : 'Add ' }Filter</Button>
       </Modal.Actions>
     </Modal>
     );
