@@ -18,7 +18,7 @@ package io.zeebe.gossip.membership;
 import java.util.*;
 
 import io.zeebe.gossip.GossipMembershipListener;
-import org.agrona.collections.IntArrayList;
+import io.zeebe.gossip.IntArrayList;
 
 public class RoundRobinMemberIterator implements Iterator<Member>, GossipMembershipListener
 {
