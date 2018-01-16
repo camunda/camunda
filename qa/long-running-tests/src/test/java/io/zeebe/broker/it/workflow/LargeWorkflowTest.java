@@ -30,6 +30,7 @@ import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.TestLoggers;
 import io.zeebe.broker.workflow.data.WorkflowInstanceState;
 import io.zeebe.client.ClientProperties;
+import io.zeebe.client.TasksClient;
 import io.zeebe.client.WorkflowsClient;
 import io.zeebe.client.event.WorkflowInstanceEvent;
 import io.zeebe.client.task.TaskHandler;
@@ -70,6 +71,27 @@ public class LargeWorkflowTest
         workflowService.deploy(clientRule.getDefaultTopic())
                        .addResourceFromClasspath("workflows/forty-tasks-process.bpmn")
                        .execute();
+    }
+
+    @Test
+    public void shouldCreateStandaloneTasksSynchronously()
+    {
+        final TasksClient taskClient = clientRule.tasks();
+        final int tasks = CREATION_TIMES;
+
+        LOG.info("Creating {} tasks", tasks);
+
+        for (int i = 0; i < tasks; i++)
+        {
+            taskClient.create(clientRule.getDefaultTopic(), "test")
+                      .execute();
+
+            if (i % REPORT_INTERVAL == 0)
+            {
+                LOG.info("Tasks created: {}/{} ({}%)", i, tasks, i * 100 / tasks);
+            }
+        }
+
     }
 
     @Test
