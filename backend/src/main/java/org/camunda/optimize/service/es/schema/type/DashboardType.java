@@ -59,8 +59,9 @@ public class DashboardType extends StrictTypeMappingCreator {
       .startObject(REPORTS)
         .field("type", "nested")
         .startObject("properties");
-          addNestedReportsField(newBuilder)
-        .endObject()
+
+     addNestedReportsField(newBuilder)
+      .endObject()
       .endObject();
      return newBuilder;
   }
@@ -82,8 +83,9 @@ public class DashboardType extends StrictTypeMappingCreator {
       .startObject(DIMENSION)
         .field("type", "nested")
         .startObject("properties");
-          addNestedDimensionField(newBuilder)
-        .endObject()
+
+    addNestedDimensionField(newBuilder)
+      .endObject()
       .endObject();
     return newBuilder;
   }

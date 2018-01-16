@@ -1,18 +1,16 @@
 package org.camunda.optimize.rest;
 
-import org.camunda.optimize.dto.optimize.query.ConnectionStatusDto;
-import org.camunda.optimize.dto.optimize.query.ProgressDto;
+import org.camunda.optimize.dto.optimize.query.status.ConnectionStatusDto;
+import org.camunda.optimize.dto.optimize.query.status.ProgressDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.exceptions.InvalidTokenException;
 import org.camunda.optimize.service.security.TokenService;
 import org.camunda.optimize.service.status.StatusCheckingService;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -63,7 +61,7 @@ public class StatusRestServiceIT {
   }
 
   @After
-  public void resetMocks() throws InvalidTokenException {
+  public void resetMocks() {
     if (mockedEngineClient != null) {
       Mockito.reset(mockedEngineClient);
     }
@@ -96,7 +94,7 @@ public class StatusRestServiceIT {
   }
 
   @Test
-  public void getConnectionStatusOk() throws Exception {
+  public void getConnectionStatusOk() {
     // when
     Response response = embeddedOptimizeRule.target("status/connection")
       .request()
@@ -113,7 +111,7 @@ public class StatusRestServiceIT {
   }
 
   @Test
-  public void getConnectionStatusForMissingEngineConnection() throws Exception {
+  public void getConnectionStatusForMissingEngineConnection() {
     // given
     mockEngineClient();
     String errorMessage = "Error";
@@ -139,7 +137,7 @@ public class StatusRestServiceIT {
   }
 
   @Test
-  public void getImportProgressStatus() throws Exception {
+  public void getImportProgressStatus() {
     // given
     long expectedCount = 0L;
 

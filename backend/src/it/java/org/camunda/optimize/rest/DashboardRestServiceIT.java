@@ -1,6 +1,7 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -34,7 +35,7 @@ public class DashboardRestServiceIT {
     .outerRule(elasticSearchRule).around(embeddedOptimizeRule);
 
   @Test
-  public void createNewDashboardWithoutAuthentication() throws IOException {
+  public void createNewDashboardWithoutAuthentication() {
     // when
     Response response =
       embeddedOptimizeRule.target("dashboard")
@@ -46,7 +47,7 @@ public class DashboardRestServiceIT {
   }
 
   @Test
-  public void createNewDashboard() throws IOException {
+  public void createNewDashboard() {
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
 
@@ -65,7 +66,7 @@ public class DashboardRestServiceIT {
   }
 
   @Test
-  public void updateDashboardWithoutAuthentication() throws IOException {
+  public void updateDashboardWithoutAuthentication() {
     // when
     Response response =
       embeddedOptimizeRule.target("dashboard/1")
@@ -77,7 +78,7 @@ public class DashboardRestServiceIT {
   }
 
   @Test
-  public void updateDashboard() throws IOException {
+  public void updateDashboard() {
 
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
@@ -96,7 +97,7 @@ public class DashboardRestServiceIT {
   }
 
   @Test
-  public void getStoredDashboardsWithoutAuthentication() throws IOException {
+  public void getStoredDashboardsWithoutAuthentication() {
     // when
     Response response =
       embeddedOptimizeRule.target("dashboard")
@@ -108,7 +109,7 @@ public class DashboardRestServiceIT {
   }
 
   @Test
-  public void getStoredDashboards() throws IOException {
+  public void getStoredDashboards() {
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
     String id = addEmptyDashboardToOptimize(token);
@@ -122,7 +123,7 @@ public class DashboardRestServiceIT {
   }
 
   @Test
-  public void getDashboardWithoutAuthentication() throws IOException {
+  public void getDashboardWithoutAuthentication() {
     // when
     Response response =
       embeddedOptimizeRule.target("dashboard/asdf")
@@ -134,7 +135,7 @@ public class DashboardRestServiceIT {
   }
 
   @Test
-  public void getDashboard() throws IOException {
+  public void getDashboard() {
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
     String id = addEmptyDashboardToOptimize(token);
@@ -155,7 +156,7 @@ public class DashboardRestServiceIT {
   }
 
   @Test
-  public void getDashboardForNonExistingIdThrowsError() throws IOException {
+  public void getDashboardForNonExistingIdThrowsError() {
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
 
@@ -172,7 +173,7 @@ public class DashboardRestServiceIT {
   }
 
   @Test
-  public void deleteDashboardWithoutAuthentication() throws IOException {
+  public void deleteDashboardWithoutAuthentication() {
     // when
     Response response =
         embeddedOptimizeRule.target("dashboard/1124")
@@ -184,7 +185,7 @@ public class DashboardRestServiceIT {
   }
 
   @Test
-  public void deleteNewDashboard() throws IOException {
+  public void deleteNewDashboard() {
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
     String id = addEmptyDashboardToOptimize(token);

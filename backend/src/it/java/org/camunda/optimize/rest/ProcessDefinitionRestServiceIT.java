@@ -4,12 +4,12 @@ import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionXmlOptimizeDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.SimpleEventDto;
-import org.camunda.optimize.dto.optimize.query.BranchAnalysisDto;
-import org.camunda.optimize.dto.optimize.query.BranchAnalysisQueryDto;
-import org.camunda.optimize.dto.optimize.query.ExtendedProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.query.HeatMapQueryDto;
-import org.camunda.optimize.dto.optimize.query.HeatMapResponseDto;
-import org.camunda.optimize.dto.optimize.query.ProcessDefinitionGroupOptimizeDto;
+import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisDto;
+import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
+import org.camunda.optimize.dto.optimize.query.definition.ExtendedProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.query.heatmap.HeatMapQueryDto;
+import org.camunda.optimize.dto.optimize.query.heatmap.HeatMapResponseDto;
+import org.camunda.optimize.dto.optimize.query.definition.ProcessDefinitionGroupOptimizeDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.junit.Rule;
@@ -31,7 +31,6 @@ import java.io.InputStreamReader;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -68,7 +67,7 @@ public class ProcessDefinitionRestServiceIT {
       .outerRule(elasticSearchRule).around(embeddedOptimizeRule);
 
   @Test
-  public void getProcessDefinitionsWithoutAuthentication() throws IOException {
+  public void getProcessDefinitionsWithoutAuthentication() {
     // when
     Response response =
         embeddedOptimizeRule.target("process-definition")
@@ -80,7 +79,7 @@ public class ProcessDefinitionRestServiceIT {
   }
 
   @Test
-  public void getProcessDefinitions() throws IOException {
+  public void getProcessDefinitions() {
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
     createProcessDefinition(ID, KEY);
@@ -102,7 +101,7 @@ public class ProcessDefinitionRestServiceIT {
   }
 
   @Test
-  public void getProcessDefinitionsWithXml() throws IOException {
+  public void getProcessDefinitionsWithXml() {
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
     String expectedProcessDefinitionId = ID;
@@ -145,7 +144,7 @@ public class ProcessDefinitionRestServiceIT {
 
 
   @Test
-  public void getProcessDefinitionXmlWithoutAuthentication() throws IOException {
+  public void getProcessDefinitionXmlWithoutAuthentication() {
     // when
     Response response =
         embeddedOptimizeRule.target("process-definition/123/xml")
@@ -157,7 +156,7 @@ public class ProcessDefinitionRestServiceIT {
   }
 
   @Test
-  public void getProcessDefinitionXml() throws IOException {
+  public void getProcessDefinitionXml() {
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
 
@@ -181,7 +180,7 @@ public class ProcessDefinitionRestServiceIT {
   }
 
   @Test
-  public void getProcessDefinitionXmlWithNonsenseIdReturns404Code() throws IOException {
+  public void getProcessDefinitionXmlWithNonsenseIdReturns404Code() {
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
 
@@ -205,7 +204,7 @@ public class ProcessDefinitionRestServiceIT {
   }
 
   @Test
-  public void getFrequencyHeatMapWithoutAuthentication() throws IOException {
+  public void getFrequencyHeatMapWithoutAuthentication() {
     // when
     Response response =
         embeddedOptimizeRule.target("process-definition/123/heatmap/frequency")
@@ -217,7 +216,7 @@ public class ProcessDefinitionRestServiceIT {
   }
 
   @Test
-  public void getFrequencyHeatMap() throws IOException {
+  public void getFrequencyHeatMap() {
     //given
     insert10ActivitiesWithDifferentPis();
 
@@ -254,7 +253,7 @@ public class ProcessDefinitionRestServiceIT {
   }
 
   @Test
-  public void getFrequencyHeatMapPostWithoutAuthentication() throws IOException {
+  public void getFrequencyHeatMapPostWithoutAuthentication() {
     // when
     Entity<HeatMapQueryDto> entity = Entity.entity(new HeatMapQueryDto(), MediaType.APPLICATION_JSON);
     Response response =
@@ -267,7 +266,7 @@ public class ProcessDefinitionRestServiceIT {
   }
 
   @Test
-  public void getFrequencyHeatPostMap() throws IOException {
+  public void getFrequencyHeatPostMap() {
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
     insert10ActivitiesWithDifferentPis();
@@ -292,7 +291,7 @@ public class ProcessDefinitionRestServiceIT {
   }
 
   @Test
-  public void getCorrelationWithoutAuthentication() throws IOException {
+  public void getCorrelationWithoutAuthentication() {
     // when
     Entity<BranchAnalysisQueryDto> entity = Entity.entity(new BranchAnalysisQueryDto(), MediaType.APPLICATION_JSON);
     Response response =
@@ -360,7 +359,7 @@ public class ProcessDefinitionRestServiceIT {
   }
 
   @Test
-  public void getProcessDefinitionsXml() throws Exception {
+  public void getProcessDefinitionsXml() {
     String token = embeddedOptimizeRule.getAuthenticationToken();
     String expectedProcessDefinitionId = ID;
 

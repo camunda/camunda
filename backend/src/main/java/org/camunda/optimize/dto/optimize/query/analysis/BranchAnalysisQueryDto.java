@@ -1,4 +1,6 @@
-package org.camunda.optimize.dto.optimize.query;
+package org.camunda.optimize.dto.optimize.query.analysis;
+
+import org.camunda.optimize.dto.optimize.query.heatmap.HeatMapQueryDto;
 
 /**
  * @author Askar Akhmerov

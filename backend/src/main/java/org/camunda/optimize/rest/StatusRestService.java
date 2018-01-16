@@ -2,8 +2,8 @@ package org.camunda.optimize.rest;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.camunda.optimize.dto.optimize.query.ConnectionStatusDto;
-import org.camunda.optimize.dto.optimize.query.ProgressDto;
+import org.camunda.optimize.dto.optimize.query.status.ConnectionStatusDto;
+import org.camunda.optimize.dto.optimize.query.status.ProgressDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.status.ImportProgressReporter;

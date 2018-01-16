@@ -1,4 +1,4 @@
-package org.camunda.optimize.dto.optimize.query;
+package org.camunda.optimize.dto.optimize.query.definition;
 
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 

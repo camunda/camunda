@@ -105,6 +105,7 @@ public class ConfigurationService {
   private List<String> variableImportPluginBasePackages;
   private String finishedPiIdTrackingType;
   private String unfinishedPiIdTrackingType;
+  private String alertType;
   private Integer numberOfRetriesOnConflict;
   private Integer engineImportProcessDefinitionMaxPageSize;
   private Long engineImportActivityInstanceMaxPageSize;
@@ -786,6 +787,13 @@ public class ConfigurationService {
       finishedPiIdTrackingType = jsonContext.read(ConfigurationServiceConstants.FINISHED_PROCESS_INSTANCE_ID_TRACKING_TYPE);
     }
     return finishedPiIdTrackingType;
+  }
+
+  public String getAlertType() {
+    if (alertType == null) {
+      alertType = jsonContext.read(ConfigurationServiceConstants.ALERT_TYPE);
+    }
+    return alertType;
   }
 
   public Integer getImportResetIntervalValue() {

@@ -1,4 +1,4 @@
-package org.camunda.optimize.dto.optimize.query;
+package org.camunda.optimize.dto.optimize.query.analysis;
 
 import java.util.HashMap;
 import java.util.Map;

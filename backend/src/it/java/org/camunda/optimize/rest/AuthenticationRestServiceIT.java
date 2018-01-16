@@ -111,7 +111,7 @@ public class AuthenticationRestServiceIT {
   }
 
   @Test
-  public void logoutSecure() throws Exception {
+  public void logoutSecure() {
 
     //when
     Response logoutResponse = embeddedOptimizeRule.target("authentication/logout")

@@ -47,7 +47,7 @@ public class LicenseCheckingRestServiceIT {
       .outerRule(elasticSearchRule).around(embeddedOptimizeRule);
 
   @BeforeClass
-  public static void init() throws ParseException {
+  public static void init() {
     VALID_UNTIL = OffsetDateTime.parse("9999-01-01T00:00:00.000+0100", sdf);
   }
 

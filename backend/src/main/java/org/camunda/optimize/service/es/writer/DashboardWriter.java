@@ -75,7 +75,7 @@ public class DashboardWriter {
   }
 
   public void updateDashboard(DashboardDefinitionDto dashboard) throws OptimizeException, JsonProcessingException {
-    logger.debug("Updating dashboard with id [{}] in Elasticsearch");
+    logger.debug("Updating dashboard with id [{}] in Elasticsearch", dashboard.getId());
     DashboardDefinitionUpdateDto updateDto = new DashboardDefinitionUpdateDto();
     updateDto.setLastModified(LocalDateUtil.getCurrentDateTime());
     updateDto.setLastModifier(dashboard.getLastModifier());
@@ -105,7 +105,7 @@ public class DashboardWriter {
   }
 
   public void deleteDashboard(String dashboardId) {
-    logger.debug("Deleting dashboard with id [{}]");
+    logger.debug("Deleting dashboard with id [{}]", dashboardId);
     esclient.prepareDelete(
       configurationService.getOptimizeIndex(configurationService.getDashboardType()),
       configurationService.getDashboardType(),

@@ -1,4 +1,4 @@
-package org.camunda.optimize.dto.optimize.query;
+package org.camunda.optimize.dto.optimize.query.status;
 
 public class ProgressDto {
 

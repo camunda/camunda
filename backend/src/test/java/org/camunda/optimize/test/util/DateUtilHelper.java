@@ -1,6 +1,6 @@
 package org.camunda.optimize.test.util;
 
-import org.camunda.optimize.dto.optimize.query.HeatMapQueryDto;
+import org.camunda.optimize.dto.optimize.query.heatmap.HeatMapQueryDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.DateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.DurationFilterDto;
@@ -11,11 +11,7 @@ import org.camunda.optimize.dto.optimize.query.report.filter.data.DurationFilter
 import org.camunda.optimize.dto.optimize.query.report.filter.data.RollingDateFilterDataDto;
 
 import java.time.OffsetDateTime;
-import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalUnit;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 
 /**

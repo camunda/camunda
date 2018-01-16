@@ -1,7 +1,7 @@
 package org.camunda.optimize.service.status;
 
 import org.camunda.optimize.dto.engine.ProcessEngineDto;
-import org.camunda.optimize.dto.optimize.query.ConnectionStatusDto;
+import org.camunda.optimize.dto.optimize.query.status.ConnectionStatusDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;

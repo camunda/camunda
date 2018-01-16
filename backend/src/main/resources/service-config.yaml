@@ -216,6 +216,7 @@ es:
   licenseType: license
   reportType: report
   dashboardType: dashboard
+  alertType: alert
   sampler:
     #Connection sampler interval set to the client
     interval: 5000

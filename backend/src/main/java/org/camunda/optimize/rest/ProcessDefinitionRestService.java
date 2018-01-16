@@ -1,11 +1,11 @@
 package org.camunda.optimize.rest;
 
-import org.camunda.optimize.dto.optimize.query.BranchAnalysisDto;
-import org.camunda.optimize.dto.optimize.query.BranchAnalysisQueryDto;
-import org.camunda.optimize.dto.optimize.query.ExtendedProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.query.HeatMapQueryDto;
-import org.camunda.optimize.dto.optimize.query.HeatMapResponseDto;
-import org.camunda.optimize.dto.optimize.query.ProcessDefinitionGroupOptimizeDto;
+import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisDto;
+import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
+import org.camunda.optimize.dto.optimize.query.definition.ExtendedProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.query.heatmap.HeatMapQueryDto;
+import org.camunda.optimize.dto.optimize.query.heatmap.HeatMapResponseDto;
+import org.camunda.optimize.dto.optimize.query.definition.ProcessDefinitionGroupOptimizeDto;
 import org.camunda.optimize.dto.optimize.rest.FlowNodeNamesDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.es.reader.BranchAnalysisReader;

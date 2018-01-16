@@ -39,7 +39,7 @@ public class ReportRestServiceIT {
     .outerRule(elasticSearchRule).around(embeddedOptimizeRule);
 
   @Test
-  public void createNewReportWithoutAuthentication() throws IOException {
+  public void createNewReportWithoutAuthentication() {
     // when
     Response response =
       embeddedOptimizeRule.target("report")
@@ -51,7 +51,7 @@ public class ReportRestServiceIT {
   }
 
   @Test
-  public void createNewReport() throws IOException {
+  public void createNewReport() {
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
 
@@ -70,7 +70,7 @@ public class ReportRestServiceIT {
   }
 
   @Test
-  public void updateReportWithoutAuthentication() throws IOException {
+  public void updateReportWithoutAuthentication() {
     // when
     Response response =
       embeddedOptimizeRule.target("report/1")
@@ -82,7 +82,7 @@ public class ReportRestServiceIT {
   }
 
   @Test
-  public void updateReport() throws IOException {
+  public void updateReport() {
 
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
@@ -101,7 +101,7 @@ public class ReportRestServiceIT {
   }
 
   @Test
-  public void getStoredReportsWithoutAuthentication() throws IOException {
+  public void getStoredReportsWithoutAuthentication() {
     // when
     Response response =
       embeddedOptimizeRule.target("report")
@@ -113,7 +113,7 @@ public class ReportRestServiceIT {
   }
 
   @Test
-  public void getStoredReports() throws IOException {
+  public void getStoredReports() {
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
     String id = addEmptyReportToOptimize(token);
@@ -127,7 +127,7 @@ public class ReportRestServiceIT {
   }
 
   @Test
-  public void getReportWithoutAuthentication() throws IOException {
+  public void getReportWithoutAuthentication() {
     // when
     Response response =
       embeddedOptimizeRule.target("report/asdf")
@@ -139,7 +139,7 @@ public class ReportRestServiceIT {
   }
 
   @Test
-  public void getReport() throws IOException {
+  public void getReport() {
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
     String id = addEmptyReportToOptimize(token);
@@ -160,7 +160,7 @@ public class ReportRestServiceIT {
   }
 
   @Test
-  public void getReportForNonExistingIdThrowsError() throws IOException {
+  public void getReportForNonExistingIdThrowsError() {
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
 
@@ -177,7 +177,7 @@ public class ReportRestServiceIT {
   }
 
   @Test
-  public void deleteReportWithoutAuthentication() throws IOException {
+  public void deleteReportWithoutAuthentication() {
     // when
     Response response =
         embeddedOptimizeRule.target("report/1124")
@@ -189,7 +189,7 @@ public class ReportRestServiceIT {
   }
 
   @Test
-  public void deleteNewReport() throws IOException {
+  public void deleteNewReport() {
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
     String id = addEmptyReportToOptimize(token);
@@ -207,7 +207,7 @@ public class ReportRestServiceIT {
   }
   
   @Test
-  public void evaluateReportByIdWithoutAuthorization() throws Exception {
+  public void evaluateReportByIdWithoutAuthorization() {
    // when
     Response response = embeddedOptimizeRule.target("report/123/evaluate")
       .request()
@@ -218,7 +218,7 @@ public class ReportRestServiceIT {
   }
 
   @Test
-  public void evaluateReportById() throws Exception {
+  public void evaluateReportById() {
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
     String id = createAndStoreDefaultReportDefinition("someRandomId");
@@ -234,7 +234,7 @@ public class ReportRestServiceIT {
   }
 
   @Test
-  public void evaluateUnsavedReportWithoutAuthorization() throws Exception {
+  public void evaluateUnsavedReportWithoutAuthorization() {
     // when
     Response response =
         embeddedOptimizeRule.target("report/evaluate")
@@ -246,7 +246,7 @@ public class ReportRestServiceIT {
   }
 
   @Test
-  public void evaluateUnsavedReport() throws Exception {
+  public void evaluateUnsavedReport() {
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
     ReportDataDto reportDataDto = ReportDataHelper.createReportDataViewRawAsTable("someRandomId");

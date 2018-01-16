@@ -54,8 +54,6 @@ public class SchemaInitializerIT {
   private ElasticSearchSchemaManager manager;
   @Autowired
   private Client transportClient;
-  @Autowired
-  private ElasticsearchImportJobExecutor jobExecutor;
 
   @Rule
   public ExpectedException thrown = ExpectedException.none();
@@ -154,7 +152,7 @@ public class SchemaInitializerIT {
   }
 
   @Test
-  public void newTypeIsNotAddedDynamically() throws IOException {
+  public void newTypeIsNotAddedDynamically() {
     // given schema is created
     schemaInitializer.initializeSchema();
 
