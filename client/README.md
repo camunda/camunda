@@ -37,6 +37,20 @@ export FAST_BUILD=1
 yarn run start-backend
 ```
 
+### Problems that may happen
+
+If for some reason you are getting error try running from the root folder:
+
+```bash
+mvn clean install -Pit
+```
+
+process stops after elasticsearch is started - delete old data folder of ES
+
+```bash
+rm -rf ../distro/traget/distro/server/elasticsearch-6.0.0/data
+```
+
 ## Production
 
 ```bash
