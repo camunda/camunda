@@ -108,6 +108,7 @@ public class JoinController
 
                 try
                 {
+                    raft.getLogger().debug("Send join request to {}", nextMember);
                     final ClientRequest clientRequest = raft.sendRequest(nextMember, joinRequest);
                     if (clientRequest != null)
                     {
@@ -116,6 +117,7 @@ public class JoinController
                     }
                     else
                     {
+                        raft.getLogger().debug("Failed to send join request to {}", nextMember);
                         context.take(TRANSITION_FAILED);
                     }
                 }

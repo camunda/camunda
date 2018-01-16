@@ -141,7 +141,7 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
 
     private void notifyRaftStateListener(final RaftStateListener listener)
     {
-        listener.onStateChange(logStream.getPartitionId(), socketAddress, state.getState());
+        listener.onStateChange(logStream.getPartitionId(), logStream.getTopicName(), socketAddress, state.getState());
     }
 
     private void notifyRaftStateListeners()

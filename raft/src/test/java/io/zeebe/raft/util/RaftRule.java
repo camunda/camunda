@@ -210,9 +210,10 @@ public class RaftRule extends ExternalResource implements RaftStateListener
     }
 
     @Override
-    public void onStateChange(final int partitionId, final SocketAddress socketAddress, final RaftState raftState)
+    public void onStateChange(final int partitionId, DirectBuffer topicName, final SocketAddress socketAddress, final RaftState raftState)
     {
         assertThat(partitionId).isEqualTo(raft.getLogStream().getPartitionId());
+        assertThat(topicName).isEqualByComparingTo(raft.getLogStream().getTopicName());
         assertThat(socketAddress).isEqualTo(raft.getSocketAddress());
         raftStateChanges.add(raftState);
     }

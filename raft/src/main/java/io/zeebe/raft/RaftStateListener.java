@@ -17,11 +17,10 @@ package io.zeebe.raft;
 
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.transport.SocketAddress;
+import org.agrona.DirectBuffer;
 
 @FunctionalInterface
 public interface RaftStateListener
 {
-
-    void onStateChange(int partitionId, SocketAddress socketAddress, RaftState raftState);
-
+    void onStateChange(int partitionId, DirectBuffer topicName, SocketAddress socketAddress, RaftState raftState);
 }
