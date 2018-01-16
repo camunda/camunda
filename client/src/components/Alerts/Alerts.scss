@@ -1,0 +1,82 @@
+.Alerts {
+  max-width: 1024px;
+  margin: 0 auto 48px auto;
+}
+
+.Alerts__header {
+  display: flex;
+}
+
+.Alerts__heading {
+  font-size: 2em;
+  flex-grow: 1;
+}
+
+.Alerts__tools {
+  flex-shrink: 0;
+  vertical-align: baseline;
+}
+
+.Alert__list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px 0;
+}
+
+.Alert__item {
+  display: flex;
+  padding: 12px 0;
+  border-bottom: 1px solid #ededed;
+}
+
+.Alert__item:first-child {
+  border-top: 1px solid #ededed;
+}
+
+.Alert__item:nth-child(even) {
+  background-color: #fafafa;
+}
+
+.Alert__data {
+  padding: 0 4px;
+}
+
+.Alert__data:first-child {
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.Alert__data--tool {
+  padding: 0 6px;
+  flex-grow: 0;
+  flex-shrink: 0;
+}
+
+.Alert__no-entities {
+  font-style: italic;
+}
+
+.Alert__data--metadata {
+  font-size: 14px;
+  color: #666666;
+  padding-left: 8px;
+  text-align: right;
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.Alert__data--title {
+  font-weight: bold;
+  color: #333333;
+  flex: none;
+  cursor: pointer;
+}
+
+.Alert__data--highlight {
+  background-color: #7FA8C5;
+  padding: 1px 8px 2px;
+  border-radius: 10px;
+  color: #fff;
+}
