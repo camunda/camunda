@@ -36,6 +36,7 @@ public class ObjectMappingTest
     public static final DirectBuffer BUF2 = wrapString("bar");
     public static final MutableDirectBuffer MSGPACK_BUF1;
     public static final MutableDirectBuffer MSGPACK_BUF2;
+    public static final MutableDirectBuffer MSGPACK_BUF3;
 
     static
     {
@@ -50,6 +51,13 @@ public class ObjectMappingTest
         {
             w.writeMapHeader(1);
             w.writeString(BUF2);
+            w.writeInteger(24L);
+        });
+
+        MSGPACK_BUF3 = encodeMsgPack((w) ->
+        {
+            w.writeMapHeader(1);
+            w.writeString(BUF1);
             w.writeInteger(24L);
         });
     }
@@ -315,6 +323,7 @@ public class ObjectMappingTest
         pojo.getLength();
     }
 
+    @Test
     public void shouldDeserializeWithReusedPOJO()
     {
         // given
@@ -370,7 +379,7 @@ public class ObjectMappingTest
             w.writeInteger(456);
 
             w.writeString(wrapString("objectProp"));
-            w.writeRaw(MSGPACK_BUF2);
+            w.writeRaw(MSGPACK_BUF3);
         });
 
         // when
