@@ -123,7 +123,7 @@ public final class MembershipEventUpdater implements MembershipEventConsumer
             case CONFIRM:
             case LEAVE:
             {
-                if (member.getStatus() != MembershipStatus.DEAD)
+                if (member.getStatus() != MembershipStatus.DEAD && event.getGossipTerm().isGreaterThan(member.getTerm()))
                 {
                     LOG.info("Remove member '{}', status = {}, gossip-term: {}", member.getId(), event.getType(), event.getGossipTerm());
 
