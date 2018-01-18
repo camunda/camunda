@@ -139,12 +139,12 @@ public class ZbMapTest
         }
 
         // when most of the value are removed
-        for (int i = 63; i > 7; i--)
+        for (int i = 63; i > 8; i--)
         {
             removeValue(zbMap, i);
         }
         // and the after removing the highest bucket id is under 0.25 * hash table size
-        removeValue(zbMap, 7);
+        removeValue(zbMap, 8);
 
         // then table can be shrinked
         // the highest bucket id is in this case 7 that's why the table has to be at least of size 8
