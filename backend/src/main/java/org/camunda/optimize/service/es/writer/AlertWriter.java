@@ -3,6 +3,7 @@ package org.camunda.optimize.service.es.writer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.alert.AlertStatusDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -10,12 +11,15 @@ import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.index.reindex.DeleteByQueryAction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
+
+import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 
 /**
  * @author Askar Akhmerov
@@ -42,9 +46,9 @@ public class AlertWriter {
 
     esclient
         .prepareIndex(
-            configurationService.getOptimizeIndex(configurationService.getAlertType()),
-            configurationService.getAlertType(),
-            id
+          configurationService.getOptimizeIndex(configurationService.getAlertType()),
+          configurationService.getAlertType(),
+          id
         )
         .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
         .setSource(map)
@@ -57,9 +61,9 @@ public class AlertWriter {
     try {
       updateResponse = esclient
           .prepareUpdate(
-              configurationService.getOptimizeIndex(configurationService.getAlertType()),
-              configurationService.getAlertType(),
-              toUpdate.getId()
+            configurationService.getOptimizeIndex(configurationService.getAlertType()),
+            configurationService.getAlertType(),
+            toUpdate.getId()
           )
           .setDoc(objectMapper.writeValueAsString(toUpdate), XContentType.JSON)
           .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
@@ -83,11 +87,33 @@ public class AlertWriter {
   public void deleteAlert(String alertId) {
     logger.debug("Deleting alert with id [{}]", alertId);
     esclient.prepareDelete(
-        configurationService.getOptimizeIndex(configurationService.getAlertType()),
-        configurationService.getAlertType(),
-        alertId
+      configurationService.getOptimizeIndex(configurationService.getAlertType()),
+      configurationService.getAlertType(),
+      alertId
     )
     .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
     .get();
+  }
+
+  public void writeAlertStatus(AlertStatusDto alertStatus) {
+    Map map = objectMapper.convertValue(alertStatus, Map.class);
+    esclient
+      .prepareIndex(
+        configurationService.getOptimizeIndex(configurationService.getAlertStatusType()),
+        configurationService.getAlertStatusType(),
+        alertStatus.getId()
+      )
+      .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
+      .setSource(map)
+      .get();
+  }
+
+  public void deleteAllStatuses() {
+    DeleteByQueryAction.INSTANCE.newRequestBuilder(esclient)
+        .refresh(true)
+        .filter(matchAllQuery())
+        .source(configurationService.getOptimizeIndex(configurationService.getAlertStatusType()))
+        .execute()
+        .actionGet();
   }
 }

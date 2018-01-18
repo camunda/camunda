@@ -240,11 +240,11 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     GetIndexResponse indexes = esclient.admin().indices().prepareGetIndex().get();
     for (String indexName : indexes.getIndices()) {
       DeleteByQueryAction.INSTANCE.newRequestBuilder(esclient)
-          .refresh(true)
-          .filter(matchAllQuery())
-          .source(indexName)
-          .execute()
-          .actionGet();
+        .refresh(true)
+        .filter(matchAllQuery())
+        .source(indexName)
+        .execute()
+        .actionGet();
     }
   }
 
@@ -258,11 +258,11 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     for (String indexName : indexes.getIndices()) {
       try {
         DeleteByQueryAction.INSTANCE.newRequestBuilder(esclient)
-            .refresh(true)
-            .filter(matchAllQuery())
-            .source(indexName)
-            .execute()
-            .actionGet();
+          .refresh(true)
+          .filter(matchAllQuery())
+          .source(indexName)
+          .execute()
+          .actionGet();
       } catch (Exception e) {
         //nothing to do
         logger.error("can't clean index [{}]", indexName, e);

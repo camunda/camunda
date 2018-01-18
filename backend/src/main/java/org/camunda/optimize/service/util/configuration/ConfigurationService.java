@@ -106,6 +106,7 @@ public class ConfigurationService {
   private String finishedPiIdTrackingType;
   private String unfinishedPiIdTrackingType;
   private String alertType;
+  private String alertStatusType;
   private Integer numberOfRetriesOnConflict;
   private Integer engineImportProcessDefinitionMaxPageSize;
   private Long engineImportActivityInstanceMaxPageSize;
@@ -796,6 +797,14 @@ public class ConfigurationService {
     return alertType;
   }
 
+
+  public String getAlertStatusType() {
+    if (alertStatusType == null) {
+      alertStatusType = jsonContext.read(ConfigurationServiceConstants.ALERT_STATUS_TYPE);
+    }
+    return alertStatusType;
+  }
+
   public Integer getImportResetIntervalValue() {
     if (importResetIntervalValue == null) {
       importResetIntervalValue = jsonContext.read(ConfigurationServiceConstants.IMPORT_RESET_INTERVAL_VALUE);
@@ -1214,7 +1223,5 @@ public class ConfigurationService {
   public void setBackoffEnabled(Boolean backoffEnabled) {
     this.backoffEnabled = backoffEnabled;
   }
-
-
 
 }

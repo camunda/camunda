@@ -4,6 +4,7 @@ import org.camunda.optimize.dto.optimize.query.CredentialsDto;
 import org.camunda.optimize.dto.optimize.query.status.ProgressDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
+import org.camunda.optimize.service.alert.AlertService;
 import org.camunda.optimize.service.engine.importing.EngineImportJobSchedulerFactory;
 import org.camunda.optimize.service.engine.importing.EngineImportJobExecutor;
 import org.camunda.optimize.service.engine.importing.EngineImportJobScheduler;
@@ -365,5 +366,9 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     for (ImportIndexHandler importIndexHandler : getIndexProvider().getAllHandlers()) {
       importIndexHandler.restartImportCycle();
     }
+  }
+
+  public AlertService getAlertService() {
+    return getApplicationContext().getBean(AlertService.class);
   }
 }

@@ -67,16 +67,20 @@ import static org.hamcrest.core.IsNull.notNullValue;
 public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
 
   public static final String PROCESS_DEFINITION_ID = "123";
+  private static final String TEST_ACTIVITY = "testActivity";
+
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
   public EngineDatabaseRule engineDatabaseRule = new EngineDatabaseRule();
 
-  private static final String TEST_ACTIVITY = "testActivity";
 
   @Rule
   public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule).around(engineDatabaseRule);
+    .outerRule(elasticSearchRule)
+      .around(engineRule)
+      .around(embeddedOptimizeRule)
+      .around(engineDatabaseRule);
 
   @Test
   public void simpleReportEvaluation() throws Exception {
@@ -578,8 +582,8 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .name("aProcessName")
       .startEvent()
-      .serviceTask()
-      .camundaExpression("${true}")
+        .serviceTask()
+          .camundaExpression("${true}")
       .endEvent()
       .done();
     return engineRule.deployProcessAndGetId(processModel);

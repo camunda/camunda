@@ -54,6 +54,7 @@ public interface ConfigurationServiceConstants {
   String REPORT_TYPE = "$.es.reportType";
   String DASHBOARD_TYPE = "$.es.dashboardType";
   String ALERT_TYPE = "$.es.alertType";
+  String ALERT_STATUS_TYPE = "$.es.alertStatusType";
 
   String ENGINE_CONNECT_TIMEOUT = "$.engine-commons.connection.timeout";
   String ENGINE_READ_TIMEOUT = "$.engine-commons.read.timeout";
@@ -89,5 +90,6 @@ public interface ConfigurationServiceConstants {
   String CONTAINER_KEYSTORE_LOCATION = "$.container.keystore.location";
   String CONTAINER_HTTPS_PORT = "$.container.ports.https";
   String CONTAINER_HTTP_PORT = "$.container.ports.http";
+
 
 }

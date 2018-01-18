@@ -33,6 +33,7 @@
     <httpclient.version>4.5.2</httpclient.version>
     <hamcrest.version>1.3</hamcrest.version>
     <junit.version>4.12</junit.version>
+    <quartz.version>2.3.0</quartz.version>
   </properties>
 
   <profiles>

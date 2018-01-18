@@ -21,6 +21,7 @@ import static org.camunda.optimize.service.es.report.command.util.ReportConstant
 public class ReportDataHelper {
   private static final String TABLE_VISUALIZATION = "table";
   private static final String HEAT_VISUALIZATION = "heat";
+  private static final String SINGLE_NUMBER_VISUALIZATION = "number";
 
   public static ReportDataDto createReportDataViewRawAsTable(String processDefinitionId) {
     return createReportDataViewRaw(
@@ -157,6 +158,23 @@ public class ReportDataHelper {
     ReportDataDto reportData = createReportDataViewRaw(
         processDefinitionId,
         HEAT_VISUALIZATION,
+        view,
+        groupByDto
+    );
+
+    return reportData;
+  }
+
+  public static ReportDataDto createPiFrequencyCountGroupedByNoneAsNumber(String processDefinitionId) {
+    ViewDto view = createCountPiFrequencyView();
+
+    GroupByDto groupByDto = createGroupByNone();
+
+    ReportDataDto reportData = createReportDataViewRaw(
+        processDefinitionId,
+        //does not really affect backend, since command object is instantiated based on
+        //group by criterion
+        SINGLE_NUMBER_VISUALIZATION,
         view,
         groupByDto
     );

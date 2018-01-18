@@ -49,10 +49,12 @@ public class ReportRestService {
   private ReportReader reportReader;
 
   @Autowired
-  private TokenService tokenService;
+  private ReportEvaluator reportEvaluator;
 
   @Autowired
-  private ReportEvaluator reportEvaluator;
+  private TokenService tokenService;
+
+
 
   /**
    * Creates an empty report.

@@ -94,12 +94,12 @@ public class AlertRestServiceIT {
     String id = addEmptyAlertToOptimize(token);
 
     // when
-    AlertCreationDto dashboardDefinitionDto = new AlertCreationDto();
+    AlertCreationDto alertCreationDto = new AlertCreationDto();
     Response response =
         embeddedOptimizeRule.target("alert/" + id)
             .request()
             .header(HttpHeaders.AUTHORIZATION, BEARER + token)
-            .put(Entity.json(dashboardDefinitionDto));
+            .put(Entity.json(alertCreationDto));
 
     // then the status code is okay
     assertThat(response.getStatus(), is(204));
@@ -124,11 +124,11 @@ public class AlertRestServiceIT {
     String id = addEmptyAlertToOptimize(token);
 
     // when
-    List<AlertDefinitionDto> dashboards = getAllAlerts(token);
+    List<AlertDefinitionDto> allAlerts = getAllAlerts(token);
 
     // then
-    assertThat(dashboards.size(), is(1));
-    assertThat(dashboards.get(0).getId(), is(id));
+    assertThat(allAlerts.size(), is(1));
+    assertThat(allAlerts.get(0).getId(), is(id));
   }
 
   @Test

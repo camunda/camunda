@@ -145,6 +145,12 @@
     </dependency>
 
     <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context-support</artifactId>
+      <version>${spring.version}</version>
+    </dependency>
+
+    <dependency>
       <groupId>org.camunda.bpm.model</groupId>
       <artifactId>camunda-bpmn-model</artifactId>
       <version>${camunda.engine.version}</version>
@@ -217,6 +223,13 @@
       <groupId>org.camunda.optimize</groupId>
       <artifactId>plugin</artifactId>
       <version>${project.version}</version>
+    </dependency>
+
+    <!-- Quartz framework -->
+    <dependency>
+      <groupId>org.quartz-scheduler</groupId>
+      <artifactId>quartz</artifactId>
+      <version>${quartz.version}</version>
     </dependency>
 
   </dependencies>
