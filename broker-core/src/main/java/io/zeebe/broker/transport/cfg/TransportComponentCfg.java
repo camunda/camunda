@@ -38,7 +38,6 @@ public class TransportComponentCfg extends ComponentConfiguration
     @Override
     public void applyGlobalConfiguration(GlobalConfiguration globalConfig)
     {
-//        gossip.applyGlobalConfiguration(globalConfig);
         management.applyGlobalConfiguration(globalConfig);
     }
 
