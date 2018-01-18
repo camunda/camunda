@@ -67,9 +67,10 @@ public class ClusterMemberListManager implements RaftStateListener
         this.updatedMemberConsumer = updatedMemberConsumer;
 
         final MemberListService memberListService = context.getMemberListService();
-        memberListService.add(new Member(transportComponentCfg.managementApi.toSocketAddress()));
-        memberListService.setApis(transportComponentCfg.clientApi.toSocketAddress(), transportComponentCfg.replicationApi.toSocketAddress(),
-                                  transportComponentCfg.managementApi.toSocketAddress());
+        final String defaultHost = transportComponentCfg.host;
+        memberListService.add(new Member(transportComponentCfg.managementApi.toSocketAddress(defaultHost)));
+        memberListService.setApis(transportComponentCfg.clientApi.toSocketAddress(defaultHost), transportComponentCfg.replicationApi.toSocketAddress(defaultHost),
+                                  transportComponentCfg.managementApi.toSocketAddress(defaultHost));
 
         context.getGossip()
                .addMembershipListener(new MembershipListener());
@@ -98,9 +99,10 @@ public class ClusterMemberListManager implements RaftStateListener
     public void publishNodeAPIAddresses()
     {
         final Gossip gossip = context.getGossip();
-        final DirectBuffer payload = writeAPIAddressesIntoBuffer(transportComponentCfg.managementApi.toSocketAddress(),
-                                                                 transportComponentCfg.replicationApi.toSocketAddress(),
-                                                                 transportComponentCfg.clientApi.toSocketAddress(),
+        final String defaultHost = transportComponentCfg.host;
+        final DirectBuffer payload = writeAPIAddressesIntoBuffer(transportComponentCfg.managementApi.toSocketAddress(defaultHost),
+                                                                 transportComponentCfg.replicationApi.toSocketAddress(defaultHost),
+                                                                 transportComponentCfg.clientApi.toSocketAddress(defaultHost),
                                                                  apiAddressBuffer);
         gossip.publishEvent(API_EVENT_TYPE, payload);
     }
@@ -220,7 +222,7 @@ public class ClusterMemberListManager implements RaftStateListener
                 {
 
                     final MemberRaftComposite member = context.getMemberListService()
-                                                              .getMember(transportComponentCfg.managementApi.toSocketAddress());
+                                                              .getMember(transportComponentCfg.managementApi.toSocketAddress(transportComponentCfg.host));
 
                     final List<RaftStateComposite> rafts = member.getRafts();
 

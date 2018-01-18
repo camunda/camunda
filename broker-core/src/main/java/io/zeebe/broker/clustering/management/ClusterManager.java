@@ -130,7 +130,7 @@ public class ClusterManager implements Actor
         }
 
         final SocketBindingCfg replicationApi = transportComponentCfg.replicationApi;
-        final SocketAddress socketAddress = new SocketAddress(replicationApi.host, replicationApi.port);
+        final SocketAddress socketAddress = new SocketAddress(replicationApi.getHost(transportComponentCfg.host), replicationApi.port);
         final File[] storageFiles = storageDirectory.listFiles();
 
         if (storageFiles != null && storageFiles.length > 0)
@@ -308,7 +308,7 @@ public class ClusterManager implements Actor
         final LogStream logStream = logStreamsManager.createLogStream(topicName, partitionId);
 
         final SocketBindingCfg replicationApi = transportComponentCfg.replicationApi;
-        final SocketAddress socketAddress = new SocketAddress(replicationApi.host, replicationApi.port);
+        final SocketAddress socketAddress = new SocketAddress(replicationApi.getHost(transportComponentCfg.host), replicationApi.port);
         createRaft(socketAddress, logStream, members);
     }
 
@@ -389,7 +389,7 @@ public class ClusterManager implements Actor
                     final MemberRaftComposite next = iterator.next();
                     if (!next.getMember()
                              .getAddress()
-                             .equals(transportComponentCfg.managementApi.toSocketAddress()))
+                             .equals(transportComponentCfg.managementApi.toSocketAddress(transportComponentCfg.host)))
                     {
                         // TODO don't invite all members to raft
                         inviteMemberToRaft(next.getMember().getAddress(), raft);

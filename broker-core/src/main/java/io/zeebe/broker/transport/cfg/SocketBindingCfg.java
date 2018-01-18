@@ -70,8 +70,8 @@ public class SocketBindingCfg extends ComponentConfiguration
         return returnValue;
     }
 
-    public SocketAddress toSocketAddress()
+    public SocketAddress toSocketAddress(final String defaultHost)
     {
-        return new SocketAddress(host, port);
+        return new SocketAddress(getHost(defaultHost), port);
     }
 }
