@@ -13,7 +13,7 @@ jest.mock('components', () => {
   return {
     Modal,
     Button: props => <button {...props}>{props.children}</button>,
-    Input: props => <input id={props.id} readOnly={props.readOnly} type={props.type} onChange={props.onChange} value={props.value} className={props.className}/>,
+    Input: props => <input ref={props.reference} id={props.id} readOnly={props.readOnly} type={props.type} onChange={props.onChange} value={props.value} className={props.className}/>,
     ControlGroup: props => <div {...props}>{props.children}</div>,
     CopyToClipboard: () => <div></div>
   };
@@ -53,7 +53,8 @@ jest.mock('./DragBehavior', () => {return {DragBehavior: () => <div>DragBehavior
 jest.mock('./ResizeHandle', () => {return {ResizeHandle: () => <div>ResizeHandle</div>}});
 
 const props = {
-  match: {params: {id: '1'}}
+  match: {params: {id: '1'}},
+  location: {}
 };
 
 const sampleDashboard = {
@@ -265,4 +266,18 @@ describe('edit mode', async () => {
 
     expect(node).toIncludeText('ResizeHandle');
   });
+
+  it('should select the name input field if dashboard is just created', () => {
+    props.match.params.viewMode = 'edit';
+    props.location.search = '?new';
+
+    const node = mount(<Dashboard {...props} />);
+
+    node.setState({
+      loaded: true,
+      ...sampleDashboard
+    });
+
+    expect(node.find('.Dashboard__name-input').at(0).getDOMNode()).toBe(document.activeElement)
+  })
 });

@@ -29,7 +29,7 @@ export default class PrivateRoute extends React.Component {
     const {component: Component, ...rest} = this.props;
     return (<Route {...rest} render={props => {
       return ((getToken() && !this.state.forceRedirect) ? (
-        <Component isNew={props.location && props.location.search === '?new'} {...props} />
+        <Component {...props} />
       ) : (
         <Redirect to={{
           pathname: '/login',

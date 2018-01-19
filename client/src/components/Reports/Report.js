@@ -13,7 +13,7 @@ export default class Report extends React.Component {
     super(props);
 
     this.id = props.match.params.id;
-    this.isNew = props.isNew;
+    this.isNew = (props.location.search === '?new');
 
     this.state = {
       name: null,
@@ -168,11 +168,6 @@ export default class Report extends React.Component {
     });
   }
 
-  inputRef = (input) => {
-    this.nameInput = input;
-    this.forceUpdate();
-  }
-
   renderEditMode = () => {
     const {name, lastModifier, lastModified, data, reportResult} = this.state;
     return (
@@ -238,6 +233,18 @@ export default class Report extends React.Component {
     )
   }
 
+  inputRef = (input) => {
+    this.nameInput = input;
+  }
+
+  componentDidUpdate() {
+    if(this.nameInput && this.isNew) {
+      this.nameInput.focus();
+      this.nameInput.select();
+      this.isNew = false;
+    }
+  }
+
   render() {
     const {viewMode} = this.props.match.params;
 
@@ -249,11 +256,6 @@ export default class Report extends React.Component {
 
     if(redirect) {
       return <Redirect to='/reports' />;
-    }
-
-    if(this.nameInput && this.isNew) {
-      this.nameInput.select();
-      this.isNew = false;
     }
 
     return (<div style={{height: '100%', width:'100%'}}>

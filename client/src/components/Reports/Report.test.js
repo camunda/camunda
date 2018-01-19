@@ -13,7 +13,7 @@ jest.mock('components', () =>{
   return {
     Modal,
     Button: props => <button {...props}>{props.children}</button>,
-    Input: props => <input id={props.id} readOnly={props.readOnly} type={props.type} onChange={props.onChange} value={props.value} className={props.className}/>,
+    Input: props => <input ref={props.reference} id={props.id} readOnly={props.readOnly} type={props.type} onChange={props.onChange} value={props.value} className={props.className}/>,
     CopyToClipboard: () => <div></div>,
     ReportView: () => <div>ReportView</div>
   }
@@ -50,7 +50,8 @@ jest.mock('./ControlPanel', () => {
 });
 
 const props = {
-  match: {params: {id: '1'}}
+  match: {params: {id: '1'}},
+  location: {}
 };
 
 const sampleReport = {
@@ -319,5 +320,19 @@ describe('edit mode', async () => {
     await node.instance().cancel();
 
     expect(node.state().reportResult.data.processDefinitionId).toEqual('123');
+  });
+
+  it('should select the name input field if Report is just created', () => {
+    props.match.params.viewMode = 'edit';
+    props.location.search = '?new';
+
+    const node = mount(<Report {...props} />);
+
+    node.setState({
+      loaded: true,
+      ...sampleReport
+    });
+
+    expect(node.find('.Report__name-input').at(0).getDOMNode()).toBe(document.activeElement)
   });
 });
