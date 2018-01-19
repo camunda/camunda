@@ -90,8 +90,8 @@ export default class DateFilter extends React.Component {
       <Modal.Header>Add Start Date Filter</Modal.Header>
       <Modal.Content>
         <ButtonGroup className='DateFilter__mode-buttons'>
-          <Button onClick={() => this.setMode('static')} active={this.state.mode === 'static'}>Static</Button>
-          <Button onClick={() => this.setMode('dynamic')} active={this.state.mode === 'dynamic'}>Dynamic</Button>
+          <Button onClick={() => this.setMode('static')} name='button-static' active={this.state.mode === 'static'}>Fixed Date</Button>
+          <Button onClick={() => this.setMode('dynamic')} name='button-dynamic' active={this.state.mode === 'dynamic'}>Relative Date</Button>
         </ButtonGroup>
         {this.state.mode === 'static' && <React.Fragment>
           <div className='DateFilter__inputs'>

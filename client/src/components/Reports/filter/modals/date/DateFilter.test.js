@@ -77,8 +77,8 @@ it('should have a create filter button', () => {
 it('should allow switching between static date and dynamic date mode', () => {
   const node = mount(<DateFilter />);
 
-  expect(node.find('div.DateFilter__mode-buttons')).toIncludeText('Static');
-  expect(node.find('div.DateFilter__mode-buttons')).toIncludeText('Dynamic');
+  expect(node.find('div.DateFilter__mode-buttons')).toIncludeText('Fixed');
+  expect(node.find('div.DateFilter__mode-buttons')).toIncludeText('Relative');
 });
 
 it('should disable the add filter button when dynamic value is not valid', () => {
