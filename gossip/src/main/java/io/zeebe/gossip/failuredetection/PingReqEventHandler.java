@@ -136,10 +136,7 @@ public class PingReqEventHandler implements GossipEventConsumer
         {
             if (context.ackResponse.isReceived())
             {
-                if (LOG.isTraceEnabled())
-                {
-                    LOG.trace("Received ACK from '{}'", context.suspiciousMember.getAddress());
-                }
+                LOG.trace("Received ACK from '{}'", context.suspiciousMember.getAddress());
 
                 context.ackResponse.process();
 
@@ -147,10 +144,7 @@ public class PingReqEventHandler implements GossipEventConsumer
             }
             else if (context.ackResponse.isFailed() || context.ackResponse.isTimedOut())
             {
-                if (LOG.isTraceEnabled())
-                {
-                    LOG.trace("Doesn't receive ACK from '{}'", context.suspiciousMember.getAddress());
-                }
+                LOG.trace("Doesn't receive ACK from '{}'", context.suspiciousMember.getAddress());
 
                 context.take(TRANSITION_FAIL);
             }

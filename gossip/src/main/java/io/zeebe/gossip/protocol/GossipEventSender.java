@@ -15,9 +15,12 @@
  */
 package io.zeebe.gossip.protocol;
 
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import io.zeebe.clustering.gossip.GossipEventType;
+import io.zeebe.gossip.Loggers;
 import io.zeebe.gossip.membership.MembershipList;
 import io.zeebe.transport.*;
 import org.agrona.DirectBuffer;
@@ -115,6 +118,7 @@ public class GossipEventSender
         }
         catch (Throwable t)
         {
+            Loggers.GOSSIP_LOGGER.error("Error on sending request.", t);
             // ignore
             return FAILED_REQUEST;
         }
@@ -134,6 +138,7 @@ public class GossipEventSender
         }
         catch (Throwable t)
         {
+            Loggers.GOSSIP_LOGGER.error("Error on sending response.", t);
             // ignore
         }
     }

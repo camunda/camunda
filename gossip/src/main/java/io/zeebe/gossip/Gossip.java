@@ -150,10 +150,7 @@ public class Gossip implements Actor, GossipController, GossipEventPublisher
                 currentTerm.increment();
             }
 
-            if (LOG.isTraceEnabled())
-            {
-                LOG.trace("Spread custom event of type '{}', in term {}", bufferAsString(type), currentTerm);
-            }
+            LOG.trace("Spread custom event of type '{}', in term {}", bufferAsString(type), currentTerm);
 
             disseminationComponent.addCustomEvent()
                 .senderAddress(self.getAddress())

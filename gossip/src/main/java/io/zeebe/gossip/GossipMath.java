@@ -31,7 +31,7 @@ public class GossipMath
     /**
      * Returns ceil(log2(n + 1)).
      */
-    private static int ceilLog2(int num)
+    protected static int ceilLog2(int num)
     {
         return 32 - Integer.numberOfLeadingZeros(num);
     }

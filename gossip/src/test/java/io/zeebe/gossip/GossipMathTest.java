@@ -15,15 +15,28 @@
  */
 package io.zeebe.gossip;
 
-import org.agrona.DirectBuffer;
+import static org.assertj.core.api.Assertions.assertThat;
 
-public interface GossipPublisher
+import java.util.function.Function;
+
+import org.junit.Test;
+
+public class GossipMathTest
 {
-    void publishEvent(DirectBuffer type, DirectBuffer payload, int offset, int length);
 
-    default void publishEvent(DirectBuffer type, DirectBuffer payload)
+    @Test
+    public void shouldHaveTheSameResultLikeCeilLog2()
     {
-        publishEvent(type, payload, 0, payload.capacity());
-    }
+        // given
+        final Function<Integer, Integer> ceilLog2 = (num) -> (int) Math.ceil((Math.log(num + 1) / Math.log(2)));
+        final int workCount = 1_000_000;
 
+        for (int i = 0; i < workCount; i++)
+        {
+            final int gossipResult = GossipMath.ceilLog2(i);
+            final int logResult = ceilLog2.apply(i);
+
+            assertThat(gossipResult).isEqualTo(logResult);
+        }
+    }
 }

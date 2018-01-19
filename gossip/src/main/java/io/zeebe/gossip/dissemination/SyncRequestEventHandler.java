@@ -86,10 +86,7 @@ public class SyncRequestEventHandler implements GossipEventConsumer
         {
             if (bufferedRequests.size() <= REQUEST_BUFFER_CAPACITY)
             {
-                if (LOG.isTraceEnabled())
-                {
-                    LOG.trace("Buffer SYNC-REQUEST from '{}'. The previous request isn't completed yet.", event.getSender());
-                }
+                LOG.trace("Buffer SYNC-REQUEST from '{}'. The previous request isn't completed yet.", event.getSender());
 
                 bufferedRequests.add().wrap(requestId, streamId);
             }
@@ -134,10 +131,7 @@ public class SyncRequestEventHandler implements GossipEventConsumer
                 final GossipSyncRequest request = context.requests.add();
                 request.wrap(tuple.getLeft());
 
-                if (LOG.isTraceEnabled())
-                {
-                    LOG.trace("Request SYNC data for custom event type '{}'", bufferAsString(tuple.getLeft()));
-                }
+                LOG.trace("Request SYNC data for custom event type '{}'", bufferAsString(tuple.getLeft()));
 
                 final GossipSyncRequestHandler handler = tuple.getRight();
                 handler.onSyncRequest(request);
@@ -209,10 +203,7 @@ public class SyncRequestEventHandler implements GossipEventConsumer
                 }
             }
 
-            if (LOG.isTraceEnabled())
-            {
-                LOG.trace("Send SYNC response");
-            }
+            LOG.trace("Send SYNC response");
 
             gossipEventSender.responseSync(context.requestId, context.streamId);
 
