@@ -31,7 +31,9 @@ export default class DashboardReport extends React.Component {
     return <div className='DashboardReport__wrapper'>
       <div className='DashboardReport__header'>
         <h1 className='DashboardReport__heading'>
+          <a href={'/report/' + this.props.report.id}>
           {this.state.data.name}
+          </a>
         </h1>
       </div>
       <div className='DashboardReport__visualization'>
