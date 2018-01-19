@@ -82,7 +82,7 @@ export default class ControlPanel extends React.Component {
 }
 
 function addSelectionOption() {
-  return <Select.Option value=''>Please select a value...</Select.Option>;
+  return <Select.Option value=''>Please select...</Select.Option>;
 }
 
 function renderOptions(options) {
