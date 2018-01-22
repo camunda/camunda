@@ -40,7 +40,7 @@ export default class Statistics extends React.Component {
       prevProps.gateway !== this.props.gateway ||
       prevProps.endEvent !== this.props.endEvent ||
       prevProps.config.processDefinitionId !== this.props.config.processDefinitionId ||
-      prevProps.config.filter.length !== this.props.config.filter.length
+      prevProps.config.filter !== this.props.config.filter
     ) {
       this.loadCorrelation();
     } else if(this.state.data) {

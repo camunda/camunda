@@ -77,7 +77,7 @@ export default class Analysis extends React.Component {
     const {config} = this.state;
     const {config: prevConfig} = prevState;
     if(config.processDefinitionId &&
-        (prevConfig.filter.length !== config.filter.length ||
+        (prevConfig.filter !== config.filter ||
          prevConfig.processDefinitionId !== config.processDefinitionId)) {
 
       this.setState({data: await loadFrequencyData(config.processDefinitionId, config.filter)});
