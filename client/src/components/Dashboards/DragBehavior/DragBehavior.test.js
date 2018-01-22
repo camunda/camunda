@@ -3,8 +3,15 @@ import {mount} from 'enzyme';
 
 import DragBehavior from './DragBehavior';
 
+import {snapInPosition} from '../service';
+
 jest.mock('../service', () => {return {
-  getOccupiedTiles: jest.fn().mockReturnValue({})
+  snapInPosition: jest.fn().mockReturnValue({
+    dimensions: {width: 3, height: 3},
+    position: {x: 0, y: 0}
+  }),
+  collidesWithReport: jest.fn().mockReturnValue(false),
+  applyPlacement: jest.fn()
 }});
 
 const props = {
@@ -84,30 +91,11 @@ it('should update the x and y position of the report when scrolling', () => {
   expect(node.getDOMNode().style.left).toBe('10px');
 });
 
-it('should snap the report to the closest grid position', () => {
-  const node = mount(<div className='DashboardObject' style={{
-    top: '0px',
-    left: '0px'
-  }}><DragBehavior {...props} /></div>);
-
-  node.find(DragBehavior).instance().startDragging({
-    preventDefault: jest.fn(),
-    screenX: 0,
-    screenY: 0
-  });
-
-  node.find(DragBehavior).instance().saveMouseAndUpdateCardPosition({
-    screenX: 33,
-    screenY: 8
-  });
-
-  node.find(DragBehavior).instance().stopDragging();
-
-  expect(node.getDOMNode().style.top).toBe('10px');
-  expect(node.getDOMNode().style.left).toBe('30px');
-});
-
 it('should call the update report callback on drop', () => {
+  snapInPosition.mockReturnValueOnce({
+    position: {x: 3, y: 1},
+    dimensions: {width: 1, height: 1}
+  });
   const spy = jest.fn();
   const node = mount(<div className='DashboardObject' style={{
     top: '0px',

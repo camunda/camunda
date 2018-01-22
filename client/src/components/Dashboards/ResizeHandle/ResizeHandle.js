@@ -1,7 +1,7 @@
 import React from 'react';
 
 import './ResizeHandle.css';
-import { getOccupiedTiles } from '../service';
+import {snapInPosition, collidesWithReport, applyPlacement} from '../service';
 
 export default class ResizeHandle extends React.Component {
   render() {
@@ -79,72 +79,46 @@ export default class ResizeHandle extends React.Component {
     }
 
     this.dragging = false;
-    const {columns, outerWidth, outerHeight, innerWidth} = this.props.tileDimensions;
-    const margin = outerWidth - innerWidth;
 
     document.body.removeEventListener('mousemove', this.saveMouseAndUpdateCardSize);
     document.body.removeEventListener('mouseup', this.stopDragging);
     window.removeEventListener('scroll', this.updateCardSize);
 
-    // -- snap in position --
-    // calculate move delta
-    const delta = {
-      width: parseInt(this.reportCard.style.width, 10) - this.cardStartSize.width,
-      height: parseInt(this.reportCard.style.height, 10) - this.cardStartSize.height
-    };
+    const newPlacement = snapInPosition({
+      tileDimensions: this.props.tileDimensions,
+      report: this.props.report,
+      changes: {
+        width: parseInt(this.reportCard.style.width, 10) - this.cardStartSize.width,
+        height: parseInt(this.reportCard.style.height, 10) - this.cardStartSize.height
+      }
+    });
 
-    // map into tile units
-    delta.width /= outerWidth;
-    delta.height /= outerHeight;
+    if(!collidesWithReport({
+      placement: newPlacement,
+      reports: this.props.reports.filter(report => report !== this.props.report)
+    })) {
+      applyPlacement({
+        placement: newPlacement,
+        tileDimensions: this.props.tileDimensions,
+        node: this.reportCard
+      });
 
-    // round to next full integer values so that a report is not between tiles
-    delta.width = Math.round(delta.width);
-    delta.height = Math.round(delta.height);
-
-    // get the new final position of the report in tile coordinates
-    const size = {
-      width: this.props.report.dimensions.width + delta.width,
-      height: this.props.report.dimensions.height + delta.height
-    }
-
-    // do not allow making a report wider than the grid
-    size.width = Math.min(size.width, columns - this.props.report.position.x);
-
-    // do not allow a non-positive size
-    size.width = Math.max(size.width, 1);
-    size.height = Math.max(size.height, 1);
-
-    if(!this.collidesWithOtherReport(this.props.report.position, size)) {
-      // set the actual position of the dom node to the calculated snapped position
-      this.reportCard.style.width = (size.width * outerWidth - margin + 1) + 'px';
-      this.reportCard.style.height = (size.height * outerHeight - margin + 1) + 'px';
-
-      // update the report
       this.props.updateReport({
         report: this.props.report,
-        dimensions: size
+        dimensions: newPlacement.dimensions
       });
     } else {
-      // reset the report to its original position
-      this.reportCard.style.width = (this.props.report.dimensions.width * outerWidth - margin + 1) + 'px';
-      this.reportCard.style.height = (this.props.report.dimensions.height * outerHeight - margin + 1) + 'px';
+      applyPlacement({
+        placement: {
+          position: this.props.report.position,
+          dimensions: this.props.report.dimensions
+        },
+        tileDimensions: this.props.tileDimensions,
+        node: this.reportCard
+      });
     }
 
     this.reportCard.classList.remove('ResizeHandle--dragging');
     this.props.onResizeEnd();
-  }
-
-  collidesWithOtherReport = ({x: left, y: top}, size) => {
-    const occupiedTiles = getOccupiedTiles(this.props.reports.filter(report => report !== this.props.report));
-
-    for(let x = left; x < left + size.width; x++) {
-      for(let y = top; y < top + size.height; y++) {
-        if(occupiedTiles[x] && occupiedTiles[x][y]) {
-          return true;
-        }
-      }
-    }
-
-    return false;
   }
 }

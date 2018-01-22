@@ -1,7 +1,7 @@
 import React from 'react';
 
 import './DragBehavior.css';
-import { getOccupiedTiles } from '../service';
+import {snapInPosition, collidesWithReport, applyPlacement} from '../service';
 
 export default class DragBehavior extends React.Component {
   render() {
@@ -73,69 +73,45 @@ export default class DragBehavior extends React.Component {
     }
 
     this.dragging = false;
-    const {columns, outerWidth, outerHeight, innerWidth} = this.props.tileDimensions;
-    const margin = outerWidth - innerWidth;
 
     document.body.removeEventListener('mousemove', this.saveMouseAndUpdateCardPosition);
     window.removeEventListener('scroll', this.updateCardPosition);
 
-    // -- snap in position --
-    // calculate move delta
-    const delta = {
-      x: parseInt(this.reportCard.style.left, 10) - this.cardStartPosition.x,
-      y: parseInt(this.reportCard.style.top, 10) - this.cardStartPosition.y
-    };
+    const newPlacement = snapInPosition({
+      tileDimensions: this.props.tileDimensions,
+      report: this.props.report,
+      changes: {
+        x: parseInt(this.reportCard.style.left, 10) - this.cardStartPosition.x,
+        y: parseInt(this.reportCard.style.top, 10) - this.cardStartPosition.y,
+      }
+    });
 
-    // map into tile units
-    delta.x /= outerWidth;
-    delta.y /= outerHeight;
+    if(!collidesWithReport({
+      placement: newPlacement,
+      reports: this.props.reports.filter(report => report !== this.props.report)
+    })) {
+      applyPlacement({
+        placement: newPlacement,
+        tileDimensions: this.props.tileDimensions,
+        node: this.reportCard
+      });
 
-    // round to next full integer values so that a report is not between tiles
-    delta.x = Math.round(delta.x);
-    delta.y = Math.round(delta.y);
-
-    // get the new final position of the report in tile coordinates
-    const position = {
-      x: this.props.report.position.x + delta.x,
-      y: this.props.report.position.y + delta.y
-    }
-
-    // do not allow placing a report outside of the grid boundaries
-    position.x = Math.max(position.x, 0);
-    position.x = Math.min(position.x, columns - this.props.report.dimensions.width);
-    position.y = Math.max(position.y, 0);
-
-    if(!this.collidesWithOtherReport(position, this.props.report.dimensions)) {
-      // set the actual position of the dom node to the calculated snapped position
-      this.reportCard.style.left = (position.x * outerWidth + margin / 2 - 1) + 'px';
-      this.reportCard.style.top = (position.y * outerHeight + margin / 2 - 1) + 'px';
-
-      // update the report
       this.props.updateReport({
         report: this.props.report,
-        position
+        position: newPlacement.position
       });
     } else {
-      // reset the report to its original position
-      this.reportCard.style.left = (this.props.report.position.x * outerWidth + margin / 2 - 1) + 'px';
-      this.reportCard.style.top = (this.props.report.position.y * outerHeight + margin / 2 - 1) + 'px';
+      applyPlacement({
+        placement: {
+          position: this.props.report.position,
+          dimensions: this.props.report.dimensions
+        },
+        tileDimensions: this.props.tileDimensions,
+        node: this.reportCard
+      });
     }
 
     this.reportCard.classList.remove('DragBehavior--dragging');
     this.props.onDragEnd();
-  }
-
-  collidesWithOtherReport = ({x: left, y: top}, size) => {
-    const occupiedTiles = getOccupiedTiles(this.props.reports.filter(report => report !== this.props.report));
-
-    for(let x = left; x < left + size.width; x++) {
-      for(let y = top; y < top + size.height; y++) {
-        if(occupiedTiles[x] && occupiedTiles[x][y]) {
-          return true;
-        }
-      }
-    }
-
-    return false;
   }
 }
