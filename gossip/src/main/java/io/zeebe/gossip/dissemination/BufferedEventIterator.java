@@ -21,7 +21,7 @@ public class BufferedEventIterator<T> implements Iterator<T>
 {
     private final boolean incrementSpreadCount;
 
-    private int spreadLimit = 1;
+    private int spreadLimit = 10;
 
     private Iterator<BufferedEvent<T>> iterator;
 
