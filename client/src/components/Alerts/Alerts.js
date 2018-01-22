@@ -14,9 +14,9 @@ export default class Alerts extends React.Component {
 
     this.state = {
       alerts: null,
-      editing: null,
       reports: null,
-      deleting: null
+      alertToEdit: null,
+      alertToDelete: null
     };
 
     this.loadData();
@@ -32,21 +32,24 @@ export default class Alerts extends React.Component {
   }
 
   saveAlert = async alert => {
-    if(this.state.editing.id) {
+    const alertToEdit = this.state.alertToEdit;
+    if(alertToEdit.id) {
       // edit an existing alert
       this.setState(update(this.state, {
         alerts: {
-          [this.state.alerts.indexOf(this.state.editing)]: {
+          [this.state.alerts.indexOf(alertToEdit)]: {
             $set: alert
           }
-        }
+        },
+        alertToEdit: {$set: null}
       }));
 
-      updateAlert(this.state.editing.id, alert);
+      updateAlert(alertToEdit.id, alert);
     } else {
       // add a new alert
       this.setState({
-        alerts: [...this.state.alerts, alert]
+        alerts: [...this.state.alerts, alert],
+        alertToEdit: null
       });
 
       const newId = await saveNewAlert(alert);
@@ -61,28 +64,22 @@ export default class Alerts extends React.Component {
         }
       }));
     }
-    this.cancelEdit();
   }
 
   deleteAlert = async () => {
-    deleteAlert(this.state.deleting.id);
+    deleteAlert(this.state.alertToDelete.id);
 
     this.setState({
-      alerts: this.state.alerts.filter(alert => alert !== this.state.deleting),
-      deleting: null
+      alerts: this.state.alerts.filter(alert => alert !== this.state.alertToDelete),
+      alertToDelete: null
     });
   };
 
-  editAlert = alertToEdit => () => {
-    this.setState({
-      editing: alertToEdit
-    });
-  };
-
-  openCreationModal = () => this.setState({editing: {}});
-  cancelEdit = () => this.setState({editing: null});
-  showDeleteModal = alert => () => this.setState({deleting: alert});
-  cancelDeleting = () => this.setState({deleting: null});
+  editAlert = alertToEdit => () => this.setState({alertToEdit});
+  openCreationModal = () => this.setState({alertToEdit: {}});
+  cancelEdit = () => this.setState({alertToEdit: null});
+  showDeleteModal = alert => () => this.setState({alertToDelete: alert});
+  cancelDeleting = () => this.setState({alertToDelete: null});
 
   render() {
     return <div className="Alerts">
@@ -94,13 +91,13 @@ export default class Alerts extends React.Component {
       </div>
       {this.state.alerts && this.state.reports ? this.renderList() : <div>loading...</div>}
       {this.state.reports &&
-        <AlertModal reports={this.state.reports} onConfirm={this.saveAlert} onClose={this.cancelEdit} alert={this.state.editing} />
+        <AlertModal reports={this.state.reports} onConfirm={this.saveAlert} onClose={this.cancelEdit} alert={this.state.alertToEdit} />
       }
-      {this.state.deleting &&
+      {this.state.alertToDelete &&
         <Modal open={true} onClose={this.cancelDeleting} className='EntityList__delete-modal'>
-          <Modal.Header>Delete {this.state.deleting.name}</Modal.Header>
+          <Modal.Header>Delete {this.state.alertToDelete.name}</Modal.Header>
           <Modal.Content>
-            <p>You are about to delete {this.state.deleting.name}. Are you sure you want to proceed?</p>
+            <p>You are about to delete {this.state.alertToDelete.name}. Are you sure you want to proceed?</p>
           </Modal.Content>
           <Modal.Actions>
             <Button className="EntityList__close-delete-modal-button" onClick={this.cancelDeleting}>Close</Button>
@@ -112,32 +109,37 @@ export default class Alerts extends React.Component {
   }
 
   renderList() {
-    return (<ul className='Alert__list'>
-    {
-      this.state.alerts.length === 0 ?
-        <li className="Alert__item Alert__no-entities">
-          You have no Alerts configured yet.&nbsp;
-          <a className='Alert__createLink' role='button' onClick={this.openCreationModal}>Create a new Alert…</a>
-        </li>
-      :
-      this.state.alerts.map((alert, idx) => {
-        return (<li key={idx} className='Alert__item'>
-          <span className='Alert__data Alert__data--title' onClick={this.editAlert(alert)}>{alert.name}</span>
-          <span className='Alert__data Alert__data--metadata'>
-            Alert <span className='Alert__data--highlight'>{alert.email}</span>
-            {' '}when Report <span className='Alert__data--highlight'>{this.state.reports.find(({id}) => alert.reportId === id).name}</span>
-            {' '}has a value <span className='Alert__data--highlight'>{alert.thresholdOperator === '<' ? 'below' : 'above'}
-            {' '}{alert.threshold}</span>
-          </span>
-          <span className='Alert__data Alert__data--tool'>
-            <Button type='small' className='Alert__deleteButton' onClick={this.showDeleteModal(alert)}>Delete</Button>
-          </span>
-          <span className='Alert__data Alert__data--tool'>
-            <Button type='small' className='Alert__editButton' onClick={this.editAlert(alert)}>Edit</Button>
-          </span>
-        </li>);
-      })
+    if(this.state.alerts.length === 0) {
+      return (
+        <ul className='Alert__list'>
+          <li className="Alert__item Alert__no-entities">
+            You have no Alerts configured yet.&nbsp;
+            <a className='Alert__createLink' role='button' onClick={this.openCreationModal}>Create a new Alert…</a>
+          </li>
+        </ul>
+      );
+    } else {
+      return (
+        <ul className='Alert__list'>
+          {this.state.alerts.map((alert, idx) => {
+            return (<li key={idx} className='Alert__item'>
+              <span className='Alert__data Alert__data--title' onClick={this.editAlert(alert)}>{alert.name}</span>
+              <span className='Alert__data Alert__data--metadata'>
+                Alert <span className='Alert__data--highlight'>{alert.email}</span>
+                {' '}when Report <span className='Alert__data--highlight'>{this.state.reports.find(({id}) => alert.reportId === id).name}</span>
+                {' '}has a value <span className='Alert__data--highlight'>{alert.thresholdOperator === '<' ? 'below' : 'above'}
+                {' '}{alert.threshold}</span>
+              </span>
+              <span className='Alert__data Alert__data--tool'>
+                <Button type='small' className='Alert__deleteButton' onClick={this.showDeleteModal(alert)}>Delete</Button>
+              </span>
+              <span className='Alert__data Alert__data--tool'>
+                <Button type='small' className='Alert__editButton' onClick={this.editAlert(alert)}>Edit</Button>
+              </span>
+            </li>);
+          })}
+        </ul>
+      );
     }
-    </ul>);
   }
 }

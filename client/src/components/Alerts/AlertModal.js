@@ -1,4 +1,5 @@
 import React from 'react';
+import update from 'immutability-helper';
 
 import {Modal, Button, Input, Select} from 'components';
 
@@ -43,27 +44,19 @@ export default class AlertModal extends React.Component {
     }
   }
 
-  update = (field, nestedProp) => ({target: {value, type, checked}}) => {
-    let parsedValue = type === 'checkbox' ? checked : value;
-
-    if(field === 'reminder') {
-      // special case: reminder takes null instead of false and has to create an object
-      if(parsedValue === false) {
-        parsedValue = null;
-      } else if(parsedValue === true) {
-        parsedValue = {
+  updateReminder = ({target: {checked}}) => {
+    if(checked) {
+      this.setState({
+        reminder: {
           value: '2',
           unit: 'hours'
-        };
-      }
+        }
+      });
+    } else {
+      this.setState({
+        reminder: null
+      });
     }
-
-    this.setState({
-      [field]: nestedProp ? {
-        ...this.state[field],
-        [nestedProp]: parsedValue
-      } : parsedValue
-    });
   }
 
   alertValid = () => {
@@ -99,19 +92,19 @@ export default class AlertModal extends React.Component {
           <div className="AlertModal__inputGroup">
             <label>
               <span className="AlertModal__label">Name</span>
-              <Input className="AlertModal__input" value={name} onChange={this.update('name')}/>
+              <Input className="AlertModal__input" value={name} onChange={({target: {value}}) => this.setState({name: value})}/>
             </label>
           </div>
           <div className="AlertModal__inputGroup">
             <label>
               <span className="AlertModal__label">Send Email to</span>
-              <Input className="AlertModal__input" value={email} onChange={this.update('email')} />
+              <Input className="AlertModal__input" value={email} onChange={({target: {value}}) => this.setState({email: value})} />
             </label>
           </div>
           <div className="AlertModal__inputGroup">
             <label>
               <span className="AlertModal__label">when Report</span>
-              <Select className="AlertModal__input" value={reportId} onChange={this.update('reportId')}>
+              <Select className="AlertModal__input" value={reportId} onChange={({target: {value}}) => this.setState({reportId: value})}>
                 <Select.Option disabled value=''>Please select Report</Select.Option>
                 {this.props.reports.map(({id, name}) => {
                   return <Select.Option key={id} value={id}>{name}</Select.Option>
@@ -123,11 +116,11 @@ export default class AlertModal extends React.Component {
             <label>
               <span className="AlertModal__label">has a value</span>
               <div className="AlertModal__combinedInput">
-                <Select value={thresholdOperator} onChange={this.update('thresholdOperator')}>
+                <Select value={thresholdOperator} onChange={({target: {value}}) => this.setState({thresholdOperator: value})}>
                   <Select.Option value='>'>above</Select.Option>
                   <Select.Option value='<'>below</Select.Option>
                 </Select>
-                <Input className="AlertModal__input" value={threshold} onChange={this.update('threshold')} />
+                <Input className="AlertModal__input" value={threshold} onChange={({target: {value}}) => this.setState({threshold: value})} />
               </div>
             </label>
           </div>
@@ -136,8 +129,15 @@ export default class AlertModal extends React.Component {
           <label>
             <span className="AlertModal__label">Check Report every</span>
             <div className="AlertModal__combinedInput">
-              <Input className="AlertModal__input" value={checkInterval.value} onChange={this.update('checkInterval', 'value')}/>
-              <Select value={checkInterval.unit} onChange={this.update('checkInterval', 'unit')}>
+              <Input
+                className="AlertModal__input"
+                value={checkInterval.value}
+                onChange={({target: {value}}) => this.setState(update(this.state, {checkInterval: {value: {$set: value}}}))}
+              />
+              <Select
+                value={checkInterval.unit}
+                onChange={({target: {value}}) => this.setState(update(this.state, {checkInterval: {unit: {$set: value}}}))}
+              >
                 <Select.Option value='minutes'>Minutes</Select.Option>
                 <Select.Option value='hours'>Hours</Select.Option>
                 <Select.Option value='days'>Days</Select.Option>
@@ -149,13 +149,13 @@ export default class AlertModal extends React.Component {
         </div>
         <div className="AlertModal__inputGroup">
           <label>
-            <Input type='checkbox' checked={fixNotification} onChange={this.update('fixNotification')} />
+            <Input type='checkbox' checked={fixNotification} onChange={({target: {checked}}) => this.setState({fixNotification: checked})} />
             Send Fix Notification
           </label>
         </div>
         <div className="AlertModal__inputGroup">
           <label>
-            <Input type='checkbox' checked={!!reminder} onChange={this.update('reminder')} />
+            <Input type='checkbox' checked={!!reminder} onChange={this.updateReminder} />
             Send Reminder Mails
           </label>
           {reminder &&
@@ -163,8 +163,15 @@ export default class AlertModal extends React.Component {
               <label>
                 <span className="AlertModal__label">every</span>
                 <div className="AlertModal__combinedInput">
-                  <Input className="AlertModal__input" value={reminder.value} onChange={this.update('reminder', 'value')} />
-                  <Select value={reminder.unit} onChange={this.update('reminder', 'unit')}>
+                  <Input
+                    className="AlertModal__input"
+                    value={reminder.value}
+                    onChange={({target: {value}}) => this.setState(update(this.state, {reminder: {value: {$set: value}}}))}
+                  />
+                  <Select
+                    value={reminder.unit}
+                    onChange={({target: {value}}) => this.setState(update(this.state, {reminder: {unit: {$set: value}}}))}
+                  >
                     <Select.Option value='minutes'>Minutes</Select.Option>
                     <Select.Option value='hours'>Hours</Select.Option>
                     <Select.Option value='days'>Days</Select.Option>
