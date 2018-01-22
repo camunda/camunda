@@ -35,7 +35,6 @@ import io.zeebe.client.topic.Topics;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.SocketAddress;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -153,7 +152,6 @@ public class CreateTopicClusteredTest
     }
 
     @Test
-    @Ignore("https://github.com/zeebe-io/zeebe/issues/617")
     public void shouldChooseNewLeaderForCreatedTopicAfterLeaderDies()
     {
         // given

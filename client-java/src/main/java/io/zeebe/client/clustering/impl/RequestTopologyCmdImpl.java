@@ -31,6 +31,17 @@ public class RequestTopologyCmdImpl extends ControlMessageRequest<TopologyRespon
     }
 
     @Override
+    public TopologyResponse execute()
+    {
+        final TopologyResponse response = super.execute();
+
+        final ClientTopologyManager topologyManager = client.getTopologyManager();
+        topologyManager.updateTopology(response);
+
+        return response;
+    }
+
+    @Override
     public Object getRequest()
     {
         return EMPTY_REQUEST;

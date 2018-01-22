@@ -29,6 +29,7 @@ receiveBufferSize = 16
 initialContactPoints = [
   "localhost:51016"
 ]
+probeInterval = 500
 
 # System Configuration --------------------------------
 

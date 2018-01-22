@@ -20,7 +20,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.zeebe.client.clustering.impl.ClientTopologyManager;
 import io.zeebe.client.cmd.ClientException;
 import io.zeebe.client.event.Event;
@@ -70,6 +69,11 @@ public class RequestManager implements Actor
             this.commandControllers[i] = controller;
             this.pooledCmds.add(controller);
         }
+    }
+
+    public ClientTopologyManager getTopologyManager()
+    {
+        return topologyManager;
     }
 
     @Override

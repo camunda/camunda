@@ -30,7 +30,6 @@ import io.zeebe.client.clustering.impl.TopicLeader;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.SocketAddress;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -50,7 +49,7 @@ public class GossipClusteringTest
     public ClientRule clientRule = new ClientRule(false);
 
     @Rule
-    public Timeout timeout = new Timeout(10, TimeUnit.SECONDS);
+    public Timeout timeout = new Timeout(20, TimeUnit.SECONDS);
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -80,9 +79,9 @@ public class GossipClusteringTest
             doRepeatedly(() -> client.requestTopology().execute().getBrokers())
                 .until(topologyBroker -> topologyBroker != null && topologyBroker.size() == 3);
 
-        assertThat(topologyBrokers).containsExactly(new SocketAddress("localhost", 51015),
-                                                    new SocketAddress("localhost", 41015),
-                                                    new SocketAddress("localhost", 31015));
+        assertThat(topologyBrokers).containsExactlyInAnyOrder(new SocketAddress("localhost", 51015),
+                                                              new SocketAddress("localhost", 41015),
+                                                              new SocketAddress("localhost", 31015));
     }
 
     @Test
@@ -129,12 +128,11 @@ public class GossipClusteringTest
             doRepeatedly(() -> client.requestTopology().execute().getBrokers())
                 .until(topologyBroker -> topologyBroker != null && topologyBroker.size() == 2);
 
-        assertThat(topologyBrokers).containsExactly(new SocketAddress("localhost", 51015),
-                                                    new SocketAddress("localhost", 41015));
+        assertThat(topologyBrokers).containsExactlyInAnyOrder(new SocketAddress("localhost", 51015),
+                                                              new SocketAddress("localhost", 41015));
     }
 
     @Test
-    @Ignore("https://github.com/zeebe-io/zeebe/issues/617")
     public void shouldRemoveLeaderFromCluster()
     {
         // given
@@ -154,8 +152,8 @@ public class GossipClusteringTest
             doRepeatedly(() -> client.requestTopology().execute().getBrokers())
                 .until(topologyBroker -> topologyBroker != null && topologyBroker.size() == 2);
 
-        assertThat(topologyBrokers).containsExactly(new SocketAddress("localhost", 51015),
-                                                    new SocketAddress("localhost", 41015));
+        assertThat(topologyBrokers).containsExactlyInAnyOrder(new SocketAddress("localhost", 31015),
+                                                              new SocketAddress("localhost", 41015));
     }
 
     @Test
@@ -176,9 +174,9 @@ public class GossipClusteringTest
             doRepeatedly(() -> client.requestTopology().execute().getBrokers())
                 .until(topologyBroker -> topologyBroker != null && topologyBroker.size() == 3);
 
-        assertThat(topologyBrokers).containsExactly(new SocketAddress("localhost", 51015),
-                                                    new SocketAddress("localhost", 41015),
-                                                    new SocketAddress("localhost", 31015));
+        assertThat(topologyBrokers).containsExactlyInAnyOrder(new SocketAddress("localhost", 51015),
+                                                              new SocketAddress("localhost", 41015),
+                                                              new SocketAddress("localhost", 31015));
     }
 
     @Test
@@ -206,9 +204,9 @@ public class GossipClusteringTest
             doRepeatedly(() -> client.requestTopology().execute().getBrokers())
                 .until(topologyBroker -> topologyBroker != null && topologyBroker.size() == 3);
 
-        assertThat(topologyBrokers).containsExactly(new SocketAddress("localhost", 51015),
-                                                    new SocketAddress("localhost", 41015),
-                                                    new SocketAddress("localhost", 31015));
+        assertThat(topologyBrokers).containsExactlyInAnyOrder(new SocketAddress("localhost", 51015),
+                                                              new SocketAddress("localhost", 41015),
+                                                              new SocketAddress("localhost", 31015));
     }
 
     private Broker startBroker(String configFile)

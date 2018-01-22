@@ -21,11 +21,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.zeebe.client.clustering.impl.ClientTopologyManager;
 import io.zeebe.client.cmd.BrokerErrorException;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
@@ -46,6 +42,8 @@ import io.zeebe.util.state.State;
 import io.zeebe.util.state.StateMachine;
 import io.zeebe.util.state.WaitState;
 import io.zeebe.util.time.ClockUtil;
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 
 @SuppressWarnings("rawtypes")
 public class RequestController implements BufferReader

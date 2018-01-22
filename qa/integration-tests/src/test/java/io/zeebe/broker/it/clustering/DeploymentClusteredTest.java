@@ -194,6 +194,7 @@ public class DeploymentClusteredTest
     }
 
     @Test
+    @Ignore
     public void shouldFailToCreateWorkflowInstanceIfRejected()
     {
         // given

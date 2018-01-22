@@ -27,6 +27,9 @@ host = "localhost"
 port = 51017
 receiveBufferSize = 16
 
+[network.gossip]
+probeInterval = 500
+
 # System Configuration --------------------------------
 
 [threading]

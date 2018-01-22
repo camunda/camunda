@@ -89,7 +89,6 @@ public class BrokerLeaderChangeTest
     }
 
     @Test
-    @Ignore("https://github.com/zeebe-io/zeebe/issues/617")
     public void shouldChangeLeaderAfterLeaderDies()
     {
         // given
