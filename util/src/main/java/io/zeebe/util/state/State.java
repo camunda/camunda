@@ -15,8 +15,6 @@
  */
 package io.zeebe.util.state;
 
-import io.zeebe.util.LangUtil;
-
 public interface State<C extends StateMachineContext>
 {
     /**
@@ -34,7 +32,7 @@ public interface State<C extends StateMachineContext>
 
     default void onFailure(C context, Exception e)
     {
-        LangUtil.rethrowUnchecked(e);
+        throw new RuntimeException(e);
     }
 
     default void onExit()
