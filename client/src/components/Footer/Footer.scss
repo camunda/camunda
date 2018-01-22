@@ -1,15 +1,12 @@
 .Footer {
-  position: fixed;
   line-height: 24px;
   font-size: .875em;
-  bottom: 0;
-  left: 0;
-  right: 0;
   background-color: #fff;
   border-top: 1px solid #eeeeee;
   color: #777777;
   z-index: 99998;
   cursor: default;
+  flex-shrink: 0;
 }
 
 

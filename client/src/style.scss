@@ -19,7 +19,10 @@ body {
 }
 
 main {
-  padding: 36px 20px 15px 20px;
+  padding: 36px 20px 0px 20px;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 a {

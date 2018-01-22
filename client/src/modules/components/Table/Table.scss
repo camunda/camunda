@@ -1,4 +1,4 @@
-.Table {
+.Table__content {
   table-layout: auto;
   border-collapse: collapse;
   font-size: .875em;
@@ -33,9 +33,10 @@
   
 }
 
-
-/* wrap table in div.Table__wrapper for an elegant x-scroll solution: */
-.Table__wrapper  {
+.Table {
   width: 100%;
   overflow-x: auto;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
 }

@@ -37,7 +37,7 @@ export default class Heatmap extends React.Component {
     }
 
     return (<div className='Heatmap'>
-      <BPMNDiagram style={{height: '100%', width:'100%'}} xml={xml}>
+      <BPMNDiagram xml={xml}>
         <HeatmapOverlay data={data} />
       </BPMNDiagram>
     </div>);

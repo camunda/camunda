@@ -171,7 +171,7 @@ export default class Report extends React.Component {
   renderEditMode = () => {
     const {name, lastModifier, lastModified, data, reportResult} = this.state;
     return (
-      <div className='Report' style={{height: '100%', width:'100%'}}>
+      <div className='Report'>
         <div className='Report__header'>
           <div className='Report__name-container'>
             <Input id='name' type='text' reference={this.inputRef} onChange={this.updateName} value={name || ''} className='Report__name-input' placeholder='Report Name'></Input>
@@ -184,7 +184,7 @@ export default class Report extends React.Component {
         </div>
 
         <ControlPanel {...data} onChange={this.updateReport} />
-        <div className='Report__content' style={{height: '100%', width: '100%'}}>
+        <div className='Report__content' >
           <ReportView report={reportResult} />
         </div>
       </div>
@@ -195,7 +195,7 @@ export default class Report extends React.Component {
     const {name, lastModifier, lastModified, reportResult, shareModalVisible, deleteModalVisible} = this.state;
 
     return (
-      <div className='Report' style={{height: '100%', width:'100%'}}>
+      <div className='Report'>
         <div className='Report__header'>
           <div className='Report__name-container'>
             <h1 className='Report__name'>{name}</h1>
@@ -226,7 +226,7 @@ export default class Report extends React.Component {
             <Button type="primary" color="red" className="Report__delete-report-modal-button" onClick={this.deleteReport}>Delete</Button>
           </Modal.Actions>
         </Modal>
-        <div className='Report__content' style={{height: '100%', width:'100%'}}>
+        <div className='Report__content' >
           <ReportView report={reportResult} />
         </div>
       </div>
@@ -258,7 +258,7 @@ export default class Report extends React.Component {
       return <Redirect to='/reports' />;
     }
 
-    return (<div style={{height: '100%', width:'100%'}}>
+    return (<div style={{flexDirection: 'column', display: 'flex', flexGrow: 1}}>
       {viewMode === 'edit' ? (this.renderEditMode()) : (this.renderViewMode())}
     </div>);
   }

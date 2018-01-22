@@ -5,15 +5,18 @@ import {Button} from 'components';
 import './Table.css';
 
 export default function Table({head, body, foot}) {
-  return (<table className='Table'>
-    <thead>{Table.renderRow(head, 0)}</thead>
-    <tbody>
-      {body.map((row, idx) => {
-        return Table.renderRow(row, idx);
-      })}
-    </tbody>
-    <tfoot>{Table.renderRow(foot, 0)}</tfoot>
-  </table>);
+  return (
+    <div className='Table'>
+      <table className='Table__content'>
+        <thead>{Table.renderRow(head, 0)}</thead>
+        <tbody>
+          {body.map((row, idx) => {
+            return Table.renderRow(row, idx);
+          })}
+        </tbody>
+        <tfoot>{Table.renderRow(foot, 0)}</tfoot>
+      </table>
+    </div>);
 }
 
 Table.renderRow = (row, idx) => {

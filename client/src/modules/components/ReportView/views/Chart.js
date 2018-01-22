@@ -24,7 +24,7 @@ export default class Chart extends React.Component {
       errorMessageFragment = <ReportBlankSlate message={errorMessage} />;
     }
 
-    return (<div style={{height: '100%', width: '100%'}}>
+    return (<div style={{flexGrow: 1}}>
       {errorMessageFragment}
       <canvas ref={this.storeContainer} />
     </div>);
