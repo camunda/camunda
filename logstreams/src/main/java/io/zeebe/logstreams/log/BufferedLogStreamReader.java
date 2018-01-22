@@ -261,7 +261,6 @@ public class BufferedLogStreamReader implements LogStreamReader
             byteBuffer.position(offsetToCopy);
             byteBuffer.limit(bufferOffset);
 
-
             newByteBuffer.put(byteBuffer);
 
             // update buffer and event offsets
@@ -272,10 +271,8 @@ public class BufferedLogStreamReader implements LogStreamReader
         else
         {
             // update buffer offset and invalidate events
-            bufferOffset = 0;
             invalidateBufferAndOffsets();
         }
-
 
         // replace old buffers by new ones
         byteBuffer = newByteBuffer;
