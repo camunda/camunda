@@ -53,9 +53,4 @@ public interface StateMachineContext
         // do nothing by default
     }
 
-    default String describeStateMachine()
-    {
-        return String.valueOf(System.identityHashCode(this));
-    }
-
 }
