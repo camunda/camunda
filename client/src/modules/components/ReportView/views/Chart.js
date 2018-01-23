@@ -77,23 +77,23 @@ export default class Chart extends React.Component {
     switch(type) {
       case 'pie':
         datasetOptions = {
-          borderColor: undefined, 
-          backgroundColor: colors, 
+          borderColor: undefined,
+          backgroundColor: colors,
           borderWidth: undefined
         };
         break;
       case 'line':
       case 'bar':
         datasetOptions = {
-          borderColor: '#00a8ff', 
-          backgroundColor: '#e5f6ff', 
+          borderColor: '#00a8ff',
+          backgroundColor: '#e5f6ff',
           borderWidth: 2
         };
         break;
       default:
         datasetOptions = {
-          borderColor: undefined, 
-          backgroundColor: undefined, 
+          borderColor: undefined,
+          backgroundColor: undefined,
           borderWidth: undefined
         };
         break;
@@ -130,11 +130,23 @@ export default class Chart extends React.Component {
       default:
         options = {};
     }
+
+    if((type === 'line' || type === 'bar') && this.props.property === 'duration') {
+      options.scales = options.scales || {};
+      options.scales.yAxes = [{
+        ticks: {callback: v => this.props.formatter(v)}
+      }];
+    }
+
     options  = {
       ...options,
       responsive: true,
       maintainAspectRatio: false,
-      animation: false
+      animation: false,
+      tooltips: {callbacks: {
+        label: ({index, datasetIndex}, {datasets}) =>
+          this.props.formatter(datasets[datasetIndex].data[index])
+      }}
     };
     return {options};
   }

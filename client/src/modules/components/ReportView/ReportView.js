@@ -7,6 +7,8 @@ import ReportBlankSlate from './ReportBlankSlate';
 
 import {Number, Json, Table, Heatmap, Chart} from './views';
 
+import {frequencyFormatter, durationFormatter} from './service';
+
 const defaultErrorMessage = 'Cannot display data for the given report builder settings. Please choose another combination!';
 
 export default class ReportView extends React.Component {
@@ -97,7 +99,7 @@ export default class ReportView extends React.Component {
       case 'pie':
         config = {
           component: Chart,
-          props: {data: result, type: data.visualization, timeUnit: data.groupBy.unit}
+          props: {data: result, type: data.visualization, timeUnit: data.groupBy.unit, property: data.view.property}
         }; break;
       default:
         config = {
@@ -108,6 +110,12 @@ export default class ReportView extends React.Component {
             }
           }
         }; break;
+    }
+
+    switch(data.view.property) {
+      case 'frequency': config.props.formatter = frequencyFormatter; break;
+      case 'duration': config.props.formatter = durationFormatter; break;
+      default: config.props.formatter = v => v;
     }
 
     config.props.errorMessage = defaultErrorMessage;

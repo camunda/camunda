@@ -8,7 +8,7 @@ export default class HeatmapOverlay extends React.Component {
   heatmap = undefined;
 
   render() {
-    return <Tooltip {...this.props} />;
+    return <Tooltip {...this.props} formatter={this.props.formatter} />;
   }
 
   componentDidMount() {
@@ -21,7 +21,7 @@ export default class HeatmapOverlay extends React.Component {
 
   renderHeatmap = () => {
     const {viewer, data} = this.props;
-    
+
     const heatmap = getHeatmap(viewer, data);
 
     if(this.heatmap) {
@@ -29,6 +29,6 @@ export default class HeatmapOverlay extends React.Component {
     }
     viewer.get('canvas')._viewport.appendChild(heatmap);
     this.heatmap = heatmap;
-  }  
-  
+  }
+
 }

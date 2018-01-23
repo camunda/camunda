@@ -3,17 +3,17 @@ import ReportBlankSlate from '../ReportBlankSlate';
 
 import {Table as TableRenderer} from 'components';
 
-export default function Table({data, labels, errorMessage}) {
+export default function Table({data, formatter, labels, errorMessage}) {
   if(!data || typeof data !== 'object') {
     return <ReportBlankSlate message={errorMessage} />;
   }
 
   return (
-    <TableRenderer {...formatData(data, labels)} />
+    <TableRenderer {...formatData(data, formatter, labels)} />
   );
 }
 
-function formatData(data, labels) {
+function formatData(data, formatter, labels) {
 
   if (data.length) {
     // raw data
@@ -37,7 +37,7 @@ function formatData(data, labels) {
     // normal two-dimensional data
     const body = Object.keys(data).map(key => [
       key,
-      data[key]
+      formatter(data[key])
     ]);
     return {head: labels, body};
   }
