@@ -72,9 +72,17 @@ export default class DiagramBehavior extends React.Component {
 
     viewer.on('element.click', ({element: {businessObject}}) => {
       if(businessObject.$instanceOf('bpmn:Gateway')) {
-        this.props.updateSelection('gateway', businessObject);
+        if(this.props.gateway === businessObject) {
+          this.props.updateSelection('gateway', null);
+        } else {
+          this.props.updateSelection('gateway', businessObject);
+        }
       } else if(businessObject.$instanceOf('bpmn:EndEvent')) {
-        this.props.updateSelection('endEvent', businessObject);
+        if(this.props.endEvent) {
+          this.props.updateSelection('endEvent', null);
+        } else {
+          this.props.updateSelection('endEvent', businessObject);
+        }
       }
     });
   }

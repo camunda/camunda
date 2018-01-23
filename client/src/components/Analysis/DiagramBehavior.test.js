@@ -95,3 +95,19 @@ it('should call the update selection state function', () => {
   viewer.on.mock.calls.find(call => call[0] === 'element.click')[1]({element: endEvent});
   expect(spy).toHaveBeenCalledWith('endEvent', endEvent.businessObject);
 });
+
+it('should deselct a selected element when clicking on it', () => {
+  viewer.on.mockClear();
+  const spy = jest.fn();
+
+  const gateway = {
+    businessObject: {
+      $instanceOf: jest.fn().mockImplementation(type => type === 'bpmn:Gateway')
+    }
+  };
+
+  mount(<DiagramBehavior {...props} updateSelection={spy} gateway={gateway.businessObject}  />);
+
+  viewer.on.mock.calls.find(call => call[0] === 'element.click')[1]({element: gateway});
+  expect(spy).toHaveBeenCalledWith('gateway', null);
+});
