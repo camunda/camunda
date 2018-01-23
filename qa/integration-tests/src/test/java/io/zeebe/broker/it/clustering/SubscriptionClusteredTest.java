@@ -19,12 +19,9 @@ import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
-import io.zeebe.broker.Broker;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.subscription.RecordingEventHandler;
 import io.zeebe.client.ZeebeClient;
@@ -36,6 +33,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 
 /**
@@ -45,14 +43,17 @@ public class SubscriptionClusteredTest
 {
     private static final int PARTITION_COUNT = 5;
 
-    @Rule
     public AutoCloseableRule closeables = new AutoCloseableRule();
-
-    @Rule
+    public Timeout testTimeout = Timeout.seconds(30);
     public ClientRule clientRule = new ClientRule(false);
+    public ClusteringRule clusteringRule = new ClusteringRule(closeables, clientRule);
 
     @Rule
-    public Timeout timeout = new Timeout(15, TimeUnit.SECONDS);
+    public RuleChain ruleChain =
+        RuleChain.outerRule(closeables)
+                 .around(testTimeout)
+                 .around(clientRule)
+                 .around(clusteringRule);
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -70,19 +71,11 @@ public class SubscriptionClusteredTest
     {
         // given
         final String topicName = "pasta al forno";
-        startBroker("zeebe.cluster.1.cfg.toml");
-        startBroker("zeebe.cluster.2.cfg.toml");
-        startBroker("zeebe.cluster.3.cfg.toml");
-
-        doRepeatedly(() -> client.requestTopology().execute().getBrokers())
-            .until(topologyBroker -> topologyBroker != null && topologyBroker.size() == 3);
+        clusteringRule.waitForExactBrokerCount(3);
 
         client.topics().create(topicName, PARTITION_COUNT).execute();
 
-        doRepeatedly(() -> client.requestTopology()
-                                 .execute()
-                                 .getTopicLeaders())
-            .until(leaders -> leaders != null && leaders.size() >= PARTITION_COUNT);
+        clusteringRule.waitForGreaterOrEqualLeaderCount(PARTITION_COUNT + 1);
 
         final Topics topicsResponse =
             doRepeatedly(() -> client.topics()
@@ -137,14 +130,5 @@ public class SubscriptionClusteredTest
         final CreateTaskCommandImpl createTaskCommand = (CreateTaskCommandImpl) client.tasks().create(topic, "baz");
         createTaskCommand.getEvent().setPartitionId(partition);
         createTaskCommand.execute();
-    }
-
-    private Broker startBroker(String configFile)
-    {
-        final InputStream config = this.getClass().getClassLoader().getResourceAsStream(configFile);
-        final Broker broker = new Broker(config);
-        closeables.manage(broker);
-
-        return broker;
     }
 }

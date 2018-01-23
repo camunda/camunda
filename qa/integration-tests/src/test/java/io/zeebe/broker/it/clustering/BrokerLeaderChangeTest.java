@@ -19,15 +19,11 @@ import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.InputStream;
 import java.time.Duration;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import io.zeebe.broker.Broker;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.client.TasksClient;
 import io.zeebe.client.TopicsClient;
@@ -38,37 +34,32 @@ import io.zeebe.client.event.TopicSubscription;
 import io.zeebe.client.task.TaskSubscription;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.SocketAddress;
-import org.junit.*;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 
 public class BrokerLeaderChangeTest
 {
-    public static final String BROKER_1_TOML = "zeebe.cluster.1.cfg.toml";
-    public static final SocketAddress BROKER_1_CLIENT_ADDRESS = new SocketAddress("localhost", 51015);
-
-    public static final String BROKER_2_TOML = "zeebe.cluster.2.cfg.toml";
-    public static final SocketAddress BROKER_2_CLIENT_ADDRESS = new SocketAddress("localhost", 41015);
-
-    public static final String BROKER_3_TOML = "zeebe.cluster.3.cfg.toml";
-    public static final SocketAddress BROKER_3_CLIENT_ADDRESS = new SocketAddress("localhost", 31015);
-
     public static final String TASK_TYPE = "testTask";
 
-    @Rule
     public AutoCloseableRule closeables = new AutoCloseableRule();
+    public Timeout testTimeout = Timeout.seconds(30);
+    public ClientRule clientRule = new ClientRule(false);
+    public ClusteringRule clusteringRule = new ClusteringRule(closeables, clientRule);
 
     @Rule
-    public ClientRule clientRule = new ClientRule(false);
-
-    protected final Map<SocketAddress, Broker> brokers = new HashMap<>();
+    public RuleChain ruleChain =
+        RuleChain.outerRule(closeables)
+                 .around(testTimeout)
+                 .around(clientRule)
+                 .around(clusteringRule);
 
     protected ZeebeClient client;
     protected TopicsClient topicClient;
     protected TasksClient taskClient;
     protected int partition;
-
-    @Rule
-    public Timeout testTimeout = Timeout.seconds(120);
 
     @Before
     public void setUp()
@@ -79,52 +70,28 @@ public class BrokerLeaderChangeTest
         partition = clientRule.getDefaultPartition();
     }
 
-    @After
-    public void tearDown()
-    {
-        for (final Broker broker : brokers.values())
-        {
-            broker.close();
-        }
-    }
-
     @Test
     public void shouldChangeLeaderAfterLeaderDies()
     {
         // given
-        brokers.put(BROKER_1_CLIENT_ADDRESS, startBroker(BROKER_1_TOML));
-        brokers.put(BROKER_2_CLIENT_ADDRESS, startBroker(BROKER_2_TOML));
-        brokers.put(BROKER_3_CLIENT_ADDRESS,  startBroker(BROKER_3_TOML));
-
-        doRepeatedly(() -> client.requestTopology().execute().getBrokers())
-            .until(topologyBroker -> topologyBroker != null && topologyBroker.size() == 3);
+        clusteringRule.waitForExactBrokerCount(3);
 
         client.topics().create(clientRule.getDefaultTopic(), 2).execute();
-        final Optional<TopicLeader> topicLeader = doRepeatedly(() -> client.requestTopology()
-                                                                     .execute()
-                                                                     .getTopicLeaders()).until(leaders -> leaders != null && leaders.size() >= 2)
-                                                                                        .stream()
-                                                                                        .filter((leader) -> leader.getPartitionId() == partition)
-                                                                                        .findAny();
+        final List<TopicLeader> topicLeaders = clusteringRule.waitForGreaterOrEqualLeaderCount(3);
+        final TopicLeader topicLeader = clusteringRule.filterLeadersByPartition(topicLeaders, partition);
 
-        final SocketAddress leaderAddress = topicLeader.get().getSocketAddress();
+        final SocketAddress leaderAddress = topicLeader.getSocketAddress();
         final TaskEvent taskEvent = taskClient.create(clientRule.getDefaultTopic(), TASK_TYPE)
                                               .execute();
 
         // when
-        brokers.remove(leaderAddress).close();
-        doRepeatedly(() -> client.requestTopology().execute().getBrokers())
-            .until(topologyBroker -> topologyBroker != null && topologyBroker.size() == 2);
+        clusteringRule.stopBroker(leaderAddress);
+        clusteringRule.waitForExactBrokerCount(2);
 
         // then
-        final Optional<TopicLeader> newLeader = doRepeatedly(() -> client.requestTopology()
-                                                                         .execute()
-                                                                         .getTopicLeaders()).until(leaders -> leaders != null && leaders.size() >= 2)
-                                                                                            .stream()
-                                                                                            .filter((leader) -> leader.getPartitionId() == partition)
-                                                                                            .findAny();
-
-        assertThat(newLeader.get().getSocketAddress()).isNotEqualTo(leaderAddress);
+        final List<TopicLeader> newTopicLeaders = clusteringRule.waitForGreaterOrEqualLeaderCount(3);
+        final TopicLeader newLeader = clusteringRule.filterLeadersByPartition(newTopicLeaders, partition);
+        assertThat(newLeader.getSocketAddress()).isNotEqualTo(leaderAddress);
 
         // when
         final TaskCompleter taskCompleter = new TaskCompleter(taskEvent);
@@ -194,15 +161,5 @@ public class BrokerLeaderChangeTest
                 topicSubscription.close();
             }
         }
-
     }
-
-    protected Broker startBroker(String configFile)
-    {
-        final InputStream config = this.getClass().getClassLoader().getResourceAsStream(configFile);
-        final Broker broker = new Broker(config);
-        closeables.manage(broker);
-        return broker;
-    }
-
 }

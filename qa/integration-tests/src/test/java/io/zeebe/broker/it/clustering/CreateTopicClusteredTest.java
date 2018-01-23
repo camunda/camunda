@@ -18,13 +18,11 @@ package io.zeebe.broker.it.clustering;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.InputStream;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
-import io.zeebe.broker.Broker;
-import io.zeebe.broker.Loggers;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.clustering.impl.TopicLeader;
@@ -37,43 +35,31 @@ import io.zeebe.transport.SocketAddress;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 
 public class CreateTopicClusteredTest
 {
     private static final int PARTITION_COUNT = 5;
 
-    private static final String BROKER1_CONFIG = "zeebe.cluster.1.cfg.toml";
-    private static final String BROKER2_CONFIG = "zeebe.cluster.2.cfg.toml";
-    private static final String BROKER3_CONFIG = "zeebe.cluster.3.cfg.toml";
-
-    private static final SocketAddress BROKER1_ADDRESS = new SocketAddress("localhost", 51015);
-    private static final SocketAddress BROKER2_ADDRESS = new SocketAddress("localhost", 41015);
-    private static final SocketAddress BROKER3_ADDRESS = new SocketAddress("localhost", 31015);
-
-    @Rule
     public AutoCloseableRule closeables = new AutoCloseableRule();
-
-    @Rule
+    public Timeout testTimeout = Timeout.seconds(30);
     public ClientRule clientRule = new ClientRule(false);
+    public ClusteringRule clusteringRule = new ClusteringRule(closeables, clientRule);
 
     @Rule
-    public Timeout timeout = new Timeout(30, TimeUnit.SECONDS);
+    public RuleChain ruleChain =
+        RuleChain.outerRule(closeables)
+                 .around(testTimeout)
+                 .around(clientRule)
+                 .around(clusteringRule);
 
     private ZeebeClient client;
-    private final Map<SocketAddress, Broker> brokers = new HashMap<>();
 
     @Before
     public void setUp()
     {
         client = clientRule.getClient();
-
-        brokers.put(BROKER1_ADDRESS, startBroker(BROKER1_CONFIG));
-        brokers.put(BROKER2_ADDRESS, startBroker(BROKER2_CONFIG));
-        brokers.put(BROKER3_ADDRESS,  startBroker(BROKER3_CONFIG));
-
-        doRepeatedly(() -> client.requestTopology().execute().getBrokers())
-            .until(topologyBroker -> topologyBroker != null && topologyBroker.size() == 3);
     }
 
     @Test
@@ -87,19 +73,17 @@ public class CreateTopicClusteredTest
                                 .execute();
 
         final List<SocketAddress> topicLeaders =
-            doRepeatedly(() -> client.requestTopology()
-                                     .execute()
-                                     .getTopicLeaders())
-                .until(leaders -> leaders != null && leaders.size() >= PARTITION_COUNT)
-                .stream()
-                .filter((topicLeader -> topicLeader.getTopicName().equals("foo")))
-                .map((topicLeader -> topicLeader.getSocketAddress()))
-                .collect(Collectors.toList());
+            clusteringRule.waitForGreaterOrEqualLeaderCount(PARTITION_COUNT)
+                          .stream()
+                          .filter((topicLeader -> topicLeader.getTopicName().equals("foo")))
+                          .map((topicLeader -> topicLeader.getSocketAddress()))
+                          .collect(Collectors.toList());
+
 
         // then
         assertThat(topicEvent.getState()).isEqualTo("CREATED");
         assertThat(topicLeaders.size()).isEqualTo(PARTITION_COUNT);
-        assertThat(topicLeaders).contains(brokers.keySet().toArray(new SocketAddress[3]));
+        clusteringRule.assertThatBrokersListContains(topicLeaders);
     }
 
     @Test
@@ -110,9 +94,8 @@ public class CreateTopicClusteredTest
               .create("foo", PARTITION_COUNT)
               .execute();
 
-        doRepeatedly(() -> client.requestTopology()
-                                 .execute()
-                                 .getTopicLeaders()).until(leaders -> leaders != null && leaders.size() >= PARTITION_COUNT);
+        clusteringRule.waitForGreaterOrEqualLeaderCount(PARTITION_COUNT);
+
         // when
         final Topics topicsResponse = doRepeatedly(() -> client.topics()
                                                       .getTopics()
@@ -140,9 +123,7 @@ public class CreateTopicClusteredTest
 
         // when
         client.topics().create("foo", PARTITION_COUNT).execute();
-        doRepeatedly(() -> client.requestTopology()
-                                 .execute()
-                                 .getTopicLeaders()).until(leaders -> leaders != null && leaders.size() >= PARTITION_COUNT);
+        clusteringRule.waitForGreaterOrEqualLeaderCount(PARTITION_COUNT);
 
         // then
         final TaskEvent taskEvent = client.tasks().create("foo", "bar").execute();
@@ -160,38 +141,22 @@ public class CreateTopicClusteredTest
         final TaskEvent taskEvent = client.tasks().create("foo", "bar").execute();
         final int partitionId = taskEvent.getMetadata().getPartitionId();
 
-        final Optional<TopicLeader> topicLeader = doRepeatedly(() -> client.requestTopology()
-                                                                         .execute()
-                                                                         .getTopicLeaders()).until(leaders -> leaders != null && leaders.size() >= partitionsCount)
-                                                                                            .stream()
-                                                                                            .filter((leader) -> leader.getPartitionId() == partitionId)
-                                                                                            .findAny();
-        final SocketAddress currentLeaderAddress = topicLeader.get().getSocketAddress();
-        final Broker currentLeader = brokers.get(currentLeaderAddress);
+        final List<TopicLeader> topicLeaders = clusteringRule.waitForGreaterOrEqualLeaderCount(partitionsCount + 1);
+        final TopicLeader topicLeader = clusteringRule.filterLeadersByPartition(topicLeaders, partitionId);
 
-        final Set<SocketAddress> expectedFollowers = new HashSet<>(brokers.keySet());
+        final SocketAddress currentLeaderAddress = topicLeader.getSocketAddress();
+
+        final Set<SocketAddress> expectedFollowers = new HashSet<>(clusteringRule.getBrokerAddresses());
         expectedFollowers.remove(currentLeaderAddress);
 
         // when
-        Loggers.CLUSTERING_LOGGER.debug("Close leader {}", currentLeaderAddress);
-        currentLeader.close();
+        clusteringRule.stopBroker(currentLeaderAddress);
 
         // then
-        final Optional<TopicLeader> newLeader = doRepeatedly(() -> client.requestTopology()
-                                                                         .execute()
-                                                                         .getTopicLeaders()).until(leaders -> leaders != null && leaders.size() >= partitionsCount)
-                                                                                            .stream()
-                                                                                            .filter((leader) -> leader.getPartitionId() == partitionId)
-                                                                                            .findAny();
-        final SocketAddress newLeaderAddress = newLeader.get().getSocketAddress();
-        assertThat(expectedFollowers).contains(newLeaderAddress);
-    }
+        final List<TopicLeader> newTopicLeaders = clusteringRule.waitForGreaterOrEqualLeaderCount(partitionsCount + 1);
+        final TopicLeader newLeader = clusteringRule.filterLeadersByPartition(newTopicLeaders, partitionId);
 
-    protected Broker startBroker(String configFile)
-    {
-        final InputStream config = this.getClass().getClassLoader().getResourceAsStream(configFile);
-        final Broker broker = new Broker(config);
-        closeables.manage(broker);
-        return broker;
+        final SocketAddress newLeaderAddress = newLeader.getSocketAddress();
+        assertThat(expectedFollowers).contains(newLeaderAddress);
     }
 }

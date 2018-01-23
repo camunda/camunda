@@ -20,15 +20,11 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
-import io.zeebe.broker.Broker;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.clustering.impl.TopicLeader;
 import io.zeebe.client.event.DeploymentEvent;
 import io.zeebe.client.event.Event;
 import io.zeebe.gossip.Loggers;
@@ -40,6 +36,7 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 
 public class DeploymentClusteredTest
@@ -51,35 +48,27 @@ public class DeploymentClusteredTest
             .endEvent()
             .done();
 
-    @Rule
     public AutoCloseableRule closeables = new AutoCloseableRule();
-
-    @Rule
+    public Timeout testTimeout = Timeout.seconds(30);
     public ClientRule clientRule = new ClientRule(false);
+    public ClusteringRule clusteringRule = new ClusteringRule(closeables, clientRule);
 
     @Rule
-    public Timeout timeout = new Timeout(15, TimeUnit.SECONDS);
+    public RuleChain ruleChain =
+        RuleChain.outerRule(closeables)
+                 .around(testTimeout)
+                 .around(clientRule)
+                 .around(clusteringRule);
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
 
     private ZeebeClient client;
 
-    private List<Broker> brokers;
-
     @Before
     public void init()
     {
         client = clientRule.getClient();
-
-        brokers = new ArrayList<>();
-        brokers.add(startBroker("zeebe.cluster.1.cfg.toml"));
-        brokers.add(startBroker("zeebe.cluster.2.cfg.toml"));
-        brokers.add(startBroker("zeebe.cluster.3.cfg.toml"));
-
-        // wait until cluster is ready
-        doRepeatedly(() -> client.requestTopology().execute())
-            .until(topology -> topology.getBrokers().size() == 3 && topology.getTopicLeaders().size() == 1);
     }
 
     @Test
@@ -87,8 +76,7 @@ public class DeploymentClusteredTest
     {
         // given
         client.topics().create("test", PARTITION_COUNT).execute();
-
-        waitUntil(() -> getLeadersOfTopic("test") >= 3);
+        clusteringRule.waitForGreaterOrEqualLeaderCount(PARTITION_COUNT + 1);
 
         // when
         client.workflows().deploy("test")
@@ -109,11 +97,10 @@ public class DeploymentClusteredTest
     {
         // given
         client.topics().create("test", PARTITION_COUNT).execute();
-
-        waitUntil(() -> getLeadersOfTopic("test") >= 3);
+        clusteringRule.waitForGreaterOrEqualLeaderCount(PARTITION_COUNT + 1);
 
         // when
-        brokers.get(2).close();
+        clusteringRule.stopBroker(2);
 
         // then
         assertThatThrownBy(() ->
@@ -125,20 +112,15 @@ public class DeploymentClusteredTest
     }
 
     @Test
-    public void shouldDeployOnRemainingBrokers() throws InterruptedException
+    public void shouldDeployOnRemainingBrokers()
     {
         // given
         client.topics().create("test", PARTITION_COUNT).execute();
-
-        waitUntil(() -> getLeadersOfTopic("test") >= 3);
+        clusteringRule.waitForGreaterOrEqualLeaderCount(PARTITION_COUNT + 1);
 
         // when
-        brokers.get(2).close();
-        Thread.sleep(3000); // new leader is chosen for partition
-
-        doRepeatedly(() -> client.requestTopology()
-                                 .execute()
-                                 .getTopicLeaders()).until(leaders -> leaders != null && leaders.size() >= PARTITION_COUNT);
+        clusteringRule.stopBroker(2);
+        clusteringRule.waitForGreaterOrEqualLeaderCount(PARTITION_COUNT + 1);
 
         // then
         final DeploymentEvent deploymentEvent = client.workflows()
@@ -152,11 +134,11 @@ public class DeploymentClusteredTest
 
     @Test
     @Ignore
-    public void shouldDeleteWorkflowsIfRejected() throws Exception
+    public void shouldDeleteWorkflowsIfRejected()
     {
         // given
         client.topics().create("test", PARTITION_COUNT).execute();
-        waitUntil(() -> getLeadersOfTopic("test") >= 3);
+        clusteringRule.waitForGreaterOrEqualLeaderCount(PARTITION_COUNT + 1);
 
         doRepeatedly(() -> client.topics()
                                  .getTopics()
@@ -175,7 +157,7 @@ public class DeploymentClusteredTest
               .open();
 
         // when
-        brokers.get(2).close();
+        clusteringRule.stopBroker(2);
 
         // then
         assertThatThrownBy(() -> client.workflows().deploy("test")
@@ -199,10 +181,10 @@ public class DeploymentClusteredTest
     {
         // given
         client.topics().create("test", PARTITION_COUNT).execute();
-        waitUntil(() -> getLeadersOfTopic("test") >= 3);
+        clusteringRule.waitForGreaterOrEqualLeaderCount(PARTITION_COUNT + 1);
 
         // when
-        brokers.get(2).close();
+        clusteringRule.stopBroker(2);
 
         // then
         assertThatThrownBy(() ->
@@ -225,14 +207,14 @@ public class DeploymentClusteredTest
 
     @Ignore
     @Test
-    public void shouldResetWorkflowVersionsIfRejected() throws InterruptedException
+    public void shouldResetWorkflowVersionsIfRejected()
     {
         // given
         client.topics().create("test", PARTITION_COUNT).execute();
-        waitUntil(() -> getLeadersOfTopic("test") >= 3);
+        clusteringRule.waitForGreaterOrEqualLeaderCount(PARTITION_COUNT + 1);
 
         // when
-        brokers.get(2).close();
+        clusteringRule.stopBroker(2);
 
         // then
         assertThatThrownBy(() ->
@@ -242,33 +224,15 @@ public class DeploymentClusteredTest
                 .execute();
         }).hasMessageContaining("Deployment was rejected");
 
+        // and when
+        clusteringRule.waitForGreaterOrEqualLeaderCount(PARTITION_COUNT + 1);
+
+        // then
         final DeploymentEvent deploymentEvent = client.workflows().deploy("test")
             .addWorkflowModel(WORKFLOW, "workflow.bpmn")
             .execute();
 
         final int version = deploymentEvent.getDeployedWorkflows().get(0).getVersion();
         assertThat(version).isEqualTo(1);
-    }
-
-    private long getLeadersOfTopic(final String topic)
-    {
-        final List<TopicLeader> topicLeaders = clientRule.getClient().requestTopology()
-            .execute()
-            .getTopicLeaders();
-
-        return topicLeaders.stream()
-                .filter(t -> topic.equals(t.getTopicName()))
-                .map(t -> t.getSocketAddress().toString())
-                .distinct()
-                .count();
-    }
-
-    private Broker startBroker(String configFile)
-    {
-        final InputStream config = this.getClass().getClassLoader().getResourceAsStream(configFile);
-        final Broker broker = new Broker(config);
-        closeables.manage(broker);
-
-        return broker;
     }
 }
