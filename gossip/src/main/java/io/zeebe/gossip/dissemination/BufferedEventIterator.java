@@ -16,17 +16,25 @@
 package io.zeebe.gossip.dissemination;
 
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 public class BufferedEventIterator<T> implements Iterator<T>
 {
+    public static final int DEFAULT_SPREAD_LIMIT = 10;
+
     private final boolean incrementSpreadCount;
 
-    private int spreadLimit = 10;
+    private int spreadLimit = DEFAULT_SPREAD_LIMIT;
 
     private Iterator<BufferedEvent<T>> iterator;
 
     private int count = 0;
     private int limit = 0;
+
+    public BufferedEventIterator()
+    {
+        this(false);
+    }
 
     public BufferedEventIterator(boolean incrementSpreadCount)
     {
@@ -54,6 +62,11 @@ public class BufferedEventIterator<T> implements Iterator<T>
     @Override
     public T next()
     {
+        if (!iterator.hasNext() || count >= limit)
+        {
+            throw new NoSuchElementException();
+        }
+
         final BufferedEvent<T> event = iterator.next();
 
         count += 1;
