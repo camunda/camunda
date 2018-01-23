@@ -169,6 +169,40 @@ public class GossipJoinTest
     }
 
     @Test
+    public void shouldJoinDifferentNodes()
+    {
+        // given
+        gossip2.join(gossip1);
+
+        actorScheduler.waitUntilDone();
+        actorScheduler.waitUntilDone();
+
+        // when
+        gossip3.join(gossip2);
+
+        actorScheduler.waitUntilDone();
+        actorScheduler.waitUntilDone();
+
+        clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
+
+        actorScheduler.waitUntilDone();
+        actorScheduler.waitUntilDone();
+
+        // then
+        assertThat(gossip2.receivedMembershipEvent(MembershipEventType.JOIN, gossip3)).isTrue();
+        assertThat(gossip1.receivedMembershipEvent(MembershipEventType.JOIN, gossip3)).isTrue();
+
+        assertThat(gossip3.hasMember(gossip1)).isTrue();
+        assertThat(gossip3.hasMember(gossip2)).isTrue();
+
+        assertThat(gossip1.hasMember(gossip3)).isTrue();
+        assertThat(gossip1.hasMember(gossip2)).isTrue();
+
+        assertThat(gossip2.hasMember(gossip3)).isTrue();
+        assertThat(gossip2.hasMember(gossip1)).isTrue();
+    }
+
+    @Test
     public void shouldCompleteFutureWhenJoined()
     {
         // when
