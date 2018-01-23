@@ -74,6 +74,31 @@ public class CreateDeploymentTest
         assertThat(resp.getEvent()).containsEntry(PROP_STATE, "CREATED");
     }
 
+    @Test
+    public void shouldCreateBunchOfDeployments()
+    {
+        // when
+        long lastDeploymentKey = -1L;
+        for (int i = 0; i < 129; i++)
+        {
+            final ExecuteCommandResponse resp = apiRule.createCmdRequest()
+                                                       .partitionId(Protocol.SYSTEM_PARTITION)
+                                                       .eventType(EventType.DEPLOYMENT_EVENT)
+                                                       .command()
+                                                       .put(PROP_STATE, "CREATE")
+                                                       .put("topicName", ClientApiRule.DEFAULT_TOPIC_NAME)
+                                                       .put("resources", Collections.singletonList(deploymentResource(bpmnXml(WORKFLOW), "process.bpmn")))
+                                                       .done()
+                                                       .sendAndAwait();
+
+            // then
+            assertThat(resp.key()).isGreaterThan(lastDeploymentKey);
+            lastDeploymentKey = resp.key();
+            assertThat(resp.partitionId()).isEqualTo(Protocol.SYSTEM_PARTITION);
+            assertThat(resp.getEvent()).containsEntry(PROP_STATE, "CREATED");
+        }
+    }
+
     @SuppressWarnings("unchecked")
     @Test
     public void shouldReturnDeployedWorkflowDefinitions()

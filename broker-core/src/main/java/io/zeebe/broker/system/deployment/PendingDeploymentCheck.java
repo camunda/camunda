@@ -121,6 +121,7 @@ public class PendingDeploymentCheck implements Runnable, CloseableSilently
                     }
                 }
 
+                pendingRequest.close();
                 // remove completed request
                 iterator.remove();
             }
