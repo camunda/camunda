@@ -44,14 +44,8 @@ export default class ClickBehavior extends React.Component {
   getNodeObjects = () => {
     const {viewer, selectedNodes} = this.props;
     const elementRegistry = viewer.get('elementRegistry');
-    const nodes = selectedNodes.map((v) => {
-      if(!(typeof(v) === 'string') && v.$instanceOf('bpmn:FlowNode')) {
-        return v;
-      } else {
-        return elementRegistry.get(v).businessObject;
-      }
-    });
-    this.props.getNodes(nodes);
+    const nodes = selectedNodes.map(v => elementRegistry.get(v).businessObject);
+    this.props.setSelectedNodes(nodes);
   }
 
   setupEventListeners() {

@@ -27,7 +27,7 @@ export default class VariableFilter extends React.Component {
     const variables = await loadVariables(this.props.processDefinitionId);
 
     if(this.props.filterData) {
-      const filterData = this.props.filterData.data;
+      const filterData = this.props.filterData[0].data;
       this.setState({
         variables,
         selectedVariableIdx: variables.findIndex((v) => v.name === filterData.name),

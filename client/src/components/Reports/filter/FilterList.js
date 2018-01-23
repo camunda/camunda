@@ -21,8 +21,8 @@ export default class FilterList extends React.Component {
         // combine two separate filter entries into one date filter pill
         const nextFilter = this.props.data[i + 1];
 
-        list.push(<li key={i} style={{cursor:'pointer'}} onClick={this.props.openEditFilterModal(i)} className='FilterList__item'>
-          <ActionItem onClick={() => this.props.deleteFilter(filter, nextFilter)}>
+        list.push(<li key={i} onClick={this.props.openEditFilterModal([filter, nextFilter])} className='FilterList__item'>
+          <ActionItem onClick={(evt) => {evt.stopPropagation(); this.props.deleteFilter(filter, nextFilter)}}>
             <span className='FilterList__parameter-name'>Start Date </span> between
             {' '}<span className='FilterList__value'>{moment(filter.data.value).format('YYYY-MM-DD')}</span>{' '}
             {this.createOperator('and')}
@@ -35,8 +35,8 @@ export default class FilterList extends React.Component {
         if(filter.type === 'variable') {
           const {name, operator, values} = filter.data;
 
-          list.push(<li key={i} style={{cursor:'pointer'}} onClick={this.props.openEditFilterModal(i)} className='FilterList__item'>
-            <ActionItem onClick={() => this.props.deleteFilter(filter)}>
+          list.push(<li key={i} onClick={this.props.openEditFilterModal([filter])} className='FilterList__item'>
+          <ActionItem onClick={(evt) => {evt.stopPropagation(); this.props.deleteFilter(filter)}}>
               <span className='FilterList__parameter-name'>{name}</span>
               {(operator === 'in' || operator === '=') && this.createOperator('is')}
               {operator === 'not in' && (
@@ -57,8 +57,8 @@ export default class FilterList extends React.Component {
         } else if(filter.type === 'executedFlowNodes') {
           const {values} = filter.data;
 
-          list.push(<li key={i} style={{cursor:'pointer'}} onClick={this.props.openEditFilterModal(i)} className='FilterList__item'>
-            <ActionItem onClick={() => this.props.deleteFilter(filter)}>
+          list.push(<li key={i} onClick={this.props.openEditFilterModal([filter])} className='FilterList__item'>
+          <ActionItem onClick={(evt) => {evt.stopPropagation(); this.props.deleteFilter(filter)}}>
               <span className='FilterList__parameter-name'>Executed Flow Node</span> is{' '}
               {values.map((value, idx) => {
                 return <span key={idx}>
@@ -71,8 +71,8 @@ export default class FilterList extends React.Component {
         } else if(filter.type === 'rollingDate') {
           const {unit, value} = filter.data;
 
-          list.push(<li key={i} style={{cursor:'pointer'}} onClick={this.props.openEditFilterModal(i)} className='FilterList__item'>
-            <ActionItem onClick={() => this.props.deleteFilter(filter)}>
+          list.push(<li key={i} onClick={this.props.openEditFilterModal([filter])} className='FilterList__item'>
+          <ActionItem onClick={(evt) => {evt.stopPropagation(); this.props.deleteFilter(filter)}}>
               <span className='FilterList__parameter-name'>Start Date </span>
               less than
               {' '}<span className='FilterList__value'>{value.toString()} {unit.slice(0,-1)}{value > 1 && 's'}</span>{' '}
@@ -82,8 +82,8 @@ export default class FilterList extends React.Component {
         } else if(filter.type === 'processInstanceDuration') {
           const {unit, value, operator} = filter.data;
 
-          list.push(<li key={i} style={{cursor:'pointer'}} onClick={this.props.openEditFilterModal(i)} className='FilterList__item'>
-            <ActionItem onClick={() => this.props.deleteFilter(filter)}>
+          list.push(<li key={i} onClick={this.props.openEditFilterModal([filter])} className='FilterList__item'>
+          <ActionItem onClick={(evt) => {evt.stopPropagation(); this.props.deleteFilter(filter)}}>
               <span className='FilterList__parameter-name'>Duration</span>
               {operator === '<' && this.createOperator('is less than')}
               {operator === '>' && this.createOperator('is more than')}

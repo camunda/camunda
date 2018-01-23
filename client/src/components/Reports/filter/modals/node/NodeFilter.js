@@ -12,7 +12,7 @@ export default class NodeFilter extends React.Component {
 
     this.state = {
       xml: undefined,
-      selectedNodes: (this.props.filterData) ? this.props.filterData.data.values : []
+      selectedNodes: (this.props.filterData) ? this.props.filterData[0].data.values : []
     };
 
     this.loadDiagram();
@@ -76,7 +76,7 @@ export default class NodeFilter extends React.Component {
             </ul>;
   }
 
-  getNodes = (nodes) => {
+  setSelectedNodes = (nodes) => {
     this.setState({
       selectedNodes: nodes
     })
@@ -90,7 +90,7 @@ export default class NodeFilter extends React.Component {
         {this.state.xml && (
           <div className='NodeFilter__diagram-container'>
             <BPMNDiagram xml={this.state.xml}>
-              <ClickBehavior getNodes={this.getNodes} onClick={this.toggleNode} selectedNodes={this.state.selectedNodes}/>
+              <ClickBehavior setSelectedNodes={this.setSelectedNodes} onClick={this.toggleNode} selectedNodes={this.state.selectedNodes}/>
             </BPMNDiagram>
           </div>
         )}

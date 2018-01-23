@@ -13,7 +13,7 @@ export default class Filter extends React.Component {
 
     this.state = {
       newFilterType: null,
-      editFilter: {}
+      editFilter: null
     }
   }
 
@@ -21,55 +21,37 @@ export default class Filter extends React.Component {
     this.setState({newFilterType: type});
   }
 
-  openEditFilterModal = i => evt => {
-    if(evt.target.className !== 'Button ActionItem__button ') {
-      let filter;
-      if (this.props.data[i].type === 'date') {
-        filter = [this.props.data[i], this.props.data[i+1]]
-      } else {
-        filter = this.props.data[i];
-      }
+  openEditFilterModal = filter => evt => {
       this.setState({editFilter: filter});
-    }
   }
 
   closeModal = () => {
-    this.setState({newFilterType: null, editFilter: {}});
+    this.setState({newFilterType: null, editFilter: null});
   }
 
-  getFilterModal = () => {
-    switch(this.state.newFilterType) {
+  getFilterModal = (type) => {
+    switch(type) {
       case 'date': return DateFilter;
+      case 'rollingDate': return DateFilter;
       case 'variable': return VariableFilter;
-      case 'duration': return DurationFilter;
-      case 'node': return NodeFilter;
+      case 'processInstanceDuration': return DurationFilter;
+      case 'executedFlowNodes': return NodeFilter;
       default: return () => null;
     }
   }
 
-  getEditFilterModal = () => {
-    if(this.state.editFilter[0]) {
-      return DateFilter;
-    } else {
-      switch(this.state.editFilter.type) {
-        case 'rollingDate': return DateFilter;
-        case 'variable': return VariableFilter;
-        case 'processInstanceDuration': return DurationFilter;
-        case 'executedFlowNodes': return NodeFilter;
-        default: return () => null;
-      }
-    }
-  }
-
   editFilter = (...newFilters) => {
-    let filters = this.props.data;
-    if (this.state.editFilter[0]) {
-      this.addFilter(...newFilters);
-    } else {
-      filters = filters.filter((filter) => (filter !== this.state.editFilter))
-      this.props.onChange('filter', [...filters, ...newFilters]);
-      this.closeModal();
-    }
+    const filters = [...this.props.data];
+
+    let numberToRemove;
+    numberToRemove = (this.state.editFilter[0].type === 'date') ? 2 : 1;
+
+    const index = filters.indexOf(filters.find((v) => (this.state.editFilter[0].data === v.data)));
+
+    filters.splice(index, numberToRemove, ...newFilters);
+
+    this.props.onChange('filter', [...filters]);
+    this.closeModal();
   }
 
   addFilter = (...newFilters) => {
@@ -93,20 +75,21 @@ export default class Filter extends React.Component {
   }
 
   render() {
-    const FilterModal = this.getFilterModal();
-    const EditFilterModal = this.getEditFilterModal();
+    const FilterModal = this.getFilterModal(this.state.newFilterType);
+
+    const EditFilterModal = this.getFilterModal((this.state.editFilter) ? this.state.editFilter[0].type : null);
 
     return (<div className='Filter'>
       <label htmlFor='ControlPanel__filters' className='visually-hidden'>Filters</label>
       <FilterList openEditFilterModal={this.openEditFilterModal} data={this.props.data} deleteFilter={this.deleteFilter} />
       <Dropdown label='Add Filter' id='ControlPanel__filters' className='Filter__dropdown' >
         <Dropdown.Option onClick={this.openNewFilterModal('date')}>Start Date</Dropdown.Option>
-        <Dropdown.Option onClick={this.openNewFilterModal('duration')}>Duration</Dropdown.Option>
+        <Dropdown.Option onClick={this.openNewFilterModal('processInstanceDuration')}>Duration</Dropdown.Option>
         <Dropdown.Option disabled={this.processDefinitionIsNotSelected()} onClick={this.openNewFilterModal('variable')}>Variable</Dropdown.Option>
-        <Dropdown.Option disabled={this.processDefinitionIsNotSelected()} onClick={this.openNewFilterModal('node')}>Flow Node</Dropdown.Option>
+        <Dropdown.Option disabled={this.processDefinitionIsNotSelected()} onClick={this.openNewFilterModal('executedFlowNodes')}>Flow Node</Dropdown.Option>
       </Dropdown>
       <FilterModal addFilter={this.addFilter} close={this.closeModal} processDefinitionId={this.props.processDefinitionId} />
-      <EditFilterModal addFilter={this.editFilter} filterData={this.state.editFilter} openEditFilterModal={this.openEditFilterModal} close={this.closeModal} processDefinitionId={this.props.processDefinitionId}/>
+      <EditFilterModal addFilter={this.editFilter} filterData={this.state.editFilter} close={this.closeModal} processDefinitionId={this.props.processDefinitionId}/>
     </div>);
   }
 }

@@ -14,14 +14,14 @@ export default class DateFilter extends React.Component {
 
     let startDate, endDate, mode, dynamicValue, dynamicUnit;
 
-    if(this.props.filterData) {
-      if(this.props.filterData[0]) {
-        startDate = moment(this.props.filterData[0].data.value);
-        endDate = moment(this.props.filterData[1].data.value);
+    if(props.filterData) {
+      if(props.filterData[0].type === 'date') {
+        startDate = moment(props.filterData[0].data.value);
+        endDate = moment(props.filterData[1].data.value);
       } else {
         mode = 'dynamic';
-        dynamicValue = this.props.filterData.data.value;
-        dynamicUnit = this.props.filterData.data.unit;
+        dynamicValue = props.filterData[0].data.value;
+        dynamicUnit = props.filterData[0].data.unit;
       }
     }
 
