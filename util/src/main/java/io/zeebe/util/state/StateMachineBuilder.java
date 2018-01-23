@@ -25,6 +25,8 @@ public final class StateMachineBuilder<C extends StateMachineContext>
 
     private final Function<StateMachine<C>, C> contextBuilder;
 
+    private boolean logStateTransitions = false;
+
     private State<C> initialState;
 
     public StateMachineBuilder(Function<StateMachine<C>, C> contextBuilder)
@@ -49,12 +51,18 @@ public final class StateMachineBuilder<C extends StateMachineContext>
         return this;
     }
 
+    public StateMachineBuilder<C> logStateTransitions()
+    {
+        this.logStateTransitions = true;
+        return this;
+    }
+
     public StateMachine<C> build()
     {
         @SuppressWarnings("unchecked")
         final Transition<C>[] transitionArray = transitions.toArray(new Transition[transitions.size()]);
 
-        return new StateMachine<>(contextBuilder, initialState, transitionArray);
+        return new StateMachine<>(contextBuilder, initialState, transitionArray, logStateTransitions);
     }
 
 }

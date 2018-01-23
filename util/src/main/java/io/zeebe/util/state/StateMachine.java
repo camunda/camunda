@@ -17,6 +17,8 @@ package io.zeebe.util.state;
 
 import java.util.function.Function;
 
+import io.zeebe.util.Loggers;
+
 public class StateMachine<C extends StateMachineContext>
 {
     private final Transition<C>[] transitions;
@@ -26,9 +28,10 @@ public class StateMachine<C extends StateMachineContext>
     // thread-safe for introspection
     private volatile State<C> currentState;
     private C context;
+    private final boolean logStateTransitions;
 
 
-    public StateMachine(Function<StateMachine<C>, C> contextBuilder, State<C> initialState, Transition<C>[] transitions)
+    public StateMachine(Function<StateMachine<C>, C> contextBuilder, State<C> initialState, Transition<C>[] transitions, boolean logStateTransitions)
     {
         this.transitions = transitions;
 
@@ -36,6 +39,7 @@ public class StateMachine<C extends StateMachineContext>
         this.currentState = initialState;
 
         this.context = contextBuilder.apply(this);
+        this.logStateTransitions = logStateTransitions;
     }
 
     /**
@@ -78,6 +82,11 @@ public class StateMachine<C extends StateMachineContext>
             currentState.onExit();
 
             currentState = transition.getNextState();
+
+            if (logStateTransitions)
+            {
+                Loggers.STATE_MACHINE_LOGGER.debug("State machine {} entering state {}", context.describeStateMachine(), currentState);
+            }
 
             currentState.onEnter();
             hasTaken = true;
