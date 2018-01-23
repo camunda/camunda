@@ -78,6 +78,10 @@ public class GossipEventResponse
 
     public void clear()
     {
+        if (request != null)
+        {
+            request.close();
+        }
         this.request = null;
         this.timeout = -1L;
     }

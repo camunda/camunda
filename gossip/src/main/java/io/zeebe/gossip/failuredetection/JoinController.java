@@ -15,6 +15,8 @@
  */
 package io.zeebe.gossip.failuredetection;
 
+import static io.zeebe.gossip.failuredetection.RequestCloser.close;
+
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
@@ -150,6 +152,7 @@ public class JoinController
         private void clear()
         {
             contactPoints = Collections.emptyList();
+            close(requests);
             requests = Collections.emptyList();
             contactPoint = null;
             future = null;
@@ -243,9 +246,10 @@ public class JoinController
         public void onExit()
         {
             response.clear();
-            stateMachine.getContext().requests.clear();
+            close(stateMachine.getContext().requests);
         }
     }
+
 
     private class SendSyncRequestState implements TransitionState<Context>
     {
@@ -401,5 +405,4 @@ public class JoinController
             }
         }
     }
-
 }

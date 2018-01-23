@@ -15,6 +15,8 @@
  */
 package io.zeebe.gossip.failuredetection;
 
+import static io.zeebe.gossip.failuredetection.RequestCloser.close;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -240,7 +242,7 @@ public class PingController
         public void onExit()
         {
             stateMachine.getContext().ackResponse.clear();
-            stateMachine.getContext().indirectRequests.clear();
+            close(stateMachine.getContext().indirectRequests);
         }
     }
 
