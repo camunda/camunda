@@ -81,7 +81,7 @@ export default class Filter extends React.Component {
 
     return (<div className='Filter'>
       <label htmlFor='ControlPanel__filters' className='visually-hidden'>Filters</label>
-      <FilterList openEditFilterModal={this.openEditFilterModal} data={this.props.data} deleteFilter={this.deleteFilter} />
+      <FilterList id={this.props.processDefinitionId} openEditFilterModal={this.openEditFilterModal} data={this.props.data} deleteFilter={this.deleteFilter} />
       <Dropdown label='Add Filter' id='ControlPanel__filters' className='Filter__dropdown' >
         <Dropdown.Option onClick={this.openNewFilterModal('date')}>Start Date</Dropdown.Option>
         <Dropdown.Option onClick={this.openNewFilterModal('processInstanceDuration')}>Duration</Dropdown.Option>

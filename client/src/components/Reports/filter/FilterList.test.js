@@ -1,12 +1,20 @@
 import React from 'react';
 
 import FilterList from './FilterList';
+import {getFlowNodeNames} from './service';
+
 
 import {mount} from 'enzyme';
 
 jest.mock('components', () => {return {
   ActionItem: props => <button {...props}>{props.children}</button>
 }});
+
+jest.mock('./service', () => {
+  return {getFlowNodeNames: jest.fn()};
+});
+
+getFlowNodeNames.mockReturnValue({flowNode: 'flow Node hello'});
 
 it('should render an unordered list', () => {
   const node = mount(<FilterList data={[]} />);
@@ -116,7 +124,7 @@ it('should combine multiple variable names with neither/nor for the not in opera
   expect(node).toIncludeText('varName is neither varValue nor varValue2');
 });
 
-it('should display a simple flow node filter', () => {
+it('should display a simple flow node filter', async () => {
   const data = [{
     type: 'executedFlowNodes',
     data: {
@@ -125,9 +133,24 @@ it('should display a simple flow node filter', () => {
     }
   }];
 
-  const node = mount(<FilterList data={data} openEditFilterModal={jest.fn()}/>);
+  const node = mount(<FilterList id={'qwe'} data={data} openEditFilterModal={jest.fn()}/>);
 
   expect(node).toIncludeText('Executed Flow Node is flowNode');
+});
+
+it('should display flow node name instead of id after the names are loaded', async () => {
+  const data = [{
+    type: 'executedFlowNodes',
+    data: {
+      operator: 'in',
+      values: ['flowNode']
+    }
+  }];
+
+  const node = mount(<FilterList id={'qwe'} data={data} openEditFilterModal={jest.fn()}/>);
+  await node.instance().loadFlowNodeNames();
+
+  expect(node).toIncludeText('Executed Flow Node is flow Node hello');
 });
 
 it('should display a flow node filter with multiple selected nodes', () => {

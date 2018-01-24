@@ -2,10 +2,24 @@ import React from 'react';
 import moment from 'moment';
 
 import {ActionItem} from 'components';
+import {getFlowNodeNames} from './service';
 
 import './FilterList.css';
 
 export default class FilterList extends React.Component {
+
+  constructor(props){
+    super(props);
+    this.state = {
+      flowNodeNames: null
+    }
+    this.loadFlowNodeNames();
+  }
+
+  loadFlowNodeNames = async () => {
+    const flowNodeNames = await getFlowNodeNames(this.props.id);
+    this.setState({flowNodeNames})
+  }
 
   createOperator  = (name) => {
     return <span className='FilterList__operator'> {name} </span>;
@@ -56,13 +70,14 @@ export default class FilterList extends React.Component {
           </li>);
         } else if(filter.type === 'executedFlowNodes') {
           const {values} = filter.data;
+          const flowNodes = this.state.flowNodeNames;
 
           list.push(<li key={i} onClick={this.props.openEditFilterModal([filter])} className='FilterList__item'>
           <ActionItem onClick={(evt) => {evt.stopPropagation(); this.props.deleteFilter(filter)}}>
               <span className='FilterList__parameter-name'>Executed Flow Node</span> is{' '}
               {values.map((value, idx) => {
                 return <span key={idx}>
-                  <span className='FilterList__value'>{value.toString()}</span>
+                  <span className='FilterList__value'>{(flowNodes) ? flowNodes[value.toString()] : value.toString()}</span>
                   {idx < values.length - 1 && this.createOperator('or')}
                 </span>
               })}
