@@ -213,27 +213,3 @@ it('should adjust date shown in table to unit', () => {
   expect(node.find(Table)).not.toIncludeText('2015-03-25T12:00:00Z');
   expect(node.find(Table)).toIncludeText('2015-03-25');
 });
-
-it('should display custom format if not able to parse date', () => {
-  const report = {
-    data: {
-      processDefinitionId: '123',
-      view : {
-        operation: 'rawData'
-      },
-      groupBy : {
-        type: 'processInstance',
-        unit: 'day'
-      },
-      visualization: 'table'
-    },
-    result: {
-      '25. März 2015': 2
-    }
-  }
-
-  const node = mount(<ReportView report={report}/>);
-
-  expect(node.find(Table)).not.toIncludeText('2015-03-25');
-  expect(node.find(Table)).toIncludeText('25. März 2015');
-});
