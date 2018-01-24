@@ -19,7 +19,7 @@ export default class DashboardView extends React.Component {
           {...report.position}
           {...report.dimensions}
         >
-        <DashboardReport report={report} tileDimensions={this.state.tileDimensions} addons={this.props.reportAddons || []} />
+        <DashboardReport viewMode={this.props.viewMode} report={report} tileDimensions={this.state.tileDimensions} addons={this.props.reportAddons || []} />
       </DashboardObject>)}
       {this.state &&
         React.Children.map(this.props.children, child =>

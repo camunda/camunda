@@ -20,6 +20,12 @@ export async function loadReports() {
   return await response.json();
 }
 
+export async function getReportName(id) {
+  const response = await get('/api/report/' + id);
+  const json = await response.json();
+  return json.name;
+}
+
 export async function loadReport(id) {
   try {
     const response = await get(`/api/report/${id}/evaluate`);

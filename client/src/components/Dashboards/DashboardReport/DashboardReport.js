@@ -1,8 +1,9 @@
 import React from 'react';
 
-import {loadReport} from '../service';
+import {loadReport, getReportName} from '../service';
 
 import {ReportView} from 'components';
+import {Link} from 'react-router-dom';
 
 import './DashboardReport.css';
 
@@ -11,7 +12,8 @@ export default class DashboardReport extends React.Component {
     super(props);
 
     this.state = {
-      data: undefined
+      data: undefined,
+      name: undefined
     };
 
     this.loadReportData();
@@ -19,7 +21,8 @@ export default class DashboardReport extends React.Component {
 
   loadReportData = async () => {
     this.setState({
-      data: await loadReport(this.props.report.id)
+      data: await loadReport(this.props.report.id),
+      name: await getReportName(this.props.report.id)
     });
   }
 
@@ -30,11 +33,9 @@ export default class DashboardReport extends React.Component {
 
     return <div className='DashboardReport__wrapper'>
       <div className='DashboardReport__header'>
-        <h1 className='DashboardReport__heading'>
-          <a href={'/report/' + this.props.report.id}>
-          {this.state.data.name}
-          </a>
-        </h1>
+      {(this.props.viewMode)
+        ? <Link to={`/report/${this.props.report.id}`} className='DashboardReport__heading'>{this.state.name}</Link>
+        : <h1 className='DashboardReport__heading'>{this.state.name}</h1>}
       </div>
       <div className='DashboardReport__visualization'>
         {this.state.data.errorMessage ?

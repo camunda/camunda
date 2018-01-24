@@ -2,10 +2,11 @@ import React from 'react';
 import {mount} from 'enzyme';
 
 import DashboardReport from './DashboardReport';
-import {loadReport} from '../service';
+import {loadReport, getReportName} from '../service';
 
 jest.mock('../service', () => {return {
-  loadReport: jest.fn()
+  loadReport: jest.fn(),
+  getReportName: jest.fn()
 }});
 jest.mock('components', () => {return {
   ReportView: () => <div>ReportView</div>
@@ -42,7 +43,7 @@ it('should render an error message if report rendering went wrong', async () => 
 });
 
 it('should contain the report name', async () => {
-  loadReport.mockReturnValue({name: 'Report Name'});
+  getReportName.mockReturnValue('Report Name');
 
   const node = mount(<DashboardReport report={report} />);
 
