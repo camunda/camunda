@@ -1,5 +1,7 @@
 .DashboardReport__wrapper {
-  height: 100%
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
 }
 
 .DashboardReport__visualization {
@@ -29,6 +31,9 @@
 }
 
 .DashboardReport__visualization { 
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
 
   .Table {
     table-layout: fixed;

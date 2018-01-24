@@ -2,6 +2,7 @@
   table-layout: auto;
   border-collapse: collapse;
   font-size: .875em;
+  margin: 0 auto;
   
   thead { 
     td {
@@ -36,7 +37,5 @@
 .Table {
   width: 100%;
   overflow-x: auto;
-  display: flex;
-  align-items: center;
-  flex-direction: column;
+  text-align: center;
 }

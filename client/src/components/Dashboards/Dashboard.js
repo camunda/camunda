@@ -10,6 +10,7 @@ import {loadDashboard, remove, update} from './service';
 import {DashboardView} from './DashboardView';
 import {AddButton} from './AddButton';
 import {Grid} from './Grid';
+import {HeightCalculator} from './HeightCalculator';
 import {DeleteButton} from './DeleteButton';
 import {DragBehavior} from './DragBehavior';
 import {ResizeHandle} from './ResizeHandle';
@@ -215,7 +216,9 @@ export default class Dashboard extends React.Component {
             <Button type="primary" color="red" className="Dashboard__delete-dashboard-modal-button" onClick={this.deleteDashboard}>Delete</Button>
           </Modal.Actions>
         </Modal>
-        <DashboardView reports={this.state.reports} />
+        <DashboardView reports={this.state.reports}>
+          <HeightCalculator reports={this.state.reports} />
+        </DashboardView>
       </div>
     )
   }
@@ -246,7 +249,7 @@ export default class Dashboard extends React.Component {
       return <Redirect to='/dashboards' />;
     }
 
-    return (<div>
+    return (<div style={{display: 'flex', flexDirection: 'column', flexGrow: 1}}>
       {viewMode === 'edit' ? (this.renderEditMode(this.state)) : (this.renderViewMode(this.state))}
     </div>);
   }

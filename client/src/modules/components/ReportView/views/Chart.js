@@ -2,6 +2,8 @@ import React from 'react';
 import ChartRenderer from 'chart.js';
 import ReportBlankSlate from '../ReportBlankSlate';
 
+import './Chart.css';
+
 const colors = [
   '#b5152b',
   '#5315b5',
@@ -24,7 +26,7 @@ export default class Chart extends React.Component {
       errorMessageFragment = <ReportBlankSlate message={errorMessage} />;
     }
 
-    return (<div style={{flexGrow: 1}}>
+    return (<div className='Chart'>
       {errorMessageFragment}
       <canvas ref={this.storeContainer} />
     </div>);
@@ -52,7 +54,7 @@ export default class Chart extends React.Component {
 
   destroyChart = () => {
     if(this.chart) {
-      this.chart.destroy();
+      this.chart.destroy(); 
     }
   }
 
