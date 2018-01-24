@@ -70,37 +70,32 @@ export default class Chart extends React.Component {
           ...this.createDatasetOptions(type)
         }]
       },
-      ...this.createChartOptions(type, timeUnit)
+      options: this.createChartOptions(type, timeUnit)
     });
   }
 
   createDatasetOptions = (type) => {
-    let datasetOptions;
     switch(type) {
       case 'pie':
-        datasetOptions = {
+        return {
           borderColor: undefined,
           backgroundColor: colors,
           borderWidth: undefined
         };
-        break;
       case 'line':
       case 'bar':
-        datasetOptions = {
+        return {
           borderColor: '#00a8ff',
           backgroundColor: '#e5f6ff',
           borderWidth: 2
         };
-        break;
       default:
-        datasetOptions = {
+        return {
           borderColor: undefined,
           backgroundColor: undefined,
           borderWidth: undefined
         };
-        break;
     }
-    return datasetOptions;
   }
 
   createChartOptions = (type, timeUnit) => {
@@ -150,6 +145,6 @@ export default class Chart extends React.Component {
           this.props.formatter(datasets[datasetIndex].data[index])
       }}
     };
-    return {options};
+    return options;
   }
 }
