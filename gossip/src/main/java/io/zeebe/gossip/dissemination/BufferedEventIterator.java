@@ -62,7 +62,7 @@ public class BufferedEventIterator<T> implements Iterator<T>
     @Override
     public T next()
     {
-        if (!iterator.hasNext() || count >= limit)
+        if (!hasNext())
         {
             throw new NoSuchElementException();
         }
