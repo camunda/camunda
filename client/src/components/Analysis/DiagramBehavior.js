@@ -44,7 +44,7 @@ export default class DiagramBehavior extends React.Component {
   }
 
   componentDidMount() {
-    const {viewer, updateHover} = this.props;
+    const {viewer} = this.props;
     const elementRegistry = viewer.get('elementRegistry');
     const canvas = viewer.get('canvas');
 
@@ -60,32 +60,44 @@ export default class DiagramBehavior extends React.Component {
       }
     });
 
-    viewer.on('element.hover', ({element}) => {
-      if(element.businessObject && this.isValidNode(element.businessObject)) {
-        updateHover(element.businessObject);
-      }
-    });
-
-    viewer.on('element.out', ({element}) => {
-      updateHover(null);
-    });
-
-    viewer.on('element.click', ({element: {businessObject}}) => {
-      if(businessObject.$instanceOf('bpmn:Gateway')) {
-        if(this.props.gateway === businessObject) {
-          this.props.updateSelection('gateway', null);
-        } else {
-          this.props.updateSelection('gateway', businessObject);
-        }
-      } else if(businessObject.$instanceOf('bpmn:EndEvent')) {
-        if(this.props.endEvent) {
-          this.props.updateSelection('endEvent', null);
-        } else {
-          this.props.updateSelection('endEvent', businessObject);
-        }
-      }
-    });
+    viewer.on('element.hover', this.hoverHandler);
+    viewer.on('element.out', this.outHandler);
+    viewer.on('element.click', this.clickHandler);
   }
+
+  componentWillUnmount() {
+    const {viewer} = this.props;
+
+    viewer.off('element.hover', this.hoverHandler);
+    viewer.off('element.out', this.outHandler);
+    viewer.off('element.click', this.clickHandler);
+  }
+
+  hoverHandler = ({element}) => {
+    if(element.businessObject && this.isValidNode(element.businessObject)) {
+      this.props.updateHover(element.businessObject);
+    }
+  }
+
+  outHandler = ({element}) => {
+    this.props.updateHover(null);
+  }
+
+  clickHandler = ({element: {businessObject}}) => {
+    if(businessObject.$instanceOf('bpmn:Gateway')) {
+      if(this.props.gateway === businessObject) {
+        this.props.updateSelection('gateway', null);
+      } else {
+        this.props.updateSelection('gateway', businessObject);
+      }
+    } else if(businessObject.$instanceOf('bpmn:EndEvent')) {
+      if(this.props.endEvent) {
+        this.props.updateSelection('endEvent', null);
+      } else {
+        this.props.updateSelection('endEvent', businessObject);
+      }
+    }
+  };
 
   isValidNode(node) {
     return node.$instanceOf('bpmn:Gateway') || node.$instanceOf('bpmn:EndEvent')

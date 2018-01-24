@@ -39,11 +39,10 @@ export default class Statistics extends React.Component {
     if(
       prevProps.gateway !== this.props.gateway ||
       prevProps.endEvent !== this.props.endEvent ||
-      prevProps.config.processDefinitionId !== this.props.config.processDefinitionId ||
       prevProps.config.filter !== this.props.config.filter
     ) {
       this.loadCorrelation();
-    } else if(this.state.data) {
+    } else if(this.state.data && prevProps.config.processDefinitionId === this.props.config.processDefinitionId) {
       // relative chart
       if(this.chart1) {
         this.chart1.destroy();
