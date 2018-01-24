@@ -38,4 +38,8 @@ describe('durationFormatter', () => {
   it('should single unit well', () => {
     expect(durationFormatter(5 * 60 * 60 * 1000)).toBe('5h');
   });
+
+  it('should handle single millisecond durations', () => {
+    expect(durationFormatter(1)).toBe('1ms');
+  });
 });

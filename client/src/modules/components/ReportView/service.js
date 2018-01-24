@@ -33,7 +33,7 @@ export function durationFormatter(time, config = {}) {
   for(let i = 0; i < units.length; i++) {
     const currentUnit = units[i];
 
-    if(remainingTime > currentUnit.value) {
+    if(remainingTime >= currentUnit.value) {
       const numberOfUnits = Math.floor(remainingTime / currentUnit.value);
 
       timeSegments.push(numberOfUnits + currentUnit.name);
