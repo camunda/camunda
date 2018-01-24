@@ -19,7 +19,13 @@ import java.util.Arrays;
 
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.raft.Raft;
-import io.zeebe.util.state.*;
+import io.zeebe.util.state.LimitedStateMachineAgent;
+import io.zeebe.util.state.SimpleStateMachineContext;
+import io.zeebe.util.state.State;
+import io.zeebe.util.state.StateMachine;
+import io.zeebe.util.state.StateMachineAgent;
+import io.zeebe.util.state.StateMachineCommand;
+import io.zeebe.util.state.WaitState;
 
 public class AdvanceCommitController
 {
@@ -85,10 +91,11 @@ public class AdvanceCommitController
                 positions[i] = raft.getMember(i).getMatchPosition();
             }
 
-            // TODO(menski): this is wrong as the current appender position is the next position which is written
-            // this means in a single node cluster the log already committed an event which will be written in the future
-            // see https://github.com/zeebe-io/zb-logstreams/issues/68
-            positions[memberSize] = raft.getLogStream().getCurrentAppenderPosition();
+            // TODO(menski): `raft.getLogStream().getCurrentAppenderPosition()` is wrong as the current appender
+            // position is the next position which is written. This means in a single node cluster the log
+            // already committed an event which will be written in the future. `- 1` is a hotfix for this.
+            // see https://github.com/zeebe-io/zeebe/issues/501
+            positions[memberSize] = raft.getLogStream().getCurrentAppenderPosition() - 1;
 
             Arrays.sort(positions);
 
