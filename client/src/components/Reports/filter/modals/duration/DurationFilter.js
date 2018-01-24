@@ -40,11 +40,14 @@ export default class DurationFilter extends React.Component {
           {' '}than</label>
           <Input value={value} onChange={this.setValue} className='DurationFilter__input' />
           <Select value={unit} onChange={this.setUnit}>
+            <Select.Option value='millis'>Milliseconds</Select.Option>
+            <Select.Option value='seconds'>Seconds</Select.Option>
             <Select.Option value='minutes'>Minutes</Select.Option>
             <Select.Option value='hours'>Hours</Select.Option>
             <Select.Option value='days'>Days</Select.Option>
             <Select.Option value='weeks'>Weeks</Select.Option>
             <Select.Option value='months'>Months</Select.Option>
+            <Select.Option value='years'>Years</Select.Option>
           </Select>
         </div>
       </Modal.Content>

@@ -136,6 +136,7 @@ export default class DateFilter extends React.Component {
               <Select.Option value='days'>Days</Select.Option>
               <Select.Option value='weeks'>Weeks</Select.Option>
               <Select.Option value='months'>Months</Select.Option>
+              <Select.Option value='years'>Years</Select.Option>
             </Select>
           </div>}
       </Modal.Content>

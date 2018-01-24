@@ -138,6 +138,7 @@ export default class AlertModal extends React.Component {
                 value={checkInterval.unit}
                 onChange={({target: {value}}) => this.setState(update(this.state, {checkInterval: {unit: {$set: value}}}))}
               >
+                <Select.Option value='seconds'>Seconds</Select.Option>
                 <Select.Option value='minutes'>Minutes</Select.Option>
                 <Select.Option value='hours'>Hours</Select.Option>
                 <Select.Option value='days'>Days</Select.Option>
