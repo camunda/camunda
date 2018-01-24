@@ -48,6 +48,7 @@ jest.mock('./DashboardView', () => {return {DashboardView: ({children, reportAdd
 
 jest.mock('./AddButton', () => {return {AddButton: ({visible}) => <div>AddButton visible: {''+visible}</div>}});
 jest.mock('./Grid', () => {return {Grid: () => <div>Grid</div>}});
+jest.mock('./HeightCalculator', () => {return {HeightCalculator: () => <div>HeightCalculator</div>}});
 jest.mock('./DeleteButton', () => {return {DeleteButton: () => <button>DeleteButton</button>}});
 jest.mock('./DragBehavior', () => {return {DragBehavior: () => <div>DragBehavior</div>}});
 jest.mock('./ResizeHandle', () => {return {ResizeHandle: () => <div>ResizeHandle</div>}});
