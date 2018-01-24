@@ -15,26 +15,43 @@
  */
 package io.zeebe.client.clustering.impl;
 
+import java.util.ArrayList;
 import java.util.List;
 
-public class TopologyResponse
-{
-    private List<TopologyBroker> brokers;
+import io.zeebe.transport.SocketAddress;
 
-    public List<TopologyBroker> getBrokers()
+
+public class TopologyBroker
+{
+    protected String host;
+    protected int port;
+    private List<BrokerPartitionState> partitions = new ArrayList<>();
+
+    public TopologyBroker setHost(final String host)
     {
-        return brokers;
+        this.host = host;
+        return this;
     }
 
-    public void setBrokers(List<TopologyBroker> brokers)
+    public TopologyBroker setPort(final int port)
     {
-        this.brokers = brokers;
+        this.port = port;
+        return this;
+    }
+
+    public List<BrokerPartitionState> getPartitions()
+    {
+        return partitions;
+    }
+
+    public SocketAddress getSocketAddress()
+    {
+        return new SocketAddress(host, port);
     }
 
     @Override
     public String toString()
     {
-        return "TopologyResponse{" + "brokers=" + brokers + '}';
+        return "Broker{" + "host='" + host + '\'' + ", port=" + port + ", partitions='" + partitions + '}';
     }
-
 }

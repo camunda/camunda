@@ -35,6 +35,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import io.zeebe.broker.clustering.handler.TopologyBroker;
 import org.agrona.DirectBuffer;
 import org.junit.After;
 import org.junit.Before;
@@ -44,7 +45,6 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
-import io.zeebe.broker.clustering.handler.BrokerAddress;
 import io.zeebe.broker.clustering.management.PartitionManager;
 import io.zeebe.broker.clustering.member.Member;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
@@ -360,7 +360,7 @@ public class CreateTopicStreamProcessorTest
 
         // then
         final PartitionEvent partitionEvent = partitionEventsInState(PartitionState.CREATE).findFirst().get();
-        final BrokerAddress creator = partitionEvent.getCreator();
+        final TopologyBroker creator = partitionEvent.getCreator();
         assertThat(creator.getHost()).isEqualTo(SOCKET_ADDRESS1.getHostBuffer());
         assertThat(creator.getPort()).isEqualTo(SOCKET_ADDRESS1.port());
     }

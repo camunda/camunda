@@ -22,6 +22,7 @@ import java.util.concurrent.CompletableFuture;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.client.clustering.Topology;
+import io.zeebe.client.impl.Loggers;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.SocketAddress;
@@ -155,6 +156,7 @@ public class ClientTopologyManager implements Actor
 
     protected void onNewTopology(TopologyResponse topologyResponse)
     {
+        Loggers.CLIENT_LOGGER.debug("On new topology: {}", topologyResponse);
         final TopologyImpl topology = new TopologyImpl();
         topology.update(topologyResponse, transport);
         this.topology = topology;

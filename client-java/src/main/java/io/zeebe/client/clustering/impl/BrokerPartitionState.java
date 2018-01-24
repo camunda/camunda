@@ -15,35 +15,20 @@
  */
 package io.zeebe.client.clustering.impl;
 
-import io.zeebe.transport.SocketAddress;
-
-
-public class TopicLeader
+public class BrokerPartitionState
 {
-    protected String host;
-    protected int port;
+
     protected String topicName;
     protected int partitionId;
+    private String state;
 
-    public TopicLeader setHost(final String host)
-    {
-        this.host = host;
-        return this;
-    }
-
-    public TopicLeader setPort(final int port)
-    {
-        this.port = port;
-        return this;
-    }
-
-    public TopicLeader setTopicName(final String topicName)
+    public BrokerPartitionState setTopicName(final String topicName)
     {
         this.topicName = topicName;
         return this;
     }
 
-    public TopicLeader setPartitionId(final int partitionId)
+    public BrokerPartitionState setPartitionId(final int partitionId)
     {
         this.partitionId = partitionId;
         return this;
@@ -59,14 +44,20 @@ public class TopicLeader
         return topicName;
     }
 
-    public SocketAddress getSocketAddress()
+    public String getState()
     {
-        return new SocketAddress(host, port);
+        return state;
+    }
+
+    public BrokerPartitionState setState(String state)
+    {
+        this.state = state;
+        return this;
     }
 
     @Override
     public String toString()
     {
-        return "TopicLeader{" + "host='" + host + '\'' + ", port=" + port + ", topicName='" + topicName + '\'' + ", partitionId=" + partitionId + '}';
+        return "BrokerPartitionState{" + "topicName='" + topicName + '\'' + ", partitionId=" + partitionId + ", state='" + state + '\'' + '}';
     }
 }

@@ -15,7 +15,6 @@
  */
 package io.zeebe.broker.it.clustering;
 
-import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -27,7 +26,6 @@ import io.zeebe.broker.it.subscription.RecordingEventHandler;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.task.impl.CreateTaskCommandImpl;
 import io.zeebe.client.topic.Topic;
-import io.zeebe.client.topic.Topics;
 import io.zeebe.test.util.AutoCloseableRule;
 import org.junit.Before;
 import org.junit.Rule;
@@ -71,24 +69,9 @@ public class SubscriptionClusteredTest
     {
         // given
         final String topicName = "pasta al forno";
-        clusteringRule.waitForExactBrokerCount(3);
-
-        client.topics().create(topicName, PARTITION_COUNT).execute();
-
-        clusteringRule.waitForGreaterOrEqualLeaderCount(PARTITION_COUNT + 1);
-
-        final Topics topicsResponse =
-            doRepeatedly(() -> client.topics()
-                                     .getTopics()
-                                     .execute())
-                .until((topics -> topics.getTopics().size() == 1));
+        final Topic topic = clusteringRule.createTopic(topicName, PARTITION_COUNT);
 
         // when
-        final Topic topic = topicsResponse.getTopics().stream()
-                                  .filter(t -> t.getName().equals(topicName))
-                                  .findFirst()
-                                  .get();
-
         final Integer[] partitionIds = topic.getPartitions().stream()
                                             .mapToInt(p -> p.getId())
                                             .boxed()

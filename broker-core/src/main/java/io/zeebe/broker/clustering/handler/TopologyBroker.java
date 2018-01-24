@@ -17,27 +17,30 @@
  */
 package io.zeebe.broker.clustering.handler;
 
-import org.agrona.DirectBuffer;
-
 import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.msgpack.property.ArrayProperty;
 import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.StringProperty;
+import io.zeebe.msgpack.value.ArrayValue;
+import io.zeebe.msgpack.value.ValueArray;
+import org.agrona.DirectBuffer;
 
 
-public class TopicLeader extends UnpackedObject
+public class TopologyBroker extends UnpackedObject
 {
     protected StringProperty hostProp = new StringProperty("host");
     protected IntegerProperty portProp = new IntegerProperty("port");
-    protected StringProperty topicNameProp = new StringProperty("topicName");
-    protected IntegerProperty partitionIdProp = new IntegerProperty("partitionId");
 
-    public TopicLeader()
+
+    protected ArrayProperty<BrokerPartitionState> partitionStatesProp =
+        new ArrayProperty<>("partitions", ArrayValue.emptyArray(), new BrokerPartitionState());
+
+    public TopologyBroker()
     {
         this
+            .declareProperty(partitionStatesProp)
             .declareProperty(hostProp)
-            .declareProperty(portProp)
-            .declareProperty(topicNameProp)
-            .declareProperty(partitionIdProp);
+            .declareProperty(portProp);
     }
 
     public DirectBuffer getHost()
@@ -45,7 +48,7 @@ public class TopicLeader extends UnpackedObject
         return hostProp.getValue();
     }
 
-    public TopicLeader setHost(final DirectBuffer host, final int offset, final int length)
+    public TopologyBroker setHost(final DirectBuffer host, final int offset, final int length)
     {
         this.hostProp.setValue(host, offset, length);
         return this;
@@ -56,31 +59,15 @@ public class TopicLeader extends UnpackedObject
         return portProp.getValue();
     }
 
-    public TopicLeader setPort(final int port)
+    public TopologyBroker setPort(final int port)
     {
         portProp.setValue(port);
         return this;
     }
 
-    public DirectBuffer getTopicNameProp()
+    public ValueArray<BrokerPartitionState> partitionStates()
     {
-        return topicNameProp.getValue();
+        return partitionStatesProp;
     }
 
-    public TopicLeader setTopicName(final DirectBuffer topicName, final int offset, final int length)
-    {
-        this.topicNameProp.setValue(topicName, offset, length);
-        return this;
-    }
-
-    public int getPartitionId()
-    {
-        return partitionIdProp.getValue();
-    }
-
-    public TopicLeader setPartitionId(final int partitionId)
-    {
-        partitionIdProp.setValue(partitionId);
-        return this;
-    }
 }

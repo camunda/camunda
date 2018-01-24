@@ -23,6 +23,7 @@ import java.util.concurrent.CompletableFuture;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.raft.Raft;
 import io.zeebe.raft.RaftPersistentStorage;
+import io.zeebe.raft.RaftStateListener;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
@@ -40,6 +41,7 @@ public class RaftService implements Service<Raft>
     private final LogStream logStream;
     private final List<SocketAddress> members;
     private final RaftPersistentStorage persistentStorage;
+    private final RaftStateListener raftStateListener;
     private Injector<ActorScheduler> actorSchedulerInjector = new Injector<>();
     private Injector<BufferingServerTransport> serverTransportInjector = new Injector<>();
     private Injector<ClientTransport> clientTransportInjector = new Injector<>();
@@ -47,12 +49,13 @@ public class RaftService implements Service<Raft>
     private Raft raft;
     private ActorReference actorReference;
 
-    public RaftService(final SocketAddress socketAddress, final LogStream logStream, final List<SocketAddress> members, final RaftPersistentStorage persistentStorage)
+    public RaftService(final SocketAddress socketAddress, final LogStream logStream, final List<SocketAddress> members, final RaftPersistentStorage persistentStorage, RaftStateListener raftStateListener)
     {
         this.socketAddress = socketAddress;
         this.logStream = logStream;
         this.members = members;
         this.persistentStorage = persistentStorage;
+        this.raftStateListener = raftStateListener;
     }
 
     @Override
@@ -65,6 +68,7 @@ public class RaftService implements Service<Raft>
                 final BufferingServerTransport serverTransport = serverTransportInjector.getValue();
                 final ClientTransport clientTransport = clientTransportInjector.getValue();
                 raft = new Raft(socketAddress, logStream, serverTransport, clientTransport, persistentStorage);
+                raft.registerRaftStateListener(raftStateListener);
 
                 raft.addMembers(members);
 

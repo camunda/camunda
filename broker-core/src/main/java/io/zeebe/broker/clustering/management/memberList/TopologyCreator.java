@@ -21,11 +21,10 @@ import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
 
 import io.zeebe.broker.Loggers;
-import io.zeebe.broker.clustering.handler.BrokerAddress;
+import io.zeebe.broker.clustering.handler.TopologyBroker;
 import io.zeebe.broker.clustering.handler.Topology;
 import io.zeebe.broker.clustering.management.ClusterManagerContext;
 import io.zeebe.msgpack.value.ValueArray;
-import io.zeebe.raft.state.RaftState;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
@@ -52,33 +51,27 @@ public class TopologyCreator
         {
             final MemberRaftComposite next = iterator.next();
 
-            final ValueArray<BrokerAddress> brokers = topology.brokers();
+            final ValueArray<TopologyBroker> brokers = topology.brokers();
 
             final SocketAddress clientApi = next.getClientApi();
 
             if (clientApi != null)
             {
-                brokers.add()
-                       .setHost(clientApi.getHostBuffer(), 0, clientApi.hostLength())
-                       .setPort(clientApi.port());
+                final TopologyBroker nextTopologyBroker = brokers.add();
+                nextTopologyBroker.setHost(clientApi.getHostBuffer(), 0, clientApi.hostLength())
+                                  .setPort(clientApi.port());
 
                 final Iterator<RaftStateComposite> raftTupleIt = next.getRaftIterator();
                 while (raftTupleIt.hasNext())
                 {
                     final RaftStateComposite nextRaftState = raftTupleIt.next();
+                    final DirectBuffer topicName = BufferUtil.cloneBuffer(nextRaftState.getTopicName());
 
-                    if (nextRaftState.getRaftState() == RaftState.LEADER)
-                    {
-                        final DirectBuffer directBuffer = BufferUtil.cloneBuffer(nextRaftState.getTopicName());
-
-                        topology.topicLeaders()
-                                .add()
-                                .setHost(clientApi.getHostBuffer(), 0, clientApi.hostLength())
-                                .setPort(clientApi.port())
-                                .setTopicName(directBuffer, 0, directBuffer.capacity())
-                                .setPartitionId(nextRaftState.getPartition());
-
-                    }
+                    nextTopologyBroker.partitionStates()
+                                      .add()
+                                      .setPartitionId(nextRaftState.getPartition())
+                                      .setTopicName(topicName, 0, topicName.capacity())
+                                      .setState(nextRaftState.getRaftState());
                 }
             }
         }

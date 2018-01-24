@@ -15,29 +15,19 @@
  */
 package io.zeebe.broker.it.clustering;
 
-import static io.zeebe.test.util.TestUtil.doRepeatedly;
-import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.event.DeploymentEvent;
-import io.zeebe.client.event.Event;
-import io.zeebe.gossip.Loggers;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.test.util.AutoCloseableRule;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
-import org.junit.rules.Timeout;
 
 public class DeploymentClusteredTest
 {
@@ -49,14 +39,14 @@ public class DeploymentClusteredTest
             .done();
 
     public AutoCloseableRule closeables = new AutoCloseableRule();
-    public Timeout testTimeout = Timeout.seconds(30);
+//    public Timeout testTimeout = Timeout.seconds(30);
     public ClientRule clientRule = new ClientRule(false);
     public ClusteringRule clusteringRule = new ClusteringRule(closeables, clientRule);
 
     @Rule
     public RuleChain ruleChain =
         RuleChain.outerRule(closeables)
-                 .around(testTimeout)
+//                 .around(testTimeout)
                  .around(clientRule)
                  .around(clusteringRule);
 
@@ -75,8 +65,8 @@ public class DeploymentClusteredTest
     public void shouldDeployWorkflowAndCreateInstances()
     {
         // given
-        client.topics().create("test", PARTITION_COUNT).execute();
-        clusteringRule.waitForGreaterOrEqualLeaderCount(PARTITION_COUNT + 1);
+        final int workCount = 10 * PARTITION_COUNT;
+        clusteringRule.createTopic("test", PARTITION_COUNT);
 
         // when
         client.workflows().deploy("test")
@@ -84,7 +74,7 @@ public class DeploymentClusteredTest
             .execute();
 
         // then
-        for (int p = 0; p < PARTITION_COUNT; p++)
+        for (int p = 0; p < workCount; p++)
         {
             client.workflows().create("test")
                 .bpmnProcessId("process")
@@ -93,34 +83,13 @@ public class DeploymentClusteredTest
     }
 
     @Test
-    public void shouldRejectDeployment()
-    {
-        // given
-        client.topics().create("test", PARTITION_COUNT).execute();
-        clusteringRule.waitForGreaterOrEqualLeaderCount(PARTITION_COUNT + 1);
-
-        // when
-        clusteringRule.stopBroker(2);
-
-        // then
-        assertThatThrownBy(() ->
-        {
-            client.workflows().deploy("test")
-                .addWorkflowModel(WORKFLOW, "workflow.bpmn")
-                .execute();
-        }).hasMessageContaining("Deployment was rejected");
-    }
-
-    @Test
     public void shouldDeployOnRemainingBrokers()
     {
         // given
-        client.topics().create("test", PARTITION_COUNT).execute();
-        clusteringRule.waitForGreaterOrEqualLeaderCount(PARTITION_COUNT + 1);
+        clusteringRule.createTopic("test", PARTITION_COUNT);
 
         // when
-        clusteringRule.stopBroker(2);
-        clusteringRule.waitForGreaterOrEqualLeaderCount(PARTITION_COUNT + 1);
+        clusteringRule.stopBroker(ClusteringRule.BROKER_3_CLIENT_ADDRESS);
 
         // then
         final DeploymentEvent deploymentEvent = client.workflows()
@@ -132,107 +101,4 @@ public class DeploymentClusteredTest
         assertThat(deploymentEvent.getErrorMessage()).isEmpty();
     }
 
-    @Test
-    @Ignore
-    public void shouldDeleteWorkflowsIfRejected()
-    {
-        // given
-        client.topics().create("test", PARTITION_COUNT).execute();
-        clusteringRule.waitForGreaterOrEqualLeaderCount(PARTITION_COUNT + 1);
-
-        doRepeatedly(() -> client.topics()
-                                 .getTopics()
-                                 .execute())
-            .until((topics -> topics.getTopics().size() == 1));
-
-        final List<String> workflowStates = new ArrayList<>();
-        final List<Event> events = new ArrayList<>();
-        client.topics().newSubscription("test")
-              .name("test")
-              .startAtHeadOfTopic()
-              .handler((event -> {
-                  events.add(event);
-              }))
-              .workflowEventHandler(e -> workflowStates.add(e.getState()))
-              .open();
-
-        // when
-        clusteringRule.stopBroker(2);
-
-        // then
-        assertThatThrownBy(() -> client.workflows().deploy("test")
-                                       .addWorkflowModel(WORKFLOW, "workflow.bpmn")
-                                       .execute())
-            .hasMessageContaining("Deployment was rejected");
-
-        waitUntil(() -> {
-            final long deleted = workflowStates.stream()
-                                               .filter(s -> s.equals("DELETED"))
-                                               .count();
-            Loggers.GOSSIP_LOGGER.debug("Deleted count {}", deleted);
-            return deleted == PARTITION_COUNT;
-
-        });
-    }
-
-    @Test
-    @Ignore
-    public void shouldFailToCreateWorkflowInstanceIfRejected()
-    {
-        // given
-        client.topics().create("test", PARTITION_COUNT).execute();
-        clusteringRule.waitForGreaterOrEqualLeaderCount(PARTITION_COUNT + 1);
-
-        // when
-        clusteringRule.stopBroker(2);
-
-        // then
-        assertThatThrownBy(() ->
-        {
-            client.workflows().deploy("test")
-                .addWorkflowModel(WORKFLOW, "workflow.bpmn")
-                .execute();
-        }).hasMessageContaining("Deployment was rejected");
-
-        for (int p = 0; p < PARTITION_COUNT; p++)
-        {
-            assertThatThrownBy(() ->
-            {
-                client.workflows().create("test")
-                    .bpmnProcessId("process")
-                    .execute();
-            }).hasMessageContaining("Failed to create instance of workflow");
-        }
-    }
-
-    @Ignore
-    @Test
-    public void shouldResetWorkflowVersionsIfRejected()
-    {
-        // given
-        client.topics().create("test", PARTITION_COUNT).execute();
-        clusteringRule.waitForGreaterOrEqualLeaderCount(PARTITION_COUNT + 1);
-
-        // when
-        clusteringRule.stopBroker(2);
-
-        // then
-        assertThatThrownBy(() ->
-        {
-            client.workflows().deploy("test")
-                .addWorkflowModel(WORKFLOW, "workflow.bpmn")
-                .execute();
-        }).hasMessageContaining("Deployment was rejected");
-
-        // and when
-        clusteringRule.waitForGreaterOrEqualLeaderCount(PARTITION_COUNT + 1);
-
-        // then
-        final DeploymentEvent deploymentEvent = client.workflows().deploy("test")
-            .addWorkflowModel(WORKFLOW, "workflow.bpmn")
-            .execute();
-
-        final int version = deploymentEvent.getDeployedWorkflows().get(0).getVersion();
-        assertThat(version).isEqualTo(1);
-    }
 }

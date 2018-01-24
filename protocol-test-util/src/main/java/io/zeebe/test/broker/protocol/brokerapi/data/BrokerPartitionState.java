@@ -15,26 +15,37 @@
  */
 package io.zeebe.test.broker.protocol.brokerapi.data;
 
-public class BrokerAddress
+public class BrokerPartitionState
 {
+    private final String state;
+    private final String topicName;
+    private final int partitionId;
 
-    protected final String host;
-    protected final int port;
-
-    public BrokerAddress(final String host, final int port)
+    public BrokerPartitionState(final String state, final String topicName, final int partitionId)
     {
-        this.host = host;
-        this.port = port;
+        this.state = state;
+        this.topicName = topicName;
+        this.partitionId = partitionId;
     }
 
-    public String getHost()
+    public String getState()
     {
-        return host;
+        return state;
     }
 
-    public int getPort()
+    public String getTopicName()
     {
-        return port;
+        return topicName;
     }
 
+    public int getPartitionId()
+    {
+        return partitionId;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "BrokerPartitionState{" + "state='" + state + '\'' + ", topicName='" + topicName + '\'' + ", partitionId=" + partitionId + '}';
+    }
 }

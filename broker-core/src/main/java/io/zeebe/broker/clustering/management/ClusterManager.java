@@ -273,7 +273,7 @@ public class ClusterManager implements Actor
     public void createRaft(final SocketAddress socketAddress, final LogStream logStream, final List<SocketAddress> members,
                            final RaftPersistentStorage persistentStorage)
     {
-        final RaftService raftService = new RaftService(socketAddress, logStream, members, persistentStorage);
+        final RaftService raftService = new RaftService(socketAddress, logStream, members, persistentStorage, clusterMemberListManager);
 
         final ServiceName<Raft> raftServiceName = raftServiceName(logStream.getLogName());
 
@@ -366,17 +366,11 @@ public class ClusterManager implements Actor
         // this must be determined before we cross the async boundary to avoid race conditions
         final boolean isRaftCreator = raft.getMemberSize() == 0;
 
-        raft.registerRaftStateListener(clusterMemberListManager);
-
         commandQueue.runAsync(() ->
         {
             LOG.trace("ADD raft {} for partition {} state {}.", raft.getSocketAddress(), raft.getLogStream()
                                                                                              .getPartitionId(), raft.getState());
             rafts.add(raft);
-
-            // add raft only when member or candidate
-            context.getMemberListService()
-                   .addRaft(raft);
 
             startLogStreamServiceControllers.add(new StartLogStreamServiceController(raftServiceName, raft, serviceContainer));
 

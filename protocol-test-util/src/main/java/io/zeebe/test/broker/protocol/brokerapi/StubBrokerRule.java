@@ -15,7 +15,6 @@
  */
 package io.zeebe.test.broker.protocol.brokerapi;
 
-
 import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
 
 import java.net.InetSocketAddress;
@@ -28,8 +27,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-import org.junit.rules.ExternalResource;
-
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.protocol.Protocol;
@@ -37,8 +34,9 @@ import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
-import io.zeebe.test.broker.protocol.brokerapi.data.TopicLeader;
+import io.zeebe.test.broker.protocol.brokerapi.data.BrokerPartitionState;
 import io.zeebe.test.broker.protocol.brokerapi.data.Topology;
+import io.zeebe.test.broker.protocol.brokerapi.data.TopologyBroker;
 import io.zeebe.test.util.collection.MapFactoryBuilder;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.ServerTransport;
@@ -46,6 +44,7 @@ import io.zeebe.transport.ServerTransportBuilder;
 import io.zeebe.transport.Transports;
 import io.zeebe.util.actor.ActorScheduler;
 import io.zeebe.util.actor.ActorSchedulerBuilder;
+import org.junit.rules.ExternalResource;
 
 public class StubBrokerRule extends ExternalResource
 {
@@ -94,8 +93,8 @@ public class StubBrokerRule extends ExternalResource
         bindAddr = new InetSocketAddress(host, port);
 
         currentTopology.set(new Topology()
-            .addTopic(new TopicLeader(host, port, TEST_TOPIC_NAME, TEST_PARTITION_ID))
-            .addTopic(new TopicLeader(host, port, Protocol.SYSTEM_TOPIC, Protocol.SYSTEM_PARTITION)));
+            .addLeader(host, port, TEST_TOPIC_NAME, TEST_PARTITION_ID)
+            .addLeader(host, port, Protocol.SYSTEM_TOPIC, Protocol.SYSTEM_PARTITION));
 
         stubTopologyRequest();
 
@@ -244,7 +243,6 @@ public class StubBrokerRule extends ExternalResource
         onTopologyRequest()
             .respondWith()
             .data()
-                .put("topicLeaders", r -> currentTopology.get().getTopicLeaders())
                 .put("brokers", r -> currentTopology.get().getBrokers())
                 .done()
             .register();
@@ -257,12 +255,16 @@ public class StubBrokerRule extends ExternalResource
                 {
                     final Topology topology = currentTopology.get();
                     final List<Map<String, Object>> partitions = new ArrayList<>();
-                    for (TopicLeader leader : topology.getTopicLeaders())
+                    for (TopologyBroker broker : topology.getBrokers())
                     {
-                        final Map<String, Object> partition = new HashMap<>();
-                        partition.put("topic", leader.getTopicName());
-                        partition.put("id", leader.getPartitionId());
-                        partitions.add(partition);
+                        final List<BrokerPartitionState> brokerPartitionStates = broker.getPartitions();
+                        for (BrokerPartitionState brokerPartitionState : brokerPartitionStates)
+                        {
+                            final Map<String, Object> partition = new HashMap<>();
+                            partition.put("topic", brokerPartitionState.getTopicName());
+                            partition.put("id", brokerPartitionState.getPartitionId());
+                            partitions.add(partition);
+                        }
                     }
                     return partitions;
                 })
@@ -278,7 +280,8 @@ public class StubBrokerRule extends ExternalResource
     public void addTopic(String topic, int partition)
     {
         final Topology newTopology = new Topology(currentTopology.get());
-        newTopology.addTopic(new TopicLeader(host, port, topic, partition));
+
+        newTopology.addLeader(host, port, topic, partition);
         currentTopology.set(newTopology);
     }
 

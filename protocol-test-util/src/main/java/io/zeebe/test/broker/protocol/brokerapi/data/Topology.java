@@ -15,18 +15,15 @@
  */
 package io.zeebe.test.broker.protocol.brokerapi.data;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.*;
 
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
-
+import io.zeebe.transport.SocketAddress;
 
 public class Topology
 {
 
-    protected List<TopicLeader> topicLeaders = new ArrayList<>();
+    protected Map<SocketAddress, TopologyBroker> brokers = new HashMap<>();
 
     public Topology()
     {
@@ -34,30 +31,45 @@ public class Topology
 
     public Topology(Topology other)
     {
-        this.topicLeaders = new ArrayList<>(other.topicLeaders);
+        this.brokers = new HashMap<>(other.brokers);
     }
 
-    public Topology addTopic(final TopicLeader topicLeader)
+    private TopologyBroker getBroker(String host, int port)
     {
-        topicLeaders.add(topicLeader);
+        final SocketAddress brokerAddress = new SocketAddress(host, port);
+        TopologyBroker topologyBroker = brokers.get(brokerAddress);
+        if (topologyBroker == null)
+        {
+            topologyBroker = new TopologyBroker(host, port);
+            brokers.put(brokerAddress, topologyBroker);
+        }
+        return topologyBroker;
+    }
+
+    public Topology addLeader(String host, int port, String topic, int partition)
+    {
+        getBroker(host, port)
+            .addPartition(new BrokerPartitionState("LEADER", topic, partition));
+
         return this;
     }
 
     public Topology addLeader(StubBrokerRule broker, String topic, int partition)
     {
-        return addTopic(new TopicLeader(broker.getHost(), broker.getPort(), topic, partition));
+        getBroker(broker.getHost(), broker.getPort())
+            .addPartition(new BrokerPartitionState("LEADER", topic, partition));
+
+        return this;
     }
 
-    public List<TopicLeader> getTopicLeaders()
+    public Set<TopologyBroker> getBrokers()
     {
-        return topicLeaders;
+        return new HashSet<>(brokers.values());
     }
 
-    public Set<BrokerAddress> getBrokers()
+    @Override
+    public String toString()
     {
-        return topicLeaders.stream()
-            .map(topicLeader -> new BrokerAddress(topicLeader.getHost(), topicLeader.getPort()))
-            .collect(Collectors.toSet());
+        return "Topology{" + "brokers=" + brokers.values() + '}';
     }
-
 }

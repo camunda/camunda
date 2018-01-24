@@ -224,14 +224,12 @@ public class ClusterMemberListManager implements RaftStateListener
                     final MemberRaftComposite member = context.getMemberListService()
                                                               .getMember(transportComponentCfg.managementApi.toSocketAddress(transportComponentCfg.host));
 
-                    final List<RaftStateComposite> rafts = member.getRafts();
-
                     // update raft state in member list
                     member.updateRaft(partitionId, savedTopicName, raftState);
-
                     LOG.trace("On raft state change for {} - local member states: {}", socketAddress, context.getMemberListService());
 
                     // send complete list of partition where I'm a follower or leader
+                    final List<RaftStateComposite> rafts = member.getRafts();
                     final DirectBuffer payload = writeRaftsIntoBuffer(rafts, memberRaftStatesBuffer);
 
                     LOG.trace("Publish event for partition {} state change {}", partitionId, raftState);

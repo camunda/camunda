@@ -22,10 +22,7 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.agrona.DirectBuffer;
@@ -207,11 +204,20 @@ public class CreateTopicTest
 
         final Set<Integer> expectedPartitions = Arrays.stream(partitions).boxed().collect(Collectors.toSet());
 
-        final List<Map<String, Object>> topicLeaders = (List<Map<String, Object>>) response.getData().get("topicLeaders");
+        final Map<String, Object> topology = response.getData();
+        final List<Map<String, Object>> brokers = (List<Map<String, Object>>) topology.get("brokers");
 
-        for (Map<String, Object> leader : topicLeaders)
+        for (Map<String, Object> broker : brokers)
         {
-            expectedPartitions.remove(leader.get("partitionId"));
+            final List<Map<String, Object>> brokerPartitionStates = (List<Map<String, Object>>) broker.get("partitions");
+            for (Map<String, Object> brokerPartitionState : brokerPartitionStates)
+            {
+                final String state = brokerPartitionState.get("state").toString();
+                if (state.equals("LEADER"))
+                {
+                    expectedPartitions.remove(brokerPartitionState.get("partitionId"));
+                }
+            }
         }
 
         return expectedPartitions.isEmpty();

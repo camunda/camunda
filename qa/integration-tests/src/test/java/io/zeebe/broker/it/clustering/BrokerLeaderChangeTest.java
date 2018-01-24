@@ -17,10 +17,8 @@ package io.zeebe.broker.it.clustering;
 
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
-import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
-import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -28,7 +26,7 @@ import io.zeebe.broker.it.ClientRule;
 import io.zeebe.client.TasksClient;
 import io.zeebe.client.TopicsClient;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.clustering.impl.TopicLeader;
+import io.zeebe.client.clustering.impl.TopologyBroker;
 import io.zeebe.client.event.TaskEvent;
 import io.zeebe.client.event.TopicSubscription;
 import io.zeebe.client.task.TaskSubscription;
@@ -74,26 +72,16 @@ public class BrokerLeaderChangeTest
     public void shouldChangeLeaderAfterLeaderDies()
     {
         // given
-        clusteringRule.waitForExactBrokerCount(3);
+        clusteringRule.createTopic(clientRule.getDefaultTopic(), 2);
 
-        client.topics().create(clientRule.getDefaultTopic(), 2).execute();
-        final List<TopicLeader> topicLeaders = clusteringRule.waitForGreaterOrEqualLeaderCount(3);
-        final TopicLeader topicLeader = clusteringRule.filterLeadersByPartition(topicLeaders, partition);
+        final TopologyBroker leaderForPartition = clusteringRule.getLeaderForPartition(1);
+        final SocketAddress leaderAddress = leaderForPartition.getSocketAddress();
 
-        final SocketAddress leaderAddress = topicLeader.getSocketAddress();
         final TaskEvent taskEvent = taskClient.create(clientRule.getDefaultTopic(), TASK_TYPE)
                                               .execute();
 
         // when
         clusteringRule.stopBroker(leaderAddress);
-        clusteringRule.waitForExactBrokerCount(2);
-
-        // then
-        final List<TopicLeader> newTopicLeaders = clusteringRule.waitForGreaterOrEqualLeaderCount(3);
-        final TopicLeader newLeader = clusteringRule.filterLeadersByPartition(newTopicLeaders, partition);
-        assertThat(newLeader.getSocketAddress()).isNotEqualTo(leaderAddress);
-
-        // when
         final TaskCompleter taskCompleter = new TaskCompleter(taskEvent);
 
         // then

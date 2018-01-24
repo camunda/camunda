@@ -21,7 +21,6 @@ import java.util.List;
 
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.clustering.impl.TopicLeader;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.SocketAddress;
 import org.junit.Before;
@@ -68,29 +67,24 @@ public class GossipClusteringTest
         // given
 
         // when
+        final List<SocketAddress> topologyBrokers = clusteringRule.getBrokersInCluster();
 
-        // then wait until cluster is ready
-        final List<SocketAddress> topologyBrokers = clusteringRule.waitForExactBrokerCount(3);
-
-        assertThat(topologyBrokers).containsExactlyInAnyOrder(new SocketAddress("localhost", 51015),
-                                                              new SocketAddress("localhost", 41015),
-                                                              new SocketAddress("localhost", 31015));
+        // then
+        assertThat(topologyBrokers).containsExactlyInAnyOrder(ClusteringRule.BROKER_1_CLIENT_ADDRESS,
+                                                              ClusteringRule.BROKER_3_CLIENT_ADDRESS,
+                                                              ClusteringRule.BROKER_2_CLIENT_ADDRESS);
     }
 
     @Test
     public void shouldDistributePartitionsAndLeaderInformationInCluster()
     {
         // given
-        clusteringRule.waitForExactBrokerCount(3);
 
         // when
-        client.topics().create("test", PARTITION_COUNT).execute();
+        clusteringRule.createTopic("test", PARTITION_COUNT);
 
         // then
-        final List<TopicLeader> topicLeaders = clusteringRule.waitForGreaterOrEqualLeaderCount(PARTITION_COUNT + 1);
-        final long partitionLeaderCount = topicLeaders.stream()
-                                                      .filter((leader) -> leader.getTopicName().equals("test"))
-                                                      .count();
+        final long partitionLeaderCount = clusteringRule.getPartitionLeaderCountForTopic("test");
         assertThat(partitionLeaderCount).isEqualTo(PARTITION_COUNT);
     }
 
@@ -98,50 +92,46 @@ public class GossipClusteringTest
     public void shouldRemoveMemberFromTopology()
     {
         // given
-        clusteringRule.waitForExactBrokerCount(3);
 
         // when
-        clusteringRule.stopBroker(2);
+        clusteringRule.stopBroker(ClusteringRule.BROKER_3_CLIENT_ADDRESS);
 
         // then
-        final List<SocketAddress> topologyBrokers = clusteringRule.waitForExactBrokerCount(2);
+        final List<SocketAddress> topologyBrokers = clusteringRule.getBrokersInCluster();
 
-        assertThat(topologyBrokers).containsExactlyInAnyOrder(new SocketAddress("localhost", 51015),
-                                                              new SocketAddress("localhost", 41015));
+        assertThat(topologyBrokers).containsExactlyInAnyOrder(ClusteringRule.BROKER_1_CLIENT_ADDRESS,
+                                                              ClusteringRule.BROKER_2_CLIENT_ADDRESS);
     }
 
     @Test
     public void shouldRemoveLeaderFromCluster()
     {
         // given
-        clusteringRule.waitForExactBrokerCount(3);
 
         // when
-        clusteringRule.stopBroker(0);
+        clusteringRule.stopBroker(ClusteringRule.BROKER_1_CLIENT_ADDRESS);
 
         // then
-        final List<SocketAddress> topologyBrokers = clusteringRule.waitForExactBrokerCount(2);
+        final List<SocketAddress> topologyBrokers = clusteringRule.getBrokersInCluster();
 
-        assertThat(topologyBrokers).containsExactlyInAnyOrder(new SocketAddress("localhost", 31015),
-                                                              new SocketAddress("localhost", 41015));
+        assertThat(topologyBrokers).containsExactlyInAnyOrder(ClusteringRule.BROKER_3_CLIENT_ADDRESS,
+                                                              ClusteringRule.BROKER_2_CLIENT_ADDRESS);
     }
 
     @Test
     public void shouldReAddToCluster()
     {
         // given
-        clusteringRule.waitForExactBrokerCount(3);
-        clusteringRule.stopBroker(2);
-        clusteringRule.waitForExactBrokerCount(2);
+        clusteringRule.stopBroker(ClusteringRule.BROKER_3_CLIENT_ADDRESS);
 
         // when
-        clusteringRule.startBroker(2);
+        clusteringRule.restartBroker(ClusteringRule.BROKER_3_CLIENT_ADDRESS);
 
         // then
-        final List<SocketAddress> topologyBrokers = clusteringRule.waitForExactBrokerCount(3);
+        final List<SocketAddress> topologyBrokers = clusteringRule.getBrokersInCluster();
 
-        assertThat(topologyBrokers).containsExactlyInAnyOrder(new SocketAddress("localhost", 51015),
-                                                              new SocketAddress("localhost", 41015),
-                                                              new SocketAddress("localhost", 31015));
+        assertThat(topologyBrokers).containsExactlyInAnyOrder(ClusteringRule.BROKER_1_CLIENT_ADDRESS,
+                                                              ClusteringRule.BROKER_3_CLIENT_ADDRESS,
+                                                              ClusteringRule.BROKER_2_CLIENT_ADDRESS);
     }
 }

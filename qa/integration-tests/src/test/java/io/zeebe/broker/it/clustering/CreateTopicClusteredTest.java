@@ -16,17 +16,16 @@
 package io.zeebe.broker.it.clustering;
 
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
+import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.clustering.impl.TopicLeader;
-import io.zeebe.client.event.Event;
+import io.zeebe.client.clustering.impl.TopologyBroker;
 import io.zeebe.client.event.TaskEvent;
 import io.zeebe.client.topic.Topic;
 import io.zeebe.client.topic.Topics;
@@ -68,39 +67,24 @@ public class CreateTopicClusteredTest
         // given
 
         // when
-        final Event topicEvent = client.topics()
-                                .create("foo", PARTITION_COUNT)
-                                .execute();
-
-        final List<SocketAddress> topicLeaders =
-            clusteringRule.waitForGreaterOrEqualLeaderCount(PARTITION_COUNT)
-                          .stream()
-                          .filter((topicLeader -> topicLeader.getTopicName().equals("foo")))
-                          .map((topicLeader -> topicLeader.getSocketAddress()))
-                          .collect(Collectors.toList());
-
+        final Topic topic = clusteringRule.createTopic("foo", PARTITION_COUNT);
 
         // then
-        assertThat(topicEvent.getState()).isEqualTo("CREATED");
-        assertThat(topicLeaders.size()).isEqualTo(PARTITION_COUNT);
-        clusteringRule.assertThatBrokersListContains(topicLeaders);
+        assertThat(topic.getName()).isEqualTo("foo");
+        assertThat(topic.getPartitions().size()).isEqualTo(PARTITION_COUNT);
     }
 
     @Test
     public void shouldRequestTopicsAfterTopicCreation()
     {
         // given
-        client.topics()
-              .create("foo", PARTITION_COUNT)
-              .execute();
-
-        clusteringRule.waitForGreaterOrEqualLeaderCount(PARTITION_COUNT);
+        clusteringRule.createTopic("foo", PARTITION_COUNT);
 
         // when
-        final Topics topicsResponse = doRepeatedly(() -> client.topics()
-                                                      .getTopics()
-                                                      .execute()).until((topics -> topics.getTopics()
-                                                                                         .size() == 1));
+        final Topics topicsResponse =
+            doRepeatedly(() -> client.topics().getTopics().execute())
+                .until((topics -> topics.getTopics().size() == 1));
+
         final List<Topic> topics = topicsResponse.getTopics();
 
         // then
@@ -120,10 +104,7 @@ public class CreateTopicClusteredTest
     public void shouldCreateTaskAfterTopicCreation()
     {
         // given
-
-        // when
-        client.topics().create("foo", PARTITION_COUNT).execute();
-        clusteringRule.waitForGreaterOrEqualLeaderCount(PARTITION_COUNT);
+        clusteringRule.createTopic("foo", PARTITION_COUNT);
 
         // then
         final TaskEvent taskEvent = client.tasks().create("foo", "bar").execute();
@@ -137,26 +118,57 @@ public class CreateTopicClusteredTest
     {
         // given
         final int partitionsCount = 1;
-        client.topics().create("foo", partitionsCount).execute();
+        clusteringRule.createTopic("foo", partitionsCount);
         final TaskEvent taskEvent = client.tasks().create("foo", "bar").execute();
         final int partitionId = taskEvent.getMetadata().getPartitionId();
 
-        final List<TopicLeader> topicLeaders = clusteringRule.waitForGreaterOrEqualLeaderCount(partitionsCount + 1);
-        final TopicLeader topicLeader = clusteringRule.filterLeadersByPartition(topicLeaders, partitionId);
-
-        final SocketAddress currentLeaderAddress = topicLeader.getSocketAddress();
-
-        final Set<SocketAddress> expectedFollowers = new HashSet<>(clusteringRule.getBrokerAddresses());
-        expectedFollowers.remove(currentLeaderAddress);
+        final TopologyBroker leaderForPartition = clusteringRule.getLeaderForPartition(partitionId);
+        final SocketAddress currentLeaderAddress = leaderForPartition.getSocketAddress();
 
         // when
         clusteringRule.stopBroker(currentLeaderAddress);
 
         // then
-        final List<TopicLeader> newTopicLeaders = clusteringRule.waitForGreaterOrEqualLeaderCount(partitionsCount + 1);
-        final TopicLeader newLeader = clusteringRule.filterLeadersByPartition(newTopicLeaders, partitionId);
+        final TopologyBroker newLeader = clusteringRule.getLeaderForPartition(partitionId);
+        assertThat(newLeader.getSocketAddress()).isNotEqualTo(leaderForPartition.getSocketAddress());
+    }
 
-        final SocketAddress newLeaderAddress = newLeader.getSocketAddress();
-        assertThat(expectedFollowers).contains(newLeaderAddress);
+    @Test
+    public void shouldCompleteTaskAfterNewLeaderWasChosen() throws Exception
+    {
+        // given
+        final int partitionsCount = 1;
+        clusteringRule.createTopic("foo", partitionsCount);
+        final TaskEvent taskEvent = client.tasks().create("foo", "bar").execute();
+        final int partitionId = taskEvent.getMetadata().getPartitionId();
+
+        final TopologyBroker leaderForPartition = clusteringRule.getLeaderForPartition(partitionId);
+        final SocketAddress currentLeaderAddress = leaderForPartition.getSocketAddress();
+
+        // when
+        clusteringRule.stopBroker(currentLeaderAddress);
+
+        // then
+        final TopologyBroker newLeader = clusteringRule.getLeaderForPartition(partitionId);
+        assertThat(newLeader.getSocketAddress()).isNotEqualTo(leaderForPartition.getSocketAddress());
+
+        final CompletableFuture<TaskEvent> taskCompleted = new CompletableFuture<>();
+        client.tasks()
+              .newTaskSubscription("foo")
+              .handler((taskClient, lockedEvent) -> {
+                  final TaskEvent completedTask = taskClient.complete(lockedEvent)
+                                                      .execute();
+                  taskCompleted.complete(completedTask);
+              })
+              .taskType("bar")
+              .lockOwner("owner")
+              .lockTime(5000)
+              .open();
+
+        waitUntil(() -> taskCompleted.isDone());
+
+        assertThat(taskCompleted).isCompleted();
+        final TaskEvent completedTask = taskCompleted.get();
+        assertThat(completedTask.getState()).isEqualTo("COMPLETED");
     }
 }

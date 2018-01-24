@@ -15,24 +15,19 @@
  */
 package io.zeebe.client.clustering.impl;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-
-import org.agrona.collections.Int2ObjectHashMap;
+import java.util.*;
 
 import io.zeebe.client.clustering.Topology;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.CollectionUtil;
+import org.agrona.collections.Int2ObjectHashMap;
 
 
 public class TopologyImpl implements Topology
 {
     protected Int2ObjectHashMap<RemoteAddress> topicLeaders;
+    protected Int2ObjectHashMap<List<RemoteAddress>> partitionBrokers;
     protected List<RemoteAddress> brokers;
     protected final Random randomBroker = new Random();
     protected Map<String, List<Integer>> partitionsByTopic = new HashMap<>();
@@ -40,6 +35,7 @@ public class TopologyImpl implements Topology
     public TopologyImpl()
     {
         topicLeaders = new Int2ObjectHashMap<>();
+        partitionBrokers = new Int2ObjectHashMap<>();
         brokers = new ArrayList<>();
     }
 
@@ -85,15 +81,27 @@ public class TopologyImpl implements Topology
 
     public void update(TopologyResponse topologyDto, ClientTransport transport)
     {
-        for (SocketAddress addr : topologyDto.getBrokers())
+        for (TopologyBroker topologyBroker : topologyDto.getBrokers())
         {
-            addBroker(transport.registerRemoteAddress(addr));
-        }
+            final RemoteAddress brokerRemoteAddress = transport.registerRemoteAddress(topologyBroker.getSocketAddress());
+            addBroker(brokerRemoteAddress);
 
-        for (TopicLeader leader : topologyDto.getTopicLeaders())
-        {
-            topicLeaders.put(leader.getPartitionId(), transport.registerRemoteAddress(leader.getSocketAddress()));
-            CollectionUtil.addToMapOfLists(partitionsByTopic, leader.getTopicName(), leader.getPartitionId());
+            for (BrokerPartitionState partitionState : topologyBroker.getPartitions())
+            {
+                if (partitionState.getState().equals("LEADER"))
+                {
+                    topicLeaders.put(partitionState.getPartitionId(), brokerRemoteAddress);
+                    CollectionUtil.addToMapOfLists(partitionsByTopic, partitionState.getTopicName(), partitionState.getPartitionId());
+                }
+
+                List<RemoteAddress> remoteAddresses = partitionBrokers.get(partitionState.getPartitionId());
+                if (remoteAddresses == null)
+                {
+                    remoteAddresses = new ArrayList<>();
+                    partitionBrokers.put(partitionState.getPartitionId(), remoteAddresses);
+                }
+                remoteAddresses.add(brokerRemoteAddress);
+            }
         }
 
     }

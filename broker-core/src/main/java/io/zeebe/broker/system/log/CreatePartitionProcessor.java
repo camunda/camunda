@@ -21,7 +21,7 @@ import java.time.Duration;
 
 import org.agrona.DirectBuffer;
 
-import io.zeebe.broker.clustering.handler.BrokerAddress;
+import io.zeebe.broker.clustering.handler.TopologyBroker;
 import io.zeebe.broker.clustering.management.PartitionManager;
 import io.zeebe.broker.logstreams.processor.TypedEvent;
 import io.zeebe.broker.logstreams.processor.TypedEventProcessor;
@@ -64,7 +64,7 @@ public class CreatePartitionProcessor implements TypedEventProcessor<PartitionEv
     public boolean executeSideEffects(TypedEvent<PartitionEvent> event, TypedResponseWriter responseWriter)
     {
         final PartitionEvent value = event.getValue();
-        final BrokerAddress creator = value.getCreator();
+        final TopologyBroker creator = value.getCreator();
         final DirectBuffer creatorHost = creator.getHost();
 
         creatorAddress.host(creatorHost, 0, creatorHost.capacity());

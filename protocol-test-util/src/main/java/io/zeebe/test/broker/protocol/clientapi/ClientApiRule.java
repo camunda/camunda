@@ -15,9 +15,7 @@
  */
 package io.zeebe.test.broker.protocol.clientapi;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Stream;
 
 import org.agrona.DirectBuffer;
@@ -296,17 +294,21 @@ public class ClientApiRule extends ExternalResource
             .sendAndAwait();
 
         final Map<String, Object> topology = response.getData();
-        final List<Map<String, Object>> leaders = (List<Map<String, Object>>) topology.get("topicLeaders");
+        final List<Map<String, Object>> brokers = (List<Map<String, Object>>) topology.get("brokers");
 
-        final List<Integer> partitionIds = new ArrayList<>();
-        for (Map<String, Object> leader : leaders)
+        final Set<Integer> partitionIds = new HashSet<>();
+        for (Map<String, Object> broker : brokers)
         {
-            if (topicName.equals(leader.get("topicName")))
+            final List<Map<String, Object>> brokerPartitionStates = (List<Map<String, Object>>) broker.get("partitions");
+            for (Map<String, Object> brokerPartitionState : brokerPartitionStates)
             {
-                partitionIds.add((int) leader.get("partitionId"));
+                if (topicName.equals(brokerPartitionState.get("topicName")))
+                {
+                    partitionIds.add((int) brokerPartitionState.get("partitionId"));
+                }
             }
         }
-        return partitionIds;
+        return new ArrayList<>(partitionIds);
     }
 
     public int getSinglePartitionId(String topicName)

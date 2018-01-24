@@ -17,9 +17,9 @@
  */
 package io.zeebe.broker.system.log;
 
+import io.zeebe.broker.clustering.handler.TopologyBroker;
 import org.agrona.DirectBuffer;
 
-import io.zeebe.broker.clustering.handler.BrokerAddress;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.EnumProperty;
 import io.zeebe.msgpack.property.IntegerProperty;
@@ -36,7 +36,7 @@ public class PartitionEvent extends UnpackedObject
     // TODO: this property can be removed when we have timestamps in log entries
     protected final LongProperty creationTimeout = new LongProperty("creationTimeout", -1L);
 
-    protected final ObjectProperty<BrokerAddress> creator = new ObjectProperty<>("creator", new BrokerAddress());
+    protected final ObjectProperty<TopologyBroker> creator = new ObjectProperty<>("creator", new TopologyBroker());
 
     public PartitionEvent()
     {
@@ -90,12 +90,12 @@ public class PartitionEvent extends UnpackedObject
 
     public void setCreator(DirectBuffer host, int port)
     {
-        final BrokerAddress address = creator.getValue();
+        final TopologyBroker address = creator.getValue();
         address.setHost(host, 0, host.capacity());
         address.setPort(port);
     }
 
-    public BrokerAddress getCreator()
+    public TopologyBroker getCreator()
     {
         return creator.getValue();
     }
