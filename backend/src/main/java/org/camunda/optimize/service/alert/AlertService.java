@@ -87,7 +87,12 @@ public class  AlertService  {
   }
 
   private Trigger[] createTriggers() {
-    List<AlertDefinitionDto> alerts = this.getStoredAlerts();
+    List<AlertDefinitionDto> alerts = new ArrayList<>();
+    try {
+      alerts = this.getStoredAlerts();
+    } catch (Exception e) {
+      logger.error("can't initialize alerts", e);
+    }
     List<Trigger> triggers = new ArrayList<>();
     for (AlertDefinitionDto alert : alerts) {
       triggers.add(statusCheckTrigger(alert));
