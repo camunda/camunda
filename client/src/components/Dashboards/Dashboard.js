@@ -190,7 +190,7 @@ export default class Dashboard extends React.Component {
             <div className='Dashboard__metadata'>Last modified {moment(lastModified).format('lll')} by {lastModifier}</div>
           </div>
           <div className='Dashboard__tools'>
-            <Link className='Button Dashboard__tool-button Dashboard__edit-button' to={`/dashboard/${this.id}/edit`}>Edit</Link>
+            <Link className='Dashboard__tool-button Dashboard__edit-button' to={`/dashboard/${this.id}/edit`}><Button>Edit</Button></Link>
             <Button onClick={this.showDeleteModal} className='Dashboard__tool-button Dashboard__delete-button'>Delete</Button>
             <Button onClick={this.showShareModal} className='Dashboard__tool-button Dashboard__share-button'>Share</Button>
           </div>

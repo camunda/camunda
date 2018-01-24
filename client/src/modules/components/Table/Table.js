@@ -43,6 +43,6 @@ Table.renderCell = cell => {
   }
 
   if(cell.onClick) {
-    return (<Button onClick={cell.onClick} className={cell.className}>{cell.content}</Button>);
+    return (<Button {...cell.props} onClick={cell.onClick} className={cell.className}>{cell.content}</Button>);
   }
 }

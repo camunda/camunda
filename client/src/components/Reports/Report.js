@@ -202,7 +202,7 @@ export default class Report extends React.Component {
             <div className='Report__metadata'>Last modified {moment(lastModified).format('lll')} by {lastModifier}</div>
           </div>
           <div className='Report__tools'>
-            <Link className='Button Report__tool-button Report__edit-button' to={`/report/${this.id}/edit`}>Edit</Link>
+            <Link className='Report__tool-button Report__edit-button' to={`/report/${this.id}/edit`}><Button>Edit</Button></Link>
             <Button className='Report__tool-button Report__delete-button' onClick={this.showDeleteModal}>Delete</Button>
             <Button onClick={this.showShareModal} className='Report__tool-button Report__share-button'>Share</Button>
           </div>

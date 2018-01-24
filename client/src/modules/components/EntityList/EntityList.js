@@ -70,7 +70,8 @@ export default class EntityList extends React.Component {
       entry.push({
         content: 'Delete',
         onClick: this.showDeleteModal({id, name}),
-        className: 'Button Button--small EntityList__deleteButton'
+        props: {type: 'small'},
+        className: 'EntityList__deleteButton'
       });
     }
     if(this.props.operations.includes('edit')) {
