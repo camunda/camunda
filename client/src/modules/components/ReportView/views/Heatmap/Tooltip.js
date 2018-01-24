@@ -12,16 +12,12 @@ export default class Tooltip extends React.Component {
     this.renderTooltip();
   }
 
-  componentDidUpdate(nextProps, nextState) {
-    this.renderTooltip();
-  }
-
   renderTooltip = () => {
-    const {viewer, data} = this.props;
+    const {viewer} = this.props;
     viewer.get('eventBus').on('element.hover', ({element: {id}}) => {
 
       this.removeOverlays(viewer);
-      const value = data[id];
+      const value = this.props.data[id];
       if (value !== undefined) {
         addDiagramTooltip(viewer, id, this.props.formatter(value));
       }

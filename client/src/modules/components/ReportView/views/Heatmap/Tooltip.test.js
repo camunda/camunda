@@ -32,10 +32,3 @@ it('should remove old tooltips on rerendering', () => {
   expect(clearSpy).toHaveBeenCalledTimes(1);
 });
 
-it('should update tooltip if data changes', () => {
-  const node = mount(<Tooltip viewer={viewer} data={data} formatter={v=>v} />);
-  addDiagramTooltip.mockReset();
-  node.setProps({data: { elementId: 'someOtherElementName'}});
-
-  expect(addDiagramTooltip).toHaveBeenCalledWith(viewer, 'elementId', 'someOtherElementName');
-});
