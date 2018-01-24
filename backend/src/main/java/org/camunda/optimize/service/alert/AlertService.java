@@ -60,7 +60,11 @@ public class  AlertService  {
   @PostConstruct
   private void init () {
     //clean up
-    alertWriter.deleteAllStatuses();
+    try {
+      alertWriter.deleteAllStatuses();
+    } catch (Exception e) {
+      logger.error("can't clean alert statuses", e);
+    }
 
     QuartzJobFactory sampleJobFactory = new QuartzJobFactory();
     sampleJobFactory.setApplicationContext(applicationContext);
