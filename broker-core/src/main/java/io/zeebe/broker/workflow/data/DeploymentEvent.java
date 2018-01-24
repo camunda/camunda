@@ -25,7 +25,6 @@ import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.ArrayProperty;
 import io.zeebe.msgpack.property.EnumProperty;
 import io.zeebe.msgpack.property.StringProperty;
-import io.zeebe.msgpack.value.ArrayValue;
 import io.zeebe.msgpack.value.ValueArray;
 
 public class DeploymentEvent extends UnpackedObject
@@ -40,7 +39,6 @@ public class DeploymentEvent extends UnpackedObject
 
     private final ArrayProperty<DeployedWorkflow> deployedWorkflowsProp = new ArrayProperty<>(
             "deployedWorkflows",
-            ArrayValue.emptyArray(),
             new DeployedWorkflow());
 
     private final StringProperty errorMessageProp = new StringProperty("errorMessage", "");

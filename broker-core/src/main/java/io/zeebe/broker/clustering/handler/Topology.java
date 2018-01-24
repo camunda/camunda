@@ -19,18 +19,15 @@ package io.zeebe.broker.clustering.handler;
 
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.ArrayProperty;
-import io.zeebe.msgpack.value.ArrayValue;
 import io.zeebe.msgpack.value.ValueArray;
 
 
 public class Topology extends UnpackedObject
 {
     protected ArrayProperty<TopicLeader> topicLeadersProp = new ArrayProperty<>("topicLeaders",
-        ArrayValue.emptyArray(),
         new TopicLeader());
 
     protected ArrayProperty<BrokerAddress> brokersProp = new ArrayProperty<>("brokers",
-        ArrayValue.emptyArray(),
         new BrokerAddress());
 
     public Topology()

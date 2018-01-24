@@ -32,7 +32,6 @@ import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.ArrayProperty;
 import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.StringProperty;
-import io.zeebe.msgpack.value.ArrayValue;
 import io.zeebe.transport.SocketAddress;
 
 public class RaftConfiguration extends UnpackedObject
@@ -48,7 +47,6 @@ public class RaftConfiguration extends UnpackedObject
 
     protected ArrayProperty<RaftConfigurationMember> membersProp = new ArrayProperty<>(
         "members",
-        ArrayValue.emptyArray(),
         new RaftConfigurationMember());
 
     public RaftConfiguration()
