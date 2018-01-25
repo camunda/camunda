@@ -161,6 +161,11 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
     return authenticationToken;
   }
 
+  public String getNewAuthenticationToken() {
+    authenticationToken = this.authenticateAdmin();
+    return authenticationToken;
+  }
+
   private String authenticateAdmin() {
     Response tokenResponse = authenticateAdminRequest();
     return tokenResponse.readEntity(String.class);

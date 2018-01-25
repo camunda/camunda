@@ -15,6 +15,7 @@ import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHa
 import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandlerProvider;
 import org.camunda.optimize.service.engine.importing.job.factory.StoreIndexesEngineImportJobFactory;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.BeanHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.test.util.SynchronizationEngineImportJob;
@@ -218,6 +219,10 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     return getOptimize().getAuthenticationToken();
   }
 
+  public String getNewAuthenticationToken() {
+    return getOptimize().getNewAuthenticationToken();
+  }
+
   public String authenticateDemo() {
     Response tokenResponse = authenticateDemoRequest();
     return tokenResponse.readEntity(String.class);
@@ -247,6 +252,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
   protected void finished(Description description) {
     TestEmbeddedCamundaOptimize.getInstance().resetConfiguration();
+    LocalDateUtil.reset();
     reloadConfiguration();
   }
 
@@ -375,4 +381,6 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   public AlertService getAlertService() {
     return getApplicationContext().getBean(AlertService.class);
   }
+
+
 }
