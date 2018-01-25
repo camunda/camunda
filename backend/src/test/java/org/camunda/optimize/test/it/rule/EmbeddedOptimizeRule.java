@@ -312,6 +312,10 @@ public class EmbeddedOptimizeRule extends TestWatcher {
       importIndexHandler.resetImportIndex();
     }
 
+    resetProcessDefinitionManager();
+  }
+
+  private void resetProcessDefinitionManager() {
     getApplicationContext().getBean(ProcessDefinitionManager.class).reset();
   }
 
@@ -342,6 +346,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
    * In case the engine got new entities, e.g., process definitions, those are then added to the import index
    */
   public void updateImportIndex() {
+    resetProcessDefinitionManager();
     for (String engineAlias : getConfigurationService().getConfiguredEngines().keySet()) {
       if (getIndexProvider().getDefinitionBasedHandlers(engineAlias) != null) {
         for (DefinitionBasedImportIndexHandler importIndexHandler : getIndexProvider().getDefinitionBasedHandlers(engineAlias)) {
@@ -355,7 +360,6 @@ public class EmbeddedOptimizeRule extends TestWatcher {
         }
       }
     }
-
   }
 
   public ImportIndexHandlerProvider getIndexProvider() {

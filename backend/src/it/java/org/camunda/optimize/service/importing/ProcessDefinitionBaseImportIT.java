@@ -48,7 +48,7 @@ public class ProcessDefinitionBaseImportIT {
   private ConfigurationService configurationService;
 
   @Before
-  public void setup() throws IOException {
+  public void setup() {
     configurationService = embeddedOptimizeRule.getConfigurationService();
   }
 
@@ -173,7 +173,7 @@ public class ProcessDefinitionBaseImportIT {
   }
 
   @Test
-  public void testDataForLatestProcessVersionImportedFirst() throws Exception {
+  public void testDataForLatestProcessVersionImportedFirst() {
     //given
     BpmnModelInstance simpleUserTaskProcess = createSimpleUserTaskProcess();
     engineRule.deployAndStartProcess(simpleUserTaskProcess);
@@ -195,7 +195,7 @@ public class ProcessDefinitionBaseImportIT {
   }
 
   @Test
-  public void testDataForLatestProcessVersionsImportedFirst() throws Exception {
+  public void testDataForLatestProcessVersionsImportedFirst() {
     //given
     int oldPageSize = configurationService.getEngineImportProcessInstanceMaxPageSize();
     configurationService.setEngineImportProcessInstanceMaxPageSize(1);
@@ -267,11 +267,9 @@ public class ProcessDefinitionBaseImportIT {
     return processDefinitionId;
   }
 
-  private String createAndAddProcessDefinitionToImportList(BpmnModelInstance modelInstance) throws IOException {
+  private void createAndAddProcessDefinitionToImportList(BpmnModelInstance modelInstance) throws IOException {
     String processDefinitionId = createAndStartProcessDefinition(modelInstance);
     addProcessDefinitionIdToImportList(processDefinitionId);
-    embeddedOptimizeRule.resetImportStartIndexes();
-    return processDefinitionId;
   }
 
   private String createAndStartProcessDefinition(BpmnModelInstance modelInstance) throws IOException {
@@ -304,7 +302,6 @@ public class ProcessDefinitionBaseImportIT {
   private void addProcessDefinitionIdToImportList(String processDefinitionId) {
     List<String> procDefsToImport = configurationService.getProcessDefinitionIdsToImport();
     procDefsToImport.add(processDefinitionId);
-    embeddedOptimizeRule.reloadConfiguration();
   }
 
   private void deployAndStartSimpleServiceTask() {
@@ -325,10 +322,11 @@ public class ProcessDefinitionBaseImportIT {
     // given
     embeddedOptimizeRule.resetImportStartIndexes();
     createAndSetProcessDefinition(createSimpleServiceTaskProcess());
-    createAndAddProcessDefinitionToImportList(createSimpleServiceTaskProcess());
 
     // when
     embeddedOptimizeRule.scheduleImport();
+    createAndAddProcessDefinitionToImportList(createSimpleServiceTaskProcess());
+    embeddedOptimizeRule.updateImportIndex();
 
     // then
     assertThat(embeddedOptimizeRule.getProgressValue(), is(50L));
