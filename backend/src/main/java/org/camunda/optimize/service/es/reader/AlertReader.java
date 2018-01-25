@@ -2,7 +2,6 @@ package org.camunda.optimize.service.es.reader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.alert.AlertStatusDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.get.GetResponse;
@@ -100,27 +99,5 @@ public class AlertReader {
 
   private void logError(String alertId) {
     logger.error("Was not able to retrieve alert with id [{}] from Elasticsearch.", alertId);
-  }
-
-  public AlertStatusDto findAlertStatus(String alertId) {
-    AlertStatusDto result = null;
-    GetResponse getResponse = esclient
-        .prepareGet(
-            configurationService.getOptimizeIndex(configurationService.getAlertStatusType()),
-            configurationService.getAlertStatusType(),
-            alertId
-        )
-        .setRealtime(false)
-        .get();
-    if (getResponse.isExists()) {
-      String responseAsString = getResponse.getSourceAsString();
-      try {
-        result = objectMapper.readValue(responseAsString, AlertStatusDto.class);
-      } catch (IOException e) {
-        logger.error("Was not able to retrieve alert status with id [{}] from Elasticsearch.", alertId);
-        throw new OptimizeRuntimeException("Can't fetch alert status");
-      }
-    }
-    return result;
   }
 }

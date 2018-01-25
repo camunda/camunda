@@ -6,6 +6,7 @@ import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
 import org.camunda.optimize.service.es.reader.AlertReader;
 import org.camunda.optimize.service.es.writer.AlertWriter;
 import org.camunda.optimize.service.security.TokenService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.quartz.Job;
 import org.quartz.JobDetail;
 import org.quartz.Scheduler;
@@ -16,7 +17,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.scheduling.quartz.JobDetailFactoryBean;
 import org.springframework.scheduling.quartz.SchedulerFactoryBean;
 import org.springframework.stereotype.Component;
@@ -54,17 +54,14 @@ public class  AlertService  {
   @Autowired
   private TokenService tokenService;
 
+  @Autowired
+  private ConfigurationService configurationService;
+
   private SchedulerFactoryBean schedulerFactoryBean;
   private Class<? extends Job> alertJobClass = AlertJob.class;
 
+  @PostConstruct
   private void init () {
-    //clean up
-    try {
-      alertWriter.deleteAllStatuses();
-    } catch (Exception e) {
-      logger.error("can't clean alert statuses", e);
-    }
-
     QuartzJobFactory sampleJobFactory = new QuartzJobFactory();
     sampleJobFactory.setApplicationContext(applicationContext);
 
@@ -76,7 +73,7 @@ public class  AlertService  {
     Trigger[] array = createTriggers();
     schedulerFactoryBean.setTriggers(array);
     schedulerFactoryBean.setApplicationContext(applicationContext);
-    schedulerFactoryBean.setConfigLocation(new ClassPathResource("quartz.properties"));
+    schedulerFactoryBean.setQuartzProperties(configurationService.getQuartzProperties());
     try {
       schedulerFactoryBean.afterPropertiesSet();
     } catch (Exception e) {
@@ -98,13 +95,13 @@ public class  AlertService  {
     }
     List<Trigger> triggers = new ArrayList<>();
     for (AlertDefinitionDto alert : alerts) {
-      triggers.add(statusCheckTrigger(alert));
+      triggers.add(createStatusCheckTrigger(alert));
     }
 
     return triggers.toArray(new Trigger[triggers.size()]);
   }
 
-  public Trigger statusCheckTrigger(AlertDefinitionDto alert, JobDetail jobDetail) {
+  public Trigger createStatusCheckTrigger(AlertDefinitionDto alert, JobDetail jobDetail) {
     SimpleTrigger trigger = null;
     if (alert.getCheckInterval() != null) {
       OffsetDateTime startFuture = OffsetDateTime.now()
@@ -127,10 +124,10 @@ public class  AlertService  {
     return trigger;
   }
 
-  public Trigger statusCheckTrigger(AlertDefinitionDto alert) {
-    JobDetail jobDetail = statusCheckJobDetails(alert);
+  public Trigger createStatusCheckTrigger(AlertDefinitionDto alert) {
+    JobDetail jobDetail = createStatusCheckJobDetails(alert);
 
-    return statusCheckTrigger(alert, jobDetail);
+    return createStatusCheckTrigger(alert, jobDetail);
   }
 
   private long durationInMs(AlertInterval checkInterval) {
@@ -146,7 +143,7 @@ public class  AlertService  {
     return ChronoUnit.valueOf(unit.toUpperCase());
   }
 
-  public JobDetail statusCheckJobDetails(AlertDefinitionDto alert) {
+  public JobDetail createStatusCheckJobDetails(AlertDefinitionDto alert) {
 
     JobDetailFactoryBean jobDetailFactoryBean = new JobDetailFactoryBean();
     jobDetailFactoryBean.setJobClass(alertJobClass);
@@ -176,9 +173,9 @@ public class  AlertService  {
   public AlertDefinitionDto createAlertForUser(AlertCreationDto toCreate, String userId) {
     AlertDefinitionDto alert = alertWriter.createAlert(newAlert(toCreate, userId));
     try {
-      JobDetail jobDetail = statusCheckJobDetails(alert);
+      JobDetail jobDetail = createStatusCheckJobDetails(alert);
       if (schedulerFactoryBean != null) {
-        schedulerFactoryBean.getObject().scheduleJob(jobDetail, statusCheckTrigger(alert, jobDetail));
+        schedulerFactoryBean.getObject().scheduleJob(jobDetail, createStatusCheckTrigger(alert, jobDetail));
       }
     } catch (SchedulerException e) {
       logger.error("can't schedule new alert", e);

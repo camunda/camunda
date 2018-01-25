@@ -14,6 +14,7 @@ public interface ConfigurationServiceConstants {
 
   String CONFIGURED_ENGINES = "$.engines";
 
+  String QUARTZ_JOB_STORE_CLASS = "$.alerting.quartz.jobStore";
 
   String ELASTICSEARCH_MAX_JOB_QUEUE_SIZE = "$.import.elasticsearchJobExecutorQueueSize";
   String ELASTICSEARCH_IMPORT_EXECUTOR_THREAD_COUNT = "$.import.elasticsearchJobExecutorThreadCount";

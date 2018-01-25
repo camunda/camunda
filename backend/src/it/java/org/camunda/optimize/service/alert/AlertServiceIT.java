@@ -10,10 +10,8 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.camunda.optimize.test.util.ReportDataHelper;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -43,7 +41,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
  */
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"/it/it-applicationContext.xml"})
-@Ignore
 public class AlertServiceIT {
 
   public static final String BEARER = "Bearer ";
@@ -52,15 +49,13 @@ public class AlertServiceIT {
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-  public EngineDatabaseRule engineDatabaseRule = new EngineDatabaseRule();
 
 
   @Rule
   public RuleChain chain = RuleChain
       .outerRule(elasticSearchRule)
       .around(engineRule)
-      .around(embeddedOptimizeRule)
-      .around(engineDatabaseRule);
+      .around(embeddedOptimizeRule);
 
   @Test
   public void testScheduleTriggers() throws Exception {
@@ -74,10 +69,10 @@ public class AlertServiceIT {
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
-    String reportId = createAndStoreDefaultReportDefinition(processDefinitionId);
+    String reportId = createAndStoreNumberReport(processDefinitionId);
 
     AlertService alertService = embeddedOptimizeRule.getAlertService();
-    TestListener triggerListener = testListener();
+    TestListener triggerListener = new TestListener();
     Scheduler scheduler = alertService.getScheduler();
     scheduler.getListenerManager().addTriggerListener(triggerListener);
 
@@ -86,7 +81,7 @@ public class AlertServiceIT {
         embeddedOptimizeRule.target(ALERT)
             .request()
             .header(HttpHeaders.AUTHORIZATION, BEARER + token)
-            .post(Entity.json(simpleAlert(reportId)));
+            .post(Entity.json(createSimpleAlert(reportId)));
 
 
     Thread.sleep(3000);
@@ -103,8 +98,8 @@ public class AlertServiceIT {
     int intervalValue = 11;
     AlertDefinitionDto fakeReportAlert = getAlertDefinitionDto(intervalValue,"Minutes");
 
-    JobDetail jobDetail = alertService.statusCheckJobDetails(fakeReportAlert);
-    Trigger trigger = alertService.statusCheckTrigger(fakeReportAlert, jobDetail);
+    JobDetail jobDetail = alertService.createStatusCheckJobDetails(fakeReportAlert);
+    Trigger trigger = alertService.createStatusCheckTrigger(fakeReportAlert, jobDetail);
     OffsetDateTime now = OffsetDateTime.now();
     alertService.getScheduler().scheduleJob(jobDetail, trigger);
     OffsetDateTime nextFireTime = getNextFireTime(trigger).truncatedTo(ChronoUnit.MINUTES);
@@ -119,8 +114,8 @@ public class AlertServiceIT {
     int intervalValue = 11;
     AlertDefinitionDto fakeReportAlert = getAlertDefinitionDto(intervalValue,"Hours");
 
-    JobDetail jobDetail = alertService.statusCheckJobDetails(fakeReportAlert);
-    Trigger trigger = alertService.statusCheckTrigger(fakeReportAlert, jobDetail);
+    JobDetail jobDetail = alertService.createStatusCheckJobDetails(fakeReportAlert);
+    Trigger trigger = alertService.createStatusCheckTrigger(fakeReportAlert, jobDetail);
     OffsetDateTime now = OffsetDateTime.now();
     alertService.getScheduler().scheduleJob(jobDetail, trigger);
     OffsetDateTime nextFireTime = getNextFireTime(trigger);
@@ -137,8 +132,8 @@ public class AlertServiceIT {
     int intervalValue = 5;
     AlertDefinitionDto fakeReportAlert = getAlertDefinitionDto(intervalValue,"Days");
 
-    JobDetail jobDetail = alertService.statusCheckJobDetails(fakeReportAlert);
-    Trigger trigger = alertService.statusCheckTrigger(fakeReportAlert, jobDetail);
+    JobDetail jobDetail = alertService.createStatusCheckJobDetails(fakeReportAlert);
+    Trigger trigger = alertService.createStatusCheckTrigger(fakeReportAlert, jobDetail);
     OffsetDateTime now = OffsetDateTime.now();
     alertService.getScheduler().scheduleJob(jobDetail, trigger);
     OffsetDateTime nextFireTime = getNextFireTime(trigger);
@@ -156,8 +151,8 @@ public class AlertServiceIT {
     int intervalValue = 5;
     AlertDefinitionDto fakeReportAlert = getAlertDefinitionDto(intervalValue,"Weeks");
 
-    JobDetail jobDetail = alertService.statusCheckJobDetails(fakeReportAlert);
-    Trigger trigger = alertService.statusCheckTrigger(fakeReportAlert, jobDetail);
+    JobDetail jobDetail = alertService.createStatusCheckJobDetails(fakeReportAlert);
+    Trigger trigger = alertService.createStatusCheckTrigger(fakeReportAlert, jobDetail);
     OffsetDateTime now = OffsetDateTime.now();
     alertService.getScheduler().scheduleJob(jobDetail, trigger);
     OffsetDateTime nextFireTime = getNextFireTime(trigger);
@@ -171,7 +166,7 @@ public class AlertServiceIT {
   }
 
   private AlertDefinitionDto getAlertDefinitionDto(int intervalValue, String intervalUnit) {
-    AlertCreationDto simpleAlert = simpleAlert("fakeReport", intervalValue, intervalUnit);
+    AlertCreationDto simpleAlert = createSimpleAlert("fakeReport", intervalValue, intervalUnit);
 
     AlertDefinitionDto alert = createFakeReport(simpleAlert);
     alert.setId(UUID.randomUUID().toString());
@@ -182,11 +177,6 @@ public class AlertServiceIT {
     AlertDefinitionDto result = new AlertDefinitionDto();
 
     AlertUtil.mapBasicFields(fakeReportAlert, result);
-    return result;
-  }
-
-  private TestListener testListener() {
-    TestListener result = new TestListener();
     return result;
   }
 
@@ -209,11 +199,11 @@ public class AlertServiceIT {
     }
   }
 
-  private AlertCreationDto simpleAlert(String reportId) {
-    return simpleAlert(reportId, 1,"Seconds");
+  private AlertCreationDto createSimpleAlert(String reportId) {
+    return createSimpleAlert(reportId, 1,"Seconds");
   }
 
-  private AlertCreationDto simpleAlert(String reportId, int intervalValue, String unit) {
+  private AlertCreationDto createSimpleAlert(String reportId, int intervalValue, String unit) {
     AlertCreationDto alertCreationDto = new AlertCreationDto();
 
     AlertInterval interval = new AlertInterval();
@@ -240,7 +230,7 @@ public class AlertServiceIT {
     return engineRule.deployProcessAndGetId(processModel);
   }
 
-  private String createAndStoreDefaultReportDefinition(String processDefinitionId) {
+  private String createAndStoreNumberReport(String processDefinitionId) {
     String id = createNewReportHelper();
     ReportDataDto reportData = ReportDataHelper.createPiFrequencyCountGroupedByNoneAsNumber(processDefinitionId);
     ReportDefinitionDto report = new ReportDefinitionDto();

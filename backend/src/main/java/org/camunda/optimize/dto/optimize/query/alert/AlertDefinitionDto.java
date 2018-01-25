@@ -16,7 +16,7 @@ public class AlertDefinitionDto extends AlertCreationDto {
   protected OffsetDateTime created;
   protected String owner;
   protected String lastModifier;
-
+  protected boolean triggered;
 
   public String getOwner() {
     return owner;
@@ -56,5 +56,13 @@ public class AlertDefinitionDto extends AlertCreationDto {
 
   public void setLastModifier(String lastModifier) {
     this.lastModifier = lastModifier;
+  }
+
+  public boolean isTriggered() {
+    return triggered;
+  }
+
+  public void setTriggered(boolean triggered) {
+    this.triggered = triggered;
   }
 }

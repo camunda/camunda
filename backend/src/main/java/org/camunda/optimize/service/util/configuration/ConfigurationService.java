@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 
 import static org.camunda.optimize.service.util.ValidationHelper.ensureGreaterThanZero;
@@ -118,6 +119,8 @@ public class ConfigurationService {
   private String containerKeystoreLocation;
   private Integer containerHttpsPort;
   private Integer containerHttpPort;
+
+  private Properties quartzProperties;
 
   public ConfigurationService() {
     this((String[]) null);
@@ -896,6 +899,15 @@ public class ConfigurationService {
 
   public boolean areProcessDefinitionsToImportDefined() {
     return getProcessDefinitionIdsToImport() != null && !getProcessDefinitionIdsToImport().isEmpty();
+  }
+
+
+  public Properties getQuartzProperties() {
+    if (quartzProperties == null) {
+      quartzProperties = new Properties();
+      quartzProperties.put("org.quartz.jobStore.class", jsonContext.read(ConfigurationServiceConstants.QUARTZ_JOB_STORE_CLASS));
+    }
+    return quartzProperties;
   }
 
   public void setVariableImportPluginBasePackages(List<String> variableImportPluginBasePackages) {

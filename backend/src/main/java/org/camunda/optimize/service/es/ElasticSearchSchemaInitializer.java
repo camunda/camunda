@@ -1,7 +1,6 @@
 package org.camunda.optimize.service.es;
 
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
-import org.camunda.optimize.service.es.schema.type.AlertStatusType;
 import org.camunda.optimize.service.es.schema.type.AlertType;
 import org.camunda.optimize.service.es.schema.type.DashboardType;
 import org.camunda.optimize.service.es.schema.type.DurationHeatmapTargetValueType;
@@ -87,9 +86,6 @@ public class ElasticSearchSchemaInitializer {
   @Autowired
   private AlertType alertType;
 
-  @Autowired
-  private AlertStatusType alertStatusType;
-
   public void initializeSchema() {
     if (!initialized) {
       try {
@@ -124,7 +120,6 @@ public class ElasticSearchSchemaInitializer {
     schemaManager.addMapping(reportType);
     schemaManager.addMapping(dashboardType);
     schemaManager.addMapping(alertType);
-    schemaManager.addMapping(alertStatusType);
   }
 
   /**

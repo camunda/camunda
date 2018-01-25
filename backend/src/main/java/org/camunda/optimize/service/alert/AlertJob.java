@@ -1,7 +1,6 @@
 package org.camunda.optimize.service.alert;
 
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.alert.AlertStatusDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.result.NumberReportResultDto;
 import org.camunda.optimize.service.es.reader.AlertReader;
@@ -12,7 +11,6 @@ import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.quartz.Job;
 import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,7 +41,7 @@ public class AlertJob implements Job {
   private ReportEvaluator reportEvaluator;
 
   @Override
-  public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
+  public void execute(JobExecutionContext jobExecutionContext) {
     JobDataMap dataMap = jobExecutionContext.getJobDetail().getJobDataMap();
     String alertId = dataMap.getString("alertId");
     logger.debug("executing status check for alert [{}]", alertId);
@@ -55,36 +53,12 @@ public class AlertJob implements Job {
       reportDefinition = reportReader.getReport(alert.getReportId());
       NumberReportResultDto result = (NumberReportResultDto) reportEvaluator.evaluate(reportDefinition);
 
-      AlertStatusDto alertStatus = alertReader.findAlertStatus(alertId);
-
-      AlertJobResult alertJobResult = new AlertJobResult();
+      AlertJobResult alertJobResult = null;
       if (thresholdExceeded(alert, result)) {
-        boolean haveToNotify = false;
-        if (alertStatus != null && !alertStatus.isTriggered()) {
-          alertStatus.setTriggered(true);
-          haveToNotify = true;
-        } else if (alertStatus == null) {
-          alertStatus = new AlertStatusDto(alertId);
-          alertStatus.setTriggered(true);
-          haveToNotify = true;
-        }
+        alertJobResult = notifyIfNeeded(alertId, alert, reportDefinition, result);
 
-        if (haveToNotify) {
-          alertWriter.writeAlertStatus(alertStatus);
-
-          notificationService.notifyRecipient(
-              composeAlertText(alert, reportDefinition, result),
-              alert.getEmail()
-          );
-
-          alertJobResult.setStatusChanged(true);
-          alertJobResult.setTriggered(true);
-        }
-
-      } else if (alertStatus != null && alertStatus.isTriggered()) {
-        alertStatus.setTriggered(false);
-        alertWriter.writeAlertStatus(alertStatus);
-
+      } else if (alert.isTriggered()) {
+        alertWriter.writeAlertStatus(false, alertId);
         alertJobResult.setStatusChanged(true);
       }
 
@@ -95,6 +69,33 @@ public class AlertJob implements Job {
       logger.error("error while processing alert ofr report [{}]", alertId, e);
     }
 
+  }
+
+  private AlertJobResult notifyIfNeeded(
+      String alertId,
+      AlertDefinitionDto alert,
+      ReportDefinitionDto reportDefinition,
+      NumberReportResultDto result
+  ) {
+    AlertJobResult alertJobResult = new AlertJobResult();
+    boolean haveToNotify = false;
+    if (!alert.isTriggered()) {
+      haveToNotify = true;
+    }
+
+    if (haveToNotify) {
+      alertWriter.writeAlertStatus(haveToNotify, alertId);
+
+      notificationService.notifyRecipient(
+          composeAlertText(alert, reportDefinition, result),
+          alert.getEmail()
+      );
+
+      alertJobResult.setStatusChanged(true);
+      alertJobResult.setTriggered(true);
+    }
+
+    return alertJobResult;
   }
 
   private String composeAlertText(

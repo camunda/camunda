@@ -25,6 +25,7 @@ public class AlertType extends StrictTypeMappingCreator {
 
   public static final String CHECK_INTERVAL = "checkInterval";
   public static final String REMINDER_INTERVAL = "reminder";
+  public static final String TRIGGERED = "triggered";
 
   public static final String INTERVAL_VALUE = "value";
   public static final String INTERVAL_UNIT = "unit";
@@ -72,6 +73,11 @@ public class AlertType extends StrictTypeMappingCreator {
       .startObject(THRESHOLD)
         .field("type", "integer")
       .endObject()
+
+      .startObject(TRIGGERED)
+        .field("type", "boolean")
+      .endObject()
+
       .startObject(CHECK_INTERVAL)
         .field("type", "nested")
         .startObject("properties")

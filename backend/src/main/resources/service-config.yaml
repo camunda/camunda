@@ -253,3 +253,6 @@ variable:
   #States the maximum number of values that are shown for the user in the
   #variable filter selection.                                            
   maxValueListSize: 15
+alerting:
+  quartz:
+    jobStore: 'org.quartz.simpl.RAMJobStore'

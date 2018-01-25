@@ -3,7 +3,6 @@ package org.camunda.optimize.service.es.writer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.alert.AlertStatusDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -19,6 +18,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
+import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 
 /**
@@ -95,25 +95,24 @@ public class AlertWriter {
     .get();
   }
 
-  public void writeAlertStatus(AlertStatusDto alertStatus) {
-    Map map = objectMapper.convertValue(alertStatus, Map.class);
-    esclient
-      .prepareIndex(
-        configurationService.getOptimizeIndex(configurationService.getAlertStatusType()),
-        configurationService.getAlertStatusType(),
-        alertStatus.getId()
-      )
-      .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
-      .setSource(map)
-      .get();
-  }
-
-  public void deleteAllStatuses() {
-    DeleteByQueryAction.INSTANCE.newRequestBuilder(esclient)
-        .refresh(true)
-        .filter(matchAllQuery())
-        .source(configurationService.getOptimizeIndex(configurationService.getAlertStatusType()))
-        .execute()
-        .actionGet();
+  public void writeAlertStatus(boolean alertStatus, String alertId) {
+    try {
+      esclient
+        .prepareUpdate(
+          configurationService.getOptimizeIndex(configurationService.getAlertStatusType()),
+          configurationService.getAlertStatusType(),
+          alertId
+        )
+        .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
+        .setDoc(
+          jsonBuilder()
+            .startObject()
+              .field("triggered", alertStatus)
+            .endObject()
+        )
+        .get();
+    } catch (Exception e) {
+      logger.error("can't update status of alert [{}]", alertId, e);
+    }
   }
 }
