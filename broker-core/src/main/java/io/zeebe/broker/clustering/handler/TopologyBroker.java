@@ -21,6 +21,7 @@ import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.ArrayProperty;
 import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.StringProperty;
+import io.zeebe.msgpack.value.ArrayValue;
 import io.zeebe.msgpack.value.ValueArray;
 import org.agrona.DirectBuffer;
 
@@ -32,7 +33,7 @@ public class TopologyBroker extends UnpackedObject
 
 
     protected ArrayProperty<BrokerPartitionState> partitionStatesProp =
-        new ArrayProperty<>("partitions", new BrokerPartitionState());
+        new ArrayProperty<>("partitions", ArrayValue.emptyArray(), new BrokerPartitionState());
 
     public TopologyBroker()
     {

@@ -25,11 +25,13 @@ import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.ArrayProperty;
 import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.StringProperty;
+import io.zeebe.msgpack.value.ArrayValue;
 
 public class PartitionsResponse extends UnpackedObject
 {
     protected ArrayProperty<Partition> partitions = new ArrayProperty<>(
             "partitions",
+            ArrayValue.emptyArray(),
             new Partition());
     protected final MutableDirectBuffer topicName = new ExpandableArrayBuffer(128);
 
