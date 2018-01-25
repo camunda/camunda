@@ -175,6 +175,7 @@ public class JoinController
                         {
                             logger.debug("Join request was accepted in term {}", joinResponse.getTerm());
                             context.take(TRANSITION_DEFAULT);
+                            raft.notifyRaftStateListeners();
                         }
                         else
                         {

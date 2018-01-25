@@ -144,9 +144,13 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
         listener.onStateChange(logStream.getPartitionId(), logStream.getTopicName(), socketAddress, state.getState());
     }
 
-    private void notifyRaftStateListeners()
+    public void notifyRaftStateListeners()
     {
-        raftStateListeners.forEach(this::notifyRaftStateListener);
+        if (joinController.isJoined())
+        {
+            getLogger().info("Find me {} {}", socketAddress, getState());
+            raftStateListeners.forEach(this::notifyRaftStateListener);
+        }
     }
 
     public String getSubscriptionName()
