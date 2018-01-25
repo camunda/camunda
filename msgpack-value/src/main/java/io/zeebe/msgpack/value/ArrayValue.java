@@ -18,304 +18,337 @@ package io.zeebe.msgpack.value;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
+import io.zeebe.msgpack.spec.MsgPackHelper;
 import io.zeebe.msgpack.spec.MsgPackReader;
 import io.zeebe.msgpack.spec.MsgPackWriter;
-import org.agrona.ExpandableArrayBuffer;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
-public class ArrayValue<T extends BaseValue> extends BaseValue implements Iterator<T>, Iterable<T>
+public class ArrayValue<T extends BaseValue> extends BaseValue implements Iterator<T>
 {
-    private final MsgPackWriter writer = new MsgPackWriter();
-    private final MsgPackReader reader = new MsgPackReader();
+    private static final DirectBuffer EMPTY_ARRAY = new UnsafeBuffer(MsgPackHelper.EMPTY_ARRAY);
 
-    // buffer
-    private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
-    private int elementCount;
-    private int bufferLength;
+    protected MsgPackReader elementReader = new MsgPackReader();
+    protected MsgPackWriter elementWriter = new MsgPackWriter();
 
-    // inner value
-    private final T innerValue;
-    private int oldInnerValueLength;
-    private InnerValueState innerValueState;
+    protected UnsafeBuffer writeBuffer = new UnsafeBuffer(new byte[1024]);
 
-    // iterator
-    private int cursorOffset;
-    private int cursorIndex;
+    protected T innerValue;
 
+    protected int length;
+    protected int size;
 
-    public ArrayValue(final T innerValue)
+    protected int cursor;
+    protected int lastReturned;
+    protected boolean skipLastReturned = false;
+    protected boolean modified = false;
+
+    public ArrayValue()
     {
-        this.innerValue = innerValue;
         reset();
+    }
+
+    public ArrayValue(DirectBuffer defaultValue, int offset, int length)
+    {
+        this();
+
+        final MsgPackReader headerReader = new MsgPackReader();
+        headerReader.wrap(defaultValue, offset, length);
+
+        this.size = headerReader.readArrayHeader();
+
+        offset = headerReader.getOffset() - offset;
+        length = length - offset;
+
+        if (length > 0)
+        {
+            elementReader.wrap(defaultValue, offset, length);
+        }
+
+        this.length = length;
     }
 
     @Override
     public void reset()
     {
-        elementCount = 0;
-        bufferLength = 0;
+        length = 0;
+        size = 0;
 
-        resetIterator();
-        resetInnerValue();
-    }
+        cursor = 0;
+        lastReturned = -1;
+        skipLastReturned = false;
+        modified = false;
 
-    private void resetIterator()
-    {
-        cursorIndex = 0;
-        cursorOffset = 0;
-    }
+        elementReader.wrap(elementReader.getBuffer(), 0, 0);
 
-    private void resetInnerValue()
-    {
-        innerValue.reset();
-        oldInnerValueLength = 0;
+        writeBuffer.setMemory(0, writeBuffer.capacity(), (byte) 0);
+        elementWriter.wrap(writeBuffer, 0);
 
-        innerValueState = InnerValueState.Uninitialized;
-    }
-
-    @Override
-    public void read(final MsgPackReader reader)
-    {
-        reset();
-
-        elementCount = reader.readArrayHeader();
-        final int headerOffset = reader.getOffset();
-
-        // skip all values to get offset to copy
-        for (int i = 0; i < elementCount; i++)
+        if (innerValue != null)
         {
-            innerValue.read(reader);
+            innerValue.reset();
+        }
+    }
+
+    public void wrapArrayValue(ArrayValue<T> from)
+    {
+        size = from.size;
+
+        cursor = from.cursor;
+        lastReturned = from.lastReturned;
+        skipLastReturned = from.skipLastReturned;
+
+        final int writeBufferCapacity = writeBuffer.capacity();
+        final int requiredWriteBufferLength = from.elementWriter.getOffset();
+
+        if (requiredWriteBufferLength > writeBufferCapacity)
+        {
+            resizeWriteBuffer(requiredWriteBufferLength);
         }
 
-        // invalidate inner value
-        resetInnerValue();
+        writeBuffer.setMemory(0, writeBuffer.capacity(), (byte) 0);
+        elementWriter.writeRaw(from.writeBuffer, 0, requiredWriteBufferLength);
 
-        // copy reader buffer to internal buffer
-        bufferLength = reader.getOffset() - headerOffset;
-        buffer.putBytes(0, reader.getBuffer(), headerOffset, bufferLength);
-    }
-
-    @Override
-    public void write(final MsgPackWriter writer)
-    {
-        flushAndResetInnerValue();
-
-        writer.writeArrayHeader(elementCount);
-        writer.writeRaw(buffer, 0, bufferLength);
-    }
-
-    @Override
-    public void writeJSON(final StringBuilder builder)
-    {
-        flushAndResetInnerValue();
-
-        builder.append("[");
-
-        boolean firstElement = true;
-
-        for (final T element : this)
+        if (from.hasNext())
         {
-            if (!firstElement)
-            {
-                builder.append(",");
-            }
-            else
-            {
-                firstElement = false;
-            }
+            final MsgPackReader fromElementReader = from.elementReader;
+            final DirectBuffer buffer = fromElementReader.getBuffer();
+            final int offset = fromElementReader.getOffset();
 
-            element.writeJSON(builder);
+            length = from.length - offset;
+            elementReader.wrap(buffer, offset, length);
         }
-
-        builder.append("]");
-
+        else
+        {
+            length = 0;
+            elementReader.wrap(elementReader.getBuffer(), 0, 0);
+        }
     }
 
-    @Override
-    public int getEncodedLength()
-    {
-        flushAndResetInnerValue();
-        return MsgPackWriter.getEncodedArrayHeaderLenght(elementCount) + bufferLength;
-    }
-
-    @Override
     public Iterator<T> iterator()
     {
-        flushAndResetInnerValue();
+        // reset the iterator
+        if (modified || cursor > 0)
+        {
+            flushLastReturned();
 
-        resetIterator();
-        resetInnerValue();
+            elementReader.wrap(writeBuffer, 0, writeBuffer.capacity());
+        }
+        else
+        {
+            final DirectBuffer buffer = elementReader.getBuffer();
+            elementReader.wrap(buffer, 0, buffer.capacity());
+        }
+
+        cursor = 0;
+        lastReturned = -1;
+        skipLastReturned = false;
+
+        innerValue.reset();
 
         return this;
     }
 
     @Override
+    public void writeJSON(StringBuilder builder)
+    {
+        builder.append("[");
+
+        iterator();
+
+        for (int i = 0; i < size; i++)
+        {
+            if (i > 0)
+            {
+                builder.append(",");
+            }
+
+            next().writeJSON(builder);
+        }
+
+        builder.append("]");
+    }
+
+    @Override
+    public void write(MsgPackWriter writer)
+    {
+        writer.writeArrayHeader(size());
+
+        final DirectBuffer readerBuffer = elementReader.getBuffer();
+
+        int length = this.length;
+
+        if (size > 0)
+        {
+            final int writerOffset = elementWriter.getOffset();
+            writer.writeRaw(writeBuffer, 0, writerOffset);
+
+            if (!skipLastReturned && cursor > 0)
+            {
+                innerValue.write(writer);
+            }
+
+            if (hasNext())
+            {
+                final int readerOffset = elementReader.getOffset();
+                length -= readerOffset;
+
+                writer.writeRaw(readerBuffer, readerOffset, length);
+            }
+        }
+    }
+
+    @Override
+    public void read(MsgPackReader reader)
+    {
+        reset();
+
+        size = reader.readArrayHeader();
+
+        final int offset = reader.getOffset();
+        for (int i = 0; i < size; i++)
+        {
+            innerValue.read(reader);
+        }
+
+        final DirectBuffer buffer = reader.getBuffer();
+        length = reader.getOffset() - offset;
+
+        if (length > 0)
+        {
+            elementReader.wrap(buffer, offset, length);
+        }
+
+        innerValue.reset();
+    }
+
+    @Override
+    public int getEncodedLength()
+    {
+        int length = MsgPackWriter.getEncodedArrayHeaderLenght(size());
+
+        if (size > 0)
+        {
+            length += elementWriter.getOffset();
+
+            if (!skipLastReturned && cursor > 0)
+            {
+                length += innerValue.getEncodedLength();
+            }
+
+            if (hasNext())
+            {
+                length += this.length - elementReader.getOffset();
+            }
+        }
+
+        return length;
+    }
+
+    @Override
     public boolean hasNext()
     {
-        return cursorIndex < elementCount;
+        return cursor < size;
     }
 
     @Override
     public T next()
     {
-        if (!hasNext())
+        if (cursor >= size)
         {
             throw new NoSuchElementException();
         }
 
-        final int innerValueLength = getInnerValueLength();
+        flushLastReturned();
 
-        flushAndResetInnerValue();
+        skipLastReturned = false;
+        lastReturned = cursor;
+        cursor += 1;
 
-        cursorIndex += 1;
-        cursorOffset += innerValueLength;
-
-        readInnerValue();
-
-        return innerValue;
-    }
-
-    public T add()
-    {
-        final boolean elementUpdated = innerValueState == InnerValueState.Modify;
-        final int innerValueLength = getInnerValueLength();
-
-        flushAndResetInnerValue();
-
-        elementCount += 1;
-
-        if (elementUpdated)
-        {
-            // if the previous element was return by iterator the new element should be added after it
-            cursorOffset += innerValueLength;
-            cursorIndex += 1;
-        }
-
-        innerValueState = InnerValueState.Insert;
-
+        innerValue.read(elementReader);
         return innerValue;
     }
 
     @Override
     public void remove()
     {
-        if (innerValueState != InnerValueState.Modify)
+        if (lastReturned < 0)
         {
-            throw new IllegalStateException("Iterator not initialized");
+            throw new IllegalStateException();
         }
 
-        elementCount -= 1;
-        cursorIndex -= 1;
-
-        moveValuesLeft(cursorOffset + oldInnerValueLength, oldInnerValueLength);
-
-        innerValueState = InnerValueState.Uninitialized;
-    }
-
-    private int getInnerValueLength()
-    {
-        switch (innerValueState)
+        if (cursor <= 0)
         {
-            case Insert:
-            case Modify:
-                return innerValue.getEncodedLength();
+            throw new IndexOutOfBoundsException();
         }
 
-        return 0;
+        size -= 1;
+
+        skipLastReturned = true;
+        cursor = lastReturned;
+        lastReturned = -1;
+        modified = true;
     }
 
-    private void readInnerValue()
+    public T add()
     {
-        reader.wrap(buffer, cursorOffset, bufferLength - cursorOffset);
+        flushLastReturned();
 
-        innerValueState = InnerValueState.Modify;
-        innerValue.read(reader);
-        oldInnerValueLength = innerValue.getEncodedLength();
+        size += 1;
 
+        skipLastReturned = false;
+        cursor += 1;
+        lastReturned = -1;
+        modified = true;
+
+        innerValue.reset();
+        return innerValue;
     }
 
-    private void flushAndResetInnerValue()
+    protected void flushLastReturned()
     {
-        switch (innerValueState)
+        if (!skipLastReturned && cursor > 0)
         {
-            case Insert:
-                insertInnerValue();
-                break;
-            case Modify:
-                updateInnerValue();
-                break;
+            final int offset = elementWriter.getOffset();
+            final int capacity = writeBuffer.capacity();
+            final int requiredLength = innerValue.getEncodedLength() + offset;
+
+            if (requiredLength > capacity)
+            {
+                resizeWriteBuffer(requiredLength);
+            }
+
+            innerValue.write(elementWriter);
         }
-
-        resetInnerValue();
     }
 
-    private void insertInnerValue()
+    protected void resizeWriteBuffer(final int newLength)
     {
-        final int innerValueLength = innerValue.getEncodedLength();
-        moveValuesRight(cursorOffset, innerValueLength);
+        final int offset = elementWriter.getOffset();
+        final byte[] byteArr = new byte[newLength];
 
-        writeInnerValue();
-
-        cursorOffset += innerValueLength;
-        cursorIndex += 1;
+        writeBuffer.getBytes(0, byteArr, 0, offset);
+        writeBuffer.wrap(byteArr, 0, newLength);
     }
 
-    private void updateInnerValue()
+    public int size()
     {
-        final int innerValueLength = innerValue.getEncodedLength();
-
-        if (oldInnerValueLength < innerValueLength)
-        {
-            // the inner value length increased
-            // move bytes back to have space for updated value
-            final int difference = innerValueLength - oldInnerValueLength;
-            moveValuesRight(cursorOffset + oldInnerValueLength, difference);
-        }
-        else if (oldInnerValueLength > innerValueLength)
-        {
-            // the inner value length decreased
-            // move bytes to front to fill gap for smaller updated value
-            final int difference = oldInnerValueLength - innerValueLength;
-            moveValuesLeft(cursorOffset + oldInnerValueLength, difference);
-        }
-
-        writeInnerValue();
+        return size;
     }
 
-    private void writeInnerValue()
+    public T getInnerValue()
     {
-        writer.wrap(buffer, cursorOffset);
-        innerValue.write(writer);
+        return innerValue;
     }
 
-    private void moveValuesLeft(final int srcOffset, final int removedLength)
+    public void setInnerValue(T innerValue)
     {
-        if (srcOffset <= bufferLength)
-        {
-            final int targetOffset = srcOffset - removedLength;
-            final int copyLength = bufferLength - srcOffset;
-            buffer.putBytes(targetOffset, buffer, srcOffset, copyLength);
-        }
-
-        bufferLength -= removedLength;
+        this.innerValue = innerValue;
     }
 
-    private void moveValuesRight(final int srcOffset, final int requiredLength)
+    public static <T extends BaseValue> ArrayValue<T> emptyArray()
     {
-        if (srcOffset < bufferLength)
-        {
-            final int targetOffset = srcOffset + requiredLength;
-            final int copyLength = bufferLength - srcOffset;
-            buffer.putBytes(targetOffset, buffer, srcOffset, copyLength);
-        }
-
-        bufferLength += requiredLength;
-    }
-
-    enum InnerValueState
-    {
-        Uninitialized,
-        Insert,
-        Modify,
+        return new ArrayValue<>(EMPTY_ARRAY, 0, EMPTY_ARRAY.capacity());
     }
 
 }
