@@ -448,6 +448,8 @@ public class VariableQueryFilterIT {
 
       // then
       assertResults(result,  1);
+
+      resetIndexesAndClean();
     }
 
   }
@@ -583,6 +585,8 @@ public class VariableQueryFilterIT {
 
       // then
       assertResults(result, 2);
+
+      resetIndexesAndClean();
     }
   }
 
