@@ -15,71 +15,24 @@
  */
 package io.zeebe.msgpack;
 
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-
 import io.zeebe.msgpack.property.ArrayProperty;
-import io.zeebe.msgpack.spec.MsgPackWriter;
-import io.zeebe.msgpack.value.ArrayValue;
 import io.zeebe.msgpack.value.ValueArray;
 
 public class POJOArray extends UnpackedObject
 {
-    protected static final DirectBuffer NOT_EMPTY_ARRAY;
-
-    static
-    {
-        final ArrayValue<MinimalPOJO> values = new ArrayValue<>();
-        values.setInnerValue(new MinimalPOJO());
-
-        values.add().setLongProp(123L);
-        values.add().setLongProp(456L);
-        values.add().setLongProp(789L);
-
-        final int length = values.getEncodedLength();
-        final UnsafeBuffer buffer = new UnsafeBuffer(new byte[length]);
-
-        final MsgPackWriter writer = new MsgPackWriter();
-        writer.wrap(buffer, 0);
-        values.write(writer);
-
-        NOT_EMPTY_ARRAY = buffer;
-    }
 
     protected ArrayProperty<MinimalPOJO> simpleArrayProp;
-    protected ArrayProperty<MinimalPOJO> emptyDefaultArrayProp;
-    protected ArrayProperty<MinimalPOJO> notEmptyDefaultArrayProp;
 
     public POJOArray()
     {
         this.simpleArrayProp = new ArrayProperty<>("simpleArray", new MinimalPOJO());
 
-        this.emptyDefaultArrayProp = new ArrayProperty<>("emptyDefaultArray",
-                ArrayValue.emptyArray(),
-                new MinimalPOJO());
-
-        this.notEmptyDefaultArrayProp = new ArrayProperty<>("notEmptyDefaultArray",
-                new ArrayValue<>(NOT_EMPTY_ARRAY, 0, NOT_EMPTY_ARRAY.capacity()),
-                new MinimalPOJO());
-
-        this.declareProperty(simpleArrayProp)
-            .declareProperty(emptyDefaultArrayProp)
-            .declareProperty(notEmptyDefaultArrayProp);
+        this.declareProperty(simpleArrayProp);
     }
 
     public ValueArray<MinimalPOJO> simpleArray()
     {
         return simpleArrayProp;
-    }
-
-    public ValueArray<MinimalPOJO> emptyDefaultArray()
-    {
-        return emptyDefaultArrayProp;
-    }
-
-    public ValueArray<MinimalPOJO> notEmptyDefaultArray()
-    {
-        return notEmptyDefaultArrayProp;
     }
 
 }
