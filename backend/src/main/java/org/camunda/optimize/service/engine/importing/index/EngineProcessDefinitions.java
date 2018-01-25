@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class ProcessDefinitionStock {
+public class EngineProcessDefinitions {
 
   protected Logger logger = LoggerFactory.getLogger(getClass());
 

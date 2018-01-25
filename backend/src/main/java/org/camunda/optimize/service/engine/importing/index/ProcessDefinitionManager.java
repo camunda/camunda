@@ -20,21 +20,21 @@ public class ProcessDefinitionManager {
   @Autowired
   private BeanFactory beanFactory;
 
-  private Map<String, ProcessDefinitionStock> stocks = new HashMap<>();
+  private Map<String, EngineProcessDefinitions> engineAliasToProcessDefinitions = new HashMap<>();
 
   public List<DefinitionImportInformation> getAvailableProcessDefinitions(EngineContext engineContext) {
     String engineAlias = engineContext.getEngineAlias();
-    if (!stocks.containsKey(engineAlias)) {
-      stocks.put(engineAlias, beanFactory.getBean(ProcessDefinitionStock.class));
+    if (!engineAliasToProcessDefinitions.containsKey(engineAlias)) {
+      engineAliasToProcessDefinitions.put(engineAlias, beanFactory.getBean(EngineProcessDefinitions.class));
     }
-    return stocks
+    return engineAliasToProcessDefinitions
       .get(engineAlias)
       .getAvailableProcessDefinitions(engineContext);
   }
 
   public void reset() {
-    stocks
+    engineAliasToProcessDefinitions
       .values()
-      .forEach(ProcessDefinitionStock::reset);
+      .forEach(EngineProcessDefinitions::reset);
   }
 }
