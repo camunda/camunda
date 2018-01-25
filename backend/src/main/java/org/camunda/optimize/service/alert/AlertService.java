@@ -57,7 +57,6 @@ public class  AlertService  {
   private SchedulerFactoryBean schedulerFactoryBean;
   private Class<? extends Job> alertJobClass = AlertJob.class;
 
-  @PostConstruct
   private void init () {
     //clean up
     try {
@@ -178,7 +177,9 @@ public class  AlertService  {
     AlertDefinitionDto alert = alertWriter.createAlert(newAlert(toCreate, userId));
     try {
       JobDetail jobDetail = statusCheckJobDetails(alert);
-      schedulerFactoryBean.getObject().scheduleJob(jobDetail, statusCheckTrigger(alert, jobDetail));
+      if (schedulerFactoryBean != null) {
+        schedulerFactoryBean.getObject().scheduleJob(jobDetail, statusCheckTrigger(alert, jobDetail));
+      }
     } catch (SchedulerException e) {
       logger.error("can't schedule new alert", e);
     }
