@@ -17,6 +17,7 @@ package io.zeebe.raft.event;
 
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.ArrayProperty;
+import io.zeebe.msgpack.value.ArrayValue;
 import io.zeebe.msgpack.value.ValueArray;
 
 public class RaftConfiguration extends UnpackedObject
@@ -24,6 +25,7 @@ public class RaftConfiguration extends UnpackedObject
     protected RaftConfigurationMember raftConfigurationMember = new RaftConfigurationMember();
     protected ArrayProperty<RaftConfigurationMember> membersProp = new ArrayProperty<>(
         "members",
+        ArrayValue.emptyArray(),
         raftConfigurationMember);
 
     public RaftConfiguration()
