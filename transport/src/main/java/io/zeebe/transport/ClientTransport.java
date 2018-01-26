@@ -219,11 +219,6 @@ public class ClientTransport implements AutoCloseable
         return transportContext.getChannelKeepAlivePeriod();
     }
 
-    public long getChannelConnectTimeout()
-    {
-        return transportContext.getChannelConnectTimeout();
-    }
-
     protected static class ClientInputMessageSubscriptionImpl implements ClientInputMessageSubscription
     {
 

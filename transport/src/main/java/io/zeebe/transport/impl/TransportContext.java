@@ -28,7 +28,6 @@ public class TransportContext
 {
     private int messageMaxLength;
     private long channelKeepAlivePeriod = 0L;
-    private long channelConnectTimeout = 0L;
 
     private ServerOutput serverOutput;
     private ClientOutput clientOutput;
@@ -169,16 +168,6 @@ public class TransportContext
     public long getChannelKeepAlivePeriod()
     {
         return channelKeepAlivePeriod;
-    }
-
-    public void setChannelConnectTimeout(long channelConnectTimeout)
-    {
-        this.channelConnectTimeout = channelConnectTimeout;
-    }
-
-    public long getChannelConnectTimeout()
-    {
-        return channelConnectTimeout;
     }
 
     public void setChannelFactory(TransportChannelFactory channelFactory)

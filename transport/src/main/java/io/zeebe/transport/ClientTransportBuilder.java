@@ -51,7 +51,6 @@ public class ClientTransportBuilder
     private int requestPoolSize = 64;
     private int messageMaxLength = 1024 * 512;
     protected long keepAlivePeriod = DEFAULT_CHANNEL_KEEP_ALIVE_PERIOD;
-    protected long channelConnectTimeout = DEFAULT_CHANNEL_CONNECT_TIMEOUT;
 
     protected Dispatcher receiveBuffer;
     private Dispatcher sendBuffer;
@@ -118,16 +117,6 @@ public class ClientTransportBuilder
     public ClientTransportBuilder keepAlivePeriod(long keepAlivePeriod)
     {
         this.keepAlivePeriod = keepAlivePeriod;
-        return this;
-    }
-
-    /**
-     * The maximum wait time until a request is discarded if not connection can be established to
-     * the remote.
-     */
-    public ClientTransportBuilder channelConnectTimeout(long channelConnectTimeout)
-    {
-        this.channelConnectTimeout = channelConnectTimeout;
         return this;
     }
 
@@ -199,7 +188,6 @@ public class ClientTransportBuilder
         context.setSenderSubscription(sendBuffer.getSubscriptionByName(SEND_BUFFER_SUBSCRIPTION_NAME));
         context.setSendFailureHandler(new ClientSendFailureHandler(clientRequestPool));
         context.setChannelKeepAlivePeriod(keepAlivePeriod);
-        context.setChannelConnectTimeout(channelConnectTimeout);
 
         if (channelFactory != null)
         {

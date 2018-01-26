@@ -31,7 +31,7 @@ public class ClientConductor extends Conductor
     public ClientConductor(ActorContext actorContext, TransportContext context)
     {
         super(actorContext, context);
-        this.connectTransportPoller = new ConnectTransportPoller(context.getChannelConnectTimeout());
+        this.connectTransportPoller = new ConnectTransportPoller();
         closableTransportPoller = new TransportPoller[]{connectTransportPoller};
         this.channelManager = new ClientChannelManager(this, context.getRemoteAddressList());
     }

@@ -35,7 +35,6 @@ import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
 import io.zeebe.util.allocation.AllocatedBuffer;
 import io.zeebe.util.allocation.BufferAllocators;
-import io.zeebe.util.time.ClockUtil;
 
 public class TransportChannel
 {
@@ -57,8 +56,6 @@ public class TransportChannel
     private final FragmentHandler readHandler;
 
     private SocketChannel media;
-
-    protected long beginConnectTimestamp;
 
     private List<SelectionKey> registeredKeys = Collections.synchronizedList(new ArrayList<>());
 
@@ -220,8 +217,6 @@ public class TransportChannel
     {
         if (STATE_FIELD.compareAndSet(this, CLOSED, CONNECTING))
         {
-            this.beginConnectTimestamp = ClockUtil.getCurrentTimeInMillis();
-
             try
             {
                 media = SocketChannel.open();
@@ -243,11 +238,6 @@ public class TransportChannel
         }
     }
 
-    public boolean hasBegunConnectingBefore(long timestamp)
-    {
-        return beginConnectTimestamp < timestamp;
-    }
-
     public void finishConnect()
     {
         if (STATE_FIELD.compareAndSet(this, CONNECTING, CONNECTED))
@@ -264,12 +254,6 @@ public class TransportChannel
             }
         }
     }
-
-    public void failConnect(Exception cause)
-    {
-        doClose();
-    }
-
 
     public boolean isClosed()
     {
