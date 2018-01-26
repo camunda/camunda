@@ -17,9 +17,13 @@ package io.zeebe.client.workflow.impl;
 
 import java.util.List;
 
-import com.fasterxml.jackson.annotation.*;
-import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
-import io.zeebe.client.event.*;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import io.zeebe.client.event.DeploymentEvent;
+import io.zeebe.client.event.DeploymentResource;
+import io.zeebe.client.event.TopicEventType;
+import io.zeebe.client.event.WorkflowDefinition;
 import io.zeebe.client.event.impl.EventImpl;
 
 public class DeploymentEventImpl extends EventImpl implements DeploymentEvent
@@ -39,7 +43,7 @@ public class DeploymentEventImpl extends EventImpl implements DeploymentEvent
     }
 
     @Override
-    @JsonTypeInfo(use = Id.NAME, defaultImpl = DeploymentResourceImpl.class)
+    @JsonDeserialize(contentAs = DeploymentResourceImpl.class)
     public List<DeploymentResource> getResources()
     {
         return resources;
@@ -51,7 +55,7 @@ public class DeploymentEventImpl extends EventImpl implements DeploymentEvent
     }
 
     @Override
-    @JsonTypeInfo(use = Id.NAME, defaultImpl = WorkflowDefinitionImpl.class)
+    @JsonDeserialize(contentAs = WorkflowDefinitionImpl.class)
     public List<WorkflowDefinition> getDeployedWorkflows()
     {
         return deployedWorkflows;
