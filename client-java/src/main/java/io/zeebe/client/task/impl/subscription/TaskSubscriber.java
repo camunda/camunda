@@ -61,7 +61,7 @@ public class TaskSubscriber extends EventSubscriber
             }
             catch (Exception handlingException)
             {
-                LOGGER.info("An error ocurred when handling task " + taskEvent.getMetadata().getKey() +
+                LOGGER.info("An error occurred when handling task " + taskEvent.getMetadata().getKey() +
                         ". Reporting failure to broker.", handlingException);
                 try
                 {

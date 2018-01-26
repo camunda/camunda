@@ -24,7 +24,6 @@ public class ErrorResponseBuilder<R>
 {
     protected final Consumer<MessageBuilder<R>> registrationFunction;
     protected final ErrorResponseWriter<R> commandResponseWriter;
-    protected Runnable callback = null;
 
     public ErrorResponseBuilder(
             Consumer<MessageBuilder<R>> registrationFunction,

@@ -97,15 +97,6 @@ public abstract class EventSubscriber
         return stateMachineAgent.doWork();
     }
 
-    class InitState implements WaitState<SimpleStateMachineContext>
-    {
-        @Override
-        public void work(SimpleStateMachineContext context) throws Exception
-        {
-            // wait for open command
-        }
-    }
-
     class OpeningState implements State<SimpleStateMachineContext>
     {
         protected Future<? extends EventSubscriptionCreationResult> subscriptionFuture;
