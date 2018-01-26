@@ -50,14 +50,21 @@ it('should contain a filter modal when a newFilter should be created', () => {
 it('should contain an edit filter modal when a filter should be edited', () => {
   const node = mount(<Filter data={[{type:'rollingDate'}]} />);
 
-  node.instance().openEditFilterModal([{
+  node.instance().openEditFilterModal({
         data: {
           operator : "bar",
           type : "baz",
           value : "foo"
         },
         type : "date"
-    }])();
+    },{
+          data: {
+            operator : "foo1",
+            type : "bar1",
+            value : "baz1"
+          },
+          type : "date"
+      })();
 
   expect(node).toIncludeText('DateFilter');
 });
@@ -74,14 +81,14 @@ it('should contain a FilterModal component based on the selected new Filter', ()
 it('should contain a EditFilterModal component based on the Filter selected for edition', () => {
   const node = mount(<Filter data={[{type: 'variable'}]} />);
 
-  node.instance().openEditFilterModal([{
+  node.instance().openEditFilterModal({
         data: {
           operator : "bar",
           type : "baz",
           value : "foo"
         },
         type : "variable"
-    }])();
+    })();
   expect(node).toIncludeText('VariableFilter');
   expect(node).not.toIncludeText('DateFilter');
 });

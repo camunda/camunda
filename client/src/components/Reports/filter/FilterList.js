@@ -17,7 +17,7 @@ export default class FilterList extends React.Component {
   }
 
   loadFlowNodeNames = async () => {
-    const flowNodeNames = await getFlowNodeNames(this.props.id);
+    const flowNodeNames = await getFlowNodeNames(this.props.processDefinitionId);
     this.setState({flowNodeNames})
   }
 
@@ -35,7 +35,7 @@ export default class FilterList extends React.Component {
         // combine two separate filter entries into one date filter pill
         const nextFilter = this.props.data[i + 1];
 
-        list.push(<li key={i} onClick={this.props.openEditFilterModal([filter, nextFilter])} className='FilterList__item'>
+        list.push(<li key={i} onClick={this.props.openEditFilterModal(filter, nextFilter)} className='FilterList__item'>
           <ActionItem onClick={(evt) => {evt.stopPropagation(); this.props.deleteFilter(filter, nextFilter)}}>
             <span className='FilterList__parameter-name'>Start Date </span> between
             {' '}<span className='FilterList__value'>{moment(filter.data.value).format('YYYY-MM-DD')}</span>{' '}
@@ -49,7 +49,7 @@ export default class FilterList extends React.Component {
         if(filter.type === 'variable') {
           const {name, operator, values} = filter.data;
 
-          list.push(<li key={i} onClick={this.props.openEditFilterModal([filter])} className='FilterList__item'>
+          list.push(<li key={i} onClick={this.props.openEditFilterModal(filter)} className='FilterList__item'>
           <ActionItem onClick={(evt) => {evt.stopPropagation(); this.props.deleteFilter(filter)}}>
               <span className='FilterList__parameter-name'>{name}</span>
               {(operator === 'in' || operator === '=') && this.createOperator('is')}
@@ -72,7 +72,7 @@ export default class FilterList extends React.Component {
           const {values} = filter.data;
           const flowNodes = this.state.flowNodeNames;
 
-          list.push(<li key={i} onClick={this.props.openEditFilterModal([filter])} className='FilterList__item'>
+          list.push(<li key={i} onClick={this.props.openEditFilterModal(filter)} className='FilterList__item'>
           <ActionItem onClick={(evt) => {evt.stopPropagation(); this.props.deleteFilter(filter)}}>
               <span className='FilterList__parameter-name'>Executed Flow Node</span> is{' '}
               {values.map((value, idx) => {
@@ -86,7 +86,7 @@ export default class FilterList extends React.Component {
         } else if(filter.type === 'rollingDate') {
           const {unit, value} = filter.data;
 
-          list.push(<li key={i} onClick={this.props.openEditFilterModal([filter])} className='FilterList__item'>
+          list.push(<li key={i} onClick={this.props.openEditFilterModal(filter)} className='FilterList__item'>
           <ActionItem onClick={(evt) => {evt.stopPropagation(); this.props.deleteFilter(filter)}}>
               <span className='FilterList__parameter-name'>Start Date </span>
               less than
@@ -97,7 +97,7 @@ export default class FilterList extends React.Component {
         } else if(filter.type === 'processInstanceDuration') {
           const {unit, value, operator} = filter.data;
 
-          list.push(<li key={i} onClick={this.props.openEditFilterModal([filter])} className='FilterList__item'>
+          list.push(<li key={i} onClick={this.props.openEditFilterModal(filter)} className='FilterList__item'>
           <ActionItem onClick={(evt) => {evt.stopPropagation(); this.props.deleteFilter(filter)}}>
               <span className='FilterList__parameter-name'>Duration</span>
               {operator === '<' && this.createOperator('is less than')}

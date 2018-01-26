@@ -21,7 +21,7 @@ export default class Filter extends React.Component {
     this.setState({newFilterType: type});
   }
 
-  openEditFilterModal = filter => evt => {
+  openEditFilterModal = (...filter) => evt => {
       this.setState({editFilter: filter});
   }
 
@@ -43,14 +43,13 @@ export default class Filter extends React.Component {
   editFilter = (...newFilters) => {
     const filters = [...this.props.data];
 
-    let numberToRemove;
-    numberToRemove = (this.state.editFilter[0].type === 'date') ? 2 : 1;
+    const numberToRemove = (this.state.editFilter[0].type === 'date') ? 2 : 1;
 
     const index = filters.indexOf(filters.find((v) => (this.state.editFilter[0].data === v.data)));
 
     filters.splice(index, numberToRemove, ...newFilters);
 
-    this.props.onChange('filter', [...filters]);
+    this.props.onChange('filter', filters);
     this.closeModal();
   }
 
@@ -81,7 +80,7 @@ export default class Filter extends React.Component {
 
     return (<div className='Filter'>
       <label htmlFor='ControlPanel__filters' className='visually-hidden'>Filters</label>
-      <FilterList id={this.props.processDefinitionId} openEditFilterModal={this.openEditFilterModal} data={this.props.data} deleteFilter={this.deleteFilter} />
+      <FilterList processDefinitionId={this.props.processDefinitionId} openEditFilterModal={this.openEditFilterModal} data={this.props.data} deleteFilter={this.deleteFilter} />
       <Dropdown label='Add Filter' id='ControlPanel__filters' className='Filter__dropdown' >
         <Dropdown.Option onClick={this.openNewFilterModal('date')}>Start Date</Dropdown.Option>
         <Dropdown.Option onClick={this.openNewFilterModal('processInstanceDuration')}>Duration</Dropdown.Option>
