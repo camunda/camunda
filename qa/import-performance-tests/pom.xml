@@ -5,12 +5,12 @@
   <parent>
     <groupId>org.camunda.optimize</groupId>
     <artifactId>qa</artifactId>
-    <version>2.0.0-SNAPSHOT</version>
+    <version>2.0.0-alpha2</version>
   </parent>
 
   <groupId>org.camunda.optimize</groupId>
   <artifactId>import-performance-tests</artifactId>
-  <version>2.0.0-SNAPSHOT</version>
+  <version>2.0.0-alpha2</version>
 
   <dependencies>
     <dependency>

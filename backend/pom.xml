@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.camunda.optimize</groupId>
     <artifactId>parent</artifactId>
-    <version>2.0.0-SNAPSHOT</version>
+    <version>2.0.0-alpha2</version>
   </parent>
 
   <artifactId>optimize-backend</artifactId>
@@ -766,8 +766,8 @@
                 <configuration>
                   <tasks>
                     <echo message="unpacking engine-rest" />
-                    <unzip src="target/camunda-tomcat/${project.build.finalName}.zip" dest="target/camunda-tomcat/"/>
-                    <delete file="target/camunda-tomcat/${project.build.finalName}.zip"/>
+                    <unzip src="target/camunda-tomcat/${project.build.finalName}.zip" dest="target/camunda-tomcat/" />
+                    <delete file="target/camunda-tomcat/${project.build.finalName}.zip" />
                   </tasks>
                 </configuration>
                 <goals>
