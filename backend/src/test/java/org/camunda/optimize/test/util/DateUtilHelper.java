@@ -53,7 +53,7 @@ public class DateUtilHelper {
     return result;
   }
 
-  public static List<FilterDto> createDurationFilter(String operator, int i, String unit) {
+  public static List<FilterDto> createDurationFilter(String operator, int filterValue, String unit) {
     List<FilterDto> result = new ArrayList<>();
 
     DurationFilterDto filter = new DurationFilterDto();
@@ -61,7 +61,7 @@ public class DateUtilHelper {
     DurationFilterDataDto filterData = new DurationFilterDataDto();
     filterData.setOperator(operator);
     filterData.setUnit(unit);
-    filterData.setValue(Long.valueOf(i));
+    filterData.setValue(Long.valueOf(filterValue));
 
     filter.setData(filterData);
     result.add(filter);
