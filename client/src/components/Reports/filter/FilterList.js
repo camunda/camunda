@@ -13,7 +13,15 @@ export default class FilterList extends React.Component {
     this.state = {
       flowNodeNames: null
     }
-    this.loadFlowNodeNames();
+    if(this.props.processDefinitionId) {
+      this.loadFlowNodeNames();
+    }
+  }
+
+  componentDidUpdate(prevProps, prevState) {
+    if (prevProps.processDefinitionId !== this.props.processDefinitionId) {
+      this.loadFlowNodeNames();
+    }
   }
 
   loadFlowNodeNames = async () => {
