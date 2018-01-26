@@ -59,11 +59,11 @@ public class DurationQueryFilter implements QueryFilter<DurationFilterDataDto> {
       OffsetDateTime minus = now.minus(dto.getValue(), unitOf(dto.getUnit()));
       if (GREATER_THAN.equalsIgnoreCase(dto.getOperator())) {
         queryDate.gt(
-          now.until(minus, ChronoUnit.MILLIS)
+            minus.until(now, ChronoUnit.MILLIS)
         );
       } else if (GREATER_THAN_EQUALS.equalsIgnoreCase(dto.getOperator())) {
         queryDate.gte(
-          now.until(minus, ChronoUnit.MILLIS)
+            minus.until(now, ChronoUnit.MILLIS)
         );
       }
     }
