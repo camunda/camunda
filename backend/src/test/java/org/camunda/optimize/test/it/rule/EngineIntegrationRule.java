@@ -7,10 +7,12 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ContentType;
@@ -41,13 +43,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -189,7 +184,7 @@ public class EngineIntegrationRule extends TestWatcher {
   private void claimAndCompleteUserTask(CloseableHttpClient client, TaskDto task) throws IOException {
     HttpPost claimPost = new HttpPost(getClaimTaskUri(task.getId()));
     claimPost.setEntity(new StringEntity("{ \"userId\" : " + "\"admin\"" + "}"));
-    claimPost.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
+    claimPost.addHeader("Content-Type", "application/json");
     CloseableHttpResponse response = client.execute(claimPost);
     if (response.getStatusLine().getStatusCode() != 204) {
       throw new RuntimeException("Could not claim user task!");
@@ -197,7 +192,7 @@ public class EngineIntegrationRule extends TestWatcher {
 
     HttpPost completePost = new HttpPost(getCompleteTaskUri(task.getId()));
     completePost.setEntity(new StringEntity("{}"));
-    completePost.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
+    completePost.addHeader("Content-Type", "application/json");
     response.close();
     response = client.execute(completePost);
     if (response.getStatusLine().getStatusCode() != 204) {
@@ -462,12 +457,18 @@ public class EngineIntegrationRule extends TestWatcher {
 
   public void addUser(String username, String password) {
     UserDto userDto = constructDemoUserDto(username, password);
+    try {
+      CloseableHttpClient client = getHttpClient();
+      HttpPost httpPost = new HttpPost(getEngineUrl() + "/user/create");
+      httpPost.addHeader("Content-Type", "application/json");
 
-    Response res = target()
-        .path("/user/create")
-        .request(MediaType.APPLICATION_JSON)
-        .post(Entity.json(userDto));
-    assertThat(res.getStatus(),is(204));
+      httpPost.setEntity(new StringEntity(objectMapper.writeValueAsString(userDto), ContentType.APPLICATION_JSON));
+      CloseableHttpResponse response = client.execute(httpPost);
+      assertThat(response.getStatusLine().getStatusCode(),is(204));
+      response.close();
+    } catch (Exception e) {
+      logger.error("error creating user", e);
+    }
 
     this.addAuthorizations(username);
   }
@@ -482,11 +483,18 @@ public class EngineIntegrationRule extends TestWatcher {
       values.put("resourceType", i);
       values.put("resourceId", "*");
 
-      Response res = target()
-          .path("/authorization/create")
-          .request(MediaType.APPLICATION_JSON)
-          .post(Entity.json(values));
-      assertThat(res.getStatus(),is(200));
+      try {
+        CloseableHttpClient client = getHttpClient();
+        HttpPost httpPost = new HttpPost(getEngineUrl() + "/authorization/create");
+        httpPost.addHeader("Content-Type", "application/json");
+
+        httpPost.setEntity(new StringEntity(objectMapper.writeValueAsString(values), ContentType.APPLICATION_JSON));
+        CloseableHttpResponse response = client.execute(httpPost);
+        assertThat(response.getStatusLine().getStatusCode(),is(200));
+        response.close();
+      } catch (Exception e) {
+        logger.error("error creating authorization", e);
+      }
     }
 
   }
@@ -509,33 +517,33 @@ public class EngineIntegrationRule extends TestWatcher {
     groupDto.setName(name);
     groupDto.setType(type);
 
-    Response res = target()
-        .path("/group/create")
-        .request(MediaType.APPLICATION_JSON)
-        .post(Entity.json(groupDto));
+    try {
+      CloseableHttpClient client = getHttpClient();
+      HttpPost httpPost = new HttpPost(getEngineUrl() + "/group/create");
+      httpPost.addHeader("Content-Type", "application/json");
 
-    assertThat(res.getStatus(),is(204));
+      httpPost.setEntity(new StringEntity(objectMapper.writeValueAsString(groupDto), ContentType.APPLICATION_JSON));
+      CloseableHttpResponse response = client.execute(httpPost);
+      assertThat(response.getStatusLine().getStatusCode(),is(204));
+      response.close();
+    } catch (Exception e) {
+      logger.error("error creating group", e);
+    }
   }
 
   public void addUserToGroup(String userId, String groupId) {
-    String path = "/group/" + groupId + "/members/" + userId;
-    Response res = target()
-        .path(path)
-        .request(MediaType.APPLICATION_JSON)
-        .put(Entity.json(""));
 
-    assertThat(res.getStatus(),is(204));
-  }
+    try {
+      CloseableHttpClient client = getHttpClient();
+      HttpPut put = new HttpPut(getEngineUrl() + "/group/" + groupId + "/members/" + userId);
+      put.addHeader("Content-Type", "application/json");
 
-  public final WebTarget target() {
-    return this.client().target(getEngineUrl());
-  }
-
-  public final Client client() {
-    return this.getClient();
-  }
-
-  private Client getClient() {
-    return ClientBuilder.newClient();
+      put.setEntity(new StringEntity("", ContentType.APPLICATION_JSON));
+      CloseableHttpResponse response = client.execute(put);
+      assertThat(response.getStatusLine().getStatusCode(),is(204));
+      response.close();
+    } catch (Exception e) {
+      logger.error("error creating group members", e);
+    }
   }
 }

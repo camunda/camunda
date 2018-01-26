@@ -44,8 +44,8 @@ public class DurationFilterParametrizedIT extends AbstractDurationFilterIT {
         { false, null, null, "<", 1, "Weeks" },
         { false, null, null, "<", 1, "Months" },
         { false, null, null, "=<", 1, "Days" },
-        { false, null, null, ">", 1, "Seconds" },
-        { false, null, null, ">=", 2, "Seconds" }
+        { true, 0L, 2L, ">", 1, "Seconds" },
+        { true, 0L, 2L, ">=", 2, "Seconds" }
     });
   }
 
