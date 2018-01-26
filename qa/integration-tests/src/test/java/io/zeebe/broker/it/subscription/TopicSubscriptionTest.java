@@ -28,30 +28,23 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.zeebe.broker.it.ClientRule;
+import io.zeebe.broker.it.EmbeddedBrokerRule;
+import io.zeebe.client.ClientProperties;
+import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.event.*;
+import io.zeebe.client.task.impl.CreateTaskCommandImpl;
+import io.zeebe.client.topic.Topic;
+import io.zeebe.client.topic.Topics;
+import io.zeebe.client.topic.impl.TopicEventImpl;
+import io.zeebe.test.util.TestUtil;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import io.zeebe.broker.it.ClientRule;
-import io.zeebe.broker.it.EmbeddedBrokerRule;
-import io.zeebe.client.ClientProperties;
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.event.GeneralEvent;
-import io.zeebe.client.event.PollableTopicSubscription;
-import io.zeebe.client.event.TaskEvent;
-import io.zeebe.client.event.TopicEventType;
-import io.zeebe.client.event.TopicSubscription;
-import io.zeebe.client.event.UniversalEventHandler;
-import io.zeebe.client.task.impl.CreateTaskCommandImpl;
-import io.zeebe.client.topic.Topic;
-import io.zeebe.client.topic.Topics;
-import io.zeebe.test.util.TestUtil;
 
 public class TopicSubscriptionTest
 {
@@ -510,17 +503,19 @@ public class TopicSubscriptionTest
     }
 
     @Test
-    @Ignore("Requires API to create multiple topics (CAM-222)")
     public void testSubscriptionsWithSameNameOnDifferentTopic()
     {
         // given
+        final String anotherTopicName = "another-topic";
+        client.topics().create(anotherTopicName, 1).execute();
+
         client.topics().newSubscription(clientRule.getDefaultTopic())
             .handler(recordingHandler)
             .name(SUBSCRIPTION_NAME)
             .open();
 
         // when
-        final TopicSubscription topic2Subscription = client.topics().newSubscription("another-topic")
+        final TopicSubscription topic2Subscription = client.topics().newSubscription(anotherTopicName)
             .handler(recordingHandler)
             .name(SUBSCRIPTION_NAME)
             .open();
@@ -530,11 +525,11 @@ public class TopicSubscriptionTest
     }
 
     @Test
-    @Ignore("Requires API to create multiple topics (#222, #235)")
     public void testSubscriptionsWithSameNameOnDifferentTopicShouldReceiveRespectiveEvents()
     {
         // given
         final String anotherTopicName = "another-topic";
+        final TopicEventImpl event = (TopicEventImpl) client.topics().create(anotherTopicName, 1).execute();
         final int anotherPartitionId = 2;
 
         final TopicSubscription topic0subscription = client.topics().newSubscription(clientRule.getDefaultTopic())
