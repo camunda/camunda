@@ -10,7 +10,7 @@ import {loadDashboard, remove, update} from './service';
 import {DashboardView} from './DashboardView';
 import {AddButton} from './AddButton';
 import {Grid} from './Grid';
-import {HeightCalculator} from './HeightCalculator';
+import {DimensionSetter} from './DimensionSetter';
 import {DeleteButton} from './DeleteButton';
 import {DragBehavior} from './DragBehavior';
 import {ResizeHandle} from './ResizeHandle';
@@ -172,6 +172,7 @@ export default class Dashboard extends React.Component {
           <ResizeHandle key='ResizeHandle' reports={this.state.reports} updateReport={this.updateReport} onResizeStart={this.hideAddButton} onResizeEnd={this.showAddButton} />
         ]}>
           <Grid reports={this.state.reports} />
+          <DimensionSetter emptyRows={9} reports={this.state.reports} />
           <AddButton addReport={this.addReport} visible={this.state.addButtonVisible} />
         </DashboardView>
       </div>
@@ -217,7 +218,7 @@ export default class Dashboard extends React.Component {
           </Modal.Actions>
         </Modal>
         <DashboardView viewMode={true} reports={this.state.reports}>
-          <HeightCalculator reports={this.state.reports} />
+          <DimensionSetter emptyRows={0} reports={this.state.reports} />
         </DashboardView>
       </div>
     )

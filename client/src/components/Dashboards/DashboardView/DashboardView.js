@@ -34,16 +34,6 @@ export default class DashboardView extends React.Component {
   }
 
   componentDidMount() {
-    const tileDimensions = this.getTileDimensions();
-
-    this.container.style.width = tileDimensions.outerWidth * columns + 'px';
-
-    this.setState({
-      tileDimensions
-    });
-  }
-
-  getTileDimensions = () => {
     const availableWidth = this.container.clientWidth;
     const outerWidth = ~~(availableWidth / columns); // make sure we are working with round values
 
@@ -52,6 +42,10 @@ export default class DashboardView extends React.Component {
 
     const outerHeight = innerHeight + tileMargin;
 
-    return {outerWidth, innerWidth, outerHeight, innerHeight, columns};
+    const tileDimensions = {outerWidth, innerWidth, outerHeight, innerHeight, columns};
+
+    this.setState({
+      tileDimensions
+    });
   }
 }
