@@ -54,7 +54,7 @@ export default class Chart extends React.Component {
 
   destroyChart = () => {
     if(this.chart) {
-      this.chart.destroy(); 
+      this.chart.destroy();
     }
   }
 
@@ -119,6 +119,11 @@ export default class Chart extends React.Component {
                 type : 'time',
                 time: {
                   unit: timeUnit
+                }
+            }],
+            yAxes: [{
+                ticks: {
+                    beginAtZero: true,
                 }
             }]
           },

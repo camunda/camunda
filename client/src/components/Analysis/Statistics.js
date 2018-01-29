@@ -93,7 +93,14 @@ export default class Statistics extends React.Component {
       maintainAspectRatio: false,
       legend: {
         display: false
-      }
+      },
+      scales: {
+        yAxes: [{
+            ticks: {
+                beginAtZero: true,
+            }
+        }]
+    },
     }
   });
 }
