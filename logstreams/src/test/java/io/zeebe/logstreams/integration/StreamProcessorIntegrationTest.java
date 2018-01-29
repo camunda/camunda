@@ -310,6 +310,8 @@ public class StreamProcessorIntegrationTest
 
         writeLogEvents(logStream, 1, MSG_SIZE, 0);
         waitUntilWrittenEvents(logStream, 2 * WORK_COUNT);
+        waitUntil(() -> resourceCounter.getObject().getCount() == 2 * WORK_COUNT);
+        waitUntil(() -> resourceCounter2.getObject().getCount() == 2 * WORK_COUNT);
 
         // then
         assertThat(resourceCounter.getObject().getCount()).isEqualTo(2 * WORK_COUNT);
