@@ -109,12 +109,14 @@ public class GossipEventFactory
 
         // update membership list
         final MembershipEventConsumer membershipEventConsumer = membershipEventLogger
-               .andThen(membershipEventUpdater);
+               .andThen(membershipEventUpdater)
+               .andThen(disseminationComponent);
 
         // update custom event references in membership list and invoke the listeners
         final CustomEventConsumer customEventConsumer = customEventLogger
                .andThen(membershipCustomEventUpdater)
-               .andThen(customEventListenerConsumer);
+               .andThen(customEventListenerConsumer)
+               .andThen(disseminationComponent);
 
         return new GossipEvent(membershipEventSupplier,
                                membershipEventConsumer,

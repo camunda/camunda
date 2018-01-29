@@ -173,16 +173,13 @@ public class GossipJoinTest
     {
         // given
         gossip2.join(gossip1);
-
-        actorScheduler.waitUntilDone();
-        actorScheduler.waitUntilDone();
-
-        // when
         gossip3.join(gossip2);
 
+        // join
         actorScheduler.waitUntilDone();
         actorScheduler.waitUntilDone();
 
+        // when - sync response are spread via ping
         clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
 
         actorScheduler.waitUntilDone();

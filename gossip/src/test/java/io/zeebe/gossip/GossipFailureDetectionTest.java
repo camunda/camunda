@@ -216,7 +216,14 @@ public class GossipFailureDetectionTest
             .findFirst()
             .get();
 
-        assertThat(counterAliveEvent.getGossipTerm().isGreaterThan(suspectEvent.getGossipTerm())).isTrue();
+        assertThat(counterAliveEvent.getGossipTerm().isEqual(suspectEvent.getGossipTerm())).isTrue();
+        final MembershipEvent lastAliveEvent = gossip1.getReceivedMembershipEvents(MembershipEventType.ALIVE, gossip3)
+                                                       .filter(e -> e.getGossipTerm()
+                                                                     .isGreaterThan(suspectEvent.getGossipTerm()))
+                                                       .findFirst()
+                                                       .get();
+
+        assertThat(lastAliveEvent.getGossipTerm().isGreaterThan(suspectEvent.getGossipTerm())).isTrue();
     }
 
 }
