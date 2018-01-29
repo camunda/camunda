@@ -269,7 +269,7 @@ export default class VariableFilter extends React.Component {
         return <ul className='VariableFilter__valueList VariableFilter__valueList--inputs'>
           {values.map((value, idx) => {
             return <li key={idx} className='VariableFilter__valueListItem'>
-              <Input type='text' value={value} data-idx={idx} onChange={this.changeValue} placeholder='Enter value' autoFocus />
+              <Input type='text' value={value} data-idx={idx} onChange={this.changeValue} placeholder='Enter value'/>
             </li>
           })}
           {values[values.length - 1] && <li className='VariableFilter__valueListButton'><Button onClick={this.addValue} className='VariableFilter__addValueButton'>Add Value</Button></li>}
