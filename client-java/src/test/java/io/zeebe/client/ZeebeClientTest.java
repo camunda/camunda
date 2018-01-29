@@ -18,8 +18,12 @@ package io.zeebe.client;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.*;
 
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Properties;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 import io.zeebe.client.clustering.impl.ClientTopologyManager;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
@@ -35,8 +39,13 @@ import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.transport.*;
-import org.junit.*;
+import io.zeebe.transport.ClientTransport;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.TransportListener;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TestName;
 

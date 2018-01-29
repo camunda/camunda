@@ -359,11 +359,11 @@ public class ClusteringRule extends ExternalResource
     {
         doRepeatedly(() -> zeebeClient.requestTopology().execute().getBrokers())
             .until(topologyBrokers -> {
-
-                final HashSet<Integer> toSearchPartitions = new HashSet<>(partitions);
+                boolean foundNewLeads = false;
 
                 if (topologyBrokers != null)
                 {
+                    final HashSet<Integer> toSearchPartitions = new HashSet<>(partitions);
                     for (TopologyBroker topologyBroker : topologyBrokers)
                     {
                         if (!topologyBroker.getSocketAddress().equals(oldLeader))
@@ -378,8 +378,9 @@ public class ClusteringRule extends ExternalResource
                             }
                         }
                     }
+                    foundNewLeads = toSearchPartitions.isEmpty();
                 }
-                return toSearchPartitions.isEmpty();
+                return foundNewLeads;
             });
     }
 
