@@ -19,7 +19,8 @@
     "react-dom": "16.2.0",
     "react-router-dom": "^4.2.2",
     "react-scripts": "1.0.14",
-    "string.prototype.includes": "^1.0.0"
+    "string.prototype.includes": "^1.0.0",
+    "license-checker": "^14.0.0"
   },
   "scripts": {
     "build-css": "node-sass-chokidar --include-path ./src/shared-styles src/ -o src/",
@@ -31,7 +32,8 @@
     "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject",
     "postinstall": "node scripts/wireModules",
-    "start-backend": "node scripts/start-backend"
+    "start-backend": "node scripts/start-backend",
+    "dependencies": "node scripts/dependencies.js"
   },
   "devDependencies": {
     "camunda-bpm-sdk-js": "camunda/camunda-bpm-sdk-js",
