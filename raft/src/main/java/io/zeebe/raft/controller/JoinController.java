@@ -29,6 +29,7 @@ public class JoinController
 {
 
     public static final long DEFAULT_JOIN_TIMEOUT_MS = 500;
+    public static final long DEFAULT_JOIN_RETRY_MS = 200;
 
     private static final int TRANSITION_DEFAULT = 0;
     private static final int TRANSITION_FAILED = 1;
@@ -46,6 +47,7 @@ public class JoinController
     {
         final State<Context> sendJoinRequest = new SendJoinRequestState();
         final State<Context> awaitJoinResponse = new AwaitJoinResponseState();
+        final State<Context> awaitJoinRetry = new AwaitJoinRetry();
         final State<Context> abortRequest = new AbortRequestState();
         final WaitState<Context> closed = context -> { };
 
@@ -55,13 +57,17 @@ public class JoinController
             .from(closed).take(TRANSITION_CLOSE).to(closed)
 
             .from(sendJoinRequest).take(TRANSITION_DEFAULT).to(awaitJoinResponse)
-            .from(sendJoinRequest).take(TRANSITION_FAILED).to(sendJoinRequest)
+            .from(sendJoinRequest).take(TRANSITION_FAILED).to(awaitJoinRetry)
             .from(sendJoinRequest).take(TRANSITION_SINGLE_NODE).to(joined)
 
             .from(awaitJoinResponse).take(TRANSITION_DEFAULT).to(joined)
-            .from(awaitJoinResponse).take(TRANSITION_FAILED).to(sendJoinRequest)
+            .from(awaitJoinResponse).take(TRANSITION_FAILED).to(awaitJoinRetry)
             .from(awaitJoinResponse).take(TRANSITION_OPEN).to(awaitJoinResponse)
             .from(awaitJoinResponse).take(TRANSITION_CLOSE).to(abortRequest)
+
+            .from(awaitJoinRetry).take(TRANSITION_DEFAULT).to(sendJoinRequest)
+            .from(awaitJoinRetry).take(TRANSITION_OPEN).to(awaitJoinRetry)
+            .from(awaitJoinRetry).take(TRANSITION_CLOSE).to(closed)
 
             .from(abortRequest).take(TRANSITION_DEFAULT).to(closed)
 
@@ -210,6 +216,26 @@ public class JoinController
             return workCount;
         }
 
+    }
+
+    static class AwaitJoinRetry implements WaitState<Context>
+    {
+        long nextJoinInterval;
+
+        @Override
+        public void onEnter()
+        {
+            nextJoinInterval = ClockUtil.getCurrentTimeInMillis() + DEFAULT_JOIN_RETRY_MS;
+        }
+
+        @Override
+        public void work(Context context)
+        {
+            if (ClockUtil.getCurrentTimeInMillis() >= nextJoinInterval)
+            {
+                context.take(TRANSITION_DEFAULT);
+            }
+        }
     }
 
     static class AbortRequestState implements State<Context>
