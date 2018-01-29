@@ -17,6 +17,7 @@ package io.zeebe.gossip.dissemination;
 
 import static io.zeebe.gossip.dissemination.BufferedEventIterator.DEFAULT_SPREAD_LIMIT;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -38,17 +39,6 @@ public class BufferedEventIteratorTest
         {
             eventList.add(new BufferedEvent<>(i));
         }
-    }
-
-    @Test
-    public void shouldWrapIterator()
-    {
-        // given
-        final Iterator<BufferedEvent<Integer>> iterator = eventList.iterator();
-        final BufferedEventIterator<Integer> bufferedEventIterator = new BufferedEventIterator<>();
-
-        // when
-        bufferedEventIterator.wrap(iterator, 10);
     }
 
     @Test
@@ -104,6 +94,10 @@ public class BufferedEventIteratorTest
                 final Integer next = bufferedEventIterator.next();
                 assertThat(next).isEqualTo(count);
                 count++;
+                if (count > limit)
+                {
+                    fail();
+                }
             }
         }
         catch (NoSuchElementException ex)
