@@ -99,6 +99,7 @@ mavenJob(jobName)
     }
 
     blockOnUpstreamProjects()
-    logRotator(-1, 5, -1, 5)
+    logRotator(-1, 3, -1, 3)
+    compressBuildLog()
 
 }
