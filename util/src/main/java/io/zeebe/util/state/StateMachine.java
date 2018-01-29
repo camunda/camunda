@@ -88,7 +88,7 @@ public class StateMachine<C extends StateMachineContext>
                 Loggers.STATE_MACHINE_LOGGER.debug("State machine {} entering state {}", context.describeStateMachine(), currentState);
             }
 
-            currentState.onEnter();
+            currentState.onEnter(context);
             hasTaken = true;
         }
         return hasTaken;

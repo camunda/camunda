@@ -312,7 +312,7 @@ public class StateMachineTest
         final State<SimpleStateMachineContext> state = new State<SimpleStateMachineContext>()
         {
             @Override
-            public void onEnter()
+            public void onEnter(SimpleStateMachineContext context)
             {
                 events.add("onEnter");
             }

@@ -46,7 +46,7 @@ public interface State<C extends StateMachineContext>
      *
      * <p>You can change that if you need this behavior.
      */
-    default void onEnter()
+    default void onEnter(C context)
     {
     }
 
