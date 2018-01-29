@@ -148,7 +148,6 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
     {
         if (joinController.isJoined())
         {
-            getLogger().info("Find me {} {}", socketAddress, getState());
             raftStateListeners.forEach(this::notifyRaftStateListener);
         }
     }
