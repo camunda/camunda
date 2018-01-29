@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.client.TasksClient;
 import io.zeebe.client.TopicsClient;
-import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.clustering.impl.TopologyBroker;
 import io.zeebe.client.event.TaskEvent;
 import io.zeebe.client.event.TopicSubscription;
@@ -54,18 +53,14 @@ public class BrokerLeaderChangeTest
                  .around(clientRule)
                  .around(clusteringRule);
 
-    protected ZeebeClient client;
     protected TopicsClient topicClient;
     protected TasksClient taskClient;
-    protected int partition;
 
     @Before
     public void setUp()
     {
-        client = clientRule.getClient();
         topicClient = clientRule.topics();
         taskClient = clientRule.tasks();
-        partition = clientRule.getDefaultPartition();
     }
 
     @Test

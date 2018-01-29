@@ -28,6 +28,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
+import org.junit.rules.Timeout;
 
 public class DeploymentClusteredTest
 {
@@ -39,14 +40,14 @@ public class DeploymentClusteredTest
             .done();
 
     public AutoCloseableRule closeables = new AutoCloseableRule();
-//    public Timeout testTimeout = Timeout.seconds(30);
+    public Timeout testTimeout = Timeout.seconds(30);
     public ClientRule clientRule = new ClientRule(false);
     public ClusteringRule clusteringRule = new ClusteringRule(closeables, clientRule);
 
     @Rule
     public RuleChain ruleChain =
         RuleChain.outerRule(closeables)
-//                 .around(testTimeout)
+                 .around(testTimeout)
                  .around(clientRule)
                  .around(clusteringRule);
 

@@ -15,6 +15,7 @@
  */
 package io.zeebe.broker.it.clustering;
 
+import static io.zeebe.broker.it.clustering.ClusteringRule.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
@@ -27,17 +28,20 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 
-/**
- *
- */
-public class GossipClusteringTest
+public class GossipDifferentNodeJoinTest
 {
+    public static final String BROKER_4_TOML = "zeebe.cluster.4.cfg.toml";
+
     private static final int PARTITION_COUNT = 5;
 
     public AutoCloseableRule closeables = new AutoCloseableRule();
     public Timeout testTimeout = Timeout.seconds(30);
     public ClientRule clientRule = new ClientRule(false);
-    public ClusteringRule clusteringRule = new ClusteringRule(closeables, clientRule);
+
+    private SocketAddress[] brokerAddresses = new SocketAddress[]{BROKER_1_CLIENT_ADDRESS, BROKER_2_CLIENT_ADDRESS, BROKER_3_CLIENT_ADDRESS};
+    private String[] brokerConfigs = new String[]{BROKER_1_TOML, BROKER_2_TOML, BROKER_4_TOML};
+
+    public ClusteringRule clusteringRule = new ClusteringRule(closeables, clientRule, brokerAddresses, brokerConfigs);
 
     @Rule
     public RuleChain ruleChain =
@@ -119,4 +123,5 @@ public class GossipClusteringTest
                                                               ClusteringRule.BROKER_3_CLIENT_ADDRESS,
                                                               ClusteringRule.BROKER_2_CLIENT_ADDRESS);
     }
+
 }

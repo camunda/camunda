@@ -58,6 +58,13 @@ public class ClusteringRule extends ExternalResource
     private ZeebeClient zeebeClient;
     protected final Map<SocketAddress, Broker> brokers = new HashMap<>();
 
+    public ClusteringRule(AutoCloseableRule autoCloseableRule, ClientRule clientRule, SocketAddress[] brokerAddresses, String[] brokerConfigs)
+    {
+        this(autoCloseableRule, clientRule);
+        this.brokerAddresses = brokerAddresses;
+        this.brokerConfigs = brokerConfigs;
+    }
+
     public ClusteringRule(AutoCloseableRule autoCloseableRule, ClientRule clientRule)
     {
         this.autoCloseableRule = autoCloseableRule;
@@ -69,9 +76,10 @@ public class ClusteringRule extends ExternalResource
     {
         zeebeClient = clientRule.getClient();
 
-        brokers.put(BROKER_1_CLIENT_ADDRESS, startBroker(BROKER_1_TOML));
-        brokers.put(BROKER_2_CLIENT_ADDRESS, startBroker(BROKER_2_TOML));
-        brokers.put(BROKER_3_CLIENT_ADDRESS,  startBroker(BROKER_3_TOML));
+        for (int i = 0; i < brokerConfigs.length; i++)
+        {
+            brokers.put(brokerAddresses[i], startBroker(brokerConfigs[i]));
+        }
 
         waitForTopicAndReplicationFactor("internal-system", 3);
     }
