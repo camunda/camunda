@@ -24,7 +24,7 @@ import java.util.function.Function;
 public class TestUtil
 {
 
-    public static final int MAX_RETRIES = 20;
+    public static final int MAX_RETRIES = 100;
 
     public static <T> Invocation<T> doRepeatedly(Callable<T> callable)
     {
