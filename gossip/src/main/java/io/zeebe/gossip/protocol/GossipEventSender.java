@@ -112,7 +112,7 @@ public class GossipEventSender
 
         try
         {
-            final ClientRequest request = clientTransport.getOutput().sendRequest(remoteAddress, event);
+            final ClientRequest request = clientTransport.getOutput().sendRequestWithRetry(remoteAddress, event);
 
             return request != null ? request : FAILED_REQUEST;
         }

@@ -48,7 +48,7 @@ public class GossipJoinTest
     public ClockRule clock = ClockRule.pinCurrentTime();
 
     @Test
-    public void shouldSendSyncRequestOnJoin()
+    public void shouldSendSyncRequestOnJoin() throws InterruptedException
     {
         gossip2.join(gossip1);
 

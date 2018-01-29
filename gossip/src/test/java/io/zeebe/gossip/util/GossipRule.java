@@ -39,6 +39,7 @@ import io.zeebe.util.actor.ActorScheduler;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.junit.rules.ExternalResource;
+import org.mockito.ArgumentMatcher;
 import org.slf4j.MDC;
 
 public class GossipRule extends ExternalResource
@@ -117,6 +118,7 @@ public class GossipRule extends ExternalResource
                 .requestPoolSize(128)
                 .scheduler(actorScheduler)
                 .inputListener(receivedEventsCollector)
+                .enableManagedRequests()
                 .build();
 
 
@@ -169,12 +171,16 @@ public class GossipRule extends ExternalResource
     {
         final ClientRequest clientRequest = mock(ClientRequest.class);
 
-        doReturn(clientRequest).when(spyClientOutput).sendRequest(argThat(r -> r.getAddress().equals(other.socketAddress)), any());
+        final ArgumentMatcher<RemoteAddress> remoteAddressMatcher = r -> r.getAddress().equals(other.socketAddress);
+        doReturn(clientRequest).when(spyClientOutput).sendRequest(argThat(remoteAddressMatcher), any());
+        doReturn(clientRequest).when(spyClientOutput).sendRequestWithRetry(argThat(remoteAddressMatcher), any());
     }
 
     public void reconnectTo(GossipRule other)
     {
+        final ArgumentMatcher<RemoteAddress> remoteAddressMatcher = r -> r.getAddress().equals(other.socketAddress);
         doCallRealMethod().when(spyClientOutput).sendRequest(argThat(r -> r.getAddress().equals(other.socketAddress)), any());
+        doCallRealMethod().when(spyClientOutput).sendRequestWithRetry(argThat(remoteAddressMatcher), any());
     }
 
     public GossipController getController()
