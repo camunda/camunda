@@ -21,6 +21,7 @@ import io.zeebe.raft.protocol.JoinResponse;
 import io.zeebe.transport.ClientRequest;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.util.state.*;
+import io.zeebe.util.time.ClockUtil;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 
@@ -300,7 +301,7 @@ public class JoinController
 
         public void setClientRequest(final ClientRequest clientRequest)
         {
-            this.timeout = System.currentTimeMillis() + DEFAULT_JOIN_TIMEOUT_MS;
+            this.timeout = ClockUtil.getCurrentTimeInMillis() + DEFAULT_JOIN_TIMEOUT_MS;
             this.clientRequest = clientRequest;
         }
 
@@ -311,7 +312,7 @@ public class JoinController
 
         public boolean isTimeout()
         {
-            return System.currentTimeMillis() > timeout;
+            return ClockUtil.getCurrentTimeInMillis() > timeout;
         }
 
     }

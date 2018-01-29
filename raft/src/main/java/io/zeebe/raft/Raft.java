@@ -29,6 +29,7 @@ import io.zeebe.raft.state.*;
 import io.zeebe.transport.*;
 import io.zeebe.util.actor.Actor;
 import io.zeebe.util.buffer.BufferWriter;
+import io.zeebe.util.time.ClockUtil;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 
@@ -620,7 +621,7 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
      */
     private boolean isElectionTimeout()
     {
-        return electionTimeout != null && joinController.isJoined() && electionTimeout < System.currentTimeMillis();
+        return electionTimeout != null && joinController.isJoined() && electionTimeout < ClockUtil.getCurrentTimeInMillis();
     }
 
     /**
@@ -636,7 +637,7 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
      */
     public void bootstrapElectionTimeout()
     {
-        electionTimeout = System.currentTimeMillis();
+        electionTimeout = ClockUtil.getCurrentTimeInMillis();
     }
 
     /**
@@ -644,7 +645,7 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
      */
     public long nextElectionTimeout()
     {
-        return System.currentTimeMillis() + ELECTION_INTERVAL_MS + (Math.abs(random.nextInt()) % ELECTION_INTERVAL_MS);
+        return ClockUtil.getCurrentTimeInMillis() + ELECTION_INTERVAL_MS + (Math.abs(random.nextInt()) % ELECTION_INTERVAL_MS);
     }
 
     /**
@@ -652,7 +653,7 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
      */
     public long nextHeartbeat()
     {
-        return System.currentTimeMillis() + HEARTBEAT_INTERVAL_MS;
+        return ClockUtil.getCurrentTimeInMillis() + HEARTBEAT_INTERVAL_MS;
     }
 
     /**
@@ -668,7 +669,7 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
      */
     private boolean isFlushTimeout()
     {
-        return flushTimeout != null && flushTimeout < System.currentTimeMillis();
+        return flushTimeout != null && flushTimeout < ClockUtil.getCurrentTimeInMillis();
     }
 
     /**
@@ -684,7 +685,7 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
      */
     public long nextFlushTimeout()
     {
-        return System.currentTimeMillis() + FLUSH_INTERVAL_MS;
+        return ClockUtil.getCurrentTimeInMillis() + FLUSH_INTERVAL_MS;
     }
 
     /**

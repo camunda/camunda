@@ -20,6 +20,7 @@ import io.zeebe.raft.Raft;
 import io.zeebe.raft.RaftMember;
 import io.zeebe.raft.protocol.AppendRequest;
 import io.zeebe.util.state.*;
+import io.zeebe.util.time.ClockUtil;
 
 public class ReplicateLogController
 {
@@ -111,7 +112,7 @@ public class ReplicateLogController
 
             final Raft raft = context.getRaft();
 
-            final long now = System.currentTimeMillis();
+            final long now = ClockUtil.getCurrentTimeInMillis();
             final long nextHeartbeat = raft.nextHeartbeat();
 
             final AppendRequest appendRequest = context.getAppendRequest().reset().setRaft(raft);
