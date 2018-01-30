@@ -15,7 +15,11 @@
  */
 package io.zeebe.transport;
 
+import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
+
+import java.nio.channels.SocketChannel;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -25,8 +29,14 @@ import org.junit.Test;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
+import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.TestUtil;
+import io.zeebe.transport.impl.DefaultChannelFactory;
+import io.zeebe.transport.impl.RemoteAddressImpl;
+import io.zeebe.transport.impl.TransportChannel;
+import io.zeebe.transport.impl.TransportChannel.ChannelLifecycleListener;
+import io.zeebe.transport.impl.TransportChannelFactory;
 import io.zeebe.transport.util.RecordingChannelListener;
 import io.zeebe.util.actor.ActorScheduler;
 import io.zeebe.util.actor.ActorSchedulerBuilder;
@@ -43,6 +53,8 @@ public class TransportChannelListenerTest
     protected ClientTransport clientTransport;
     protected ServerTransport serverTransport;
     private ActorScheduler actorScheduler;
+
+    protected CountingChannelFactory clientChannelFactory;
 
     @Before
     public void setUp()
@@ -64,10 +76,13 @@ public class TransportChannelListenerTest
             .build();
         closeables.manage(serverSendBuffer);
 
+        clientChannelFactory = new CountingChannelFactory();
+
         clientTransport = Transports.newClientTransport()
             .sendBuffer(clientSendBuffer)
             .requestPoolSize(128)
             .scheduler(actorScheduler)
+            .channelFactory(clientChannelFactory)
             .build();
         closeables.manage(clientTransport);
 
@@ -157,6 +172,51 @@ public class TransportChannelListenerTest
 
         assertThat(clientListener.getClosedConnections()).hasSize(0);
         assertThat(serverListener.getClosedConnections()).hasSize(0);
+    }
+
+    @Test
+    public void shouldNotInvokeListenerWhenChannelCannotConnect() throws InterruptedException
+    {
+        // given
+        final RecordingChannelListener clientListener = new RecordingChannelListener();
+        clientTransport.registerChannelListener(clientListener);
+
+        serverTransport.close();
+
+        // when
+        clientTransport.registerRemoteAddress(ADDRESS); // triggering connection attempts
+
+        // then
+        waitUntil(() -> clientChannelFactory.getCreatedChannels() >= 2); // first connection attempt failed
+        assertThat(clientListener.getOpenedConnections()).isEmpty();
+        assertThat(clientListener.getClosedConnections()).isEmpty();
+    }
+
+    protected static class CountingChannelFactory implements TransportChannelFactory
+    {
+        protected AtomicInteger createdChannels = new AtomicInteger();
+        protected TransportChannelFactory actualFactory = new DefaultChannelFactory();
+
+        @Override
+        public TransportChannel buildClientChannel(ChannelLifecycleListener listener, RemoteAddressImpl remoteAddress,
+                int maxMessageSize, FragmentHandler readHandler)
+        {
+            createdChannels.incrementAndGet();
+            return actualFactory.buildClientChannel(listener, remoteAddress, maxMessageSize, readHandler);
+        }
+
+        public int getCreatedChannels()
+        {
+            return createdChannels.get();
+        }
+
+        @Override
+        public TransportChannel buildServerChannel(ChannelLifecycleListener listener, RemoteAddressImpl remoteAddress,
+                int maxMessageSize, FragmentHandler readHandler, SocketChannel media)
+        {
+            throw new UnsupportedOperationException();
+        }
+
     }
 
 }

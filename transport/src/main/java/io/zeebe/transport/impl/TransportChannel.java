@@ -240,18 +240,18 @@ public class TransportChannel
 
     public void finishConnect()
     {
-        if (STATE_FIELD.compareAndSet(this, CONNECTING, CONNECTED))
+        try
         {
-            try
+            media.finishConnect();
+            if (STATE_FIELD.compareAndSet(this, CONNECTING, CONNECTED))
             {
-                media.finishConnect();
                 listener.onChannelConnected(this);
             }
-            catch (IOException e)
-            {
-                e.printStackTrace();
-                doClose();
-            }
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+            doClose();
         }
     }
 
