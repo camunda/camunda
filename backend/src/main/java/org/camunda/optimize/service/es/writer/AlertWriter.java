@@ -3,6 +3,7 @@ package org.camunda.optimize.service.es.writer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
+import org.camunda.optimize.service.es.schema.type.AlertType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -99,15 +100,15 @@ public class AlertWriter {
     try {
       esclient
         .prepareUpdate(
-          configurationService.getOptimizeIndex(configurationService.getAlertStatusType()),
-          configurationService.getAlertStatusType(),
+          configurationService.getOptimizeIndex(configurationService.getAlertType()),
+          configurationService.getAlertType(),
           alertId
         )
         .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
         .setDoc(
           jsonBuilder()
             .startObject()
-              .field("triggered", alertStatus)
+              .field(AlertType.TRIGGERED, alertStatus)
             .endObject()
         )
         .get();

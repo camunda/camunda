@@ -1,5 +1,7 @@
 package org.camunda.optimize.service.alert;
 
+import com.icegreen.greenmail.util.GreenMail;
+import com.icegreen.greenmail.util.ServerSetup;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.IdDto;
@@ -18,12 +20,12 @@ import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.quartz.JobDetail;
 import org.quartz.JobExecutionContext;
-import org.quartz.Scheduler;
 import org.quartz.Trigger;
 import org.quartz.listeners.TriggerListenerSupport;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import javax.mail.internet.MimeMessage;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
@@ -43,8 +45,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 @ContextConfiguration(locations = {"/it/it-applicationContext.xml"})
 public class AlertServiceIT {
 
-  public static final String BEARER = "Bearer ";
-  public static final String ALERT = "alert";
+  private static final String BEARER = "Bearer ";
+  private static final String ALERT = "alert";
 
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
@@ -61,35 +63,55 @@ public class AlertServiceIT {
   public void testScheduleTriggers() throws Exception {
 
     //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
+    GreenMail greenMail = initGreenMail();
+    try {
+      String reportId = startProcessAndCreateReport();
+      setEmailConfiguration();
 
+      // when
+      String token = embeddedOptimizeRule.getAuthenticationToken();
+      embeddedOptimizeRule.target(ALERT)
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .post(Entity.json(createSimpleAlert(reportId)));
+      assertThat(greenMail.waitForIncomingEmail(3000, 1), is(true));
+
+      //then
+      MimeMessage[] emails = greenMail.getReceivedMessages();
+      assertThat(emails.length, is(1));
+      assertThat(emails[0].getSubject(), is("[Camunda-Optimize] - Report status"));
+    } finally {
+      greenMail.stop();
+    }
+  }
+
+  private void setEmailConfiguration() {
+    embeddedOptimizeRule.getConfigurationService().setAlertEmailUsername("demo");
+    embeddedOptimizeRule.getConfigurationService().setAlertEmailPassword("demo");
+    embeddedOptimizeRule.getConfigurationService().setAlertEmailAddress("from@localhost.com");
+    embeddedOptimizeRule.getConfigurationService().setAlertEmailHostname("127.0.0.1");
+    embeddedOptimizeRule.getConfigurationService().setAlertEmailPort(6666);
+    embeddedOptimizeRule.getConfigurationService().setAlertEmailProtocol("NONE");
+  }
+
+  private String startProcessAndCreateReport() throws IOException, InterruptedException {
     String processDefinitionId = deploySimpleServiceTaskProcess();
     engineRule.startProcessInstance(processDefinitionId);
 
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
-    String reportId = createAndStoreNumberReport(processDefinitionId);
-
-    AlertService alertService = embeddedOptimizeRule.getAlertService();
-    TestListener triggerListener = new TestListener();
-    Scheduler scheduler = alertService.getScheduler();
-    scheduler.getListenerManager().addTriggerListener(triggerListener);
-
-    // when
-    Response response =
-        embeddedOptimizeRule.target(ALERT)
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
-            .post(Entity.json(createSimpleAlert(reportId)));
-
-
-    Thread.sleep(3000);
-
-    //then
-    assertThat(triggerListener.getFireCounter(), is(3));
-    scheduler.clear();
+    return createAndStoreNumberReport(processDefinitionId);
   }
+
+  private GreenMail initGreenMail() {
+    GreenMail greenMail = new GreenMail(new ServerSetup(6666, null, ServerSetup.PROTOCOL_SMTP));
+    greenMail.start();
+    greenMail.setUser("from@localhost.com", "demo", "demo");
+    greenMail.setUser("test@camunda.com", "test@camunda.com", "test@camunda.com");
+    return greenMail;
+  }
+
 
   @Test
   public void testCronMinutesInterval() throws Exception {
@@ -153,7 +175,6 @@ public class AlertServiceIT {
 
     JobDetail jobDetail = alertService.createStatusCheckJobDetails(fakeReportAlert);
     Trigger trigger = alertService.createStatusCheckTrigger(fakeReportAlert, jobDetail);
-    OffsetDateTime now = OffsetDateTime.now();
     alertService.getScheduler().scheduleJob(jobDetail, trigger);
     OffsetDateTime nextFireTime = getNextFireTime(trigger);
 
@@ -192,10 +213,6 @@ public class AlertServiceIT {
     public void triggerFired(Trigger trigger, JobExecutionContext context) {
       super.triggerFired(trigger, context);
       this.fireCounter = this.fireCounter + 1;
-    }
-
-    public int getFireCounter() {
-      return fireCounter;
     }
   }
 

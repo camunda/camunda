@@ -107,7 +107,6 @@ public class ConfigurationService {
   private String finishedPiIdTrackingType;
   private String unfinishedPiIdTrackingType;
   private String alertType;
-  private String alertStatusType;
   private Integer numberOfRetriesOnConflict;
   private Integer engineImportProcessDefinitionMaxPageSize;
   private Long engineImportActivityInstanceMaxPageSize;
@@ -119,6 +118,13 @@ public class ConfigurationService {
   private String containerKeystoreLocation;
   private Integer containerHttpsPort;
   private Integer containerHttpPort;
+
+  private String alertEmailUsername;
+  private String alertEmailPassword;
+  private String alertEmailAddress;
+  private String alertEmailHostname;
+  private Integer alertEmailPort;
+  private String alertEmailProtocol;
 
   private Properties quartzProperties;
 
@@ -772,13 +778,6 @@ public class ConfigurationService {
     return haiCountEndpoint;
   }
 
-  public Integer getLifeTime() {
-    if (lifeTime == null) {
-      lifeTime = jsonContext.read(ConfigurationServiceConstants.LIFE_TIME);
-    }
-    return lifeTime;
-  }
-
   public String getElasticsearchUsersType() {
     if (elasticsearchUsersType == null) {
       elasticsearchUsersType = jsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_USERS_TYPE);
@@ -798,14 +797,6 @@ public class ConfigurationService {
       alertType = jsonContext.read(ConfigurationServiceConstants.ALERT_TYPE);
     }
     return alertType;
-  }
-
-
-  public String getAlertStatusType() {
-    if (alertStatusType == null) {
-      alertStatusType = jsonContext.read(ConfigurationServiceConstants.ALERT_STATUS_TYPE);
-    }
-    return alertStatusType;
   }
 
   public Integer getImportResetIntervalValue() {
@@ -908,6 +899,48 @@ public class ConfigurationService {
       quartzProperties.put("org.quartz.jobStore.class", jsonContext.read(ConfigurationServiceConstants.QUARTZ_JOB_STORE_CLASS));
     }
     return quartzProperties;
+  }
+
+  public String getAlertEmailUsername() {
+    if (alertEmailUsername == null) {
+      alertEmailUsername = jsonContext.read(ConfigurationServiceConstants.EMAIL_USERNAME);
+    }
+    return alertEmailUsername;
+  }
+
+  public String getAlertEmailPassword() {
+    if (alertEmailPassword == null) {
+      alertEmailPassword = jsonContext.read(ConfigurationServiceConstants.EMAIL_PASSWORD);
+    }
+    return alertEmailPassword;
+  }
+
+  public String getAlertEmailAddress() {
+    if (alertEmailAddress == null) {
+      alertEmailAddress = jsonContext.read(ConfigurationServiceConstants.EMAIL_ADDRESS);
+    }
+    return alertEmailAddress;
+  }
+
+  public String getAlertEmailHostname() {
+    if (alertEmailHostname == null) {
+      alertEmailHostname = jsonContext.read(ConfigurationServiceConstants.EMAIL_HOSTNAME);
+    }
+    return alertEmailHostname;
+  }
+
+  public Integer getAlertEmailPort() {
+    if (alertEmailPort == null) {
+      alertEmailPort = jsonContext.read(ConfigurationServiceConstants.EMAIL_PORT);
+    }
+    return alertEmailPort;
+  }
+
+  public String getAlertEmailProtocol() {
+    if (alertEmailProtocol == null) {
+      alertEmailProtocol = jsonContext.read(ConfigurationServiceConstants.EMAIL_PROTOCOL);
+    }
+    return alertEmailProtocol;
   }
 
   public void setVariableImportPluginBasePackages(List<String> variableImportPluginBasePackages) {
@@ -1236,4 +1269,31 @@ public class ConfigurationService {
     this.backoffEnabled = backoffEnabled;
   }
 
+  public void setAlertType(String alertType) {
+    this.alertType = alertType;
+  }
+
+  public void setAlertEmailUsername(String alertEmailUsername) {
+    this.alertEmailUsername = alertEmailUsername;
+  }
+
+  public void setAlertEmailPassword(String alertEmailPassword) {
+    this.alertEmailPassword = alertEmailPassword;
+  }
+
+  public void setAlertEmailAddress(String alertEmailAddress) {
+    this.alertEmailAddress = alertEmailAddress;
+  }
+
+  public void setAlertEmailHostname(String alertEmailHostname) {
+    this.alertEmailHostname = alertEmailHostname;
+  }
+
+  public void setAlertEmailPort(Integer alertEmailPort) {
+    this.alertEmailPort = alertEmailPort;
+  }
+
+  public void setAlertEmailProtocol(String alertEmailProtocol) {
+    this.alertEmailProtocol = alertEmailProtocol;
+  }
 }

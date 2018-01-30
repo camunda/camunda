@@ -238,6 +238,20 @@
       <version>${quartz.version}</version>
     </dependency>
 
+    <!-- Email framework -->
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-email</artifactId>
+      <version>1.5</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.icegreen</groupId>
+      <artifactId>greenmail</artifactId>
+      <version>1.5.6</version>
+      <scope>test</scope>
+    </dependency>
+
   </dependencies>
 
   <build>

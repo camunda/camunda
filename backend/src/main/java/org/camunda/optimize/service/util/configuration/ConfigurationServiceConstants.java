@@ -15,6 +15,12 @@ public interface ConfigurationServiceConstants {
   String CONFIGURED_ENGINES = "$.engines";
 
   String QUARTZ_JOB_STORE_CLASS = "$.alerting.quartz.jobStore";
+  String EMAIL_USERNAME = "$.alerting.email.username";
+  String EMAIL_PASSWORD = "$.alerting.email.password";
+  String EMAIL_ADDRESS = "$.alerting.email.address";
+  String EMAIL_HOSTNAME = "$.alerting.email.hostname";
+  String EMAIL_PORT = "$.alerting.email.port";
+  String EMAIL_PROTOCOL = "$.alerting.email.securityProtocol";
 
   String ELASTICSEARCH_MAX_JOB_QUEUE_SIZE = "$.import.elasticsearchJobExecutorQueueSize";
   String ELASTICSEARCH_IMPORT_EXECUTOR_THREAD_COUNT = "$.import.elasticsearchJobExecutorThreadCount";
@@ -55,7 +61,6 @@ public interface ConfigurationServiceConstants {
   String REPORT_TYPE = "$.es.reportType";
   String DASHBOARD_TYPE = "$.es.dashboardType";
   String ALERT_TYPE = "$.es.alertType";
-  String ALERT_STATUS_TYPE = "$.es.alertStatusType";
 
   String ENGINE_CONNECT_TIMEOUT = "$.engine-commons.connection.timeout";
   String ENGINE_READ_TIMEOUT = "$.engine-commons.read.timeout";
