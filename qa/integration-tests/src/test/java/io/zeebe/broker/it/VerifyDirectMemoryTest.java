@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.Test;
 import sun.misc.VM;
 
-public class VerifyDirectMemory
+public class VerifyDirectMemoryTest
 {
     @Test
     public void shouldEnsureDirectMemory()
