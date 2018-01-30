@@ -228,7 +228,7 @@ public class JoinController
         long nextJoinInterval;
 
         @Override
-        public void onEnter()
+        public void onEnter(Context context)
         {
             nextJoinInterval = ClockUtil.getCurrentTimeInMillis() + DEFAULT_JOIN_RETRY_MS;
         }
