@@ -9,10 +9,12 @@ import org.camunda.optimize.service.security.TokenService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.quartz.Job;
 import org.quartz.JobDetail;
+import org.quartz.JobKey;
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 import org.quartz.SimpleTrigger;
 import org.quartz.Trigger;
+import org.quartz.impl.matchers.GroupMatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +32,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.quartz.SimpleScheduleBuilder.simpleSchedule;
 import static org.quartz.TriggerBuilder.newTrigger;
@@ -148,8 +151,8 @@ public class  AlertService  {
     JobDetailFactoryBean jobDetailFactoryBean = new JobDetailFactoryBean();
     jobDetailFactoryBean.setJobClass(alertJobClass);
     jobDetailFactoryBean.setDurability(true);
-    jobDetailFactoryBean.setName(alert.getId() + "-job");
-    jobDetailFactoryBean.setGroup("statusCheck-job");
+    jobDetailFactoryBean.setName(getJobName(alert));
+    jobDetailFactoryBean.setGroup(getJobGroup());
 
     Map<String, String> dataMap = new HashMap<>();
     dataMap.put("alertId", alert.getId());
@@ -159,6 +162,14 @@ public class  AlertService  {
     jobDetailFactoryBean.afterPropertiesSet();
 
     return jobDetailFactoryBean.getObject();
+  }
+
+  private String getJobGroup() {
+    return "statusCheck-job";
+  }
+
+  private String getJobName(AlertDefinitionDto alert) {
+    return alert.getId() + "-job";
   }
 
   public List<AlertDefinitionDto> getStoredAlerts() {
@@ -172,16 +183,19 @@ public class  AlertService  {
 
   protected AlertDefinitionDto createAlertForUser(AlertCreationDto toCreate, String userId) {
     AlertDefinitionDto alert = alertWriter.createAlert(newAlert(toCreate, userId));
+    scheduleAlert(alert);
+    return alert;
+  }
+
+  private void scheduleAlert(AlertDefinitionDto alert) {
     try {
       JobDetail jobDetail = createStatusCheckJobDetails(alert);
       if (schedulerFactoryBean != null) {
-        schedulerFactoryBean.getObject().scheduleJob(jobDetail, createStatusCheckTrigger(alert, jobDetail));
+        getScheduler().scheduleJob(jobDetail, createStatusCheckTrigger(alert, jobDetail));
       }
     } catch (SchedulerException e) {
       logger.error("can't schedule new alert", e);
     }
-
-    return alert;
   }
 
   private static AlertDefinitionDto newAlert(AlertCreationDto toCreate, String userId) {
@@ -201,12 +215,37 @@ public class  AlertService  {
 
   private void updateAlertForUser(String alertId, AlertCreationDto toCreate, String userId) {
     AlertDefinitionDto toUpdate = alertReader.findAlert(alertId);
+    unscheduleJob(toUpdate);
     AlertUtil.updateFromUser(userId, toUpdate);
     AlertUtil.mapBasicFields(toCreate, toUpdate);
     alertWriter.updateAlert(toUpdate);
+    scheduleAlert(toUpdate);
   }
 
   public void deleteAlert(String alertId) {
+    AlertDefinitionDto toDelete = alertReader.findAlert(alertId);
     alertWriter.deleteAlert(alertId);
+    unscheduleJob(toDelete);
+  }
+
+  private void unscheduleJob(AlertDefinitionDto toDelete) {
+    String alertId = toDelete.getId();
+    try {
+      Set<JobKey> jobKeys = getScheduler().getJobKeys(GroupMatcher.jobGroupEquals(getJobGroup()));
+      JobKey toUnschedule = null;
+
+      for (JobKey key : jobKeys) {
+        if (key.getName().equals(getJobName(toDelete))) {
+          toUnschedule = key;
+        }
+      }
+
+      if (toUnschedule != null) {
+        getScheduler().deleteJob(toUnschedule);
+      }
+
+    } catch (SchedulerException e) {
+      logger.error("can't adjust scheduler for alert [{}]", alertId, e);
+    }
   }
 }

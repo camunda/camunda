@@ -14,6 +14,7 @@ import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.camunda.optimize.test.util.ReportDataHelper;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -21,6 +22,7 @@ import org.junit.runner.RunWith;
 import org.quartz.JobDetail;
 import org.quartz.JobExecutionContext;
 import org.quartz.Trigger;
+import org.quartz.TriggerKey;
 import org.quartz.listeners.TriggerListenerSupport;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -36,6 +38,7 @@ import java.util.TimeZone;
 import java.util.UUID;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
@@ -43,7 +46,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
  */
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"/it/it-applicationContext.xml"})
-public class AlertServiceIT {
+public class AlertSchedulerIT {
 
   private static final String BEARER = "Bearer ";
   private static final String ALERT = "alert";
@@ -52,12 +55,127 @@ public class AlertServiceIT {
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 
-
   @Rule
   public RuleChain chain = RuleChain
       .outerRule(elasticSearchRule)
       .around(engineRule)
       .around(embeddedOptimizeRule);
+
+  @Before
+  public void cleanUp() throws Exception {
+    embeddedOptimizeRule.getAlertService().getScheduler().clear();
+  }
+
+  @Test
+  public void createNewAlertPropagatedToScheduler() throws Exception {
+    //given
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+
+    AlertCreationDto simpleAlert = getSetupBasicAlert();
+
+    // when
+    Response response =
+        embeddedOptimizeRule.target(ALERT)
+            .request()
+            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+            .post(Entity.json(simpleAlert));
+
+    // then
+    assertThat(response.getStatus(), is(200));
+    String id =
+        response.readEntity(String.class);
+    assertThat(id, is(notNullValue()));
+    assertThat(
+        embeddedOptimizeRule.getAlertService().getScheduler().getJobGroupNames().size(),
+        is(1)
+    );
+  }
+
+  private AlertCreationDto getSetupBasicAlert() throws IOException, InterruptedException {
+    String processDefinitionId = deploySimpleServiceTaskProcess();
+    engineRule.startProcessInstance(processDefinitionId);
+
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    String reportId = createAndStoreNumberReport(processDefinitionId);
+    return createSimpleAlert(reportId);
+  }
+
+  @Test
+  public void deletedAlertsAreRemovedFromScheduler() throws Exception {
+    //given
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+
+    AlertCreationDto simpleAlert = getSetupBasicAlert();
+
+    Response response =
+        embeddedOptimizeRule.target(ALERT)
+            .request()
+            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+            .post(Entity.json(simpleAlert));
+
+    String alertId = response.readEntity(String.class);
+
+    // when
+    response =
+        embeddedOptimizeRule.target("alert/" + alertId)
+            .request()
+            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+            .delete();
+
+    // then
+    assertThat(response.getStatus(), is(204));
+    assertThat(
+        embeddedOptimizeRule.getAlertService().getScheduler().getJobGroupNames().size(),
+        is(0)
+    );
+  }
+
+  @Test
+  public void updatedAlertIsRescheduled() throws Exception {
+    //given
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+
+    AlertCreationDto simpleAlert = getSetupBasicAlert();
+
+    Response response =
+        embeddedOptimizeRule.target(ALERT)
+            .request()
+            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+            .post(Entity.json(simpleAlert));
+
+    String alertId = response.readEntity(String.class);
+    Trigger trigger = embeddedOptimizeRule.getAlertService().getScheduler().getTrigger(getTriggerKey(alertId));
+    assertThat(
+        getNextFireTime(trigger).truncatedTo(ChronoUnit.SECONDS),
+        is(
+            OffsetDateTime.now().plus(1,ChronoUnit.SECONDS).truncatedTo(ChronoUnit.SECONDS)
+        )
+    );
+
+    // when
+    simpleAlert.getCheckInterval().setValue(30);
+
+    response =
+        embeddedOptimizeRule.target("alert/" + alertId)
+            .request()
+            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+            .put(Entity.json(simpleAlert));
+
+    // then
+    assertThat(response.getStatus(), is(204));
+
+    trigger = embeddedOptimizeRule.getAlertService().getScheduler().getTrigger(getTriggerKey(alertId));
+    assertThat(
+        getNextFireTime(trigger).truncatedTo(ChronoUnit.SECONDS),
+        is(OffsetDateTime.now().plus(30,ChronoUnit.SECONDS).truncatedTo(ChronoUnit.SECONDS))
+    );
+  }
+
+  private TriggerKey getTriggerKey(String alertId) {
+    return new TriggerKey(alertId + "-trigger", "statusCheck-trigger");
+  }
 
   @Test
   public void testScheduleTriggers() throws Exception {
