@@ -63,8 +63,7 @@ public final class APISyncHandler implements GossipSyncRequestHandler
                                                                              next.getReplicationApi(),
                                                                              next.getClientApi(),
                                                                              apiAddressBuffer);
-                    request.addPayload(next.getMember()
-                                           .getAddress(), payload);
+                    request.addPayload(next.getMember().getAddress(), payload);
                 }
             }
             request.done();

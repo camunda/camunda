@@ -20,6 +20,7 @@ package io.zeebe.broker.clustering.management.memberList;
 import static io.zeebe.broker.clustering.management.memberList.GossipEventCreationHelper.writeRaftsIntoBuffer;
 
 import java.util.Iterator;
+import java.util.List;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.management.ClusterManagerContext;
@@ -57,9 +58,13 @@ public final class MemberRaftStatesSyncHandler implements GossipSyncRequestHandl
             {
                 final MemberRaftComposite next = iterator.next();
 
-                final DirectBuffer payload = writeRaftsIntoBuffer(next.getRafts(), memberRaftStatesBuffer);
-                request.addPayload(next.getMember()
-                                       .getAddress(), payload);
+                final List<RaftStateComposite> rafts = next.getRafts();
+                if (!rafts.isEmpty())
+                {
+                    final DirectBuffer payload = writeRaftsIntoBuffer(rafts, memberRaftStatesBuffer);
+
+                    request.addPayload(next.getMember().getAddress(), payload);
+                }
             }
             request.done();
 
