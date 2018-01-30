@@ -37,9 +37,9 @@ public class TopologyBroker extends UnpackedObject
     public TopologyBroker()
     {
         this
-            .declareProperty(partitionStatesProp)
             .declareProperty(hostProp)
-            .declareProperty(portProp);
+            .declareProperty(portProp)
+            .declareProperty(partitionStatesProp);
     }
 
     public DirectBuffer getHost()
