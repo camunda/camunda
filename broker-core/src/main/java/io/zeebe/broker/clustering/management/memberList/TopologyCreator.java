@@ -43,7 +43,7 @@ public class TopologyCreator
 
     public void createTopology(CompletableFuture<Topology> future)
     {
-        LOG.debug("Received topology request.");
+        LOG.trace("Received topology request.");
         final Iterator<MemberRaftComposite> iterator = clusterManagerContext.getMemberListService()
                                                                             .iterator();
         final Topology topology = new Topology();
