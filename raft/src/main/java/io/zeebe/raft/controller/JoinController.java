@@ -184,6 +184,9 @@ public class JoinController
                         {
                             logger.debug("Join request was accepted in term {}", joinResponse.getTerm());
                             context.take(TRANSITION_DEFAULT);
+
+                            // as this will not trigger a state change in raft we have to notify listeners
+                            // that this raft is now in a visible state
                             raft.notifyRaftStateListeners();
                         }
                         else

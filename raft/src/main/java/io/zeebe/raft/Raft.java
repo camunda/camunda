@@ -147,6 +147,8 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
 
     public void notifyRaftStateListeners()
     {
+        // only propagate state changes if the member is joined
+        // otherwise members are already visible even if the join request was never accepted
         if (joinController.isJoined())
         {
             raftStateListeners.forEach(this::notifyRaftStateListener);
