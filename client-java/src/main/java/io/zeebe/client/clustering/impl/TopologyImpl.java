@@ -20,24 +20,17 @@ import java.util.*;
 import io.zeebe.client.clustering.Topology;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.RemoteAddress;
-import io.zeebe.util.CollectionUtil;
 import org.agrona.collections.Int2ObjectHashMap;
 
 
 public class TopologyImpl implements Topology
 {
-    protected Int2ObjectHashMap<RemoteAddress> topicLeaders;
-    protected Int2ObjectHashMap<List<RemoteAddress>> partitionBrokers;
-    protected List<RemoteAddress> brokers;
-    protected final Random randomBroker = new Random();
-    protected Map<String, List<Integer>> partitionsByTopic = new HashMap<>();
+    protected final Int2ObjectHashMap<RemoteAddress> topicLeaders = new Int2ObjectHashMap<>();
+    protected final Int2ObjectHashMap<List<RemoteAddress>> partitionBrokers = new Int2ObjectHashMap<>();
+    protected final List<RemoteAddress> brokers = new ArrayList<>();
+    protected final Map<String, List<Integer>> partitionsByTopic = new HashMap<>();
 
-    public TopologyImpl()
-    {
-        topicLeaders = new Int2ObjectHashMap<>();
-        partitionBrokers = new Int2ObjectHashMap<>();
-        brokers = new ArrayList<>();
-    }
+    protected final Random randomBroker = new Random();
 
     public void addBroker(RemoteAddress remoteAddress)
     {
@@ -88,19 +81,20 @@ public class TopologyImpl implements Topology
 
             for (BrokerPartitionState partitionState : topologyBroker.getPartitions())
             {
+                final String topicName = partitionState.getTopicName();
+                final int partitionId = partitionState.getPartitionId();
+
                 if (partitionState.isLeader())
                 {
-                    topicLeaders.put(partitionState.getPartitionId(), brokerRemoteAddress);
-                    CollectionUtil.addToMapOfLists(partitionsByTopic, partitionState.getTopicName(), partitionState.getPartitionId());
+                    topicLeaders.put(partitionId, brokerRemoteAddress);
+                    partitionsByTopic
+                        .computeIfAbsent(topicName, t -> new ArrayList<>())
+                        .add(partitionId);
                 }
 
-                List<RemoteAddress> remoteAddresses = partitionBrokers.get(partitionState.getPartitionId());
-                if (remoteAddresses == null)
-                {
-                    remoteAddresses = new ArrayList<>();
-                    partitionBrokers.put(partitionState.getPartitionId(), remoteAddresses);
-                }
-                remoteAddresses.add(brokerRemoteAddress);
+                partitionBrokers
+                    .computeIfAbsent(partitionId, p -> new ArrayList<>())
+                    .add(brokerRemoteAddress);
             }
         }
 
