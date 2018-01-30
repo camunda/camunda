@@ -19,13 +19,10 @@ import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
+import io.zeebe.client.topic.Topics;
 import org.junit.rules.ExternalResource;
 
 import io.zeebe.broker.Broker;
@@ -102,22 +99,23 @@ public class ClusteringRule extends ExternalResource
      */
     public TopologyBroker getLeaderForPartition(int partition)
     {
-        final List<TopologyBroker> topologyBrokerList =
-            doRepeatedly(() -> zeebeClient.requestTopology().execute().getBrokers())
-                .until(topologyBrokers -> extractPartitionLeader(topologyBrokers, partition) != null);
-        return extractPartitionLeader(topologyBrokerList, partition);
+        return
+            doRepeatedly(() -> {
+                final List<TopologyBroker> brokers = zeebeClient.requestTopology().execute().getBrokers();
+                return extractPartitionLeader(brokers, partition);
+            })
+                .until(Optional::isPresent)
+                .get();
     }
 
-    private TopologyBroker extractPartitionLeader(List<TopologyBroker> topologyBrokers, int partition)
+    private Optional<TopologyBroker> extractPartitionLeader(List<TopologyBroker> topologyBrokers, int partition)
     {
         return topologyBrokers.stream()
             .filter(b -> b.getPartitions()
                     .stream()
-                    .anyMatch(p ->
-                        p.getPartitionId() == partition
-                        && "LEADER".equals(p.getState())))
-            .findFirst()
-            .orElse(null);
+                    .anyMatch(p -> p.getPartitionId() == partition && p.isLeader())
+            )
+            .findFirst();
     }
 
     /**
@@ -142,8 +140,7 @@ public class ClusteringRule extends ExternalResource
         assertThat(topicEvent.getState()).isEqualTo("CREATED");
 
         waitForTopicPartitionReplicationFactor(topicName, partitionCount, replicationFactor);
-        final Topic topic = waitForTopicAvailability(topicName);
-        return topic;
+        return waitForTopicAvailability(topicName);
     }
 
     private boolean hasPartitionsWithReplicationFactor(List<TopologyBroker> brokers, String topicName, int partitionCount, int replicationFactor)
@@ -174,12 +171,11 @@ public class ClusteringRule extends ExternalResource
 
     private Topic waitForTopicAvailability(String topicName)
     {
-        return doRepeatedly(() -> zeebeClient.topics().getTopics().execute())
-            .until((topics -> topics.getTopics().stream().filter(topic -> topic.getName().equals(topicName)).count() == 1))
-            .getTopics()
-            .stream()
-            .filter(topic -> topic.getName().equals(topicName))
-            .findFirst()
+        return doRepeatedly(() -> {
+            final Topics topics = zeebeClient.topics().getTopics().execute();
+            return topics.getTopics().stream().filter(topic -> topicName.equals(topic.getName())).findAny();
+        })
+            .until(Optional::isPresent)
             .get();
     }
 
@@ -227,30 +223,15 @@ public class ClusteringRule extends ExternalResource
      */
     public List<Integer> getBrokersLeadingPartitions(SocketAddress socketAddress)
     {
-        final List<TopologyBroker> topologyBrokers = zeebeClient.requestTopology()
-                                                                .execute()
-                                                                .getBrokers();
-
-        final List<Integer> leadingPartitions = new ArrayList<>();
-
-        for (TopologyBroker topologyBroker : topologyBrokers)
-        {
-            if (topologyBroker.getSocketAddress().equals(socketAddress))
-            {
-                final List<BrokerPartitionState> partitions = topologyBroker.getPartitions();
-                for (BrokerPartitionState brokerPartitionState : partitions)
-                {
-                    final int currentPartitionId = brokerPartitionState.getPartitionId();
-                    if (brokerPartitionState.isLeader())
-                    {
-                        leadingPartitions.add(currentPartitionId);
-                    }
-                }
-                break;
-            }
-        }
-
-        return leadingPartitions;
+        return zeebeClient.requestTopology()
+                          .execute()
+                          .getBrokers()
+                          .stream()
+                          .filter(broker -> broker.getSocketAddress().equals(socketAddress))
+                          .flatMap(broker -> broker.getPartitions().stream())
+                          .filter(BrokerPartitionState::isLeader)
+                          .map(BrokerPartitionState::getPartitionId)
+                          .collect(Collectors.toList());
     }
 
     /**
@@ -263,7 +244,7 @@ public class ClusteringRule extends ExternalResource
                           .execute()
                           .getBrokers()
                           .stream()
-                          .map(topologyBroker -> topologyBroker.getSocketAddress())
+                          .map(TopologyBroker::getSocketAddress)
                           .collect(Collectors.toList());
 
     }
@@ -274,27 +255,16 @@ public class ClusteringRule extends ExternalResource
      * @param topic
      * @return
      */
-    public int getPartitionLeaderCountForTopic(String topic)
+    public long getPartitionLeaderCountForTopic(String topic)
     {
-        int leaderCount = 0;
 
-        final List<TopologyBroker> topologyBrokers = zeebeClient.requestTopology()
-                                                                .execute()
-                                                                .getBrokers();
-
-        for (TopologyBroker topologyBroker : topologyBrokers)
-        {
-            final List<BrokerPartitionState> partitions = topologyBroker.getPartitions();
-            for (BrokerPartitionState brokerPartitionState : partitions)
-            {
-                final String topicName = brokerPartitionState.getTopicName();
-                if (topic.equals(topicName) && brokerPartitionState.getState().equals("LEADER"))
-                {
-                    leaderCount++;
-                }
-            }
-        }
-        return leaderCount;
+        return zeebeClient.requestTopology()
+                          .execute()
+                          .getBrokers()
+                          .stream()
+                          .flatMap(broker -> broker.getPartitions().stream())
+                          .filter(p -> p.getTopicName().equals(topic) && p.isLeader())
+                          .count();
     }
 
     /**
@@ -318,30 +288,14 @@ public class ClusteringRule extends ExternalResource
     {
         doRepeatedly(() -> zeebeClient.requestTopology().execute().getBrokers())
             .until(topologyBrokers ->
-            {
-                boolean foundNewLeads = false;
-
-                if (topologyBrokers != null)
-                {
-                    final HashSet<Integer> toSearchPartitions = new HashSet<>(partitions);
-                    for (TopologyBroker topologyBroker : topologyBrokers)
-                    {
-                        if (!topologyBroker.getSocketAddress().equals(oldLeader))
-                        {
-                            final List<BrokerPartitionState> partitionStates = topologyBroker.getPartitions();
-                            for (BrokerPartitionState brokerPartitionState : partitionStates)
-                            {
-                                if (brokerPartitionState.isLeader())
-                                {
-                                    toSearchPartitions.remove(brokerPartitionState.getPartitionId());
-                                }
-                            }
-                        }
-                    }
-                    foundNewLeads = toSearchPartitions.isEmpty();
-                }
-                return foundNewLeads;
-            });
+                topologyBrokers != null && topologyBrokers.stream()
+                               .filter(broker -> !broker.getSocketAddress().equals(oldLeader))
+                               .flatMap(broker -> broker.getPartitions().stream())
+                               .filter(BrokerPartitionState::isLeader)
+                               .map(BrokerPartitionState::getPartitionId)
+                               .collect(Collectors.toSet())
+                               .containsAll(partitions)
+            );
     }
 
     public void setReplicationFactor(int replicationFactor)
