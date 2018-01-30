@@ -40,7 +40,7 @@ public class DeploymentClusteredTest
             .done();
 
     public AutoCloseableRule closeables = new AutoCloseableRule();
-    public Timeout testTimeout = Timeout.seconds(30);
+    public Timeout testTimeout = Timeout.seconds(60);
     public ClientRule clientRule = new ClientRule(false);
     public ClusteringRule clusteringRule = new ClusteringRule(closeables, clientRule);
 
