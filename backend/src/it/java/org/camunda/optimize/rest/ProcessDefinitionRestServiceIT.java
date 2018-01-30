@@ -7,9 +7,9 @@ import org.camunda.optimize.dto.optimize.importing.SimpleEventDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.query.definition.ExtendedProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.query.definition.ProcessDefinitionGroupOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.heatmap.HeatMapQueryDto;
 import org.camunda.optimize.dto.optimize.query.heatmap.HeatMapResponseDto;
-import org.camunda.optimize.dto.optimize.query.definition.ProcessDefinitionGroupOptimizeDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.junit.Rule;
@@ -31,9 +31,11 @@ import java.io.InputStreamReader;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -135,9 +137,14 @@ public class ProcessDefinitionRestServiceIT {
   }
 
   private void createProcessDefinition(String expectedProcessDefinitionId, String key) {
+    createProcessDefinition(expectedProcessDefinitionId, key, 0);
+  }
+
+  private void createProcessDefinition(String expectedProcessDefinitionId, String key, int version) {
     ProcessDefinitionOptimizeDto expected = new ProcessDefinitionOptimizeDto();
     expected.setId(expectedProcessDefinitionId);
     expected.setKey(key);
+    expected.setVersion(version);
     expected.setEngine(TEST_ENGINE);
     elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessDefinitionType(), expectedProcessDefinitionId, expected);
   }
@@ -334,28 +341,44 @@ public class ProcessDefinitionRestServiceIT {
   public void testGetProcessDefinitionsGroupedByKey() {
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
-    String expectedProcessDefinitionId = ID;
+    createProcessDefinitionsForKey("procDefKey1", 3);
+    createProcessDefinitionsForKey("procDefKey2", 2);
 
-    createProcessDefinition(expectedProcessDefinitionId, KEY);
-    createProcessDefinitionXml(expectedProcessDefinitionId + "_xml");
-
-    String expectedProcessDefinitionId_2 = ID + "2";
-    createProcessDefinition(expectedProcessDefinitionId_2, KEY);
-    createProcessDefinitionXml(expectedProcessDefinitionId_2 + "_xml");
-
+    // when
     Response response =
         embeddedOptimizeRule.target("process-definition/groupedByKey")
             .request()
             .header(HttpHeaders.AUTHORIZATION, BEARER + token)
             .get();
 
+    // then
     assertThat(response.getStatus(), is(200));
     List <ProcessDefinitionGroupOptimizeDto> actual =
         response.readEntity(new GenericType<List<ProcessDefinitionGroupOptimizeDto>>() {});
     assertThat(actual, is(notNullValue()));
-    assertThat(actual.size(), is(1));
-    assertThat(actual.get(0).getKey(), is(KEY + "-" + TEST_ENGINE));
-    assertThat(actual.get(0).getVersions().size(), is(2));
+    assertThat(actual.size(), is(2));
+    // assert that proceDefKey1 comes first in list
+    actual.sort(Comparator.comparing(ProcessDefinitionGroupOptimizeDto::getVersions, Comparator.comparing(v -> v.get(0).getKey())));
+    ProcessDefinitionGroupOptimizeDto procDefs1 = actual.get(0);
+    assertThat(procDefs1.getKey(), is("procDefKey1"));
+    assertThat(procDefs1.getVersions().size(), is(3));
+    assertThat(procDefs1.getVersions().get(0).getVersion(), is(2L));
+    assertThat(procDefs1.getVersions().get(1).getVersion(), is(1L));
+    assertThat(procDefs1.getVersions().get(2).getVersion(), is(0L));
+    ProcessDefinitionGroupOptimizeDto procDefs2 = actual.get(1);
+    assertThat(procDefs2.getKey(), is("procDefKey2"));
+    assertThat(procDefs2.getVersions().size(), is(2));
+    assertThat(procDefs2.getVersions().get(0).getVersion(), is(1L));
+    assertThat(procDefs2.getVersions().get(1).getVersion(), is(0L));
+  }
+
+  private void createProcessDefinitionsForKey(String key, int count) {
+    IntStream.range(0, count).forEach(
+      i -> {
+        String constructedId = "id-" + key + "-version-" + i;
+        createProcessDefinition(constructedId, key, i);
+      }
+    );
   }
 
   @Test

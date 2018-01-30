@@ -148,18 +148,20 @@ public class ProcessDefinitionReader {
     Map<String, ProcessDefinitionGroupOptimizeDto> resultMap = new HashMap<>();
     List<ExtendedProcessDefinitionOptimizeDto> allDefinitions = getProcessDefinitions();
     for (ExtendedProcessDefinitionOptimizeDto process : allDefinitions) {
-      if (!resultMap.containsKey(EsHelper.constructKey(process.getKey(), process.getEngine()))) {
-        resultMap.put(EsHelper.constructKey(process.getKey(), process.getEngine()), constructGroup(process));
+      String key = process.getKey();
+      if (!resultMap.containsKey(key)) {
+        resultMap.put(key, constructGroup(process));
       }
-      resultMap.get(EsHelper.constructKey(process.getKey(), process.getEngine())).getVersions().add(process);
+      resultMap.get(key).getVersions().add(process);
     }
+    resultMap.values().forEach(ProcessDefinitionGroupOptimizeDto::sort);
     return new ArrayList<>(resultMap.values());
   }
 
 
   private ProcessDefinitionGroupOptimizeDto constructGroup(ExtendedProcessDefinitionOptimizeDto process) {
     ProcessDefinitionGroupOptimizeDto result = new ProcessDefinitionGroupOptimizeDto();
-    result.setKey(EsHelper.constructKey(process.getKey(), process.getEngine()));
+    result.setKey(process.getKey());
     return result;
   }
 
