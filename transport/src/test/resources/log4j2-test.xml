@@ -9,6 +9,7 @@
 
   <Loggers>
     <Logger name="io.zeebe" level="debug"/>
+    <Logger name="io.zeebe.transport" level="trace"/>
 
     <Root level="info">
       <AppenderRef ref="Console"/>

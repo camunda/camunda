@@ -15,15 +15,19 @@
  */
 package io.zeebe.transport.impl;
 
+import io.zeebe.transport.Loggers;
 import org.agrona.BitUtil;
 import org.agrona.concurrent.ManyToManyConcurrentArrayQueue;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.util.buffer.BufferWriter;
+import org.slf4j.Logger;
 
 public class ClientRequestPool implements AutoCloseable
 {
+    private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
+
     private final int capacity;
     private final ManyToManyConcurrentArrayQueue<ClientRequestImpl> availableRequests;
     private ClientRequestImpl[] requests;
@@ -119,8 +123,7 @@ public class ClientRequestPool implements AutoCloseable
             }
             catch (Exception e)
             {
-                // ignore
-                e.printStackTrace();
+                LOG.debug("Failed to close client request {}", clientRequestImpl, e);
             }
         }
     }

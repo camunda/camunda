@@ -21,13 +21,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.ToIntFunction;
 
+import io.zeebe.transport.Loggers;
 import org.agrona.LangUtil;
 import org.agrona.nio.TransportPoller;
 
 import io.zeebe.transport.impl.TransportChannel;
+import org.slf4j.Logger;
 
 public class ReadTransportPoller extends TransportPoller
 {
+    private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
+
     protected final List<TransportChannel> channels = new ArrayList<>();
 
     protected final ToIntFunction<SelectionKey> processKeyFn = this::processKey;
@@ -86,7 +90,7 @@ public class ReadTransportPoller extends TransportPoller
         }
         catch (Exception e)
         {
-            e.printStackTrace();
+            LOG.debug("Failed to add channel {}", channel, e);
         }
     }
 

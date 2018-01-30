@@ -27,8 +27,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import io.zeebe.transport.Loggers;
+import org.slf4j.Logger;
+
 public class ServerSocketBinding
 {
+    private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
+
     protected final List<Selector> registeredSelectors = Collections.synchronizedList(new ArrayList<>());
     protected final InetSocketAddress bindAddress;
 
@@ -82,7 +87,7 @@ public class ServerSocketBinding
             }
             catch (IOException e)
             {
-                e.printStackTrace();
+                LOG.debug("Failed to remove selector {}", selector, e);
             }
         }
     }
@@ -113,7 +118,7 @@ public class ServerSocketBinding
         }
         catch (Exception e)
         {
-            e.printStackTrace();
+            LOG.debug("Failed to close selectors", e);
         }
         try
         {
@@ -121,7 +126,7 @@ public class ServerSocketBinding
         }
         catch (IOException e)
         {
-            e.printStackTrace();
+            LOG.debug("Failed to close media", e);
         }
     }
 }

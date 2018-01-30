@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import io.zeebe.transport.Loggers;
 import org.agrona.nio.TransportPoller;
 
 import io.zeebe.transport.TransportListener;
@@ -31,9 +32,12 @@ import io.zeebe.transport.impl.TransportChannelFactory;
 import io.zeebe.transport.impl.TransportContext;
 import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.actor.Actor;
+import org.slf4j.Logger;
 
 public abstract class Conductor implements Actor, ChannelLifecycleListener
 {
+    private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
+
     protected final DeferredCommandContext deferred = new DeferredCommandContext();
     protected final RemoteAddressListImpl remoteAddressList;
     protected final TransportContext transportContext;
@@ -105,7 +109,7 @@ public abstract class Conductor implements Actor, ChannelLifecycleListener
                 }
                 catch (Exception e)
                 {
-                    e.printStackTrace();
+                    LOG.debug("Failed to call transport listener {} on channel connect", l, e);
                 }
             });
         });
@@ -143,7 +147,7 @@ public abstract class Conductor implements Actor, ChannelLifecycleListener
                 }
                 catch (Exception e)
                 {
-                    e.printStackTrace();
+                    LOG.debug("Failed to call transport listener {} on disconnect", l, e);
                 }
             });
         });

@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
+import io.zeebe.transport.Loggers;
 import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -35,9 +36,11 @@ import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
 import io.zeebe.util.allocation.AllocatedBuffer;
 import io.zeebe.util.allocation.BufferAllocators;
+import org.slf4j.Logger;
 
 public class TransportChannel
 {
+    private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
     private static final AtomicIntegerFieldUpdater<TransportChannel> STATE_FIELD = AtomicIntegerFieldUpdater.newUpdater(TransportChannel.class, "state");
 
     private static final int CLOSED = 1;
@@ -147,7 +150,7 @@ public class TransportChannel
         }
         catch (Exception e)
         {
-            e.printStackTrace();
+            LOG.trace("Failed to handle message", e);
             return true;
         }
     }
@@ -227,7 +230,7 @@ public class TransportChannel
             }
             catch (Exception e)
             {
-                e.printStackTrace();
+                LOG.trace("Failed to begin connect to {}", remoteAddress, e);
                 doClose();
                 return false;
             }
@@ -250,7 +253,7 @@ public class TransportChannel
         }
         catch (IOException e)
         {
-            e.printStackTrace();
+            LOG.trace("Failed to finish connect to {}", remoteAddress, e);
             doClose();
         }
     }
@@ -290,8 +293,7 @@ public class TransportChannel
         }
         catch (Exception e)
         {
-            e.printStackTrace();
-            // ignore
+            LOG.debug("Failed to close channel", e);
         }
         finally
         {
