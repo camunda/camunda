@@ -94,7 +94,7 @@ public class StreamProcessorControllerTest
     @Mock
     private LoggedEvent mockSourceEvent;
 
-    private LogStreamFailureListener targetLogStreamFailureListener;
+    private LogStreamFailureListener logStreamFailureListener;
 
     protected ControllableEventFilter eventFilter;
     protected ControllableEventFilter reprocessingEventFilter;
@@ -139,7 +139,7 @@ public class StreamProcessorControllerTest
         doAnswer(invocation ->
         {
             // this is invoked while opening
-            targetLogStreamFailureListener = (LogStreamFailureListener) invocation.getArguments()[0];
+            logStreamFailureListener = (LogStreamFailureListener) invocation.getArguments()[0];
             return null;
         }).when(mockLogStream).registerFailureListener(any(LogStreamFailureListener.class));
     }
@@ -761,7 +761,7 @@ public class StreamProcessorControllerTest
         // -> processing
         controller.doWork();
 
-        targetLogStreamFailureListener.onFailed(2L);
+        logStreamFailureListener.onFailed(2L);
 
         // -> failed
         controller.doWork();
@@ -788,7 +788,7 @@ public class StreamProcessorControllerTest
         // -> processing
         controller.doWork();
 
-        targetLogStreamFailureListener.onFailed(2L);
+        logStreamFailureListener.onFailed(2L);
 
         // -> failed
         controller.doWork();
@@ -831,7 +831,7 @@ public class StreamProcessorControllerTest
         // -> snapshotting
         controller.doWork();
 
-        targetLogStreamFailureListener.onFailed(2L);
+        logStreamFailureListener.onFailed(2L);
 
         // -> failed
         controller.doWork();
@@ -853,7 +853,7 @@ public class StreamProcessorControllerTest
         // -> open
         controller.doWork();
 
-        targetLogStreamFailureListener.onFailed(1L);
+        logStreamFailureListener.onFailed(1L);
 
         // -> failed
         controller.doWork();
@@ -883,13 +883,13 @@ public class StreamProcessorControllerTest
         // -> processing
         controller.doWork();
 
-        targetLogStreamFailureListener.onFailed(2L);
+        logStreamFailureListener.onFailed(2L);
         // -> failed
         controller.doWork();
 
         assertThat(controller.isFailed()).isTrue();
 
-        targetLogStreamFailureListener.onRecovered();
+        logStreamFailureListener.onRecovered();
         // -> recover
         controller.doWork();
         assertThat(controller.isOnRecover());
@@ -925,13 +925,13 @@ public class StreamProcessorControllerTest
         // -> processing
         controller.doWork();
 
-        targetLogStreamFailureListener.onFailed(3L);
+        logStreamFailureListener.onFailed(3L);
         // -> failed
         controller.doWork();
 
         assertThat(controller.isFailed()).isTrue();
 
-        targetLogStreamFailureListener.onRecovered();
+        logStreamFailureListener.onRecovered();
         // -> open
         controller.doWork();
 
@@ -962,8 +962,8 @@ public class StreamProcessorControllerTest
         controller.doWork();
 
         // then
-        verify(mockLogStream, times(1)).registerFailureListener(targetLogStreamFailureListener);
-        verify(mockLogStream, times(2)).removeFailureListener(targetLogStreamFailureListener);
+        verify(mockLogStream, times(1)).registerFailureListener(logStreamFailureListener);
+        verify(mockLogStream, times(2)).removeFailureListener(logStreamFailureListener);
     }
 
     @Test
@@ -1541,8 +1541,8 @@ public class StreamProcessorControllerTest
         assertThat(controller.isFailed()).isTrue();
 
         // verify that it can't be recovered
-        targetLogStreamFailureListener.onFailed(2L);
-        targetLogStreamFailureListener.onRecovered();
+        logStreamFailureListener.onFailed(2L);
+        logStreamFailureListener.onRecovered();
 
         controller.doWork();
 
@@ -1569,8 +1569,8 @@ public class StreamProcessorControllerTest
         assertThat(controller.isFailed()).isTrue();
 
         // verify that it can't be recovered
-        targetLogStreamFailureListener.onFailed(2L);
-        targetLogStreamFailureListener.onRecovered();
+        logStreamFailureListener.onFailed(2L);
+        logStreamFailureListener.onRecovered();
 
         controller.doWork();
 
@@ -1773,7 +1773,7 @@ public class StreamProcessorControllerTest
         // -> closing snapshotting
         controller.doWork(); // does not write snapshot as appender hasn't caught up yet
 
-        targetLogStreamFailureListener.onFailed(255L);
+        logStreamFailureListener.onFailed(255L);
 
         // then
         // -> closing
