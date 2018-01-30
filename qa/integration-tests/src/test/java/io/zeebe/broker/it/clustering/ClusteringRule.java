@@ -100,7 +100,7 @@ public class ClusteringRule extends ExternalResource
                         {
                             if (brokerPartitionState.getTopicName().equals(topicName))
                             {
-                                if (brokerPartitionState.getState().equals("LEADER"))
+                                if (brokerPartitionState.isLeader())
                                 {
                                     leadCount++;
                                 }
@@ -282,7 +282,7 @@ public class ClusteringRule extends ExternalResource
                 for (BrokerPartitionState brokerPartitionState : partitions)
                 {
                     final int currentPartitionId = brokerPartitionState.getPartitionId();
-                    if (brokerPartitionState.getState().equals("LEADER"))
+                    if (brokerPartitionState.isLeader())
                     {
                         leadingPartitions.add(currentPartitionId);
                     }
@@ -371,7 +371,7 @@ public class ClusteringRule extends ExternalResource
                             final List<BrokerPartitionState> partitionStates = topologyBroker.getPartitions();
                             for (BrokerPartitionState brokerPartitionState : partitionStates)
                             {
-                                if (brokerPartitionState.getState().equals("LEADER"))
+                                if (brokerPartitionState.isLeader())
                                 {
                                     toSearchPartitions.remove(brokerPartitionState.getPartitionId());
                                 }

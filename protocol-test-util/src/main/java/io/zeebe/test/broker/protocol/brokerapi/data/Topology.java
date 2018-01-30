@@ -15,6 +15,8 @@
  */
 package io.zeebe.test.broker.protocol.brokerapi.data;
 
+import static io.zeebe.test.broker.protocol.brokerapi.data.BrokerPartitionState.LEADER_STATE;
+
 import java.util.*;
 
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
@@ -49,17 +51,14 @@ public class Topology
     public Topology addLeader(String host, int port, String topic, int partition)
     {
         getBroker(host, port)
-            .addPartition(new BrokerPartitionState("LEADER", topic, partition));
+            .addPartition(new BrokerPartitionState(LEADER_STATE, topic, partition));
 
         return this;
     }
 
     public Topology addLeader(StubBrokerRule broker, String topic, int partition)
     {
-        getBroker(broker.getHost(), broker.getPort())
-            .addPartition(new BrokerPartitionState("LEADER", topic, partition));
-
-        return this;
+        return addLeader(broker.getHost(), broker.getPort(), topic, partition);
     }
 
     public Set<TopologyBroker> getBrokers()

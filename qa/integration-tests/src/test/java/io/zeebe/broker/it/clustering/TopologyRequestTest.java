@@ -95,7 +95,7 @@ public class TopologyRequestTest
                             final List<BrokerPartitionState> partitionStates = topologyBroker.getPartitions();
                             for (BrokerPartitionState brokerPartitionState : partitionStates)
                             {
-                                if (brokerPartitionState.getState().equals("LEADER"))
+                                if (brokerPartitionState.isLeader())
                                 {
                                     toSearchPartitions.remove(brokerPartitionState.getPartitionId());
                                 }

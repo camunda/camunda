@@ -81,7 +81,7 @@ public class ClientRule extends ExternalResource
             for (BrokerPartitionState brokerPartitionState : partitions)
             {
                 if (DEFAULT_TOPIC.equals(brokerPartitionState.getTopicName())
-                    && brokerPartitionState.getState().equals("LEADER"))
+                    && brokerPartitionState.isLeader())
                 {
                     defaultPartition = brokerPartitionState.getPartitionId();
                     break;

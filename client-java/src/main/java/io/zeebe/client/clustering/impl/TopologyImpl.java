@@ -88,7 +88,7 @@ public class TopologyImpl implements Topology
 
             for (BrokerPartitionState partitionState : topologyBroker.getPartitions())
             {
-                if (partitionState.getState().equals("LEADER"))
+                if (partitionState.isLeader())
                 {
                     topicLeaders.put(partitionState.getPartitionId(), brokerRemoteAddress);
                     CollectionUtil.addToMapOfLists(partitionsByTopic, partitionState.getTopicName(), partitionState.getPartitionId());

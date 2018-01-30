@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.topic;
 
+import static io.zeebe.test.broker.protocol.brokerapi.data.BrokerPartitionState.LEADER_STATE;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -213,7 +214,7 @@ public class CreateTopicTest
             for (Map<String, Object> brokerPartitionState : brokerPartitionStates)
             {
                 final String state = brokerPartitionState.get("state").toString();
-                if (state.equals("LEADER"))
+                if (state.equals(LEADER_STATE))
                 {
                     expectedPartitions.remove(brokerPartitionState.get("partitionId"));
                 }

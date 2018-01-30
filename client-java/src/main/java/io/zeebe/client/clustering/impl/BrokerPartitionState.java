@@ -18,6 +18,8 @@ package io.zeebe.client.clustering.impl;
 public class BrokerPartitionState
 {
 
+    public static final String LEADER_STATE = "LEADER";
+
     protected String topicName;
     protected int partitionId;
     private String state;
@@ -53,6 +55,11 @@ public class BrokerPartitionState
     {
         this.state = state;
         return this;
+    }
+
+    public boolean isLeader()
+    {
+        return getState().equals(LEADER_STATE);
     }
 
     @Override
