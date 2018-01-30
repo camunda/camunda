@@ -36,6 +36,7 @@ public class JoinController
     private static final int TRANSITION_OPEN = 2;
     private static final int TRANSITION_CLOSE = 3;
     private static final int TRANSITION_SINGLE_NODE = 4;
+    private static final int TRANSITION_TIMEOUT = 5;
 
     private static final StateMachineCommand<Context> OPEN_COMMAND = context -> context.take(TRANSITION_OPEN);
 
@@ -62,6 +63,7 @@ public class JoinController
 
             .from(awaitJoinResponse).take(TRANSITION_DEFAULT).to(joined)
             .from(awaitJoinResponse).take(TRANSITION_FAILED).to(awaitJoinRetry)
+            .from(awaitJoinResponse).take(TRANSITION_TIMEOUT).to(sendJoinRequest)
             .from(awaitJoinResponse).take(TRANSITION_OPEN).to(awaitJoinResponse)
             .from(awaitJoinResponse).take(TRANSITION_CLOSE).to(abortRequest)
 
@@ -209,7 +211,7 @@ public class JoinController
             else if (context.isTimeout())
             {
                 logger.debug("Timeout while waiting for join response");
-                context.take(TRANSITION_FAILED);
+                context.take(TRANSITION_TIMEOUT);
                 context.reset();
             }
 
