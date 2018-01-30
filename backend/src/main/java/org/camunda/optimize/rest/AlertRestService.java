@@ -42,7 +42,7 @@ public class AlertRestService {
   @POST
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public AlertDefinitionDto createAlert(
+  public String createAlert(
       @Context ContainerRequestContext requestContext,
       AlertCreationDto toCreate
   ) {

@@ -64,14 +64,9 @@ public class AlertRestServiceIT {
 
     // then the status code is okay
     assertThat(response.getStatus(), is(200));
-    AlertDefinitionDto alertDefinitionDto =
-        response.readEntity(AlertDefinitionDto.class);
-    assertThat(alertDefinitionDto, is(notNullValue()));
-    assertThat(alertDefinitionDto.getId(), is(notNullValue()));
-    assertThat(alertDefinitionDto.getCreated(), is(notNullValue()));
-    assertThat(alertDefinitionDto.getLastModified(), is(notNullValue()));
-    assertThat(alertDefinitionDto.getLastModifier(), is(notNullValue()));
-    assertThat(alertDefinitionDto.getOwner(), is(notNullValue()));
+    String id =
+        response.readEntity(String.class);
+    assertThat(id, is(notNullValue()));
   }
 
   @Test
@@ -168,7 +163,7 @@ public class AlertRestServiceIT {
             .header(HttpHeaders.AUTHORIZATION, BEARER + token)
             .post(Entity.json(new AlertCreationDto()));
 
-    return response.readEntity(AlertDefinitionDto.class).getId();
+    return response.readEntity(String.class);
   }
 
   private List<AlertDefinitionDto> getAllAlerts(String token) {

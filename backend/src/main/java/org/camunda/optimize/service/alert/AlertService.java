@@ -165,12 +165,12 @@ public class  AlertService  {
     return alertReader.getStoredAlerts();
   }
 
-  public AlertDefinitionDto createAlert(AlertCreationDto toCreate, String token) {
+  public String createAlert(AlertCreationDto toCreate, String token) {
     String userId = tokenService.getTokenIssuer(token);
-    return this.createAlertForUser(toCreate, userId);
+    return this.createAlertForUser(toCreate, userId).getId();
   }
 
-  public AlertDefinitionDto createAlertForUser(AlertCreationDto toCreate, String userId) {
+  protected AlertDefinitionDto createAlertForUser(AlertCreationDto toCreate, String userId) {
     AlertDefinitionDto alert = alertWriter.createAlert(newAlert(toCreate, userId));
     try {
       JobDetail jobDetail = createStatusCheckJobDetails(alert);
