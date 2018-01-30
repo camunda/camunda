@@ -17,7 +17,6 @@ package io.zeebe.gossip.dissemination;
 
 import static io.zeebe.gossip.dissemination.BufferedEventIterator.DEFAULT_SPREAD_LIMIT;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -25,12 +24,17 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 public class BufferedEventIteratorTest
 {
     public static final int WORK_COUNT = 1_000;
     private final List<BufferedEvent<Integer>> eventList = new ArrayList<>();
+
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
 
     @Before
     public void setUp()
@@ -85,25 +89,14 @@ public class BufferedEventIteratorTest
         final int limit = 10;
         bufferedEventIterator.wrap(iterator, limit);
 
-        // when - then
-        int count = 0;
-        try
+        // then
+        for (int i = 0; i < limit; i++)
         {
-            for (int i = 0; i < WORK_COUNT; i++)
-            {
-                final Integer next = bufferedEventIterator.next();
-                assertThat(next).isEqualTo(count);
-                count++;
-                if (count > limit)
-                {
-                    fail();
-                }
-            }
+            assertThat(bufferedEventIterator.hasNext()).isTrue();
+            assertThat(bufferedEventIterator.next()).isEqualTo(i);
         }
-        catch (NoSuchElementException ex)
-        {
-            assertThat(count).isEqualTo(limit);
-        }
+
+        assertThat(bufferedEventIterator.hasNext()).isFalse();
     }
 
     @Test
@@ -114,20 +107,11 @@ public class BufferedEventIteratorTest
         final BufferedEventIterator<Integer> bufferedEventIterator = new BufferedEventIterator<>();
         bufferedEventIterator.wrap(iterator, WORK_COUNT);
 
-        // when - then
-        int count = 0;
-        try
+        // then
+        for (int i = 0; i < WORK_COUNT; i++)
         {
-            for (int i = 0; i < WORK_COUNT + 1; i++)
-            {
-                final Integer next = bufferedEventIterator.next();
-                assertThat(next).isEqualTo(count);
-                count++;
-            }
-        }
-        catch (NoSuchElementException ex)
-        {
-            assertThat(count).isEqualTo(WORK_COUNT);
+            assertThat(bufferedEventIterator.hasNext()).isTrue();
+            assertThat(bufferedEventIterator.next()).isEqualTo(i);
         }
     }
 
@@ -149,6 +133,24 @@ public class BufferedEventIteratorTest
         }
         assertThat(count).isEqualTo(WORK_COUNT);
     }
+
+    @Test
+    public void shouldThrowExceptionIfNoNextElementExists()
+    {
+        // given
+        final Iterator<BufferedEvent<Integer>> iterator = eventList.iterator();
+        final BufferedEventIterator<Integer> bufferedEventIterator = new BufferedEventIterator<>();
+        bufferedEventIterator.wrap(iterator, 1);
+
+        // when
+        bufferedEventIterator.next();
+
+        // then
+        exception.expect(NoSuchElementException.class);
+
+        bufferedEventIterator.next();
+    }
+
 
     @Test
     public void shouldNotRemoveIfIncrementSpreadCountFlagIsFalse()
