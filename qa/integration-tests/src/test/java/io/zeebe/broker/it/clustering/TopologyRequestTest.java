@@ -19,7 +19,6 @@ import static io.zeebe.broker.it.clustering.ClusteringRule.BROKER_1_CLIENT_ADDRE
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
