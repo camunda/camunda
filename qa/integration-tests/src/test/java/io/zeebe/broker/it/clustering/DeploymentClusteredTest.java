@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
 import io.zeebe.client.event.WorkflowInstanceEvent;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -229,6 +230,7 @@ public class DeploymentClusteredTest
     }
 
     @Test
+    @Ignore("https://github.com/zeebe-io/zeebe/issues/644")
     public void shouldDeployOnTopicWithManyPartitions()
     {
         // given
