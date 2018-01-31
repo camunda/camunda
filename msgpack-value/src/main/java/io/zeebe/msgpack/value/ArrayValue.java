@@ -81,17 +81,14 @@ public class ArrayValue<T extends BaseValue> extends BaseValue implements Iterat
 
         writer.wrap(buffer, 0);
 
-        // skip all values to get offset to copy
         for (int i = 0; i < elementCount; i++)
         {
             innerValue.read(reader);
             innerValue.write(writer);
         }
 
-        // invalidate inner value
         resetInnerValue();
 
-        // copy reader buffer to internal buffer
         bufferLength = writer.getOffset();
     }
 

@@ -17,11 +17,10 @@ package io.zeebe.msgpack;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import io.zeebe.msgpack.property.StringProperty;
@@ -279,7 +278,12 @@ public class ArrayValueTest
     {
         // given
         final int valueCount = 10_000;
-        final Integer[] values = Collections.nCopies(valueCount, 5).toArray(new Integer[valueCount]);
+
+        final Integer[] values = IntStream.iterate(0, (i) -> ++i)
+                                          .limit(valueCount)
+                                          .boxed()
+                                          .collect(Collectors.toList())
+                                          .toArray(new Integer[valueCount]);
 
         // when
         addIntValues(array, values);
@@ -294,7 +298,14 @@ public class ArrayValueTest
     {
         // given
         final int valueCount = 10_000;
-        final Integer[] values = Collections.nCopies(valueCount, 5).toArray(new Integer[valueCount]);
+        final List<Integer> generatedList = IntStream.iterate(0, (i) -> ++i)
+                                               .limit(valueCount)
+                                               .boxed()
+                                               .collect(Collectors.toList());
+        final List<Integer> reverseList = new ArrayList<>(generatedList);
+        Collections.reverse(generatedList);
+
+        final Integer[] values = generatedList.toArray(new Integer[valueCount]);
 
         // when
         for (final Integer value : values)
@@ -306,7 +317,9 @@ public class ArrayValueTest
 
         // then
         encodeAndDecode(array);
-        assertIntValues(array, values);
+
+        final Integer[] resultValues = reverseList.toArray(new Integer[valueCount]);
+        assertIntValues(array, resultValues);
     }
 
     @Test
