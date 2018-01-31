@@ -74,7 +74,7 @@ public class ServiceController
      */
     protected ServiceState firstStopState = null;
 
-    protected final ManyToOneConcurrentArrayQueue<Runnable> cmdQueue = new ManyToOneConcurrentArrayQueue<>(8);
+    protected final ManyToOneConcurrentArrayQueue<Runnable> cmdQueue = new ManyToOneConcurrentArrayQueue<>(128);
     protected final Consumer<Runnable> cmdHandler = (r) ->
     {
         r.run();
