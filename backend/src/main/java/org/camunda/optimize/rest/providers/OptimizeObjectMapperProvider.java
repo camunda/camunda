@@ -1,6 +1,7 @@
 package org.camunda.optimize.rest.providers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.camunda.optimize.service.util.ObjectMapperFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -18,10 +19,10 @@ import javax.ws.rs.ext.Provider;
 @Component
 public class OptimizeObjectMapperProvider implements ContextResolver<ObjectMapper> {
   @Autowired
-  private ObjectMapper defaultObjectMapper;
+  private ObjectMapperFactory objectMapperFactory;
 
   public ObjectMapper getContext(Class<?> type) {
-    return defaultObjectMapper;
+    return objectMapperFactory.createEngineMapper();
   }
 
 }

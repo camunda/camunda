@@ -40,7 +40,7 @@
 
   <bean id="objectMapper"
         class="com.fasterxml.jackson.databind.ObjectMapper"
-        factory-method="createDefaultMapper"
+        factory-method="createOptimizeMapper"
         factory-bean="objectMapperFactory"
   />
 

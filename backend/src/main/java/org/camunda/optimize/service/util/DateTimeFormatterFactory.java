@@ -18,7 +18,7 @@ public class DateTimeFormatterFactory implements FactoryBean<DateTimeFormatter> 
   @Override
   public DateTimeFormatter getObject() throws Exception {
     if (dateTimeFormatter == null) {
-      dateTimeFormatter = DateTimeFormatter.ofPattern(configurationService.getDateFormat());
+      dateTimeFormatter = DateTimeFormatter.ofPattern(configurationService.getOptimizeDateFormat());
     }
     return dateTimeFormatter;
   }

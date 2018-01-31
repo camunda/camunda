@@ -43,7 +43,7 @@ public class RollingDateQueryFilter implements QueryFilter<RollingDateFilterData
       OffsetDateTime dateBeforeGivenFilter = now.minus(toFilter.getValue(), unitOf(toFilter.getUnit()));
       queryDate.gt(formatter.format(dateBeforeGivenFilter));
 
-      queryDate.format(configurationService.getDateFormat());
+      queryDate.format(configurationService.getOptimizeDateFormat());
       filters.add(queryDate);
     }
   }

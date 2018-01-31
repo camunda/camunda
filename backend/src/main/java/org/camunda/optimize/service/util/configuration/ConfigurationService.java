@@ -64,7 +64,8 @@ public class ConfigurationService {
   private String tokenFilter;
   private String defaultUser;
   private String defaultPassword;
-  private String dateFormat;
+  private String engineDateFormat;
+  private String optimizeDateFormat;
   private Integer engineImportMaxPageSize;
   private Long importHandlerWait;
   private Long maximumBackoff;
@@ -375,11 +376,18 @@ public class ConfigurationService {
     return defaultPassword;
   }
 
-  public String getDateFormat() {
-    if (dateFormat == null) {
-      dateFormat = jsonContext.read(ConfigurationServiceConstants.DATE_FORMAT);
+  public String getEngineDateFormat() {
+    if (engineDateFormat == null) {
+      engineDateFormat = jsonContext.read(ConfigurationServiceConstants.ENGINE_DATE_FORMAT);
     }
-    return dateFormat;
+    return engineDateFormat;
+  }
+
+  public String getOptimizeDateFormat() {
+    if (optimizeDateFormat == null) {
+      optimizeDateFormat = jsonContext.read(ConfigurationServiceConstants.OPTIMIZE_DATE_FORMAT);
+    }
+    return optimizeDateFormat;
   }
 
   public int getImportIndexAutoStorageIntervalInSec() {
@@ -1075,8 +1083,12 @@ public class ConfigurationService {
     this.defaultPassword = defaultPassword;
   }
 
-  public void setDateFormat(String dateFormat) {
-    this.dateFormat = dateFormat;
+  public void setEngineDateFormat(String engineDateFormat) {
+    this.engineDateFormat = engineDateFormat;
+  }
+
+  public void setOptimizeDateFormat(String optimizeDateFormat) {
+    this.optimizeDateFormat = optimizeDateFormat;
   }
 
   public void setEngineImportMaxPageSize(Integer engineImportMaxPageSize) {

@@ -139,7 +139,7 @@ public class VariableReader {
         .field(getNestedVariableValueFieldLabel(variableFieldLabel))
         .order(BucketOrder.key(true));
     if (variableFieldLabel.equals(DATE_VARIABLES)) {
-      variableValuesAgg.format(configurationService.getDateFormat());
+      variableValuesAgg.format(configurationService.getOptimizeDateFormat());
     }
     return
       nested(variableFieldLabel, variableFieldLabel)

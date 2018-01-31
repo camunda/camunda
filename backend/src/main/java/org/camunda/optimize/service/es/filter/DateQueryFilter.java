@@ -11,8 +11,6 @@ import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
-import java.text.SimpleDateFormat;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
@@ -59,7 +57,7 @@ public class DateQueryFilter implements QueryFilter<DateFilterDataDto> {
       queryDate.gte(formatter.format(dto.getValue()));
     }
 
-    queryDate.format(configurationService.getDateFormat());
+    queryDate.format(configurationService.getOptimizeDateFormat());
     return queryDate;
   }
 

@@ -18,10 +18,8 @@ import org.elasticsearch.search.aggregations.metrics.avg.InternalAvg;
 import org.joda.time.DateTime;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.TreeMap;
 
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -63,7 +61,7 @@ public class AverageProcessInstanceDurationGroupedByStartDateCommand extends Rep
     // For each entry
     for (Histogram.Bucket entry : agg.getBuckets()) {
       DateTime key = (DateTime) entry.getKey();    // Key
-      String formattedDate = key.toString(configurationService.getDateFormat());
+      String formattedDate = key.toString(configurationService.getOptimizeDateFormat());
 
       InternalAvg averageDuration = entry.getAggregations().get(AVG_DURATION);
       long roundedDuration = Math.round(averageDuration.getValue());

@@ -247,8 +247,9 @@ serialization:
   #Define a custom date format that should be used
   #(should be the same as in the engine)
   #please not that engine prior to 7.8 use yyyy-MM-dd'T'HH:mm:ss as default date format
-  dateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ
-  #dateFormat: yyyy-MM-dd'T'HH:mm:ss
+  engineDateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ
+  # the date format that is used in Optimize internally
+  optimizeDateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ
 variable:
   #States the maximum number of values that are shown for the user in the
   #variable filter selection.                                            

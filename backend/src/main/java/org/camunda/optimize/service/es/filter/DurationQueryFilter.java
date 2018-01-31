@@ -10,7 +10,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
 import java.util.List;
@@ -68,7 +67,7 @@ public class DurationQueryFilter implements QueryFilter<DurationFilterDataDto> {
       }
     }
 
-    queryDate.format(configurationService.getDateFormat());
+    queryDate.format(configurationService.getOptimizeDateFormat());
     return queryDate;
   }
 
