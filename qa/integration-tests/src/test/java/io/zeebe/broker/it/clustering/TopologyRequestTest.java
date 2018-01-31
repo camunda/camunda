@@ -22,6 +22,7 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.client.ZeebeClient;
@@ -83,29 +84,15 @@ public class TopologyRequestTest
         clusteringRule.brokers.remove(oldLeader).close();
 
         doRepeatedly(this::requestTopologyAsync)
-            .until(topologyBrokers -> {
-                boolean foundNewLeads = false;
-                if (topologyBrokers != null)
-                {
-                    final HashSet<Integer> toSearchPartitions = new HashSet<>(partitions);
-                    for (TopologyBroker topologyBroker : topologyBrokers)
-                    {
-                        if (!topologyBroker.getSocketAddress().equals(oldLeader))
-                        {
-                            final List<BrokerPartitionState> partitionStates = topologyBroker.getPartitions();
-                            for (BrokerPartitionState brokerPartitionState : partitionStates)
-                            {
-                                if (brokerPartitionState.isLeader())
-                                {
-                                    toSearchPartitions.remove(brokerPartitionState.getPartitionId());
-                                }
-                            }
-                        }
-                    }
-                    foundNewLeads = toSearchPartitions.isEmpty();
-                }
-                return foundNewLeads;
-            });
+            .until(topologyBrokers ->
+                topologyBrokers != null && topologyBrokers.stream()
+                                                          .filter(broker -> !broker.getSocketAddress().equals(oldLeader))
+                                                          .flatMap(broker -> broker.getPartitions().stream())
+                                                          .filter(BrokerPartitionState::isLeader)
+                                                          .map(BrokerPartitionState::getPartitionId)
+                                                          .collect(Collectors.toSet())
+                                                          .containsAll(partitions)
+            );
 
         // then
         zeebeClient.topics().create("foo", 1).execute();
@@ -115,7 +102,7 @@ public class TopologyRequestTest
     {
         final Future<TopologyResponse> topologyResponseFuture = zeebeClient.requestTopology().executeAsync();
 
-        waitUntil(() -> topologyResponseFuture.isDone());
+        waitUntil(topologyResponseFuture::isDone);
 
         try
         {
