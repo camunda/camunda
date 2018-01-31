@@ -120,11 +120,6 @@ export default class Chart extends React.Component {
                 time: {
                   unit: timeUnit
                 }
-            }],
-            yAxes: [{
-                ticks: {
-                    beginAtZero: true,
-                }
             }]
           },
         }
@@ -133,11 +128,16 @@ export default class Chart extends React.Component {
         options = {};
     }
 
-    if((type === 'line' || type === 'bar') && this.props.property === 'duration') {
+    if(type === 'line' || type === 'bar') {
       options.scales = options.scales || {};
       options.scales.yAxes = [{
-        ticks: {callback: v => this.props.formatter(v)}
+        ticks: {
+          beginAtZero: true
+        }
       }];
+      if (this.props.property === 'duration') {
+        options.scales.yAxes[0].ticks.callback = v => this.props.formatter(v);
+      }
     }
 
     options  = {
