@@ -18,6 +18,7 @@ package io.zeebe.transport.impl;
 import java.util.ArrayList;
 
 import org.agrona.collections.ArrayListUtil;
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.util.actor.Actor;
@@ -25,6 +26,7 @@ import io.zeebe.util.buffer.BufferWriter;
 
 public class RequestManager implements Actor
 {
+    protected final ManyToOneConcurrentArrayQueue<ManagedClientRequestImpl> stagedRequests = new ManyToOneConcurrentArrayQueue<>(128);
     protected final ArrayList<ManagedClientRequestImpl> activeRequests = new ArrayList<>();
     protected final ClientRequestPool requestPool;
 
@@ -36,7 +38,8 @@ public class RequestManager implements Actor
     @Override
     public int doWork() throws Exception
     {
-        int workCount = 0;
+        int workCount = stagedRequests.drain(activeRequests::add);
+
         for (int i = 0; i < activeRequests.size(); i++)
         {
             final ManagedClientRequestImpl requestImpl = activeRequests.get(i);
@@ -72,7 +75,13 @@ public class RequestManager implements Actor
                 }
                 else
                 {
-                    activeRequests.add(resilientRequest);
+                    final boolean staged = stagedRequests.offer(resilientRequest);
+                    if (!staged)
+                    {
+                        // discard the request and signal backpressure
+                        request.close();
+                        resilientRequest = null;
+                    }
                 }
             }
         }
