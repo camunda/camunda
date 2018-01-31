@@ -183,6 +183,22 @@ public class ReportDataHelper {
     return reportData;
   }
 
+  public static ReportDataDto createAvgPiDurationAsNumberGroupByNone(String processDefinitionId) {
+
+    ViewDto view = createAvgPIDurationView();
+
+    GroupByDto groupByDto = createGroupByNone();
+
+    ReportDataDto reportData = createReportDataViewRaw(
+        processDefinitionId,
+        SINGLE_NUMBER_VISUALIZATION,
+        view,
+        groupByDto
+    );
+
+    return reportData;
+  }
+
   private static ViewDto createCountPiFrequencyView() {
     ViewDto view = new ViewDto();
     view.setOperation(VIEW_COUNT_OPERATION);

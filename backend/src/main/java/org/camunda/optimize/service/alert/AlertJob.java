@@ -58,6 +58,7 @@ public class AlertJob implements Job {
         alertJobResult = notifyIfNeeded(alertId, alert, reportDefinition, result);
 
       } else if (alert.isTriggered()) {
+        alertJobResult = new AlertJobResult(alert);
         alertWriter.writeAlertStatus(false, alertId);
         alertJobResult.setStatusChanged(true);
       }
@@ -77,7 +78,7 @@ public class AlertJob implements Job {
       ReportDefinitionDto reportDefinition,
       NumberReportResultDto result
   ) {
-    AlertJobResult alertJobResult = new AlertJobResult();
+    AlertJobResult alertJobResult = new AlertJobResult(alert);
     boolean haveToNotify = false;
     if (!alert.isTriggered()) {
       haveToNotify = true;

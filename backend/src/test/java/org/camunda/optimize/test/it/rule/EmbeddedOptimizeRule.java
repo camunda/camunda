@@ -246,6 +246,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   public void startOptimize() {
     try {
       getOptimize().start();
+      getAlertService().init();
     } catch (Exception e) {
       logger.error("Failed to start Optimize", e);
     }
@@ -263,6 +264,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
   public void stopOptimize() {
     try {
+      this.getAlertService().destroy();
       getOptimize().destroy();
     } catch (Exception e) {
       logger.error("Failed to stop Optimize", e);

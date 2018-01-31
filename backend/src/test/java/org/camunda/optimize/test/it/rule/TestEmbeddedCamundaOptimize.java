@@ -123,7 +123,6 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
       if (beanRef instanceof ConfigurationReloadable) {
         ConfigurationReloadable reloadable = (ConfigurationReloadable) beanRef;
         reloadable.reloadConfiguration(getApplicationContext());
-
       }
     }
   }

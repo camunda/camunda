@@ -2,18 +2,9 @@ package org.camunda.optimize.service.alert;
 
 import com.icegreen.greenmail.util.GreenMail;
 import com.icegreen.greenmail.util.ServerSetup;
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
-import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.camunda.optimize.test.util.ReportDataHelper;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -50,14 +41,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
  */
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"/it/it-applicationContext.xml"})
-public class AlertSchedulerIT {
-
-  private static final String BEARER = "Bearer ";
-  private static final String ALERT = "alert";
-
-  public EngineIntegrationRule engineRule = new EngineIntegrationRule();
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
+public class AlertCheckSchedulerIT extends AbstractAlertSchedulerIT {
 
   @Rule
   public RuleChain chain = RuleChain
@@ -85,10 +69,10 @@ public class AlertSchedulerIT {
     AlertCreationDto simpleAlert = createSimpleAlert(reportId);
 
     Response response =
-        embeddedOptimizeRule.target(ALERT)
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
-            .post(Entity.json(simpleAlert));
+      embeddedOptimizeRule.target(ALERT)
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .post(Entity.json(simpleAlert));
 
     assertThat(response.getStatus(), is(200));
 
@@ -101,20 +85,20 @@ public class AlertSchedulerIT {
     // then
     // scheduler does not contain any triggers
     assertThat(
-        embeddedOptimizeRule.getAlertService().getScheduler().getJobGroupNames().size(),
-        is(0)
+      embeddedOptimizeRule.getAlertService().getScheduler().getJobGroupNames().size(),
+      is(0)
     );
 
     //alert is deleted from ES
     response =
-        embeddedOptimizeRule.target(ALERT)
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
-            .get();
+      embeddedOptimizeRule.target(ALERT)
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .get();
 
     assertThat(response.getStatus(), is(200));
     List<AlertDefinitionDto> alertDefinitionDtos = response.readEntity(
-        new GenericType<List<AlertDefinitionDto>>() {}
+      new GenericType<List<AlertDefinitionDto>>() {}
     );
     assertThat(alertDefinitionDtos.size(), is(0));
   }
@@ -124,40 +108,40 @@ public class AlertSchedulerIT {
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
 
-    AlertCreationDto simpleAlert = getSetupBasicAlert();
+    AlertCreationDto simpleAlert = setupBasicAlert();
 
     Response response =
-        embeddedOptimizeRule.target(ALERT)
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
-            .post(Entity.json(simpleAlert));
+      embeddedOptimizeRule.target(ALERT)
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .post(Entity.json(simpleAlert));
 
     assertThat(response.getStatus(), is(200));
 
     // when
     response =
-        embeddedOptimizeRule.target("report/" + simpleAlert.getReportId())
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
-            .delete();
+      embeddedOptimizeRule.target("report/" + simpleAlert.getReportId())
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .delete();
 
     // then
     assertThat(response.getStatus(), is(204));
     assertThat(
-        embeddedOptimizeRule.getAlertService().getScheduler().getJobGroupNames().size(),
-        is(0)
+      embeddedOptimizeRule.getAlertService().getScheduler().getJobGroupNames().size(),
+      is(0)
     );
 
     response =
-        embeddedOptimizeRule.target(ALERT)
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
-            .get();
+      embeddedOptimizeRule.target(ALERT)
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .get();
 
     assertThat(response.getStatus(), is(200));
     List<AlertDefinitionDto> alertDefinitionDtos = response.readEntity(
-        new GenericType<List<AlertDefinitionDto>>() {}
-        );
+      new GenericType<List<AlertDefinitionDto>>() {}
+    );
     assertThat(alertDefinitionDtos.size(), is(0));
   }
 
@@ -166,35 +150,23 @@ public class AlertSchedulerIT {
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
 
-    AlertCreationDto simpleAlert = getSetupBasicAlert();
+    AlertCreationDto simpleAlert = setupBasicAlert();
 
     // when
     Response response =
-        embeddedOptimizeRule.target(ALERT)
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
-            .post(Entity.json(simpleAlert));
+      embeddedOptimizeRule.target(ALERT)
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .post(Entity.json(simpleAlert));
 
     // then
     assertThat(response.getStatus(), is(200));
-    String id =
-        response.readEntity(String.class);
+    String id = response.readEntity(String.class);
     assertThat(id, is(notNullValue()));
     assertThat(
-        embeddedOptimizeRule.getAlertService().getScheduler().getJobGroupNames().size(),
-        is(1)
+      embeddedOptimizeRule.getAlertService().getScheduler().getJobGroupNames().size(),
+      is(1)
     );
-  }
-
-  private AlertCreationDto getSetupBasicAlert() throws IOException, InterruptedException {
-    String processDefinitionId = deploySimpleServiceTaskProcess();
-    engineRule.startProcessInstance(processDefinitionId);
-
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-
-    String reportId = createAndStoreNumberReport(processDefinitionId);
-    return createSimpleAlert(reportId);
   }
 
   @Test
@@ -202,28 +174,28 @@ public class AlertSchedulerIT {
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
 
-    AlertCreationDto simpleAlert = getSetupBasicAlert();
+    AlertCreationDto simpleAlert = setupBasicAlert();
 
     Response response =
-        embeddedOptimizeRule.target(ALERT)
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
-            .post(Entity.json(simpleAlert));
+      embeddedOptimizeRule.target(ALERT)
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .post(Entity.json(simpleAlert));
 
     String alertId = response.readEntity(String.class);
 
     // when
     response =
-        embeddedOptimizeRule.target("alert/" + alertId)
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
-            .delete();
+      embeddedOptimizeRule.target("alert/" + alertId)
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .delete();
 
     // then
     assertThat(response.getStatus(), is(204));
     assertThat(
-        embeddedOptimizeRule.getAlertService().getScheduler().getJobGroupNames().size(),
-        is(0)
+      embeddedOptimizeRule.getAlertService().getScheduler().getJobGroupNames().size(),
+      is(0)
     );
   }
 
@@ -232,44 +204,47 @@ public class AlertSchedulerIT {
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
 
-    AlertCreationDto simpleAlert = getSetupBasicAlert();
+    AlertCreationDto simpleAlert = setupBasicAlert();
 
     Response response =
-        embeddedOptimizeRule.target(ALERT)
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
-            .post(Entity.json(simpleAlert));
+      embeddedOptimizeRule.target(ALERT)
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .post(Entity.json(simpleAlert));
 
     String alertId = response.readEntity(String.class);
     Trigger trigger = embeddedOptimizeRule.getAlertService().getScheduler().getTrigger(getTriggerKey(alertId));
     assertThat(
-        getNextFireTime(trigger).truncatedTo(ChronoUnit.SECONDS),
-        is(
-            OffsetDateTime.now().plus(1,ChronoUnit.SECONDS).truncatedTo(ChronoUnit.SECONDS)
-        )
+      getNextFireTime(trigger).truncatedTo(ChronoUnit.SECONDS),
+      is(
+        OffsetDateTime.now().plus(1,ChronoUnit.SECONDS).truncatedTo(ChronoUnit.SECONDS)
+      )
     );
 
     // when
     simpleAlert.getCheckInterval().setValue(30);
 
     response =
-        embeddedOptimizeRule.target("alert/" + alertId)
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
-            .put(Entity.json(simpleAlert));
+      embeddedOptimizeRule.target("alert/" + alertId)
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .put(Entity.json(simpleAlert));
 
     // then
     assertThat(response.getStatus(), is(204));
 
+    List<AlertDefinitionDto> allAlerts = getAllAlerts(token);
+    assertThat(allAlerts.get(0).isTriggered(), is(false));
+
     trigger = embeddedOptimizeRule.getAlertService().getScheduler().getTrigger(getTriggerKey(alertId));
     assertThat(
-        getNextFireTime(trigger).truncatedTo(ChronoUnit.SECONDS),
-        is(OffsetDateTime.now().plus(30,ChronoUnit.SECONDS).truncatedTo(ChronoUnit.SECONDS))
+      getNextFireTime(trigger).truncatedTo(ChronoUnit.SECONDS),
+      is(OffsetDateTime.now().plus(30,ChronoUnit.SECONDS).truncatedTo(ChronoUnit.SECONDS))
     );
   }
 
   private TriggerKey getTriggerKey(String alertId) {
-    return new TriggerKey(alertId + "-trigger", "statusCheck-trigger");
+    return new TriggerKey(alertId + "-check-trigger", "statusCheck-trigger");
   }
 
   @Test
@@ -429,77 +404,15 @@ public class AlertSchedulerIT {
     }
   }
 
-  private AlertCreationDto createSimpleAlert(String reportId) {
-    return createSimpleAlert(reportId, 1,"Seconds");
-  }
-
-  private AlertCreationDto createSimpleAlert(String reportId, int intervalValue, String unit) {
-    AlertCreationDto alertCreationDto = new AlertCreationDto();
-
-    AlertInterval interval = new AlertInterval();
-    interval.setUnit(unit);
-    interval.setValue(intervalValue);
-    alertCreationDto.setCheckInterval(interval);
-    alertCreationDto.setThreshold(0);
-    alertCreationDto.setThresholdOperator(">");
-    alertCreationDto.setEmail("test@camunda.com");
-    alertCreationDto.setName("test alert");
-    alertCreationDto.setReportId(reportId);
-
-    return alertCreationDto;
-  }
-
-  private String deploySimpleServiceTaskProcess() throws IOException {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .name("aProcessName")
-      .startEvent()
-        .serviceTask()
-          .camundaExpression("${true}")
-      .endEvent()
-    .done();
-    return engineRule.deployProcessAndGetId(processModel);
-  }
-
-  private String createAndStoreNumberReport(String processDefinitionId) {
-    String id = createNewReportHelper();
-    ReportDefinitionDto report = getReportDefinitionDto(processDefinitionId);
-    updateReport(id, report);
-    return id;
-  }
-
-  private ReportDefinitionDto getReportDefinitionDto(String processDefinitionId) {
-    ReportDataDto reportData = ReportDataHelper.createPiFrequencyCountGroupedByNoneAsNumber(processDefinitionId);
-    ReportDefinitionDto report = new ReportDefinitionDto();
-    report.setData(reportData);
-    report.setId("something");
-    report.setLastModifier("something");
-    report.setName("something");
-    OffsetDateTime someDate = OffsetDateTime.now().plusHours(1);
-    report.setCreated(someDate);
-    report.setLastModified(someDate);
-    report.setOwner("something");
-    return report;
-  }
-
-  private String createNewReportHelper() {
-    String token = embeddedOptimizeRule.getAuthenticationToken();
+  private List<AlertDefinitionDto> getAllAlerts(String token) {
     Response response =
-        embeddedOptimizeRule.target("report")
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
-            .post(Entity.json(""));
+      embeddedOptimizeRule.target(ALERT)
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .get();
+
     assertThat(response.getStatus(), is(200));
-
-    return response.readEntity(IdDto.class).getId();
-  }
-
-  private void updateReport(String id, ReportDefinitionDto updatedReport) {
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-    Response response =
-        embeddedOptimizeRule.target("report/" + id)
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
-            .put(Entity.json(updatedReport));
-    assertThat(response.getStatus(), is(204));
+    return response.readEntity(new GenericType<List<AlertDefinitionDto>>() {
+    });
   }
 }
