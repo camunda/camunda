@@ -394,7 +394,7 @@ public class ClusterManager implements Actor
                                                                                              .getPartitionId(), raft.getState());
             rafts.add(raft);
 
-            startLogStreamServiceControllers.add(new StartLogStreamServiceController(raftServiceName, raft, serviceContainer));
+            startLogStreamServiceControllers.add(new StartLogStreamServiceController(raftServiceName, raft, serviceContainer, clusterMemberListManager));
 
             if (isRaftCreator)
             {

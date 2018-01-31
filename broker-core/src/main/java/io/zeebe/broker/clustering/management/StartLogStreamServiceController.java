@@ -34,6 +34,7 @@ import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.util.state.SimpleStateMachineContext;
 import io.zeebe.util.state.State;
 import io.zeebe.util.state.StateMachine;
+import io.zeebe.util.state.TransitionState;
 
 public class StartLogStreamServiceController
 {
@@ -45,10 +46,15 @@ public class StartLogStreamServiceController
 
     private final StateMachine<Context> stateMachine;
 
-    public StartLogStreamServiceController(final ServiceName<Raft> raftServiceName, final Raft raft, final ServiceContainer serviceContainer)
+    private final OnOpenLogStreamListener onOpenCallback;
+
+    public StartLogStreamServiceController(final ServiceName<Raft> raftServiceName, final Raft raft, final ServiceContainer serviceContainer, OnOpenLogStreamListener callable)
     {
+        this.onOpenCallback = callable;
+
         final State<Context> startLogStreamService = new StartLogStreamServiceState();
         final State<Context> awaitStartLogStreamService = new AwaitServiceFutureState();
+        final State<Context> onOpenTransitionState = new OnOpenTransitionState(onOpenCallback);
         final State<Context> open = new OpenState();
         final State<Context> stopLogStreamService = new StopLogStreamServiceState();
         final State<Context> awaitStopLogStreamService = new AwaitServiceFutureState();
@@ -61,8 +67,10 @@ public class StartLogStreamServiceController
 
             .from(startLogStreamService).take(TRANSITION_DEFAULT).to(awaitStartLogStreamService)
 
-            .from(awaitStartLogStreamService).take(TRANSITION_DEFAULT).to(open)
+            .from(awaitStartLogStreamService).take(TRANSITION_DEFAULT).to(onOpenTransitionState)
             .from(awaitStartLogStreamService).take(TRANSITION_FAILED).to(startLogStreamService)
+
+            .from(onOpenTransitionState).take(TRANSITION_DEFAULT).to(open)
 
             .from(open).take(TRANSITION_CLOSE).to(stopLogStreamService)
             .from(open).take(TRANSITION_OPEN).to(open)
@@ -132,7 +140,7 @@ public class StartLogStreamServiceController
     {
 
         @Override
-        public int doWork(final Context context) throws Exception
+        public int doWork(final Context context)
         {
             int workCount = 0;
 
@@ -167,6 +175,24 @@ public class StartLogStreamServiceController
         public boolean isInterruptable()
         {
             return false;
+        }
+    }
+
+    private static class OnOpenTransitionState implements TransitionState<Context>
+    {
+
+        private final OnOpenLogStreamListener onOpenCallback;
+
+        OnOpenTransitionState(OnOpenLogStreamListener onOpenCallback)
+        {
+            this.onOpenCallback = onOpenCallback;
+        }
+
+        @Override
+        public void work(Context context) throws Exception
+        {
+            onOpenCallback.onOpen(context.getRaft().getLogStream());
+            context.take(TRANSITION_DEFAULT);
         }
     }
 

@@ -18,6 +18,7 @@
 package io.zeebe.broker.clustering.management.memberList;
 
 import static io.zeebe.broker.clustering.management.memberList.GossipEventCreationHelper.*;
+import static io.zeebe.raft.state.RaftState.LEADER;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,11 +28,13 @@ import java.util.function.Consumer;
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.handler.Topology;
 import io.zeebe.broker.clustering.management.ClusterManagerContext;
+import io.zeebe.broker.clustering.management.OnOpenLogStreamListener;
 import io.zeebe.broker.transport.cfg.TransportComponentCfg;
 import io.zeebe.gossip.Gossip;
 import io.zeebe.gossip.GossipCustomEventListener;
 import io.zeebe.gossip.GossipMembershipListener;
 import io.zeebe.gossip.membership.Member;
+import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.raft.RaftStateListener;
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.transport.ClientTransport;
@@ -43,7 +46,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.slf4j.Logger;
 
-public class ClusterMemberListManager implements RaftStateListener
+public class ClusterMemberListManager implements RaftStateListener, OnOpenLogStreamListener
 {
     public static final Logger LOG = Loggers.CLUSTERING_LOGGER;
     public static final DirectBuffer API_EVENT_TYPE = BufferUtil.wrapString("apis");
@@ -227,38 +230,43 @@ public class ClusterMemberListManager implements RaftStateListener
     }
 
     @Override
+    public void onOpen(LogStream logStream)
+    {
+        final int partitionId = logStream.getPartitionId();
+        final DirectBuffer savedTopicName = BufferUtil.cloneBuffer(logStream.getTopicName());
+
+        commandQueue.runAsync(() ->  updateTopologyOnRaftStateChangeForPartition(LEADER, partitionId, savedTopicName));
+    }
+
+    @Override
     public void onStateChange(int partitionId, DirectBuffer topicName, SocketAddress socketAddress, RaftState raftState)
     {
         final DirectBuffer savedTopicName = BufferUtil.cloneBuffer(topicName);
         commandQueue.runAsync(() ->
         {
-            switch (raftState)
+            if (raftState == RaftState.FOLLOWER)
             {
-                case LEADER:
-                case FOLLOWER:
-                {
-
-                    final MemberRaftComposite member = context.getMemberListService()
-                                                              .getMember(transportComponentCfg.managementApi.toSocketAddress(transportComponentCfg.host));
-
-                    // update raft state in member list
-                    member.updateRaft(partitionId, savedTopicName, raftState);
-                    LOG.trace("On raft state change for {} - local member states: {}", socketAddress, context.getMemberListService());
-
-                    // send complete list of partition where I'm a follower or leader
-                    final List<RaftStateComposite> rafts = member.getRafts();
-                    final DirectBuffer payload = writeRaftsIntoBuffer(rafts, memberRaftStatesBuffer);
-
-                    LOG.trace("Publish event for partition {} state change {}", partitionId, raftState);
-
-                    context.getGossip()
-                           .publishEvent(MEMBER_RAFT_STATES_EVENT_TYPE, payload);
-
-                    break;
-                }
-                default:
-                    break;
+                updateTopologyOnRaftStateChangeForPartition(raftState, partitionId, savedTopicName);
             }
         });
+    }
+
+    private void updateTopologyOnRaftStateChangeForPartition(RaftState raftState, int partitionId, DirectBuffer savedTopicName)
+    {
+        final MemberRaftComposite member = context.getMemberListService()
+                                                  .getMember(transportComponentCfg.managementApi.toSocketAddress(transportComponentCfg.host));
+
+        // update raft state in member list
+        member.updateRaft(partitionId, savedTopicName, raftState);
+        LOG.trace("On raft state change for {} - local member states: {}", member.getMember().getAddress(), context.getMemberListService());
+
+        // send complete list of partition where I'm a follower or leader
+        final List<RaftStateComposite> rafts = member.getRafts();
+        final DirectBuffer payload = writeRaftsIntoBuffer(rafts, memberRaftStatesBuffer);
+
+        LOG.trace("Publish event for partition {} state change {}", partitionId, raftState);
+
+        context.getGossip()
+               .publishEvent(MEMBER_RAFT_STATES_EVENT_TYPE, payload);
     }
 }
