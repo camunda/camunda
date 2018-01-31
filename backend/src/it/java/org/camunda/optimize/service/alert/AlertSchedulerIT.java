@@ -29,14 +29,18 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.mail.internet.MimeMessage;
 import javax.ws.rs.client.Entity;
+import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.TimeZone;
 import java.util.UUID;
 
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_FLOW_NODE_TYPE;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.HEAT_VISUALIZATION;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -64,6 +68,97 @@ public class AlertSchedulerIT {
   @Before
   public void cleanUp() throws Exception {
     embeddedOptimizeRule.getAlertService().getScheduler().clear();
+  }
+
+  @Test
+  public void reportUpdateToNotNumberRemovesAlert() throws Exception {
+    //given
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+
+    String processDefinitionId = deploySimpleServiceTaskProcess();
+    engineRule.startProcessInstance(processDefinitionId);
+
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    String reportId = createAndStoreNumberReport(processDefinitionId);
+    AlertCreationDto simpleAlert = createSimpleAlert(reportId);
+
+    Response response =
+        embeddedOptimizeRule.target(ALERT)
+            .request()
+            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+            .post(Entity.json(simpleAlert));
+
+    assertThat(response.getStatus(), is(200));
+
+    // when
+    ReportDefinitionDto report = getReportDefinitionDto(processDefinitionId);
+    report.getData().getGroupBy().setType(GROUP_BY_FLOW_NODE_TYPE);
+    report.getData().setVisualization(HEAT_VISUALIZATION);
+    updateReport(simpleAlert.getReportId(), report);
+
+    // then
+    // scheduler does not contain any triggers
+    assertThat(
+        embeddedOptimizeRule.getAlertService().getScheduler().getJobGroupNames().size(),
+        is(0)
+    );
+
+    //alert is deleted from ES
+    response =
+        embeddedOptimizeRule.target(ALERT)
+            .request()
+            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+            .get();
+
+    assertThat(response.getStatus(), is(200));
+    List<AlertDefinitionDto> alertDefinitionDtos = response.readEntity(
+        new GenericType<List<AlertDefinitionDto>>() {}
+    );
+    assertThat(alertDefinitionDtos.size(), is(0));
+  }
+
+  @Test
+  public void reportDeletionRemovesAlert() throws Exception {
+    //given
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+
+    AlertCreationDto simpleAlert = getSetupBasicAlert();
+
+    Response response =
+        embeddedOptimizeRule.target(ALERT)
+            .request()
+            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+            .post(Entity.json(simpleAlert));
+
+    assertThat(response.getStatus(), is(200));
+
+    // when
+    response =
+        embeddedOptimizeRule.target("report/" + simpleAlert.getReportId())
+            .request()
+            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+            .delete();
+
+    // then
+    assertThat(response.getStatus(), is(204));
+    assertThat(
+        embeddedOptimizeRule.getAlertService().getScheduler().getJobGroupNames().size(),
+        is(0)
+    );
+
+    response =
+        embeddedOptimizeRule.target(ALERT)
+            .request()
+            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+            .get();
+
+    assertThat(response.getStatus(), is(200));
+    List<AlertDefinitionDto> alertDefinitionDtos = response.readEntity(
+        new GenericType<List<AlertDefinitionDto>>() {}
+        );
+    assertThat(alertDefinitionDtos.size(), is(0));
   }
 
   @Test
@@ -367,6 +462,12 @@ public class AlertSchedulerIT {
 
   private String createAndStoreNumberReport(String processDefinitionId) {
     String id = createNewReportHelper();
+    ReportDefinitionDto report = getReportDefinitionDto(processDefinitionId);
+    updateReport(id, report);
+    return id;
+  }
+
+  private ReportDefinitionDto getReportDefinitionDto(String processDefinitionId) {
     ReportDataDto reportData = ReportDataHelper.createPiFrequencyCountGroupedByNoneAsNumber(processDefinitionId);
     ReportDefinitionDto report = new ReportDefinitionDto();
     report.setData(reportData);
@@ -377,8 +478,7 @@ public class AlertSchedulerIT {
     report.setCreated(someDate);
     report.setLastModified(someDate);
     report.setOwner("something");
-    updateReport(id, report);
-    return id;
+    return report;
   }
 
   private String createNewReportHelper() {

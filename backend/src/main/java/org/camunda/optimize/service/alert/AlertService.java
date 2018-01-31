@@ -3,6 +3,7 @@ package org.camunda.optimize.service.alert;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
+import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.service.es.reader.AlertReader;
 import org.camunda.optimize.service.es.writer.AlertWriter;
 import org.camunda.optimize.service.security.TokenService;
@@ -34,6 +35,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_NONE_TYPE;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.SINGLE_NUMBER_VISUALIZATION;
 import static org.quartz.SimpleScheduleBuilder.simpleSchedule;
 import static org.quartz.TriggerBuilder.newTrigger;
 
@@ -246,6 +249,33 @@ public class  AlertService  {
 
     } catch (SchedulerException e) {
       logger.error("can't adjust scheduler for alert [{}]", alertId, e);
+    }
+  }
+
+  public void deleteAlertsForReport(String reportId) {
+    List<AlertDefinitionDto> alerts = alertReader.findAlertsForReport(reportId);
+
+    for (AlertDefinitionDto alert : alerts) {
+      unscheduleJob(alert);
+    }
+
+    alertWriter.deleteAlertsForReport(reportId);
+  }
+
+  /**
+   * Check if it's still evaluated as number.
+   * @param reportId
+   * @param data
+   */
+  public void deleteAlertsIfNeeded(String reportId, ReportDataDto data) {
+    if (
+        data == null ||
+        data.getGroupBy() == null ||
+            (!GROUP_BY_NONE_TYPE.equals(data.getGroupBy().getType()) ||
+                !SINGLE_NUMBER_VISUALIZATION.equals(data.getVisualization())
+            )
+        ) {
+      this.deleteAlertsForReport(reportId);
     }
   }
 }

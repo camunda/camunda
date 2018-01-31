@@ -6,16 +6,10 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.result.ReportResultDto;
 import org.camunda.optimize.rest.providers.Secured;
-import org.camunda.optimize.rest.queryparam.adjustment.QueryParamAdjustmentUtil;
 import org.camunda.optimize.rest.util.AuthenticationUtil;
-import org.camunda.optimize.service.es.reader.ReportReader;
-import org.camunda.optimize.service.es.report.ReportEvaluator;
-import org.camunda.optimize.service.es.writer.ReportWriter;
 import org.camunda.optimize.service.exceptions.OptimizeException;
+import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.TokenService;
-import org.camunda.optimize.service.security.util.LocalDateUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -40,20 +34,11 @@ import java.util.List;
 @Component
 public class ReportRestService {
 
-  private Logger logger = LoggerFactory.getLogger(getClass());
-
-  @Autowired
-  private ReportWriter reportWriter;
-
-  @Autowired
-  private ReportReader reportReader;
-
-  @Autowired
-  private ReportEvaluator reportEvaluator;
-
   @Autowired
   private TokenService tokenService;
 
+  @Autowired
+  private ReportService reportService;
 
 
   /**
@@ -67,7 +52,7 @@ public class ReportRestService {
   public IdDto createNewReport(@Context ContainerRequestContext requestContext) {
     String token = AuthenticationUtil.getToken(requestContext);
     String userId = tokenService.getTokenIssuer(token);
-    return reportWriter.createNewReportAndReturnId(userId);
+    return reportService.createNewReportAndReturnId(userId);
   }
 
   /**
@@ -83,12 +68,9 @@ public class ReportRestService {
   public void updateReport(@Context ContainerRequestContext requestContext,
                            @PathParam("id") String reportId,
                            ReportDefinitionDto updatedReport) throws OptimizeException, JsonProcessingException {
-    updatedReport.setId(reportId);
     String token = AuthenticationUtil.getToken(requestContext);
     String userId = tokenService.getTokenIssuer(token);
-    updatedReport.setLastModifier(userId);
-    updatedReport.setLastModified(LocalDateUtil.getCurrentDateTime());
-    reportWriter.updateReport(updatedReport);
+    reportService.updateReport(reportId, updatedReport, userId);
   }
 
   /**
@@ -99,9 +81,8 @@ public class ReportRestService {
   @GET
   @Produces(MediaType.APPLICATION_JSON)
   public List<ReportDefinitionDto> getStoredReports(@Context UriInfo uriInfo) throws IOException {
-    List<ReportDefinitionDto> reports = reportReader.getAllReports();
     MultivaluedMap<String, String> queryParameters = uriInfo.getQueryParameters();
-    reports = QueryParamAdjustmentUtil.adjustReportResultsToQueryParameters(reports, queryParameters);
+    List<ReportDefinitionDto> reports = reportService.findAndFilterReports(queryParameters);
     return reports;
   }
 
@@ -112,7 +93,7 @@ public class ReportRestService {
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
   public ReportDefinitionDto getReport(@PathParam("id") String reportId) throws IOException, OptimizeException {
-    return reportReader.getReport(reportId);
+    return reportService.getReport(reportId);
   }
 
   /**
@@ -121,7 +102,7 @@ public class ReportRestService {
   @DELETE
   @Path("/{id}")
   public void deleteReport(@PathParam("id") String reportId) {
-    reportWriter.deleteReport(reportId);
+    reportService.deleteReport(reportId);
   }
 
   /**
@@ -136,11 +117,9 @@ public class ReportRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
   public ReportResultDto evaluateReport(@PathParam("id") String reportId) throws IOException, OptimizeException {
-    ReportDefinitionDto reportDefinition;
-    reportDefinition = reportReader.getReport(reportId);
-    ReportResultDto result = reportEvaluator.evaluate(reportDefinition);
-    return result;
+    return reportService.evaluateSavedReport(reportId);
   }
+
 
   /**
    * Evaluates the given report and returns the result.
@@ -152,7 +131,7 @@ public class ReportRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public ReportResultDto evaluateReport(ReportDataDto reportData) throws IOException, OptimizeException {
-    ReportResultDto result = reportEvaluator.evaluate(reportData);
-    return result;
+    return reportService.evaluateReportInMemory(reportData);
   }
+
 }

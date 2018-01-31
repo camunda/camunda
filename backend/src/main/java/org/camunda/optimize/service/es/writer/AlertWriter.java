@@ -11,6 +11,8 @@ import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.DeleteByQueryAction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -115,5 +117,21 @@ public class AlertWriter {
     } catch (Exception e) {
       logger.error("can't update status of alert [{}]", alertId, e);
     }
+  }
+
+  /**
+   * Delete all alerts that are associated with following report ID
+   *
+   * @param reportId
+   */
+  public void deleteAlertsForReport(String reportId) {
+    BulkByScrollResponse bulkByScrollResponse = DeleteByQueryAction.INSTANCE.newRequestBuilder(esclient)
+        .filter(QueryBuilders.matchQuery(AlertType.REPORT_ID, reportId))
+        .source(configurationService.getOptimizeIndex(configurationService.getAlertType()))
+        .refresh(true)
+        .get();
+
+    long deleted = bulkByScrollResponse.getDeleted();
+    logger.debug("deleted [{}] alerts related to report [{}]", deleted, reportId);
   }
 }

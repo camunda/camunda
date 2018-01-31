@@ -7,6 +7,9 @@ import org.camunda.optimize.dto.optimize.query.report.ViewDto;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_FLOW_NODE_TYPE;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_NONE_TYPE;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_START_DATE_TYPE;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.HEAT_VISUALIZATION;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.SINGLE_NUMBER_VISUALIZATION;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.TABLE_VISUALIZATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_AVERAGE_OPERATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_COUNT_OPERATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_DURATION_PROPERTY;
@@ -19,9 +22,7 @@ import static org.camunda.optimize.service.es.report.command.util.ReportConstant
  * @author Askar Akhmerov
  */
 public class ReportDataHelper {
-  private static final String TABLE_VISUALIZATION = "table";
-  private static final String HEAT_VISUALIZATION = "heat";
-  private static final String SINGLE_NUMBER_VISUALIZATION = "number";
+
 
   public static ReportDataDto createReportDataViewRawAsTable(String processDefinitionId) {
     return createReportDataViewRaw(

@@ -2,6 +2,7 @@ package org.camunda.optimize.service.es.reader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
+import org.camunda.optimize.service.es.schema.type.AlertType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.get.GetResponse;
@@ -99,5 +100,31 @@ public class AlertReader {
 
   private void logError(String alertId) {
     logger.error("Was not able to retrieve alert with id [{}] from Elasticsearch.", alertId);
+  }
+
+  public List<AlertDefinitionDto> findAlertsForReport(String reportId) {
+    List<AlertDefinitionDto> result = new ArrayList<>();
+    QueryBuilder query;
+    query = QueryBuilders.termQuery(AlertType.REPORT_ID, reportId);
+
+    SearchResponse scrollResp = esclient
+        .prepareSearch(configurationService.getOptimizeIndex(configurationService.getAlertType()))
+        .setTypes(configurationService.getAlertType())
+        .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
+        .setQuery(query)
+        .setSize(20)
+        .get();
+
+    do {
+      for (SearchHit hit : scrollResp.getHits().getHits()) {
+        result.add(mapHit(hit));
+      }
+      scrollResp = esclient
+          .prepareSearchScroll(scrollResp.getScrollId())
+          .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
+          .get();
+    } while (scrollResp.getHits().getHits().length != 0);
+
+    return result;
   }
 }
