@@ -17,6 +17,8 @@ package io.zeebe.broker.it.clustering;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.client.cmd.ClientCommandRejectedException;
+import io.zeebe.client.event.WorkflowInstanceEvent;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -35,10 +37,31 @@ public class DeploymentClusteredTest
 {
     private static final int PARTITION_COUNT = 5;
 
+    private static final WorkflowDefinition INVALID_WORKFLOW = Bpmn.createExecutableWorkflow("invalid").done();
+
     private static final WorkflowDefinition WORKFLOW = Bpmn.createExecutableWorkflow("process")
-            .startEvent()
-            .endEvent()
-            .done();
+                                                           .startEvent()
+                                                           .endEvent()
+                                                           .done();
+
+    private static final WorkflowDefinition WORKFLOW_WITH_TASK = Bpmn.createExecutableWorkflow("process-2")
+                                                                     .startEvent()
+                                                                     .serviceTask()
+                                                                     .taskType("task")
+                                                                     .taskRetries(3)
+                                                                     .done()
+                                                                     .endEvent()
+                                                                     .done();
+
+    private static final WorkflowDefinition WORKFLOW_WITH_OTHER_TASK = Bpmn.createExecutableWorkflow("process-3")
+                                                                     .startEvent()
+                                                                     .serviceTask()
+                                                                     .taskType("otherTask")
+                                                                     .taskRetries(3)
+                                                                     .done()
+                                                                     .endEvent()
+                                                                     .done();
+
 
     public AutoCloseableRule closeables = new AutoCloseableRule();
     public Timeout testTimeout = Timeout.seconds(60);
@@ -53,7 +76,7 @@ public class DeploymentClusteredTest
                  .around(clusteringRule);
 
     @Rule
-    public ExpectedException thrown = ExpectedException.none();
+    public ExpectedException expectedException = ExpectedException.none();
 
     private ZeebeClient client;
 
@@ -61,6 +84,59 @@ public class DeploymentClusteredTest
     public void init()
     {
         client = clientRule.getClient();
+    }
+
+    @Test
+    public void shouldDeployInCluster()
+    {
+        // given
+        clusteringRule.createTopic("test", PARTITION_COUNT);
+
+        // when
+        final DeploymentEvent deploymentEvent = client.workflows()
+                                                      .deploy("test")
+                                                      .addWorkflowModel(WORKFLOW, "workflow.bpmn")
+                                                      .execute();
+
+        // then
+        assertThat(deploymentEvent.getDeployedWorkflows().size()).isEqualTo(1);
+        assertThat(deploymentEvent.getErrorMessage()).isEmpty();
+    }
+
+    @Test
+    public void shouldDeployFileInCluster() throws Exception
+    {
+        // given
+        clusteringRule.createTopic("test", PARTITION_COUNT);
+
+        // when
+        final String filePath = getClass().getResource("/workflows/one-task-process.bpmn").toURI().getPath();
+        final DeploymentEvent deploymentEvent = client.workflows()
+                                                      .deploy("test")
+                                                      .addResourceFile(filePath)
+                                                      .execute();
+
+        // then
+        assertThat(deploymentEvent.getDeployedWorkflows().size()).isEqualTo(1);
+        assertThat(deploymentEvent.getErrorMessage()).isEmpty();
+    }
+
+    @Test
+    public void shouldDeployYamlInCluster() throws Exception
+    {
+        // given
+        clusteringRule.createTopic("test", PARTITION_COUNT);
+
+        // when
+        final String filePath = getClass().getResource("/workflows/simple-workflow.yaml").toURI().getPath();
+        final DeploymentEvent deploymentEvent = client.workflows()
+                                                      .deploy("test")
+                                                      .addResourceFile(filePath)
+                                                      .execute();
+
+        // then
+        assertThat(deploymentEvent.getDeployedWorkflows().size()).isEqualTo(1);
+        assertThat(deploymentEvent.getErrorMessage()).isEmpty();
     }
 
     @Test
@@ -78,9 +154,12 @@ public class DeploymentClusteredTest
         // then
         for (int p = 0; p < workCount; p++)
         {
-            client.workflows().create("test")
-                .bpmnProcessId("process")
-                .execute();
+            final WorkflowInstanceEvent workflowInstanceEvent = client.workflows()
+                                                                      .create("test")
+                                                                      .bpmnProcessId("process")
+                                                                      .execute();
+
+            assertThat(workflowInstanceEvent.getState()).isEqualTo("WORKFLOW_INSTANCE_CREATED");
         }
     }
 
@@ -101,5 +180,202 @@ public class DeploymentClusteredTest
 
         assertThat(deploymentEvent.getDeployedWorkflows().size()).isEqualTo(1);
         assertThat(deploymentEvent.getErrorMessage()).isEmpty();
+    }
+
+    @Test
+    public void shouldCreateInstancesOnRestartedBroker()
+    {
+        // given
+        final int workCount = 10 * PARTITION_COUNT;
+        clusteringRule.createTopic("test", PARTITION_COUNT);
+        clusteringRule.stopBroker(ClusteringRule.BROKER_3_CLIENT_ADDRESS);
+        client.workflows()
+              .deploy("test")
+              .addWorkflowModel(WORKFLOW, "workflow.bpmn")
+              .execute();
+
+        // when
+        clusteringRule.restartBroker(ClusteringRule.BROKER_3_CLIENT_ADDRESS);
+
+        // then
+        for (int p = 0; p < workCount; p++)
+        {
+            final WorkflowInstanceEvent workflowInstanceEvent = client.workflows()
+                                                                      .create("test")
+                                                                      .bpmnProcessId("process")
+                                                                      .execute();
+
+            assertThat(workflowInstanceEvent.getState()).isEqualTo("WORKFLOW_INSTANCE_CREATED");
+        }
+    }
+
+    @Test
+    public void shouldDeployAfterRestartBroker()
+    {
+        // given
+        clusteringRule.createTopic("test", PARTITION_COUNT);
+
+        // when
+        clusteringRule.restartBroker(ClusteringRule.BROKER_3_CLIENT_ADDRESS);
+
+        // then
+        final DeploymentEvent deploymentEvent = client.workflows()
+                                                      .deploy("test")
+                                                      .addWorkflowModel(WORKFLOW, "workflow.bpmn")
+                                                      .execute();
+
+        assertThat(deploymentEvent.getDeployedWorkflows().size()).isEqualTo(1);
+        assertThat(deploymentEvent.getErrorMessage()).isEmpty();
+    }
+
+    @Test
+    public void shouldDeployOnTopicWithManyPartitions()
+    {
+        // given
+        clusteringRule.createTopic("test", 15);
+
+        // when
+        final DeploymentEvent deploymentEvent = client.workflows()
+                                                      .deploy("test")
+                                                      .addWorkflowModel(WORKFLOW, "workflow.bpmn")
+                                                      .execute();
+
+        // then
+        assertThat(deploymentEvent.getDeployedWorkflows().size()).isEqualTo(1);
+        assertThat(deploymentEvent.getErrorMessage()).isEmpty();
+    }
+
+    @Test
+    public void shouldDeployOnDifferentTopics()
+    {
+        // given
+        clusteringRule.createTopic("test-1", PARTITION_COUNT);
+        clusteringRule.createTopic("test-2", PARTITION_COUNT);
+
+        // when
+        final DeploymentEvent deploymentEventOnTest1 = client.workflows()
+                                                             .deploy("test-2")
+                                                             .addWorkflowModel(WORKFLOW, "workflow.bpmn")
+                                                             .execute();
+
+        final DeploymentEvent deploymentEventOnTest2 = client.workflows()
+                                                             .deploy("test-2")
+                                                             .addWorkflowModel(WORKFLOW, "workflow.bpmn")
+                                                             .execute();
+
+        // then
+        assertThat(deploymentEventOnTest1.getDeployedWorkflows().size()).isEqualTo(1);
+        assertThat(deploymentEventOnTest1.getErrorMessage()).isEmpty();
+
+        assertThat(deploymentEventOnTest2.getDeployedWorkflows().size()).isEqualTo(1);
+        assertThat(deploymentEventOnTest2.getErrorMessage()).isEmpty();
+    }
+
+    @Test
+    public void shouldDeployMultipleResources()
+    {
+        // given
+        clusteringRule.createTopic("test", PARTITION_COUNT);
+
+        // when
+        final DeploymentEvent deploymentEvent = client.workflows()
+                                                      .deploy("test")
+                                                      .addWorkflowModel(WORKFLOW, "workflow.bpmn")
+                                                      .addWorkflowModel(WORKFLOW_WITH_TASK, "workflowWithTask.bpmn")
+                                                      .addWorkflowModel(WORKFLOW_WITH_OTHER_TASK, "workflowWithOtherTask.bpmn")
+                                                      .execute();
+
+        // then
+        assertThat(deploymentEvent.getDeployedWorkflows().size()).isEqualTo(3);
+        assertThat(deploymentEvent.getErrorMessage()).isEmpty();
+    }
+
+    @Test
+    public void shouldNotDeployUnparsable()
+    {
+        // given
+        clusteringRule.createTopic("test", PARTITION_COUNT);
+
+        // expect
+        expectedException.expect(ClientCommandRejectedException.class);
+        expectedException.expectMessage("Deployment was rejected");
+        expectedException.expectMessage("Failed to deploy resource 'invalid.bpmn'");
+        expectedException.expectMessage("Failed to read BPMN model");
+
+        // when
+        client.workflows()
+              .deploy("test")
+              .addResourceStringUtf8("invalid", "invalid.bpmn")
+              .execute();
+    }
+
+    @Test
+    public void shouldNotDeployInvalidBpmnModel()
+    {
+        // given
+        clusteringRule.createTopic("test", PARTITION_COUNT);
+
+        // expect
+        expectedException.expect(ClientCommandRejectedException.class);
+        expectedException.expectMessage("Deployment was rejected");
+        expectedException.expectMessage("The process must contain at least one none start event.");
+
+        // when
+        client.workflows()
+              .deploy("test")
+              .addWorkflowModel(INVALID_WORKFLOW, "invalid.bpmn")
+              .execute();
+    }
+
+    @Test
+    public void shouldNotDeployNonExecutable() throws Exception
+    {
+        // given
+        clusteringRule.createTopic("test", PARTITION_COUNT);
+
+        // expect
+        expectedException.expect(ClientCommandRejectedException.class);
+        expectedException.expectMessage("Deployment was rejected");
+        expectedException.expectMessage("BPMN model must contain at least one executable process.");
+
+        // when
+        final String filePath = getClass().getResource("/workflows/nonExecutableProcess.bpmn").toURI().getPath();
+        client.workflows()
+              .deploy("test")
+              .addResourceFile(filePath)
+              .execute();
+    }
+
+    @Test
+    public void shouldNotDeployEmpty()
+    {
+        // given
+        clusteringRule.createTopic("test", PARTITION_COUNT);
+
+        // expect
+        expectedException.expect(ClientCommandRejectedException.class);
+        expectedException.expectMessage("Deployment was rejected");
+        expectedException.expectMessage("Deployment doesn't contain a resource to deploy.");
+
+        // when
+        client.workflows()
+              .deploy("test")
+              .execute();
+    }
+
+    @Test
+    public void shouldNotDeployForNonExistingTopic()
+    {
+        // given
+
+        // expect
+        expectedException.expect(ClientCommandRejectedException.class);
+        expectedException.expectMessage("Deployment was rejected");
+
+        // when
+        client.workflows()
+              .deploy("test")
+              .addWorkflowModel(WORKFLOW, "workflow.bpmn")
+              .execute();
     }
 }
