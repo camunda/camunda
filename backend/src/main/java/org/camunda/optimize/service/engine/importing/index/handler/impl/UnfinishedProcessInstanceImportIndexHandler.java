@@ -3,6 +3,7 @@ package org.camunda.optimize.service.engine.importing.index.handler.impl;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.fetcher.count.UnfinishedProcessInstanceCountFetcher;
 import org.camunda.optimize.service.engine.importing.index.handler.ScrollBasedImportIndexHandler;
+import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.util.EsHelper;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.common.unit.TimeValue;
@@ -20,11 +21,13 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.END_DATE;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.ENGINE;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_INSTANCE_ID;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.START_DATE;
 import static org.camunda.optimize.service.es.schema.type.UnfinishedProcessInstanceTrackingType.PROCESS_INSTANCE_IDS;
 import static org.camunda.optimize.service.es.schema.type.UnfinishedProcessInstanceTrackingType.UNFINISHED_PROCESS_INSTANCE_TRACKING_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsLookupQuery;
 
 
@@ -47,7 +50,14 @@ public class UnfinishedProcessInstanceImportIndexHandler extends ScrollBasedImpo
 
   @Override
   public long fetchMaxEntityCount() {
-    return unfinishedProcessInstanceCountFetcher.fetchUnfinishedHistoricProcessInstanceCount();
+
+    SearchResponse scrollResp = esclient
+        .prepareSearch(configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()))
+        .setTypes(configurationService.getProcessInstanceType())
+        .setQuery(buildBasicQuery())
+        .setSize(0)
+        .get();
+    return scrollResp.getHits().getTotalHits();
   }
 
   protected Set<String> performScrollQuery() {
@@ -109,7 +119,8 @@ public class UnfinishedProcessInstanceImportIndexHandler extends ScrollBasedImpo
     BoolQueryBuilder query = QueryBuilders.boolQuery();
     query
       .mustNot(existsQuery(END_DATE))
-      .mustNot(termsLookupQuery(PROCESS_INSTANCE_ID, termsLookup));
+      .mustNot(termsLookupQuery(PROCESS_INSTANCE_ID, termsLookup))
+      .must(termQuery(ENGINE, engineContext.getEngineAlias()));
     if (configurationService.getProcessDefinitionIdsToImport() != null &&
       !configurationService.getProcessDefinitionIdsToImport().isEmpty()) {
       for (String processDefinitionId : configurationService.getProcessDefinitionIdsToImport()) {

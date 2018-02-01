@@ -32,6 +32,10 @@ public class ProcessDefinitionManager {
       .getAvailableProcessDefinitions(engineContext);
   }
 
+  public int getAvailableProcessDefinitionCount(EngineContext engineContext) {
+    return getAvailableProcessDefinitions(engineContext).size();
+  }
+
   public void reset() {
     engineAliasToProcessDefinitions
       .values()

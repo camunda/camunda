@@ -116,7 +116,6 @@ public class MultipleEngineSupportIT {
 
     // when
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    embeddedOptimizeRule.storeImportIndexesToElasticsearch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
     secondEngineRule.deployAndStartProcess(
       Bpmn.createExecutableProcess()
@@ -131,7 +130,7 @@ public class MultipleEngineSupportIT {
   }
 
   @Test
-  public void importProgressReportWorksEvenIfOneEngineIsDown() throws OptimizeException {
+  public void importProgressReportWorksEvenIfOneEngineIsDown() throws Exception {
     // given
     addNonExistingSecondEngineToConfiguration();
     embeddedOptimizeRule.getConfigurationService().setMaximumBackoff(1l);
@@ -144,8 +143,7 @@ public class MultipleEngineSupportIT {
     );
 
     // when
-    embeddedOptimizeRule.scheduleImport();
-    embeddedOptimizeRule.scheduleImport();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // then

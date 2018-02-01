@@ -73,6 +73,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
         scheduleImportAndWaitUntilIsFinished(scheduler);
       }
     }
+    resetProcessDefinitionManager();
   }
 
   public void waitForBackoff() throws InterruptedException {
@@ -321,7 +322,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     resetProcessDefinitionManager();
   }
 
-  private void resetProcessDefinitionManager() {
+  public void resetProcessDefinitionManager() {
     getApplicationContext().getBean(ProcessDefinitionManager.class).reset();
   }
 

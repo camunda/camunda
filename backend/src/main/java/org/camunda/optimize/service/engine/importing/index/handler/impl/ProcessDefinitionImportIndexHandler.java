@@ -1,12 +1,8 @@
 package org.camunda.optimize.service.engine.importing.index.handler.impl;
 
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.engine.importing.fetcher.count.ProcessDefinitionCountFetcher;
-import org.camunda.optimize.service.engine.importing.fetcher.count.UnfinishedProcessInstanceCountFetcher;
-import org.camunda.optimize.service.engine.importing.fetcher.instance.ProcessDefinitionFetcher;
-import org.camunda.optimize.service.engine.importing.index.handler.AllEntitiesBasedImportIndexHandler;
+import org.camunda.optimize.service.engine.importing.index.ProcessDefinitionManager;
 import org.camunda.optimize.service.engine.importing.index.handler.DefinitionBasedImportIndexHandler;
-import org.camunda.optimize.service.util.BeanHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -18,7 +14,8 @@ import javax.annotation.PostConstruct;
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessDefinitionImportIndexHandler extends DefinitionBasedImportIndexHandler {
 
-  private ProcessDefinitionCountFetcher engineCountFetcher;
+  @Autowired
+  private ProcessDefinitionManager processDefinitionManager;
 
   public ProcessDefinitionImportIndexHandler(EngineContext engineContext) {
     super(engineContext);
@@ -26,13 +23,13 @@ public class ProcessDefinitionImportIndexHandler extends DefinitionBasedImportIn
 
   @PostConstruct
   public void init() {
-    engineCountFetcher = beanHelper.getInstance(ProcessDefinitionCountFetcher.class, this.engineContext);
     super.init();
   }
 
   @Override
   protected long fetchMaxEntityCountForDefinition(String processDefinitionId) {
-    return engineCountFetcher.fetchProcessDefinitionCount(processDefinitionId);
+    // every id is unique, so there is only a single definition that can be fetched per id
+    return 1L;
   }
 
   @Override
@@ -42,11 +39,7 @@ public class ProcessDefinitionImportIndexHandler extends DefinitionBasedImportIn
 
   @Override
   protected long fetchMaxEntityCountForAllDefinitions() {
-    if (configurationService.areProcessDefinitionsToImportDefined()) {
-      return engineCountFetcher.fetchProcessDefinitionCount(getAllProcessDefinitions());
-    } else {
-      return engineCountFetcher.fetchAllProcessDefinitionCount();
-    }
+    return processDefinitionManager.getAvailableProcessDefinitionCount(engineContext);
   }
 
   @Override

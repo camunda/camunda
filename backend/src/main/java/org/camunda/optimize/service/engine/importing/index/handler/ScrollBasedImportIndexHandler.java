@@ -85,7 +85,6 @@ public abstract class ScrollBasedImportIndexHandler
       resetScroll();
       ids = fetchNextPageOfProcessInstanceIds();
       if (ids.isEmpty()) {
-        updateMaxEntityCount();
         return Optional.empty();
       }
     }
@@ -136,6 +135,7 @@ public abstract class ScrollBasedImportIndexHandler
   }
 
   public OptionalDouble computeProgress() {
+    updateMaxEntityCount();
     Long maxEntityCount = this.maxEntityCount;
     Long importIndex = this.importIndex;
 

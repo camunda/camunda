@@ -123,14 +123,15 @@ public class ImportIT  {
 
     // when
     deployAndStartSimpleServiceTask();
+    embeddedOptimizeRule.resetProcessDefinitionManager();
 
     // then
-    // ( 100 (variable) +
+    // ( 50 (variable) +
     //   50 (process definitions) +
     //   50 (process definition xmls) +
     //    50 (finished process instances) +
-    //    50 (activity instances) ) / 5 = 60
-    assertThat(embeddedOptimizeRule.getProgressValue(), is(60L));
+    //    50 (activity instances) ) / 5 = 50
+    assertThat(embeddedOptimizeRule.getProgressValue(), is(50L));
   }
 
   @Test
@@ -159,6 +160,7 @@ public class ImportIT  {
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     embeddedOptimizeRule.storeImportIndexesToElasticsearch();
     deployAndStartSimpleServiceTask();
+    embeddedOptimizeRule.resetProcessDefinitionManager();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
     long firstImportProgress = embeddedOptimizeRule.getProgressValue();
 
@@ -476,6 +478,7 @@ public class ImportIT  {
     deployAndStartSimpleUserTask();
     engineRule.finishAllUserTasks();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+//    embeddedOptimizeRule.resetProcessDefinitionManager();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // then

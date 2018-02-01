@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.engine.importing.fetcher;
 
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.engine.importing.fetcher.count.cache.InstanceCountCache;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +17,9 @@ public abstract class AbstractEngineAwareFetcher {
   protected Logger logger = LoggerFactory.getLogger(getClass());
 
   protected EngineContext engineContext;
+
+  @Autowired
+  protected InstanceCountCache cache;
   @Autowired
   protected ConfigurationService configurationService;
 
@@ -29,5 +33,9 @@ public abstract class AbstractEngineAwareFetcher {
 
   public String getEngineAlias() {
     return engineContext.getEngineAlias();
+  }
+
+  public void reset() {
+    cache.reset();
   }
 }

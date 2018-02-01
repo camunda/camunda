@@ -324,11 +324,16 @@ public class ProcessDefinitionBaseImportIT {
     createAndSetProcessDefinition(createSimpleServiceTaskProcess());
 
     // when
-    embeddedOptimizeRule.scheduleImport();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     createAndAddProcessDefinitionToImportList(createSimpleServiceTaskProcess());
     embeddedOptimizeRule.updateImportIndex();
 
     // then
+    // ( 50 (variable) +
+    //   50 (process definitions) +
+    //   50 (process definition xmls) +
+    //    50 (finished process instances) +
+    //    50 (activity instances) ) / 5 = 50
     assertThat(embeddedOptimizeRule.getProgressValue(), is(50L));
   }
 

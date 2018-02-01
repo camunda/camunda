@@ -2,15 +2,10 @@ package org.camunda.optimize.service.engine.importing.index.handler.impl;
 
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.fetcher.count.FinishedProcessInstanceCountFetcher;
-import org.camunda.optimize.service.engine.importing.fetcher.instance.ProcessDefinitionFetcher;
 import org.camunda.optimize.service.engine.importing.index.handler.DefinitionBasedImportIndexHandler;
-import org.camunda.optimize.service.util.BeanHelper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
-
-import java.util.Collections;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
@@ -35,7 +30,7 @@ public class FinishedProcessInstanceImportIndexHandler extends DefinitionBasedIm
 
   @Override
   protected long fetchMaxEntityCountForDefinition(String processDefinitionId) {
-    return engineCountFetcher.fetchFinishedHistoricProcessInstanceCount(Collections.singletonList(processDefinitionId));
+    return engineCountFetcher.fetchCountForDefinition(processDefinitionId);
   }
 
   @Override
@@ -45,10 +40,12 @@ public class FinishedProcessInstanceImportIndexHandler extends DefinitionBasedIm
 
   @Override
   protected long fetchMaxEntityCountForAllDefinitions() {
-    if (configurationService.areProcessDefinitionsToImportDefined()) {
-      return engineCountFetcher.fetchFinishedHistoricProcessInstanceCount(getAllProcessDefinitions());
-    } else {
-      return engineCountFetcher.fetchAllFinishedHistoricProcessInstanceCount();
-    }
+    return engineCountFetcher.fetchAllFinishedHistoricProcessInstanceCount();
+  }
+
+  @Override
+  public void resetImportIndex() {
+    super.resetImportIndex();
+    engineCountFetcher.reset();
   }
 }

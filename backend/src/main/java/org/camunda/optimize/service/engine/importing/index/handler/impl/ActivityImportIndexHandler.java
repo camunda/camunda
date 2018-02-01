@@ -35,7 +35,7 @@ public class ActivityImportIndexHandler extends DefinitionBasedImportIndexHandle
 
   @Override
   protected long fetchMaxEntityCountForDefinition(String processDefinitionId) {
-    return engineCountFetcher.fetchHistoricActivityInstanceCount(Collections.singletonList(processDefinitionId));
+    return engineCountFetcher.fetchCountForDefinition(processDefinitionId);
   }
 
   @Override
@@ -45,10 +45,12 @@ public class ActivityImportIndexHandler extends DefinitionBasedImportIndexHandle
 
   @Override
   protected long fetchMaxEntityCountForAllDefinitions() {
-    if (configurationService.areProcessDefinitionsToImportDefined()) {
-      return engineCountFetcher.fetchHistoricActivityInstanceCount(getAllProcessDefinitions());
-    } else {
-      return engineCountFetcher.fetchAllHistoricActivityInstanceCount();
-    }
+    return engineCountFetcher.fetchAllHistoricActivityInstanceCount();
+  }
+
+  @Override
+  public void resetImportIndex() {
+    super.resetImportIndex();
+    engineCountFetcher.reset();
   }
 }

@@ -1,9 +1,11 @@
 package org.camunda.optimize.service.engine.importing.fetcher.count;
 
 import org.camunda.optimize.dto.engine.CountDto;
+import org.camunda.optimize.dto.optimize.importing.DefinitionImportInformation;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.fetcher.AbstractEngineAwareFetcher;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.engine.importing.fetcher.count.cache.InstanceCountCache;
+import org.camunda.optimize.service.engine.importing.index.ProcessDefinitionManager;
 import org.camunda.optimize.service.util.configuration.EngineConstantsUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -11,6 +13,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.engine.importing.fetcher.instance.EngineEntityFetcher.UTF8;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.INCLUDE_ONLY_FINISHED_INSTANCES;
@@ -21,17 +24,22 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 public class ActivityInstanceCountFetcher extends AbstractEngineAwareFetcher {
 
   @Autowired
-  private ConfigurationService configurationService;
+  private ProcessDefinitionManager processDefinitionManager;
 
   public ActivityInstanceCountFetcher(EngineContext engineContext) {
     super(engineContext);
   }
 
-  public Long fetchHistoricActivityInstanceCount(List<String> processDefinitionIds) {
+  private long fetchHistoricActivityInstanceCount(List<String> processDefinitionIds) {
     long totalCount = 0;
-
     for (String processDefinitionId : processDefinitionIds) {
-      CountDto newCount = getEngineClient()
+      totalCount += fetchCountForDefinition(processDefinitionId);
+    }
+    return totalCount;
+  }
+
+  public Long fetchCountForDefinition(String processDefinitionId) {
+    CountDto newCount = getEngineClient()
           .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
           .path(configurationService.getHistoricActivityInstanceCountEndpoint())
           .queryParam(EngineConstantsUtil.PROCESS_DEFINITION_ID, processDefinitionId)
@@ -39,20 +47,19 @@ public class ActivityInstanceCountFetcher extends AbstractEngineAwareFetcher {
           .request()
           .acceptEncoding(UTF8)
           .get(CountDto.class);
-      totalCount += newCount.getCount();
-    }
-
-    return totalCount;
+    cache.addCount(processDefinitionId, newCount.getCount());
+    return newCount.getCount();
   }
 
   public long fetchAllHistoricActivityInstanceCount() {
-    CountDto newCount = getEngineClient()
-        .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
-        .path(configurationService.getHistoricActivityInstanceCountEndpoint())
-        .queryParam(INCLUDE_ONLY_FINISHED_INSTANCES, TRUE)
-        .request()
-        .acceptEncoding(UTF8)
-        .get(CountDto.class);
-    return newCount.getCount();
+    if(cache.getEntrySize() < processDefinitionManager.getAvailableProcessDefinitionCount(engineContext)) {
+      List<String> definitionIds =
+        processDefinitionManager.getAvailableProcessDefinitions(engineContext)
+          .stream()
+          .map(DefinitionImportInformation::getProcessDefinitionId)
+          .collect(Collectors.toList());
+      fetchHistoricActivityInstanceCount(definitionIds);
+    }
+    return cache.getTotalCount();
   }
 }

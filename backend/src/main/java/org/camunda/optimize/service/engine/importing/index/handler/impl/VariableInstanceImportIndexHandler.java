@@ -1,8 +1,6 @@
 package org.camunda.optimize.service.engine.importing.index.handler.impl;
 
-import org.camunda.optimize.dto.optimize.importing.DefinitionImportInformation;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.engine.importing.fetcher.count.VariableInstanceCountFetcher;
 import org.camunda.optimize.service.engine.importing.index.ProcessDefinitionManager;
 import org.camunda.optimize.service.engine.importing.index.handler.ScrollBasedImportIndexHandler;
 import org.camunda.optimize.service.util.EsHelper;
@@ -12,7 +10,6 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.indices.TermsLookup;
-import org.elasticsearch.search.SearchContextMissingException;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
@@ -28,6 +25,7 @@ import java.util.Set;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.BOOLEAN_VARIABLES;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.DATE_VARIABLES;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.DOUBLE_VARIABLES;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.ENGINE;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.INTEGER_VARIABLES;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.LONG_VARIABLES;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_INSTANCE_ID;
@@ -37,13 +35,12 @@ import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.ST
 import static org.camunda.optimize.service.es.schema.type.VariableProcessInstanceTrackingType.PROCESS_INSTANCE_IDS;
 import static org.camunda.optimize.service.es.schema.type.VariableProcessInstanceTrackingType.VARIABLE_PROCESS_INSTANCE_TRACKING_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsLookupQuery;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class VariableInstanceImportIndexHandler extends ScrollBasedImportIndexHandler {
-
-  private VariableInstanceCountFetcher variableInstanceCountFetcher;
 
   @Autowired
   private ProcessDefinitionManager processDefinitionManager;
@@ -54,7 +51,6 @@ public class VariableInstanceImportIndexHandler extends ScrollBasedImportIndexHa
 
   @PostConstruct
   public void init() {
-    variableInstanceCountFetcher = beanHelper.getInstance(VariableInstanceCountFetcher.class, this.engineContext);
     super.init();
   }
 
@@ -63,35 +59,14 @@ public class VariableInstanceImportIndexHandler extends ScrollBasedImportIndexHa
   public long fetchMaxEntityCount() {
     // here the import index is based on process instances and therefore
     // we need to fetch the maximum number of process instances
-    Long result ;
-    if (configurationService.areProcessDefinitionsToImportDefined()) {
-      SearchResponse response = esclient
-          .prepareSearch(configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()))
-          .setTypes(configurationService.getProcessInstanceType())
-          .setQuery(QueryBuilders.matchAllQuery())
-          .setSize(0) // Don't return any documents, we don't need them.
-          .get();
-      result = response.getHits().getTotalHits();
-    } else {
-      try {
-        result = variableInstanceCountFetcher.fetchTotalProcessInstanceCountIfVariablesAreAvailable();
-      } catch (Exception e) {
-        result = fetchBasedOnDefinitions();
-      }
-    }
-
-    return result;
+    SearchResponse response = esclient
+      .prepareSearch(configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()))
+      .setTypes(configurationService.getProcessInstanceType())
+      .setQuery(buildBasicQuery())
+      .setSize(0) // Don't return any documents, we don't need them.
+      .get();
+    return response.getHits().getTotalHits();
   }
-
-  private Long fetchBasedOnDefinitions() {
-    Long total = 0L;
-
-    for (DefinitionImportInformation info : processDefinitionManager.getAvailableProcessDefinitions(engineContext)) {
-      total = total + variableInstanceCountFetcher.fetchTotalProcessInstanceCountIfVariablesAreAvailable(info.getProcessDefinitionId());
-    }
-    return total;
-  }
-
 
   protected Set<String> performScrollQuery() {
     logger.debug("Performing scroll search query!");
@@ -152,6 +127,7 @@ public class VariableInstanceImportIndexHandler extends ScrollBasedImportIndexHa
       PROCESS_INSTANCE_IDS);
     BoolQueryBuilder query = QueryBuilders.boolQuery();
     query
+      .must(termQuery(ENGINE, engineContext.getEngineAlias()))
       .must(existsQuery(START_DATE))
       .mustNot(termsLookupQuery(PROCESS_INSTANCE_ID, termsLookup))
       .mustNot(existsQuery(BOOLEAN_VARIABLES))
@@ -165,7 +141,7 @@ public class VariableInstanceImportIndexHandler extends ScrollBasedImportIndexHa
       !configurationService.getProcessDefinitionIdsToImport().isEmpty()) {
       for (String processDefinitionId : configurationService.getProcessDefinitionIdsToImport()) {
         query
-          .should(QueryBuilders.termQuery("processDefinitionId", processDefinitionId));
+          .should(termQuery("processDefinitionId", processDefinitionId));
       }
     }
     return query;
