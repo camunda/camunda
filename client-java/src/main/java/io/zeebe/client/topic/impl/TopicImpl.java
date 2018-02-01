@@ -43,4 +43,9 @@ public class TopicImpl implements Topic
         return partitions;
     }
 
+    @Override
+    public String toString()
+    {
+        return "Topic{" + "name='" + name + '\'' + ", partitions=" + partitions + '}';
+    }
 }

@@ -40,4 +40,11 @@ public class TopicsImpl implements Topics
     {
         return topics;
     }
+
+    @Override
+    public String toString()
+    {
+        return "Topics{" + "topics=" + topics + '}';
+    }
+
 }
