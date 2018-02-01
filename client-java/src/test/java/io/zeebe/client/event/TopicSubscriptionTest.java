@@ -54,6 +54,7 @@ import io.zeebe.test.util.Conditions;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.util.time.ClockUtil;
+import org.junit.rules.Timeout;
 
 public class TopicSubscriptionTest
 {
@@ -71,6 +72,9 @@ public class TopicSubscriptionTest
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
+
+    @Rule
+    public Timeout testTimeout = Timeout.seconds(15);
 
     protected ZeebeClient client;
 
