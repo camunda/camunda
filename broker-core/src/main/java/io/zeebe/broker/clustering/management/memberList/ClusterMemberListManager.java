@@ -230,7 +230,7 @@ public class ClusterMemberListManager implements RaftStateListener, OnOpenLogStr
     }
 
     @Override
-    public void onOpen(LogStream logStream)
+    public void onOpenLogStreamService(LogStream logStream)
     {
         final int partitionId = logStream.getPartitionId();
         final DirectBuffer savedTopicName = BufferUtil.cloneBuffer(logStream.getTopicName());

@@ -191,7 +191,7 @@ public class StartLogStreamServiceController
         @Override
         public void work(Context context) throws Exception
         {
-            onOpenCallback.onOpen(context.getRaft().getLogStream());
+            onOpenCallback.onOpenLogStreamService(context.getRaft().getLogStream());
             context.take(TRANSITION_DEFAULT);
         }
     }
