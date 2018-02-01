@@ -80,7 +80,7 @@ public class ClientChannelManager
         while (addressIt.hasNext())
         {
             final RemoteAddressImpl address = addressIt.next();
-            if (!channels.containsKey(address.getStreamId()) && address.isActive())
+            if (address.isActive() && !channels.containsKey(address.getStreamId()))
             {
                 openChannel(address);
                 workCount++;
