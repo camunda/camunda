@@ -18,6 +18,7 @@ package io.zeebe.gossip;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
+import java.util.Optional;
 
 import io.zeebe.clustering.gossip.GossipEventType;
 import io.zeebe.clustering.gossip.MembershipEventType;
@@ -217,13 +218,12 @@ public class GossipFailureDetectionTest
             .get();
 
         assertThat(counterAliveEvent.getGossipTerm().isEqual(suspectEvent.getGossipTerm())).isTrue();
-        final MembershipEvent lastAliveEvent = gossip1.getReceivedMembershipEvents(MembershipEventType.ALIVE, gossip3)
-                                                       .filter(e -> e.getGossipTerm()
+        final Optional<MembershipEvent> lastAliveEvent = gossip1.getReceivedMembershipEvents(MembershipEventType.ALIVE, gossip3)
+                                                               .filter(e -> e.getGossipTerm()
                                                                      .isGreaterThan(suspectEvent.getGossipTerm()))
-                                                       .findFirst()
-                                                       .get();
+                                                               .findFirst();
 
-        assertThat(lastAliveEvent.getGossipTerm().isGreaterThan(suspectEvent.getGossipTerm())).isTrue();
+        assertThat(lastAliveEvent).isPresent();
     }
 
 }
