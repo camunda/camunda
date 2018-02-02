@@ -17,10 +17,6 @@
  */
 package io.zeebe.broker.clustering.gossip.service;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
-
 import io.zeebe.broker.transport.cfg.TransportComponentCfg;
 import io.zeebe.gossip.Gossip;
 import io.zeebe.servicecontainer.Injector;
@@ -57,14 +53,6 @@ public class GossipService implements Service<Gossip>
         this.gossip = new Gossip(host, bufferingServerTransportInjector.getValue(),
                                  clientTransportInjector.getValue(), transportComponentCfg.gossip);
 
-        final List<SocketAddress> collect = Arrays.stream(transportComponentCfg.gossip.initialContactPoints)
-                                                  .map(SocketAddress::from)
-                                                  .collect(Collectors.toList());
-
-        if (!collect.isEmpty())
-        {
-            gossip.join(collect);
-        }
 
         actorRef = actorScheduler.schedule(gossip);
     }

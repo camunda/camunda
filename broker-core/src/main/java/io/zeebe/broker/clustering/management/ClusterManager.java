@@ -24,16 +24,10 @@ import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
-
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.slf4j.Logger;
+import java.util.stream.Collectors;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.handler.Topology;
@@ -57,14 +51,12 @@ import io.zeebe.raft.RaftPersistentStorage;
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.RequestResponseController;
-import io.zeebe.transport.ServerInputSubscription;
-import io.zeebe.transport.ServerOutput;
-import io.zeebe.transport.ServerResponse;
-import io.zeebe.transport.SocketAddress;
+import io.zeebe.transport.*;
 import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.actor.Actor;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.slf4j.Logger;
 
 public class ClusterManager implements Actor
 {
@@ -113,6 +105,14 @@ public class ClusterManager implements Actor
                                    .join();
 
         clusterMemberListManager = new ClusterMemberListManager(context, transportComponentCfg, this::inviteUpdatedMember);
+
+        final List<SocketAddress> collect = Arrays.stream(transportComponentCfg.gossip.initialContactPoints)
+                                                  .map(SocketAddress::from)
+                                                  .collect(Collectors.toList());
+        if (!collect.isEmpty())
+        {
+            context.getGossip().join(collect);
+        }
     }
 
     public void open()
