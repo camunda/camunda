@@ -304,4 +304,31 @@ public class GossipJoinTest
         assertThat(future).hasFailedWithThrowableThat().hasMessage("Can't join cluster without contact points.");
     }
 
+    @Test
+    public void shouldCloseClientRequestsOnJoinAndLeave()
+    {
+        // given
+        final int joinLeaveCount = 1_000;
+
+        // when - then
+        for (int i = 0; i < joinLeaveCount; i++)
+        {
+            gossip2.join(gossip1);
+
+            actorScheduler.waitUntilDone();
+            actorScheduler.waitUntilDone();
+
+            assertThat(gossip1.hasMember(gossip2)).isTrue();
+            assertThat(gossip2.hasMember(gossip1)).isTrue();
+            assertThat(gossip1.receivedMembershipEvent(MembershipEventType.JOIN, gossip2)).isTrue();
+
+            gossip1.clearReceivedEvents();
+            gossip2.getController().leave();
+
+            actorScheduler.waitUntilDone();
+            actorScheduler.waitUntilDone();
+
+            assertThat(gossip1.receivedMembershipEvent(MembershipEventType.LEAVE, gossip2)).isTrue();
+        }
+    }
 }

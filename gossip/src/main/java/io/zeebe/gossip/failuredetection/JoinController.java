@@ -394,6 +394,7 @@ public class JoinController
                 LOG.info("Left cluster successfully");
 
                 context.future.complete(null);
+                context.clear();
                 context.take(TRANSITION_RECEIVED);
             }
             else if (ClockUtil.getCurrentTimeInMillis() >= context.timeout)
