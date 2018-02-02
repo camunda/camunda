@@ -1,7 +1,7 @@
 import React from 'react';
 import {mount} from 'enzyme';
 
-import {loadCorrelationData} from './service';
+import {loadCorrelationData, getFlowNodeNames} from './service';
 
 import ChartRenderer from 'chart.js';
 
@@ -14,6 +14,10 @@ jest.mock('./service', () => {return {
       a: {activitiesReached: 3, activityCount: 1},
       b: {activitiesReached: 2, activityCount: 2}
     }
+  }),
+  getFlowNodeNames: jest.fn().mockReturnValue({
+    a: 'q',
+    b: 'w'
   })
 }});
 

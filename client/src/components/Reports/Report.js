@@ -3,7 +3,7 @@ import moment from 'moment';
 import {Link, Redirect} from 'react-router-dom';
 import {Button, Modal, Input, CopyToClipboard, ReportView} from 'components';
 
-import {loadSingleReport, remove, getReportData, saveReport} from './service';
+import {loadSingleReport, remove, getReportData, saveReport, getFlowNodeNames} from './service';
 import ControlPanel from './ControlPanel';
 
 import './Report.css';
@@ -52,9 +52,9 @@ export default class Report extends React.Component {
       data: stateData,
       originalData: stateData,
       reportResult: reportResult || {data: stateData},
-      loaded: true,
       originalName: name
     }, this.save);
+    this.idsToNames();
   }
 
   deleteReport = async evt => {
@@ -95,6 +95,7 @@ export default class Report extends React.Component {
       reportResult = {data};
     }
     this.setState({reportResult});
+    this.idsToNames();
   }
 
   allFieldsAreSelected = (data) => {
@@ -166,6 +167,27 @@ export default class Report extends React.Component {
     this.setState({
       deleteModalVisible: false
     });
+  }
+
+  idsToNames = async () => {
+    const {reportResult: {data}} = this.state;
+    const reportResult = Object.assign({}, this.state.reportResult);
+    const visualizations = ['pie', 'line', 'bar', 'table']
+
+    if(reportResult.result && data.view.entity === "flowNode" && visualizations.includes(data.visualization)) {
+      const flowNodeNames = await getFlowNodeNames(data.processDefinitionId);
+      const chartData = {};
+      Object.keys(reportResult.result).forEach((v) => {
+        chartData[flowNodeNames[v]] = reportResult.result[v];
+      });
+      reportResult.result = chartData;
+      this.setState({
+        reportResult
+      });
+    }
+    this.setState({
+      loaded: true
+    })
   }
 
   renderEditMode = () => {

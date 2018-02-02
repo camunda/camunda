@@ -16,6 +16,14 @@ export async function loadProcessDefinitions() {
   return await response.json();
 }
 
+export async function getFlowNodeNames(id) {
+  const response = await post(`/api/process-definition/${id}/flowNodeNames`, []);
+
+  const json = await response.json();
+
+  return await json.flowNodeNames;
+}
+
 export async function getReportData(query) {
   let response;
 
@@ -30,7 +38,7 @@ export async function getReportData(query) {
   } catch(e) {
     return null;
   }
-
+  
   return await response.json();
 }
 
