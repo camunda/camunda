@@ -85,6 +85,13 @@ export default class Report extends React.Component {
       [field]: newValue
     };
 
+    if (field === 'processDefinitionId') {
+      const filter = data.filter.filter((v) => {
+        return v.type !== 'executedFlowNodes' && v.type !== 'variable';
+      });
+      data.filter = filter;
+    }
+    
     this.setState({data});
 
     let reportResult;
