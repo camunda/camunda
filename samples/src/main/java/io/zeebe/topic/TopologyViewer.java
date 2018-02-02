@@ -15,49 +15,41 @@
  */
 package io.zeebe.topic;
 
-import java.util.List;
 import java.util.Properties;
-import java.util.stream.Collectors;
 
 import io.zeebe.client.ClientProperties;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.clustering.impl.TopologyResponse;
-import io.zeebe.client.topic.Partition;
-import io.zeebe.client.topic.Topics;
 
 public class TopologyViewer
 {
 
     public static void main(final String[] args)
     {
-        final String broker = "localhost:51015";
+        final String[] brokers = new String[] {"localhost:51015", "localhost:41015", "localhost:31015"};
 
-        final Properties clientProperties = new Properties();
-        clientProperties.put(ClientProperties.BROKER_CONTACTPOINT, broker);
-
-        try (ZeebeClient zeebeClient = ZeebeClient.create(clientProperties))
+        for (final String broker: brokers)
         {
-            final Topics topics = zeebeClient.topics().getTopics().execute();
-            final TopologyResponse topology = zeebeClient.requestTopology().execute();
+            final Properties clientProperties = new Properties();
+            clientProperties.put(ClientProperties.BROKER_CONTACTPOINT, broker);
 
-            System.out.println("Requesting topics and topology with inital contact point " + broker);
+            try (ZeebeClient zeebeClient = ZeebeClient.create(clientProperties))
+            {
+                final TopologyResponse topology = zeebeClient.requestTopology().execute();
 
-            System.out.println("  Topics:");
-            topics.getTopics().forEach(topic -> {
-                final List<Integer> partitions = topic.getPartitions().stream().map(Partition::getId).collect(Collectors.toList());
-                System.out.println("    Topic: " + topic.getName() + " Partitions: " + partitions);
-            });
+                System.out.println("Requesting topology with initial contact point " + broker);
 
-            System.out.println("  Topology:");
-            topology.getBrokers().forEach(b -> {
-                System.out.println("    " + b.getSocketAddress());
-                b.getPartitions().forEach(p -> System.out.println("      " + p.getTopicName() + "." + p.getPartitionId() + " - " + p.getState()));
-            });
+                System.out.println("  Topology:");
+                topology.getBrokers().forEach(b ->
+                {
+                    System.out.println("    " + b.getSocketAddress());
+                    b.getPartitions().forEach(p -> System.out.println("      " + p.getTopicName() + "." + p.getPartitionId() + " - " + p.getState()));
+                });
+            }
+            catch (final Exception e)
+            {
+                System.out.println("Broker " + broker + " not available");
+            }
         }
-        catch (final Exception e)
-        {
-            System.out.println("Broker " + broker + " not available");
-        }
-
     }
 }
