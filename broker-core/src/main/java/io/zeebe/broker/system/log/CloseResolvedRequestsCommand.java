@@ -36,6 +36,8 @@ public class CloseResolvedRequestsCommand implements Runnable
             {
                 request.close();
                 requests.remove(i);
+                // if a request is removed the next request has the same index
+                i--;
             }
         }
     }
