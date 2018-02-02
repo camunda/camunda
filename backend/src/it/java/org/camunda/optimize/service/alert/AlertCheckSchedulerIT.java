@@ -273,15 +273,6 @@ public class AlertCheckSchedulerIT extends AbstractAlertSchedulerIT {
     }
   }
 
-  private void setEmailConfiguration() {
-    embeddedOptimizeRule.getConfigurationService().setAlertEmailUsername("demo");
-    embeddedOptimizeRule.getConfigurationService().setAlertEmailPassword("demo");
-    embeddedOptimizeRule.getConfigurationService().setAlertEmailAddress("from@localhost.com");
-    embeddedOptimizeRule.getConfigurationService().setAlertEmailHostname("127.0.0.1");
-    embeddedOptimizeRule.getConfigurationService().setAlertEmailPort(6666);
-    embeddedOptimizeRule.getConfigurationService().setAlertEmailProtocol("NONE");
-  }
-
   private String startProcessAndCreateReport() throws IOException, InterruptedException {
     String processDefinitionId = deploySimpleServiceTaskProcess();
     engineRule.startProcessInstance(processDefinitionId);
@@ -290,14 +281,6 @@ public class AlertCheckSchedulerIT extends AbstractAlertSchedulerIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     return createAndStoreNumberReport(processDefinitionId);
-  }
-
-  private GreenMail initGreenMail() {
-    GreenMail greenMail = new GreenMail(new ServerSetup(6666, null, ServerSetup.PROTOCOL_SMTP));
-    greenMail.start();
-    greenMail.setUser("from@localhost.com", "demo", "demo");
-    greenMail.setUser("test@camunda.com", "test@camunda.com", "test@camunda.com");
-    return greenMail;
   }
 
 

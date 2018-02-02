@@ -61,6 +61,13 @@ public class AlertJob implements Job {
         alertJobResult = new AlertJobResult(alert);
         alertWriter.writeAlertStatus(false, alertId);
         alertJobResult.setStatusChanged(true);
+
+        if (alert.isFixNotification()) {
+          notificationService.notifyRecipient(
+            composeFixText(alert, reportDefinition, result),
+            alert.getEmail()
+          );
+        }
       }
 
       jobExecutionContext.setResult(alertJobResult);
@@ -70,6 +77,18 @@ public class AlertJob implements Job {
       logger.error("error while processing alert ofr report [{}]", alertId, e);
     }
 
+  }
+
+  private String composeFixText(AlertDefinitionDto alert, ReportDefinitionDto reportDefinition, NumberReportResultDto result) {
+    String emailBody = "Camunda Optimize - Report Status\n" +
+        "Report name: " + reportDefinition.getName() + "\n" +
+        "Status: Given threshold [" +
+        alert.getThreshold() +
+        "] is not exceeded anymore." +
+        "Current value: " +
+        result.getResult() +
+        ". Please check your Optimize dashboard for more information!";
+    return emailBody;
   }
 
   private AlertJobResult notifyIfNeeded(

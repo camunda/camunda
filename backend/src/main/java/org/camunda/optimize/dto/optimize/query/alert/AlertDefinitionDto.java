@@ -1,7 +1,5 @@
 package org.camunda.optimize.dto.optimize.query.alert;
 
-import org.camunda.optimize.dto.optimize.query.IdDto;
-
 import java.time.OffsetDateTime;
 
 /**
@@ -17,6 +15,17 @@ public class AlertDefinitionDto extends AlertCreationDto {
   protected String owner;
   protected String lastModifier;
   protected boolean triggered;
+  protected boolean fixNotification;
+
+  @Override
+  public boolean isFixNotification() {
+    return fixNotification;
+  }
+
+  @Override
+  public void setFixNotification(boolean fixNotification) {
+    this.fixNotification = fixNotification;
+  }
 
   public String getOwner() {
     return owner;

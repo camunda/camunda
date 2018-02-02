@@ -42,7 +42,7 @@ public class ReminderHandlingListener implements JobListener {
   @Override
   public void jobWasExecuted(JobExecutionContext context, JobExecutionException jobException) {
     AlertJobResult result = (AlertJobResult) context.getResult();
-    if (result.isStatusChanged()) {
+    if (result != null && result.isStatusChanged()) {
       // create reminders if needed
       if (result.isTriggered() && result.getAlert().getReminder() != null) {
         logger.debug("Creating reminder job for [{}]", result.getAlert().getId());
