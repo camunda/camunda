@@ -16,6 +16,7 @@
 package io.zeebe.broker.it.clustering;
 
 import static io.zeebe.broker.it.clustering.ClusteringRule.*;
+import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
@@ -117,7 +118,8 @@ public class GossipDifferentNodeJoinTest
         clusteringRule.restartBroker(ClusteringRule.BROKER_3_CLIENT_ADDRESS);
 
         // then
-        final List<SocketAddress> topologyBrokers = clusteringRule.getBrokersInCluster();
+        final List<SocketAddress> topologyBrokers = doRepeatedly(() -> clusteringRule.getBrokersInCluster())
+                .until(l -> l.size() == 3);
 
         assertThat(topologyBrokers).containsExactlyInAnyOrder(ClusteringRule.BROKER_1_CLIENT_ADDRESS,
                                                               ClusteringRule.BROKER_3_CLIENT_ADDRESS,
