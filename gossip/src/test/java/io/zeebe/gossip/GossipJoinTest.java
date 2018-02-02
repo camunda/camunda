@@ -23,6 +23,7 @@ import java.util.concurrent.CompletableFuture;
 
 import io.zeebe.clustering.gossip.GossipEventType;
 import io.zeebe.clustering.gossip.MembershipEventType;
+import io.zeebe.gossip.membership.SimpleMembershipListener;
 import io.zeebe.gossip.protocol.MembershipEvent;
 import io.zeebe.gossip.util.GossipClusterRule;
 import io.zeebe.gossip.util.GossipRule;
@@ -330,5 +331,23 @@ public class GossipJoinTest
 
             assertThat(gossip1.receivedMembershipEvent(MembershipEventType.LEAVE, gossip2)).isTrue();
         }
+    }
+
+    @Test
+    public void shouldAddMemberlistenerAfterJoin()
+    {
+        // given
+        final SimpleMembershipListener listener = new SimpleMembershipListener();
+        gossip2.join(gossip1);
+
+        actorScheduler.waitUntilDone();
+        actorScheduler.waitUntilDone();
+
+        // when
+        gossip2.getController().addMembershipListener(listener);
+        actorScheduler.waitUntilDone();
+
+        assertThat(listener.getMemberList().size()).isEqualTo(1);
+        assertThat(listener.getMemberList()).containsExactly(gossip2.getMember(gossip1));
     }
 }

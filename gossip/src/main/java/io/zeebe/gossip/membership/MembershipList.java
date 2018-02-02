@@ -167,6 +167,10 @@ public class MembershipList implements Iterable<Member>
     public void addListener(GossipMembershipListener listener)
     {
         listeners.add(listener);
+        for (Member member : members)
+        {
+            listener.onAdd(member);
+        }
     }
 
     public void removeListener(GossipMembershipListener listener)
