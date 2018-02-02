@@ -4,7 +4,7 @@ import {mount} from 'enzyme';
 import ControlPanel from './ControlPanel';
 
 jest.mock('./service', () => {return {
-  loadProcessDefinitions: () => [{id:'procdef1'}, {id:'procdef2'}]
+  loadProcessDefinitions: () => [{key:'foo', versions: [{id:'procdef1'}, {id:'procdef2'}]}]
 }});
 jest.mock('./filter', () => {return {
   Filter: () => 'Filter'
