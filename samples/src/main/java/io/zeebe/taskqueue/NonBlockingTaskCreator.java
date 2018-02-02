@@ -34,11 +34,13 @@ public class NonBlockingTaskCreator
 
     public static void main(String[] args)
     {
+        final int tasks = 1_000_000;
+
         final Properties properties = System.getProperties();
 
         ClientProperties.setDefaults(properties);
 
-        properties.putIfAbsent(SAMPLE_NUMBER_OF_REQUESTS, "1000000");
+        properties.putIfAbsent(SAMPLE_NUMBER_OF_REQUESTS, String.valueOf(tasks));
         properties.putIfAbsent(SAMPLE_MAX_CONCURRENT_REQUESTS, "128");
         properties.put(ClientProperties.CLIENT_MAXREQUESTS, "128");
 
