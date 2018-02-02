@@ -11,7 +11,7 @@ export async function remove(id) {
 }
 
 export async function loadProcessDefinitions() {
-  const response = await get('/api/process-definition');
+  const response = await get('/api/process-definition/groupedByKey');
 
   return await response.json();
 }
@@ -38,7 +38,7 @@ export async function getReportData(query) {
   } catch(e) {
     return null;
   }
-  
+
   return await response.json();
 }
 
