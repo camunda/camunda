@@ -18,6 +18,7 @@ package io.zeebe.util.sched;
 import java.time.Duration;
 import java.util.concurrent.*;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 import io.zeebe.util.sched.channel.ChannelSubscription;
 import io.zeebe.util.sched.channel.ConsumableChannel;
@@ -129,6 +130,23 @@ public class ActorControl
         subscription.submit();
     }
 
+    public void runBlocking(Runnable runnable, Consumer<Throwable> whenDone)
+    {
+        final RunnableAdapter<Void> adapter = RunnableAdapter.wrapRunnable(runnable);
+
+        ensureCalledFromWithinActor("pollBlocking(...)");
+
+        final ActorJob noop = new ActorJob();
+        noop.onJobAddedToTask(task);
+        noop.setAutoCompleting(true);
+        noop.setRunnable(adapter.wrapConsumer(whenDone));
+
+        final BlockingPollSubscription subscription = new BlockingPollSubscription(noop, adapter, task.getScheduler(), false);
+        noop.setSubscription(subscription);
+
+        subscription.submit();
+    }
+
     /**
      * Run the provided runnable repeatedly until it calls {@link #done()}.
      * To be used for jobs which may experience backpressure.
@@ -171,6 +189,14 @@ public class ActorControl
         blockedJob.setAutoCompleting(true);
         blockedJob.setBlockOnFuture((ActorFuture<T>) f, callback);
         currentJob.appendChild(blockedJob);
+    }
+
+    public <T> void await(Future<T> f, Consumer<Throwable> callback)
+    {
+        await(f, (r, t) ->
+        {
+            callback.accept(t);
+        });
     }
 
 

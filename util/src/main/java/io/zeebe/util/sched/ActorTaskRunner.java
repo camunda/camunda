@@ -63,7 +63,7 @@ public class ActorTaskRunner extends Thread
 
     private final ActorJobPool jobPool = new ActorJobPool();
 
-    private final ActorTaskRunnerIdleStrategy idleStrategy = new ActorTaskRunnerIdleStrategy();
+    protected ActorTaskRunnerIdleStrategy idleStrategy = new ActorTaskRunnerIdleStrategy();
 
     ActorTask currentTask;
 
@@ -152,7 +152,7 @@ public class ActorTaskRunner extends Thread
         }
     }
 
-    class ActorTaskRunnerIdleStrategy
+    protected class ActorTaskRunnerIdleStrategy
     {
         final BackoffIdleStrategy backoff = new BackoffIdleStrategy(100, 100, 1, TimeUnit.MILLISECONDS.toNanos(1));
         boolean isIdle;
@@ -166,7 +166,7 @@ public class ActorTaskRunner extends Thread
             idleTimeStart = System.nanoTime();
         }
 
-        void idle()
+        protected void idle()
         {
             if (!isIdle)
             {
@@ -180,7 +180,7 @@ public class ActorTaskRunner extends Thread
         }
 
 
-        void onTaskExecute()
+        protected void onTaskExecute()
         {
             backoff.reset();
 

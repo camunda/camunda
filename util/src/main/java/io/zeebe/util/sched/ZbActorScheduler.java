@@ -16,6 +16,7 @@
 package io.zeebe.util.sched;
 
 import java.io.PrintStream;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -26,13 +27,15 @@ import org.agrona.concurrent.status.CountersManager;
 
 public class ZbActorScheduler
 {
+    protected Duration blockingTaskShutdownTime = Duration.ofSeconds(15);
+
     private final AtomicReference<SchedulerState> state = new AtomicReference<ZbActorScheduler.SchedulerState>();
 
     private final RunnerAssignmentStrategy runnerAssignmentStrategy;
 
     final ActorTaskRunner[] nonBlockingTasksRunners;
 
-    final ThreadPoolExecutor blockingTasksRunner;
+    protected final ThreadPoolExecutor blockingTasksRunner;
 
     public final int runnerCount;
 
@@ -48,10 +51,15 @@ public class ZbActorScheduler
         for (int i = 0; i < runnerCount; i++)
         {
             final ActorRunnerMetrics metrics = new ActorRunnerMetrics(String.format("runner-%d", i), countersManager);
-            nonBlockingTasksRunners[i] = new ActorTaskRunner(this, i, metrics);
+            nonBlockingTasksRunners[i] = createTaskRunner(i, metrics);
         }
 
         blockingTasksRunner = new ThreadPoolExecutor(1, Integer.MAX_VALUE, 60L, TimeUnit.SECONDS, new SynchronousQueue<>(), new BlockingTasksThreadFactory());
+    }
+
+    protected ActorTaskRunner createTaskRunner(int i, final ActorRunnerMetrics metrics)
+    {
+        return new ActorTaskRunner(this, i, metrics);
     }
 
     public ZbActorScheduler(int numOfRunnerThreads, CountersManager countersManager)
@@ -151,7 +159,7 @@ public class ZbActorScheduler
 
             try
             {
-                blockingTasksRunner.awaitTermination(30, TimeUnit.SECONDS);
+                blockingTasksRunner.awaitTermination(blockingTaskShutdownTime.getSeconds(), TimeUnit.SECONDS);
             }
             catch (InterruptedException e)
             {

@@ -17,6 +17,8 @@ package io.zeebe.util.sched;
 
 import java.util.concurrent.*;
 
+import io.zeebe.util.LangUtil;
+
 public class FutureUtil
 {
     /**
@@ -37,6 +39,21 @@ public class FutureUtil
         {
             throw new RuntimeException(e);
         }
+    }
+
+    public static Runnable wrap(Future<?> future)
+    {
+        return () ->
+        {
+            try
+            {
+                future.get();
+            }
+            catch (Exception e)
+            {
+                LangUtil.rethrowUnchecked(e);
+            }
+        };
     }
 
 }
