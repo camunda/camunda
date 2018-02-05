@@ -13,9 +13,7 @@ export default class FilterList extends React.Component {
     this.state = {
       flowNodeNames: null
     }
-    if(this.props.processDefinitionId) {
-      this.loadFlowNodeNames();
-    }
+    this.loadFlowNodeNames();
   }
 
   componentDidUpdate(prevProps, prevState) {
@@ -25,8 +23,10 @@ export default class FilterList extends React.Component {
   }
 
   loadFlowNodeNames = async () => {
-    const flowNodeNames = await getFlowNodeNames(this.props.processDefinitionId);
-    this.setState({flowNodeNames})
+    if(this.props.processDefinitionId) {
+      const flowNodeNames = await getFlowNodeNames(this.props.processDefinitionId);
+      this.setState({flowNodeNames})
+    }
   }
 
   createOperator  = (name) => {
