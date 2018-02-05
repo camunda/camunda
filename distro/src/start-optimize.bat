@@ -47,7 +47,9 @@ if "%ARGUMENT%" neq "standalone" (
 :: plugin directory and the optimize jar
 set OPTIMIZE_CLASSPATH="%BASEDIR%environment;%BASEDIR%plugin\*;%BASEDIR%optimize-backend-${project.version}.jar"
 
+echo.
 echo Starting Camunda Optimize ${project.version}
+echo.
 
 IF DEFINED JAVA_HOME (
   set JAVA="%JAVA_HOME%\bin\java.exe"
@@ -55,5 +57,37 @@ IF DEFINED JAVA_HOME (
   set JAVA=java
 )
 
-%JAVA% -cp %OPTIMIZE_CLASSPATH% -Dfile.encoding=UTF-8 org.camunda.optimize.Main > %LOG_FILE% 2>&1
+:: start optimize
+start /b "Camunda Optimize" cmd /c ^(%JAVA% -cp %OPTIMIZE_CLASSPATH% -Dfile.encoding=UTF-8 org.camunda.optimize.Main ^> %LOG_FILE% ^2^>^&^1 ^) 
+
+
+:: command to query optimize
+set COMMAND=curl.exe -f -XGET http://localhost:8090/login
+:: query Optimize if it's up
+set RETRIES=5
+:while2
+%COMMAND% >nul 2>&1
+:: if there was an error wait and retry
+if %ERRORLEVEL% neq 0 (
+    echo Polling Optimize ... %RETRIES% retries left
+    timeout /t %SLEEP_TIME% /nobreak >nul
+    set /a RETRIES-=1
+    if %RETRIES% leq 0 (
+        echo Error: Optimize did not start!
+        exit /b
+    )
+    goto :while2
+)
+echo Optimize has successfully been started.
+
+:: open Optimize in the browser
+start "" http://localhost:8090/login
+
+:: print some info for the user
+set TAB=^ ^ ^ ^ 
+echo.
+echo You can now view Camunda Optimize in your browser.
+echo.
+echo %TAB%http://localhost:8090/login
+echo.
 
