@@ -92,9 +92,9 @@ public class AlertStateChangeIT extends AbstractAlertSchedulerIT {
     jobListener.getDone().await();
 
     //then
-    assertThat(greenMail.waitForIncomingEmail(3000, 1), is(false));
+    assertThat("email received", greenMail.waitForIncomingEmail(3000, 2), is(false));
     MimeMessage[] emails = greenMail.getReceivedMessages();
-    assertThat(emails.length, is(0));
+    assertThat(emails.length, is(1));
   }
 
   @Test
@@ -146,7 +146,7 @@ public class AlertStateChangeIT extends AbstractAlertSchedulerIT {
     jobListener.getDone().await();
 
     //then
-    assertThat(greenMail.waitForIncomingEmail(3000, 1), is(true));
+    assertThat(greenMail.waitForIncomingEmail(5000, 1), is(true));
     MimeMessage[] emails = greenMail.getReceivedMessages();
     assertThat(emails.length, is(2));
     assertThat(emails[1].getSubject(), is("[Camunda-Optimize] - Report status"));
