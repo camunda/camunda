@@ -15,12 +15,14 @@
  */
 package io.zeebe.dispatcher;
 
-import static org.agrona.BitUtil.align;
-import static org.assertj.core.api.Assertions.assertThat;
 import static io.zeebe.dispatcher.impl.PositionUtil.position;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.FRAME_ALIGNMENT;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
+import static org.agrona.BitUtil.align;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -29,18 +31,21 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.Position;
-import io.zeebe.dispatcher.impl.DispatcherContext;
-import io.zeebe.dispatcher.impl.log.LogBuffer;
-import io.zeebe.dispatcher.impl.log.LogBufferAppender;
-import io.zeebe.dispatcher.impl.log.LogBufferPartition;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.mockito.Mockito;
+
+import io.zeebe.dispatcher.impl.log.LogBuffer;
+import io.zeebe.dispatcher.impl.log.LogBufferAppender;
+import io.zeebe.dispatcher.impl.log.LogBufferPartition;
+import io.zeebe.util.sched.ActorCondition;
 
 public class DispatcherTest
 {
@@ -84,6 +89,7 @@ public class DispatcherTest
         when(logBuffer.getPartition(0)).thenReturn(logBufferPartition0);
         when(logBuffer.getPartition(1)).thenReturn(logBufferPartition1);
         when(logBuffer.getPartition(2)).thenReturn(logBufferPartition2);
+        when(logBuffer.createRawBufferView()).thenReturn(ByteBuffer.allocate(32));
 
         logAppender = mock(LogBufferAppender.class);
         publisherLimit = mock(Position.class);
@@ -99,13 +105,12 @@ public class DispatcherTest
                 A_LOG_WINDOW_LENGTH,
                 new String[0],
                 Dispatcher.MODE_PUB_SUB,
-                mock(DispatcherContext.class),
                 "test")
         {
             @Override
-            protected Subscription newSubscription(int subscriberId, String subscriberName)
+            protected Subscription newSubscription(int subscriberId, String subscriberName, ActorCondition onConsumption)
             {
-                subscriptionSpy = spy(new Subscription(subscriberPosition, subscriberId, subscriberName, dispatcher));
+                subscriptionSpy = spy(new Subscription(subscriberPosition, determineLimit(subscriberId), subscriberId, subscriberName, onConsumption, logBuffer));
                 return subscriptionSpy;
             }
         };
@@ -197,7 +202,7 @@ public class DispatcherTest
         when(logBufferPartition0.getTailCounterVolatile()).thenReturn(0);
         when(publisherLimit.getVolatile()).thenReturn(position(0, A_FRAGMENT_LENGTH));
 
-        when(logAppender.claim(logBufferPartition0, 0, claimedFragment, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID)).thenReturn(A_FRAGMENT_LENGTH);
+        when(logAppender.claim(eq(logBufferPartition0), eq(0), eq(claimedFragment), eq(A_MSG_PAYLOAD_LENGTH), eq(A_STREAM_ID), any())).thenReturn(A_FRAGMENT_LENGTH);
 
         // if
         final long newPosition = dispatcher.claim(claimedFragment, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID);
@@ -205,7 +210,7 @@ public class DispatcherTest
         // then
         assertThat(newPosition).isEqualTo(position(0, A_FRAGMENT_LENGTH));
 
-        verify(logAppender).claim(logBufferPartition0, 0, claimedFragment, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID);
+        verify(logAppender).claim(eq(logBufferPartition0), eq(0), eq(claimedFragment), eq(A_MSG_PAYLOAD_LENGTH), eq(A_STREAM_ID), Mockito.any());
 
         verify(publisherLimit).getVolatile();
         verify(publisherPosition).proposeMaxOrdered(position(0, A_FRAGMENT_LENGTH));
@@ -275,7 +280,7 @@ public class DispatcherTest
     public void shouldReadFragmentsFromPartition()
     {
         // given
-        dispatcher.doOpenSubscription("test");
+        dispatcher.doOpenSubscription("test", mock(ActorCondition.class));
         when(subscriberPosition.get()).thenReturn(0L);
         when(publisherPosition.get()).thenReturn(position(0, A_FRAGMENT_LENGTH));
 
@@ -294,7 +299,7 @@ public class DispatcherTest
     public void shouldNotReadBeyondPublisherPosition()
     {
         // given
-        dispatcher.doOpenSubscription("test");
+        dispatcher.doOpenSubscription("test", mock(ActorCondition.class));
         when(subscriptionSpy.getPosition()).thenReturn(0L);
         when(publisherPosition.get()).thenReturn(0L);
 
@@ -310,7 +315,7 @@ public class DispatcherTest
     {
         when(subscriberPosition.get()).thenReturn(position(10, 100));
 
-        dispatcher.doOpenSubscription("test");
+        dispatcher.doOpenSubscription("test", mock(ActorCondition.class));
         dispatcher.updatePublisherLimit();
 
         verify(publisherLimit).proposeMaxOrdered(position(10, 100 + A_LOG_WINDOW_LENGTH));
@@ -321,7 +326,7 @@ public class DispatcherTest
     {
         when(subscriberPosition.get()).thenReturn(position(10, A_PARITION_SIZE - A_LOG_WINDOW_LENGTH));
 
-        dispatcher.doOpenSubscription("test");
+        dispatcher.doOpenSubscription("test", mock(ActorCondition.class));
         dispatcher.updatePublisherLimit();
 
         verify(publisherLimit).proposeMaxOrdered(position(11, A_LOG_WINDOW_LENGTH));
@@ -331,7 +336,7 @@ public class DispatcherTest
     public void shouldReadFragmentsFromPartitionOnPeekAndConsume()
     {
         // given
-        dispatcher.doOpenSubscription("test");
+        dispatcher.doOpenSubscription("test", mock(ActorCondition.class));
         when(subscriberPosition.get()).thenReturn(0L);
         when(publisherPosition.get()).thenReturn(position(0, A_FRAGMENT_LENGTH));
 
@@ -352,8 +357,8 @@ public class DispatcherTest
         thrown.expect(IllegalStateException.class);
         thrown.expectMessage("subscription with name 's1' already exists");
 
-        dispatcher.doOpenSubscription("s1");
-        dispatcher.doOpenSubscription("s1");
+        dispatcher.doOpenSubscription("s1", mock(ActorCondition.class));
+        dispatcher.doOpenSubscription("s1", mock(ActorCondition.class));
     }
 
 }

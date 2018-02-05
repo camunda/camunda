@@ -15,12 +15,20 @@
  */
 package io.zeebe.dispatcher.impl.log;
 
-import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.*;
+import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.LOG_ACTIVE_PARTITION_ID_OFFSET;
+import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.LOG_INITIAL_PARTITION_ID_OFFSET;
+import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.LOG_MAX_FRAME_LENGTH_OFFSET;
+import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.LOG_META_DATA_LENGTH;
+import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.PARTITION_NEEDS_CLEANING;
+import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.logMetadataOffset;
+
+import java.nio.ByteBuffer;
+
+import org.agrona.concurrent.UnsafeBuffer;
+import org.slf4j.Logger;
 
 import io.zeebe.dispatcher.Loggers;
 import io.zeebe.util.allocation.AllocatedBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.slf4j.Logger;
 
 public class LogBuffer
 {
@@ -85,14 +93,18 @@ public class LogBuffer
     public int cleanPartitions()
     {
         int workCount = 0;
-        for (LogBufferPartition partition : partitions)
+
+        for (int i = 0; i < LogBufferDescriptor.PARTITION_COUNT; i++)
         {
+            final LogBufferPartition partition = partitions[i];
+
             if (partition.getStatusVolatile() == PARTITION_NEEDS_CLEANING)
             {
                 partition.clean();
                 ++workCount;
             }
         }
+
         return workCount;
     }
 
@@ -104,6 +116,11 @@ public class LogBuffer
     public int getPartitionSize()
     {
         return partitionSize;
+    }
+
+    public ByteBuffer createRawBufferView()
+    {
+        return rawBuffer.getRawBuffer().duplicate();
     }
 
 }

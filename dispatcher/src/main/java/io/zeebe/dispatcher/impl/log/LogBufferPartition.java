@@ -15,9 +15,11 @@
  */
 package io.zeebe.dispatcher.impl.log;
 
-import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.*;
+import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.PARTITION_CLEAN;
+import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.PARTITION_NEEDS_CLEANING;
+import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.PARTITION_STATUS_OFFSET;
+import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.PARTITION_TAIL_COUNTER_OFFSET;
 
-import io.zeebe.util.allocation.AllocatedBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public class LogBufferPartition
@@ -43,16 +45,9 @@ public class LogBufferPartition
      */
     protected final int rawBufferOffset;
 
-    /**
-     * the raw buffer in which this partition is allocated into.
-     * {@link #getUnderlyingBufferOffset()} is the offset of the data buffer in this buffer
-     */
-    protected final AllocatedBuffer underlyingBuffer;
-
     public LogBufferPartition(
             UnsafeBuffer dataBuffer,
             UnsafeBuffer metadataBuffer,
-            AllocatedBuffer underlyingBuffer,
             int rawBufferOffset)
     {
         dataBuffer.verifyAlignment();
@@ -60,7 +55,6 @@ public class LogBufferPartition
         this.dataBuffer = dataBuffer;
         this.metadataBuffer = metadataBuffer;
         this.partitionSize = dataBuffer.capacity();
-        this.underlyingBuffer = underlyingBuffer;
         this.rawBufferOffset = rawBufferOffset;
         dataBuffer.setMemory(0, partitionSize, (byte) 0);
     }
@@ -112,8 +106,4 @@ public class LogBufferPartition
         return rawBufferOffset;
     }
 
-    public AllocatedBuffer getUnderlyingBuffer()
-    {
-        return underlyingBuffer;
-    }
 }

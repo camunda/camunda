@@ -15,107 +15,76 @@
  */
 package io.zeebe.dispatcher;
 
-import static io.zeebe.dispatcher.impl.PositionUtil.position;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.FRAME_ALIGNMENT;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
-import static org.agrona.BitUtil.align;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import java.nio.charset.Charset;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.function.Consumer;
 
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.status.Position;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
 
-import io.zeebe.dispatcher.impl.DispatcherContext;
-import io.zeebe.dispatcher.impl.log.LogBuffer;
-import io.zeebe.dispatcher.impl.log.LogBufferAppender;
-import io.zeebe.dispatcher.impl.log.LogBufferPartition;
+import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
+import io.zeebe.test.util.AutoCloseableRule;
+import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 
 public class DispatcherPipelineModeTest
 {
+    public static final FragmentHandler NOOP_FRAGMENT_HANDLER = (buffer, offset, length, streamId, isMarkedFailed) -> FragmentHandler.CONSUME_FRAGMENT_RESULT;
 
-    static final byte[] A_MSG_PAYLOAD = "some bytes".getBytes(Charset.forName("utf-8"));
-    static final int A_MSG_PAYLOAD_LENGTH = A_MSG_PAYLOAD.length;
-    static final int A_FRAGMENT_LENGTH = align(A_MSG_PAYLOAD_LENGTH + HEADER_LENGTH, FRAME_ALIGNMENT);
-    static final UnsafeBuffer A_MSG = new UnsafeBuffer(A_MSG_PAYLOAD);
-    static final int AN_INITIAL_PARTITION_ID = 0;
-    static final int A_LOG_WINDOW_LENGTH = 128;
-    static final int A_PARITION_SIZE = 1024;
-    static final int A_STREAM_ID = 20;
-    static final String[] SUBSCRIPTION_NAMES = new String[] {"s1", "s2"};
-
-    Dispatcher dispatcher;
-    LogBuffer logBuffer;
-    LogBufferPartition logBufferPartition0;
-    LogBufferPartition logBufferPartition1;
-    LogBufferPartition logBufferPartition2;
-    LogBufferAppender logAppender;
-    Position publisherLimit;
-    Position publisherPosition;
-    FragmentHandler fragmentHandler;
-    ClaimedFragment claimedFragment;
-    Position subscriberPosition;
+    protected ControlledActorSchedulerRule scheduler = new ControlledActorSchedulerRule();
+    protected AutoCloseableRule closeables = new AutoCloseableRule();
 
     @Rule
-    public ExpectedException thrown = ExpectedException.none();
+    public RuleChain ruleChain = RuleChain.outerRule(scheduler).around(closeables);
 
-    @Before
-    public void setup()
+    protected Dispatcher buildDispatcher()
     {
-        logBuffer = mock(LogBuffer.class);
-        logBufferPartition0 = mock(LogBufferPartition.class);
-        logBufferPartition1 = mock(LogBufferPartition.class);
-        logBufferPartition2 = mock(LogBufferPartition.class);
-
-        when(logBuffer.getInitialPartitionId()).thenReturn(AN_INITIAL_PARTITION_ID);
-        when(logBuffer.getPartitionCount()).thenReturn(3);
-        when(logBuffer.getPartitionSize()).thenReturn(A_PARITION_SIZE);
-        when(logBuffer.getPartition(0)).thenReturn(logBufferPartition0);
-        when(logBuffer.getPartition(1)).thenReturn(logBufferPartition1);
-        when(logBuffer.getPartition(2)).thenReturn(logBufferPartition2);
-
-        logAppender = mock(LogBufferAppender.class);
-        publisherLimit = mock(Position.class);
-        publisherPosition = mock(Position.class);
-        fragmentHandler = mock(FragmentHandler.class);
-        claimedFragment = mock(ClaimedFragment.class);
-        subscriberPosition = mock(Position.class);
-
-        dispatcher = new Dispatcher(logBuffer,
-                logAppender,
-                publisherLimit,
-                publisherPosition,
-                A_LOG_WINDOW_LENGTH,
-                SUBSCRIPTION_NAMES,
-                Dispatcher.MODE_PIPELINE,
-                mock(DispatcherContext.class),
-                "test")
+        return buildDispatcher(b ->
         {
-            @Override
-            protected Subscription newSubscription(int subscriptionId, String subscriptionName)
-            {
-                return spy(super.newSubscription(subscriptionId, subscriptionName));
-            }
-        };
+        });
+    }
+
+    protected Dispatcher buildDispatcher(Consumer<DispatcherBuilder> configurator)
+    {
+        final DispatcherBuilder builder = Dispatchers.create("foo")
+                .actorScheduler(scheduler.get())
+                .modePipeline()
+                .bufferSize(1024 * 1024);
+
+        configurator.accept(builder);
+        final Dispatcher d = builder.build();
+        closeables.manage(() ->
+        {
+            d.closeAsync();
+            scheduler.workUntilDone();
+        });
+        return d;
     }
 
     @Test
-    public void shouldGetPredefinedSubscriptions()
+    public void shouldGetPredefinedSubscriptions() throws InterruptedException, ExecutionException
     {
-        final Subscription subscription1 = dispatcher.getSubscriptionByName("s1");
+        // given
+        final Dispatcher dispatcher = buildDispatcher(b -> b.subscriptions("s1", "s2"));
+        final Future<Subscription> future1 = dispatcher.getSubscriptionAsync("s1");
+        final Future<Subscription> future2 = dispatcher.getSubscriptionAsync("s2");
+
+        // when
+        scheduler.workUntilDone();
+
+        // when
+        final Subscription subscription1 = future1.get();
         assertThat(subscription1).isNotNull();
         assertThat(subscription1.getName()).isEqualTo("s1");
         assertThat(subscription1.getId()).isEqualTo(0);
 
-        final Subscription subscription2 = dispatcher.getSubscriptionByName("s2");
+        // then
+        final Subscription subscription2 = future2.get();
         assertThat(subscription2).isNotNull();
         assertThat(subscription2.getName()).isEqualTo("s2");
         assertThat(subscription2.getId()).isEqualTo(1);
@@ -123,69 +92,133 @@ public class DispatcherPipelineModeTest
     }
 
     @Test
-    public void shouldThrowExceptionForNonExistingSubscription()
-    {
-        // then
-        thrown.expect(RuntimeException.class);
-        thrown.expectMessage("Subscription with name nonExisting not registered");
-
-        // when
-        dispatcher.getSubscriptionByName("nonExisting");
-    }
-
-    @Test
-    public void shouldNotOpenSubscription()
-    {
-        thrown.expect(IllegalStateException.class);
-        thrown.expectMessage("Cannot open subscriptions in pipelining mode");
-
-        dispatcher.doOpenSubscription("new");
-    }
-
-    @Test
-    public void shouldNotCloseSubscription()
-    {
-        thrown.expect(IllegalStateException.class);
-        thrown.expectMessage("Cannot close subscriptions in pipelining mode");
-
-        final Subscription subscription = dispatcher.getSubscriptionByName("s1");
-        dispatcher.doCloseSubscription(subscription);
-    }
-
-    @Test
-    public void shouldNotReadBeyondPreviousSubscription()
+    public void shouldThrowExceptionForNonExistingSubscription() throws InterruptedException, ExecutionException
     {
         // given
-        final Subscription subscription1 = dispatcher.getSubscriptionByName("s1");
-        final Subscription subscription2 = dispatcher.getSubscriptionByName("s2");
+        final Dispatcher dispatcher = buildDispatcher();
+        final Future<Subscription> future = dispatcher.getSubscriptionAsync("nonExisting");
 
-        when(subscription1.getPosition()).thenReturn(position(0, 0));
-        when(subscription2.getPosition()).thenReturn(position(0, 0));
+        scheduler.workUntilDone();
 
-        when(publisherPosition.get()).thenReturn(position(0, A_FRAGMENT_LENGTH));
+        // then
+        assertThatThrownBy(() -> future.get())
+            .isInstanceOf(ExecutionException.class)
+            .hasMessage("Subscription with name nonExisting not registered")
+            .hasCauseInstanceOf(RuntimeException.class);
+    }
+
+    @Test
+    public void shouldNotOpenSubscription() throws InterruptedException, ExecutionException
+    {
+        // given
+        final Dispatcher dispatcher = buildDispatcher();
+        final Future<Subscription> future = dispatcher.openSubscriptionAsync("new");
+
+        scheduler.workUntilDone();
+
+        // when/then
+        assertThatThrownBy(() -> future.get())
+            .isInstanceOf(ExecutionException.class)
+            .hasMessage("Cannot open subscriptions in pipelining mode")
+            .hasCauseInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    public void shouldNotCloseSubscription() throws InterruptedException, ExecutionException
+    {
+        // given
+        final Dispatcher dispatcher = buildDispatcher(b -> b.subscriptions("s1"));
+        final Future<Subscription> openFuture = dispatcher.getSubscriptionAsync("s1");
+        scheduler.workUntilDone();
+
+        final Subscription subscription = openFuture.get();
+
+        final Future<Void> closeFuture = dispatcher.closeSubscriptionAsync(subscription);
+        scheduler.workUntilDone();
+
+        // when/then
+        assertThatThrownBy(() -> closeFuture.get())
+            .isInstanceOf(ExecutionException.class)
+            .hasMessage("Cannot close subscriptions in pipelining mode")
+            .hasCauseInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    public void shouldNotReadBeyondPreviousSubscription() throws InterruptedException, ExecutionException
+    {
+        // given
+        final Dispatcher dispatcher = buildDispatcher(b -> b.subscriptions("s1", "s2"));
+
+        final Future<Subscription> future1 = dispatcher.getSubscriptionAsync("s1");
+        final Future<Subscription> future2 = dispatcher.getSubscriptionAsync("s2");
+        scheduler.workUntilDone();
+
+        future1.get();
+        final Subscription subscription2 = future2.get();
 
         // when
-        final int fragmentsRead = subscription2.poll(fragmentHandler, 1);
+        final int fragmentsRead = subscription2.poll(NOOP_FRAGMENT_HANDLER, 1);
 
         // then
         assertThat(fragmentsRead).isEqualTo(0);
     }
 
     @Test
-    public void shouldUpdatePublisherLimit()
+    public void shouldUpdatePublisherLimit() throws InterruptedException, ExecutionException
     {
         // given
-        final Subscription subscription1 = dispatcher.getSubscriptionByName("s1");
-        final Subscription subscription2 = dispatcher.getSubscriptionByName("s2");
+        final Dispatcher dispatcher = buildDispatcher(b -> b
+                .bufferSize(1024 * 1024)
+                .subscriptions("s1", "s2"));
 
-        when(subscription1.getPosition()).thenReturn(position(0, 2 * A_FRAGMENT_LENGTH));
-        when(subscription2.getPosition()).thenReturn(position(0, A_FRAGMENT_LENGTH));
+        final Future<Subscription> future1 = dispatcher.getSubscriptionAsync("s1");
+        final Future<Subscription> future2 = dispatcher.getSubscriptionAsync("s2");
+        scheduler.workUntilDone();
+
+        final Subscription subscription1 = future1.get();
+        final Subscription subscription2 = future2.get();
+
+        final int messageLength = 32;
+
+        publishMessages(dispatcher, 2, messageLength);
+        scheduler.workUntilDone();
+
+        final long initialPublisherLimit = dispatcher.getPublisherLimit();
+
+        // consuming one fragment
+        subscription1.poll(NOOP_FRAGMENT_HANDLER, 2);
+        subscription2.poll(NOOP_FRAGMENT_HANDLER, 1);
+
+        final long expectedPublisherLimit = initialPublisherLimit + DataFrameDescriptor.alignedFramedLength(messageLength);
 
         // when
-        dispatcher.updatePublisherLimit();
+        scheduler.workUntilDone();
 
         // then
-        verify(publisherLimit).proposeMaxOrdered(position(0, A_FRAGMENT_LENGTH + A_LOG_WINDOW_LENGTH));
+        assertThat(dispatcher.getPublisherLimit()).isEqualTo(expectedPublisherLimit);
+    }
+
+    protected void publishMessages(Dispatcher dispatcher, int numMessages, int length)
+    {
+        for (int i = 0; i < numMessages; i++)
+        {
+            long position = -2;
+
+            do
+            {
+                position = dispatcher.offer(bufferOfLength(length));
+            }
+            while (position == -2);
+
+            if (position < 0)
+            {
+                throw new RuntimeException("Could not publish message " + i);
+            }
+        }
+    }
+    protected static DirectBuffer bufferOfLength(int length)
+    {
+        return new UnsafeBuffer(new byte[length]);
     }
 
 }

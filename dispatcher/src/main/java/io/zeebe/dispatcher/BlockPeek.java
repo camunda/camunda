@@ -25,6 +25,7 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.Position;
 import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
+import io.zeebe.util.sched.ActorCondition;
 
 /**
  * Represents a block of fragments to read from.
@@ -44,10 +45,12 @@ public class BlockPeek implements Iterable<DirectBuffer>
     protected int newPartitionOffset;
 
     protected DataFrameIterator iterator = new DataFrameIterator();
+    private ActorCondition dataConsumed;
 
     public void setBlock(
             final ByteBuffer byteBuffer,
             final Position position,
+            final ActorCondition dataConsumed,
             final int streamId,
             final int bufferOffset,
             final int blockLength,
@@ -56,6 +59,7 @@ public class BlockPeek implements Iterable<DirectBuffer>
     {
         this.byteBuffer = byteBuffer;
         this.subscriberPosition = position;
+        this.dataConsumed = dataConsumed;
         this.streamId = streamId;
         this.bufferOffset = bufferOffset;
         this.blockLength = blockLength;
@@ -121,6 +125,7 @@ public class BlockPeek implements Iterable<DirectBuffer>
     protected void updatePosition()
     {
         subscriberPosition.proposeMaxOrdered(position(newPartitionId, newPartitionOffset));
+        dataConsumed.signal();
     }
 
     public int getStreamId()

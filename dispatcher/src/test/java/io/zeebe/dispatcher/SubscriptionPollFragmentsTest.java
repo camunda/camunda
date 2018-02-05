@@ -42,7 +42,10 @@ import static org.mockito.Mockito.when;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.Position;
 import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
+import io.zeebe.dispatcher.impl.log.LogBuffer;
 import io.zeebe.dispatcher.impl.log.LogBufferPartition;
+import io.zeebe.util.sched.ActorCondition;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
@@ -70,11 +73,13 @@ public class SubscriptionPollFragmentsTest
         metadataBufferMock = mock(UnsafeBuffer.class);
 
         when(dataBufferMock.capacity()).thenReturn(A_PARTITION_LENGTH);
-        logBufferPartition = new LogBufferPartition(dataBufferMock, metadataBufferMock, null, 0);
+        logBufferPartition = new LogBufferPartition(dataBufferMock, metadataBufferMock, 0);
 
         mockSubscriberPosition = mock(Position.class);
         mockFragmentHandler = mock(FragmentHandler.class);
-        subscription = new Subscription(mockSubscriberPosition, 0, "0", mock(Dispatcher.class));
+        final ActorCondition onConsumed = mock(ActorCondition.class);
+
+        subscription = new Subscription(mockSubscriberPosition, mock(Position.class), 0, "0", onConsumed, mock(LogBuffer.class));
     }
 
     @Test

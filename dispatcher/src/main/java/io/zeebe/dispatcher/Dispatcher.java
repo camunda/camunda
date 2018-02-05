@@ -15,20 +15,14 @@
  */
 package io.zeebe.dispatcher;
 
-import static io.zeebe.dispatcher.impl.PositionUtil.partitionId;
-import static io.zeebe.dispatcher.impl.PositionUtil.partitionOffset;
-import static io.zeebe.dispatcher.impl.PositionUtil.position;
+import static io.zeebe.dispatcher.impl.PositionUtil.*;
 import static io.zeebe.dispatcher.impl.log.LogBufferAppender.RESULT_PADDING_AT_END_OF_PARTITION;
 
 import java.util.Arrays;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 
-import io.zeebe.dispatcher.impl.DispatcherContext;
-import io.zeebe.dispatcher.impl.log.LogBuffer;
-import io.zeebe.dispatcher.impl.log.LogBufferAppender;
-import io.zeebe.dispatcher.impl.log.LogBufferPartition;
-import io.zeebe.util.actor.Actor;
+import io.zeebe.dispatcher.impl.log.*;
+import io.zeebe.util.sched.*;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.status.AtomicLongPosition;
 import org.agrona.concurrent.status.Position;
@@ -38,18 +32,17 @@ import org.agrona.concurrent.status.Position;
  * Component for sending and receiving messages between different threads.
  *
  */
-public class Dispatcher implements AutoCloseable
+public class Dispatcher extends ZbActor implements AutoCloseable
 {
     public static final int MODE_PUB_SUB = 1;
     public static final int MODE_PIPELINE = 2;
-
-    protected final DispatcherContext context;
 
     protected final LogBuffer logBuffer;
     protected final LogBufferAppender logAppender;
 
     protected final Position publisherLimit;
     protected final Position publisherPosition;
+    protected final String[] defaultSubscriptionNames;
     protected Subscription[] subscriptions;
 
     protected final int maxFrameLength;
@@ -61,6 +54,12 @@ public class Dispatcher implements AutoCloseable
 
     protected volatile boolean isClosed = false;
 
+    private ActorCondition dataConsumed;
+
+    private Runnable backgroundTask = this::runBackgroundTask;
+
+    private final Runnable onClaimComplete = this::signalSubsciptions;
+
     public Dispatcher(
             LogBuffer logBuffer,
             LogBufferAppender logAppender,
@@ -69,7 +68,6 @@ public class Dispatcher implements AutoCloseable
             int logWindowLength,
             String[] subscriptionNames,
             int mode,
-            DispatcherContext context,
             String name)
     {
         this.logBuffer = logBuffer;
@@ -78,32 +76,66 @@ public class Dispatcher implements AutoCloseable
         this.publisherPosition = publisherPosition;
         this.logWindowLength = logWindowLength;
         this.mode = mode;
-        this.context = context;
         this.name = name;
 
         this.partitionSize = logBuffer.getPartitionSize();
         this.maxFrameLength = partitionSize / 16;
 
-        this.subscriptions = initSubscriptions(subscriptionNames);
+        this.subscriptions = new Subscription[0];
+        this.defaultSubscriptionNames = subscriptionNames;
     }
 
-    protected Subscription[] initSubscriptions(String[] subscriptionNames)
+    @Override
+    public String getName()
     {
-        int subscriptionSize = 0;
-        if (subscriptionNames != null)
+        return name;
+    }
+
+    private void runBackgroundTask()
+    {
+        int workCount = 0;
+
+        workCount += updatePublisherLimit();
+        workCount += logBuffer.cleanPartitions();
+
+        if (workCount > 0)
         {
-            subscriptionSize = subscriptionNames.length;
+            actor.yield();
+            actor.run(backgroundTask);
+        }
+    }
+
+    @Override
+    protected void onActorStarted()
+    {
+        dataConsumed = actor.onCondition("data-consumed", backgroundTask);
+        openDefaultSubscriptions();
+    }
+
+    @Override
+    protected void onActorClosing()
+    {
+        publisherLimit.close();
+        publisherPosition.close();
+
+        final Subscription[] subscriptionsCopy = Arrays.copyOf(subscriptions, subscriptions.length);
+
+        for (Subscription subscription : subscriptionsCopy)
+        {
+            doCloseSubscription(subscription);
         }
 
-        final Subscription[] subscriptions = new Subscription[subscriptionSize];
+        isClosed = true;
+    }
+
+    protected void openDefaultSubscriptions()
+    {
+        final int subscriptionSize = defaultSubscriptionNames == null ? 0 : defaultSubscriptionNames.length;
 
         for (int i = 0; i < subscriptionSize; i++)
         {
-            final Subscription subscription = newSubscription(i, subscriptionNames[i]);
-            subscriptions[i] = subscription;
+            doOpenSubscription(defaultSubscriptionNames[i], dataConsumed);
         }
-
-        return subscriptions;
     }
 
     /**
@@ -188,10 +220,20 @@ public class Dispatcher implements AutoCloseable
                 newPosition = updatePublisherPosition(activePartitionId, newOffset);
 
                 publisherPosition.proposeMaxOrdered(newPosition);
+                signalSubsciptions();
             }
         }
 
         return newPosition;
+    }
+
+    private void signalSubsciptions()
+    {
+        final Subscription[] subscriptions = this.subscriptions;
+        for (int i = 0; i < subscriptions.length; i++)
+        {
+            subscriptions[i].signalReadAvailable();
+        }
     }
 
     /**
@@ -241,7 +283,8 @@ public class Dispatcher implements AutoCloseable
                         activePartitionId,
                         claim,
                         length,
-                        streamId);
+                        streamId,
+                        onClaimComplete);
             }
             else
             {
@@ -293,7 +336,8 @@ public class Dispatcher implements AutoCloseable
                                                   activePartitionId,
                                                   batch,
                                                   fragmentCount,
-                                                  batchLength);
+                                                  batchLength,
+                                                  onClaimComplete);
                 }
                 else
                 {
@@ -324,38 +368,6 @@ public class Dispatcher implements AutoCloseable
         }
 
         return newPosition;
-    }
-
-    /**
-     * Returns the position till the given subscription can read.
-     */
-    public long subscriberLimit(Subscription subscription)
-    {
-        long limit = -1;
-
-        if (!isClosed)
-        {
-            if (mode == MODE_PUB_SUB)
-            {
-                limit = publisherPosition.get();
-            }
-            else
-            {
-                final int subscriberId = subscription.getId();
-                if (subscriberId == 0)
-                {
-                    limit = publisherPosition.get();
-                }
-                else
-                {
-                    // in pipelining mode, a subscriber's limit is the position of the
-                    // previous subscriber
-                    limit = subscriptions[subscriberId - 1].getPosition();
-                }
-            }
-        }
-
-        return limit;
     }
 
     public int updatePublisherLimit()
@@ -411,7 +423,7 @@ public class Dispatcher implements AutoCloseable
      */
     public Subscription openSubscription(String subscriptionName)
     {
-        return openSubscriptionAsync(subscriptionName).join();
+        return FutureUtil.join(openSubscriptionAsync(subscriptionName));
     }
 
     /**
@@ -419,18 +431,31 @@ public class Dispatcher implements AutoCloseable
      * operation fails if the dispatcher runs in pipeline-mode or a subscription
      * with this name already exists.
      */
-    public CompletableFuture<Subscription> openSubscriptionAsync(String subscriptionName)
+    public Future<Subscription> openSubscriptionAsync(String subscriptionName)
     {
-        return addToDispatcherCommandQueue(() -> doOpenSubscription(subscriptionName));
+        return actor.call(() ->
+        {
+            if (mode == MODE_PIPELINE)
+            {
+                throw new IllegalStateException("Cannot open subscriptions in pipelining mode");
+            }
+
+            return doOpenSubscription(subscriptionName, dataConsumed);
+        });
     }
 
-    protected Subscription doOpenSubscription(String subscriptionName)
+    public Future<Subscription> getSubscriptionAsync(String subscriptionName)
     {
-        if (mode == MODE_PIPELINE)
-        {
-            throw new IllegalStateException("Cannot open subscriptions in pipelining mode");
-        }
+        return actor.call(() -> getSubscriptionByName(subscriptionName));
+    }
 
+    public Subscription getSubscription(String subscriptionName)
+    {
+        return FutureUtil.join(getSubscriptionAsync(subscriptionName));
+    }
+
+    protected Subscription doOpenSubscription(String subscriptionName, ActorCondition onConsumption)
+    {
         ensureUniqueSubscriptionName(subscriptionName);
 
         final Subscription[] newSubscriptions = new Subscription[subscriptions.length + 1];
@@ -438,11 +463,13 @@ public class Dispatcher implements AutoCloseable
 
         final int subscriberId = newSubscriptions.length - 1;
 
-        final Subscription subscription = newSubscription(subscriberId, subscriptionName);
+        final Subscription subscription = newSubscription(subscriberId, subscriptionName, onConsumption);
 
         newSubscriptions[subscriberId] = subscription;
 
         this.subscriptions = newSubscriptions;
+
+        onConsumption.signal();
 
         return subscription;
     }
@@ -455,11 +482,34 @@ public class Dispatcher implements AutoCloseable
         }
     }
 
-    protected Subscription newSubscription(final int subscriptionId, final String subscriptionName)
+    protected Subscription newSubscription(final int subscriptionId, final String subscriptionName, ActorCondition onConsumption)
     {
         final AtomicLongPosition position = new AtomicLongPosition();
         position.setOrdered(position(logBuffer.getActivePartitionIdVolatile(), 0));
-        return new Subscription(position, subscriptionId, subscriptionName, this);
+        final Position limit = determineLimit(subscriptionId);
+
+        return new Subscription(position, limit, subscriptionId, subscriptionName, onConsumption, logBuffer);
+    }
+
+    protected Position determineLimit(int subscriptionId)
+    {
+        if (mode == MODE_PUB_SUB)
+        {
+            return publisherPosition;
+        }
+        else
+        {
+            if (subscriptionId == 0)
+            {
+                return publisherPosition;
+            }
+            else
+            {
+                // in pipelining mode, a subscriber's limit is the position of the
+                // previous subscriber
+                return subscriptions[subscriptionId - 1].position;
+            }
+        }
     }
 
     /**
@@ -470,16 +520,24 @@ public class Dispatcher implements AutoCloseable
      */
     public void closeSubscription(Subscription subscriptionToClose)
     {
-        closeSubscriptionAsync(subscriptionToClose).join();
+        FutureUtil.join(closeSubscriptionAsync(subscriptionToClose));
     }
 
     /**
      * Close the given subscription asynchronously. The operation fails if the
      * dispatcher runs in pipeline-mode.
      */
-    public CompletableFuture<Void> closeSubscriptionAsync(Subscription subscriptionToClose)
+    public Future<Void> closeSubscriptionAsync(Subscription subscriptionToClose)
     {
-        return addToDispatcherCommandQueue(() -> doCloseSubscription(subscriptionToClose));
+        return actor.call(() ->
+        {
+            if (mode == MODE_PIPELINE)
+            {
+                throw new IllegalStateException("Cannot close subscriptions in pipelining mode");
+            }
+
+            doCloseSubscription(subscriptionToClose);
+        });
     }
 
     protected void doCloseSubscription(Subscription subscriptionToClose)
@@ -489,11 +547,11 @@ public class Dispatcher implements AutoCloseable
             return; // don't need to adjust the subscriptions when closed
         }
 
-        if (mode == MODE_PIPELINE)
-        {
-            throw new IllegalStateException("Cannot close subscriptions in pipelining mode");
-        }
+        // close subscription
+        subscriptionToClose.isClosed = true;
+        subscriptionToClose.position.close();
 
+        // remove from list
         final int len = subscriptions.length;
         int index = 0;
 
@@ -530,7 +588,7 @@ public class Dispatcher implements AutoCloseable
      * @return the subscription
      * @throws exception if no such subscription is opened
      */
-    public Subscription getSubscriptionByName(String subscriptionName)
+    private Subscription getSubscriptionByName(String subscriptionName)
     {
         final Subscription subscription = findSubscriptionByName(subscriptionName);
 
@@ -571,65 +629,12 @@ public class Dispatcher implements AutoCloseable
     @Override
     public void close()
     {
-        closeAsync().join();
+        FutureUtil.join(closeAsync());
     }
 
-    public CompletableFuture<Void> closeAsync()
+    public Future<Void> closeAsync()
     {
-        return addToDispatcherCommandQueue(() ->
-        {
-            isClosed = true;
-
-            publisherLimit.close();
-            publisherPosition.close();
-
-            final CompletableFuture<?>[] subScriptionFutures = new CompletableFuture<?>[subscriptions.length];
-            for (int i = 0; i < subscriptions.length; i++)
-            {
-                final CompletableFuture<Void> subscriptionFuture = subscriptions[i].closeAsnyc();
-                subScriptionFutures[i] = subscriptionFuture;
-            }
-
-            return subScriptionFutures;
-        })
-        .thenCompose(CompletableFuture::allOf)
-        .thenRun(() ->
-        {
-            logBuffer.close();
-            if (context.getConductorReference() != null)
-            {
-                context.getConductorReference().close();
-            }
-        });
-    }
-
-    protected CompletableFuture<Void> addToDispatcherCommandQueue(Runnable runnable)
-    {
-        return addToDispatcherCommandQueue(() ->
-        {
-            runnable.run();
-            return null;
-        });
-    }
-
-    protected <T> CompletableFuture<T> addToDispatcherCommandQueue(Callable<T> callable)
-    {
-        final CompletableFuture<T> future = new CompletableFuture<>();
-
-        context.getDispatcherCommandQueue().add((d) ->
-        {
-            try
-            {
-                final T result = callable.call();
-                future.complete(result);
-            }
-            catch (Exception e)
-            {
-                future.completeExceptionally(e);
-            }
-        });
-
-        return future;
+        return actor.close();
     }
 
     public LogBuffer getLogBuffer()
@@ -654,14 +659,21 @@ public class Dispatcher implements AutoCloseable
         }
     }
 
+    public long getPublisherLimit()
+    {
+        if (isClosed)
+        {
+            return -1L;
+        }
+        else
+        {
+            return publisherLimit.get();
+        }
+    }
+
     public int getSubscriberCount()
     {
         return subscriptions.length;
-    }
-
-    public Actor getConductor()
-    {
-        return context.getConductor();
     }
 
     @Override
@@ -669,5 +681,4 @@ public class Dispatcher implements AutoCloseable
     {
         return "Dispatcher [" + name + "]";
     }
-
 }

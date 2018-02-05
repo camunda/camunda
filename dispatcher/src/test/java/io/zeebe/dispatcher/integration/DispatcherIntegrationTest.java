@@ -24,13 +24,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import io.zeebe.dispatcher.BlockPeek;
@@ -40,25 +40,12 @@ import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.dispatcher.Subscription;
 import io.zeebe.dispatcher.impl.log.LogBuffer;
-import io.zeebe.util.actor.ActorScheduler;
-import io.zeebe.util.actor.ActorSchedulerBuilder;
+import io.zeebe.util.sched.testing.ActorSchedulerRule;
 
 public class DispatcherIntegrationTest
 {
-    private ActorScheduler actorScheduler;
-
-    @Before
-    public void setup()
-    {
-        actorScheduler = ActorSchedulerBuilder.createDefaultScheduler("test");
-    }
-
-    @After
-    public void teardown() throws Exception
-    {
-        actorScheduler.close();
-    }
-
+    @Rule
+    public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(1);
 
     class Consumer implements FragmentHandler
     {
@@ -83,18 +70,17 @@ public class DispatcherIntegrationTest
     public void testOffer() throws Exception
     {
         // 1 million messages
-        final int totalWork = 1000000;
+        final int totalWork = 1_000_000;
         final UnsafeBuffer msg = new UnsafeBuffer(ByteBuffer.allocate(4534));
 
         final Dispatcher dispatcher = Dispatchers.create("default")
-                .actorScheduler(actorScheduler)
+                .actorScheduler(actorSchedulerRule.get())
                 .bufferSize(1024 * 1024 * 10) // 10 MB buffersize
                 .build();
 
         final Consumer consumer = new Consumer();
 
         final Subscription subscription = dispatcher.openSubscription("test");
-
 
         final Thread consumerThread = new Thread(() ->
         {
@@ -120,7 +106,7 @@ public class DispatcherIntegrationTest
         final ClaimedFragment claimedFragment = new ClaimedFragment();
 
         final Dispatcher dispatcher = Dispatchers.create("default")
-                .actorScheduler(actorScheduler)
+                .actorScheduler(actorSchedulerRule.get())
                 .bufferSize(1024 * 1024 * 10) // 10 MB buffersize
                 .build();
 
@@ -153,7 +139,7 @@ public class DispatcherIntegrationTest
         final BlockPeek blockPeek = new BlockPeek();
 
         final Dispatcher dispatcher = Dispatchers.create("default")
-                .actorScheduler(actorScheduler)
+                .actorScheduler(actorSchedulerRule.get())
                 .bufferSize(1024 * 1024 * 10) // 10 MB buffersize
                 .build();
 
@@ -202,14 +188,14 @@ public class DispatcherIntegrationTest
         final Consumer consumer2 = new Consumer();
 
         final Dispatcher dispatcher = Dispatchers.create("default")
-                .actorScheduler(actorScheduler)
+                .actorScheduler(actorSchedulerRule.get())
                 .bufferSize(1024 * 1024 * 10) // 10 MB buffersize
                 .modePipeline()
                 .subscriptions("s1", "s2")
                 .build();
 
-        final Subscription subscription1 = dispatcher.getSubscriptionByName("s1");
-        final Subscription subscription2 = dispatcher.getSubscriptionByName("s2");
+        final Subscription subscription1 = dispatcher.getSubscription("s1");
+        final Subscription subscription2 = dispatcher.getSubscription("s2");
 
         final Thread consumerThread1 = new Thread(() ->
         {
@@ -219,13 +205,19 @@ public class DispatcherIntegrationTest
             }
         });
 
+        final AtomicBoolean thread2OvertookThread1 = new AtomicBoolean(false);
+
         final Thread consumerThread2 = new Thread(() ->
         {
             while (consumer2.counter < totalWork)
             {
                 // in pipeline mode, the second consumer should not overtake the
                 // first consumer
-                assertThat(consumer2.counter).isLessThanOrEqualTo(consumer1.counter);
+                if (consumer2.counter > consumer1.counter)
+                {
+                    thread2OvertookThread1.set(true);
+                    // do not leave the loop or else the other thread won't be able to complete
+                }
 
                 subscription2.peekAndConsume(consumer2, Integer.MAX_VALUE);
             }
@@ -238,6 +230,8 @@ public class DispatcherIntegrationTest
 
         consumerThread1.join();
         consumerThread2.join();
+
+        assertThat(thread2OvertookThread1).isFalse();
 
         dispatcher.close();
     }
@@ -252,14 +246,14 @@ public class DispatcherIntegrationTest
         final BlockPeek blockPeek2 = new BlockPeek();
 
         final Dispatcher dispatcher = Dispatchers.create("default")
-                .actorScheduler(actorScheduler)
+                .actorScheduler(actorSchedulerRule.get())
                 .bufferSize(1024 * 1024 * 10) // 10 MB buffersize
                 .modePipeline()
                 .subscriptions("s1", "s2")
                 .build();
 
-        final Subscription subscription1 = dispatcher.getSubscriptionByName("s1");
-        final Subscription subscription2 = dispatcher.getSubscriptionByName("s2");
+        final Subscription subscription1 = dispatcher.getSubscription("s1");
+        final Subscription subscription2 = dispatcher.getSubscription("s2");
 
         final AtomicInteger counter1 = new AtomicInteger(0);
         final AtomicInteger counter2 = new AtomicInteger(0);
@@ -327,14 +321,14 @@ public class DispatcherIntegrationTest
         };
 
         final Dispatcher dispatcher = Dispatchers.create("default")
-                .actorScheduler(actorScheduler)
+                .actorScheduler(actorSchedulerRule.get())
                 .bufferSize(1024 * 1024 * 10) // 10 MB buffersize
                 .modePipeline()
                 .subscriptions("s1", "s2")
                 .build();
 
-        final Subscription subscription1 = dispatcher.getSubscriptionByName("s1");
-        final Subscription subscription2 = dispatcher.getSubscriptionByName("s2");
+        final Subscription subscription1 = dispatcher.getSubscription("s1");
+        final Subscription subscription2 = dispatcher.getSubscription("s2");
 
         final Thread consumerThread1 = new Thread(() ->
         {
@@ -371,7 +365,7 @@ public class DispatcherIntegrationTest
         final UnsafeBuffer msg = new UnsafeBuffer(ByteBuffer.allocate(4534));
 
         final Dispatcher dispatcher = Dispatchers.create("default")
-                .actorScheduler(actorScheduler)
+                .actorScheduler(actorSchedulerRule.get())
                 .bufferSize(1024 * 1024 * 10) // 10 MB buffersize
                 .initialPartitionId(2)
                 .build();
@@ -408,7 +402,7 @@ public class DispatcherIntegrationTest
     {
         // given
         final Dispatcher dispatcher = Dispatchers.create("default")
-                .actorScheduler(actorScheduler)
+                .actorScheduler(actorSchedulerRule.get())
                 .bufferSize(1024 * 10)
                 .initialPartitionId(2)
                 .build();
@@ -425,6 +419,22 @@ public class DispatcherIntegrationTest
         // then
         assertThat(handler.handledFragmentLengths).hasSize(1);
         assertThat(handler.handledFragmentLengths).containsExactly(0);
+    }
+
+    @Test
+    public void shouldCloseDispatcher()
+    {
+        // given
+        final Dispatcher dispatcher = Dispatchers.create("default")
+            .actorScheduler(actorSchedulerRule.get())
+            .bufferSize(1024 * 10)
+            .build();
+
+        // when
+        dispatcher.close();
+
+        // then
+        assertThat(dispatcher.isClosed()).isTrue();
     }
 
     protected static class LoggingFragmentHandler implements FragmentHandler

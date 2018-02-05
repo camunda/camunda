@@ -76,7 +76,8 @@ public class LogBufferAppender
             final int activePartitionId,
             final ClaimedFragment claim,
             final int length,
-            final int streamId)
+            final int streamId,
+            Runnable onComplete)
     {
         final int partitionSize = partition.getPartitionSize();
         final int framedMessageLength = framedLength(length);
@@ -97,7 +98,7 @@ public class LogBufferAppender
             buffer.putShort(typeOffset(frameOffset), TYPE_MESSAGE);
             buffer.putInt(streamIdOffset(frameOffset), streamId);
 
-            claim.wrap(buffer, frameOffset, framedMessageLength);
+            claim.wrap(buffer, frameOffset, framedMessageLength, onComplete);
             // Do not commit the message
         }
         else
@@ -113,7 +114,8 @@ public class LogBufferAppender
             final int activePartitionId,
             final ClaimedFragmentBatch batch,
             final int fragmentCount,
-            final int batchLength)
+            final int batchLength,
+            final Runnable onComplete)
     {
         final int partitionSize = partition.getPartitionSize();
         // reserve enough space for frame alignment because each batch fragment must start on an aligned position
@@ -129,7 +131,7 @@ public class LogBufferAppender
         {
             final UnsafeBuffer buffer = partition.getDataBuffer();
             // all fragment data are written using the claimed batch
-            batch.wrap(buffer, activePartitionId, frameOffset, alignedFrameLength);
+            batch.wrap(buffer, activePartitionId, frameOffset, alignedFrameLength, onComplete);
         }
         else
         {

@@ -23,14 +23,11 @@ import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
-import io.zeebe.dispatcher.impl.DispatcherConductor;
-import io.zeebe.dispatcher.impl.DispatcherContext;
 import io.zeebe.dispatcher.impl.log.LogBuffer;
 import io.zeebe.dispatcher.impl.log.LogBufferAppender;
 import io.zeebe.util.EnsureUtil;
-import io.zeebe.util.actor.ActorReference;
-import io.zeebe.util.actor.ActorScheduler;
 import io.zeebe.util.allocation.*;
+import io.zeebe.util.sched.ZbActorScheduler;
 import org.agrona.BitUtil;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -58,9 +55,7 @@ public class DispatcherBuilder
 
     protected AtomicBuffer countersBuffer;
 
-    protected ActorScheduler actorScheduler;
-
-    protected boolean conductorExternallyManaged = false;
+    protected ZbActorScheduler actorScheduler;
 
     protected String[] subscriptionNames;
 
@@ -114,13 +109,7 @@ public class DispatcherBuilder
         return this;
     }
 
-    public DispatcherBuilder conductorExternallyManaged()
-    {
-        this.conductorExternallyManaged = true;
-        return this;
-    }
-
-    public DispatcherBuilder actorScheduler(ActorScheduler actorScheduler)
+    public DispatcherBuilder actorScheduler(ZbActorScheduler actorScheduler)
     {
         this.actorScheduler = actorScheduler;
         return this;
@@ -193,6 +182,8 @@ public class DispatcherBuilder
 
     public Dispatcher build()
     {
+        Objects.requireNonNull(actorScheduler, "Actor scheduler cannot be null.");
+
         final int partitionSize = BitUtil.align(bufferSize / PARTITION_COUNT, 8);
 
         final AllocatedBuffer allocatedBuffer = initAllocatedBuffer(partitionSize);
@@ -227,8 +218,6 @@ public class DispatcherBuilder
 
         final int bufferWindowLength = partitionSize / 4;
 
-        final DispatcherContext context = new DispatcherContext();
-
         final Dispatcher dispatcher = new Dispatcher(
             logBuffer,
             logAppender,
@@ -237,21 +226,11 @@ public class DispatcherBuilder
             bufferWindowLength,
             subscriptionNames,
             mode,
-            context,
             dispatcherName);
 
         dispatcher.updatePublisherLimit(); // make subscription initially writable without waiting for conductor to do this
 
-        final DispatcherConductor conductor = new DispatcherConductor(dispatcherName, context, dispatcher);
-        context.setConductor(conductor);
-
-        if (!conductorExternallyManaged)
-        {
-            Objects.requireNonNull(actorScheduler, "Actor scheduler cannot be null.");
-
-            final ActorReference actorReference = actorScheduler.schedule(conductor);
-            context.setConductorReference(actorReference);
-        }
+        actorScheduler.submitActor(dispatcher);
 
         return dispatcher;
     }

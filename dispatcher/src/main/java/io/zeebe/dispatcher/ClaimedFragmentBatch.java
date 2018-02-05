@@ -15,13 +15,13 @@
  */
 package io.zeebe.dispatcher;
 
-import static org.agrona.UnsafeAccess.UNSAFE;
 import static io.zeebe.dispatcher.impl.PositionUtil.position;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.*;
+import static org.agrona.UnsafeAccess.UNSAFE;
 
+import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
 
 /**
  * A claimed batch of fragments in the buffer. Use
@@ -47,12 +47,14 @@ public class ClaimedFragmentBatch
     private int currentOffset;
     private int nextOffset;
 
+    private Runnable onCompleteHandler;
+
     public ClaimedFragmentBatch()
     {
         buffer = new UnsafeBuffer(0, 0);
     }
 
-    public void wrap(UnsafeBuffer underlyingbuffer, int partitionId, int fragmentOffset, int fragmentLength)
+    public void wrap(UnsafeBuffer underlyingbuffer, int partitionId, int fragmentOffset, int fragmentLength, Runnable onCompleteHandler)
     {
         buffer.wrap(underlyingbuffer, fragmentOffset, fragmentLength);
 
@@ -61,6 +63,8 @@ public class ClaimedFragmentBatch
 
         currentOffset = 0;
         nextOffset = 0;
+
+        this.onCompleteHandler = onCompleteHandler;
     }
 
     /**
@@ -152,6 +156,7 @@ public class ClaimedFragmentBatch
         // commit the first fragment at the end so that the batch can be read at
         // once
         buffer.putIntOrdered(lengthOffset(FIRST_FRAGMENT_OFFSET), firstFragmentFramedLength);
+        onCompleteHandler.run();
 
         reset();
     }
@@ -174,6 +179,7 @@ public class ClaimedFragmentBatch
         }
 
         fillRemainingBatchSize();
+        onCompleteHandler.run();
 
         reset();
     }
@@ -193,6 +199,7 @@ public class ClaimedFragmentBatch
     private void reset()
     {
         buffer.wrap(0, 0);
+        onCompleteHandler = null;
     }
 
 }

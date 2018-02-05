@@ -38,7 +38,7 @@ public class PartitionBuilder
             final UnsafeBuffer dataSection = new UnsafeBuffer(buffer, dataSectionOffset, partitionSize);
             final UnsafeBuffer metadataSection = new UnsafeBuffer(buffer, metaDataSectionOffset, PARTITION_META_DATA_LENGTH);
 
-            partitions[i] = new LogBufferPartition(dataSection, metadataSection, allocatedBuffer, dataSectionOffset);
+            partitions[i] = new LogBufferPartition(dataSection, metadataSection, dataSectionOffset);
         }
 
         return partitions;

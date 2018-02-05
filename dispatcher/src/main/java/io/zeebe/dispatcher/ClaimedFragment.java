@@ -32,16 +32,18 @@ import org.agrona.concurrent.UnsafeBuffer;
  */
 public class ClaimedFragment
 {
-
     protected final UnsafeBuffer buffer;
+
+    private Runnable onCompleteHandler;
 
     public ClaimedFragment()
     {
         buffer = new UnsafeBuffer(0, 0);
     }
 
-    public void wrap(UnsafeBuffer underlyingbuffer, int fragmentOffset, int fragmentLength)
+    public void wrap(UnsafeBuffer underlyingbuffer, int fragmentOffset, int fragmentLength, Runnable onCompleteHandler)
     {
+        this.onCompleteHandler = onCompleteHandler;
         buffer.wrap(underlyingbuffer, fragmentOffset, fragmentLength);
     }
 
@@ -75,7 +77,8 @@ public class ClaimedFragment
     {
         // commit the message by writing the positive framed length
         buffer.putIntOrdered(lengthOffset(0), buffer.capacity());
-        reset(buffer);
+        onCompleteHandler.run();
+        reset();
     }
 
     /**
@@ -87,12 +90,14 @@ public class ClaimedFragment
         // abort the message by setting type to padding and writing the positive framed length
         buffer.putInt(typeOffset(0), TYPE_PADDING);
         buffer.putIntOrdered(lengthOffset(0), buffer.capacity());
-        reset(buffer);
+        onCompleteHandler.run();
+        reset();
     }
 
-    private static void reset(UnsafeBuffer fragmentWrapper)
+    private void reset()
     {
-        fragmentWrapper.wrap(0, 0);
+        buffer.wrap(0, 0);
+        onCompleteHandler = null;
     }
 
     public boolean isOpen()

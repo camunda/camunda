@@ -15,22 +15,16 @@
  */
 package io.zeebe.dispatcher.integration;
 
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.*;
 import static org.assertj.core.api.Assertions.assertThat;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedFramedLength;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.streamIdOffset;
 
+import io.zeebe.dispatcher.*;
+import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
+import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import io.zeebe.dispatcher.*;
-import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
-import io.zeebe.util.actor.ActorScheduler;
-import io.zeebe.util.actor.ActorSchedulerBuilder;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 
 public class FragmentBatchIntegrationTest
 {
@@ -38,9 +32,11 @@ public class FragmentBatchIntegrationTest
     private static final byte[] MSG2 = "msg2".getBytes();
     private static final byte[] MSG3 = "msg3".getBytes();
 
+    @Rule
+    public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(1);
+
     private Dispatcher dispatcher;
     private Subscription subscription;
-    private ActorScheduler actorScheduler;
 
     private BlockPeek blockPeek;
     private ClaimedFragmentBatch batch;
@@ -48,11 +44,9 @@ public class FragmentBatchIntegrationTest
     @Before
     public void init()
     {
-        actorScheduler = ActorSchedulerBuilder.createDefaultScheduler("test");
-
         dispatcher = Dispatchers.create("default")
                 .bufferSize(1024 * 32)
-                .actorScheduler(actorScheduler)
+                .actorScheduler(actorSchedulerRule.get())
                 .build();
 
         subscription = dispatcher.openSubscription("test");
@@ -65,7 +59,6 @@ public class FragmentBatchIntegrationTest
     public void cleanUp() throws Exception
     {
         dispatcher.close();
-        actorScheduler.close();
     }
 
     @Test

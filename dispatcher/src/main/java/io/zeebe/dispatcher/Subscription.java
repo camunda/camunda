@@ -32,7 +32,6 @@ import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.streamIdOffset;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.typeOffset;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.CompletableFuture;
 
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.Position;
@@ -41,31 +40,62 @@ import org.slf4j.Logger;
 import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
 import io.zeebe.dispatcher.impl.log.LogBuffer;
 import io.zeebe.dispatcher.impl.log.LogBufferPartition;
+import io.zeebe.util.sched.ActorCondition;
+import io.zeebe.util.sched.channel.AbstractConsumableChannelImpl;
+import io.zeebe.util.sched.channel.ConsumableChannel;
 
-public class Subscription
+public class Subscription extends AbstractConsumableChannelImpl implements ConsumableChannel
 {
     public static final Logger LOG = Loggers.DISPATCHER_LOGGER;
 
+    protected final Position limit;
     protected final Position position;
     protected final LogBuffer logBuffer;
-    protected final Dispatcher dispatcher;
     protected final int id;
     protected final String name;
+    protected final ActorCondition dataConsumed;
+    protected final ByteBuffer rawDispatcherBufferView;
 
     protected volatile boolean isClosed = false;
 
-    public Subscription(Position position, int id, String name, Dispatcher dispatcher)
+
+    public Subscription(Position position, Position limit, int id, String name, ActorCondition onConsumption, LogBuffer logBuffer)
     {
         this.position = position;
         this.id = id;
         this.name = name;
-        this.dispatcher = dispatcher;
-        this.logBuffer = dispatcher.getLogBuffer();
+        this.limit = limit;
+        this.logBuffer = logBuffer;
+        this.dataConsumed = onConsumption;
+
+        // required so that a subscription can freely modify position and limit of the raw buffer
+        this.rawDispatcherBufferView = logBuffer.createRawBufferView();
     }
 
     public long getPosition()
     {
         return position.get();
+    }
+
+    @Override
+    public boolean hasAvailable()
+    {
+        final long currentPosition = position.get();
+        final long limit = getLimit();
+
+        return limit > currentPosition;
+    }
+
+    protected long getLimit()
+    {
+        if (!limit.isClosed())
+        {
+            return limit.get();
+        }
+        else
+        {
+            return -1;
+        }
     }
 
     /**
@@ -84,8 +114,7 @@ public class Subscription
         if (!isClosed)
         {
             final long currentPosition = position.get();
-
-            final long limit = dispatcher.subscriberLimit(this);
+            final long limit = getLimit();
 
             if (limit > currentPosition)
             {
@@ -102,6 +131,8 @@ public class Subscription
                                               false);
             }
         }
+
+        dataConsumed.signal();
 
         return fragmentsRead;
     }
@@ -180,6 +211,8 @@ public class Subscription
 
         position.setOrdered(position(partitionId, fragmentOffset));
 
+        dataConsumed.signal();
+
         return fragmentsConsumed;
     }
 
@@ -200,8 +233,7 @@ public class Subscription
         if (!isClosed)
         {
             final long currentPosition = position.get();
-
-            final long limit = dispatcher.subscriberLimit(this);
+            final long limit = getLimit();
 
             if (limit > currentPosition)
             {
@@ -220,21 +252,9 @@ public class Subscription
             }
         }
 
+        dataConsumed.signal();
+
         return fragmentsRead;
-    }
-
-    public void close()
-    {
-        closeAsnyc().join();
-    }
-
-    public CompletableFuture<Void> closeAsnyc()
-    {
-        isClosed = true;
-
-        final CompletableFuture<Void> future = dispatcher.closeSubscriptionAsync(this);
-        future.thenRun(() -> position.close());
-        return future;
     }
 
     /**
@@ -262,7 +282,7 @@ public class Subscription
         {
             final long currentPosition = position.get();
 
-            final long limit = dispatcher.subscriberLimit(this);
+            final long limit = getLimit();
 
             if (limit > currentPosition)
             {
@@ -295,7 +315,6 @@ public class Subscription
     {
         final UnsafeBuffer buffer = partition.getDataBuffer();
         final int bufferOffset = partition.getUnderlyingBufferOffset();
-        final ByteBuffer rawBuffer = partition.getUnderlyingBuffer().getRawBuffer();
         final int firstFragmentOffset = partitionOffset;
 
         int readBytes = 0;
@@ -386,7 +405,15 @@ public class Subscription
         {
             final int absoluteOffset = bufferOffset + firstFragmentOffset;
 
-            availableBlock.setBlock(rawBuffer, position, initialStreamId, absoluteOffset, blockLength, partitionId, offset);
+            availableBlock.setBlock(
+                    rawDispatcherBufferView,
+                    position,
+                    dataConsumed,
+                    initialStreamId,
+                    absoluteOffset,
+                    blockLength,
+                    partitionId,
+                    offset);
         }
         return blockLength;
     }
@@ -412,5 +439,4 @@ public class Subscription
         builder.append("]");
         return builder.toString();
     }
-
 }
