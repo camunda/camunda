@@ -33,19 +33,31 @@ export default class DashboardView extends React.Component {
     </div>);
   }
 
+  updateDimensions() {
+    if(this.container) {
+      this.container.style.width = '100%';
+      
+      const availableWidth = this.container.clientWidth;
+      const outerWidth = ~~(availableWidth / columns); // make sure we are working with round values
+      const innerWidth = outerWidth - tileMargin;
+      const innerHeight = innerWidth / tileAspectRatio;
+
+      const outerHeight = innerHeight + tileMargin;
+
+      const tileDimensions = {outerWidth, innerWidth, outerHeight, innerHeight, columns};
+
+      this.setState({
+        tileDimensions
+      });
+    }
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener("resize", this.updateDimensions.bind(this));
+  }
+
   componentDidMount() {
-    const availableWidth = this.container.clientWidth;
-    const outerWidth = ~~(availableWidth / columns); // make sure we are working with round values
-
-    const innerWidth = outerWidth - tileMargin;
-    const innerHeight = innerWidth / tileAspectRatio;
-
-    const outerHeight = innerHeight + tileMargin;
-
-    const tileDimensions = {outerWidth, innerWidth, outerHeight, innerHeight, columns};
-
-    this.setState({
-      tileDimensions
-    });
+    this.updateDimensions();
+    window.addEventListener("resize", this.updateDimensions.bind(this));
   }
 }
