@@ -15,20 +15,19 @@
  */
 package io.zeebe.servicecontainer;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 
 public interface ServiceContainer
 {
     void start();
 
-    <S> boolean hasService(ServiceName<S> name);
+    boolean hasService(ServiceName<?> name);
 
     <S> ServiceBuilder<S> createService(ServiceName<S> name, Service<S> service);
 
     CompletableFuture<Void> removeService(ServiceName<?> serviceName);
 
     void close(long awaitTime, TimeUnit timeUnit) throws TimeoutException, ExecutionException, InterruptedException;
+
+    CompletableFuture<Void> closeAsync();
 }

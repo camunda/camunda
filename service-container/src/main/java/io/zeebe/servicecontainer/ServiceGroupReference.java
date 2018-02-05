@@ -53,8 +53,11 @@ public final class ServiceGroupReference<S>
 
     public void removeValue(ServiceName<S> name, S value)
     {
-        invoke(removeHandler, name, value);
-        injectedValues.remove(name);
+        if (injectedValues.containsKey(name))
+        {
+            invoke(removeHandler, name, value);
+            injectedValues.remove(name);
+        }
     }
 
     public void uninject()

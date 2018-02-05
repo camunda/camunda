@@ -15,26 +15,26 @@
  */
 package io.zeebe.servicecontainer.impl;
 
-import static org.assertj.core.api.Assertions.*;
-import static io.zeebe.servicecontainer.ServiceGroupReference.*;
-import static org.mockito.ArgumentMatchers.*;
+import static io.zeebe.servicecontainer.ServiceGroupReference.collection;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
-import org.junit.Before;
-import org.junit.Test;
+import io.zeebe.servicecontainer.*;
+import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
+import org.junit.*;
 import org.mockito.InOrder;
 
 @SuppressWarnings("unchecked")
 public class ServiceGroupReferenceTest
 {
-    ControlledServiceContainer serviceContainer;
+    @Rule
+    public final ControlledActorSchedulerRule actorSchedulerRule = new ControlledActorSchedulerRule();
+
+    private ServiceContainerImpl serviceContainer;
 
     ServiceName<Object> service1Name;
     ServiceName<Object> service2Name;
@@ -51,7 +51,7 @@ public class ServiceGroupReferenceTest
     @Before
     public void setup()
     {
-        serviceContainer = new ControlledServiceContainer();
+        serviceContainer = new ServiceContainerImpl(actorSchedulerRule.get());
         serviceContainer.start();
 
         service1Name = ServiceName.newServiceName("service1", Object.class);
@@ -80,7 +80,7 @@ public class ServiceGroupReferenceTest
         serviceContainer.createService(service1Name, mockService1)
                         .groupReference(group1Name, collection(injectedServices))
                         .install();
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
         // then
         assertThat(injectedServices).isEmpty();
@@ -93,14 +93,14 @@ public class ServiceGroupReferenceTest
         serviceContainer.createService(service2Name, mockService2)
                         .group(group2Name)
                         .install();
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
         // when
         final List<Object> injectedServices = new ArrayList<>();
         serviceContainer.createService(service1Name, mockService1)
                         .groupReference(group1Name, collection(injectedServices))
                         .install();
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
         // then
         assertThat(injectedServices).isEmpty();
@@ -113,14 +113,14 @@ public class ServiceGroupReferenceTest
         serviceContainer.createService(service2Name, mockService2)
                         .group(group1Name)
                         .install();
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
         // when
         final List<Object> injectedServices = new ArrayList<>();
         serviceContainer.createService(service1Name, mockService1)
                         .groupReference(group1Name, collection(injectedServices))
                         .install();
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
         // then
         assertThat(injectedServices).contains(mockService2Value);
@@ -134,13 +134,13 @@ public class ServiceGroupReferenceTest
         serviceContainer.createService(service1Name, mockService1)
                         .groupReference(group1Name, collection(injectedServices))
                         .install();
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
         // when
         serviceContainer.createService(service2Name, mockService2)
                         .group(group1Name)
                         .install();
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
         // then
         assertThat(injectedServices).contains(mockService2Value);
@@ -159,7 +159,7 @@ public class ServiceGroupReferenceTest
                         .install();
 
         // when
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
         // then
         assertThat(injectedServices).contains(mockService2Value);
@@ -173,13 +173,13 @@ public class ServiceGroupReferenceTest
         serviceContainer.createService(service1Name, mockService1)
                         .groupReference(group1Name, collection(injectedServices))
                         .install();
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
         // when
         serviceContainer.createService(service2Name, mockService2)
                         .group(group1Name)
                         .install();
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
         // then
         final InOrder inOrder = inOrder(mockService1, injectedServices);
@@ -196,14 +196,14 @@ public class ServiceGroupReferenceTest
         serviceContainer.createService(service2Name, mockService2)
                         .group(group1Name)
                         .install();
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
         // when
         final List<Object> injectedServices = mock(List.class);
         serviceContainer.createService(service1Name, mockService1)
                         .groupReference(group1Name, collection(injectedServices))
                         .install();
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
         // then
         final InOrder inOrder = inOrder(mockService1, injectedServices);
@@ -224,18 +224,18 @@ public class ServiceGroupReferenceTest
         serviceContainer.createService(service2Name, mockService2)
                         .group(group1Name)
                         .install();
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
         // when
         serviceContainer.removeService(service2Name);
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
         // then
         final InOrder inOrder = inOrder(injectedServices, mockService2);
-        inOrder.verify(injectedServices)
-               .remove(mockService2Value);
         inOrder.verify(mockService2)
                .stop(any(ServiceStopContext.class));
+        inOrder.verify(injectedServices)
+               .remove(mockService2Value);
     }
 
     @Test
@@ -249,11 +249,11 @@ public class ServiceGroupReferenceTest
         serviceContainer.createService(service2Name, mockService2)
                         .group(group1Name)
                         .install();
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
         // when
         serviceContainer.removeService(service1Name);
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
         // then
         final InOrder inOrder = inOrder(injectedServices, mockService1);
@@ -274,12 +274,12 @@ public class ServiceGroupReferenceTest
         serviceContainer.createService(service2Name, mockService2)
                         .group(group1Name)
                         .install();
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
         // when
         serviceContainer.removeService(service2Name);
         serviceContainer.removeService(service1Name);
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
         // then
         // in this case, there is no guarantee on the ordering

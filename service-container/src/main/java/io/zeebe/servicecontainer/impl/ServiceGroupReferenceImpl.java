@@ -15,8 +15,6 @@
  */
 package io.zeebe.servicecontainer.impl;
 
-import java.util.List;
-
 import io.zeebe.servicecontainer.ServiceGroupReference;
 
 @SuppressWarnings("rawtypes")
@@ -46,26 +44,6 @@ public class ServiceGroupReferenceImpl
     public ServiceGroup getGroup()
     {
         return group;
-    }
-
-    public void remove()
-    {
-        group.removeReference(this);
-    }
-
-    @SuppressWarnings("unchecked")
-    public void injectInitialValues()
-    {
-        final List<ServiceController> controllers = group.getControllers();
-
-        for (ServiceController ctr : controllers)
-        {
-            if (ctr.isStarted())
-            {
-                final Object value = ctr.service.get();
-                injector.addValue(ctr.name, value);
-            }
-        }
     }
 
     public void uninject()

@@ -15,11 +15,11 @@
  */
 package io.zeebe.servicecontainer.impl;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
-import io.zeebe.servicecontainer.ServiceName;
+import io.zeebe.servicecontainer.*;
 
+@SuppressWarnings("unchecked")
 public class ServiceGroup
 {
     protected final ServiceName<?> groupName;
@@ -35,11 +35,32 @@ public class ServiceGroup
     public void addReference(ServiceGroupReferenceImpl reference)
     {
         references.add(reference);
+        onReferenceAdded(reference);
     }
 
-    public void removeReference(ServiceGroupReferenceImpl reference)
+    private void onReferenceAdded(ServiceGroupReferenceImpl reference)
     {
-        references.remove(reference);
+        for (ServiceController serviceController : controllers)
+        {
+            final Service<?> service = serviceController.getService();
+            reference.getInjector().addValue(serviceController.getServiceName(), service.get());
+        }
+    }
+
+    public void removeReference(ServiceGroupReference<?> reference)
+    {
+        final Iterator<ServiceGroupReferenceImpl> iterator = references.iterator();
+        reference.uninject();
+
+        while (iterator.hasNext()) // could be more efficient with further indexing
+        {
+            final ServiceGroupReferenceImpl serviceGroupReferenceImpl = iterator.next();
+            if (serviceGroupReferenceImpl.injector == reference)
+            {
+                iterator.remove();
+                break;
+            }
+        }
     }
 
     public void addService(ServiceController controller)
@@ -56,23 +77,23 @@ public class ServiceGroup
 
     private void onServiceAdded(ServiceController controller)
     {
+        final Object serviceObject = controller.getService().get();
+
         for (int i = 0; i < references.size(); i++)
         {
             final ServiceGroupReferenceImpl reference = references.get(i);
-            final ServiceController referringService = reference.getReferringService();
-
-            referringService.onReferencedServiceStart(reference, controller);
+            reference.getInjector().addValue(controller.getServiceName(), serviceObject);
         }
     }
 
     private void onServiceRemoved(ServiceController controller)
     {
+        final Object serviceObject = controller.getService().get();
+
         for (int i = 0; i < references.size(); i++)
         {
             final ServiceGroupReferenceImpl reference = references.get(i);
-            final ServiceController referringService = reference.getReferringService();
-
-            referringService.onReferencedServiceStop(reference, controller);
+            reference.getInjector().removeValue(controller.getServiceName(), serviceObject);
         }
     }
 

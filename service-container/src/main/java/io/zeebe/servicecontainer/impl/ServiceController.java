@@ -16,537 +16,311 @@
 package io.zeebe.servicecontainer.impl;
 
 import java.util.*;
-import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.BiConsumer;
+import java.util.concurrent.Future;
 import java.util.function.Consumer;
 
 import io.zeebe.servicecontainer.*;
-import org.agrona.LangUtil;
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
+import io.zeebe.servicecontainer.impl.ServiceEvent.ServiceEventType;
+import io.zeebe.util.sched.*;
+import io.zeebe.util.sched.channel.ConcurrentQueueChannel;
+import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.slf4j.Logger;
 
 @SuppressWarnings("rawtypes")
-public class ServiceController
+public class ServiceController extends ZbActor
 {
     public static final Logger LOG = Loggers.SERVICE_CONTAINER_LOGGER;
 
-    /**
-     * The operation currently being performed by the service controller
-     */
-    public enum ServiceOperation
-    {
-        /**
-         * Service is being installed into the container
-         */
-        INSTALLING, /**
-     * Service is being removed from the container
-     */
-    REMOVING,
-    }
+    private final AwaitDependenciesStartedState awaitDependenciesStartedState = new AwaitDependenciesStartedState();
+    private final AwaitStartState awaitStartState = new AwaitStartState();
+    private final StartedState startedState = new StartedState();
+    private final AwaitDependentsStopped awaitDependentsStopped = new AwaitDependentsStopped();
+    private final AwaitStopState awaitStopState = new AwaitStopState();
+    private final RemovedState removedState = new RemovedState();
 
-    private static final String AWAIT_ASYNC_START = "AwaitAsyncStart";
-    private static final String AWAIT_DEPENDENTS_STOP = "AwaitDependentsStop";
-    private static final String AWAIT_ASYNC_STOP = "AwaitAsyncStop";
+    private final ConcurrentQueueChannel<ServiceEvent> channel = new ConcurrentQueueChannel<>(new ManyToOneConcurrentLinkedQueue<>());
 
-    protected final StoppedState stoppedState = new StoppedState();
-    protected final ResolvingState resolvingState = new ResolvingState();
-    protected final AwaitingDependenciesState awaitDependenciesState = new AwaitingDependenciesState();
-    protected final InjectDependenciesState injectDependenciesState = new InjectDependenciesState();
-    protected final InvokeStartState invokeStartState = new InvokeStartState();
-    protected final WaitingState awaitAsyncStartState = new WaitingState(AWAIT_ASYNC_START);
-    protected final UpdateReferencesState updateReferencesState = new UpdateReferencesState();
-    protected final StartedState startedState = new StartedState();
-    protected final RemoveReferencesState removeReferencesState = new RemoveReferencesState();
-    protected final StopDependentsState stopDependentsState = new StopDependentsState();
-    protected final WaitingState awaitDependentsStop = new WaitingState(AWAIT_DEPENDENTS_STOP);
-    protected final InvokeStopState invokeStopState = new InvokeStopState();
-    protected final WaitingState awaitAsyncStopState = new WaitingState(AWAIT_ASYNC_STOP);
-    protected final UninjectDependenciesState uninjectDependenciesState = new UninjectDependenciesState();
-    protected final UnresolveState unresolveState = new UnresolveState();
+    private final ServiceContainerImpl container;
 
-    protected ServiceOperation operation = null;
-    protected ServiceState state = stoppedState;
-    /**
-     * when a controller stops, it always goes first into the StopDependents -&gt; AwaitDependentsStop
-     * sequence. Then it performs the rest of the stop states, depending on how far it progressed
-     * through it's lifecycle.
-     */
-    protected ServiceState firstStopState = null;
+    private final ServiceName name;
+    private final ServiceName<?> groupName;
+    private final Service service;
 
-    protected final ManyToOneConcurrentArrayQueue<Runnable> cmdQueue = new ManyToOneConcurrentArrayQueue<>(128);
-    protected final Consumer<Runnable> cmdHandler = (r) ->
-    {
-        r.run();
-    };
+    private final Set<ServiceName<?>> dependencies;
+    private final Map<ServiceName<?>, Collection<Injector<?>>> injectors;
+    private final Map<ServiceName<?>, ServiceGroupReference<?>> injectedReferences;
 
-    protected final ServiceContainerImpl container;
+    private final List<CompletableFuture<Void>> stopFutures = new ArrayList<>();
+    private final CompletableFuture<Void> startFuture;
 
-    protected final ServiceName name;
-    protected final ServiceName<?> groupName;
-    protected final Service service;
-    /**
-     * this service's dependencies
-     */
-    protected final Set<ServiceName<?>> dependencies;
-    protected final Map<ServiceName<?>, Collection<Injector<?>>> injectors;
+    private List<ServiceController> resolvedDependencies;
 
-    /**
-     * this service's unresolved dependencies
-     */
-    protected final List<ServiceName<?>> unresolvedDependencies = new ArrayList<>();
-    /**
-     * resolved services on which this service depends
-     */
-    protected final List<ServiceController> resolvedDependencies = new ArrayList<>();
-    /**
-     * resolved services depending on this service
-     */
-    protected final List<ServiceController> resolvedDependents = new ArrayList<>();
-    /**
-     * this service's resolved references
-     */
-    protected List<ServiceGroupReferenceImpl> references;
+    private StartContextImpl startContext;
+    private StopContextImpl stopContext;
 
-    protected StartContextImpl startContext;
-    protected StopContextImpl stopContext;
-    protected final List<CompletableFuture<Void>> stopFutures = new ArrayList<>();
-    protected CompletableFuture<Void> startFuture;
-    /**
-     * captures exception caught during installation operation of the service
-     */
-    protected Throwable installException;
+    private Consumer<ServiceEvent> state = awaitDependenciesStartedState;
 
-    public ServiceController(ServiceBuilder<?> builder, ServiceContainerImpl serviceContainer)
+
+    public ServiceController(ServiceBuilder<?> builder, ServiceContainerImpl serviceContainer, CompletableFuture<Void> startFuture)
     {
         this.container = serviceContainer;
+        this.startFuture = startFuture;
         this.service = builder.getService();
         this.name = builder.getName();
-        groupName = builder.getGroupName();
+        this.groupName = builder.getGroupName();
         this.injectors = builder.getInjectedDependencies();
         this.dependencies = builder.getDependencies();
-        this.unresolvedDependencies.addAll(dependencies);
+        this.injectedReferences = builder.getInjectedReferences();
     }
 
-    public int doWork()
+    @Override
+    protected void onActorStarted()
     {
-        int workCount = 0;
+        actor.consume(channel, this::onServiceEvent);
+
+        container.getChannel()
+            .add(new ServiceEvent(ServiceEventType.SERVICE_INSTALLED, this));
+    }
+
+    private void onServiceEvent()
+    {
+        ServiceEvent event = null;
+        while ((event = channel.poll()) != null)
+        {
+            state.accept(event);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    class AwaitDependenciesStartedState implements Consumer<ServiceEvent>
+    {
+        @Override
+        public void accept(ServiceEvent evt)
+        {
+            switch (evt.getType())
+            {
+                case DEPENDENCIES_AVAILABLE:
+                    onDependenciesAvailable(evt);
+                    break;
+
+                case SERVICE_STOPPING:
+                    onStopping();
+                    break;
+
+                default:
+                    break;
+            }
+        }
+
+        private void onStopping()
+        {
+            state = removedState;
+            fireEvent(ServiceEventType.SERVICE_REMOVED);
+        }
+
+        public void onDependenciesAvailable(ServiceEvent evt)
+        {
+            resolvedDependencies = (List<ServiceController>) evt.getPayload();
+
+            // inject dependencies
+
+            for (ServiceController serviceController : resolvedDependencies)
+            {
+                final Collection<Injector<?>> injectos = injectors.getOrDefault(serviceController.name, Collections.emptyList());
+                for (Injector injector : injectos)
+                {
+                    injector.inject(serviceController.service.get());
+                    injector.setInjectedServiceName(serviceController.name);
+                }
+            }
+
+            // invoke start
+            state = awaitStartState;
+
+            startContext = new StartContextImpl();
+            try
+            {
+                service.start(startContext);
+
+                if (startContext.action != null)
+                {
+                    actor.runBlocking(startContext.action, startContext);
+                }
+
+                if (!startContext.isAsync())
+                {
+                    fireEvent(ServiceEventType.SERVICE_STARTED);
+                }
+            }
+            catch (Exception e)
+            {
+                fireEvent(ServiceEventType.SERVICE_START_FAILED, e);
+            }
+
+        }
+    }
+
+    class AwaitStartState implements Consumer<ServiceEvent>
+    {
+        boolean stopAfterStarted = false;
+
+        @Override
+        public void accept(ServiceEvent t)
+        {
+            switch (t.getType())
+            {
+                case SERVICE_STARTED:
+                    onStarted();
+                    break;
+                case SERVICE_START_FAILED:
+                    onStartFailed((Throwable) t.getPayload());
+                    break;
+                case SERVICE_STOPPING:
+                    stopAfterStarted = true;
+                    break;
+
+                default:
+                    break;
+            }
+        }
+
+        public void onStarted()
+        {
+            if (stopAfterStarted)
+            {
+                startFuture.completeExceptionally(new RuntimeException(String.format("Could not start service %s" +
+                        " removed while starting", name)));
+
+                invokeStop();
+            }
+            else
+            {
+                state = startedState;
+                startFuture.complete(null);
+            }
+        }
+
+        public void onStartFailed(Throwable t)
+        {
+            startFuture.completeExceptionally(t);
+            state = awaitStopState;
+            fireEvent(ServiceEventType.SERVICE_STOPPED);
+        }
+    }
+
+    class StartedState implements Consumer<ServiceEvent>
+    {
+        @Override
+        public void accept(ServiceEvent t)
+        {
+            switch (t.getType())
+            {
+                case DEPENDENCIES_UNAVAILABLE:
+                    onDependenciesUnavailable();
+                    break;
+
+                case SERVICE_STOPPING:
+                    onServiceStopping();
+                    break;
+
+                default:
+                    break;
+            }
+        }
+
+        public void onDependenciesUnavailable()
+        {
+            fireEvent(ServiceEventType.SERVICE_STOPPING);
+            state = awaitDependentsStopped;
+        }
+
+        public void onServiceStopping()
+        {
+            state = awaitDependentsStopped;
+        }
+    }
+
+    class AwaitDependentsStopped implements Consumer<ServiceEvent>
+    {
+        @Override
+        public void accept(ServiceEvent t)
+        {
+            if (t.getType() == ServiceEventType.DEPENDENTS_STOPPED)
+            {
+                invokeStop();
+            }
+        }
+    }
+
+    class AwaitStopState implements Consumer<ServiceEvent>
+    {
+        @Override
+        public void accept(ServiceEvent t)
+        {
+            if (t.getType() == ServiceEventType.SERVICE_STOPPED)
+            {
+                injectors.values().stream()
+                    .flatMap(Collection::stream)
+                    .forEach(i -> i.uninject());
+
+                stopFutures.forEach(f -> f.complete(null));
+
+                fireEvent(ServiceEventType.SERVICE_REMOVED);
+
+                state = removedState;
+            }
+        }
+    }
+
+    class RemovedState implements Consumer<ServiceEvent>
+    {
+        @Override
+        public void accept(ServiceEvent t)
+        {
+            if (t.getType() == ServiceEventType.SERVICE_REMOVED)
+            {
+                actor.close();
+            }
+        }
+    }
+
+    private void invokeStop()
+    {
+        state = awaitStopState;
+
+        if (startContext != null)
+        {
+            startContext.invalidate();
+        }
+
+        stopContext = new StopContextImpl();
 
         try
         {
-            workCount += cmdQueue.drain(cmdHandler);
-            workCount += state.doWork();
+            service.stop(stopContext);
+
+            if (stopContext.action != null)
+            {
+                actor.runBlocking(stopContext.action, stopContext);
+            }
+
+            if (!stopContext.isAsync())
+            {
+                fireEvent(ServiceEventType.SERVICE_STOPPED);
+            }
         }
         catch (Throwable t)
         {
-            onThrowable(t);
-
-            if (operation == ServiceOperation.INSTALLING)
-            {
-                stopAsyncInternal(new CompletableFuture<Void>());
-            }
-            else
-            {
-                state = stoppedState;
-            }
-
-            ++workCount;
-        }
-
-        return workCount;
-    }
-
-    private void onThrowable(Throwable t)
-    {
-        if (operation == ServiceOperation.INSTALLING)
-        {
-            this.installException = t;
-        }
-
-        LangUtil.rethrowUnchecked(t);
-    }
-
-    interface ServiceState
-    {
-        int doWork() throws Exception;
-
-        default String getName()
-        {
-            return getClass().getSimpleName()
-                             .replaceFirst("State", "");
+            LOG.error("Exception while stopping servic %s: %s", this, t);
+            fireEvent(ServiceEventType.SERVICE_STOPPED);
         }
     }
 
-    class ResolvingState implements ServiceState
+    class StartContextImpl implements ServiceStartContext, Consumer<Throwable>
     {
-        @Override
-        public int doWork()
-        {
-            int workCount = 0;
+        final Set<ServiceName<?>> dependentServices = new HashSet<>();
 
-            final Iterator<ServiceName<?>> unresolvedIterator = unresolvedDependencies.iterator();
-
-            while (unresolvedIterator.hasNext())
-            {
-                final ServiceName<?> serviceName = unresolvedIterator.next();
-                final ServiceController controller = container.getServiceController(serviceName);
-
-                if (controller != null)
-                {
-                    unresolvedIterator.remove();
-                    resolvedDependencies.add(controller);
-                    controller.resolvedDependents.add(ServiceController.this);
-                    ++workCount;
-                }
-            }
-
-            if (unresolvedDependencies.isEmpty())
-            {
-                state = awaitDependenciesState;
-                ++workCount;
-            }
-
-            return workCount;
-        }
-    }
-
-    class AwaitingDependenciesState implements ServiceState
-    {
-        @Override
-        public int doWork()
-        {
-            int workCount = 0;
-
-            boolean allAvailable = true;
-
-            for (int i = 0; i < resolvedDependencies.size() && allAvailable; i++)
-            {
-                allAvailable &= resolvedDependencies.get(i)
-                                                    .isStarted();
-            }
-
-            if (allAvailable)
-            {
-                state = injectDependenciesState;
-                ++workCount;
-            }
-
-            return workCount;
-        }
-
-    }
-
-    class InjectDependenciesState implements ServiceState
-    {
-        @Override
-        @SuppressWarnings("unchecked")
-        public int doWork()
-        {
-            for (Entry<ServiceName<?>, Collection<Injector<?>>> injectedDep : injectors.entrySet())
-            {
-                final ServiceName<?> serviceName = injectedDep.getKey();
-                final Service injectedService = container.getService(serviceName);
-
-                for (Injector injector : injectedDep.getValue())
-                {
-                    injector.inject(injectedService.get());
-                }
-            }
-
-            state = invokeStartState;
-
-            return 1;
-        }
-    }
-
-    class InvokeStartState implements ServiceState
-    {
-        @Override
-        public int doWork() throws Exception
-        {
-            startContext = new StartContextImpl();
-
-            service.start(startContext);
-
-            if (startContext.action != null)
-            {
-                final Runnable action = startContext.action;
-                final CompletableFuture<Void> future = new CompletableFuture<>();
-                future.whenComplete(startContext);
-
-                container.executeShortRunning(() ->
-                {
-                    try
-                    {
-                        action.run();
-                        future.complete(null);
-                    }
-                    catch (Throwable t)
-                    {
-                        future.completeExceptionally(t);
-                    }
-                });
-            }
-
-            if (!startContext.isAsync())
-            {
-                state = updateReferencesState;
-            }
-            else
-            {
-                state = awaitAsyncStartState;
-            }
-
-            return 1;
-        }
-    }
-
-    class UpdateReferencesState implements ServiceState
-    {
-        @Override
-        public int doWork()
-        {
-            for (ServiceGroupReferenceImpl reference : references)
-            {
-                reference.injectInitialValues();
-            }
-
-            if (groupName != null)
-            {
-                ServiceGroup serviceGroup = container.groups.get(groupName);
-                if (serviceGroup == null)
-                {
-                    serviceGroup = new ServiceGroup(groupName);
-                    container.groups.put(groupName, serviceGroup);
-                }
-                serviceGroup.addService(ServiceController.this);
-            }
-
-            state = startedState;
-
-            return 1;
-        }
-    }
-
-    class RemoveReferencesState implements ServiceState
-    {
-        @Override
-        public int doWork()
-        {
-            if (groupName != null)
-            {
-                final ServiceGroup serviceGroup = container.groups.get(groupName);
-                if (serviceGroup != null)
-                {
-                    serviceGroup.removeService(ServiceController.this);
-                }
-            }
-
-            state = invokeStopState;
-
-            return 1;
-        }
-    }
-
-    class StopDependentsState implements ServiceState
-    {
-        @Override
-        public int doWork()
-        {
-            final CompletableFuture[] stopFutures = new CompletableFuture[resolvedDependents.size()];
-
-            for (int i = 0; i < resolvedDependents.size(); i++)
-            {
-                final ServiceController serviceController = resolvedDependents.get(i);
-                final CompletableFuture<Void> future = new CompletableFuture<>();
-                serviceController.stopAsyncInternal(future);
-
-                stopFutures[i] = future;
-            }
-
-            CompletableFuture.allOf(stopFutures)
-                             .whenComplete((r, t) -> onDependentsStopped());
-
-            state = awaitDependentsStop;
-
-            return 1;
-        }
-    }
-
-    class InvokeStopState implements ServiceState
-    {
-        @Override
-        public int doWork()
-        {
-            startContext.invalidate();
-            stopContext = new StopContextImpl();
-
-            try
-            {
-                service.stop(stopContext);
-
-                if (stopContext.action != null)
-                {
-                    final Runnable action = stopContext.action;
-                    final CompletableFuture<Void> future = new CompletableFuture<>();
-                    future.whenComplete(stopContext);
-
-                    // wrap runnable
-                    container.executeShortRunning(() ->
-                    {
-                        try
-                        {
-                            action.run();
-                            future.complete(null);
-                        }
-                        catch (Throwable t)
-                        {
-                            future.completeExceptionally(t);
-                        }
-                    });
-                }
-
-                if (!stopContext.isAsync())
-                {
-                    state = uninjectDependenciesState;
-                }
-                else
-                {
-                    state = awaitAsyncStopState;
-                }
-            }
-            catch (Throwable t)
-            {
-                state = uninjectDependenciesState;
-            }
-
-            return 1;
-        }
-    }
-
-    class UninjectDependenciesState implements ServiceState
-    {
-        @Override
-        public int doWork()
-        {
-            if (startContext != null)
-            {
-                startContext.invalidate();
-            }
-
-            injectors.values()
-                     .stream()
-                     .flatMap(Collection::stream)
-                     .forEach(injector -> injector.uninject());
-
-            for (ServiceGroupReferenceImpl reference : references)
-            {
-                reference.uninject();
-            }
-
-            state = unresolveState;
-
-            return 1;
-        }
-    }
-
-    class UnresolveState implements ServiceState
-    {
-        @Override
-        public int doWork()
-        {
-            for (ServiceController dependency : resolvedDependencies)
-            {
-                dependency.resolvedDependents.remove(ServiceController.this);
-            }
-            resolvedDependencies.clear();
-            unresolvedDependencies.clear();
-            unresolvedDependencies.addAll(dependencies);
-            resolvedDependents.clear();
-            state = stoppedState;
-
-            return 1;
-        }
-    }
-
-    class WaitingState implements ServiceState
-    {
-        protected final String name;
-
-        WaitingState(String name)
-        {
-            this.name = name;
-        }
-
-        @Override
-        public int doWork()
-        {
-            return 0;
-        }
-
-        @Override
-        public String getName()
-        {
-            return name;
-        }
-    }
-
-    class StartedState implements ServiceState
-    {
-        @Override
-        public int doWork()
-        {
-            int workCount = 0;
-
-            if (operation == ServiceOperation.INSTALLING)
-            {
-                startFuture.complete(null);
-                startFuture = null;
-                ++workCount;
-            }
-
-            operation = null;
-
-            return workCount;
-        }
-    }
-
-    class StoppedState implements ServiceState
-    {
-        @Override
-        public int doWork()
-        {
-            for (int i = 0; i < stopFutures.size(); i++)
-            {
-                stopFutures.get(i)
-                           .complete(null);
-            }
-            stopFutures.clear();
-
-            if (operation == ServiceOperation.INSTALLING)
-            {
-                final String exceptionMsg = String.format("Could not install service '%s' into the container.", name);
-                final RuntimeException exception = new RuntimeException(exceptionMsg, installException);
-                startFuture.completeExceptionally(exception);
-                startFuture = null;
-            }
-
-            container.controllers.remove(ServiceController.this);
-            container.controllersByName.remove(name);
-
-            for (ServiceGroupReferenceImpl reference : references)
-            {
-                reference.remove();
-            }
-
-            operation = null;
-
-            return 1;
-        }
-    }
-
-    class StartContextImpl implements ServiceStartContext, BiConsumer<Object, Throwable>
-    {
         boolean isValid = true;
         boolean isAsync = false;
         boolean stopOnCompletion = false;
@@ -564,8 +338,7 @@ public class ServiceController
         {
             validCheck();
             dependencyCheck(name);
-            return (S) container.getService(name)
-                                .get();
+            return (S) resolvedDependencies.stream().filter((c) -> c.name.equals(name)).findFirst();
         }
 
         @Override
@@ -588,6 +361,8 @@ public class ServiceController
         {
             validCheck();
 
+            dependentServices.add(name);
+
             return new ServiceBuilder<>(name, service, container).dependency(ServiceController.this.name);
         }
 
@@ -596,42 +371,36 @@ public class ServiceController
         {
             validCheck();
 
-            final ServiceController serviceController = container.getServiceController(name);
-            if (serviceController == null)
+            if (!dependentServices.contains(name))
             {
-                final String errorMessage = String.format("Cannot remove service '%s' from context '%s'. Service not found.", name,
-                                                          ServiceController.this.name);
-                throw new IllegalArgumentException(errorMessage);
-            }
+                final Optional<ServiceController> contoller = resolvedDependencies.stream().filter((c) -> c.name.equals(name)).findFirst();
 
-            if (!serviceController.hasDependency(ServiceController.this.name))
-            {
-                final String errorMessage = String.format("Cannot remove service '%s' from context '%s'. The context is not a dependency of the service.", name,
-                                                          ServiceController.this.name);
-                throw new IllegalArgumentException(errorMessage);
+                if (!contoller.isPresent())
+                {
+                    final String errorMessage = String.format("Cannot remove service '%s' from context '%s'. Can only remove dependencies and services started through this context.", name,
+                                                              ServiceController.this.name);
+                    throw new IllegalArgumentException(errorMessage);
+                }
             }
 
             return container.removeService(name);
         }
 
         @Override
-        public CompletableFuture<Void> async()
+        public void async(Future<?> future)
         {
             validCheck();
             notAsyncCheck();
             isAsync = true;
-            final CompletableFuture<Void> future = new CompletableFuture<>();
-            future.whenComplete(this);
-            return future;
-        }
 
-        @Override
-        public void async(CompletableFuture<?> future)
-        {
-            validCheck();
-            notAsyncCheck();
-            isAsync = true;
-            future.whenComplete(this);
+            if (future instanceof ActorFuture)
+            {
+                actor.await(future, this);
+            }
+            else
+            {
+                actor.runBlocking(FutureUtil.wrap(future), this);
+            }
         }
 
         @Override
@@ -676,41 +445,21 @@ public class ServiceController
         }
 
         @Override
-        public void accept(Object t, Throwable u)
+        public void accept(Throwable u)
         {
-            cmdQueue.add(() ->
+            if (u == null)
             {
-                if (stopOnCompletion)
-                {
-                    if (u == null)
-                    {
-                        firstStopState = invokeStopState;
-                    }
-                    else
-                    {
-                        firstStopState = uninjectDependenciesState;
-                    }
-
-                    state = stopDependentsState;
-                }
-                else
-                {
-                    if (u == null)
-                    {
-                        onAsyncStartCompleted();
-                    }
-                    else
-                    {
-                        onAsyncStartFailed(u);
-                    }
-                }
-            });
-            container.idleStrategy.signalWorkAvailable();
+                fireEvent(ServiceEventType.SERVICE_STARTED);
+            }
+            else
+            {
+                fireEvent(ServiceEventType.SERVICE_START_FAILED, u);
+            }
         }
 
     }
 
-    class StopContextImpl implements ServiceStopContext, BiConsumer<Object, Throwable>
+    class StopContextImpl implements ServiceStopContext, Consumer<Throwable>
     {
         boolean isValid = true;
         boolean isAsync = false;
@@ -723,23 +472,20 @@ public class ServiceController
         }
 
         @Override
-        public CompletableFuture<Void> async()
+        public void async(Future<?> future)
         {
             validCheck();
             notAsyncCheck();
             isAsync = true;
-            final CompletableFuture<Void> f = new CompletableFuture<>();
-            f.whenComplete(this);
-            return f;
-        }
 
-        @Override
-        public void async(CompletableFuture<?> future)
-        {
-            validCheck();
-            notAsyncCheck();
-            isAsync = true;
-            future.whenComplete(this);
+            if (future instanceof ActorFuture)
+            {
+                actor.await(future, this);
+            }
+            else
+            {
+                actor.runBlocking(FutureUtil.wrap(future), this);
+            }
         }
 
         @Override
@@ -784,175 +530,69 @@ public class ServiceController
         }
 
         @Override
-        public void accept(Object t, Throwable u)
+        public void accept(Throwable u)
         {
-            if (u != null)
-            {
-                LOG.error("Failed to stop", u);
-            }
-
-            onAsyncStopCompleted();
+            fireEvent(ServiceEventType.SERVICE_STOPPED);
         }
     }
 
     // API & Cmds ////////////////////////////////////////////////
 
-    /*
-     * must only be called from container cmd
-     */
-    public void startAsyncInternal(CompletableFuture<Void> future)
-    {
-        if (state == stoppedState)
-        {
-            operation = ServiceOperation.INSTALLING;
-            startFuture = future;
-            state = resolvingState;
-        }
-        else
-        {
-            final String errorMessage = String.format("Cannot start service '%s': not in state 'stopped'.", name);
-            future.completeExceptionally(new IllegalStateException(errorMessage));
-        }
-    }
-
-    /*
-     * must only be called from container cmd
-     */
-    public void stopAsyncInternal(CompletableFuture<Void> future)
-    {
-        stopFutures.add(future);
-        container.controllersByName.remove(this);
-
-        if (operation == null)
-        {
-            operation = ServiceOperation.REMOVING;
-        }
-
-        if (state == awaitAsyncStartState)
-        {
-            // first, we wait for the async start actions to complete.
-            // when complete, the service transitions into the stopDependentsState.
-            // SEE: io.zeebe.servicecontainer.impl.ServiceController.StartContextImpl.accept(Object, Throwable)
-            startContext.stopOnCompletion = true;
-        }
-        else if (firstStopState == null)
-        {
-            if (state == resolvingState || state == awaitDependenciesState || state == injectDependenciesState)
-            {
-                firstStopState = unresolveState;
-            }
-            else if (state == invokeStartState)
-            {
-                firstStopState = uninjectDependenciesState;
-            }
-            else if (state == updateReferencesState)
-            {
-                firstStopState = invokeStopState;
-            }
-            else if (state == startedState)
-            {
-                firstStopState = removeReferencesState;
-            }
-
-            state = stopDependentsState;
-        }
-    }
-
-    protected void onAsyncStartCompleted()
-    {
-        cmdQueue.add(() ->
-        {
-            if (state == awaitAsyncStartState)
-            {
-                state = updateReferencesState;
-            }
-        });
-        container.idleStrategy.signalWorkAvailable();
-    }
-
-    protected void onAsyncStartFailed(Throwable t)
-    {
-        cmdQueue.add(() ->
-        {
-            onThrowable(t);
-
-            if (state == awaitAsyncStartState)
-            {
-                container.controllersByName.remove(ServiceController.this);
-                state = stopDependentsState;
-                firstStopState = uninjectDependenciesState;
-            }
-        });
-        container.idleStrategy.signalWorkAvailable();
-    }
-
-    protected void onAsyncStopCompleted()
-    {
-        cmdQueue.add(() ->
-        {
-            if (state == awaitAsyncStopState)
-            {
-                state = uninjectDependenciesState;
-            }
-        });
-        container.idleStrategy.signalWorkAvailable();
-    }
-
-    public void onDependentsStopped()
-    {
-        cmdQueue.add(() ->
-        {
-            if (state == awaitDependentsStop)
-            {
-                state = firstStopState;
-            }
-        });
-    }
-
-    @SuppressWarnings("unchecked")
-    public void onReferencedServiceStart(ServiceGroupReferenceImpl reference, ServiceController controller)
-    {
-        cmdQueue.add(() ->
-        {
-            if (isStarted())
-            {
-                final ServiceGroupReference injector = reference.getInjector();
-                final Object value = controller.service.get();
-
-                injector.addValue(controller.name, value);
-            }
-        });
-    }
-
-    @SuppressWarnings("unchecked")
-    public void onReferencedServiceStop(ServiceGroupReferenceImpl reference, ServiceController controller)
-    {
-        cmdQueue.add(() ->
-        {
-            if (isStarted())
-            {
-                final ServiceGroupReference injector = reference.getInjector();
-                final Object value = controller.service.get();
-
-                injector.removeValue(controller.name, value);
-            }
-        });
-    }
-
-    public boolean isStarted()
-    {
-        return state == startedState;
-    }
-
-    public boolean hasDependency(ServiceName<?> name)
-    {
-        return dependencies.contains(name);
-    }
-
     @Override
     public String toString()
     {
-        return String.format("[%s (%s, %s)]", name, operation, state.getName());
+        return String.format("%s", name);
     }
 
+    private void fireEvent(ServiceEventType evtType)
+    {
+        fireEvent(evtType, null);
+    }
+
+    private void fireEvent(ServiceEventType evtType, Object payload)
+    {
+        final ServiceEvent event = new ServiceEvent(evtType, this, payload);
+
+        channel.add(event);
+        container.getChannel().add(event);
+    }
+
+    public ConcurrentQueueChannel<ServiceEvent> getChannel()
+    {
+        return channel;
+    }
+
+    public Set<ServiceName<?>> getDependencies()
+    {
+        return dependencies;
+    }
+
+    public void remove(CompletableFuture<Void> future)
+    {
+        actor.call(() ->
+        {
+            stopFutures.add(future);
+            fireEvent(ServiceEventType.SERVICE_STOPPING);
+        });
+    }
+
+    public ServiceName<?> getGroupName()
+    {
+        return groupName;
+    }
+
+    public ServiceName<?> getServiceName()
+    {
+        return name;
+    }
+
+    public Map<ServiceName<?>, ServiceGroupReference<?>> getInjectedReferences()
+    {
+        return injectedReferences;
+    }
+
+    public Service getService()
+    {
+        return service;
+    }
 }

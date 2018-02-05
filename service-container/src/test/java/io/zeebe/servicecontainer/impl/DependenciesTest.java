@@ -21,25 +21,25 @@ import static org.mockito.Mockito.*;
 
 import java.util.concurrent.CompletableFuture;
 
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
-import org.junit.Before;
-import org.junit.Test;
+import io.zeebe.servicecontainer.*;
+import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
+import org.junit.*;
 import org.mockito.InOrder;
 
 @SuppressWarnings({"unchecked"})
 public class DependenciesTest
 {
-    ControlledServiceContainer serviceContainer;
+    @Rule
+    public ControlledActorSchedulerRule actorSchedulerRule = new ControlledActorSchedulerRule();
+
+    ServiceContainer serviceContainer;
     ServiceName<Object> service1;
     ServiceName<Object> service2;
 
     @Before
     public void setup()
     {
-        serviceContainer = new ControlledServiceContainer();
+        serviceContainer = new ServiceContainerImpl(actorSchedulerRule.get());
         serviceContainer.start();
         service1 = ServiceName.newServiceName("service1", Object.class);
         service2 = ServiceName.newServiceName("service2", Object.class);
@@ -52,7 +52,7 @@ public class DependenciesTest
 
         final CompletableFuture<Void> serviceFuture = serviceContainer.createService(service1, mockService).install();
 
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
         assertCompleted(serviceFuture);
         verify(mockService, times(1)).start(any(ServiceStartContext.class));
@@ -67,7 +67,7 @@ public class DependenciesTest
             .dependency(service2)
             .install();
 
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
         assertNotCompleted(serviceFuture);
         verify(mockService, times(0)).start(any(ServiceStartContext.class));
@@ -79,15 +79,16 @@ public class DependenciesTest
         // given
         final Service<Object> mockService = mock(Service.class);
         serviceContainer.createService(service1, mockService)
-            .dependency(service2)
             .install();
-        serviceContainer.doWorkUntilDone();
+
+        actorSchedulerRule.workUntilDone();
 
         // when
         final CompletableFuture<Void> serviceFuture2 = serviceContainer.createService(service1, mockService)
             .dependency(service2)
             .install();
-        serviceContainer.doWorkUntilDone();
+
+        actorSchedulerRule.workUntilDone();
 
         // then
         assertFailed(serviceFuture2);
@@ -99,21 +100,19 @@ public class DependenciesTest
         final Service<Object> mockService1 = mock(Service.class);
         final Service<Object> mockService2 = mock(Service.class);
 
-        final CompletableFuture<Void> service1Future = serviceContainer.createService(service1, mockService1)
+        serviceContainer.createService(service1, mockService1)
             .install();
 
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
-        assertCompleted(service1Future);
         verify(mockService1, times(1)).start(any(ServiceStartContext.class));
 
-        final CompletableFuture<Void> service2Future = serviceContainer.createService(service2, mockService2)
+        serviceContainer.createService(service2, mockService2)
             .dependency(service1)
             .install();
 
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
-        assertCompleted(service2Future);
         verify(mockService2, times(1)).start(any(ServiceStartContext.class));
     }
 
@@ -127,14 +126,14 @@ public class DependenciesTest
             .dependency(service2)
             .install();
 
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
         verify(mockService1, times(0)).start(any(ServiceStartContext.class));
 
         serviceContainer.createService(service2, mockService2)
             .install();
 
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
         final InOrder inOrder = inOrder(mockService1, mockService2);
 
@@ -149,14 +148,13 @@ public class DependenciesTest
 
         // given
         serviceContainer.createService(service1, mockService).install();
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
         // when
-        final CompletableFuture<Void> removeFuture = serviceContainer.removeService(service1);
-        serviceContainer.doWorkUntilDone();
+        serviceContainer.removeService(service1);
+        actorSchedulerRule.workUntilDone();
 
         // then
-        assertCompleted(removeFuture);
         verify(mockService, times(1)).stop(any(ServiceStopContext.class));
     }
 
@@ -172,14 +170,14 @@ public class DependenciesTest
             .install();
         serviceContainer.createService(service2, mockService2)
             .install();
-        serviceContainer.doWorkUntilDone();
+
+        actorSchedulerRule.workUntilDone();
 
         // when
-        final CompletableFuture<Void> closeFuture = serviceContainer.removeService(service2);
-        serviceContainer.doWorkUntilDone();
+        serviceContainer.removeService(service2);
+        actorSchedulerRule.workUntilDone();
 
         // then
-        assertCompleted(closeFuture);
         final InOrder inOrder = inOrder(mockService1, mockService2);
         inOrder.verify(mockService1, times(1)).stop(any(ServiceStopContext.class));
         inOrder.verify(mockService2, times(1)).stop(any(ServiceStopContext.class));
@@ -197,14 +195,13 @@ public class DependenciesTest
         serviceContainer.createService(service2, mockService2)
             .dependency(service1)
             .install();
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
         // when
-        final CompletableFuture<Void> future = serviceContainer.closeAsync();
-        serviceContainer.doWorkUntilDone();
+        serviceContainer.closeAsync();
+        actorSchedulerRule.workUntilDone();
 
         // then
-        assertCompleted(future);
         final InOrder inOrder = inOrder(mockService1, mockService2);
         inOrder.verify(mockService2, times(1)).stop(any(ServiceStopContext.class));
         inOrder.verify(mockService1, times(1)).stop(any(ServiceStopContext.class));

@@ -21,10 +21,8 @@ import static org.mockito.Mockito.*;
 
 import java.util.concurrent.CompletableFuture;
 
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.servicecontainer.*;
+import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -33,7 +31,10 @@ import org.junit.rules.ExpectedException;
 @SuppressWarnings("unchecked")
 public class ServiceStartContextTest
 {
-    private ControlledServiceContainer serviceContainer;
+    @Rule
+    public ControlledActorSchedulerRule actorSchedulerRule = new ControlledActorSchedulerRule();
+
+    private ServiceContainer serviceContainer;
 
     private ServiceName<Object> service1;
     private ServiceName<Object> service2;
@@ -44,7 +45,7 @@ public class ServiceStartContextTest
     @Before
     public void setup()
     {
-        serviceContainer = new ControlledServiceContainer();
+        serviceContainer = new ServiceContainerImpl(actorSchedulerRule.get());
         serviceContainer.start();
 
         service1 = ServiceName.newServiceName("service1", Object.class);
@@ -59,12 +60,12 @@ public class ServiceStartContextTest
 
         final CompletableFuture<Void> service1Future = serviceContainer.createService(service1, mockService1).install();
 
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
         assertCompleted(service1Future);
 
         final CompletableFuture<Void> service2Future = mockService1.startContext.createService(service2, mockService2).install();
 
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
         assertCompleted(service2Future);
 
         verify(mockService2, times(1)).start(any(ServiceStartContext.class));
@@ -77,14 +78,14 @@ public class ServiceStartContextTest
         final Service<Object> mockService2 = mock(Service.class);
 
         serviceContainer.createService(service1, mockService1).install();
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
         mockService1.startContext.createService(service2, mockService2).install();
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
         final CompletableFuture<Void> service2Future = mockService1.startContext.removeService(service2);
 
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
         assertCompleted(service2Future);
 
         verify(mockService2, times(1)).stop(any(ServiceStopContext.class));
@@ -97,13 +98,13 @@ public class ServiceStartContextTest
         final Service<Object> mockService2 = mock(Service.class);
 
         serviceContainer.createService(service1, mockService1).install();
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
         serviceContainer.createService(service2, mockService2).install();
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
         thrown.expect(RuntimeException.class);
-        thrown.expectMessage("Cannot remove service 'service2' from context 'service1'. The context is not a dependency of the service.");
+        thrown.expectMessage("Cannot remove service 'service2' from context 'service1'. Can only remove dependencies and services started through this context.");
 
         mockService1.startContext.removeService(service2);
     }
@@ -114,10 +115,10 @@ public class ServiceStartContextTest
         final MockService mockService1 = new MockService();
 
         serviceContainer.createService(service1, mockService1).install();
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
         thrown.expect(RuntimeException.class);
-        thrown.expectMessage("Cannot remove service 'service2' from context 'service1'. Service not found.");
+        thrown.expectMessage("Cannot remove service 'service2' from context 'service1'. Can only remove dependencies and services started through this context.");
 
         mockService1.startContext.removeService(service2);
     }

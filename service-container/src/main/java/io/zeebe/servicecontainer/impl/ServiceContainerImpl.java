@@ -16,21 +16,17 @@
 package io.zeebe.servicecontainer.impl;
 
 import java.util.*;
-import java.util.Map.Entry;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 
 import io.zeebe.servicecontainer.*;
-import io.zeebe.util.LangUtil;
-import io.zeebe.util.LogUtil;
-import io.zeebe.util.actor.*;
-import org.agrona.ErrorHandler;
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
+import io.zeebe.util.sched.ZbActor;
+import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.channel.ConcurrentQueueChannel;
+import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.slf4j.Logger;
 
-public class ServiceContainerImpl implements Actor, ServiceContainer
+public class ServiceContainerImpl extends ZbActor implements ServiceContainer
 {
     public static final Logger LOG = Loggers.SERVICE_CONTAINER_LOGGER;
 
@@ -40,64 +36,34 @@ public class ServiceContainerImpl implements Actor, ServiceContainer
     }
 
     private static final String NAME = "service-container-main";
-    protected final Map<String, String> diagnosticContext;
 
-    protected final Map<ServiceName<?>, ServiceController> controllersByName = new HashMap<>();
+    protected final ServiceDependencyResolver dependencyResolver = new ServiceDependencyResolver();
+    protected final ConcurrentQueueChannel<ServiceEvent> channel = new ConcurrentQueueChannel<>(new ManyToOneConcurrentLinkedQueue<>());
+
     protected final Map<ServiceName<?>, ServiceGroup> groups = new HashMap<>();
-    protected final List<ServiceController> controllers = new ArrayList<>();
 
-    private final ActorScheduler actorScheduler;
-    private ActorReference actorRef;
+    protected final Map<ServiceName<?>, List<ServiceController>> serviceListeners = new HashMap<>();
 
-    protected final ManyToOneConcurrentArrayQueue<Runnable> cmdQueue = new ManyToOneConcurrentArrayQueue<>(1024);
-    protected final Consumer<Runnable> cmdConsumer = (r) ->
-    {
-        r.run();
-    };
-
-    private static final ErrorHandler DEFAULT_ERROR_HANDLER = (t) ->
-    {
-        LangUtil.rethrowUnchecked(t);
-    };
+    protected final ZbActorScheduler actorScheduler;
 
     protected ContainerState state = ContainerState.NEW;
 
     protected final AtomicBoolean isOpenend = new AtomicBoolean(false);
-    protected ExecutorService actionsExecutor;
-    protected WaitingIdleStrategy idleStrategy;
 
-    public ServiceContainerImpl()
+    private final CompletableFuture<Void> containerCloseFuture = new CompletableFuture<Void>();
+
+    public ServiceContainerImpl(ZbActorScheduler scheduler)
     {
-        this(Collections.emptyMap());
-    }
-
-    public ServiceContainerImpl(Map<String, String> diagnosticContext)
-    {
-        idleStrategy = new WaitingIdleStrategy();
-
-        this.diagnosticContext = diagnosticContext;
-        actorScheduler = new ActorSchedulerBuilder()
-                .name("service-container")
-                .diagnosticContext(diagnosticContext)
-                .runnerIdleStrategy(idleStrategy)
-                .runnerErrorHander(DEFAULT_ERROR_HANDLER)
-                .build();
+        actorScheduler = scheduler;
     }
 
     @Override
     public void start()
     {
-        cmdQueue.add(() -> state = ContainerState.OPEN);
-
-        idleStrategy.signalWorkAvailable();
-
         if (isOpenend.compareAndSet(false, true))
         {
-            actorRef = actorScheduler.schedule(this);
-
-            final AtomicInteger threadCounter = new AtomicInteger();
-            actionsExecutor = Executors.newCachedThreadPool(
-                (r) -> new Thread(r, String.format("service-container-action-%d", threadCounter.getAndIncrement())));
+            actorScheduler.submitActor(this);
+            state = ContainerState.OPEN;
         }
         else
         {
@@ -107,31 +73,33 @@ public class ServiceContainerImpl implements Actor, ServiceContainer
     }
 
     @Override
-    public int doWork()
-    {
-        int workCount = 0;
-
-        workCount += cmdQueue.drain(cmdConsumer);
-
-        for (int i = 0; i < controllers.size(); i++)
-        {
-            workCount += controllers.get(i)
-                                    .doWork();
-        }
-
-        return workCount;
-    }
-
-    @Override
-    public String name()
+    public String getName()
     {
         return NAME;
     }
 
     @Override
-    public <S> boolean hasService(ServiceName<S> name)
+    protected void onActorStarted()
     {
-        return controllersByName.containsKey(name);
+        actor.consume(channel, this::onServiceEvent);
+    }
+
+    protected void onServiceEvent()
+    {
+        while (!channel.isEmpty())
+        {
+            final ServiceEvent serviceEvent = channel.poll();
+            if (serviceEvent != null)
+            {
+                dependencyResolver.onServiceEvent(serviceEvent);
+            }
+        }
+    }
+
+    @Override
+    public boolean hasService(ServiceName<?> name)
+    {
+        return dependencyResolver.getService(name) != null;
     }
 
     @Override
@@ -144,20 +112,17 @@ public class ServiceContainerImpl implements Actor, ServiceContainer
     {
         final CompletableFuture<Void> future = new CompletableFuture<>();
 
-        executeCmd(future, () ->
+        actor.call(() ->
         {
             if (state == ContainerState.OPEN)
             {
-                final ServiceController serviceController = new ServiceController(serviceBuilder, this);
+                final ServiceController serviceController = new ServiceController(serviceBuilder, this, future);
 
                 final ServiceName<?> serviceName = serviceBuilder.getName();
 
-                if (!controllersByName.containsKey(serviceName))
+                if (!hasService(serviceController.getServiceName()))
                 {
-                    controllersByName.put(serviceName, serviceController);
-                    controllers.add(serviceController);
-                    serviceController.references = createReferences(serviceController, serviceBuilder.getInjectedReferences());
-                    serviceController.startAsyncInternal(future);
+                    actorScheduler.submitActor(serviceController);
                 }
                 else
                 {
@@ -183,36 +148,20 @@ public class ServiceContainerImpl implements Actor, ServiceContainer
         return future;
     }
 
-    private void executeCmd(CompletableFuture<Void> future, Runnable r)
-    {
-        try
-        {
-            cmdQueue.add(r);
-        }
-        catch (Throwable t)
-        {
-            future.completeExceptionally(t);
-        }
-        finally
-        {
-            idleStrategy.signalWorkAvailable();
-        }
-    }
-
     @Override
     public CompletableFuture<Void> removeService(ServiceName<?> serviceName)
     {
         final CompletableFuture<Void> future = new CompletableFuture<>();
 
-        executeCmd(future, () ->
+        actor.call(() ->
         {
             if (state == ContainerState.OPEN || state == ContainerState.CLOSING)
             {
-                final ServiceController ctrl = controllersByName.get(serviceName);
+                final ServiceController ctrl = dependencyResolver.getService(serviceName);
 
                 if (ctrl != null)
                 {
-                    ctrl.stopAsyncInternal(future);
+                    ctrl.remove(future);
                 }
                 else
                 {
@@ -241,7 +190,7 @@ public class ServiceContainerImpl implements Actor, ServiceContainer
     @Override
     public void close(long awaitTime, TimeUnit timeUnit) throws InterruptedException, ExecutionException, TimeoutException
     {
-        final CompletableFuture<Void> containerCloseFuture = closeAsync();
+        final Future<Void> containerCloseFuture = closeAsync();
 
         try
         {
@@ -253,26 +202,31 @@ public class ServiceContainerImpl implements Actor, ServiceContainer
         }
     }
 
-    @SuppressWarnings("rawtypes")
+    @Override
     public CompletableFuture<Void> closeAsync()
     {
-        final CompletableFuture<Void> containerCloseFuture = new CompletableFuture<>();
-
-        executeCmd(containerCloseFuture, () ->
+        actor.call(() ->
         {
             if (state == ContainerState.OPEN)
             {
                 state = ContainerState.CLOSING;
 
-                final CompletableFuture[] serviceFutures = new CompletableFuture[controllers.size()];
+                final List<CompletableFuture<Void>> serviceFutures = new ArrayList<>();
 
-                for (int i = 0; i < controllers.size(); i++)
-                {
-                    serviceFutures[i] = removeService(controllers.get(i).name);
-                }
+                dependencyResolver.getControllers().stream()
+                    .forEach((c) ->
+                    {
+                        final CompletableFuture<Void> closeFuture = new CompletableFuture<>();
+                        c.remove(closeFuture);
+                        serviceFutures.add(closeFuture);
+                    });
 
-                CompletableFuture.allOf(serviceFutures)
-                                 .whenComplete((r, t) -> containerCloseFuture.complete(null));
+                CompletableFuture.allOf(serviceFutures.toArray(new CompletableFuture[serviceFutures.size()]))
+                                 .whenComplete((r, t) ->
+                                 {
+                                     actor.close();
+                                     containerCloseFuture.complete(null);
+                                 });
             }
             else
             {
@@ -287,69 +241,10 @@ public class ServiceContainerImpl implements Actor, ServiceContainer
     private void onClosed()
     {
         state = ContainerState.CLOSED;
-
-        actorRef.close();
-        actorScheduler.close();
-
-        if (actionsExecutor != null)
-        {
-            actionsExecutor.shutdown();
-        }
     }
 
-    @SuppressWarnings("unchecked")
-    public <S> Service<S> getService(ServiceName<?> name)
+    public ConcurrentQueueChannel<ServiceEvent> getChannel()
     {
-        final ServiceController serviceController = controllersByName.get(name);
-
-        if (serviceController != null && serviceController.isStarted())
-        {
-            return serviceController.service;
-        }
-        else
-        {
-            return null;
-        }
+        return channel;
     }
-
-    public ServiceController getServiceController(ServiceName<?> serviceName)
-    {
-        return controllersByName.get(serviceName);
-    }
-
-    private List<ServiceGroupReferenceImpl> createReferences(ServiceController controller, Map<ServiceName<?>, ServiceGroupReference<?>> injectedReferences)
-    {
-        final List<ServiceGroupReferenceImpl> references = new ArrayList<>();
-
-        for (Entry<ServiceName<?>, ServiceGroupReference<?>> injectedReference : injectedReferences.entrySet())
-        {
-            final ServiceName<?> groupName = injectedReference.getKey();
-            final ServiceGroupReference<?> injector = injectedReference.getValue();
-
-            ServiceGroup group = groups.get(groupName);
-            if (group == null)
-            {
-                group = new ServiceGroup(groupName);
-                groups.put(groupName, group);
-            }
-
-            final ServiceGroupReferenceImpl reference = new ServiceGroupReferenceImpl(controller, injector, group);
-
-            group.addReference(reference);
-            references.add(reference);
-        }
-
-        return references;
-    }
-
-    public ExecutorService getExecutor()
-    {
-        return actionsExecutor;
-    }
-
-    public void executeShortRunning(Runnable runnable)
-    {
-        actionsExecutor.execute(() -> LogUtil.doWithMDC(diagnosticContext, runnable));
-    }
-
 }

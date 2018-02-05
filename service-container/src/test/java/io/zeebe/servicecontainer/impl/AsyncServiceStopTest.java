@@ -22,17 +22,17 @@ import static org.mockito.Mockito.verify;
 
 import java.util.concurrent.CompletableFuture;
 
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
-import org.junit.Before;
-import org.junit.Test;
+import io.zeebe.servicecontainer.*;
+import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
+import org.junit.*;
 
 @SuppressWarnings("unchecked")
 public class AsyncServiceStopTest
 {
-    ControlledServiceContainer serviceContainer;
+    @Rule
+    public ControlledActorSchedulerRule actorSchedulerRule = new ControlledActorSchedulerRule();
+
+    ServiceContainer serviceContainer;
 
     ServiceName<Object> service1Name;
     ServiceName<Object> service2Name;
@@ -40,7 +40,7 @@ public class AsyncServiceStopTest
     @Before
     public void setup()
     {
-        serviceContainer = new ControlledServiceContainer();
+        serviceContainer = new ServiceContainerImpl(actorSchedulerRule.get());
         serviceContainer.start();
 
         service1Name = ServiceName.newServiceName("service1", Object.class);
@@ -52,14 +52,15 @@ public class AsyncServiceStopTest
     {
         // given
         final AsyncStopService service = new AsyncStopService();
+        service.future = new CompletableFuture<Void>();
 
         serviceContainer.createService(service1Name, service)
             .install();
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
         // when
         final CompletableFuture<Void> removeFuture = serviceContainer.removeService(service1Name);
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
         // then
         assertNotCompleted(removeFuture);
@@ -70,58 +71,19 @@ public class AsyncServiceStopTest
     {
         // given
         final AsyncStopService service = new AsyncStopService();
+        service.future = new CompletableFuture<Void>();
 
         serviceContainer.createService(service1Name, service)
             .install();
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
         final CompletableFuture<Void> removeFuture = serviceContainer.removeService(service1Name);
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
         // when
         service.future.complete(null);
-        serviceContainer.doWorkUntilDone();
-
-        // then
-        assertCompleted(removeFuture);
-    }
-
-    @Test
-    public void shouldWaitOnSuppliedFuture()
-    {
-        // given
-        final AsyncStopService service = new AsyncStopService();
-        service.future = new CompletableFuture<>();
-
-        serviceContainer.createService(service1Name, service)
-            .install();
-        serviceContainer.doWorkUntilDone();
-
-        // when
-        final CompletableFuture<Void> removeFuture = serviceContainer.removeService(service1Name);
-        serviceContainer.doWorkUntilDone();
-
-        // then
-        assertNotCompleted(removeFuture);
-    }
-
-    @Test
-    public void shouldContineOnSuppliedFuture()
-    {
-        // given
-        final AsyncStopService service = new AsyncStopService();
-        service.future = new CompletableFuture<>();
-
-        serviceContainer.createService(service1Name, service)
-            .install();
-        serviceContainer.doWorkUntilDone();
-
-        final CompletableFuture<Void> removeFuture = serviceContainer.removeService(service1Name);
-        serviceContainer.doWorkUntilDone();
-
-        // when
-        service.future.complete(null);
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.awaitBlockingTasksCompleted(1);
+        actorSchedulerRule.workUntilDone();
 
         // then
         assertCompleted(removeFuture);
@@ -136,14 +98,15 @@ public class AsyncServiceStopTest
 
         serviceContainer.createService(service1Name, service)
             .install();
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
         final CompletableFuture<Void> removeFuture = serviceContainer.removeService(service1Name);
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
         // when
         service.future.completeExceptionally(new RuntimeException());
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.awaitBlockingTasksCompleted(1);
+        actorSchedulerRule.workUntilDone();
 
         // then
         assertCompleted(removeFuture);
@@ -160,11 +123,11 @@ public class AsyncServiceStopTest
 
         serviceContainer.createService(service1Name, service)
             .install();
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
         // when
         final CompletableFuture<Void> removeFuture = serviceContainer.removeService(service1Name);
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
         // then
         assertNotCompleted(removeFuture);
@@ -180,16 +143,16 @@ public class AsyncServiceStopTest
 
         serviceContainer.createService(service1Name, service)
             .install();
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
         // when
         final CompletableFuture<Void> removeFuture = serviceContainer.removeService(service1Name);
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
         // when
-        serviceContainer.executeAsyncActions();
+        actorSchedulerRule.awaitBlockingTasksCompleted(1);
         verify(mockAction).run();
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
         // then
         assertCompleted(removeFuture);
@@ -207,16 +170,16 @@ public class AsyncServiceStopTest
 
         serviceContainer.createService(service1Name, service)
             .install();
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
         // when
         final CompletableFuture<Void> removeFuture = serviceContainer.removeService(service1Name);
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
         // when
-        serviceContainer.executeAsyncActions();
+        actorSchedulerRule.awaitBlockingTasksCompleted(1);
         verify(mockAction).run();
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
         // then
         assertCompleted(removeFuture);
@@ -227,18 +190,19 @@ public class AsyncServiceStopTest
     {
         // given
         final AsyncStopService service = new AsyncStopService();
+        service.future = new CompletableFuture<Void>();
 
         serviceContainer.createService(service1Name, service)
                 .dependency(service2Name)
                 .install();
         serviceContainer.createService(service2Name, mock(Service.class))
                 .install();
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
         // when
         final CompletableFuture<Void> service1RemoveFuture = serviceContainer.removeService(service1Name);
         final CompletableFuture<Void> service2RemoveFuture = serviceContainer.removeService(service2Name);
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
         // then
         assertNotCompleted(service1RemoveFuture);
@@ -250,21 +214,23 @@ public class AsyncServiceStopTest
     {
         // given
         final AsyncStopService service = new AsyncStopService();
+        service.future = new CompletableFuture<Void>();
 
         serviceContainer.createService(service1Name, service)
                 .dependency(service2Name)
                 .install();
         serviceContainer.createService(service2Name, mock(Service.class))
                 .install();
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
         final CompletableFuture<Void> service1RemoveFuture = serviceContainer.removeService(service1Name);
         final CompletableFuture<Void> service2RemoveFuture = serviceContainer.removeService(service2Name);
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.workUntilDone();
 
         // when
         service.future.complete(null);
-        serviceContainer.doWorkUntilDone();
+        actorSchedulerRule.awaitBlockingTasksCompleted(1);
+        actorSchedulerRule.workUntilDone();
 
         // then
         assertCompleted(service1RemoveFuture);
@@ -293,10 +259,6 @@ public class AsyncServiceStopTest
             else if (future != null)
             {
                 stopContext.async(future);
-            }
-            else
-            {
-                future = stopContext.async();
             }
         }
 

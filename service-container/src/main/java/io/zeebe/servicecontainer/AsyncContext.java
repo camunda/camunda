@@ -15,13 +15,11 @@
  */
 package io.zeebe.servicecontainer;
 
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 
 public interface AsyncContext
 {
-    CompletableFuture<Void> async();
-
-    void async(CompletableFuture<?> future);
+    void async(Future<?> future);
 
     void run(Runnable action);
 }
