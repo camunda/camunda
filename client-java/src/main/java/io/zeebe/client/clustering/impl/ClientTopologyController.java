@@ -36,9 +36,11 @@ import io.zeebe.util.state.SimpleStateMachineContext;
 import io.zeebe.util.state.State;
 import io.zeebe.util.state.StateMachine;
 import io.zeebe.util.state.WaitState;
+import org.slf4j.Logger;
 
 public class ClientTopologyController
 {
+    private static final Logger LOG = Loggers.CLIENT_LOGGER;
 
     protected static final int TRANSITION_DEFAULT = 0;
     private static final int REQUEST_TIMEOUT_MS = 1000; // this should not be a large value
@@ -113,6 +115,7 @@ public class ClientTopologyController
             final ClientRequest request = output.sendRequestWithRetry(context.remoteAddress, requestHandler, REQUEST_TIMEOUT_MS);
             if (request != null)
             {
+                LOG.debug("Request topology from {}", context.remoteAddress);
                 workCount++;
                 context.request = request;
                 context.take(TRANSITION_DEFAULT);
@@ -145,7 +148,7 @@ public class ClientTopologyController
                 }
                 catch (Exception e)
                 {
-                    Loggers.CLIENT_LOGGER.debug("Topology request failed", e);
+                    LOG.debug("Topology request failed", e);
                     failureCallback.accept(e);
                 }
                 finally

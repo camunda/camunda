@@ -145,13 +145,12 @@ public class ClientTopologyManager implements Actor
                 (!refreshFutures.isEmpty() && nextEarliestPossibleRequestTimestamp < now);
     }
 
-    protected CompletableFuture<Void> updateTopology(TopologyResponse topologyResponse)
+    protected CompletableFuture<TopologyResponse> updateTopology(final TopologyResponse response)
     {
-        final TopologyResponse response = topologyResponse;
         return commandContext.runAsync(future ->
         {
             onNewTopology(response);
-            future.complete(null);
+            future.complete(response);
         });
     }
 

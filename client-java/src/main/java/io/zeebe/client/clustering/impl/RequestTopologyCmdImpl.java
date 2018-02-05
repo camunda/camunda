@@ -37,20 +37,16 @@ public class RequestTopologyCmdImpl extends ControlMessageRequest<TopologyRespon
     {
         final TopologyResponse response = super.execute();
 
-        final ClientTopologyManager topologyManager = client.getTopologyManager();
-        topologyManager.updateTopology(response);
-
-        return response;
+        return client.getTopologyManager()
+                     .updateTopology(response)
+                     .join();
     }
 
     @Override
     public Future<TopologyResponse> executeAsync()
     {
-        final CompletableFuture<TopologyResponse> topologyResponseCompletableFuture = client.executeAsync(this);
-
-        topologyResponseCompletableFuture.thenAccept(client.getTopologyManager()::updateTopology);
-
-        return topologyResponseCompletableFuture;
+        return ((CompletableFuture<TopologyResponse>) super.executeAsync())
+                     .thenCompose(client.getTopologyManager()::updateTopology);
     }
 
     @Override
