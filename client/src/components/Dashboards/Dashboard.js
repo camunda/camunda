@@ -218,7 +218,7 @@ export default class Dashboard extends React.Component {
           </Modal.Actions>
         </Modal>
         <DashboardView viewMode={true} reports={this.state.reports}>
-          <DimensionSetter emptyRows={0} reports={this.state.reports} />
+          <DimensionSetter reports={this.state.reports} />
         </DashboardView>
       </div>
     )
