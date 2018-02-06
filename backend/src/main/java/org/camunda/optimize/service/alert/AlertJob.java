@@ -56,7 +56,6 @@ public class AlertJob implements Job {
       AlertJobResult alertJobResult = null;
       if (thresholdExceeded(alert, result)) {
         alertJobResult = notifyIfNeeded(alertId, alert, reportDefinition, result);
-
       } else if (alert.isTriggered()) {
         alertJobResult = new AlertJobResult(alert);
         alertWriter.writeAlertStatus(false, alertId);

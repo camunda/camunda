@@ -72,16 +72,23 @@ public class AlertStateChangeIT extends AbstractAlertSchedulerIT {
             .post(Entity.json(simpleAlert));
     String id = response.readEntity(String.class);
 
-    assertThat("email received", greenMail.waitForIncomingEmail(3000, 1), is(true));
-    greenMail.purgeEmailFromAllMailboxes();
+    SyncListener jobListener = new SyncListener(1);
+    embeddedOptimizeRule.getAlertService().getScheduler().getListenerManager().addJobListener(jobListener);
+    embeddedOptimizeRule.getAlertService().getScheduler().triggerJob(checkJobKey(id));
+    jobListener.getDone().await();
 
     //when
     engineRule.startProcessInstance(processDefinitionId);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    greenMail.purgeEmailFromAllMailboxes();
 
     //then
-    assertThat("email received", greenMail.waitForIncomingEmail(3000, 1), is(false));
+    jobListener = new SyncListener(1);
+    embeddedOptimizeRule.getAlertService().getScheduler().getListenerManager().addJobListener(jobListener);
+    embeddedOptimizeRule.getAlertService().getScheduler().triggerJob(checkJobKey(id));
+    jobListener.getDone().await();
+
     MimeMessage[] emails = greenMail.getReceivedMessages();
     assertThat(emails.length, is(0));
   }
@@ -102,12 +109,12 @@ public class AlertStateChangeIT extends AbstractAlertSchedulerIT {
     String reportId = createAndStoreDurationNumberReport(processDefinitionId);
     AlertCreationDto simpleAlert = createSimpleAlert(reportId);
     AlertInterval reminderInterval = new AlertInterval();
-    reminderInterval.setValue(1);
+    reminderInterval.setValue(3);
     reminderInterval.setUnit("Seconds");
     simpleAlert.setReminder(reminderInterval);
     simpleAlert.setFixNotification(true);
     simpleAlert.setThreshold(1000);
-    simpleAlert.getCheckInterval().setValue(2);
+    simpleAlert.getCheckInterval().setValue(5);
 
     Response response =
         embeddedOptimizeRule.target(ALERT)
@@ -117,17 +124,25 @@ public class AlertStateChangeIT extends AbstractAlertSchedulerIT {
     String id = response.readEntity(String.class);
 
     embeddedOptimizeRule.getAlertService().getScheduler().triggerJob(checkJobKey(id));
-    assertThat(greenMail.waitForIncomingEmail(3000, 1), is(true));
-    greenMail.purgeEmailFromAllMailboxes();
+
+    SyncListener jobListener = new SyncListener(1);
+    embeddedOptimizeRule.getAlertService().getScheduler().getListenerManager().addJobListener(jobListener);
+    embeddedOptimizeRule.getAlertService().getScheduler().triggerJob(checkJobKey(id));
+    jobListener.getDone().await();
 
     //when
     engineRule.startProcessInstance(processDefinitionId);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
+    greenMail.purgeEmailFromAllMailboxes();
+    jobListener = new SyncListener(1);
+    embeddedOptimizeRule.getAlertService().getScheduler().getListenerManager().addJobListener(jobListener);
     embeddedOptimizeRule.getAlertService().getScheduler().triggerJob(checkJobKey(id));
+    jobListener.getDone().await();
     //then
-    assertThat(greenMail.waitForIncomingEmail(3000, 1), is(true));
+
+    assertThat("email received", greenMail.waitForIncomingEmail(3000, 1), is(true));
     MimeMessage[] emails = greenMail.getReceivedMessages();
     assertThat(emails.length, is(1));
     assertThat(emails[0].getSubject(), is("[Camunda-Optimize] - Report status"));

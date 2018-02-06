@@ -205,9 +205,9 @@ public abstract class AbstractAlertSchedulerIT {
 
   protected GreenMail initGreenMail() {
     GreenMail greenMail = new GreenMail(new ServerSetup(6666, null, ServerSetup.PROTOCOL_SMTP));
-    greenMail.start();
     greenMail.setUser("from@localhost.com", "demo", "demo");
     greenMail.setUser("test@camunda.com", "test@camunda.com", "test@camunda.com");
+    greenMail.start();
     return greenMail;
   }
 }
