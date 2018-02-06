@@ -3,8 +3,10 @@ package org.camunda.optimize.service.alert;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
 import org.quartz.JobDetail;
+import org.quartz.JobKey;
 import org.quartz.SimpleTrigger;
 import org.quartz.Trigger;
+import org.quartz.TriggerKey;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.quartz.JobDetailFactoryBean;
@@ -83,6 +85,17 @@ public abstract class AbstractAlertFactory {
 
   public ApplicationContext getApplicationContext() {
     return applicationContext;
+  }
+
+  protected JobKey getJobKey(AlertDefinitionDto alert) {
+    return new JobKey(
+        this.getJobName(alert),
+        this.getJobGroup()
+    );
+  }
+
+  protected TriggerKey getTriggerKey(AlertDefinitionDto toDelete) {
+    return new TriggerKey(getTriggerName(toDelete), getTriggerGroup());
   }
 
   protected abstract AlertInterval getInterval(AlertDefinitionDto alert);

@@ -44,7 +44,7 @@ public class ReminderHandlingListener implements JobListener {
     AlertJobResult result = (AlertJobResult) context.getResult();
     if (result != null && result.isStatusChanged()) {
       // create reminders if needed
-      if (result.isTriggered() && result.getAlert().getReminder() != null) {
+      if (result.getAlert().isTriggered() && result.getAlert().getReminder() != null) {
         logger.debug("Creating reminder job for [{}]", result.getAlert().getId());
         JobDetail jobDetails = alertReminderJobFactory.createJobDetails(result.getAlert());
         try {
@@ -57,14 +57,8 @@ public class ReminderHandlingListener implements JobListener {
         }
       } else {
         // remove reminders
-        TriggerKey triggerKey = new TriggerKey(
-            alertReminderJobFactory.getTriggerName(result.getAlert()),
-            alertReminderJobFactory.getTriggerGroup()
-        );
-        JobKey jobKey = new JobKey(
-            alertReminderJobFactory.getJobName(result.getAlert()),
-            alertReminderJobFactory.getJobGroup()
-        );
+        JobKey jobKey = alertReminderJobFactory.getJobKey(result.getAlert());
+        TriggerKey triggerKey = alertReminderJobFactory.getTriggerKey(result.getAlert());
 
         try {
           context.getScheduler().unscheduleJob(triggerKey);
@@ -76,7 +70,6 @@ public class ReminderHandlingListener implements JobListener {
 
     }
   }
-
 
 
 }

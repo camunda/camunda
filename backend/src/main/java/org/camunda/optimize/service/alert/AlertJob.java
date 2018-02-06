@@ -57,9 +57,12 @@ public class AlertJob implements Job {
       if (thresholdExceeded(alert, result)) {
         alertJobResult = notifyIfNeeded(alertId, alert, reportDefinition, result);
       } else if (alert.isTriggered()) {
+        alert.setTriggered(false);
+
         alertJobResult = new AlertJobResult(alert);
-        alertWriter.writeAlertStatus(false, alertId);
         alertJobResult.setStatusChanged(true);
+
+        alertWriter.writeAlertStatus(false, alertId);
 
         if (alert.isFixNotification()) {
           notificationService.notifyRecipient(
@@ -96,11 +99,13 @@ public class AlertJob implements Job {
       ReportDefinitionDto reportDefinition,
       NumberReportResultDto result
   ) {
-    AlertJobResult alertJobResult = new AlertJobResult(alert);
-    boolean haveToNotify = false;
-    if (!alert.isTriggered()) {
-      haveToNotify = true;
+
+    boolean haveToNotify = !alert.isTriggered();
+    if (haveToNotify) {
+      alert.setTriggered(true);
     }
+
+    AlertJobResult alertJobResult = new AlertJobResult(alert);
 
     if (haveToNotify) {
       alertWriter.writeAlertStatus(haveToNotify, alertId);
@@ -111,7 +116,6 @@ public class AlertJob implements Job {
       );
 
       alertJobResult.setStatusChanged(true);
-      alertJobResult.setTriggered(true);
     }
 
     return alertJobResult;

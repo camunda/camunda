@@ -233,8 +233,8 @@ public class  AlertService {
   }
 
   private void unscheduleReminderJob(AlertDefinitionDto toDelete) throws SchedulerException {
-    JobKey toUnschedule = new JobKey(alertReminderJobFactory.getJobName(toDelete), alertReminderJobFactory.getJobGroup());
-    TriggerKey triggerKey = new TriggerKey(alertReminderJobFactory.getTriggerName(toDelete), alertReminderJobFactory.getTriggerGroup());
+    JobKey toUnschedule = alertReminderJobFactory.getJobKey(toDelete);
+    TriggerKey triggerKey = alertReminderJobFactory.getTriggerKey(toDelete);
 
     if (toUnschedule != null) {
       getScheduler().unscheduleJob(triggerKey);
@@ -242,9 +242,11 @@ public class  AlertService {
     }
   }
 
+
+
   private void unscheduleCheckJob(AlertDefinitionDto toDelete) throws SchedulerException {
-    JobKey toUnschedule = new JobKey(alertCheckJobFactory.getJobName(toDelete), alertCheckJobFactory.getJobGroup());
-    TriggerKey triggerKey = new TriggerKey(alertCheckJobFactory.getTriggerName(toDelete), alertCheckJobFactory.getTriggerGroup());
+    JobKey toUnschedule = alertCheckJobFactory.getJobKey(toDelete);
+    TriggerKey triggerKey = alertReminderJobFactory.getTriggerKey(toDelete);
 
     if (toUnschedule != null) {
       getScheduler().unscheduleJob(triggerKey);

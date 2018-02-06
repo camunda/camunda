@@ -8,7 +8,6 @@ import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 public class AlertJobResult {
 
   private boolean statusChanged;
-  private boolean triggered;
   private AlertDefinitionDto alert;
 
   public AlertJobResult(AlertDefinitionDto alert) {
@@ -29,13 +28,5 @@ public class AlertJobResult {
 
   public void setStatusChanged(boolean statusChanged) {
     this.statusChanged = statusChanged;
-  }
-
-  public boolean isTriggered() {
-    return triggered;
-  }
-
-  public void setTriggered(boolean triggered) {
-    this.triggered = triggered;
   }
 }

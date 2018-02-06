@@ -16,6 +16,7 @@ import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.camunda.optimize.test.util.ReportDataHelper;
 import org.quartz.JobKey;
+import org.quartz.SchedulerException;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
@@ -42,6 +43,25 @@ public abstract class AbstractAlertSchedulerIT {
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
   public EngineDatabaseRule engineDatabaseRule = new EngineDatabaseRule();
+
+  protected String createAlert(String token, AlertCreationDto simpleAlert) {
+    Response response =
+        embeddedOptimizeRule.target(ALERT)
+            .request()
+            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+            .post(Entity.json(simpleAlert));
+    return response.readEntity(String.class);
+  }
+
+  protected void triggerAndCompleteJob(String id) throws SchedulerException, InterruptedException {
+    SyncListener jobListener = new SyncListener(1);
+    embeddedOptimizeRule.getAlertService().getScheduler().getListenerManager().addJobListener(jobListener);
+    //trigger job
+    embeddedOptimizeRule.getAlertService().getScheduler().triggerJob(checkJobKey(id));
+    //wait for job to finish
+    jobListener.getDone().await();
+    embeddedOptimizeRule.getAlertService().getScheduler().getListenerManager().removeJobListener(jobListener.getName());
+  }
 
   protected ProcessInstanceEngineDto deployWithTimeShift(long daysToShift, long durationInSec) throws SQLException, InterruptedException {
     OffsetDateTime startDate = OffsetDateTime.now().withOffsetSameInstant(ZoneOffset.UTC);

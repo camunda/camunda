@@ -1,6 +1,5 @@
 package org.camunda.optimize.service.alert;
 
-import com.icegreen.greenmail.util.GreenMail;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -21,6 +20,7 @@ import static org.camunda.optimize.service.es.report.command.util.ReportConstant
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.HEAT_VISUALIZATION;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 
 /**
  * @author Askar Akhmerov
@@ -47,23 +47,12 @@ public class AlertReminderSchedulerIT extends AbstractAlertSchedulerIT {
 
     AlertCreationDto simpleAlert = createBasicAlertWithReminder();
 
-    SyncListener jobListener = new SyncListener(1);
-    embeddedOptimizeRule.getAlertService().getScheduler().getListenerManager().addJobListener(jobListener);
+    String id = createAlert(token, simpleAlert);
 
-    Response response =
-        embeddedOptimizeRule.target(ALERT)
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
-            .post(Entity.json(simpleAlert));
-    String id = response.readEntity(String.class);
-
-    //trigger job
-    embeddedOptimizeRule.getAlertService().getScheduler().triggerJob(checkJobKey(id));
-    //wait for job to finish
-    jobListener.getDone().await();
+    triggerAndCompleteJob(id);
 
     //when
-    response =
+    Response response =
       embeddedOptimizeRule.target("alert/" + id)
         .request()
         .header(HttpHeaders.AUTHORIZATION, BEARER + token)
@@ -81,33 +70,23 @@ public class AlertReminderSchedulerIT extends AbstractAlertSchedulerIT {
 
     AlertCreationDto simpleAlert = createBasicAlertWithReminder();
 
-    SyncListener jobListener = new SyncListener(1);
-    embeddedOptimizeRule.getAlertService().getScheduler().getListenerManager().addJobListener(jobListener);
+    String id = createAlert(token, simpleAlert);
 
-    Response response =
-        embeddedOptimizeRule.target(ALERT)
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
-            .post(Entity.json(simpleAlert));
-    String id = response.readEntity(String.class);
-
-    //trigger job
-    embeddedOptimizeRule.getAlertService().getScheduler().triggerJob(checkJobKey(id));
-    //wait for job to finish
-    jobListener.getDone().await();
+    triggerAndCompleteJob(id);
 
     //when
-    response =
-        embeddedOptimizeRule.target("report/" + simpleAlert.getReportId())
-          .request()
-          .header(HttpHeaders.AUTHORIZATION, BEARER + token)
-          .delete();
+    Response response =
+      embeddedOptimizeRule.target("report/" + simpleAlert.getReportId())
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .delete();
     //then
     assertThat(
-        embeddedOptimizeRule.getAlertService().getScheduler().getJobGroupNames().size(),
-        is(0)
+      embeddedOptimizeRule.getAlertService().getScheduler().getJobGroupNames().size(),
+      is(0)
     );
   }
+
 
   @Test
   public void reminderJobsAreRemovedOnReportUpdate() throws Exception {
@@ -127,20 +106,10 @@ public class AlertReminderSchedulerIT extends AbstractAlertSchedulerIT {
     reminderInterval.setUnit("Seconds");
     simpleAlert.setReminder(reminderInterval);
 
-    SyncListener jobListener = new SyncListener(1);
-    embeddedOptimizeRule.getAlertService().getScheduler().getListenerManager().addJobListener(jobListener);
+    String id = createAlert(token, simpleAlert);
 
-    Response response =
-        embeddedOptimizeRule.target(ALERT)
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
-            .post(Entity.json(simpleAlert));
-    String id = response.readEntity(String.class);
+    triggerAndCompleteJob(id);
 
-    //trigger job
-    embeddedOptimizeRule.getAlertService().getScheduler().triggerJob(checkJobKey(id));
-    //wait for job to finish
-    jobListener.getDone().await();
     assertThat(
       embeddedOptimizeRule.getAlertService().getScheduler().getJobGroupNames().size(),
       is(2)
@@ -179,36 +148,25 @@ public class AlertReminderSchedulerIT extends AbstractAlertSchedulerIT {
 
     simpleAlert.setThreshold(1000);
 
-    SyncListener jobListener = new SyncListener(1);
-    embeddedOptimizeRule.getAlertService().getScheduler().getListenerManager().addJobListener(jobListener);
+    String id = createAlert(token, simpleAlert);
 
-    Response response =
-        embeddedOptimizeRule.target(ALERT)
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
-            .post(Entity.json(simpleAlert));
-    String id = response.readEntity(String.class);
+    triggerAndCompleteJob(id);
 
-    //trigger job
-    embeddedOptimizeRule.getAlertService().getScheduler().triggerJob(checkJobKey(id));
-    //wait for job to finish
-    jobListener.getDone().await();
-
+    assertThat(
+        embeddedOptimizeRule.getAlertService().getScheduler().getJobGroupNames().size(),
+        is(greaterThanOrEqualTo(2))
+    );
     //when
     engineRule.startProcessInstance(processDefinitionId);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
-    jobListener = new SyncListener(1);
-    embeddedOptimizeRule.getAlertService().getScheduler().getListenerManager().addJobListener(jobListener);
-    embeddedOptimizeRule.getAlertService().getScheduler().triggerJob(checkJobKey(id));
-    //wait for job to finish
-    jobListener.getDone().await();
+    triggerAndCompleteJob(id);
 
     //then
     assertThat(
-        embeddedOptimizeRule.getAlertService().getScheduler().getJobGroupNames().size(),
-        is(1)
+      embeddedOptimizeRule.getAlertService().getScheduler().getJobGroupNames().size(),
+      is(1)
     );
   }
 
@@ -219,30 +177,22 @@ public class AlertReminderSchedulerIT extends AbstractAlertSchedulerIT {
 
     AlertCreationDto simpleAlert = createBasicAlertWithReminder();
 
-    SyncListener jobListener = new SyncListener(1);
-    embeddedOptimizeRule.getAlertService().getScheduler().getListenerManager().addJobListener(jobListener);
+    String id = createAlert(token, simpleAlert);
 
-    Response response =
-      embeddedOptimizeRule.target(ALERT)
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
-        .post(Entity.json(simpleAlert));
-    String id = response.readEntity(String.class);
+    triggerAndCompleteJob(id);
 
-    //trigger job
-    embeddedOptimizeRule.getAlertService().getScheduler().triggerJob(checkJobKey(id));
-    //wait for job to finish
-    jobListener.getDone().await();
-
+    assertThat(
+      embeddedOptimizeRule.getAlertService().getScheduler().getJobGroupNames().size(),
+      is(greaterThanOrEqualTo(2))
+    );
     //when
     simpleAlert.getCheckInterval().setValue(30);
-    jobListener = new SyncListener(1);
-    embeddedOptimizeRule.getAlertService().getScheduler().getListenerManager().addJobListener(jobListener);
 
     embeddedOptimizeRule.target("alert/" + id)
       .request()
       .header(HttpHeaders.AUTHORIZATION, BEARER + token)
       .put(Entity.json(simpleAlert));
+
     //then
     assertThat(
       embeddedOptimizeRule.getAlertService().getScheduler().getJobGroupNames().size(),
@@ -250,10 +200,8 @@ public class AlertReminderSchedulerIT extends AbstractAlertSchedulerIT {
     );
 
     //when
-    //trigger job
-    embeddedOptimizeRule.getAlertService().getScheduler().triggerJob(checkJobKey(id));
-    //wait for job to finish
-    jobListener.getDone().await();
+    triggerAndCompleteJob(id);
+
     //then
     assertThat(
       embeddedOptimizeRule.getAlertService().getScheduler().getJobGroupNames().size(),
@@ -268,9 +216,6 @@ public class AlertReminderSchedulerIT extends AbstractAlertSchedulerIT {
 
     AlertCreationDto simpleAlert = createBasicAlertWithReminder();
 
-    SyncListener jobListener = new SyncListener(1);
-    embeddedOptimizeRule.getAlertService().getScheduler().getListenerManager().addJobListener(jobListener);
-
     // when
     Response response =
       embeddedOptimizeRule.target(ALERT)
@@ -279,10 +224,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertSchedulerIT {
         .post(Entity.json(simpleAlert));
     String id = response.readEntity(String.class);
 
-    //trigger job
-    embeddedOptimizeRule.getAlertService().getScheduler().triggerJob(checkJobKey(id));
-    //wait for job to finish
-    jobListener.getDone().await();
+    triggerAndCompleteJob(id);
 
     // then
     assertThat(response.getStatus(), is(200));
@@ -299,20 +241,9 @@ public class AlertReminderSchedulerIT extends AbstractAlertSchedulerIT {
 
     AlertCreationDto simpleAlert = createBasicAlertWithReminder();
 
-    SyncListener jobListener = new SyncListener(1);
-    embeddedOptimizeRule.getAlertService().getScheduler().getListenerManager().addJobListener(jobListener);
+    String id = createAlert(token, simpleAlert);
 
-    Response response =
-      embeddedOptimizeRule.target(ALERT)
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
-        .post(Entity.json(simpleAlert));
-    String id = response.readEntity(String.class);
-
-    //trigger job
-    embeddedOptimizeRule.getAlertService().getScheduler().triggerJob(checkJobKey(id));
-    //wait for job to finish
-    jobListener.getDone().await();
+    triggerAndCompleteJob(id);
 
     // when
     embeddedOptimizeRule.stopOptimize();
