@@ -34,7 +34,17 @@ public class ChannelSubscription implements ActorSubscription
 
         if (task.tryWakeup())
         {
-            ActorTaskRunner.current().submit(task);
+            final ActorTaskRunner current = ActorTaskRunner.current();
+
+            if (current != null)
+            {
+                current.submit(task);
+            }
+            else
+            {
+                // make it possible for non-actor runner threads to signal consumers
+                task.getScheduler().reSubmitActor(task);
+            }
         }
     }
 

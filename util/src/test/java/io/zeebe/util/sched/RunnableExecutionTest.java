@@ -143,7 +143,7 @@ public class RunnableExecutionTest
                 {
                     innerIterationCount++;
 
-                    if (innerIterationCount < 10_000)
+                    if (innerIterationCount < 1)
                     {
                         actor.run(method);
                     }

@@ -78,7 +78,7 @@ public class ZbActorScheduler
     }
 
     /** called when an actor returns from the blockedTasksRunner */
-    void reSubmitActor(ActorTask task)
+    public void reSubmitActor(ActorTask task)
     {
         final ActorTaskRunner assignedRunner = runnerAssignmentStrategy.nextRunner(nonBlockingTasksRunners);
         assignedRunner.submit(task);
