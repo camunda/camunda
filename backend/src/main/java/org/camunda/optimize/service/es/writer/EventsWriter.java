@@ -98,6 +98,7 @@ public class EventsWriter {
     procInst.setProcessDefinitionKey(e.getProcessDefinitionKey());
     procInst.setProcessInstanceId(e.getProcessInstanceId());
     procInst.getEvents().addAll(simpleEvents);
+    procInst.setEngine(e.getEngineAlias());
     String newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
 
     addEventToProcessInstanceBulkRequest.add(esclient

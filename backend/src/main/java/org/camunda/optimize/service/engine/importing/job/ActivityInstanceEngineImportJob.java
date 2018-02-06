@@ -51,6 +51,7 @@ public class ActivityInstanceEngineImportJob extends
     flowNodeEventDto.setEndDate(engineEntity.getEndTime());
     flowNodeEventDto.setActivityType(engineEntity.getActivityType());
     flowNodeEventDto.setDurationInMs(engineEntity.getDurationInMillis());
+    flowNodeEventDto.setEngineAlias(engineContext.getEngineAlias());
     return flowNodeEventDto;
   }
 

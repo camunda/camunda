@@ -23,6 +23,7 @@ public class FlowNodeEventDto implements Serializable,OptimizeDto {
   protected OffsetDateTime processInstanceEndDate;
   protected Long durationInMs;
   protected String activityType;
+  protected String engineAlias;
 
   public String getId() {
     return id;
@@ -127,5 +128,13 @@ public class FlowNodeEventDto implements Serializable,OptimizeDto {
 
   public void setActivityType(String activityType) {
     this.activityType = activityType;
+  }
+
+  public String getEngineAlias() {
+    return engineAlias;
+  }
+
+  public void setEngineAlias(String engineAlias) {
+    this.engineAlias = engineAlias;
   }
 }
