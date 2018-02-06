@@ -11,9 +11,6 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import javax.mail.internet.MimeMessage;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
@@ -57,17 +54,11 @@ public class AlertStateChangeIT extends AbstractAlertSchedulerIT {
     String processDefinitionId = processInstance.getDefinitionId();
     // when
     String reportId = createAndStoreDurationNumberReport(processDefinitionId);
-    AlertCreationDto simpleAlert = createSimpleAlert(reportId);
-    AlertInterval reminderInterval = new AlertInterval();
-    reminderInterval.setValue(1);
-    reminderInterval.setUnit("Seconds");
-    simpleAlert.setReminder(reminderInterval);
-
-    simpleAlert.setThreshold(1000);
+    AlertCreationDto simpleAlert = createAlertWithReminder(reportId);
 
     String id = createAlert(token, simpleAlert);
 
-    triggerAndCompleteJob(id);
+    triggerAndCompleteCheckJob(id);
 
     //when
     engineRule.startProcessInstance(processDefinitionId);
@@ -76,7 +67,7 @@ public class AlertStateChangeIT extends AbstractAlertSchedulerIT {
     greenMail.purgeEmailFromAllMailboxes();
 
     //then
-    triggerAndCompleteJob(id);
+    triggerAndCompleteReminderJob(id);
 
     MimeMessage[] emails = greenMail.getReceivedMessages();
     assertThat(emails.length, is(0));
@@ -96,18 +87,12 @@ public class AlertStateChangeIT extends AbstractAlertSchedulerIT {
     String processDefinitionId = processInstance.getDefinitionId();
     // when
     String reportId = createAndStoreDurationNumberReport(processDefinitionId);
-    AlertCreationDto simpleAlert = createSimpleAlert(reportId);
-    AlertInterval reminderInterval = new AlertInterval();
-    reminderInterval.setValue(3);
-    reminderInterval.setUnit("Seconds");
-    simpleAlert.setReminder(reminderInterval);
+    AlertCreationDto simpleAlert = createAlertWithReminder(reportId);
     simpleAlert.setFixNotification(true);
-    simpleAlert.setThreshold(1000);
-    simpleAlert.getCheckInterval().setValue(5);
 
     String id = createAlert(token, simpleAlert);
 
-    triggerAndCompleteJob(id);
+    triggerAndCompleteCheckJob(id);
 
     //when
     engineRule.startProcessInstance(processDefinitionId);
@@ -115,14 +100,24 @@ public class AlertStateChangeIT extends AbstractAlertSchedulerIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     greenMail.purgeEmailFromAllMailboxes();
-    triggerAndCompleteJob(id);
+    triggerAndCompleteReminderJob(id);
     //then
 
-    assertThat("email received", greenMail.waitForIncomingEmail(3000, 1), is(true));
     MimeMessage[] emails = greenMail.getReceivedMessages();
     assertThat(emails.length, is(1));
     assertThat(emails[0].getSubject(), is("[Camunda-Optimize] - Report status"));
     assertThat(emails[0].getContent().toString(), containsString("is not exceeded anymore."));
+  }
+
+  private AlertCreationDto createAlertWithReminder(String reportId) {
+    AlertCreationDto simpleAlert = createSimpleAlert(reportId);
+    AlertInterval reminderInterval = new AlertInterval();
+    reminderInterval.setValue(3);
+    reminderInterval.setUnit("Seconds");
+    simpleAlert.setReminder(reminderInterval);
+    simpleAlert.setThreshold(1000);
+    simpleAlert.getCheckInterval().setValue(5);
+    return simpleAlert;
   }
 
 }

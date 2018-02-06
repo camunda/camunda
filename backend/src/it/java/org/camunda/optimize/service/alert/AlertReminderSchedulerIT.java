@@ -49,7 +49,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertSchedulerIT {
 
     String id = createAlert(token, simpleAlert);
 
-    triggerAndCompleteJob(id);
+    triggerAndCompleteCheckJob(id);
 
     //when
     Response response =
@@ -72,7 +72,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertSchedulerIT {
 
     String id = createAlert(token, simpleAlert);
 
-    triggerAndCompleteJob(id);
+    triggerAndCompleteCheckJob(id);
 
     //when
     Response response =
@@ -108,7 +108,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertSchedulerIT {
 
     String id = createAlert(token, simpleAlert);
 
-    triggerAndCompleteJob(id);
+    triggerAndCompleteCheckJob(id);
 
     assertThat(
       embeddedOptimizeRule.getAlertService().getScheduler().getJobGroupNames().size(),
@@ -150,7 +150,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertSchedulerIT {
 
     String id = createAlert(token, simpleAlert);
 
-    triggerAndCompleteJob(id);
+    triggerAndCompleteCheckJob(id);
 
     assertThat(
         embeddedOptimizeRule.getAlertService().getScheduler().getJobGroupNames().size(),
@@ -161,7 +161,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertSchedulerIT {
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
-    triggerAndCompleteJob(id);
+    triggerAndCompleteCheckJob(id);
 
     //then
     assertThat(
@@ -179,7 +179,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertSchedulerIT {
 
     String id = createAlert(token, simpleAlert);
 
-    triggerAndCompleteJob(id);
+    triggerAndCompleteCheckJob(id);
 
     assertThat(
       embeddedOptimizeRule.getAlertService().getScheduler().getJobGroupNames().size(),
@@ -200,7 +200,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertSchedulerIT {
     );
 
     //when
-    triggerAndCompleteJob(id);
+    triggerAndCompleteCheckJob(id);
 
     //then
     assertThat(
@@ -224,7 +224,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertSchedulerIT {
         .post(Entity.json(simpleAlert));
     String id = response.readEntity(String.class);
 
-    triggerAndCompleteJob(id);
+    triggerAndCompleteCheckJob(id);
 
     // then
     assertThat(response.getStatus(), is(200));
@@ -243,7 +243,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertSchedulerIT {
 
     String id = createAlert(token, simpleAlert);
 
-    triggerAndCompleteJob(id);
+    triggerAndCompleteCheckJob(id);
 
     // when
     embeddedOptimizeRule.stopOptimize();

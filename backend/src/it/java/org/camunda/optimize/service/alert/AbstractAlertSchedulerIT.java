@@ -53,14 +53,26 @@ public abstract class AbstractAlertSchedulerIT {
     return response.readEntity(String.class);
   }
 
-  protected void triggerAndCompleteJob(String id) throws SchedulerException, InterruptedException {
+  protected void triggerAndCompleteCheckJob(String id) throws SchedulerException, InterruptedException {
+    this.triggerAndCompleteJob(checkJobKey(id));
+  }
+
+  protected void triggerAndCompleteJob(JobKey jobKey ) throws SchedulerException, InterruptedException {
     SyncListener jobListener = new SyncListener(1);
     embeddedOptimizeRule.getAlertService().getScheduler().getListenerManager().addJobListener(jobListener);
     //trigger job
-    embeddedOptimizeRule.getAlertService().getScheduler().triggerJob(checkJobKey(id));
+    embeddedOptimizeRule.getAlertService().getScheduler().triggerJob(jobKey);
     //wait for job to finish
     jobListener.getDone().await();
     embeddedOptimizeRule.getAlertService().getScheduler().getListenerManager().removeJobListener(jobListener.getName());
+  }
+
+  protected void triggerAndCompleteReminderJob(String id) throws SchedulerException, InterruptedException  {
+    this.triggerAndCompleteJob(reminderJobKey(id));
+  }
+
+  private JobKey reminderJobKey(String id) {
+    return new JobKey(id + "-reminder-job", "statusReminder-job");
   }
 
   protected ProcessInstanceEngineDto deployWithTimeShift(long daysToShift, long durationInSec) throws SQLException, InterruptedException {
