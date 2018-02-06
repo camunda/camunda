@@ -65,9 +65,6 @@ public class AlertStateChangeIT extends AbstractAlertSchedulerIT {
 
     simpleAlert.setThreshold(1000);
 
-    SyncListener jobListener = new SyncListener(1);
-    embeddedOptimizeRule.getAlertService().getScheduler().getListenerManager().addJobListener(jobListener);
-
     Response response =
         embeddedOptimizeRule.target(ALERT)
             .request()
@@ -105,14 +102,12 @@ public class AlertStateChangeIT extends AbstractAlertSchedulerIT {
     String reportId = createAndStoreDurationNumberReport(processDefinitionId);
     AlertCreationDto simpleAlert = createSimpleAlert(reportId);
     AlertInterval reminderInterval = new AlertInterval();
-    reminderInterval.setValue(300);
-    reminderInterval.setUnit("Millis");
+    reminderInterval.setValue(1);
+    reminderInterval.setUnit("Seconds");
     simpleAlert.setReminder(reminderInterval);
     simpleAlert.setFixNotification(true);
     simpleAlert.setThreshold(1000);
-
-    SyncListener jobListener = new SyncListener(1);
-    embeddedOptimizeRule.getAlertService().getScheduler().getListenerManager().addJobListener(jobListener);
+    simpleAlert.getCheckInterval().setValue(2);
 
     Response response =
         embeddedOptimizeRule.target(ALERT)
@@ -121,6 +116,7 @@ public class AlertStateChangeIT extends AbstractAlertSchedulerIT {
             .post(Entity.json(simpleAlert));
     String id = response.readEntity(String.class);
 
+    embeddedOptimizeRule.getAlertService().getScheduler().triggerJob(checkJobKey(id));
     assertThat(greenMail.waitForIncomingEmail(3000, 1), is(true));
     greenMail.purgeEmailFromAllMailboxes();
 
@@ -129,6 +125,7 @@ public class AlertStateChangeIT extends AbstractAlertSchedulerIT {
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
+    embeddedOptimizeRule.getAlertService().getScheduler().triggerJob(checkJobKey(id));
     //then
     assertThat(greenMail.waitForIncomingEmail(3000, 1), is(true));
     MimeMessage[] emails = greenMail.getReceivedMessages();
