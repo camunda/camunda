@@ -20,22 +20,10 @@ export default class ControlPanel extends React.Component {
   }
 
   loadAvailableDefinitions = async () => {
-    const definitions = await loadProcessDefinitions();
-
-    const arr = definitions.map((d) => {
-      return ([d.key, d.versions.map((v) => {
-        return v;
-      })]);
-    });
-
     this.setState({
-      availableDefinitions: this.flatten(arr),
+      availableDefinitions: await loadProcessDefinitions(),
       loaded: true
     });
-  }
-
-  flatten = arr => {
-    return Array.prototype.concat(...Array.prototype.concat(...arr))
   }
 
   changeDefinition = evt => {
@@ -62,10 +50,10 @@ export default class ControlPanel extends React.Component {
           <Select className='ControlPanel__select' name='ControlPanel__process-definition' value={this.props.processDefinitionId} onChange={this.changeDefinition}>
             {addSelectionOption()}
             {this.state.availableDefinitions.map(definition => {
-              let key;
-              const isObject = typeof(definition) === 'object';
-              (isObject) ? key = definition.id : key = definition;
-              return <Select.Option value={key} key={key} disabled={!isObject}>{(isObject) ? key : '--'}</Select.Option>
+              return (<React.Fragment key={definition.key}>
+                <Select.Option disabled>--</Select.Option>
+                {definition.versions.map(({id}) => <Select.Option value={id} key={id} >{id}</Select.Option>)}
+              </React.Fragment>);
             })}
           </Select>
         </li>
