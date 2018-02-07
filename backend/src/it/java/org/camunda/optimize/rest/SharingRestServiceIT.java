@@ -1,6 +1,5 @@
 package org.camunda.optimize.rest;
 
-import camundafeel.de.odysseus.el.tree.impl.Cache;
 import org.camunda.optimize.dto.optimize.query.sharing.SharingDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
