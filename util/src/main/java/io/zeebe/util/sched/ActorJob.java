@@ -68,17 +68,6 @@ public class ActorJob
                 resultFuture.complete(invocationResult);
             }
 
-            if (state != ActorState.BLOCKED)
-            {
-                if (isAutoCompleting || isDoneCalled || isTriggeredBySubscription())
-                {
-                    state = ActorState.TERMINATED;
-                }
-                else
-                {
-                    state = ActorState.QUEUED;
-                }
-            }
         }
         catch (Exception e)
         {
@@ -93,6 +82,19 @@ public class ActorJob
         finally
         {
             this.runner = null;
+
+            // in any case, success or exception, decide if the job should be resubmitted
+            if (state != ActorState.BLOCKED)
+            {
+                if (isAutoCompleting || isDoneCalled || isTriggeredBySubscription())
+                {
+                    state = ActorState.TERMINATED;
+                }
+                else
+                {
+                    state = ActorState.QUEUED;
+                }
+            }
         }
     }
 

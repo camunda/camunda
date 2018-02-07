@@ -16,19 +16,22 @@
 package io.zeebe.util.sched;
 
 import java.time.Duration;
-import java.util.concurrent.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+
+import org.junit.Assert;
+import org.junit.Rule;
+import org.junit.Test;
 
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
-import org.junit.*;
 
 public class CallableExecutionTest
 {
     @Rule
     public final ActorSchedulerRule schedulerRule = new ActorSchedulerRule(3);
 
-    final CountDownLatch latch = new CountDownLatch(10);
-
-    class PongActor extends ZbActor
+    static class PongActor extends ZbActor
     {
         @Override
         protected void onActorStarted()
@@ -48,18 +51,20 @@ public class CallableExecutionTest
         }
     }
 
-    class PingActor extends ZbActor
+    static class PingActor extends ZbActor
     {
 
         int count = 0;
+        final CountDownLatch latch;
 
         PongActor pongActor;
 
         Runnable sendPing = this::sendPing;
 
-        PingActor(PongActor pongActor)
+        PingActor(PongActor pongActor, CountDownLatch latch)
         {
             this.pongActor = pongActor;
+            this.latch = latch;
         }
 
         @Override
@@ -89,13 +94,14 @@ public class CallableExecutionTest
     @Test
     public void testRunMultipleTimesConcurrent() throws InterruptedException
     {
+        final CountDownLatch latch = new CountDownLatch(10);
         final PongActor pongActor = new PongActor();
 
         final PingActor[] actors = new PingActor[(int) latch.getCount()];
 
         for (int i = 0; i < actors.length; i++)
         {
-            actors[i] = new PingActor(pongActor);
+            actors[i] = new PingActor(pongActor, latch);
         }
 
         schedulerRule.submitActor(pongActor);
@@ -103,7 +109,6 @@ public class CallableExecutionTest
         {
             schedulerRule.submitActor(pingActor);
         }
-
 
         if (!latch.await(5, TimeUnit.MINUTES))
         {
@@ -113,5 +118,4 @@ public class CallableExecutionTest
         final ZbActorScheduler actorScheduler = schedulerRule.get();
         actorScheduler.dumpMetrics(System.out);
     }
-
 }
