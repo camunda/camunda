@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.query.sharing.SharingDto;
 import org.camunda.optimize.service.es.schema.type.ShareType;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.unit.TimeValue;
@@ -59,6 +60,28 @@ public class SharingReader {
             SharingDto.class
           )
         );
+      } catch (IOException e) {
+        logger.error("cant't map sharing hit", e);
+      }
+    }
+    return result;
+  }
+
+  public Optional<SharingDto> findShare(String shareId) {
+    Optional<SharingDto> result = Optional.empty();
+    logger.debug("Fetching share with id [{}]", shareId);
+    GetResponse getResponse = esclient
+      .prepareGet(
+          configurationService.getOptimizeIndex(configurationService.getShareType()),
+          configurationService.getShareType(),
+          shareId
+      )
+      .setRealtime(false)
+      .get();
+
+    if (getResponse.isExists()) {
+      try {
+        result = Optional.of(objectMapper.readValue(getResponse.getSourceAsString(), SharingDto.class));
       } catch (IOException e) {
         logger.error("cant't map sharing hit", e);
       }

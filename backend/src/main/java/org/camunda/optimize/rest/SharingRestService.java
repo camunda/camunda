@@ -1,6 +1,7 @@
 package org.camunda.optimize.rest;
 
 
+import org.camunda.optimize.dto.optimize.query.sharing.EvaluatedReportShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.SharingDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.security.SharingService;
@@ -45,6 +46,13 @@ public class SharingRestService {
   @Produces(MediaType.APPLICATION_JSON)
   public SharingDto findShareForResource(@PathParam("id") String resourceId) {
     return sharingService.findShareForResource(resourceId);
+  }
+
+  @GET
+  @Path("/report/{id}/evaluate")
+  @Produces(MediaType.APPLICATION_JSON)
+  public EvaluatedReportShareDto evaluateReport(@PathParam("id") String shareId) {
+    return sharingService.evaluate(shareId).orElse(null);
   }
 
 }

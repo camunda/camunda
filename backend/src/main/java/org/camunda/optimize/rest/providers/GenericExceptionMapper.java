@@ -14,7 +14,7 @@ import javax.ws.rs.ext.Provider;
  */
 @Provider
 public class GenericExceptionMapper implements ExceptionMapper<Throwable> {
-  private final Logger logger = LoggerFactory.getLogger(AuthenticationFilter.class);
+  private final Logger logger = LoggerFactory.getLogger(getClass());
 
   @Override
   public Response toResponse(Throwable throwable) {
