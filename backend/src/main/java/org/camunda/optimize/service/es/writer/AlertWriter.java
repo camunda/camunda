@@ -43,10 +43,6 @@ public class AlertWriter {
     AlertDefinitionDto result = alertDefinitionDto;
     String id = IdGenerator.getNextId();
     result.setId(id);
-    Map map = objectMapper.convertValue(result, Map.class);
-
-    logger.debug("Writing alert [{}] to elasticsearch", id);
-
     esclient
         .prepareIndex(
           configurationService.getOptimizeIndex(configurationService.getAlertType()),
@@ -54,8 +50,11 @@ public class AlertWriter {
           id
         )
         .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
-        .setSource(map)
+        .setSource(objectMapper.convertValue(result, Map.class))
         .get();
+
+    logger.debug("alert with [{}] saved to elasticsearch", id);
+
     return result;
   }
 

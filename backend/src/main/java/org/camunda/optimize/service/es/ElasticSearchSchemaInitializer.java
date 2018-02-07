@@ -11,6 +11,7 @@ import org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType;
 import org.camunda.optimize.service.es.schema.type.FinishedProcessInstanceIdTrackingType;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.es.schema.type.ReportType;
+import org.camunda.optimize.service.es.schema.type.ShareType;
 import org.camunda.optimize.service.es.schema.type.UnfinishedProcessInstanceIdTrackingType;
 import org.camunda.optimize.service.es.schema.type.UnfinishedProcessInstanceTrackingType;
 import org.camunda.optimize.service.es.schema.type.UsersType;
@@ -86,6 +87,9 @@ public class ElasticSearchSchemaInitializer {
   @Autowired
   private AlertType alertType;
 
+  @Autowired
+  private ShareType shareType;
+
   public void initializeSchema() {
     if (!initialized) {
       try {
@@ -120,6 +124,7 @@ public class ElasticSearchSchemaInitializer {
     schemaManager.addMapping(reportType);
     schemaManager.addMapping(dashboardType);
     schemaManager.addMapping(alertType);
+    schemaManager.addMapping(shareType);
   }
 
   /**

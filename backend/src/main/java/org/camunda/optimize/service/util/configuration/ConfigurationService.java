@@ -52,13 +52,28 @@ public class ConfigurationService {
   private String optimizeIndex;
   private String haiEndpoint;
   private String haiCountEndpoint;
-  private String eventType;
   private String userValidationEndpoint;
-  private String processDefinitionType;
   private String processDefinitionEndpoint;
   private String processDefinitionCountEndpoint;
+
+  private String eventType;
+  private String processDefinitionType;
   private String processDefinitionXmlType;
   private String elasticsearchUsersType;
+  private String importIndexType;
+  private String scrollImportIndexType;
+  private String durationHeatmapTargetValueType;
+  private String variableType;
+  private String processInstanceType;
+  private String processDefinitionImportIndexType;
+  private String licenseType;
+  private String reportType;
+  private String dashboardType;
+  private String finishedPiIdTrackingType;
+  private String unfinishedPiIdTrackingType;
+  private String alertType;
+  private String shareType;
+
   private String analyzerName;
   private String tokenizer;
   private String tokenFilter;
@@ -80,34 +95,23 @@ public class ConfigurationService {
   private Integer elasticsearchConnectionTimeout;
   private Integer engineConnectTimeout;
   private Integer engineReadTimeout;
-  private String importIndexType;
-  private String scrollImportIndexType;
-  private String durationHeatmapTargetValueType;
   private String hviEndpoint;
-  private String variableType;
   private Integer maxVariableValueListSize;
   private String hviCountEndpoint;
-  private String processInstanceType;
   private String hpiCountEndpoint;
   private Integer engineImportProcessInstanceMaxPageSize;
   private Integer engineImportVariableInstanceMaxPageSize;
   private List<String> processDefinitionIdsToImport;
-  private String processDefinitionImportIndexType;
   private String esRefreshInterval;
   private Integer esNumberOfReplicas;
   private Integer esNumberOfShards;
   private Integer engineImportProcessDefinitionXmlMaxPageSize;
   private String processDefinitionXmlEndpoint;
-  private String licenseType;
-  private String reportType;
-  private String dashboardType;
   private Long generalBackoff;
   private Integer importIndexAutoStorageIntervalInSec;
   private Long samplerInterval;
   private List<String> variableImportPluginBasePackages;
-  private String finishedPiIdTrackingType;
-  private String unfinishedPiIdTrackingType;
-  private String alertType;
+
   private Integer numberOfRetriesOnConflict;
   private Integer engineImportProcessDefinitionMaxPageSize;
   private Long engineImportActivityInstanceMaxPageSize;
@@ -807,6 +811,13 @@ public class ConfigurationService {
     return alertType;
   }
 
+  public String getShareType() {
+    if (shareType == null) {
+      shareType = jsonContext.read(ConfigurationServiceConstants.SHARE_TYPE);
+    }
+    return shareType;
+  }
+
   public Integer getImportResetIntervalValue() {
     if (importResetIntervalValue == null) {
       importResetIntervalValue = jsonContext.read(ConfigurationServiceConstants.IMPORT_RESET_INTERVAL_VALUE);
@@ -1308,4 +1319,5 @@ public class ConfigurationService {
   public void setAlertEmailProtocol(String alertEmailProtocol) {
     this.alertEmailProtocol = alertEmailProtocol;
   }
+
 }
