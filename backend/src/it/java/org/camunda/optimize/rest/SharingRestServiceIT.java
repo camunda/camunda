@@ -1,5 +1,6 @@
 package org.camunda.optimize.rest;
 
+import camundafeel.de.odysseus.el.tree.impl.Cache;
 import org.camunda.optimize.dto.optimize.query.sharing.SharingDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -16,6 +17,7 @@ import javax.ws.rs.core.Response;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
@@ -90,6 +92,46 @@ public class SharingRestServiceIT {
             .post(Entity.json(share));
 
     assertThat(id, is(response.readEntity(String.class)));
+  }
+
+  @Test
+  public void deleteShareWithoutAuthentication() {
+    // when
+    Response response =
+      embeddedOptimizeRule.target(SHARE + "/1124")
+        .request()
+        .delete();
+
+    // then the status code is not authorized
+    assertThat(response.getStatus(), is(401));
+  }
+
+  @Test
+  public void deleteShare() {
+    //given
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+    String id = addShareForFakeReport(token);
+
+    // when
+    Response response =
+        embeddedOptimizeRule.target(SHARE + "/" + id)
+            .request()
+            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+            .delete();
+
+    // then the status code is okay
+    assertThat(response.getStatus(), is(204));
+  }
+
+  private String addShareForFakeReport(String token) {
+    SharingDto share = createShare();
+    Response response =
+        embeddedOptimizeRule.target(SHARE)
+            .request()
+            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+            .post(Entity.json(share));
+
+    return response.readEntity(String.class);
   }
 
   private SharingDto createShare() {

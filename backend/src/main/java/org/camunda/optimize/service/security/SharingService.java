@@ -29,4 +29,8 @@ public class SharingService {
 
     return result;
   }
+
+  public void deleteShare(String shareId) {
+    sharingWriter.deleteShare(shareId);
+  }
 }

@@ -34,9 +34,9 @@ public class SharingWriter {
     createSharingDto.setId(id);
     esclient
       .prepareIndex(
-          configurationService.getOptimizeIndex(configurationService.getShareType()),
-          configurationService.getShareType(),
-          id
+        configurationService.getOptimizeIndex(configurationService.getShareType()),
+        configurationService.getShareType(),
+        id
       )
       .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
       .setSource(objectMapper.convertValue(createSharingDto, Map.class))
@@ -44,5 +44,16 @@ public class SharingWriter {
 
     logger.debug("share with id [{}] for resource [{}] has been created", id, createSharingDto.getResourceId());
     return createSharingDto;
+  }
+
+  public void deleteShare(String shareId) {
+    logger.debug("Deleting share with id [{}]", shareId);
+    esclient.prepareDelete(
+      configurationService.getOptimizeIndex(configurationService.getShareType()),
+      configurationService.getShareType(),
+      shareId
+    )
+    .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
+    .get();
   }
 }
