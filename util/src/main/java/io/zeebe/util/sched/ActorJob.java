@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.concurrent.*;
 import java.util.function.BiConsumer;
 
+import io.zeebe.util.sched.future.*;
 import io.zeebe.util.sched.metrics.ActorRunnerMetrics;
 
 @SuppressWarnings({ "unchecked", "rawtypes" })
@@ -64,7 +65,7 @@ public class ActorJob
 
             if (resultFuture != null)
             {
-                resultFuture.markDone(invocationResult, null);
+                resultFuture.complete(invocationResult);
             }
 
             if (state != ActorState.BLOCKED)
@@ -85,7 +86,7 @@ public class ActorJob
 
             if (resultFuture != null)
             {
-                resultFuture.markDone(null, e);
+                resultFuture.completeExceptionally(e);
             }
             // TODO: what else to do?
         }
@@ -195,7 +196,7 @@ public class ActorJob
     public Future setCallable(Callable<?> callable)
     {
         this.callable = callable;
-        this.resultFuture = new ActorFuture();
+        this.resultFuture = new CompletableActorFuture<>();
         return resultFuture;
     }
 

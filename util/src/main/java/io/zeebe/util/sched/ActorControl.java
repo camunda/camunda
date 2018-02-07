@@ -22,6 +22,7 @@ import java.util.function.Consumer;
 
 import io.zeebe.util.sched.channel.ChannelSubscription;
 import io.zeebe.util.sched.channel.ConsumableChannel;
+import io.zeebe.util.sched.future.ActorFuture;
 
 public class ActorControl
 {

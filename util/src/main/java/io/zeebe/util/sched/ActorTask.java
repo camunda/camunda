@@ -20,6 +20,8 @@ import static org.agrona.UnsafeAccess.UNSAFE;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 
 /**
@@ -48,7 +50,7 @@ public class ActorTask
         }
     }
 
-    public final ActorFuture<Void> terminationFuture = new ActorFuture<>();
+    public final ActorFuture<Void> terminationFuture = new CompletableActorFuture<>();
 
     final ZbActor actor;
 
@@ -211,7 +213,7 @@ public class ActorTask
                 if (isClosing)
                 {
                     state = ActorState.TERMINATED;
-                    terminationFuture.markDone(null, null);
+                    terminationFuture.complete(null);
                 }
                 else
                 {

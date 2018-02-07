@@ -353,4 +353,9 @@ public class ActorTaskRunner extends Thread
         return currentTask;
     }
 
+    public ActorClock getClock()
+    {
+        return clock;
+    }
+
 }

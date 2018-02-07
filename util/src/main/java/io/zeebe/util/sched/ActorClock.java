@@ -63,4 +63,20 @@ public class ActorClock
         return nanoTime;
     }
 
+    public static ActorClock current()
+    {
+        final ActorTaskRunner current = ActorTaskRunner.current();
+        if (current == null)
+        {
+            throw new UnsupportedOperationException("ActorClock.current() can only be called from actor thread.");
+        }
+
+        return current.getClock();
+    }
+
+    public static long currentTimeMillis()
+    {
+        return current().getTimeMillis();
+    }
+
 }
