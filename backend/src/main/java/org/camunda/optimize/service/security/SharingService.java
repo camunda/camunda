@@ -33,4 +33,9 @@ public class SharingService {
   public void deleteShare(String shareId) {
     sharingWriter.deleteShare(shareId);
   }
+
+  public SharingDto findShareForResource(String resourceId) {
+    Optional<SharingDto> shareForResource = sharingReader.findShareForResource(resourceId);
+    return shareForResource.orElse(null);
+  }
 }

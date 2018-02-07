@@ -1,26 +1,20 @@
 package org.camunda.optimize.service.es.reader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.sharing.SharingDto;
-import org.camunda.optimize.service.es.schema.type.AlertType;
 import org.camunda.optimize.service.es.schema.type.ShareType;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.SearchHit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 
 /**
@@ -39,10 +33,15 @@ public class SharingReader {
   private ObjectMapper objectMapper;
 
   public Optional<SharingDto> findSharedResource(SharingDto createSharingDto) {
+    String resourceId = createSharingDto.getResourceId();
+    return findShareForResource(resourceId);
+  }
+
+  public Optional<SharingDto> findShareForResource(String resourceId) {
     Optional<SharingDto> result = Optional.empty();
-    logger.debug("Fetching share for resource [{}]", createSharingDto);
+    logger.debug("Fetching share for resource [{}]", resourceId);
     QueryBuilder query;
-    query = QueryBuilders.termQuery(ShareType.RESOURCE_ID, createSharingDto.getResourceId());
+    query = QueryBuilders.termQuery(ShareType.RESOURCE_ID, resourceId);
 
     SearchResponse scrollResp = esclient
       .prepareSearch(configurationService.getOptimizeIndex(configurationService.getShareType()))

@@ -29,6 +29,8 @@ public class SharingRestServiceIT {
 
   public static final String BEARER = "Bearer ";
   public static final String SHARE = "share";
+  public static final String REPORT_ID = "fake";
+
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
   @Rule
@@ -39,9 +41,9 @@ public class SharingRestServiceIT {
   public void createNewShareWithoutAuthentication() {
     // when
     Response response =
-        embeddedOptimizeRule.target(SHARE)
-            .request()
-            .post(Entity.json(""));
+      embeddedOptimizeRule.target(SHARE)
+        .request()
+        .post(Entity.json(""));
 
     // then the status code is not authorized
     assertThat(response.getStatus(), is(401));
@@ -54,10 +56,10 @@ public class SharingRestServiceIT {
 
     // when
     Response response =
-        embeddedOptimizeRule.target(SHARE)
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
-            .post(Entity.json(createShare()));
+      embeddedOptimizeRule.target(SHARE)
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .post(Entity.json(createShare()));
 
     // then the status code is okay
     assertThat(response.getStatus(), is(200));
@@ -74,10 +76,10 @@ public class SharingRestServiceIT {
     // when
     SharingDto share = createShare();
     Response response =
-        embeddedOptimizeRule.target(SHARE)
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
-            .post(Entity.json(share));
+      embeddedOptimizeRule.target(SHARE)
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .post(Entity.json(share));
 
     // then the status code is okay
     assertThat(response.getStatus(), is(200));
@@ -86,10 +88,10 @@ public class SharingRestServiceIT {
     assertThat(id, is(notNullValue()));
 
     response =
-        embeddedOptimizeRule.target(SHARE)
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
-            .post(Entity.json(share));
+      embeddedOptimizeRule.target(SHARE)
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .post(Entity.json(share));
 
     assertThat(id, is(response.readEntity(String.class)));
   }
@@ -114,29 +116,68 @@ public class SharingRestServiceIT {
 
     // when
     Response response =
-        embeddedOptimizeRule.target(SHARE + "/" + id)
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
-            .delete();
+      embeddedOptimizeRule.target(SHARE + "/" + id)
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .delete();
 
     // then the status code is okay
     assertThat(response.getStatus(), is(204));
+    assertThat(getShareForReport(token, REPORT_ID), is(nullValue()));
+  }
+
+  @Test
+  public void findShareForeReport() {
+    //given
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+    String id = addShareForFakeReport(token);
+
+    //when
+    SharingDto fake = getShareForReport(token, REPORT_ID);
+
+    //then
+    assertThat(fake, is(notNullValue()));
+    assertThat(fake.getId(), is(id));
+  }
+
+  @Test
+  public void findShareForeReportWithoutAuthentication() {
+    //given
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+    addShareForFakeReport(token);
+
+    Response response = findShareForReport(null, REPORT_ID);
+
+    // then the status code is not authorized
+    assertThat(response.getStatus(), is(401));
+  }
+
+  private SharingDto getShareForReport(String token, String reportId) {
+    Response response = findShareForReport(token, reportId);
+    return response.readEntity(SharingDto.class);
+  }
+
+  private Response findShareForReport(String token, String reportId) {
+    return embeddedOptimizeRule.target(SHARE + "/report/" + reportId)
+      .request()
+      .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+      .get();
   }
 
   private String addShareForFakeReport(String token) {
     SharingDto share = createShare();
     Response response =
-        embeddedOptimizeRule.target(SHARE)
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
-            .post(Entity.json(share));
+      embeddedOptimizeRule.target(SHARE)
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .post(Entity.json(share));
 
     return response.readEntity(String.class);
   }
 
   private SharingDto createShare() {
     SharingDto sharingDto = new SharingDto();
-    sharingDto.setResourceId("fake");
+    sharingDto.setResourceId(REPORT_ID);
     return sharingDto;
   }
 
