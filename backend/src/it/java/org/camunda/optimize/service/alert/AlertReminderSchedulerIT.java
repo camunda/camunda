@@ -161,7 +161,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertSchedulerIT {
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
-    triggerAndCompleteCheckJob(id);
+    triggerAndCompleteReminderJob(id);
 
     //then
     assertThat(
