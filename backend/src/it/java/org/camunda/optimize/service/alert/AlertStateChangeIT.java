@@ -115,7 +115,7 @@ public class AlertStateChangeIT extends AbstractAlertSchedulerIT {
     reminderInterval.setValue(3);
     reminderInterval.setUnit("Seconds");
     simpleAlert.setReminder(reminderInterval);
-    simpleAlert.setThreshold(1000);
+    simpleAlert.setThreshold(1500);
     simpleAlert.getCheckInterval().setValue(5);
     return simpleAlert;
   }
