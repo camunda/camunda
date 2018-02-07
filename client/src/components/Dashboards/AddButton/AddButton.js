@@ -87,10 +87,6 @@ export default class AddButton extends React.Component {
               {(noReports) ? <Select.Option>No reports created yet</Select.Option> : ''}
             </Select>
           </ControlGroup>
-          <div className='AddButton__modal-divider'>or</div>
-          <div className='AddButton__create-button'>
-            <Button disabled={true}>Create new Report...</Button>
-          </div>
         </Modal.Content>
         <Modal.Actions>
           <Button onClick={this.closeModal}>Cancel</Button>
