@@ -79,12 +79,12 @@ func main() {
 		panic(errClientStartFailed)
 	}
 
-  topology, err := zbClient.Topology()
-  if err != nil {
-      panic(err)
-  }
+	topology, err := zbClient.Topology()
+	if err != nil {
+		panic(err)
+	}
 
-  b, err := json.MarshalIndent(topology, "", "    ")
+	b, err := json.MarshalIndent(topology, "", "    ")
 	fmt.Println(string(b))
 }
 ```
