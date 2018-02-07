@@ -87,7 +87,7 @@ function startBackend(code) {
 
         runWithColor(elasticSearch, 'Elastic Search', chalk.blue);
 
-        return utils.waitForServer('http://localhost:9200')
+        return utils.waitForServer('http://localhost:9200', 10)
           .then(() => {
             console.log('Elastic search has been started!');
             console.log('Starting backend...');
@@ -129,6 +129,8 @@ function startBackend(code) {
             runWithColor('java -cp ' + classpath + ' org.camunda.optimize.Main', 'BE', chalk.green);
 
             return utils.waitForServer('http://localhost:8090');
+          }).catch(() => {
+            console.log('Could not start Elasticsearch. Please check your Elasticsearch connection!');
           });
       });
   }
