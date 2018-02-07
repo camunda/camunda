@@ -1,0 +1,40 @@
+.Popover {
+  position: relative;
+}
+
+.Popover__button {
+  width: 100%;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.Popover__dialog {
+  position: absolute;
+  background-color: white;
+  border: 1px solid gray;
+  margin-top: 10px;
+  z-index: 99999;
+}
+.Popover__dialog-arrow, .Popover__dialog-arrow-border {
+	bottom: 100%;
+	left: 50%;
+	border: solid transparent;
+	height: 0;
+	width: 0;
+	position: absolute;
+	pointer-events: none;
+}
+
+.Popover__dialog-arrow {
+	border-color: rgba(136, 183, 213, 0);
+	border-bottom-color: white;
+	border-width: 10px;
+	margin-left: -10px;
+}
+.Popover__dialog-arrow-border {
+	border-color: rgba(194, 225, 245, 0);
+	border-bottom-color: gray;
+	border-width: 11px;
+	margin-left: -11px;
+}

@@ -14,7 +14,9 @@ jest.mock('components', () => {
   const Select = props => <select {...props}>{props.children}</select>;
   Select.Option = props => <option {...props}>{props.children}</option>;
 
-  return {Select};
+  return {Select,
+    Popover: ({children}) => children
+  };
 });
 
 jest.mock('services', () => {return {

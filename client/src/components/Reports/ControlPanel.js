@@ -1,5 +1,5 @@
 import React from 'react';
-import {Select} from 'components';
+import {Select, Popover} from 'components';
 
 import {Filter} from './filter';
 import {loadProcessDefinitions} from './service';
@@ -47,15 +47,17 @@ export default class ControlPanel extends React.Component {
       <ul className='ControlPanel__list'>
         <li className='ControlPanel__item ControlPanel__item--select'>
           <label htmlFor='ControlPanel__process-definition' className='ControlPanel__label'>Process definition</label>
-          <Select className='ControlPanel__select' name='ControlPanel__process-definition' value={this.props.processDefinitionId} onChange={this.changeDefinition}>
-            {addSelectionOption()}
-            {this.state.availableDefinitions.map(definition => {
-              return (<React.Fragment key={definition.key}>
-                <Select.Option disabled>--</Select.Option>
-                {definition.versions.map(({id}) => <Select.Option value={id} key={id} >{id}</Select.Option>)}
-              </React.Fragment>);
-            })}
-          </Select>
+          <Popover className='ControlPanel__popover' title={this.props.processDefinitionId || 'Select Process Definition'}>
+            <Select className='ControlPanel__select' name='ControlPanel__process-definition' value={this.props.processDefinitionId} onChange={this.changeDefinition}>
+              {addSelectionOption()}
+              {this.state.availableDefinitions.map(definition => {
+                return (<React.Fragment key={definition.key}>
+                  <Select.Option disabled>--</Select.Option>
+                  {definition.versions.map(({id}) => <Select.Option value={id} key={id} >{id}</Select.Option>)}
+                </React.Fragment>);
+              })}
+            </Select>
+          </Popover>
         </li>
         <li className='ControlPanel__item ControlPanel__item--select'>
           <label htmlFor='ControlPanel__view' className='ControlPanel__label'>View</label>

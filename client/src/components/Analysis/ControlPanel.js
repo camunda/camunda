@@ -1,5 +1,5 @@
 import React from 'react';
-import {Select, ActionItem} from 'components';
+import {Select, ActionItem, Popover} from 'components';
 
 import {Filter} from '../Reports';
 import {loadProcessDefinitions} from './service';
@@ -40,10 +40,12 @@ export default class ControlPanel extends React.Component {
       <ul className='ControlPanel__list'>
         <li className='ControlPanel__item ControlPanel__item--select'>
           <label htmlFor='ControlPanel__process-definition' className='ControlPanel__label'>Process definition</label>
-          <Select className='ControlPanel__select' name='ControlPanel__process-definition' value={this.props.processDefinitionId} onChange={this.changeDefinition}>
-            {addSelectionOption()}
-            {this.state.availableDefinitions.map(definition => <Select.Option value={definition.id} key={definition.id}>{definition.id}</Select.Option>)}
-          </Select>
+          <Popover className='ControlPanel__popover' title={this.props.processDefinitionId || 'Select Process Definition'}>
+            <Select className='ControlPanel__select' name='ControlPanel__process-definition' value={this.props.processDefinitionId} onChange={this.changeDefinition}>
+              {addSelectionOption()}
+              {this.state.availableDefinitions.map(definition => <Select.Option value={definition.id} key={definition.id}>{definition.id}</Select.Option>)}
+            </Select>
+          </Popover>
         </li>
         {[
         {type: 'endEvent', label: 'End Event', bpmnKey:'bpmn:EndEvent'},

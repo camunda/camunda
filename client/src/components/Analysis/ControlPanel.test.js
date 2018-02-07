@@ -16,7 +16,8 @@ jest.mock('components', () => {
 
   return {
     Select,
-    ActionItem: props => <button {...props}>{props.children}</button>
+    ActionItem: props => <button {...props}>{props.children}</button>,
+    Popover: ({children}) => children
   };
 });
 
