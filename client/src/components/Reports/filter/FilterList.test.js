@@ -1,7 +1,7 @@
 import React from 'react';
 
 import FilterList from './FilterList';
-import {getFlowNodeNames} from './service';
+import {getFlowNodeNames} from 'services';
 
 
 import {mount} from 'enzyme';
@@ -10,7 +10,7 @@ jest.mock('components', () => {return {
   ActionItem: props => <button {...props}>{props.children}</button>
 }});
 
-jest.mock('./service', () => {
+jest.mock('services', () => {
   return {getFlowNodeNames: jest.fn()};
 });
 

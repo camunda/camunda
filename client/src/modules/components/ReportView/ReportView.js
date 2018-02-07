@@ -1,7 +1,7 @@
 import React from 'react';
 
 import {ErrorBoundary} from 'components';
-import {reportLabelMap} from 'services';
+import {reportLabelMap, getFlowNodeNames} from 'services';
 import moment from 'moment';
 import ReportBlankSlate from './ReportBlankSlate';
 
@@ -12,8 +12,19 @@ import {frequencyFormatter, durationFormatter} from './service';
 const defaultErrorMessage = 'Cannot display data for the given report builder settings. Please choose another combination!';
 
 export default class ReportView extends React.Component {
-  render() {
+  constructor(props) {
+    super(props);
 
+    this.state = {
+      flowNodeNames: null,
+      loaded: false
+    };
+    if (props.report.data.processDefinitionId) {
+      this.loadFlowNodeNames(props.report.data.processDefinitionId);
+    }
+  }
+
+  render() {
     if (this.props.report) {
       return this.checkProcDefAndRenderReport(this.props.report);
     } else {
@@ -21,7 +32,6 @@ export default class ReportView extends React.Component {
         <div className='Message Message--error'>{defaultErrorMessage}</div>
       );
     }
-
   }
 
   checkProcDefAndRenderReport = (report) => {
@@ -72,9 +82,46 @@ export default class ReportView extends React.Component {
     return (!str || 0 === str.length);
   }
 
+  loadFlowNodeNames = async (id) => {
+    this.setState({
+      flowNodeNames: await getFlowNodeNames(id),
+      loaded: true
+    });
+  }
+
+  componentWillReceiveProps(nextProps) {
+    const thisProcDefId = this.props.report.data.processDefinitionId;
+    const nextProcDefId = nextProps.report.data.processDefinitionId;
+    if(nextProcDefId && (thisProcDefId !== nextProcDefId)) {
+      this.setState({loaded: false})
+      this.loadFlowNodeNames(nextProcDefId);
+    }
+  }
+
+  applyFlowNodeNames = data => {
+    if(this.state.flowNodeNames) {
+      const chartData = {};
+      Object.keys(data).forEach(key => {
+        chartData[this.state.flowNodeNames[key]] = data[key];
+      });
+
+      return chartData;
+    }
+  }
+
   renderReport = report => {
-    const {data, result} = report;
+    let {data, result} = report;
     let config;
+
+    const visualizations = ['pie', 'line', 'bar', 'table']
+    if(data.view.entity === "flowNode" && visualizations.includes(data.visualization) && result) {
+      result = this.applyFlowNodeNames(result) || result;
+    }
+
+    if(!this.state.loaded) {
+      return <p>loading...</p>
+    }
+
     switch(data.visualization) {
       case 'number':
         config = {

@@ -1,25 +1,33 @@
 import React from 'react';
 import {mount} from 'enzyme';
 
-import {loadCorrelationData, getFlowNodeNames} from './service';
+import {loadCorrelationData} from './service';
+import {getFlowNodeNames} from 'services';
 
 import ChartRenderer from 'chart.js';
 
 import Statistics from './Statistics';
 
-jest.mock('./service', () => {return {
-  loadCorrelationData: jest.fn().mockReturnValue({
-    total: 10,
-    followingNodes: {
-      a: {activitiesReached: 3, activityCount: 1},
-      b: {activitiesReached: 2, activityCount: 2}
-    }
-  }),
-  getFlowNodeNames: jest.fn().mockReturnValue({
-    a: 'q',
-    b: 'w'
-  })
-}});
+jest.mock('./service', () => {
+  return {
+    loadCorrelationData: jest.fn().mockReturnValue({
+      total: 10,
+      followingNodes: {
+        a: {activitiesReached: 3, activityCount: 1},
+        b: {activitiesReached: 2, activityCount: 2}
+      }
+    })
+  }
+});
+
+jest.mock('services', () => {
+  return {
+    getFlowNodeNames: jest.fn().mockReturnValue({
+      a: 'foo',
+      b: 'bar'
+    })
+  }
+});
 
 jest.mock('chart.js', () => jest.fn().mockImplementation(() =>{return {destroy: jest.fn()}}));
 

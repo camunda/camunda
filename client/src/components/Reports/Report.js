@@ -3,7 +3,7 @@ import moment from 'moment';
 import {Link, Redirect} from 'react-router-dom';
 import {Button, Modal, Input, ShareEntity, ReportView} from 'components';
 
-import {loadSingleReport, loadProcessDefinitionXml, remove, getReportData, saveReport, getFlowNodeNames, shareReport, revokeReportSharing, getSharedReport} from './service';
+import {loadSingleReport, loadProcessDefinitionXml, remove, getReportData, saveReport, shareReport, revokeReportSharing, getSharedReport} from './service';
 import ControlPanel from './ControlPanel';
 
 import './Report.css';
@@ -50,12 +50,12 @@ export default class Report extends React.Component {
       name,
       lastModifier,
       lastModified,
+      loaded: true,
       data: stateData,
       originalData: stateData,
       reportResult: reportResult || {data: stateData},
       originalName: name
     }, this.save);
-    this.idsToNames();
   }
 
   deleteReport = async evt => {
@@ -85,7 +85,7 @@ export default class Report extends React.Component {
       ...this.state.data,
       ...updates
     };
-    
+
     const processDefinitionIdWasUpdated = updates.processDefinitionId;
     if (processDefinitionIdWasUpdated) {
       data.filter = data.filter.filter(({type}) => type !== 'executedFlowNodes' && type !== 'variable');
@@ -102,7 +102,6 @@ export default class Report extends React.Component {
       reportResult = {data};
     }
     this.setState({reportResult});
-    this.idsToNames();
   }
 
   loadXmlToConfiguration = async (data) => {
@@ -183,27 +182,6 @@ export default class Report extends React.Component {
     });
   }
 
-  idsToNames = async () => {
-    const {reportResult: {data}} = this.state;
-    const reportResult = Object.assign({}, this.state.reportResult);
-    const visualizations = ['pie', 'line', 'bar', 'table']
-
-    if(reportResult.result && data.view.entity === "flowNode" && visualizations.includes(data.visualization)) {
-      const flowNodeNames = await getFlowNodeNames(data.processDefinitionId);
-      const chartData = {};
-      Object.keys(reportResult.result).forEach((v) => {
-        chartData[flowNodeNames[v]] = reportResult.result[v];
-      });
-      reportResult.result = chartData;
-      this.setState({
-        reportResult
-      });
-    }
-    this.setState({
-      loaded: true
-    })
-  }
-
   renderEditMode = () => {
     const {name, lastModifier, lastModified, data, reportResult} = this.state;
     return (
@@ -246,7 +224,7 @@ export default class Report extends React.Component {
         <Modal open={shareModalVisible} onClose={this.closeShareModal} className='Report__share-modal'>
           <Modal.Header>Share {this.state.name}</Modal.Header>
           <Modal.Content>
-            <ShareEntity type={'report'} resourceId={this.id} shareEntity={shareReport} 
+            <ShareEntity type={'report'} resourceId={this.id} shareEntity={shareReport}
               revokeEntitySharing={revokeReportSharing} getSharedEntity={getSharedReport}/>
           </Modal.Content>
           <Modal.Actions>

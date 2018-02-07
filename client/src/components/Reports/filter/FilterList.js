@@ -2,7 +2,7 @@ import React from 'react';
 import moment from 'moment';
 
 import {ActionItem} from 'components';
-import {getFlowNodeNames} from './service';
+import {getFlowNodeNames} from 'services';
 
 import './FilterList.css';
 

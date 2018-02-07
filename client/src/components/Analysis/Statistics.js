@@ -1,7 +1,9 @@
 import React from 'react';
 import ChartRenderer from 'chart.js';
 
-import {loadCorrelationData, getFlowNodeNames} from './service';
+import {loadCorrelationData} from './service';
+
+import {getFlowNodeNames} from 'services';
 
 import './Statistics.css';
 
@@ -10,9 +12,19 @@ export default class Statistics extends React.Component {
     super(props);
 
     this.state = {
-      data: null
+      data: null,
+      flowNodeNames: null
     };
+
+    this.loadFlowNodeNames();
   }
+
+  loadFlowNodeNames = async () => {
+    this.setState({
+      flowNodeNames: await getFlowNodeNames(this.props.config.processDefinitionId)
+    });
+  }
+
   render() {
     if(this.state.data) {
       return <div className="Statistics">
@@ -73,13 +85,12 @@ export default class Statistics extends React.Component {
         this.props.gateway.id,
         this.props.endEvent.id
       )
-    }, this.idsToNames);
-
+    }, this.applyFlowNodeNames);
   }
 
-  idsToNames = async () => {
+  applyFlowNodeNames = () => {
     const nodes = this.state.data.followingNodes;
-    const flowNodeNames = await getFlowNodeNames(this.props.config.processDefinitionId);
+    const flowNodeNames = this.state.flowNodeNames;
     const chartData = {};
     Object.keys(nodes).forEach((v) => {
       chartData[flowNodeNames[v]] = nodes[v];
