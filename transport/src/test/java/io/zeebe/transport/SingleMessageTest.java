@@ -16,6 +16,7 @@
 package io.zeebe.transport;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -43,6 +44,9 @@ public class SingleMessageTest
     @Test
     public void shouldEchoMessages() throws Exception
     {
+        fail("This test hangs sometimes because no more messages can be submitted to the send buffer. It seems that the sender tasks" +
+                " can no longer write messages because the channels are full and the receiver tasks are no longer executed");
+
         final SocketAddress addr = new SocketAddress("localhost", 51115);
         final int numRequests = 1_000_000;
 
