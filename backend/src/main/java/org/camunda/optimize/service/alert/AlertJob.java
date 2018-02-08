@@ -86,7 +86,7 @@ public class AlertJob implements Job {
         "Report name: " + reportDefinition.getName() + "\n" +
         "Status: Given threshold [" +
         alert.getThreshold() +
-        "] is not exceeded anymore." +
+        "] is not exceeded anymore. " +
         "Current value: " +
         result.getResult() +
         ". Please check your Optimize dashboard for more information!";
@@ -130,7 +130,7 @@ public class AlertJob implements Job {
         "Report name: " + reportDefinition.getName() + "\n" +
         "Status: Given threshold [" +
         alert.getThreshold() +
-        "] was exceeded." +
+        "] was exceeded. " +
         "Current value: " +
         result.getResult() +
         ". Please check your Optimize dashboard for more information!";
