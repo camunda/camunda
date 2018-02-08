@@ -50,7 +50,7 @@ public class ActorTask
         }
     }
 
-    public final ActorFuture<Void> terminationFuture = new CompletableActorFuture<>();
+    public final CompletableActorFuture<Void> terminationFuture = new CompletableActorFuture<>();
 
     final ZbActor actor;
 
@@ -89,6 +89,11 @@ public class ActorTask
      */
     public void onTaskScheduled(ZbActorScheduler scheduler)
     {
+        // reset previous state to allow re-scheduling
+        this.terminationFuture.close();
+        this.terminationFuture.setAwaitingResult();
+        this.isClosing = false;
+
         this.scheduler = scheduler;
         // create queue nodes
         final int runnerCount = scheduler.runnerCount;
@@ -213,12 +218,26 @@ public class ActorTask
                 if (isClosing)
                 {
                     state = ActorState.TERMINATED;
+                    subscriptions.clear();
+
+                    while (submittedJobs.poll() != null)
+                    {
+                        // discard jobs
+                    }
+
                     terminationFuture.complete(null);
                 }
                 else
                 {
-                    autoClose(runner);
-                    resubmit = true;
+                    if (actor.isAutoClosing())
+                    {
+                        autoClose(runner);
+                        resubmit = true;
+                    }
+                    else
+                    {
+                        resubmit = setStateActiveToWaiting();
+                    }
                 }
             }
         }

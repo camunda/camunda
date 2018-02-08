@@ -26,6 +26,11 @@ public abstract class ZbActor
         return getClass().getName();
     }
 
+    protected boolean isAutoClosing()
+    {
+        return true;
+    }
+
     protected void onActorStarted()
     {
         // do nothing

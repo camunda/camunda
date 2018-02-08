@@ -217,12 +217,10 @@ public class ActorControl
                 if (future.isCompletedExceptionally())
                 {
                     callback.accept(future.getException());
-                }
-                else
-                {
-                    callback.accept(null);
+                    return;
                 }
             }
+            callback.accept(null);
         };
 
         for (int i = length - 2; i >= 0; i--)

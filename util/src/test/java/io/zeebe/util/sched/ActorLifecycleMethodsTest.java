@@ -18,10 +18,17 @@ package io.zeebe.util.sched;
 import static org.junit.Assert.fail;
 
 import java.time.Duration;
-import java.util.concurrent.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
 
+import io.zeebe.util.TestUtil;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
-import org.junit.*;
+import org.junit.Rule;
+import org.junit.Test;
 
 public class ActorLifecycleMethodsTest
 {
@@ -119,6 +126,39 @@ public class ActorLifecycleMethodsTest
 
         future.get(5, TimeUnit.MINUTES);
 
+    }
+
+    @Test
+    public void testReSubmitClosedActor() throws InterruptedException, ExecutionException, TimeoutException
+    {
+        final AtomicLong invocations = new AtomicLong(0);
+
+        final ZbActor actor = new ZbActor()
+        {
+            @Override
+            protected void onActorStarted()
+            {
+                actor.runAtFixedRate(Duration.ofMillis(1), () ->
+                {
+                    invocations.incrementAndGet();
+                });
+            }
+        };
+
+        schedulerRule.submitActor(actor);
+
+        Future<Void> future = actor.actor.close();
+        future.get(5, TimeUnit.SECONDS);
+
+        invocations.set(0);
+
+        // submit actor again
+        schedulerRule.submitActor(actor);
+
+        TestUtil.waitUntil(() -> invocations.get() > 0);
+
+        future = actor.actor.close();
+        future.get(5, TimeUnit.SECONDS);
     }
 
 }
