@@ -1,6 +1,8 @@
 package org.camunda.optimize.service.security;
 
 import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.report.result.ReportResultDto;
 import org.camunda.optimize.dto.optimize.query.sharing.EvaluatedReportShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.SharedResourceType;
@@ -46,15 +48,46 @@ public class SharingService  {
    */
   public IdDto crateNewShare(SharingDto createSharingDto) {
     String result;
-    Optional<SharingDto> existing = sharingReader.findSharedResource(createSharingDto);
+    Optional<SharingDto> existing =
+        sharingReader.findShareForResource(createSharingDto.getResourceId(), createSharingDto.getType());
 
     result = existing
       .map(SharingDto::getId)
-      .orElseGet(() -> sharingWriter.saveShare(createSharingDto).getId());
+      .orElseGet(() -> {
+        if (SharedResourceType.DASHBOARD.equals(createSharingDto.getType())) {
+          this.shareReportsOfDashboard(createSharingDto);
+        }
+        return sharingWriter.saveShare(createSharingDto).getId();
+      });
 
     IdDto id = new IdDto();
     id.setId(result);
     return id;
+  }
+
+  private void shareReportsOfDashboard(SharingDto createSharingDto) {
+    try {
+      DashboardDefinitionDto dashboardDefinition =
+          dashboardService.getDashboardDefinition(createSharingDto.getResourceId());
+
+      if (dashboardDefinition.getReports() != null) {
+        for (ReportLocationDto report : dashboardDefinition.getReports()) {
+          this.crateNewShare(constructShareDto(report));
+        }
+      }
+
+    } catch (IOException e) {
+      logger.error("can't find dashboard", e);
+    } catch (OptimizeException e) {
+      logger.error("can't find dashboard", e);
+    }
+  }
+
+  private SharingDto constructShareDto(ReportLocationDto report) {
+    SharingDto result = new SharingDto();
+    result.setType(SharedResourceType.DASHBOARD_REPORT);
+    result.setResourceId(report.getId());
+    return result;
   }
 
   public void validate(SharingDto createSharingDto) {
@@ -85,11 +118,6 @@ public class SharingService  {
     sharingWriter.deleteShare(shareId);
   }
 
-  public SharingDto findShareForResource(String resourceId) {
-    Optional<SharingDto> shareForResource = sharingReader.findShareForResource(resourceId);
-    return shareForResource.orElse(null);
-  }
-
   public Optional<EvaluatedReportShareDto> evaluate(String shareId) {
     Optional<EvaluatedReportShareDto> result = Optional.empty();
     Optional<SharingDto> base = sharingReader.findShare(shareId);
@@ -117,9 +145,24 @@ public class SharingService  {
   }
 
   public void deleteShareForReport(String reportId) {
-    SharingDto share = findShareForResource(reportId);
-    if (share != null) {
-      this.deleteShare(share.getId());
-    }
+    Optional<SharingDto> share = findShareForResource(reportId, SharedResourceType.DASHBOARD_REPORT);
+    share.ifPresent(dto -> this.deleteShare(dto.getId()));
+
+    share = findShareForResource(reportId, SharedResourceType.REPORT);
+    share.ifPresent(dto -> this.deleteShare(dto.getId()));
+  }
+
+  public SharingDto findShareForReport(String resourceId) {
+    return findShareForResource(resourceId, SharedResourceType.REPORT)
+        .orElse(null);
+  }
+
+  private Optional<SharingDto> findShareForResource(String resourceId, SharedResourceType type) {
+    return sharingReader.findShareForResource(resourceId, type);
+  }
+
+  public SharingDto findShareForDashboard(String resourceId) {
+    return findShareForResource(resourceId, SharedResourceType.DASHBOARD)
+        .orElse(null);
   }
 }

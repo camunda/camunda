@@ -3,6 +3,8 @@ package org.camunda.optimize.rest;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.sharing.SharedResourceType;
@@ -22,7 +24,9 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -71,11 +75,7 @@ public class SharingRestServiceIT {
     String token = embeddedOptimizeRule.getAuthenticationToken();
 
     // when
-    Response response =
-      embeddedOptimizeRule.target(SHARE)
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
-        .post(Entity.json(createReportShare()));
+    Response response = createShareResponse(token, createReportShare());
 
     // then
     assertThat(response.getStatus(), is(500));
@@ -107,11 +107,7 @@ public class SharingRestServiceIT {
     SharingDto share = createReportShare(reportId);
 
     // when
-    Response response =
-        embeddedOptimizeRule.target(SHARE)
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
-            .post(Entity.json(share));
+    Response response = createShareResponse(token, share);
 
     // then
     assertThat(response.getStatus(), is(200));
@@ -131,11 +127,7 @@ public class SharingRestServiceIT {
     sharingDto.setType(SharedResourceType.DASHBOARD);
 
     // when
-    Response response =
-        embeddedOptimizeRule.target(SHARE)
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
-            .post(Entity.json(sharingDto));
+    Response response = createShareResponse(token, sharingDto);
 
     // then
     assertThat(response.getStatus(), is(200));
@@ -154,17 +146,11 @@ public class SharingRestServiceIT {
     sharingDto.setType(SharedResourceType.DASHBOARD_REPORT);
 
     // when
-    Response response =
-        embeddedOptimizeRule.target(SHARE)
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
-            .post(Entity.json(sharingDto));
+    Response response = createShareResponse(token, sharingDto);
 
     // then
     assertThat(response.getStatus(), is(500));
   }
-
-
 
   @Test
   public void createNewFakeDashboardShareThrowsError() {
@@ -176,11 +162,7 @@ public class SharingRestServiceIT {
     dashboardShare.setResourceId(FAKE_REPORT_ID);
     dashboardShare.setType(SharedResourceType.DASHBOARD);
 
-    Response response =
-      embeddedOptimizeRule.target(SHARE)
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
-        .post(Entity.json(dashboardShare));
+    Response response = createShareResponse(token, dashboardShare);
 
     // then the status code is okay
     assertThat(response.getStatus(), is(500));
@@ -194,11 +176,7 @@ public class SharingRestServiceIT {
     SharingDto share = createReportShare(reportId);
 
     // when
-    Response response =
-      embeddedOptimizeRule.target(SHARE)
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
-        .post(Entity.json(share));
+    Response response = createShareResponse(token, share);
 
     // then the status code is okay
     assertThat(response.getStatus(), is(200));
@@ -275,6 +253,41 @@ public class SharingRestServiceIT {
   }
 
   @Test
+  public void findShareForSharedDashboard() throws Exception {
+    //given
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+
+    String reportId = createReport();
+    String dashboardWithReport = createDashboardWithReport(token, reportId);
+    String id = addShareForDashboard(token, dashboardWithReport);
+
+    //when
+    SharingDto share = findShareForDashboard(token, dashboardWithReport).readEntity(SharingDto.class);
+
+    //then
+    assertThat(share, is(notNullValue()));
+    assertThat(share.getId(), is(id));
+  }
+
+  @Test
+  public void findShareForDashboardWithoutAuthentication() throws Exception {
+    //given
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+
+    String reportId = createReport();
+    String dashboardWithReport = createDashboardWithReport(token, reportId);
+    addShareForDashboard(token, dashboardWithReport);
+
+    //when
+    Response response = embeddedOptimizeRule.target(SHARE + "/dashboard/" + dashboardWithReport)
+        .request()
+        .get();
+
+    // then the status code is not authorized
+    assertThat(response.getStatus(), is(401));
+  }
+
+  @Test
   public void canEvaluateSharedReportWithoutAuthentication() throws Exception {
     // given
     String token = embeddedOptimizeRule.getAuthenticationToken();
@@ -298,14 +311,37 @@ public class SharingRestServiceIT {
     assertThat(reportMap.get("data"), is(notNullValue()));
   }
 
+  private String createDashboardWithReport(String token, String reportId) {
+    String dashboardId = addEmptyDashboardToOptimize(token);
+    DashboardDefinitionDto fullBoard = new DashboardDefinitionDto();
+    fullBoard.setId(dashboardId);
+    ReportLocationDto reportLocation = new ReportLocationDto();
+    reportLocation.setId(reportId);
+    List<ReportLocationDto> reports = new ArrayList<>();
+    reports.add(reportLocation);
+    fullBoard.setReports(reports);
+    updateDashboard(dashboardId, fullBoard);
+    return dashboardId;
+  }
+
   private String addEmptyDashboardToOptimize(String token) {
     Response response =
-        embeddedOptimizeRule.target("dashboard")
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
-            .post(Entity.json(""));
+      embeddedOptimizeRule.target("dashboard")
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .post(Entity.json(""));
 
     return response.readEntity(IdDto.class).getId();
+  }
+
+  private void updateDashboard(String id, DashboardDefinitionDto updatedDashboard) {
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+    Response response =
+      embeddedOptimizeRule.target("dashboard/" + id)
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+        .put(Entity.json(updatedDashboard));
+    assertThat(response.getStatus(), is(204));
   }
 
   private String createReport() throws InterruptedException {
@@ -351,19 +387,36 @@ public class SharingRestServiceIT {
       .get();
   }
 
+  private Response findShareForDashboard(String token, String dashboardId) {
+    return embeddedOptimizeRule.target(SHARE + "/dashboard/" + dashboardId)
+      .request()
+      .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+      .get();
+  }
+
   private String addShareForFakeReport(String token) {
     return addShareForReport(token, FAKE_REPORT_ID);
   }
 
   private String addShareForReport(String token, String reportId) {
     SharingDto share = createReportShare(reportId);
-    Response response =
-      embeddedOptimizeRule.target(SHARE)
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
-        .post(Entity.json(share));
+    Response response = createShareResponse(token, share);
 
     return response.readEntity(IdDto.class).getId();
+  }
+
+  private String addShareForDashboard(String token, String dashboardId) {
+    SharingDto share = createDashboardShare(dashboardId);
+    Response response = createShareResponse(token, share);
+
+    return response.readEntity(IdDto.class).getId();
+  }
+
+  private Response createShareResponse(String token, SharingDto share) {
+    return embeddedOptimizeRule.target(SHARE)
+      .request()
+      .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+      .post(Entity.json(share));
   }
 
   private SharingDto createReportShare() {
@@ -374,6 +427,13 @@ public class SharingRestServiceIT {
     SharingDto sharingDto = new SharingDto();
     sharingDto.setResourceId(reportId);
     sharingDto.setType(SharedResourceType.REPORT);
+    return sharingDto;
+  }
+
+  private SharingDto createDashboardShare(String dashboardId) {
+    SharingDto sharingDto = new SharingDto();
+    sharingDto.setResourceId(dashboardId);
+    sharingDto.setType(SharedResourceType.DASHBOARD);
     return sharingDto;
   }
 

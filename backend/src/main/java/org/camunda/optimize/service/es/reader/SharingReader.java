@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.es.reader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.camunda.optimize.dto.optimize.query.sharing.SharedResourceType;
 import org.camunda.optimize.dto.optimize.query.sharing.SharingDto;
 import org.camunda.optimize.service.es.schema.type.ShareType;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -8,6 +9,7 @@ import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.slf4j.Logger;
@@ -33,16 +35,9 @@ public class SharingReader {
   @Autowired
   private ObjectMapper objectMapper;
 
-  public Optional<SharingDto> findSharedResource(SharingDto createSharingDto) {
-    String resourceId = createSharingDto.getResourceId();
-    return findShareForResource(resourceId);
-  }
-
-  public Optional<SharingDto> findShareForResource(String resourceId) {
+  private Optional<SharingDto> findShareByQuery(String resourceId, QueryBuilder query) {
     Optional<SharingDto> result = Optional.empty();
     logger.debug("Fetching share for resource [{}]", resourceId);
-    QueryBuilder query;
-    query = QueryBuilders.termQuery(ShareType.RESOURCE_ID, resourceId);
 
     SearchResponse scrollResp = esclient
       .prepareSearch(configurationService.getOptimizeIndex(configurationService.getShareType()))
@@ -87,5 +82,15 @@ public class SharingReader {
       }
     }
     return result;
+  }
+
+  public Optional<SharingDto> findShareForResource(String resourceId, SharedResourceType type) {
+    BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+    boolQueryBuilder
+        .must(QueryBuilders.termQuery(ShareType.RESOURCE_ID, resourceId))
+        .must(QueryBuilders.termQuery(ShareType.TYPE, type.toString()));
+    QueryBuilder query = boolQueryBuilder;
+
+    return findShareByQuery(resourceId, query);
   }
 }

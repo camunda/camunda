@@ -46,8 +46,15 @@ public class SharingRestService {
   @GET
   @Path("/report/{id}")
   @Produces(MediaType.APPLICATION_JSON)
-  public SharingDto findShareForResource(@PathParam("id") String resourceId) {
-    return sharingService.findShareForResource(resourceId);
+  public SharingDto findShareForReport(@PathParam("id") String resourceId) {
+    return sharingService.findShareForReport(resourceId);
+  }
+
+  @GET
+  @Path("/dashboard/{id}")
+  @Produces(MediaType.APPLICATION_JSON)
+  public SharingDto findShareForDashboard(@PathParam("id") String resourceId) {
+    return sharingService.findShareForDashboard(resourceId);
   }
 
   @GET
