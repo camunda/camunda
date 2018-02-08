@@ -1,6 +1,7 @@
 package org.camunda.optimize.rest;
 
 
+import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.sharing.EvaluatedReportShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.SharingDto;
 import org.camunda.optimize.rest.providers.Secured;
@@ -31,7 +32,7 @@ public class SharingRestService {
   @POST
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public String createNewShare (SharingDto createSharingDto) {
+  public IdDto createNewShare (SharingDto createSharingDto) {
     sharingService.validate(createSharingDto);
     return sharingService.crateNewShare(createSharingDto);
   }

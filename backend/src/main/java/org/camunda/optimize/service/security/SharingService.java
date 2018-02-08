@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.security;
 
+import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.result.ReportResultDto;
 import org.camunda.optimize.dto.optimize.query.sharing.EvaluatedReportShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.SharedResourceType;
@@ -43,7 +44,7 @@ public class SharingService  {
    * @param createSharingDto
    * @return
    */
-  public String crateNewShare(SharingDto createSharingDto) {
+  public IdDto crateNewShare(SharingDto createSharingDto) {
     String result;
     Optional<SharingDto> existing = sharingReader.findSharedResource(createSharingDto);
 
@@ -51,7 +52,9 @@ public class SharingService  {
       .map(SharingDto::getId)
       .orElseGet(() -> sharingWriter.saveShare(createSharingDto).getId());
 
-    return result;
+    IdDto id = new IdDto();
+    id.setId(result);
+    return id;
   }
 
   public void validate(SharingDto createSharingDto) {

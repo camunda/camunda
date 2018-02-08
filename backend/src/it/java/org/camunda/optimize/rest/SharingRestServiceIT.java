@@ -345,7 +345,7 @@ public class SharingRestServiceIT {
         .header(HttpHeaders.AUTHORIZATION, BEARER + token)
         .post(Entity.json(share));
 
-    return response.readEntity(String.class);
+    return response.readEntity(IdDto.class).getId();
   }
 
   private SharingDto createReportShare() {
