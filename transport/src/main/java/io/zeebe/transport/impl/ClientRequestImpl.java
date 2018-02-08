@@ -15,13 +15,8 @@
  */
 package io.zeebe.transport.impl;
 
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 import java.util.function.Consumer;
-
-import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
 
 import io.zeebe.dispatcher.ClaimedFragment;
 import io.zeebe.dispatcher.Dispatcher;
@@ -29,10 +24,14 @@ import io.zeebe.transport.ClientRequest;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.impl.ClientRequestPool.RequestIdGenerator;
 import io.zeebe.util.buffer.BufferWriter;
+import io.zeebe.util.sched.ActorJob;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
+import org.agrona.*;
+import org.agrona.concurrent.UnsafeBuffer;
 
-public class ClientRequestImpl implements ClientRequest
+public class ClientRequestImpl implements ClientRequest, ActorFuture<DirectBuffer>
 {
-
     private final TransportHeaderDescriptor transportHeaderDescriptor = new TransportHeaderDescriptor();
     private final RequestResponseHeaderDescriptor requestResponseHeader = new RequestResponseHeaderDescriptor();
 
@@ -43,7 +42,10 @@ public class ClientRequestImpl implements ClientRequest
 
     private volatile long requestId;
     private RemoteAddress remoteAddress;
-    private final FutureImpl responseFuture = new FutureImpl();
+    private final CompletableActorFuture<DirectBuffer> responseFuture = new CompletableActorFuture<>();
+
+    private final MutableDirectBuffer responseBuffer = new ExpandableArrayBuffer();
+    private final UnsafeBuffer responseBufferView = new UnsafeBuffer(0, 0);
 
     public ClientRequestImpl(RequestIdGenerator requestIdGenerator, Dispatcher sendBuffer, Consumer<ClientRequestImpl> closeHandler)
     {
@@ -54,14 +56,14 @@ public class ClientRequestImpl implements ClientRequest
 
     public void init(RemoteAddress remoteAddress)
     {
-        this.responseFuture.awaitResult();
+        this.responseFuture.setAwaitingResult();
         this.requestId = requestIdGenerator.getNextRequestId();
         this.remoteAddress = remoteAddress;
     }
 
     public boolean submit(BufferWriter writer)
     {
-        this.responseFuture.awaitResult();
+        this.responseFuture.setAwaitingResult();
         final int requiredLength = RequestResponseHeaderDescriptor.framedLength(TransportHeaderDescriptor.framedLength(writer.getLength()));
 
         long claimedOffset;
@@ -128,7 +130,7 @@ public class ClientRequestImpl implements ClientRequest
 
     public void fail(String failure, Exception cause)
     {
-        responseFuture.fail(failure, cause);
+        responseFuture.completeExceptionally(failure, cause);
     }
 
     @Override
@@ -139,7 +141,12 @@ public class ClientRequestImpl implements ClientRequest
 
     public void processResponse(DirectBuffer buff, int offset, int length)
     {
-        responseFuture.complete(buff, offset, length);
+        if (responseFuture.isAwaitingResult())
+        {
+            responseBuffer.putBytes(0, buff, offset, length);
+            responseBufferView.wrap(responseBuffer, 0, length);
+            responseFuture.complete(responseBufferView);
+        }
     }
 
     @Override
@@ -171,9 +178,10 @@ public class ClientRequestImpl implements ClientRequest
         return responseFuture.isAwaitingResult();
     }
 
+    @Override
     public boolean isFailed()
     {
-        return responseFuture.isFailed();
+        return responseFuture.isCompletedExceptionally();
     }
 
     @Override
@@ -186,5 +194,41 @@ public class ClientRequestImpl implements ClientRequest
     public DirectBuffer get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException
     {
         return responseFuture.get(timeout, unit);
+    }
+
+    @Override
+    public void complete(DirectBuffer value)
+    {
+        new UnsupportedOperationException();
+    }
+
+    @Override
+    public void completeExceptionally(String failure, Throwable throwable)
+    {
+        new UnsupportedOperationException();
+    }
+
+    @Override
+    public void completeExceptionally(Throwable throwable)
+    {
+        new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean block(ActorJob job)
+    {
+        return responseFuture.block(job);
+    }
+
+    @Override
+    public boolean isCompletedExceptionally()
+    {
+        return responseFuture.isCompletedExceptionally();
+    }
+
+    @Override
+    public Throwable getException()
+    {
+        return responseFuture.getException();
     }
 }

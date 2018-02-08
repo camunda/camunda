@@ -16,21 +16,15 @@
 package io.zeebe.transport;
 
 import java.time.Duration;
-import java.util.concurrent.CompletableFuture;
-
-import org.agrona.DirectBuffer;
 
 import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.dispatcher.FragmentHandler;
-import io.zeebe.dispatcher.Subscription;
-import io.zeebe.transport.impl.ClientRequestPool;
 import io.zeebe.transport.impl.TransportContext;
 import io.zeebe.transport.impl.actor.ActorContext;
+import io.zeebe.util.sched.future.ActorFuture;
 
 public class ClientTransport implements AutoCloseable
 {
     private final ClientOutput output;
-    private final ClientRequestPool requestPool;
     private final RemoteAddressList remoteAddressList;
     private final ActorContext transportActorContext;
     private final Dispatcher receiveBuffer;
@@ -41,7 +35,6 @@ public class ClientTransport implements AutoCloseable
         this.transportActorContext = transportActorContext;
         this.transportContext = transportContext;
         this.output = transportContext.getClientOutput();
-        this.requestPool = transportContext.getClientRequestPool();
         this.remoteAddressList = transportContext.getRemoteAddressList();
         this.receiveBuffer = transportContext.getReceiveBuffer();
     }
@@ -162,21 +155,22 @@ public class ClientTransport implements AutoCloseable
      *
      * @throws RuntimeException if this client was not created with a receive buffer for single-messages
      */
-    public CompletableFuture<ClientInputMessageSubscription> openSubscription(String subscriptionName, ClientMessageHandler messageHandler)
+    public ActorFuture<ClientInputMessageSubscription> openSubscription(String subscriptionName, ClientMessageHandler messageHandler)
     {
         if (receiveBuffer == null)
         {
             throw new RuntimeException("Cannot throw exception. No receive buffer in use");
         }
 
-        return receiveBuffer.openSubscriptionAsync(subscriptionName)
-                .thenApply(s -> new ClientInputMessageSubscriptionImpl(s, messageHandler, output, remoteAddressList));
+        return transportActorContext
+                .getClientConductor()
+                .openClientInputMessageSubscription(subscriptionName, messageHandler, output, remoteAddressList);
     }
 
     /**
      * Registers a listener with callbacks for whenever a connection to a remote gets established or closed.
      */
-    public CompletableFuture<Void> registerChannelListener(TransportListener channelListener)
+    public ActorFuture<Void> registerChannelListener(TransportListener channelListener)
     {
         return transportActorContext.registerListener(channelListener);
     }
@@ -186,16 +180,9 @@ public class ClientTransport implements AutoCloseable
         transportActorContext.removeListener(listener);
     }
 
-    public CompletableFuture<Void> closeAsync()
+    public ActorFuture<Void> closeAsync()
     {
-        return transportActorContext
-                .onClose()
-                .whenComplete((v, t) ->
-                {
-                    requestPool.close();
-
-                    transportContext.getActorReferences().forEach(r -> r.close());
-                });
+        return transportActorContext.onClose();
     }
 
     @Override
@@ -209,47 +196,13 @@ public class ClientTransport implements AutoCloseable
         transportActorContext.interruptAllChannels();
     }
 
-    public CompletableFuture<Void> closeAllChannels()
+    public ActorFuture<Void> closeAllChannels()
     {
         return transportActorContext.closeAllOpenChannels();
     }
 
-    public long getChannelKeepAlivePeriod()
+    public Duration getChannelKeepAlivePeriod()
     {
         return transportContext.getChannelKeepAlivePeriod();
-    }
-
-    protected static class ClientInputMessageSubscriptionImpl implements ClientInputMessageSubscription
-    {
-
-        protected final Subscription subscription;
-        protected final FragmentHandler messageHandler;
-
-        public ClientInputMessageSubscriptionImpl(
-            Subscription subscription,
-            ClientMessageHandler messageHandler,
-            ClientOutput output,
-            RemoteAddressList remoteAddresses)
-        {
-            this.subscription = subscription;
-            this.messageHandler = new FragmentHandler()
-            {
-                @Override
-                public int onFragment(DirectBuffer buffer, int offset, int length, int streamId, boolean isMarkedFailed)
-                {
-                    final RemoteAddress remoteAddress = remoteAddresses.getByStreamId(streamId);
-                    final boolean success = messageHandler.onMessage(output, remoteAddress, buffer, offset, length);
-
-                    return success ? CONSUME_FRAGMENT_RESULT : POSTPONE_FRAGMENT_RESULT;
-                }
-            };
-        }
-
-        @Override
-        public int poll()
-        {
-            return subscription.peekAndConsume(messageHandler, Integer.MAX_VALUE);
-        }
-
     }
 }

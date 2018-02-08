@@ -16,10 +16,9 @@
 package io.zeebe.transport.impl;
 
 import java.util.Iterator;
+import java.util.function.Consumer;
 
-import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.RemoteAddressList;
-import io.zeebe.transport.SocketAddress;
+import io.zeebe.transport.*;
 
 /**
  * Threadsafe datastructure for indexing remote addresses and assigning
@@ -31,6 +30,9 @@ public class RemoteAddressListImpl implements RemoteAddressList
     private volatile int size;
     private RemoteAddressImpl[] index = new RemoteAddressImpl[0];
 
+    private Consumer<RemoteAddressImpl> onAddressAddedConsumer;
+
+    @Override
     public RemoteAddressImpl getByStreamId(int streamId)
     {
         if (streamId < size)
@@ -46,6 +48,7 @@ public class RemoteAddressListImpl implements RemoteAddressList
      * @param inetSocketAddress
      * @return
      */
+    @Override
     public RemoteAddressImpl getByAddress(SocketAddress inetSocketAddress)
     {
         return getByAddress(inetSocketAddress, RemoteAddressImpl.STATE_ACTIVE);
@@ -75,6 +78,7 @@ public class RemoteAddressListImpl implements RemoteAddressList
      * Effect: This remote address/stream is never used again; no channel will every be managed for this again;
      * if the underlying socket address is registered again, a new remote address is assigned (+ new stream id)
      */
+    @Override
     public synchronized void retire(RemoteAddress remote)
     {
         getByStreamId(remote.getStreamId()).retire();
@@ -84,11 +88,13 @@ public class RemoteAddressListImpl implements RemoteAddressList
      * This stream is deactivated until it is registered again; the stream id in this case will remain stable
      * @param remote
      */
+    @Override
     public synchronized void deactivate(RemoteAddress remote)
     {
         getByStreamId(remote.getStreamId()).deactivate();
     }
 
+    @Override
     public synchronized void deactivateAll()
     {
         for (int i = 0; i < size; i++)
@@ -97,6 +103,7 @@ public class RemoteAddressListImpl implements RemoteAddressList
         }
     }
 
+    @Override
     public RemoteAddressImpl register(SocketAddress inetSocketAddress)
     {
         RemoteAddressImpl result = getByAddress(inetSocketAddress);
@@ -130,6 +137,8 @@ public class RemoteAddressListImpl implements RemoteAddressList
                         result.activate();
                     }
                 }
+
+                onAddressAddedConsumer.accept(result);
             }
         }
 
@@ -171,4 +180,9 @@ public class RemoteAddressListImpl implements RemoteAddressList
             return next;
         }
     };
+
+    public void setOnAddressAddedConsumer(Consumer<RemoteAddressImpl> onAddressAddedConsumer)
+    {
+        this.onAddressAddedConsumer = onAddressAddedConsumer;
+    }
 }

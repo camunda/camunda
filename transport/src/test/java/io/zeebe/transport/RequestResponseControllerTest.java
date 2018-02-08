@@ -84,7 +84,7 @@ public class RequestResponseControllerTest
 
         // then
         assertThat(rrController.isResponseAvailable()).isTrue();
-        assertThat(rrController.isFailed()).isFalse();
+        assertThat(rrController.isCompletedExceptionally()).isFalse();
         assertThat(rrController.isClosed()).isFalse();
 
         assertThat(rrController.getResponseLength()).isEqualTo(BUF1.capacity());
@@ -129,11 +129,11 @@ public class RequestResponseControllerTest
 
         // when
         TestUtil.doRepeatedly(() -> rrController.doWork())
-            .until(i -> rrController.isFailed());
+            .until(i -> rrController.isCompletedExceptionally());
 
         // then
         assertThat(rrController.isResponseAvailable()).isFalse();
-        assertThat(rrController.isFailed()).isTrue();
+        assertThat(rrController.isCompletedExceptionally()).isTrue();
         assertThat(rrController.isClosed()).isFalse();
 
         final Exception failure = rrController.getFailure();
@@ -163,11 +163,11 @@ public class RequestResponseControllerTest
 
         // when
         TestUtil.doRepeatedly(() -> rrController.doWork())
-            .until(i -> rrController.isFailed());
+            .until(i -> rrController.isCompletedExceptionally());
 
         // then
         assertThat(rrController.isResponseAvailable()).isFalse();
-        assertThat(rrController.isFailed()).isTrue();
+        assertThat(rrController.isCompletedExceptionally()).isTrue();
         assertThat(rrController.isClosed()).isFalse();
 
         final Exception failure = rrController.getFailure();
@@ -199,7 +199,7 @@ public class RequestResponseControllerTest
         // then
         assertThat(rrController.isClosed()).isTrue();
         assertThat(rrController.isResponseAvailable()).isFalse();
-        assertThat(rrController.isFailed()).isFalse();
+        assertThat(rrController.isCompletedExceptionally()).isFalse();
     }
 
     @Test

@@ -19,83 +19,110 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
 
-import org.agrona.nio.TransportPoller;
-
-import io.zeebe.transport.SocketAddress;
-import io.zeebe.transport.impl.RemoteAddressImpl;
-import io.zeebe.transport.impl.TransportChannel;
-import io.zeebe.transport.impl.TransportContext;
+import io.zeebe.transport.*;
+import io.zeebe.transport.impl.*;
 import io.zeebe.transport.impl.selector.AcceptTransportPoller;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 
 public class ServerConductor extends Conductor
 {
     private final AcceptTransportPoller acceptTransportPoller;
-    private final TransportPoller[] closableTransportPoller;
+    private ServerSocketBinding serverSocketBinding;
 
     public ServerConductor(ServerActorContext actorContext, TransportContext context)
     {
         super(actorContext, context);
-        acceptTransportPoller = new AcceptTransportPoller(actorContext);
-        acceptTransportPoller.addServerSocketBinding(context.getServerSocketBinding());
-        closableTransportPoller = new TransportPoller[]{acceptTransportPoller};
+        this.serverSocketBinding = context.getServerSocketBinding();
+        this.acceptTransportPoller = new AcceptTransportPoller(this);
+        this.acceptTransportPoller.addServerSocketBinding(serverSocketBinding);
     }
 
     @Override
-    public int doWork() throws Exception
+    protected void onActorStarted()
     {
-        int workCount = super.doWork();
+        super.onActorStarted();
 
-        workCount += acceptTransportPoller.pollNow();
+        actor.pollBlocking(acceptTransportPoller::pollBlocking, acceptTransportPoller::processKeys);
+    }
 
-        return workCount;
+    @Override
+    protected void onActorClosing()
+    {
+        acceptTransportPoller.close();
+        super.onActorClosing();
+    }
+
+    @Override
+    protected void onSenderAndReceiverClosed()
+    {
+        serverSocketBinding.close();
     }
 
     public void onServerChannelOpened(SocketChannel serverChannel)
     {
-        deferred.runAsync(() ->
-        {
-            SocketAddress socketAddress = null;
+        SocketAddress socketAddress = null;
 
+        try
+        {
+            socketAddress = new SocketAddress((InetSocketAddress) serverChannel.getRemoteAddress());
+        }
+        catch (IOException e)
+        {
             try
             {
-                socketAddress = new SocketAddress((InetSocketAddress) serverChannel.getRemoteAddress());
+                serverChannel.close();
             }
-            catch (IOException e)
+            catch (IOException e1)
             {
-                try
-                {
-                    serverChannel.close();
-                }
-                catch (IOException e1)
-                {
-                    return;
-                }
+                return;
             }
+        }
 
-            RemoteAddressImpl remoteAddress = remoteAddressList.getByAddress(socketAddress);
+        RemoteAddressImpl remoteAddress = remoteAddressList.getByAddress(socketAddress);
 
-            if (remoteAddress != null)
-            {
-                // make sure to generate a new stream id
-                remoteAddressList.retire(remoteAddress);
-            }
+        if (remoteAddress != null)
+        {
+            // make sure to generate a new stream id
+            remoteAddressList.retire(remoteAddress);
+        }
 
-            remoteAddress = remoteAddressList.register(socketAddress);
+        remoteAddress = remoteAddressList.register(socketAddress);
 
-            final TransportChannel ch = channelFactory.buildServerChannel(
-                this,
-                remoteAddress,
-                transportContext.getMessageMaxLength(),
-                transportContext.getReceiveHandler(),
-                serverChannel);
+        final TransportChannel ch = channelFactory.buildServerChannel(
+            this,
+            remoteAddress,
+            transportContext.getMessageMaxLength(),
+            transportContext.getReceiveHandler(),
+            serverChannel);
 
-            onChannelConnected(ch);
-        });
+        onChannelConnected(ch);
     }
 
-    @Override
-    protected TransportPoller[] getClosableTransportPoller()
+    public ActorFuture<ServerInputSubscription> openInputSubscription(String subscriptionName,
+            ServerOutput output,
+            RemoteAddressListImpl remoteAddressList,
+            ServerMessageHandler messageHandler,
+            ServerRequestHandler requestHandler)
     {
-        return closableTransportPoller;
+        final CompletableActorFuture<ServerInputSubscription> future = new CompletableActorFuture<>();
+
+        actor.call(() ->
+        {
+            actor.await(transportContext.getReceiveBuffer().openSubscriptionAsync(subscriptionName), (s, t) ->
+            {
+                if (t == null)
+                {
+                    future.complete(new ServerInputSubscriptionImpl(output, s, remoteAddressList, messageHandler, requestHandler));
+                }
+                else
+                {
+                    future.completeExceptionally(t);
+                }
+            });
+        });
+
+        return future;
     }
+
 }

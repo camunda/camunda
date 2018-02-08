@@ -15,33 +15,26 @@
  */
 package io.zeebe.transport.impl;
 
-import java.util.List;
+import java.time.Duration;
 
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.dispatcher.FragmentHandler;
-import io.zeebe.dispatcher.Subscription;
+import io.zeebe.dispatcher.*;
 import io.zeebe.transport.ClientOutput;
 import io.zeebe.transport.ServerOutput;
-import io.zeebe.util.actor.ActorReference;
 
 public class TransportContext
 {
     private int messageMaxLength;
-    private long channelKeepAlivePeriod = 0L;
+    private Duration channelKeepAlivePeriod;
 
     private ServerOutput serverOutput;
     private ClientOutput clientOutput;
 
     private Dispatcher receiveBuffer;
-
-    private Subscription senderSubscription;
+    private Dispatcher sendBuffer;
 
     private RemoteAddressListImpl remoteAddressList;
 
     private ClientRequestPool clientRequestPool;
-    private RequestManager requestManager;
-
-    private List<ActorReference> actorReferences;
 
     private FragmentHandler receiveHandler;
     private SendFailureHandler sendFailureHandler;
@@ -90,16 +83,6 @@ public class TransportContext
         this.receiveBuffer = receiveBuffer;
     }
 
-    public Subscription getSenderSubscription()
-    {
-        return senderSubscription;
-    }
-
-    public void setSenderSubscription(Subscription senderSubscription)
-    {
-        this.senderSubscription = senderSubscription;
-    }
-
     public RemoteAddressListImpl getRemoteAddressList()
     {
         return remoteAddressList;
@@ -118,16 +101,6 @@ public class TransportContext
     public void setClientRequestPool(ClientRequestPool clientRequestPool)
     {
         this.clientRequestPool = clientRequestPool;
-    }
-
-    public void setActorReferences(List<ActorReference> conductorReferences)
-    {
-        this.actorReferences = conductorReferences;
-    }
-
-    public List<ActorReference> getActorReferences()
-    {
-        return actorReferences;
     }
 
     public void setReceiveHandler(FragmentHandler receiveHandler)
@@ -160,12 +133,12 @@ public class TransportContext
         this.serverSocketBinding = serverSocketBinding;
     }
 
-    public void setChannelKeepAlivePeriod(long channelKeepAlivePeriod)
+    public void setChannelKeepAlivePeriod(Duration channelKeepAlivePeriod)
     {
         this.channelKeepAlivePeriod = channelKeepAlivePeriod;
     }
 
-    public long getChannelKeepAlivePeriod()
+    public Duration getChannelKeepAlivePeriod()
     {
         return channelKeepAlivePeriod;
     }
@@ -180,13 +153,13 @@ public class TransportContext
         return channelFactory;
     }
 
-    public RequestManager getRequestManager()
+    public void setSendBuffer(Dispatcher sendBuffer)
     {
-        return requestManager;
+        this.sendBuffer = sendBuffer;
     }
 
-    public void setRequestManager(RequestManager requestManager)
+    public Dispatcher getSetSendBuffer()
     {
-        this.requestManager = requestManager;
+        return sendBuffer;
     }
 }

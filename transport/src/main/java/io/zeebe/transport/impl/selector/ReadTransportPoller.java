@@ -17,8 +17,7 @@ package io.zeebe.transport.impl.selector;
 
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.function.ToIntFunction;
 
 import io.zeebe.transport.Loggers;
@@ -26,18 +25,43 @@ import org.agrona.LangUtil;
 import org.agrona.nio.TransportPoller;
 
 import io.zeebe.transport.impl.TransportChannel;
+import io.zeebe.util.sched.ActorControl;
 import org.slf4j.Logger;
 
 public class ReadTransportPoller extends TransportPoller
 {
+    private final ActorControl actor;
+
     private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
 
     protected final List<TransportChannel> channels = new ArrayList<>();
+    protected final List<TransportChannel> channelsToAdd = new ArrayList<>();
 
     protected final ToIntFunction<SelectionKey> processKeyFn = this::processKey;
+    protected final Runnable pollNow = this::pollNow;
 
-    public int pollNow()
+    public ReadTransportPoller(ActorControl actor)
     {
+        this.actor = actor;
+    }
+
+    public void pollBlocking()
+    {
+        try
+        {
+            selector.select();
+        }
+        catch (IOException e)
+        {
+            selectedKeySet.reset();
+            LangUtil.rethrowUnchecked(e);
+        }
+    }
+
+    public void pollNow()
+    {
+        maintainChannels();
+
         int workCount = 0;
 
         if (channels.size() <= ITERATION_THRESHOLD)
@@ -55,7 +79,7 @@ public class ReadTransportPoller extends TransportPoller
                 try
                 {
                     selector.selectNow();
-                    workCount = selectedKeySet.forEach(processKeyFn);
+                    workCount += processKeys();
                 }
                 catch (IOException e)
                 {
@@ -65,7 +89,34 @@ public class ReadTransportPoller extends TransportPoller
             }
         }
 
-        return workCount;
+        if (workCount > 0)
+        {
+            actor.run(pollNow);
+            actor.yield();
+        }
+    }
+
+    private void maintainChannels()
+    {
+        for (int i = 0; i < channelsToAdd.size(); i++)
+        {
+            final TransportChannel channel = channelsToAdd.get(i);
+            try
+            {
+                channel.registerSelector(selector, SelectionKey.OP_READ);
+                channels.add(channel);
+            }
+            catch (Exception e)
+            {
+                LOG.debug("Failed to add channel {}", channel, e);
+            }
+        }
+        channelsToAdd.clear();
+    }
+
+    public int processKeys()
+    {
+        return selectedKeySet.forEach(processKeyFn);
     }
 
     protected int processKey(SelectionKey key)
@@ -83,15 +134,8 @@ public class ReadTransportPoller extends TransportPoller
 
     public void addChannel(TransportChannel channel)
     {
-        try
-        {
-            channel.registerSelector(selector, SelectionKey.OP_READ);
-            channels.add(channel);
-        }
-        catch (Exception e)
-        {
-            LOG.debug("Failed to add channel {}", channel, e);
-        }
+        channelsToAdd.add(channel);
+        selector.wakeup();
     }
 
     public void removeChannel(TransportChannel channel)

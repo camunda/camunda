@@ -104,7 +104,7 @@ public class ClientRequestPool implements AutoCloseable
         for (int i = 0; i < requests.length; i++)
         {
             final ClientRequestImpl request = requests[i];
-            if (request.isAwaitingResponse() && remote.equals(request.getRemoteAddress()))
+            if (remote.equals(request.getRemoteAddress()))
             {
                 request.fail(reason, null);
             }

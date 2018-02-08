@@ -17,42 +17,48 @@ package io.zeebe.transport.impl.selector;
 
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.ToIntFunction;
 
-import org.agrona.LangUtil;
-import org.agrona.nio.TransportPoller;
-
 import io.zeebe.transport.impl.TransportChannel;
+import org.agrona.nio.TransportPoller;
 
 public class ConnectTransportPoller extends TransportPoller
 {
     protected final ToIntFunction<SelectionKey> processKeyFn = this::processKey;
-    protected int channelCount = 0;
 
-    public int doWork()
+    protected final List<TransportChannel> channelsToAdd = new ArrayList<>();
+    protected final List<TransportChannel> channelsToRemove = new ArrayList<>();
+
+    public void pollBlocking()
     {
-        return pollNow();
+        try
+        {
+            selector.select();
+        }
+        catch (IOException e)
+        {
+            selectedKeySet.reset();
+            throw new RuntimeException(e);
+        }
     }
 
-    public int pollNow()
+    public void processKeys()
     {
-        int workCount = 0;
+        selectedKeySet.forEach(processKeyFn);
 
-        if (channelCount > 0 && selector.isOpen())
+        for (TransportChannel channel : channelsToAdd)
         {
-
-            try
-            {
-                selector.selectNow();
-                workCount = selectedKeySet.forEach(processKeyFn);
-            }
-            catch (IOException e)
-            {
-                selectedKeySet.reset();
-                LangUtil.rethrowUnchecked(e);
-            }
+            channel.registerSelector(selector, SelectionKey.OP_CONNECT);
         }
-        return workCount;
+        channelsToAdd.clear();
+
+        for (TransportChannel channel : channelsToRemove)
+        {
+            channel.removeSelector(selector);
+        }
+        channelsToRemove.clear();
     }
 
     protected int processKey(SelectionKey key)
@@ -62,7 +68,6 @@ public class ConnectTransportPoller extends TransportPoller
             final TransportChannel channel = (TransportChannel) key.attachment();
             removeChannel(channel);
             channel.finishConnect();
-
             return 1;
         }
 
@@ -71,14 +76,13 @@ public class ConnectTransportPoller extends TransportPoller
 
     public void addChannel(TransportChannel channel)
     {
-        channel.registerSelector(selector, SelectionKey.OP_CONNECT);
-        ++channelCount;
+        channelsToAdd.add(channel);
+        selector.wakeup();
     }
 
     public void removeChannel(TransportChannel channel)
     {
-        channel.removeSelector(selector);
-        --channelCount;
+        channelsToRemove.add(channel);
+        selector.wakeup();
     }
-
 }

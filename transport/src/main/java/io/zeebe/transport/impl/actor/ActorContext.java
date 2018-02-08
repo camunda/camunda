@@ -15,10 +15,9 @@
  */
 package io.zeebe.transport.impl.actor;
 
-import java.util.concurrent.CompletableFuture;
-
 import io.zeebe.transport.TransportListener;
 import io.zeebe.transport.impl.TransportChannel;
+import io.zeebe.util.sched.future.ActorFuture;
 
 public abstract class ActorContext
 {
@@ -58,25 +57,48 @@ public abstract class ActorContext
         conductor.removeListener(listener);
     }
 
-    public CompletableFuture<Void> registerListener(TransportListener channelListener)
+    public ActorFuture<Void> registerListener(TransportListener channelListener)
     {
         return conductor.registerListener(channelListener);
     }
 
-    public CompletableFuture<Void> onClose()
+    public ActorFuture<Void> onClose()
     {
-        return  conductor.onClose()
-                         .whenComplete((v, t) -> receiver.closeSelectors());
+        return conductor.close();
     }
 
-    public CompletableFuture<Void> closeAllOpenChannels()
+    public ActorFuture<Void> closeAllOpenChannels()
     {
         return conductor.closeCurrentChannels();
     }
 
-    public CompletableFuture<Void> interruptAllChannels()
+    public ActorFuture<Void> interruptAllChannels()
     {
         return conductor.interruptAllChannels();
     }
 
+    public ActorFuture<Void> closeSender()
+    {
+        return sender.close();
+    }
+
+    public ActorFuture<Void> closeReceiver()
+    {
+        return receiver.close();
+    }
+
+    public Conductor getConductor()
+    {
+        return conductor;
+    }
+
+    public ClientConductor getClientConductor()
+    {
+        return (ClientConductor) conductor;
+    }
+
+    public ServerConductor getServerConductor()
+    {
+        return (ServerConductor) conductor;
+    }
 }

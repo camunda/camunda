@@ -37,6 +37,14 @@ public class ControllableServerTransport implements AutoCloseable
     protected Map<SocketAddress, List<TransportChannel>> clientChannels = new HashMap<>();
     protected RemoteAddressListImpl remoteList = new RemoteAddressListImpl();
 
+    public ControllableServerTransport()
+    {
+        remoteList.setOnAddressAddedConsumer((addr) ->
+        {
+          // no-op
+        });
+    }
+
     public void listenOn(SocketAddress localAddress)
     {
         ServerSocketChannel socketChannel = null;
@@ -109,6 +117,7 @@ public class ControllableServerTransport implements AutoCloseable
         return clientChannels.get(localAddress).stream().mapToInt(c -> c.receive()).sum();
     }
 
+    @Override
     public void close()
     {
         clientChannels.forEach((a, channels) -> channels.forEach(c -> c.close()));

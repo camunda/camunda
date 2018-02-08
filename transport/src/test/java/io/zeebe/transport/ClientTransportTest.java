@@ -18,13 +18,8 @@ package io.zeebe.transport;
 import static io.zeebe.test.util.BufferAssert.assertThatBuffer;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.fail;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
@@ -32,38 +27,31 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.mockito.ArgumentMatchers;
-
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.dispatcher.Dispatchers;
-import io.zeebe.dispatcher.FragmentHandler;
-import io.zeebe.dispatcher.Subscription;
+import io.zeebe.dispatcher.*;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.test.util.io.FailingBufferWriter;
 import io.zeebe.test.util.io.FailingBufferWriter.FailingBufferWriterException;
 import io.zeebe.transport.impl.TransportChannel;
 import io.zeebe.transport.impl.TransportHeaderDescriptor;
-import io.zeebe.transport.util.ControllableServerTransport;
-import io.zeebe.transport.util.EchoRequestResponseHandler;
-import io.zeebe.transport.util.RecordingChannelListener;
-import io.zeebe.transport.util.RecordingMessageHandler;
-import io.zeebe.transport.util.TransportTestUtil;
-import io.zeebe.util.actor.ActorScheduler;
-import io.zeebe.util.actor.ActorSchedulerBuilder;
-import io.zeebe.util.buffer.BufferUtil;
-import io.zeebe.util.buffer.BufferWriter;
-import io.zeebe.util.buffer.DirectBufferWriter;
+import io.zeebe.transport.util.*;
+import io.zeebe.util.buffer.*;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import io.zeebe.util.time.ClockUtil;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.*;
+import org.junit.rules.RuleChain;
+import org.mockito.ArgumentMatchers;
 
 public class ClientTransportTest
 {
+    public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3);
+    public AutoCloseableRule closeables = new AutoCloseableRule();
+
+    @Rule
+    public RuleChain ruleChain = RuleChain.outerRule(actorSchedulerRule).around(closeables);
 
     public static final DirectBuffer BUF1 = BufferUtil.wrapBytes(1, 2, 3, 4);
     public static final SocketAddress SERVER_ADDRESS1 = new SocketAddress("localhost", 51115);
@@ -72,40 +60,31 @@ public class ClientTransportTest
     public static final int REQUEST_POOL_SIZE = 4;
     public static final int BUFFER_SIZE = 16 * 1024;
 
-    @Rule
-    public AutoCloseableRule closeables = new AutoCloseableRule();
-
     protected Dispatcher clientReceiveBuffer;
 
     protected ClientTransport clientTransport;
-    protected ActorScheduler actorScheduler;
     private Dispatcher sendBuffer;
 
     @Before
     public void setUp()
     {
-        actorScheduler = ActorSchedulerBuilder.createDefaultScheduler("test");
-        closeables.manage(actorScheduler);
-
         sendBuffer = Dispatchers.create("clientSendBuffer")
             .bufferSize(BUFFER_SIZE)
-            .subscriptions(ClientTransportBuilder.SEND_BUFFER_SUBSCRIPTION_NAME)
-            .actorScheduler(actorScheduler)
+            .actorScheduler(actorSchedulerRule.get())
             .build();
         closeables.manage(sendBuffer);
 
         clientReceiveBuffer = Dispatchers.create("clientReceiveBuffer")
             .bufferSize(BUFFER_SIZE)
-            .actorScheduler(actorScheduler)
+            .actorScheduler(actorSchedulerRule.get())
             .build();
         closeables.manage(clientReceiveBuffer);
 
         clientTransport = Transports.newClientTransport()
                 .sendBuffer(sendBuffer)
                 .requestPoolSize(REQUEST_POOL_SIZE)
-                .scheduler(actorScheduler)
+                .scheduler(actorSchedulerRule.get())
                 .messageReceiveBuffer(clientReceiveBuffer)
-                .enableManagedRequests()
                 .build();
         closeables.manage(clientTransport);
     }
@@ -127,14 +106,13 @@ public class ClientTransportTest
     {
         final Dispatcher serverSendBuffer = Dispatchers.create("serverSendBuffer")
             .bufferSize(BUFFER_SIZE)
-            .subscriptions(ServerTransportBuilder.SEND_BUFFER_SUBSCRIPTION_NAME)
-            .actorScheduler(actorScheduler)
+            .actorScheduler(actorSchedulerRule.get())
             .build();
         closeables.manage(serverSendBuffer);
 
         final ServerTransportBuilder transportBuilder = Transports.newServerTransport()
             .sendBuffer(serverSendBuffer)
-            .scheduler(actorScheduler);
+            .scheduler(actorSchedulerRule.get());
 
         final ServerTransport serverTransport = builderConsumer.apply(transportBuilder);
         closeables.manage(serverTransport);
@@ -548,13 +526,13 @@ public class ClientTransportTest
         final RemoteAddress remote1 = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
 
         // when
-        final ClientRequest request = clientTransport.getOutput().sendRequestWithRetry(
+        final ActorFuture<ClientRequest> request = clientTransport.getOutput().sendRequestWithRetry(
                 remote1,
                 new DirectBufferWriter().wrap(BUF1),
-                Duration.ofSeconds(10).toMillis());
+                Duration.ofSeconds(10));
 
         // then
-        final DirectBuffer response = request.join();
+        final DirectBuffer response = request.join().join();
         assertThatBuffer(response).hasBytes(BUF1);
     }
 
@@ -587,7 +565,7 @@ public class ClientTransportTest
         when(writer.getLength()).thenReturn(16);
 
         final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
-        final ClientRequest request = clientTransport.getOutput().sendRequestWithRetry(remote, writer);
+        final ActorFuture<ClientRequest> request = clientTransport.getOutput().sendRequestWithRetry(remote, writer);
 
         // when
         Thread.sleep(1000L); // should make a couple of send attempts in this second

@@ -16,33 +16,21 @@
 package io.zeebe.transport;
 
 import java.net.InetSocketAddress;
-import java.util.Arrays;
 import java.util.Objects;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.FragmentHandler;
-import io.zeebe.transport.impl.ReceiveBufferHandler;
-import io.zeebe.transport.impl.RemoteAddressListImpl;
-import io.zeebe.transport.impl.ServerOutputImpl;
-import io.zeebe.transport.impl.ServerReceiveHandler;
-import io.zeebe.transport.impl.ServerSocketBinding;
-import io.zeebe.transport.impl.TransportContext;
-import io.zeebe.transport.impl.actor.Receiver;
-import io.zeebe.transport.impl.actor.Sender;
-import io.zeebe.transport.impl.actor.ServerActorContext;
-import io.zeebe.transport.impl.actor.ServerConductor;
-import io.zeebe.util.actor.ActorScheduler;
+import io.zeebe.transport.impl.*;
+import io.zeebe.transport.impl.actor.*;
+import io.zeebe.util.sched.ZbActorScheduler;
 
 public class ServerTransportBuilder
 {
-
-    public static final String SEND_BUFFER_SUBSCRIPTION_NAME = "sender";
-
     private int messageMaxLength = 1024 * 512;
 
     private Dispatcher sendBuffer;
     private ServerOutput output;
-    private ActorScheduler scheduler;
+    private ZbActorScheduler scheduler;
     private InetSocketAddress bindAddress;
     protected FragmentHandler receiveHandler;
     protected RemoteAddressListImpl remoteAddressList;
@@ -54,7 +42,7 @@ public class ServerTransportBuilder
         return this;
     }
 
-    public ServerTransportBuilder scheduler(ActorScheduler scheduler)
+    public ServerTransportBuilder scheduler(ZbActorScheduler scheduler)
     {
         this.scheduler = scheduler;
         return this;
@@ -130,7 +118,7 @@ public class ServerTransportBuilder
         context.setRemoteAddressList(remoteAddressList);
         context.setReceiveHandler(receiveHandler);
         context.setServerSocketBinding(serverSocketBinding);
-        context.setSenderSubscription(sendBuffer.getSubscriptionByName(SEND_BUFFER_SUBSCRIPTION_NAME));
+        context.setSendBuffer(sendBuffer);
 
         return context;
     }
@@ -141,11 +129,9 @@ public class ServerTransportBuilder
         final Sender sender = new Sender(actorContext, context);
         final Receiver receiver = new Receiver(actorContext, context);
 
-        context.setActorReferences(
-                Arrays.asList(
-                    scheduler.schedule(conductor),
-                    scheduler.schedule(sender),
-                    scheduler.schedule(receiver)));
+        scheduler.submitActor(conductor);
+        scheduler.submitActor(sender);
+        scheduler.submitActor(receiver);
     }
 
     protected void validate()

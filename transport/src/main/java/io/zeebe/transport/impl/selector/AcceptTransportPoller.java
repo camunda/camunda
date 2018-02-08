@@ -20,43 +20,36 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.function.ToIntFunction;
 
-import org.agrona.LangUtil;
-import org.agrona.nio.TransportPoller;
-
 import io.zeebe.transport.impl.ServerSocketBinding;
-import io.zeebe.transport.impl.actor.ServerActorContext;
+import io.zeebe.transport.impl.actor.ServerConductor;
+import org.agrona.nio.TransportPoller;
 
 public class AcceptTransportPoller extends TransportPoller
 {
-    protected final ToIntFunction<SelectionKey> processKeyFn = this::processKey;
-    private final ServerActorContext actorContext;
+    private final ServerConductor serverConductor;
+    private final ToIntFunction<SelectionKey> processKeyFn = this::processKey;
 
-    public AcceptTransportPoller(ServerActorContext actorContext)
+    public AcceptTransportPoller(ServerConductor serverConductor)
     {
-        this.actorContext = actorContext;
+        this.serverConductor = serverConductor;
     }
 
-    public int pollNow()
+    public void pollBlocking()
     {
-        int workCount = 0;
-
-        if (selector.isOpen())
+        try
         {
-            try
-            {
-                selector.selectNow();
-                if (!selectedKeySet.isEmpty())
-                {
-                    workCount = selectedKeySet.forEach(processKeyFn);
-                }
-            }
-            catch (IOException e)
-            {
-                selectedKeySet.reset();
-                LangUtil.rethrowUnchecked(e);
-            }
+            selector.select();
         }
-        return workCount;
+        catch (IOException e)
+        {
+            selectedKeySet.reset();
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void processKeys()
+    {
+        selectedKeySet.forEach(processKeyFn);
     }
 
     protected int processKey(SelectionKey key)
@@ -67,7 +60,7 @@ public class AcceptTransportPoller extends TransportPoller
             final ServerSocketBinding serverSocketBinding = (ServerSocketBinding) key.attachment();
             final SocketChannel serverChannel = serverSocketBinding.accept();
 
-            actorContext.onServerChannelOpened(serverChannel);
+            serverConductor.onServerChannelOpened(serverChannel);
 
             return 1;
         }

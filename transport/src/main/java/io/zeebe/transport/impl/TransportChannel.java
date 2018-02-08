@@ -300,6 +300,7 @@ public class TransportChannel
             // invoke listener only once and only if connected was invoked as well
             if (STATE_FIELD.getAndSet(this, CLOSED) == CONNECTED)
             {
+                System.out.println("onChannelDisconnected" + Thread.currentThread());
                 if (listener != null)
                 {
                     listener.onChannelDisconnected(this);

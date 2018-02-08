@@ -15,28 +15,34 @@
  */
 package io.zeebe.transport.impl;
 
+import java.time.Duration;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
 import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.transport.ClientOutput;
-import io.zeebe.transport.ClientRequest;
-import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.TransportMessage;
+import io.zeebe.transport.*;
 import io.zeebe.util.buffer.BufferWriter;
+import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletedActorFuture;
+import org.agrona.DirectBuffer;
 
 public class ClientOutputImpl implements ClientOutput
 {
     protected final Dispatcher sendBuffer;
     protected final ClientRequestPool requestPool;
-    protected final RequestManager requestManager;
-    protected final long defaultRequestRetryTimeout;
+    protected final Duration defaultRequestRetryTimeout;
+    protected final ZbActorScheduler scheduler;
 
-    public ClientOutputImpl(Dispatcher sendBuffer,
+    public ClientOutputImpl(
+            ZbActorScheduler scheduler,
+            Dispatcher sendBuffer,
             ClientRequestPool requestPool,
-            RequestManager requestManager,
-            long defaultRequestRetryTimeout)
+            Duration defaultRequestRetryTimeout)
     {
+        this.scheduler = scheduler;
         this.sendBuffer = sendBuffer;
         this.requestPool = requestPool;
-        this.requestManager = requestManager;
         this.defaultRequestRetryTimeout = defaultRequestRetryTimeout;
     }
 
@@ -53,24 +59,26 @@ public class ClientOutputImpl implements ClientOutput
     }
 
     @Override
-    public ClientRequest sendRequestWithRetry(RemoteAddress addr, BufferWriter writer, long timeout)
+    public ActorFuture<ClientRequest> sendRequestWithRetry(RemoteAddress addr, BufferWriter writer, Duration timeout)
     {
-        ensureRequestManagerEnabled();
-        return requestManager.openRequest(addr, writer, timeout);
+        return sendRequestWithRetry(() -> new CompletedActorFuture<>(addr), (b) -> false, writer, timeout);
     }
 
     @Override
-    public ClientRequest sendRequestWithRetry(RemoteAddress addr, BufferWriter writer)
+    public ActorFuture<ClientRequest> sendRequestWithRetry(RemoteAddress addr, BufferWriter writer)
     {
         return sendRequestWithRetry(addr, writer, defaultRequestRetryTimeout);
     }
 
-    private void ensureRequestManagerEnabled()
+    @Override
+    public ActorFuture<ClientRequest> sendRequestWithRetry(Supplier<ActorFuture<RemoteAddress>> remoteAddressSupplier, Function<DirectBuffer, Boolean> responseInspector,
+            BufferWriter writer, Duration timeout)
     {
-        if (requestManager == null)
-        {
-            throw new UnsupportedOperationException("Managed requests are disabled. Must be enabled on the client transport builder");
-        }
+        final ClientRequestRetryController ctrl = new ClientRequestRetryController(remoteAddressSupplier, responseInspector, requestPool, writer, timeout);
+
+        scheduler.submitActor(ctrl);
+
+        return ctrl.getRequest();
     }
 
 }

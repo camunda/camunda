@@ -15,30 +15,21 @@
  */
 package io.zeebe.transport.impl.actor;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.zeebe.transport.Loggers;
-import org.agrona.nio.TransportPoller;
-
 import io.zeebe.transport.TransportListener;
-import io.zeebe.transport.impl.ClientRequestPool;
-import io.zeebe.transport.impl.RemoteAddressListImpl;
-import io.zeebe.transport.impl.TransportChannel;
+import io.zeebe.transport.impl.*;
 import io.zeebe.transport.impl.TransportChannel.ChannelLifecycleListener;
-import io.zeebe.transport.impl.TransportChannelFactory;
-import io.zeebe.transport.impl.TransportContext;
-import io.zeebe.util.DeferredCommandContext;
-import io.zeebe.util.actor.Actor;
+import io.zeebe.util.sched.ZbActor;
+import io.zeebe.util.sched.future.ActorFuture;
 import org.slf4j.Logger;
 
-public abstract class Conductor implements Actor, ChannelLifecycleListener
+public abstract class Conductor extends ZbActor implements ChannelLifecycleListener
 {
     private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
 
-    protected final DeferredCommandContext deferred = new DeferredCommandContext();
     protected final RemoteAddressListImpl remoteAddressList;
     protected final TransportContext transportContext;
 
@@ -58,34 +49,17 @@ public abstract class Conductor implements Actor, ChannelLifecycleListener
         actorContext.setConductor(this);
     }
 
-    @Override
-    public int getPriority(long now)
+    public ActorFuture<Void> registerListener(TransportListener channelListener)
     {
-        return PRIORITY_LOW;
-    }
-
-    @Override
-    public int doWork() throws Exception
-    {
-        int workCount = 0;
-
-        workCount += deferred.doWork();
-
-        return workCount;
-    }
-
-    public CompletableFuture<Void> registerListener(TransportListener channelListener)
-    {
-        return deferred.runAsync((future) ->
+        return actor.call(() ->
         {
             transportListeners.add(channelListener);
-            future.complete(null);
         });
     }
 
     public void removeListener(TransportListener channelListener)
     {
-        deferred.runAsync(() ->
+        actor.run(() ->
         {
             transportListeners.remove(channelListener);
         });
@@ -96,44 +70,38 @@ public abstract class Conductor implements Actor, ChannelLifecycleListener
     @Override
     public void onChannelConnected(TransportChannel ch)
     {
-        deferred.runAsync(() ->
-        {
-            transportChannels.add(ch);
-            actorContext.registerChannel(ch);
+        transportChannels.add(ch);
+        actorContext.registerChannel(ch);
 
-            transportListeners.forEach(l ->
+        transportListeners.forEach(l ->
+        {
+            try
             {
-                try
-                {
-                    l.onConnectionEstablished(ch.getRemoteAddress());
-                }
-                catch (Exception e)
-                {
-                    LOG.debug("Failed to call transport listener {} on channel connect", l, e);
-                }
-            });
+                l.onConnectionEstablished(ch.getRemoteAddress());
+            }
+            catch (Exception e)
+            {
+                LOG.debug("Failed to call transport listener {} on channel connect", l, e);
+            }
         });
     }
 
-    public CompletableFuture<Void> interruptAllChannels()
+    public ActorFuture<Void> interruptAllChannels()
     {
-        return deferred.runAsync((future) ->
+        return actor.call(() ->
         {
             for (int i = 0; i < transportChannels.size(); i++)
             {
                 final TransportChannel channel = transportChannels.get(i);
                 channel.shutdownInput();
             }
-
-            future.complete(null);
         });
     }
 
     @Override
     public void onChannelDisconnected(TransportChannel ch)
     {
-
-        deferred.runAsync(() ->
+        actor.run(() ->
         {
             transportChannels.remove(ch);
             failRequestsOnChannel(ch, "Socket channel has been disconnected");
@@ -162,39 +130,40 @@ public abstract class Conductor implements Actor, ChannelLifecycleListener
         }
     }
 
-    public CompletableFuture<Void> onClose()
+    @Override
+    protected void onActorClosing()
     {
-        if (closing.compareAndSet(false, true))
+        remoteAddressList.deactivateAll();
+
+        final ArrayList<TransportChannel> listCopy = new ArrayList<>(transportChannels);
+
+        for (TransportChannel transportChannel : listCopy)
         {
-            remoteAddressList.deactivateAll();
-            return CompletableFuture.allOf(closeClosableTransportPoller(), closeCurrentChannels());
+            transportChannel.close();
         }
-        else
+
+        final ActorFuture<Void> senderClose = actorContext.closeSender();
+        final ActorFuture<Void> receiverClose = actorContext.closeReceiver();
+
+        actor.awaitAll(Arrays.asList(senderClose, receiverClose), (t) ->
         {
-            return CompletableFuture.completedFuture(null);
-        }
-    }
-
-    protected abstract TransportPoller[] getClosableTransportPoller();
-
-    protected CompletableFuture<Void> closeClosableTransportPoller()
-    {
-        return deferred.runAsync((f) ->
-        {
-            final TransportPoller[] toClosableResources = getClosableTransportPoller();
-
-            for (TransportPoller closeable : toClosableResources)
-            {
-                closeable.close();
-            }
-
-            f.complete(null);
+            onSenderAndReceiverClosed();
         });
     }
 
-    public CompletableFuture<Void> closeCurrentChannels()
+    protected void onSenderAndReceiverClosed()
     {
-        return deferred.runAsync((f) ->
+        // empty
+    }
+
+    public ActorFuture<Void> close()
+    {
+        return actor.close();
+    }
+
+    public ActorFuture<Void> closeCurrentChannels()
+    {
+        return actor.call(() ->
         {
             final ArrayList<TransportChannel> listCopy = new ArrayList<>(transportChannels);
 
@@ -202,8 +171,6 @@ public abstract class Conductor implements Actor, ChannelLifecycleListener
             {
                 transportChannel.close();
             }
-
-            f.complete(null);
         });
     }
 }

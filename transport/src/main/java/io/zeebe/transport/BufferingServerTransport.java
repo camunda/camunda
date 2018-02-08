@@ -15,11 +15,10 @@
  */
 package io.zeebe.transport;
 
-import java.util.concurrent.CompletableFuture;
-
-import io.zeebe.dispatcher.*;
-import io.zeebe.transport.impl.*;
+import io.zeebe.dispatcher.Dispatcher;
+import io.zeebe.transport.impl.TransportContext;
 import io.zeebe.transport.impl.actor.ActorContext;
+import io.zeebe.util.sched.future.ActorFuture;
 
 public class BufferingServerTransport extends ServerTransport
 {
@@ -31,39 +30,8 @@ public class BufferingServerTransport extends ServerTransport
         receiveBuffer = transportContext.getReceiveBuffer();
     }
 
-    public CompletableFuture<ServerInputSubscription> openSubscription(String subscriptionName, ServerMessageHandler messageHandler, ServerRequestHandler requestHandler)
+    public ActorFuture<ServerInputSubscription> openSubscription(String subscriptionName, ServerMessageHandler messageHandler, ServerRequestHandler requestHandler)
     {
-        return receiveBuffer.openSubscriptionAsync(subscriptionName)
-            .thenApply(s -> new ServerInputSubscriptionImpl(output, s, transportContext.getRemoteAddressList(), messageHandler, requestHandler));
-    }
-
-    protected static class ServerInputSubscriptionImpl implements ServerInputSubscription
-    {
-        protected final Subscription subscription;
-        protected final FragmentHandler fragmentHandler;
-
-        public ServerInputSubscriptionImpl(
-                ServerOutput output,
-                Subscription subscription,
-                RemoteAddressList addressList,
-                ServerMessageHandler messageHandler,
-                ServerRequestHandler requestHandler)
-        {
-            this.subscription = subscription;
-            this.fragmentHandler = new ServerReceiveHandler(output, addressList, messageHandler, requestHandler, null);
-        }
-
-        @Override
-        public int poll()
-        {
-            return poll(Integer.MAX_VALUE);
-        }
-
-        @Override
-        public int poll(int maxCount)
-        {
-            return subscription.poll(fragmentHandler, maxCount);
-        }
-    }
-
+        return transportActorContext.getServerConductor()
+                .openInputSubscription(subscriptionName, output, transportContext.getRemoteAddressList(), messageHandler, requestHandler);    }
 }

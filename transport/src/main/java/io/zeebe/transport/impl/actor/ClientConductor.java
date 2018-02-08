@@ -15,36 +15,40 @@
  */
 package io.zeebe.transport.impl.actor;
 
-import org.agrona.nio.TransportPoller;
-
-import io.zeebe.transport.impl.RemoteAddressImpl;
-import io.zeebe.transport.impl.TransportChannel;
-import io.zeebe.transport.impl.TransportContext;
+import io.zeebe.dispatcher.Subscription;
+import io.zeebe.transport.*;
+import io.zeebe.transport.impl.*;
 import io.zeebe.transport.impl.selector.ConnectTransportPoller;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 
 public class ClientConductor extends Conductor
 {
     private final ConnectTransportPoller connectTransportPoller;
-    private final TransportPoller[] closableTransportPoller;
     private final ClientChannelManager channelManager;
 
     public ClientConductor(ActorContext actorContext, TransportContext context)
     {
         super(actorContext, context);
+
         this.connectTransportPoller = new ConnectTransportPoller();
-        closableTransportPoller = new TransportPoller[]{connectTransportPoller};
-        this.channelManager = new ClientChannelManager(this, context.getRemoteAddressList());
+        this.channelManager = new ClientChannelManager(this);
+
+        remoteAddressList.setOnAddressAddedConsumer(this::onRemoteAddressAdded);
     }
 
     @Override
-    public int doWork() throws Exception
+    protected void onActorStarted()
     {
-        int workCount = super.doWork();
+        super.onActorStarted();
+        actor.pollBlocking(connectTransportPoller::pollBlocking, connectTransportPoller::processKeys);
+    }
 
-        workCount += connectTransportPoller.doWork();
-        workCount += channelManager.maintainChannels();
-
-        return workCount;
+    @Override
+    protected void onActorClosing()
+    {
+        connectTransportPoller.close();
+        super.onActorClosing();
     }
 
     public TransportChannel openChannel(RemoteAddressImpl address)
@@ -58,6 +62,8 @@ public class ClientConductor extends Conductor
 
         if (channel.beginConnect())
         {
+            System.out.println("Begin connect" + channel.getRemoteAddress());
+
             connectTransportPoller.addChannel(channel);
             return channel;
         }
@@ -69,8 +75,48 @@ public class ClientConductor extends Conductor
     }
 
     @Override
-    protected TransportPoller[] getClosableTransportPoller()
+    public void onChannelDisconnected(TransportChannel ch)
     {
-        return closableTransportPoller;
+        actor.run(() ->
+        {
+            channelManager.onChannelClosed(ch);
+        });
+
+        super.onChannelDisconnected(ch);
+    }
+
+    private void onRemoteAddressAdded(RemoteAddressImpl remoteAddress)
+    {
+        actor.call(() ->
+        {
+            channelManager.onRemoteAddressAdded(remoteAddress);
+        });
+    }
+
+    public ActorFuture<ClientInputMessageSubscription> openClientInputMessageSubscription(String subscriptionName,
+            ClientMessageHandler messageHandler,
+            ClientOutput output,
+            RemoteAddressList remoteAddressList)
+    {
+        final CompletableActorFuture<ClientInputMessageSubscription> future = new CompletableActorFuture<>();
+
+        actor.call(() ->
+        {
+            final ActorFuture<Subscription> subscriptionFuture = transportContext.getReceiveBuffer().openSubscriptionAsync(subscriptionName);
+
+            actor.await(subscriptionFuture, (s, t) ->
+            {
+                if (t != null)
+                {
+                    future.completeExceptionally(t);
+                }
+                else
+                {
+                    future.complete(new ClientInputMessageSubscriptionImpl(s, messageHandler, output, remoteAddressList));
+                }
+            });
+        });
+
+        return future;
     }
 }

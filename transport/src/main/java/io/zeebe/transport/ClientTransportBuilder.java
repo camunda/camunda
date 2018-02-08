@@ -16,52 +16,36 @@
 package io.zeebe.transport;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.FragmentHandler;
-import io.zeebe.transport.impl.ClientOutputImpl;
-import io.zeebe.transport.impl.ClientReceiveHandler;
-import io.zeebe.transport.impl.ClientRequestPool;
-import io.zeebe.transport.impl.ClientSendFailureHandler;
-import io.zeebe.transport.impl.RemoteAddressListImpl;
-import io.zeebe.transport.impl.RequestManager;
-import io.zeebe.transport.impl.TransportChannelFactory;
-import io.zeebe.transport.impl.TransportContext;
-import io.zeebe.transport.impl.actor.ClientActorContext;
-import io.zeebe.transport.impl.actor.ClientConductor;
-import io.zeebe.transport.impl.actor.Receiver;
-import io.zeebe.transport.impl.actor.Sender;
-import io.zeebe.util.actor.ActorReference;
-import io.zeebe.util.actor.ActorScheduler;
+import io.zeebe.transport.impl.*;
+import io.zeebe.transport.impl.actor.*;
+import io.zeebe.util.sched.ZbActorScheduler;
 
 public class ClientTransportBuilder
 {
-
-    public static final String SEND_BUFFER_SUBSCRIPTION_NAME = ServerTransportBuilder.SEND_BUFFER_SUBSCRIPTION_NAME;
-
     /**
      * In the same order of magnitude of what apache and nginx use.
      */
-    protected static final long DEFAULT_CHANNEL_KEEP_ALIVE_PERIOD = 5000;
+    protected static final Duration DEFAULT_CHANNEL_KEEP_ALIVE_PERIOD = Duration.ofSeconds(5);
     protected static final long DEFAULT_CHANNEL_CONNECT_TIMEOUT = 500;
 
     private int requestPoolSize = 64;
     private int messageMaxLength = 1024 * 512;
-    protected long keepAlivePeriod = DEFAULT_CHANNEL_KEEP_ALIVE_PERIOD;
+    protected Duration keepAlivePeriod = DEFAULT_CHANNEL_KEEP_ALIVE_PERIOD;
 
     protected Dispatcher receiveBuffer;
     private Dispatcher sendBuffer;
-    private ActorScheduler scheduler;
+    private ZbActorScheduler scheduler;
     protected List<ClientInputListener> listeners;
     protected TransportChannelFactory channelFactory;
 
     protected boolean enableManagedRequests = false;
-    protected long defaultRequestRetryTimeout = Duration.ofSeconds(15).toMillis();
+    protected Duration defaultRequestRetryTimeout = Duration.ofSeconds(15);
 
-    public ClientTransportBuilder scheduler(ActorScheduler scheduler)
+    public ClientTransportBuilder scheduler(ZbActorScheduler scheduler)
     {
         this.scheduler = scheduler;
         return this;
@@ -114,8 +98,12 @@ public class ClientTransportBuilder
     /**
      * The period in which a dummy message is sent to keep the underlying TCP connection open.
      */
-    public ClientTransportBuilder keepAlivePeriod(long keepAlivePeriod)
+    public ClientTransportBuilder keepAlivePeriod(Duration keepAlivePeriod)
     {
+        if (keepAlivePeriod.getSeconds() < 1)
+        {
+            throw new RuntimeException("Min value for keepalive period is 1s.");
+        }
         this.keepAlivePeriod = keepAlivePeriod;
         return this;
     }
@@ -126,19 +114,9 @@ public class ClientTransportBuilder
         return this;
     }
 
-    /**
-     * Enables APIs like {@link ClientOutput#sendRequestWithRetry(RemoteAddress, io.zeebe.util.buffer.BufferWriter)}.
-     * Requires running another actor, so you can keep this disabled if you don't use the APIs.
-     */
-    public ClientTransportBuilder enableManagedRequests()
-    {
-        this.enableManagedRequests = true;
-        return this;
-    }
-
     public ClientTransportBuilder defaultRequestRetryTimeout(Duration duration)
     {
-        this.defaultRequestRetryTimeout = duration.toMillis();
+        this.defaultRequestRetryTimeout = duration;
         return this;
     }
 
@@ -146,13 +124,10 @@ public class ClientTransportBuilder
     {
         validate();
         final ClientRequestPool clientRequestPool = new ClientRequestPool(requestPoolSize, sendBuffer);
-        final RequestManager requestManager = enableManagedRequests ?
-                new RequestManager(clientRequestPool) :
-                null;
         final ClientOutput output = new ClientOutputImpl(
+                scheduler,
                 sendBuffer,
                 clientRequestPool,
-                requestManager,
                 defaultRequestRetryTimeout);
 
         final RemoteAddressListImpl remoteAddressList = new RemoteAddressListImpl();
@@ -161,7 +136,6 @@ public class ClientTransportBuilder
                 buildTransportContext(
                         output,
                         clientRequestPool,
-                        requestManager,
                         remoteAddressList,
                         new ClientReceiveHandler(clientRequestPool, receiveBuffer, listeners),
                         receiveBuffer);
@@ -172,7 +146,6 @@ public class ClientTransportBuilder
     protected TransportContext buildTransportContext(
             ClientOutput output,
             ClientRequestPool clientRequestPool,
-            RequestManager requestManager,
             RemoteAddressListImpl addressList,
             FragmentHandler receiveHandler,
             Dispatcher receiveBuffer)
@@ -182,12 +155,11 @@ public class ClientTransportBuilder
         context.setReceiveBuffer(receiveBuffer);
         context.setMessageMaxLength(messageMaxLength);
         context.setClientRequestPool(clientRequestPool);
-        context.setRequestManager(requestManager);
         context.setRemoteAddressList(addressList);
         context.setReceiveHandler(receiveHandler);
-        context.setSenderSubscription(sendBuffer.getSubscriptionByName(SEND_BUFFER_SUBSCRIPTION_NAME));
         context.setSendFailureHandler(new ClientSendFailureHandler(clientRequestPool));
         context.setChannelKeepAlivePeriod(keepAlivePeriod);
+        context.setSendBuffer(sendBuffer);
 
         if (channelFactory != null)
         {
@@ -205,19 +177,9 @@ public class ClientTransportBuilder
         final Sender sender = new Sender(actorContext, context);
         final Receiver receiver = new Receiver(actorContext, context);
 
-        final List<ActorReference> actorReferences = new ArrayList<>();
-        actorReferences.add(scheduler.schedule(conductor));
-        actorReferences.add(scheduler.schedule(sender));
-        actorReferences.add(scheduler.schedule(receiver));
-
-        final RequestManager requestManager = context.getRequestManager();
-
-        if (requestManager != null)
-        {
-            actorReferences.add(scheduler.schedule(requestManager));
-        }
-
-        context.setActorReferences(actorReferences);
+        scheduler.submitActor(conductor);
+        scheduler.submitActor(sender);
+        scheduler.submitActor(receiver);
 
         return new ClientTransport(actorContext, context);
     }

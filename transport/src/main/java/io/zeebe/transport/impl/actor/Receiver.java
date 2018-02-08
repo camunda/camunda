@@ -18,48 +18,42 @@ package io.zeebe.transport.impl.actor;
 import io.zeebe.transport.impl.TransportChannel;
 import io.zeebe.transport.impl.TransportContext;
 import io.zeebe.transport.impl.selector.ReadTransportPoller;
-import io.zeebe.util.DeferredCommandContext;
-import io.zeebe.util.actor.Actor;
+import io.zeebe.util.sched.ZbActor;
+import io.zeebe.util.sched.future.ActorFuture;
 
-public class Receiver implements Actor
+public class Receiver extends ZbActor
 {
-    protected final DeferredCommandContext commandContext;
     protected final ReadTransportPoller transportPoller;
 
     public Receiver(ActorContext actorContext, TransportContext context)
     {
-        this.commandContext = new DeferredCommandContext();
-        this.transportPoller = new ReadTransportPoller();
+        this.transportPoller = new ReadTransportPoller(actor);
 
         actorContext.setReceiver(this);
     }
 
     @Override
-    public int doWork() throws Exception
+    protected void onActorStarted()
     {
-        int work = 0;
-
-        work += commandContext.doWork();
-        work += transportPoller.pollNow();
-
-        return work;
-    }
-
-    public void closeSelectors()
-    {
-        transportPoller.clearChannels();
-        transportPoller.close();
+        actor.pollBlocking(transportPoller::pollBlocking, transportPoller::processKeys);
     }
 
     @Override
-    public String name()
+    protected void onActorClosing()
+    {
+        transportPoller.close();
+        transportPoller.clearChannels();
+    }
+
+    @Override
+    public String getName()
     {
         return "receiver";
     }
 
     public void removeChannel(TransportChannel c)
     {
-        commandContext.runAsync(() ->
+        actor.call(() ->
         {
             transportPoller.removeChannel(c);
         });
@@ -67,10 +61,14 @@ public class Receiver implements Actor
 
     public void registerChannel(TransportChannel c)
     {
-        commandContext.runAsync((future) ->
+        actor.call(() ->
         {
             transportPoller.addChannel(c);
         });
     }
 
+    public ActorFuture<Void> close()
+    {
+        return actor.close();
+    }
 }

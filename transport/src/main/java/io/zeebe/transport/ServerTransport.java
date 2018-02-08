@@ -15,11 +15,10 @@
  */
 package io.zeebe.transport;
 
-import java.util.concurrent.CompletableFuture;
-
 import io.zeebe.transport.impl.ServerSocketBinding;
 import io.zeebe.transport.impl.TransportContext;
 import io.zeebe.transport.impl.actor.ActorContext;
+import io.zeebe.util.sched.future.ActorFuture;
 
 public class ServerTransport implements AutoCloseable
 {
@@ -47,7 +46,7 @@ public class ServerTransport implements AutoCloseable
     /**
      * Registers a listener with callbacks for whenever a connection to a remote gets established or closed.
      */
-    public CompletableFuture<Void> registerChannelListener(TransportListener channelListener)
+    public ActorFuture<Void> registerChannelListener(TransportListener channelListener)
     {
         return transportActorContext.registerListener(channelListener);
     }
@@ -57,17 +56,12 @@ public class ServerTransport implements AutoCloseable
         transportActorContext.removeListener(listener);
     }
 
-    public CompletableFuture<Void> closeAsync()
+    public ActorFuture<Void> closeAsync()
     {
-        return transportActorContext.onClose()
-            .whenComplete((v, t) ->
-            {
-                serverSocketBinding.close();
-                transportContext.getActorReferences().forEach(r -> r.close());
-            });
+        return transportActorContext.onClose();
     }
 
-    public CompletableFuture<Void> interruptAllChannels()
+    public ActorFuture<Void> interruptAllChannels()
     {
         return transportActorContext.interruptAllChannels();
     }

@@ -15,79 +15,18 @@
  */
 package io.zeebe.transport.impl.actor;
 
-import java.util.Iterator;
-
-import org.agrona.collections.Int2ObjectHashMap;
-
 import io.zeebe.transport.impl.RemoteAddressImpl;
-import io.zeebe.transport.impl.RemoteAddressListImpl;
 import io.zeebe.transport.impl.TransportChannel;
+import org.agrona.collections.Int2ObjectHashMap;
 
 public class ClientChannelManager
 {
-
     protected Int2ObjectHashMap<TransportChannel> channels = new Int2ObjectHashMap<>();
-    protected final RemoteAddressListImpl registeredAddresses;
     protected final ClientConductor conductor;
 
-    public ClientChannelManager(ClientConductor conductor, RemoteAddressListImpl registeredAddresses)
+    public ClientChannelManager(ClientConductor conductor)
     {
-        this.registeredAddresses = registeredAddresses;
         this.conductor = conductor;
-    }
-
-    public int maintainChannels()
-    {
-        int workCount = 0;
-
-        workCount += openNewChannels();
-        workCount += reopenChannels();
-
-        return workCount;
-    }
-
-    private int reopenChannels()
-    {
-        int workCount = 0;
-        final Iterator<TransportChannel> channelIt = channels.values().iterator();
-
-        while (channelIt.hasNext())
-        {
-            final TransportChannel channel = channelIt.next();
-            if (channel.isClosed())
-            {
-                final RemoteAddressImpl remoteAddress = channel.getRemoteAddress();
-                if (remoteAddress.isActive())
-                {
-                    openChannel(remoteAddress);
-                }
-                else
-                {
-                    channelIt.remove();
-                }
-                workCount++;
-            }
-        }
-
-        return workCount;
-    }
-
-    private int openNewChannels()
-    {
-        final Iterator<RemoteAddressImpl> addressIt = registeredAddresses.iterator();
-
-        int workCount = 0;
-        while (addressIt.hasNext())
-        {
-            final RemoteAddressImpl address = addressIt.next();
-            if (address.isActive() && !channels.containsKey(address.getStreamId()))
-            {
-                openChannel(address);
-                workCount++;
-            }
-        }
-
-        return workCount;
     }
 
     private void openChannel(final RemoteAddressImpl address)
@@ -97,6 +36,37 @@ public class ClientChannelManager
         if (channel != null)
         {
             channels.put(address.getStreamId(), channel);
+        }
+    }
+
+    public void onChannelClosed(TransportChannel channel)
+    {
+        final RemoteAddressImpl remoteAddress = channel.getRemoteAddress();
+
+        if (remoteAddress.isActive())
+        {
+            openChannel(remoteAddress);
+        }
+        else
+        {
+            channels.remove(remoteAddress.getStreamId());
+        }
+    }
+
+    public void onRemoteAddressAdded(RemoteAddressImpl remoteAddress)
+    {
+        final TransportChannel channel = channels.get(remoteAddress.getStreamId());
+
+        if (channel == null)
+        {
+            openChannel(remoteAddress);
+        }
+        else
+        {
+            if (channel.isClosed())
+            {
+                openChannel(remoteAddress);
+            }
         }
     }
 }
