@@ -15,8 +15,6 @@
  */
 package io.zeebe.broker.it;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.ExecutionException;
@@ -29,16 +27,18 @@ import org.slf4j.Logger;
 
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.transport.TransportServiceNames;
+import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
-import io.zeebe.servicecontainer.impl.ServiceContainerImpl;
 import io.zeebe.util.allocation.DirectBufferAllocator;
 
 public class EmbeddedBrokerRule extends ExternalResource
 {
+
+    static final ServiceName<Object> AWAIT_BROKER_SERVICE_NAME = ServiceName.newServiceName("testService", Object.class);
     protected static final Logger LOG = TestLoggers.TEST_LOGGER;
 
     protected Broker broker;
@@ -103,7 +103,7 @@ public class EmbeddedBrokerRule extends ExternalResource
         {
             // Hack: block until default task queue log has been installed
             // How to make it better: https://github.com/zeebe-io/zeebe/issues/196
-            serviceContainer.createService(TestService.NAME, new TestService())
+            serviceContainer.createService(AWAIT_BROKER_SERVICE_NAME, new NoneService())
                 .dependency(TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME))
                 .install()
                 .get(10, TimeUnit.SECONDS);
@@ -115,38 +115,47 @@ public class EmbeddedBrokerRule extends ExternalResource
         }
     }
 
-    public <S> Service<S> getService(final ServiceName<S> serviceName)
+    public <S> S getService(ServiceName<S> serviceName)
     {
-        final ServiceContainerImpl serviceContainer = (ServiceContainerImpl) broker.getBrokerContext().getServiceContainer();
+        final ServiceContainer serviceContainer = broker.getBrokerContext().getServiceContainer();
 
-        final Service<S> service = serviceContainer.getService(serviceName);
+        final Injector<S> injector = new Injector<>();
 
-        assertThat(service).isNotNull();
+        final ServiceName<Object> accessorServiceName = ServiceName.newServiceName("serviceAccess" + serviceName.getName(), Object.class);
+        try
+        {
+            serviceContainer
+                .createService(accessorServiceName, new NoneService())
+                .dependency(serviceName, injector)
+                .install()
+                .get();
+        }
+        catch (InterruptedException | ExecutionException e)
+        {
+            throw new RuntimeException(e);
+        }
 
-        return service;
+        serviceContainer.removeService(accessorServiceName);
+
+        return injector.getValue();
     }
 
-    static class TestService implements Service<TestService>
+    protected class NoneService implements Service<Object>
     {
-
-        static final ServiceName<TestService> NAME = ServiceName.newServiceName("testService", TestService.class);
-
         @Override
         public void start(ServiceStartContext startContext)
         {
-
         }
 
         @Override
         public void stop(ServiceStopContext stopContext)
         {
-
         }
 
         @Override
-        public TestService get()
+        public Object get()
         {
-            return this;
+            return null;
         }
 
     }

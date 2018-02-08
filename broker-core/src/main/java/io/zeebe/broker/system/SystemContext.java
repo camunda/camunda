@@ -28,6 +28,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.ConcurrentCountersManager;
 import org.slf4j.Logger;
 
 import io.zeebe.broker.Loggers;
@@ -36,6 +38,7 @@ import io.zeebe.broker.transport.cfg.TransportComponentCfg;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.impl.ServiceContainerImpl;
 import io.zeebe.util.FileUtil;
+import io.zeebe.util.sched.ZbActorScheduler;
 
 public class SystemContext implements AutoCloseable
 {
@@ -51,13 +54,32 @@ public class SystemContext implements AutoCloseable
     protected final List<CompletableFuture<?>> requiredStartActions = new ArrayList<>();
 
     protected Map<String, String> diagnosticContext;
+    protected final ZbActorScheduler scheduler;
 
     public SystemContext(ConfigurationManager configurationManager)
     {
         final String brokerId = readBrokerId(configurationManager);
         this.diagnosticContext = Collections.singletonMap(BROKER_ID_LOG_PROPERTY, brokerId);
-        this.serviceContainer = new ServiceContainerImpl(Collections.singletonMap(BROKER_ID_LOG_PROPERTY, brokerId));
+
+        // TODO: submit diagnosticContext to actor scheduler once supported
+        this.scheduler = initScheduler();
+        this.serviceContainer = new ServiceContainerImpl(this.scheduler);
         this.configurationManager = configurationManager;
+        this.scheduler.start();
+
+    }
+
+    private int determineNumberOfRunnerThreads()
+    {
+        return Math.min(1, Runtime.getRuntime().availableProcessors() - 1);
+    }
+
+    private ZbActorScheduler initScheduler()
+    {
+        final UnsafeBuffer valueBuffer = new UnsafeBuffer(new byte[16 * 1024]);
+        final UnsafeBuffer labelBuffer = new UnsafeBuffer(new byte[valueBuffer.capacity() * 2 + 1]);
+        final ConcurrentCountersManager countersManager = new ConcurrentCountersManager(labelBuffer, valueBuffer);
+        return new ZbActorScheduler(determineNumberOfRunnerThreads(), countersManager);
     }
 
     protected static String readBrokerId(ConfigurationManager configurationManager)
@@ -75,6 +97,11 @@ public class SystemContext implements AutoCloseable
     public SystemContext(InputStream configStream)
     {
         this(new ConfigurationManagerImpl(configStream));
+    }
+
+    public ZbActorScheduler getScheduler()
+    {
+        return scheduler;
     }
 
     public ServiceContainer getServiceContainer()

@@ -19,6 +19,8 @@ package io.zeebe.broker.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.concurrent.ExecutionException;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -29,8 +31,12 @@ import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.broker.workflow.WorkflowQueueServiceNames;
 import io.zeebe.logstreams.processor.StreamProcessorController;
 import io.zeebe.raft.Raft;
+import io.zeebe.servicecontainer.Injector;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.servicecontainer.impl.ServiceContainerImpl;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 
 public class ServicesLifecycleTest
@@ -47,13 +53,14 @@ public class ServicesLifecycleTest
     {
         // given
         final Broker broker = brokerRule.getBroker();
-        final ServiceContainerImpl serviceContainer = (ServiceContainerImpl) broker.getBrokerContext().getServiceContainer();
+        final ServiceContainer serviceContainer = broker.getBrokerContext().getServiceContainer();
         final String logStreamName = ClientApiRule.DEFAULT_TOPIC_NAME + "." + apiRule.getDefaultPartitionId();
 
         final ServiceName<StreamProcessorController> streamProcessorServiceName = WorkflowQueueServiceNames.workflowInstanceStreamProcessorServiceName(logStreamName);
         final ServiceName<Raft> raftServiceName = ClusterServiceNames.raftServiceName(logStreamName);
 
-        final StreamProcessorController streamProcessorController = serviceContainer.<StreamProcessorController>getService(streamProcessorServiceName).get();
+        final StreamProcessorController streamProcessorController =
+                getService(serviceContainer, streamProcessorServiceName);
 
         // when
         serviceContainer.removeService(raftServiceName).get();
@@ -61,5 +68,48 @@ public class ServicesLifecycleTest
         // then
         assertThat(streamProcessorController.isClosed()).isTrue();
         assertThat(streamProcessorController.isFailed()).isFalse();
+    }
+
+    protected <S> S getService(ServiceContainer serviceContainer, ServiceName<S> serviceName)
+    {
+        final Injector<S> injector = new Injector<>();
+
+        final ServiceName<Object> accessorServiceName = ServiceName.newServiceName("serviceAccess" + serviceName.getName(), Object.class);
+        try
+        {
+            serviceContainer
+                .createService(accessorServiceName, new NoneService())
+                .dependency(serviceName, injector)
+                .install()
+                .get();
+        }
+        catch (InterruptedException | ExecutionException e)
+        {
+            throw new RuntimeException(e);
+        }
+
+        serviceContainer.removeService(accessorServiceName);
+
+        return injector.getValue();
+    }
+
+    protected class NoneService implements Service<Object>
+    {
+        @Override
+        public void start(ServiceStartContext startContext)
+        {
+        }
+
+        @Override
+        public void stop(ServiceStopContext stopContext)
+        {
+        }
+
+        @Override
+        public Object get()
+        {
+            return null;
+        }
+
     }
 }

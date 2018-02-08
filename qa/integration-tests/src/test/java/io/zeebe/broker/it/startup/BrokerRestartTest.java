@@ -464,7 +464,7 @@ public class BrokerRestartTest
 
         final ServiceName<Raft> serviceName = ClusterServiceNames.raftServiceName(clientRule.getDefaultTopic() + "." + clientRule.getDefaultPartition());
 
-        Raft raft = brokerRule.getService(serviceName).get();
+        Raft raft = brokerRule.getService(serviceName);
         waitUntil(raft::isInitialEventCommitted);
 
         raft.setTerm(testTerm);
@@ -472,7 +472,7 @@ public class BrokerRestartTest
         // when
         restartBroker();
 
-        raft = brokerRule.getService(serviceName).get();
+        raft = brokerRule.getService(serviceName);
         waitUntil(raft::isInitialEventCommitted);
 
         // then
