@@ -16,12 +16,12 @@
 package io.zeebe.util.sched;
 
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
-import org.assertj.core.util.Arrays;
 import org.junit.*;
 
 public class CallableExecutionTest
@@ -118,7 +118,7 @@ public class CallableExecutionTest
             final ActorFuture<Integer> future2 = pongActor.onPing(count);
             final ActorFuture<Integer> future3 = pongActor.onPing(count);
 
-            actor.awaitAll(Arrays.array(future1, future2, future3), (t) ->
+            actor.awaitAll(Arrays.asList(future1, future2, future3), (t) ->
             {
                 count = Math.max(Math.max(future1.join(), future2.join()), future3.join());
 

@@ -16,7 +16,9 @@
 package io.zeebe.util.sched;
 
 import java.time.Duration;
-import java.util.concurrent.*;
+import java.util.Collection;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -201,16 +203,17 @@ public class ActorControl
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public <T> void awaitAll(ActorFuture[] futures, Consumer<Throwable> callback)
+    public <T> void awaitAll(Collection<ActorFuture> futures, Consumer<Throwable> callback)
     {
-        final int length = futures.length;
+        final int length = futures.size();
+        final ActorFuture[] futureArray = futures.toArray(new ActorFuture[length]);
 
         final Consumer<Throwable>[] callbacks = new Consumer[length];
         callbacks[length - 1] = (t) ->
         {
-            for (int i = 0; i < futures.length; i++)
+            for (int i = 0; i < futureArray.length; i++)
             {
-                final ActorFuture future = futures[i];
+                final ActorFuture future = futureArray[i];
                 if (future.isCompletedExceptionally())
                 {
                     callback.accept(future.getException());
@@ -227,11 +230,11 @@ public class ActorControl
             final int offset = i;
             callbacks[offset] = (t) ->
             {
-                await(futures[offset + 1], callbacks[offset + 1]);
+                await(futureArray[offset + 1], callbacks[offset + 1]);
             };
         }
 
-        await(futures[0], callbacks[0]);
+        await(futureArray[0], callbacks[0]);
     }
 
 
@@ -243,7 +246,7 @@ public class ActorControl
         job.task.yield();
     }
 
-    public Future<Void> close()
+    public ActorFuture<Void> close()
     {
         final ActorJob closeJob = new ActorJob();
 

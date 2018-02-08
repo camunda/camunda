@@ -15,7 +15,8 @@
  */
 package io.zeebe.util.sched;
 
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 import io.zeebe.util.LangUtil;
 
@@ -55,5 +56,4 @@ public class FutureUtil
             }
         };
     }
-
 }
