@@ -85,6 +85,26 @@ public class ServiceDependencyResolver
         final ServiceController controller = event.getController();
         stoppingServices.add(controller);
 
+        // resolve group name
+        final ServiceName<?> groupName = controller.getGroupName();
+        if (groupName != null)
+        {
+            final ServiceGroup serviceGroup = getOrCreateGroup(groupName);
+            serviceGroup.removeService(controller);
+        }
+
+        // update injected references
+        final Map<ServiceName<?>, ServiceGroupReference<?>> injectedReferences = controller.getInjectedReferences();
+        injectedReferences.entrySet()
+            .stream()
+            .forEach((e) ->
+            {
+                final ServiceName<?> refGroupName = e.getKey();
+                final ServiceGroupReference<?> reference = e.getValue();
+                final ServiceGroup refGroup = getOrCreateGroup(refGroupName);
+                refGroup.removeReference(reference);
+            });
+
         final List<ServiceController> dependents = this.dependentServices.get(controller);
         for (ServiceController dependentService : dependents)
         {
@@ -124,26 +144,6 @@ public class ServiceDependencyResolver
                 }
             }
         }
-
-        // resolve group name
-        final ServiceName<?> groupName = controller.getGroupName();
-        if (groupName != null)
-        {
-            final ServiceGroup serviceGroup = getOrCreateGroup(groupName);
-            serviceGroup.removeService(controller);
-        }
-
-        // update injected references
-        final Map<ServiceName<?>, ServiceGroupReference<?>> injectedReferences = controller.getInjectedReferences();
-        injectedReferences.entrySet()
-            .stream()
-            .forEach((e) ->
-            {
-                final ServiceName<?> refGroupName = e.getKey();
-                final ServiceGroupReference<?> reference = e.getValue();
-                final ServiceGroup refGroup = getOrCreateGroup(refGroupName);
-                refGroup.removeReference(reference);
-            });
     }
 
     private void onServiceStarted(ServiceEvent event)

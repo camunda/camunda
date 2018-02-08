@@ -25,6 +25,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
@@ -617,5 +618,27 @@ public class ServiceController extends ZbActor
     public Service getService()
     {
         return service;
+    }
+
+    public void addReferencedValue(ServiceGroupReference ref, ServiceName name, Object value)
+    {
+        actor.call(() ->
+        {
+            invoke(ref.getAddHandler(), name, value);
+        });
+    }
+
+    public void removeReferencedValue(ServiceGroupReference ref, ServiceName name, Object value)
+    {
+        actor.call(() ->
+        {
+            invoke(ref.getRemoveHandler(), name, value);
+        });
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <S> void invoke(BiConsumer consumer, ServiceName name, Object value)
+    {
+        consumer.accept(name, (S) value);
     }
 }

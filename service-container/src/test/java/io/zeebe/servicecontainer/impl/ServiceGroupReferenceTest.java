@@ -18,15 +18,29 @@ package io.zeebe.servicecontainer.impl;
 import static io.zeebe.servicecontainer.ServiceGroupReference.collection;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-import io.zeebe.servicecontainer.*;
-import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
-import org.junit.*;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.mockito.InOrder;
+
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceGroupReference;
+import io.zeebe.servicecontainer.ServiceName;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.util.sched.ActorTask;
+import io.zeebe.util.sched.ActorTaskRunner;
+import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 
 @SuppressWarnings("unchecked")
 public class ServiceGroupReferenceTest
@@ -232,10 +246,10 @@ public class ServiceGroupReferenceTest
 
         // then
         final InOrder inOrder = inOrder(injectedServices, mockService2);
+        inOrder.verify(injectedServices)
+                .remove(mockService2Value);
         inOrder.verify(mockService2)
                .stop(any(ServiceStopContext.class));
-        inOrder.verify(injectedServices)
-               .remove(mockService2Value);
     }
 
     @Test
@@ -257,10 +271,10 @@ public class ServiceGroupReferenceTest
 
         // then
         final InOrder inOrder = inOrder(injectedServices, mockService1);
+        inOrder.verify(injectedServices)
+                .remove(mockService2Value);
         inOrder.verify(mockService1)
                .stop(any(ServiceStopContext.class));
-        inOrder.verify(injectedServices)
-               .remove(mockService2Value);
     }
 
     @Test
@@ -285,4 +299,77 @@ public class ServiceGroupReferenceTest
         // in this case, there is no guarantee on the ordering
         verify(injectedServices).remove(mockService2Value);
     }
+
+    @Test
+    public void shouldInvokeAllServiceCallbacksInSameActorContext()
+    {
+        // given
+        final ActorCapturingService service = new ActorCapturingService();
+        serviceContainer.createService(service1Name, service)
+            .groupReference(group1Name, service.logStreamsGroupReference)
+            .install();
+        serviceContainer.createService(service2Name, mockService2)
+            .group(group1Name)
+            .install();
+
+        actorSchedulerRule.workUntilDone();
+
+        serviceContainer.removeService(service2Name);
+        serviceContainer.removeService(service1Name);
+        actorSchedulerRule.workUntilDone();
+
+        // when
+        final Map<String, ActorTask> context = service.actorContext;
+
+        // then
+        assertThat(context).containsKeys("start", "stop", "reference-add", "reference-remove");
+
+        final ActorTask actorTask = context.get("start");
+        assertThat(context.values()).containsOnly(actorTask);
+    }
+
+    class ActorCapturingService implements Service<Object>
+    {
+        Map<String, ActorTask> actorContext = new HashMap<>();
+
+        ServiceGroupReference<Object> logStreamsGroupReference = ServiceGroupReference.<Object>create()
+            .onAdd(this::onReferenceAdd)
+            .onRemove(this::onReferenceRemove)
+            .build();
+
+        @Override
+        public void start(ServiceStartContext startContext)
+        {
+            recordCurrentTask("start");
+        }
+
+        @Override
+        public void stop(ServiceStopContext stopContext)
+        {
+            recordCurrentTask("stop");
+        }
+
+        public void onReferenceAdd(ServiceName<Object> name, Object o)
+        {
+            recordCurrentTask("reference-add");
+        }
+        public void onReferenceRemove(ServiceName<Object> name, Object o)
+        {
+            recordCurrentTask("reference-remove");
+        }
+
+        protected void recordCurrentTask(String identifier)
+        {
+            final ActorTask currentTask = ActorTaskRunner.current().getCurrentTask();
+            actorContext.put(identifier, currentTask);
+        }
+
+        @Override
+        public Void get()
+        {
+            return null;
+        }
+
+    }
+
 }

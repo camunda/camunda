@@ -16,9 +16,7 @@
 package io.zeebe.servicecontainer;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.function.BiConsumer;
 
 public final class ServiceGroupReference<S>
@@ -31,7 +29,6 @@ public final class ServiceGroupReference<S>
 
     protected BiConsumer<ServiceName<S>, S> addHandler;
     protected BiConsumer<ServiceName<S>, S> removeHandler;
-    protected final Map<ServiceName<S>, S> injectedValues = new HashMap<>();
 
     @SuppressWarnings("unchecked")
     private ServiceGroupReference()
@@ -45,33 +42,14 @@ public final class ServiceGroupReference<S>
         this.removeHandler = removeHandler;
     }
 
-    public void addValue(ServiceName<S> name, S value)
+    public BiConsumer<ServiceName<S>, S> getAddHandler()
     {
-        invoke(addHandler, name, value);
-        injectedValues.put(name, value);
+        return addHandler;
     }
 
-    public void removeValue(ServiceName<S> name, S value)
+    public BiConsumer<ServiceName<S>, S> getRemoveHandler()
     {
-        if (injectedValues.containsKey(name))
-        {
-            invoke(removeHandler, name, value);
-            injectedValues.remove(name);
-        }
-    }
-
-    public void uninject()
-    {
-        for (Entry<ServiceName<S>, S> e : injectedValues.entrySet())
-        {
-            invoke(removeHandler, e.getKey(), e.getValue());
-        }
-        injectedValues.clear();
-    }
-
-    private static <S> void invoke(BiConsumer<ServiceName<S>, S> consumer, ServiceName<S> name, S value)
-    {
-        consumer.accept(name, value);
+        return removeHandler;
     }
 
     public static <S> ServiceGroupReference<S> collection(Collection<S> collection)

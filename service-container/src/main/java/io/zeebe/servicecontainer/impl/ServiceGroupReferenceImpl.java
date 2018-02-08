@@ -15,7 +15,12 @@
  */
 package io.zeebe.servicecontainer.impl;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+
 import io.zeebe.servicecontainer.ServiceGroupReference;
+import io.zeebe.servicecontainer.ServiceName;
 
 @SuppressWarnings("rawtypes")
 public class ServiceGroupReferenceImpl
@@ -23,6 +28,7 @@ public class ServiceGroupReferenceImpl
     protected final ServiceController referringService;
     protected final ServiceGroupReference injector;
     protected final ServiceGroup group;
+    protected final Map<ServiceName, Object> injectedValues = new HashMap<>();
 
     public ServiceGroupReferenceImpl(ServiceController referringService, ServiceGroupReference injector, ServiceGroup group)
     {
@@ -46,8 +52,27 @@ public class ServiceGroupReferenceImpl
         return group;
     }
 
+    public void addValue(ServiceName name, Object value)
+    {
+        referringService.addReferencedValue(injector, name, value);
+        injectedValues.put(name, value);
+    }
+
+    public void removeValue(ServiceName name, Object value)
+    {
+        if (injectedValues.containsKey(name))
+        {
+            referringService.removeReferencedValue(injector, name, value);
+            injectedValues.remove(name);
+        }
+    }
+
     public void uninject()
     {
-        injector.uninject();
+        for (Entry<ServiceName, Object> e : injectedValues.entrySet())
+        {
+            removeValue(e.getKey(), e.getValue());
+        }
+        injectedValues.clear();
     }
 }
