@@ -19,7 +19,7 @@ public abstract class BackoffImportIndexHandler<PAGE extends ImportPage, INDEX>
 
   private static final long STARTING_BACKOFF = 0;
   private long backoffCounter = STARTING_BACKOFF;
-  private OffsetDateTime dateUntilPaginationIsBlocked = OffsetDateTime.MIN;
+  private OffsetDateTime dateUntilPaginationIsBlocked = OffsetDateTime.now().minusMinutes(1L);
   private OffsetDateTime nextReset;
 
   @Autowired
