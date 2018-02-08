@@ -15,14 +15,21 @@
  */
 package io.zeebe.dispatcher;
 
-import static io.zeebe.dispatcher.impl.PositionUtil.*;
+import static io.zeebe.dispatcher.impl.PositionUtil.partitionId;
+import static io.zeebe.dispatcher.impl.PositionUtil.partitionOffset;
+import static io.zeebe.dispatcher.impl.PositionUtil.position;
 import static io.zeebe.dispatcher.impl.log.LogBufferAppender.RESULT_PADDING_AT_END_OF_PARTITION;
 
 import java.util.Arrays;
 import java.util.concurrent.Future;
 
-import io.zeebe.dispatcher.impl.log.*;
-import io.zeebe.util.sched.*;
+import io.zeebe.dispatcher.impl.log.LogBuffer;
+import io.zeebe.dispatcher.impl.log.LogBufferAppender;
+import io.zeebe.dispatcher.impl.log.LogBufferPartition;
+import io.zeebe.util.sched.ActorCondition;
+import io.zeebe.util.sched.FutureUtil;
+import io.zeebe.util.sched.ZbActor;
+import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.status.AtomicLongPosition;
 import org.agrona.concurrent.status.Position;
@@ -431,7 +438,7 @@ public class Dispatcher extends ZbActor implements AutoCloseable
      * operation fails if the dispatcher runs in pipeline-mode or a subscription
      * with this name already exists.
      */
-    public Future<Subscription> openSubscriptionAsync(String subscriptionName)
+    public ActorFuture<Subscription> openSubscriptionAsync(String subscriptionName)
     {
         return actor.call(() ->
         {
@@ -444,7 +451,7 @@ public class Dispatcher extends ZbActor implements AutoCloseable
         });
     }
 
-    public Future<Subscription> getSubscriptionAsync(String subscriptionName)
+    public ActorFuture<Subscription> getSubscriptionAsync(String subscriptionName)
     {
         return actor.call(() -> getSubscriptionByName(subscriptionName));
     }

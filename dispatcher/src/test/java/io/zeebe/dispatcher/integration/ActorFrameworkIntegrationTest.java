@@ -3,7 +3,10 @@ package io.zeebe.dispatcher.integration;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 
-import io.zeebe.dispatcher.*;
+import io.zeebe.dispatcher.Dispatcher;
+import io.zeebe.dispatcher.Dispatchers;
+import io.zeebe.dispatcher.FragmentHandler;
+import io.zeebe.dispatcher.Subscription;
 import io.zeebe.util.sched.ZbActor;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.agrona.DirectBuffer;
