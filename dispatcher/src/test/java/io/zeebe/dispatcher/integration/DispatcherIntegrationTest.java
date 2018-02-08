@@ -40,6 +40,7 @@ import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.dispatcher.Subscription;
 import io.zeebe.dispatcher.impl.log.LogBuffer;
+import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 
 public class DispatcherIntegrationTest
@@ -435,6 +436,22 @@ public class DispatcherIntegrationTest
 
         // then
         assertThat(dispatcher.isClosed()).isTrue();
+    }
+
+    @Test
+    public void shouldPublishToDispatcherWithoutSubscription()
+    {
+        // given
+        final Dispatcher dispatcher = Dispatchers.create("default")
+            .actorScheduler(actorSchedulerRule.get())
+            .bufferSize(1024 * 10)
+            .build();
+
+        // when
+        final long position = dispatcher.offer(BufferUtil.wrapBytes(16));
+
+        // then
+        assertThat(position).isGreaterThanOrEqualTo(0);
     }
 
     protected static class LoggingFragmentHandler implements FragmentHandler

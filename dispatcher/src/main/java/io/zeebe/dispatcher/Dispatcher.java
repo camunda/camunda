@@ -21,7 +21,10 @@ import static io.zeebe.dispatcher.impl.PositionUtil.position;
 import static io.zeebe.dispatcher.impl.log.LogBufferAppender.RESULT_PADDING_AT_END_OF_PARTITION;
 
 import java.util.Arrays;
-import java.util.concurrent.Future;
+
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.status.AtomicLongPosition;
+import org.agrona.concurrent.status.Position;
 
 import io.zeebe.dispatcher.impl.log.LogBuffer;
 import io.zeebe.dispatcher.impl.log.LogBufferAppender;
@@ -30,9 +33,6 @@ import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.FutureUtil;
 import io.zeebe.util.sched.ZbActor;
 import io.zeebe.util.sched.future.ActorFuture;
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.status.AtomicLongPosition;
-import org.agrona.concurrent.status.Position;
 
 
 /**
@@ -399,7 +399,7 @@ public class Dispatcher extends ZbActor implements AutoCloseable
             }
             else
             {
-                lastSubscriberPosition = publisherLimit.get() - logWindowLength;
+                lastSubscriberPosition = Math.max(0, publisherLimit.get() - logWindowLength);
             }
 
             int partitionId = partitionId(lastSubscriberPosition);
@@ -534,7 +534,7 @@ public class Dispatcher extends ZbActor implements AutoCloseable
      * Close the given subscription asynchronously. The operation fails if the
      * dispatcher runs in pipeline-mode.
      */
-    public Future<Void> closeSubscriptionAsync(Subscription subscriptionToClose)
+    public ActorFuture<Void> closeSubscriptionAsync(Subscription subscriptionToClose)
     {
         return actor.call(() ->
         {
