@@ -35,7 +35,7 @@ public class Receiver extends ZbActor
     @Override
     protected void onActorStarted()
     {
-        actor.pollBlocking(transportPoller::pollBlocking, transportPoller::processKeys);
+        actor.pollBlocking(transportPoller::pollBlocking, transportPoller::pollBlockingEnded);
     }
 
     @Override
@@ -53,7 +53,7 @@ public class Receiver extends ZbActor
 
     public void removeChannel(TransportChannel c)
     {
-        actor.call(() ->
+        actor.run(() ->
         {
             transportPoller.removeChannel(c);
         });
@@ -61,7 +61,7 @@ public class Receiver extends ZbActor
 
     public void registerChannel(TransportChannel c)
     {
-        actor.call(() ->
+        actor.run(() ->
         {
             transportPoller.addChannel(c);
         });

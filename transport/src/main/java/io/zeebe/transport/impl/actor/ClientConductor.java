@@ -62,8 +62,6 @@ public class ClientConductor extends Conductor
 
         if (channel.beginConnect())
         {
-            System.out.println("Begin connect" + channel.getRemoteAddress());
-
             connectTransportPoller.addChannel(channel);
             return channel;
         }

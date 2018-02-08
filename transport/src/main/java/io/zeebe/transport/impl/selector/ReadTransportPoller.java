@@ -17,15 +17,15 @@ package io.zeebe.transport.impl.selector;
 
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.ToIntFunction;
 
 import io.zeebe.transport.Loggers;
-import org.agrona.LangUtil;
-import org.agrona.nio.TransportPoller;
-
 import io.zeebe.transport.impl.TransportChannel;
 import io.zeebe.util.sched.ActorControl;
+import org.agrona.LangUtil;
+import org.agrona.nio.TransportPoller;
 import org.slf4j.Logger;
 
 public class ReadTransportPoller extends TransportPoller
@@ -58,10 +58,18 @@ public class ReadTransportPoller extends TransportPoller
         }
     }
 
-    public void pollNow()
+    public void pollBlockingEnded()
     {
         maintainChannels();
 
+        if (processKeys() > 0)
+        {
+            pollNow();
+        }
+    }
+
+    public void pollNow()
+    {
         int workCount = 0;
 
         if (channels.size() <= ITERATION_THRESHOLD)
@@ -134,6 +142,7 @@ public class ReadTransportPoller extends TransportPoller
 
     public void addChannel(TransportChannel channel)
     {
+        System.out.println("Channel add " + channel);
         channelsToAdd.add(channel);
         selector.wakeup();
     }

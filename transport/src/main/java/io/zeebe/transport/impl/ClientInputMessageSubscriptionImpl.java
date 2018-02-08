@@ -4,7 +4,6 @@ import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.dispatcher.Subscription;
 import io.zeebe.transport.*;
 import io.zeebe.util.sched.channel.ChannelSubscription;
-import io.zeebe.util.sched.channel.ConsumableChannel;
 import org.agrona.DirectBuffer;
 
 public class ClientInputMessageSubscriptionImpl implements ClientInputMessageSubscription
