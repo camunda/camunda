@@ -15,18 +15,34 @@
  */
 package io.zeebe.servicecontainer.impl;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
 
-import io.zeebe.servicecontainer.*;
-import io.zeebe.servicecontainer.impl.ServiceEvent.ServiceEventType;
-import io.zeebe.util.sched.*;
-import io.zeebe.util.sched.channel.ConcurrentQueueChannel;
-import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.slf4j.Logger;
+
+import io.zeebe.servicecontainer.Injector;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceBuilder;
+import io.zeebe.servicecontainer.ServiceGroupReference;
+import io.zeebe.servicecontainer.ServiceName;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.servicecontainer.impl.ServiceEvent.ServiceEventType;
+import io.zeebe.util.sched.FutureUtil;
+import io.zeebe.util.sched.ZbActor;
+import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.channel.ConcurrentQueueChannel;
+import io.zeebe.util.sched.future.ActorFuture;
 
 @SuppressWarnings("rawtypes")
 public class ServiceController extends ZbActor
@@ -456,6 +472,12 @@ public class ServiceController extends ZbActor
             {
                 fireEvent(ServiceEventType.SERVICE_START_FAILED, u);
             }
+        }
+
+        @Override
+        public ZbActorScheduler getScheduler()
+        {
+            return container.getActorScheduler();
         }
 
     }

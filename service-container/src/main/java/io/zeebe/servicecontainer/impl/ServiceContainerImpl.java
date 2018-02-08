@@ -50,7 +50,7 @@ public class ServiceContainerImpl extends ZbActor implements ServiceContainer
 
     protected final AtomicBoolean isOpenend = new AtomicBoolean(false);
 
-    private final CompletableFuture<Void> containerCloseFuture = new CompletableFuture<Void>();
+    private final CompletableFuture<Void> containerCloseFuture = new CompletableFuture<>();
 
     public ServiceContainerImpl(ZbActorScheduler scheduler)
     {
@@ -246,5 +246,10 @@ public class ServiceContainerImpl extends ZbActor implements ServiceContainer
     public ConcurrentQueueChannel<ServiceEvent> getChannel()
     {
         return channel;
+    }
+
+    public ZbActorScheduler getActorScheduler()
+    {
+        return actorScheduler;
     }
 }

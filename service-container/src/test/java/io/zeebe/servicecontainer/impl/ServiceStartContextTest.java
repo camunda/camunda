@@ -22,6 +22,7 @@ import static org.mockito.Mockito.*;
 import java.util.concurrent.CompletableFuture;
 
 import io.zeebe.servicecontainer.*;
+import io.zeebe.util.sched.ZbActorScheduler;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 import org.junit.Before;
 import org.junit.Rule;
@@ -121,6 +122,25 @@ public class ServiceStartContextTest
         thrown.expectMessage("Cannot remove service 'service2' from context 'service1'. Can only remove dependencies and services started through this context.");
 
         mockService1.startContext.removeService(service2);
+    }
+
+    /**
+     * Allows services to schedule their own tasks on the same scheduler. This is a convenience method
+     * to avoid carrying the actor scheduler around outside of the service container.
+     */
+    @Test
+    public void shouldProvideActorSchedulerInStartContext()
+    {
+        // given
+        final MockService service = new MockService();
+
+        // when
+        serviceContainer.createService(service1, service).install();
+        actorSchedulerRule.workUntilDone();
+
+        // then
+        final ZbActorScheduler providedScheduler = service.startContext.getScheduler();
+        assertThat(providedScheduler).isSameAs(actorSchedulerRule.get());
     }
 
     protected void assertCompleted(CompletableFuture<Void> serviceFuture)
