@@ -11,6 +11,7 @@ import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.quartz.Job;
 import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
+import org.quartz.JobKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,7 +56,13 @@ public class AlertJob implements Job {
 
       AlertJobResult alertJobResult = null;
       if (thresholdExceeded(alert, result)) {
-        alertJobResult = notifyIfNeeded(alertId, alert, reportDefinition, result);
+        alertJobResult = notifyIfNeeded(
+            jobExecutionContext.getJobDetail().getKey(),
+            alertId,
+            alert,
+            reportDefinition,
+            result
+        );
       } else if (alert.isTriggered()) {
         alert.setTriggered(false);
 
@@ -94,13 +101,14 @@ public class AlertJob implements Job {
   }
 
   private AlertJobResult notifyIfNeeded(
-      String alertId,
+      JobKey key, String alertId,
       AlertDefinitionDto alert,
       ReportDefinitionDto reportDefinition,
       NumberReportResultDto result
   ) {
 
-    boolean haveToNotify = !alert.isTriggered();
+    boolean triggeredReminder = key.getName().toLowerCase().contains("reminder") && alert.isTriggered();
+    boolean haveToNotify = triggeredReminder || !alert.isTriggered();
     if (haveToNotify) {
       alert.setTriggered(true);
     }

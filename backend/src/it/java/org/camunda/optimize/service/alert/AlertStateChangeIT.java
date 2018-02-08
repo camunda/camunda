@@ -11,6 +11,9 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import javax.mail.internet.MimeMessage;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.Response;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
@@ -39,6 +42,48 @@ public class AlertStateChangeIT extends AbstractAlertSchedulerIT {
   @After
   public void tearDown() {
     greenMail.stop();
+  }
+
+  @Test
+  public void reminderJobsSendEmailEveryTime() throws Exception {
+    //given
+    setEmailConfiguration();
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+    long daysToShift = 0L;
+    long durationInSec = 2L;
+    ProcessInstanceEngineDto processInstance = deployWithTimeShift(daysToShift, durationInSec);
+    String processDefinitionId = processInstance.getDefinitionId();
+    String reportId = createAndStoreDurationNumberReport(processDefinitionId);
+    AlertCreationDto simpleAlert = createAlertWithReminder(reportId);
+    String id = createAlert(token, simpleAlert);
+
+    triggerAndCompleteCheckJob(id);
+
+    //when
+    greenMail.purgeEmailFromAllMailboxes();
+    triggerAndCompleteReminderJob(id);
+
+    //reminder received once
+    MimeMessage[] emails = greenMail.getReceivedMessages();
+    assertThat(emails.length, is(1));
+
+    //when
+    greenMail.purgeEmailFromAllMailboxes();
+    triggerAndCompleteReminderJob(id);
+
+    //then
+    //reminder received twice
+    emails = greenMail.getReceivedMessages();
+    assertThat(emails.length, is(1));
+
+    //when
+    greenMail.purgeEmailFromAllMailboxes();
+    triggerAndCompleteCheckJob(id);
+
+    //then
+    //reminder is not received
+    emails = greenMail.getReceivedMessages();
+    assertThat(emails.length, is(0));
   }
 
   @Test
