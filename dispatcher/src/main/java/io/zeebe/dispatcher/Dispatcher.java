@@ -639,7 +639,7 @@ public class Dispatcher extends ZbActor implements AutoCloseable
         FutureUtil.join(closeAsync());
     }
 
-    public Future<Void> closeAsync()
+    public ActorFuture<Void> closeAsync()
     {
         return actor.close();
     }
