@@ -6,15 +6,15 @@ import java.io.Serializable;
  * @author Askar Akhmerov
  */
 public class SharingDto implements Serializable {
-  private String type;
   private String id;
+  private SharedResourceType type;
   private String resourceId;
 
-  public String getType() {
+  public SharedResourceType getType() {
     return type;
   }
 
-  public void setType(String type) {
+  public void setType(SharedResourceType type) {
     this.type = type;
   }
 

@@ -2,11 +2,14 @@ package org.camunda.optimize.service.security;
 
 import org.camunda.optimize.dto.optimize.query.report.result.ReportResultDto;
 import org.camunda.optimize.dto.optimize.query.sharing.EvaluatedReportShareDto;
+import org.camunda.optimize.dto.optimize.query.sharing.SharedResourceType;
 import org.camunda.optimize.dto.optimize.query.sharing.SharingDto;
+import org.camunda.optimize.service.dashboard.DashboardService;
 import org.camunda.optimize.service.es.reader.SharingReader;
 import org.camunda.optimize.service.es.writer.SharingWriter;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.report.ReportService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,6 +35,14 @@ public class SharingService  {
   @Autowired
   private ReportService reportService;
 
+  @Autowired
+  private DashboardService dashboardService;
+
+  /**
+   * NOTE: this method does not perform validation
+   * @param createSharingDto
+   * @return
+   */
   public String crateNewShare(SharingDto createSharingDto) {
     String result;
     Optional<SharingDto> existing = sharingReader.findSharedResource(createSharingDto);
@@ -41,6 +52,30 @@ public class SharingService  {
       .orElseGet(() -> sharingWriter.saveShare(createSharingDto).getId());
 
     return result;
+  }
+
+  public void validate(SharingDto createSharingDto) {
+    if (SharedResourceType.REPORT.equals(createSharingDto.getType())) {
+      try {
+        reportService.getReport(createSharingDto.getResourceId());
+      } catch (IOException e) {
+        logger.error("can't fetch report [{}]", createSharingDto.getResourceId(), e);
+      } catch (OptimizeException e) {
+        logger.error("can't fetch report [{}]", createSharingDto.getResourceId(), e);
+        throw new OptimizeValidationException(e.getMessage());
+      }
+    } else if (SharedResourceType.DASHBOARD.equals(createSharingDto.getType())) {
+      try {
+        dashboardService.getDashboardDefinition(createSharingDto.getResourceId());
+      } catch (IOException e) {
+        logger.error("can't fetch dashboard [{}]", createSharingDto.getResourceId(), e);
+      } catch (OptimizeException e) {
+        logger.error("can't fetch dashboard [{}]", createSharingDto.getResourceId(), e);
+        throw new OptimizeValidationException(e.getMessage());
+      }
+    } else {
+      throw new OptimizeValidationException("Specified share type is not allowed");
+    }
   }
 
   public void deleteShare(String shareId) {

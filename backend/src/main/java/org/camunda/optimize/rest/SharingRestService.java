@@ -32,6 +32,7 @@ public class SharingRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public String createNewShare (SharingDto createSharingDto) {
+    sharingService.validate(createSharingDto);
     return sharingService.crateNewShare(createSharingDto);
   }
 

@@ -5,7 +5,7 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.sharing.EvaluatedReportShareDto;
+import org.camunda.optimize.dto.optimize.query.sharing.SharedResourceType;
 import org.camunda.optimize.dto.optimize.query.sharing.SharingDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -22,9 +22,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
-
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -41,7 +39,7 @@ public class SharingRestServiceIT {
 
   public static final String BEARER = "Bearer ";
   public static final String SHARE = "share";
-  public static final String REPORT_ID = "fake";
+  public static final String FAKE_REPORT_ID = "fake";
   public static final String EVALUATE = "evaluate";
   public static final String REPORT = "report";
 
@@ -68,7 +66,7 @@ public class SharingRestServiceIT {
   }
 
   @Test
-  public void createNewShare() {
+  public void createNewFakeReportShareThrowsError() {
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
 
@@ -77,9 +75,27 @@ public class SharingRestServiceIT {
       embeddedOptimizeRule.target(SHARE)
         .request()
         .header(HttpHeaders.AUTHORIZATION, BEARER + token)
-        .post(Entity.json(createShare()));
+        .post(Entity.json(createReportShare()));
 
-    // then the status code is okay
+    // then
+    assertThat(response.getStatus(), is(500));
+  }
+
+  @Test
+  public void createNewReportShare() throws Exception {
+    //given
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+    String reportId = createReport();
+    SharingDto share = createReportShare(reportId);
+
+    // when
+    Response response =
+        embeddedOptimizeRule.target(SHARE)
+            .request()
+            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+            .post(Entity.json(share));
+
+    // then
     assertThat(response.getStatus(), is(200));
     String id =
         response.readEntity(String.class);
@@ -87,12 +103,79 @@ public class SharingRestServiceIT {
   }
 
   @Test
-  public void shareIsNotCreatedForSameResourceTwice() {
+  public void createNewDashboardShare() {
+    //given
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+    String dashboard = addEmptyDashboardToOptimize(token);
+
+    SharingDto sharingDto = new SharingDto();
+    sharingDto.setResourceId(dashboard);
+    sharingDto.setType(SharedResourceType.DASHBOARD);
+
+    // when
+    Response response =
+        embeddedOptimizeRule.target(SHARE)
+            .request()
+            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+            .post(Entity.json(sharingDto));
+
+    // then
+    assertThat(response.getStatus(), is(200));
+    String id =
+        response.readEntity(String.class);
+    assertThat(id, is(notNullValue()));
+  }
+
+  @Test
+  public void cantCreateDashboardReportShare() {
+    //given
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+
+    SharingDto sharingDto = new SharingDto();
+    sharingDto.setResourceId(FAKE_REPORT_ID);
+    sharingDto.setType(SharedResourceType.DASHBOARD_REPORT);
+
+    // when
+    Response response =
+        embeddedOptimizeRule.target(SHARE)
+            .request()
+            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+            .post(Entity.json(sharingDto));
+
+    // then
+    assertThat(response.getStatus(), is(500));
+  }
+
+
+
+  @Test
+  public void createNewFakeDashboardShareThrowsError() {
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
 
     // when
-    SharingDto share = createShare();
+    SharingDto dashboardShare = new SharingDto();
+    dashboardShare.setResourceId(FAKE_REPORT_ID);
+    dashboardShare.setType(SharedResourceType.DASHBOARD);
+
+    Response response =
+      embeddedOptimizeRule.target(SHARE)
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .post(Entity.json(dashboardShare));
+
+    // then the status code is okay
+    assertThat(response.getStatus(), is(500));
+  }
+
+  @Test
+  public void shareIsNotCreatedForSameResourceTwice() throws Exception {
+    //given
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+    String reportId = createReport();
+    SharingDto share = createReportShare(reportId);
+
+    // when
     Response response =
       embeddedOptimizeRule.target(SHARE)
         .request()
@@ -127,10 +210,11 @@ public class SharingRestServiceIT {
   }
 
   @Test
-  public void deleteShare() {
+  public void deleteShare() throws Exception {
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
-    String id = addShareForFakeReport(token);
+    String reportId = createReport();
+    String id = addShareForReport(token, reportId);
 
     // when
     Response response =
@@ -141,17 +225,19 @@ public class SharingRestServiceIT {
 
     // then the status code is okay
     assertThat(response.getStatus(), is(204));
-    assertThat(getShareForReport(token, REPORT_ID), is(nullValue()));
+    assertThat(getShareForReport(token, FAKE_REPORT_ID), is(nullValue()));
   }
 
   @Test
-  public void findShareForeReport() {
+  public void findShareForReport() throws Exception {
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
-    String id = addShareForFakeReport(token);
+
+    String reportId = createReport();
+    String id = addShareForReport(token, reportId);
 
     //when
-    SharingDto fake = getShareForReport(token, REPORT_ID);
+    SharingDto fake = getShareForReport(token, reportId);
 
     //then
     assertThat(fake, is(notNullValue()));
@@ -159,12 +245,12 @@ public class SharingRestServiceIT {
   }
 
   @Test
-  public void findShareForeReportWithoutAuthentication() {
+  public void findShareForReportWithoutAuthentication() {
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
     addShareForFakeReport(token);
 
-    Response response = findShareForReport(null, REPORT_ID);
+    Response response = findShareForReport(null, FAKE_REPORT_ID);
 
     // then the status code is not authorized
     assertThat(response.getStatus(), is(401));
@@ -174,16 +260,7 @@ public class SharingRestServiceIT {
   public void canEvaluateSharedReportWithoutAuthentication() throws Exception {
     // given
     String token = embeddedOptimizeRule.getAuthenticationToken();
-    ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
-    String processDefinitionId = processInstance.getDefinitionId();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-
-    String reportId = this.createNewReport();
-    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
-    ReportDefinitionDto report = new ReportDefinitionDto();
-    report.setData(reportData);
-    updateReport(reportId, report);
+    String reportId = createReport();
 
     String shareId = addShareForReport(token, reportId);
 
@@ -201,6 +278,30 @@ public class SharingRestServiceIT {
     Map reportMap = (Map) sharingDto.get("report");
     assertThat(reportMap.get("id"), is(reportId));
     assertThat(reportMap.get("data"), is(notNullValue()));
+  }
+
+  private String addEmptyDashboardToOptimize(String token) {
+    Response response =
+        embeddedOptimizeRule.target("dashboard")
+            .request()
+            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+            .post(Entity.json(""));
+
+    return response.readEntity(IdDto.class).getId();
+  }
+
+  private String createReport() throws InterruptedException {
+    ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
+    String processDefinitionId = processInstance.getDefinitionId();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    String reportId = this.createNewReport();
+    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
+    ReportDefinitionDto report = new ReportDefinitionDto();
+    report.setData(reportData);
+    updateReport(reportId, report);
+    return reportId;
   }
 
   private String getSharedReportEvaluationPath(String shareId) {
@@ -233,11 +334,11 @@ public class SharingRestServiceIT {
   }
 
   private String addShareForFakeReport(String token) {
-    return addShareForReport(token, REPORT_ID);
+    return addShareForReport(token, FAKE_REPORT_ID);
   }
 
   private String addShareForReport(String token, String reportId) {
-    SharingDto share = createShare(reportId);
+    SharingDto share = createReportShare(reportId);
     Response response =
       embeddedOptimizeRule.target(SHARE)
         .request()
@@ -247,13 +348,14 @@ public class SharingRestServiceIT {
     return response.readEntity(String.class);
   }
 
-  private SharingDto createShare() {
-    return createShare(REPORT_ID);
+  private SharingDto createReportShare() {
+    return createReportShare(FAKE_REPORT_ID);
   }
 
-  private SharingDto createShare(String reportId) {
+  private SharingDto createReportShare(String reportId) {
     SharingDto sharingDto = new SharingDto();
     sharingDto.setResourceId(reportId);
+    sharingDto.setType(SharedResourceType.REPORT);
     return sharingDto;
   }
 

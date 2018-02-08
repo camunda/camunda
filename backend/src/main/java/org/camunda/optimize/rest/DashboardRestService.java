@@ -6,8 +6,7 @@ import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.rest.queryparam.adjustment.QueryParamAdjustmentUtil;
 import org.camunda.optimize.rest.util.AuthenticationUtil;
-import org.camunda.optimize.service.es.reader.DashboardReader;
-import org.camunda.optimize.service.es.writer.DashboardWriter;
+import org.camunda.optimize.service.dashboard.DashboardService;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.security.TokenService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,14 +33,12 @@ import java.util.List;
 @Component
 public class DashboardRestService {
 
-  @Autowired
-  private DashboardWriter dashboardWriter;
-
-  @Autowired
-  private DashboardReader dashboardReader;
 
   @Autowired
   private TokenService tokenService;
+
+  @Autowired
+  private DashboardService dashboardService;
 
   /**
    * Creates an empty dashboard.
@@ -54,7 +51,7 @@ public class DashboardRestService {
   public IdDto createNewDashboard(@Context ContainerRequestContext requestContext) {
     String token = AuthenticationUtil.getToken(requestContext);
     String userId = tokenService.getTokenIssuer(token);
-    return dashboardWriter.createNewDashboardAndReturnId(userId);
+    return dashboardService.createNewDashboardAndReturnId(userId);
   }
 
   /**
@@ -73,9 +70,9 @@ public class DashboardRestService {
     updatedDashboard.setId(dashboardId);
     String token = AuthenticationUtil.getToken(requestContext);
     String userId = tokenService.getTokenIssuer(token);
-    updatedDashboard.setLastModifier(userId);
-    dashboardWriter.updateDashboard(updatedDashboard);
+    dashboardService.updateDashboard(updatedDashboard, userId);
   }
+
 
   /**
    * Get a list of all available dashboards.
@@ -85,11 +82,13 @@ public class DashboardRestService {
   @GET
   @Produces(MediaType.APPLICATION_JSON)
   public List<DashboardDefinitionDto> getStoredDashboards(@Context UriInfo uriInfo) throws IOException {
-    List<DashboardDefinitionDto> dashboards = dashboardReader.getAllDashboards();
+    List<DashboardDefinitionDto> dashboards = dashboardService.getDashboardDefinitions();
     MultivaluedMap<String, String> queryParameters = uriInfo.getQueryParameters();
     dashboards = QueryParamAdjustmentUtil.adjustDashboardResultsToQueryParameters(dashboards, queryParameters);
     return dashboards;
   }
+
+
 
   /**
    * Retrieve the dashboard to the specified id.
@@ -98,7 +97,7 @@ public class DashboardRestService {
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
   public DashboardDefinitionDto getDashboards(@PathParam("id") String dashboardId) throws IOException, OptimizeException {
-    return dashboardReader.getDashboard(dashboardId);
+    return dashboardService.getDashboardDefinition(dashboardId);
   }
 
   /**
@@ -107,7 +106,7 @@ public class DashboardRestService {
   @DELETE
   @Path("/{id}")
   public void deleteDashboard(@PathParam("id") String dashboardId) {
-    dashboardWriter.deleteDashboard(dashboardId);
+    dashboardService.deleteDashboard(dashboardId);
   }
 
 
