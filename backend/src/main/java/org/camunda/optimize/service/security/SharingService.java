@@ -115,4 +115,9 @@ public class SharingService  {
   public SharingDto findShare(String shareId) {
     return sharingReader.findShare(shareId).orElse(null);
   }
+
+  public void deleteShareForReport(String reportId) {
+    SharingDto share = findShareForResource(reportId);
+    this.deleteShare(share.getId());
+  }
 }

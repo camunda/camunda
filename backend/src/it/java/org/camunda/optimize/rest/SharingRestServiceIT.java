@@ -82,6 +82,24 @@ public class SharingRestServiceIT {
   }
 
   @Test
+  public void sharesRemovedOnReportDeletion() throws Exception {
+    //given
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+    String reportId = createReport();
+    this.addShareForReport(token, reportId);
+
+    // when
+    embeddedOptimizeRule.target("report/" + reportId)
+      .request()
+      .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+      .delete();
+
+    //then
+    SharingDto share = getShareForReport(token, reportId);
+    assertThat(share, is(nullValue()));
+  }
+
+  @Test
   public void createNewReportShare() throws Exception {
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
@@ -237,11 +255,11 @@ public class SharingRestServiceIT {
     String id = addShareForReport(token, reportId);
 
     //when
-    SharingDto fake = getShareForReport(token, reportId);
+    SharingDto share = getShareForReport(token, reportId);
 
     //then
-    assertThat(fake, is(notNullValue()));
-    assertThat(fake.getId(), is(id));
+    assertThat(share, is(notNullValue()));
+    assertThat(share.getId(), is(id));
   }
 
   @Test

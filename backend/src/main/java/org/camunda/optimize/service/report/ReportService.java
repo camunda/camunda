@@ -11,6 +11,7 @@ import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.report.ReportEvaluator;
 import org.camunda.optimize.service.es.writer.ReportWriter;
 import org.camunda.optimize.service.exceptions.OptimizeException;
+import org.camunda.optimize.service.security.SharingService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -37,9 +38,12 @@ public class ReportService {
   @Autowired
   private AlertService alertService;
 
+  @Autowired
+  private SharingService sharingService;
 
   public void deleteReport(String reportId) {
     alertService.deleteAlertsForReport(reportId);
+    sharingService.deleteShareForReport(reportId);
     reportWriter.deleteReport(reportId);
   }
 
