@@ -118,6 +118,8 @@ public class SharingService  {
 
   public void deleteShareForReport(String reportId) {
     SharingDto share = findShareForResource(reportId);
-    this.deleteShare(share.getId());
+    if (share != null) {
+      this.deleteShare(share.getId());
+    }
   }
 }
