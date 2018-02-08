@@ -35,6 +35,7 @@ public class DependenciesTest
     ServiceContainer serviceContainer;
     ServiceName<Object> service1;
     ServiceName<Object> service2;
+    ServiceName<Object> service3;
 
     @Before
     public void setup()
@@ -43,6 +44,7 @@ public class DependenciesTest
         serviceContainer.start();
         service1 = ServiceName.newServiceName("service1", Object.class);
         service2 = ServiceName.newServiceName("service2", Object.class);
+        service3 = ServiceName.newServiceName("service3", Object.class);
     }
 
     @Test
@@ -184,6 +186,66 @@ public class DependenciesTest
     }
 
     @Test
+    public void shouldStopDependentServicesFirstCase2()
+    {
+        final Service<Object> mockService1 = mock(Service.class);
+        final Service<Object> mockService2 = mock(Service.class);
+        final Service<Object> mockService3 = mock(Service.class);
+
+        // given
+        serviceContainer.createService(service1, mockService1)
+            .dependency(service2)
+            .install();
+        serviceContainer.createService(service2, mockService2)
+            .dependency(service3)
+            .install();
+        serviceContainer.createService(service3, mockService3)
+            .install();
+
+        actorSchedulerRule.workUntilDone();
+
+        // when
+        serviceContainer.removeService(service3);
+        actorSchedulerRule.workUntilDone();
+
+        // then
+        final InOrder inOrder = inOrder(mockService1, mockService2, mockService3);
+        inOrder.verify(mockService1, times(1)).stop(any(ServiceStopContext.class));
+        inOrder.verify(mockService2, times(1)).stop(any(ServiceStopContext.class));
+        inOrder.verify(mockService3, times(1)).stop(any(ServiceStopContext.class));
+    }
+
+    /**
+     * Same as test above but dependency direction is reversed with respect to
+     * installation order. Having this test makes it a little more affirming
+     * that the service container does not close services in arbitrary order.
+     */
+    @Test
+    public void shouldStopDependentServicesFirstWithReverseInstallationOrder()
+    {
+        final Service<Object> mockService1 = mock(Service.class);
+        final Service<Object> mockService2 = mock(Service.class);
+
+        // given
+        serviceContainer.createService(service1, mockService1)
+            .install();
+        serviceContainer.createService(service2, mockService2)
+            .dependency(service1)
+            .install();
+
+        actorSchedulerRule.workUntilDone();
+
+        // when
+        serviceContainer.removeService(service1);
+        actorSchedulerRule.workUntilDone();
+
+        // then
+        final InOrder inOrder = inOrder(mockService1, mockService2);
+        inOrder.verify(mockService2, times(1)).stop(any(ServiceStopContext.class));
+        inOrder.verify(mockService1, times(1)).stop(any(ServiceStopContext.class));
+    }
+
+    @Test
     public void shouldStopAllServicesWhenStoppingContainer()
     {
         final Service<Object> mockService1 = mock(Service.class);
@@ -205,6 +267,30 @@ public class DependenciesTest
         final InOrder inOrder = inOrder(mockService1, mockService2);
         inOrder.verify(mockService2, times(1)).stop(any(ServiceStopContext.class));
         inOrder.verify(mockService1, times(1)).stop(any(ServiceStopContext.class));
+    }
+
+    @Test
+    public void shouldStopAllServicesWhenStoppingContainerWithReverseInstallationOrder()
+    {
+        final Service<Object> mockService1 = mock(Service.class);
+        final Service<Object> mockService2 = mock(Service.class);
+
+        // given
+        serviceContainer.createService(service1, mockService1)
+            .dependency(service2)
+            .install();
+        serviceContainer.createService(service2, mockService2)
+            .install();
+        actorSchedulerRule.workUntilDone();
+
+        // when
+        serviceContainer.closeAsync();
+        actorSchedulerRule.workUntilDone();
+
+        // then
+        final InOrder inOrder = inOrder(mockService1, mockService2);
+        inOrder.verify(mockService1, times(1)).stop(any(ServiceStopContext.class));
+        inOrder.verify(mockService2, times(1)).stop(any(ServiceStopContext.class));
     }
 
     protected void assertCompleted(CompletableFuture<Void> serviceFuture)

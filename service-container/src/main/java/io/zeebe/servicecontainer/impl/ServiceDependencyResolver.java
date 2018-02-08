@@ -130,7 +130,7 @@ public class ServiceDependencyResolver
         {
             if (startedServices.contains(dependentService))
             {
-                final List<ServiceController> deps = resolvedDependencies.get(dependentService);
+                final List<ServiceController> deps = dependentServices.get(dependentService);
                 boolean allStopped = true;
                 for (int i = 0; i < deps.size() && allStopped; i++)
                 {
