@@ -27,44 +27,43 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.impl.ControlMessages;
-import io.zeebe.util.actor.ActorScheduler;
-import io.zeebe.util.actor.ActorSchedulerBuilder;
 import io.zeebe.util.buffer.BufferUtil;
+import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import io.zeebe.util.time.ClockUtil;
 
 public class ClientChannelKeepAliveTest
 {
     protected static final DirectBuffer BUF = BufferUtil.wrapBytes(1, 2, 3, 4);
 
-    protected static final long KEEP_ALIVE_PERIOD = 1000;
+    protected static final Duration KEEP_ALIVE_PERIOD = Duration.ofSeconds(1);
     protected static final SocketAddress ADDRESS = new SocketAddress("localhost", 51115);
     protected static final SocketAddress ADDRESS2 = new SocketAddress("localhost", 51116);
 
-    private ActorScheduler actorScheduler;
+
+    public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3);
+    public AutoCloseableRule closeables = new AutoCloseableRule();
+
+    @Rule
+    public RuleChain ruleChain = RuleChain.outerRule(actorSchedulerRule).around(closeables);
+
     private Dispatcher clientSendBuffer;
 
     protected ControlMessageRecorder serverRecorder;
-
-    @Rule
-    public AutoCloseableRule closeables = new AutoCloseableRule();
 
 
     @Before
     public void setUp()
     {
-        actorScheduler = ActorSchedulerBuilder.createDefaultScheduler("test");
-        closeables.manage(actorScheduler);
-
         clientSendBuffer = Dispatchers.create("clientSendBuffer")
             .bufferSize(32 * 1024)
-            .subscriptions(ClientTransportBuilder.SEND_BUFFER_SUBSCRIPTION_NAME)
-            .actorScheduler(actorScheduler)
+            .actorScheduler(actorSchedulerRule.get())
             .build();
         closeables.manage(clientSendBuffer);
 
@@ -76,15 +75,14 @@ public class ClientChannelKeepAliveTest
     {
         final Dispatcher serverSendBuffer = Dispatchers.create("serverSendBuffer")
             .bufferSize(32 * 1024)
-            .subscriptions(ServerTransportBuilder.SEND_BUFFER_SUBSCRIPTION_NAME)
-            .actorScheduler(actorScheduler)
+            .actorScheduler(actorSchedulerRule.get())
             .build();
         closeables.manage(serverSendBuffer);
 
         final ServerTransport serverTransport = Transports.newServerTransport()
             .sendBuffer(serverSendBuffer)
             .bindAddress(bindAddress.toInetSocketAddress())
-            .scheduler(actorScheduler)
+            .scheduler(actorSchedulerRule.get())
             .controlMessageListener(recorder)
             .build(null, null);
         closeables.manage(serverTransport);
@@ -92,14 +90,14 @@ public class ClientChannelKeepAliveTest
         return serverTransport;
     }
 
-    protected ClientTransport buildClientTransport(long keepAlivePeriod)
+    protected ClientTransport buildClientTransport(Duration keepAlivePeriod)
     {
         final ClientTransportBuilder transportBuilder = Transports.newClientTransport()
             .sendBuffer(clientSendBuffer)
             .requestPoolSize(32)
-            .scheduler(actorScheduler);
+            .scheduler(actorSchedulerRule.get());
 
-        if (keepAlivePeriod >= 0)
+        if (keepAlivePeriod != null)
         {
             transportBuilder.keepAlivePeriod(keepAlivePeriod);
         }
@@ -141,7 +139,7 @@ public class ClientChannelKeepAliveTest
         openChannel(transport, ADDRESS);
 
         // when
-        ClockUtil.addTime(Duration.ofMillis(KEEP_ALIVE_PERIOD + 1));
+        ClockUtil.addTime(KEEP_ALIVE_PERIOD.plusMillis(1));
 
         // then
         TestUtil.waitUntil(() -> !serverRecorder.getReceivedFrames().isEmpty());
@@ -159,13 +157,13 @@ public class ClientChannelKeepAliveTest
 
         openChannel(transport, ADDRESS);
 
-        ClockUtil.addTime(Duration.ofMillis(KEEP_ALIVE_PERIOD + 1));
+        ClockUtil.addTime(KEEP_ALIVE_PERIOD.plusMillis(1));
         final long timestamp1 = ClockUtil.getCurrentTimeInMillis();
 
         TestUtil.waitUntil(() -> !serverRecorder.getReceivedFrames().isEmpty());
 
         // when
-        ClockUtil.addTime(Duration.ofMillis(KEEP_ALIVE_PERIOD + 1));
+        ClockUtil.addTime(KEEP_ALIVE_PERIOD.plusMillis(1));
         final long timestamp2 = ClockUtil.getCurrentTimeInMillis();
 
         // then
@@ -184,7 +182,7 @@ public class ClientChannelKeepAliveTest
         ClockUtil.setCurrentTime(Instant.now());
 
         final int expectedDefaultKeepAlive = 5000;
-        final ClientTransport transport = buildClientTransport(-1);
+        final ClientTransport transport = buildClientTransport(null);
 
         openChannel(transport, ADDRESS);
 
@@ -219,7 +217,7 @@ public class ClientChannelKeepAliveTest
         openChannel(clientTransport, ADDRESS2);
 
         // when
-        ClockUtil.addTime(Duration.ofMillis(KEEP_ALIVE_PERIOD + 1));
+        ClockUtil.addTime(KEEP_ALIVE_PERIOD.plusMillis(1));
 
         // then
         TestUtil.waitUntil(() -> !serverRecorder.getReceivedFrames().isEmpty());
@@ -238,7 +236,7 @@ public class ClientChannelKeepAliveTest
     {
         // given
         ClockUtil.setCurrentTime(Instant.now());
-        final ClientTransport clientTransport = buildClientTransport(0);
+        final ClientTransport clientTransport = buildClientTransport(null);
 
         openChannel(clientTransport, ADDRESS);
 

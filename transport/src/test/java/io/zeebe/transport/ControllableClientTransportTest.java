@@ -23,11 +23,13 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
-import io.zeebe.test.util.agent.ManualActorScheduler;
+import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.buffer.DirectBufferWriter;
+import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 import io.zeebe.util.time.ClockUtil;
 
 public class ControllableClientTransportTest
@@ -40,8 +42,11 @@ public class ControllableClientTransportTest
 
     public static final int MESSAGES_REQUIRED_TO_SATURATE_SEND_BUFFER = SEND_BUFFER_SIZE / BUF1.capacity();
 
+    public ControlledActorSchedulerRule actorSchedulerRule = new ControlledActorSchedulerRule();
+    public AutoCloseableRule closeables = new AutoCloseableRule();
+
     @Rule
-    public ManualActorScheduler scheduler = new ManualActorScheduler();
+    public RuleChain ruleChain = RuleChain.outerRule(actorSchedulerRule).around(closeables);
 
     protected ClientTransport clientTransport;
 
@@ -50,14 +55,13 @@ public class ControllableClientTransportTest
     {
         final Dispatcher clientSendBuffer = Dispatchers.create("clientSendBuffer")
             .bufferSize(SEND_BUFFER_SIZE)
-            .subscriptions(ClientTransportBuilder.SEND_BUFFER_SUBSCRIPTION_NAME)
-            .actorScheduler(scheduler)
+            .actorScheduler(actorSchedulerRule.get())
             .build();
 
         clientTransport = Transports.newClientTransport()
             .sendBuffer(clientSendBuffer)
             .requestPoolSize(MESSAGES_REQUIRED_TO_SATURATE_SEND_BUFFER + 1)
-            .scheduler(scheduler)
+            .scheduler(actorSchedulerRule.get())
             .build();
     }
 
@@ -66,7 +70,7 @@ public class ControllableClientTransportTest
     {
         ClockUtil.reset();
         clientTransport.closeAsync();
-        scheduler.waitUntilDone();
+        actorSchedulerRule.workUntilDone();
     }
 
     @Test

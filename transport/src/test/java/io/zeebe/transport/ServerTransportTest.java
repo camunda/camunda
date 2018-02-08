@@ -23,6 +23,7 @@ import org.agrona.DirectBuffer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
@@ -30,13 +31,11 @@ import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.util.RecordingChannelListener;
 import io.zeebe.transport.util.RecordingMessageHandler;
-import io.zeebe.util.actor.ActorScheduler;
-import io.zeebe.util.actor.ActorSchedulerBuilder;
 import io.zeebe.util.buffer.BufferUtil;
+import io.zeebe.util.sched.testing.ActorSchedulerRule;
 
 public class ServerTransportTest
 {
-
     public static final DirectBuffer BUF1 = BufferUtil.wrapBytes(1, 2, 3, 4);
     public static final DirectBuffer BUF2 = BufferUtil.wrapBytes(5, 6, 7, 8);
     public static final SocketAddress SERVER_ADDRESS = new SocketAddress("localhost", 51115);
@@ -44,8 +43,11 @@ public class ServerTransportTest
     public static final int REQUEST_POOL_SIZE = 4;
     public static final int SEND_BUFFER_SIZE = 16 * 1024;
 
-    @Rule
+    public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3);
     public AutoCloseableRule closeables = new AutoCloseableRule();
+
+    @Rule
+    public RuleChain ruleChain = RuleChain.outerRule(actorSchedulerRule).around(closeables);
 
     protected ClientTransport clientTransport;
     protected ServerTransport serverTransport;
@@ -58,19 +60,15 @@ public class ServerTransportTest
     @Before
     public void setUp()
     {
-        final ActorScheduler actorScheduler = ActorSchedulerBuilder.createDefaultScheduler("test");
-        closeables.manage(actorScheduler);
-
         final Dispatcher clientSendBuffer = Dispatchers.create("clientSendBuffer")
             .bufferSize(SEND_BUFFER_SIZE)
-            .subscriptions(ClientTransportBuilder.SEND_BUFFER_SUBSCRIPTION_NAME)
-            .actorScheduler(actorScheduler)
+            .actorScheduler(actorSchedulerRule.get())
             .build();
         closeables.manage(clientSendBuffer);
 
         final Dispatcher clientReceiveBuffer = Dispatchers.create("clientReceiveBuffer")
             .bufferSize(SEND_BUFFER_SIZE)
-            .actorScheduler(actorScheduler)
+            .actorScheduler(actorSchedulerRule.get())
             .build();
         closeables.manage(clientReceiveBuffer);
 
@@ -78,20 +76,19 @@ public class ServerTransportTest
             .sendBuffer(clientSendBuffer)
             .messageReceiveBuffer(clientReceiveBuffer)
             .requestPoolSize(REQUEST_POOL_SIZE)
-            .scheduler(actorScheduler)
+            .scheduler(actorSchedulerRule.get())
             .build();
         closeables.manage(clientTransport);
 
         final Dispatcher serverSendBuffer = Dispatchers.create("serverSendBuffer")
             .bufferSize(SEND_BUFFER_SIZE)
-            .subscriptions(ServerTransportBuilder.SEND_BUFFER_SUBSCRIPTION_NAME)
-            .actorScheduler(actorScheduler)
+            .actorScheduler(actorSchedulerRule.get())
             .build();
         closeables.manage(serverSendBuffer);
 
         serverTransport = Transports.newServerTransport()
             .sendBuffer(serverSendBuffer)
-            .scheduler(actorScheduler)
+            .scheduler(actorSchedulerRule.get())
             .bindAddress(SERVER_ADDRESS.toInetSocketAddress())
             .build(serverHandler, null);
         closeables.manage(serverTransport);

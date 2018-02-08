@@ -59,7 +59,7 @@ public abstract class Conductor extends ZbActor implements ChannelLifecycleListe
 
     public void removeListener(TransportListener channelListener)
     {
-        actor.run(() ->
+        actor.call(() ->
         {
             transportListeners.remove(channelListener);
         });

@@ -23,10 +23,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
-import io.zeebe.test.util.agent.ManualActorScheduler;
+import io.zeebe.test.util.AutoCloseableRule;
+import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 
 public class ControllableServerTransportTest
 {
@@ -37,24 +39,26 @@ public class ControllableServerTransportTest
     public static final int SEND_BUFFER_SIZE = 16 * 1024;
     public static final int MESSAGES_REQUIRED_TO_SATURATE_SEND_BUFFER = SEND_BUFFER_SIZE / BUF1.capacity();
 
-    protected ServerTransport serverTransport;
+    public ControlledActorSchedulerRule actorSchedulerRule = new ControlledActorSchedulerRule();
+    public AutoCloseableRule closeables = new AutoCloseableRule();
 
     @Rule
-    public ManualActorScheduler scheduler = new ManualActorScheduler();
+    public RuleChain ruleChain = RuleChain.outerRule(actorSchedulerRule).around(closeables);
+
+    protected ServerTransport serverTransport;
 
     @Before
     public void setUp()
     {
         final Dispatcher sendBuffer = Dispatchers.create("clientSendBuffer")
             .bufferSize(SEND_BUFFER_SIZE)
-            .subscriptions(ServerTransportBuilder.SEND_BUFFER_SUBSCRIPTION_NAME)
-            .actorScheduler(scheduler)
+            .actorScheduler(actorSchedulerRule.get())
             .build();
 
         serverTransport = Transports.newServerTransport()
             .bindAddress(ADDRESS.toInetSocketAddress())
             .sendBuffer(sendBuffer)
-            .scheduler(scheduler)
+            .scheduler(actorSchedulerRule.get())
             .build(null, null);
     }
 
@@ -62,7 +66,7 @@ public class ControllableServerTransportTest
     public void tearDown()
     {
         serverTransport.closeAsync();
-        scheduler.waitUntilDone();
+        actorSchedulerRule.workUntilDone();
     }
 
     @Test

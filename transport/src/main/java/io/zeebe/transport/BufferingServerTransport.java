@@ -33,5 +33,6 @@ public class BufferingServerTransport extends ServerTransport
     public ActorFuture<ServerInputSubscription> openSubscription(String subscriptionName, ServerMessageHandler messageHandler, ServerRequestHandler requestHandler)
     {
         return transportActorContext.getServerConductor()
-                .openInputSubscription(subscriptionName, output, transportContext.getRemoteAddressList(), messageHandler, requestHandler);    }
+                .openInputSubscription(subscriptionName, output, transportContext.getRemoteAddressList(), messageHandler, requestHandler);
+    }
 }

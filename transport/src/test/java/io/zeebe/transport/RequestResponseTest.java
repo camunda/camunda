@@ -22,37 +22,29 @@ import java.util.Queue;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.util.EchoRequestResponseHandler;
-import io.zeebe.util.actor.ActorScheduler;
-import io.zeebe.util.actor.ActorSchedulerBuilder;
 import io.zeebe.util.buffer.DirectBufferWriter;
+import io.zeebe.util.sched.testing.ActorSchedulerRule;
 
 public class RequestResponseTest
 {
+    public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3);
+    public AutoCloseableRule closeables = new AutoCloseableRule();
+
+    @Rule
+    public RuleChain ruleChain = RuleChain.outerRule(actorSchedulerRule).around(closeables);
 
     protected ServerResponse response = new ServerResponse();
     protected Queue<ClientRequest> pendingRequests = new ArrayDeque<>();
     protected UnsafeBuffer messageBuffer = new UnsafeBuffer(new byte[1024]);
     protected DirectBufferWriter bufferWriter = new DirectBufferWriter();
-
-    private ActorScheduler actorScheduler;
-
-    @Rule
-    public AutoCloseableRule closeables = new AutoCloseableRule();
-
-    @Before
-    public void setup()
-    {
-        actorScheduler = ActorSchedulerBuilder.createDefaultScheduler("test");
-        closeables.manage(actorScheduler);
-    }
 
     @Test
     public void shouldEchoMessages() throws Exception
@@ -62,29 +54,27 @@ public class RequestResponseTest
 
         final Dispatcher clientSendBuffer = Dispatchers.create("clientSendBuffer")
             .bufferSize(32 * 1024 * 1024)
-            .subscriptions(ClientTransportBuilder.SEND_BUFFER_SUBSCRIPTION_NAME)
-            .actorScheduler(actorScheduler)
+            .actorScheduler(actorSchedulerRule.get())
             .build();
         closeables.manage(clientSendBuffer);
 
         final Dispatcher serverSendBuffer = Dispatchers.create("serverSendBuffer")
             .bufferSize(32 * 1024 * 1024)
-            .subscriptions(ServerTransportBuilder.SEND_BUFFER_SUBSCRIPTION_NAME)
-            .actorScheduler(actorScheduler)
+            .actorScheduler(actorSchedulerRule.get())
             .build();
         closeables.manage(serverSendBuffer);
 
         final ClientTransport clientTransport = Transports.newClientTransport()
             .sendBuffer(clientSendBuffer)
             .requestPoolSize(128)
-            .scheduler(actorScheduler)
+            .scheduler(actorSchedulerRule.get())
             .build();
         closeables.manage(clientTransport);
 
         final ServerTransport serverTransport = Transports.newServerTransport()
             .sendBuffer(serverSendBuffer)
             .bindAddress(addr.toInetSocketAddress())
-            .scheduler(actorScheduler)
+            .scheduler(actorSchedulerRule.get())
             .build(null, new EchoRequestResponseHandler());
         closeables.manage(serverTransport);
 
