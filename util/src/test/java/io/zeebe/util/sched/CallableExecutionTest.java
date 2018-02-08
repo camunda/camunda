@@ -17,16 +17,12 @@ package io.zeebe.util.sched;
 
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
 
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.assertj.core.util.Arrays;
+import org.junit.*;
 
 public class CallableExecutionTest
 {
@@ -77,7 +73,7 @@ public class CallableExecutionTest
 
         void sendPing()
         {
-            final Future<Integer> future = pongActor.onPing(count);
+            final ActorFuture<Integer> future = pongActor.onPing(count);
             actor.await(future, (r, t) ->
             {
                 count = r;

@@ -96,7 +96,7 @@ public class ActorControl
         return future;
     }
 
-    public Future<Void> call(Runnable r)
+    public ActorFuture<Void> call(Runnable r)
     {
         final Callable<Void> c = () ->
         {
@@ -181,18 +181,18 @@ public class ActorControl
         timerSubscription.submit();
     }
 
-    public <T> void await(Future<T> f, BiConsumer<T, Throwable> callback)
+    public <T> void await(ActorFuture<T> f, BiConsumer<T, Throwable> callback)
     {
         final ActorJob currentJob = ensureCalledFromWithinActor("await(...)");
 
         final ActorJob blockedJob = new ActorJob();
         blockedJob.onJobAddedToTask(task);
         blockedJob.setAutoCompleting(true);
-        blockedJob.setBlockOnFuture((ActorFuture<T>) f, callback);
+        blockedJob.setBlockOnFuture(f, callback);
         currentJob.appendChild(blockedJob);
     }
 
-    public <T> void await(Future<T> f, Consumer<Throwable> callback)
+    public <T> void await(ActorFuture<T> f, Consumer<Throwable> callback)
     {
         await(f, (r, t) ->
         {
