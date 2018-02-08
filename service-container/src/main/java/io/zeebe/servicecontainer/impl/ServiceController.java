@@ -24,6 +24,7 @@ import io.zeebe.servicecontainer.*;
 import io.zeebe.servicecontainer.impl.ServiceEvent.ServiceEventType;
 import io.zeebe.util.sched.*;
 import io.zeebe.util.sched.channel.ConcurrentQueueChannel;
+import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.slf4j.Logger;
 
@@ -395,7 +396,7 @@ public class ServiceController extends ZbActor
 
             if (future instanceof ActorFuture)
             {
-                actor.await(future, this);
+                actor.await((ActorFuture<?>) future, this);
             }
             else
             {
@@ -480,7 +481,7 @@ public class ServiceController extends ZbActor
 
             if (future instanceof ActorFuture)
             {
-                actor.await(future, this);
+                actor.await((ActorFuture<?>) future, this);
             }
             else
             {
