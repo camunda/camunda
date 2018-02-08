@@ -611,9 +611,6 @@ public class ClientTransportTest
         Thread.sleep(500L);
         subscription.poll(counter, Integer.MAX_VALUE);
         assertThat(counter.getCount()).isEqualTo(2);
-
-
-
     }
 
     protected class CountFragmentsHandler implements FragmentHandler

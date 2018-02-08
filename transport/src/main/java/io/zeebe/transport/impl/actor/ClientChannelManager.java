@@ -41,6 +41,10 @@ public class ClientChannelManager
 
     public void onChannelClosed(TransportChannel channel)
     {
+        // TODO: this callback does not work yet in a reliable way;
+        // it is only called if the channel was connected before, but we also want to retry
+        // if the channel was not connected
+
         final RemoteAddressImpl remoteAddress = channel.getRemoteAddress();
 
         if (remoteAddress.isActive())

@@ -30,7 +30,9 @@ public class RemoteAddressListImpl implements RemoteAddressList
     private volatile int size;
     private RemoteAddressImpl[] index = new RemoteAddressImpl[0];
 
-    private Consumer<RemoteAddressImpl> onAddressAddedConsumer;
+    private Consumer<RemoteAddressImpl> onAddressAddedConsumer = r ->
+    {
+    };
 
     @Override
     public RemoteAddressImpl getByStreamId(int streamId)

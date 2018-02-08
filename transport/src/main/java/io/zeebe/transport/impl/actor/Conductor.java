@@ -99,25 +99,28 @@ public abstract class Conductor extends ZbActor implements ChannelLifecycleListe
     }
 
     @Override
-    public void onChannelDisconnected(TransportChannel ch)
+    public void onChannelClosed(TransportChannel ch, boolean wasConnected)
     {
         actor.run(() ->
         {
-            transportChannels.remove(ch);
-            failRequestsOnChannel(ch, "Socket channel has been disconnected");
-            actorContext.removeChannel(ch);
-
-            transportListeners.forEach(l ->
+            if (wasConnected)
             {
-                try
+                transportChannels.remove(ch);
+                failRequestsOnChannel(ch, "Socket channel has been disconnected");
+                actorContext.removeChannel(ch);
+
+                transportListeners.forEach(l ->
                 {
-                    l.onConnectionClosed(ch.getRemoteAddress());
-                }
-                catch (Exception e)
-                {
-                    LOG.debug("Failed to call transport listener {} on disconnect", l, e);
-                }
-            });
+                    try
+                    {
+                        l.onConnectionClosed(ch.getRemoteAddress());
+                    }
+                    catch (Exception e)
+                    {
+                        LOG.debug("Failed to call transport listener {} on disconnect", l, e);
+                    }
+                });
+            }
         });
     }
 

@@ -73,14 +73,14 @@ public class ClientConductor extends Conductor
     }
 
     @Override
-    public void onChannelDisconnected(TransportChannel ch)
+    public void onChannelClosed(TransportChannel ch, boolean wasConnected)
     {
         actor.run(() ->
         {
             channelManager.onChannelClosed(ch);
         });
 
-        super.onChannelDisconnected(ch);
+        super.onChannelClosed(ch, wasConnected);
     }
 
     private void onRemoteAddressAdded(RemoteAddressImpl remoteAddress)

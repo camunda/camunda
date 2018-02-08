@@ -3,6 +3,7 @@ package io.zeebe.transport.impl;
 import java.time.Duration;
 import java.util.Deque;
 import java.util.LinkedList;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -13,6 +14,8 @@ import io.zeebe.util.sched.ActorClock;
 import io.zeebe.util.sched.ZbActor;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
+import io.zeebe.util.time.ClockUtil;
+
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -46,7 +49,7 @@ public class ClientRequestRetryController extends ZbActor
         this.responseHandler = responseInspector;
         this.requestPool = requestPool;
         this.timeout = timeout;
-        this.deadline = ActorClock.currentTimeMillis() + timeout.toMillis();
+        this.deadline = ClockUtil.getCurrentTimeInMillis() + timeout.toMillis();
 
         final int requestLength = writer.getLength();
         writeBuffer.wrap(new byte[requestLength]); // TODO: we need to pool / recycle this memory
@@ -95,7 +98,8 @@ public class ClientRequestRetryController extends ZbActor
 
                     if (e != null)
                     {
-                        shouldRetry = e instanceof NotConnectedException;
+                        shouldRetry = e instanceof ExecutionException && e.getCause() instanceof NotConnectedException;
+                        System.out.println("Retrying send");
                     }
                     else
                     {

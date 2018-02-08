@@ -298,11 +298,15 @@ public class TransportChannel
         finally
         {
             // invoke listener only once and only if connected was invoked as well
-            if (STATE_FIELD.getAndSet(this, CLOSED) == CONNECTED)
+            final int previousState = STATE_FIELD.getAndSet(this, CLOSED);
+
+            // ensuring to only invoke this once per channel
+            if (previousState != CLOSED)
             {
                 if (listener != null)
                 {
-                    listener.onChannelDisconnected(this);
+                    final boolean wasConnected = previousState == CONNECTED;
+                    listener.onChannelClosed(this, wasConnected);
                 }
             }
         }
@@ -329,7 +333,7 @@ public class TransportChannel
     {
         void onChannelConnected(TransportChannel transportChannelImpl);
 
-        void onChannelDisconnected(TransportChannel transportChannelImpl);
+        void onChannelClosed(TransportChannel transportChannelImpl, boolean wasConnected);
     }
 
     public void close()
