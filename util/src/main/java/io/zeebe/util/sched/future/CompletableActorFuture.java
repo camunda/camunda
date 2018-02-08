@@ -1,3 +1,18 @@
+/*
+ * Copyright © 2017 camunda services GmbH (info@camunda.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.zeebe.util.sched.future;
 
 import static org.agrona.UnsafeAccess.UNSAFE;
@@ -17,8 +32,8 @@ public class CompletableActorFuture<V> implements ActorFuture<V>
 
     private static final int AWAITING_RESULT = 1;
     private static final int COMPLETING = 2;
-    private static final int RESULT_AVAILABLE = 3;
-    private static final int FAILED = 4;
+    private static final int COMPLETED = 3;
+    private static final int COMPLETED_EXCEPTIONALLY = 4;
     private static final int CLOSED = 5;
 
     private final ManyToOneConcurrentArrayQueue<ActorJob> blockedTasks = new ManyToOneConcurrentArrayQueue<>(32);
@@ -58,12 +73,13 @@ public class CompletableActorFuture<V> implements ActorFuture<V>
     public boolean isDone()
     {
         final int state = this.state;
-        return state == RESULT_AVAILABLE || state == FAILED;
+        return state == COMPLETED || state == COMPLETED_EXCEPTIONALLY;
     }
 
-    public boolean isFailed()
+    @Override
+    public boolean isCompletedExceptionally()
     {
-        return state == FAILED;
+        return state == COMPLETED_EXCEPTIONALLY;
     }
 
     public boolean isAwaitingResult()
@@ -121,7 +137,7 @@ public class CompletableActorFuture<V> implements ActorFuture<V>
             }
         }
 
-        if (isFailed())
+        if (isCompletedExceptionally())
         {
             throw new ExecutionException(failure, failureCause);
         }
@@ -138,7 +154,7 @@ public class CompletableActorFuture<V> implements ActorFuture<V>
         if (UNSAFE.compareAndSwapInt(this, STATE_OFFSET, AWAITING_RESULT, COMPLETING))
         {
             this.value = value;
-            this.state = RESULT_AVAILABLE;
+            this.state = COMPLETED;
             notifyBlockedTasks();
         }
         else
@@ -154,7 +170,7 @@ public class CompletableActorFuture<V> implements ActorFuture<V>
         {
             this.failure = failure;
             this.failureCause = throwable;
-            this.state = FAILED;
+            this.state = COMPLETED_EXCEPTIONALLY;
             notifyBlockedTasks();
         }
         else
@@ -220,6 +236,17 @@ public class CompletableActorFuture<V> implements ActorFuture<V>
     public boolean isClosed()
     {
         return state == CLOSED;
+    }
+
+    @Override
+    public Throwable getException()
+    {
+        if (!isCompletedExceptionally())
+        {
+            throw new IllegalStateException("Cannot call getException(); future is not completed exceptionally.");
+        }
+
+        return failureCause;
     }
 
     static

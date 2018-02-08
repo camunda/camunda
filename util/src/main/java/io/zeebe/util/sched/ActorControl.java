@@ -79,7 +79,7 @@ public class ActorControl
     }
 
     @SuppressWarnings("unchecked")
-    public <T> Future<T> call(Callable<T> callable)
+    public <T> ActorFuture<T> call(Callable<T> callable)
     {
         final ActorTaskRunner runner = ActorTaskRunner.current();
         if (runner != null && runner.getCurrentTask() == task)
@@ -88,7 +88,7 @@ public class ActorControl
         }
 
         final ActorJob job = new ActorJob();
-        final Future<T> future = job.setCallable(callable);
+        final ActorFuture<T> future = job.setCallable(callable);
         job.onJobAddedToTask(task);
         job.setAutoCompleting(true);
         task.submit(job);
@@ -199,6 +199,41 @@ public class ActorControl
             callback.accept(t);
         });
     }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public <T> void awaitAll(ActorFuture[] futures, Consumer<Throwable> callback)
+    {
+        final int length = futures.length;
+
+        final Consumer<Throwable>[] callbacks = new Consumer[length];
+        callbacks[length - 1] = (t) ->
+        {
+            for (int i = 0; i < futures.length; i++)
+            {
+                final ActorFuture future = futures[i];
+                if (future.isCompletedExceptionally())
+                {
+                    callback.accept(future.getException());
+                }
+                else
+                {
+                    callback.accept(null);
+                }
+            }
+        };
+
+        for (int i = length - 2; i >= 0; i--)
+        {
+            final int offset = i;
+            callbacks[offset] = (t) ->
+            {
+                await(futures[offset + 1], callbacks[offset + 1]);
+            };
+        }
+
+        await(futures[0], callbacks[0]);
+    }
+
 
 
     /** can be called by the actor to yield the thread */

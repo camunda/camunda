@@ -195,7 +195,7 @@ public class ActorJob
 
     }
 
-    public Future setCallable(Callable<?> callable)
+    public ActorFuture setCallable(Callable<?> callable)
     {
         this.callable = callable;
         this.resultFuture = new CompletableActorFuture<>();
