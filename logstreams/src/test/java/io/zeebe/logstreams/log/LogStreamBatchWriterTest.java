@@ -15,26 +15,34 @@
  */
 package io.zeebe.logstreams.log;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static io.zeebe.dispatcher.impl.PositionUtil.position;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.FRAME_ALIGNMENT;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedFramedLength;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.*;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.headerLength;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.keyOffset;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.metadataOffset;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.positionOffset;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.producerIdOffset;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.raftTermOffset;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.sourceEventLogStreamPartitionIdOffset;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.sourceEventPositionOffset;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.valueOffset;
 import static io.zeebe.util.StringUtil.getBytes;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
 
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import io.zeebe.dispatcher.ClaimedFragmentBatch;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.impl.log.LogBufferAppender;
 import io.zeebe.util.buffer.DirectBufferWriter;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -539,7 +547,8 @@ public class LogStreamBatchWriterTest
             final int length = (int) invocation.getArguments()[2];
 
             final int batchLength = length + fragmentCount * (HEADER_LENGTH + FRAME_ALIGNMENT) + FRAME_ALIGNMENT;
-            claimedBatch.wrap(writeBuffer, PARTITION_ID, PARTITION_OFFSET, alignedFramedLength(batchLength));
+            claimedBatch.wrap(writeBuffer, PARTITION_ID, PARTITION_OFFSET, alignedFramedLength(batchLength), () ->
+            { });
 
             return Long.valueOf(alignedFramedLength(length));
         };

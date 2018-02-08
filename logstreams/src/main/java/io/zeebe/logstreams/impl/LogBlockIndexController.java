@@ -16,20 +16,28 @@
 package io.zeebe.logstreams.impl;
 
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.getPosition;
-import static io.zeebe.logstreams.impl.LogStateMachineAgent.*;
 import static io.zeebe.logstreams.log.LogStreamUtil.INVALID_ADDRESS;
 import static io.zeebe.logstreams.spi.LogStorage.OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY;
 import static io.zeebe.logstreams.spi.LogStorage.OP_RESULT_INVALID_ADDR;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
-import io.zeebe.logstreams.spi.*;
-import io.zeebe.util.actor.*;
+import io.zeebe.logstreams.spi.LogStorage;
+import io.zeebe.logstreams.spi.ReadableSnapshot;
+import io.zeebe.logstreams.spi.SnapshotPolicy;
+import io.zeebe.logstreams.spi.SnapshotStorage;
+import io.zeebe.logstreams.spi.SnapshotWriter;
 import io.zeebe.util.allocation.AllocatedBuffer;
 import io.zeebe.util.allocation.BufferAllocators;
-import io.zeebe.util.state.*;
+import io.zeebe.util.sched.ActorCondition;
+import io.zeebe.util.sched.FutureUtil;
+import io.zeebe.util.sched.ZbActor;
+import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
+import io.zeebe.util.sched.future.CompletedActorFuture;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.Position;
 import org.slf4j.Logger;
@@ -38,7 +46,7 @@ import org.slf4j.Logger;
  * Represents the log block index controller, which creates the log block index
  * for the given log storage.
  */
-public class LogBlockIndexController implements Actor
+public class LogBlockIndexController extends ZbActor
 {
     public static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
 
@@ -48,56 +56,49 @@ public class LogBlockIndexController implements Actor
      */
     public static final float DEFAULT_DEVIATION = 0.1f;
 
-    protected static final int TRANSITION_SNAPSHOT = 3;
-    protected static final int TRANSITION_TRUNCATE = 4;
-    protected static final int TRANSITION_CREATE = 5;
-
-    // STATES /////////////////////////////////////////////////////////
-
-    protected final OpeningState openingState = new OpeningState();
-    protected final OpenState openState = new OpenState();
-    protected final SnapshottingState snapshottingState = new SnapshottingState();
-    protected final ClosedState closedState = new ClosedState();
-    protected final TruncateState truncateState = new TruncateState();
-    protected final BlockIndexCreationState blockIndexCreationState = new BlockIndexCreationState();
-
-    protected final LogStateMachineAgent stateMachine;
+    private final Runnable readLogStorage = this::readLogStorage;
+    private final Runnable createSnapshot = this::createSnapshot;
 
     //  MANDATORY //////////////////////////////////////////////////
 
-    protected final String name;
-    protected final LogStorage logStorage;
-    protected final LogBlockIndex blockIndex;
-    protected final ActorScheduler actorScheduler;
-    protected ActorReference actorRef;
+    private final String name;
+    private final LogStorage logStorage;
+    private final LogBlockIndex blockIndex;
+    private final ZbActorScheduler actorScheduler;
 
     /**
      * Defines the block size for which an index will be created.
      */
-    protected final int indexBlockSize;
+    private final int indexBlockSize;
 
     /**
      * The deviation which will be used in calculation of the index block size.
      * It defines the allowable tolerance. That means if the deviation is set to 0.1f (10%),
      * an index will be created if the block is 90 % filled.
      */
-    protected final float deviation;
+    private final float deviation;
 
-    protected final SnapshotStorage snapshotStorage;
-    protected final SnapshotPolicy snapshotPolicy;
-    protected final UnsafeBuffer buffer = new UnsafeBuffer(0, 0);
-    protected final CompleteEventsInBlockProcessor readResultProcessor = new CompleteEventsInBlockProcessor();
-    protected final Runnable openStateRunnable;
-    protected final Runnable closedStateRunnable;
+    private final SnapshotStorage snapshotStorage;
+    private final SnapshotPolicy snapshotPolicy;
+    private final UnsafeBuffer buffer = new UnsafeBuffer(0, 0);
+    private final CompleteEventsInBlockProcessor readResultProcessor = new CompleteEventsInBlockProcessor();
+
+    private final AtomicBoolean isOpenend = new AtomicBoolean(false);
+
+    private final CompletableActorFuture<Void> openFuture = new CompletableActorFuture<>();
+
 
     // INTERNAL ///////////////////////////////////////////////////
 
-    protected long nextAddress = INVALID_ADDRESS;
-    protected int bufferSize;
-    protected ByteBuffer ioBuffer;
-    protected AllocatedBuffer allocatedBuffer;
-    protected CompletableFuture<Void> truncateFuture;
-    protected Position commitPosition;
+    private int currentBlockSize = 0;
+    private long currentBlockAddress = INVALID_ADDRESS;
+    private long firstEventPosition = 0;
+
+    private long nextAddress = INVALID_ADDRESS;
+    private int bufferSize;
+    private ByteBuffer ioBuffer;
+    private AllocatedBuffer allocatedBuffer;
+    private Position commitPosition;
 
     public LogBlockIndexController(LogStreamImpl.LogStreamBuilder logStreamBuilder)
     {
@@ -106,7 +107,7 @@ public class LogBlockIndexController implements Actor
 
     public LogBlockIndexController(LogStreamImpl.LogStreamBuilder logStreamBuilder, Position commitPosition)
     {
-        this.name = logStreamBuilder.getLogName();
+        this.name = logStreamBuilder.getLogName() + ".index";
         this.logStorage = logStreamBuilder.getLogStorage();
         this.blockIndex = logStreamBuilder.getBlockIndex();
         this.actorScheduler = logStreamBuilder.getActorScheduler();
@@ -117,87 +118,55 @@ public class LogBlockIndexController implements Actor
         this.snapshotStorage = logStreamBuilder.getSnapshotStorage();
         this.snapshotPolicy = logStreamBuilder.getSnapshotPolicy();
         this.bufferSize = logStreamBuilder.getReadBlockSize();
-
-        this.openStateRunnable = () ->
-        {
-            actorRef = actorScheduler.schedule(this);
-        };
-        this.closedStateRunnable = () ->
-        {
-            allocatedBuffer.close();
-
-            actorRef.close();
-        };
-
-        this.stateMachine = new LogStateMachineAgent(
-            StateMachine.<LogContext>builder(s -> new LogContext(s))
-                .initialState(closedState)
-                .from(openingState).take(TRANSITION_DEFAULT).to(openState)
-
-                .from(openState).take(TRANSITION_TRUNCATE).to(truncateState)
-                .from(truncateState).take(TRANSITION_DEFAULT).to(openState)
-                .from(openState).take(TRANSITION_CLOSE).to(closedState)
-                .from(closedState).take(TRANSITION_OPEN).to(openingState)
-                .from(openState).take(TRANSITION_CREATE).to(blockIndexCreationState)
-
-                .from(blockIndexCreationState).take(TRANSITION_SNAPSHOT).to(snapshottingState)
-                .from(snapshottingState).take(TRANSITION_DEFAULT).to(openState)
-                .from(blockIndexCreationState).take(TRANSITION_TRUNCATE).to(truncateState)
-                .from(blockIndexCreationState).take(TRANSITION_CLOSE).to(closedState)
-                .from(blockIndexCreationState).take(TRANSITION_DEFAULT).to(openState)
-
-                .build(), openStateRunnable, closedStateRunnable);
     }
 
     @Override
-    public int doWork()
-    {
-        return getStateMachine().doWork();
-    }
-
-    @Override
-    public String name()
+    public String getName()
     {
         return name;
     }
 
-    protected LogStateMachineAgent getStateMachine()
+    public void open()
     {
-        return stateMachine;
+        FutureUtil.join(openAsync());
     }
 
-    protected class OpeningState implements TransitionState<LogContext>
+    public ActorFuture<Void> openAsync()
     {
-        @Override
-        public void work(LogContext logContext)
+        // reset future
+        openFuture.close();
+        openFuture.setAwaitingResult();
+
+        if (isOpenend.compareAndSet(false, true))
         {
-            try
-            {
-                allocatedBuffer = BufferAllocators.allocateDirect(bufferSize);
-                ioBuffer = allocatedBuffer.getRawBuffer();
-                buffer.wrap(ioBuffer);
-
-                if (!logStorage.isOpen())
-                {
-                    logStorage.open();
-                }
-
-                recoverBlockIndex();
-            }
-            catch (Exception e)
-            {
-                // snapshot could not been read - so we start with the first block
-                nextAddress = logStorage.getFirstBlockAddress();
-            }
-            finally
-            {
-                logContext.take(TRANSITION_DEFAULT);
-
-                stateMachine.completeOpenFuture(null);
-            }
+            actorScheduler.submitActor(this);
+        }
+        else
+        {
+            openFuture.complete(null);
         }
 
-        protected void recoverBlockIndex() throws Exception
+        return openFuture;
+    }
+
+    @Override
+    protected void onActorStarted()
+    {
+        allocatedBuffer = BufferAllocators.allocateDirect(bufferSize);
+        ioBuffer = allocatedBuffer.getRawBuffer();
+        buffer.wrap(ioBuffer);
+
+        if (!logStorage.isOpen())
+        {
+            logStorage.open();
+        }
+
+        recoverBlockIndex();
+    }
+
+    private void recoverBlockIndex()
+    {
+        try
         {
             final long recoveredAddress = logStorage.getFirstBlockAddress();
             final ReadableSnapshot lastSnapshot = snapshotStorage.getLastSnapshot(name);
@@ -205,192 +174,224 @@ public class LogBlockIndexController implements Actor
             {
                 lastSnapshot.recoverFromSnapshot(blockIndex);
                 nextAddress = Math.max(blockIndex.lookupBlockAddress(lastSnapshot.getPosition()),
-                    recoveredAddress);
+                                       recoveredAddress);
             }
             else
             {
                 nextAddress = recoveredAddress;
             }
+
+            // register condition after index is recovered
+            final ActorCondition onAppendCondition = actor.onCondition("log-storage-on-append", readLogStorage);
+            logStorage.registerOnAppendCondition(onAppendCondition);
+
+            openFuture.complete(null);
+
+            // start reading after started
+            actor.yield();
+            actor.run(readLogStorage);
+        }
+        catch (Exception e)
+        {
+            LOG.error("Fail to recover block index.", e);
+            openFuture.completeExceptionally(e);
         }
     }
 
-    protected class OpenState implements State<LogContext>
+    private void readLogStorage()
     {
-        private int currentBlockSize = 0;
-
-        @Override
-        public int doWork(LogContext logContext)
+        if (nextAddress == INVALID_ADDRESS)
         {
-            int result = 0;
-            if (nextAddress != INVALID_ADDRESS)
-            {
-                final long currentAddress = nextAddress;
-
-                // read buffer with only complete events
-                final long nextAddressToRead = logStorage.read(ioBuffer, currentAddress, readResultProcessor);
-                if (nextAddressToRead > currentAddress)
-                {
-                    tryToCreateBlockIndex(logContext, currentAddress);
-                    // set next address
-                    nextAddress = nextAddressToRead;
-                    result = 1;
-                }
-                else if (nextAddressToRead == OP_RESULT_INVALID_ADDR)
-                {
-                    LOG.error("Can't read from illegal address: {}", currentAddress);
-                }
-                else if (nextAddressToRead == OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY)
-                {
-                    increaseBufferSize();
-                    result = 1;
-                }
-            }
-            else
-            {
-                nextAddress = resolveLastValidAddress();
-            }
-            return result;
+            nextAddress = resolveLastValidAddress();
         }
-
-        private long resolveLastValidAddress()
+        else
         {
-            long newAddress = 0;
-            if (blockIndex.size() > 0)
-            {
-                newAddress = blockIndex.getAddress(blockIndex.size());
-            }
-            if (newAddress <= 0)
-            {
-                newAddress = logStorage.getFirstBlockAddress();
-            }
-            return newAddress;
-        }
+            final long currentAddress = nextAddress;
 
-        private void tryToCreateBlockIndex(LogContext logContext, long currentAddress)
-        {
-            if (!logContext.hasCurrentBlockAddress())
+            // read buffer with only complete events
+            final long nextAddressToRead = logStorage.read(ioBuffer, currentAddress, readResultProcessor);
+            if (nextAddressToRead > currentAddress)
             {
-                logContext.setCurrentBlockAddress(currentAddress);
-                logContext.setFirstEventPosition(getPosition(buffer, 0));
-            }
+                tryToCreateBlockIndex(currentAddress);
+                // set next address
+                nextAddress = nextAddressToRead;
 
-            currentBlockSize += ioBuffer.position();
-            // if block size is greater then or equals to index block size we will create an index
-            if (currentBlockSize >= indexBlockSize)
-            {
-                logContext.take(TRANSITION_CREATE);
-                currentBlockSize = 0;
+                // read next bytes
+                actor.run(readLogStorage);
             }
-            else
+            else if (nextAddressToRead == OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY)
             {
-                // block was not filled enough
-                // read next events into buffer after the current read events
-                ioBuffer.clear();
+                increaseBufferSize();
+
+                // try to read bytes again
+                actor.run(readLogStorage);
+            }
+            else if (nextAddressToRead == OP_RESULT_INVALID_ADDR)
+            {
+                LOG.error("Can't read from illegal address: {}", currentAddress);
             }
         }
+    }
 
-        private void increaseBufferSize()
+    private long resolveLastValidAddress()
+    {
+        long newAddress = 0;
+        if (blockIndex.size() > 0)
         {
-            // increase buffer and try again
-            bufferSize *= 2;
+            newAddress = blockIndex.getAddress(blockIndex.size());
+        }
+        if (newAddress <= 0)
+        {
+            newAddress = logStorage.getFirstBlockAddress();
+        }
+        return newAddress;
+    }
 
-            allocatedBuffer.close();
-
-            allocatedBuffer = BufferAllocators.allocateDirect(bufferSize);
-            ioBuffer = allocatedBuffer.getRawBuffer();
-            buffer.wrap(ioBuffer);
+    private void tryToCreateBlockIndex(long currentAddress)
+    {
+        if (currentBlockAddress == INVALID_ADDRESS)
+        {
+            currentBlockAddress = currentAddress;
+            firstEventPosition = getPosition(buffer, 0);
         }
 
-        public void reset(LogContext context)
+        currentBlockSize += ioBuffer.position();
+        // if block size is greater then or equals to index block size we will create an index
+        if (currentBlockSize >= indexBlockSize)
         {
+            createBlockIndex();
+
             currentBlockSize = 0;
-            nextAddress = context.getCurrentBlockAddress();
         }
-    }
-
-    protected class SnapshottingState implements TransitionState<LogContext>
-    {
-        @Override
-        public void work(LogContext logContext)
+        else
         {
-            SnapshotWriter snapshotWriter = null;
-            try
-            {
-                // should do recovery if fails to flush because of corrupted block index - see #8
-
-                // flush the log to ensure that the snapshot doesn't contains indexes of unwritten events
-                logStorage.flush();
-
-                snapshotWriter = snapshotStorage.createSnapshot(name, logContext.getFirstEventPosition());
-
-                snapshotWriter.writeSnapshot(blockIndex);
-                snapshotWriter.commit();
-            }
-            catch (Exception e)
-            {
-                LOG.error("Failed to create snapshot", e);
-
-                if (snapshotWriter != null)
-                {
-                    snapshotWriter.abort();
-                }
-            }
-            finally
-            {
-                logContext.setFirstEventPosition(0);
-                // regardless whether the writing of the snapshot was successful or not we go to the open state
-                logContext.take(TRANSITION_DEFAULT);
-            }
+            // block was not filled enough
+            // read next events into buffer after the current read events
+            ioBuffer.clear();
         }
     }
 
-    protected class ClosedState implements WaitState<LogContext>
+    private void createBlockIndex()
     {
-        @Override
-        public void work(LogContext logContext) throws Exception
+        if (readResultProcessor.getLastReadEventPosition() <= getCommitPosition())
         {
-            getStateMachine().closing();
+            createBlockIdx(currentBlockAddress);
+
+            // reset buffer position and limit for reuse
+            ioBuffer.clear();
+
+            // reset cached block address
+            currentBlockAddress = INVALID_ADDRESS;
         }
     }
 
-    public boolean isClosed()
+    private void createBlockIdx(long addressOfFirstEventInBlock)
     {
-        return getStateMachine().getCurrentState() == closedState;
+        // write block IDX
+        final long position = firstEventPosition;
+        blockIndex.addBlock(position, addressOfFirstEventInBlock);
+
+        // check if snapshot should be created
+        if (snapshotPolicy.apply(position))
+        {
+            actor.run(createSnapshot);
+        }
+        else
+        {
+            firstEventPosition = 0;
+        }
     }
 
-    public boolean isOpen()
+    private void createSnapshot()
     {
-        return getStateMachine().getCurrentState() == openState;
+        SnapshotWriter snapshotWriter = null;
+        try
+        {
+            // should do recovery if fails to flush because of corrupted block index - see #8
+
+            // flush the log to ensure that the snapshot doesn't contains indexes of unwritten events
+            logStorage.flush();
+
+            snapshotWriter = snapshotStorage.createSnapshot(name, firstEventPosition);
+
+            snapshotWriter.writeSnapshot(blockIndex);
+            snapshotWriter.commit();
+        }
+        catch (Exception e)
+        {
+            LOG.error("Failed to create snapshot", e);
+
+            if (snapshotWriter != null)
+            {
+                snapshotWriter.abort();
+            }
+        }
+        finally
+        {
+            firstEventPosition = 0;
+        }
     }
 
-    public boolean isRunning()
+    private void increaseBufferSize()
     {
-        return getStateMachine().isRunning();
-    }
+        // increase buffer and try again
+        bufferSize *= 2;
 
-    public boolean isInCreateState()
-    {
-        return getStateMachine().getCurrentState() == blockIndexCreationState;
-    }
+        allocatedBuffer.close();
 
-    public void open()
-    {
-        getStateMachine().open();
-    }
-
-    public CompletableFuture<Void> openAsync()
-    {
-        return getStateMachine().openAsync();
+        allocatedBuffer = BufferAllocators.allocateDirect(bufferSize);
+        ioBuffer = allocatedBuffer.getRawBuffer();
+        buffer.wrap(ioBuffer);
     }
 
     public void close()
     {
-        getStateMachine().close();
+        FutureUtil.join(closeAsync());
     }
 
-    public CompletableFuture<Void> closeAsync()
+    public ActorFuture<Void> closeAsync()
     {
-        return getStateMachine().closeAsync();
+        if (isOpenend.compareAndSet(true, false))
+        {
+            return actor.close();
+        }
+        else
+        {
+            return new CompletedActorFuture<>(null);
+        }
+    }
+
+    @Override
+    protected void onActorClosing()
+    {
+        allocatedBuffer.close();
+
+        isOpenend.set(false);
+    }
+
+    public void truncate()
+    {
+        actor.call(() ->
+        {
+            if (isOpened())
+            {
+                currentBlockSize = 0;
+                nextAddress = currentBlockAddress;
+
+                currentBlockAddress = INVALID_ADDRESS;
+                firstEventPosition = 0;
+            }
+        });
+    }
+
+    public boolean isClosed()
+    {
+        return !isOpenend.get();
+    }
+
+    public boolean isOpened()
+    {
+        return isOpenend.get();
     }
 
     public long getNextAddress()
@@ -415,82 +416,4 @@ public class LogBlockIndexController implements Actor
         }
     }
 
-    public CompletableFuture<Void> truncate()
-    {
-        final CompletableFuture<Void> future = new CompletableFuture<>();
-
-        getStateMachine().addCommand(LogContext ->
-        {
-            final boolean possibleToTakeTransition = LogContext.tryTake(TRANSITION_TRUNCATE);
-            if (possibleToTakeTransition)
-            {
-                truncateFuture = future;
-            }
-            else
-            {
-                future.completeExceptionally(new IllegalStateException("Cannot truncate log stream. State is neither open nor create."));
-            }
-        });
-
-        return future;
-    }
-
-    private class BlockIndexCreationState implements State<LogContext>
-    {
-        @Override
-        public int doWork(LogContext logContext) throws Exception
-        {
-            int result = 0;
-            if (readResultProcessor.getLastReadEventPosition() <= getCommitPosition())
-            {
-                createBlockIdx(logContext, logContext.getCurrentBlockAddress());
-
-                // reset buffer position and limit for reuse
-                ioBuffer.clear();
-
-                // reset cached block address
-                logContext.resetCurrentBlockAddress();
-                result = 1;
-            }
-            return result;
-        }
-
-        private void createBlockIdx(LogContext logContext, long addressOfFirstEventInBlock)
-        {
-            // write block IDX
-            final long position = logContext.getFirstEventPosition();
-            blockIndex.addBlock(position, addressOfFirstEventInBlock);
-
-            // check if snapshot should be created
-            if (snapshotPolicy.apply(position))
-            {
-                logContext.take(TRANSITION_SNAPSHOT);
-            }
-            else
-            {
-                logContext.resetLastPosition();
-                logContext.take(TRANSITION_DEFAULT);
-            }
-        }
-    }
-
-    private class TruncateState implements State<LogContext>
-    {
-        @Override
-        public int doWork(LogContext logContext) throws Exception
-        {
-            try
-            {
-                openState.reset(logContext);
-                logContext.reset();
-            }
-            finally
-            {
-                truncateFuture.complete(null);
-                truncateFuture = null;
-                logContext.take(TRANSITION_DEFAULT);
-            }
-            return 0;
-        }
-    }
 }

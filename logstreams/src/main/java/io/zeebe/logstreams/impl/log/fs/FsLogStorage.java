@@ -15,7 +15,9 @@
  */
 package io.zeebe.logstreams.impl.log.fs;
 
-import static io.zeebe.dispatcher.impl.PositionUtil.*;
+import static io.zeebe.dispatcher.impl.PositionUtil.partitionId;
+import static io.zeebe.dispatcher.impl.PositionUtil.partitionOffset;
+import static io.zeebe.dispatcher.impl.PositionUtil.position;
 import static io.zeebe.logstreams.impl.log.fs.FsLogSegment.END_OF_SEGMENT;
 import static io.zeebe.logstreams.impl.log.fs.FsLogSegment.NO_DATA;
 import static io.zeebe.logstreams.impl.log.fs.FsLogSegmentDescriptor.METADATA_LENGTH;
@@ -40,6 +42,7 @@ import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.spi.ReadResultProcessor;
 import io.zeebe.util.FileUtil;
+import io.zeebe.util.sched.ActorCondition;
 import org.agrona.IoUtil;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -55,6 +58,8 @@ public class FsLogStorage implements LogStorage
 
     protected final FsLogStorageConfiguration config;
     protected final ReadResultProcessor defaultReadResultProcessor = (buffer, readResult) -> readResult;
+
+    private ActorCondition[] onAppendConditions = new ActorCondition[0];
 
     /**
      * Readable log segments
@@ -109,6 +114,8 @@ public class FsLogStorage implements LogStorage
                 opresult = position(currentSegment.getSegmentId(), appendResult);
 
                 markSegmentAsDirty(currentSegment);
+
+                signalOnAppendConditions();
             }
             else
             {
@@ -541,4 +548,57 @@ public class FsLogStorage implements LogStorage
 
         return segmentId;
     }
+
+    private void signalOnAppendConditions()
+    {
+        final ActorCondition[] conditions = onAppendConditions; // please do not remove me, array ref may be replaced concurrently
+
+        for (int i = 0; i < conditions.length; i++)
+        {
+            conditions[i].signal();
+        }
+    }
+
+    @Override
+    public synchronized void registerOnAppendCondition(ActorCondition condition)
+    {
+        onAppendConditions = appendToArray(onAppendConditions, condition);
+    }
+
+    @Override
+    public synchronized void removeOnAppendCondition(ActorCondition condition)
+    {
+        onAppendConditions = removeFromArray(onAppendConditions, condition);
+    }
+
+    private static ActorCondition[] appendToArray(ActorCondition[] array, ActorCondition condition)
+    {
+        array = Arrays.copyOf(array, array.length + 1);
+        array[array.length - 1] = condition;
+        return array;
+    }
+
+    private static ActorCondition[] removeFromArray(ActorCondition[] array, ActorCondition condition)
+    {
+        final int length = array.length;
+
+        int index = -1;
+        for (int i = 0; i < array.length; i++)
+        {
+            if (array[i] ==  condition)
+            {
+                index = 1;
+            }
+        }
+
+        final ActorCondition[] result = new ActorCondition[length - 1];
+        System.arraycopy(array, 0, result, 0, index);
+        if (index < length - 1)
+        {
+            System.arraycopy(array, index + 1, result, index, length - index - 1);
+        }
+
+        return result;
+    }
+
 }

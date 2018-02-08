@@ -15,10 +15,13 @@
  */
 package io.zeebe.logstreams.processor;
 
-import io.zeebe.logstreams.log.*;
-import io.zeebe.logstreams.spi.*;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamReader;
+import io.zeebe.logstreams.log.LogStreamWriter;
+import io.zeebe.logstreams.spi.SnapshotPolicy;
+import io.zeebe.logstreams.spi.SnapshotStorage;
 import io.zeebe.util.DeferredCommandContext;
-import io.zeebe.util.actor.ActorScheduler;
+import io.zeebe.util.sched.ZbActorScheduler;
 
 public class StreamProcessorContext
 {
@@ -36,7 +39,7 @@ public class StreamProcessorContext
     protected SnapshotPolicy snapshotPolicy;
     protected SnapshotStorage snapshotStorage;
 
-    protected ActorScheduler actorScheduler;
+    protected ZbActorScheduler actorScheduler;
 
     protected EventFilter eventFilter;
     protected EventFilter reprocessingEventFilter;
@@ -83,12 +86,12 @@ public class StreamProcessorContext
         this.id = id;
     }
 
-    public ActorScheduler getTaskScheduler()
+    public ZbActorScheduler getActorScheduler()
     {
         return actorScheduler;
     }
 
-    public void setTaskScheduler(ActorScheduler actorScheduler)
+    public void setActorScheduler(ZbActorScheduler actorScheduler)
     {
         this.actorScheduler = actorScheduler;
     }

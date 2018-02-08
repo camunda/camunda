@@ -15,10 +15,13 @@
  */
 package io.zeebe.logstreams.processor;
 
-import io.zeebe.logstreams.log.*;
-import io.zeebe.logstreams.spi.*;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamReader;
+import io.zeebe.logstreams.log.LogStreamWriter;
+import io.zeebe.logstreams.spi.SnapshotPolicy;
+import io.zeebe.logstreams.spi.SnapshotStorage;
 import io.zeebe.util.DeferredCommandContext;
-import io.zeebe.util.actor.ActorScheduler;
+import io.zeebe.util.sched.ZbActorScheduler;
 
 public class TestStreamProcessorBuilder extends StreamProcessorBuilder
 {
@@ -40,7 +43,7 @@ public class TestStreamProcessorBuilder extends StreamProcessorBuilder
     }
 
     @Override
-    public TestStreamProcessorBuilder actorScheduler(ActorScheduler actorScheduler)
+    public TestStreamProcessorBuilder actorScheduler(ZbActorScheduler actorScheduler)
     {
         return (TestStreamProcessorBuilder) super.actorScheduler(actorScheduler);
     }

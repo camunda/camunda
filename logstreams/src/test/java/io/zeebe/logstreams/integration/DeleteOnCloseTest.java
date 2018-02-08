@@ -15,18 +15,18 @@
  */
 package io.zeebe.logstreams.integration;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
 import java.util.concurrent.ExecutionException;
 
-import org.agrona.DirectBuffer;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.util.actor.ActorScheduler;
-import io.zeebe.util.actor.ActorSchedulerBuilder;
-import org.junit.*;
+import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import org.agrona.DirectBuffer;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 
@@ -37,19 +37,8 @@ public class DeleteOnCloseTest
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
 
-    private ActorScheduler actorScheduler;
-
-    @Before
-    public void setup()
-    {
-        actorScheduler = ActorSchedulerBuilder.createDefaultScheduler("test");
-    }
-
-    @After
-    public void destroy() throws Exception
-    {
-        actorScheduler.close();
-    }
+    @Rule
+    public ActorSchedulerRule actorScheduler = new ActorSchedulerRule();
 
     @Test
     public void shouldNotDeleteOnCloseByDefault() throws InterruptedException, ExecutionException
@@ -58,7 +47,7 @@ public class DeleteOnCloseTest
 
         final LogStream log = LogStreams.createFsLogStream(TOPIC_NAME, 0)
             .logRootPath(logFolder.getAbsolutePath())
-            .actorScheduler(actorScheduler)
+            .actorScheduler(actorScheduler.get())
             .build();
 
         log.open();
@@ -80,7 +69,7 @@ public class DeleteOnCloseTest
         final LogStream log = LogStreams.createFsLogStream(TOPIC_NAME, 0)
             .logRootPath(logFolder.getAbsolutePath())
             .deleteOnClose(true)
-            .actorScheduler(actorScheduler)
+            .actorScheduler(actorScheduler.get())
             .build();
 
         log.open();

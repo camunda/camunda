@@ -15,26 +15,13 @@
  */
 package io.zeebe.logstreams.integration;
 
-import io.zeebe.logstreams.LogStreams;
-import io.zeebe.logstreams.impl.LogStreamController;
-import io.zeebe.logstreams.integration.util.ControllableFsLogStorage;
-import io.zeebe.logstreams.integration.util.ControllableFsLogStreamBuilder;
-import io.zeebe.logstreams.integration.util.Counter;
-import io.zeebe.logstreams.log.*;
-import io.zeebe.logstreams.processor.EventProcessor;
-import io.zeebe.logstreams.processor.StreamProcessor;
-import io.zeebe.logstreams.processor.StreamProcessorContext;
-import io.zeebe.logstreams.processor.StreamProcessorController;
-import io.zeebe.logstreams.snapshot.SerializableWrapper;
-import io.zeebe.logstreams.spi.*;
-import io.zeebe.test.util.AutoCloseableRule;
-import io.zeebe.test.util.TestUtil;
-import io.zeebe.util.actor.ActorScheduler;
-import io.zeebe.util.actor.ActorSchedulerBuilder;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.*;
-import org.junit.rules.TemporaryFolder;
-import org.mockito.Mockito;
+import static io.zeebe.logstreams.integration.util.LogIntegrationTestUtil.waitUntilWrittenEvents;
+import static io.zeebe.logstreams.integration.util.LogIntegrationTestUtil.waitUntilWrittenKey;
+import static io.zeebe.logstreams.integration.util.LogIntegrationTestUtil.writeLogEvents;
+import static io.zeebe.logstreams.integration.util.LogIntegrationTestUtil.writeLogEventsAndReturnPosition;
+import static io.zeebe.test.util.TestUtil.waitUntil;
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,10 +32,39 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.LongFunction;
 import java.util.function.Predicate;
 
-import static io.zeebe.logstreams.integration.util.LogIntegrationTestUtil.*;
-import static io.zeebe.test.util.TestUtil.waitUntil;
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
-import static org.assertj.core.api.Assertions.assertThat;
+import io.zeebe.logstreams.LogStreams;
+import io.zeebe.logstreams.impl.LogStreamController;
+import io.zeebe.logstreams.integration.util.ControllableFsLogStorage;
+import io.zeebe.logstreams.integration.util.ControllableFsLogStreamBuilder;
+import io.zeebe.logstreams.integration.util.Counter;
+import io.zeebe.logstreams.log.BufferedLogStreamReader;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamBatchWriter;
+import io.zeebe.logstreams.log.LogStreamBatchWriterImpl;
+import io.zeebe.logstreams.log.LogStreamReader;
+import io.zeebe.logstreams.log.LogStreamWriter;
+import io.zeebe.logstreams.log.LogStreamWriterImpl;
+import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.logstreams.processor.EventProcessor;
+import io.zeebe.logstreams.processor.StreamProcessor;
+import io.zeebe.logstreams.processor.StreamProcessorContext;
+import io.zeebe.logstreams.processor.StreamProcessorController;
+import io.zeebe.logstreams.snapshot.SerializableWrapper;
+import io.zeebe.logstreams.spi.ReadableSnapshot;
+import io.zeebe.logstreams.spi.SnapshotPolicy;
+import io.zeebe.logstreams.spi.SnapshotStorage;
+import io.zeebe.logstreams.spi.SnapshotSupport;
+import io.zeebe.logstreams.spi.SnapshotWriter;
+import io.zeebe.test.util.AutoCloseableRule;
+import io.zeebe.test.util.TestUtil;
+import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.mockito.Mockito;
 
 public class StreamProcessorIntegrationTest
 {
@@ -64,7 +80,8 @@ public class StreamProcessorIntegrationTest
     @Rule
     public AutoCloseableRule autoCloseableRule = new AutoCloseableRule();
 
-    private ActorScheduler actorScheduler;
+    @Rule
+    private ActorSchedulerRule actorScheduler = new ActorSchedulerRule();
 
     private LogStream logStream;
 
@@ -79,8 +96,6 @@ public class StreamProcessorIntegrationTest
     @Before
     public void setup()
     {
-        actorScheduler = ActorSchedulerBuilder.createDefaultScheduler("test");
-
         resourceCounter = new SerializableWrapper<>(new Counter());
 
         logPath = tempFolder.getRoot().getAbsolutePath();
@@ -91,7 +106,7 @@ public class StreamProcessorIntegrationTest
                 .logRootPath(logPath)
                 .deleteOnClose(true)
                 .logSegmentSize(1024 * 1024 * 16)
-                .actorScheduler(actorScheduler)
+                .actorScheduler(actorScheduler.get())
                 .build();
 
         logStream.open();
@@ -113,9 +128,6 @@ public class StreamProcessorIntegrationTest
         }
 
         logStream.close();
-
-        actorScheduler.close();
-
     }
 
     protected void manage(StreamProcessorController controller)
@@ -130,7 +142,7 @@ public class StreamProcessorIntegrationTest
         final StreamProcessorController streamProcessorController = LogStreams
             .createStreamProcessor("increment-processor", STREAM_PROCESSOR_ID, new SimpleProducerProcessor())
             .logStream(logStream)
-            .actorScheduler(actorScheduler)
+            .actorScheduler(actorScheduler.get())
             .snapshotPolicy(NO_SNAPSHOT_POLICY)
             .snapshotStorage(snapshotStorage)
             .build();
@@ -154,7 +166,7 @@ public class StreamProcessorIntegrationTest
         final StreamProcessorController streamProcessorController = LogStreams
             .createStreamProcessor("increment-processor", STREAM_PROCESSOR_ID, new SimpleProducerProcessor())
             .logStream(logStream)
-            .actorScheduler(actorScheduler)
+            .actorScheduler(actorScheduler.get())
             .snapshotPolicy(position -> isSnapshotPoint.getAndSet(false))
             .snapshotStorage(snapshotStorage)
             .build();
@@ -181,7 +193,7 @@ public class StreamProcessorIntegrationTest
         final StreamProcessorController streamProcessorController = LogStreams
             .createStreamProcessor("increment-processor", STREAM_PROCESSOR_ID, new SimpleProducerProcessor())
             .logStream(logStream)
-            .actorScheduler(actorScheduler)
+            .actorScheduler(actorScheduler.get())
             .snapshotPolicy(position -> isSnapshotPoint.getAndSet(false))
             .snapshotStorage(snapshotStorage)
             .build();
@@ -215,7 +227,7 @@ public class StreamProcessorIntegrationTest
         final StreamProcessorController streamProcessorController = LogStreams
             .createStreamProcessor("increment-processor", STREAM_PROCESSOR_ID, new SimpleProducerProcessor())
             .logStream(logStream)
-            .actorScheduler(actorScheduler)
+            .actorScheduler(actorScheduler.get())
             .snapshotPolicy(position -> isSnapshotPoint.getAndSet(false))
             .snapshotStorage(snapshotStorage)
             .build();
@@ -253,7 +265,7 @@ public class StreamProcessorIntegrationTest
         streamProcessorController = LogStreams
             .createStreamProcessor("increment-processor", STREAM_PROCESSOR_ID, new SimpleProducerProcessor())
             .logStream(logStream)
-            .actorScheduler(actorScheduler)
+            .actorScheduler(actorScheduler.get())
             .snapshotPolicy(NO_SNAPSHOT_POLICY)
             .snapshotStorage(snapshotStorage)
             .build();
@@ -288,7 +300,7 @@ public class StreamProcessorIntegrationTest
             .createStreamProcessor("processor-1", 1,
                 new ProducerProcessor(resourceCounter, aLong -> aLong < 2 * WORK_COUNT && (aLong % 2) == 0, value -> value + 1))
             .logStream(logStream)
-            .actorScheduler(actorScheduler)
+            .actorScheduler(actorScheduler.get())
             .snapshotPolicy(NO_SNAPSHOT_POLICY)
             .snapshotStorage(snapshotStorage)
             .build();
@@ -297,7 +309,7 @@ public class StreamProcessorIntegrationTest
             .createStreamProcessor("processor-2", 2,
                 new ProducerProcessor(resourceCounter2, aLong -> aLong < 2 * WORK_COUNT && (aLong % 2) != 0, value -> value + 1))
             .logStream(logStream)
-            .actorScheduler(actorScheduler)
+            .actorScheduler(actorScheduler.get())
             .snapshotPolicy(NO_SNAPSHOT_POLICY)
             .snapshotStorage(snapshotStorage)
             .build();
@@ -331,7 +343,7 @@ public class StreamProcessorIntegrationTest
             .createStreamProcessor("processor-1", 1,
                 new ProducerProcessor(resourceCounter, aLong -> aLong < 2 * WORK_COUNT && (aLong % 2) == 0, value -> value + 1))
             .logStream(logStream)
-            .actorScheduler(actorScheduler)
+            .actorScheduler(actorScheduler.get())
             .snapshotPolicy(pos -> isSnapshotPoint1.getAndSet(false))
             .snapshotStorage(snapshotStorage)
             .build();
@@ -340,7 +352,7 @@ public class StreamProcessorIntegrationTest
             .createStreamProcessor("processor-2", 2,
                 new ProducerProcessor(resourceCounter2, aLong -> aLong < 2 * WORK_COUNT && (aLong % 2) != 0, value -> value + 1))
             .logStream(logStream)
-            .actorScheduler(actorScheduler)
+            .actorScheduler(actorScheduler.get())
             .snapshotPolicy(pos -> isSnapshotPoint2.getAndSet(false))
             .snapshotStorage(snapshotStorage)
             .build();
@@ -395,7 +407,7 @@ public class StreamProcessorIntegrationTest
         final StreamProcessorController streamProcessorController = LogStreams
             .createStreamProcessor("copy-event-batch-processor", STREAM_PROCESSOR_ID, new EventBatchStreamProcessor(resourceCounter))
             .logStream(logStream)
-            .actorScheduler(actorScheduler)
+            .actorScheduler(actorScheduler.get())
             .snapshotPolicy(NO_SNAPSHOT_POLICY)
             .snapshotStorage(snapshotStorage)
             .build();
@@ -422,7 +434,7 @@ public class StreamProcessorIntegrationTest
         final StreamProcessorController streamProcessorController = LogStreams
             .createStreamProcessor("copy-event-batch-processor", STREAM_PROCESSOR_ID, new EventBatchStreamProcessor(resourceCounter))
             .logStream(logStream)
-            .actorScheduler(actorScheduler)
+            .actorScheduler(actorScheduler.get())
             .snapshotPolicy(NO_SNAPSHOT_POLICY)
             .snapshotStorage(snapshotStorage)
             .build();
@@ -457,7 +469,7 @@ public class StreamProcessorIntegrationTest
                 .logRootPath(tempFolder.getRoot().getAbsolutePath())
                 .deleteOnClose(true)
                 .logSegmentSize(1024 * 1024 * 16)
-                .actorScheduler(actorScheduler)
+                .actorScheduler(actorScheduler.get())
                 .build();
 
         final ControllableFsLogStorage controllableLogStorage = (ControllableFsLogStorage) controllablelogStream.getLogStorage();
@@ -468,7 +480,7 @@ public class StreamProcessorIntegrationTest
         final StreamProcessorController streamProcessorController = LogStreams
             .createStreamProcessor("processor", STREAM_PROCESSOR_ID, new SimpleProducerProcessor())
             .logStream(controllablelogStream)
-            .actorScheduler(actorScheduler)
+            .actorScheduler(actorScheduler.get())
             .snapshotPolicy(position -> isSnapshotPoint.getAndSet(false))
             .snapshotStorage(snapshotStorage)
             .build();
@@ -517,7 +529,7 @@ public class StreamProcessorIntegrationTest
             .logRootPath(tempFolder.getRoot().getAbsolutePath())
             .deleteOnClose(true)
             .logSegmentSize(1024 * 1024 * 16)
-            .actorScheduler(actorScheduler)
+            .actorScheduler(actorScheduler.get())
             .build();
 
         final ControllableFsLogStorage controllableLogStorage = (ControllableFsLogStorage) controllablelogStream.getLogStorage();
@@ -528,7 +540,7 @@ public class StreamProcessorIntegrationTest
         final StreamProcessorController streamProcessorController = LogStreams
             .createStreamProcessor("processor", STREAM_PROCESSOR_ID, new SimpleVisitorProcessor())
             .logStream(controllablelogStream)
-            .actorScheduler(actorScheduler)
+            .actorScheduler(actorScheduler.get())
             .snapshotPolicy(position -> isSnapshotPoint.getAndSet(false))
             .snapshotStorage(snapshotStorage)
             .build();
@@ -580,7 +592,7 @@ public class StreamProcessorIntegrationTest
         final StreamProcessorController streamProcessorController = LogStreams
                 .createStreamProcessor("test", STREAM_PROCESSOR_ID, streamProcessor)
                 .logStream(logStream)
-                .actorScheduler(actorScheduler)
+                .actorScheduler(actorScheduler.get())
                 .snapshotPolicy(p -> true)
                 .snapshotStorage(snapshotStorage)
                 .build();
@@ -646,7 +658,7 @@ public class StreamProcessorIntegrationTest
                 .createStreamProcessor("copy-processor", STREAM_PROCESSOR_ID, streamProcessor)
                 .readOnly(true)
                 .logStream(logStream)
-                .actorScheduler(actorScheduler)
+                .actorScheduler(actorScheduler.get())
                 .snapshotPolicy(NO_SNAPSHOT_POLICY)
                 .snapshotStorage(snapshotStorage)
                 .build();
@@ -677,7 +689,7 @@ public class StreamProcessorIntegrationTest
         streamProcessorController = LogStreams
                 .createStreamProcessor("processor", STREAM_PROCESSOR_ID, new SimpleProducerProcessor())
                 .logStream(logStream)
-                .actorScheduler(actorScheduler)
+                .actorScheduler(actorScheduler.get())
                 .snapshotPolicy(NO_SNAPSHOT_POLICY)
                 .snapshotStorage(snapshotStorage)
                 .build();

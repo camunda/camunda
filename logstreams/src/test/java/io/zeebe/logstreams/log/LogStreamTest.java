@@ -33,23 +33,20 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TemporaryFolder;
-
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.logstreams.fs.FsLogStreamBuilder;
 import io.zeebe.logstreams.impl.LogStreamController;
 import io.zeebe.logstreams.impl.LogStreamImpl;
 import io.zeebe.logstreams.impl.log.fs.FsLogStorage;
 import io.zeebe.test.util.AutoCloseableRule;
-import io.zeebe.util.actor.ActorScheduler;
-import io.zeebe.util.actor.ActorSchedulerBuilder;
+import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TemporaryFolder;
 
 public class LogStreamTest
 {
@@ -63,19 +60,13 @@ public class LogStreamTest
     @Rule
     public RuleChain chain = RuleChain.outerRule(tempFolder).around(closeables);
 
-    private ActorScheduler actorScheduler;
-
-    @Before
-    public void setUp()
-    {
-        actorScheduler = ActorSchedulerBuilder.createDefaultScheduler("foo");
-        closeables.manage(actorScheduler);
-    }
+    @Rule
+    public ActorSchedulerRule actorScheduler = new ActorSchedulerRule();
 
     protected LogStream buildLogStream(Consumer<FsLogStreamBuilder> streamConfig)
     {
         final FsLogStreamBuilder builder = new FsLogStreamBuilder(TOPIC_NAME_BUFFER, PARTITION_ID);
-        builder.actorScheduler(actorScheduler)
+        builder.actorScheduler(actorScheduler.get())
             .logRootPath(tempFolder.getRoot().getAbsolutePath())
             .snapshotPolicy(pos -> false);
 
@@ -99,7 +90,7 @@ public class LogStreamTest
 
         final FsLogStreamBuilder builder = new FsLogStreamBuilder(topicName, PARTITION_ID)
                 .logRootPath(tempFolder.getRoot().getAbsolutePath())
-                .actorScheduler(actorScheduler);
+                .actorScheduler(actorScheduler.get());
 
         // expect exception
         thrown.expect(RuntimeException.class);
@@ -143,10 +134,10 @@ public class LogStreamTest
 
         // then
         // log block index is opened and runs now
-        assertTrue(logStream.getLogBlockIndexController().isRunning());
+        assertTrue(logStream.getLogBlockIndexController().isOpened());
 
         // log stream controller is opened and runs now
-        assertTrue(logStream.getLogStreamController().isRunning());
+        assertTrue(logStream.getLogStreamController().isOpened());
 
         // and logStorage is opened
         assertTrue(logStream.getLogStorage().isOpen());
@@ -164,7 +155,7 @@ public class LogStreamTest
 
         // then
         // log block index is opened and runs now
-        assertTrue(logStream.getLogBlockIndexController().isRunning());
+        assertTrue(logStream.getLogBlockIndexController().isOpened());
 
         // log stream controller is null
         assertNull(logStream.getLogStreamController());
@@ -174,7 +165,7 @@ public class LogStreamTest
     }
 
     @Test
-    public void shouldStopLogStreamController()
+    public void shouldStopLogStreamController() throws Exception
     {
         final LogStream logStream = buildLogStream();
 
@@ -183,21 +174,21 @@ public class LogStreamTest
         final Dispatcher writeBuffer = logStream.getWriteBuffer();
 
         // when log streaming is stopped
-        logStream.closeLogStreamController().join();
+        logStream.closeLogStreamController().get();
 
         assertThat(writeBuffer.isClosed()).isTrue();
 
         // then
         // log stream controller has stop running and reference is not null for reuse
         assertNotNull(logStream.getLogStreamController());
-        assertFalse(logStream.getLogStreamController().isRunning());
+        assertFalse(logStream.getLogStreamController().isOpened());
 
         // dispatcher is null as well
         assertNull(logStream.getWriteBuffer());
     }
 
     @Test
-    public void shouldStopAndStartLogStreamController()
+    public void shouldStopAndStartLogStreamController() throws Exception
     {
         // given
         final LogStream logStream = buildLogStream();
@@ -206,10 +197,10 @@ public class LogStreamTest
         logStream.open();
         final LogStreamController controller1 = logStream.getLogStreamController();
 
-        logStream.closeLogStreamController().join();
+        logStream.closeLogStreamController().get();
 
         // when log streaming is started
-        logStream.openLogStreamController().join();
+        logStream.openLogStreamController().get();
         final LogStreamController controller2 = logStream.getLogStreamController();
 
         // then
@@ -218,34 +209,33 @@ public class LogStreamTest
         assertNotNull(controller2);
 
         // is running
-        assertTrue(controller2.isRunning());
+        assertTrue(controller2.isOpened());
 
         // dispatcher is initialized
         assertNotNull(logStream.getWriteBuffer());
     }
 
     @Test
-    public void shouldStopAndStartLogStreamControllerWithDifferentAgentRunners()
+    public void shouldStopAndStartLogStreamControllerWithDifferentAgentRunners() throws Exception
     {
         // given
         final LogStream logStream = buildLogStream();
 
-        // set up block index and log storage
-        final ActorScheduler scheduler2 = ActorSchedulerBuilder.createDefaultScheduler("bar");
+        // TODO set up block index and log storage
 
         // given open log stream with stopped log stream controller
         logStream.open();
         closeables.manage(logStream);
-        logStream.closeLogStreamController().join();
+        logStream.closeLogStreamController().get();
 
         // when log streaming is started
-        logStream.openLogStreamController(scheduler2).join();
+        logStream.openLogStreamController(actorScheduler.get()).get();
         final LogStreamController logStreamController2 = logStream.getLogStreamController();
 
         // then
         // log stream controller has been set and is running
         assertNotNull(logStreamController2);
-        assertTrue(logStreamController2.isRunning());
+        assertTrue(logStreamController2.isOpened());
 
         // dispatcher is initialized
         assertNotNull(logStream.getWriteBuffer());
@@ -258,13 +248,13 @@ public class LogStreamTest
         final LogStream logStream = buildLogStream(b -> b.logStreamControllerDisabled(true));
 
         // when log streaming is started
-        logStream.openLogStreamController(actorScheduler);
+        logStream.openLogStreamController(actorScheduler.get());
         final LogStreamController logStreamController = logStream.getLogStreamController();
 
         // then
         // log stream controller has been set and is running
         assertNotNull(logStreamController);
-        assertTrue(logStreamController.isRunning());
+        assertTrue(logStreamController.isOpened());
 
         // dispatcher is initialized
         final Dispatcher writeBuffer = logStream.getWriteBuffer();
@@ -283,47 +273,47 @@ public class LogStreamTest
         logStream.close();
 
         // then controllers are not running
-        assertFalse(logStream.getLogBlockIndexController().isRunning());
-        assertFalse(logStream.getLogStreamController().isRunning());
+        assertFalse(logStream.getLogBlockIndexController().isOpened());
+        assertFalse(logStream.getLogStreamController().isOpened());
 
         // and log storage was closed
         assertThat(logStream.getLogStorage().isClosed()).isTrue();
     }
 
     @Test
-    public void shouldCloseLogStreamControllerAndAfterwardsStream()
+    public void shouldCloseLogStreamControllerAndAfterwardsStream() throws Exception
     {
         // given open log stream
         final LogStream logStream = buildLogStream();
         logStream.open();
 
         // when log stream controller is closed
-        logStream.closeLogStreamController().join();
+        logStream.closeLogStreamController().get();
 
         // then the log stream is closed
         assertThat(logStream.getWriteBuffer()).isNull();
-        assertThat(logStream.getLogStreamController().isRunning()).isFalse();
+        assertThat(logStream.getLogStreamController().isOpened()).isFalse();
 
         // when log stream is closed
-        logStream.closeAsync().join();
+        logStream.closeAsync().get();
 
         // then
         assertThat(logStream.getLogBlockIndexController().isClosed()).isTrue();
     }
 
     @Test
-    public void shouldCloseLogBlockIndexController()
+    public void shouldCloseLogBlockIndexController() throws Exception
     {
         // given open log stream without log stream controller
         final LogStream logStream = buildLogStream(b -> b.logStreamControllerDisabled(true));
         logStream.open();
 
         // when log stream is closed
-        logStream.closeAsync().join();
+        logStream.closeAsync().get();
 
         // then
         // controllers are not running
-        assertFalse(logStream.getLogBlockIndexController().isRunning());
+        assertFalse(logStream.getLogBlockIndexController().isOpened());
 
         // and log storage was closed
         assertThat(logStream.getLogStorage().isClosed()).isTrue();
@@ -343,8 +333,8 @@ public class LogStreamTest
         logStream.open();
 
         // then controllers run again
-        assertTrue(logStream.getLogBlockIndexController().isRunning());
-        assertTrue(logStream.getLogStreamController().isRunning());
+        assertTrue(logStream.getLogBlockIndexController().isOpened());
+        assertTrue(logStream.getLogStreamController().isOpened());
     }
 
     @Test
@@ -361,7 +351,7 @@ public class LogStreamTest
         logStream.open();
 
         // then
-        assertThat(logStream.getLogBlockIndexController().isRunning()).isTrue();
+        assertThat(logStream.getLogBlockIndexController().isOpened()).isTrue();
     }
 
     @Test

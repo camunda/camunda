@@ -15,16 +15,15 @@
  */
 package io.zeebe.logstreams.log;
 
-import java.util.concurrent.CompletableFuture;
-
-import org.agrona.DirectBuffer;
+import java.util.concurrent.Future;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.logstreams.impl.LogBlockIndexController;
 import io.zeebe.logstreams.impl.LogStreamController;
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
 import io.zeebe.logstreams.spi.LogStorage;
-import io.zeebe.util.actor.ActorScheduler;
+import io.zeebe.util.sched.ZbActorScheduler;
+import org.agrona.DirectBuffer;
 
 
 /**
@@ -75,18 +74,19 @@ public interface LogStream extends AutoCloseable
     /**
      * Opens the log stream asynchronously.
      */
-    CompletableFuture<Void> openAsync();
+    Future<Void> openAsync();
 
     /**
      * Closes the log stream synchronously. This blocks until the log stream is
      * closed.
      */
+    @Override
     void close();
 
     /**
      * Closes the log stream asynchronous.
      */
-    CompletableFuture<Void> closeAsync();
+    Future<Void> closeAsync();
 
     /**
      * @return the current position of the log appender, or a negative value if
@@ -169,7 +169,7 @@ public interface LogStream extends AutoCloseable
     /**
      * Stops the streaming to the log storage. New events are no longer append to the log storage.
      */
-    CompletableFuture<Void> closeLogStreamController();
+    Future<Void> closeLogStreamController();
 
     /**
      * This method delegates to {@link #openLogStreamController(AgentRunnerService, int)}.
@@ -180,7 +180,7 @@ public interface LogStream extends AutoCloseable
      * @see {@link #openLogStreamController(AgentRunnerService, int)}
      * @return returns the future for the log stream controller opening
      */
-    CompletableFuture<Void> openLogStreamController();
+    Future<Void> openLogStreamController();
 
     /**
      * This method delegates to {@link #openLogStreamController(AgentRunnerService, int)}.
@@ -191,7 +191,7 @@ public interface LogStream extends AutoCloseable
      * @param actorScheduler the agent runner service which is used for the scheduling
      * @return returns the future for the log stream controller opening
      */
-    CompletableFuture<Void> openLogStreamController(ActorScheduler actorScheduler);
+    Future<Void> openLogStreamController(ZbActorScheduler actorScheduler);
 
     /**
      * Starts the log streaming from the write buffer into log storage. The write buffer
@@ -204,7 +204,7 @@ public interface LogStream extends AutoCloseable
      * @param maxAppendBlockSize the maximum block size which should been appended
      * @return returns the future for the log stream controller opening
      */
-    CompletableFuture<Void> openLogStreamController(ActorScheduler actorScheduler, int maxAppendBlockSize);
+    Future<Void> openLogStreamController(ZbActorScheduler actorScheduler, int maxAppendBlockSize);
 
     /**
      * Truncates the log stream from the given position to the end of the stream.

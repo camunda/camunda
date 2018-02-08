@@ -15,93 +15,65 @@
  */
 package io.zeebe.logstreams.impl;
 
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.positionOffset;
+
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import io.zeebe.dispatcher.BlockPeek;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Subscription;
 import io.zeebe.logstreams.log.LogStreamFailureListener;
 import io.zeebe.logstreams.spi.LogStorage;
-import io.zeebe.util.actor.Actor;
-import io.zeebe.util.actor.ActorReference;
-import io.zeebe.util.actor.ActorScheduler;
-import io.zeebe.util.state.State;
-import io.zeebe.util.state.StateMachine;
-import io.zeebe.util.state.TransitionState;
-import io.zeebe.util.state.WaitState;
+import io.zeebe.util.sched.FutureUtil;
+import io.zeebe.util.sched.ZbActor;
+import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
+import io.zeebe.util.sched.future.CompletedActorFuture;
 import org.agrona.MutableDirectBuffer;
 import org.slf4j.Logger;
 
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.positionOffset;
-import static io.zeebe.logstreams.impl.LogStateMachineAgent.*;
-
-public class LogStreamController implements Actor
+public class LogStreamController extends ZbActor
 {
     public static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
 
-    protected static final int TRANSITION_FAIL = 3;
-    protected static final int TRANSITION_RECOVER = 5;
+    private final AtomicBoolean isOpenend = new AtomicBoolean(false);
+    private final AtomicBoolean isFailed = new AtomicBoolean(false);
 
-    // STATES /////////////////////////////////////////////////////////
+    private final Runnable peekNextBlock = this::peekNextBlock;
+    private final Runnable invokeListenersOnFailed = this::invokeListenersOnFailed;
+    private final Runnable discardNextBlock = this::discardNextBlock;
+    private final Runnable invokeListenersOnRecovered = this::invokeListenersOnRecovered;
 
-    protected final OpeningState openingState = new OpeningState();
-    protected final OpenState openState = new OpenState();
-    protected final FailingState failingState = new FailingState();
-    protected final FailedState failedState = new FailedState();
-    protected final RecoveredState recoveredState = new RecoveredState();
-    protected final ClosingState closingState = new ClosingState();
-    protected final ClosedState closedState = new ClosedState();
+    private long firstEventPosition;
 
-    protected final LogStateMachineAgent stateMachine;
+    private final CompletableActorFuture<Void> openFuture = new CompletableActorFuture<>();
+    private final CompletableActorFuture<Void> recoverFuture = new CompletableActorFuture<>();
 
     //  MANDATORY //////////////////////////////////////////////////
-    protected String name;
-    protected LogStorage logStorage;
-    protected ActorScheduler actorScheduler;
-    protected ActorReference controllerRef;
-    protected ActorReference writeBufferRef;
+    private String name;
+    private LogStorage logStorage;
+    private ZbActorScheduler actorScheduler;
 
-    protected final BlockPeek blockPeek = new BlockPeek();
-    protected int maxAppendBlockSize;
-    protected Dispatcher writeBuffer;
-    protected Subscription writeBufferSubscription;
-    protected final Runnable openStateRunnable;
-    protected final Runnable closedStateRunnable;
+    private final BlockPeek blockPeek = new BlockPeek();
+    private int maxAppendBlockSize;
+    private Dispatcher writeBuffer;
+    private Subscription writeBufferSubscription;
 
-    protected List<LogStreamFailureListener> failureListeners = new ArrayList<>();
+    private List<LogStreamFailureListener> failureListeners = new ArrayList<>();
 
     public LogStreamController(LogStreamImpl.LogStreamBuilder logStreamBuilder)
     {
         wrap(logStreamBuilder);
-
-        this.openStateRunnable = () ->
-        {
-            controllerRef = actorScheduler.schedule(this);
-        };
-        this.closedStateRunnable = () -> controllerRef.close();
-        this.stateMachine = new LogStateMachineAgent(
-            StateMachine.<LogContext>builder(s -> new LogContext(s))
-                .initialState(closedState)
-                .from(openingState).take(TRANSITION_DEFAULT).to(openState)
-                .from(openingState).take(TRANSITION_FAIL).to(failingState)
-                .from(openState).take(TRANSITION_FAIL).to(failingState)
-                .from(openState).take(TRANSITION_CLOSE).to(closingState)
-                .from(failingState).take(TRANSITION_DEFAULT).to(failedState)
-                .from(failedState).take(TRANSITION_CLOSE).to(closingState)
-                .from(failedState).take(TRANSITION_RECOVER).to(recoveredState)
-                .from(recoveredState).take(TRANSITION_DEFAULT).to(openState)
-                .from(closingState).take(TRANSITION_DEFAULT).to(closedState)
-                .from(closedState).take(TRANSITION_OPEN).to(openingState)
-                .build(), openStateRunnable, closedStateRunnable);
     }
 
     protected void wrap(LogStreamImpl.LogStreamBuilder logStreamBuilder)
     {
-        this.name = logStreamBuilder.getLogName();
+        this.name = logStreamBuilder.getLogName() + ".appender";
         this.logStorage = logStreamBuilder.getLogStorage();
         this.actorScheduler = logStreamBuilder.getActorScheduler();
 
@@ -110,203 +82,217 @@ public class LogStreamController implements Actor
     }
 
     @Override
-    public int doWork()
-    {
-        return getStateMachine().doWork();
-    }
-
-    @Override
-    public String name()
+    public String getName()
     {
         return name;
     }
 
-    protected LogStateMachineAgent getStateMachine()
+    public void open()
     {
-        return stateMachine;
+        FutureUtil.join(openAsync());
     }
 
-    protected int getMaxAppendBlockSize()
+    public ActorFuture<Void> openAsync()
     {
-        return maxAppendBlockSize;
-    }
+        // reset future
+        openFuture.close();
+        openFuture.setAwaitingResult();
 
-    protected class OpeningState implements TransitionState<LogContext>
-    {
-        @Override
-        public void work(LogContext context)
+        if (isOpenend.compareAndSet(false, true))
         {
-            try
-            {
-                if (!logStorage.isOpen())
-                {
-                    logStorage.open();
-                }
-
-                writeBufferSubscription = writeBuffer.getSubscriptionByName("log-appender");
-                writeBufferRef = actorScheduler.schedule(writeBuffer.getConductor());
-
-                context.take(TRANSITION_DEFAULT);
-                stateMachine.completeOpenFuture(null);
-            }
-            catch (Exception e)
-            {
-                context.take(TRANSITION_FAIL);
-                stateMachine.completeOpenFuture(e);
-            }
+            actorScheduler.submitActor(this);
         }
+        else
+        {
+            openFuture.complete(null);
+        }
+
+        return openFuture;
     }
 
-    protected class OpenState implements State<LogContext>
+    @Override
+    protected void onActorStarted()
     {
-        @Override
-        public int doWork(LogContext context)
+        if (!logStorage.isOpen())
         {
-            final int bytesAvailable = writeBufferSubscription.peekBlock(blockPeek, maxAppendBlockSize, true);
+            logStorage.open();
+        }
 
-            if (bytesAvailable > 0)
+        actor.await(writeBuffer.getSubscriptionAsync("log-appender"), (subscription, failure) ->
+        {
+            if (failure == null)
             {
-                final ByteBuffer nioBuffer = blockPeek.getRawBuffer();
-                final MutableDirectBuffer buffer = blockPeek.getBuffer();
+                writeBufferSubscription = subscription;
 
-                final long position = buffer.getLong(positionOffset(messageOffset(0)));
-                context.setFirstEventPosition(position);
+                final Runnable peekBlocksAndAppend = this::peekBlocksAndAppend;
+                actor.consume(writeBufferSubscription, peekBlocksAndAppend);
 
-                final long address = logStorage.append(nioBuffer);
-
-                if (address >= 0)
-                {
-                    blockPeek.markCompleted();
-                }
-                else
-                {
-                    blockPeek.markFailed();
-
-                    context.take(TRANSITION_FAIL);
-                }
-
-                return 1;
+                openFuture.complete(null);
             }
             else
             {
-                return 0;
+                openFuture.completeExceptionally(failure);
             }
-        }
+        });
     }
 
-    protected class FailingState implements TransitionState<LogContext>
+    private void peekBlocksAndAppend()
     {
-        @Override
-        public void work(LogContext context)
+        actor.runUntilDone(peekNextBlock);
+    }
+
+    private void peekNextBlock()
+    {
+        final int bytesAvailable = writeBufferSubscription.peekBlock(blockPeek, maxAppendBlockSize, true);
+
+        if (bytesAvailable > 0)
         {
-            LOG.debug("Failing for first event position: {}", context.getFirstEventPosition());
-            for (int i = 0; i < failureListeners.size(); i++)
+            final ByteBuffer nioBuffer = blockPeek.getRawBuffer();
+            final MutableDirectBuffer buffer = blockPeek.getBuffer();
+
+            final long position = buffer.getLong(positionOffset(messageOffset(0)));
+            firstEventPosition = position;
+
+            final long address = logStorage.append(nioBuffer);
+
+            if (address >= 0)
             {
-                final LogStreamFailureListener logStreamWriteErrorListener = failureListeners.get(i);
-                try
-                {
-                    logStreamWriteErrorListener.onFailed(context.getFirstEventPosition());
-                }
-                catch (Exception e)
-                {
-                    LOG.error("Exception while invoking {}", logStreamWriteErrorListener);
-                }
+                blockPeek.markCompleted();
+                // continue with next block
+                actor.yield();
             }
-
-            context.take(TRANSITION_DEFAULT);
-        }
-    }
-
-    protected class FailedState implements State<LogContext>
-    {
-        @Override
-        public int doWork(LogContext context)
-        {
-            final int available = writeBufferSubscription.peekBlock(blockPeek, maxAppendBlockSize, true);
-
-            if (available > 0)
+            else
             {
                 blockPeek.markFailed();
-            }
+                actor.done();
 
-            return available;
+                actor.run(invokeListenersOnFailed);
+            }
+        }
+        else
+        {
+            actor.done();
         }
     }
 
-    protected class RecoveredState implements TransitionState<LogContext>
+    private void invokeListenersOnFailed()
     {
-        @Override
-        public void work(LogContext context)
+        LOG.debug("Failing for first event position: {}", firstEventPosition);
+
+        for (int i = 0; i < failureListeners.size(); i++)
         {
-            for (int i = 0; i < failureListeners.size(); i++)
+            final LogStreamFailureListener logStreamWriteErrorListener = failureListeners.get(i);
+            try
             {
-                final LogStreamFailureListener logStreamWriteErrorListener = failureListeners.get(i);
-                try
-                {
-                    logStreamWriteErrorListener.onRecovered();
-                }
-                catch (Exception e)
-                {
-                    LOG.error("Exception while invoking {}", logStreamWriteErrorListener);
-                }
+                logStreamWriteErrorListener.onFailed(firstEventPosition);
             }
-
-            context.take(TRANSITION_DEFAULT);
+            catch (Exception e)
+            {
+                LOG.error("Exception while invoking {}", logStreamWriteErrorListener);
+            }
         }
+
+        actor.runUntilDone(discardNextBlock);
     }
 
-    protected class ClosingState implements TransitionState<LogContext>
+    private void discardNextBlock()
     {
-        @Override
-        public void work(LogContext context)
+        final int available = writeBufferSubscription.peekBlock(blockPeek, maxAppendBlockSize, true);
+
+        if (available > 0)
         {
-            writeBufferRef.close();
-            context.take(TRANSITION_DEFAULT);
+            blockPeek.markFailed();
+            // continue with next block
+            actor.yield();
         }
-    }
-
-    protected class ClosedState implements WaitState<LogContext>
-    {
-        @Override
-        public void work(LogContext logContext) throws Exception
+        else
         {
-            getStateMachine().closing();
+            actor.done();
+
+            // block until recovered
+            isFailed.set(true);
+            actor.await(recoverFuture, (v, failure) ->
+            {
+                // reset future
+                recoverFuture.close();
+                recoverFuture.setAwaitingResult();
+
+                actor.run(invokeListenersOnRecovered);
+            });
         }
-    }
-
-    public boolean isRunning()
-    {
-        return getStateMachine().isRunning();
-    }
-
-    public void open()
-    {
-        getStateMachine().open();
-    }
-
-    public CompletableFuture<Void> openAsync()
-    {
-        return getStateMachine().openAsync();
-    }
-
-    public void close()
-    {
-        getStateMachine().close();
-    }
-
-    public CompletableFuture<Void> closeAsync()
-    {
-        return getStateMachine().closeAsync();
     }
 
     public void recover()
     {
-        // TODO who take care of the log storage and invoke this method?
-
-        stateMachine.addCommand(context ->
+        if (isFailed.compareAndSet(true, false))
         {
-            context.take(TRANSITION_RECOVER);
-        });
+            recoverFuture.complete(null);
+        }
+    }
+
+    private void invokeListenersOnRecovered()
+    {
+        for (int i = 0; i < failureListeners.size(); i++)
+        {
+            final LogStreamFailureListener logStreamWriteErrorListener = failureListeners.get(i);
+            try
+            {
+                logStreamWriteErrorListener.onRecovered();
+            }
+            catch (Exception e)
+            {
+                LOG.error("Exception while invoking {}", logStreamWriteErrorListener);
+            }
+        }
+    }
+
+    public void close()
+    {
+        FutureUtil.join(closeAsync());
+    }
+
+    public ActorFuture<Void> closeAsync()
+    {
+        if (isOpenend.compareAndSet(true, false))
+        {
+            return actor.close();
+        }
+        else
+        {
+            return new CompletedActorFuture<>(null);
+        }
+    }
+
+    @Override
+    protected void onActorClosing()
+    {
+        isOpenend.set(false);
+        isFailed.set(false);
+    }
+
+    public void registerFailureListener(LogStreamFailureListener listener)
+    {
+        actor.call(() -> failureListeners.add(listener));
+    }
+
+    public void removeFailureListener(LogStreamFailureListener listener)
+    {
+        actor.call(() -> failureListeners.remove(listener));
+    }
+
+    public boolean isOpened()
+    {
+        return isOpenend.get();
+    }
+
+    public boolean isClosed()
+    {
+        return !isOpenend.get();
+    }
+
+    public boolean isFailed()
+    {
+        return isFailed.get();
     }
 
     public long getCurrentAppenderPosition()
@@ -321,33 +307,8 @@ public class LogStreamController implements Actor
         }
     }
 
-    public boolean isClosed()
+    protected int getMaxAppendBlockSize()
     {
-        return stateMachine.getCurrentState() == closedState;
-    }
-
-    public boolean isOpen()
-    {
-        return stateMachine.getCurrentState() == openState;
-    }
-
-    public boolean isFailed()
-    {
-        return stateMachine.getCurrentState() == failedState;
-    }
-
-    public void registerFailureListener(LogStreamFailureListener listener)
-    {
-        stateMachine.addCommand(context -> failureListeners.add(listener));
-    }
-
-    public void removeFailureListener(LogStreamFailureListener listener)
-    {
-        stateMachine.addCommand(context -> failureListeners.remove(listener));
-    }
-
-    public Dispatcher getWriteBuffer()
-    {
-        return writeBuffer;
+        return maxAppendBlockSize;
     }
 }

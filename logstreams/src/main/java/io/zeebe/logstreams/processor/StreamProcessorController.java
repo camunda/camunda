@@ -22,11 +22,26 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 
 import io.zeebe.logstreams.impl.Loggers;
-import io.zeebe.logstreams.log.*;
-import io.zeebe.logstreams.spi.*;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamFailureListener;
+import io.zeebe.logstreams.log.LogStreamReader;
+import io.zeebe.logstreams.log.LogStreamWriter;
+import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.logstreams.spi.ReadableSnapshot;
+import io.zeebe.logstreams.spi.SnapshotPolicy;
+import io.zeebe.logstreams.spi.SnapshotStorage;
+import io.zeebe.logstreams.spi.SnapshotWriter;
 import io.zeebe.util.DeferredCommandContext;
-import io.zeebe.util.actor.*;
-import io.zeebe.util.state.*;
+import io.zeebe.util.actor.Actor;
+import io.zeebe.util.actor.ActorReference;
+import io.zeebe.util.actor.ActorScheduler;
+import io.zeebe.util.state.ComposedState;
+import io.zeebe.util.state.SimpleStateMachineContext;
+import io.zeebe.util.state.State;
+import io.zeebe.util.state.StateMachine;
+import io.zeebe.util.state.StateMachineAgent;
+import io.zeebe.util.state.TransitionState;
+import io.zeebe.util.state.WaitState;
 import org.slf4j.Logger;
 
 public class StreamProcessorController implements Actor
@@ -110,7 +125,7 @@ public class StreamProcessorController implements Actor
     public StreamProcessorController(StreamProcessorContext context)
     {
         this.streamProcessorContext = context;
-        this.actorScheduler = context.getTaskScheduler();
+        this.actorScheduler = (ActorScheduler) context.getActorScheduler();
         this.streamProcessor = context.getStreamProcessor();
         this.logStreamReader = context.getLogStreamReader();
         this.logStreamWriter = context.getLogStreamWriter();

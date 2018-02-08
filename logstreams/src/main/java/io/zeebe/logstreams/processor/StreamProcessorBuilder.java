@@ -18,11 +18,17 @@ package io.zeebe.logstreams.processor;
 import java.time.Duration;
 import java.util.Objects;
 
-import io.zeebe.logstreams.log.*;
+import io.zeebe.logstreams.log.BufferedLogStreamReader;
+import io.zeebe.logstreams.log.DisabledLogStreamWriter;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamReader;
+import io.zeebe.logstreams.log.LogStreamWriter;
+import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.logstreams.snapshot.TimeBasedSnapshotPolicy;
-import io.zeebe.logstreams.spi.*;
+import io.zeebe.logstreams.spi.SnapshotPolicy;
+import io.zeebe.logstreams.spi.SnapshotStorage;
 import io.zeebe.util.DeferredCommandContext;
-import io.zeebe.util.actor.ActorScheduler;
+import io.zeebe.util.sched.ZbActorScheduler;
 
 public class StreamProcessorBuilder
 {
@@ -33,7 +39,7 @@ public class StreamProcessorBuilder
 
     protected LogStream logStream;
 
-    protected ActorScheduler actorScheduler;
+    protected ZbActorScheduler actorScheduler;
 
     protected SnapshotPolicy snapshotPolicy;
     protected SnapshotStorage snapshotStorage;
@@ -61,7 +67,7 @@ public class StreamProcessorBuilder
         return this;
     }
 
-    public StreamProcessorBuilder actorScheduler(ActorScheduler actorScheduler)
+    public StreamProcessorBuilder actorScheduler(ZbActorScheduler actorScheduler)
     {
         this.actorScheduler = actorScheduler;
         return this;
@@ -152,7 +158,7 @@ public class StreamProcessorBuilder
 
         ctx.setLogStream(logStream);
 
-        ctx.setTaskScheduler(actorScheduler);
+        ctx.setActorScheduler(actorScheduler);
 
         ctx.setLogStreamReader(logStreamReader);
         ctx.setLogStreamWriter(logStreamWriter);

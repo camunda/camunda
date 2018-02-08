@@ -25,25 +25,36 @@ import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.dispatcher.impl.PositionUtil;
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
-import io.zeebe.logstreams.log.*;
+import io.zeebe.logstreams.log.BufferedLogStreamReader;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamFailureListener;
+import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.snapshot.TimeBasedSnapshotPolicy;
-import io.zeebe.logstreams.spi.*;
-import io.zeebe.util.actor.ActorScheduler;
+import io.zeebe.logstreams.spi.LogStorage;
+import io.zeebe.logstreams.spi.SnapshotPolicy;
+import io.zeebe.logstreams.spi.SnapshotStorage;
+import io.zeebe.util.sched.ZbActor;
+import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
+import io.zeebe.util.sched.future.CompletedActorFuture;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.status.*;
+import org.agrona.concurrent.status.AtomicLongPosition;
+import org.agrona.concurrent.status.CountersManager;
+import org.agrona.concurrent.status.Position;
 
 /**
  * Represents the implementation of the LogStream interface.
  */
-public final class LogStreamImpl implements LogStream
+public final class LogStreamImpl extends ZbActor implements LogStream
 {
     public static final String EXCEPTION_MSG_TRUNCATE_FAILED = "Truncation failed! Position %d was not found.";
     public static final String EXCEPTION_MSG_TRUNCATE_AND_LOG_STREAM_CTRL_IN_PARALLEL = "Can't truncate the log storage and have a log stream controller active at the same time.";
@@ -60,7 +71,7 @@ public final class LogStreamImpl implements LogStream
 
     protected final LogStorage logStorage;
     protected final LogBlockIndex blockIndex;
-    protected final ActorScheduler actorScheduler;
+    protected final ZbActorScheduler actorScheduler;
 
 
     protected final LogBlockIndexController logBlockIndexController;
@@ -92,8 +103,16 @@ public final class LogStreamImpl implements LogStream
             this.logStreamController = new LogStreamController(logStreamBuilder);
             this.writeBuffer = logStreamBuilder.getWriteBuffer();
         }
+
+        actorScheduler.submitActor(this);
     }
 
+    @Override
+    protected boolean isAutoClosing()
+    {
+        // this is a daemon actor for open / close orchestration
+        return false;
+    }
 
     @Override
     public LogBlockIndexController getLogBlockIndexController()
@@ -143,12 +162,24 @@ public final class LogStreamImpl implements LogStream
     }
 
     @Override
-    public CompletableFuture<Void> openAsync()
+    public Future<Void> openAsync()
     {
         if (logStreamController != null)
         {
-            return CompletableFuture.allOf(logBlockIndexController.openAsync(),
-                openStreamControlling(actorScheduler, logStreamController.getMaxAppendBlockSize()));
+            final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+
+            actor.call(() ->
+            {
+                actor.await(logBlockIndexController.openAsync(), t ->
+                {
+                    actor.await(openStreamControlling(actorScheduler, logStreamController.getMaxAppendBlockSize()), t2 ->
+                    {
+                        future.complete(null);
+                    });
+                });
+            });
+
+            return future;
         }
         else
         {
@@ -174,19 +205,41 @@ public final class LogStreamImpl implements LogStream
     }
 
     @Override
-    public CompletableFuture<Void> closeAsync()
+    public Future<Void> closeAsync()
     {
-        if (writeBuffer != null)
+        final CompletableActorFuture<Void> closeFuture = new CompletableActorFuture<>();
+
+        actor.call(() ->
         {
-            return CompletableFuture.allOf(logBlockIndexController.closeAsync(),
-                writeBuffer.closeAsync()
-                           .thenCompose((v) -> logStreamController.closeAsync())
-                           .thenAccept((v) -> logStorage.close()));
-        }
-        else
-        {
-            return logBlockIndexController.closeAsync().thenAccept((v) -> logStorage.close());
-        }
+            if (writeBuffer != null)
+            {
+                actor.await(writeBuffer.closeAsync(), t ->
+                {
+                    actor.await(logBlockIndexController.closeAsync(), t2 ->
+                    {
+                        actor.await(logStreamController.closeAsync(), t3 ->
+                        {
+                            logStorage.close();
+
+                            writeBuffer = null;
+
+                            closeFuture.complete(null);
+                        });
+                    });
+                });
+            }
+            else
+            {
+                actor.await(logBlockIndexController.closeAsync(), t ->
+                {
+                    logStorage.close();
+
+                    closeFuture.complete(null);
+                });
+            }
+        });
+
+        return closeFuture;
     }
 
     @Override
@@ -256,40 +309,53 @@ public final class LogStreamImpl implements LogStream
     }
 
     @Override
-    public CompletableFuture<Void> closeLogStreamController()
+    public Future<Void> closeLogStreamController()
     {
         if (logStreamController != null)
         {
-            return writeBuffer.closeAsync()
-                              .thenCompose((v) -> logStreamController.closeAsync())
-                              .thenAccept((v) -> writeBuffer = null);
+            final CompletableActorFuture<Void> closeFuture = new CompletableActorFuture<>();
+
+            actor.call(() ->
+            {
+                actor.await(writeBuffer.closeAsync(), (v1, t1) ->
+                {
+                    actor.await(logStreamController.closeAsync(), (v2, t2) ->
+                    {
+                        writeBuffer = null;
+
+                        closeFuture.complete(null);
+                    });
+                });
+            });
+
+            return closeFuture;
         }
         else
         {
-            return CompletableFuture.completedFuture(null);
+            return new CompletedActorFuture<>(null);
         }
     }
 
     @Override
-    public CompletableFuture<Void> openLogStreamController()
+    public Future<Void> openLogStreamController()
     {
         return openLogStreamController(actorScheduler, DEFAULT_MAX_APPEND_BLOCK_SIZE);
     }
 
     @Override
-    public CompletableFuture<Void> openLogStreamController(ActorScheduler actorScheduler)
+    public Future<Void> openLogStreamController(ZbActorScheduler actorScheduler)
     {
         return openLogStreamController(actorScheduler, DEFAULT_MAX_APPEND_BLOCK_SIZE);
     }
 
     @Override
-    public CompletableFuture<Void> openLogStreamController(ActorScheduler actorScheduler,
+    public Future<Void> openLogStreamController(ZbActorScheduler actorScheduler,
                                                            int maxAppendBlockSize)
     {
         return openStreamControlling(actorScheduler, maxAppendBlockSize);
     }
 
-    private CompletableFuture<Void> openStreamControlling(ActorScheduler actorScheduler, int maxAppendBlockSize)
+    private ActorFuture<Void> openStreamControlling(ZbActorScheduler actorScheduler, int maxAppendBlockSize)
     {
         if ((writeBuffer != null && writeBuffer.isClosed()) || writeBuffer == null)
         {
@@ -307,7 +373,7 @@ public final class LogStreamImpl implements LogStream
         return logStreamController.openAsync();
     }
 
-    private LogStreamBuilder createNewBuilder(ActorScheduler actorScheduler, int maxAppendBlockSize)
+    private LogStreamBuilder createNewBuilder(ZbActorScheduler actorScheduler, int maxAppendBlockSize)
     {
         if (!logStorage.isOpen())
         {
@@ -370,7 +436,7 @@ public final class LogStreamImpl implements LogStream
         protected final DirectBuffer topicName;
         protected final int partitionId;
         protected final String logName;
-        protected ActorScheduler actorScheduler;
+        protected ZbActorScheduler actorScheduler;
         protected LogStorage logStorage;
         protected LogBlockIndex logBlockIndex;
 
@@ -449,7 +515,7 @@ public final class LogStreamImpl implements LogStream
             return self();
         }
 
-        public T actorScheduler(ActorScheduler actorScheduler)
+        public T actorScheduler(ZbActorScheduler actorScheduler)
         {
             this.actorScheduler = actorScheduler;
             return self();
@@ -533,7 +599,7 @@ public final class LogStreamImpl implements LogStream
             return logName;
         }
 
-        public ActorScheduler getActorScheduler()
+        public ZbActorScheduler getActorScheduler()
         {
             Objects.requireNonNull(actorScheduler, "No actor scheduler provided.");
             return actorScheduler;
@@ -613,7 +679,7 @@ public final class LogStreamImpl implements LogStream
                     .bufferSize(writeBufferSize)
                     .subscriptions("log-appender")
                     .initialPartitionId(partitionId + 1)
-                    .conductorExternallyManaged()
+                    .actorScheduler(actorScheduler)
                     .build();
             }
             return writeBuffer;

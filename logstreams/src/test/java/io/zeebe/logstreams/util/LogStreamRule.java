@@ -17,9 +17,9 @@ package io.zeebe.logstreams.util;
 
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.util.actor.ActorScheduler;
-import io.zeebe.util.actor.ActorSchedulerBuilder;
 import io.zeebe.util.buffer.BufferUtil;
+import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
 
@@ -31,7 +31,7 @@ public class LogStreamRule extends ExternalResource
     private final String name;
     private final TemporaryFolder temporaryFolder;
 
-    private ActorScheduler actorScheduler;
+    private ZbActorScheduler actorScheduler;
     private LogStream logStream;
 
     public LogStreamRule(final TemporaryFolder temporaryFolder)
@@ -48,7 +48,8 @@ public class LogStreamRule extends ExternalResource
     @Override
     protected void before()
     {
-        actorScheduler = ActorSchedulerBuilder.createDefaultScheduler(name + "-scheduler");
+        actorScheduler = new ActorSchedulerRule().get();
+        actorScheduler.start();
 
         logStream = LogStreams.createFsLogStream(BufferUtil.wrapString(name), 0)
                               .logDirectory(temporaryFolder.getRoot().getAbsolutePath())
@@ -63,7 +64,7 @@ public class LogStreamRule extends ExternalResource
     protected void after()
     {
         logStream.close();
-        actorScheduler.close();
+        actorScheduler.stop();
     }
 
     public LogStream getLogStream()

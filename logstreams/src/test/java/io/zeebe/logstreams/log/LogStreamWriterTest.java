@@ -33,6 +33,11 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.zeebe.dispatcher.ClaimedFragment;
+import io.zeebe.dispatcher.Dispatcher;
+import io.zeebe.dispatcher.impl.log.LogBufferAppender;
+import io.zeebe.logstreams.impl.LogEntryDescriptor;
+import io.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
@@ -42,12 +47,6 @@ import org.junit.rules.ExpectedException;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.stubbing.Answer;
-
-import io.zeebe.dispatcher.ClaimedFragment;
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.dispatcher.impl.log.LogBufferAppender;
-import io.zeebe.logstreams.impl.LogEntryDescriptor;
-import io.zeebe.util.buffer.BufferWriter;
 
 public class LogStreamWriterTest
 {
@@ -318,7 +317,8 @@ public class LogStreamWriterTest
             final ClaimedFragment claimedFragment = (ClaimedFragment) invocation.getArguments()[0];
             final int length = (int) invocation.getArguments()[1];
 
-            claimedFragment.wrap(writeBuffer, 0, alignedFramedLength(length));
+            claimedFragment.wrap(writeBuffer, 0, alignedFramedLength(length), () ->
+            { });
 
             return offset + alignedFramedLength(length);
         };

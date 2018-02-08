@@ -22,12 +22,15 @@ import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
 import java.nio.ByteBuffer;
 
+import io.zeebe.logstreams.LogStreams;
+import io.zeebe.logstreams.log.BufferedLogStreamReader;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamBatchWriter;
+import io.zeebe.logstreams.log.LogStreamBatchWriterImpl;
+import io.zeebe.logstreams.log.LogStreamReader;
+import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import io.zeebe.logstreams.LogStreams;
-import io.zeebe.logstreams.log.*;
-import io.zeebe.util.actor.ActorScheduler;
-import io.zeebe.util.actor.ActorSchedulerBuilder;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -42,21 +45,21 @@ public class LogIntegrationTest
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
 
-    protected ActorScheduler actorScheduler;
+    @Rule
+    public ActorSchedulerRule actorScheduler = new ActorSchedulerRule();
+
     private LogStream logStream;
 
     @Before
     public void setup()
     {
-        actorScheduler = ActorSchedulerBuilder.createDefaultScheduler("test");
-
         final String logPath = tempFolder.getRoot().getAbsolutePath();
 
         logStream = LogStreams.createFsLogStream(TOPIC_NAME, 0)
                 .logRootPath(logPath)
                 .deleteOnClose(true)
                 .logSegmentSize(1024 * 1024 * 16)
-                .actorScheduler(actorScheduler)
+                .actorScheduler(actorScheduler.get())
                 .build();
 
         logStream.open();
@@ -66,7 +69,6 @@ public class LogIntegrationTest
     public void destroy() throws Exception
     {
         logStream.close();
-        actorScheduler.close();
     }
 
     @Test

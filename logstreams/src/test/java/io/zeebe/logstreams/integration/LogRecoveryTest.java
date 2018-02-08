@@ -27,12 +27,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.fs.FsLogStreamBuilder;
 import io.zeebe.logstreams.integration.util.LogIntegrationTestUtil;
-import io.zeebe.logstreams.log.*;
+import io.zeebe.logstreams.log.BufferedLogStreamReader;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.test.util.TestUtil;
-import io.zeebe.util.actor.ActorScheduler;
-import io.zeebe.util.actor.ActorSchedulerBuilder;
+import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.agrona.DirectBuffer;
-import org.junit.*;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 public class LogRecoveryTest
@@ -54,7 +57,8 @@ public class LogRecoveryTest
 
     private String logPath;
 
-    private ActorScheduler actorScheduler;
+    @Rule
+    public ActorSchedulerRule actorScheduler = new ActorSchedulerRule();
 
     private FsLogStreamBuilder logStreamBuilder;
 
@@ -62,8 +66,6 @@ public class LogRecoveryTest
     public void setup()
     {
         logPath = temFolder.getRoot().getAbsolutePath();
-
-        actorScheduler = ActorSchedulerBuilder.createDefaultScheduler("test");
 
         logStreamBuilder = getLogStreamBuilder();
     }
@@ -77,13 +79,7 @@ public class LogRecoveryTest
             .indexBlockSize(INDEX_BLOCK_SIZE)
             .readBlockSize(INDEX_BLOCK_SIZE)
             .snapshotPolicy(pos -> false)
-            .actorScheduler(actorScheduler);
-    }
-
-    @After
-    public void destroy() throws Exception
-    {
-        actorScheduler.close();
+            .actorScheduler(actorScheduler.get());
     }
 
     @Test
@@ -129,7 +125,7 @@ public class LogRecoveryTest
             .logSegmentSize(LOG_SEGMENT_SIZE)
             .indexBlockSize(INDEX_BLOCK_SIZE)
             .readBlockSize(INDEX_BLOCK_SIZE)
-            .actorScheduler(actorScheduler)
+            .actorScheduler(actorScheduler.get())
             .logStreamControllerDisabled(true)
             .build();
         newLog.open();
@@ -216,7 +212,7 @@ public class LogRecoveryTest
             .logSegmentSize(LOG_SEGMENT_SIZE)
             .indexBlockSize(INDEX_BLOCK_SIZE)
             .readBlockSize(INDEX_BLOCK_SIZE)
-            .actorScheduler(actorScheduler)
+            .actorScheduler(actorScheduler.get())
             .logStreamControllerDisabled(true)
             .build();
         newLog.open();
@@ -256,7 +252,7 @@ public class LogRecoveryTest
             .logSegmentSize(LOG_SEGMENT_SIZE)
             .indexBlockSize(INDEX_BLOCK_SIZE)
             .readBlockSize(INDEX_BLOCK_SIZE)
-            .actorScheduler(actorScheduler)
+            .actorScheduler(actorScheduler.get())
             .logStreamControllerDisabled(true)
             .build();
         newLog.open();
