@@ -151,6 +151,7 @@ public class AlertStateChangeIT extends AbstractAlertSchedulerIT {
     MimeMessage[] emails = greenMail.getReceivedMessages();
     assertThat(emails.length, is(1));
     assertThat(emails[0].getSubject(), is("[Camunda-Optimize] - Report status"));
+    assertThat(emails[0].getContent().toString(), containsString(simpleAlert.getName()));
     assertThat(emails[0].getContent().toString(), containsString("is not exceeded anymore."));
   }
 

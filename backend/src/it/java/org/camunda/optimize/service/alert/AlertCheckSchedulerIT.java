@@ -31,6 +31,7 @@ import java.util.UUID;
 
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_FLOW_NODE_TYPE;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.HEAT_VISUALIZATION;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -257,16 +258,18 @@ public class AlertCheckSchedulerIT extends AbstractAlertSchedulerIT {
 
       // when
       String token = embeddedOptimizeRule.getAuthenticationToken();
+      AlertCreationDto simpleAlert = createSimpleAlert(reportId);
       embeddedOptimizeRule.target(ALERT)
         .request()
         .header(HttpHeaders.AUTHORIZATION, BEARER + token)
-        .post(Entity.json(createSimpleAlert(reportId)));
+        .post(Entity.json(simpleAlert));
       assertThat(greenMail.waitForIncomingEmail(3000, 1), is(true));
 
       //then
       MimeMessage[] emails = greenMail.getReceivedMessages();
       assertThat(emails.length, is(1));
       assertThat(emails[0].getSubject(), is("[Camunda-Optimize] - Report status"));
+      assertThat(emails[0].getContent().toString(), containsString(simpleAlert.getName()));
     } finally {
       greenMail.stop();
     }
