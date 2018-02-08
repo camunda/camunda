@@ -171,7 +171,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertSchedulerIT {
   }
 
   @Test
-  public void reminderJobsAreRemovedOnAlertChange() throws Exception {
+  public void reminderJobsAreRemovedOnAlertDefinitionChange() throws Exception {
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
 

@@ -35,6 +35,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isIn;
+import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.fail;
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -149,6 +150,7 @@ public class ProcessDefinitionBaseImportIT {
 
     // then
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(elasticSearchRule.getProcessInstanceType());
+    assertThat(idsResp.getHits().getTotalHits(), is(not(0)));
     for (SearchHit searchHitFields : idsResp.getHits()) {
       List events = (List) searchHitFields.getSourceAsMap().get(EVENTS);
       assertThat(events.size(), is(3));
@@ -188,6 +190,7 @@ public class ProcessDefinitionBaseImportIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(elasticSearchRule.getProcessInstanceType());
+    assertThat(idsResp.getHits().getTotalHits(), is(not(0)));
     for (SearchHit searchHitFields : idsResp.getHits()) {
       assertThat(searchHitFields.getSourceAsMap().get("processDefinitionId"), is(latestPd));
     }
@@ -195,14 +198,13 @@ public class ProcessDefinitionBaseImportIT {
   }
 
   @Test
-  public void testDataForLatestProcessVersionsImportedFirst() {
+  public void testDataForLatestProcessVersionsImportedFirst() throws Exception {
     //given
     int oldPageSize = configurationService.getEngineImportProcessInstanceMaxPageSize();
     configurationService.setEngineImportProcessInstanceMaxPageSize(1);
     ArrayList<String> ids = new ArrayList<>();
 
     BpmnModelInstance simpleServiceTaskProcess = createSimpleServiceTaskProcess();
-    engineRule.deployAndStartProcess(simpleServiceTaskProcess);
 
     ProcessInstanceEngineDto latestProcessInstance = engineRule.deployAndStartProcess(simpleServiceTaskProcess);
     String latestPd = latestProcessInstance.getDefinitionId();
@@ -217,17 +219,20 @@ public class ProcessDefinitionBaseImportIT {
 
     //when
     embeddedOptimizeRule.scheduleImport();
+    embeddedOptimizeRule.scheduleImport();
 
     //then
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(elasticSearchRule.getProcessInstanceType());
+    assertThat(idsResp.getHits().getTotalHits(), is(not(0)));
     for (SearchHit searchHitFields : idsResp.getHits()) {
-      assertThat(idsResp.getHits().totalHits, is((long) ids.size()));
+      assertThat(idsResp.getHits().getTotalHits(), is((long) ids.size()));
       assertThat((String) searchHitFields.getSourceAsMap().get("processDefinitionId"), isIn(ids));
     }
     configurationService.setEngineImportProcessInstanceMaxPageSize(oldPageSize);
   }
+
 
   private void allEntriesInElasticsearchHaveAllData(String elasticsearchType, String expectedProcessDefinitionId) throws IOException {
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(elasticsearchType);
