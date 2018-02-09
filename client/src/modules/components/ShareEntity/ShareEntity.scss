@@ -1,0 +1,28 @@
+.ShareEntity {
+  flex-shrink: 0;
+}
+
+.ShareEntity__enable {
+  border-bottom: 1px solid lightgray;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  justify-content: space-between;
+  flex-direction: row;
+  line-height: 40px;
+}
+
+.ShareEntity__enable-text {
+  vertical-align: middle;
+  font-weight: bold;
+}
+
+.ShareEntity__enable-switch {
+  vertical-align: middle;
+  display: table-cell;
+}
+
+.ShareEntity__clipboard {
+  padding-top: 50px;
+  padding-bottom: 20px;
+}

@@ -1,9 +1,9 @@
 import React from 'react';
 import moment from 'moment';
 import {Link, Redirect} from 'react-router-dom';
-import {Button, Modal, Input, CopyToClipboard, ReportView} from 'components';
+import {Button, Modal, Input, ShareEntity, ReportView} from 'components';
 
-import {loadSingleReport, remove, getReportData, saveReport, getFlowNodeNames} from './service';
+import {loadSingleReport, remove, getReportData, saveReport, getFlowNodeNames, shareReport, revokeReportSharing, getSharedReport} from './service';
 import ControlPanel from './ControlPanel';
 
 import './Report.css';
@@ -239,7 +239,7 @@ export default class Report extends React.Component {
         <Modal open={shareModalVisible} onClose={this.closeShareModal} className='Report__share-modal'>
           <Modal.Header>Share {this.state.name}</Modal.Header>
           <Modal.Content>
-            <CopyToClipboard value={document.URL} />
+            <ShareEntity resourceId={this.id} shareEntity={shareReport} revokeEntitySharing={revokeReportSharing} getSharedEntity={getSharedReport}/>
           </Modal.Content>
           <Modal.Actions>
             <Button className="Report__close-share-modal-button" onClick={this.closeShareModal}>Close</Button>

@@ -45,3 +45,29 @@ export async function getReportData(query) {
 export async function saveReport(id, data) {
   return await put(`/api/report/${id}`, data);
 }
+
+export async function shareReport(reportId) {
+  const body = {
+    resourceId: reportId,
+    type: 'REPORT'
+  };
+  const response = await post(`/api/share/`, body);
+
+  const json = await response.json();
+  return json.id;
+}
+
+export async function getSharedReport(reportId) {
+  const response = await get(`/api/share/report/${reportId}`);
+
+  if(response.status > 201) {
+    return '';
+  } else {
+    const json = await response.json();
+    return json.id;
+  }
+}
+
+export async function revokeReportSharing(id) {
+  return await del(`/api/share/${id}`);
+}

@@ -16,4 +16,6 @@ export {Logo} from './Logo';
 export {EntityList} from './EntityList'
 export {Icon} from './Icon';
 export {ActionItem} from './ActionItem';
+export {ShareEntity} from './ShareEntity';
+export {Switch} from './Switch';
 export {Popover} from './Popover';
