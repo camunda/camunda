@@ -22,13 +22,15 @@ public class EmailNotificationService implements NotificationService {
   @Override
   public void notifyRecipient(String text, String destination) {
     logger.debug("sending email [{}] to [{}]", text, destination);
-    try {
-      sendEmail(destination, text);
-    } catch (EmailException e) {
-      logger.error("Was not able to send email from [{}] to [{}]!",
-        configurationService.getAlertEmailAddress(),
-        destination,
-        e);
+    if (configurationService.isEmailEnabled()) {
+      try {
+        sendEmail(destination, text);
+      } catch (EmailException e) {
+        logger.error("Was not able to send email from [{}] to [{}]!",
+            configurationService.getAlertEmailAddress(),
+            destination,
+            e);
+      }
     }
   }
 

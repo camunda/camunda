@@ -52,7 +52,7 @@ public class ReminderHandlingListener implements JobListener {
               jobDetails,
               alertReminderJobFactory.createTrigger(result.getAlert(),jobDetails)
           );
-        } catch (SchedulerException e) {
+        } catch (Exception e) {
           logger.error("can't schedule reminder for [{}]", result.getAlert().getId(), e);
         }
       } else {

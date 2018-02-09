@@ -124,6 +124,7 @@ public class ConfigurationService {
   private Integer containerHttpsPort;
   private Integer containerHttpPort;
 
+  private Boolean emailsEnabled;
   private String alertEmailUsername;
   private String alertEmailPassword;
   private String alertEmailAddress;
@@ -132,6 +133,7 @@ public class ConfigurationService {
   private String alertEmailProtocol;
 
   private Properties quartzProperties;
+
 
   public ConfigurationService() {
     this((String[]) null);
@@ -934,6 +936,13 @@ public class ConfigurationService {
     return alertEmailPassword;
   }
 
+  public boolean isEmailEnabled() {
+    if (emailsEnabled == null) {
+      emailsEnabled = jsonContext.read(ConfigurationServiceConstants.EMAIL_ENABLED);
+    }
+    return emailsEnabled;
+  }
+
   public String getAlertEmailAddress() {
     if (alertEmailAddress == null) {
       alertEmailAddress = jsonContext.read(ConfigurationServiceConstants.EMAIL_ADDRESS);
@@ -1298,6 +1307,10 @@ public class ConfigurationService {
 
   public void setAlertEmailUsername(String alertEmailUsername) {
     this.alertEmailUsername = alertEmailUsername;
+  }
+
+  public void setEmailsEnabled(Boolean emailsEnabled) {
+    this.emailsEnabled = emailsEnabled;
   }
 
   public void setAlertEmailPassword(String alertEmailPassword) {

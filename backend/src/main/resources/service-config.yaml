@@ -259,6 +259,7 @@ alerting:
   quartz:
     jobStore: 'org.quartz.simpl.RAMJobStore'
   email:
+    enabled: false
     # Username of your smtp server
     username: ''
     # Corresponding password to the given user of your smtp server

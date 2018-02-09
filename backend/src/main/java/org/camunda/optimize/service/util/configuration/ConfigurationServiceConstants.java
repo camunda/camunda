@@ -18,6 +18,7 @@ public interface ConfigurationServiceConstants {
   String EMAIL_USERNAME = "$.alerting.email.username";
   String EMAIL_PASSWORD = "$.alerting.email.password";
   String EMAIL_ADDRESS = "$.alerting.email.address";
+  String EMAIL_ENABLED = "$.alerting.email.enabled";
   String EMAIL_HOSTNAME = "$.alerting.email.hostname";
   String EMAIL_PORT = "$.alerting.email.port";
   String EMAIL_PROTOCOL = "$.alerting.email.securityProtocol";

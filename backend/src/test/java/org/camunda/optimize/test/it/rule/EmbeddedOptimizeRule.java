@@ -21,6 +21,7 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.test.util.SynchronizationEngineImportJob;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
+import org.quartz.SchedulerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
@@ -254,6 +255,11 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   }
 
   protected void finished(Description description) {
+    try {
+      this.getAlertService().getScheduler().clear();
+    } catch (SchedulerException e) {
+      logger.error("cant clear scheduler after test", e);
+    }
     TestEmbeddedCamundaOptimize.getInstance().resetConfiguration();
     LocalDateUtil.reset();
     reloadConfiguration();
