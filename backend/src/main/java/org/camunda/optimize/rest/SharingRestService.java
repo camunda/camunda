@@ -2,6 +2,7 @@ package org.camunda.optimize.rest;
 
 
 import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.sharing.EvaluatedDashboardShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.EvaluatedReportShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.SharingDto;
 import org.camunda.optimize.rest.providers.Secured;
@@ -21,7 +22,6 @@ import javax.ws.rs.core.MediaType;
 /**
  * @author Askar Akhmerov
  */
-@Secured
 @Path("/share")
 @Component
 public class SharingRestService {
@@ -30,6 +30,7 @@ public class SharingRestService {
   private SharingService sharingService;
 
   @POST
+  @Secured
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public IdDto createNewShare (SharingDto createSharingDto) {
@@ -38,12 +39,14 @@ public class SharingRestService {
   }
 
   @DELETE
+  @Secured
   @Path("/{id}")
-  public void deleteAlert(@PathParam("id") String shareId) {
+  public void deleteShare(@PathParam("id") String shareId) {
     sharingService.deleteShare(shareId);
   }
 
   @GET
+  @Secured
   @Path("/report/{id}")
   @Produces(MediaType.APPLICATION_JSON)
   public SharingDto findShareForReport(@PathParam("id") String resourceId) {
@@ -51,6 +54,7 @@ public class SharingRestService {
   }
 
   @GET
+  @Secured
   @Path("/dashboard/{id}")
   @Produces(MediaType.APPLICATION_JSON)
   public SharingDto findShareForDashboard(@PathParam("id") String resourceId) {
@@ -61,7 +65,14 @@ public class SharingRestService {
   @Path("/report/{id}/evaluate")
   @Produces(MediaType.APPLICATION_JSON)
   public EvaluatedReportShareDto evaluateReport(@PathParam("id") String shareId) {
-    return sharingService.evaluate(shareId).orElse(null);
+    return sharingService.evaluateReport(shareId).orElse(null);
+  }
+
+  @GET
+  @Path("/dashboard/{id}/evaluate")
+  @Produces(MediaType.APPLICATION_JSON)
+  public EvaluatedDashboardShareDto evaluateDashboard(@PathParam("id") String shareId) {
+    return sharingService.evaluateDashboard(shareId).orElse(null);
   }
 
 }

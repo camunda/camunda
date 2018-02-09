@@ -1,19 +1,9 @@
 package org.camunda.optimize.rest;
 
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.sharing.EvaluatedDashboardShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.SharedResourceType;
 import org.camunda.optimize.dto.optimize.query.sharing.SharingDto;
-import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.camunda.optimize.test.util.ReportDataHelper;
+import org.camunda.optimize.service.sharing.AbstractSharingIT;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -24,9 +14,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -39,17 +27,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
  */
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"/it/it-applicationContext.xml"})
-public class SharingRestServiceIT {
-
-  public static final String BEARER = "Bearer ";
-  public static final String SHARE = "share";
-  public static final String FAKE_REPORT_ID = "fake";
-  public static final String EVALUATE = "evaluate";
-  public static final String REPORT = "report";
-
-  public EngineIntegrationRule engineRule = new EngineIntegrationRule();
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
+public class SharingRestServiceIT extends AbstractSharingIT {
 
   @Rule
   public RuleChain chain = RuleChain
@@ -270,6 +248,39 @@ public class SharingRestServiceIT {
   }
 
   @Test
+  public void evaluateSharedDashboard() throws Exception {
+    //given
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+
+    String reportId = createReport();
+    String dashboardWithReport = createDashboardWithReport(token, reportId);
+    String dashboardShareId = addShareForDashboard(token, dashboardWithReport);
+
+    //when
+    Response response =
+        embeddedOptimizeRule.target(getSharedDashboardEvaluationPath(dashboardShareId))
+            .request()
+            .get();
+    EvaluatedDashboardShareDto dashboardShareDto = response.readEntity(EvaluatedDashboardShareDto.class);
+    //then
+    assertThat(dashboardShareDto, is(notNullValue()));
+    assertThat(dashboardShareDto.getId(), is(dashboardShareId));
+    assertThat(dashboardShareDto.getDashboard(), is(notNullValue()));
+    assertThat(dashboardShareDto.getDashboard().getReportShares(), is(notNullValue()));
+    assertThat(dashboardShareDto.getDashboard().getReportShares().size(), is(1));
+
+    //when
+    String reportShareId = dashboardShareDto.getDashboard().getReportShares().get(0).getShareId();
+    response =
+        embeddedOptimizeRule.target(getSharedReportEvaluationPath(reportShareId))
+            .request()
+            .get();
+    HashMap evaluatedReportAsMap = response.readEntity(HashMap.class);
+
+    assertReportData(reportId, reportShareId, evaluatedReportAsMap);
+  }
+
+  @Test
   public void findShareForDashboardWithoutAuthentication() throws Exception {
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
@@ -279,11 +290,11 @@ public class SharingRestServiceIT {
     addShareForDashboard(token, dashboardWithReport);
 
     //when
-    Response response = embeddedOptimizeRule.target(SHARE + "/dashboard/" + dashboardWithReport)
+    Response response = embeddedOptimizeRule.target(SHARE + "/" + DASHBOARD + "/" + dashboardWithReport)
         .request()
         .get();
 
-    // then the status code is not authorized
+    // then
     assertThat(response.getStatus(), is(401));
   }
 
@@ -300,66 +311,19 @@ public class SharingRestServiceIT {
       embeddedOptimizeRule.target(getSharedReportEvaluationPath(shareId))
         .request()
         .get();
-    HashMap sharingDto = response.readEntity(HashMap.class);
+    HashMap evaluatedReportAsMap = response.readEntity(HashMap.class);
 
     //then
     assertThat(response.getStatus(), is(200));
-    assertThat(sharingDto, is(notNullValue()));
-    assertThat(sharingDto.get("id"), is(shareId));
-    Map reportMap = (Map) sharingDto.get("report");
+    assertReportData(reportId, shareId, evaluatedReportAsMap);
+  }
+
+  private void assertReportData(String reportId, String shareId, HashMap evaluatedReportAsMap) {
+    assertThat(evaluatedReportAsMap, is(notNullValue()));
+    assertThat(evaluatedReportAsMap.get("id"), is(shareId));
+    Map reportMap = (Map) evaluatedReportAsMap.get("report");
     assertThat(reportMap.get("id"), is(reportId));
     assertThat(reportMap.get("data"), is(notNullValue()));
-  }
-
-  private String createDashboardWithReport(String token, String reportId) {
-    String dashboardId = addEmptyDashboardToOptimize(token);
-    DashboardDefinitionDto fullBoard = new DashboardDefinitionDto();
-    fullBoard.setId(dashboardId);
-    ReportLocationDto reportLocation = new ReportLocationDto();
-    reportLocation.setId(reportId);
-    List<ReportLocationDto> reports = new ArrayList<>();
-    reports.add(reportLocation);
-    fullBoard.setReports(reports);
-    updateDashboard(dashboardId, fullBoard);
-    return dashboardId;
-  }
-
-  private String addEmptyDashboardToOptimize(String token) {
-    Response response =
-      embeddedOptimizeRule.target("dashboard")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
-        .post(Entity.json(""));
-
-    return response.readEntity(IdDto.class).getId();
-  }
-
-  private void updateDashboard(String id, DashboardDefinitionDto updatedDashboard) {
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-    Response response =
-      embeddedOptimizeRule.target("dashboard/" + id)
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
-        .put(Entity.json(updatedDashboard));
-    assertThat(response.getStatus(), is(204));
-  }
-
-  private String createReport() throws InterruptedException {
-    ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
-    String processDefinitionId = processInstance.getDefinitionId();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-
-    String reportId = this.createNewReport();
-    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
-    ReportDefinitionDto report = new ReportDefinitionDto();
-    report.setData(reportData);
-    updateReport(reportId, report);
-    return reportId;
-  }
-
-  private String getSharedReportEvaluationPath(String shareId) {
-    return SHARE + "/"+ REPORT + "/" + shareId + "/" + EVALUATE;
   }
 
   @Test
@@ -372,19 +336,7 @@ public class SharingRestServiceIT {
         .get();
 
     //then
-    assertThat(response.getStatus(), is(401));
-  }
-
-  private SharingDto getShareForReport(String token, String reportId) {
-    Response response = findShareForReport(token, reportId);
-    return response.readEntity(SharingDto.class);
-  }
-
-  private Response findShareForReport(String token, String reportId) {
-    return embeddedOptimizeRule.target(SHARE + "/report/" + reportId)
-      .request()
-      .header(HttpHeaders.AUTHORIZATION, BEARER + token)
-      .get();
+    assertThat(response.getStatus(), is(500));
   }
 
   private Response findShareForDashboard(String token, String dashboardId) {
@@ -398,77 +350,4 @@ public class SharingRestServiceIT {
     return addShareForReport(token, FAKE_REPORT_ID);
   }
 
-  private String addShareForReport(String token, String reportId) {
-    SharingDto share = createReportShare(reportId);
-    Response response = createShareResponse(token, share);
-
-    return response.readEntity(IdDto.class).getId();
-  }
-
-  private String addShareForDashboard(String token, String dashboardId) {
-    SharingDto share = createDashboardShare(dashboardId);
-    Response response = createShareResponse(token, share);
-
-    return response.readEntity(IdDto.class).getId();
-  }
-
-  private Response createShareResponse(String token, SharingDto share) {
-    return embeddedOptimizeRule.target(SHARE)
-      .request()
-      .header(HttpHeaders.AUTHORIZATION, BEARER + token)
-      .post(Entity.json(share));
-  }
-
-  private SharingDto createReportShare() {
-    return createReportShare(FAKE_REPORT_ID);
-  }
-
-  private SharingDto createReportShare(String reportId) {
-    SharingDto sharingDto = new SharingDto();
-    sharingDto.setResourceId(reportId);
-    sharingDto.setType(SharedResourceType.REPORT);
-    return sharingDto;
-  }
-
-  private SharingDto createDashboardShare(String dashboardId) {
-    SharingDto sharingDto = new SharingDto();
-    sharingDto.setResourceId(dashboardId);
-    sharingDto.setType(SharedResourceType.DASHBOARD);
-    return sharingDto;
-  }
-
-  private String createNewReport() {
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-    Response response =
-      embeddedOptimizeRule.target("report")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
-        .post(Entity.json(""));
-    assertThat(response.getStatus(), is(200));
-
-    return response.readEntity(IdDto.class).getId();
-  }
-
-  private void updateReport(String id, ReportDefinitionDto updatedReport) {
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-    Response response =
-      embeddedOptimizeRule.target("report/" + id)
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
-        .put(Entity.json(updatedReport));
-    assertThat(response.getStatus(), is(204));
-  }
-
-  private ProcessInstanceEngineDto deployAndStartSimpleProcess() {
-    return deployAndStartSimpleProcessWithVariables(new HashMap<>());
-  }
-
-  private ProcessInstanceEngineDto deployAndStartSimpleProcessWithVariables(Map<String, Object> variables) {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .name("aProcessName")
-      .startEvent()
-      .endEvent()
-      .done();
-    return engineRule.deployAndStartProcessWithVariables(processModel, variables);
-  }
 }
