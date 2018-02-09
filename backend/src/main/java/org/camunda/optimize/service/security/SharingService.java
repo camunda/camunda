@@ -43,8 +43,6 @@ public class SharingService  {
 
   /**
    * NOTE: this method does not perform validation
-   * @param createSharingDto
-   * @return
    */
   public IdDto crateNewShare(SharingDto createSharingDto) {
     String result;
