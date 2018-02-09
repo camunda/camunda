@@ -108,7 +108,7 @@ public class AlertJob implements Job {
       NumberReportResultDto result
   ) {
 
-    boolean triggeredReminder = key.getName().toLowerCase().contains("reminder") && alert.isTriggered();
+    boolean triggeredReminder = isReminder(key) && alert.isTriggered();
     boolean haveToNotify = triggeredReminder || !alert.isTriggered();
     if (haveToNotify) {
       alert.setTriggered(true);
@@ -128,6 +128,10 @@ public class AlertJob implements Job {
     }
 
     return alertJobResult;
+  }
+
+  private boolean isReminder(JobKey key) {
+    return key.getName().toLowerCase().contains("reminder");
   }
 
   private String composeAlertText(
