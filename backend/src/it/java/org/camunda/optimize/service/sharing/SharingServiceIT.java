@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.sharing;
 
 import org.camunda.optimize.dto.optimize.query.sharing.EvaluatedDashboardShareDto;
+import org.camunda.optimize.dto.optimize.query.sharing.SharedResourceType;
 import org.camunda.optimize.dto.optimize.query.sharing.SharingDto;
 import org.junit.Rule;
 import org.junit.Test;
@@ -9,6 +10,7 @@ import org.junit.runner.RunWith;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 
@@ -32,6 +34,75 @@ public class SharingServiceIT extends AbstractSharingIT {
       .outerRule(elasticSearchRule)
       .around(engineRule)
       .around(embeddedOptimizeRule);
+
+  @Test
+  public void createNewFakeReportShareThrowsError() {
+    //given
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+
+    // when
+    Response response = createShareResponse(token, createReportShare());
+
+    // then
+    assertThat(response.getStatus(), is(500));
+  }
+
+  @Test
+  public void cantCreateDashboardReportShare() {
+    //given
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+
+    SharingDto sharingDto = new SharingDto();
+    sharingDto.setResourceId(FAKE_REPORT_ID);
+    sharingDto.setType(SharedResourceType.DASHBOARD_REPORT);
+
+    // when
+    Response response = createShareResponse(token, sharingDto);
+
+    // then
+    assertThat(response.getStatus(), is(500));
+  }
+
+  @Test
+  public void createNewFakeDashboardShareThrowsError() {
+    //given
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+
+    // when
+    SharingDto dashboardShare = new SharingDto();
+    dashboardShare.setResourceId(FAKE_REPORT_ID);
+    dashboardShare.setType(SharedResourceType.DASHBOARD);
+
+    Response response = createShareResponse(token, dashboardShare);
+
+    // then the status code is okay
+    assertThat(response.getStatus(), is(500));
+  }
+
+  @Test
+  public void shareIsNotCreatedForSameResourceTwice() throws Exception {
+    //given
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+    String reportId = createReport();
+    SharingDto share = createReportShare(reportId);
+
+    // when
+    Response response = createShareResponse(token, share);
+
+    // then the status code is okay
+    assertThat(response.getStatus(), is(200));
+    String id =
+        response.readEntity(String.class);
+    assertThat(id, is(notNullValue()));
+
+    response =
+        embeddedOptimizeRule.target(SHARE)
+            .request()
+            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+            .post(Entity.json(share));
+
+    assertThat(id, is(response.readEntity(String.class)));
+  }
 
   @Test
   public void cantEvaluateNotExistingReportShare() {
