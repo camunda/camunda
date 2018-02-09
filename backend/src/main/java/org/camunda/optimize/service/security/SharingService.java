@@ -82,9 +82,7 @@ public class SharingService  {
         }
       }
 
-    } catch (IOException e) {
-      logger.error("can't find dashboard", e);
-    } catch (OptimizeException e) {
+    } catch (IOException | OptimizeException e) {
       logger.error("can't find dashboard", e);
     }
   }
@@ -143,9 +141,7 @@ public class SharingService  {
       ReportResultDto reportResultDto = reportService.evaluateSavedReport(wrapped.getResourceId());
       wrapped.setReport(reportResultDto);
       result = Optional.of(wrapped);
-    } catch (IOException e) {
-      logger.error("can't evaluate shared report []", wrapped.getResourceId());
-    } catch (OptimizeException e) {
+    } catch (IOException | OptimizeException e) {
       logger.error("can't evaluate shared report []", wrapped.getResourceId());
     }
 
@@ -169,9 +165,7 @@ public class SharingService  {
       DashboardDefinitionShareDto shareData = DashboardDefinitionShareDto.of(dashboardDefinition);
       shareData.setReportShares(constructReportShares(dashboardDefinition.getReports()));
       result.setDashboard(shareData);
-    } catch (IOException e) {
-      logger.error("can't find dashboard [{}]", share.getResourceId(), e);
-    } catch (OptimizeException e) {
+    } catch (IOException | OptimizeException e) {
       logger.error("can't find dashboard [{}]", share.getResourceId(), e);
     }
 
@@ -209,10 +203,6 @@ public class SharingService  {
     toAdd.setDimensions(reportLocationDto.getDimensions());
     toAdd.setPosition(reportLocationDto.getPosition());
     return toAdd;
-  }
-
-  public SharingDto findShare(String shareId) {
-    return sharingReader.findShare(shareId).orElse(null);
   }
 
   public void deleteShareForReport(String reportId) {
