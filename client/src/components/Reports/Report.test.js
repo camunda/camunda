@@ -236,6 +236,35 @@ it('should hide the modal on close button click', () => {
 
 describe('edit mode', async () => {
 
+  it('should remove flow node and variable filter after changing ProcDef', async () => {
+    props.match.params.viewMode = 'edit';
+    const node = mount(<Report {...props} />);
+    node.setState({
+      loaded: true,
+      data: {
+        filter: [
+          {
+            data: 'foo',
+            type: 'bar'
+          },
+          {
+            data:'foo',
+            type: 'executedFlowNodes'
+          },
+          {
+            data: 'foo',
+            type: 'variable'
+          }
+        ]
+      }
+    });
+    node.instance().updateReport('processDefinitionId', 'asd');
+    expect(node.state().data.filter.length).toBe(1);
+    expect(node.state().data.filter[0].data).toBe('foo');
+    expect(node.state().data.filter[0].type).toBe('bar');
+  });
+
+
   it('should provide a link to view mode', async () => {
     props.match.params.viewMode = 'edit';
 
