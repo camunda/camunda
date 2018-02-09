@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.alert;
 
+import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
@@ -168,9 +169,12 @@ public class  AlertService {
     return alertReader.getStoredAlerts();
   }
 
-  public String createAlert(AlertCreationDto toCreate, String token) {
+  public IdDto createAlert(AlertCreationDto toCreate, String token) {
     String userId = tokenService.getTokenIssuer(token);
-    return this.createAlertForUser(toCreate, userId).getId();
+    String alertId = this.createAlertForUser(toCreate, userId).getId();
+    IdDto result = new IdDto();
+    result.setId(alertId);
+    return result;
   }
 
   protected AlertDefinitionDto createAlertForUser(AlertCreationDto toCreate, String userId) {

@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.alert;
 
 import com.icegreen.greenmail.util.GreenMail;
+import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -182,7 +183,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertSchedulerIT {
         .header(HttpHeaders.AUTHORIZATION, BEARER + token)
         .post(Entity.json(simpleAlert));
 
-    String alertId = response.readEntity(String.class);
+    String alertId = response.readEntity(IdDto.class).getId();
 
     // when
     response =
@@ -212,7 +213,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertSchedulerIT {
         .header(HttpHeaders.AUTHORIZATION, BEARER + token)
         .post(Entity.json(simpleAlert));
 
-    String alertId = response.readEntity(String.class);
+    String alertId = response.readEntity(IdDto.class).getId();
     Trigger trigger = embeddedOptimizeRule.getAlertService().getScheduler().getTrigger(getTriggerKey(alertId));
     assertThat(
       getNextFireTime(trigger).truncatedTo(ChronoUnit.SECONDS),

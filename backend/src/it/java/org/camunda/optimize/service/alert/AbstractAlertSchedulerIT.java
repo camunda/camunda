@@ -50,7 +50,7 @@ public abstract class AbstractAlertSchedulerIT {
             .request()
             .header(HttpHeaders.AUTHORIZATION, BEARER + token)
             .post(Entity.json(simpleAlert));
-    return response.readEntity(String.class);
+    return response.readEntity(IdDto.class).getId();
   }
 
   protected void triggerAndCompleteCheckJob(String id) throws SchedulerException, InterruptedException {

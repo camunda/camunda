@@ -1,5 +1,6 @@
 package org.camunda.optimize.rest;
 
+import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.rest.providers.Secured;
@@ -42,7 +43,7 @@ public class AlertRestService {
   @POST
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public String createAlert(
+  public IdDto createAlert(
       @Context ContainerRequestContext requestContext,
       AlertCreationDto toCreate
   ) {

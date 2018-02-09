@@ -1,8 +1,8 @@
 package org.camunda.optimize.rest;
 
+import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.junit.Rule;
@@ -16,7 +16,6 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
-
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -163,7 +162,7 @@ public class AlertRestServiceIT {
             .header(HttpHeaders.AUTHORIZATION, BEARER + token)
             .post(Entity.json(new AlertCreationDto()));
 
-    return response.readEntity(String.class);
+    return response.readEntity(IdDto.class).getId();
   }
 
   private List<AlertDefinitionDto> getAllAlerts(String token) {

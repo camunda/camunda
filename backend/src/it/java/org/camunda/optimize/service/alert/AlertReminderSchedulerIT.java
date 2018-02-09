@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.alert;
 
+import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -222,7 +223,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertSchedulerIT {
         .request()
         .header(HttpHeaders.AUTHORIZATION, BEARER + token)
         .post(Entity.json(simpleAlert));
-    String id = response.readEntity(String.class);
+    String id = response.readEntity(IdDto.class).getId();
 
     triggerAndCompleteCheckJob(id);
 
