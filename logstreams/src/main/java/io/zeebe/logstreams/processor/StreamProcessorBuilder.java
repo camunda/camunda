@@ -24,8 +24,6 @@ import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LogStreamWriter;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
-import io.zeebe.logstreams.snapshot.TimeBasedSnapshotPolicy;
-import io.zeebe.logstreams.spi.SnapshotPolicy;
 import io.zeebe.logstreams.spi.SnapshotStorage;
 import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.sched.ZbActorScheduler;
@@ -41,7 +39,7 @@ public class StreamProcessorBuilder
 
     protected ZbActorScheduler actorScheduler;
 
-    protected SnapshotPolicy snapshotPolicy;
+    protected Duration snapshotPeriod;
     protected SnapshotStorage snapshotStorage;
 
     protected LogStreamReader logStreamReader;
@@ -73,9 +71,9 @@ public class StreamProcessorBuilder
         return this;
     }
 
-    public StreamProcessorBuilder snapshotPolicy(SnapshotPolicy snapshotPolicy)
+    public StreamProcessorBuilder snapshotPeriod(Duration snapshotPeriod)
     {
-        this.snapshotPolicy = snapshotPolicy;
+        this.snapshotPeriod = snapshotPeriod;
         return this;
     }
 
@@ -127,9 +125,9 @@ public class StreamProcessorBuilder
             streamProcessorCmdQueue = new DeferredCommandContext(100);
         }
 
-        if (snapshotPolicy == null)
+        if (snapshotPeriod == null)
         {
-            snapshotPolicy = new TimeBasedSnapshotPolicy(Duration.ofMinutes(1));
+            snapshotPeriod = Duration.ofMinutes(1);
         }
 
         logStreamReader = new BufferedLogStreamReader();
@@ -163,7 +161,7 @@ public class StreamProcessorBuilder
         ctx.setLogStreamReader(logStreamReader);
         ctx.setLogStreamWriter(logStreamWriter);
 
-        ctx.setSnapshotPolicy(snapshotPolicy);
+        ctx.setSnapshotPeriod(snapshotPeriod);
         ctx.setSnapshotStorage(snapshotStorage);
 
         ctx.setEventFilter(eventFilter);

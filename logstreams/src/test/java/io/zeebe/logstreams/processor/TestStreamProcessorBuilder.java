@@ -15,10 +15,11 @@
  */
 package io.zeebe.logstreams.processor;
 
+import java.time.Duration;
+
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LogStreamWriter;
-import io.zeebe.logstreams.spi.SnapshotPolicy;
 import io.zeebe.logstreams.spi.SnapshotStorage;
 import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.sched.ZbActorScheduler;
@@ -49,9 +50,9 @@ public class TestStreamProcessorBuilder extends StreamProcessorBuilder
     }
 
     @Override
-    public TestStreamProcessorBuilder snapshotPolicy(SnapshotPolicy snapshotPolicy)
+    public TestStreamProcessorBuilder snapshotPeriod(Duration snapshotPolicy)
     {
-        return (TestStreamProcessorBuilder) super.snapshotPolicy(snapshotPolicy);
+        return (TestStreamProcessorBuilder) super.snapshotPeriod(snapshotPolicy);
     }
 
     @Override

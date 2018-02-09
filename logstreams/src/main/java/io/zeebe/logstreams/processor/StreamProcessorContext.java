@@ -15,10 +15,11 @@
  */
 package io.zeebe.logstreams.processor;
 
+import java.time.Duration;
+
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LogStreamWriter;
-import io.zeebe.logstreams.spi.SnapshotPolicy;
 import io.zeebe.logstreams.spi.SnapshotStorage;
 import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.sched.ZbActorScheduler;
@@ -36,7 +37,7 @@ public class StreamProcessorContext
     protected LogStreamReader logStreamReader;
     protected LogStreamWriter logStreamWriter;
 
-    protected SnapshotPolicy snapshotPolicy;
+    protected Duration snapshotPeriod;
     protected SnapshotStorage snapshotStorage;
 
     protected ZbActorScheduler actorScheduler;
@@ -116,14 +117,14 @@ public class StreamProcessorContext
         this.logStreamWriter = logStreamWriter;
     }
 
-    public SnapshotPolicy getSnapshotPolicy()
+    public Duration getSnapshotPeriod()
     {
-        return snapshotPolicy;
+        return snapshotPeriod;
     }
 
-    public void setSnapshotPolicy(SnapshotPolicy snapshotPolicy)
+    public void setSnapshotPeriod(Duration snapshotPeriod)
     {
-        this.snapshotPolicy = snapshotPolicy;
+        this.snapshotPeriod = snapshotPeriod;
     }
 
     public SnapshotStorage getSnapshotStorage()

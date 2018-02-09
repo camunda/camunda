@@ -25,7 +25,6 @@ import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LogStreamWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.spi.ReadableSnapshot;
-import io.zeebe.logstreams.spi.SnapshotPolicy;
 import io.zeebe.logstreams.spi.SnapshotStorage;
 import io.zeebe.logstreams.spi.SnapshotWriter;
 import io.zeebe.util.sched.ActorCondition;
@@ -47,8 +46,8 @@ public class StreamProcessorController extends ZbActor
     private final LogStreamReader logStreamReader;
     private final LogStreamWriter logStreamWriter;
 
-    private final SnapshotPolicy snapshotPolicy;
     private final SnapshotStorage snapshotStorage;
+    private final Duration snapshotPeriod;
 
     private final LogStreamFailureListener logStreamFailureListener = new StreamFailureListener();
 
@@ -85,8 +84,8 @@ public class StreamProcessorController extends ZbActor
         this.streamProcessor = context.getStreamProcessor();
         this.logStreamReader = context.getLogStreamReader();
         this.logStreamWriter = context.getLogStreamWriter();
-        this.snapshotPolicy = context.getSnapshotPolicy();
         this.snapshotStorage = context.getSnapshotStorage();
+        this.snapshotPeriod = context.getSnapshotPeriod();
         this.eventFilter = context.getEventFilter();
         this.reprocessingEventFilter = context.getReprocessingEventFilter();
         this.isReadOnlyProcessor = context.isReadOnlyProcessor();
@@ -302,8 +301,7 @@ public class StreamProcessorController extends ZbActor
         final ActorCondition condition = actor.onCondition(getName() + "-on-commit-position-updated", readNextEvent);
         streamProcessorContext.logStream.registerOnCommitPositionUpdatedCondition(condition);
 
-        // TODO make snapshot period configurable
-        actor.runAtFixedRate(Duration.ofMillis(500), this::createSnapshot);
+        actor.runAtFixedRate(snapshotPeriod, this::createSnapshot);
 
         actor.run(readNextEvent);
     }
@@ -319,13 +317,12 @@ public class StreamProcessorController extends ZbActor
             {
                 processEvent(currentEvent);
             }
-
-            actor.yield();
-            actor.run(readNextEvent);
+//            actor.yield();
+//            actor.run(readNextEvent);
         }
         else
         {
-            // actor.yield();
+//            actor.yield();
         }
     }
 
@@ -401,6 +398,10 @@ public class StreamProcessorController extends ZbActor
         {
             lastWrittenEventPosition = eventPosition;
         }
+
+        // continue with next event
+        actor.run(readNextEvent);
+        actor.yield();
     }
 
     private void createSnapshot()
