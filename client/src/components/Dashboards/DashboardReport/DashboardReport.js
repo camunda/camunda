@@ -33,9 +33,7 @@ export default class DashboardReport extends React.Component {
 
     return <div className='DashboardReport__wrapper'>
       <div className='DashboardReport__header'>
-      {(this.props.viewMode)
-        ? <Link to={`/report/${this.props.report.id}`} className='DashboardReport__heading'>{this.state.name}</Link>
-        : <h1 className='DashboardReport__heading'>{this.state.name}</h1>}
+        <Link to={`/report/${this.props.report.id}`} className='DashboardReport__heading'>{this.state.name}</Link>
       </div>
       <div className='DashboardReport__visualization'>
         {this.state.data.errorMessage ?

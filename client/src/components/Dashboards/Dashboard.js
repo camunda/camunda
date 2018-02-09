@@ -166,7 +166,7 @@ export default class Dashboard extends React.Component {
             <Link className='Button Dashboard__tool-button Dashboard__cancel-button' to={`/dashboard/${this.id}`} onClick={this.cancelChanges}>Cancel</Link>
           </div>
         </div>
-        <DashboardView viewMode={false} reports={this.state.reports} reportAddons={[
+        <DashboardView reports={this.state.reports} reportAddons={[
           <DragBehavior key='DragBehavior' reports={this.state.reports} updateReport={this.updateReport} onDragStart={this.hideAddButton} onDragEnd={this.showAddButton} />,
           <DeleteButton key='DeleteButton' deleteReport={this.deleteReport} />,
           <ResizeHandle key='ResizeHandle' reports={this.state.reports} updateReport={this.updateReport} onResizeStart={this.hideAddButton} onResizeEnd={this.showAddButton} />
@@ -217,7 +217,7 @@ export default class Dashboard extends React.Component {
             <Button type="primary" color="red" className="Dashboard__delete-dashboard-modal-button" onClick={this.deleteDashboard}>Delete</Button>
           </Modal.Actions>
         </Modal>
-        <DashboardView viewMode={true} reports={this.state.reports}>
+        <DashboardView reports={this.state.reports}>
           <DimensionSetter reports={this.state.reports} />
         </DashboardView>
       </div>

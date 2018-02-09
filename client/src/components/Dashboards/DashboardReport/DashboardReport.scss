@@ -25,12 +25,20 @@
   padding-left: 10px;
 }
 
-.DashboardReport__heading {
+a.DashboardReport__heading {
   font-size: 24px;
   margin: 0;
+  font-weight: bold;
+  text-decoration: none;
+  color: #333333;
 }
 
-.DashboardReport__visualization { 
+a.DashboardReport__heading:active,
+a.DashboardReport__heading:visited {
+  color: #333333;
+}
+
+.DashboardReport__visualization {
   display: flex;
   flex-direction: column;
   flex-grow: 1;
@@ -39,5 +47,5 @@
     table-layout: fixed;
     min-width: 100%;
   }
-  
+
 }

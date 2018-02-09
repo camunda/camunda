@@ -19,7 +19,7 @@ export default class DashboardView extends React.Component {
           {...report.position}
           {...report.dimensions}
         >
-        <DashboardReport viewMode={this.props.viewMode} report={report} tileDimensions={this.state.tileDimensions} addons={this.props.reportAddons || []} />
+        <DashboardReport report={report} tileDimensions={this.state.tileDimensions} addons={this.props.reportAddons || []} />
       </DashboardObject>)}
       {this.state &&
         React.Children.map(this.props.children, child =>
@@ -36,7 +36,7 @@ export default class DashboardView extends React.Component {
   updateDimensions() {
     if(this.container) {
       this.container.style.width = '100%';
-      
+
       const availableWidth = this.container.clientWidth;
       const outerWidth = ~~(availableWidth / columns); // make sure we are working with round values
       const innerWidth = outerWidth - tileMargin;
