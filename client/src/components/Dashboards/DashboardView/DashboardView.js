@@ -33,7 +33,7 @@ export default class DashboardView extends React.Component {
     </div>);
   }
 
-  updateDimensions() {
+  updateDimensions = () => {
     if(this.container) {
       this.container.style.width = '100%';
 
@@ -53,11 +53,11 @@ export default class DashboardView extends React.Component {
   }
 
   componentWillUnmount() {
-    window.removeEventListener("resize", this.updateDimensions.bind(this));
+    window.removeEventListener("resize", this.updateDimensions);
   }
 
   componentDidMount() {
     this.updateDimensions();
-    window.addEventListener("resize", this.updateDimensions.bind(this));
+    window.addEventListener("resize", this.updateDimensions);
   }
 }
