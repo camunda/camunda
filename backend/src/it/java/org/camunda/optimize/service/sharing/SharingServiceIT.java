@@ -9,11 +9,13 @@ import org.junit.runner.RunWith;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
@@ -28,6 +30,24 @@ public class SharingServiceIT extends AbstractSharingIT {
       .outerRule(elasticSearchRule)
       .around(engineRule)
       .around(embeddedOptimizeRule);
+
+  @Test
+  public void sharesRemovedOnReportDeletion() throws Exception {
+    //given
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+    String reportId = createReport();
+    this.addShareForReport(token, reportId);
+
+    // when
+    embeddedOptimizeRule.target("report/" + reportId)
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .delete();
+
+    //then
+    SharingDto share = getShareForReport(token, reportId);
+    assertThat(share, is(nullValue()));
+  }
 
   @Test
   public void canCreateReportShareIfDashboardIsShared() throws Exception {
