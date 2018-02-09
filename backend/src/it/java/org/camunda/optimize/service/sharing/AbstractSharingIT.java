@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
@@ -182,4 +183,13 @@ public abstract class AbstractSharingIT {
     Response response = findShareForReport(token, reportId);
     return response.readEntity(SharingDto.class);
   }
+
+  protected void assertReportData(String reportId, String shareId, HashMap evaluatedReportAsMap) {
+    assertThat(evaluatedReportAsMap, is(notNullValue()));
+    assertThat(evaluatedReportAsMap.get("id"), is(shareId));
+    Map reportMap = (Map) evaluatedReportAsMap.get("report");
+    assertThat(reportMap.get("id"), is(reportId));
+    assertThat(reportMap.get("data"), is(notNullValue()));
+  }
+
 }

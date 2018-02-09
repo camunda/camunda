@@ -12,6 +12,8 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 
+import java.util.HashMap;
+
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -32,6 +34,76 @@ public class SharingServiceIT extends AbstractSharingIT {
       .around(embeddedOptimizeRule);
 
   @Test
+  public void cantEvaluateNotExistingReportShare() {
+    //when
+    Response response =
+      embeddedOptimizeRule.target(getSharedReportEvaluationPath(FAKE_REPORT_ID))
+        .request()
+        .get();
+
+    assertThat(response.getStatus(), is(500));
+  }
+
+  @Test
+  public void cantEvaluateNotExistingDashboardShare() {
+
+    //when
+    Response response =
+      embeddedOptimizeRule.target(getSharedDashboardEvaluationPath(FAKE_REPORT_ID))
+        .request()
+        .get();
+
+    assertThat(response.getStatus(), is(500));
+  }
+
+  @Test
+  public void cantEvaluateUnsharedReport() throws Exception {
+    //given
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+    String reportId = createReport();
+    String shareId = this.addShareForReport(token, reportId);
+
+    Response response =
+      embeddedOptimizeRule.target(getSharedDashboardEvaluationPath(shareId))
+        .request()
+        .get();
+    assertThat(response.getStatus(),is(200));
+
+    //when
+    response =
+      embeddedOptimizeRule.target(SHARE + "/" + shareId)
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .delete();
+    assertThat(response.getStatus(),is(204));
+
+    //then
+    response =
+        embeddedOptimizeRule.target(getSharedDashboardEvaluationPath(shareId))
+            .request()
+            .get();
+    assertThat(response.getStatus(),is(500));
+  }
+
+  @Test
+  public void newIdGeneratedAfterDeletion() throws Exception {
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+    String reportId = createReport();
+    String shareId = this.addShareForReport(token, reportId);
+
+    //when
+    Response response =
+        embeddedOptimizeRule.target(SHARE + "/" + shareId)
+            .request()
+            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+            .delete();
+    assertThat(response.getStatus(),is(204));
+
+    String newShareId = this.addShareForReport(token, reportId);
+    assertThat(shareId,is(not(newShareId)));
+  }
+
+  @Test
   public void sharesRemovedOnReportDeletion() throws Exception {
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
@@ -47,6 +119,26 @@ public class SharingServiceIT extends AbstractSharingIT {
     //then
     SharingDto share = getShareForReport(token, reportId);
     assertThat(share, is(nullValue()));
+  }
+
+  @Test
+  public void canEvaluateSharedReportWithoutAuthentication() throws Exception {
+    // given
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+    String reportId = createReport();
+
+    String shareId = addShareForReport(token, reportId);
+
+    //when
+    Response response =
+        embeddedOptimizeRule.target(getSharedReportEvaluationPath(shareId))
+            .request()
+            .get();
+    HashMap evaluatedReportAsMap = response.readEntity(HashMap.class);
+
+    //then
+    assertThat(response.getStatus(), is(200));
+    assertReportData(reportId, shareId, evaluatedReportAsMap);
   }
 
   @Test

@@ -281,34 +281,6 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   }
 
   @Test
-  public void canEvaluateSharedReportWithoutAuthentication() throws Exception {
-    // given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-    String reportId = createReport();
-
-    String shareId = addShareForReport(token, reportId);
-
-    //when
-    Response response =
-      embeddedOptimizeRule.target(getSharedReportEvaluationPath(shareId))
-        .request()
-        .get();
-    HashMap evaluatedReportAsMap = response.readEntity(HashMap.class);
-
-    //then
-    assertThat(response.getStatus(), is(200));
-    assertReportData(reportId, shareId, evaluatedReportAsMap);
-  }
-
-  private void assertReportData(String reportId, String shareId, HashMap evaluatedReportAsMap) {
-    assertThat(evaluatedReportAsMap, is(notNullValue()));
-    assertThat(evaluatedReportAsMap.get("id"), is(shareId));
-    Map reportMap = (Map) evaluatedReportAsMap.get("report");
-    assertThat(reportMap.get("id"), is(reportId));
-    assertThat(reportMap.get("data"), is(notNullValue()));
-  }
-
-  @Test
   public void evaluationOfNotExistingShareReturnsError() {
 
     //when
