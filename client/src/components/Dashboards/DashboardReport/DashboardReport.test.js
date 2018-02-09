@@ -4,6 +4,18 @@ import {mount} from 'enzyme';
 import DashboardReport from './DashboardReport';
 import {loadReport, getReportName} from '../service';
 
+
+jest.mock('react-router-dom', () => {
+  return {
+    Redirect: ({to}) => {
+      return <div>REDIRECT to {to}</div>
+    },
+    Link: ({children, to, onClick, id}) => {
+      return <a id={id} href={to} onClick={onClick}>{children}</a>
+    }
+  }
+});
+
 jest.mock('../service', () => {return {
   loadReport: jest.fn(),
   getReportName: jest.fn()
