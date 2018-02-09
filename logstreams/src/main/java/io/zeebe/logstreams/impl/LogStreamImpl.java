@@ -40,8 +40,10 @@ import io.zeebe.logstreams.snapshot.TimeBasedSnapshotPolicy;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.spi.SnapshotPolicy;
 import io.zeebe.logstreams.spi.SnapshotStorage;
+import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.ZbActor;
 import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.channel.ActorConditions;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import io.zeebe.util.sched.future.CompletedActorFuture;
@@ -63,22 +65,23 @@ public final class LogStreamImpl extends ZbActor implements LogStream
     private static final int DEFAULT_INDEX_BLOCK_SIZE = 1024 * 1024 * 4;
     private static final int DEFAULT_READ_BLOCK_SIZE = 1024;
 
-    protected volatile int term = 0;
+    private volatile int term = 0;
 
-    protected final DirectBuffer topicName;
-    protected final int partitionId;
-    protected final String name;
+    private final DirectBuffer topicName;
+    private final int partitionId;
+    private final String name;
 
-    protected final LogStorage logStorage;
-    protected final LogBlockIndex blockIndex;
-    protected final ZbActorScheduler actorScheduler;
+    private final LogStorage logStorage;
+    private final LogBlockIndex blockIndex;
+    private final ZbActorScheduler actorScheduler;
 
+    private final LogBlockIndexController logBlockIndexController;
 
-    protected final LogBlockIndexController logBlockIndexController;
+    private final ActorConditions onCommitPositionUpdatedConditions = new ActorConditions();
 
-    protected LogStreamController logStreamController;
-    protected Dispatcher writeBuffer;
-    protected final Position commitPosition = new AtomicLongPosition();
+    private LogStreamController logStreamController;
+    private Dispatcher writeBuffer;
+    private final Position commitPosition = new AtomicLongPosition();
 
     private LogStreamImpl(final LogStreamBuilder logStreamBuilder)
     {
@@ -258,6 +261,20 @@ public final class LogStreamImpl extends ZbActor implements LogStream
     public void setCommitPosition(long commitPosition)
     {
         this.commitPosition.setOrdered(commitPosition);
+
+        onCommitPositionUpdatedConditions.signalConditions();
+    }
+
+    @Override
+    public void registerOnCommitPositionUpdatedCondition(ActorCondition condition)
+    {
+        onCommitPositionUpdatedConditions.registerCondition(condition);
+    }
+
+    @Override
+    public void removeOnCommitPositionUpdatedCondition(ActorCondition condition)
+    {
+        onCommitPositionUpdatedConditions.removeCondition(condition);
     }
 
     @Override

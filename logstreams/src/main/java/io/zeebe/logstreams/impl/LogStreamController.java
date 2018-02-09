@@ -124,8 +124,7 @@ public class LogStreamController extends ZbActor
             {
                 writeBufferSubscription = subscription;
 
-                final Runnable peekBlocksAndAppend = this::peekBlocksAndAppend;
-                actor.consume(writeBufferSubscription, peekBlocksAndAppend);
+                actor.consume(writeBufferSubscription, this::peekBlocksAndAppend);
 
                 openFuture.complete(null);
             }
@@ -226,7 +225,7 @@ public class LogStreamController extends ZbActor
     {
         if (isFailed.compareAndSet(true, false))
         {
-            recoverFuture.complete(null);
+            actor.call(() -> recoverFuture.complete(null));
         }
     }
 

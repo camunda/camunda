@@ -182,7 +182,7 @@ public class LogBlockIndexController extends ZbActor
             }
 
             // register condition after index is recovered
-            final ActorCondition onAppendCondition = actor.onCondition("log-storage-on-append", readLogStorage);
+            final ActorCondition onAppendCondition = actor.onCondition("log-index-on-append", readLogStorage);
             logStorage.registerOnAppendCondition(onAppendCondition);
 
             openFuture.complete(null);

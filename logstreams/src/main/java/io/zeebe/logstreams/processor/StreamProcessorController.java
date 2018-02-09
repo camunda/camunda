@@ -15,11 +15,8 @@
  */
 package io.zeebe.logstreams.processor;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BiConsumer;
 
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.LogStream;
@@ -31,397 +28,401 @@ import io.zeebe.logstreams.spi.ReadableSnapshot;
 import io.zeebe.logstreams.spi.SnapshotPolicy;
 import io.zeebe.logstreams.spi.SnapshotStorage;
 import io.zeebe.logstreams.spi.SnapshotWriter;
-import io.zeebe.util.DeferredCommandContext;
-import io.zeebe.util.actor.Actor;
-import io.zeebe.util.actor.ActorReference;
-import io.zeebe.util.actor.ActorScheduler;
-import io.zeebe.util.state.ComposedState;
-import io.zeebe.util.state.SimpleStateMachineContext;
-import io.zeebe.util.state.State;
-import io.zeebe.util.state.StateMachine;
-import io.zeebe.util.state.StateMachineAgent;
-import io.zeebe.util.state.TransitionState;
-import io.zeebe.util.state.WaitState;
+import io.zeebe.util.sched.ActorCondition;
+import io.zeebe.util.sched.ZbActor;
+import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
+import io.zeebe.util.sched.future.CompletedActorFuture;
 import org.slf4j.Logger;
 
-public class StreamProcessorController implements Actor
+public class StreamProcessorController extends ZbActor
 {
     public static final String ERROR_MESSAGE_REPROCESSING_FAILED = "Stream processor '%s' failed to reprocess. Cannot find source event position: %d";
     public static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
 
-    protected static final int TRANSITION_DEFAULT = 0;
-    protected static final int TRANSITION_OPEN = 1;
-    protected static final int TRANSITION_CLOSE = 2;
-    protected static final int TRANSITION_FAIL = 3;
-    protected static final int TRANSITION_PROCESS = 4;
-    protected static final int TRANSITION_SNAPSHOT = 5;
-    protected static final int TRANSITION_RECOVER = 6;
-    protected static final int TRANSITION_REPROCESS = 7;
+    private final StreamProcessor streamProcessor;
+    private final StreamProcessorContext streamProcessorContext;
 
-    protected final State<Context> openingState = new OpeningState();
-    protected final State<Context> openedState = new OpenedState();
-    protected final State<Context> processState = new ProcessState();
-    protected final State<Context> snapshottingState = new SnapshottingState();
-    protected final State<Context> recoveringState = new RecoveringState();
-    protected final State<Context> prepareReprocessingState = new PrepareReprocessingState();
-    protected final State<Context> reprocessingState = new ReprocessingState();
-    protected final State<Context> closingSnapshottingState = new ClosingSnapshottingState();
-    protected final State<Context> closingState = new ClosingState();
-    protected final State<Context> closedState = new ClosedState();
-    protected final State<Context> failedState = new FailedState();
+    private final LogStreamReader logStreamReader;
+    private final LogStreamWriter logStreamWriter;
 
-    protected final StateMachineAgent<Context> stateMachineAgent = new StateMachineAgent<>(StateMachine.<Context> builder(s -> new Context(s))
-            .initialState(closedState)
-            .from(openingState).take(TRANSITION_DEFAULT).to(recoveringState)
-            .from(openingState).take(TRANSITION_FAIL).to(failedState)
-            .from(recoveringState).take(TRANSITION_DEFAULT).to(prepareReprocessingState)
-            .from(recoveringState).take(TRANSITION_FAIL).to(failedState)
-            .from(prepareReprocessingState).take(TRANSITION_DEFAULT).to(openedState)
-            .from(prepareReprocessingState).take(TRANSITION_REPROCESS).to(reprocessingState)
-            .from(prepareReprocessingState).take(TRANSITION_FAIL).to(failedState)
-            .from(reprocessingState).take(TRANSITION_DEFAULT).to(openedState)
-            .from(reprocessingState).take(TRANSITION_FAIL).to(failedState)
-            .from(openedState).take(TRANSITION_PROCESS).to(processState)
-            .from(openedState).take(TRANSITION_CLOSE).to(closingSnapshottingState)
-            .from(openedState).take(TRANSITION_FAIL).to(failedState)
-            .from(processState).take(TRANSITION_DEFAULT).to(openedState)
-            .from(processState).take(TRANSITION_SNAPSHOT).to(snapshottingState)
-            .from(processState).take(TRANSITION_FAIL).to(failedState)
-            .from(processState).take(TRANSITION_CLOSE).to(closingSnapshottingState)
-            .from(snapshottingState).take(TRANSITION_DEFAULT).to(openedState)
-            .from(snapshottingState).take(TRANSITION_FAIL).to(failedState)
-            .from(snapshottingState).take(TRANSITION_CLOSE).to(closingSnapshottingState)
-            .from(failedState).take(TRANSITION_CLOSE).to(closingState)
-            .from(failedState).take(TRANSITION_OPEN).to(openedState)
-            .from(failedState).take(TRANSITION_RECOVER).to(recoveringState)
-            .from(closingSnapshottingState).take(TRANSITION_DEFAULT).to(closingState)
-            .from(closingSnapshottingState).take(TRANSITION_FAIL).to(closingState)
-            .from(closingState).take(TRANSITION_DEFAULT).to(closedState)
-            .from(closedState).take(TRANSITION_OPEN).to(openingState)
-            .build());
+    private final SnapshotPolicy snapshotPolicy;
+    private final SnapshotStorage snapshotStorage;
 
-    protected final StreamProcessor streamProcessor;
-    protected final StreamProcessorContext streamProcessorContext;
+    private final LogStreamFailureListener logStreamFailureListener = new StreamFailureListener();
 
-    protected final DeferredCommandContext streamProcessorCmdQueue;
+    private final ZbActorScheduler actorScheduler;
+    private final AtomicBoolean isOpened = new AtomicBoolean(false);
+    private final AtomicBoolean isFailed = new AtomicBoolean(false);
 
-    protected final LogStreamReader logStreamReader;
-    protected final LogStreamWriter logStreamWriter;
+    private final EventFilter eventFilter;
+    private final EventFilter reprocessingEventFilter;
+    private final boolean isReadOnlyProcessor;
 
-    protected final SnapshotPolicy snapshotPolicy;
-    protected final SnapshotStorage snapshotStorage;
+    /// ----
 
-    protected final LogStreamFailureListener logStreamFailureListener = new StreamFailureListener();
+    private final Runnable readNextEvent = this::readNextEvent;
 
-    protected final ActorScheduler actorScheduler;
-    protected ActorReference actorRef;
-    protected final AtomicBoolean isRunning = new AtomicBoolean(false);
+    private final CompletableActorFuture<Void> openFuture = new CompletableActorFuture<>();
+    private final CompletableActorFuture<Void> closeFuture = new CompletableActorFuture<>();
+    private final CompletableActorFuture<Void> onRecoveredFuture = new CompletableActorFuture<>();
 
-    protected final EventFilter eventFilter;
-    protected final EventFilter reprocessingEventFilter;
-    protected final boolean isReadOnlyProcessor;
+    private long snapshotPosition = -1L;
+    private long lastSourceEventPosition = -1L;
+    private long eventPosition = -1L;
+    private long lastSuccessfulProcessedEventPosition = 1L;
+    private long lastWrittenEventPosition = -1L;
+    private long failedEventPosition = -1L;
 
+    private LoggedEvent currentEvent;
+    private EventProcessor eventProcessor;
 
     public StreamProcessorController(StreamProcessorContext context)
     {
         this.streamProcessorContext = context;
-        this.actorScheduler = (ActorScheduler) context.getActorScheduler();
+        this.actorScheduler = context.getActorScheduler();
         this.streamProcessor = context.getStreamProcessor();
         this.logStreamReader = context.getLogStreamReader();
         this.logStreamWriter = context.getLogStreamWriter();
         this.snapshotPolicy = context.getSnapshotPolicy();
         this.snapshotStorage = context.getSnapshotStorage();
-        this.streamProcessorCmdQueue = context.getStreamProcessorCmdQueue();
         this.eventFilter = context.getEventFilter();
         this.reprocessingEventFilter = context.getReprocessingEventFilter();
         this.isReadOnlyProcessor = context.isReadOnlyProcessor();
     }
 
     @Override
-    public int doWork()
-    {
-        return stateMachineAgent.doWork();
-    }
-
-    @Override
-    public String name()
+    public String getName()
     {
         return streamProcessorContext.getName();
     }
 
-    public CompletableFuture<Void> openAsync()
+    public ActorFuture<Void> openAsync()
     {
-        final CompletableFuture<Void> future = new CompletableFuture<>();
+        // reset future
+        openFuture.close();
+        openFuture.setAwaitingResult();
 
-        stateMachineAgent.addCommand(context ->
+        if (isOpened.compareAndSet(false, true))
         {
-            final boolean opening = context.tryTake(TRANSITION_OPEN);
-            if (opening)
-            {
-                context.setFuture(future);
-            }
-            else
-            {
-                future.completeExceptionally(new IllegalStateException("Cannot open stream processor."));
-            }
-        });
-
-        if (isRunning.compareAndSet(false, true))
-        {
-            try
-            {
-                actorRef = actorScheduler.schedule(this);
-            }
-            catch (Exception e)
-            {
-                isRunning.set(false);
-                future.completeExceptionally(e);
-            }
+            actorScheduler.submitActor(this);
         }
-        return future;
+        return openFuture;
     }
 
     @Override
-    public int getPriority(long now)
+    protected void onActorStarted()
     {
-        return streamProcessor.getPriority(now);
+        final LogStream logStream = streamProcessorContext.getLogStream();
+
+        logStreamReader.wrap(logStream);
+        logStreamWriter.wrap(logStream);
+
+        logStream.removeFailureListener(logStreamFailureListener);
+        logStream.registerFailureListener(logStreamFailureListener);
+
+        actor.run(this::recoverFromSnapshot);
     }
 
-    public CompletableFuture<Void> closeAsync()
+    private void recoverFromSnapshot()
     {
-        final CompletableFuture<Void> future = new CompletableFuture<>();
+        streamProcessor.getStateResource().reset();
 
-        stateMachineAgent.addCommand(context ->
+        snapshotPosition = -1;
+
+        try
         {
-            final boolean closing = context.tryTake(TRANSITION_CLOSE);
-            if (closing)
+            final ReadableSnapshot lastSnapshot = snapshotStorage.getLastSnapshot(streamProcessorContext.getName());
+            if (lastSnapshot != null)
             {
-                context.setFuture(future);
-            }
-            else
-            {
-                future.completeExceptionally(new IllegalStateException("Cannot close stream processor."));
-            }
-        });
+                // recover last snapshot
+                lastSnapshot.recoverFromSnapshot(streamProcessor.getStateResource());
 
-        return future;
-    }
+                // read the last event from snapshot
+                snapshotPosition = lastSnapshot.getPosition();
+                final boolean found = logStreamReader.seek(snapshotPosition);
 
-    public boolean isOnRecover()
-    {
-        return stateMachineAgent.getCurrentState() == recoveringState
-            || stateMachineAgent.getCurrentState() == prepareReprocessingState
-            || stateMachineAgent.getCurrentState() == reprocessingState;
-    }
-
-    public boolean isOpen()
-    {
-        return stateMachineAgent.getCurrentState() == openedState
-                || stateMachineAgent.getCurrentState() == processState
-                || stateMachineAgent.getCurrentState() == snapshottingState;
-    }
-
-    public boolean isClosing()
-    {
-        return stateMachineAgent.getCurrentState() == closingState
-                || stateMachineAgent.getCurrentState() == closingSnapshottingState;
-    }
-
-    public boolean isClosed()
-    {
-        return stateMachineAgent.getCurrentState() == closedState;
-    }
-
-    public boolean isFailed()
-    {
-        return stateMachineAgent.getCurrentState() == failedState;
-    }
-
-    public EventFilter getEventFilter()
-    {
-        return eventFilter;
-    }
-
-    public EventFilter getReprocessingEventFilter()
-    {
-        return reprocessingEventFilter;
-    }
-
-    private final BiConsumer<Context, Exception> stateFailureHandler = (context, e) ->
-    {
-        LOG.error("Stream processor '{}' failed.", name(), e);
-
-        context.take(TRANSITION_FAIL);
-        context.completeFutureExceptionally(e);
-    };
-
-    private class OpeningState implements TransitionState<Context>
-    {
-        @Override
-        public void work(Context context)
-        {
-            final LogStream logStream = streamProcessorContext.getLogStream();
-
-            logStreamReader.wrap(logStream);
-            logStreamWriter.wrap(logStream);
-
-            logStream.removeFailureListener(logStreamFailureListener);
-            logStream.registerFailureListener(logStreamFailureListener);
-
-            context.take(TRANSITION_DEFAULT);
-        }
-
-        @Override
-        public void onFailure(Context context, Exception e)
-        {
-            stateFailureHandler.accept(context, e);
-        }
-    }
-
-    private class OpenedState implements State<Context>
-    {
-        @Override
-        public int doWork(Context context)
-        {
-            int workCount = 0;
-
-            workCount += streamProcessorCmdQueue.doWork();
-
-            if (!streamProcessor.isSuspended() && logStreamReader.hasNext())
-            {
-                workCount += 1;
-
-                final LoggedEvent event = logStreamReader.next();
-                context.setEvent(event);
-
-                if (eventFilter == null || eventFilter.applies(event))
+                if (found && logStreamReader.hasNext())
                 {
-                    context.take(TRANSITION_PROCESS);
+                    // resume the next position on source log stream to continue from
+                    final long sourceEventPosition = snapshotPosition;
+                    logStreamReader.seek(sourceEventPosition + 1);
+                }
+                else
+                {
+                    throw new IllegalStateException(
+                                                    String.format("Stream processor '%s' failed to recover. Cannot find event with the snapshot position in target log stream.",
+                                                                  getName()));
                 }
             }
 
-            return workCount;
+            streamProcessor.onOpen(streamProcessorContext);
+
+            seekToLastSourceEvent();
         }
-
-        @Override
-        public void onFailure(Context context, Exception e)
+        catch (Exception e)
         {
-            stateFailureHandler.accept(context, e);
-        }
-    }
+            openFuture.completeExceptionally(e);
 
-    private class ProcessState extends ComposedState<Context>
-    {
-        private EventProcessor eventProcessor;
-        private long eventPosition;
-
-        @Override
-        protected List<Step<Context>> steps()
-        {
-            return Arrays.asList(
-                    processEventStep,
-                    sideEffectsStep,
-                    writeEventStep,
-                    updateStateStep);
-        }
-
-        private Step<Context> processEventStep = context ->
-        {
-            boolean processEvent = false;
-
-            eventProcessor = streamProcessor.onEvent(context.getEvent());
-
-            if (eventProcessor != null)
-            {
-                eventProcessor.processEvent();
-                processEvent = true;
-            }
-            else
-            {
-                context.take(TRANSITION_DEFAULT);
-            }
-            return processEvent;
-        };
-
-        private Step<Context> sideEffectsStep = context -> eventProcessor.executeSideEffects();
-
-        private Step<Context> writeEventStep = context ->
-        {
-            final LogStream sourceStream = streamProcessorContext.getLogStream();
-
-            logStreamWriter
-                .producerId(streamProcessorContext.getId())
-                .sourceEvent(sourceStream.getPartitionId(), context.getEvent().getPosition());
-
-            eventPosition = eventProcessor.writeEvent(logStreamWriter);
-            return eventPosition >= 0;
-        };
-
-        private FailSafeStep<Context> updateStateStep = context ->
-        {
-            eventProcessor.updateState();
-            streamProcessor.afterEvent();
-            context.setLastSuccessfulProcessedEventPosition(context.event.getPosition());
-
-            final boolean hasWrittenEvent = eventPosition > 0;
-            if (hasWrittenEvent)
-            {
-                context.setLastWrittenEventPosition(eventPosition);
-            }
-
-            if (hasWrittenEvent && snapshotPolicy.apply(context.getEvent().getPosition()))
-            {
-                context.take(TRANSITION_SNAPSHOT);
-            }
-            else
-            {
-                context.take(TRANSITION_DEFAULT);
-            }
-        };
-
-        @Override
-        public void onFailure(Context context, Exception e)
-        {
-            LOG.error("The log stream processor '{}' failed to process event. It stop processing further events.", name(), e);
-
-            context.take(TRANSITION_FAIL);
+            onFailure();
         }
     }
 
-    /**
-     * @param context
-     * @return true if successful
-     */
-    private boolean ensureSnapshotWritten(Context context)
+    private void seekToLastSourceEvent()
     {
-        boolean isSnapshotWritten = false;
-
-        final long lastSuccessfulProcessedEventPosition = context.getLastSuccessfulProcessedEventPosition();
-        final long lastWrittenEventPosition = context.getLastWrittenEventPosition();
-        final long commitPosition = streamProcessorContext.getLogStream().getCommitPosition();
-
-        final long snapshotPosition = lastSuccessfulProcessedEventPosition;
-        final boolean snapshotAlreadyPresent = snapshotPosition <= context.getSnapshotPosition();
-
-        if (!snapshotAlreadyPresent)
+        if (!isReadOnlyProcessor && logStreamReader.hasNext())
         {
-            // ensure that the last written event was commited
-            if (commitPosition >= lastWrittenEventPosition)
-            {
-                writeSnapshot(context, snapshotPosition);
+            final long lastSourceEventPosition = findLastSourceEvent();
+            logStreamReader.seek(snapshotPosition + 1);
 
-                isSnapshotWritten = true;
+            if (lastSourceEventPosition > snapshotPosition)
+            {
+                this.lastSourceEventPosition = lastSourceEventPosition;
+
+                actor.runUntilDone(this::reprocessNextEvent);
+            }
+            else
+            {
+                // nothing to reprocess
+                openFuture.complete(null);
+
+                onOpened();
             }
         }
         else
         {
-            isSnapshotWritten = true;
-        }
+            // nothing to reprocess
+            openFuture.complete(null);
 
-        return isSnapshotWritten;
+            onOpened();
+        }
     }
 
-    protected void writeSnapshot(final Context context, final long eventPosition)
+    private long findLastSourceEvent()
+    {
+        long lastSourceEventPosition = snapshotPosition;
+        while (logStreamReader.hasNext())
+        {
+            final LoggedEvent newEvent = logStreamReader.next();
+
+            // ignore events from other producers
+            if (newEvent.getProducerId() == streamProcessorContext.getId()
+                && ((reprocessingEventFilter == null || reprocessingEventFilter.applies(newEvent))))
+            {
+                final long sourceEventPosition = newEvent.getSourceEventPosition();
+                if (sourceEventPosition > 0 && sourceEventPosition > lastSourceEventPosition)
+                {
+                    lastSourceEventPosition = sourceEventPosition;
+                }
+
+            }
+        }
+        return lastSourceEventPosition;
+    }
+
+    private void reprocessNextEvent()
+    {
+        try
+        {
+            if (logStreamReader.hasNext())
+            {
+                final LoggedEvent currentEvent = logStreamReader.next();
+                final long currentEventPosition = currentEvent.getPosition();
+
+                if (currentEventPosition <= lastSourceEventPosition)
+                {
+                    reprocessEvent(currentEvent);
+
+                    if (currentEventPosition == lastSourceEventPosition)
+                    {
+                        // all events are re-processed
+                        actor.done();
+
+                        openFuture.complete(null);
+
+                        onOpened();
+                    }
+                    else
+                    {
+                        // continue with next event
+                        actor.yield();
+                    }
+                }
+                else
+                {
+                    throw new IllegalStateException(
+                                                    String.format(ERROR_MESSAGE_REPROCESSING_FAILED,
+                                                                  streamProcessorContext.getName(),
+                                                                  lastSourceEventPosition));
+                }
+            }
+            else
+            {
+                throw new IllegalStateException(
+                                                String.format(ERROR_MESSAGE_REPROCESSING_FAILED,
+                                                              streamProcessorContext.getName(),
+                                                              lastSourceEventPosition));
+            }
+        }
+        catch (Exception e)
+        {
+            actor.done();
+
+            onFailure();
+        }
+    }
+
+    private void reprocessEvent(LoggedEvent currentEvent)
+    {
+        if (eventFilter == null || eventFilter.applies(currentEvent))
+        {
+            try
+            {
+                final EventProcessor eventProcessor = streamProcessor.onEvent(currentEvent);
+
+                if (eventProcessor != null)
+                {
+                    eventProcessor.processEvent();
+                    eventProcessor.updateState();
+                    streamProcessor.afterEvent();
+                }
+            }
+            catch (Exception e)
+            {
+                final String errorMessage = "Stream processor '%s' failed to reprocess event: %s";
+                throw new RuntimeException(String.format(errorMessage, streamProcessorContext.getName(), currentEvent, e));
+            }
+        }
+    }
+
+    private void onOpened()
+    {
+        // TODO ensure to register only once!
+        final ActorCondition condition = actor.onCondition(getName() + "-on-commit-position-updated", readNextEvent);
+        streamProcessorContext.logStream.registerOnCommitPositionUpdatedCondition(condition);
+
+        // TODO make snapshot period configurable
+        actor.runAtFixedRate(Duration.ofMillis(500), this::createSnapshot);
+
+        actor.run(readNextEvent);
+    }
+
+    private void readNextEvent()
+    {
+        if (!streamProcessor.isSuspended() && logStreamReader.hasNext())
+        {
+            final LoggedEvent event = logStreamReader.next();
+            currentEvent = event;
+
+            if (eventFilter == null || eventFilter.applies(event))
+            {
+                processEvent(currentEvent);
+            }
+
+            actor.yield();
+            actor.run(readNextEvent);
+        }
+        else
+        {
+            // actor.yield();
+        }
+    }
+
+    private void processEvent(LoggedEvent event)
+    {
+        eventProcessor = streamProcessor.onEvent(event);
+
+        if (eventProcessor != null)
+        {
+            try
+            {
+                eventProcessor.processEvent();
+
+                actor.runUntilDone(this::executeSideEffects);
+            }
+            catch (Exception e)
+            {
+                LOG.error("The log stream processor '{}' failed to process event. It stop processing further events.", getName(), e);
+                onFailure();
+            }
+        }
+    }
+
+    private void executeSideEffects()
+    {
+        final boolean success = eventProcessor.executeSideEffects();
+
+        if (success)
+        {
+            actor.done();
+
+            actor.runUntilDone(this::writeEvent);
+        }
+        else
+        {
+            // try again
+            actor.yield();
+        }
+    }
+
+    private void writeEvent()
+    {
+        final LogStream sourceStream = streamProcessorContext.getLogStream();
+
+        logStreamWriter
+            .producerId(streamProcessorContext.getId())
+            .sourceEvent(sourceStream.getPartitionId(), currentEvent.getPosition());
+
+        eventPosition = eventProcessor.writeEvent(logStreamWriter);
+
+        if (eventPosition >= 0)
+        {
+            actor.done();
+
+            updateState();
+        }
+        else
+        {
+            // try again
+            actor.yield();
+        }
+    }
+
+    private void updateState()
+    {
+        eventProcessor.updateState();
+        streamProcessor.afterEvent();
+
+        lastSuccessfulProcessedEventPosition = currentEvent.getPosition();
+
+        final boolean hasWrittenEvent = eventPosition > 0;
+        if (hasWrittenEvent)
+        {
+            lastWrittenEventPosition = eventPosition;
+        }
+    }
+
+    private void createSnapshot()
+    {
+        if (currentEvent != null)
+        {
+            final long commitPosition = streamProcessorContext.getLogStream().getCommitPosition();
+
+            final boolean snapshotAlreadyPresent = lastSuccessfulProcessedEventPosition <= snapshotPosition;
+
+            if (!snapshotAlreadyPresent)
+            {
+                // ensure that the last written event was committed
+                if (commitPosition >= lastWrittenEventPosition)
+                {
+                    writeSnapshot(lastSuccessfulProcessedEventPosition);
+                }
+            }
+        }
+    }
+
+    protected void writeSnapshot(final long eventPosition)
     {
         SnapshotWriter snapshotWriter = null;
         try
@@ -435,11 +436,12 @@ public class StreamProcessorController implements Actor
             snapshotWriter.writeSnapshot(streamProcessor.getStateResource());
             snapshotWriter.commit();
             LOG.info("Creation of snapshot {} took {} ms.", name, System.currentTimeMillis() - start);
-            context.setSnapshotPosition(eventPosition);
+
+            snapshotPosition = eventPosition;
         }
         catch (Exception e)
         {
-            LOG.error("Stream processor '{}' failed. Can not write snapshot.", name(), e);
+            LOG.error("Stream processor '{}' failed. Can not write snapshot.", getName(), e);
 
             if (snapshotWriter != null)
             {
@@ -448,254 +450,75 @@ public class StreamProcessorController implements Actor
         }
     }
 
-    private class SnapshottingState implements State<Context>
+    public ActorFuture<Void> closeAsync()
     {
-        @Override
-        public int doWork(Context context)
+        if (isOpened.compareAndSet(true, false))
         {
-            int workCount = 0;
+            // reset future
+            closeFuture.close();
+            closeFuture.setAwaitingResult();
 
-            final boolean snapshotWritten = ensureSnapshotWritten(context);
-
-            if (snapshotWritten)
+            actor.call(() ->
             {
-                context.take(TRANSITION_DEFAULT);
-                workCount += 1;
-            }
+                streamProcessor.onClose();
 
-            return workCount;
+                createSnapshot();
+
+                actor.close();
+            });
+
+            return closeFuture;
+        }
+        else
+        {
+            return new CompletedActorFuture<>(null);
         }
     }
 
-    private class RecoveringState implements TransitionState<Context>
+    @Override
+    protected void onActorClosing()
     {
-        @Override
-        public void work(Context context) throws Exception
+        streamProcessorContext.getLogStreamReader().close();
+        streamProcessorContext.getLogStream().removeFailureListener(logStreamFailureListener);
+
+        if (closeFuture != null)
         {
-            streamProcessor.getStateResource().reset();
-
-            long snapshotPosition = -1;
-
-            final ReadableSnapshot lastSnapshot = snapshotStorage.getLastSnapshot(streamProcessorContext.getName());
-
-            if (lastSnapshot != null)
-            {
-                // recover last snapshot
-                lastSnapshot.recoverFromSnapshot(streamProcessor.getStateResource());
-
-                // read the last event from snapshot
-                snapshotPosition = lastSnapshot.getPosition();
-                final boolean found = logStreamReader.seek(snapshotPosition);
-
-                if (found && logStreamReader.hasNext())
-                {
-                    // resume the next position on source log stream to continue from
-                    final long sourceEventPosition = snapshotPosition; // isSourceStreamWriter() ? snapshotPosition : lastEventFromSnapshot.getSourceEventPosition();
-                    logStreamReader.seek(sourceEventPosition + 1);
-                }
-                else
-                {
-                    throw new IllegalStateException(
-                            String.format("Stream processor '%s' failed to recover. Cannot find event with the snapshot position in target log stream.",
-                                          name()));
-                }
-            }
-
-            streamProcessor.onOpen(streamProcessorContext);
-
-            context.setSnapshotPosition(snapshotPosition);
-            context.take(TRANSITION_DEFAULT);
-        }
-
-        @Override
-        public void onFailure(Context context, Exception e)
-        {
-            stateFailureHandler.accept(context, e);
+            closeFuture.complete(null);
         }
     }
 
-    private class PrepareReprocessingState implements State<Context>
+    private void onFailure()
     {
-        @Override
-        public int doWork(Context context) throws Exception
-        {
-            if (!isReadOnlyProcessor && logStreamReader.hasNext())
-            {
-                final long lastSourceEventPosition = findLastSourceEvent(context);
-                logStreamReader.seek(context.snapshotPosition + 1);
-
-                if (lastSourceEventPosition > context.snapshotPosition)
-                {
-                    context.setLastSourceEventPosition(lastSourceEventPosition);
-
-                    // reprocess
-                    context.take(TRANSITION_REPROCESS);
-                    context.completeFuture();
-                }
-                else
-                {
-                    // nothing to reprocess
-                    context.take(TRANSITION_DEFAULT);
-                    context.completeFuture();
-                }
-            }
-            else
-            {
-                // nothing to reprocess
-                context.take(TRANSITION_DEFAULT);
-                context.completeFuture();
-            }
-            return 1;
-        }
-
-        private long findLastSourceEvent(Context context)
-        {
-            long lastSourceEventPosition = context.snapshotPosition;
-            while (logStreamReader.hasNext())
-            {
-                final LoggedEvent newEvent = logStreamReader.next();
-
-                // ignore events from other producers
-                if (newEvent.getProducerId() == streamProcessorContext.getId()
-                    && ((reprocessingEventFilter == null || reprocessingEventFilter.applies(newEvent))))
-                {
-                    final long sourceEventPosition = newEvent.getSourceEventPosition();
-                    if (sourceEventPosition > 0 && sourceEventPosition > lastSourceEventPosition)
-                    {
-                        lastSourceEventPosition = sourceEventPosition;
-                    }
-
-                }
-            }
-            return lastSourceEventPosition;
-        }
-    }
-
-    private class ReprocessingState implements State<Context>
-    {
-        @Override
-        public int doWork(Context context)
-        {
-            if (logStreamReader.hasNext())
-            {
-                final long lastSourceEventPosition = context.getLastSourceEventPosition();
-                final LoggedEvent currentEvent = logStreamReader.next();
-                final long currentEventPosition = currentEvent.getPosition();
-
-                if (currentEventPosition <= lastSourceEventPosition)
-                {
-                    reprocessEvent(currentEvent);
-
-                    if (currentEventPosition == lastSourceEventPosition)
-                    {
-                        // all events are re-processed
-                        context.take(TRANSITION_DEFAULT);
-                        context.completeFuture();
-                    }
-                }
-                else
-                {
-                    throw new IllegalStateException(
-                        String.format(ERROR_MESSAGE_REPROCESSING_FAILED,
-                            streamProcessorContext.getName(),
-                            lastSourceEventPosition));
-                }
-            }
-            else
-            {
-                throw new IllegalStateException(
-                    String.format(ERROR_MESSAGE_REPROCESSING_FAILED,
-                        streamProcessorContext.getName(),
-                        context.lastSourceEventPosition));
-            }
-            return 1;
-        }
-
-        private void reprocessEvent(LoggedEvent currentEvent)
-        {
-            if (eventFilter == null || eventFilter.applies(currentEvent))
-            {
-                try
-                {
-                    final EventProcessor eventProcessor = streamProcessor.onEvent(currentEvent);
-
-                    if (eventProcessor != null)
-                    {
-                        eventProcessor.processEvent();
-                        eventProcessor.updateState();
-                        streamProcessor.afterEvent();
-                    }
-                }
-                catch (Exception e)
-                {
-                    final String errorMessage = "Stream processor '%s' failed to reprocess event: %s";
-                    throw new RuntimeException(String.format(errorMessage, streamProcessorContext.getName(), currentEvent, e));
-                }
-            }
-        }
-
-        @Override
-        public void onFailure(Context context, Exception e)
-        {
-            stateFailureHandler.accept(context, e);
-        }
-    }
-
-    private class ClosingSnapshottingState implements State<Context>
-    {
-        @Override
-        public int doWork(Context context) throws Exception
-        {
-            int workCount = 0;
-
-            final boolean hasProcessedAnyEvent = context.getEvent() != null;
-
-            if (hasProcessedAnyEvent)
-            {
-                ensureSnapshotWritten(context);
-            }
-
-            context.take(TRANSITION_DEFAULT);
-            workCount += 1;
-
-            return workCount;
-        }
-    }
-
-    private class ClosingState implements TransitionState<Context>
-    {
-        @Override
-        public void work(Context context)
-        {
-            streamProcessor.onClose();
-
-            streamProcessorContext.getLogStreamReader().close();
-            streamProcessorContext.getLogStream().removeFailureListener(logStreamFailureListener);
-
-            context.take(TRANSITION_DEFAULT);
-        }
-    }
-
-    private class ClosedState implements WaitState<Context>
-    {
-        @Override
-        public void work(Context context)
-        {
-            if (isRunning.compareAndSet(true, false))
-            {
-                context.completeFuture();
-
-                actorRef.close();
-            }
-        }
-    }
-
-    private class FailedState implements WaitState<Context>
-    {
-        @Override
-        public void work(Context context)
+        if (isFailed.compareAndSet(false, true))
         {
             // wait for recovery
+            actor.await(onRecoveredFuture, t ->
+            {
+                // reset future
+                onRecoveredFuture.close();
+                onRecoveredFuture.setAwaitingResult();
+
+                isFailed.set(false);
+
+                if (failedEventPosition <= lastWrittenEventPosition)
+                {
+                    recoverFromSnapshot();
+                }
+                else
+                {
+                    final long currentEventPosition = currentEvent.getPosition();
+                    if (currentEventPosition > lastSuccessfulProcessedEventPosition)
+                    {
+                        // controller has failed on processing event
+                        // we need to process this event again
+                        logStreamReader.seek(currentEventPosition);
+                    }
+                    // no recovery required if the log stream failed,
+                    // after all events of the processor are written
+                    actor.run(readNextEvent);
+                }
+                failedEventPosition = -1L;
+            });
         }
     }
 
@@ -704,145 +527,44 @@ public class StreamProcessorController implements Actor
         @Override
         public void onFailed(long failedPosition)
         {
-            stateMachineAgent.addCommand(context ->
+            actor.call(() ->
             {
-                final boolean failed = context.tryTake(TRANSITION_FAIL);
-                if (failed)
-                {
-                    context.setFailedEventPosition(failedPosition);
-                }
+                failedEventPosition = failedPosition;
+
+                onFailure();
             });
         }
 
         @Override
         public void onRecovered()
         {
-            stateMachineAgent.addCommand(context ->
+            actor.call(() ->
             {
-                final long failedEventPosition = context.getFailedEventPosition();
                 if (failedEventPosition < 0)
                 {
                     // ignore
                 }
-                else if (failedEventPosition <= context.getLastWrittenEventPosition())
-                {
-                    context.take(TRANSITION_RECOVER);
-                }
                 else
                 {
-
-                    final long currentEventPosition = context.event.getPosition();
-                    if (currentEventPosition > context.lastSuccessfulProcessedEventPosition)
-                    {
-                        // controller has failed on processing event
-                        // we need to process this event again
-                        logStreamReader.seek(currentEventPosition);
-                    }
-                    // no recovery required if the log stream failed,
-                    // after all events of the processor are written
-                    context.take(TRANSITION_OPEN);
+                    onRecoveredFuture.complete(null);
                 }
-                context.setFailedEventPosition(-1);
             });
         }
     }
 
-    protected class Context extends SimpleStateMachineContext
+    public boolean isFailed()
     {
-        private LoggedEvent event;
-        private long lastSuccessfulProcessedEventPosition = -1;
-        private long lastWrittenEventPosition = -1;
-        private long lastSourceEventPosition = -1;
-        private long snapshotPosition = -1;
-        private long failedEventPosition = -1;
-        private CompletableFuture<Void> future;
-
-        Context(StateMachine<Context> stateMachine)
-        {
-            super(stateMachine);
-        }
-
-        public LoggedEvent getEvent()
-        {
-            return event;
-        }
-
-        public void setEvent(LoggedEvent event)
-        {
-            this.event = event;
-        }
-
-        public void completeFuture()
-        {
-            if (future != null)
-            {
-                future.complete(null);
-                future = null;
-            }
-        }
-
-        public void completeFutureExceptionally(Throwable e)
-        {
-            if (future != null)
-            {
-                future.completeExceptionally(e);
-                future = null;
-            }
-        }
-
-        public void setFuture(CompletableFuture<Void> future)
-        {
-            this.future = future;
-        }
-
-        public long getLastSuccessfulProcessedEventPosition()
-        {
-            return lastSuccessfulProcessedEventPosition;
-        }
-
-        public void setLastSuccessfulProcessedEventPosition(long lastSuccessfulProcessedEventPosition)
-        {
-            this.lastSuccessfulProcessedEventPosition = lastSuccessfulProcessedEventPosition;
-        }
-
-        public long getLastWrittenEventPosition()
-        {
-            return lastWrittenEventPosition;
-        }
-
-        public void setLastWrittenEventPosition(long lastWrittenEventPosition)
-        {
-            this.lastWrittenEventPosition = lastWrittenEventPosition;
-        }
-
-        public long getFailedEventPosition()
-        {
-            return failedEventPosition;
-        }
-
-        public void setFailedEventPosition(long failedEventPosition)
-        {
-            this.failedEventPosition = failedEventPosition;
-        }
-
-        public void setSnapshotPosition(long snapshotPosition)
-        {
-            this.snapshotPosition = snapshotPosition;
-        }
-
-        public long getSnapshotPosition()
-        {
-            return snapshotPosition;
-        }
-
-        public long getLastSourceEventPosition()
-        {
-            return lastSourceEventPosition;
-        }
-
-        public void setLastSourceEventPosition(long lastSourceEventPosition)
-        {
-            this.lastSourceEventPosition = lastSourceEventPosition;
-        }
+        return isFailed.get();
     }
+
+    public EventFilter getEventFilter()
+    {
+        return eventFilter;
+    }
+
+    public EventFilter getReprocessingEventFilter()
+    {
+        return reprocessingEventFilter;
+    }
+
 }

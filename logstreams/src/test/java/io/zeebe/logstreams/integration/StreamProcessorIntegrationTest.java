@@ -25,7 +25,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -57,6 +56,9 @@ import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.logstreams.spi.SnapshotWriter;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.TestUtil;
+import io.zeebe.util.sched.ActorCondition;
+import io.zeebe.util.sched.FutureUtil;
+import io.zeebe.util.sched.ZbActor;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.After;
@@ -81,7 +83,7 @@ public class StreamProcessorIntegrationTest
     public AutoCloseableRule autoCloseableRule = new AutoCloseableRule();
 
     @Rule
-    private ActorSchedulerRule actorScheduler = new ActorSchedulerRule();
+    public ActorSchedulerRule actorScheduler = new ActorSchedulerRule();
 
     private LogStream logStream;
 
@@ -110,6 +112,21 @@ public class StreamProcessorIntegrationTest
                 .build();
 
         logStream.open();
+
+        // update commit position when new event is appended
+        // this triggers the stream processor controller to process available events
+        actorScheduler.get().submitActor(new ZbActor()
+        {
+            @Override
+            protected void onActorStarted()
+            {
+                final ActorCondition condition = actor.onCondition("on-append", () ->
+                {
+                    logStream.setCommitPosition(Long.MAX_VALUE);
+                });
+                logStream.getLogStorage().registerOnAppendCondition(condition);
+            }
+        });
 
         controllers = new ArrayList<>();
     }
@@ -146,7 +163,6 @@ public class StreamProcessorIntegrationTest
             .snapshotPolicy(NO_SNAPSHOT_POLICY)
             .snapshotStorage(snapshotStorage)
             .build();
-        logStream.setCommitPosition(Long.MAX_VALUE);
         streamProcessorController.openAsync().get();
 
         // when
@@ -171,7 +187,6 @@ public class StreamProcessorIntegrationTest
             .snapshotStorage(snapshotStorage)
             .build();
 
-        logStream.setCommitPosition(Long.MAX_VALUE);
         streamProcessorController.openAsync().get();
         writeLogEvents(logStream, 1, MSG_SIZE, 0);
         waitUntilWrittenKey(logStream, WORK_COUNT / 2);
@@ -197,7 +212,7 @@ public class StreamProcessorIntegrationTest
             .snapshotPolicy(position -> isSnapshotPoint.getAndSet(false))
             .snapshotStorage(snapshotStorage)
             .build();
-        logStream.setCommitPosition(Long.MAX_VALUE);
+
         streamProcessorController.openAsync().get();
         writeLogEvents(logStream, 1, MSG_SIZE, 0);
         waitUntilWrittenKey(logStream, WORK_COUNT / 2);
@@ -232,7 +247,6 @@ public class StreamProcessorIntegrationTest
             .snapshotStorage(snapshotStorage)
             .build();
 
-        logStream.setCommitPosition(Long.MAX_VALUE);
         streamProcessorController.openAsync().get();
         writeLogEvents(logStream, 1, MSG_SIZE, 0);
         waitUntilWrittenKey(logStream, WORK_COUNT / 2);
@@ -288,8 +302,6 @@ public class StreamProcessorIntegrationTest
         assertThat(resourceCounter.getObject().getCount()).isEqualTo(WORK_COUNT + 1);
     }
 
-
-
     @Test
     public void shouldProcessWithTwoProcessors() throws Exception
     {
@@ -314,11 +326,9 @@ public class StreamProcessorIntegrationTest
             .snapshotStorage(snapshotStorage)
             .build();
 
-        logStream.setCommitPosition(Long.MAX_VALUE);
-        logStream.setCommitPosition(Long.MAX_VALUE);
-
         // when
-        CompletableFuture.allOf(streamProcessorController1.openAsync(), streamProcessorController2.openAsync()).get();
+        FutureUtil.join(streamProcessorController1.openAsync());
+        FutureUtil.join(streamProcessorController2.openAsync());
 
         writeLogEvents(logStream, 1, MSG_SIZE, 0);
         waitUntilWrittenEvents(logStream, 2 * WORK_COUNT);
@@ -328,7 +338,9 @@ public class StreamProcessorIntegrationTest
         // then
         assertThat(resourceCounter.getObject().getCount()).isEqualTo(2 * WORK_COUNT);
         assertThat(resourceCounter2.getObject().getCount()).isEqualTo(2 * WORK_COUNT);
-        CompletableFuture.allOf(streamProcessorController1.closeAsync(), streamProcessorController2.closeAsync()).get();
+
+        FutureUtil.join(streamProcessorController1.closeAsync());
+        FutureUtil.join(streamProcessorController2.closeAsync());
     }
 
     @Test
@@ -357,9 +369,8 @@ public class StreamProcessorIntegrationTest
             .snapshotStorage(snapshotStorage)
             .build();
 
-        logStream.setCommitPosition(Long.MAX_VALUE);
-        logStream.setCommitPosition(Long.MAX_VALUE);
-        CompletableFuture.allOf(streamProcessorController1.openAsync(), streamProcessorController2.openAsync()).get();
+        FutureUtil.join(streamProcessorController1.openAsync());
+        FutureUtil.join(streamProcessorController2.openAsync());
 
         writeLogEvents(logStream, 1, MSG_SIZE, 0);
         waitUntilWrittenEvents(logStream, WORK_COUNT / 2);
@@ -371,12 +382,15 @@ public class StreamProcessorIntegrationTest
         waitUntilWrittenEvents(logStream, 2 * WORK_COUNT + 1);
 
         snapshotStorage.readOnly();
-        CompletableFuture.allOf(streamProcessorController1.closeAsync(), streamProcessorController2.closeAsync()).get();
+        FutureUtil.join(streamProcessorController1.closeAsync());
+        FutureUtil.join(streamProcessorController2.closeAsync());
 
         // when
         resourceCounter.getObject().reset();
         resourceCounter2.getObject().reset();
-        CompletableFuture.allOf(streamProcessorController1.openAsync(), streamProcessorController2.openAsync()).get();
+
+        FutureUtil.join(streamProcessorController1.openAsync());
+        FutureUtil.join(streamProcessorController2.openAsync());
 
         // then
         assertThat(resourceCounter.getObject().getCount()).isGreaterThan(WORK_COUNT / 2);
@@ -397,7 +411,8 @@ public class StreamProcessorIntegrationTest
         assertThat(resourceCounter.getObject().getCount()).isEqualTo(2 * WORK_COUNT + 2);
         assertThat(resourceCounter2.getObject().getCount()).isEqualTo(2 * WORK_COUNT + 2);
 
-        CompletableFuture.allOf(streamProcessorController1.closeAsync(), streamProcessorController2.closeAsync()).get();
+        FutureUtil.join(streamProcessorController1.closeAsync());
+        FutureUtil.join(streamProcessorController2.closeAsync());
     }
 
     @Test
@@ -411,9 +426,6 @@ public class StreamProcessorIntegrationTest
             .snapshotPolicy(NO_SNAPSHOT_POLICY)
             .snapshotStorage(snapshotStorage)
             .build();
-
-        logStream.setCommitPosition(Long.MAX_VALUE);
-        logStream.setCommitPosition(Long.MAX_VALUE);
 
         streamProcessorController.openAsync().get();
 
@@ -438,9 +450,6 @@ public class StreamProcessorIntegrationTest
             .snapshotPolicy(NO_SNAPSHOT_POLICY)
             .snapshotStorage(snapshotStorage)
             .build();
-
-        logStream.setCommitPosition(Long.MAX_VALUE);
-        logStream.setCommitPosition(Long.MAX_VALUE);
 
         streamProcessorController.openAsync().get();
         writeLogEvents(logStream, 1, MSG_SIZE, 1);
@@ -485,8 +494,21 @@ public class StreamProcessorIntegrationTest
             .snapshotStorage(snapshotStorage)
             .build();
 
-        controllablelogStream.setCommitPosition(Long.MAX_VALUE);
         controllablelogStream.open();
+
+        actorScheduler.get().submitActor(new ZbActor()
+        {
+            @Override
+            protected void onActorStarted()
+            {
+                final ActorCondition condition = actor.onCondition("on-append", () ->
+                {
+                    controllablelogStream.setCommitPosition(Long.MAX_VALUE);
+                });
+                controllablelogStream.getLogStorage().registerOnAppendCondition(condition);
+            }
+        });
+
         streamProcessorController.openAsync().get();
 
         writeLogEvents(controllablelogStream, 1, MSG_SIZE, 0);
@@ -545,8 +567,22 @@ public class StreamProcessorIntegrationTest
             .snapshotStorage(snapshotStorage)
             .build();
 
-        controllablelogStream.setCommitPosition(Long.MAX_VALUE);
+
         controllablelogStream.open();
+
+        actorScheduler.get().submitActor(new ZbActor()
+        {
+            @Override
+            protected void onActorStarted()
+            {
+                final ActorCondition condition = actor.onCondition("on-append", () ->
+                {
+                    controllablelogStream.setCommitPosition(Long.MAX_VALUE);
+                });
+                controllablelogStream.getLogStorage().registerOnAppendCondition(condition);
+            }
+        });
+
         streamProcessorController.openAsync().get();
 
         writeLogEvents(controllablelogStream, WORK_COUNT / 2, MSG_SIZE, 0);
@@ -597,8 +633,6 @@ public class StreamProcessorIntegrationTest
                 .snapshotStorage(snapshotStorage)
                 .build();
         manage(streamProcessorController);
-
-        logStream.setCommitPosition(Long.MAX_VALUE);
 
         final LogStreamReader logReader = newLogReader(logStream);
 
@@ -662,9 +696,6 @@ public class StreamProcessorIntegrationTest
                 .snapshotPolicy(NO_SNAPSHOT_POLICY)
                 .snapshotStorage(snapshotStorage)
                 .build();
-
-        logStream.setCommitPosition(Long.MAX_VALUE);
-        logStream.setCommitPosition(Long.MAX_VALUE);
 
         streamProcessorController.openAsync().get();
 

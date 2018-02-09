@@ -22,6 +22,7 @@ import io.zeebe.logstreams.impl.LogBlockIndexController;
 import io.zeebe.logstreams.impl.LogStreamController;
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
 import io.zeebe.logstreams.spi.LogStorage;
+import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.ZbActorScheduler;
 import org.agrona.DirectBuffer;
 
@@ -215,5 +216,9 @@ public interface LogStream extends AutoCloseable
      * @return the future which is completed if the truncation was successful
      */
     void truncate(long position);
+
+    void registerOnCommitPositionUpdatedCondition(ActorCondition condition);
+
+    void removeOnCommitPositionUpdatedCondition(ActorCondition condition);
 
 }
