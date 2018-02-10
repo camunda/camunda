@@ -164,13 +164,6 @@ public class ActorTask
                 e.printStackTrace();
             }
 
-            if (shouldYield)
-            {
-                shouldYield = false;
-                resubmit = true;
-                break;
-            }
-
             switch (currentJob.state)
             {
                 case TERMINATED:
@@ -204,6 +197,12 @@ public class ActorTask
 
                 default:
                     break;
+            }
+
+            if (shouldYield)
+            {
+                shouldYield = false;
+                break;
             }
         }
 

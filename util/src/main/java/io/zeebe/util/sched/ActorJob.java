@@ -86,7 +86,9 @@ public class ActorJob
             // in any case, success or exception, decide if the job should be resubmitted
             if (state != ActorState.BLOCKED)
             {
-                if (isAutoCompleting || isDoneCalled || isTriggeredBySubscription())
+                if (isTriggeredBySubscription()
+                        || (isAutoCompleting && runnable == null)
+                        || isDoneCalled)
                 {
                     state = ActorState.TERMINATED;
                 }
@@ -378,4 +380,7 @@ public class ActorJob
     {
         triggeredConditions.add(condition);
     }
+
+
+
 }
