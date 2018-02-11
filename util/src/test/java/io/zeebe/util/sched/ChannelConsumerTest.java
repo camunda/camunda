@@ -63,12 +63,14 @@ public class ChannelConsumerTest
         {
             actor.consume(ch, () ->
             {
-                while (ch.poll() != null)
+                if (ch.poll() != null)
                 {
-                    if (++count == 10_000_000)
-                    {
-                        latch.countDown();
-                    }
+                    ++count;
+                }
+
+                if (count == 10_000_000)
+                {
+                    latch.countDown();
                 }
             });
         }

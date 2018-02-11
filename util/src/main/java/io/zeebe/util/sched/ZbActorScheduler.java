@@ -22,6 +22,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.metrics.ActorRunnerMetrics;
 import org.agrona.concurrent.status.CountersManager;
 
@@ -39,7 +40,22 @@ public class ZbActorScheduler
 
     public final int runnerCount;
 
+    public ZbActorScheduler(int numOfRunnerThreads, CountersManager countersManager)
+    {
+        this(numOfRunnerThreads, countersManager, null);
+    }
+
+    public ZbActorScheduler(int numOfRunnerThreads, CountersManager countersManager, ActorClock clock)
+    {
+        this(numOfRunnerThreads, new RandomRunnerAssignmentStrategy(numOfRunnerThreads), countersManager, clock);
+    }
+
     public ZbActorScheduler(int numOfRunnerThreads, RunnerAssignmentStrategy initialRunnerAssignmentStrategy, CountersManager countersManager)
+    {
+        this(numOfRunnerThreads, initialRunnerAssignmentStrategy, countersManager, null);
+    }
+
+    public ZbActorScheduler(int numOfRunnerThreads, RunnerAssignmentStrategy initialRunnerAssignmentStrategy, CountersManager countersManager, ActorClock clock)
     {
         this.runnerAssignmentStrategy = initialRunnerAssignmentStrategy;
 
@@ -51,20 +67,16 @@ public class ZbActorScheduler
         for (int i = 0; i < runnerCount; i++)
         {
             final ActorRunnerMetrics metrics = new ActorRunnerMetrics(String.format("runner-%d", i), countersManager);
-            nonBlockingTasksRunners[i] = createTaskRunner(i, metrics);
+            nonBlockingTasksRunners[i] = createTaskRunner(i, metrics, clock);
         }
 
         blockingTasksRunner = new ThreadPoolExecutor(1, Integer.MAX_VALUE, 60L, TimeUnit.SECONDS, new SynchronousQueue<>(), new BlockingTasksThreadFactory());
     }
 
-    protected ActorTaskRunner createTaskRunner(int i, final ActorRunnerMetrics metrics)
-    {
-        return new ActorTaskRunner(this, i, metrics);
-    }
 
-    public ZbActorScheduler(int numOfRunnerThreads, CountersManager countersManager)
+    protected ActorTaskRunner createTaskRunner(int i, final ActorRunnerMetrics metrics, ActorClock clock)
     {
-        this(numOfRunnerThreads, new RandomRunnerAssignmentStrategy(numOfRunnerThreads), countersManager);
+        return new ActorTaskRunner(this, i, metrics, clock);
     }
 
     public void submitActor(ZbActor actor)

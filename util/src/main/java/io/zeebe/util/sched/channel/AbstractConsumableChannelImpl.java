@@ -17,40 +17,42 @@ package io.zeebe.util.sched.channel;
 
 import java.util.Arrays;
 
+import io.zeebe.util.sched.ActorCondition;
+
 public abstract class AbstractConsumableChannelImpl implements ConsumableChannel
 {
-    private ChannelSubscription[] consumers = new ChannelSubscription[0];
+    private ActorCondition[] consumers = new ActorCondition[0];
 
-    public void signalReadAvailable()
+    public void signalConsumers()
     {
-        final ChannelSubscription[] task = consumers; // please do not remove me, array ref may be replaced concurrently
+        final ActorCondition[] consumer = consumers; // please do not remove me, array ref may be replaced concurrently
 
-        for (int i = 0; i < task.length; i++)
+        for (int i = 0; i < consumer.length; i++)
         {
-            task[i].signalReadAvailable();
+            consumer[i].signal();
         }
     }
 
     @Override
-    public synchronized void registerConsumer(ChannelSubscription listener)
+    public synchronized void registerConsumer(ActorCondition listener)
     {
         consumers = appendToArray(consumers, listener);
     }
 
     @Override
-    public synchronized void removeConsumer(ChannelSubscription listener)
+    public synchronized void removeConsumer(ActorCondition listener)
     {
         consumers = removeFromArray(consumers, listener);
     }
 
-    private static ChannelSubscription[] appendToArray(ChannelSubscription[] array, ChannelSubscription listener)
+    private static ActorCondition[] appendToArray(ActorCondition[] array, ActorCondition listener)
     {
         array = Arrays.copyOf(array, array.length + 1);
         array[array.length - 1] = listener;
         return array;
     }
 
-    private static ChannelSubscription[] removeFromArray(ChannelSubscription[] array, ChannelSubscription listener)
+    private static ActorCondition[] removeFromArray(ActorCondition[] array, ActorCondition listener)
     {
         final int length = array.length;
 
@@ -63,7 +65,7 @@ public abstract class AbstractConsumableChannelImpl implements ConsumableChannel
             }
         }
 
-        final ChannelSubscription[] result = new ChannelSubscription[length - 1];
+        final ActorCondition[] result = new ActorCondition[length - 1];
         System.arraycopy(array, 0, result, 0, index);
         if (index < length - 1)
         {

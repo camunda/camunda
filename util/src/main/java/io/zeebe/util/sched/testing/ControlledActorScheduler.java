@@ -19,6 +19,7 @@ import java.time.Duration;
 
 import io.zeebe.util.sched.ActorTaskRunner;
 import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.metrics.ActorRunnerMetrics;
 import org.agrona.concurrent.status.CountersManager;
 import org.junit.Assert;
@@ -34,9 +35,9 @@ public class ControlledActorScheduler extends ZbActorScheduler
     }
 
     @Override
-    protected ActorTaskRunner createTaskRunner(int i, ActorRunnerMetrics metrics)
+    protected ActorTaskRunner createTaskRunner(int i, ActorRunnerMetrics metrics, ActorClock clock)
     {
-        controlledActorTaskRunner = new ControlledActorTaskRunner(this, i, metrics);
+        controlledActorTaskRunner = new ControlledActorTaskRunner(this, i, metrics, clock);
         return controlledActorTaskRunner;
     }
 

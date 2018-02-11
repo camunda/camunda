@@ -132,7 +132,7 @@ public class ActorRunnerMetrics
 
         final long micros = TimeUnit.NANOSECONDS.toMicros(value);
 
-        ps.format("%s:\t %dh %dm %02ds %03dms %03dus\n", label, hours, minutes, seconds, millis, micros);
+        ps.format("%s:\t %dh %dm %02ds %03dms %03dμs\n", label, hours, minutes, seconds, millis, micros);
     }
 
 

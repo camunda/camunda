@@ -19,6 +19,8 @@ import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
+import io.zeebe.util.sched.clock.ActorClock;
+import io.zeebe.util.sched.clock.DefaultActorClock;
 import io.zeebe.util.sched.metrics.ActorRunnerMetrics;
 import org.agrona.UnsafeAccess;
 import org.agrona.concurrent.BackoffIdleStrategy;
@@ -39,7 +41,7 @@ public class ActorTaskRunner extends Thread
 
     private final Random localRandom = new Random();
 
-    private final ActorClock clock = new ActorClock();
+    private final ActorClock clock;
 
     static
     {
@@ -59,7 +61,7 @@ public class ActorTaskRunner extends Thread
 
     private final ActorTaskQueue taskQueue;
 
-    private final ActorTimerQueue timerJobQueue = new ActorTimerQueue();
+    private final ActorTimerQueue timerJobQueue;
 
     private final ActorJobPool jobPool = new ActorJobPool();
 
@@ -67,7 +69,7 @@ public class ActorTaskRunner extends Thread
 
     ActorTask currentTask;
 
-    public ActorTaskRunner(ZbActorScheduler scheduler, int runnerId, ActorRunnerMetrics metrics)
+    public ActorTaskRunner(ZbActorScheduler scheduler, int runnerId, ActorRunnerMetrics metrics, ActorClock clock)
     {
         setName("zb-non-blocking-task-runner-" + runnerId);
         this.scheduler = scheduler;
@@ -75,6 +77,8 @@ public class ActorTaskRunner extends Thread
         this.metrics = metrics;
         this.state = TaskRunnerState.NEW;
         this.taskQueue = new ActorTaskQueue(runnerId);
+        this.clock = clock != null ? clock : new DefaultActorClock();
+        this.timerJobQueue = new ActorTimerQueue(this.clock);
     }
 
     @Override

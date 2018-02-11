@@ -15,13 +15,13 @@
  */
 package io.zeebe.util.sched.channel;
 
+import io.zeebe.util.sched.ActorCondition;
+
 public interface ConsumableChannel
 {
-    /** returns true if the channel has data ready to be consumed */
     boolean hasAvailable();
 
-    void registerConsumer(ChannelSubscription listener);
+    void registerConsumer(ActorCondition onDataAvailable);
 
-    void removeConsumer(ChannelSubscription listener);
-
+    void removeConsumer(ActorCondition onDataAvailable);
 }

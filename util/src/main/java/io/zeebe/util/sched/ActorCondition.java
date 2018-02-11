@@ -17,7 +17,6 @@ package io.zeebe.util.sched;
 
 /**
  * condition variable for actors.
- *
  */
 public interface ActorCondition
 {

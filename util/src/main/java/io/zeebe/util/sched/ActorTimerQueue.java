@@ -17,6 +17,7 @@ package io.zeebe.util.sched;
 
 import java.util.concurrent.TimeUnit;
 
+import io.zeebe.util.sched.clock.ActorClock;
 import org.agrona.DeadlineTimerWheel;
 import org.agrona.collections.Long2ObjectHashMap;
 
@@ -29,17 +30,20 @@ public class ActorTimerQueue extends DeadlineTimerWheel
         @Override
         public boolean onTimerExpiry(TimeUnit timeUnit, long now, long timerId)
         {
-            final TimerSubscription timer = timerJobMap.get(timerId);
+            final TimerSubscription timer = timerJobMap.remove(timerId);
 
-            timer.onTimerExpired(timeUnit, now);
+            if (timer != null)
+            {
+                timer.onTimerExpired(timeUnit, now);
+            }
 
             return true;
         }
     };
 
-    public ActorTimerQueue()
+    public ActorTimerQueue(ActorClock clock)
     {
-        super(TimeUnit.MILLISECONDS, System.currentTimeMillis(), 1, 32);
+        super(TimeUnit.MILLISECONDS, clock.getTimeMillis(), 1, 32);
     }
 
     public void processExpiredTimers(ActorClock clock)

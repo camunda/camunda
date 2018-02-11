@@ -21,15 +21,16 @@ import java.util.concurrent.CyclicBarrier;
 import io.zeebe.util.LangUtil;
 import io.zeebe.util.sched.ActorTaskRunner;
 import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.metrics.ActorRunnerMetrics;
 
 public class ControlledActorTaskRunner extends ActorTaskRunner
 {
     private CyclicBarrier barrier = new CyclicBarrier(2);
 
-    public ControlledActorTaskRunner(ZbActorScheduler scheduler, int runnerId, ActorRunnerMetrics metrics)
+    public ControlledActorTaskRunner(ZbActorScheduler scheduler, int runnerId, ActorRunnerMetrics metrics, ActorClock clock)
     {
-        super(scheduler, runnerId, metrics);
+        super(scheduler, runnerId, metrics, clock);
         idleStrategy = new ControlledIdleStartegy();
     }
 

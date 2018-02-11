@@ -60,8 +60,6 @@ public class ActorTask
      * from a job within the same actor while the task is in RUNNING state. */
     final ManyToOneConcurrentLinkedQueue<ActorJob> submittedJobs = new ManyToOneConcurrentLinkedQueue<>();
 
-    private ActorTaskQueueNode[] queueNodes;
-
     volatile ActorState state = null;
 
     volatile long stateCount = 0;
@@ -93,16 +91,7 @@ public class ActorTask
         this.terminationFuture.close();
         this.terminationFuture.setAwaitingResult();
         this.isClosing = false;
-
         this.scheduler = scheduler;
-        // create queue nodes
-        final int runnerCount = scheduler.runnerCount;
-        this.queueNodes = new ActorTaskQueueNode[runnerCount];
-
-        for (int i = 0; i < runnerCount; i++)
-        {
-            this.queueNodes[i] = new ActorTaskQueueNode(this);
-        }
 
         // create initial job to invoke on start callback
         final ActorJob j = new ActorJob();
@@ -132,13 +121,10 @@ public class ActorTask
         }
     }
 
-    ActorTaskQueueNode taskQueueNode(int queueId)
-    {
-        return queueNodes[queueId];
-    }
-
     public boolean execute(ActorTaskRunner runner)
     {
+        state = ActorState.ACTIVE;
+
         boolean resubmit = false;
 
         while (!resubmit && (currentJob != null || poll()))
@@ -202,6 +188,7 @@ public class ActorTask
             if (shouldYield)
             {
                 shouldYield = false;
+                resubmit = currentJob != null;
                 break;
             }
         }

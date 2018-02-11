@@ -159,7 +159,11 @@ public class CompletableActorFuture<V> implements ActorFuture<V>
         }
         else
         {
-            throw new IllegalStateException("Cannot complete future, the future is already completed.");
+            final String err = "Cannot complete future, the future is already completed " +
+                    (state == COMPLETED_EXCEPTIONALLY ? ("exceptionally with " + failure + " ") :
+                     " with value " + value);
+
+            throw new IllegalStateException(err);
         }
     }
 
@@ -175,7 +179,10 @@ public class CompletableActorFuture<V> implements ActorFuture<V>
         }
         else
         {
-            throw new IllegalStateException("Cannot complete future, the future is already completed.");
+            final String err = "Cannot complete future, the future is already completed " +
+                    (state == COMPLETED_EXCEPTIONALLY ? ("exceptionally with '" + failure + "' ") :
+                     " with value " + value);
+            throw new IllegalStateException(err);
         }
     }
 

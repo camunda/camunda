@@ -13,57 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.util.sched;
+package io.zeebe.util.sched.clock;
 
-public class ActorClock
+import io.zeebe.util.sched.ActorTaskRunner;
+
+public interface ActorClock
 {
-    long timeMillis;
+    void update();
 
-    long nanoTime;
+    long getTimeMillis();
 
-    long nanoTimeOfLastMilli;
+    long getNanosSinceLastMillisecond();
 
-    long nanosSinceLastMilli;
+    long getNanoTime();
 
-    public boolean update()
-    {
-        boolean isNextTick = false;
-
-        updateNanos();
-
-        if (nanosSinceLastMilli >= 1_000_000)
-        {
-            timeMillis = System.currentTimeMillis();
-            nanoTimeOfLastMilli = nanoTime;
-
-            isNextTick = true;
-        }
-
-        return isNextTick;
-    }
-
-    public void updateNanos()
-    {
-        nanoTime = System.nanoTime();
-        nanosSinceLastMilli = nanoTime - nanoTimeOfLastMilli;
-    }
-
-    public long getTimeMillis()
-    {
-        return timeMillis;
-    }
-
-    public long getNanosSinceLastMillisecond()
-    {
-        return nanosSinceLastMilli;
-    }
-
-    public long getNanoTime()
-    {
-        return nanoTime;
-    }
-
-    public static ActorClock current()
+    static ActorClock current()
     {
         final ActorTaskRunner current = ActorTaskRunner.current();
         if (current == null)
@@ -74,9 +38,8 @@ public class ActorClock
         return current.getClock();
     }
 
-    public static long currentTimeMillis()
+    static long currentTimeMillis()
     {
         return current().getTimeMillis();
     }
-
 }

@@ -15,12 +15,12 @@
  */
 package io.zeebe.util.sched;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.function.BiConsumer;
 
-import io.zeebe.util.sched.future.*;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import io.zeebe.util.sched.metrics.ActorRunnerMetrics;
 
 @SuppressWarnings({ "unchecked", "rawtypes" })
@@ -45,8 +45,6 @@ public class ActorJob
 
     private ActorSubscription subscription;
 
-    private final List<ActorConditionImpl> triggeredConditions = new ArrayList<>();
-
     public void onJobAddedToTask(ActorTask task)
     {
         this.actor = task.actor;
@@ -66,6 +64,7 @@ public class ActorJob
             if (resultFuture != null)
             {
                 resultFuture.complete(invocationResult);
+                resultFuture = null;
             }
 
         }
@@ -134,22 +133,10 @@ public class ActorJob
             }
         }
 
-        processTriggeredConditions();
-
         if (ActorRunnerMetrics.SHOULD_RECORD_JOB_EXECUTION_TIME)
         {
             final ActorRunnerMetrics metrics = runner.getMetrics();
             metrics.recordJobExecutionTime(System.nanoTime() - before);
-        }
-    }
-
-    private void processTriggeredConditions()
-    {
-        final int conditioncount = triggeredConditions.size();
-        for (int i = conditioncount - 1; i >= 0; i--)
-        {
-            final ActorConditionImpl condition = triggeredConditions.remove(i);
-            condition.trigger();
         }
     }
 
@@ -188,7 +175,7 @@ public class ActorJob
 
     public boolean setRunnable(Runnable runnable)
     {
-        if (this.runnable == null)
+        if (this.runnable == null && this.callable == null && !isTriggeredBySubscription())
         {
             this.runnable = runnable;
             return true;
@@ -284,7 +271,7 @@ public class ActorJob
     }
 
     /**
-     * used to recycle the task object
+     * used to recycle the job object
      */
     void reset()
     {
@@ -375,12 +362,5 @@ public class ActorJob
     {
         return task;
     }
-
-    public void addTriggeredCondition(ActorConditionImpl condition)
-    {
-        triggeredConditions.add(condition);
-    }
-
-
 
 }

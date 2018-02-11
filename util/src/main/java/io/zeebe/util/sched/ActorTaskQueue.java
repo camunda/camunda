@@ -39,16 +39,11 @@ class ActorTaskQueueNode
         }
     }
 
-    final ActorTask task;
     volatile ActorTaskQueueNode next;
     volatile ActorTaskQueueNode prev;
 
     long stateCount;
-
-    ActorTaskQueueNode(ActorTask actorTask)
-    {
-        task = actorTask;
-    }
+    ActorTask task;
 
     void nextOrdered(ActorTaskQueueNode t)
     {
@@ -58,6 +53,11 @@ class ActorTaskQueueNode
     void prevOrdered(ActorTaskQueueNode t)
     {
         UNSAFE.putObjectVolatile(this, PREV_OFFSET, t);
+    }
+
+    public void setTask(ActorTask task)
+    {
+        this.task = task;
     }
 }
 
@@ -124,7 +124,7 @@ public class ActorTaskQueue extends ActorTaskQueueHead
     @SuppressWarnings("unused")
     protected long p31, p32, p33, p34, p35, p36, p37, p38, p39, p40, p41, p42, p43, p44, p45;
 
-    private final ActorTaskQueueNode empty = new ActorTaskQueueNode(null);
+    private final ActorTaskQueueNode empty = new ActorTaskQueueNode();
 
     private final int queueId;
 
@@ -140,29 +140,13 @@ public class ActorTaskQueue extends ActorTaskQueueHead
      */
     public void append(final ActorTask task)
     {
-        final ActorTaskRunner runner = ActorTaskRunner.current();
-
-        ActorTaskQueueNode tail = task.taskQueueNode(queueId);
-
-        if (runner != null && runner.getRunnerId() == queueId)
-        {
-            if (tail.next != null)
-            {
-                // do not re-add if already in list
-                assert tail.task.stateCount != tail.stateCount;
-                tail = new ActorTaskQueueNode(task);
-            }
-        }
-        else
-        {
-            // submission from non actor task runner thread
-            tail = new ActorTaskQueueNode(task);
-        }
-
+        // TODO: make garbage free again
+        final ActorTaskQueueNode tail = new ActorTaskQueueNode();
+        tail.task = task;
         tail.stateCount = task.stateCount;
         final ActorTaskQueueNode previousTail = swapTail(tail);
-        tail.prevOrdered(previousTail);
         previousTail.nextOrdered(tail);
+        tail.prevOrdered(previousTail);
     }
 
     /**
@@ -227,6 +211,7 @@ public class ActorTaskQueue extends ActorTaskQueueHead
         if (null != next)
         {
             value = next;
+            head.prevOrdered(null);
             head.nextOrdered(null);
 
             if (null == next.next)

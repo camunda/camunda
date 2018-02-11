@@ -13,27 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.util.sched;
+package io.zeebe.util.sched.channel;
 
 import static org.agrona.UnsafeAccess.UNSAFE;
 
+import io.zeebe.util.sched.*;
+
 @SuppressWarnings("restriction")
-public class ActorConditionImpl implements ActorCondition, ActorSubscription
+public class ChannelConsumerCondition implements ActorCondition, ActorSubscription
 {
     private static final long TRIGGER_COUNT_OFFSET;
 
     private volatile long triggerCount = 0;
-    private long runCount = 0;
+    private long processedTiggersCount = 0;
 
+    private final ConsumableChannel channel;
     private final ActorJob job;
-    private final String conditionName;
     private final ActorTask task;
 
     static
     {
         try
         {
-            TRIGGER_COUNT_OFFSET = UNSAFE.objectFieldOffset(ActorConditionImpl.class.getDeclaredField("triggerCount"));
+            TRIGGER_COUNT_OFFSET = UNSAFE.objectFieldOffset(ChannelConsumerCondition.class.getDeclaredField("triggerCount"));
         }
         catch (Exception e)
         {
@@ -41,11 +43,20 @@ public class ActorConditionImpl implements ActorCondition, ActorSubscription
         }
     }
 
-    public ActorConditionImpl(String conditionName, ActorJob job)
+
+    public ChannelConsumerCondition(ActorJob job, ConsumableChannel channel)
     {
-        this.conditionName = conditionName;
         this.job = job;
-        this.task = job.task;
+        this.task = job.getTask();
+        this.channel = channel;
+    }
+
+    @Override
+    public boolean poll()
+    {
+        final long polledCount = this.triggerCount;
+        final boolean hasAvailable = channel.hasAvailable();
+        return polledCount > processedTiggersCount || hasAvailable;
     }
 
     @Override
@@ -70,13 +81,7 @@ public class ActorConditionImpl implements ActorCondition, ActorSubscription
     @Override
     public void onJobCompleted()
     {
-        runCount++;
-    }
-
-    @Override
-    public boolean poll()
-    {
-        return triggerCount > runCount;
+        this.processedTiggersCount++;
     }
 
     @Override
@@ -89,11 +94,5 @@ public class ActorConditionImpl implements ActorCondition, ActorSubscription
     public boolean isRecurring()
     {
         return true;
-    }
-
-    @Override
-    public String toString()
-    {
-        return "Condition " + conditionName;
     }
 }

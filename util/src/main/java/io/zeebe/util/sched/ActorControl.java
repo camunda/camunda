@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-import io.zeebe.util.sched.channel.ChannelSubscription;
+import io.zeebe.util.sched.channel.ChannelConsumerCondition;
 import io.zeebe.util.sched.channel.ConsumableChannel;
 import io.zeebe.util.sched.future.ActorFuture;
 
@@ -44,9 +44,10 @@ public class ActorControl
 
         final ActorJob job = new ActorJob();
         job.setRunnable(consumer);
+        job.setAutoCompleting(false);
         job.onJobAddedToTask(task);
 
-        final ChannelSubscription subscription = new ChannelSubscription(job, channel);
+        final ChannelConsumerCondition subscription = new ChannelConsumerCondition(job, channel);
         job.setSubscription(subscription);
 
         channel.registerConsumer(subscription);
@@ -66,12 +67,12 @@ public class ActorControl
         subscription.submit();
     }
 
-    public ActorCondition onCondition(String conditionName, Runnable action)
+    public ActorCondition onCondition(String conditionName, Runnable conditionAction)
     {
         ensureCalledFromWithinActor("onCondition(...)");
 
         final ActorJob job = new ActorJob();
-        job.setRunnable(action);
+        job.setRunnable(conditionAction);
         job.onJobAddedToTask(task);
 
         final ActorConditionImpl condition = new ActorConditionImpl(conditionName, job);

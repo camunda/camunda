@@ -41,7 +41,7 @@ public class ConcurrentQueueChannel<E> extends AbstractConsumableChannelImpl imp
     {
         if (wrapped.add(e))
         {
-            signalReadAvailable();
+            signalConsumers();
             return true;
         }
         return false;
@@ -52,7 +52,7 @@ public class ConcurrentQueueChannel<E> extends AbstractConsumableChannelImpl imp
     {
         if (wrapped.offer(e))
         {
-            signalReadAvailable();
+            signalConsumers();
             return true;
         }
         return false;
