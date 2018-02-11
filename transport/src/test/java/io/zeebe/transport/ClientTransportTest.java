@@ -36,9 +36,9 @@ import io.zeebe.transport.impl.TransportChannel;
 import io.zeebe.transport.impl.TransportHeaderDescriptor;
 import io.zeebe.transport.util.*;
 import io.zeebe.util.buffer.*;
+import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
-import io.zeebe.util.time.ClockUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.*;
@@ -47,7 +47,8 @@ import org.mockito.ArgumentMatchers;
 
 public class ClientTransportTest
 {
-    public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3);
+    private ControlledActorClock clock = new ControlledActorClock();
+    public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3, clock);
     public AutoCloseableRule closeables = new AutoCloseableRule();
 
     @Rule
@@ -87,12 +88,6 @@ public class ClientTransportTest
                 .messageReceiveBuffer(clientReceiveBuffer)
                 .build();
         closeables.manage(clientTransport);
-    }
-
-    @After
-    public void tearDown()
-    {
-        ClockUtil.reset();
     }
 
     protected ControllableServerTransport buildControllableServerTransport()
@@ -419,6 +414,9 @@ public class ClientTransportTest
     @Test
     public void shouldNotBlockAllRequestsWhenOneRemoteIsNotReachable()
     {
+        fail("This test always succeeds but sometimes only because the keepalive is counted by the ControllableServerTransport." +
+                "Right now it is not guaranteed that the Sender agent in the client has the channel once" +
+                "the server has accepted the connection and in that case the request cannot be sent.");
         // given
         final ControllableServerTransport serverTransport = buildControllableServerTransport();
         serverTransport.listenOn(SERVER_ADDRESS1);
@@ -426,15 +424,19 @@ public class ClientTransportTest
         final RemoteAddress remote1 = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
         final RemoteAddress remote2 = clientTransport.registerRemoteAddress(SERVER_ADDRESS2);
 
+        // <!> as the code is written currently: fact that server accepts connection
+        // <!> does not guarantee that the sender agent in the client has the channel
         final AtomicInteger messageCounter = serverTransport.acceptNextConnection(SERVER_ADDRESS1);
 
         final ClientOutput output = clientTransport.getOutput();
 
         // when
         output.sendRequest(remote2, new DirectBufferWriter().wrap(BUF1));
+        // <!> not guaranteed that the sender has the connection
         output.sendRequest(remote1, new DirectBufferWriter().wrap(BUF1));
 
         // then blocked request 1 should not block sending request 2
+        // <!> always succeeds but sometimes only because the keeepalive is sent
         doRepeatedly(() -> serverTransport.receive(SERVER_ADDRESS1)).until(i -> messageCounter.get() == 1);
         assertThat(messageCounter.get()).isEqualTo(1);
     }
@@ -582,7 +584,7 @@ public class ClientTransportTest
     {
         // given
         final Duration resubmitTimeout = Duration.ofMillis(100L);
-        ClockUtil.pinCurrentTime();
+        clock.pinCurrentTime();
 
         // For this test to work, it is important that the send buffer works in pub_sub mode
         // or else the sender subscription could never process fragments independent of
@@ -605,7 +607,7 @@ public class ClientTransportTest
         subscription.poll(counter, Integer.MAX_VALUE);
         assertThat(counter.getCount()).isEqualTo(1);
 
-        ClockUtil.addTime(resubmitTimeout.plusMillis(30));
+        clock.addTime(resubmitTimeout.plusMillis(30));
 
         // should resubmit request once because timeout has elapsed once
         Thread.sleep(500L);

@@ -16,7 +16,6 @@
 package io.zeebe.transport.impl.actor;
 
 import io.zeebe.transport.TransportListener;
-import io.zeebe.transport.impl.TransportChannel;
 import io.zeebe.util.sched.future.ActorFuture;
 
 public abstract class ActorContext
@@ -38,18 +37,6 @@ public abstract class ActorContext
     public void setReceiver(Receiver receiver)
     {
         this.receiver = receiver;
-    }
-
-    public void registerChannel(TransportChannel ch)
-    {
-        sender.registerChannel(ch);
-        receiver.registerChannel(ch);
-    }
-
-    public void removeChannel(TransportChannel ch)
-    {
-        sender.removeChannel(ch);
-        receiver.removeChannel(ch);
     }
 
     public void removeListener(TransportListener listener)
@@ -100,5 +87,15 @@ public abstract class ActorContext
     public ServerConductor getServerConductor()
     {
         return (ServerConductor) conductor;
+    }
+
+    public Sender getSender()
+    {
+        return sender;
+    }
+
+    public Receiver getReceiver()
+    {
+        return receiver;
     }
 }

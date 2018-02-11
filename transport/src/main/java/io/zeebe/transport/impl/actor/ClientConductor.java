@@ -15,6 +15,8 @@
  */
 package io.zeebe.transport.impl.actor;
 
+import java.time.Duration;
+
 import io.zeebe.dispatcher.Subscription;
 import io.zeebe.transport.*;
 import io.zeebe.transport.impl.*;
@@ -25,15 +27,11 @@ import io.zeebe.util.sched.future.CompletableActorFuture;
 public class ClientConductor extends Conductor
 {
     private final ConnectTransportPoller connectTransportPoller;
-    private final ClientChannelManager channelManager;
 
     public ClientConductor(ActorContext actorContext, TransportContext context)
     {
         super(actorContext, context);
-
-        this.connectTransportPoller = new ConnectTransportPoller();
-        this.channelManager = new ClientChannelManager(this);
-
+        connectTransportPoller = new ConnectTransportPoller();
         remoteAddressList.setOnAddressAddedConsumer(this::onRemoteAddressAdded);
     }
 
@@ -51,7 +49,7 @@ public class ClientConductor extends Conductor
         super.onActorClosing();
     }
 
-    public TransportChannel openChannel(RemoteAddressImpl address)
+    public void openChannel(RemoteAddressImpl address, int connectAttempt)
     {
         final TransportChannel channel =
             channelFactory.buildClientChannel(
@@ -60,34 +58,53 @@ public class ClientConductor extends Conductor
                 transportContext.getMessageMaxLength(),
                 transportContext.getReceiveHandler());
 
-        if (channel.beginConnect())
-        {
-            connectTransportPoller.addChannel(channel);
-            return channel;
-        }
-        else
-        {
-            return null;
-        }
 
+        if (channel.beginConnect(connectAttempt))
+        {
+            // backoff connecton attempts
+            actor.runDelayed(Duration.ofMillis(Math.min(1000, 50 * connectAttempt)), () ->
+            {
+                connectTransportPoller.addChannel(channel);
+            });
+
+            channels.put(address.getStreamId(), channel);
+        }
     }
 
     @Override
-    public void onChannelClosed(TransportChannel ch, boolean wasConnected)
+    public void onChannelClosed(TransportChannel channel, boolean wasConnected)
     {
         actor.run(() ->
         {
-            channelManager.onChannelClosed(ch);
-        });
+            final RemoteAddressImpl remoteAddress = channel.getRemoteAddress();
 
-        super.onChannelClosed(ch, wasConnected);
+            if (remoteAddress.isActive())
+            {
+                final int openAttempt = channel.getOpenAttempt() + 1;
+                openChannel(remoteAddress, openAttempt);
+            }
+
+            super.onChannelClosed(channel, wasConnected);
+        });
     }
 
     private void onRemoteAddressAdded(RemoteAddressImpl remoteAddress)
     {
         actor.call(() ->
         {
-            channelManager.onRemoteAddressAdded(remoteAddress);
+            final TransportChannel channel = channels.get(remoteAddress.getStreamId());
+
+            if (channel == null)
+            {
+                openChannel(remoteAddress, 0);
+            }
+            else
+            {
+                if (channel.isClosed())
+                {
+                    openChannel(remoteAddress, 0);
+                }
+            }
         });
     }
 

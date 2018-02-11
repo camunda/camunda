@@ -113,6 +113,7 @@ public class ServerTransportBuilder
 
         final TransportContext context = new TransportContext();
 
+        context.setName("server");
         context.setServerOutput(output);
         context.setMessageMaxLength(messageMaxLength);
         context.setRemoteAddressList(remoteAddressList);

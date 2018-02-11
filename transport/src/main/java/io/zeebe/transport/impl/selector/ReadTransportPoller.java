@@ -47,25 +47,25 @@ public class ReadTransportPoller extends TransportPoller
 
     public void pollBlocking()
     {
-        try
+        if (selector.isOpen())
         {
-            selector.select();
-        }
-        catch (IOException e)
-        {
-            selectedKeySet.reset();
-            LangUtil.rethrowUnchecked(e);
+            try
+            {
+                selector.select();
+            }
+            catch (IOException e)
+            {
+                selectedKeySet.reset();
+                throw new RuntimeException(e);
+            }
         }
     }
 
-    public void pollBlockingEnded()
+    public void pollBlockingEnded(Throwable t)
     {
         maintainChannels();
-
-        if (processKeys() > 0)
-        {
-            pollNow();
-        }
+        processKeys();
+        actor.runUntilDone(pollNow);
     }
 
     public void pollNow()
@@ -82,24 +82,25 @@ public class ReadTransportPoller extends TransportPoller
         }
         else
         {
-            if (selector.isOpen())
+            try
             {
-                try
-                {
-                    selector.selectNow();
-                    workCount += processKeys();
-                }
-                catch (IOException e)
-                {
-                    selectedKeySet.reset();
-                    LangUtil.rethrowUnchecked(e);
-                }
+                selector.selectNow();
+                workCount += processKeys();
+            }
+            catch (IOException e)
+            {
+                selectedKeySet.reset();
+                LangUtil.rethrowUnchecked(e);
             }
         }
 
-        if (workCount > 0)
+        if (workCount == 0)
         {
-            actor.run(pollNow);
+            actor.done();
+            actor.runBlocking(this::pollBlocking, this::pollBlockingEnded);
+        }
+        else
+        {
             actor.yield();
         }
     }
@@ -131,7 +132,7 @@ public class ReadTransportPoller extends TransportPoller
     {
         int workCount = 0;
 
-        if (key != null && key.isReadable())
+        if (key != null && key.isValid())
         {
             final TransportChannel channel = (TransportChannel) key.attachment();
             workCount = channel.receive();
@@ -142,7 +143,6 @@ public class ReadTransportPoller extends TransportPoller
 
     public void addChannel(TransportChannel channel)
     {
-        System.out.println("Channel add " + channel);
         channelsToAdd.add(channel);
         selector.wakeup();
     }

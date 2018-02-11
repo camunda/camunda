@@ -33,14 +33,17 @@ public class ConnectTransportPoller extends TransportPoller
 
     public void pollBlocking()
     {
-        try
+        if (selector.isOpen())
         {
-            selector.select();
-        }
-        catch (IOException e)
-        {
-            selectedKeySet.reset();
-            throw new RuntimeException(e);
+            try
+            {
+                selector.select();
+            }
+            catch (IOException e)
+            {
+                selectedKeySet.reset();
+                throw new RuntimeException(e);
+            }
         }
     }
 
@@ -48,22 +51,25 @@ public class ConnectTransportPoller extends TransportPoller
     {
         selectedKeySet.forEach(processKeyFn);
 
-        for (TransportChannel channel : channelsToAdd)
+        if (selector.isOpen())
         {
-            channel.registerSelector(selector, SelectionKey.OP_CONNECT);
+            for (TransportChannel channel : channelsToAdd)
+            {
+                channel.registerSelector(selector, SelectionKey.OP_CONNECT);
+            }
+
+            for (TransportChannel channel : channelsToRemove)
+            {
+                channel.removeSelector(selector);
+            }
         }
         channelsToAdd.clear();
-
-        for (TransportChannel channel : channelsToRemove)
-        {
-            channel.removeSelector(selector);
-        }
         channelsToRemove.clear();
     }
 
     protected int processKey(SelectionKey key)
     {
-        if (key != null)
+        if (key != null && key.isValid())
         {
             final TransportChannel channel = (TransportChannel) key.attachment();
             removeChannel(channel);

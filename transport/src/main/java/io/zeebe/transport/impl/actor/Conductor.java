@@ -22,8 +22,10 @@ import io.zeebe.transport.Loggers;
 import io.zeebe.transport.TransportListener;
 import io.zeebe.transport.impl.*;
 import io.zeebe.transport.impl.TransportChannel.ChannelLifecycleListener;
+import io.zeebe.util.sched.ActorTaskRunner;
 import io.zeebe.util.sched.ZbActor;
 import io.zeebe.util.sched.future.ActorFuture;
+import org.agrona.collections.Int2ObjectHashMap;
 import org.slf4j.Logger;
 
 public abstract class Conductor extends ZbActor implements ChannelLifecycleListener
@@ -34,7 +36,8 @@ public abstract class Conductor extends ZbActor implements ChannelLifecycleListe
     protected final TransportContext transportContext;
 
     private final List<TransportListener> transportListeners = new ArrayList<>();
-    private final List<TransportChannel> transportChannels = new ArrayList<>();
+    protected Int2ObjectHashMap<TransportChannel> channels = new Int2ObjectHashMap<>();
+
     private final ActorContext actorContext;
     protected final AtomicBoolean closing = new AtomicBoolean(false);
     protected final TransportChannelFactory channelFactory;
@@ -59,10 +62,21 @@ public abstract class Conductor extends ZbActor implements ChannelLifecycleListe
 
     public void removeListener(TransportListener channelListener)
     {
-        actor.call(() ->
+        // TODO make better
+        if (ActorTaskRunner.current() != null)
         {
-            transportListeners.remove(channelListener);
-        });
+            actor.run(() ->
+            {
+                transportListeners.remove(channelListener);
+            });
+        }
+        else
+        {
+            actor.call(() ->
+            {
+                transportListeners.remove(channelListener);
+            });
+        }
     }
 
     // channel lifecycle
@@ -70,19 +84,24 @@ public abstract class Conductor extends ZbActor implements ChannelLifecycleListe
     @Override
     public void onChannelConnected(TransportChannel ch)
     {
-        transportChannels.add(ch);
-        actorContext.registerChannel(ch);
+        channels.put(ch.getRemoteAddress().getStreamId(), ch);
 
-        transportListeners.forEach(l ->
+        final ActorFuture<Void> f1 = actorContext.getReceiver().registerChannel(ch);
+        final ActorFuture<Void> f2 = actorContext.getSender().registerChannel(ch);
+
+        actor.awaitAll(Arrays.asList(f1, f2), (t) ->
         {
-            try
+            transportListeners.forEach(l ->
             {
-                l.onConnectionEstablished(ch.getRemoteAddress());
-            }
-            catch (Exception e)
-            {
-                LOG.debug("Failed to call transport listener {} on channel connect", l, e);
-            }
+                try
+                {
+                    l.onConnectionEstablished(ch.getRemoteAddress());
+                }
+                catch (Exception e)
+                {
+                    LOG.debug("Failed to call transport listener {} on channel connect", l, e);
+                }
+            });
         });
     }
 
@@ -90,11 +109,8 @@ public abstract class Conductor extends ZbActor implements ChannelLifecycleListe
     {
         return actor.call(() ->
         {
-            for (int i = 0; i < transportChannels.size(); i++)
-            {
-                final TransportChannel channel = transportChannels.get(i);
-                channel.shutdownInput();
-            }
+            new ArrayList<>(channels.values())
+                .forEach(TransportChannel::shutdownInput);
         });
     }
 
@@ -103,23 +119,26 @@ public abstract class Conductor extends ZbActor implements ChannelLifecycleListe
     {
         actor.run(() ->
         {
-            if (wasConnected)
+            if (channels.remove(ch.getRemoteAddress().getStreamId()) != null)
             {
-                transportChannels.remove(ch);
-                failRequestsOnChannel(ch, "Socket channel has been disconnected");
-                actorContext.removeChannel(ch);
-
-                transportListeners.forEach(l ->
+                if (wasConnected)
                 {
-                    try
+                    failRequestsOnChannel(ch, "Socket channel has been disconnected");
+                    actorContext.getReceiver().removeChannel(ch);
+                    actorContext.getSender().removeChannel(ch);
+
+                    transportListeners.forEach(l ->
                     {
-                        l.onConnectionClosed(ch.getRemoteAddress());
-                    }
-                    catch (Exception e)
-                    {
-                        LOG.debug("Failed to call transport listener {} on disconnect", l, e);
-                    }
-                });
+                        try
+                        {
+                            l.onConnectionClosed(ch.getRemoteAddress());
+                        }
+                        catch (Exception e)
+                        {
+                            LOG.debug("Failed to call transport listener {} on disconnect", l, e);
+                        }
+                    });
+                }
             }
         });
     }
@@ -138,12 +157,8 @@ public abstract class Conductor extends ZbActor implements ChannelLifecycleListe
     {
         remoteAddressList.deactivateAll();
 
-        final ArrayList<TransportChannel> listCopy = new ArrayList<>(transportChannels);
-
-        for (TransportChannel transportChannel : listCopy)
-        {
-            transportChannel.close();
-        }
+        new ArrayList<>(channels.values())
+            .forEach(TransportChannel::close);
 
         final ActorFuture<Void> senderClose = actorContext.closeSender();
         final ActorFuture<Void> receiverClose = actorContext.closeReceiver();
@@ -168,12 +183,8 @@ public abstract class Conductor extends ZbActor implements ChannelLifecycleListe
     {
         return actor.call(() ->
         {
-            final ArrayList<TransportChannel> listCopy = new ArrayList<>(transportChannels);
-
-            for (TransportChannel transportChannel : listCopy)
-            {
-                transportChannel.close();
-            }
+            new ArrayList<>(channels.values())
+                .forEach(TransportChannel::close);
         });
     }
 }

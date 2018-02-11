@@ -33,6 +33,7 @@ public class Sender extends ZbActor
     private static final String NOT_CONNECTED_ERROR = "No available channel for remote";
     private static final String COULD_NOT_WRITE_TO_CHANNEL = "Could not write to channel";
 
+    private final String name;
     private final Dispatcher sendBuffer;
     private final int maxPeekSize;
     protected final Duration keepAlivePeriod;
@@ -45,12 +46,12 @@ public class Sender extends ZbActor
     private final Int2ObjectHashMap<TransportChannel> channelMap = new Int2ObjectHashMap<>();
     private final ByteBuffer keepAliveBuffer = ByteBuffer.allocate(ControlMessages.KEEP_ALIVE.capacity());
     private TransportChannel writeChannel;
-    private int bytesWritten;
     private final BlockPeek blockPeek = new BlockPeek();
     private Subscription senderSubscription;
 
     public Sender(ActorContext actorContext, TransportContext context)
     {
+        this.name = String.format("%s-sender", context.getName());
         this.sendBuffer = context.getSetSendBuffer();
         this.maxPeekSize = context.getMessageMaxLength() * 16;
         this.sendFailureHandler = context.getSendFailureHandler();
@@ -63,13 +64,20 @@ public class Sender extends ZbActor
     }
 
     @Override
+    public String getName()
+    {
+        return name;
+    }
+
+    @Override
     protected void onActorStarted()
     {
         actor.await(sendBuffer.openSubscriptionAsync(SUBSCRIPTION_NAME), (subscription, t) ->
         {
+            senderSubscription = subscription;
+
             if (t == null)
             {
-                senderSubscription = subscription;
                 actor.consume(subscription, peekNextBlock);
 
                 if (keepAlivePeriod != null)
@@ -96,42 +104,38 @@ public class Sender extends ZbActor
 
     private void peekNextBlock()
     {
-        final int blockSize = senderSubscription.peekBlock(blockPeek, maxPeekSize, true);
-
-        if (blockSize > 0)
+        if (senderSubscription.peekBlock(blockPeek, maxPeekSize, true) > 0)
         {
             writeChannel = channelMap.get(blockPeek.getStreamId());
 
             if (writeChannel != null && !writeChannel.isClosed())
             {
-                bytesWritten = 0;
                 actor.runUntilDone(sendData);
             }
             else
             {
-                actor.run(discard(NOT_CONNECTED_ERROR, new NotConnectedException(NOT_CONNECTED_ERROR)));
+                discard(NOT_CONNECTED_ERROR, new NotConnectedException(NOT_CONNECTED_ERROR));
+                blockPeek.markCompleted();
             }
         }
     }
 
     private void sendData()
     {
-        final int bytesWritten = writeChannel.write(blockPeek.getRawBuffer());
+        final ByteBuffer rawBuffer = blockPeek.getRawBuffer();
 
-        if (bytesWritten == -1)
+        if (writeChannel.write(rawBuffer) == -1)
         {
-            actor.run(discard(COULD_NOT_WRITE_TO_CHANNEL, null));
+            discard(COULD_NOT_WRITE_TO_CHANNEL, null);
+            blockPeek.markCompleted();
             actor.done();
         }
         else
         {
-            this.bytesWritten += bytesWritten;
-
-            if (this.bytesWritten == blockPeek.getBlockLength())
+            if (!rawBuffer.hasRemaining())
             {
                 blockPeek.markCompleted();
                 actor.done();
-                actor.run(peekNextBlock);
             }
             else
             {
@@ -140,14 +144,14 @@ public class Sender extends ZbActor
         }
     }
 
-    private Runnable discard(String failure, Exception failureCause)
+    private void discard(String failure, Exception failureCause)
     {
-        return () ->
+        if (sendFailureHandler != null)
         {
-            if (sendFailureHandler != null)
+            final Iterator<DirectBuffer> messagesIt = blockPeek.iterator();
+            while (messagesIt.hasNext())
             {
-                final Iterator<DirectBuffer> messagesIt = blockPeek.iterator();
-                while (messagesIt.hasNext())
+                try
                 {
                     final DirectBuffer nextMessage = messagesIt.next();
                     sendFailureHandler.onFragment(
@@ -158,10 +162,12 @@ public class Sender extends ZbActor
                             failure,
                             failureCause);
                 }
+                catch (Exception e)
+                {
+                    e.printStackTrace();
+                }
             }
-            blockPeek.markFailed();
-            actor.run(peekNextBlock);
-        };
+        }
     }
 
     private void sendKeepalives()
@@ -201,9 +207,9 @@ public class Sender extends ZbActor
         });
     }
 
-    public void registerChannel(TransportChannel c)
+    public ActorFuture<Void> registerChannel(TransportChannel c)
     {
-        actor.run(() ->
+        return actor.call(() ->
         {
             channelMap.put(c.getStreamId(), c);
         });

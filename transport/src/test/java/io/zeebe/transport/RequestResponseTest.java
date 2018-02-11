@@ -20,18 +20,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.ArrayDeque;
 import java.util.Queue;
 
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.util.EchoRequestResponseHandler;
 import io.zeebe.util.buffer.DirectBufferWriter;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 public class RequestResponseTest
 {
@@ -78,7 +77,7 @@ public class RequestResponseTest
             .build(null, new EchoRequestResponseHandler());
         closeables.manage(serverTransport);
 
-        final int numRequests = 100_000;
+        final int numRequests = 10_000_000;
         int numResponsesReceived = 0;
         int numRequestsSent = 0;
         final RemoteAddress remote = clientTransport.registerRemoteAndAwaitChannel(addr);
@@ -92,7 +91,7 @@ public class RequestResponseTest
 
             final ClientRequest nextPendingRequest = pendingRequests.peek();
 
-            if (nextPendingRequest.isDone())
+            if (nextPendingRequest != null && nextPendingRequest.isDone())
             {
                 final DirectBuffer response = nextPendingRequest.get();
                 assertThat(response.getInt(0)).isEqualTo(numResponsesReceived);
@@ -101,6 +100,8 @@ public class RequestResponseTest
                 pendingRequests.remove();
             }
         }
+
+        actorSchedulerRule.get().dumpMetrics(System.out);
     }
 
     protected boolean sendRequest(ClientTransport client, RemoteAddress remote, int payload)

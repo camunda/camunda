@@ -16,18 +16,16 @@
 package io.zeebe.transport;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
-
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 public class SingleMessageTest
 {
@@ -44,11 +42,8 @@ public class SingleMessageTest
     @Test
     public void shouldEchoMessages() throws Exception
     {
-        fail("This test hangs sometimes because no more messages can be submitted to the send buffer. It seems that the sender tasks" +
-                " can no longer write messages because the channels are full and the receiver tasks are no longer executed");
-
         final SocketAddress addr = new SocketAddress("localhost", 51115);
-        final int numRequests = 1_000_000;
+        final int numRequests = 10_000_000;
 
         final CountingListener responseCounter = new CountingListener();
 
@@ -106,6 +101,8 @@ public class SingleMessageTest
         }
 
         assertThat(responseCounter.numMessagesReceived).isEqualTo(numRequests);
+
+        actorSchedulerRule.get().dumpMetrics(System.out);
     }
 
     protected static class CountingListener implements ClientInputListener

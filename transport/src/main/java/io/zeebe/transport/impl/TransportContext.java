@@ -23,6 +23,7 @@ import io.zeebe.transport.ServerOutput;
 
 public class TransportContext
 {
+    private String name;
     private int messageMaxLength;
     private Duration channelKeepAlivePeriod;
 
@@ -161,5 +162,15 @@ public class TransportContext
     public Dispatcher getSetSendBuffer()
     {
         return sendBuffer;
+    }
+
+    public void setName(String name)
+    {
+        this.name = name;
+    }
+
+    public String getName()
+    {
+        return name;
     }
 }

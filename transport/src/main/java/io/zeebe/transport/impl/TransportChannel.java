@@ -60,6 +60,8 @@ public class TransportChannel
 
     private SocketChannel media;
 
+    private int connectAttempt;
+
     private List<SelectionKey> registeredKeys = Collections.synchronizedList(new ArrayList<>());
 
     public TransportChannel(
@@ -216,10 +218,11 @@ public class TransportChannel
         }
     }
 
-    public boolean beginConnect()
+    public boolean beginConnect(int attempt)
     {
         if (STATE_FIELD.compareAndSet(this, CLOSED, CONNECTING))
         {
+            connectAttempt = attempt;
             try
             {
                 media = SocketChannel.open();
@@ -250,6 +253,8 @@ public class TransportChannel
             {
                 listener.onChannelConnected(this);
             }
+
+            connectAttempt = 0;
         }
         catch (IOException e)
         {
@@ -346,4 +351,8 @@ public class TransportChannel
         return media;
     }
 
+    public int getOpenAttempt()
+    {
+        return connectAttempt;
+    }
 }

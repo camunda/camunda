@@ -22,21 +22,18 @@ import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.agrona.DirectBuffer;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.impl.ControlMessages;
 import io.zeebe.util.buffer.BufferUtil;
+import io.zeebe.util.sched.clock.ActorClock;
+import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
-import io.zeebe.util.time.ClockUtil;
+import org.agrona.DirectBuffer;
+import org.junit.*;
+import org.junit.rules.RuleChain;
 
 public class ClientChannelKeepAliveTest
 {
@@ -46,8 +43,8 @@ public class ClientChannelKeepAliveTest
     protected static final SocketAddress ADDRESS = new SocketAddress("localhost", 51115);
     protected static final SocketAddress ADDRESS2 = new SocketAddress("localhost", 51116);
 
-
-    public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3);
+    private ControlledActorClock clock = new ControlledActorClock();
+    public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3, clock);
     public AutoCloseableRule closeables = new AutoCloseableRule();
 
     @Rule
@@ -116,7 +113,6 @@ public class ClientChannelKeepAliveTest
     @After
     public void tearDown()
     {
-        ClockUtil.reset();
     }
 
     @Test
@@ -134,18 +130,18 @@ public class ClientChannelKeepAliveTest
     {
         // given
         final ClientTransport transport = buildClientTransport(KEEP_ALIVE_PERIOD);
-        ClockUtil.setCurrentTime(1000);
+        clock.setCurrentTime(1000);
 
         openChannel(transport, ADDRESS);
 
         // when
-        ClockUtil.addTime(KEEP_ALIVE_PERIOD.plusMillis(1));
+        clock.addTime(KEEP_ALIVE_PERIOD.plusMillis(1));
 
         // then
         TestUtil.waitUntil(() -> !serverRecorder.getReceivedFrames().isEmpty());
         assertThat(serverRecorder.getReceivedFrames()).hasSize(1);
         assertThat(serverRecorder.getReceivedFrames().get(0).type).isEqualTo(ControlMessages.KEEP_ALIVE_TYPE);
-        assertThat(serverRecorder.getReceivedFrames().get(0).timestamp).isEqualTo(ClockUtil.getCurrentTimeInMillis());
+        assertThat(serverRecorder.getReceivedFrames().get(0).timestamp).isEqualTo(clock.getCurrentTimeInMillis());
     }
 
     @Test
@@ -153,18 +149,18 @@ public class ClientChannelKeepAliveTest
     {
         // given
         final ClientTransport transport = buildClientTransport(KEEP_ALIVE_PERIOD);
-        ClockUtil.setCurrentTime(Instant.now());
+        clock.setCurrentTime(Instant.now());
 
         openChannel(transport, ADDRESS);
 
-        ClockUtil.addTime(KEEP_ALIVE_PERIOD.plusMillis(1));
-        final long timestamp1 = ClockUtil.getCurrentTimeInMillis();
+        clock.addTime(KEEP_ALIVE_PERIOD.plusMillis(1));
+        final long timestamp1 = clock.getCurrentTimeInMillis();
 
         TestUtil.waitUntil(() -> !serverRecorder.getReceivedFrames().isEmpty());
 
         // when
-        ClockUtil.addTime(KEEP_ALIVE_PERIOD.plusMillis(1));
-        final long timestamp2 = ClockUtil.getCurrentTimeInMillis();
+        clock.addTime(KEEP_ALIVE_PERIOD.plusMillis(1));
+        final long timestamp2 = clock.getCurrentTimeInMillis();
 
         // then
         TestUtil.waitUntil(() -> serverRecorder.getReceivedFrames().size() == 2);
@@ -179,7 +175,7 @@ public class ClientChannelKeepAliveTest
     public void shouldUseDefaultKeepAlive() throws InterruptedException
     {
         // given
-        ClockUtil.setCurrentTime(Instant.now());
+        clock.setCurrentTime(Instant.now());
 
         final int expectedDefaultKeepAlive = 5000;
         final ClientTransport transport = buildClientTransport(null);
@@ -187,26 +183,26 @@ public class ClientChannelKeepAliveTest
         openChannel(transport, ADDRESS);
 
         // when
-        ClockUtil.addTime(Duration.ofMillis(expectedDefaultKeepAlive - 1));
+        clock.addTime(Duration.ofMillis(expectedDefaultKeepAlive - 1));
         Thread.sleep(500L);
 
         assertThat(serverRecorder.getReceivedFrames()).isEmpty();
 
         // when
-        ClockUtil.addTime(Duration.ofMillis(2));
+        clock.addTime(Duration.ofMillis(2));
 
         // then
         TestUtil.waitUntil(() -> !serverRecorder.getReceivedFrames().isEmpty());
         assertThat(serverRecorder.getReceivedFrames()).hasSize(1);
         assertThat(serverRecorder.getReceivedFrames().get(0).type).isEqualTo(ControlMessages.KEEP_ALIVE_TYPE);
-        assertThat(serverRecorder.getReceivedFrames().get(0).timestamp).isEqualTo(ClockUtil.getCurrentTimeInMillis());
+        assertThat(serverRecorder.getReceivedFrames().get(0).timestamp).isEqualTo(clock.getCurrentTimeInMillis());
     }
 
     @Test
     public void shouldSendKeepAliveForMultipleChannels()
     {
         // given
-        ClockUtil.setCurrentTime(Instant.now());
+        clock.setCurrentTime(Instant.now());
         final ControlMessageRecorder secondServerRecorder = new ControlMessageRecorder();
 
         buildServerTransport(ADDRESS2, secondServerRecorder);
@@ -217,17 +213,17 @@ public class ClientChannelKeepAliveTest
         openChannel(clientTransport, ADDRESS2);
 
         // when
-        ClockUtil.addTime(KEEP_ALIVE_PERIOD.plusMillis(1));
+        clock.addTime(KEEP_ALIVE_PERIOD.plusMillis(1));
 
         // then
         TestUtil.waitUntil(() -> !serverRecorder.getReceivedFrames().isEmpty());
         TestUtil.waitUntil(() -> !secondServerRecorder.getReceivedFrames().isEmpty());
 
         assertThat(serverRecorder.getReceivedFrames()).hasSize(1);
-        assertThat(serverRecorder.getReceivedFrames().get(0).timestamp).isEqualTo(ClockUtil.getCurrentTimeInMillis());
+        assertThat(serverRecorder.getReceivedFrames().get(0).timestamp).isEqualTo(clock.getCurrentTimeInMillis());
 
         assertThat(secondServerRecorder.getReceivedFrames()).hasSize(1);
-        assertThat(secondServerRecorder.getReceivedFrames().get(0).timestamp).isEqualTo(ClockUtil.getCurrentTimeInMillis());
+        assertThat(secondServerRecorder.getReceivedFrames().get(0).timestamp).isEqualTo(clock.getCurrentTimeInMillis());
 
     }
 
@@ -235,13 +231,13 @@ public class ClientChannelKeepAliveTest
     public void shouldNotSendKeepAliveWhenPeriodIsZero() throws Exception
     {
         // given
-        ClockUtil.setCurrentTime(Instant.now());
+        clock.setCurrentTime(Instant.now());
         final ClientTransport clientTransport = buildClientTransport(null);
 
         openChannel(clientTransport, ADDRESS);
 
         // when
-        ClockUtil.setCurrentTime(Long.MAX_VALUE);
+        clock.setCurrentTime(Long.MAX_VALUE);
         Thread.sleep(1000L); // can't wait for sender to do nothing, so have to sleep for a bit
 
         // then
@@ -257,7 +253,7 @@ public class ClientChannelKeepAliveTest
         {
             final ControlFrame frame = new ControlFrame();
             frame.type = controlMessageType;
-            frame.timestamp = ClockUtil.getCurrentTimeInMillis();
+            frame.timestamp = ActorClock.currentTimeMillis();
 
             receivedFrames.add(frame);
         }

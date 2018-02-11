@@ -24,18 +24,19 @@ import io.zeebe.util.sched.future.ActorFuture;
 public class Receiver extends ZbActor
 {
     protected final ReadTransportPoller transportPoller;
+    private String name;
 
     public Receiver(ActorContext actorContext, TransportContext context)
     {
         this.transportPoller = new ReadTransportPoller(actor);
-
+        this.name = String.format("%s-receiver", context.getName());
         actorContext.setReceiver(this);
     }
 
     @Override
     protected void onActorStarted()
     {
-        actor.pollBlocking(transportPoller::pollBlocking, transportPoller::pollBlockingEnded);
+        actor.runBlocking(transportPoller::pollBlocking, transportPoller::pollBlockingEnded);
     }
 
     @Override
@@ -48,7 +49,7 @@ public class Receiver extends ZbActor
     @Override
     public String getName()
     {
-        return "receiver";
+        return name;
     }
 
     public void removeChannel(TransportChannel c)
@@ -59,9 +60,9 @@ public class Receiver extends ZbActor
         });
     }
 
-    public void registerChannel(TransportChannel c)
+    public ActorFuture<Void> registerChannel(TransportChannel c)
     {
-        actor.run(() ->
+        return actor.call(() ->
         {
             transportPoller.addChannel(c);
         });

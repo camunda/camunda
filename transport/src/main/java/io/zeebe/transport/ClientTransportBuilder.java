@@ -151,6 +151,7 @@ public class ClientTransportBuilder
             Dispatcher receiveBuffer)
     {
         final TransportContext context = new TransportContext();
+        context.setName("client");
         context.setClientOutput(output);
         context.setReceiveBuffer(receiveBuffer);
         context.setMessageMaxLength(messageMaxLength);
