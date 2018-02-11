@@ -225,7 +225,7 @@ public class Dispatcher extends ZbActor implements AutoCloseable
         final Subscription[] subscriptions = this.subscriptions;
         for (int i = 0; i < subscriptions.length; i++)
         {
-            subscriptions[i].signalConsumers();
+            subscriptions[i].getActorConditions().signalConsumers();
         }
     }
 

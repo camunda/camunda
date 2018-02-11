@@ -22,15 +22,16 @@ import java.nio.ByteBuffer;
 
 import io.zeebe.dispatcher.impl.log.*;
 import io.zeebe.util.sched.ActorCondition;
-import io.zeebe.util.sched.channel.AbstractConsumableChannelImpl;
-import io.zeebe.util.sched.channel.ConsumableChannel;
+import io.zeebe.util.sched.channel.*;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.Position;
 import org.slf4j.Logger;
 
-public class Subscription extends AbstractConsumableChannelImpl implements ConsumableChannel
+public class Subscription implements ConsumableChannel
 {
     public static final Logger LOG = Loggers.DISPATCHER_LOGGER;
+
+    protected final ActorConditions actorConditions = new ActorConditions();
 
     protected final Position limit;
     protected final Position position;
@@ -396,6 +397,18 @@ public class Subscription extends AbstractConsumableChannelImpl implements Consu
         return blockLength;
     }
 
+    @Override
+    public void registerConsumer(ActorCondition consumer)
+    {
+        actorConditions.registerConsumer(consumer);
+    }
+
+    @Override
+    public void removeConsumer(ActorCondition consumer)
+    {
+        actorConditions.registerConsumer(consumer);
+    }
+
     public int getId()
     {
         return id;
@@ -404,6 +417,11 @@ public class Subscription extends AbstractConsumableChannelImpl implements Consu
     public String getName()
     {
         return name;
+    }
+
+    protected ActorConditions getActorConditions()
+    {
+        return actorConditions;
     }
 
     @Override
