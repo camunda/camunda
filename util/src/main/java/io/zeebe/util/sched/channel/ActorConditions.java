@@ -19,7 +19,7 @@ import java.util.Arrays;
 
 import io.zeebe.util.sched.ActorCondition;
 
-public abstract class AbstractConsumableChannelImpl implements ConsumableChannel
+public class ActorConditions
 {
     private ActorCondition[] consumers = new ActorCondition[0];
 
@@ -33,13 +33,11 @@ public abstract class AbstractConsumableChannelImpl implements ConsumableChannel
         }
     }
 
-    @Override
     public synchronized void registerConsumer(ActorCondition listener)
     {
         consumers = appendToArray(consumers, listener);
     }
 
-    @Override
     public synchronized void removeConsumer(ActorCondition listener)
     {
         consumers = removeFromArray(consumers, listener);

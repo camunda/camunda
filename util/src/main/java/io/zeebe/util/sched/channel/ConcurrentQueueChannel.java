@@ -18,11 +18,15 @@ package io.zeebe.util.sched.channel;
 import java.util.*;
 import java.util.function.Consumer;
 
+import io.zeebe.util.sched.ActorCondition;
+
 /**
  * Wraps a {@link Queue} as {@link ConsumableChannel}.
  */
-public class ConcurrentQueueChannel<E> extends AbstractConsumableChannelImpl implements Queue<E>, ConsumableChannel
+public class ConcurrentQueueChannel<E> implements Queue<E>, ConsumableChannel
 {
+    private final ActorConditions actorConditions = new ActorConditions();
+
     private final Queue<E> wrapped;
 
     public ConcurrentQueueChannel(Queue<E> wrapped)
@@ -41,7 +45,7 @@ public class ConcurrentQueueChannel<E> extends AbstractConsumableChannelImpl imp
     {
         if (wrapped.add(e))
         {
-            signalConsumers();
+            actorConditions.signalConsumers();
             return true;
         }
         return false;
@@ -52,7 +56,7 @@ public class ConcurrentQueueChannel<E> extends AbstractConsumableChannelImpl imp
     {
         if (wrapped.offer(e))
         {
-            signalConsumers();
+            actorConditions.signalConsumers();
             return true;
         }
         return false;
@@ -159,4 +163,17 @@ public class ConcurrentQueueChannel<E> extends AbstractConsumableChannelImpl imp
     {
         throw new UnsupportedOperationException();
     }
+
+    @Override
+    public void registerConsumer(ActorCondition onDataAvailable)
+    {
+        actorConditions.registerConsumer(onDataAvailable);
+    }
+
+    @Override
+    public void removeConsumer(ActorCondition onDataAvailable)
+    {
+        actorConditions.removeConsumer(onDataAvailable);
+    }
+
 }
