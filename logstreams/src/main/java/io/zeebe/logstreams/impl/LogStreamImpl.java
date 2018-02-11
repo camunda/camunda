@@ -32,26 +32,15 @@ import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.dispatcher.impl.PositionUtil;
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
-import io.zeebe.logstreams.log.BufferedLogStreamReader;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamFailureListener;
-import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.logstreams.log.*;
 import io.zeebe.logstreams.snapshot.TimeBasedSnapshotPolicy;
-import io.zeebe.logstreams.spi.LogStorage;
-import io.zeebe.logstreams.spi.SnapshotPolicy;
-import io.zeebe.logstreams.spi.SnapshotStorage;
-import io.zeebe.util.sched.ActorCondition;
-import io.zeebe.util.sched.ZbActor;
-import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.logstreams.spi.*;
+import io.zeebe.util.sched.*;
 import io.zeebe.util.sched.channel.ActorConditions;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
-import io.zeebe.util.sched.future.CompletedActorFuture;
+import io.zeebe.util.sched.future.*;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.status.AtomicLongPosition;
-import org.agrona.concurrent.status.CountersManager;
-import org.agrona.concurrent.status.Position;
+import org.agrona.concurrent.status.*;
 
 /**
  * Represents the implementation of the LogStream interface.
@@ -262,19 +251,19 @@ public final class LogStreamImpl extends ZbActor implements LogStream
     {
         this.commitPosition.setOrdered(commitPosition);
 
-        onCommitPositionUpdatedConditions.signalConditions();
+        onCommitPositionUpdatedConditions.signalConsumers();
     }
 
     @Override
     public void registerOnCommitPositionUpdatedCondition(ActorCondition condition)
     {
-        onCommitPositionUpdatedConditions.registerCondition(condition);
+        onCommitPositionUpdatedConditions.registerConsumer(condition);
     }
 
     @Override
     public void removeOnCommitPositionUpdatedCondition(ActorCondition condition)
     {
-        onCommitPositionUpdatedConditions.removeCondition(condition);
+        onCommitPositionUpdatedConditions.registerConsumer(condition);
     }
 
     @Override

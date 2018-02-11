@@ -552,18 +552,18 @@ public class FsLogStorage implements LogStorage
 
     private void signalOnAppendConditions()
     {
-        onAppendConditions.signalConditions();
+        onAppendConditions.signalConsumers();
     }
 
     @Override
     public synchronized void registerOnAppendCondition(ActorCondition condition)
     {
-        onAppendConditions.registerCondition(condition);
+        onAppendConditions.registerConsumer(condition);
     }
 
     @Override
     public synchronized void removeOnAppendCondition(ActorCondition condition)
     {
-        onAppendConditions.removeCondition(condition);
+        onAppendConditions.registerConsumer(condition);
     }
 }
