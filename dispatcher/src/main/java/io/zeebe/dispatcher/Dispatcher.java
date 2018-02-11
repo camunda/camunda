@@ -15,24 +15,17 @@
  */
 package io.zeebe.dispatcher;
 
-import static io.zeebe.dispatcher.impl.PositionUtil.partitionId;
-import static io.zeebe.dispatcher.impl.PositionUtil.partitionOffset;
-import static io.zeebe.dispatcher.impl.PositionUtil.position;
+import static io.zeebe.dispatcher.impl.PositionUtil.*;
 import static io.zeebe.dispatcher.impl.log.LogBufferAppender.RESULT_PADDING_AT_END_OF_PARTITION;
 
 import java.util.Arrays;
 
+import io.zeebe.dispatcher.impl.log.*;
+import io.zeebe.util.sched.*;
+import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.status.AtomicLongPosition;
 import org.agrona.concurrent.status.Position;
-
-import io.zeebe.dispatcher.impl.log.LogBuffer;
-import io.zeebe.dispatcher.impl.log.LogBufferAppender;
-import io.zeebe.dispatcher.impl.log.LogBufferPartition;
-import io.zeebe.util.sched.ActorCondition;
-import io.zeebe.util.sched.FutureUtil;
-import io.zeebe.util.sched.ZbActor;
-import io.zeebe.util.sched.future.ActorFuture;
 
 
 /**
@@ -100,16 +93,8 @@ public class Dispatcher extends ZbActor implements AutoCloseable
 
     private void runBackgroundTask()
     {
-        int workCount = 0;
-
-        workCount += updatePublisherLimit();
-        workCount += logBuffer.cleanPartitions();
-
-        if (workCount > 0)
-        {
-            actor.yield();
-            actor.run(backgroundTask);
-        }
+        updatePublisherLimit();
+        logBuffer.cleanPartitions();
     }
 
     @Override
@@ -231,6 +216,7 @@ public class Dispatcher extends ZbActor implements AutoCloseable
             }
         }
 
+
         return newPosition;
     }
 
@@ -239,7 +225,7 @@ public class Dispatcher extends ZbActor implements AutoCloseable
         final Subscription[] subscriptions = this.subscriptions;
         for (int i = 0; i < subscriptions.length; i++)
         {
-            subscriptions[i].signalReadAvailable();
+            subscriptions[i].signalConsumers();
         }
     }
 
@@ -299,10 +285,9 @@ public class Dispatcher extends ZbActor implements AutoCloseable
             }
 
             newPosition = updatePublisherPosition(activePartitionId, newOffset);
-
             publisherPosition.proposeMaxOrdered(newPosition);
+            signalSubsciptions();
         }
-
         return newPosition;
     }
 
@@ -354,6 +339,7 @@ public class Dispatcher extends ZbActor implements AutoCloseable
                 newPosition = updatePublisherPosition(activePartitionId, newOffset);
 
                 publisherPosition.proposeMaxOrdered(newPosition);
+                signalSubsciptions();
             }
         }
 

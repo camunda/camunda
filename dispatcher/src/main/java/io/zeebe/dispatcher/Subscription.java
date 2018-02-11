@@ -15,34 +15,18 @@
  */
 package io.zeebe.dispatcher;
 
-import static io.zeebe.dispatcher.impl.PositionUtil.partitionId;
-import static io.zeebe.dispatcher.impl.PositionUtil.partitionOffset;
-import static io.zeebe.dispatcher.impl.PositionUtil.position;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.TYPE_PADDING;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.flagBatchBegin;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.flagBatchEnd;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.flagFailed;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.flagsOffset;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageLength;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.streamIdOffset;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.typeOffset;
+import static io.zeebe.dispatcher.impl.PositionUtil.*;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.*;
 
 import java.nio.ByteBuffer;
 
-import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.status.Position;
-import org.slf4j.Logger;
-
-import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
-import io.zeebe.dispatcher.impl.log.LogBuffer;
-import io.zeebe.dispatcher.impl.log.LogBufferPartition;
+import io.zeebe.dispatcher.impl.log.*;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.channel.AbstractConsumableChannelImpl;
 import io.zeebe.util.sched.channel.ConsumableChannel;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.Position;
+import org.slf4j.Logger;
 
 public class Subscription extends AbstractConsumableChannelImpl implements ConsumableChannel
 {
@@ -80,10 +64,7 @@ public class Subscription extends AbstractConsumableChannelImpl implements Consu
     @Override
     public boolean hasAvailable()
     {
-        final long currentPosition = position.get();
-        final long limit = getLimit();
-
-        return limit > currentPosition;
+        return getLimit() > getPosition();
     }
 
     protected long getLimit()
@@ -132,7 +113,6 @@ public class Subscription extends AbstractConsumableChannelImpl implements Consu
             }
         }
 
-        dataConsumed.signal();
 
         return fragmentsRead;
     }
@@ -210,7 +190,6 @@ public class Subscription extends AbstractConsumableChannelImpl implements Consu
         while (fragmentResult != FragmentHandler.POSTPONE_FRAGMENT_RESULT && fragmentsConsumed < maxNumOfFragments && position(partitionId, fragmentOffset) < limit);
 
         position.setOrdered(position(partitionId, fragmentOffset));
-
         dataConsumed.signal();
 
         return fragmentsConsumed;
@@ -251,8 +230,6 @@ public class Subscription extends AbstractConsumableChannelImpl implements Consu
                                               true);
             }
         }
-
-        dataConsumed.signal();
 
         return fragmentsRead;
     }
@@ -351,6 +328,7 @@ public class Subscription extends AbstractConsumableChannelImpl implements Consu
                 if (readBytes == 0)
                 {
                     position.proposeMaxOrdered(position(partitionId, partitionOffset));
+                    dataConsumed.signal();
                 }
 
                 break;
