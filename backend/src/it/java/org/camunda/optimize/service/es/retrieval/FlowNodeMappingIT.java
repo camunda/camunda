@@ -30,7 +30,7 @@ import static org.junit.Assert.assertThat;
  */
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"/it/it-applicationContext.xml"})
-public class ProcessDefinitionMappingIT {
+public class FlowNodeMappingIT {
   public static final String A_START = "aStart";
   public static final String A_TASK = "aTask";
   public static final String AN_END = "anEnd";
@@ -46,24 +46,23 @@ public class ProcessDefinitionMappingIT {
 
 
   @Test
-  public void getProcessDefinitionsMapping() throws Exception {
+  public void mapFlowNodeIdsToNames() throws Exception {
+    // given
     BpmnModelInstance modelInstance = getNamedBpmnModelInstance();
     String processDefinitionId = engineRule.deployProcessAndGetId(modelInstance);
 
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-
     // when
-
     Response response =
-        embeddedOptimizeRule.target("process-definition/" + processDefinitionId + "/flowNodeNames")
+        embeddedOptimizeRule.target("flow-node/" + processDefinitionId + "/flowNodeNames")
             .request()
-            .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
             .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
             .post(null);
 
+    // then
     FlowNodeNamesDto result = response.readEntity(FlowNodeNamesDto.class);
     assertThat(result, is(notNullValue()));
     assertThat(result.getFlowNodeNames(), is(notNullValue()));
@@ -88,27 +87,26 @@ public class ProcessDefinitionMappingIT {
   }
 
   @Test
-  public void getFilteredProcessDefinitionsMapping() throws Exception {
+  public void mapFilteredFlowNodeIdsToNames() throws Exception {
+    // given
     BpmnModelInstance modelInstance = getNamedBpmnModelInstance();
     String processDefinitionId = engineRule.deployProcessAndGetId(modelInstance);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-
     StartEvent start = modelInstance.getModelElementsByType(StartEvent.class).iterator().next();
 
-    List<String> ids = new ArrayList<>();
-    ids.add(start.getId());
-
-    String token = embeddedOptimizeRule.getAuthenticationToken();
 
     // when
+    List<String> ids = new ArrayList<>();
+    ids.add(start.getId());
     Response response =
-        embeddedOptimizeRule.target("process-definition/" + processDefinitionId + "/flowNodeNames")
+        embeddedOptimizeRule.target("flow-node/" + processDefinitionId + "/flowNodeNames")
             .request()
-            .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
             .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
             .post(Entity.json(ids));
 
+    // then
     FlowNodeNamesDto result = response.readEntity(FlowNodeNamesDto.class);
     assertThat(result, is(notNullValue()));
     assertThat(result.getFlowNodeNames(), is(notNullValue()));

@@ -222,6 +222,10 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     return getOptimize().getAuthenticationToken();
   }
 
+  public String getAuthorizationHeader() {
+    return "Bearer " + getAuthenticationToken();
+  }
+
   public String getNewAuthenticationToken() {
     return getOptimize().getNewAuthenticationToken();
   }
