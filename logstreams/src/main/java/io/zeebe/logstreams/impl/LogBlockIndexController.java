@@ -375,7 +375,8 @@ public class LogBlockIndexController extends ZbActor
     {
         if (isOpenend.compareAndSet(true, false))
         {
-            currentRunnable = () -> {};
+            currentRunnable = () -> {
+            };
             return actor.close();
         }
         else
