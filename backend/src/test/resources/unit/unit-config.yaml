@@ -12,3 +12,6 @@ import:
 es:
   sampler:
     interval: 100
+alerting:
+  email:
+    enabled: true
