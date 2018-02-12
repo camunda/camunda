@@ -23,17 +23,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import io.zeebe.dispatcher.BlockPeek;
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.dispatcher.Subscription;
+import io.zeebe.dispatcher.*;
 import io.zeebe.logstreams.log.LogStreamFailureListener;
 import io.zeebe.logstreams.spi.LogStorage;
-import io.zeebe.util.sched.FutureUtil;
 import io.zeebe.util.sched.ZbActor;
 import io.zeebe.util.sched.ZbActorScheduler;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
-import io.zeebe.util.sched.future.CompletedActorFuture;
+import io.zeebe.util.sched.future.*;
 import org.agrona.MutableDirectBuffer;
 import org.slf4j.Logger;
 
@@ -44,10 +39,7 @@ public class LogStreamController extends ZbActor
     private final AtomicBoolean isOpenend = new AtomicBoolean(false);
     private final AtomicBoolean isFailed = new AtomicBoolean(false);
 
-    private final Runnable peekNextBlock = this::peekNextBlock;
-    private final Runnable invokeListenersOnFailed = this::invokeListenersOnFailed;
-    private final Runnable discardNextBlock = this::discardNextBlock;
-    private final Runnable invokeListenersOnRecovered = this::invokeListenersOnRecovered;
+    private Runnable peekedBlockHandler;
 
     private long firstEventPosition;
 
@@ -89,7 +81,7 @@ public class LogStreamController extends ZbActor
 
     public void open()
     {
-        FutureUtil.join(openAsync());
+        openAsync().join();
     }
 
     public ActorFuture<Void> openAsync()
@@ -124,7 +116,8 @@ public class LogStreamController extends ZbActor
             {
                 writeBufferSubscription = subscription;
 
-                actor.consume(writeBufferSubscription, this::peekBlocksAndAppend);
+                peekedBlockHandler = this::appendBlock;
+                actor.consume(writeBufferSubscription, this::peek);
 
                 openFuture.complete(null);
             }
@@ -135,46 +128,58 @@ public class LogStreamController extends ZbActor
         });
     }
 
-    private void peekBlocksAndAppend()
+    private void peek()
     {
-        actor.runUntilDone(peekNextBlock);
+        if (writeBufferSubscription.peekBlock(blockPeek, maxAppendBlockSize, true) > 0)
+        {
+            peekedBlockHandler.run();
+        }
     }
 
-    private void peekNextBlock()
+    private void appendBlock()
     {
-        final int bytesAvailable = writeBufferSubscription.peekBlock(blockPeek, maxAppendBlockSize, true);
+        final ByteBuffer nioBuffer = blockPeek.getRawBuffer();
+        final MutableDirectBuffer buffer = blockPeek.getBuffer();
 
-        if (bytesAvailable > 0)
+        final long position = buffer.getLong(positionOffset(messageOffset(0)));
+        firstEventPosition = position;
+
+        final long address = logStorage.append(nioBuffer);
+
+        if (address >= 0)
         {
-            final ByteBuffer nioBuffer = blockPeek.getRawBuffer();
-            final MutableDirectBuffer buffer = blockPeek.getBuffer();
-
-            final long position = buffer.getLong(positionOffset(messageOffset(0)));
-            firstEventPosition = position;
-
-            final long address = logStorage.append(nioBuffer);
-
-            if (address >= 0)
-            {
-                blockPeek.markCompleted();
-                // continue with next block
-                actor.yield();
-            }
-            else
-            {
-                blockPeek.markFailed();
-                actor.done();
-
-                actor.run(invokeListenersOnFailed);
-            }
+            blockPeek.markCompleted();
         }
         else
         {
-            actor.done();
+            isFailed.set(true);
+            notifyListenersOnFailed();
+            peekedBlockHandler = this::discardBlock;
         }
     }
 
-    private void invokeListenersOnFailed()
+
+    private void discardBlock()
+    {
+        blockPeek.markFailed();
+        // continue with next block
+        actor.yield();
+
+        if (!writeBufferSubscription.hasAvailable())
+        {
+            // block until recovered
+            actor.await(recoverFuture, (v, failure) ->
+            {
+                // reset future
+                recoverFuture.close();
+                recoverFuture.setAwaitingResult();
+                notifyListenersOnRecovered();
+                peekedBlockHandler = this::appendBlock;
+            });
+        }
+    }
+
+    private void notifyListenersOnFailed()
     {
         LOG.debug("Failing for first event position: {}", firstEventPosition);
 
@@ -190,46 +195,9 @@ public class LogStreamController extends ZbActor
                 LOG.error("Exception while invoking {}", logStreamWriteErrorListener);
             }
         }
-
-        actor.runUntilDone(discardNextBlock);
     }
 
-    private void discardNextBlock()
-    {
-        final int available = writeBufferSubscription.peekBlock(blockPeek, maxAppendBlockSize, true);
-
-        if (available > 0)
-        {
-            blockPeek.markFailed();
-            // continue with next block
-            actor.yield();
-        }
-        else
-        {
-            actor.done();
-
-            // block until recovered
-            isFailed.set(true);
-            actor.await(recoverFuture, (v, failure) ->
-            {
-                // reset future
-                recoverFuture.close();
-                recoverFuture.setAwaitingResult();
-
-                actor.run(invokeListenersOnRecovered);
-            });
-        }
-    }
-
-    public void recover()
-    {
-        if (isFailed.compareAndSet(true, false))
-        {
-            actor.call(() -> recoverFuture.complete(null));
-        }
-    }
-
-    private void invokeListenersOnRecovered()
+    private void notifyListenersOnRecovered()
     {
         for (int i = 0; i < failureListeners.size(); i++)
         {
@@ -245,9 +213,17 @@ public class LogStreamController extends ZbActor
         }
     }
 
+    public void recover()
+    {
+        if (isFailed.compareAndSet(true, false))
+        {
+            actor.call(() -> recoverFuture.complete(null));
+        }
+    }
+
     public void close()
     {
-        FutureUtil.join(closeAsync());
+        closeAsync().join();
     }
 
     public ActorFuture<Void> closeAsync()

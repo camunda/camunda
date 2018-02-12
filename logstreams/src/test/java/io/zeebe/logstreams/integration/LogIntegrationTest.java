@@ -74,7 +74,7 @@ public class LogIntegrationTest
     @Test
     public void shouldWriteEvents()
     {
-        final int workPerIteration = 10_000;
+        final int workPerIteration = 100_000;
 
         writeLogEvents(logStream, workPerIteration, MSG_SIZE, 0);
 

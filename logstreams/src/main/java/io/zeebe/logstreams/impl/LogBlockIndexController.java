@@ -24,20 +24,11 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
-import io.zeebe.logstreams.spi.LogStorage;
-import io.zeebe.logstreams.spi.ReadableSnapshot;
-import io.zeebe.logstreams.spi.SnapshotPolicy;
-import io.zeebe.logstreams.spi.SnapshotStorage;
-import io.zeebe.logstreams.spi.SnapshotWriter;
+import io.zeebe.logstreams.spi.*;
 import io.zeebe.util.allocation.AllocatedBuffer;
 import io.zeebe.util.allocation.BufferAllocators;
-import io.zeebe.util.sched.ActorCondition;
-import io.zeebe.util.sched.FutureUtil;
-import io.zeebe.util.sched.ZbActor;
-import io.zeebe.util.sched.ZbActorScheduler;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
-import io.zeebe.util.sched.future.CompletedActorFuture;
+import io.zeebe.util.sched.*;
+import io.zeebe.util.sched.future.*;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.Position;
 import org.slf4j.Logger;
@@ -128,7 +119,7 @@ public class LogBlockIndexController extends ZbActor
 
     public void open()
     {
-        FutureUtil.join(openAsync());
+        openAsync().join();
     }
 
     public ActorFuture<Void> openAsync()
@@ -188,7 +179,6 @@ public class LogBlockIndexController extends ZbActor
             openFuture.complete(null);
 
             // start reading after started
-            actor.yield();
             actor.run(readLogStorage);
         }
         catch (Exception e)
@@ -218,6 +208,7 @@ public class LogBlockIndexController extends ZbActor
 
                 // read next bytes
                 actor.run(readLogStorage);
+                actor.yield();
             }
             else if (nextAddressToRead == OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY)
             {
@@ -260,7 +251,6 @@ public class LogBlockIndexController extends ZbActor
         if (currentBlockSize >= indexBlockSize)
         {
             createBlockIndex();
-
             currentBlockSize = 0;
         }
         else
@@ -346,7 +336,7 @@ public class LogBlockIndexController extends ZbActor
 
     public void close()
     {
-        FutureUtil.join(closeAsync());
+        closeAsync().join();
     }
 
     public ActorFuture<Void> closeAsync()
