@@ -48,7 +48,6 @@ public class RequestResponseTest
     @Test
     public void shouldEchoMessages() throws Exception
     {
-        // 1K message
         final SocketAddress addr = new SocketAddress("localhost", 51115);
 
         final Dispatcher clientSendBuffer = Dispatchers.create("clientSendBuffer")
@@ -77,7 +76,7 @@ public class RequestResponseTest
             .build(null, new EchoRequestResponseHandler());
         closeables.manage(serverTransport);
 
-        final int numRequests = 10_000_000;
+        final int numRequests = 100_000;
         int numResponsesReceived = 0;
         int numRequestsSent = 0;
         final RemoteAddress remote = clientTransport.registerRemoteAndAwaitChannel(addr);
@@ -99,6 +98,9 @@ public class RequestResponseTest
                 nextPendingRequest.close();
                 pendingRequests.remove();
             }
+
+
+
         }
 
         actorSchedulerRule.get().dumpMetrics(System.out);

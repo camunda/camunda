@@ -43,7 +43,7 @@ public class SingleMessageTest
     public void shouldEchoMessages() throws Exception
     {
         final SocketAddress addr = new SocketAddress("localhost", 51115);
-        final int numRequests = 10_000_000;
+        final int numRequests = 1_000_000;
 
         final CountingListener responseCounter = new CountingListener();
 
