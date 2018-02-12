@@ -29,6 +29,7 @@ import io.zeebe.logstreams.spi.*;
 import io.zeebe.util.allocation.AllocatedBuffer;
 import io.zeebe.util.allocation.BufferAllocators;
 import io.zeebe.util.sched.*;
+import io.zeebe.util.sched.channel.ActorConditions;
 import io.zeebe.util.sched.future.*;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.Position;
@@ -48,6 +49,13 @@ public class LogBlockIndexController extends ZbActor
      */
     public static final float DEFAULT_DEVIATION = 0.1f;
 
+    /**
+     * Per default we start with reading from log storage.
+     */
+    private Runnable currentRunnable = this::readLogStorage;
+    private Duration currentDelay = Duration.ZERO;
+
+    private final Runnable runCurrentWork = this::runCurrentWork;
     private final Runnable readLogStorage = this::readLogStorage;
     private final Runnable tryCreateBlockIndex = this::tryToCreateBlockIndex;
     private final Runnable createSnapshot = this::createSnapshot;
@@ -72,7 +80,7 @@ public class LogBlockIndexController extends ZbActor
     private final float deviation;
 
     private final SnapshotStorage snapshotStorage;
-    private final SnapshotPolicy snapshotPolicy;
+    private final Duration snapshotPeriod;
     private final UnsafeBuffer buffer = new UnsafeBuffer(0, 0);
     private final CompleteEventsInBlockProcessor readResultProcessor = new CompleteEventsInBlockProcessor();
 
@@ -91,25 +99,22 @@ public class LogBlockIndexController extends ZbActor
     private int bufferSize;
     private ByteBuffer ioBuffer;
     private AllocatedBuffer allocatedBuffer;
-    private Position commitPosition;
+    private final Position commitPosition;
+    private final ActorConditions onCommitPositionUpdatedConditions;
 
-    public LogBlockIndexController(LogStreamImpl.LogStreamBuilder logStreamBuilder)
-    {
-        this(logStreamBuilder, null);
-    }
-
-    public LogBlockIndexController(LogStreamImpl.LogStreamBuilder logStreamBuilder, Position commitPosition)
+    public LogBlockIndexController(LogStreamImpl.LogStreamBuilder logStreamBuilder, Position commitPosition, ActorConditions onCommitPositionUpdatedConditions)
     {
         this.name = logStreamBuilder.getLogName() + ".index";
         this.logStorage = logStreamBuilder.getLogStorage();
         this.blockIndex = logStreamBuilder.getBlockIndex();
         this.actorScheduler = logStreamBuilder.getActorScheduler();
         this.commitPosition = commitPosition;
+        this.onCommitPositionUpdatedConditions = onCommitPositionUpdatedConditions;
 
         this.deviation = logStreamBuilder.getDeviation();
         this.indexBlockSize = (int) (logStreamBuilder.getIndexBlockSize() * (1f - deviation));
         this.snapshotStorage = logStreamBuilder.getSnapshotStorage();
-        this.snapshotPolicy = logStreamBuilder.getSnapshotPolicy();
+        this.snapshotPeriod = logStreamBuilder.getSnapshotPeriod();
         this.bufferSize = logStreamBuilder.getReadBlockSize();
     }
 
@@ -157,6 +162,11 @@ public class LogBlockIndexController extends ZbActor
         recoverBlockIndex();
     }
 
+    private void runCurrentWork()
+    {
+        actor.runDelayed(currentDelay, currentRunnable);
+    }
+
     private void recoverBlockIndex()
     {
         try
@@ -176,13 +186,14 @@ public class LogBlockIndexController extends ZbActor
             }
 
             // register condition after index is recovered
-            final ActorCondition onAppendCondition = actor.onCondition("log-index-on-append", readLogStorage);
-            logStorage.registerOnAppendCondition(onAppendCondition);
+            final ActorCondition onCommitCondition = actor.onCondition("log-index-on-commit-position", runCurrentWork);
+            onCommitPositionUpdatedConditions.registerConsumer(onCommitCondition);
 
             openFuture.complete(null);
 
+            actor.runAtFixedRate(snapshotPeriod, createSnapshot);
             // start reading after started
-            actor.run(readLogStorage);
+            runCurrentWork();
         }
         catch (Exception e)
         {
@@ -208,19 +219,17 @@ public class LogBlockIndexController extends ZbActor
                 tryToCreateBlockIndex(currentAddress);
                 // set next address
                 nextAddress = nextAddressToRead;
-
             }
             else if (nextAddressToRead == OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY)
             {
                 increaseBufferSize();
-
-                // try to read bytes again
-                actor.run(readLogStorage);
             }
             else if (nextAddressToRead == OP_RESULT_INVALID_ADDR)
             {
                 LOG.error("Can't read from illegal address: {}", currentAddress);
             }
+
+            runCurrentWork();
         }
     }
 
@@ -243,7 +252,6 @@ public class LogBlockIndexController extends ZbActor
         if (currentBlockAddress == INVALID_ADDRESS)
         {
             currentBlockAddress = currentAddress;
-            firstEventPosition = getPosition(buffer, 0);
         }
 
         currentBlockSize += ioBuffer.position();
@@ -257,10 +265,6 @@ public class LogBlockIndexController extends ZbActor
             // block was not filled enough
             // read next events into buffer after the current read events
             ioBuffer.clear();
-
-            // read next bytes
-            actor.runDelayed(Duration.ofMillis(0), readLogStorage);
-            actor.yield();
         }
     }
 
@@ -273,14 +277,14 @@ public class LogBlockIndexController extends ZbActor
             currentBlockSize = 0;
 
             // read next bytes
-            actor.runDelayed(Duration.ofMillis(0), readLogStorage);
-            actor.yield();
+            currentRunnable = readLogStorage;
+            currentDelay = Duration.ZERO;
         }
         else
         {
             // try again
-            actor.runDelayed(Duration.ofMillis(500), tryCreateBlockIndex);
-            actor.yield();
+            currentRunnable = tryCreateBlockIndex;
+            currentDelay = Duration.ofMillis(500);
         }
     }
 
@@ -289,6 +293,8 @@ public class LogBlockIndexController extends ZbActor
         final boolean canCreateBlock = readResultProcessor.getLastReadEventPosition() <= getCommitPosition();
         if (canCreateBlock)
         {
+            firstEventPosition = getPosition(buffer, 0);
+
             createBlockIdx(currentBlockAddress);
 
             // reset buffer position and limit for reuse
@@ -307,33 +313,30 @@ public class LogBlockIndexController extends ZbActor
         blockIndex.addBlock(position, addressOfFirstEventInBlock);
 
         LOG.trace("Add block to index with position {} and address {}.", position, addressOfFirstEventInBlock);
-
-        // check if snapshot should be created
-        if (snapshotPolicy.apply(position))
-        {
-            actor.run(createSnapshot);
-        }
-        else
-        {
-            firstEventPosition = 0;
-        }
     }
+
+    private long lastWrittenSnapshotEventPosition = -1;
 
     private void createSnapshot()
     {
         SnapshotWriter snapshotWriter = null;
         try
         {
-            // should do recovery if fails to flush because of corrupted block index - see #8
+            if (lastWrittenSnapshotEventPosition < firstEventPosition)
+            {
+                // should do recovery if fails to flush because of corrupted block index - see #8
 
-            // flush the log to ensure that the snapshot doesn't contains indexes of unwritten events
-            logStorage.flush();
+                // flush the log to ensure that the snapshot doesn't contains indexes of unwritten events
+                logStorage.flush();
 
-            snapshotWriter = snapshotStorage.createSnapshot(name, firstEventPosition);
+                snapshotWriter = snapshotStorage.createSnapshot(name, firstEventPosition);
 
-            snapshotWriter.writeSnapshot(blockIndex);
-            snapshotWriter.commit();
-            LOG.trace("Created snapshot for block index {}.", name);
+                snapshotWriter.writeSnapshot(blockIndex);
+                snapshotWriter.commit();
+                LOG.debug("Created snapshot for block index {}.", name);
+
+                lastWrittenSnapshotEventPosition = firstEventPosition;
+            }
         }
         catch (Exception e)
         {

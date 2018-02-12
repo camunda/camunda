@@ -28,6 +28,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import java.time.Duration;
 import java.util.Collections;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -68,7 +69,7 @@ public class LogStreamTest
         final FsLogStreamBuilder builder = new FsLogStreamBuilder(TOPIC_NAME_BUFFER, PARTITION_ID);
         builder.actorScheduler(actorScheduler.get())
             .logRootPath(tempFolder.getRoot().getAbsolutePath())
-            .snapshotPolicy(pos -> false);
+            .snapshotPeriod(Duration.ofMinutes(5));
 
         streamConfig.accept(builder);
 

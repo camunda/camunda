@@ -36,10 +36,7 @@ public class FsLogStreamBuilder extends LogStreamImpl.LogStreamBuilder<FsLogStre
     @Override
     protected void initLogStorage()
     {
-        if (logDirectory == null)
-        {
-            logDirectory = logRootPath + File.separatorChar + logName + File.separatorChar;
-        }
+        final String logDirectory = getLogDirectory();
 
         final File file = new File(logDirectory);
         file.mkdirs();

@@ -22,6 +22,7 @@ import static io.zeebe.util.EnsureUtil.ensureGreaterThanOrEqual;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
 
+import java.io.File;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.Objects;
@@ -88,7 +89,7 @@ public final class LogStreamImpl extends ZbActor implements LogStream
         this.actorScheduler = logStreamBuilder.getActorScheduler();
 
         commitPosition.setOrdered(INVALID_ADDRESS);
-        this.logBlockIndexController = new LogBlockIndexController(logStreamBuilder, commitPosition);
+        this.logBlockIndexController = new LogBlockIndexController(logStreamBuilder, commitPosition, onCommitPositionUpdatedConditions);
 
         if (!logStreamBuilder.isLogStreamControllerDisabled())
         {
@@ -461,7 +462,7 @@ public final class LogStreamImpl extends ZbActor implements LogStream
         protected int indexBlockSize = DEFAULT_INDEX_BLOCK_SIZE;
         protected float deviation = LogBlockIndexController.DEFAULT_DEVIATION;
         protected int readBlockSize = DEFAULT_READ_BLOCK_SIZE;
-        protected SnapshotPolicy snapshotPolicy;
+        protected Duration snapshotPeriod;
         protected SnapshotStorage snapshotStorage;
 
         protected Dispatcher writeBuffer;
@@ -575,9 +576,9 @@ public final class LogStreamImpl extends ZbActor implements LogStream
             return self();
         }
 
-        public T snapshotPolicy(SnapshotPolicy snapshotPolicy)
+        public T snapshotPeriod(Duration snapshotPeriod)
         {
-            this.snapshotPolicy = snapshotPolicy;
+            this.snapshotPeriod = snapshotPeriod;
             return self();
         }
 
@@ -589,6 +590,14 @@ public final class LogStreamImpl extends ZbActor implements LogStream
 
         // getter /////////////////
 
+        public String getLogDirectory()
+        {
+            if (logDirectory == null)
+            {
+                logDirectory = logRootPath + File.separatorChar + logName + File.separatorChar;
+            }
+            return logDirectory;
+        }
 
         public DirectBuffer getTopicName()
         {
@@ -648,13 +657,13 @@ public final class LogStreamImpl extends ZbActor implements LogStream
             return readBlockSize;
         }
 
-        public SnapshotPolicy getSnapshotPolicy()
+        public Duration getSnapshotPeriod()
         {
-            if (snapshotPolicy == null)
+            if (snapshotPeriod == null)
             {
-                snapshotPolicy = new TimeBasedSnapshotPolicy(Duration.ofMinutes(1));
+                snapshotPeriod = Duration.ofMinutes(1);
             }
-            return snapshotPolicy;
+            return snapshotPeriod;
         }
 
         protected Dispatcher initWriteBuffer(Dispatcher writeBuffer, BufferedLogStreamReader logReader,
