@@ -57,12 +57,12 @@ public class LogStreamTest
 
     public TemporaryFolder tempFolder = new TemporaryFolder();
     public AutoCloseableRule closeables = new AutoCloseableRule();
-
-    @Rule
-    public RuleChain chain = RuleChain.outerRule(tempFolder).around(closeables);
-
-    @Rule
     public ActorSchedulerRule actorScheduler = new ActorSchedulerRule();
+
+    @Rule
+    public RuleChain chain = RuleChain.outerRule(tempFolder)
+                                      .around(actorScheduler)
+                                      .around(closeables);
 
     protected LogStream buildLogStream(Consumer<FsLogStreamBuilder> streamConfig)
     {
@@ -485,20 +485,18 @@ public class LogStreamTest
     public void shouldTruncateLogStorageForExistingBlockIndexAndCommittedPosition()
     {
         // given
-        final LogStream logStream = buildLogStream(b -> b.indexBlockSize(20));
-
+        final LogStream logStream = buildLogStream(b -> b.indexBlockSize(20).readBlockSize(20));
         logStream.open();
         closeables.manage(logStream);
 
         final LogStreamWriter writer = new LogStreamWriterImpl(logStream);
         final long firstPosition = writer.key(123L).value(new UnsafeBuffer(new byte[4])).tryWrite();
         waitUntil(() -> events(logStream).count() == 1);
-
         logStream.setCommitPosition(firstPosition);
-        waitUntil(() -> logStream.getLogBlockIndex().size() > 0);
-
+        logStream.setCommitPosition(firstPosition);
         final long secondPosition = writer.key(123L).value(new UnsafeBuffer(new byte[4])).tryWrite();
         waitUntil(() -> events(logStream).count() == 2);
+        waitUntil(() -> logStream.getLogBlockIndex().size() > 0);
 
         logStream.getLogStreamController().close();
 
