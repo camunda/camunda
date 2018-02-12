@@ -2,7 +2,7 @@ import React from 'react';
 import {mount} from 'enzyme';
 
 import Report from './Report';
-import {getReportData, loadSingleReport, remove, saveReport} from './service';
+import {getReportData, loadSingleReport, remove, saveReport, loadProcessDefinitionXml} from './service';
 
 jest.mock('components', () =>{
   const Modal = props => <div {...props}>{props.children}</div>;
@@ -24,7 +24,8 @@ jest.mock('./service', () => {
     loadSingleReport: jest.fn(),
     remove: jest.fn(),
     getReportData: jest.fn(),
-    saveReport: jest.fn()
+    saveReport: jest.fn(),
+    loadProcessDefinitionXml: jest.fn()
   }
 });
 
@@ -62,6 +63,7 @@ const sampleReport = {
 
 loadSingleReport.mockReturnValue(sampleReport);
 getReportData.mockReturnValue('some report data');
+loadProcessDefinitionXml.mockReturnValue('some xml');
 
 beforeEach(() => {
   props.match.params.viewMode = 'view';
@@ -239,9 +241,11 @@ describe('edit mode', async () => {
   it('should remove flow node and variable filter after changing ProcDef', async () => {
     props.match.params.viewMode = 'edit';
     const node = mount(<Report {...props} />);
-    node.setState({
+
+    node.setState(prevState => ({
       loaded: true,
       data: {
+        ...node.instance().initializeReport(),
         filter: [
           {
             data: 'foo',
@@ -257,13 +261,24 @@ describe('edit mode', async () => {
           }
         ]
       }
-    });
-    node.instance().updateReport('processDefinitionId', 'asd');
+    }));
+    
+    await node.instance().updateReport('processDefinitionId', 'asd');
+    
     expect(node.state().data.filter.length).toBe(1);
     expect(node.state().data.filter[0].data).toBe('foo');
     expect(node.state().data.filter[0].type).toBe('bar');
   });
 
+  it('should store xml if process definition is changed', async () => {
+    props.match.params.viewMode = 'edit';
+    const node = mount(<Report {...props} />);
+    
+    await node.instance().loadReport();
+    await node.instance().updateReport('processDefinitionId', 'asd');
+    
+    expect(node.state().data.configuration.xml).toBe('some xml');
+  });
 
   it('should provide a link to view mode', async () => {
     props.match.params.viewMode = 'edit';

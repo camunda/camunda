@@ -34,7 +34,8 @@ const data = {
   view: {operation: 'count', entity: 'processInstance'},
   groupBy: {type: 'none', unit: null},
   visualization: 'json',
-  filter: null
+  filter: null,
+  configuration: {xml: 'fooXml'}
 };
 
 const spy = jest.fn();

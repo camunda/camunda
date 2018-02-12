@@ -25,6 +25,7 @@ public class ReportUtil {
     reportDataDto.setGroupBy(from.getGroupBy());
     reportDataDto.setFilter(from.getFilter());
     reportDataDto.setVisualization(from.getVisualization());
+    reportDataDto.setConfiguration(from.getConfiguration());
     to.setData(reportDataDto);
   }
 

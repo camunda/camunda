@@ -15,8 +15,15 @@ export default class HeatmapOverlay extends React.Component {
     this.renderHeatmap();
   }
 
-  componentDidUpdate(nextProps, nextState) {
+  componentWillUpdate(nextProps) {
     this.renderHeatmap();
+  }
+
+  componentWillUnmount() {
+    const {viewer} = this.props;
+    if(this.heatmap) {
+      viewer.get('canvas')._viewport.removeChild(this.heatmap);
+    }
   }
 
   renderHeatmap = () => {

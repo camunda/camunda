@@ -1,7 +1,6 @@
 import React from 'react';
 import {Modal, Button, BPMNDiagram} from 'components';
 
-import {loadDiagramXML} from './service';
 import ClickBehavior from './ClickBehavior';
 
 import './NodeFilter.css';
@@ -11,17 +10,8 @@ export default class NodeFilter extends React.Component {
     super(props);
 
     this.state = {
-      xml: undefined,
       selectedNodes: (this.props.filterData) ? this.props.filterData[0].data.values : []
     };
-
-    this.loadDiagram();
-  }
-
-  loadDiagram = async () => {
-    this.setState({
-      xml: await loadDiagramXML(this.props.processDefinitionId)
-    });
   }
 
   toggleNode = toggledNode => {
@@ -87,9 +77,9 @@ export default class NodeFilter extends React.Component {
       <Modal.Header>Add Flow Node Filter</Modal.Header>
       <Modal.Content>
         {this.createPreviewList()}
-        {this.state.xml && (
+        {this.props.xml && (
           <div className='NodeFilter__diagram-container'>
-            <BPMNDiagram xml={this.state.xml}>
+            <BPMNDiagram xml={this.props.xml}>
               <ClickBehavior setSelectedNodes={this.setSelectedNodes} onClick={this.toggleNode} selectedNodes={this.state.selectedNodes}/>
             </BPMNDiagram>
           </div>

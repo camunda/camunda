@@ -1,5 +1,3 @@
-import {get} from 'request';
-
 import HeatmapJS from 'heatmap.js';
 import './Tooltip.css';
 
@@ -13,12 +11,6 @@ const VALUE_SHIFT = 0.17;
 const COOLNESS = 2.5;
 const EDGE_BUFFER = 75;
 const RESOLUTION = 4;
-
-export async function loadProcessDefinitionXml(id) {
-  const response = await get('/api/process-definition/xml', {ids: [id]});
-
-  return (await response.json())[id];
-}
 
 export function getHeatmap(viewer, data) {
   const heat = generateHeatmap(viewer, data);

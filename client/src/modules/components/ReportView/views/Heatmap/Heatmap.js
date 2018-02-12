@@ -1,56 +1,27 @@
 import React from 'react';
 
-import {loadProcessDefinitionXml} from './service';
-
 import {BPMNDiagram} from 'components';
 import HeatmapOverlay from './HeatmapOverlay';
 
 import './Heatmap.css';
 
-export default class Heatmap extends React.Component {
-  constructor(props) {
-    super(props);
+const Heatmap = (props) => {
+  const {xml} = props;
+  const {data, errorMessage} = props;
 
-    this.state = {
-      xml: null
-    };
-
-    this.load();
+  if(!data || typeof data !== 'object') {
+    return <p>{errorMessage}</p>;
   }
 
-  async load() {
-    const xml = await loadProcessDefinitionXml(this.props.process);
-
-    this.setState({xml});
+  if(!xml) {
+    return <div className='heatmap-loading-indicator'>loading...</div>;
   }
 
-  render() {
-    const {xml} = this.state;
-    const {data, errorMessage} = this.props;
-
-    if(!data || typeof data !== 'object') {
-      return <p>{errorMessage}</p>;
-    }
-
-    if(!xml) {
-      return <div className='heatmap-loading-indicator'>loading...</div>;
-    }
-
-    return (<div className='Heatmap'>
-      <BPMNDiagram xml={xml}>
-        <HeatmapOverlay data={data} formatter={this.props.formatter} />
-      </BPMNDiagram>
-    </div>);
-  }
-
-  async componentWillReceiveProps(nextProps) {
-    if(nextProps.process !== this.props.process) {
-      this.setState({xml: null});
-      if(nextProps.process) {
-        this.setState({
-          xml: await loadProcessDefinitionXml(nextProps.process)
-        });
-      }
-    }
-  }
+  return (<div className='Heatmap'>
+    <BPMNDiagram xml={xml}>
+      <HeatmapOverlay data={data} formatter={props.formatter} />
+    </BPMNDiagram>
+  </div>);
 }
+
+  export default Heatmap;

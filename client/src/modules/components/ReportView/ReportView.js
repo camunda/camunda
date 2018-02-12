@@ -92,7 +92,7 @@ export default class ReportView extends React.Component {
       case 'heat':
         config = {
           component: Heatmap,
-          props: {data: result, process: data.processDefinitionId}
+          props: {data: result, xml: data.configuration.xml}
         }; break;
       case 'bar':
       case 'line':

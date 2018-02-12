@@ -16,6 +16,12 @@ export async function loadProcessDefinitions() {
   return await response.json();
 }
 
+export async function loadProcessDefinitionXml(id) {
+  const response = await get('/api/process-definition/xml', {ids: [id]});
+
+  return (await response.json())[id];
+}
+
 export async function getFlowNodeNames(id) {
   const response = await post(`/api/flow-node/${id}/flowNodeNames`, []);
 

@@ -3,7 +3,7 @@ import moment from 'moment';
 import {Link, Redirect} from 'react-router-dom';
 import {Button, Modal, Input, ShareEntity, ReportView} from 'components';
 
-import {loadSingleReport, remove, getReportData, saveReport, getFlowNodeNames, shareReport, revokeReportSharing, getSharedReport} from './service';
+import {loadSingleReport, loadProcessDefinitionXml, remove, getReportData, saveReport, getFlowNodeNames, shareReport, revokeReportSharing, getSharedReport} from './service';
 import ControlPanel from './ControlPanel';
 
 import './Report.css';
@@ -35,7 +35,8 @@ export default class Report extends React.Component {
       view: {operation: '', entity: '', property: ''},
       groupBy: {type: '', unit: null},
       visualization: '',
-      filter: []
+      filter: [],
+      configuration: {}
     });
   }
 
@@ -87,6 +88,7 @@ export default class Report extends React.Component {
 
     if (field === 'processDefinitionId') {
       data.filter = data.filter.filter(({type}) => type !== 'executedFlowNodes' && type !== 'variable');
+      await this.loadXmlToConfiguration(data);
     }
 
     this.setState({data});
@@ -100,6 +102,13 @@ export default class Report extends React.Component {
     }
     this.setState({reportResult});
     this.idsToNames();
+  }
+
+  loadXmlToConfiguration = async (data) => {
+    if(data.processDefinitionId) {
+      const xml = await loadProcessDefinitionXml(data.processDefinitionId);
+      data.configuration = {...data.configuration, xml};
+    }
   }
 
   allFieldsAreSelected = (data) => {

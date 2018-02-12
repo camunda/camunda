@@ -1,7 +1,6 @@
 import React from 'react';
 
 import NodeFilter from './NodeFilter';
-import {loadDiagramXML} from './service';
 
 import {mount} from 'enzyme';
 
@@ -14,14 +13,8 @@ jest.mock('components', () => {
   return {
   Modal,
   Button: props => <button {...props}>{props.children}</button>,
-  BPMNDiagram: props => <div>Diagram {props.children}</div>
+  BPMNDiagram: props => <div id='diagram'>Diagram {props.children} {props.xml}</div>
 }});
-
-jest.mock('./service', () => {
-  return {
-    loadDiagramXML: jest.fn().mockReturnValue('someDiagramXML')
-  }
-});
 
 jest.mock('./ClickBehavior', () => props => <span>ClickBehavior</span>);
 
@@ -31,18 +24,10 @@ it('should contain a modal', () => {
   expect(node.find('#modal')).toBePresent();
 });
 
-it('should initially load the process diagram', () => {
-  mount(<NodeFilter processDefinitionId='procDefId' />);
+it('should display a diagram', () => {
+  const node = mount(<NodeFilter processDefinitionId='procDefId' xml='fooXml'/>);
 
-  expect(loadDiagramXML).toHaveBeenCalledWith('procDefId');
-});
-
-it('should display a diagram', async () => {
-  const node = mount(<NodeFilter processDefinitionId='procDefId' />);
-
-  await node.instance().loadDiagram();
-
-  expect(node).toIncludeText('Diagram');
+  expect(node.find('#diagram')).toIncludeText('fooXml');
 });
 
 it('should add an unselected node to the selectedNodes on toggle', () => {

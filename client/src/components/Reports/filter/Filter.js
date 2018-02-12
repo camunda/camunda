@@ -77,6 +77,7 @@ export default class Filter extends React.Component {
     const FilterModal = this.getFilterModal(this.state.newFilterType);
 
     const EditFilterModal = this.getFilterModal((this.state.editFilter) ? this.state.editFilter[0].type : null);
+    
 
     return (<div className='Filter'>
       <label htmlFor='ControlPanel__filters' className='visually-hidden'>Filters</label>
@@ -87,8 +88,8 @@ export default class Filter extends React.Component {
         <Dropdown.Option disabled={this.processDefinitionIsNotSelected()} onClick={this.openNewFilterModal('variable')}>Variable</Dropdown.Option>
         <Dropdown.Option disabled={this.processDefinitionIsNotSelected()} onClick={this.openNewFilterModal('executedFlowNodes')}>Flow Node</Dropdown.Option>
       </Dropdown>
-      <FilterModal addFilter={this.addFilter} close={this.closeModal} processDefinitionId={this.props.processDefinitionId} />
-      <EditFilterModal addFilter={this.editFilter} filterData={this.state.editFilter} close={this.closeModal} processDefinitionId={this.props.processDefinitionId}/>
+      <FilterModal addFilter={this.addFilter} close={this.closeModal} xml={this.props.xml} />
+      <EditFilterModal addFilter={this.editFilter} filterData={this.state.editFilter} close={this.closeModal} xml={this.props.xml}/>
     </div>);
   }
 }
