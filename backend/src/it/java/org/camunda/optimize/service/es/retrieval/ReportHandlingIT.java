@@ -139,6 +139,7 @@ public class ReportHandlingIT {
     ReportDataDto reportData = new ReportDataDto();
     reportData.setProcessDefinitionId("procdef-123");
     reportData.setFilter(Collections.emptyList());
+    reportData.setConfiguration("aRandomConfiguration");
     ReportDefinitionDto report = new ReportDefinitionDto();
     report.setData(reportData);
     report.setId("shouldNotBeUpdated");
@@ -157,6 +158,7 @@ public class ReportHandlingIT {
     assertThat(reports.size(), is(1));
     ReportDefinitionDto newReport = reports.get(0);
     assertThat(newReport.getData().getProcessDefinitionId(), is("procdef-123"));
+    assertThat(newReport.getData().getConfiguration(), is("aRandomConfiguration"));
     assertThat(newReport.getId(), is(id));
     assertThat(newReport.getCreated(), is(not(shouldBeIgnoredDate)));
     assertThat(newReport.getLastModified(), is(not(shouldBeIgnoredDate)));

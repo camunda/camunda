@@ -12,6 +12,7 @@ public class ReportDataDto {
   protected ViewDto view;
   protected GroupByDto groupBy;
   protected String visualization;
+  protected String configuration;
 
 
   public String getProcessDefinitionId() {
@@ -54,4 +55,11 @@ public class ReportDataDto {
     this.visualization = visualization;
   }
 
+  public String getConfiguration() {
+    return configuration;
+  }
+
+  public void setConfiguration(String configuration) {
+    this.configuration = configuration;
+  }
 }
