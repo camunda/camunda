@@ -1,5 +1,7 @@
 package org.camunda.optimize.service.sharing;
 
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.sharing.EvaluatedDashboardShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.SharedResourceType;
 import org.camunda.optimize.dto.optimize.query.sharing.SharingDto;
@@ -14,7 +16,9 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
@@ -34,6 +38,50 @@ public class SharingServiceIT extends AbstractSharingIT {
       .outerRule(elasticSearchRule)
       .around(engineRule)
       .around(embeddedOptimizeRule);
+
+  @Test
+  public void removingReportFromDashboardRemovesRespectiveShare() throws Exception {
+    //given
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+
+    String reportId = createReport();
+    String dashboardWithReport = createDashboardWithReport(token, reportId);
+    String dashboardShareId = addShareForDashboard(token, dashboardWithReport);
+
+    //when
+    DashboardDefinitionDto fullBoard = new DashboardDefinitionDto();
+    fullBoard.setId(dashboardWithReport);
+    updateDashboard(dashboardWithReport, fullBoard);
+
+    //then
+    Response response =
+        embeddedOptimizeRule.target(getSharedDashboardEvaluationPath(dashboardShareId))
+            .request()
+            .get();
+    EvaluatedDashboardShareDto dashboardShareDto = response.readEntity(EvaluatedDashboardShareDto.class);
+    assertThat(dashboardShareDto.getDashboard().getReportShares().size(), is(0));
+  }
+
+  @Test
+  public void addingReportToDashboardAddsRespectiveShare() throws Exception {
+    //given
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+
+    String dashboardId = addEmptyDashboardToOptimize(token);
+    String dashboardShareId = addShareForDashboard(token, dashboardId);
+
+    //when
+    String reportId = createReport();
+    addReportToDashboard(reportId,dashboardId);
+
+    //then
+    Response response =
+      embeddedOptimizeRule.target(getSharedDashboardEvaluationPath(dashboardShareId))
+        .request()
+        .get();
+    EvaluatedDashboardShareDto dashboardShareDto = response.readEntity(EvaluatedDashboardShareDto.class);
+    assertThat(dashboardShareDto.getDashboard().getReportShares().size(), is(1));
+  }
 
   @Test
   public void unsharedDashboardRemovesNotStandaloneReportShares() throws Exception {

@@ -78,7 +78,7 @@ public class SharingService  {
 
       if (dashboardDefinition.getReports() != null) {
         for (ReportLocationDto report : dashboardDefinition.getReports()) {
-          this.crateNewShare(constructShareDto(report));
+          this.crateNewShare(constructDashboardReportShareDto(report));
         }
       }
 
@@ -87,7 +87,7 @@ public class SharingService  {
     }
   }
 
-  private SharingDto constructShareDto(ReportLocationDto report) {
+  private SharingDto constructDashboardReportShareDto(ReportLocationDto report) {
     SharingDto result = new SharingDto();
     result.setType(SharedResourceType.DASHBOARD_REPORT);
     result.setResourceId(report.getId());
@@ -213,10 +213,15 @@ public class SharingService  {
   }
 
   private ReportShareLocationDto constructReportShareLocation(Map<String, ReportLocationDto> reportLocationsMap, SharingDto reportShare) {
-    ReportShareLocationDto toAdd = new ReportShareLocationDto();
-    toAdd.setShareId(reportShare.getId());
-    toAdd.setId(reportShare.getResourceId());
     ReportLocationDto reportLocationDto = reportLocationsMap.get(reportShare.getResourceId());
+    ReportShareLocationDto toAdd = mapToReportShareLocationDto(reportLocationDto, reportShare.getId(), reportShare.getResourceId());
+    return toAdd;
+  }
+
+  private ReportShareLocationDto mapToReportShareLocationDto(ReportLocationDto reportLocationDto, String shareId, String reportId) {
+    ReportShareLocationDto toAdd = new ReportShareLocationDto();
+    toAdd.setShareId(shareId);
+    toAdd.setId(reportId);
     toAdd.setDimensions(reportLocationDto.getDimensions());
     toAdd.setPosition(reportLocationDto.getPosition());
     return toAdd;
@@ -242,5 +247,28 @@ public class SharingService  {
   public SharingDto findShareForDashboard(String resourceId) {
     return findShareForResource(resourceId, SharedResourceType.DASHBOARD)
         .orElse(null);
+  }
+
+  public void adjustDashboardShares(DashboardDefinitionDto updatedDashboard) {
+    Optional<SharingDto> dashboardShare = findShareForResource(updatedDashboard.getId(), SharedResourceType.DASHBOARD);
+
+    Optional<EvaluatedDashboardShareDto> evaluatedDashboardShareDto = dashboardShare
+      .map(share -> {
+        Optional<EvaluatedDashboardShareDto> evaluated = this.evaluateDashboard(share.getId());
+        return evaluated.get();
+      });
+
+    evaluatedDashboardShareDto.ifPresent(share -> {
+      for (ReportShareLocationDto dashboardReport : share.getDashboard().getReportShares()) {
+        this.deleteShare(dashboardReport.getShareId());
+      }
+
+      if (updatedDashboard.getReports() != null) {
+        for (ReportLocationDto report : updatedDashboard.getReports()) {
+          this.crateNewShare(constructDashboardReportShareDto(report));
+        }
+      }
+    });
+
   }
 }

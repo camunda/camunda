@@ -6,6 +6,7 @@ import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.service.es.reader.DashboardReader;
 import org.camunda.optimize.service.es.writer.DashboardWriter;
 import org.camunda.optimize.service.exceptions.OptimizeException;
+import org.camunda.optimize.service.security.SharingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -24,6 +25,9 @@ public class DashboardService {
   @Autowired
   private DashboardReader dashboardReader;
 
+  @Autowired
+  private SharingService sharingService;
+
   public IdDto createNewDashboardAndReturnId(String userId) {
     return dashboardWriter.createNewDashboardAndReturnId(userId);
   }
@@ -31,6 +35,7 @@ public class DashboardService {
   public void updateDashboard(DashboardDefinitionDto updatedDashboard, String userId) throws OptimizeException, JsonProcessingException {
     updatedDashboard.setLastModifier(userId);
     dashboardWriter.updateDashboard(updatedDashboard);
+    sharingService.adjustDashboardShares(updatedDashboard);
   }
 
   public List<DashboardDefinitionDto> getDashboardDefinitions() throws IOException {

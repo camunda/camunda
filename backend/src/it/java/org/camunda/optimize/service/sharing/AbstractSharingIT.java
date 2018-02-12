@@ -94,6 +94,11 @@ public abstract class AbstractSharingIT {
 
   protected String createDashboardWithReport(String token, String reportId) {
     String dashboardId = addEmptyDashboardToOptimize(token);
+    addReportToDashboard(reportId, dashboardId);
+    return dashboardId;
+  }
+
+  protected void addReportToDashboard(String reportId, String dashboardId) {
     DashboardDefinitionDto fullBoard = new DashboardDefinitionDto();
     fullBoard.setId(dashboardId);
     ReportLocationDto reportLocation = new ReportLocationDto();
@@ -102,7 +107,6 @@ public abstract class AbstractSharingIT {
     reports.add(reportLocation);
     fullBoard.setReports(reports);
     updateDashboard(dashboardId, fullBoard);
-    return dashboardId;
   }
 
   protected String addEmptyDashboardToOptimize(String token) {
