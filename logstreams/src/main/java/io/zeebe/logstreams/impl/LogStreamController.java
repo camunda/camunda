@@ -23,12 +23,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import io.zeebe.dispatcher.*;
+import io.zeebe.dispatcher.BlockPeek;
+import io.zeebe.dispatcher.Dispatcher;
+import io.zeebe.dispatcher.Subscription;
 import io.zeebe.logstreams.log.LogStreamFailureListener;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.util.sched.ZbActor;
 import io.zeebe.util.sched.ZbActorScheduler;
-import io.zeebe.util.sched.future.*;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
+import io.zeebe.util.sched.future.CompletedActorFuture;
 import org.agrona.MutableDirectBuffer;
 import org.slf4j.Logger;
 
@@ -134,6 +138,7 @@ public class LogStreamController extends ZbActor
         {
             peekedBlockHandler.run();
         }
+        // TODO continue to discard block
     }
 
     private void appendBlock()
@@ -155,6 +160,7 @@ public class LogStreamController extends ZbActor
             isFailed.set(true);
             notifyListenersOnFailed();
             peekedBlockHandler = this::discardBlock;
+            discardBlock();
         }
     }
 

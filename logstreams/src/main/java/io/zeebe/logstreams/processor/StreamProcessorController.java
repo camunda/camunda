@@ -308,7 +308,7 @@ public class StreamProcessorController extends ZbActor
 
     private void readNextEvent()
     {
-        if (!streamProcessor.isSuspended() && logStreamReader.hasNext())
+        if (isOpened.get() && !streamProcessor.isSuspended() && logStreamReader.hasNext())
         {
             final LoggedEvent event = logStreamReader.next();
             currentEvent = event;
@@ -317,12 +317,15 @@ public class StreamProcessorController extends ZbActor
             {
                 processEvent(currentEvent);
             }
-//            actor.yield();
-//            actor.run(readNextEvent);
+            else
+            {
+                actor.yield();
+                actor.run(readNextEvent);
+            }
         }
         else
         {
-//            actor.yield();
+            actor.yield();
         }
     }
 
@@ -400,7 +403,8 @@ public class StreamProcessorController extends ZbActor
         }
 
         // continue with next event
-        actor.run(readNextEvent);
+        // -- execute other jobs before continue
+        actor.runDelayed(Duration.ofMillis(0), readNextEvent);
         actor.yield();
     }
 

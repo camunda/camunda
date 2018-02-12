@@ -169,9 +169,9 @@ public class StreamProcessorIntegrationTest
             .snapshotStorage(snapshotStorage)
             .build();
 
-        streamProcessorController.openAsync().get();
-
         scheduleCommitPositionUpdated(logStream);
+
+        streamProcessorController.openAsync().get();
 
         // when
         writeLogEvents(logStream, 1, MSG_SIZE, 0);
@@ -179,6 +179,8 @@ public class StreamProcessorIntegrationTest
         // then
         waitUntilWrittenKey(logStream, WORK_COUNT);
         assertThat(resourceCounter.getObject().getCount()).isEqualTo(WORK_COUNT);
+
+        streamProcessorController.closeAsync().get();
     }
 
     @Test
@@ -193,9 +195,9 @@ public class StreamProcessorIntegrationTest
             .snapshotStorage(snapshotStorage)
             .build();
 
-        streamProcessorController.openAsync().get();
-
         scheduleCommitPositionUpdated(logStream);
+
+        streamProcessorController.openAsync().get();
 
         // when
         writeLogEvents(logStream, 1, MSG_SIZE, 0);
@@ -204,6 +206,8 @@ public class StreamProcessorIntegrationTest
         // then
         assertThat(snapshotStorage.isSnapshotCreated()).isTrue();
         assertThat(resourceCounter.getObject().getCount()).isEqualTo(WORK_COUNT);
+
+        streamProcessorController.closeAsync().get();
     }
 
     @Test
@@ -218,9 +222,9 @@ public class StreamProcessorIntegrationTest
             .snapshotStorage(snapshotStorage)
             .build();
 
-        streamProcessorController.openAsync().get();
-
         scheduleCommitPositionUpdated(logStream);
+
+        streamProcessorController.openAsync().get();
 
         writeLogEvents(logStream, 1, MSG_SIZE, 0);
         waitUntilWrittenKey(logStream, WORK_COUNT);
@@ -252,9 +256,9 @@ public class StreamProcessorIntegrationTest
             .snapshotStorage(snapshotStorage)
             .build();
 
-        streamProcessorController.openAsync().get();
-
         scheduleCommitPositionUpdated(logStream);
+
+        streamProcessorController.openAsync().get();
 
         writeLogEvents(logStream, 1, MSG_SIZE, 0);
         waitUntilWrittenKey(logStream, WORK_COUNT);
@@ -290,9 +294,9 @@ public class StreamProcessorIntegrationTest
             .snapshotStorage(snapshotStorage)
             .build();
 
-        streamProcessorController.openAsync().get();
-
         scheduleCommitPositionUpdated(logStream);
+
+        streamProcessorController.openAsync().get();
 
         writeLogEvents(logStream, 1, MSG_SIZE, 0);
         waitUntilWrittenKey(logStream, WORK_COUNT);
@@ -421,7 +425,6 @@ public class StreamProcessorIntegrationTest
         FutureUtil.join(streamProcessorController2.closeAsync());
     }
 
-    @Ignore("endless loop - close is not called")
     @Test
     public void shouldProcessWithEventBatches() throws Exception
     {
@@ -434,9 +437,9 @@ public class StreamProcessorIntegrationTest
             .snapshotStorage(snapshotStorage)
             .build();
 
-        streamProcessorController.openAsync().get();
-
         scheduleCommitPositionUpdated(logStream);
+
+        streamProcessorController.openAsync().get();
 
         // when
         writeLogEvents(logStream, 1, MSG_SIZE, 1);
@@ -448,7 +451,6 @@ public class StreamProcessorIntegrationTest
         streamProcessorController.closeAsync().get();
     }
 
-    @Ignore("endless loop - close is not called")
     @Test
     public void shouldRecoverWithEventBatches() throws Exception
     {
@@ -461,9 +463,9 @@ public class StreamProcessorIntegrationTest
             .snapshotStorage(snapshotStorage)
             .build();
 
-        streamProcessorController.openAsync().get();
-
         scheduleCommitPositionUpdated(logStream);
+
+        streamProcessorController.openAsync().get();
 
         writeLogEvents(logStream, 1, MSG_SIZE, 1);
         waitUntilWrittenKey(logStream, WORK_COUNT);
