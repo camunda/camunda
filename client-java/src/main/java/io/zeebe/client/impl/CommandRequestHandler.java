@@ -54,14 +54,10 @@ public class CommandRequestHandler implements RequestResponseHandler
     protected ExpandableArrayBuffer serializedCommand = new ExpandableArrayBuffer();
     protected int serializedCommandLength = 0;
 
-    public CommandRequestHandler(ObjectMapper objectMapper)
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public CommandRequestHandler(ObjectMapper objectMapper, CommandImpl command)
     {
         this.objectMapper = objectMapper;
-    }
-
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    public void configure(CommandImpl command)
-    {
         this.event = command.getEvent();
         this.expectedState = command.getExpectedStatus();
         this.errorFunction = command::generateError;

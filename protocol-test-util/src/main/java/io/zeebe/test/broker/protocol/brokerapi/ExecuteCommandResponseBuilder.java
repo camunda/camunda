@@ -92,8 +92,8 @@ public class ExecuteCommandResponseBuilder
     public ResponseController registerControlled()
     {
         final ResponseController controller = new ResponseController();
-        final NotifyingMessageBuilder<ExecuteCommandRequest> notifyingBuilder = new NotifyingMessageBuilder<>(commandResponseWriter, controller::waitForNextJoin);
-        registrationFunction.accept(notifyingBuilder);
+        commandResponseWriter.beforeResponse(controller::waitForNextJoin);
+        register();
         return controller;
     }
 }

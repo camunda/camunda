@@ -21,6 +21,7 @@ import io.zeebe.client.event.Event;
 import io.zeebe.client.event.PollableTopicSubscriptionBuilder;
 import io.zeebe.client.event.TopicSubscriptionBuilder;
 import io.zeebe.client.impl.ZeebeClientImpl;
+import io.zeebe.client.task.impl.ControlMessageRequest;
 import io.zeebe.client.topic.Topics;
 import io.zeebe.client.topic.impl.CreateTopicCommandImpl;
 import io.zeebe.client.topic.impl.GetPartitionsRequestImpl;
@@ -38,13 +39,20 @@ public class TopicClientImpl implements TopicsClient
     @Override
     public TopicSubscriptionBuilder newSubscription(String topicName)
     {
-        return client.getSubscriptionManager().newTopicSubscription(client, topicName);
+        return new TopicSubscriptionBuilderImpl(
+                topicName,
+                client.getEventAcquisition(),
+                client.getMsgPackMapper(),
+                client.getSubscriptionPrefetchCapacity());
     }
 
     @Override
     public PollableTopicSubscriptionBuilder newPollableSubscription(String topicName)
     {
-        return client.getSubscriptionManager().newPollableTopicSubscription(client, topicName);
+        return new PollableTopicSubscriptionBuilderImpl(
+                topicName,
+                client.getEventAcquisition(),
+                client.getSubscriptionPrefetchCapacity());
     }
 
     @Override
@@ -69,7 +77,7 @@ public class TopicClientImpl implements TopicsClient
     }
 
     @Override
-    public Request<Topics> getTopics()
+    public ControlMessageRequest<Topics> getTopics()
     {
         return new GetPartitionsRequestImpl(client.getCommandManager());
     }

@@ -15,12 +15,11 @@
  */
 package io.zeebe.client.impl.cmd;
 
-import java.util.concurrent.Future;
-
 import io.zeebe.client.cmd.Request;
 import io.zeebe.client.event.Event;
 import io.zeebe.client.event.impl.EventImpl;
 import io.zeebe.client.impl.RequestManager;
+import io.zeebe.util.sched.future.ActorFuture;
 
 public abstract class CommandImpl<E extends Event> implements Request<E>
 {
@@ -39,7 +38,7 @@ public abstract class CommandImpl<E extends Event> implements Request<E>
     }
 
     @Override
-    public Future<E> executeAsync()
+    public ActorFuture<E> executeAsync()
     {
         return client.executeAsync(this);
     }

@@ -30,7 +30,7 @@ import org.junit.rules.RuleChain;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.task.PollableTaskSubscription;
 import io.zeebe.client.task.TaskSubscription;
-import io.zeebe.client.task.impl.subscription.EventSubscriberGroup;
+import io.zeebe.client.task.impl.subscription.SubscriberGroup;
 import io.zeebe.client.util.ClientRule;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ControlMessageType;
@@ -199,7 +199,7 @@ public class PartitionedTaskSubscriptionTest
             .event().done()
             .push(clientAddressFromBroker2);
 
-        waitUntil(() -> ((EventSubscriberGroup<?>) subscription).size() == 2);
+        waitUntil(() -> ((SubscriberGroup<?>) subscription).size() == 2);
 
         // when
         final int polledEvents = subscription.poll(eventHandler);

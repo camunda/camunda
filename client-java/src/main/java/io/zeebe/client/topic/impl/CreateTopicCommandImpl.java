@@ -19,6 +19,7 @@ import io.zeebe.client.event.Event;
 import io.zeebe.client.event.impl.EventImpl;
 import io.zeebe.client.impl.RequestManager;
 import io.zeebe.client.impl.cmd.CommandImpl;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.util.EnsureUtil;
 
 public class CreateTopicCommandImpl extends CommandImpl<Event>
@@ -32,8 +33,8 @@ public class CreateTopicCommandImpl extends CommandImpl<Event>
         EnsureUtil.ensureNotNull("name", name);
 
         this.event = new TopicEventImpl(TopicEventType.CREATE.name(), name, partitions);
-        this.event.setTopicName(client.getSystemTopic());
-        this.event.setPartitionId(client.getSystemPartition());
+        this.event.setTopicName(Protocol.SYSTEM_TOPIC);
+        this.event.setPartitionId(Protocol.SYSTEM_PARTITION);
     }
 
 

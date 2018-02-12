@@ -45,13 +45,9 @@ public class ControlMessageRequestHandler implements RequestResponseHandler
 
     protected ControlMessageRequest message;
 
-    public ControlMessageRequestHandler(ObjectMapper objectMapper)
+    public ControlMessageRequestHandler(ObjectMapper objectMapper, ControlMessageRequest controlMessage)
     {
         this.objectMapper = objectMapper;
-    }
-
-    public void configure(ControlMessageRequest controlMessage)
-    {
         this.message = controlMessage;
         serialize(controlMessage);
     }

@@ -15,28 +15,41 @@
  */
 package io.zeebe.client.event;
 
+import static io.zeebe.test.util.TestUtil.doRepeatedly;
+import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 import java.time.Duration;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.event.impl.TopicSubscriberGroup;
+import io.zeebe.client.impl.ZeebeClientImpl;
+import io.zeebe.client.task.impl.subscription.Subscriber;
 import io.zeebe.client.util.ClientRule;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
+import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandResponseBuilder;
+import io.zeebe.test.broker.protocol.brokerapi.ResponseController;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.RemoteAddress;
-import io.zeebe.util.time.ClockUtil;
 
 public class PollableTopicSubscriptionTest
 {
+
+    protected static final UniversalEventHandler DO_NOTHING = e ->
+    { };
 
     protected static final String SUBSCRIPTION_NAME = "foo";
 
@@ -52,12 +65,6 @@ public class PollableTopicSubscriptionTest
     public void setUp()
     {
         this.client = clientRule.getClient();
-    }
-
-    @After
-    public void tearDown()
-    {
-        ClockUtil.reset();
     }
 
     @Test
@@ -162,10 +169,122 @@ public class PollableTopicSubscriptionTest
         // when
         broker.closeTransport();
         Thread.sleep(500L); // ensuring a reconnection attempt
-        ClockUtil.addTime(Duration.ofSeconds(60)); // let request time out immediately
+        clientRule.getClock().addTime(Duration.ofSeconds(60)); // let request time out immediately
 
         // then
         TestUtil.waitUntil(() -> subscription.isClosed());
         assertThat(subscription.isClosed()).isTrue();
+    }
+
+    @Test
+    public void shouldAcknowledgeOnlyOnceWhenTriggeredMultipleTimes() throws InterruptedException
+    {
+        // given
+        final long subscriberKey = 123L;
+        broker.stubTopicSubscriptionApi(subscriberKey);
+
+        final ResponseController ackResponseController = stubAcknowledgeRequest()
+            .registerControlled();
+
+        final PollableTopicSubscription subscription = clientRule.topics().newPollableSubscription(clientRule.getDefaultTopicName())
+            .startAtHeadOfTopic()
+            .name(SUBSCRIPTION_NAME)
+            .open();
+
+        final int subscriptionCapacity = ((ZeebeClientImpl) client).getSubscriptionPrefetchCapacity();
+        final int replenishmentThreshold = (int) (subscriptionCapacity * (1.0d - Subscriber.REPLENISHMENT_THRESHOLD));
+
+        final RemoteAddress clientAddress = receivedSubscribeCommands().findFirst().get().getSource();
+
+        // push and handle as many events such that an ACK is triggered
+        for (int i = 0; i < replenishmentThreshold + 1; i++)
+        {
+            broker.pushTopicEvent(clientAddress, subscriberKey, i, i);
+        }
+        final AtomicInteger handledEvents = new AtomicInteger(0);
+        doRepeatedly(() -> handledEvents.addAndGet(subscription.poll(DO_NOTHING))).until(e -> e == replenishmentThreshold + 1);
+
+        waitUntil(() -> receivedAckRequests().count() == 1);
+
+        // when consuming another event (while the ACK is not yet confirmed)
+        broker.pushTopicEvent(clientAddress, subscriberKey, 99, 99);
+        doRepeatedly(() -> subscription.poll(DO_NOTHING)).until(e -> e == 1);
+
+        // then
+        Thread.sleep(500L); // give some time for another ACK request
+        ackResponseController.unblockNextResponse();
+
+        final List<ExecuteCommandRequest> ackRequests = receivedAckRequests()
+            .collect(Collectors.toList());
+
+        assertThat(ackRequests).hasSize(1); // and not two
+
+        stubAcknowledgeRequest().register(); // unblock the request so tear down succeeds
+    }
+
+    @Test
+    public void shouldPollEventsWhileModifyingSubscribers() throws InterruptedException
+    {
+        // given
+        final int subscriberKey = 456;
+        broker.stubTopicSubscriptionApi(subscriberKey);
+
+        final ControllableHandler handler = new ControllableHandler();
+
+        final TopicSubscriberGroup subscription = (TopicSubscriberGroup) client.topics()
+            .newPollableSubscription(clientRule.getDefaultTopicName())
+            .name("hohoho")
+            .open();
+
+        final RemoteAddress clientAddress = broker.getReceivedCommandRequests().get(0).getSource();
+        broker.pushTopicEvent(clientAddress, subscriberKey, 1, 1);
+
+        waitUntil(() -> subscription.size() == 1); // event is received
+
+        final AtomicReference<Throwable> failure = new AtomicReference<>();
+        final Thread poller = new Thread(() -> subscription.poll(handler));
+        poller.setUncaughtExceptionHandler((thread, throwable) -> failure.set(throwable));
+        poller.start();
+
+        waitUntil(() -> handler.isWaiting());
+
+        // closing the subscriber
+        broker.closeTransport();
+
+        waitUntil(() -> subscription.numActiveSubscribers() == 0);
+
+        // when continuing event handling
+        handler.disableWait();
+        handler.signal();
+
+        // then the concurrent modification of subscribers did not affect the poller
+        poller.join(Duration.ofSeconds(10).toMillis());
+        assertThat(failure.get()).isNull();
+    }
+
+    private Stream<ExecuteCommandRequest> receivedAckRequests()
+    {
+        return broker.getReceivedCommandRequests().stream()
+                .filter((c) -> c.eventType() == EventType.SUBSCRIPTION_EVENT)
+                .filter((c) -> "ACKNOWLEDGE".equals(c.getCommand().get("state")));
+    }
+
+    protected Stream<ExecuteCommandRequest> receivedSubscribeCommands()
+    {
+        return broker.getReceivedCommandRequests()
+                .stream()
+                .filter((e) -> e.eventType() == EventType.SUBSCRIBER_EVENT
+                    && "SUBSCRIBE".equals(e.getCommand().get("state")));
+    }
+
+    private ExecuteCommandResponseBuilder stubAcknowledgeRequest()
+    {
+        return broker.onExecuteCommandRequest(EventType.SUBSCRIPTION_EVENT, "ACKNOWLEDGE")
+            .respondWith()
+            .key(r -> r.key())
+            .event()
+                .allOf((r) -> r.getCommand())
+                .put("state", "ACKNOWLEDGED")
+                .done();
     }
 }

@@ -24,7 +24,9 @@ import io.zeebe.client.TasksClient;
 import io.zeebe.client.TopicsClient;
 import io.zeebe.client.WorkflowsClient;
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.impl.ZeebeClientImpl;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
+import io.zeebe.util.sched.clock.ControlledActorClock;
 
 public class ClientRule extends ExternalResource
 {
@@ -32,6 +34,7 @@ public class ClientRule extends ExternalResource
     protected final Properties properties;
 
     protected ZeebeClient client;
+    protected ControlledActorClock clock;
 
     public ClientRule()
     {
@@ -47,13 +50,20 @@ public class ClientRule extends ExternalResource
     @Override
     protected void before() throws Throwable
     {
-        client = ZeebeClient.create(properties);
+        clock = new ControlledActorClock();
+        client = new ZeebeClientImpl(properties, clock);
+    }
+
+    public ControlledActorClock getClock()
+    {
+        return clock;
     }
 
     @Override
     protected void after()
     {
         client.close();
+        clock.reset();
     }
 
     public ZeebeClient getClient()
@@ -86,4 +96,12 @@ public class ClientRule extends ExternalResource
         return StubBrokerRule.TEST_PARTITION_ID;
     }
 
+    protected class ControllableZeebeClientImpl extends ZeebeClientImpl
+    {
+
+        public ControllableZeebeClientImpl(Properties properties)
+        {
+            super(properties);
+        }
+    }
 }

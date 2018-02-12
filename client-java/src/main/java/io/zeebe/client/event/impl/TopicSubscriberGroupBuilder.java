@@ -15,22 +15,19 @@
  */
 package io.zeebe.client.event.impl;
 
+import java.util.concurrent.Future;
+
 import org.agrona.collections.Long2LongHashMap;
 
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.clustering.impl.ClientTopologyManager;
-import io.zeebe.client.task.impl.subscription.EventAcquisition;
+import io.zeebe.client.task.impl.subscription.SubscriptionManager;
 import io.zeebe.util.CheckedConsumer;
 import io.zeebe.util.EnsureUtil;
 
 public class TopicSubscriberGroupBuilder
 {
-    protected final ZeebeClient client;
-    protected final ClientTopologyManager topologyManager;
-
     protected final String topic;
     protected CheckedConsumer<GeneralEventImpl> handler;
-    protected final EventAcquisition acquisition;
+    protected final SubscriptionManager acquisition;
     protected String name;
     protected final int prefetchCapacity;
     protected boolean forceStart;
@@ -38,17 +35,13 @@ public class TopicSubscriberGroupBuilder
     protected final Long2LongHashMap startPositions = new Long2LongHashMap(-1);
 
     public TopicSubscriberGroupBuilder(
-            ZeebeClient client,
-            ClientTopologyManager topologyManager,
             String topic,
-            EventAcquisition acquisition,
+            SubscriptionManager acquisition,
             int prefetchCapacity)
     {
         EnsureUtil.ensureNotNull("topic", topic);
         EnsureUtil.ensureNotEmpty("topic", topic);
 
-        this.client = client;
-        this.topologyManager = topologyManager;
         this.topic = topic;
         this.acquisition = acquisition;
         this.prefetchCapacity = prefetchCapacity;
@@ -105,7 +98,7 @@ public class TopicSubscriberGroupBuilder
         return name;
     }
 
-    public TopicSubscriberGroup build()
+    public Future<TopicSubscriberGroup> build()
     {
         final TopicSubscriptionSpec subscription = new TopicSubscriptionSpec(
                 topic,
@@ -116,11 +109,6 @@ public class TopicSubscriberGroupBuilder
                 name,
                 prefetchCapacity);
 
-        final TopicSubscriberGroup subscriberGroup = new TopicSubscriberGroup(
-                client,
-                acquisition,
-                subscription);
-
-        return subscriberGroup;
+        return acquisition.openTopicSubscription(subscription);
     }
 }

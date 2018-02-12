@@ -17,6 +17,7 @@ package io.zeebe.client.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Duration;
 import java.util.Properties;
 
 import org.junit.Rule;
@@ -43,11 +44,13 @@ public class ClientConfigurationTest
         final Properties props = new Properties();
         props.put(ClientProperties.CLIENT_TCP_CHANNEL_KEEP_ALIVE_PERIOD, Long.toString(KEEP_ALIVE_TIMEOUT));
 
+        final Duration expectedTimeout = Duration.ofMillis(KEEP_ALIVE_TIMEOUT);
+
         // when
         final ZeebeClient client = ZeebeClient.create(props);
 
         // then
         final ClientTransport transport = ((ZeebeClientImpl) client).getTransport();
-        assertThat(transport.getChannelKeepAlivePeriod()).isEqualTo(KEEP_ALIVE_TIMEOUT);
+        assertThat(transport.getChannelKeepAlivePeriod()).isEqualTo(expectedTimeout);
     }
 }

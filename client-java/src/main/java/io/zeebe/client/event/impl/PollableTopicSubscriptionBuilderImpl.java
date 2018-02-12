@@ -15,11 +15,13 @@
  */
 package io.zeebe.client.event.impl;
 
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.clustering.impl.ClientTopologyManager;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+
+import io.zeebe.client.cmd.ClientException;
 import io.zeebe.client.event.PollableTopicSubscription;
 import io.zeebe.client.event.PollableTopicSubscriptionBuilder;
-import io.zeebe.client.task.impl.subscription.EventAcquisition;
+import io.zeebe.client.task.impl.subscription.SubscriptionManager;
 import io.zeebe.util.EnsureUtil;
 
 public class PollableTopicSubscriptionBuilderImpl implements PollableTopicSubscriptionBuilder
@@ -27,13 +29,11 @@ public class PollableTopicSubscriptionBuilderImpl implements PollableTopicSubscr
     protected TopicSubscriberGroupBuilder implBuilder;
 
     public PollableTopicSubscriptionBuilderImpl(
-            ZeebeClient client,
-            ClientTopologyManager topologyManager,
             String topic,
-            EventAcquisition acquisition,
+            SubscriptionManager acquisition,
             int prefetchCapacity)
     {
-        implBuilder = new TopicSubscriberGroupBuilder(client, topologyManager, topic, acquisition, prefetchCapacity);
+        implBuilder = new TopicSubscriberGroupBuilder(topic, acquisition, prefetchCapacity);
     }
 
     @Override
@@ -41,9 +41,16 @@ public class PollableTopicSubscriptionBuilderImpl implements PollableTopicSubscr
     {
         EnsureUtil.ensureNotNull("name", implBuilder.getName());
 
-        final TopicSubscriberGroup subscription = implBuilder.build();
-        subscription.open();
-        return subscription;
+        final Future<TopicSubscriberGroup> subscription = implBuilder.build();
+
+        try
+        {
+            return subscription.get();
+        }
+        catch (InterruptedException | ExecutionException e)
+        {
+            throw new ClientException("Could not open subscription", e);
+        }
     }
 
     @Override

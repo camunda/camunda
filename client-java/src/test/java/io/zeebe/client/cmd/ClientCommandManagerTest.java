@@ -24,7 +24,6 @@ import static org.hamcrest.CoreMatchers.containsString;
 import java.util.List;
 import java.util.Properties;
 
-import io.zeebe.client.ClientProperties;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -34,15 +33,18 @@ import org.junit.rules.RuleChain;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import io.zeebe.client.ClientProperties;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.event.TaskEvent;
 import io.zeebe.client.event.TopicEventType;
 import io.zeebe.client.event.impl.EventImpl;
+import io.zeebe.client.event.impl.TaskEventImpl;
 import io.zeebe.client.impl.RequestManager;
 import io.zeebe.client.impl.ZeebeClientImpl;
 import io.zeebe.client.impl.cmd.CommandImpl;
 import io.zeebe.client.task.cmd.CreateTaskCommand;
 import io.zeebe.client.util.ClientRule;
+import io.zeebe.client.util.Events;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.clientapi.EventType;
@@ -92,7 +94,7 @@ public class ClientCommandManagerTest
         // initial topology has been fetched
         waitUntil(() -> broker.getReceivedControlMessageRequests().size() == 1);
 
-        stubTaskResponse();
+        stubCreateTaskResponse();
 
         // extend topology
         broker.addTopic("other-topic", 0);
@@ -102,6 +104,31 @@ public class ClientCommandManagerTest
 
         // then the client has refreshed its topology
         assertThat(taskEvent).isNotNull();
+
+        assertTopologyRefreshRequests(2);
+    }
+
+    @Test
+    public void testRefreshTopologyWhenLeaderIsNotKnown()
+    {
+        // given
+        // initial topology has been fetched
+        waitUntil(() -> broker.getReceivedControlMessageRequests().size() == 1);
+
+        stubCompleteTaskResponse();
+
+        // extend topology
+        broker.addTopic("other-topic", 1);
+
+        final TaskEventImpl task = Events.exampleTask();
+        task.setTopicName("other-topic");
+        task.setPartitionId(1);
+
+        // when
+        final TaskEvent result = client.tasks().complete(task).execute();
+
+        // then the client has refreshed its topology
+        assertThat(result).isNotNull();
 
         assertTopologyRefreshRequests(2);
     }
@@ -127,7 +154,7 @@ public class ClientCommandManagerTest
     public void testReadResponseFailure()
     {
         // given
-        stubTaskResponse();
+        stubCreateTaskResponse();
 
         final FailingCommand command = new FailingCommand(((ZeebeClientImpl) client).getCommandManager());
 
@@ -147,7 +174,7 @@ public class ClientCommandManagerTest
 
         // then
         exception.expect(RuntimeException.class);
-        exception.expectMessage(containsString("timeout 3 seconds"));
+        exception.expectMessage(containsString("Request timed out (PT3S)"));
         // when the partition is repeatedly not found, the client loops
         // over refreshing the topology and making a request that fails and so on. The timeout
         // kicks in at any point in that loop, so we cannot assert the exact error message any more specifically.
@@ -167,7 +194,7 @@ public class ClientCommandManagerTest
         return client.tasks().create(topicName, "test");
     }
 
-    protected void stubTaskResponse()
+    protected void stubCreateTaskResponse()
     {
         broker.onExecuteCommandRequest(EventType.TASK_EVENT, "CREATE")
             .respondWith()
@@ -178,6 +205,19 @@ public class ClientCommandManagerTest
               .put("state", "CREATED")
               .put("lockTime", Protocol.INSTANT_NULL_VALUE)
               .put("lockOwner", "")
+              .done()
+            .register();
+    }
+
+    protected void stubCompleteTaskResponse()
+    {
+        broker.onExecuteCommandRequest(EventType.TASK_EVENT, "COMPLETE")
+            .respondWith()
+            .partitionId(r -> r.partitionId())
+            .key(r -> r.key())
+            .event()
+              .allOf((r) -> r.getCommand())
+              .put("state", "COMPLETED")
               .done()
             .register();
     }

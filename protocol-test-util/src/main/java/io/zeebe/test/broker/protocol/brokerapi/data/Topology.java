@@ -16,6 +16,7 @@
 package io.zeebe.test.broker.protocol.brokerapi.data;
 
 import static io.zeebe.test.broker.protocol.brokerapi.data.BrokerPartitionState.LEADER_STATE;
+import static io.zeebe.test.broker.protocol.brokerapi.data.BrokerPartitionState.FOLLOWER_STATE;
 
 import java.util.*;
 
@@ -52,6 +53,14 @@ public class Topology
     {
         getBroker(host, port)
             .addPartition(new BrokerPartitionState(LEADER_STATE, topic, partition));
+
+        return this;
+    }
+
+    public Topology addFollower(String host, int port, String topic, int partition)
+    {
+        getBroker(host, port)
+            .addPartition(new BrokerPartitionState(FOLLOWER_STATE, topic, partition));
 
         return this;
     }

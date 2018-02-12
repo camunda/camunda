@@ -18,6 +18,7 @@ package io.zeebe.test.broker.protocol.brokerapi.data;
 public class BrokerPartitionState
 {
     public static final String LEADER_STATE = "LEADER";
+    public static final String FOLLOWER_STATE = "FOLLOWER";
 
     private final String state;
     private final String topicName;

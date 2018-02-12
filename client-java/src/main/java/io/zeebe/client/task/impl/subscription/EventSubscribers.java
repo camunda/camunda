@@ -33,13 +33,12 @@ public class EventSubscribers
     protected static final Logger LOGGER = Loggers.SUBSCRIPTION_LOGGER;
 
     // partitionId => subscriberKey => subscription (subscriber keys are not guaranteed to be globally unique)
-    protected Int2ObjectHashMap<Long2ObjectHashMap<EventSubscriber>> activeSubscribers = new Int2ObjectHashMap<>();
+    protected Int2ObjectHashMap<Long2ObjectHashMap<Subscriber>> subscribers = new Int2ObjectHashMap<>();
 
-    protected final List<EventSubscriber> subscribers = new CopyOnWriteArrayList<>();
-    protected final List<EventSubscriberGroup> pollableSubscriberGroups = new CopyOnWriteArrayList<>();
-    protected final List<EventSubscriberGroup> managedSubscriberGroups = new CopyOnWriteArrayList<>();
+    protected final List<SubscriberGroup> pollableSubscriberGroups = new CopyOnWriteArrayList<>();
+    protected final List<SubscriberGroup> managedSubscriberGroups = new CopyOnWriteArrayList<>();
 
-    public void addGroup(final EventSubscriberGroup subscription)
+    public void addGroup(final SubscriberGroup subscription)
     {
         if (subscription.isManagedGroup())
         {
@@ -51,97 +50,62 @@ public class EventSubscribers
         }
     }
 
-    public void addSubscriber(final EventSubscriber subscriber)
-    {
-        this.subscribers.add(subscriber);
-    }
-
-    public void removeSubscriber(final EventSubscriber subscriber)
-    {
-        this.subscribers.remove(subscriber);
-    }
-
-    protected void addPollableGroup(final EventSubscriberGroup subscription)
+    private void addPollableGroup(final SubscriberGroup subscription)
     {
         this.pollableSubscriberGroups.add(subscription);
     }
 
-    protected void addManagedGroup(final EventSubscriberGroup subscription)
+    private void addManagedGroup(final SubscriberGroup subscription)
     {
         this.managedSubscriberGroups.add(subscription);
     }
 
-    public void closeAllGroups()
+    public void closeAllGroups(String reason)
     {
-        for (final EventSubscriberGroup group : pollableSubscriberGroups)
+        for (final SubscriberGroup group : pollableSubscriberGroups)
         {
-            closeGroup(group);
+            group.initClose(reason, null);
         }
 
-        for (final EventSubscriberGroup group : managedSubscriberGroups)
+        for (final SubscriberGroup group : managedSubscriberGroups)
         {
-            closeGroup(group);
-        }
-    }
-
-    protected void closeGroup(EventSubscriberGroup group)
-    {
-        try
-        {
-            group.close();
-        }
-        catch (final Exception e)
-        {
-            LOGGER.error("Unable to close subscriber group {}", group, e);
+            group.initClose(reason, null);
         }
     }
 
-    public void reopenSubscribersForRemote(RemoteAddress remoteAddress)
+    public void add(Subscriber subscriber)
     {
-        forAllDoConsume(managedSubscriberGroups, s ->
-        {
-            s.reopenSubscribersForRemote(remoteAddress);
-        });
-
-        forAllDoConsume(pollableSubscriberGroups, s ->
-        {
-            s.reopenSubscribersForRemote(remoteAddress);
-        });
-    }
-
-    public void activate(EventSubscriber subscriber)
-    {
-        this.activeSubscribers
+        this.subscribers
             .computeIfAbsent(subscriber.getPartitionId(), partitionId -> new Long2ObjectHashMap<>())
             .put(subscriber.getSubscriberKey(), subscriber);
     }
 
-    public void deactivate(final EventSubscriber subscriber)
+    public void remove(final Subscriber subscriber)
     {
         final int partitionId = subscriber.getPartitionId();
 
-        final Long2ObjectHashMap<EventSubscriber> subscribersForPartition = activeSubscribers.get(partitionId);
+        final Long2ObjectHashMap<Subscriber> subscribersForPartition = subscribers.get(partitionId);
         if (subscribersForPartition != null)
         {
             subscribersForPartition.remove(subscriber.getSubscriberKey());
 
             if (subscribersForPartition.isEmpty())
             {
-                activeSubscribers.remove(partitionId);
+                subscribers.remove(partitionId);
             }
         }
 
     }
 
-    public void removeGroup(EventSubscriberGroup group)
+    public void removeGroup(SubscriberGroup group)
     {
         pollableSubscriberGroups.remove(group);
         managedSubscriberGroups.remove(group);
     }
 
-    public EventSubscriber getSubscriber(final int partitionId, final long subscriberKey)
+    public Subscriber getSubscriber(final int partitionId, final long subscriberKey)
     {
-        final Long2ObjectHashMap<EventSubscriber> subscribersForPartition = activeSubscribers.get(partitionId);
+        final Long2ObjectHashMap<Subscriber> subscribersForPartition = subscribers.get(partitionId);
 
         if (subscribersForPartition != null)
         {
@@ -151,18 +115,11 @@ public class EventSubscribers
         return null;
     }
 
-    public int maintainState()
-    {
-        int workCount = forAllDo(managedSubscriberGroups, s -> s.maintainState());
-        workCount += forAllDo(pollableSubscriberGroups, s -> s.maintainState());
-        return workCount;
-    }
-
-    protected int forAllDo(List<EventSubscriberGroup> groups, ToIntFunction<EventSubscriberGroup> action)
+    private int forAllDo(List<SubscriberGroup> groups, ToIntFunction<SubscriberGroup> action)
     {
         int workCount = 0;
 
-        for (EventSubscriberGroup group : groups)
+        for (SubscriberGroup group : groups)
         {
             workCount += action.applyAsInt(group);
         }
@@ -170,12 +127,18 @@ public class EventSubscribers
         return workCount;
     }
 
-    protected void forAllDoConsume(List<EventSubscriberGroup> groups, Consumer<EventSubscriberGroup> action)
+    private void forAllDoConsume(List<SubscriberGroup> groups, Consumer<SubscriberGroup> action)
     {
-        for (EventSubscriberGroup subscription : groups)
+        for (SubscriberGroup subscription : groups)
         {
             action.accept(subscription);
         }
+    }
+
+    public void reopenSubscribersForRemote(RemoteAddress remote)
+    {
+        forAllDoConsume(managedSubscriberGroups, s -> s.reopenSubscriptionsForRemoteAsync(remote));
+        forAllDoConsume(pollableSubscriberGroups, s -> s.reopenSubscriptionsForRemoteAsync(remote));
     }
 
     public int pollManagedSubscribers()
@@ -183,11 +146,17 @@ public class EventSubscribers
         return forAllDo(managedSubscriberGroups, s -> s.poll());
     }
 
-    public boolean isAnySubscriberOpening()
+    public boolean isAnySubscriberOpeningOn(int partitionId)
     {
-        for (EventSubscriber subscriber : subscribers)
+        return isAnySubscriberOpeningOn(managedSubscriberGroups, partitionId)
+                || isAnySubscriberOpeningOn(pollableSubscriberGroups, partitionId);
+    }
+
+    private boolean isAnySubscriberOpeningOn(List<SubscriberGroup> groups, int partitionId)
+    {
+        for (SubscriberGroup group : groups)
         {
-            if (subscriber.isOpening())
+            if (group.isSubscribingTo(partitionId))
             {
                 return true;
             }

@@ -137,4 +137,5 @@ public class UpdateTaskRetriesTest
             .retries(5)
             .execute();
     }
+
 }

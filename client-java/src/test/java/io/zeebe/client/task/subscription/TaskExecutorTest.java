@@ -39,7 +39,7 @@ public class TaskExecutorTest
         when(subscription.poll()).thenReturn(34);
         subscriptions.addGroup(subscription);
 
-        final SubscriptionExecutor executor = new SubscriptionExecutor(subscriptions);
+        final SubscriptionExecutor executor = new SubscriptionExecutor(subscriptions, new EventSubscribers());
 
         // when
         final int workCount = executor.doWork();

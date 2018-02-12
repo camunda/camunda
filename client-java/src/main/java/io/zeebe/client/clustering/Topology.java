@@ -26,4 +26,5 @@ public interface Topology
     RemoteAddress getRandomBroker();
 
     List<Integer> getPartitionsOfTopic(String topic);
+
 }

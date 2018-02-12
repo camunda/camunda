@@ -38,35 +38,16 @@ public class SubscribedEventCollector implements ClientMessageHandler
     protected final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     protected final SubscribedEventDecoder subscribedEventDecoder = new SubscribedEventDecoder();
 
-    protected final SubscribedEventHandler taskSubscriptionHandler;
-    protected final SubscribedEventHandler topicSubscriptionHandler;
+    protected final SubscribedEventHandler eventHandler;
 
     protected final MsgPackConverter converter;
 
     public SubscribedEventCollector(
-            SubscribedEventHandler taskSubscriptionHandler,
-            SubscribedEventHandler topicSubscriptionHandler,
+            SubscribedEventHandler eventHandler,
             MsgPackConverter converter)
     {
-        this.taskSubscriptionHandler = taskSubscriptionHandler;
-        this.topicSubscriptionHandler = topicSubscriptionHandler;
+        this.eventHandler = eventHandler;
         this.converter = converter;
-    }
-
-    protected SubscribedEventHandler getHandlerForEvent(SubscriptionType subscriptionType)
-    {
-        if (subscriptionType == SubscriptionType.TASK_SUBSCRIPTION)
-        {
-            return taskSubscriptionHandler;
-        }
-        else if (subscriptionType == SubscriptionType.TOPIC_SUBSCRIPTION)
-        {
-            return topicSubscriptionHandler;
-        }
-        else
-        {
-            return null;
-        }
     }
 
     @Override
@@ -87,31 +68,22 @@ public class SubscribedEventCollector implements ClientMessageHandler
             subscribedEventDecoder.wrap(buffer, offset, messageHeaderDecoder.blockLength(), messageHeaderDecoder.version());
 
             final SubscriptionType subscriptionType = subscribedEventDecoder.subscriptionType();
-            final SubscribedEventHandler eventHandler = getHandlerForEvent(subscriptionType);
 
-            if (eventHandler != null)
-            {
-                final long key = subscribedEventDecoder.key();
-                final long subscriberKey = subscribedEventDecoder.subscriberKey();
-                final long position = subscribedEventDecoder.position();
-                final int partitionId = subscribedEventDecoder.partitionId();
-                final byte[] eventBuffer = readBytes(subscribedEventDecoder::getEvent, subscribedEventDecoder::eventLength);
+            final long key = subscribedEventDecoder.key();
+            final long subscriberKey = subscribedEventDecoder.subscriberKey();
+            final long position = subscribedEventDecoder.position();
+            final int partitionId = subscribedEventDecoder.partitionId();
+            final byte[] eventBuffer = readBytes(subscribedEventDecoder::getEvent, subscribedEventDecoder::eventLength);
 
-                final GeneralEventImpl event = new GeneralEventImpl(
-                        partitionId,
-                        key,
-                        position,
-                        EventTypeMapping.mapEventType(subscribedEventDecoder.eventType()),
-                        eventBuffer,
-                        converter);
+            final GeneralEventImpl event = new GeneralEventImpl(
+                    partitionId,
+                    key,
+                    position,
+                    EventTypeMapping.mapEventType(subscribedEventDecoder.eventType()),
+                    eventBuffer,
+                    converter);
 
-                messageHandled = eventHandler.onEvent(subscriberKey, event);
-            }
-            else
-            {
-                LOGGER.info("Ignoring event for unknown subscription type " + subscriptionType.toString());
-                messageHandled = true;
-            }
+            messageHandled = eventHandler.onEvent(subscriptionType, subscriberKey, event);
         }
         else
         {

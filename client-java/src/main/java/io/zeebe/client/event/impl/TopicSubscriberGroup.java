@@ -17,15 +17,20 @@ package io.zeebe.client.event.impl;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.event.PollableTopicSubscription;
 import io.zeebe.client.event.TopicSubscription;
 import io.zeebe.client.event.UniversalEventHandler;
-import io.zeebe.client.task.impl.subscription.EventAcquisition;
-import io.zeebe.client.task.impl.subscription.EventSubscriberGroup;
+import io.zeebe.client.impl.Loggers;
+import io.zeebe.client.impl.ZeebeClientImpl;
+import io.zeebe.client.task.impl.subscription.SubscriberGroup;
+import io.zeebe.client.task.impl.subscription.EventSubscriptionCreationResult;
+import io.zeebe.client.task.impl.subscription.SubscriptionManager;
 import io.zeebe.util.CheckedConsumer;
+import io.zeebe.util.sched.ActorControl;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 
-public class TopicSubscriberGroup extends EventSubscriberGroup<TopicSubscriber>
+public class TopicSubscriberGroup extends SubscriberGroup<TopicSubscriber>
     implements TopicSubscription, PollableTopicSubscription
 {
 
@@ -35,11 +40,12 @@ public class TopicSubscriberGroup extends EventSubscriberGroup<TopicSubscriber>
     protected final TopicSubscriptionSpec subscription;
 
     public TopicSubscriberGroup(
-            ZeebeClient client,
-            EventAcquisition acquisition,
+            ActorControl actor,
+            ZeebeClientImpl client,
+            SubscriptionManager acquisition,
             TopicSubscriptionSpec subscription)
     {
-        super(acquisition, client, subscription.getTopic());
+        super(actor, client, acquisition, subscription.getTopic());
         this.subscription = subscription;
     }
 
@@ -85,13 +91,60 @@ public class TopicSubscriberGroup extends EventSubscriberGroup<TopicSubscriber>
     }
 
     @Override
-    protected TopicSubscriber buildSubscriber(int partition)
+    protected ActorFuture<? extends EventSubscriptionCreationResult> requestNewSubscriber(int partitionId)
     {
-        return new TopicSubscriber((TopicClientImpl) client.topics(), subscription, partition, acquisition);
+        return client.topics().createTopicSubscription(subscription.getTopic(), partitionId)
+            .startPosition(subscription.getStartPosition(partitionId))
+            .prefetchCapacity(subscription.getPrefetchCapacity())
+            .name(subscription.getName())
+            .forceStart(subscription.isForceStart())
+            .executeAsync();
     }
 
     @Override
-    protected String describeGroupSpec()
+    protected TopicSubscriber buildSubscriber(EventSubscriptionCreationResult result)
+    {
+        return new TopicSubscriber(
+                client.topics(),
+                subscription,
+                result.getSubscriberKey(),
+                result.getEventPublisher(),
+                result.getPartitionId(),
+                this,
+                subscriptionManager);
+    }
+
+    @Override
+    protected ActorFuture<Void> doCloseSubscriber(TopicSubscriber subscriber)
+    {
+        final ActorFuture<?> ackFuture = subscriber.acknowledgeLastProcessedEvent();
+
+        final CompletableActorFuture<Void> closeFuture = new CompletableActorFuture<>();
+        actor.runOnCompletion(ackFuture, (ackResult, ackThrowable) ->
+        {
+            if (ackThrowable != null)
+            {
+                Loggers.SUBSCRIPTION_LOGGER.error("Could not acknowledge last event position before closing subscriber. Ignoring.", ackThrowable);
+            }
+
+            final ActorFuture<Void> closeRequestFuture = subscriber.requestSubscriptionClose();
+            actor.runOnCompletion(closeRequestFuture, (closeResult, closeThrowable) ->
+            {
+                if (closeThrowable == null)
+                {
+                    closeFuture.complete(closeResult);
+                }
+                else
+                {
+                    closeFuture.completeExceptionally(closeThrowable);
+                }
+            });
+        });
+        return closeFuture;
+    }
+
+    @Override
+    protected String describeGroup()
     {
         return subscription.toString();
     }

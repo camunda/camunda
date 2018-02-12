@@ -56,8 +56,8 @@ public class ErrorResponseBuilder<R>
     public ResponseController registerControlled()
     {
         final ResponseController controller = new ResponseController();
-        final NotifyingMessageBuilder<R> notifyingBuilder = new NotifyingMessageBuilder<>(commandResponseWriter, controller::waitForNextJoin);
-        registrationFunction.accept(notifyingBuilder);
+        commandResponseWriter.beforeResponse(controller::waitForNextJoin);
+        register();
         return controller;
     }
 

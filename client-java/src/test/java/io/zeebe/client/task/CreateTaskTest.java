@@ -40,10 +40,12 @@ import io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import io.zeebe.test.util.MsgPackUtil;
+import io.zeebe.util.sched.testing.ActorSchedulerRule;
 
 public class CreateTaskTest
 {
 
+    public ActorSchedulerRule schedulerRule = new ActorSchedulerRule();
     public ClientRule clientRule = new ClientRule();
     public StubBrokerRule brokerRule = new StubBrokerRule();
 

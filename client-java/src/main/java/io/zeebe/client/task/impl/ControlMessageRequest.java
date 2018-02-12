@@ -15,13 +15,12 @@
  */
 package io.zeebe.client.task.impl;
 
-import java.util.concurrent.Future;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import io.zeebe.client.cmd.Request;
 import io.zeebe.client.impl.RequestManager;
 import io.zeebe.protocol.clientapi.ControlMessageType;
+import io.zeebe.util.sched.future.ActorFuture;
 
 public abstract class ControlMessageRequest<R> implements Request<R>
 {
@@ -111,7 +110,7 @@ public abstract class ControlMessageRequest<R> implements Request<R>
     }
 
     @Override
-    public Future<R> executeAsync()
+    public ActorFuture<R> executeAsync()
     {
         return client.executeAsync(this);
     }

@@ -15,9 +15,9 @@
  */
 package io.zeebe.client.task.impl.subscription;
 
+import java.util.concurrent.Future;
+
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.clustering.impl.ClientTopologyManager;
-import io.zeebe.client.impl.data.MsgPackMapper;
 import io.zeebe.client.task.TaskHandler;
 import io.zeebe.util.EnsureUtil;
 
@@ -32,23 +32,17 @@ public class TaskSubscriberGroupBuilder
     protected int taskFetchSize = DEFAULT_TASK_FETCH_SIZE;
 
     protected final ZeebeClient client;
-    protected final EventAcquisition taskAcquisition;
-    protected final MsgPackMapper msgPackMapper;
+    protected final SubscriptionManager taskAcquisition;
     protected final String topic;
-    protected final ClientTopologyManager topologyManager;
 
     public TaskSubscriberGroupBuilder(
             ZeebeClient client,
-            ClientTopologyManager topologyManager,
             String topic,
-            EventAcquisition taskAcquisition,
-            MsgPackMapper msgPackMapper)
+            SubscriptionManager taskAcquisition)
     {
         this.topic = topic;
         this.client = client;
         this.taskAcquisition = taskAcquisition;
-        this.msgPackMapper = msgPackMapper;
-        this.topologyManager = topologyManager;
     }
 
     public TaskSubscriberGroupBuilder taskType(String taskType)
@@ -81,7 +75,7 @@ public class TaskSubscriberGroupBuilder
         return this;
     }
 
-    public TaskSubscriberGroup build()
+    public Future<TaskSubscriberGroup> build()
     {
         EnsureUtil.ensureNotNullOrEmpty("taskType", taskType);
         EnsureUtil.ensureGreaterThan("lockTime", lockTime, 0L);
@@ -91,12 +85,6 @@ public class TaskSubscriberGroupBuilder
         final TaskSubscriptionSpec subscription =
                 new TaskSubscriptionSpec(topic, taskHandler, taskType, lockTime, lockOwner, taskFetchSize);
 
-        final TaskSubscriberGroup subscriberGroup = new TaskSubscriberGroup(
-                client,
-                taskAcquisition,
-                subscription,
-                msgPackMapper);
-
-        return subscriberGroup;
+        return taskAcquisition.openTaskSubscription(subscription);
     }
 }

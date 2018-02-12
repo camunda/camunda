@@ -15,8 +15,6 @@
  */
 package io.zeebe.client.task.impl.subscription;
 
-import java.util.concurrent.Future;
-
 import org.slf4j.Logger;
 
 import io.zeebe.client.event.impl.TaskEventImpl;
@@ -24,9 +22,10 @@ import io.zeebe.client.impl.Loggers;
 import io.zeebe.client.impl.TasksClientImpl;
 import io.zeebe.client.impl.data.MsgPackMapper;
 import io.zeebe.client.task.TaskHandler;
-import io.zeebe.client.task.impl.CreateTaskSubscriptionCommandImpl;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.util.sched.future.ActorFuture;
 
-public class TaskSubscriber extends EventSubscriber
+public class TaskSubscriber extends Subscriber
 {
     protected static final Logger LOGGER = Loggers.TASK_SUBSCRIPTION_LOGGER;
 
@@ -38,11 +37,14 @@ public class TaskSubscriber extends EventSubscriber
     public TaskSubscriber(
             TasksClientImpl client,
             TaskSubscriptionSpec subscription,
+            long subscriberKey,
+            RemoteAddress eventSource,
             int partition,
+            SubscriberGroup<TaskSubscriber> group,
             MsgPackMapper msgPackMapper,
-            EventAcquisition acqusition)
+            SubscriptionManager acquisition)
     {
-        super(partition, subscription.getCapacity(), acqusition);
+        super(subscriberKey, partition, subscription.getCapacity(), eventSource, group, acquisition);
         this.taskClient = client;
         this.subscription = subscription;
         this.msgPackMapper = msgPackMapper;
@@ -81,38 +83,18 @@ public class TaskSubscriber extends EventSubscriber
     }
 
     @Override
-    protected void requestEventSourceReplenishment(int eventsProcessed)
+    protected ActorFuture<?> requestEventSourceReplenishment(int eventsProcessed)
     {
-        taskClient.increaseSubscriptionCredits(partitionId)
+        return taskClient.increaseSubscriptionCredits(partitionId)
             .subscriberKey(subscriberKey)
             .credits(eventsProcessed)
-            .execute();
+            .executeAsync();
     }
 
     @Override
-    public Future<? extends EventSubscriptionCreationResult> requestNewSubscription()
+    public ActorFuture<Void> requestSubscriptionClose()
     {
-        final CreateTaskSubscriptionCommandImpl cmd;
-        if (partitionId >= 0)
-        {
-            cmd = taskClient.createTaskSubscription(partitionId);
-        }
-        else
-        {
-            cmd = taskClient.createTaskSubscription(subscription.getTopic());
-        }
-
-        return cmd.taskType(subscription.getTaskType())
-                .lockDuration(subscription.getLockTime())
-                .lockOwner(subscription.getLockOwner())
-                .initialCredits(capacity)
-                .executeAsync();
-    }
-
-    @Override
-    public void requestSubscriptionClose()
-    {
-        taskClient.closeTaskSubscription(partitionId, subscriberKey).execute();
+        return taskClient.closeTaskSubscription(partitionId, subscriberKey).executeAsync();
     }
 
     @Override

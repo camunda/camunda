@@ -16,10 +16,11 @@
 package io.zeebe.client.task.impl.subscription;
 
 import java.time.Duration;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.clustering.impl.ClientTopologyManager;
-import io.zeebe.client.impl.data.MsgPackMapper;
+import io.zeebe.client.cmd.ClientException;
+import io.zeebe.client.impl.ZeebeClientImpl;
 import io.zeebe.client.task.TaskHandler;
 import io.zeebe.client.task.TaskSubscription;
 import io.zeebe.client.task.TaskSubscriptionBuilder;
@@ -32,13 +33,11 @@ public class TaskSubscriptionBuilderImpl implements TaskSubscriptionBuilder
     protected final TaskSubscriberGroupBuilder subscriberBuilder;
 
     public TaskSubscriptionBuilderImpl(
-            ZeebeClient client,
-            ClientTopologyManager topologyManager,
+            ZeebeClientImpl client,
             String topic,
-            EventAcquisition taskAcquisition,
-            MsgPackMapper msgPackMapper)
+            SubscriptionManager taskAcquisition)
     {
-        this.subscriberBuilder = new TaskSubscriberGroupBuilder(client, topologyManager, topic, taskAcquisition, msgPackMapper);
+        this.subscriberBuilder = new TaskSubscriberGroupBuilder(client, topic, taskAcquisition);
     }
 
     @Override
@@ -88,10 +87,16 @@ public class TaskSubscriptionBuilderImpl implements TaskSubscriptionBuilder
         EnsureUtil.ensureNotNull("taskHandler", taskHandler);
         subscriberBuilder.taskHandler(taskHandler);
 
-        final TaskSubscriberGroup subscriberGroup = subscriberBuilder.build();
-        subscriberGroup.open();
+        final Future<TaskSubscriberGroup> subscriberGroup = subscriberBuilder.build();
 
-        return subscriberGroup;
+        try
+        {
+            return subscriberGroup.get();
+        }
+        catch (InterruptedException | ExecutionException e)
+        {
+            throw new ClientException("Could not open subscription", e);
+        }
     }
 
 }

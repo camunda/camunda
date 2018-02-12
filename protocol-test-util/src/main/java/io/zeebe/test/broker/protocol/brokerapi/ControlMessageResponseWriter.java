@@ -23,7 +23,7 @@ import io.zeebe.protocol.clientapi.ControlMessageResponseEncoder;
 import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 
-public class ControlMessageResponseWriter implements MessageBuilder<ControlMessageRequest>
+public class ControlMessageResponseWriter extends AbstractMessageBuilder<ControlMessageRequest>
 {
 
     protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();

@@ -37,6 +37,17 @@ public interface RequestResponseHandler extends BufferWriter
      */
     int getTargetPartition();
 
+    default boolean addressesSpecificTopic()
+    {
+        return getTargetTopic() != null;
+    }
+
+    default boolean addressesSpecificPartition()
+    {
+        return getTargetPartition() >= 0;
+    }
+
+
     void onSelectedPartition(int partitionId);
 
     String describeRequest();

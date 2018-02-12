@@ -22,4 +22,6 @@ public interface MessageBuilder<T> extends BufferWriter
 
     void initializeFrom(T context);
 
+    void beforeResponse();
+
 }

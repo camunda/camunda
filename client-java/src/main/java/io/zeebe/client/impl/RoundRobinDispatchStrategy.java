@@ -15,16 +15,18 @@
  */
 package io.zeebe.client.impl;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import io.zeebe.client.clustering.impl.ClientTopologyManager;
+import io.zeebe.client.clustering.impl.TopologyImpl;
 
 public class RoundRobinDispatchStrategy implements RequestDispatchStrategy
 {
 
     protected final ClientTopologyManager topologyManager;
-    protected Map<String, Integer> topicOffsets = new HashMap<>();
+    protected Map<String, AtomicInteger> topicOffsets = new ConcurrentHashMap<>();
 
     public RoundRobinDispatchStrategy(ClientTopologyManager topologyManager)
     {
@@ -34,8 +36,11 @@ public class RoundRobinDispatchStrategy implements RequestDispatchStrategy
     @Override
     public int determinePartition(String topic)
     {
-        final Integer offset = topicOffsets.getOrDefault(topic, 0);
-        topicOffsets.put(topic, offset + 1);
-        return topologyManager.getPartitionForTopic(topic, offset);
+        final TopologyImpl topology = topologyManager.getTopology();
+
+        final AtomicInteger offsetCounter = topicOffsets.computeIfAbsent(topic, t -> new AtomicInteger(0));
+        final int offset = offsetCounter.getAndIncrement();
+
+        return topology.getPartition(topic, offset);
     }
 }

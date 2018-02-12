@@ -140,6 +140,8 @@ public class StubResponseChannelHandler implements ServerRequestHandler
                         .requestId(requestId)
                         .writer(responseWriter);
 
+                    responseWriter.beforeResponse();
+
                     return output.sendResponse(response);
                 }
                 else

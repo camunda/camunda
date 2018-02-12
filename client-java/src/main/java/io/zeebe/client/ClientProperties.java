@@ -17,9 +17,6 @@ package io.zeebe.client;
 
 import java.util.Properties;
 
-import io.zeebe.client.task.TaskHandler;
-import io.zeebe.client.task.TaskSubscription;
-
 public class ClientProperties
 {
     /**
@@ -38,23 +35,27 @@ public class ClientProperties
     public static final String CLIENT_SENDBUFFER_SIZE = "zeebe.client.sendbuffer.size";
 
     /**
-     * Possible values:
-     * SHARED: a single thread is used by the client for network communication
-     * DEDICATED: a dedicated thread is used for running the sender, receive and conductor agent.
+     * The number of threads the client uses for the following tasks:
+     *
+     * <ul>
+     * <li>Orchestrating requests
+     * <li>Sending/Receiving network traffic
+     * <li>Orchestrating subscriptions
      */
-    public static final String CLIENT_THREADINGMODE = "zeebe.client.threadingmode";
+    public static final String CLIENT_MANAGEMENT_THREADS = "zeebe.client.threads";
 
     /**
-     * The number of threads for invocation of {@link TaskHandler}. Setting this value to 0 effectively disables
-     * managed task execution via {@link TaskSubscription}s.
+     * The number of threads for invocation of managed task and topic subscriptions. Setting this value to
+     * 0 effectively disables managed subscriptions.
      */
-    public static final String CLIENT_TASK_EXECUTION_THREADS = "zeebe.client.tasks.execution.threads";
+    public static final String CLIENT_SUBSCRIPTION_EXECUTION_THREADS = "zeebe.client.subscription.threads";
+
 
     /**
      * Determines the maximum amount of topic events are prefetched and buffered at a time
      * before they are handled to the event handler. Default value is 32.
      */
-    public static final String CLIENT_TOPIC_SUBSCRIPTION_PREFETCH_CAPACITY = "zeebe.client.event.prefetch";
+    public static final String CLIENT_TOPIC_SUBSCRIPTION_PREFETCH_CAPACITY = "zeebe.client.subscription.prefetch";
 
     /**
      * The period of time in milliseconds for sending keep alive messages on tcp channels. Setting this appropriately
@@ -75,8 +76,8 @@ public class ClientProperties
         properties.putIfAbsent(BROKER_CONTACTPOINT, "127.0.0.1:51015");
         properties.putIfAbsent(CLIENT_MAXREQUESTS, "128");
         properties.putIfAbsent(CLIENT_SENDBUFFER_SIZE, "16");
-        properties.putIfAbsent(CLIENT_THREADINGMODE, "SHARED");
-        properties.putIfAbsent(CLIENT_TASK_EXECUTION_THREADS, "2");
+        properties.putIfAbsent(CLIENT_MANAGEMENT_THREADS, "1");
+        properties.putIfAbsent(CLIENT_SUBSCRIPTION_EXECUTION_THREADS, "1");
         properties.putIfAbsent(CLIENT_TOPIC_SUBSCRIPTION_PREFETCH_CAPACITY, "32");
         properties.putIfAbsent(CLIENT_REQUEST_TIMEOUT_SEC, "15");
     }

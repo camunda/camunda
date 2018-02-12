@@ -19,13 +19,15 @@ import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.junit.Assert.fail;
 
 import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -35,7 +37,7 @@ import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.cmd.ClientException;
 import io.zeebe.client.event.impl.TopicSubscriberGroup;
 import io.zeebe.client.event.impl.TopicSubscriptionBuilderImpl;
-import io.zeebe.client.task.impl.subscription.EventSubscriberGroup;
+import io.zeebe.client.task.impl.subscription.SubscriberGroup;
 import io.zeebe.client.util.ClientRule;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ControlMessageType;
@@ -47,7 +49,6 @@ import io.zeebe.test.broker.protocol.brokerapi.ResponseController;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import io.zeebe.test.broker.protocol.brokerapi.data.Topology;
 import io.zeebe.transport.RemoteAddress;
-import io.zeebe.util.time.ClockUtil;
 
 public class PartitionedTopicSubscriptionTest
 {
@@ -80,12 +81,6 @@ public class PartitionedTopicSubscriptionTest
         broker2.setCurrentTopology(topology);
 
         client = clientRule.getClient();
-    }
-
-    @After
-    public void tearDown()
-    {
-        ClockUtil.reset();
     }
 
     @Test
@@ -197,10 +192,16 @@ public class PartitionedTopicSubscriptionTest
                 .handler(new RecordingEventHandler())
                 .name("hohoho");
 
-        // when/then
-        assertThatThrownBy(() -> subscriptionBuilder.open())
+        // when
+        final Throwable failure = catchThrowable(() -> subscriptionBuilder.open());
+
+        // then
+        assertThat(failure)
             .isInstanceOf(ClientException.class)
-            .hasMessageContaining("A subscriber closed unexpectedly");
+            .hasMessageContaining("Could not open subscriber group");
+
+        assertThat(failure.getCause())
+            .hasMessageContaining("Could not subscribe to all partitions");
     }
 
     @Test
@@ -221,18 +222,15 @@ public class PartitionedTopicSubscriptionTest
             .handler(new RecordingEventHandler())
             .name("hohoho");
 
-        final TopicSubscriberGroup subscriberGroup = builder.buildSubscriberGroup();
-        final CompletableFuture<?> openFuture = subscriberGroup.openAsync();
-
-        waitUntil(() -> subscriberGroup.getSubscribers().stream()
-                .filter(s -> s.isOpen())
-                .count() == 1);
+        final Future<TopicSubscriberGroup> groupFuture = builder.buildSubscriberGroup();
+        waitUntil(() -> getOpenSubscriptionRequests(broker1).size() == 1);
 
         // when
         responseController.unblockNextResponse(); // triggering the error response and continuing
 
         // then
-        waitUntil(() -> openFuture.isCompletedExceptionally());
+        waitUntil(() -> groupFuture.isDone());
+        assertFailed(groupFuture);
 
         final List<ControlMessageRequest> closeRequestsBroker1 = getCloseSubscriptionRequests(broker1);
         assertThat(closeRequestsBroker1).hasSize(1);
@@ -255,7 +253,7 @@ public class PartitionedTopicSubscriptionTest
         // when
         broker1.closeTransport();
         Thread.sleep(500L); // let subscriber attempt reopening
-        ClockUtil.addTime(Duration.ofSeconds(60)); // make request time out immediately
+        clientRule.getClock().addTime(Duration.ofSeconds(60)); // make request time out immediately
 
         // then
         waitUntil(() -> subscription.isClosed());
@@ -308,10 +306,16 @@ public class PartitionedTopicSubscriptionTest
                 .handler(new RecordingEventHandler())
                 .name("hohoho");
 
-        // when/then
-        assertThatThrownBy(() -> subscriptionBuilder.open())
+        // when
+        final Throwable failure = catchThrowable(() -> subscriptionBuilder.open());
+
+        // then
+        assertThat(failure)
             .isInstanceOf(ClientException.class)
-            .hasMessageContaining("Could not fetch topics");
+            .hasMessageContaining("Could not open subscriber group");
+
+        assertThat(failure.getCause())
+            .hasMessageContaining("Requesting partitions failed");
 
         assertThat(getSubscribeRequests(broker1)).isEmpty();
         assertThat(getSubscribeRequests(broker2)).isEmpty();
@@ -327,9 +331,15 @@ public class PartitionedTopicSubscriptionTest
                 .handler(new RecordingEventHandler())
                 .name("hohoho");
 
-        // when/then
-        assertThatThrownBy(() -> subscriptionBuilder.open())
+        // when
+        final Throwable failure = catchThrowable(() -> subscriptionBuilder.open());
+
+        // then
+        assertThat(failure)
             .isInstanceOf(ClientException.class)
+            .hasMessageContaining("Could not open subscriber group");
+
+        assertThat(failure.getCause())
             .hasMessageContaining("Topic " + nonExistingTopic + " is not known");
 
         assertThat(getSubscribeRequests(broker1)).isEmpty();
@@ -357,7 +367,7 @@ public class PartitionedTopicSubscriptionTest
         broker1.pushTopicEvent(clientAddressFromBroker1, b -> b.partitionId(PARTITION_1).subscriberKey(subscriberKey1).key(3));
         broker2.pushTopicEvent(clientAddressFromBroker2, b -> b.partitionId(PARTITION_2).subscriberKey(subscriberKey2).key(4));
 
-        waitUntil(() -> ((EventSubscriberGroup<?>) subscription).size() == 2);
+        waitUntil(() -> ((SubscriberGroup<?>) subscription).size() == 2);
 
         // when
         final int polledEvents = subscription.poll(eventHandler);
@@ -470,10 +480,33 @@ public class PartitionedTopicSubscriptionTest
         assertThat(broker2Request.getCommand()).containsEntry("startPosition", position2);
     }
 
+    @Test
+    public void shouldHandleConcurrentOpeningAndClosingOfSubscribers()
+    {
+        // TODO: requests (open, close, ack) are no longer blocking; identify error cases and test them
+        fail("Implement");
+        // TODO: vielleicht ist es doch am besten, wenn die Group eine Map von Partition-ID auf
+        // Subscriber-State hält, worüber immer klar ist, was für einen Partition gerade passiert (Subscriber offen, Subscribing
+        // in progress, Subscriber closing, etc.) => vielleicht wird der Code dann an einigen Stellen klarer
+    }
+
+    protected List<ExecuteCommandRequest> getOpenSubscriptionRequests(StubBrokerRule broker)
+    {
+        return broker.getReceivedCommandRequests().stream()
+            .filter(r -> r.eventType() == EventType.SUBSCRIBER_EVENT &&
+                    "SUBSCRIBE".equals(r.getCommand().get("state")))
+            .collect(Collectors.toList());
+    }
+
     protected List<ControlMessageRequest> getCloseSubscriptionRequests(StubBrokerRule broker)
     {
         return broker.getReceivedControlMessageRequests().stream()
             .filter(r -> r.messageType() == ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION)
             .collect(Collectors.toList());
+    }
+
+    private void assertFailed(Future<?> future)
+    {
+        assertThatThrownBy(() -> future.get()).isInstanceOf(ExecutionException.class);
     }
 }

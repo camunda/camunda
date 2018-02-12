@@ -23,7 +23,7 @@ import io.zeebe.protocol.clientapi.ErrorResponseEncoder;
 import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 
-public class ErrorResponseWriter<R> implements MessageBuilder<R>
+public class ErrorResponseWriter<R> extends AbstractMessageBuilder<R>
 {
     protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     protected final ErrorResponseEncoder bodyEncoder = new ErrorResponseEncoder();

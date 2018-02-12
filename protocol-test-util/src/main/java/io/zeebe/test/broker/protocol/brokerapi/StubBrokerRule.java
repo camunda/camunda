@@ -27,6 +27,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
+import org.junit.rules.ExternalResource;
+
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.protocol.Protocol;
@@ -40,11 +42,8 @@ import io.zeebe.test.broker.protocol.brokerapi.data.TopologyBroker;
 import io.zeebe.test.util.collection.MapFactoryBuilder;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.ServerTransport;
-import io.zeebe.transport.ServerTransportBuilder;
 import io.zeebe.transport.Transports;
-import io.zeebe.util.actor.ActorScheduler;
-import io.zeebe.util.actor.ActorSchedulerBuilder;
-import org.junit.rules.ExternalResource;
+import io.zeebe.util.sched.ZbActorScheduler;
 
 public class StubBrokerRule extends ExternalResource
 {
@@ -53,10 +52,11 @@ public class StubBrokerRule extends ExternalResource
     public static final int TEST_PARTITION_ID = 99;
 
 
+    protected ZbActorScheduler scheduler;
+
     protected final String host;
     protected final int port;
 
-    protected ActorScheduler actorScheduler;
     protected ServerTransport transport;
     protected Dispatcher sendBuffer;
 
@@ -81,11 +81,13 @@ public class StubBrokerRule extends ExternalResource
     protected void before() throws Throwable
     {
         msgPackHelper = new MsgPackHelper();
-        this.actorScheduler = ActorSchedulerBuilder.createDefaultScheduler("broker-rule");
+
+        final int numThreads = 2;
+        scheduler = new ZbActorScheduler(numThreads);
+        scheduler.start();
 
         sendBuffer = Dispatchers.create("send-buffer")
-            .actorScheduler(actorScheduler)
-            .subscriptions(ServerTransportBuilder.SEND_BUFFER_SUBSCRIPTION_NAME)
+            .actorScheduler(scheduler)
             .bufferSize(1024 * 1024)
             .build();
 
@@ -112,9 +114,9 @@ public class StubBrokerRule extends ExternalResource
         {
             sendBuffer.close();
         }
-        if (actorScheduler != null)
+        if (scheduler != null)
         {
-            actorScheduler.close();
+            scheduler.stop();
         }
     }
 
@@ -142,7 +144,7 @@ public class StubBrokerRule extends ExternalResource
         {
             transport = Transports.newServerTransport()
                     .bindAddress(bindAddr)
-                    .scheduler(actorScheduler)
+                    .scheduler(scheduler)
                     .sendBuffer(sendBuffer)
                     .build(null, channelHandler);
         }

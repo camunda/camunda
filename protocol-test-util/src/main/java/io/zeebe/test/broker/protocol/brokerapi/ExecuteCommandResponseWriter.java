@@ -26,7 +26,7 @@ import io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder;
 import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 
-public class ExecuteCommandResponseWriter implements MessageBuilder<ExecuteCommandRequest>
+public class ExecuteCommandResponseWriter extends AbstractMessageBuilder<ExecuteCommandRequest>
 {
     protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     protected final ExecuteCommandResponseEncoder bodyEncoder = new ExecuteCommandResponseEncoder();

@@ -16,10 +16,11 @@
 package io.zeebe.client.task.impl.subscription;
 
 import java.time.Duration;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.clustering.impl.ClientTopologyManager;
-import io.zeebe.client.impl.data.MsgPackMapper;
+import io.zeebe.client.cmd.ClientException;
 import io.zeebe.client.task.PollableTaskSubscription;
 import io.zeebe.client.task.PollableTaskSubscriptionBuilder;
 
@@ -29,12 +30,10 @@ public class PollableTaskSubscriptionBuilderImpl implements PollableTaskSubscrip
 
     public PollableTaskSubscriptionBuilderImpl(
             ZeebeClient client,
-            ClientTopologyManager topologyManager,
             String topic,
-            EventAcquisition taskAcquisition,
-            MsgPackMapper msgPackMapper)
+            SubscriptionManager taskAcquisition)
     {
-        this.subscriberBuilder = new TaskSubscriberGroupBuilder(client, topologyManager, topic, taskAcquisition, msgPackMapper);
+        this.subscriberBuilder = new TaskSubscriberGroupBuilder(client, topic, taskAcquisition);
     }
 
     @Override
@@ -74,9 +73,15 @@ public class PollableTaskSubscriptionBuilderImpl implements PollableTaskSubscrip
     @Override
     public PollableTaskSubscription open()
     {
-        final TaskSubscriberGroup subscriberGroup = subscriberBuilder.build();
-        subscriberGroup.open();
+        final Future<TaskSubscriberGroup> subscriberGroup = subscriberBuilder.build();
 
-        return subscriberGroup;
+        try
+        {
+            return subscriberGroup.get();
+        }
+        catch (InterruptedException | ExecutionException e)
+        {
+            throw new ClientException("Could not open subscription", e);
+        }
     }
 }

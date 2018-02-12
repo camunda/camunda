@@ -17,7 +17,19 @@ package io.zeebe.client.impl;
 
 import static io.zeebe.client.ClientProperties.*;
 
+import java.time.Duration;
 import java.util.Properties;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import org.msgpack.jackson.dataformat.MessagePackFactory;
+import org.slf4j.Logger;
+
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.InjectableValues;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.zeebe.client.ClientProperties;
 import io.zeebe.client.WorkflowsClient;
@@ -28,17 +40,17 @@ import io.zeebe.client.clustering.impl.TopologyResponse;
 import io.zeebe.client.cmd.Request;
 import io.zeebe.client.event.impl.TopicClientImpl;
 import io.zeebe.client.impl.data.MsgPackConverter;
+import io.zeebe.client.impl.data.MsgPackMapper;
 import io.zeebe.client.task.impl.subscription.SubscriptionManager;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.ClientTransportBuilder;
+import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.Transports;
-import io.zeebe.util.actor.ActorReference;
-import io.zeebe.util.actor.ActorScheduler;
-import io.zeebe.util.actor.ActorSchedulerBuilder;
-import org.slf4j.Logger;
+import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.clock.ActorClock;
 
 public class ZeebeClientImpl implements ZeebeClient
 {
@@ -55,88 +67,98 @@ public class ZeebeClientImpl implements ZeebeClient
 
     protected final Properties initializationProperties;
 
-    protected SocketAddress contactPoint;
     protected Dispatcher dataFrameReceiveBuffer;
     protected Dispatcher sendBuffer;
-    protected ActorScheduler transportActorScheduler;
+    protected ZbActorScheduler scheduler;
 
     protected ClientTransport transport;
 
     protected final ZeebeObjectMapper objectMapper;
-
-    protected SubscriptionManager subscriptionManager;
+    protected final MsgPackMapper msgPackMapper;
 
     protected final ClientTopologyManager topologyManager;
     protected final RequestManager apiCommandManager;
-
-    protected ActorReference topologyManagerActorReference;
-    protected ActorReference commandManagerActorReference;
+    protected SubscriptionManager subscriptionManager;
 
     protected boolean isClosed;
 
+    private final int subscriptionPrefetchCapacity;
+
+    private final int numExecutionThreads;
+
+
     public ZeebeClientImpl(final Properties properties)
+    {
+        this(properties, null);
+    }
+
+    public ZeebeClientImpl(final Properties properties, ActorClock actorClock)
     {
         LOG.info("Version: {}", VERSION);
 
         ClientProperties.setDefaults(properties);
         this.initializationProperties = properties;
 
-        contactPoint = SocketAddress.from(properties.getProperty(ClientProperties.BROKER_CONTACTPOINT));
+        final SocketAddress contactPoint = SocketAddress.from(properties.getProperty(ClientProperties.BROKER_CONTACTPOINT));
 
         final int maxRequests = Integer.parseInt(properties.getProperty(CLIENT_MAXREQUESTS));
         final int sendBufferSize = Integer.parseInt(properties.getProperty(CLIENT_SENDBUFFER_SIZE));
 
-        this.transportActorScheduler = ActorSchedulerBuilder.createDefaultScheduler("transport");
+        final int numSchedulerThreads = Integer.parseInt(properties.getProperty(ClientProperties.CLIENT_MANAGEMENT_THREADS));
+        this.scheduler = new ZbActorScheduler(numSchedulerThreads, actorClock);
+        this.scheduler.start();
 
         dataFrameReceiveBuffer = Dispatchers.create("receive-buffer")
-                                            .bufferSize(1024 * 1024 * sendBufferSize)
-                                            .modePubSub()
-                                            .frameMaxLength(1024 * 1024)
-                                            .actorScheduler(transportActorScheduler)
-                                            .build();
+            .bufferSize(1024 * 1024 * sendBufferSize)
+            .modePubSub()
+            .frameMaxLength(1024 * 1024)
+            .actorScheduler(scheduler)
+            .build();
+
         sendBuffer = Dispatchers.create("send-buffer")
-                                .actorScheduler(transportActorScheduler)
-                                .bufferSize(1024 * 1024 * sendBufferSize)
-                                .subscriptions(ClientTransportBuilder.SEND_BUFFER_SUBSCRIPTION_NAME)
-                                //                .countersManager(countersManager) // TODO: counters manager
-                                .build();
+            .actorScheduler(scheduler)
+            .bufferSize(1024 * 1024 * sendBufferSize)
+            .build();
 
         final ClientTransportBuilder transportBuilder = Transports.newClientTransport()
-                                                                  .messageMaxLength(1024 * 1024)
-                                                                  .messageReceiveBuffer(dataFrameReceiveBuffer)
-                                                                  .requestPoolSize(maxRequests + 16)
-                                                                  .scheduler(transportActorScheduler)
-                                                                  .sendBuffer(sendBuffer)
-                                                                  .enableManagedRequests();
+            .messageMaxLength(1024 * 1024)
+            .messageReceiveBuffer(dataFrameReceiveBuffer)
+            .requestPoolSize(maxRequests + 16)
+            .scheduler(scheduler)
+            .sendBuffer(sendBuffer);
 
         if (properties.containsKey(ClientProperties.CLIENT_TCP_CHANNEL_KEEP_ALIVE_PERIOD))
         {
             final long keepAlivePeriod = Long.parseLong(properties.getProperty(ClientProperties.CLIENT_TCP_CHANNEL_KEEP_ALIVE_PERIOD));
-            transportBuilder.keepAlivePeriod(keepAlivePeriod);
+            transportBuilder.keepAlivePeriod(Duration.ofMillis(keepAlivePeriod));
         }
 
         transport = transportBuilder.build();
 
         this.objectMapper = new ZeebeObjectMapper();
+        this.msgPackMapper = new MsgPackMapper(objectMapper);
 
-        final int numExecutionThreads = Integer.parseInt(properties.getProperty(ClientProperties.CLIENT_TASK_EXECUTION_THREADS));
 
-        final int prefetchCapacity = Integer.parseInt(properties.getProperty(ClientProperties.CLIENT_TOPIC_SUBSCRIPTION_PREFETCH_CAPACITY));
+        numExecutionThreads = Integer.parseInt(properties.getProperty(ClientProperties.CLIENT_SUBSCRIPTION_EXECUTION_THREADS));
+        subscriptionPrefetchCapacity = Integer.parseInt(properties.getProperty(ClientProperties.CLIENT_TOPIC_SUBSCRIPTION_PREFETCH_CAPACITY));
 
-        final long requestTimeout = Long.parseLong(properties.getProperty(CLIENT_REQUEST_TIMEOUT_SEC));
+        final Duration requestTimeout = Duration.ofSeconds(Long.parseLong(properties.getProperty(CLIENT_REQUEST_TIMEOUT_SEC)));
 
-        topologyManager = new ClientTopologyManager(transport, objectMapper, contactPoint);
+        final RemoteAddress initialContactPoint = transport.registerRemoteAddress(contactPoint);
 
-        subscriptionManager = new SubscriptionManager(this, numExecutionThreads, prefetchCapacity);
-        transport.registerChannelListener(subscriptionManager);
+        topologyManager = new ClientTopologyManager(transport, objectMapper, initialContactPoint);
+        scheduler.submitActor(topologyManager);
 
-        apiCommandManager = new RequestManager(transport, topologyManager, new RoundRobinDispatchStrategy(topologyManager), objectMapper, maxRequests,
-            requestTimeout);
+        apiCommandManager = new RequestManager(
+                transport.getOutput(),
+                topologyManager,
+                objectMapper,
+                requestTimeout);
+        this.scheduler.submitActor(apiCommandManager);
 
-        commandManagerActorReference = transportActorScheduler.schedule(apiCommandManager);
-        topologyManagerActorReference = transportActorScheduler.schedule(topologyManager);
-
-        subscriptionManager.start();
+        this.subscriptionManager = new SubscriptionManager(this);
+        this.transport.registerChannelListener(subscriptionManager);
+        this.scheduler.submitActor(subscriptionManager);
     }
 
     @Override
@@ -149,51 +171,39 @@ public class ZeebeClientImpl implements ZeebeClient
 
         isClosed = true;
 
-        subscriptionManager.closeAllSubscribers();
-        subscriptionManager.stop();
-
-        topologyManagerActorReference.close();
-        topologyManagerActorReference = null;
-
-        commandManagerActorReference.close();
-        commandManagerActorReference = null;
-
-        subscriptionManager.close();
+        doAndLogException(() -> subscriptionManager.close().join());
+        doAndLogException(() -> apiCommandManager.close().join());
+        doAndLogException(() -> topologyManager.close().join());
+        doAndLogException(() -> transport.close());
+        doAndLogException(() -> dataFrameReceiveBuffer.close());
+        doAndLogException(() -> sendBuffer.close());
 
         try
         {
-            transport.close();
+            scheduler.stop().get(15, TimeUnit.SECONDS);
         }
-        catch (final Exception e)
+        catch (InterruptedException | ExecutionException | TimeoutException e)
         {
-            e.printStackTrace();
+            throw new RuntimeException("Could not shutdown client successfully", e);
         }
+    }
 
+    protected void doAndLogException(Runnable r)
+    {
         try
         {
-            dataFrameReceiveBuffer.close();
+            r.run();
         }
-        catch (final Exception e)
+        catch (Exception e)
         {
-            e.printStackTrace();
+            Loggers.CLIENT_LOGGER.error("Exception when closing client. Ignoring", e);
         }
-
-        try
-        {
-            sendBuffer.close();
-        }
-        catch (final Exception e)
-        {
-            e.printStackTrace();
-        }
-
-        transportActorScheduler.close();
     }
 
     @Override
     public Request<TopologyResponse> requestTopology()
     {
-        return new RequestTopologyCmdImpl(apiCommandManager);
+        return new RequestTopologyCmdImpl(apiCommandManager, topologyManager);
     }
 
     @Override
@@ -224,9 +234,9 @@ public class ZeebeClientImpl implements ZeebeClient
         return topologyManager;
     }
 
-    public SubscriptionManager getSubscriptionManager()
+    public MsgPackMapper getMsgPackMapper()
     {
-        return subscriptionManager;
+        return msgPackMapper;
     }
 
     public ZeebeObjectMapper getObjectMapper()
@@ -247,5 +257,25 @@ public class ZeebeClientImpl implements ZeebeClient
     public MsgPackConverter getMsgPackConverter()
     {
         return objectMapper.getMsgPackConverter();
+    }
+
+    public ZbActorScheduler getScheduler()
+    {
+        return scheduler;
+    }
+
+    public SubscriptionManager getEventAcquisition()
+    {
+        return subscriptionManager;
+    }
+
+    public int getSubscriptionPrefetchCapacity()
+    {
+        return subscriptionPrefetchCapacity;
+    }
+
+    public int getNumExecutionThreads()
+    {
+        return numExecutionThreads;
     }
 }

@@ -16,6 +16,7 @@
 package io.zeebe.client.task.impl.subscription;
 
 import io.zeebe.client.event.impl.GeneralEventImpl;
+import io.zeebe.protocol.clientapi.SubscriptionType;
 
 public interface SubscribedEventHandler
 {
@@ -23,5 +24,5 @@ public interface SubscribedEventHandler
     /**
      * @return true if event could be successfully handled; false, if it should be retried later
      */
-    boolean onEvent(long subscriberKey, GeneralEventImpl event);
+    boolean onEvent(SubscriptionType type, long subscriberKey, GeneralEventImpl event);
 }

@@ -85,6 +85,7 @@ public class ZeebeClientTest
     @Test
     public void shouldCloseAllConnectionsOnClose() throws Exception
     {
+        fail("https://github.com/zeebe-io/zeebe/issues/677");
         // given
         final ServerTransport serverTransport = broker.getTransport();
 
@@ -115,16 +116,18 @@ public class ZeebeClientTest
 
         // when
         broker.closeTransport();
+        System.out.println("Broker transport closed");
         broker.bindTransport();
+        System.out.println("Broker transport bound");
 
         // then
         final TopicSubscription newSubscription = openSubscription();
 
         assertThat(newSubscription.isOpen()).isTrue();
-        waitUntil(() -> channelListener.connectionState.size() == 2); // listener invocation is asynchronous
-        assertThat(channelListener.connectionState).containsExactly(
-                ConnectionState.CLOSED,
-                ConnectionState.CONNECTED);
+        waitUntil(() -> channelListener.connectionState.contains(ConnectionState.CONNECTED)); // listener invocation is asynchronous
+        assertThat(channelListener.connectionState)
+            .last()
+            .isSameAs(ConnectionState.CONNECTED);
     }
 
     @Test
@@ -178,7 +181,7 @@ public class ZeebeClientTest
 
         // then
         exception.expect(ClientException.class);
-        exception.expectMessage("Cannot determine target partition for request (timeout 3 seconds). " +
+        exception.expectMessage("Cannot determine target partition for request. " +
                 "Request was: [ topic = foo, partition = any, event type = TASK, state = CREATE ]");
 
         // when
@@ -196,7 +199,7 @@ public class ZeebeClientTest
 
         // then
         exception.expect(ClientException.class);
-        exception.expectMessage("Cannot execute request (timeout 3 seconds). " +
+        exception.expectMessage("Request timed out (PT3S). " +
                 "Request was: [ topic = default-topic, partition = 99, event type = TASK, state = COMPLETE ]");
 
         // when
@@ -288,7 +291,7 @@ public class ZeebeClientTest
                                             .getProperty(ClientProperties.CLIENT_REQUEST_TIMEOUT_SEC));
         final long requestTimeoutMs = TimeUnit.SECONDS.toMillis(requestTimeout);
         final long expectedMaximumTopologyRequests =
-                (requestTimeoutMs / ClientTopologyManager.MIN_REFRESH_INTERVAL_MILLIS) + 2;
+                (requestTimeoutMs / ClientTopologyManager.MIN_REFRESH_INTERVAL_MILLIS.toMillis()) + 2;
         final long actualTopologyRequests = broker
             .getReceivedControlMessageRequests()
             .stream()
@@ -316,7 +319,7 @@ public class ZeebeClientTest
         final long requestTimeout = Long.parseLong(client.getInitializationProperties()
                                                          .getProperty(ClientProperties.CLIENT_REQUEST_TIMEOUT_SEC));
         final long requestTimeoutMs = TimeUnit.SECONDS.toMillis(requestTimeout);
-        final long expectedMaximumTopologyRequests = (requestTimeoutMs / ClientTopologyManager.MIN_REFRESH_INTERVAL_MILLIS) + 2;
+        final long expectedMaximumTopologyRequests = (requestTimeoutMs / ClientTopologyManager.MIN_REFRESH_INTERVAL_MILLIS.toMillis()) + 2;
         final long actualTopologyRequests = broker
             .getReceivedControlMessageRequests()
             .stream()

@@ -15,16 +15,18 @@
  */
 package io.zeebe.client.event.impl;
 
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
-import io.zeebe.client.task.impl.subscription.EventAcquisition;
-import io.zeebe.client.task.impl.subscription.EventSubscriber;
-import io.zeebe.client.task.impl.subscription.EventSubscriptionCreationResult;
+import io.zeebe.client.task.impl.subscription.Subscriber;
+import io.zeebe.client.task.impl.subscription.SubscriberGroup;
+import io.zeebe.client.task.impl.subscription.SubscriptionManager;
+import io.zeebe.transport.RemoteAddress;
 import io.zeebe.util.CheckedConsumer;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 
-public class TopicSubscriber extends EventSubscriber
+public class TopicSubscriber extends Subscriber
 {
 
     protected static final int MAX_HANDLING_RETRIES = 2;
@@ -42,10 +44,13 @@ public class TopicSubscriber extends EventSubscriber
     public TopicSubscriber(
             TopicClientImpl client,
             TopicSubscriptionSpec subscription,
+            long subscriberKey,
+            RemoteAddress eventSource,
             int partitionId,
-            EventAcquisition acquisition)
+            SubscriberGroup group,
+            SubscriptionManager acquisition)
     {
-        super(partitionId, subscription.getPrefetchCapacity(), acquisition);
+        super(subscriberKey, partitionId, subscription.getPrefetchCapacity(), eventSource, group, acquisition);
         this.subscription = subscription;
         this.client = client;
         this.lastProcessedEventPosition = subscription.getStartPosition(partitionId);
@@ -75,7 +80,9 @@ public class TopicSubscriber extends EventSubscriber
     protected void logExceptionAndClose(GeneralEventImpl event, Exception e)
     {
         logEventHandlingError(e, event, "Closing subscription.");
-        this.closeAsync();
+        disable();
+
+        acquisition.closeGroup(group, "Event handling failed");
     }
 
     protected void logExceptionAndPropagate(GeneralEventImpl event, Exception e)
@@ -90,31 +97,19 @@ public class TopicSubscriber extends EventSubscriber
     }
 
     @Override
-    protected Future<? extends EventSubscriptionCreationResult> requestNewSubscription()
+    protected ActorFuture<Void> requestSubscriptionClose()
     {
-        return client.createTopicSubscription(subscription.getTopic(), partitionId)
-                .startPosition(subscription.getStartPosition(partitionId))
-                .prefetchCapacity(subscription.getPrefetchCapacity())
-                .name(subscription.getName())
-                .forceStart(subscription.isForceStart())
-                .executeAsync();
+        System.out.println("Closing subscriber at partition " + partitionId);
+        return client.closeTopicSubscription(partitionId, subscriberKey).executeAsync();
     }
 
     @Override
-    protected void requestSubscriptionClose()
+    protected ActorFuture<?> requestEventSourceReplenishment(int eventsProcessed)
     {
-        acknowledgeLastProcessedEvent();
-
-        client.closeTopicSubscription(partitionId, subscriberKey).execute();
+        return acknowledgeLastProcessedEvent();
     }
 
-    @Override
-    protected void requestEventSourceReplenishment(int eventsProcessed)
-    {
-        acknowledgeLastProcessedEvent();
-    }
-
-    protected void acknowledgeLastProcessedEvent()
+    protected ActorFuture<?> acknowledgeLastProcessedEvent()
     {
 
         // note: it is important we read lastProcessedEventPosition only once
@@ -123,12 +118,20 @@ public class TopicSubscriber extends EventSubscriber
 
         if (positionToAck > lastAcknowledgedPosition)
         {
-            client.acknowledgeEvent(subscription.getTopic(), partitionId)
+            // TODO: what to do on error here? close the group (but only if it is not already closing)
+            final ActorFuture<TopicSubscriptionEvent> future = client.acknowledgeEvent(subscription.getTopic(), partitionId)
                 .subscriptionName(subscription.getName())
                 .ackPosition(positionToAck)
-                .execute();
+                .executeAsync();
 
+            // record this immediately to avoid repeated requests for the same position
             lastAcknowledgedPosition = positionToAck;
+
+            return future;
+        }
+        else
+        {
+            return CompletableActorFuture.<Void>completed(null);
         }
     }
 

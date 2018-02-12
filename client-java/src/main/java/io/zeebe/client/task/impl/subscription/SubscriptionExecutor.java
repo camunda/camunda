@@ -15,27 +15,31 @@
  */
 package io.zeebe.client.task.impl.subscription;
 
-import io.zeebe.util.actor.Actor;
+import org.agrona.concurrent.Agent;
 
-public class SubscriptionExecutor implements Actor
+public class SubscriptionExecutor implements Agent
 {
     public static final String ROLE_NAME = "subscription-executor";
 
-    protected final EventSubscribers subscriptions;
+    protected final EventSubscribers topicSubscriptions;
+    protected final EventSubscribers taskSubscriptions;
 
-    public SubscriptionExecutor(EventSubscribers subscriptions)
+    public SubscriptionExecutor(EventSubscribers topicSubscriptions, EventSubscribers taskSubscriptions)
     {
-        this.subscriptions = subscriptions;
+        this.topicSubscriptions = topicSubscriptions;
+        this.taskSubscriptions = taskSubscriptions;
     }
 
     @Override
     public int doWork() throws Exception
     {
-        return subscriptions.pollManagedSubscribers();
+        int workCount = topicSubscriptions.pollManagedSubscribers();
+        workCount += taskSubscriptions.pollManagedSubscribers();
+        return workCount;
     }
 
     @Override
-    public String name()
+    public String roleName()
     {
         return ROLE_NAME;
     }

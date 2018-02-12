@@ -24,12 +24,13 @@ import java.util.Properties;
 import io.zeebe.client.cmd.ClientException;
 import io.zeebe.client.event.TaskEvent;
 import io.zeebe.client.event.impl.TaskEventImpl;
+import io.zeebe.client.impl.ZeebeClientImpl;
 import io.zeebe.client.util.Events;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import io.zeebe.test.util.AutoCloseableRule;
-import io.zeebe.util.time.ClockUtil;
+import io.zeebe.util.sched.clock.ControlledActorClock;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -46,13 +47,15 @@ public class ZeebeClientTopologyTimeoutTest
     @Rule
     public AutoCloseableRule closeables = new AutoCloseableRule();
 
+    protected ControlledActorClock clientClock = new ControlledActorClock();
+
 
     protected ZeebeClient buildClient()
     {
         final Properties properties = new Properties();
         properties.setProperty(ClientProperties.CLIENT_REQUEST_TIMEOUT_SEC, "1");
 
-        final ZeebeClient client = ZeebeClient.create(properties);
+        final ZeebeClient client = new ZeebeClientImpl(properties, clientClock);
         closeables.manage(client);
         return client;
     }
@@ -60,7 +63,7 @@ public class ZeebeClientTopologyTimeoutTest
     @After
     public void tearDown()
     {
-        ClockUtil.reset();
+        clientClock.reset();
     }
 
     @Test
@@ -77,7 +80,7 @@ public class ZeebeClientTopologyTimeoutTest
 
         // then
         exception.expect(ClientException.class);
-        exception.expectMessage("Cannot determine leader for partition (timeout 1 seconds). " +
+        exception.expectMessage("Request timed out (PT1S). " +
                 "Request was: [ topic = default-topic, partition = 99, event type = TASK, state = COMPLETE ]");
 
         // when
@@ -90,7 +93,6 @@ public class ZeebeClientTopologyTimeoutTest
         // given
         final int topologyTimeoutSeconds = 1;
 
-        ClockUtil.pinCurrentTime();
         broker.onTopologyRequest().doNotRespond();
         broker.onExecuteCommandRequest(EventType.TASK_EVENT, "COMPLETE")
             .respondWith()
@@ -112,7 +114,7 @@ public class ZeebeClientTopologyTimeoutTest
                 .count() == 1);
 
         broker.stubTopologyRequest(); // make topology available
-        ClockUtil.addTime(Duration.ofSeconds(topologyTimeoutSeconds + 1)); // let request time out
+        clientClock.addTime(Duration.ofSeconds(topologyTimeoutSeconds + 1)); // let request time out
 
         // when making a new request
         final TaskEvent response = client.tasks().complete(baseEvent).execute();

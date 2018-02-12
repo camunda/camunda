@@ -16,8 +16,6 @@
 package io.zeebe.client.clustering.impl;
 
 import java.util.HashMap;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
 
 import io.zeebe.client.impl.RequestManager;
 import io.zeebe.client.task.impl.ControlMessageRequest;
@@ -27,26 +25,21 @@ public class RequestTopologyCmdImpl extends ControlMessageRequest<TopologyRespon
 {
     protected static final Object EMPTY_REQUEST = new HashMap<>();
 
-    public RequestTopologyCmdImpl(RequestManager commandManager)
+    protected final ClientTopologyManager topologyListener;
+
+    public RequestTopologyCmdImpl(RequestManager commandManager, ClientTopologyManager topologyListener)
     {
         super(commandManager, ControlMessageType.REQUEST_TOPOLOGY, TopologyResponse.class);
+        this.topologyListener = topologyListener;
     }
 
     @Override
-    public TopologyResponse execute()
+    public void onResponse(TopologyResponse response)
     {
-        final TopologyResponse response = super.execute();
-
-        return client.getTopologyManager()
-                     .updateTopology(response)
-                     .join();
-    }
-
-    @Override
-    public Future<TopologyResponse> executeAsync()
-    {
-        return ((CompletableFuture<TopologyResponse>) super.executeAsync())
-                     .thenCompose(client.getTopologyManager()::updateTopology);
+        if (topologyListener != null)
+        {
+            topologyListener.provideTopology(response);
+        }
     }
 
     @Override
