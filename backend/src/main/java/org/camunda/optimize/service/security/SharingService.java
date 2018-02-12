@@ -120,7 +120,22 @@ public class SharingService  {
 
   public void deleteShare(String shareId) {
     Optional<SharingDto> base = sharingReader.findShare(shareId);
-    base.ifPresent((share) -> sharingWriter.deleteShare(shareId));
+    base.ifPresent((share) -> deleteShareCascaded(shareId, share));
+  }
+
+  /**
+   *
+   * @param shareId
+   * @param share
+   */
+  private void deleteShareCascaded(String shareId, SharingDto share) {
+    if (SharedResourceType.DASHBOARD.equals(share.getType())) {
+      Optional<EvaluatedDashboardShareDto> evaluatedDashboardShareDto = this.evaluateDashboard(shareId);
+      for (ReportShareLocationDto reportShare : evaluatedDashboardShareDto.get().getDashboard().getReportShares()) {
+        this.deleteShare(reportShare.getShareId());
+      }
+    }
+    sharingWriter.deleteShare(shareId);
   }
 
   public Optional<EvaluatedReportShareDto> evaluateReport(String shareId) {

@@ -171,9 +171,9 @@ public class SharingRestServiceIT extends AbstractSharingIT {
 
     //when
     Response response =
-        embeddedOptimizeRule.target(getSharedDashboardEvaluationPath(dashboardShareId))
-            .request()
-            .get();
+      embeddedOptimizeRule.target(getSharedDashboardEvaluationPath(dashboardShareId))
+        .request()
+        .get();
     EvaluatedDashboardShareDto dashboardShareDto = response.readEntity(EvaluatedDashboardShareDto.class);
     //then
     assertThat(dashboardShareDto, is(notNullValue()));
@@ -185,9 +185,9 @@ public class SharingRestServiceIT extends AbstractSharingIT {
     //when
     String reportShareId = dashboardShareDto.getDashboard().getReportShares().get(0).getShareId();
     response =
-        embeddedOptimizeRule.target(getSharedReportEvaluationPath(reportShareId))
-            .request()
-            .get();
+      embeddedOptimizeRule.target(getSharedReportEvaluationPath(reportShareId))
+        .request()
+        .get();
     HashMap evaluatedReportAsMap = response.readEntity(HashMap.class);
 
     assertReportData(reportId, reportShareId, evaluatedReportAsMap);
@@ -204,8 +204,8 @@ public class SharingRestServiceIT extends AbstractSharingIT {
 
     //when
     Response response = embeddedOptimizeRule.target(SHARE + "/" + DASHBOARD + "/" + dashboardWithReport)
-        .request()
-        .get();
+      .request()
+      .get();
 
     // then
     assertThat(response.getStatus(), is(401));
