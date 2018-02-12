@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.fs.FsLogStreamBuilder;
+import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.integration.util.LogIntegrationTestUtil;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;

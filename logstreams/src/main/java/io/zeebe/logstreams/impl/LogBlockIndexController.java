@@ -21,6 +21,7 @@ import static io.zeebe.logstreams.spi.LogStorage.OP_RESULT_INSUFFICIENT_BUFFER_C
 import static io.zeebe.logstreams.spi.LogStorage.OP_RESULT_INVALID_ADDR;
 
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
@@ -48,6 +49,7 @@ public class LogBlockIndexController extends ZbActor
     public static final float DEFAULT_DEVIATION = 0.1f;
 
     private final Runnable readLogStorage = this::readLogStorage;
+    private final Runnable tryCreateBlockIndex = this::tryToCreateBlockIndex;
     private final Runnable createSnapshot = this::createSnapshot;
 
     //  MANDATORY //////////////////////////////////////////////////
@@ -159,6 +161,7 @@ public class LogBlockIndexController extends ZbActor
     {
         try
         {
+            LOG.trace("Recover block index.");
             final long recoveredAddress = logStorage.getFirstBlockAddress();
             final ReadableSnapshot lastSnapshot = snapshotStorage.getLastSnapshot(name);
             if (lastSnapshot != null)
@@ -206,9 +209,6 @@ public class LogBlockIndexController extends ZbActor
                 // set next address
                 nextAddress = nextAddressToRead;
 
-                // read next bytes
-                actor.run(readLogStorage);
-                actor.yield();
             }
             else if (nextAddressToRead == OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY)
             {
@@ -250,20 +250,44 @@ public class LogBlockIndexController extends ZbActor
         // if block size is greater then or equals to index block size we will create an index
         if (currentBlockSize >= indexBlockSize)
         {
-            createBlockIndex();
-            currentBlockSize = 0;
+            tryToCreateBlockIndex();
         }
         else
         {
             // block was not filled enough
             // read next events into buffer after the current read events
             ioBuffer.clear();
+
+            // read next bytes
+            actor.runDelayed(Duration.ofMillis(0), readLogStorage);
+            actor.yield();
         }
     }
 
-    private void createBlockIndex()
+    private void tryToCreateBlockIndex()
     {
-        if (readResultProcessor.getLastReadEventPosition() <= getCommitPosition())
+        final boolean blockWasCreated = createBlockIndex();
+
+        if (blockWasCreated)
+        {
+            currentBlockSize = 0;
+
+            // read next bytes
+            actor.runDelayed(Duration.ofMillis(0), readLogStorage);
+            actor.yield();
+        }
+        else
+        {
+            // try again
+            actor.runDelayed(Duration.ofMillis(500), tryCreateBlockIndex);
+            actor.yield();
+        }
+    }
+
+    private boolean createBlockIndex()
+    {
+        final boolean canCreateBlock = readResultProcessor.getLastReadEventPosition() <= getCommitPosition();
+        if (canCreateBlock)
         {
             createBlockIdx(currentBlockAddress);
 
@@ -273,6 +297,7 @@ public class LogBlockIndexController extends ZbActor
             // reset cached block address
             currentBlockAddress = INVALID_ADDRESS;
         }
+        return canCreateBlock;
     }
 
     private void createBlockIdx(long addressOfFirstEventInBlock)
@@ -280,6 +305,8 @@ public class LogBlockIndexController extends ZbActor
         // write block IDX
         final long position = firstEventPosition;
         blockIndex.addBlock(position, addressOfFirstEventInBlock);
+
+        LOG.trace("Add block to index with position {} and address {}.", position, addressOfFirstEventInBlock);
 
         // check if snapshot should be created
         if (snapshotPolicy.apply(position))
@@ -306,6 +333,7 @@ public class LogBlockIndexController extends ZbActor
 
             snapshotWriter.writeSnapshot(blockIndex);
             snapshotWriter.commit();
+            LOG.trace("Created snapshot for block index {}.", name);
         }
         catch (Exception e)
         {
@@ -365,6 +393,7 @@ public class LogBlockIndexController extends ZbActor
         {
             if (isOpened())
             {
+                LOG.trace("Truncate and reset internal. Log block index controller {}.", name);
                 currentBlockSize = 0;
                 nextAddress = currentBlockAddress;
 
