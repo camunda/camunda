@@ -127,8 +127,9 @@ public class SharingService  {
     Optional<SharingDto> base = sharingReader.findShare(shareId);
 
     Optional<EvaluatedReportShareDto> result = base
-        .map( share -> this.constructReportShare(share))
-        .orElseThrow(() -> new OptimizeRuntimeException("share [" + shareId + "] does not exist"));
+        .filter(share -> SharedResourceType.REPORT.equals(share.getType()) || SharedResourceType.DASHBOARD_REPORT.equals(share.getType()))
+        .map(share -> this.constructReportShare(share))
+        .orElseThrow(() -> new OptimizeRuntimeException("share [" + shareId + "] does not exist or is of unsupported type"));
 
     return result;
   }
@@ -152,8 +153,9 @@ public class SharingService  {
     Optional<SharingDto> base = sharingReader.findShare(shareId);
 
     Optional<EvaluatedDashboardShareDto> result = base
-        .map( share -> constructDashboard(share))
-        .orElseThrow(() -> new OptimizeRuntimeException("share [" + shareId + "] does not exist"));
+        .filter(share -> SharedResourceType.DASHBOARD.equals(share.getType()))
+        .map(share -> constructDashboard(share))
+        .orElseThrow(() -> new OptimizeRuntimeException("share [" + shareId + "] does not exist or is of unsupported type"));
     return result;
   }
 

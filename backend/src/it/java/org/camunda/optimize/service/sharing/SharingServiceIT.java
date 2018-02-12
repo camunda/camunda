@@ -36,6 +36,25 @@ public class SharingServiceIT extends AbstractSharingIT {
       .around(embeddedOptimizeRule);
 
   @Test
+  public void cantEvaluateDashboardOverReportsEndpoint() throws Exception {
+    //given
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+
+    String reportId = createReport();
+    String dashboardWithReport = createDashboardWithReport(token, reportId);
+    String dashboardShareId = addShareForDashboard(token, dashboardWithReport);
+
+    //when
+    Response response =
+        embeddedOptimizeRule.target(getSharedReportEvaluationPath(dashboardShareId))
+            .request()
+            .get();
+
+    //then
+    assertThat(response.getStatus(),is(500));
+  }
+
+  @Test
   public void createNewFakeReportShareThrowsError() {
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
@@ -135,7 +154,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     String shareId = this.addShareForReport(token, reportId);
 
     Response response =
-      embeddedOptimizeRule.target(getSharedDashboardEvaluationPath(shareId))
+      embeddedOptimizeRule.target(getSharedReportEvaluationPath(shareId))
         .request()
         .get();
     assertThat(response.getStatus(),is(200));
@@ -150,7 +169,7 @@ public class SharingServiceIT extends AbstractSharingIT {
 
     //then
     response =
-        embeddedOptimizeRule.target(getSharedDashboardEvaluationPath(shareId))
+        embeddedOptimizeRule.target(getSharedReportEvaluationPath(shareId))
             .request()
             .get();
     assertThat(response.getStatus(),is(500));
