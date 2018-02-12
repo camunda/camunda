@@ -12,6 +12,8 @@ def mavenSettingsId = 'camunda-maven-settings'
 
 mavenJob(jobName)
 {
+    disabled()
+
     scm
     {
         git

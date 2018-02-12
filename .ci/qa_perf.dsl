@@ -48,6 +48,8 @@ def JOBS = TESTS.collectEntries
 // can be triggered manually and is also used as downstream of the distro job
 job(triggerJobName)
 {
+    disabled()
+
     label 'master'
     logRotator(-1, 50, -1, 50)
 
