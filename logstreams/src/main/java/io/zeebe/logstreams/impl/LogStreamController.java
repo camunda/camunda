@@ -19,14 +19,11 @@ import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.positionOffset;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.zeebe.dispatcher.BlockPeek;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Subscription;
-import io.zeebe.logstreams.log.LogStreamFailureListener;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.util.sched.ZbActor;
 import io.zeebe.util.sched.ZbActorScheduler;
@@ -59,8 +56,6 @@ public class LogStreamController extends ZbActor
     private int maxAppendBlockSize;
     private Dispatcher writeBuffer;
     private Subscription writeBufferSubscription;
-
-    private List<LogStreamFailureListener> failureListeners = new ArrayList<>();
 
     public LogStreamController(LogStreamImpl.LogStreamBuilder logStreamBuilder)
     {
@@ -138,7 +133,6 @@ public class LogStreamController extends ZbActor
         {
             peekedBlockHandler.run();
         }
-        // TODO continue to discard block
     }
 
     private void appendBlock()
@@ -158,73 +152,20 @@ public class LogStreamController extends ZbActor
         else
         {
             isFailed.set(true);
-            notifyListenersOnFailed();
+
+            LOG.debug("Failed to append log storage on position '{}'. Discard the following blocks.", firstEventPosition);
+
             peekedBlockHandler = this::discardBlock;
+
             discardBlock();
         }
     }
-
 
     private void discardBlock()
     {
         blockPeek.markFailed();
         // continue with next block
         actor.yield();
-
-        if (!writeBufferSubscription.hasAvailable())
-        {
-            // block until recovered
-            actor.await(recoverFuture, (v, failure) ->
-            {
-                // reset future
-                recoverFuture.close();
-                recoverFuture.setAwaitingResult();
-                notifyListenersOnRecovered();
-                peekedBlockHandler = this::appendBlock;
-            });
-        }
-    }
-
-    private void notifyListenersOnFailed()
-    {
-        LOG.debug("Failing for first event position: {}", firstEventPosition);
-
-        for (int i = 0; i < failureListeners.size(); i++)
-        {
-            final LogStreamFailureListener logStreamWriteErrorListener = failureListeners.get(i);
-            try
-            {
-                logStreamWriteErrorListener.onFailed(firstEventPosition);
-            }
-            catch (Exception e)
-            {
-                LOG.error("Exception while invoking {}", logStreamWriteErrorListener);
-            }
-        }
-    }
-
-    private void notifyListenersOnRecovered()
-    {
-        for (int i = 0; i < failureListeners.size(); i++)
-        {
-            final LogStreamFailureListener logStreamWriteErrorListener = failureListeners.get(i);
-            try
-            {
-                logStreamWriteErrorListener.onRecovered();
-            }
-            catch (Exception e)
-            {
-                LOG.error("Exception while invoking {}", logStreamWriteErrorListener);
-            }
-        }
-    }
-
-    public void recover()
-    {
-        if (isFailed.compareAndSet(true, false))
-        {
-            actor.call(() -> recoverFuture.complete(null));
-        }
     }
 
     public void close()
@@ -249,16 +190,6 @@ public class LogStreamController extends ZbActor
     {
         isOpenend.set(false);
         isFailed.set(false);
-    }
-
-    public void registerFailureListener(LogStreamFailureListener listener)
-    {
-        actor.call(() -> failureListeners.add(listener));
-    }
-
-    public void removeFailureListener(LogStreamFailureListener listener)
-    {
-        actor.call(() -> failureListeners.remove(listener));
     }
 
     public boolean isOpened()

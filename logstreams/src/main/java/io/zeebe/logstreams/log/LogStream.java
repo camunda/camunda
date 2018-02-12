@@ -117,16 +117,6 @@ public interface LogStream extends AutoCloseable
     void setTerm(int term);
 
     /**
-     * Register a failure listener.
-     */
-    void registerFailureListener(LogStreamFailureListener listener);
-
-    /**
-     * Remove a registered failure listener.
-     */
-    void removeFailureListener(LogStreamFailureListener listener);
-
-    /**
      * Returns the log storage, which is accessed by the LogStream.
      *
      * @return the log storage

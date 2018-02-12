@@ -20,7 +20,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamFailureListener;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LogStreamWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
@@ -32,7 +31,6 @@ import io.zeebe.util.sched.ZbActor;
 import io.zeebe.util.sched.ZbActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
-import io.zeebe.util.sched.future.CompletedActorFuture;
 import org.slf4j.Logger;
 
 public class StreamProcessorController extends ZbActor
@@ -49,8 +47,6 @@ public class StreamProcessorController extends ZbActor
     private final SnapshotStorage snapshotStorage;
     private final Duration snapshotPeriod;
 
-    private final LogStreamFailureListener logStreamFailureListener = new StreamFailureListener();
-
     private final ZbActorScheduler actorScheduler;
     private final AtomicBoolean isOpened = new AtomicBoolean(false);
     private final AtomicBoolean isFailed = new AtomicBoolean(false);
@@ -65,7 +61,6 @@ public class StreamProcessorController extends ZbActor
 
     private final CompletableActorFuture<Void> openFuture = new CompletableActorFuture<>();
     private final CompletableActorFuture<Void> closeFuture = new CompletableActorFuture<>();
-    private final CompletableActorFuture<Void> onRecoveredFuture = new CompletableActorFuture<>();
 
     private long snapshotPosition = -1L;
     private long lastSourceEventPosition = -1L;
@@ -117,9 +112,6 @@ public class StreamProcessorController extends ZbActor
 
         logStreamReader.wrap(logStream);
         logStreamWriter.wrap(logStream);
-
-        logStream.removeFailureListener(logStreamFailureListener);
-        logStream.registerFailureListener(logStreamFailureListener);
 
         actor.run(this::recoverFromSnapshot);
     }
@@ -351,61 +343,97 @@ public class StreamProcessorController extends ZbActor
 
     private void executeSideEffects()
     {
-        final boolean success = eventProcessor.executeSideEffects();
-
-        if (success)
+        try
         {
-            actor.done();
+            final boolean success = eventProcessor.executeSideEffects();
 
-            actor.runUntilDone(this::writeEvent);
+            if (success)
+            {
+                actor.done();
+
+                actor.runUntilDone(this::writeEvent);
+            }
+            else if (isOpened.get())
+            {
+                // try again
+                actor.yield();
+            }
+            else
+            {
+                actor.done();
+            }
         }
-        else
+        catch (Exception e)
         {
-            // try again
-            actor.yield();
+            LOG.error("The log stream processor '{}' failed to process event. It stop processing further events.", getName(), e);
+
+            actor.done();
+            onFailure();
         }
     }
 
     private void writeEvent()
     {
-        final LogStream sourceStream = streamProcessorContext.getLogStream();
-
-        logStreamWriter
-            .producerId(streamProcessorContext.getId())
-            .sourceEvent(sourceStream.getPartitionId(), currentEvent.getPosition());
-
-        eventPosition = eventProcessor.writeEvent(logStreamWriter);
-
-        if (eventPosition >= 0)
+        try
         {
-            actor.done();
+            final LogStream sourceStream = streamProcessorContext.getLogStream();
 
-            updateState();
+            logStreamWriter
+                .producerId(streamProcessorContext.getId())
+                .sourceEvent(sourceStream.getPartitionId(), currentEvent.getPosition());
+
+            eventPosition = eventProcessor.writeEvent(logStreamWriter);
+
+            if (eventPosition >= 0)
+            {
+                actor.done();
+
+                updateState();
+            }
+            else if (isOpened.get())
+            {
+                // try again
+                actor.yield();
+            }
+            else
+            {
+                actor.done();
+            }
         }
-        else
+        catch (Exception e)
         {
-            // try again
-            actor.yield();
+            LOG.error("The log stream processor '{}' failed to process event. It stop processing further events.", getName(), e);
+
+            actor.done();
+            onFailure();
         }
     }
 
     private void updateState()
     {
-        eventProcessor.updateState();
-        streamProcessor.afterEvent();
-
-        lastSuccessfulProcessedEventPosition = currentEvent.getPosition();
-
-        final boolean hasWrittenEvent = eventPosition > 0;
-        if (hasWrittenEvent)
+        try
         {
-            lastWrittenEventPosition = eventPosition;
-        }
+            eventProcessor.updateState();
+            streamProcessor.afterEvent();
 
-        // continue with next event
-        // -- execute other jobs before continue
-        actor.runDelayed(Duration.ofMillis(0), readNextEvent);
-        actor.yield();
+            lastSuccessfulProcessedEventPosition = currentEvent.getPosition();
+
+            final boolean hasWrittenEvent = eventPosition > 0;
+            if (hasWrittenEvent)
+            {
+                lastWrittenEventPosition = eventPosition;
+            }
+
+            // continue with next event
+            // -- execute other jobs before continue
+            actor.runDelayed(Duration.ofMillis(0), readNextEvent);
+            actor.yield();
+        }
+        catch (Exception e)
+        {
+            LOG.error("The log stream processor '{}' failed to process event. It stop processing further events.", getName(), e);
+            onFailure();
+        }
     }
 
     private void createSnapshot()
@@ -476,7 +504,7 @@ public class StreamProcessorController extends ZbActor
         }
         else
         {
-            return new CompletedActorFuture<>(null);
+            return closeFuture;
         }
     }
 
@@ -484,7 +512,6 @@ public class StreamProcessorController extends ZbActor
     protected void onActorClosing()
     {
         streamProcessorContext.getLogStreamReader().close();
-        streamProcessorContext.getLogStream().removeFailureListener(logStreamFailureListener);
 
         if (closeFuture != null)
         {
@@ -496,64 +523,12 @@ public class StreamProcessorController extends ZbActor
     {
         if (isFailed.compareAndSet(false, true))
         {
-            // wait for recovery
-            actor.await(onRecoveredFuture, t ->
-            {
-                // reset future
-                onRecoveredFuture.close();
-                onRecoveredFuture.setAwaitingResult();
+            isOpened.set(false);
 
-                isFailed.set(false);
+            closeFuture.close();
+            closeFuture.setAwaitingResult();
 
-                if (failedEventPosition <= lastWrittenEventPosition)
-                {
-                    recoverFromSnapshot();
-                }
-                else
-                {
-                    final long currentEventPosition = currentEvent.getPosition();
-                    if (currentEventPosition > lastSuccessfulProcessedEventPosition)
-                    {
-                        // controller has failed on processing event
-                        // we need to process this event again
-                        logStreamReader.seek(currentEventPosition);
-                    }
-                    // no recovery required if the log stream failed,
-                    // after all events of the processor are written
-                    actor.run(readNextEvent);
-                }
-                failedEventPosition = -1L;
-            });
-        }
-    }
-
-    private class StreamFailureListener implements LogStreamFailureListener
-    {
-        @Override
-        public void onFailed(long failedPosition)
-        {
-            actor.call(() ->
-            {
-                failedEventPosition = failedPosition;
-
-                onFailure();
-            });
-        }
-
-        @Override
-        public void onRecovered()
-        {
-            actor.call(() ->
-            {
-                if (failedEventPosition < 0)
-                {
-                    // ignore
-                }
-                else
-                {
-                    onRecoveredFuture.complete(null);
-                }
-            });
+            actor.close();
         }
     }
 

@@ -32,9 +32,6 @@ import java.util.function.LongFunction;
 import java.util.function.Predicate;
 
 import io.zeebe.logstreams.LogStreams;
-import io.zeebe.logstreams.impl.LogStreamController;
-import io.zeebe.logstreams.integration.util.ControllableFsLogStorage;
-import io.zeebe.logstreams.integration.util.ControllableFsLogStreamBuilder;
 import io.zeebe.logstreams.integration.util.Counter;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
@@ -485,125 +482,6 @@ public class StreamProcessorIntegrationTest
         streamProcessorController.closeAsync().get();
     }
 
-    @Ignore("endless loop - on recover is not called")
-    @Test
-    public void shouldRecoverAfterLogStreamFailure() throws InterruptedException, ExecutionException
-    {
-        // given
-        final LogStream controllablelogStream = new ControllableFsLogStreamBuilder(wrapString("controllable-logstream"), 3)
-                .logRootPath(tempFolder.getRoot().getAbsolutePath())
-                .deleteOnClose(true)
-                .logSegmentSize(1024 * 1024 * 16)
-                .actorScheduler(actorScheduler.get())
-                .build();
-
-        final ControllableFsLogStorage controllableLogStorage = (ControllableFsLogStorage) controllablelogStream.getLogStorage();
-        final LogStreamController logStreamController = controllablelogStream.getLogStreamController();
-
-        final StreamProcessorController streamProcessorController = LogStreams
-            .createStreamProcessor("processor", STREAM_PROCESSOR_ID, new SimpleProducerProcessor())
-            .logStream(controllablelogStream)
-            .actorScheduler(actorScheduler.get())
-            .snapshotPeriod(SNAPSHOT_PERIOD)
-            .snapshotStorage(snapshotStorage)
-            .build();
-
-        controllablelogStream.open();
-
-        scheduleCommitPositionUpdated(controllablelogStream);
-
-        streamProcessorController.openAsync().get();
-
-        writeLogEvents(controllablelogStream, 1, MSG_SIZE, 0);
-        waitUntilWrittenKey(controllablelogStream, (int) (WORK_COUNT * 0.75));
-
-        // when
-        controllableLogStorage.setFailure(true);
-
-        // then
-        TestUtil.waitUntil(() -> streamProcessorController.isFailed());
-
-        // when
-        resourceCounter.reset();
-        controllableLogStorage.setFailure(false);
-        // notify the controller that the log storage is recovered
-        logStreamController.recover();
-
-        // then
-        // last event should be processed again
-        // verify that the stream processor recover and resume processing
-        waitUntilWrittenKey(controllablelogStream, WORK_COUNT);
-        waitUntilCounterReached(WORK_COUNT);
-
-        assertThat(resourceCounter.getObject().getCount()).isEqualTo(WORK_COUNT);
-
-        streamProcessorController.closeAsync().get();
-        controllablelogStream.close();
-    }
-
-    @Ignore("endless loop - on recover is not called")
-    @Test
-    public void shouldRecoverAfterLogStreamFailureWithSimpleVisitorProcessor() throws InterruptedException, ExecutionException
-    {
-        // given
-        final LogStream controllablelogStream = new ControllableFsLogStreamBuilder(wrapString("controllable-logstream"), 3)
-            .logRootPath(tempFolder.getRoot().getAbsolutePath())
-            .deleteOnClose(true)
-            .logSegmentSize(1024 * 1024 * 16)
-            .actorScheduler(actorScheduler.get())
-            .build();
-
-        final ControllableFsLogStorage controllableLogStorage = (ControllableFsLogStorage) controllablelogStream.getLogStorage();
-        final LogStreamController logStreamController = controllablelogStream.getLogStreamController();
-
-        final StreamProcessorController streamProcessorController = LogStreams
-            .createStreamProcessor("processor", STREAM_PROCESSOR_ID, new SimpleVisitorProcessor())
-            .logStream(controllablelogStream)
-            .actorScheduler(actorScheduler.get())
-            .snapshotPeriod(SNAPSHOT_PERIOD)
-            .snapshotStorage(snapshotStorage)
-            .build();
-
-
-        controllablelogStream.open();
-
-        scheduleCommitPositionUpdated(controllablelogStream);
-
-        streamProcessorController.openAsync().get();
-
-        writeLogEvents(controllablelogStream, WORK_COUNT / 2, MSG_SIZE, 0);
-        waitUntilWrittenKey(controllablelogStream, WORK_COUNT / 2);
-
-        // when
-        writeLogEvents(controllablelogStream, WORK_COUNT / 2, MSG_SIZE, WORK_COUNT / 2);
-        controllableLogStorage.setFailure(true);
-        waitUntilWrittenKey(controllablelogStream, (int) (WORK_COUNT * 0.75));
-
-        // then
-        TestUtil.waitUntil(() -> streamProcessorController.isFailed());
-
-        // when
-        controllableLogStorage.setFailure(false);
-        // notify the controller that the log storage is recovered
-        resourceCounter.reset();
-        final BufferedLogStreamReader reader = new BufferedLogStreamReader(controllablelogStream, true);
-        final int eventCount = countEvents(reader);
-        logStreamController.recover();
-        writeLogEvents(controllablelogStream, WORK_COUNT - eventCount, MSG_SIZE, eventCount + 1);
-
-        // then
-        // verify that the stream processor recover and resume processing
-        waitUntilWrittenKey(controllablelogStream, WORK_COUNT);
-        assertThat(countEvents(reader)).isEqualTo(WORK_COUNT);
-
-        waitUntilCounterReached(WORK_COUNT);
-        assertThat(resourceCounter.getObject().getCount()).isEqualTo(WORK_COUNT);
-
-        streamProcessorController.closeAsync().get();
-        controllablelogStream.close();
-    }
-
-    @Ignore("endless loop - close is not called")
     @Test
     public void shouldRecoverWithIntermediateIndexingState() throws InterruptedException, ExecutionException
     {
@@ -685,6 +563,8 @@ public class StreamProcessorIntegrationTest
                 .snapshotPeriod(NO_SNAPSHOT)
                 .snapshotStorage(snapshotStorage)
                 .build();
+
+        scheduleCommitPositionUpdated(logStream);
 
         streamProcessorController.openAsync().get();
 

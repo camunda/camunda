@@ -22,13 +22,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.fs.FsLogStreamBuilder;
-import io.zeebe.logstreams.fs.FsSnapshotStorageBuilder;
-import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.impl.snapshot.fs.FsSnapshotStorage;
 import io.zeebe.logstreams.impl.snapshot.fs.FsSnapshotStorageConfiguration;
 import io.zeebe.logstreams.impl.snapshot.fs.FsSnapshotWriter;
@@ -39,9 +35,7 @@ import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.ZbActor;
-import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.clock.ControlledActorClock;
-import io.zeebe.util.sched.clock.DefaultActorClock;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.agrona.DirectBuffer;
 import org.junit.Before;
