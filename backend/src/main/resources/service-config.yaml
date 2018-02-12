@@ -259,6 +259,7 @@ alerting:
   quartz:
     jobStore: 'org.quartz.simpl.RAMJobStore'
   email:
+    #A switch to control email sending process.
     enabled: false
     # Username of your smtp server
     username: ''
