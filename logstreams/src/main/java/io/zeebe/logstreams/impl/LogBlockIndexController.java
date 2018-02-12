@@ -219,17 +219,18 @@ public class LogBlockIndexController extends ZbActor
                 tryToCreateBlockIndex(currentAddress);
                 // set next address
                 nextAddress = nextAddressToRead;
+                runCurrentWork();
             }
             else if (nextAddressToRead == OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY)
             {
                 increaseBufferSize();
+                runCurrentWork();
             }
             else if (nextAddressToRead == OP_RESULT_INVALID_ADDR)
             {
                 LOG.error("Can't read from illegal address: {}", currentAddress);
             }
 
-            runCurrentWork();
         }
     }
 
@@ -374,6 +375,7 @@ public class LogBlockIndexController extends ZbActor
     {
         if (isOpenend.compareAndSet(true, false))
         {
+            currentRunnable = () -> {};
             return actor.close();
         }
         else

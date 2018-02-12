@@ -216,11 +216,11 @@ public final class LogStreamImpl extends ZbActor implements LogStream
         {
             if (writeBuffer != null)
             {
-                actor.await(writeBuffer.closeAsync(), t ->
+                actor.await(logBlockIndexController.closeAsync(), t ->
                 {
-                    actor.await(logBlockIndexController.closeAsync(), t2 ->
+                    actor.await(logStreamController.closeAsync(), t2 ->
                     {
-                        actor.await(logStreamController.closeAsync(), t3 ->
+                        actor.await(writeBuffer.closeAsync(), t3 ->
                         {
                             logStorage.close();
 
