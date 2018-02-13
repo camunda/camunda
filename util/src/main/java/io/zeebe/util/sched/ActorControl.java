@@ -264,6 +264,7 @@ public class ActorControl
         job.task.yield();
     }
 
+
     public ActorFuture<Void> close()
     {
         final ActorJob closeJob = new ActorJob();
@@ -271,15 +272,7 @@ public class ActorControl
         closeJob.onJobAddedToTask(task);
         closeJob.setAutoCompleting(true);
 
-        closeJob.setRunnable(() ->
-        {
-            // could be that the task gets auto-closed concurrently.
-            if (!task.isClosing)
-            {
-                task.isClosing = true;
-                actor.onActorClosing();
-            }
-        });
+        closeJob.setRunnable(task::closingBehavior);
 
         task.submit(closeJob);
 

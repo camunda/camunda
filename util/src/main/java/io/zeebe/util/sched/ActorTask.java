@@ -127,7 +127,7 @@ public class ActorTask
 
         boolean resubmit = false;
 
-        while (!resubmit && (currentJob != null || poll()) && !isClosing)
+        while (!resubmit && (currentJob != null || poll()))
         {
             if (currentJob.state == ActorState.BLOCKED)
             {
@@ -221,11 +221,7 @@ public class ActorTask
         }
         else
         {
-            if (isClosing)
-            {
-                cleanUpOnClose();
-            }
-            else if (currentJob.state == ActorState.BLOCKED)
+            if (currentJob.state == ActorState.BLOCKED)
             {
                 resubmit = setStateActiveToBlocked();
             }
@@ -254,17 +250,28 @@ public class ActorTask
         closeJob.onJobAddedToTask(this);
         closeJob.setAutoCompleting(true);
 
-        closeJob.setRunnable(() ->
-        {
-            // could be that we both autoclose but also get close job externallly
-            if (!isClosing)
-            {
-                isClosing = true;
-                actor.onActorClosing();
-            }
-        });
+        closeJob.setRunnable(this::closingBehavior);
 
         currentJob = closeJob;
+    }
+
+    public void closingBehavior()
+    {
+        // could be that we both autoclose but also get close job externallly
+        if (!isClosing)
+        {
+            isClosing = true;
+
+            subscriptions.clear();
+
+            while (submittedJobs.poll() != null)
+            {
+                // discard jobs
+            }
+            ActorTaskRunner.current().getCurrentJob().next = null;
+
+            actor.onActorClosing();
+        }
     }
 
     boolean casStateCount(long expectedCount)
