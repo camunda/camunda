@@ -15,25 +15,31 @@
  */
 package io.zeebe.logstreams.impl;
 
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.getPosition;
-import static io.zeebe.logstreams.log.LogStreamUtil.INVALID_ADDRESS;
-import static io.zeebe.logstreams.spi.LogStorage.OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY;
-import static io.zeebe.logstreams.spi.LogStorage.OP_RESULT_INVALID_ADDR;
+import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
+import io.zeebe.logstreams.spi.LogStorage;
+import io.zeebe.logstreams.spi.ReadableSnapshot;
+import io.zeebe.logstreams.spi.SnapshotStorage;
+import io.zeebe.logstreams.spi.SnapshotWriter;
+import io.zeebe.util.allocation.AllocatedBuffer;
+import io.zeebe.util.allocation.BufferAllocators;
+import io.zeebe.util.sched.ActorCondition;
+import io.zeebe.util.sched.ZbActor;
+import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.channel.ActorConditions;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.Position;
+import org.slf4j.Logger;
 
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
-import io.zeebe.logstreams.spi.*;
-import io.zeebe.util.allocation.AllocatedBuffer;
-import io.zeebe.util.allocation.BufferAllocators;
-import io.zeebe.util.sched.*;
-import io.zeebe.util.sched.channel.ActorConditions;
-import io.zeebe.util.sched.future.*;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.status.Position;
-import org.slf4j.Logger;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.getPosition;
+import static io.zeebe.logstreams.log.LogStreamUtil.INVALID_ADDRESS;
+import static io.zeebe.logstreams.spi.LogStorage.OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY;
+import static io.zeebe.logstreams.spi.LogStorage.OP_RESULT_INVALID_ADDR;
 
 /**
  * Represents the log block index controller, which creates the log block index
@@ -370,21 +376,14 @@ public class LogBlockIndexController extends ZbActor
 
     public ActorFuture<Void> closeAsync()
     {
-        if (isOpenend.compareAndSet(true, false))
-        {
-            return actor.close();
-        }
-        else
-        {
-            return new CompletedActorFuture<>(null);
-        }
+        return actor.close();
     }
 
     @Override
     protected void onActorClosing()
     {
         allocatedBuffer.close();
-        currentRunnable = () -> { };
+        currentRunnable = null;
 
         isOpenend.set(false);
     }

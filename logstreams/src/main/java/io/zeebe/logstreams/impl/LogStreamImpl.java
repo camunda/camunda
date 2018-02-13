@@ -105,7 +105,6 @@ public final class LogStreamImpl extends ZbActor implements LogStream
             this.writeBuffer = logStreamBuilder.getWriteBuffer();
         }
 
-        actorScheduler.submitActor(this);
     }
 
     @Override
@@ -165,6 +164,7 @@ public final class LogStreamImpl extends ZbActor implements LogStream
     @Override
     public Future<Void> openAsync()
     {
+        actorScheduler.submitActor(this);
         if (logStreamController != null)
         {
             final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
@@ -191,22 +191,11 @@ public final class LogStreamImpl extends ZbActor implements LogStream
     @Override
     public void close()
     {
-        try
-        {
-            closeAsync().get();
-        }
-        catch (ExecutionException e)
-        {
-            throw new RuntimeException(e.getCause() != null ? e.getCause() : e);
-        }
-        catch (InterruptedException e)
-        {
-            throw new RuntimeException(e);
-        }
+        closeAsync().join();
     }
 
     @Override
-    public Future<Void> closeAsync()
+    public ActorFuture<Void> closeAsync()
     {
         final CompletableActorFuture<Void> closeFuture = new CompletableActorFuture<>();
 

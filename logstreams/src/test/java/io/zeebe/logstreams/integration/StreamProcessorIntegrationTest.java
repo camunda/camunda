@@ -62,6 +62,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 import org.mockito.Mockito;
 
@@ -75,14 +76,17 @@ public class StreamProcessorIntegrationTest
     private static final Duration NO_SNAPSHOT = Duration.ofMinutes(10);
     private static final Duration SNAPSHOT_PERIOD = Duration.ofMillis(250);
 
-    @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
 
-    @Rule
     public AutoCloseableRule autoCloseableRule = new AutoCloseableRule();
 
-    @Rule
     public ActorSchedulerRule actorScheduler = new ActorSchedulerRule();
+
+    @Rule
+    public RuleChain chain = RuleChain.outerRule(tempFolder)
+                                      .around(actorScheduler)
+                                      .around(autoCloseableRule);
+
 
     private LogStream logStream;
 
@@ -111,6 +115,7 @@ public class StreamProcessorIntegrationTest
                 .build();
 
         logStream.open();
+        autoCloseableRule.manage(logStream);
 
         controllers = new ArrayList<>();
     }
@@ -145,8 +150,6 @@ public class StreamProcessorIntegrationTest
         {
             streamProcessorController.closeAsync().get();
         }
-
-        logStream.close();
     }
 
     protected void manage(StreamProcessorController controller)
@@ -548,7 +551,6 @@ public class StreamProcessorIntegrationTest
         return reader;
     }
 
-    @Ignore("error is not catched by the controller")
     @Test
     public void shouldUseDisabledWriterForReadOnlyProcessor() throws InterruptedException, ExecutionException
     {
