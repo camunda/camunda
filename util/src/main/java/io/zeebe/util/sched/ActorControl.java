@@ -166,6 +166,25 @@ public class ActorControl
         scheduleTimer(delay, false, runnable);
     }
 
+    /**
+     * Like {@link #run(Runnable)} but submits the runnable to the end end of the actor's queue such that
+     * other other actions may be executed before this. This method is useful in case
+     * an actor is in a (potentially endless) loop and it should be able to interrupt it.
+     *
+     * @param action the action to run.
+     */
+    public void submit(Runnable action)
+    {
+        final ActorTaskRunner currentActorRunner = ensureCalledFromActorRunner("run(...)");
+
+        final ActorJob job = currentActorRunner.newJob();
+        job.setRunnable(action);
+        job.setAutoCompleting(true);
+        job.onJobAddedToTask(task);
+        task.submit(job);
+        yield();
+    }
+
     public void runAtFixedRate(Duration delay, Runnable runnable)
     {
         ensureCalledFromWithinActor("runAtFixedRate(...)");
@@ -309,6 +328,12 @@ public class ActorControl
     {
         final ActorJob job = ensureCalledFromWithinActor("done()");
         job.markDone();
+    }
+
+    public boolean isClosing()
+    {
+        ensureCalledFromWithinActor("isClosing()");
+        return task.isClosing;
     }
 
     private ActorJob ensureCalledFromWithinActor(String methodName)

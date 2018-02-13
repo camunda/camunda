@@ -78,7 +78,7 @@ public class ActorTask
         this.actor = actor;
     }
 
-    volatile boolean isClosing;
+    boolean isClosing;
 
 
     /**

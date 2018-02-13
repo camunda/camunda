@@ -17,9 +17,11 @@ package io.zeebe.util.sched;
 
 import static org.junit.Assert.fail;
 
+import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.junit.*;
 
@@ -200,4 +202,66 @@ public class RunnableExecutionTest
         schedulerRule.get().dumpMetrics(System.out);
     }
 
+    @Test
+    public void testActorSubmitInterruptedByTimer() throws InterruptedException
+    {
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        final ZbActor actor = new ZbActor()
+        {
+            @Override
+            protected void onActorStarted()
+            {
+                actor.run(this::method1);
+                actor.runDelayed(Duration.ofMillis(2), actor::close);
+            }
+
+            private void method1()
+            {
+                actor.submit(this::method1);
+            }
+
+            @Override
+            protected void onActorClosing()
+            {
+                latch.countDown();
+            }
+        };
+
+        schedulerRule.submitActor(actor);
+
+        if (!latch.await(10, TimeUnit.MINUTES))
+        {
+            fail("timeout awaiting actor close");
+        }
+    }
+
+    class ActorSubmittingActionsInEndlessLoop extends ZbActor
+    {
+        @Override
+        protected void onActorStarted()
+        {
+            actor.run(this::method1);
+        }
+
+        private void method1()
+        {
+            actor.submit(this::method1);
+        }
+
+        public ActorFuture<Void> close()
+        {
+            return actor.close();
+        }
+    }
+
+    @Test
+    public void testCloseActorInEndlessSubmitLoop() throws InterruptedException
+    {
+        final ActorSubmittingActionsInEndlessLoop actor = new ActorSubmittingActionsInEndlessLoop();
+
+        schedulerRule.submitActor(actor);
+
+        actor.close().join();
+    }
 }
