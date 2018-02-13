@@ -52,7 +52,7 @@ public class LogBlockIndexController extends ZbActor
     /**
      * Per default we start with reading from log storage.
      */
-    private Runnable currentRunnable = this::readLogStorage;
+    private Runnable currentRunnable;
     private Duration currentDelay = Duration.ZERO;
 
     private final Runnable runCurrentWork = this::runCurrentWork;
@@ -153,6 +153,7 @@ public class LogBlockIndexController extends ZbActor
         allocatedBuffer = BufferAllocators.allocateDirect(bufferSize);
         ioBuffer = allocatedBuffer.getRawBuffer();
         buffer.wrap(ioBuffer);
+        currentRunnable = readLogStorage;
 
         if (!logStorage.isOpen())
         {
@@ -230,7 +231,6 @@ public class LogBlockIndexController extends ZbActor
             {
                 LOG.error("Can't read from illegal address: {}", currentAddress);
             }
-
         }
     }
 
@@ -375,8 +375,6 @@ public class LogBlockIndexController extends ZbActor
     {
         if (isOpenend.compareAndSet(true, false))
         {
-            currentRunnable = () -> {
-            };
             return actor.close();
         }
         else
@@ -389,6 +387,7 @@ public class LogBlockIndexController extends ZbActor
     protected void onActorClosing()
     {
         allocatedBuffer.close();
+        currentRunnable = () -> { };
 
         isOpenend.set(false);
     }
