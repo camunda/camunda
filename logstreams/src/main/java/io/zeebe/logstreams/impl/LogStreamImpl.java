@@ -197,39 +197,35 @@ public final class LogStreamImpl extends ZbActor implements LogStream
     @Override
     public ActorFuture<Void> closeAsync()
     {
-        final CompletableActorFuture<Void> closeFuture = new CompletableActorFuture<>();
+        return actor.close();
+    }
 
-        actor.call(() ->
+    @Override
+    protected void onActorClosing()
+    {
+        if (writeBuffer != null)
         {
-            if (writeBuffer != null)
+            actor.await(logBlockIndexController.closeAsync(), t ->
             {
-                actor.await(logBlockIndexController.closeAsync(), t ->
+                actor.await(logStreamController.closeAsync(), t2 ->
                 {
-                    actor.await(logStreamController.closeAsync(), t2 ->
+                    actor.await(writeBuffer.closeAsync(), t3 ->
                     {
-                        actor.await(writeBuffer.closeAsync(), t3 ->
-                        {
-                            logStorage.close();
+                        logStorage.close();
 
-                            writeBuffer = null;
+                        writeBuffer = null;
 
-                            closeFuture.complete(null);
-                        });
                     });
                 });
-            }
-            else
+            });
+        }
+        else
+        {
+            actor.await(logBlockIndexController.closeAsync(), t ->
             {
-                actor.await(logBlockIndexController.closeAsync(), t ->
-                {
-                    logStorage.close();
-
-                    closeFuture.complete(null);
-                });
-            }
-        });
-
-        return closeFuture;
+                logStorage.close();
+            });
+        }
     }
 
     @Override
