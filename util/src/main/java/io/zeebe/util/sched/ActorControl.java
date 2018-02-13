@@ -15,16 +15,16 @@
  */
 package io.zeebe.util.sched;
 
+import io.zeebe.util.sched.channel.ChannelConsumerCondition;
+import io.zeebe.util.sched.channel.ConsumableChannel;
+import io.zeebe.util.sched.future.ActorFuture;
+
 import java.time.Duration;
 import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-
-import io.zeebe.util.sched.channel.ChannelConsumerCondition;
-import io.zeebe.util.sched.channel.ConsumableChannel;
-import io.zeebe.util.sched.future.ActorFuture;
 
 public class ActorControl
 {

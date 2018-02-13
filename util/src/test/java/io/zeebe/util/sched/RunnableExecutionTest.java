@@ -15,15 +15,17 @@
  */
 package io.zeebe.util.sched;
 
-import static org.junit.Assert.fail;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import org.junit.Assert;
+import org.junit.Rule;
+import org.junit.Test;
 
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.testing.ActorSchedulerRule;
-import org.junit.*;
+import static org.junit.Assert.fail;
 
 public class RunnableExecutionTest
 {
@@ -206,6 +208,7 @@ public class RunnableExecutionTest
     public void testActorSubmitInterruptedByTimer() throws InterruptedException
     {
         final CountDownLatch latch = new CountDownLatch(1);
+        final CountDownLatch called = new CountDownLatch(1);
 
         final ZbActor actor = new ZbActor()
         {
@@ -218,6 +221,11 @@ public class RunnableExecutionTest
 
             private void method1()
             {
+                final long count = latch.getCount();
+                if (count == 0)
+                {
+                    called.countDown();
+                }
                 actor.submit(this::method1);
             }
 
@@ -233,6 +241,13 @@ public class RunnableExecutionTest
         if (!latch.await(10, TimeUnit.MINUTES))
         {
             fail("timeout awaiting actor close");
+        }
+        else
+        {
+            if (called.getCount() == 0)
+            {
+                fail("Method1 was called after close");
+            }
         }
     }
 

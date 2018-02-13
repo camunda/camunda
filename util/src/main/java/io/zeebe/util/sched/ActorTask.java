@@ -127,7 +127,7 @@ public class ActorTask
 
         boolean resubmit = false;
 
-        while (!resubmit && (currentJob != null || poll()))
+        while (!resubmit && (currentJob != null || poll()) && !isClosing)
         {
             if (currentJob.state == ActorState.BLOCKED)
             {
@@ -203,15 +203,7 @@ public class ActorTask
             {
                 if (isClosing)
                 {
-                    state = ActorState.TERMINATED;
-                    subscriptions.clear();
-
-                    while (submittedJobs.poll() != null)
-                    {
-                        // discard jobs
-                    }
-
-                    terminationFuture.complete(null);
+                    cleanUpOnClose();
                 }
                 else
                 {
@@ -229,13 +221,30 @@ public class ActorTask
         }
         else
         {
-            if (currentJob.state == ActorState.BLOCKED)
+            if (isClosing)
+            {
+                cleanUpOnClose();
+            }
+            else if (currentJob.state == ActorState.BLOCKED)
             {
                 resubmit = setStateActiveToBlocked();
             }
         }
 
         return resubmit;
+    }
+
+    private void cleanUpOnClose()
+    {
+        state = ActorState.TERMINATED;
+        subscriptions.clear();
+
+        while (submittedJobs.poll() != null)
+        {
+            // discard jobs
+        }
+
+        terminationFuture.complete(null);
     }
 
     private void autoClose(ActorTaskRunner runner)
