@@ -53,7 +53,6 @@ public class LogBlockIndexController extends ZbActor
      * Per default we start with reading from log storage.
      */
     private Runnable currentRunnable;
-    private Duration currentDelay = Duration.ZERO;
 
     private final Runnable runCurrentWork = this::runCurrentWork;
     private final Runnable readLogStorage = this::readLogStorage;
@@ -165,7 +164,7 @@ public class LogBlockIndexController extends ZbActor
 
     private void runCurrentWork()
     {
-        actor.runDelayed(currentDelay, currentRunnable);
+        actor.submit(currentRunnable);
     }
 
     private void recoverBlockIndex()
@@ -279,13 +278,11 @@ public class LogBlockIndexController extends ZbActor
 
             // read next bytes
             currentRunnable = readLogStorage;
-            currentDelay = Duration.ZERO;
         }
         else
         {
             // try again
             currentRunnable = tryCreateBlockIndex;
-            currentDelay = Duration.ofMillis(500);
         }
     }
 

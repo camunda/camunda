@@ -424,10 +424,7 @@ public class StreamProcessorController extends ZbActor
                 lastWrittenEventPosition = eventPosition;
             }
 
-            // continue with next event
-            // -- execute other jobs before continue
-            actor.runDelayed(Duration.ofMillis(0), readNextEvent);
-            actor.yield();
+            actor.submit(readNextEvent);
         }
         catch (Exception e)
         {
