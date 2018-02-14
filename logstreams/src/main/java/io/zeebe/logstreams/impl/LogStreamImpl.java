@@ -108,10 +108,11 @@ public final class LogStreamImpl extends ZbActor implements LogStream
     }
 
     @Override
-    protected boolean isAutoClosing()
+    protected void onActorStarted()
     {
-        // this is a daemon actor for open / close orchestration
-        return false;
+        // avoid that this actor is closed
+        actor.onCondition("is-running", () ->
+        { });
     }
 
     @Override
