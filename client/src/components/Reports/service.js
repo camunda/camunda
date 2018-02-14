@@ -54,10 +54,10 @@ export async function saveReport(id, data) {
 
 export async function shareReport(reportId) {
   const body = {
-    resourceId: reportId,
+    reportId,
     type: 'REPORT'
   };
-  const response = await post(`/api/share/`, body);
+  const response = await post(`/api/share/report`, body);
 
   const json = await response.json();
   return json.id;
@@ -75,5 +75,5 @@ export async function getSharedReport(reportId) {
 }
 
 export async function revokeReportSharing(id) {
-  return await del(`/api/share/${id}`);
+  return await del(`/api/share/report/${id}`);
 }

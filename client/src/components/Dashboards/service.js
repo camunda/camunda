@@ -29,12 +29,12 @@ export async function loadReport(report) {
   }
 }
 
-export async function shareDashboard(reportId) {
+export async function shareDashboard(dashboardId) {
   const body = {
-    resourceId: reportId,
+    dashboardId,
     type: 'DASHBOARD'
   };
-  const response = await post(`/api/share/`, body);
+  const response = await post(`/api/share/dashboard`, body);
 
   const json = await response.json();
   return json.id;
@@ -52,7 +52,7 @@ export async function getSharedDashboard(reportId) {
 }
 
 export async function revokeDashboardSharing(id) {
-  return await del(`/api/share/${id}`);
+  return await del(`/api/share/dashboard/${id}`);
 }
 
 export function getOccupiedTiles(reports) {
