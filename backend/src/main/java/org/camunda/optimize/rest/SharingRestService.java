@@ -2,9 +2,10 @@ package org.camunda.optimize.rest;
 
 
 import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.EvaluatedDashboardShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.EvaluatedReportShareDto;
-import org.camunda.optimize.dto.optimize.query.sharing.SharingDto;
+import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.security.SharingService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,23 +34,41 @@ public class SharingRestService {
   @Secured
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public IdDto createNewShare (SharingDto createSharingDto) {
-    sharingService.validate(createSharingDto);
-    return sharingService.crateNewShare(createSharingDto);
+  @Path("/report")
+  public IdDto createNewReportShare(ReportShareDto createSharingDto) {
+    sharingService.validateReportShare(createSharingDto);
+    return sharingService.crateNewReportShare(createSharingDto);
+  }
+
+  @POST
+  @Secured
+  @Produces(MediaType.APPLICATION_JSON)
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Path("/dashboard")
+  public IdDto createNewDashboardShare (DashboardShareDto createSharingDto) {
+    sharingService.validateDashboardShare(createSharingDto);
+    return sharingService.crateNewDashboardShare(createSharingDto);
   }
 
   @DELETE
   @Secured
-  @Path("/{id}")
-  public void deleteShare(@PathParam("id") String shareId) {
-    sharingService.deleteShare(shareId);
+  @Path("/report/{id}")
+  public void deleteReportShare(@PathParam("id") String shareId) {
+    sharingService.deleteReportShare(shareId);
+  }
+
+  @DELETE
+  @Secured
+  @Path("/dashboard/{id}")
+  public void deleteDashboardShare(@PathParam("id") String shareId) {
+    sharingService.deleteDashboardShare(shareId);
   }
 
   @GET
   @Secured
   @Path("/report/{id}")
   @Produces(MediaType.APPLICATION_JSON)
-  public SharingDto findShareForReport(@PathParam("id") String resourceId) {
+  public ReportShareDto findShareForReport(@PathParam("id") String resourceId) {
     return sharingService.findShareForReport(resourceId);
   }
 
@@ -57,7 +76,7 @@ public class SharingRestService {
   @Secured
   @Path("/dashboard/{id}")
   @Produces(MediaType.APPLICATION_JSON)
-  public SharingDto findShareForDashboard(@PathParam("id") String resourceId) {
+  public DashboardShareDto findShareForDashboard(@PathParam("id") String resourceId) {
     return sharingService.findShareForDashboard(resourceId);
   }
 

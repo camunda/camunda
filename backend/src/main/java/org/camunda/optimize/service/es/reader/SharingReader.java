@@ -1,10 +1,11 @@
 package org.camunda.optimize.service.es.reader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
+import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.SharedResourceType;
-import org.camunda.optimize.dto.optimize.query.sharing.SharingDto;
-import org.camunda.optimize.service.es.schema.type.ShareType;
+import org.camunda.optimize.service.es.schema.type.DashboardShareType;
+import org.camunda.optimize.service.es.schema.type.ReportShareType;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchResponse;
@@ -40,12 +41,12 @@ public class SharingReader {
   @Autowired
   private ObjectMapper objectMapper;
 
-  private Optional<SharingDto> findShareByQuery(QueryBuilder query) {
-    Optional<SharingDto> result = Optional.empty();
+  private Optional<ReportShareDto> findReportShareByQuery(QueryBuilder query) {
+    Optional<ReportShareDto> result = Optional.empty();
 
     SearchResponse scrollResp = esclient
-      .prepareSearch(configurationService.getOptimizeIndex(configurationService.getShareType()))
-      .setTypes(configurationService.getShareType())
+      .prepareSearch(configurationService.getOptimizeIndex(configurationService.getReportShareType()))
+      .setTypes(configurationService.getReportShareType())
       .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
       .setQuery(query)
       .setSize(20)
@@ -56,7 +57,7 @@ public class SharingReader {
         result = Optional.of(
           objectMapper.readValue(
             scrollResp.getHits().getAt(0).getSourceAsString(),
-            SharingDto.class
+              ReportShareDto.class
           )
         );
       } catch (IOException e) {
@@ -66,13 +67,13 @@ public class SharingReader {
     return result;
   }
 
-  public Optional<SharingDto> findShare(String shareId) {
-    Optional<SharingDto> result = Optional.empty();
+  public Optional<ReportShareDto> findReportShare(String shareId) {
+    Optional<ReportShareDto> result = Optional.empty();
     logger.debug("Fetching share with id [{}]", shareId);
     GetResponse getResponse = esclient
       .prepareGet(
-          configurationService.getOptimizeIndex(configurationService.getShareType()),
-          configurationService.getShareType(),
+          configurationService.getOptimizeIndex(configurationService.getReportShareType()),
+          configurationService.getReportShareType(),
           shareId
       )
       .setRealtime(false)
@@ -80,7 +81,7 @@ public class SharingReader {
 
     if (getResponse.isExists()) {
       try {
-        result = Optional.of(objectMapper.readValue(getResponse.getSourceAsString(), SharingDto.class));
+        result = Optional.of(objectMapper.readValue(getResponse.getSourceAsString(), ReportShareDto.class));
       } catch (IOException e) {
         logger.error("cant't map sharing hit", e);
       }
@@ -88,31 +89,84 @@ public class SharingReader {
     return result;
   }
 
-  public Optional<SharingDto> findShareForResource(String resourceId, SharedResourceType type) {
-    BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
-    boolQueryBuilder
-        .must(QueryBuilders.termQuery(ShareType.RESOURCE_ID, resourceId))
-        .must(QueryBuilders.termQuery(ShareType.TYPE, type.toString()));
-    QueryBuilder query = boolQueryBuilder;
+  public Optional<DashboardShareDto> findDashboardShare(String shareId) {
+    Optional<DashboardShareDto> result = Optional.empty();
+    logger.debug("Fetching share with id [{}]", shareId);
+    GetResponse getResponse = esclient
+      .prepareGet(
+          configurationService.getOptimizeIndex(configurationService.getDashboardShareType()),
+          configurationService.getDashboardShareType(),
+          shareId
+      )
+      .setRealtime(false)
+      .get();
 
-    logger.debug("Fetching share for resource [{}]", resourceId);
-    return findShareByQuery(query);
+    if (getResponse.isExists()) {
+      try {
+        result = Optional.of(objectMapper.readValue(getResponse.getSourceAsString(), DashboardShareDto.class));
+      } catch (IOException e) {
+        logger.error("cant't map sharing hit", e);
+      }
+    }
+    return result;
   }
 
-  public List<SharingDto> findSharesForResources(Set<String> resourceIds, SharedResourceType sharedResourceType) {
+  public Optional<ReportShareDto> findShareForReport(String reportId, SharedResourceType type) {
+    logger.debug("Fetching share for resource [{}]", reportId);
     BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
-    boolQueryBuilder
-        .must(QueryBuilders.termsQuery(ShareType.RESOURCE_ID, resourceIds))
-        .must(QueryBuilders.termQuery(ShareType.TYPE, sharedResourceType.toString()));
-    QueryBuilder query = boolQueryBuilder;
-    return findSharesByQuery(query);
+    boolQueryBuilder = boolQueryBuilder
+        .must(QueryBuilders.termQuery(ReportShareType.REPORT_ID, reportId))
+        .must(QueryBuilders.termQuery(ReportShareType.TYPE, type.toString()));
+    return findReportShareByQuery(boolQueryBuilder);
   }
 
-  private List<SharingDto> findSharesByQuery(QueryBuilder query) {
-    List<SharingDto> result = new ArrayList<>();
+  public Optional<DashboardShareDto> findShareForDashboard(String dashboardId, SharedResourceType type) {
+    logger.debug("Fetching share for resource [{}]", dashboardId);
+    BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+    boolQueryBuilder = boolQueryBuilder
+        .must(QueryBuilders.termQuery(DashboardShareType.DASHBOARD_ID, dashboardId))
+        .must(QueryBuilders.termQuery(DashboardShareType.TYPE, type.toString()));
+    return findDashboardShareByQuery(boolQueryBuilder);
+  }
+
+  private Optional<DashboardShareDto> findDashboardShareByQuery(BoolQueryBuilder query) {
+    Optional<DashboardShareDto> result = Optional.empty();
+
     SearchResponse scrollResp = esclient
-        .prepareSearch(configurationService.getOptimizeIndex(configurationService.getShareType()))
-        .setTypes(configurationService.getShareType())
+        .prepareSearch(configurationService.getOptimizeIndex(configurationService.getDashboardShareType()))
+        .setTypes(configurationService.getDashboardShareType())
+        .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
+        .setQuery(query)
+        .setSize(20)
+        .get();
+
+    if (scrollResp.getHits().getTotalHits() != 0) {
+      String firstHitSource = scrollResp.getHits().getAt(0).getSourceAsString();
+      try {
+        result = Optional.of(
+            objectMapper.readValue(firstHitSource, DashboardShareDto.class)
+        );
+      } catch (IOException e) {
+        logger.error("cant't map sharing hit", e);
+      }
+    }
+    return result;
+  }
+
+  public List<ReportShareDto> findReportSharesForResources(Set<String> resourceIds, SharedResourceType sharedResourceType) {
+    BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+    boolQueryBuilder
+        .must(QueryBuilders.termsQuery(ReportShareType.REPORT_ID, resourceIds))
+        .must(QueryBuilders.termQuery(ReportShareType.TYPE, sharedResourceType.toString()));
+    QueryBuilder query = boolQueryBuilder;
+    return findReportSharesByQuery(query);
+  }
+
+  private List<ReportShareDto> findReportSharesByQuery(QueryBuilder query) {
+    List<ReportShareDto> result = new ArrayList<>();
+    SearchResponse scrollResp = esclient
+        .prepareSearch(configurationService.getOptimizeIndex(configurationService.getReportShareType()))
+        .setTypes(configurationService.getReportShareType())
         .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
         .setQuery(query)
         .setSize(20)
@@ -121,7 +175,7 @@ public class SharingReader {
     do {
       for (SearchHit hit : scrollResp.getHits().getHits()) {
         try {
-          result.add(objectMapper.readValue(hit.getSourceAsString(), SharingDto.class));
+          result.add(objectMapper.readValue(hit.getSourceAsString(), ReportShareDto.class));
         } catch (IOException e) {
           logger.error("cant't map sharing hit", e);
         }

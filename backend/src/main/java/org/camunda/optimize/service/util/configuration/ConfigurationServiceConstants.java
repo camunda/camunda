@@ -62,7 +62,8 @@ public interface ConfigurationServiceConstants {
   String REPORT_TYPE = "$.es.reportType";
   String DASHBOARD_TYPE = "$.es.dashboardType";
   String ALERT_TYPE = "$.es.alertType";
-  String SHARE_TYPE = "$.es.shareType";
+  String REPORT_SHARE_TYPE = "$.es.reportShareType";
+  String DASHBOARD_SHARE_TYPE = "$.es.dashboardShareType";
 
   String ENGINE_CONNECT_TIMEOUT = "$.engine-commons.connection.timeout";
   String ENGINE_READ_TIMEOUT = "$.engine-commons.read.timeout";

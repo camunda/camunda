@@ -1,7 +1,8 @@
 package org.camunda.optimize.service.es.writer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.camunda.optimize.dto.optimize.query.sharing.SharingDto;
+import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
+import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.support.WriteRequest;
@@ -29,28 +30,72 @@ public class SharingWriter {
   @Autowired
   private ObjectMapper objectMapper;
 
-  public SharingDto saveShare(SharingDto createSharingDto) {
+  public ReportShareDto saveReportShare(ReportShareDto createSharingDto) {
     String id = IdGenerator.getNextId();
     createSharingDto.setId(id);
     esclient
       .prepareIndex(
-        configurationService.getOptimizeIndex(configurationService.getShareType()),
-        configurationService.getShareType(),
+        configurationService.getOptimizeIndex(configurationService.getReportShareType()),
+        configurationService.getReportShareType(),
         id
       )
       .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
       .setSource(objectMapper.convertValue(createSharingDto, Map.class))
       .get();
 
-    logger.debug("share with id [{}] for resource [{}] has been created", id, createSharingDto.getResourceId());
+    logger.debug("report share with id [{}] for resource [{}] has been created", id, createSharingDto.getReportId());
     return createSharingDto;
   }
 
-  public void deleteShare(String shareId) {
-    logger.debug("Deleting share with id [{}]", shareId);
+  public DashboardShareDto saveDashboardShare(DashboardShareDto createSharingDto) {
+    String id = IdGenerator.getNextId();
+    createSharingDto.setId(id);
+    esclient
+      .prepareIndex(
+        configurationService.getOptimizeIndex(configurationService.getDashboardShareType()),
+        configurationService.getDashboardShareType(),
+        id
+      )
+      .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
+      .setSource(objectMapper.convertValue(createSharingDto, Map.class))
+      .get();
+
+    logger.debug("dashboard share with id [{}] for resource [{}] has been created", id, createSharingDto.getDashboardId());
+    return createSharingDto;
+  }
+
+  public DashboardShareDto updateDashboardShare(DashboardShareDto updatedShare) {
+    String id = updatedShare.getId();
+    esclient
+      .prepareIndex(
+        configurationService.getOptimizeIndex(configurationService.getDashboardShareType()),
+        configurationService.getDashboardShareType(),
+        id
+      )
+      .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
+      .setSource(objectMapper.convertValue(updatedShare, Map.class))
+      .get();
+
+    logger.debug("dashboard share with id [{}] for resource [{}] has been created", id, updatedShare.getDashboardId());
+    return updatedShare;
+  }
+
+  public void deleteReportShare(String shareId) {
+    logger.debug("Deleting report share with id [{}]", shareId);
     esclient.prepareDelete(
-      configurationService.getOptimizeIndex(configurationService.getShareType()),
-      configurationService.getShareType(),
+      configurationService.getOptimizeIndex(configurationService.getReportShareType()),
+      configurationService.getReportShareType(),
+      shareId
+    )
+    .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
+    .get();
+  }
+
+  public void deleteDashboardShare(String shareId) {
+    logger.debug("Deleting dashboard share with id [{}]", shareId);
+    esclient.prepareDelete(
+      configurationService.getOptimizeIndex(configurationService.getDashboardShareType()),
+      configurationService.getDashboardShareType(),
       shareId
     )
     .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)

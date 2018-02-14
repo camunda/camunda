@@ -218,7 +218,8 @@ es:
   dashboardType: dashboard
   alertType: alert
   alertStatusType: alert-status
-  shareType: share
+  reportShareType: report-share
+  dashboardShareType: dashboard-share
   sampler:
     #Connection sampler interval set to the client
     interval: 5000

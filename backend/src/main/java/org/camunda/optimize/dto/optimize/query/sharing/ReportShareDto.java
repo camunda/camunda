@@ -5,10 +5,10 @@ import java.io.Serializable;
 /**
  * @author Askar Akhmerov
  */
-public class SharingDto implements Serializable {
+public class ReportShareDto implements Serializable {
   private String id;
   private SharedResourceType type;
-  private String resourceId;
+  private String reportId;
 
   public SharedResourceType getType() {
     return type;
@@ -26,11 +26,11 @@ public class SharingDto implements Serializable {
     this.id = id;
   }
 
-  public String getResourceId() {
-    return resourceId;
+  public String getReportId() {
+    return reportId;
   }
 
-  public void setResourceId(String resourceId) {
-    this.resourceId = resourceId;
+  public void setReportId(String reportId) {
+    this.reportId = reportId;
   }
 }

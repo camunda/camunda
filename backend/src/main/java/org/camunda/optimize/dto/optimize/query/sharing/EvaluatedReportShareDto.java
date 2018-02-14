@@ -5,7 +5,7 @@ import org.camunda.optimize.dto.optimize.query.report.result.ReportResultDto;
 /**
  * @author Askar Akhmerov
  */
-public class EvaluatedReportShareDto <T extends ReportResultDto> extends SharingDto {
+public class EvaluatedReportShareDto <T extends ReportResultDto> extends ReportShareDto {
 
   private T report;
 
@@ -13,11 +13,11 @@ public class EvaluatedReportShareDto <T extends ReportResultDto> extends Sharing
     this(null);
   }
 
-  public EvaluatedReportShareDto(SharingDto base) {
+  public EvaluatedReportShareDto(ReportShareDto base) {
     if (base != null) {
       this.setId(base.getId());
       this.setType(base.getType());
-      this.setResourceId(base.getResourceId());
+      this.setReportId(base.getReportId());
     }
   }
 

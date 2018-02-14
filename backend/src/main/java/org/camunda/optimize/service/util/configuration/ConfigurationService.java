@@ -72,7 +72,8 @@ public class ConfigurationService {
   private String finishedPiIdTrackingType;
   private String unfinishedPiIdTrackingType;
   private String alertType;
-  private String shareType;
+  private String reportShareType;
+  private String dashboardShareType;
 
   private String analyzerName;
   private String tokenizer;
@@ -813,11 +814,18 @@ public class ConfigurationService {
     return alertType;
   }
 
-  public String getShareType() {
-    if (shareType == null) {
-      shareType = jsonContext.read(ConfigurationServiceConstants.SHARE_TYPE);
+  public String getReportShareType() {
+    if (reportShareType == null) {
+      reportShareType = jsonContext.read(ConfigurationServiceConstants.REPORT_SHARE_TYPE);
     }
-    return shareType;
+    return reportShareType;
+  }
+
+  public String getDashboardShareType() {
+    if (dashboardShareType == null) {
+      dashboardShareType = jsonContext.read(ConfigurationServiceConstants.DASHBOARD_SHARE_TYPE);
+    }
+    return reportShareType;
   }
 
   public Integer getImportResetIntervalValue() {

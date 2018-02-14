@@ -3,14 +3,14 @@ package org.camunda.optimize.service.security;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.result.ReportResultDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardDefinitionShareDto;
+import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.EvaluatedDashboardShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.EvaluatedReportShareDto;
+import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareLocationDto;
 import org.camunda.optimize.dto.optimize.query.sharing.SharedResourceType;
-import org.camunda.optimize.dto.optimize.query.sharing.SharingDto;
 import org.camunda.optimize.service.dashboard.DashboardService;
 import org.camunda.optimize.service.es.reader.SharingReader;
 import org.camunda.optimize.service.es.writer.SharingWriter;
@@ -53,34 +53,49 @@ public class SharingService  {
   /**
    * NOTE: this method does not perform validation
    */
-  public IdDto crateNewShare(SharingDto createSharingDto) {
+  public IdDto crateNewReportShare(ReportShareDto createSharingDto) {
     String result;
-    Optional<SharingDto> existing =
-        sharingReader.findShareForResource(createSharingDto.getResourceId(), createSharingDto.getType());
+    Optional<ReportShareDto> existing =
+        sharingReader.findShareForReport(createSharingDto.getReportId(), createSharingDto.getType());
 
     result = existing
-      .map(SharingDto::getId)
-      .orElseGet(() -> {
-        if (SharedResourceType.DASHBOARD.equals(createSharingDto.getType())) {
-          this.shareReportsOfDashboard(createSharingDto);
-        }
-        return sharingWriter.saveShare(createSharingDto).getId();
-      });
+      .map(ReportShareDto::getId)
+      .orElseGet(() -> sharingWriter.saveReportShare(createSharingDto).getId());
 
     IdDto id = new IdDto();
     id.setId(result);
     return id;
   }
 
-  private void shareReportsOfDashboard(SharingDto createSharingDto) {
+  public IdDto crateNewDashboardShare(DashboardShareDto createSharingDto) {
+    String result;
+    Optional<DashboardShareDto> existing =
+        sharingReader.findShareForDashboard(createSharingDto.getDashboardId(), createSharingDto.getType());
+
+    result = existing
+        .map(DashboardShareDto::getId)
+        .orElseGet(() -> {
+          this.shareReportsOfDashboard(createSharingDto);
+          return sharingWriter.saveDashboardShare(createSharingDto).getId();
+        });
+
+    IdDto id = new IdDto();
+    id.setId(result);
+    return id;
+  }
+
+  private void shareReportsOfDashboard(DashboardShareDto createSharingDto) {
     try {
       DashboardDefinitionDto dashboardDefinition =
-          dashboardService.getDashboardDefinition(createSharingDto.getResourceId());
+          dashboardService.getDashboardDefinition(createSharingDto.getDashboardId());
 
       if (dashboardDefinition.getReports() != null) {
+        List<String> reportShares = new ArrayList<>();
         for (ReportLocationDto report : dashboardDefinition.getReports()) {
-          this.crateNewShare(constructDashboardReportShareDto(report));
+          IdDto idDto = this.crateNewReportShare(constructDashboardReportShareDto(report));
+          reportShares.add(idDto.getId());
         }
+        createSharingDto.setReportShares(reportShares);
       }
 
     } catch (IOException | OptimizeException e) {
@@ -88,30 +103,21 @@ public class SharingService  {
     }
   }
 
-  private SharingDto constructDashboardReportShareDto(ReportLocationDto report) {
-    SharingDto result = new SharingDto();
+  private ReportShareDto constructDashboardReportShareDto(ReportLocationDto report) {
+    ReportShareDto result = new ReportShareDto();
     result.setType(SharedResourceType.DASHBOARD_REPORT);
-    result.setResourceId(report.getId());
+    result.setReportId(report.getId());
     return result;
   }
 
-  public void validate(SharingDto createSharingDto) {
-    if (SharedResourceType.REPORT.equals(createSharingDto.getType())) {
+  public void validateDashboardShare(DashboardShareDto createSharingDto) {
+    if (SharedResourceType.DASHBOARD.equals(createSharingDto.getType())) {
       try {
-        reportService.getReport(createSharingDto.getResourceId());
+        dashboardService.getDashboardDefinition(createSharingDto.getDashboardId());
       } catch (IOException e) {
-        logger.error("can't fetch report [{}]", createSharingDto.getResourceId(), e);
+        logger.error("can't fetch dashboard [{}]", createSharingDto.getDashboardId(), e);
       } catch (OptimizeException e) {
-        logger.error("can't fetch report [{}]", createSharingDto.getResourceId(), e);
-        throw new OptimizeValidationException(e.getMessage());
-      }
-    } else if (SharedResourceType.DASHBOARD.equals(createSharingDto.getType())) {
-      try {
-        dashboardService.getDashboardDefinition(createSharingDto.getResourceId());
-      } catch (IOException e) {
-        logger.error("can't fetch dashboard [{}]", createSharingDto.getResourceId(), e);
-      } catch (OptimizeException e) {
-        logger.error("can't fetch dashboard [{}]", createSharingDto.getResourceId(), e);
+        logger.error("can't fetch dashboard [{}]", createSharingDto.getDashboardId(), e);
         throw new OptimizeValidationException(e.getMessage());
       }
     } else {
@@ -119,28 +125,40 @@ public class SharingService  {
     }
   }
 
-  public void deleteShare(String shareId) {
-    Optional<SharingDto> base = sharingReader.findShare(shareId);
-    base.ifPresent((share) -> deleteShareCascaded(shareId, share));
+  public void validateReportShare(ReportShareDto createSharingDto) {
+    if (SharedResourceType.REPORT.equals(createSharingDto.getType())) {
+      try {
+        reportService.getReport(createSharingDto.getReportId());
+      } catch (IOException e) {
+        logger.error("can't fetch report [{}]", createSharingDto.getReportId(), e);
+      } catch (OptimizeException e) {
+        logger.error("can't fetch report [{}]", createSharingDto.getReportId(), e);
+        throw new OptimizeValidationException(e.getMessage());
+      }
+    } else {
+      throw new OptimizeValidationException("Specified share type is not allowed");
+    }
   }
 
-  /**
-   *
-   * @param shareId
-   * @param share
-   */
-  private void deleteShareCascaded(String shareId, SharingDto share) {
-    if (SharedResourceType.DASHBOARD.equals(share.getType())) {
-      Optional<EvaluatedDashboardShareDto> evaluatedDashboardShareDto = this.evaluateDashboard(shareId);
-      for (ReportShareLocationDto reportShare : evaluatedDashboardShareDto.get().getDashboard().getReportShares()) {
-        this.deleteShare(reportShare.getShareId());
+  public void deleteReportShare(String shareId) {
+    Optional<ReportShareDto> base = sharingReader.findReportShare(shareId);
+    base.ifPresent((share) -> sharingWriter.deleteReportShare(shareId));
+  }
+
+  public void deleteDashboardShare(String shareId) {
+    Optional<DashboardShareDto> base = sharingReader.findDashboardShare(shareId);
+    base.ifPresent((share) -> {
+      if (share.getReportShares() != null) {
+        for (String reportShare : share.getReportShares()) {
+          sharingWriter.deleteReportShare(reportShare);
+        }
       }
-    }
-    sharingWriter.deleteShare(shareId);
+      sharingWriter.deleteDashboardShare(shareId);
+    });
   }
 
   public Optional<EvaluatedReportShareDto> evaluateReport(String shareId) {
-    Optional<SharingDto> base = sharingReader.findShare(shareId);
+    Optional<ReportShareDto> base = sharingReader.findReportShare(shareId);
 
     Optional<EvaluatedReportShareDto> result = base
         .filter(share -> SharedResourceType.REPORT.equals(share.getType()) || SharedResourceType.DASHBOARD_REPORT.equals(share.getType()))
@@ -150,23 +168,23 @@ public class SharingService  {
     return result;
   }
 
-  private Optional<EvaluatedReportShareDto> constructReportShare(SharingDto share) {
+  private Optional<EvaluatedReportShareDto> constructReportShare(ReportShareDto share) {
     Optional<EvaluatedReportShareDto> result = Optional.empty();
     EvaluatedReportShareDto wrapped = new EvaluatedReportShareDto(share);
 
     try {
-      ReportResultDto reportResultDto = reportService.evaluateSavedReport(wrapped.getResourceId());
+      ReportResultDto reportResultDto = reportService.evaluateSavedReport(wrapped.getReportId());
       wrapped.setReport(reportResultDto);
       result = Optional.of(wrapped);
     } catch (IOException | OptimizeException e) {
-      logger.error("can't evaluate shared report []", wrapped.getResourceId());
+      logger.error("can't evaluate shared report []", wrapped.getReportId());
     }
 
     return result;
   }
 
   public Optional<EvaluatedDashboardShareDto> evaluateDashboard(String shareId) {
-    Optional<SharingDto> base = sharingReader.findShare(shareId);
+    Optional<DashboardShareDto> base = sharingReader.findDashboardShare(shareId);
 
     Optional<EvaluatedDashboardShareDto> result = base
         .filter(share -> SharedResourceType.DASHBOARD.equals(share.getType()))
@@ -175,16 +193,16 @@ public class SharingService  {
     return result;
   }
 
-  private Optional<EvaluatedDashboardShareDto> constructDashboard(SharingDto share) {
+  private Optional<EvaluatedDashboardShareDto> constructDashboard(DashboardShareDto share) {
     EvaluatedDashboardShareDto result = new EvaluatedDashboardShareDto(share);
 
     try {
-      DashboardDefinitionDto dashboardDefinition = dashboardService.getDashboardDefinition(share.getResourceId());
+      DashboardDefinitionDto dashboardDefinition = dashboardService.getDashboardDefinition(share.getDashboardId());
       DashboardDefinitionShareDto shareData = DashboardDefinitionShareDto.of(dashboardDefinition);
       shareData.setReportShares(constructReportShares(dashboardDefinition.getReports()));
       result.setDashboard(shareData);
     } catch (IOException | OptimizeException e) {
-      logger.error("can't find dashboard [{}]", share.getResourceId(), e);
+      logger.error("can't find dashboard [{}]", share.getDashboardId(), e);
     }
 
     return Optional.of(result);
@@ -198,10 +216,10 @@ public class SharingService  {
         reportLocationsMap.put(report.getId(), report);
       }
 
-      List<SharingDto> dashboardReports = this.findSharesForDashboardReports(reportLocationsMap.keySet());
+      List<ReportShareDto> dashboardReports = this.findSharesForDashboardReports(reportLocationsMap.keySet());
 
       result = new ArrayList<>();
-      for (SharingDto reportShare : dashboardReports) {
+      for (ReportShareDto reportShare : dashboardReports) {
         ReportShareLocationDto toAdd = constructReportShareLocation(reportLocationsMap, reportShare);
         result.add(toAdd);
       }
@@ -209,17 +227,20 @@ public class SharingService  {
     return result;
   }
 
-  private List<SharingDto> findSharesForDashboardReports(Set<String> resourceIds) {
-    return sharingReader.findSharesForResources(resourceIds, SharedResourceType.DASHBOARD_REPORT);
+  private List<ReportShareDto> findSharesForDashboardReports(Set<String> resourceIds) {
+    return sharingReader.findReportSharesForResources(resourceIds, SharedResourceType.DASHBOARD_REPORT);
   }
 
-  private ReportShareLocationDto constructReportShareLocation(Map<String, ReportLocationDto> reportLocationsMap, SharingDto reportShare) {
-    ReportLocationDto reportLocationDto = reportLocationsMap.get(reportShare.getResourceId());
-    ReportShareLocationDto toAdd = mapToReportShareLocationDto(reportLocationDto, reportShare.getId(), reportShare.getResourceId());
+  private ReportShareLocationDto constructReportShareLocation(
+      Map<String, ReportLocationDto> reportLocationsMap, ReportShareDto reportShare) {
+    ReportLocationDto reportLocationDto = reportLocationsMap.get(reportShare.getReportId());
+    ReportShareLocationDto toAdd = mapToReportShareLocationDto(
+        reportLocationDto, reportShare.getId(), reportShare.getReportId());
     return toAdd;
   }
 
-  private ReportShareLocationDto mapToReportShareLocationDto(ReportLocationDto reportLocationDto, String shareId, String reportId) {
+  private ReportShareLocationDto mapToReportShareLocationDto(
+      ReportLocationDto reportLocationDto, String shareId, String reportId) {
     ReportShareLocationDto toAdd = new ReportShareLocationDto();
     toAdd.setShareId(shareId);
     toAdd.setId(reportId);
@@ -229,45 +250,50 @@ public class SharingService  {
   }
 
   public void deleteShareForReport(String reportId) {
-    Optional<SharingDto> share = findShareForResource(reportId, SharedResourceType.DASHBOARD_REPORT);
-    share.ifPresent(dto -> this.deleteShare(dto.getId()));
+    Optional<ReportShareDto> share = findShareForReport(reportId, SharedResourceType.DASHBOARD_REPORT);
+    share.ifPresent(dto -> this.deleteReportShare(dto.getId()));
 
-    share = findShareForResource(reportId, SharedResourceType.REPORT);
-    share.ifPresent(dto -> this.deleteShare(dto.getId()));
+    share = findShareForReport(reportId, SharedResourceType.REPORT);
+    share.ifPresent(dto -> this.deleteReportShare(dto.getId()));
   }
 
-  public SharingDto findShareForReport(String resourceId) {
-    return findShareForResource(resourceId, SharedResourceType.REPORT)
+  public ReportShareDto findShareForReport(String resourceId) {
+    return findShareForReport(resourceId, SharedResourceType.REPORT)
         .orElse(null);
   }
 
-  private Optional<SharingDto> findShareForResource(String resourceId, SharedResourceType type) {
-    return sharingReader.findShareForResource(resourceId, type);
+  private Optional<ReportShareDto> findShareForReport(String resourceId, SharedResourceType type) {
+    return sharingReader.findShareForReport(resourceId, type);
   }
 
-  public SharingDto findShareForDashboard(String resourceId) {
-    return findShareForResource(resourceId, SharedResourceType.DASHBOARD)
+  public DashboardShareDto findShareForDashboard(String resourceId) {
+    return findShareForDashboard(resourceId, SharedResourceType.DASHBOARD)
         .orElse(null);
+  }
+
+  private Optional<DashboardShareDto> findShareForDashboard(String resourceId, SharedResourceType type) {
+    return sharingReader.findShareForDashboard(resourceId, type);
   }
 
   public void adjustDashboardShares(DashboardDefinitionDto updatedDashboard) {
-    Optional<SharingDto> dashboardShare = findShareForResource(updatedDashboard.getId(), SharedResourceType.DASHBOARD);
+    Optional<DashboardShareDto> dashboardShare = findShareForDashboard(
+        updatedDashboard.getId(), SharedResourceType.DASHBOARD);
 
-    Optional<EvaluatedDashboardShareDto> evaluatedDashboardShareDto = dashboardShare
-      .map(share -> {
-        Optional<EvaluatedDashboardShareDto> evaluated = this.evaluateDashboard(share.getId());
-        return evaluated.get();
-      });
-
-    evaluatedDashboardShareDto.ifPresent(share -> {
-      for (ReportShareLocationDto dashboardReport : share.getDashboard().getReportShares()) {
-        this.deleteShare(dashboardReport.getShareId());
+    dashboardShare.ifPresent(share -> {
+      if (share.getReportShares() != null) {
+        for (String dashboardReportShareId : share.getReportShares()) {
+          this.deleteReportShare(dashboardReportShareId);
+        }
       }
 
       if (updatedDashboard.getReports() != null) {
+        List<String> reportShares = new ArrayList<>();
         for (ReportLocationDto report : updatedDashboard.getReports()) {
-          this.crateNewShare(constructDashboardReportShareDto(report));
+          IdDto idDto = this.crateNewReportShare(constructDashboardReportShareDto(report));
+          reportShares.add(idDto.getId());
         }
+        share.setReportShares(reportShares);
+        sharingWriter.updateDashboardShare(share);
       }
     });
 

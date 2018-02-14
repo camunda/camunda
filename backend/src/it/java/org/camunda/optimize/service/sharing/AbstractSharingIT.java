@@ -7,8 +7,9 @@ import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
+import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.SharedResourceType;
-import org.camunda.optimize.dto.optimize.query.sharing.SharingDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -130,40 +131,47 @@ public abstract class AbstractSharingIT {
   }
 
   protected String addShareForDashboard(String token, String dashboardId) {
-    SharingDto share = createDashboardShare(dashboardId);
-    Response response = createShareResponse(token, share);
+    DashboardShareDto share = createDashboardShare(dashboardId);
+    Response response = createDashboardShareResponse(token, share);
 
     return response.readEntity(IdDto.class).getId();
   }
 
-  protected Response createShareResponse(String token, SharingDto share) {
-    return embeddedOptimizeRule.target(SHARE)
+  protected Response createReportShareResponse(String token, ReportShareDto share) {
+    return embeddedOptimizeRule.target(SHARE + "/" + REPORT)
         .request()
         .header(HttpHeaders.AUTHORIZATION, BEARER + token)
         .post(Entity.json(share));
   }
 
-  protected SharingDto createReportShare() {
+  protected Response createDashboardShareResponse(String token, DashboardShareDto share) {
+    return embeddedOptimizeRule.target(SHARE + "/" + DASHBOARD)
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .post(Entity.json(share));
+  }
+
+  protected ReportShareDto createReportShare() {
     return createReportShare(FAKE_REPORT_ID);
   }
 
-  protected SharingDto createReportShare(String reportId) {
-    SharingDto sharingDto = new SharingDto();
-    sharingDto.setResourceId(reportId);
+  protected ReportShareDto createReportShare(String reportId) {
+    ReportShareDto sharingDto = new ReportShareDto();
+    sharingDto.setReportId(reportId);
     sharingDto.setType(SharedResourceType.REPORT);
     return sharingDto;
   }
 
-  protected SharingDto createDashboardShare(String dashboardId) {
-    SharingDto sharingDto = new SharingDto();
-    sharingDto.setResourceId(dashboardId);
+  protected DashboardShareDto createDashboardShare(String dashboardId) {
+    DashboardShareDto sharingDto = new DashboardShareDto();
+    sharingDto.setDashboardId(dashboardId);
     sharingDto.setType(SharedResourceType.DASHBOARD);
     return sharingDto;
   }
 
   protected String addShareForReport(String token, String reportId) {
-    SharingDto share = createReportShare(reportId);
-    Response response = createShareResponse(token, share);
+    ReportShareDto share = createReportShare(reportId);
+    Response response = createReportShareResponse(token, share);
 
     return response.readEntity(IdDto.class).getId();
   }
@@ -183,9 +191,9 @@ public abstract class AbstractSharingIT {
         .get();
   }
 
-  protected SharingDto getShareForReport(String token, String reportId) {
+  protected ReportShareDto getShareForReport(String token, String reportId) {
     Response response = findShareForReport(token, reportId);
-    return response.readEntity(SharingDto.class);
+    return response.readEntity(ReportShareDto.class);
   }
 
   protected void assertReportData(String reportId, String shareId, HashMap evaluatedReportAsMap) {

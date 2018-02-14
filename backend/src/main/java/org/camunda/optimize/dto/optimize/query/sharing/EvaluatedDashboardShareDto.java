@@ -1,11 +1,9 @@
 package org.camunda.optimize.dto.optimize.query.sharing;
 
-import org.camunda.optimize.dto.optimize.query.dashboard.BaseDashboardDefinitionDto;
-
 /**
  * @author Askar Akhmerov
  */
-public class EvaluatedDashboardShareDto extends SharingDto {
+public class EvaluatedDashboardShareDto extends DashboardShareDto {
 
   private DashboardDefinitionShareDto dashboard;
 
@@ -13,11 +11,11 @@ public class EvaluatedDashboardShareDto extends SharingDto {
     this(null);
   }
 
-  public EvaluatedDashboardShareDto(SharingDto base) {
+  public EvaluatedDashboardShareDto(DashboardShareDto base) {
     if (base != null) {
       this.setId(base.getId());
       this.setType(base.getType());
-      this.setResourceId(base.getResourceId());
+      this.setDashboardId(base.getDashboardId());
     }
   }
 

@@ -1,8 +1,9 @@
 package org.camunda.optimize.rest;
 
+import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.EvaluatedDashboardShareDto;
+import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.SharedResourceType;
-import org.camunda.optimize.dto.optimize.query.sharing.SharingDto;
 import org.camunda.optimize.service.sharing.AbstractSharingIT;
 import org.junit.Rule;
 import org.junit.Test;
@@ -36,10 +37,22 @@ public class SharingRestServiceIT extends AbstractSharingIT {
       .around(embeddedOptimizeRule);
 
   @Test
-  public void createNewShareWithoutAuthentication() {
+  public void createNewReportShareWithoutAuthentication() {
     // when
     Response response =
-      embeddedOptimizeRule.target(SHARE)
+      embeddedOptimizeRule.target(SHARE + "/" + REPORT)
+        .request()
+        .post(Entity.json(""));
+
+    // then the status code is not authorized
+    assertThat(response.getStatus(), is(401));
+  }
+
+  @Test
+  public void createNewDashboardShareWithoutAuthentication() {
+    // when
+    Response response =
+      embeddedOptimizeRule.target(SHARE + "/" + DASHBOARD)
         .request()
         .post(Entity.json(""));
 
@@ -52,10 +65,10 @@ public class SharingRestServiceIT extends AbstractSharingIT {
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
     String reportId = createReport();
-    SharingDto share = createReportShare(reportId);
+    ReportShareDto share = createReportShare(reportId);
 
     // when
-    Response response = createShareResponse(token, share);
+    Response response = createReportShareResponse(token, share);
 
     // then
     assertThat(response.getStatus(), is(200));
@@ -70,12 +83,12 @@ public class SharingRestServiceIT extends AbstractSharingIT {
     String token = embeddedOptimizeRule.getAuthenticationToken();
     String dashboard = addEmptyDashboardToOptimize(token);
 
-    SharingDto sharingDto = new SharingDto();
-    sharingDto.setResourceId(dashboard);
+    DashboardShareDto sharingDto = new DashboardShareDto();
+    sharingDto.setDashboardId(dashboard);
     sharingDto.setType(SharedResourceType.DASHBOARD);
 
     // when
-    Response response = createShareResponse(token, sharingDto);
+    Response response = createDashboardShareResponse(token, sharingDto);
 
     // then
     assertThat(response.getStatus(), is(200));
@@ -85,10 +98,10 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   }
 
   @Test
-  public void deleteShareWithoutAuthentication() {
+  public void deleteReportShareWithoutAuthentication() {
     // when
     Response response =
-      embeddedOptimizeRule.target(SHARE + "/1124")
+      embeddedOptimizeRule.target(SHARE + "/" + REPORT + "/1124")
         .request()
         .delete();
 
@@ -97,7 +110,19 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   }
 
   @Test
-  public void deleteShare() throws Exception {
+  public void deleteDashboardShareWithoutAuthentication() {
+    // when
+    Response response =
+      embeddedOptimizeRule.target(SHARE + "/" + DASHBOARD + "/1124")
+        .request()
+        .delete();
+
+    // then the status code is not authorized
+    assertThat(response.getStatus(), is(401));
+  }
+
+  @Test
+  public void deleteReportShare() throws Exception {
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
     String reportId = createReport();
@@ -105,7 +130,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
 
     // when
     Response response =
-      embeddedOptimizeRule.target(SHARE + "/" + id)
+      embeddedOptimizeRule.target(SHARE + "/" + REPORT + "/" + id)
         .request()
         .header(HttpHeaders.AUTHORIZATION, BEARER + token)
         .delete();
@@ -113,6 +138,26 @@ public class SharingRestServiceIT extends AbstractSharingIT {
     // then the status code is okay
     assertThat(response.getStatus(), is(204));
     assertThat(getShareForReport(token, FAKE_REPORT_ID), is(nullValue()));
+  }
+
+  @Test
+  public void deleteDashboardShare() throws Exception {
+    //given
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+    String reportId = createReport();
+    String dashboardWithReport = createDashboardWithReport(token, reportId);
+    String id = addShareForDashboard(token, dashboardWithReport);
+
+    // when
+    Response response =
+      embeddedOptimizeRule.target(SHARE + "/" + DASHBOARD + "/" + id)
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .delete();
+
+    // then the status code is okay
+    assertThat(response.getStatus(), is(204));
+    assertThat(getShareForReport(token, reportId), is(nullValue()));
   }
 
   @Test
@@ -124,7 +169,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
     String id = addShareForReport(token, reportId);
 
     //when
-    SharingDto share = getShareForReport(token, reportId);
+    ReportShareDto share = getShareForReport(token, reportId);
 
     //then
     assertThat(share, is(notNullValue()));
@@ -153,7 +198,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
     String id = addShareForDashboard(token, dashboardWithReport);
 
     //when
-    SharingDto share = findShareForDashboard(token, dashboardWithReport).readEntity(SharingDto.class);
+    DashboardShareDto share = findShareForDashboard(token, dashboardWithReport).readEntity(DashboardShareDto.class);
 
     //then
     assertThat(share, is(notNullValue()));

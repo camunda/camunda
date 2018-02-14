@@ -10,15 +10,16 @@ import java.io.IOException;
  * @author Askar Akhmerov
  */
 @Component
-public class ShareType extends StrictTypeMappingCreator {
+public class DashboardShareType extends StrictTypeMappingCreator {
 
   public static final String ID = "id";
   public static final String TYPE = "type";
-  public static final String RESOURCE_ID = "resourceId";
+  public static final String DASHBOARD_ID = "dashboardId";
+  public static final String REPORT_SHARES = "reportShares";
 
   @Override
   public String getType() {
-    return configurationService.getShareType();
+    return configurationService.getReportShareType();
   }
 
   @Override
@@ -30,7 +31,10 @@ public class ShareType extends StrictTypeMappingCreator {
       .startObject(TYPE)
         .field("type", "keyword")
       .endObject()
-      .startObject(RESOURCE_ID)
+      .startObject(REPORT_SHARES)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(DASHBOARD_ID)
         .field("type", "keyword")
       .endObject();
 

@@ -2,6 +2,7 @@ package org.camunda.optimize.service.es;
 
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.type.AlertType;
+import org.camunda.optimize.service.es.schema.type.DashboardShareType;
 import org.camunda.optimize.service.es.schema.type.DashboardType;
 import org.camunda.optimize.service.es.schema.type.DurationHeatmapTargetValueType;
 import org.camunda.optimize.service.es.schema.type.EventType;
@@ -11,7 +12,7 @@ import org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType;
 import org.camunda.optimize.service.es.schema.type.FinishedProcessInstanceIdTrackingType;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.es.schema.type.ReportType;
-import org.camunda.optimize.service.es.schema.type.ShareType;
+import org.camunda.optimize.service.es.schema.type.ReportShareType;
 import org.camunda.optimize.service.es.schema.type.UnfinishedProcessInstanceIdTrackingType;
 import org.camunda.optimize.service.es.schema.type.UnfinishedProcessInstanceTrackingType;
 import org.camunda.optimize.service.es.schema.type.UsersType;
@@ -88,7 +89,10 @@ public class ElasticSearchSchemaInitializer {
   private AlertType alertType;
 
   @Autowired
-  private ShareType shareType;
+  private ReportShareType reportShareType;
+
+  @Autowired
+  private DashboardShareType dashboardShareType;
 
   public void initializeSchema() {
     if (!initialized) {
@@ -124,7 +128,8 @@ public class ElasticSearchSchemaInitializer {
     schemaManager.addMapping(reportType);
     schemaManager.addMapping(dashboardType);
     schemaManager.addMapping(alertType);
-    schemaManager.addMapping(shareType);
+    schemaManager.addMapping(reportShareType);
+    schemaManager.addMapping(dashboardShareType);
   }
 
   /**
