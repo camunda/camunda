@@ -2,7 +2,6 @@ import React from 'react';
 import {mount} from 'enzyme';
 
 import DashboardReport from './DashboardReport';
-import {loadReport, getReportName} from '../service';
 
 
 jest.mock('react-router-dom', () => {
@@ -16,28 +15,29 @@ jest.mock('react-router-dom', () => {
   }
 });
 
-jest.mock('../service', () => {return {
-  loadReport: jest.fn(),
-  getReportName: jest.fn()
-}});
 jest.mock('components', () => {return {
   ReportView: () => <div>ReportView</div>
 }});
 
-const report = {
-  id: 'a'
-};
+const loadReport = jest.fn();
+
+const props = {
+  report: {
+    id: 'a'
+  },
+  loadReport
+}
 
 it('should load the report provided by id', () => {
-  mount(<DashboardReport report={report} />);
+  mount(<DashboardReport {...props} />);
 
-  expect(loadReport).toHaveBeenCalledWith('a');
+  expect(loadReport).toHaveBeenCalledWith({...props.report});
 });
 
 it('should render the ReportView if data is loaded', async () => {
   loadReport.mockReturnValue('data');
 
-  const node = mount(<DashboardReport report={report} />);
+  const node = mount(<DashboardReport {...props} />);
 
   await node.instance().loadReportData();
 
@@ -47,7 +47,7 @@ it('should render the ReportView if data is loaded', async () => {
 it('should render an error message if report rendering went wrong', async () => {
   loadReport.mockReturnValue({errorMessage: 'I AM BROKEN!'});
 
-  const node = mount(<DashboardReport report={report} />);
+  const node = mount(<DashboardReport {...props} />);
 
   await node.instance().loadReportData();
 
@@ -55,9 +55,8 @@ it('should render an error message if report rendering went wrong', async () => 
 });
 
 it('should contain the report name', async () => {
-  getReportName.mockReturnValue('Report Name');
-
-  const node = mount(<DashboardReport report={report} />);
+  loadReport.mockReturnValue({name: 'Report Name'});
+  const node = mount(<DashboardReport {...props} />);
 
   await node.instance().loadReportData();
 
@@ -69,7 +68,7 @@ it('should render optional addons', async () => {
 
   const TextRenderer = ({children}) => <p>{children}</p>;
 
-  const node = mount(<DashboardReport report={report} addons={[
+  const node = mount(<DashboardReport {...props} addons={[
     <TextRenderer key='textAddon'>I am an addon!</TextRenderer>
   ]} />);
 

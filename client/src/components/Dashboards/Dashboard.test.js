@@ -15,7 +15,8 @@ jest.mock('components', () => {
     Button: props => <button {...props}>{props.children}</button>,
     Input: props => <input ref={props.reference} id={props.id} readOnly={props.readOnly} type={props.type} onChange={props.onChange} value={props.value} className={props.className}/>,
     ControlGroup: props => <div {...props}>{props.children}</div>,
-    CopyToClipboard: () => <div></div>
+    ShareEntity: () => <div></div>,
+    DashboardView: ({children, reportAddons}) => <div className='DashboardView'>{children} Addons: {reportAddons}</div>,
   };
 });
 
@@ -43,8 +44,6 @@ jest.mock('moment', () => () => {
     format: () => 'some date'
   }
 });
-
-jest.mock('./DashboardView', () => {return {DashboardView: ({children, reportAddons}) => <div className='DashboardView'>{children} Addons: {reportAddons}</div>}});
 
 jest.mock('./AddButton', () => {return {AddButton: ({visible}) => <div>AddButton visible: {''+visible}</div>}});
 jest.mock('./Grid', () => {return {Grid: () => <div>Grid</div>}});

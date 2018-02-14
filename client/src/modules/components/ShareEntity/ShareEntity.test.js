@@ -47,14 +47,14 @@ it('should delete entity if is unchecked', () => {
 });
 
 it('should construct special link', () => {
-  const node = mount(<ShareEntity {...props} />);
+  const node = mount(<ShareEntity type={'report'} {...props} />);
   Object.defineProperty(window.location, 'origin', {
     value: 'http://example.com'
   });
   
   node.setState({loaded: true, id: 10});
 
-  expect(node.find('#copy')).toIncludeText(`http://example.com/share/10`);
+  expect(node.find('#copy')).toIncludeText(`http://example.com/share/report/10`);
 });
 
 it('should display a loading indicator', () => {

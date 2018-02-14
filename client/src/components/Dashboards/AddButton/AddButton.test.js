@@ -17,7 +17,8 @@ jest.mock('components', () => {
     Modal,
     Select,
     Button: props => <button {...props}>{props.children}</button>,
-    ControlGroup: props => <div>{props.children}</div>
+    ControlGroup: props => <div>{props.children}</div>,
+    DashboardObject: ({children}) => <div className="DashboardObject">{children}</div>,
   };
 });
 
@@ -25,8 +26,6 @@ jest.mock('../service', () => {return {
   loadReports: jest.fn().mockReturnValue([]),
   getOccupiedTiles: jest.fn().mockReturnValue({0:{0: true}, 1:{0: true}, 2:{0: true}, 3:{0: true}, 4:{0: true}})
 }});
-
-jest.mock('../DashboardObject', () => {return {DashboardObject: ({children}) => <div className="DashboardObject">{children}</div>}});
 
 const props = {
   tileDimensions: {

@@ -1,4 +1,4 @@
-import {get, del, put} from 'request';
+import {get, del, put, post} from 'request';
 
 export async function loadDashboard(id) {
   const response = await get('/api/dashboard/' + id);
@@ -20,19 +20,39 @@ export async function loadReports() {
   return await response.json();
 }
 
-export async function getReportName(id) {
-  const response = await get('/api/report/' + id);
-  const json = await response.json();
-  return json.name;
-}
-
-export async function loadReport(id) {
+export async function loadReport(report) {
   try {
-    const response = await get(`/api/report/${id}/evaluate`);
+    const response = await get(`/api/report/${report.id}/evaluate`);
     return await response.json();
   } catch(error) {
     return await error.json();
   }
+}
+
+export async function shareDashboard(reportId) {
+  const body = {
+    resourceId: reportId,
+    type: 'DASHBOARD'
+  };
+  const response = await post(`/api/share/`, body);
+
+  const json = await response.json();
+  return json.id;
+}
+
+export async function getSharedDashboard(reportId) {
+  const response = await get(`/api/share/dashboard/${reportId}`);
+
+  if(response.status > 201) {
+    return '';
+  } else {
+    const json = await response.json();
+    return json.id;
+  }
+}
+
+export async function revokeDashboardSharing(id) {
+  return await del(`/api/share/${id}`);
 }
 
 export function getOccupiedTiles(reports) {

@@ -55,7 +55,7 @@ export default class ShareEntity extends React.Component {
 
   buildShareLink = () => {
     if(this.state.id) {
-      return `${window.location.origin}/share/${this.state.id}`;
+      return `${window.location.origin}/share/${this.props.type}/${this.state.id}`;
     } else {
       return '';
     }

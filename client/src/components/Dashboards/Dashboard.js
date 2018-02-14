@@ -3,11 +3,10 @@ import moment from 'moment';
 import {default as updateState} from 'immutability-helper';
 import {Link, Redirect} from 'react-router-dom';
 
-import {Button, Modal, Input, ControlGroup, CopyToClipboard} from 'components';
+import {Button, Modal, Input, ShareEntity, DashboardView} from 'components';
 
-import {loadDashboard, remove, update} from './service';
+import {loadDashboard, remove, update, loadReport, getSharedDashboard, shareDashboard, revokeDashboardSharing} from './service';
 
-import {DashboardView} from './DashboardView';
 import {AddButton} from './AddButton';
 import {Grid} from './Grid';
 import {DimensionSetter} from './DimensionSetter';
@@ -166,7 +165,7 @@ export default class Dashboard extends React.Component {
             <Link className='Button Dashboard__tool-button Dashboard__cancel-button' to={`/dashboard/${this.id}`} onClick={this.cancelChanges}>Cancel</Link>
           </div>
         </div>
-        <DashboardView reports={this.state.reports} reportAddons={[
+        <DashboardView loadReport={loadReport} reports={this.state.reports} reportAddons={[
           <DragBehavior key='DragBehavior' reports={this.state.reports} updateReport={this.updateReport} onDragStart={this.hideAddButton} onDragEnd={this.showAddButton} />,
           <DeleteButton key='DeleteButton' deleteReport={this.deleteReport} />,
           <ResizeHandle key='ResizeHandle' reports={this.state.reports} updateReport={this.updateReport} onResizeStart={this.hideAddButton} onResizeEnd={this.showAddButton} />
@@ -199,9 +198,8 @@ export default class Dashboard extends React.Component {
         <Modal open={shareModalVisible} onClose={this.closeShareModal} className='Dashboard__share-modal'>
           <Modal.Header>Share {this.state.name}</Modal.Header>
           <Modal.Content>
-            <ControlGroup>
-              <CopyToClipboard value={document.URL} />
-            </ControlGroup>
+            <ShareEntity type={'dashboard'} resourceId={this.id} shareEntity={shareDashboard} 
+              revokeEntitySharing={revokeDashboardSharing} getSharedEntity={getSharedDashboard}/>
           </Modal.Content>
           <Modal.Actions>
             <Button className="Dashboard__close-share-modal-button" onClick={this.closeShareModal}>Close</Button>
@@ -217,7 +215,7 @@ export default class Dashboard extends React.Component {
             <Button type="primary" color="red" className="Dashboard__delete-dashboard-modal-button" onClick={this.deleteDashboard}>Delete</Button>
           </Modal.Actions>
         </Modal>
-        <DashboardView reports={this.state.reports}>
+        <DashboardView loadReport={loadReport} reports={this.state.reports}>
           <DimensionSetter reports={this.state.reports} />
         </DashboardView>
       </div>

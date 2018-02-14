@@ -2,18 +2,20 @@ import React from 'react';
 import { mount } from 'enzyme';
 
 import Sharing from './Sharing';
-import {getReportData} from './service';
+import {evaluateEntity, loadReport} from './service';
 
 jest.mock('./service', () => {
 return {
-    getReportData: jest.fn()
+    evaluateEntity: jest.fn(),
+    loadReport: jest.fn()    
 }
 });
 
 jest.mock('components', () =>{
-return {
-    ReportView: () => <div id='report' >ReportView</div>
-    }
+    return {
+        ReportView: () => <div id='report' >ReportView</div>,
+        DashboardView: () => <div id='dashboard' >DashboardView</div>
+    }   
 });
 
 const props = {
@@ -31,7 +33,7 @@ it('should render without crashing', () => {
 it('should initially load data', () => {
     mount(<Sharing {...props} />);
 
-    expect(getReportData).toHaveBeenCalled();
+    expect(evaluateEntity).toHaveBeenCalled();
 });
 
 it('should display a loading indicator', () => {
@@ -40,30 +42,88 @@ it('should display a loading indicator', () => {
     expect(node.find('.Sharing__loading-indicator')).toBePresent();
 });
 
-it('should display a loading indicator', () => {
+it('should display an error message if evaluation was unsuccessful', () => {
+    props.match.params.type = 'report';
     const node = mount(<Sharing {...props} />);
 
     node.setState({
-        loaded: true,
-        reportResult: null
+        loading: false,
+        evaluationResult: null
+    });
+
+    expect(node.find('.Sharing__error-message')).toBePresent();
+});
+
+it('should display an error message if type is invalid', () => {
+    props.match.params.type = 'foo';
+    const node = mount(<Sharing {...props} />);
+
+    node.setState({
+        loading: false,
+        evaluationResult: { report: {name: 'foo'}}
     });
 
     expect(node.find('.Sharing__error-message')).toBePresent();
 });
 
 it('should have report if everything is fine', () => {
+    props.match.params.type = 'report';
     const node = mount(<Sharing {...props} />);
     
     node.setState({
-        loaded: true,
-        reportResult: { report: {name: 'foo'}}
+        loading: false,
+        evaluationResult: { report: {name: 'foo'}}
     });
 
     expect(node.find('#report')).toIncludeText('ReportView');
 });
 
 it('should retrieve report for the given id', () => {
+    props.match.params.type = 'report';
     const node = mount(<Sharing {...props} />);
 
-    expect(getReportData).toHaveBeenCalledWith(123);
+    expect(evaluateEntity).toHaveBeenCalledWith(123, 'report');
+});
+
+it('should display the report name', () => {
+    props.match.params.type = 'report';
+    const node = mount(<Sharing {...props} />);
+
+    node.setState({
+        loading: false,
+        evaluationResult: { report: { name: 'My report name'}}
+    });
+
+    expect(node).toIncludeText('My report name');
+});
+
+it('should have dashboard if everything is fine', () => {
+    props.match.params.type = 'dashboard';
+    const node = mount(<Sharing {...props} />);
+    
+    node.setState({
+        loading: false,
+        evaluationResult: { dashboard: { reportShares: 'foo'}}
+    });
+
+    expect(node.find('#dashboard')).toIncludeText('DashboardView');
+});
+
+it('should retrieve dashboard for the given id', () => {
+    props.match.params.type = 'dashboard';
+    const node = mount(<Sharing {...props} />);
+
+    expect(evaluateEntity).toHaveBeenCalledWith(123, 'dashboard');
+});
+
+it('should display the dashboard name', () => {
+    props.match.params.type = 'dashboard';
+    const node = mount(<Sharing {...props} />);
+
+    node.setState({
+        loading: false,
+        evaluationResult: { dashboard: { name: 'My dashboard name'}}
+    });
+
+    expect(node).toIncludeText('My dashboard name');
 });

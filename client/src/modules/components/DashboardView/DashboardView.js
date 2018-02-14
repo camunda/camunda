@@ -1,7 +1,7 @@
 import React from 'react';
 
-import {DashboardReport} from '../DashboardReport';
-import {DashboardObject} from '../DashboardObject';
+import {DashboardReport} from './DashboardReport';
+import {DashboardObject} from './DashboardObject';
 
 import './DashboardView.css';
 
@@ -19,7 +19,7 @@ export default class DashboardView extends React.Component {
           {...report.position}
           {...report.dimensions}
         >
-        <DashboardReport report={report} tileDimensions={this.state.tileDimensions} addons={this.props.reportAddons || []} />
+        <DashboardReport loadReport={this.props.loadReport} report={report} tileDimensions={this.state.tileDimensions} addons={this.props.reportAddons || []} />
       </DashboardObject>)}
       {this.state &&
         React.Children.map(this.props.children, child =>
