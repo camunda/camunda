@@ -29,6 +29,7 @@ import io.zeebe.transport.*;
 import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.actor.Actor;
 import io.zeebe.util.buffer.BufferUtil;
+import io.zeebe.util.sched.ZbActor;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 
@@ -38,7 +39,7 @@ import org.slf4j.Logger;
  * Note that implementation is designed to run on a single thread as an actor.
  *
  */
-public class Gossip implements Actor, GossipController, GossipEventPublisher
+public class Gossip extends ZbActor implements Actor, GossipController, GossipEventPublisher
 {
     private static final Logger LOG = Loggers.GOSSIP_LOGGER;
 
@@ -87,6 +88,35 @@ public class Gossip implements Actor, GossipController, GossipEventPublisher
         requestHandler.registerGossipEventConsumer(GossipEventType.SYNC_REQUEST, syncRequestHandler);
 
         subscriptionController = new SubscriptionController(serverTransport, requestHandler, configuration.getSubscriptionPollLimit());
+
+    }
+
+
+    @Override
+    protected void onActorStarted()
+    {
+        // join happens only once?
+
+        // ping timer
+
+        // defered -> calls
+        // subscriptionController -> consume
+
+        // ping req -> consume ? or condition
+        // synx same
+
+        // suspicion -> in ping ctrl
+        // run delayed with timeout time -> runnable checks if still suspected
+        //
+
+    }
+
+
+
+    @Override
+    protected void onActorClosing()
+    {
+        super.onActorClosing();
     }
 
     @Override
@@ -115,6 +145,8 @@ public class Gossip implements Actor, GossipController, GossipEventPublisher
     @Override
     public CompletableFuture<Void> join(List<SocketAddress> contactPoints)
     {
+
+        actor.call(() -> joinController::join(contactPoints));
         return deferredCommands.runAsync(future -> joinController.join(contactPoints, future));
     }
 

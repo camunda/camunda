@@ -15,20 +15,20 @@
  */
 package io.zeebe.gossip.protocol;
 
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
 import io.zeebe.clustering.gossip.GossipEventType;
 import io.zeebe.gossip.Loggers;
 import io.zeebe.gossip.membership.MembershipList;
 import io.zeebe.transport.*;
+import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
+
+import java.time.Duration;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 public class GossipEventSender
 {
-    private static final ClientRequest FAILED_REQUEST = new FailedClientRequest();
-
     private final ServerResponse serverResponse = new ServerResponse();
 
     private final ClientTransport clientTransport;
@@ -55,17 +55,17 @@ public class GossipEventSender
         this.gossipSyncResponseEvent = gossipEventFactory.createSyncResponseEvent();
     }
 
-    public ClientRequest sendPing(SocketAddress receiver)
+    public ActorFuture<ClientRequest> sendPing(SocketAddress receiver, Duration timeout)
     {
         gossipFailureDetectionEvent
                 .reset()
                 .eventType(GossipEventType.PING)
                 .sender(membershipList.self().getAddress());
 
-        return sendEventTo(gossipFailureDetectionEvent, receiver);
+        return sendEventTo(gossipFailureDetectionEvent, receiver, timeout);
     }
 
-    public ClientRequest sendPingReq(SocketAddress receiver, SocketAddress probeMember)
+    public ActorFuture<ClientRequest> sendPingReq(SocketAddress receiver, SocketAddress probeMember, Duration timeout)
     {
         gossipFailureDetectionEvent
             .reset()
@@ -73,17 +73,17 @@ public class GossipEventSender
             .probeMember(probeMember)
             .sender(membershipList.self().getAddress());
 
-        return sendEventTo(gossipFailureDetectionEvent, receiver);
+        return sendEventTo(gossipFailureDetectionEvent, receiver, timeout);
     }
 
-    public ClientRequest sendSyncRequest(SocketAddress receiver)
+    public ActorFuture<ClientRequest> sendSyncRequest(SocketAddress receiver, Duration timeout)
     {
         gossipSyncRequestEvent
             .reset()
             .eventType(GossipEventType.SYNC_REQUEST)
             .sender(membershipList.self().getAddress());
 
-        return sendEventTo(gossipSyncRequestEvent, receiver);
+        return sendEventTo(gossipSyncRequestEvent, receiver, timeout);
     }
 
     public void responseAck(long requestId, int streamId)
@@ -106,22 +106,10 @@ public class GossipEventSender
         responseTo(gossipSyncResponseEvent, requestId, streamId);
     }
 
-    private ClientRequest sendEventTo(GossipEvent event, SocketAddress receiver)
+    private ActorFuture<ClientRequest> sendEventTo(GossipEvent event, SocketAddress receiver, Duration timeout)
     {
         final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(receiver);
-
-        try
-        {
-            final ClientRequest request = clientTransport.getOutput().sendRequestWithRetry(remoteAddress, event);
-
-            return request != null ? request : FAILED_REQUEST;
-        }
-        catch (Throwable t)
-        {
-            Loggers.GOSSIP_LOGGER.error("Error on sending request.", t);
-            // ignore
-            return FAILED_REQUEST;
-        }
+        return clientTransport.getOutput().sendRequestWithRetry(remoteAddress, event, timeout);
     }
 
     private void responseTo(GossipEvent event, long requestId, int streamId)

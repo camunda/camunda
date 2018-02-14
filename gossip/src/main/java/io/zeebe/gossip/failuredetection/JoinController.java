@@ -17,8 +17,10 @@ package io.zeebe.gossip.failuredetection;
 
 import static io.zeebe.gossip.failuredetection.RequestCloser.close;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.zeebe.clustering.gossip.MembershipEventType;
 import io.zeebe.gossip.*;
@@ -28,6 +30,11 @@ import io.zeebe.gossip.membership.MembershipList;
 import io.zeebe.gossip.protocol.*;
 import io.zeebe.transport.ClientRequest;
 import io.zeebe.transport.SocketAddress;
+import io.zeebe.util.actor.Actor;
+import io.zeebe.util.sched.ActorControl;
+import io.zeebe.util.sched.ZbActor;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import io.zeebe.util.state.*;
 import io.zeebe.util.time.ClockUtil;
 import org.slf4j.Logger;
@@ -45,11 +52,36 @@ public class JoinController
 
     private final GossipConfiguration configuration;
 
-    private final StateMachine<Context> stateMachine;
 
-    public JoinController(GossipContext context)
+    private final DisseminationComponent disseminationComponent;
+    private final Member self;
+    private final MembershipList membershipList;
+    private final GossipEventSender gossipEventSender;
+    private final GossipEventFactory gossipEventFactory;
+
+    private final StateMachine<Context> stateMachine;
+    private final ActorControl actor;
+
+    private List<SocketAddress> contactPoints;
+    protected List<ActorFuture<ClientRequest>> futureRequests;
+    private long timeout;
+    private long nextJoinInterval;
+    private SocketAddress contactPoint;
+    private CompletableActorFuture<Void> future;
+
+    private boolean isJoined;
+
+    public JoinController(GossipContext context, ActorControl actor)
     {
         this.configuration = context.getConfiguration();
+
+        this.actor = actor;
+        this.disseminationComponent = context.getDisseminationComponent();
+        this.self = context.getMembershipList().self();
+        this.membershipList = context.getMembershipList();
+        this.gossipEventSender = context.getGossipEventSender();
+        this.gossipEventFactory = context.getGossipEventFactory();
+
 
         final WaitState<Context> awaitJoinState = ctx ->
         { };
@@ -84,34 +116,76 @@ public class JoinController
                 .build();
     }
 
-    public int doWork()
-    {
-        return stateMachine.doWork();
-    }
 
-    public void join(List<SocketAddress> contactPoints, CompletableFuture<Void> future)
+    public ActorFuture<Void> join(List<SocketAddress> contactPoints)
     {
+        final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+
         if (contactPoints == null || contactPoints.isEmpty())
         {
-            future.completeExceptionally(new IllegalArgumentException("Can't join cluster without contact points."));
+            future.completeExceptionally(
+                new IllegalArgumentException("Can't join cluster without contact points."));
         }
         else
         {
-            final boolean success = stateMachine.tryTake(TRANSITION_JOIN);
-            if (success)
+            if (!isJoined)
             {
-                LOG.info("Join cluster with known contact points: {}", contactPoints);
+                actor.run(this::sendJoin);
+                isJoined = true;
 
-                final Context context = stateMachine.getContext();
-                context.contactPoints = new ArrayList<>(contactPoints);
-                context.requests = new ArrayList<>(contactPoints.size());
-                context.future = future;
+                this.futureRequests = new ArrayList<>(contactPoints.size());
+                this.contactPoints = contactPoints;
             }
             else
             {
                 future.completeExceptionally(new IllegalStateException("Already joined."));
             }
         }
+        return future;
+    }
+
+    private boolean firstJoin = false;
+
+    private void sendJoin()
+    {
+        self.getTerm().increment();
+
+        for (SocketAddress contactPoint : contactPoints)
+        {
+            if (!self.getAddress().equals(contactPoint))
+            {
+                LOG.trace("Spread JOIN event to contact point '{}'", contactPoint);
+
+                disseminationComponent.addMembershipEvent()
+                    .address(self.getAddress())
+                    .type(MembershipEventType.JOIN)
+                    .gossipTerm(self.getTerm());
+
+                final ActorFuture<ClientRequest> clientRequestActorFuture =
+                    gossipEventSender.sendPing(contactPoint, configuration.getJoinTimeout());
+                futureRequests.add(clientRequestActorFuture);
+
+                actor.pollBlocking(() -> clientRequestActorFuture.join(), () -> {
+                   if (!firstJoin)
+                   {
+                       firstJoin = true;
+
+
+                   }
+
+                    // after await
+                });
+
+
+            }
+        }
+
+
+
+//        context.take(TRANSITION_DEFAULT);
+        // where to go
+
+
     }
 
     public void leave(CompletableFuture<Void> future)
@@ -131,16 +205,10 @@ public class JoinController
         }
     }
 
+
+
     private class Context extends SimpleStateMachineContext
     {
-        private final GossipEventResponse syncResponse;
-
-        private List<SocketAddress> contactPoints;
-        private List<ClientRequest> requests;
-        private long timeout;
-        private long nextJoinInterval;
-        private SocketAddress contactPoint;
-        private CompletableFuture<Void> future;
 
         Context(StateMachine<Context> stateMachine, GossipEventFactory eventFactory)
         {

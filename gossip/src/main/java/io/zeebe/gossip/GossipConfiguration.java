@@ -15,24 +15,26 @@
  */
 package io.zeebe.gossip;
 
+import java.time.Duration;
+
 public class GossipConfiguration
 {
     private int retransmissionMultiplier = 3;
 
-    private int probeInterval = 1_000;
-    private int probeTimeout = 500;
+    private Duration probeInterval = Duration.ofSeconds(1);
+    private Duration probeTimeout = Duration.ofMillis(500);
 
     private int probeIndirectNodes = 3;
-    private int probeIndirectTimeout = 1_000;
+    private Duration probeIndirectTimeout =  Duration.ofSeconds(1);
 
     private int suspicionMultiplier = 5;
 
-    private int syncTimeout = 3_000;
+    private Duration syncTimeout = Duration.ofSeconds(3);
 
-    private int joinTimeout = 1_000;
-    private int joinInterval = 5_000;
+    private Duration joinTimeout =  Duration.ofSeconds(1);
+    private Duration joinInterval = Duration.ofSeconds(5);
 
-    private int leaveTimeout = 1_000;
+    private Duration leaveTimeout =  Duration.ofSeconds(1);
 
     private int maxMembershipEventsPerMessage = 32;
     private int maxCustomEventsPerMessage = 8;
@@ -42,7 +44,7 @@ public class GossipConfiguration
     /**
      * The timeout of a join request in milliseconds.
      */
-    public int getJoinTimeout()
+    public Duration getJoinTimeout()
     {
         return joinTimeout;
     }
@@ -52,14 +54,14 @@ public class GossipConfiguration
      */
     public GossipConfiguration joinTimeout(int joinTimeout)
     {
-        this.joinTimeout = joinTimeout;
+        this.joinTimeout = Duration.ofMillis(joinTimeout);
         return this;
     }
 
     /**
      * The time in milliseconds when a failed join request is send again.
      */
-    public int getJoinInterval()
+    public Duration getJoinInterval()
     {
         return joinInterval;
     }
@@ -69,7 +71,7 @@ public class GossipConfiguration
      */
     public GossipConfiguration joinInterval(int joinInterval)
     {
-        this.joinInterval = joinInterval;
+        this.joinInterval = Duration.ofMillis(joinInterval);
         return this;
     }
 
@@ -99,7 +101,7 @@ public class GossipConfiguration
     /**
      * The time in milliseconds between two probe requests.
      */
-    public int getProbeInterval()
+    public Duration getProbeInterval()
     {
         return probeInterval;
     }
@@ -109,14 +111,14 @@ public class GossipConfiguration
      */
     public GossipConfiguration setProbeInterval(final int probeInterval)
     {
-        this.probeInterval = probeInterval;
+        this.probeInterval = Duration.ofMillis(probeInterval);
         return this;
     }
 
     /**
      * The timeout of a probe request in milliseconds.
      */
-    public int getProbeTimeout()
+    public Duration getProbeTimeout()
     {
         return probeTimeout;
     }
@@ -126,7 +128,7 @@ public class GossipConfiguration
      */
     public GossipConfiguration setProbeTimeout(final int probeTimeout)
     {
-        this.probeTimeout = probeTimeout;
+        this.probeTimeout = Duration.ofMillis(probeTimeout);
         return this;
     }
 
@@ -150,7 +152,7 @@ public class GossipConfiguration
     /**
      * The timeout of an indirect probe request in milliseconds.
      */
-    public int getProbeIndirectTimeout()
+    public Duration getProbeIndirectTimeout()
     {
         return probeIndirectTimeout;
     }
@@ -160,14 +162,14 @@ public class GossipConfiguration
      */
     public GossipConfiguration probeIndirectTimeout(int probeIndirectTimeout)
     {
-        this.probeIndirectTimeout = probeIndirectTimeout;
+        this.probeIndirectTimeout = Duration.ofMillis(probeIndirectTimeout);
         return this;
     }
 
     /**
      * The timeout of a sync request in milliseconds.
      */
-    public int getSyncTimeout()
+    public Duration getSyncTimeout()
     {
         return syncTimeout;
     }
@@ -177,7 +179,7 @@ public class GossipConfiguration
      */
     public GossipConfiguration syncTimeout(int syncTimeout)
     {
-        this.syncTimeout = syncTimeout;
+        this.syncTimeout = Duration.ofMillis(syncTimeout);
         return this;
     }
 
@@ -207,7 +209,7 @@ public class GossipConfiguration
     /**
      * The timeout of a leave request in milliseconds.
      */
-    public int getLeaveTimeout()
+    public Duration getLeaveTimeout()
     {
         return leaveTimeout;
     }
@@ -217,7 +219,7 @@ public class GossipConfiguration
      */
     public GossipConfiguration leaveTimeout(int leaveTimeout)
     {
-        this.leaveTimeout = leaveTimeout;
+        this.leaveTimeout = Duration.ofMillis(leaveTimeout);
         return this;
     }
 
