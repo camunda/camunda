@@ -37,7 +37,7 @@ public class SharingRestService {
   @Path("/report")
   public IdDto createNewReportShare(ReportShareDto createSharingDto) {
     sharingService.validateReportShare(createSharingDto);
-    return sharingService.crateNewReportShare(createSharingDto);
+    return sharingService.crateNewReportShareIfAbsent(createSharingDto);
   }
 
   @POST

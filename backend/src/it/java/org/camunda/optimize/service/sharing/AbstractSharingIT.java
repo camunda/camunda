@@ -95,18 +95,26 @@ public abstract class AbstractSharingIT {
 
   protected String createDashboardWithReport(String token, String reportId) {
     String dashboardId = addEmptyDashboardToOptimize(token);
-    addReportToDashboard(reportId, dashboardId);
+    addReportToDashboard(dashboardId, reportId);
     return dashboardId;
   }
 
-  protected void addReportToDashboard(String reportId, String dashboardId) {
+  protected void addReportToDashboard(String dashboardId, String... reportIds) {
     DashboardDefinitionDto fullBoard = new DashboardDefinitionDto();
     fullBoard.setId(dashboardId);
-    ReportLocationDto reportLocation = new ReportLocationDto();
-    reportLocation.setId(reportId);
+
     List<ReportLocationDto> reports = new ArrayList<>();
-    reports.add(reportLocation);
+
+    if (reportIds != null) {
+      for (String reportId : reportIds) {
+        ReportLocationDto reportLocation = new ReportLocationDto();
+        reportLocation.setId(reportId);
+        reports.add(reportLocation);
+      }
+    }
+
     fullBoard.setReports(reports);
+
     updateDashboard(dashboardId, fullBoard);
   }
 
