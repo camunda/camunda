@@ -207,15 +207,8 @@ public class ActorTask
                 }
                 else
                 {
-                    if (actor.isAutoClosing())
-                    {
-                        autoClose(runner);
-                        resubmit = true;
-                    }
-                    else
-                    {
-                        resubmit = setStateActiveToWaiting();
-                    }
+                    autoClose(runner);
+                    resubmit = true;
                 }
             }
         }
