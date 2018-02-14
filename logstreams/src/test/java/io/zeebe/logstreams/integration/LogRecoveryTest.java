@@ -225,12 +225,9 @@ public class LogRecoveryTest
 
         final LogStreamReader logReader = new BufferedLogStreamReader(newLog);
         LogIntegrationTestUtil.readLogAndAssertEvents(logReader, WORK_COUNT, MSG_SIZE);
+        TestUtil.waitUntil(() -> newLog.getLogBlockIndex().size() > recoveredIndexSize);
         newLog.close();
         logReader.close();
-
-        // and after read events more block indices are created
-        final int newIndexSize = newLog.getLogBlockIndex().size();
-        assertThat(newIndexSize).isGreaterThan(recoveredIndexSize);
     }
 
     @Test

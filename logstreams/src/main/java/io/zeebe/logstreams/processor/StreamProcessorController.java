@@ -509,6 +509,7 @@ public class StreamProcessorController extends ZbActor
         streamProcessorContext.getLogStreamReader().close();
 
         streamProcessorContext.logStream.removeOnCommitPositionUpdatedCondition(onCommitPositionUpdatedCondition);
+        onCommitPositionUpdatedCondition = null;
     }
 
     private void onFailure()

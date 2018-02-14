@@ -248,7 +248,7 @@ public final class LogStreamImpl extends ZbActor implements LogStream
     @Override
     public void removeOnCommitPositionUpdatedCondition(ActorCondition condition)
     {
-        onCommitPositionUpdatedConditions.registerConsumer(condition);
+        onCommitPositionUpdatedConditions.removeConsumer(condition);
     }
 
     @Override

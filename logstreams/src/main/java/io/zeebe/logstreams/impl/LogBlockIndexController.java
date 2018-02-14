@@ -106,6 +106,7 @@ public class LogBlockIndexController extends ZbActor
     private AllocatedBuffer allocatedBuffer;
     private final Position commitPosition;
     private final ActorConditions onCommitPositionUpdatedConditions;
+    private ActorCondition onCommitCondition;
 
     public LogBlockIndexController(LogStreamImpl.LogStreamBuilder logStreamBuilder, Position commitPosition, ActorConditions onCommitPositionUpdatedConditions)
     {
@@ -192,7 +193,7 @@ public class LogBlockIndexController extends ZbActor
             }
 
             // register condition after index is recovered
-            final ActorCondition onCommitCondition = actor.onCondition("log-index-on-commit-position", runCurrentWork);
+            this.onCommitCondition = actor.onCondition("log-index-on-commit-position", runCurrentWork);
             onCommitPositionUpdatedConditions.registerConsumer(onCommitCondition);
 
             openFuture.complete(null);
@@ -385,6 +386,8 @@ public class LogBlockIndexController extends ZbActor
         allocatedBuffer.close();
         currentRunnable = null;
 
+        onCommitPositionUpdatedConditions.removeConsumer(onCommitCondition);
+        onCommitCondition = null;
         isOpenend.set(false);
     }
 
