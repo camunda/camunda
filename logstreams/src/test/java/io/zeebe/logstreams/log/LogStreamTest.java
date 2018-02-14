@@ -15,31 +15,13 @@
  */
 package io.zeebe.logstreams.log;
 
-import static io.zeebe.logstreams.log.LogStream.MAX_TOPIC_NAME_LENGTH;
-import static io.zeebe.logstreams.log.LogTestUtil.PARTITION_ID;
-import static io.zeebe.logstreams.log.LogTestUtil.TOPIC_NAME_BUFFER;
-import static io.zeebe.test.util.TestUtil.waitUntil;
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
-import static java.lang.String.join;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-
-import java.time.Duration;
-import java.util.Collections;
-import java.util.function.Consumer;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
-
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.logstreams.fs.FsLogStreamBuilder;
 import io.zeebe.logstreams.impl.LogStreamController;
 import io.zeebe.logstreams.impl.LogStreamImpl;
 import io.zeebe.logstreams.impl.log.fs.FsLogStorage;
 import io.zeebe.test.util.AutoCloseableRule;
+import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -49,8 +31,24 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
+import java.time.Duration;
+import java.util.Collections;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+
+import static io.zeebe.logstreams.log.LogStream.MAX_TOPIC_NAME_LENGTH;
+import static io.zeebe.test.util.TestUtil.waitUntil;
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static java.lang.String.join;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
+
 public class LogStreamTest
 {
+
+    public static final int PARTITION_ID = 0;
+    public static final DirectBuffer TOPIC_NAME_BUFFER = BufferUtil.wrapString("default-topic");
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();

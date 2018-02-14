@@ -105,6 +105,7 @@ public final class LogStreamImpl extends ZbActor implements LogStream
             this.writeBuffer = logStreamBuilder.getWriteBuffer();
         }
 
+        actorScheduler.submitActor(this);
     }
 
     @Override
@@ -147,24 +148,12 @@ public final class LogStreamImpl extends ZbActor implements LogStream
     @Override
     public void open()
     {
-        try
-        {
-            openAsync().get();
-        }
-        catch (ExecutionException e)
-        {
-            throw new RuntimeException(e.getCause() != null ? e.getCause() : e);
-        }
-        catch (InterruptedException e)
-        {
-            throw new RuntimeException(e);
-        }
+        openAsync().join();
     }
 
     @Override
-    public Future<Void> openAsync()
+    public ActorFuture<Void> openAsync()
     {
-        actorScheduler.submitActor(this);
         if (logStreamController != null)
         {
             final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
@@ -197,35 +186,37 @@ public final class LogStreamImpl extends ZbActor implements LogStream
     @Override
     public ActorFuture<Void> closeAsync()
     {
-        return actor.close();
-    }
-
-    @Override
-    protected void onActorClosing()
-    {
-        if (writeBuffer != null)
+        final CompletableActorFuture<Void> completableActorFuture = new CompletableActorFuture<>();
+        actor.call(() ->
         {
-            actor.await(logBlockIndexController.closeAsync(), t ->
+
+            if (writeBuffer != null)
             {
-                actor.await(logStreamController.closeAsync(), t2 ->
+                actor.await(logBlockIndexController.closeAsync(), t ->
                 {
-                    actor.await(writeBuffer.closeAsync(), t3 ->
+                    actor.await(logStreamController.closeAsync(), t2 ->
                     {
-                        logStorage.close();
+                        actor.await(writeBuffer.closeAsync(), t3 ->
+                        {
+                            logStorage.close();
 
-                        writeBuffer = null;
-
+                            writeBuffer = null;
+                            completableActorFuture.complete(null);
+                        });
                     });
                 });
-            });
-        }
-        else
-        {
-            actor.await(logBlockIndexController.closeAsync(), t ->
+            }
+            else
             {
-                logStorage.close();
-            });
-        }
+                actor.await(logBlockIndexController.closeAsync(), t ->
+                {
+                    logStorage.close();
+                    completableActorFuture.complete(null);
+                });
+            }
+
+        });
+        return completableActorFuture;
     }
 
     @Override
