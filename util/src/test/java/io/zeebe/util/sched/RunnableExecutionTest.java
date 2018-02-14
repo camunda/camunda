@@ -15,17 +15,18 @@
  */
 package io.zeebe.util.sched;
 
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.testing.ActorSchedulerRule;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
+import static org.junit.Assert.fail;
 
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.fail;
+import org.junit.Assert;
+import org.junit.Rule;
+import org.junit.Test;
+
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.testing.ActorSchedulerRule;
 
 public class RunnableExecutionTest
 {

@@ -36,10 +36,10 @@ public class CompletableActorFuture<V> implements ActorFuture<V>
     private static final int COMPLETED_EXCEPTIONALLY = 4;
     private static final int CLOSED = 5;
 
-    private final ManyToOneConcurrentArrayQueue<ActorJob> blockedTasks = new ManyToOneConcurrentArrayQueue<>(32);
+    private final ManyToOneConcurrentArrayQueue<Runnable> blockedTasks = new ManyToOneConcurrentArrayQueue<>(32);
 
     /** used when blocked tasks has reached capacity (this queue has no capacity restriction but is not garbage free) */
-    private final ManyToOneConcurrentLinkedQueue<ActorJob> blockedTasksOverflow = new ManyToOneConcurrentLinkedQueue<>();
+    private final ManyToOneConcurrentLinkedQueue<Runnable> blockedTasksOverflow = new ManyToOneConcurrentLinkedQueue<>();
 
     private volatile int state = CLOSED;
 
@@ -88,11 +88,11 @@ public class CompletableActorFuture<V> implements ActorFuture<V>
     }
 
     @Override
-    public boolean block(ActorJob job)
+    public boolean block(Runnable onCompletion)
     {
-        if (!blockedTasks.add(job))
+        if (!blockedTasks.add(onCompletion))
         {
-            blockedTasksOverflow.add(job);
+            blockedTasksOverflow.add(onCompletion);
         }
 
         return !isDone();
@@ -198,16 +198,16 @@ public class CompletableActorFuture<V> implements ActorFuture<V>
         notifyAllInQueue(blockedTasksOverflow);
     }
 
-    private void notifyAllInQueue(Queue<ActorJob> tasks)
+    private void notifyAllInQueue(Queue<Runnable> tasks)
     {
         while (!tasks.isEmpty())
         {
-            final ActorJob blocked = tasks.poll();
+            final Runnable blocked = tasks.poll();
             if (blocked != null)
             {
                 try
                 {
-                    blocked.onFutureCompleted();
+                    blocked.run();
                 }
                 catch (Exception ex)
                 {

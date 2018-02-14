@@ -16,7 +16,6 @@
 package io.zeebe.util.sched;
 
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.function.BiConsumer;
 
 import io.zeebe.util.sched.future.ActorFuture;
@@ -193,18 +192,31 @@ public class ActorJob
 
     public <T> void setBlockOnFuture(ActorFuture<T> future, BiConsumer<T, Throwable> callback)
     {
-        runnable = new AwaitFutureRunnable<>(this, future, callback);
+        final Runnable onCompletion = () -> task.onFutureCompleted(createContinuationJob(future, callback));
+        this.runnable = new AwaitFutureRunnable<>(this, future, onCompletion, true);
+    }
+
+    public <T> void setTriggerSubscriptionOnFuture(ActorFuture<T> future, ActorFutureSubscription subscription)
+    {
+        final Runnable onCompletion = () -> subscription.trigger();
+        runnable = new AwaitFutureRunnable<>(this, future, onCompletion, false);
     }
 
     static class AwaitFutureRunnable<T> implements Runnable
     {
-        ActorFuture<T> future;
-        BiConsumer<T, Throwable> callback;
-        ActorJob job;
-        ActorTask task;
+        final ActorFuture<T> future;
+        final Runnable callback;
+        final ActorJob job;
+        final ActorTask task;
+        final boolean blockOnFuture;
 
-        AwaitFutureRunnable(ActorJob job, ActorFuture<T> future, BiConsumer<T, Throwable> callback)
+        AwaitFutureRunnable(
+                ActorJob job,
+                ActorFuture<T> future,
+                Runnable callback,
+                boolean blockOnFuture)
         {
+            this.blockOnFuture = blockOnFuture;
             this.job = job;
             this.task = job.task;
             this.future = future;
@@ -214,60 +226,26 @@ public class ActorJob
         @Override
         public void run()
         {
-            task.awaitFuture = future;
-            job.state = ActorState.BLOCKED;
-
-            if (!future.block(createContinuationJob(future, callback)))
+            if (blockOnFuture)
             {
-                task.submittedJobs.offer(createContinuationJob(future, callback));
+                task.awaitFuture = future;
+                job.state = ActorState.BLOCKED;
+            }
+
+            if (!future.block(callback))
+            {
+                callback.run();
             }
         }
-
-        private <T> ActorJob createContinuationJob(ActorFuture<T> future, BiConsumer<T, Throwable> callback)
-        {
-            final ActorJob continuationJob = new ActorJob();
-            continuationJob.setAutoCompleting(true);
-            continuationJob.onJobAddedToTask(task);
-            continuationJob.setRunnable(new FutureContinuationRunnable<>(task, future, callback));
-            return continuationJob;
-        }
-
     }
 
-    static class FutureContinuationRunnable<T> implements Runnable
+    private <T> ActorJob createContinuationJob(ActorFuture<T> future, BiConsumer<T, Throwable> callback)
     {
-        ActorFuture<T> future;
-        BiConsumer<T, Throwable> callback;
-        ActorTask task;
-
-        FutureContinuationRunnable(ActorTask task, ActorFuture<T> future, BiConsumer<T, Throwable> callback)
-        {
-            this.task = task;
-            this.future = future;
-            this.callback = callback;
-        }
-
-        @Override
-        public void run()
-        {
-            try
-            {
-                if (task.awaitFuture == future)
-                {
-                    task.awaitFuture = null;
-                    final T res = future.get();
-                    callback.accept(res, null);
-                }
-            }
-            catch (ExecutionException e)
-            {
-                callback.accept(null, e);
-            }
-            catch (InterruptedException e)
-            {
-                e.printStackTrace();
-            }
-        }
+        final ActorJob continuationJob = new ActorJob();
+        continuationJob.setAutoCompleting(true);
+        continuationJob.onJobAddedToTask(task);
+        continuationJob.setRunnable(new FutureContinuationRunnable<>(task, future, callback, true));
+        return continuationJob;
     }
 
     /**

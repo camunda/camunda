@@ -203,6 +203,30 @@ public class ActorControl
         timerSubscription.submit();
     }
 
+    /**
+     * Like {@link #await(ActorFuture, BiConsumer)} but does not block the actor
+     */
+    public <T> void runOnCompletion(ActorFuture<T> f, BiConsumer<T, Throwable> callback)
+    {
+        final ActorJob currentJob = ensureCalledFromWithinActor("await(...)");
+
+        final ActorJob continuationJob = new ActorJob();
+        final FutureContinuationRunnable<T> continuationRunnable = new FutureContinuationRunnable<>(task, f, callback, false);
+        continuationJob.setRunnable(continuationRunnable);
+        continuationJob.setAutoCompleting(true);
+        continuationJob.onJobAddedToTask(task);
+
+        final ActorFutureSubscription subscription = new ActorFutureSubscription(task, continuationJob);
+        continuationJob.setSubscription(subscription);
+
+        final ActorJob registerJob = new ActorJob();
+        registerJob.onJobAddedToTask(task);
+        registerJob.setAutoCompleting(true);
+        registerJob.setTriggerSubscriptionOnFuture(f, subscription);
+
+        currentJob.appendChild(registerJob);
+    }
+
     public <T> void await(ActorFuture<T> f, BiConsumer<T, Throwable> callback)
     {
         final ActorJob currentJob = ensureCalledFromWithinActor("await(...)");

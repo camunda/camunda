@@ -24,13 +24,16 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.metrics.ActorRunnerMetrics;
+
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.ConcurrentCountersManager;
 import org.agrona.concurrent.status.CountersManager;
 
 public class ZbActorScheduler
 {
     protected Duration blockingTaskShutdownTime = Duration.ofSeconds(15);
 
-    private final AtomicReference<SchedulerState> state = new AtomicReference<ZbActorScheduler.SchedulerState>();
+    private final AtomicReference<SchedulerState> state = new AtomicReference<>();
 
     private final RunnerAssignmentStrategy runnerAssignmentStrategy;
 
@@ -39,6 +42,21 @@ public class ZbActorScheduler
     protected final ThreadPoolExecutor blockingTasksRunner;
 
     public final int runnerCount;
+
+    /**
+     * For testing, else manage the counters manager outside
+     */
+    public ZbActorScheduler(int numOfRunnerThreads)
+    {
+        this(numOfRunnerThreads, buildDefaultCountersManager());
+    }
+
+    protected static CountersManager buildDefaultCountersManager()
+    {
+        final UnsafeBuffer valueBuffer = new UnsafeBuffer(new byte[16 * 1024]);
+        final UnsafeBuffer labelBuffer = new UnsafeBuffer(new byte[valueBuffer.capacity() * 2 + 1]);
+        return new ConcurrentCountersManager(labelBuffer, valueBuffer);
+    }
 
     public ZbActorScheduler(int numOfRunnerThreads, CountersManager countersManager)
     {

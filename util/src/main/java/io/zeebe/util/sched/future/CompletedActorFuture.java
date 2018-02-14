@@ -15,9 +15,10 @@
  */
 package io.zeebe.util.sched.future;
 
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
-import io.zeebe.util.sched.ActorJob;
 import io.zeebe.util.sched.FutureUtil;
 
 /**
@@ -120,7 +121,7 @@ public class CompletedActorFuture<V> implements ActorFuture<V>
     }
 
     @Override
-    public boolean block(ActorJob job)
+    public boolean block(Runnable onCompletion)
     {
         return false;
     }
