@@ -304,7 +304,7 @@ public class StreamProcessorController extends ZbActor
 
     private void readNextEvent()
     {
-        if (!streamProcessor.isSuspended() && logStreamReader.hasNext())
+        if (isOpened() && !streamProcessor.isSuspended() && logStreamReader.hasNext())
         {
             final LoggedEvent event = logStreamReader.next();
             currentEvent = event;
