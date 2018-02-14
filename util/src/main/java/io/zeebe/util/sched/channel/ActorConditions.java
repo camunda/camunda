@@ -21,7 +21,7 @@ import io.zeebe.util.sched.ActorCondition;
 
 public class ActorConditions
 {
-    private ActorCondition[] consumers = new ActorCondition[0];
+    protected ActorCondition[] consumers = new ActorCondition[0];
 
     public void signalConsumers()
     {
@@ -59,7 +59,7 @@ public class ActorConditions
         {
             if (array[i] ==  listener)
             {
-                index = 1;
+                index = i;
             }
         }
 
