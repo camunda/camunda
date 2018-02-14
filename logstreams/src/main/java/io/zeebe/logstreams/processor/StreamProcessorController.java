@@ -31,12 +31,15 @@ import io.zeebe.util.sched.ZbActor;
 import io.zeebe.util.sched.ZbActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
+import io.zeebe.util.sched.future.CompletedActorFuture;
 import org.slf4j.Logger;
 
 public class StreamProcessorController extends ZbActor
 {
-    public static final String ERROR_MESSAGE_REPROCESSING_FAILED = "Stream processor '%s' failed to reprocess. Cannot find source event position: %d";
-    public static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
+    private static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
+
+    private static final String ERROR_MESSAGE_REPROCESSING_FAILED = "Stream processor '%s' failed to reprocess. Cannot find source event position: %d";
+    private static final String ERROR_MESSAGE_PROCESSING_FAILED = "Stream processor '{}' failed to process event. It stop processing further events.";
 
     private final StreamProcessor streamProcessor;
     private final StreamProcessorContext streamProcessorContext;
@@ -55,22 +58,19 @@ public class StreamProcessorController extends ZbActor
     private final EventFilter reprocessingEventFilter;
     private final boolean isReadOnlyProcessor;
 
-    /// ----
-
     private final Runnable readNextEvent = this::readNextEvent;
 
-    private final CompletableActorFuture<Void> openFuture = new CompletableActorFuture<>();
-    private final CompletableActorFuture<Void> closeFuture = new CompletableActorFuture<>();
+    private CompletableActorFuture<Void> openFuture;
 
     private long snapshotPosition = -1L;
     private long lastSourceEventPosition = -1L;
     private long eventPosition = -1L;
     private long lastSuccessfulProcessedEventPosition = 1L;
     private long lastWrittenEventPosition = -1L;
-    private long failedEventPosition = -1L;
 
     private LoggedEvent currentEvent;
     private EventProcessor eventProcessor;
+    private ActorCondition onCommitPositionUpdatedCondition;
 
     public StreamProcessorController(StreamProcessorContext context)
     {
@@ -94,15 +94,18 @@ public class StreamProcessorController extends ZbActor
 
     public ActorFuture<Void> openAsync()
     {
-        // reset future
-        openFuture.close();
-        openFuture.setAwaitingResult();
-
         if (isOpened.compareAndSet(false, true))
         {
+            openFuture = new CompletableActorFuture<>();
+
             actorScheduler.submitActor(this);
+
+            return openFuture;
         }
-        return openFuture;
+        else
+        {
+            return new CompletedActorFuture<>((Void) null);
+        }
     }
 
     @Override
@@ -113,7 +116,7 @@ public class StreamProcessorController extends ZbActor
         logStreamReader.wrap(logStream);
         logStreamWriter.wrap(logStream);
 
-        actor.run(this::recoverFromSnapshot);
+        recoverFromSnapshot();
     }
 
     private void recoverFromSnapshot()
@@ -176,16 +179,12 @@ public class StreamProcessorController extends ZbActor
             else
             {
                 // nothing to reprocess
-                openFuture.complete(null);
-
                 onOpened();
             }
         }
         else
         {
             // nothing to reprocess
-            openFuture.complete(null);
-
             onOpened();
         }
     }
@@ -230,8 +229,6 @@ public class StreamProcessorController extends ZbActor
                         // all events are re-processed
                         actor.done();
 
-                        openFuture.complete(null);
-
                         onOpened();
                     }
                     else
@@ -259,6 +256,8 @@ public class StreamProcessorController extends ZbActor
         catch (Exception e)
         {
             actor.done();
+
+            openFuture.completeExceptionally(e);
 
             onFailure();
         }
@@ -289,18 +288,23 @@ public class StreamProcessorController extends ZbActor
 
     private void onOpened()
     {
-        // TODO ensure to register only once!
-        final ActorCondition condition = actor.onCondition(getName() + "-on-commit-position-updated", readNextEvent);
-        streamProcessorContext.logStream.registerOnCommitPositionUpdatedCondition(condition);
+        if (openFuture != null)
+        {
+            openFuture.complete(null);
+        }
+
+        onCommitPositionUpdatedCondition = actor.onCondition(getName() + "-on-commit-position-updated", readNextEvent);
+        streamProcessorContext.logStream.registerOnCommitPositionUpdatedCondition(onCommitPositionUpdatedCondition);
+
+        // start reading
+        actor.run(readNextEvent);
 
         actor.runAtFixedRate(snapshotPeriod, this::createSnapshot);
-
-        actor.run(readNextEvent);
     }
 
     private void readNextEvent()
     {
-        if (isOpened.get() && !streamProcessor.isSuspended() && logStreamReader.hasNext())
+        if (!streamProcessor.isSuspended() && logStreamReader.hasNext())
         {
             final LoggedEvent event = logStreamReader.next();
             currentEvent = event;
@@ -311,8 +315,8 @@ public class StreamProcessorController extends ZbActor
             }
             else
             {
-                actor.yield();
-                actor.run(readNextEvent);
+                // continue with the next event
+                actor.submit(readNextEvent);
             }
         }
         else
@@ -335,7 +339,7 @@ public class StreamProcessorController extends ZbActor
             }
             catch (Exception e)
             {
-                LOG.error("The log stream processor '{}' failed to process event. It stop processing further events.", getName(), e);
+                LOG.error(ERROR_MESSAGE_PROCESSING_FAILED, getName(), e);
                 onFailure();
             }
         }
@@ -346,14 +350,13 @@ public class StreamProcessorController extends ZbActor
         try
         {
             final boolean success = eventProcessor.executeSideEffects();
-
             if (success)
             {
                 actor.done();
 
                 actor.runUntilDone(this::writeEvent);
             }
-            else if (isOpened.get())
+            else if (isOpened())
             {
                 // try again
                 actor.yield();
@@ -365,7 +368,7 @@ public class StreamProcessorController extends ZbActor
         }
         catch (Exception e)
         {
-            LOG.error("The log stream processor '{}' failed to process event. It stop processing further events.", getName(), e);
+            LOG.error(ERROR_MESSAGE_PROCESSING_FAILED, getName(), e);
 
             actor.done();
             onFailure();
@@ -390,7 +393,7 @@ public class StreamProcessorController extends ZbActor
 
                 updateState();
             }
-            else if (isOpened.get())
+            else if (isOpened())
             {
                 // try again
                 actor.yield();
@@ -402,7 +405,7 @@ public class StreamProcessorController extends ZbActor
         }
         catch (Exception e)
         {
-            LOG.error("The log stream processor '{}' failed to process event. It stop processing further events.", getName(), e);
+            LOG.error(ERROR_MESSAGE_PROCESSING_FAILED, getName(), e);
 
             actor.done();
             onFailure();
@@ -424,11 +427,12 @@ public class StreamProcessorController extends ZbActor
                 lastWrittenEventPosition = eventPosition;
             }
 
+            // continue with next event
             actor.submit(readNextEvent);
         }
         catch (Exception e)
         {
-            LOG.error("The log stream processor '{}' failed to process event. It stop processing further events.", getName(), e);
+            LOG.error(ERROR_MESSAGE_PROCESSING_FAILED, getName(), e);
             onFailure();
         }
     }
@@ -484,36 +488,27 @@ public class StreamProcessorController extends ZbActor
     {
         if (isOpened.compareAndSet(true, false))
         {
-            // reset future
-            closeFuture.close();
-            closeFuture.setAwaitingResult();
-
-            actor.call(() ->
-            {
-                streamProcessor.onClose();
-
-                createSnapshot();
-
-                actor.close();
-            });
-
-            return closeFuture;
+            return actor.close();
         }
         else
         {
-            return closeFuture;
+            return new CompletedActorFuture<>((Void) null);
         }
     }
 
     @Override
     protected void onActorClosing()
     {
+        if (!isFailed())
+        {
+            streamProcessor.onClose();
+
+            createSnapshot();
+        }
+
         streamProcessorContext.getLogStreamReader().close();
 
-        if (closeFuture != null)
-        {
-            closeFuture.complete(null);
-        }
+        streamProcessorContext.logStream.removeOnCommitPositionUpdatedCondition(onCommitPositionUpdatedCondition);
     }
 
     private void onFailure()
@@ -522,11 +517,13 @@ public class StreamProcessorController extends ZbActor
         {
             isOpened.set(false);
 
-            closeFuture.close();
-            closeFuture.setAwaitingResult();
-
             actor.close();
         }
+    }
+
+    public boolean isOpened()
+    {
+        return isOpened.get();
     }
 
     public boolean isFailed()

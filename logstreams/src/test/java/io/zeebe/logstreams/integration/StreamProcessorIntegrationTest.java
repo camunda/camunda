@@ -15,9 +15,32 @@
  */
 package io.zeebe.logstreams.integration;
 
+import static io.zeebe.logstreams.integration.util.LogIntegrationTestUtil.waitUntilWrittenEvents;
+import static io.zeebe.logstreams.integration.util.LogIntegrationTestUtil.waitUntilWrittenKey;
+import static io.zeebe.logstreams.integration.util.LogIntegrationTestUtil.writeLogEvents;
+import static io.zeebe.logstreams.integration.util.LogIntegrationTestUtil.writeLogEventsAndReturnPosition;
+import static io.zeebe.test.util.TestUtil.waitUntil;
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutionException;
+import java.util.function.LongFunction;
+import java.util.function.Predicate;
+
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.integration.util.Counter;
-import io.zeebe.logstreams.log.*;
+import io.zeebe.logstreams.log.BufferedLogStreamReader;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamBatchWriter;
+import io.zeebe.logstreams.log.LogStreamBatchWriterImpl;
+import io.zeebe.logstreams.log.LogStreamReader;
+import io.zeebe.logstreams.log.LogStreamWriter;
+import io.zeebe.logstreams.log.LogStreamWriterImpl;
+import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.processor.EventProcessor;
 import io.zeebe.logstreams.processor.StreamProcessor;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
@@ -41,19 +64,6 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 import org.mockito.Mockito;
-
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutionException;
-import java.util.function.LongFunction;
-import java.util.function.Predicate;
-
-import static io.zeebe.logstreams.integration.util.LogIntegrationTestUtil.*;
-import static io.zeebe.test.util.TestUtil.waitUntil;
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class StreamProcessorIntegrationTest
 {
@@ -721,7 +731,7 @@ public class StreamProcessorIntegrationTest
 
         protected long eventKeyToBlock = -1;
         protected CopyOnWriteArrayList<Long> successfullyHandledEvents = new CopyOnWriteArrayList<>();
-        protected final SerializableWrapper stateResource = new SerializableWrapper<>(successfullyHandledEvents);
+        protected final SerializableWrapper<CopyOnWriteArrayList<Long>> stateResource = new SerializableWrapper<>(successfullyHandledEvents);
 
 
         protected boolean blockOnCurrentEvent = false;
@@ -735,7 +745,7 @@ public class StreamProcessorIntegrationTest
         @Override
         public void onOpen(StreamProcessorContext context)
         {
-            this.successfullyHandledEvents = (CopyOnWriteArrayList<Long>) stateResource.getObject();
+            this.successfullyHandledEvents = stateResource.getObject();
         }
 
         @Override
@@ -865,29 +875,6 @@ public class StreamProcessorIntegrationTest
                     {
                         return 0;
                     }
-                }
-            };
-        }
-
-        @Override
-        public SnapshotSupport getStateResource()
-        {
-            return resourceCounter;
-        }
-    };
-
-    private class SimpleVisitorProcessor implements StreamProcessor
-    {
-        @Override
-        public EventProcessor onEvent(LoggedEvent event)
-        {
-            return new EventProcessor()
-            {
-                @Override
-                public void processEvent()
-                {
-                    final Counter c = resourceCounter.getObject();
-                    c.increment();
                 }
             };
         }
