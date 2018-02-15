@@ -194,6 +194,93 @@ public class ActorFutureTest
     }
 
     @Test
+    public void shouldInvokeCallbackOnAllFutureCompletedSuccessfully()
+    {
+        // given
+        final CompletableActorFuture<String> future1 = new CompletableActorFuture<>();
+        final CompletableActorFuture<String> future2 = new CompletableActorFuture<>();
+
+        final List<Throwable> invocations = new ArrayList<>();
+        final List<String> results = new ArrayList<>();
+
+        final ZbActor waitingActor = new ZbActor()
+        {
+            @Override
+            protected void onActorStarted()
+            {
+                actor.runOnCompletion(Arrays.asList(future1, future2), t ->
+                {
+                    invocations.add(t);
+
+                    results.add(future1.join());
+                    results.add(future2.join());
+                });
+            }
+        };
+
+        final ZbActor completingActor = new ZbActor()
+        {
+            @Override
+            protected void onActorStarted()
+            {
+                future1.complete("foo");
+                future2.complete("bar");
+            }
+        };
+
+        schedulerRule.submitActor(waitingActor);
+        schedulerRule.workUntilDone();
+
+        // when
+        schedulerRule.submitActor(completingActor);
+        schedulerRule.workUntilDone();
+
+        // then
+        assertThat(invocations).hasSize(1).containsNull();
+        assertThat(results).contains("foo", "bar");
+    }
+
+    @Test
+    public void shouldInvokeCallbackOnAllFutureCompletedExceptionally()
+    {
+        // given
+        final CompletableActorFuture<String> future1 = new CompletableActorFuture<>();
+        final CompletableActorFuture<String> future2 = new CompletableActorFuture<>();
+
+        final List<Throwable> invocations = new ArrayList<>();
+
+        final ZbActor waitingActor = new ZbActor()
+        {
+            @Override
+            protected void onActorStarted()
+            {
+                actor.runOnCompletion(Arrays.asList(future1, future2), t -> invocations.add(t));
+            }
+        };
+
+        final ZbActor completingActor = new ZbActor()
+        {
+            @Override
+            protected void onActorStarted()
+            {
+                future1.completeExceptionally(new RuntimeException("foo"));
+                future2.completeExceptionally(new RuntimeException("bar"));
+            }
+        };
+
+        schedulerRule.submitActor(waitingActor);
+        schedulerRule.workUntilDone();
+
+        // when
+        schedulerRule.submitActor(completingActor);
+        schedulerRule.workUntilDone();
+
+        // then
+        assertThat(invocations).hasSize(1);
+        assertThat(invocations.get(0).getMessage()).isEqualTo("bar");
+    }
+
+    @Test
     public void shouldNotBlockExecutionWhenRegisteredOnFuture()
     {
         // given

@@ -25,6 +25,7 @@ import java.util.function.Consumer;
 import io.zeebe.util.sched.channel.ChannelConsumerCondition;
 import io.zeebe.util.sched.channel.ConsumableChannel;
 import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.AllCompletedFutureConsumer;
 import io.zeebe.util.sched.future.FirstSuccessfullyCompletedFutureConsumer;
 
 public class ActorControl
@@ -231,6 +232,16 @@ public class ActorControl
     public <T> void runOnFirstCompletion(Collection<ActorFuture<T>> futures, BiConsumer<T, Throwable> callback)
     {
         final BiConsumer<T, Throwable> futureConsumer = new FirstSuccessfullyCompletedFutureConsumer<>(futures.size(), callback);
+
+        for (ActorFuture<T> future : futures)
+        {
+            runOnCompletion(future, futureConsumer);
+        }
+    }
+
+    public <T> void runOnCompletion(Collection<ActorFuture<T>> futures, Consumer<Throwable> callback)
+    {
+        final BiConsumer<T, Throwable> futureConsumer = new AllCompletedFutureConsumer<>(futures.size(), callback);
 
         for (ActorFuture<T> future : futures)
         {
