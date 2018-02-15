@@ -35,7 +35,6 @@ import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
-import io.zeebe.util.sched.future.CompletedActorFuture;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 
@@ -59,6 +58,7 @@ public class JoinController
 
     private final GossipEvent ackResponse;
     private CompletableActorFuture<Void> joinFuture;
+    private GossipEvent syncResponse;
 
     public JoinController(GossipContext context, ActorControl actor)
     {
@@ -70,10 +70,10 @@ public class JoinController
         this.membershipList = context.getMembershipList();
         this.gossipEventSender = context.getGossipEventSender();
         this.gossipEventFactory = context.getGossipEventFactory();
+
         this.ackResponse = gossipEventFactory.createAckResponse();
+        this.syncResponse = gossipEventFactory.createSyncResponse();
     }
-
-
 
     public ActorFuture<Void> join(List<SocketAddress> contactPoints)
     {
@@ -109,7 +109,6 @@ public class JoinController
         });
         return completedActorFuture;
     }
-
 
     private void sendJoin()
     {
@@ -156,17 +155,17 @@ public class JoinController
         final ActorFuture<ClientRequest> clientRequestActorFuture =
             gossipEventSender.sendSyncRequest(contactPoint, configuration.getSyncTimeout());
 
-        actor.await(clientRequestActorFuture, (result, throwable) ->
+        actor.await(clientRequestActorFuture, (response, throwable) ->
         {
             if (throwable == null)
             {
-                // process response
                 LOG.debug("Received SYNC response.");
-                final GossipEvent syncResponse = gossipEventFactory.createSyncResponse();
-                final DirectBuffer join = result.join();
-                // wrap === process
+
+                final DirectBuffer join = response.join();
                 syncResponse.wrap(join, 0, join.capacity());
-                LOG.debug("JOINED!");
+
+                LOG.debug("Joined cluster successfully");
+
                 isJoined = true;
                 joinFuture.complete(null);
                 joinFuture = null;

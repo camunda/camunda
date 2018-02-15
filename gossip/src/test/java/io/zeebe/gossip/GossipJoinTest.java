@@ -17,20 +17,15 @@ package io.zeebe.gossip;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.time.Duration;
-import java.util.Collections;
-import java.util.concurrent.CompletableFuture;
-
 import io.zeebe.clustering.gossip.GossipEventType;
 import io.zeebe.clustering.gossip.MembershipEventType;
-import io.zeebe.gossip.protocol.MembershipEvent;
 import io.zeebe.gossip.util.GossipClusterRule;
 import io.zeebe.gossip.util.GossipRule;
 import io.zeebe.util.sched.clock.ControlledActorClock;
-import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 public class GossipJoinTest
 {
@@ -47,61 +42,54 @@ public class GossipJoinTest
     @Rule
     public GossipClusterRule cluster = new GossipClusterRule(actorScheduler, gossip1, gossip2, gossip3);
 
+    @Rule
+    public Timeout timeout = Timeout.seconds(10);
+
     @Test
-    public void shouldSendSyncRequestOnJoin() throws InterruptedException
+    public void shouldSendSyncRequestOnJoin()
     {
-        final ActorFuture<Void> future = gossip2.join(gossip1);
+        // when
+        gossip2.join(gossip1).join();
 
-        // TODO wait
-
-        future.join();
-        Loggers.GOSSIP_LOGGER.debug("joined!");
-//        assertThat(gossip1.receivedEvent(GossipEventType.SYNC_REQUEST, gossip2)).isTrue();
-//        assertThat(gossip2.receivedEvent(GossipEventType.SYNC_RESPONSE, gossip1)).isTrue();
+        // then
+        assertThat(gossip1.receivedEvent(GossipEventType.SYNC_REQUEST, gossip2)).isTrue();
+        assertThat(gossip2.receivedEvent(GossipEventType.SYNC_RESPONSE, gossip1)).isTrue();
     }
-//
-//    @Test
-//    public void shouldSpreadJoinEvent()
-//    {
-//        gossip2.join(gossip1);
-//
-//        actorScheduler.waitUntilDone();
-//        actorScheduler.waitUntilDone();
-//
-//        assertThat(gossip1.receivedMembershipEvent(MembershipEventType.JOIN, gossip2)).isTrue();
-//    }
-//
-//    @Test
-//    public void shouldAddMemberOnJoin()
-//    {
-//        gossip2.join(gossip1);
-//
-//        actorScheduler.waitUntilDone();
-//        actorScheduler.waitUntilDone();
-//
-//        assertThat(gossip1.hasMember(gossip2)).isTrue();
-//        assertThat(gossip2.hasMember(gossip1)).isTrue();
-//    }
-//
-//    @Test
-//    public void shouldSyncMembersOnJoin()
-//    {
-//        // given
-//        gossip2.join(gossip1);
-//
-//        actorScheduler.waitUntilDone();
-//        actorScheduler.waitUntilDone();
-//
-//        // when
-//        gossip3.join(gossip1);
-//
-//        actorScheduler.waitUntilDone();
-//        actorScheduler.waitUntilDone();
-//
-//        // then
-//        assertThat(gossip3.hasMember(gossip1)).isTrue();
-//        assertThat(gossip3.hasMember(gossip2)).isTrue();
-//    }
+
+    @Test
+    public void shouldSpreadJoinEvent()
+    {
+        // when
+        gossip2.join(gossip1).join();
+
+        // then
+        assertThat(gossip1.receivedMembershipEvent(MembershipEventType.JOIN, gossip2)).isTrue();
+    }
+
+    @Test
+    public void shouldAddMemberOnJoin()
+    {
+        // when
+        gossip2.join(gossip1).join();
+
+        // then
+        assertThat(gossip1.hasMember(gossip2)).isTrue();
+        assertThat(gossip2.hasMember(gossip1)).isTrue();
+    }
+
+    @Test
+    public void shouldSyncMembersOnJoin()
+    {
+        // given
+        gossip2.join(gossip1).join();
+
+        // when
+        gossip3.join(gossip1).join();
+
+        // then
+        assertThat(gossip3.hasMember(gossip1)).isTrue();
+        assertThat(gossip3.hasMember(gossip2)).isTrue();
+    }
 //
 //    @Test
 //    public void shouldRetryJoinIfContactPointIsNotAvailable()

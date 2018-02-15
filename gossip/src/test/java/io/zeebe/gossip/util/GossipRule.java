@@ -171,17 +171,13 @@ public class GossipRule extends ExternalResource
     @Override
     protected void after()
     {
-        // TODO close actors
+        serverTransport.close();
+        clientTransport.close();
 
-//        gossipActorRef.close();
-//        testSubscriptionActorRef.close();
-//
-//        serverTransport.closeAsync()
-//            .thenCompose(v -> serverSendBuffer.closeAsync())
-//            .thenCompose(v -> serverReceiveBuffer.closeAsync());
-//
-//        clientTransport.closeAsync()
-//            .thenCompose(v -> clientSendBuffer.closeAsync());
+        serverSendBuffer.close();
+        serverReceiveBuffer.close();
+
+        clientSendBuffer.close();
     }
 
     public ActorFuture<Void> join(GossipRule... contactPoints)
