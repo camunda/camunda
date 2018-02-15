@@ -82,7 +82,7 @@ public class Gossip extends ZbActor implements GossipController, GossipEventPubl
         gossipEventFactory = new GossipEventFactory(configuration, membershipList, disseminationComponent, customEventSyncRequestSupplier, customEventListenerConsumer);
         final GossipEventSender gossipEventSender = new GossipEventSender(clientTransport, serverTransport, membershipList, gossipEventFactory);
 
-        this.configuration = configuration
+        this.configuration = configuration;
         final GossipContext context = new GossipContext(configuration, membershipList, disseminationComponent, gossipEventSender, gossipEventFactory);
 
         joinController = new JoinController(context, actor);
@@ -90,7 +90,7 @@ public class Gossip extends ZbActor implements GossipController, GossipEventPubl
 
         pingController = new PingController(context, actor);
         pingReqController = new PingReqEventHandler(context, actor);
-        syncRequestHandler = new SyncRequestEventHandler(context, customEventSyncRequestSupplier);
+        syncRequestHandler = new SyncRequestEventHandler(context, customEventSyncRequestSupplier, actor);
 
         requestHandler = new GossipRequestHandler(gossipEventFactory);
         requestHandler.registerGossipEventConsumer(GossipEventType.PING, new PingEventHandler(context));
@@ -128,7 +128,6 @@ public class Gossip extends ZbActor implements GossipController, GossipEventPubl
 
         actor.runDelayed(configuration.getProbeInterval(), pingController::sendPing);
 
-        // ping req -> consume ? or condition
         // sync same
 
         // suspicion -> in ping ctrl
@@ -150,8 +149,6 @@ public class Gossip extends ZbActor implements GossipController, GossipEventPubl
     {
         int workCount = 0;
 
-        workCount += pingReqController.doWork();
-        workCount += syncRequestHandler.doWork();
         workCount += suspicionController.doWork();
 
         return workCount;

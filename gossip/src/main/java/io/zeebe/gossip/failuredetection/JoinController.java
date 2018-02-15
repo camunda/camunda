@@ -56,6 +56,8 @@ public class JoinController
 
     private boolean isJoined;
 
+    private final GossipEvent ackResponse;
+
     public JoinController(GossipContext context, ActorControl actor)
     {
         this.configuration = context.getConfiguration();
@@ -66,6 +68,7 @@ public class JoinController
         this.membershipList = context.getMembershipList();
         this.gossipEventSender = context.getGossipEventSender();
         this.gossipEventFactory = context.getGossipEventFactory();
+        this.ackResponse = gossipEventFactory.createAckResponse();
     }
 
     public ActorFuture<Void> join(List<SocketAddress> contactPoints)
@@ -116,29 +119,33 @@ public class JoinController
                 final ActorFuture<ClientRequest> clientRequestActorFuture =
                     gossipEventSender.sendPing(contactPoint, configuration.getJoinTimeout());
                 futureRequests.add(clientRequestActorFuture);
-
-                // TODO wait non-blocking on first completed future
-                // save contact point which returns first
-                // call -> sendSync
             }
         }
+
+        actor.runOnFirstCompletion(futureRequests, (result, throwable) ->
+        {
+            if (throwable == null)
+            {
+                final DirectBuffer response = result.join();
+                ackResponse.wrap(response, 0, response.capacity());
+
+                contactPoint = ackResponse.getSender();
+                actor.submit(this::sendSync);
+            }
+            else
+            {
+                actor.runDelayed(configuration.getJoinInterval(), this::sendJoin);
+            }
+        });
     }
 
     private void sendSync()
     {
-        //
-        //                if (clientRequestActorFuture.isCompletedExceptionally())
-        //                {
-        //
-        //                // if timer is triggered check if join response was received
-        //                }
-
         LOG.trace("Send SYNC request to '{}'", contactPoint);
 
         final ActorFuture<ClientRequest> clientRequestActorFuture =
             gossipEventSender.sendSyncRequest(contactPoint, configuration.getSyncTimeout());
 
-        // when complete then
         actor.await(clientRequestActorFuture, (result, throwable) -> {
             if (throwable == null)
             {
@@ -192,8 +199,6 @@ public class JoinController
                     futureRequests.add(clientRequestActorFuture);
                 }
 
-                // wait non-blocking on first completed
-                // callback - leave response
                 actor.awaitAll(futureRequests, (throwable) -> {
 
                     completableActorFuture.complete(null);

@@ -20,6 +20,7 @@ import io.zeebe.gossip.membership.Member;
 import io.zeebe.gossip.membership.MembershipList;
 import io.zeebe.gossip.protocol.*;
 import io.zeebe.transport.ClientRequest;
+import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.actor.Actor;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -37,8 +38,6 @@ public class PingReqEventHandler implements GossipEventConsumer
     private final GossipEventSender gossipEventSender;
     private final GossipEvent ackResponse;
 
-    private Member suspiciousMember;
-
     public PingReqEventHandler(GossipContext context, ActorControl actorControl)
     {
         this.configuration = context.getConfiguration();
@@ -52,19 +51,18 @@ public class PingReqEventHandler implements GossipEventConsumer
     @Override
     public void accept(GossipEvent event, long requestId, int streamId)
     {
-
         final Member sender = membershipList.get(event.getSender());
         final Member probeMember = membershipList.get(event.getProbeMember());
         if (probeMember != null)
         {
-            suspiciousMember = probeMember;
-            final ActorFuture<ClientRequest> clientRequestActorFuture = gossipEventSender.sendPing(suspiciousMember.getAddress(), configuration.getProbeTimeout());
+            final ActorFuture<ClientRequest> clientRequestActorFuture =
+                gossipEventSender.sendPing(probeMember.getAddress(), configuration.getProbeTimeout());
 
             actor.runOnCompletion(clientRequestActorFuture, (request, throwable) ->
             {
                 if (throwable == null)
                 {
-                    LOG.trace("Received ACK from '{}'", suspiciousMember.getAddress());
+                    LOG.trace("Received ACK from '{}'", probeMember.getAddress());
                     final DirectBuffer response = request.join();
                     ackResponse.wrap(response, 0, response.capacity());
 
@@ -73,30 +71,14 @@ public class PingReqEventHandler implements GossipEventConsumer
                 }
                 else
                 {
-                    LOG.trace("Doesn't receive ACK from '{}'", suspiciousMember.getAddress());
+                    LOG.trace("Doesn't receive ACK from '{}'", probeMember.getAddress());
                     // do nothing
                 }
             });
-//
-//            final boolean success = stateMachine.tryTake(TRANSITION_PING_REQ_RECEIVED);
-//            if (success)
-//            {
-//                final Context context = stateMachine.getContext();
-//                context.sender = sender;
-//                context.suspiciousMember = probeMember;
-//                context.requestId = requestId;
-//                context.streamId = streamId;
-//            }
-//            else
-//            {
-//                // TODO buffer incoming PING-REQ request
-//                LOG.trace("Reject PING-REQ from '{}' because the previous request isn't completed yet", sender);
-//            }
         }
         else
         {
             LOG.debug("Reject PING-REQ for unknown member '{}'", probeMember);
         }
     }
-
 }

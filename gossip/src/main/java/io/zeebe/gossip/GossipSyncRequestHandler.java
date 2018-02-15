@@ -16,6 +16,7 @@
 package io.zeebe.gossip;
 
 import io.zeebe.gossip.dissemination.GossipSyncRequest;
+import io.zeebe.util.sched.future.ActorFuture;
 
 /**
  * Handle Gossip sync requests and provide data for custom events.
@@ -23,5 +24,5 @@ import io.zeebe.gossip.dissemination.GossipSyncRequest;
 @FunctionalInterface
 public interface GossipSyncRequestHandler
 {
-    void onSyncRequest(GossipSyncRequest request);
+    ActorFuture<Void> onSyncRequest(GossipSyncRequest request);
 }

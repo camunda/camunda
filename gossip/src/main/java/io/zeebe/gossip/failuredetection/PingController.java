@@ -117,17 +117,22 @@ public class PingController
             }
         }
 
-        // wait non-block on first completed
-        // on success
-        // LOG.trace("Received ACK of PING-REQ from '{}'", context.probeMember.getId());
-        //
-        //                    context.ackResponse.process();
-        // run delayed sendPing
-        // on timeout
-        // mark member as suspected
-        // LOG.trace("Doesn't receive any ACK of PING-REQ to probe '{}'", context.probeMember.getId());
-        // submit suspect
 
+        actor.runOnFirstCompletion(indirectRequestFutures, (clientRequest, throwable) ->
+        {
+            if (throwable == null)
+            {
+                LOG.trace("Received ACK of PING-REQ from '{}'", probeMember.getId());
+                final DirectBuffer response = clientRequest.join();
+                ackResponse.wrap(response, 0, response.capacity());
+                actor.runDelayed(configuration.getProbeInterval(), this::sendPing);
+            }
+            else
+            {
+                LOG.trace("Doesn't receive any ACK of PING-REQ to probe '{}'", probeMember.getId());
+                actor.submit(this::sendSuspect);
+            }
+        });
     }
 
     private void sendSuspect()
