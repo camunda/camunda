@@ -2,6 +2,7 @@ import React from 'react';
 import update from 'immutability-helper';
 
 import {Modal, Button, Input, Select} from 'components';
+import {emailNotificationIsEnabled} from './service';
 
 import './AlertModal.css';
 
@@ -24,6 +25,14 @@ export default class AlertModal extends React.Component {
     super(props);
 
     this.state = newAlert;
+    
+    this.checkIfEmailNotificationIsConfigured();
+  }
+
+  checkIfEmailNotificationIsConfigured = async () => {
+    this.setState({
+      emailNotificationIsEnabled: await emailNotificationIsEnabled()
+    })
   }
 
   componentWillReceiveProps({alert}) {
@@ -79,7 +88,8 @@ export default class AlertModal extends React.Component {
   }
 
   render() {
-    const {name, email, reportId, thresholdOperator, threshold, checkInterval, reminder, fixNotification} = this.state;
+    const {name, email, reportId, thresholdOperator, threshold, 
+      checkInterval, reminder, fixNotification, emailNotificationIsEnabled} = this.state;
 
     return <Modal open={this.props.alert} onClose={this.props.onClose}>
       <Modal.Header>
@@ -90,6 +100,11 @@ export default class AlertModal extends React.Component {
       <Modal.Content>
         <div className="AlertModal__topSection">
           <div className="AlertModal__inputGroup">
+            { !emailNotificationIsEnabled && 
+              <span className={'AlertModal__configuration-warning'}>Email notification service is not configured. 
+                Please check the {<a href="https://docs.camunda.org/optimize/latest/technical-guide/configuration/#alerting">Optimize documentation</a>}
+              </span>
+            }
             <label>
               <span className="AlertModal__label">Name</span>
               <Input className="AlertModal__input" value={name} onChange={({target: {value}}) => this.setState({name: value})}/>

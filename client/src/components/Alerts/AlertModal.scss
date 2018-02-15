@@ -4,6 +4,13 @@
   display: block;
 }
 
+.AlertModal__configuration-warning {
+  color: red; 
+  font-size: 0.8em;
+  margin-bottom: 20px;
+  display: inline-block;
+}
+
 .AlertModal__input {
   width: 100%;
   flex-grow: 1;

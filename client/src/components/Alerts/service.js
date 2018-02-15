@@ -28,3 +28,9 @@ export async function deleteAlert(id) {
   return await del('api/alert/' + id);
 }
 
+export async function emailNotificationIsEnabled() {
+  const response = await get('/api/alert/email/isEnabled');
+
+  return await response.json().isEnabled;
+}
+

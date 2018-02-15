@@ -2,6 +2,13 @@ import React from 'react';
 import {mount} from 'enzyme';
 
 import AlertModal from './AlertModal';
+import {emailNotificationIsEnabled} from './service'
+
+jest.mock('./service', () => {
+  return {
+    emailNotificationIsEnabled: jest.fn()
+  }
+});
 
 jest.mock('components', () =>{
   const Modal = props => <div id='modal'>{props.children}</div>;
@@ -124,4 +131,20 @@ it('should disable the submit button if the check interval is negative', () => {
   }});
 
   expect(node.find('button[type="primary"]')).toBeDisabled();
+});
+
+it('should show warning that email is not configured', async () => {
+  emailNotificationIsEnabled.mockReturnValue(false);
+  const node = await mount(<AlertModal reports={reports} />);
+  await node.update();
+
+  expect(node.find('.AlertModal__configuration-warning').hasClass('AlertModal__configuration-warning')).toBe(true);
+});
+
+it('should not display warning if email is configured', async () => {
+  emailNotificationIsEnabled.mockReturnValue(true);
+  const node = await mount(<AlertModal reports={reports} />);
+  await node.update();
+
+  expect(node.find('.AlertModal__configuration-warning').exists()).toBe(false);
 });
