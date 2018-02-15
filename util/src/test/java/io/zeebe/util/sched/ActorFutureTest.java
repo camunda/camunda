@@ -18,18 +18,19 @@ package io.zeebe.util.sched;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-
+import io.zeebe.util.collection.Tuple;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import io.zeebe.util.sched.future.CompletedActorFuture;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
 
 public class ActorFutureTest
 {
@@ -55,6 +56,7 @@ public class ActorFutureTest
 
         final ZbActor completingActor = new ZbActor()
         {
+            @Override
             protected void onActorStarted()
             {
                 future.complete(null);
@@ -70,6 +72,125 @@ public class ActorFutureTest
 
         // then
         assertThat(callbackInvocations).hasValue(1);
+    }
+
+    @Test
+    public void shouldInvokeCallbackOnFirstFutureCompletion()
+    {
+        // given
+        final CompletableActorFuture<String> future1 = new CompletableActorFuture<>();
+        final CompletableActorFuture<String> future2 = new CompletableActorFuture<>();
+
+        final List<Tuple<String, Throwable>> invocations = new ArrayList<>();
+
+        final ZbActor waitingActor = new ZbActor()
+        {
+            @Override
+            protected void onActorStarted()
+            {
+                actor.runOnFirstCompletion(Arrays.asList(future1, future2), (r, t) -> invocations.add(new Tuple<>(r, t)));
+            }
+        };
+
+        final ZbActor completingActor = new ZbActor()
+        {
+            @Override
+            protected void onActorStarted()
+            {
+                future1.complete("foo");
+                future2.complete("bar");
+            }
+        };
+
+        schedulerRule.submitActor(waitingActor);
+        schedulerRule.workUntilDone();
+
+        // when
+        schedulerRule.submitActor(completingActor);
+        schedulerRule.workUntilDone();
+
+        // then
+        assertThat(invocations).hasSize(1).contains(new Tuple<>("foo", null));
+    }
+
+    @Test
+    public void shouldInvokeCallbackOnlyOnSuccessfullyFutureCompletion()
+    {
+        // given
+        final CompletableActorFuture<String> future1 = new CompletableActorFuture<>();
+        final CompletableActorFuture<String> future2 = new CompletableActorFuture<>();
+
+        final List<Tuple<String, Throwable>> invocations = new ArrayList<>();
+
+        final ZbActor waitingActor = new ZbActor()
+        {
+            @Override
+            protected void onActorStarted()
+            {
+                actor.runOnFirstCompletion(Arrays.asList(future1, future2), (r, t) -> invocations.add(new Tuple<>(r, t)));
+            }
+        };
+
+        final ZbActor completingActor = new ZbActor()
+        {
+            @Override
+            protected void onActorStarted()
+            {
+                future1.completeExceptionally(new RuntimeException("foo"));
+                future2.complete("bar");
+            }
+        };
+
+        schedulerRule.submitActor(waitingActor);
+        schedulerRule.workUntilDone();
+
+        // when
+        schedulerRule.submitActor(completingActor);
+        schedulerRule.workUntilDone();
+
+        // then
+        assertThat(invocations).hasSize(1).contains(new Tuple<>("bar", null));
+    }
+
+    @Test
+    public void shouldInvokeCallbackOnLastExceptionallyFutureCompletion()
+    {
+        // given
+        final CompletableActorFuture<String> future1 = new CompletableActorFuture<>();
+        final CompletableActorFuture<String> future2 = new CompletableActorFuture<>();
+
+        final List<Tuple<String, Throwable>> invocations = new ArrayList<>();
+
+        final ZbActor waitingActor = new ZbActor()
+        {
+            @Override
+            protected void onActorStarted()
+            {
+                actor.runOnFirstCompletion(Arrays.asList(future1, future2), (r, t) -> invocations.add(new Tuple<>(r, t)));
+            }
+        };
+
+        final ZbActor completingActor = new ZbActor()
+        {
+            @Override
+            protected void onActorStarted()
+            {
+                future1.completeExceptionally(new RuntimeException("foo"));
+                future2.completeExceptionally(new RuntimeException("bar"));
+            }
+        };
+
+        schedulerRule.submitActor(waitingActor);
+        schedulerRule.workUntilDone();
+
+        // when
+        schedulerRule.submitActor(completingActor);
+        schedulerRule.workUntilDone();
+
+        // then
+        assertThat(invocations).hasSize(1);
+        assertThat(invocations.get(0).getLeft()).isNull();
+        assertThat(invocations.get(0).getRight().getMessage()).isEqualTo("bar");
     }
 
     @Test
@@ -153,6 +274,7 @@ public class ActorFutureTest
         actor.actor.call(() -> lifecycle.add("call"));
         schedulerRule.submitActor(new ZbActor()
         {
+            @Override
             protected void onActorStarted()
             {
                 future.complete(null);

@@ -15,16 +15,17 @@
  */
 package io.zeebe.util.sched;
 
-import io.zeebe.util.sched.channel.ChannelConsumerCondition;
-import io.zeebe.util.sched.channel.ConsumableChannel;
-import io.zeebe.util.sched.future.ActorFuture;
-
 import java.time.Duration;
 import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+
+import io.zeebe.util.sched.channel.ChannelConsumerCondition;
+import io.zeebe.util.sched.channel.ConsumableChannel;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.FirstSuccessfullyCompletedFutureConsumer;
 
 public class ActorControl
 {
@@ -208,7 +209,7 @@ public class ActorControl
      */
     public <T> void runOnCompletion(ActorFuture<T> f, BiConsumer<T, Throwable> callback)
     {
-        final ActorJob currentJob = ensureCalledFromWithinActor("await(...)");
+        final ActorJob currentJob = ensureCalledFromWithinActor("runOnCompletion(...)");
 
         final ActorJob continuationJob = new ActorJob();
         final FutureContinuationRunnable<T> continuationRunnable = new FutureContinuationRunnable<>(task, f, callback, false);
@@ -225,6 +226,16 @@ public class ActorControl
         registerJob.setTriggerSubscriptionOnFuture(f, subscription);
 
         currentJob.appendChild(registerJob);
+    }
+
+    public <T> void runOnFirstCompletion(Collection<ActorFuture<T>> futures, BiConsumer<T, Throwable> callback)
+    {
+        final BiConsumer<T, Throwable> futureConsumer = new FirstSuccessfullyCompletedFutureConsumer<>(futures.size(), callback);
+
+        for (ActorFuture<T> future : futures)
+        {
+            runOnCompletion(future, futureConsumer);
+        }
     }
 
     public <T> void await(ActorFuture<T> f, BiConsumer<T, Throwable> callback)
