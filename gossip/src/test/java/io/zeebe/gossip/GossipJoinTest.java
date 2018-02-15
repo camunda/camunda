@@ -26,8 +26,9 @@ import io.zeebe.clustering.gossip.MembershipEventType;
 import io.zeebe.gossip.protocol.MembershipEvent;
 import io.zeebe.gossip.util.GossipClusterRule;
 import io.zeebe.gossip.util.GossipRule;
-import io.zeebe.test.util.ClockRule;
-import io.zeebe.test.util.agent.ManualActorScheduler;
+import io.zeebe.util.sched.clock.ControlledActorClock;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -35,25 +36,24 @@ public class GossipJoinTest
 {
     private static final GossipConfiguration CONFIGURATION = new GossipConfiguration();
 
-    private ManualActorScheduler actorScheduler = new ManualActorScheduler();
+    private ControlledActorClock clock = new ControlledActorClock();
 
-    private GossipRule gossip1 = new GossipRule(() -> actorScheduler, CONFIGURATION, "localhost", 8001);
-    private GossipRule gossip2 = new GossipRule(() -> actorScheduler, CONFIGURATION, "localhost", 8002);
-    private GossipRule gossip3 = new GossipRule(() -> actorScheduler, CONFIGURATION, "localhost", 8003);
+    @Rule
+    private ActorSchedulerRule actorScheduler = new ActorSchedulerRule(clock);
+
+    private GossipRule gossip1 = new GossipRule(() -> actorScheduler.get(), CONFIGURATION, "localhost", 8001);
+    private GossipRule gossip2 = new GossipRule(() -> actorScheduler.get(), CONFIGURATION, "localhost", 8002);
+    private GossipRule gossip3 = new GossipRule(() -> actorScheduler.get(), CONFIGURATION, "localhost", 8003);
 
     @Rule
     public GossipClusterRule cluster = new GossipClusterRule(actorScheduler, gossip1, gossip2, gossip3);
 
-    @Rule
-    public ClockRule clock = ClockRule.pinCurrentTime();
-
     @Test
     public void shouldSendSyncRequestOnJoin() throws InterruptedException
     {
-        gossip2.join(gossip1);
+        final ActorFuture<Void> future = gossip2.join(gossip1);
 
-        actorScheduler.waitUntilDone();
-        actorScheduler.waitUntilDone();
+        // TODO wait
 
         assertThat(gossip1.receivedEvent(GossipEventType.SYNC_REQUEST, gossip2)).isTrue();
         assertThat(gossip2.receivedEvent(GossipEventType.SYNC_RESPONSE, gossip1)).isTrue();

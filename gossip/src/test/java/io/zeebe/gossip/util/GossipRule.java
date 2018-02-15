@@ -18,34 +18,57 @@ package io.zeebe.gossip.util;
 import static java.util.stream.Collectors.toList;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
 
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import io.zeebe.clustering.gossip.GossipEventType;
 import io.zeebe.clustering.gossip.MembershipEventType;
-import io.zeebe.dispatcher.*;
-import io.zeebe.gossip.*;
+import io.zeebe.dispatcher.Dispatcher;
+import io.zeebe.dispatcher.Dispatchers;
+import io.zeebe.dispatcher.FragmentHandler;
+import io.zeebe.gossip.Gossip;
+import io.zeebe.gossip.GossipConfiguration;
+import io.zeebe.gossip.GossipController;
+import io.zeebe.gossip.GossipCustomEventListener;
+import io.zeebe.gossip.GossipEventPublisher;
+import io.zeebe.gossip.GossipMembershipListener;
 import io.zeebe.gossip.membership.Member;
-import io.zeebe.gossip.protocol.*;
-import io.zeebe.transport.*;
+import io.zeebe.gossip.protocol.CustomEvent;
+import io.zeebe.gossip.protocol.GossipEvent;
+import io.zeebe.gossip.protocol.MembershipEvent;
+import io.zeebe.transport.BufferingServerTransport;
+import io.zeebe.transport.ClientInputListener;
+import io.zeebe.transport.ClientOutput;
+import io.zeebe.transport.ClientRequest;
+import io.zeebe.transport.ClientTransport;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.SocketAddress;
+import io.zeebe.transport.Transports;
 import io.zeebe.transport.impl.RequestResponseHeaderDescriptor;
 import io.zeebe.transport.impl.TransportHeaderDescriptor;
-import io.zeebe.util.actor.ActorReference;
-import io.zeebe.util.actor.ActorScheduler;
 import io.zeebe.util.buffer.BufferUtil;
+import io.zeebe.util.sched.ZbActor;
+import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
 import org.junit.rules.ExternalResource;
 import org.mockito.ArgumentMatcher;
-import org.slf4j.MDC;
 
 public class GossipRule extends ExternalResource
 {
 
-    private final Supplier<ActorScheduler> actionSchedulerSupplier;
+    private final Supplier<ZbActorScheduler> actionSchedulerSupplier;
     private final GossipConfiguration configuration;
     private final SocketAddress socketAddress;
     private final String memberId;
@@ -59,15 +82,12 @@ public class GossipRule extends ExternalResource
     private Dispatcher serverSendBuffer;
     private Dispatcher serverReceiveBuffer;
 
-    private ActorReference gossipActorRef;
-    private ActorReference testSubscriptionActorRef;
-
     private ClientOutput spyClientOutput;
 
     private LocalMembershipListener localMembershipListener;
     private ReceivedEventsCollector receivedEventsCollector = new ReceivedEventsCollector();
 
-    public GossipRule(final Supplier<ActorScheduler> actionSchedulerSupplier, final GossipConfiguration configuration, final String host, final int port)
+    public GossipRule(final Supplier<ZbActorScheduler> actionSchedulerSupplier, final GossipConfiguration configuration, final String host, final int port)
     {
         this.actionSchedulerSupplier = actionSchedulerSupplier;
         this.configuration = configuration;
@@ -82,7 +102,7 @@ public class GossipRule extends ExternalResource
 
         final String name = socketAddress.toString();
 
-        final ActorScheduler actorScheduler = actionSchedulerSupplier.get();
+        final ZbActorScheduler actorScheduler = actionSchedulerSupplier.get();
 
         serverSendBuffer = Dispatchers
                 .create("serverSendBuffer-" + name)
@@ -118,7 +138,6 @@ public class GossipRule extends ExternalResource
                 .requestPoolSize(128)
                 .scheduler(actorScheduler)
                 .inputListener(receivedEventsCollector)
-                .enableManagedRequests()
                 .build();
 
 
@@ -129,38 +148,43 @@ public class GossipRule extends ExternalResource
 
         gossip = new Gossip(socketAddress, serverTransport, spyClientTransport, configuration);
 
-        gossipActorRef = actorScheduler.schedule(() ->
-        {
-            // make it easier to distinguish different gossip runners
-            MDC.put("gossip-id", name);
-
-            return gossip.doWork();
-        });
+        // TODO make it easier to distinguish different gossip runners
+        // MDC.put("gossip-id", name);
+        actorScheduler.submitActor(gossip);
 
         localMembershipListener = new LocalMembershipListener();
         gossip.addMembershipListener(localMembershipListener);
 
-        serverReceiveBuffer.openSubscriptionAsync("received-events-collector").thenAccept(sub ->
+        actorScheduler.submitActor(new ZbActor()
         {
-            testSubscriptionActorRef = actorScheduler.schedule(() -> sub.poll(receivedEventsCollector, 32));
+            @Override
+            protected void onActorStarted()
+            {
+                actor.await(serverReceiveBuffer.openSubscriptionAsync("received-events-collector"), (sub, t) ->
+                {
+                    actor.consume(sub, () -> sub.poll(receivedEventsCollector, Integer.MAX_VALUE));
+                });
+            }
         });
     }
 
     @Override
     protected void after()
     {
-        gossipActorRef.close();
-        testSubscriptionActorRef.close();
+        // TODO close actors
 
-        serverTransport.closeAsync()
-            .thenCompose(v -> serverSendBuffer.closeAsync())
-            .thenCompose(v -> serverReceiveBuffer.closeAsync());
-
-        clientTransport.closeAsync()
-            .thenCompose(v -> clientSendBuffer.closeAsync());
+//        gossipActorRef.close();
+//        testSubscriptionActorRef.close();
+//
+//        serverTransport.closeAsync()
+//            .thenCompose(v -> serverSendBuffer.closeAsync())
+//            .thenCompose(v -> serverReceiveBuffer.closeAsync());
+//
+//        clientTransport.closeAsync()
+//            .thenCompose(v -> clientSendBuffer.closeAsync());
     }
 
-    public CompletableFuture<Void> join(GossipRule... contactPoints)
+    public ActorFuture<Void> join(GossipRule... contactPoints)
     {
         final List<SocketAddress> contactPointList = Arrays.asList(contactPoints).stream().map(c -> c.socketAddress).collect(toList());
 
