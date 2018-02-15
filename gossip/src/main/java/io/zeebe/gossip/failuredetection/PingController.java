@@ -26,6 +26,8 @@ import io.zeebe.gossip.dissemination.DisseminationComponent;
 import io.zeebe.gossip.membership.*;
 import io.zeebe.gossip.protocol.*;
 import io.zeebe.transport.ClientRequest;
+import io.zeebe.util.sched.ActorControl;
+import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.state.*;
 import io.zeebe.util.time.ClockUtil;
 import org.slf4j.Logger;
@@ -47,6 +49,15 @@ public class PingController
 
     private final StateMachine<Context> stateMachine;
 
+    private long nextInterval;
+    private Member probeMember;
+    private long pingReqTimeout;
+    private final GossipEvent ackResponse;
+    private final List<ClientRequest> indirectRequests;
+    private ActorControl actorControl;
+
+    private final GossipEventSender gossipEventSender;
+
     public PingController(GossipContext context)
     {
         this.configuration = context.getConfiguration();
@@ -54,6 +65,7 @@ public class PingController
         this.membershipList = context.getMembershipList();
         this.propbeMemberIterator = new RoundRobinMemberIterator(membershipList);
         this.indirectProbeMemberIterator = new RoundRobinMemberIterator(membershipList);
+        this.gossipEventSender = context.getGossipEventSender();
 
         final AwaitNextIntervalState awaitNextIntervalState = new AwaitNextIntervalState();
         final SendPingState sendPingState = new SendPingState(context.getGossipEventSender());
@@ -75,98 +87,60 @@ public class PingController
                 .build();
     }
 
+
+    public void sendPing()
+    {
+        final Member member = propbeMemberIterator.next();
+        probeMember = member;
+
+        LOG.trace("Send PING to '{}'", member.getId());
+
+        final ActorFuture<ClientRequest> clientRequestActorFuture =
+            gossipEventSender.sendPing(member.getAddress(), configuration.getProbeTimeout());
+
+        // on completed
+        // if exceptionally then send ping req
+        // LOG.trace("Doesn't receive ACK from '{}'", context.probeMember.getId());
+        // send ping req
+        // else
+        //  LOG.trace("Received ACK from '{}'", context.probeMember.getId());
+        // process response
+        // wait for next call
+
+
+    }
+
+    private void sendPingReq()
+    {
+
+        final Member suspiciousMember = context.probeMember;
+
+        final int probeNodes = Math.min(configuration.getProbeIndirectNodes(), membershipList.size() - 1);
+
+        for (int n = 0; n < probeNodes;)
+        {
+            final Member member = indirectProbeMemberIterator.next();
+
+            if (member != suspiciousMember)
+            {
+                LOG.trace("Send PING-REQ to '{}' to probe '{}'", member.getId(), suspiciousMember.getId());
+
+                final ClientRequest request = gossipEventSender.sendPingReq(member.getAddress(), suspiciousMember.getAddress());
+                context.indirectRequests.add(request);
+
+                n += 1;
+            }
+        }
+
+        context.pingReqTimeout = ClockUtil.getCurrentTimeInMillis() + configuration.getProbeIndirectTimeout();
+        context.take(TRANSITION_DEFAULT);
+    }
+
     public int doWork()
     {
         return stateMachine.doWork();
     }
 
-    private class Context extends SimpleStateMachineContext
-    {
-        private long nextInterval;
-        private Member probeMember;
-        private long pingReqTimeout;
-        private final GossipEventResponse ackResponse;
-        private final List<ClientRequest> indirectRequests;
-
-        Context(StateMachine<Context> stateMachine, GossipEventFactory eventFactory, int probeIndirectNodes)
-        {
-            super(stateMachine);
-
-            this.ackResponse = eventFactory.createAckResponse();
-            this.indirectRequests = new ArrayList<>(probeIndirectNodes);
-        }
-    }
-
-    private class AwaitNextIntervalState implements WaitState<Context>
-    {
-        @Override
-        public void work(Context context) throws Exception
-        {
-            final long currentTime = ClockUtil.getCurrentTimeInMillis();
-
-            if (currentTime >= context.nextInterval)
-            {
-                context.nextInterval = currentTime + configuration.getProbeInterval();
-
-                if (propbeMemberIterator.hasNext())
-                {
-                    context.take(TRANSITION_DEFAULT);
-                }
-            }
-        }
-    }
-
-    private class SendPingState implements TransitionState<Context>
-    {
-        private final GossipEventSender gossipEventSender;
-
-        SendPingState(GossipEventSender gossipEventSender)
-        {
-            this.gossipEventSender = gossipEventSender;
-        }
-
-        @Override
-        public void work(Context context) throws Exception
-        {
-            final Member member = propbeMemberIterator.next();
-            context.probeMember = member;
-
-            LOG.trace("Send PING to '{}'", member.getId());
-
-            final ClientRequest request = gossipEventSender.sendPing(member.getAddress());
-            context.ackResponse.wrap(request, configuration.getProbeTimeout());
-
-            context.take(TRANSITION_DEFAULT);
-        }
-    }
-
-    private class AwaitAckState implements WaitState<Context>
-    {
-        @Override
-        public void work(Context context) throws Exception
-        {
-            if (context.ackResponse.isReceived())
-            {
-                LOG.trace("Received ACK from '{}'", context.probeMember.getId());
-
-                context.ackResponse.process();
-
-                context.take(TRANSITION_ACK_RECEIVED);
-            }
-            else if (context.ackResponse.isFailed() || context.ackResponse.isTimedOut())
-            {
-                LOG.trace("Doesn't receive ACK from '{}'", context.probeMember.getId());
-
-                context.take(TRANSITION_FAIL);
-            }
-        }
-
-        @Override
-        public void onExit()
-        {
-            stateMachine.getContext().ackResponse.clear();
-        }
-    }
 
     private class SendPingReqState implements TransitionState<Context>
     {

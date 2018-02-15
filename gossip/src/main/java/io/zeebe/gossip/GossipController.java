@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import io.zeebe.transport.SocketAddress;
+import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
 
 public interface GossipController
@@ -28,12 +29,12 @@ public interface GossipController
      *
      * @param contactPoints known contact points of the cluster
      */
-    CompletableFuture<Void> join(List<SocketAddress> contactPoints);
+    ActorFuture<Void> join(List<SocketAddress> contactPoints);
 
     /**
      * Leave the current cluster.
      */
-    CompletableFuture<Void> leave();
+    ActorFuture<Void> leave();
 
     void addMembershipListener(GossipMembershipListener listener);
 

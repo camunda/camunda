@@ -19,6 +19,7 @@ import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import java.util.Iterator;
 
+import io.zeebe.gossip.Gossip;
 import io.zeebe.gossip.GossipConfiguration;
 import io.zeebe.gossip.Loggers;
 import io.zeebe.gossip.dissemination.*;
@@ -126,14 +127,14 @@ public class GossipEventFactory
                                Integer.MAX_VALUE);
     }
 
-    public GossipEventResponse createAckResponse()
+    public GossipEvent createAckResponse()
     {
-        return new GossipEventResponse(createFailureDetectionEvent());
+        return createFailureDetectionEvent();
     }
 
-    public GossipEventResponse createSyncResponse()
+    public GossipEvent createSyncResponse()
     {
-        return new GossipEventResponse(createSyncResponseEvent());
+        return createSyncResponseEvent();
     }
 
     private static final class MembershipEventLogger implements MembershipEventConsumer

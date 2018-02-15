@@ -30,6 +30,7 @@ import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.actor.Actor;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.ZbActor;
+import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 
@@ -39,17 +40,14 @@ import org.slf4j.Logger;
  * Note that implementation is designed to run on a single thread as an actor.
  *
  */
-public class Gossip extends ZbActor implements Actor, GossipController, GossipEventPublisher
+public class Gossip extends ZbActor implements GossipController, GossipEventPublisher
 {
     private static final Logger LOG = Loggers.GOSSIP_LOGGER;
-
-    private final DeferredCommandContext deferredCommands = new DeferredCommandContext();
 
     private final MembershipList membershipList;
     private final DisseminationComponent disseminationComponent;
     private final GossipEventFactory gossipEventFactory;
 
-    private final SubscriptionController subscriptionController;
     private final JoinController joinController;
     private final PingController pingController;
     private final PingReqEventHandler pingReqController;
@@ -57,6 +55,8 @@ public class Gossip extends ZbActor implements Actor, GossipController, GossipEv
     private final SuspicionController suspicionController;
 
     private CustomEventListenerConsumer customEventListenerConsumer;
+    private final BufferingServerTransport serverTransport;
+    private final GossipRequestHandler requestHandler;
 
     public Gossip(
             final SocketAddress socketAddress,
@@ -64,6 +64,7 @@ public class Gossip extends ZbActor implements Actor, GossipController, GossipEv
             final ClientTransport clientTransport,
             final GossipConfiguration configuration)
     {
+        this.serverTransport = serverTransport;
         membershipList = new MembershipList(socketAddress, configuration);
         disseminationComponent = new DisseminationComponent(configuration, membershipList);
 
@@ -75,35 +76,47 @@ public class Gossip extends ZbActor implements Actor, GossipController, GossipEv
 
         final GossipContext context = new GossipContext(configuration, membershipList, disseminationComponent, gossipEventSender, gossipEventFactory);
 
-        joinController = new JoinController(context);
+        joinController = new JoinController(context, actor);
         suspicionController = new SuspicionController(context);
 
         pingController = new PingController(context);
         pingReqController = new PingReqEventHandler(context);
         syncRequestHandler = new SyncRequestEventHandler(context, customEventSyncRequestSupplier);
 
-        final GossipRequestHandler requestHandler = new GossipRequestHandler(gossipEventFactory);
+        requestHandler = new GossipRequestHandler(gossipEventFactory);
         requestHandler.registerGossipEventConsumer(GossipEventType.PING, new PingEventHandler(context));
         requestHandler.registerGossipEventConsumer(GossipEventType.PING_REQ, pingReqController);
         requestHandler.registerGossipEventConsumer(GossipEventType.SYNC_REQUEST, syncRequestHandler);
-
-        subscriptionController = new SubscriptionController(serverTransport, requestHandler, configuration.getSubscriptionPollLimit());
-
     }
 
 
     @Override
     protected void onActorStarted()
     {
-        // join happens only once?
-
         // ping timer
 
+
         // defered -> calls
+        // done
+
         // subscriptionController -> consume
+        final ActorFuture<ServerInputSubscription> serverInputSubscriptionActorFuture =
+            serverTransport.openSubscription("gossip", null, requestHandler);
+
+        actor.await(serverInputSubscriptionActorFuture, (subscription, throwable) ->
+        {
+            if (throwable == null)
+            {
+                actor.consume(subscription, () -> subscription.poll());
+            }
+            else
+            {
+                LOG.error("Failed to open subscription!", throwable);
+            }
+        });
 
         // ping req -> consume ? or condition
-        // synx same
+        // sync same
 
         // suspicion -> in ping ctrl
         // run delayed with timeout time -> runnable checks if still suspected
@@ -124,8 +137,6 @@ public class Gossip extends ZbActor implements Actor, GossipController, GossipEv
     {
         int workCount = 0;
 
-        workCount += deferredCommands.doWork();
-        workCount += joinController.doWork();
 
         workCount += subscriptionController.doWork();
         workCount += pingController.doWork();
@@ -136,24 +147,17 @@ public class Gossip extends ZbActor implements Actor, GossipController, GossipEv
         return workCount;
     }
 
+
     @Override
-    public int getPriority(long now)
+    public ActorFuture<Void> join(List<SocketAddress> contactPoints)
     {
-        return PRIORITY_HIGH;
+        return joinController.join(contactPoints);
     }
 
     @Override
-    public CompletableFuture<Void> join(List<SocketAddress> contactPoints)
+    public ActorFuture<Void> leave()
     {
-
-        actor.call(() -> joinController::join(contactPoints));
-        return deferredCommands.runAsync(future -> joinController.join(contactPoints, future));
-    }
-
-    @Override
-    public CompletableFuture<Void> leave()
-    {
-        return deferredCommands.runAsync(future -> joinController.leave(future));
+        return joinController.leave();
     }
 
     @Override
@@ -163,17 +167,16 @@ public class Gossip extends ZbActor implements Actor, GossipController, GossipEv
         final DirectBuffer type = BufferUtil.cloneBuffer(typeBuffer);
         final DirectBuffer payload = BufferUtil.cloneBuffer(payloadBuffer, offset, length);
 
-        deferredCommands.runAsync(() ->
+        actor.call(() ->
         {
-
             final Member self = membershipList.self();
 
             GossipTerm currentTerm = self.getTermForEventType(type);
             if (currentTerm == null)
             {
                 currentTerm = new GossipTerm()
-                        .epoch(self.getTerm().getEpoch())
-                        .heartbeat(0);
+                    .epoch(self.getTerm().getEpoch())
+                    .heartbeat(0);
 
                 self.addTermForEventType(type, currentTerm);
             }
@@ -195,31 +198,31 @@ public class Gossip extends ZbActor implements Actor, GossipController, GossipEv
     @Override
     public void addMembershipListener(GossipMembershipListener listener)
     {
-        deferredCommands.runAsync(() -> membershipList.addListener(listener));
+        actor.call(() -> membershipList.addListener(listener));
     }
 
     @Override
     public void removeMembershipListener(GossipMembershipListener listener)
     {
-        deferredCommands.runAsync(() -> membershipList.removeListener(listener));
+        actor.call(() -> membershipList.removeListener(listener));
     }
 
     @Override
     public void addCustomEventListener(DirectBuffer eventType, GossipCustomEventListener listener)
     {
-        deferredCommands.runAsync(() -> customEventListenerConsumer.addCustomEventListener(eventType, listener));
+        actor.call(() -> customEventListenerConsumer.addCustomEventListener(eventType, listener));
     }
 
     @Override
     public void removeCustomEventListener(GossipCustomEventListener listener)
     {
-        deferredCommands.runAsync(() -> customEventListenerConsumer.removeCustomEventListener(listener));
+        actor.call(() -> customEventListenerConsumer.removeCustomEventListener(listener));
     }
 
     @Override
     public void registerSyncRequestHandler(DirectBuffer eventType, GossipSyncRequestHandler handler)
     {
-        deferredCommands.runAsync(() -> syncRequestHandler.registerSyncRequestHandler(eventType, handler));
+        actor.call(() -> syncRequestHandler.registerSyncRequestHandler(eventType, handler));
     }
 
 }
