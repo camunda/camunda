@@ -15,22 +15,24 @@
  */
 package io.zeebe.transport.impl;
 
-import java.util.concurrent.*;
-import java.util.function.Consumer;
-
 import io.zeebe.dispatcher.ClaimedFragment;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.transport.ClientRequest;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.impl.ClientRequestPool.RequestIdGenerator;
 import io.zeebe.util.buffer.BufferWriter;
-import io.zeebe.util.sched.ActorJob;
-import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
-import org.agrona.*;
+import org.agrona.DirectBuffer;
+import org.agrona.ExpandableArrayBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class ClientRequestImpl implements ClientRequest, ActorFuture<DirectBuffer>
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
+
+public class ClientRequestImpl implements ClientRequest
 {
     private final TransportHeaderDescriptor transportHeaderDescriptor = new TransportHeaderDescriptor();
     private final RequestResponseHeaderDescriptor requestResponseHeader = new RequestResponseHeaderDescriptor();
@@ -215,7 +217,7 @@ public class ClientRequestImpl implements ClientRequest, ActorFuture<DirectBuffe
     }
 
     @Override
-    public boolean block(ActorJob job)
+    public boolean block(Runnable job)
     {
         return responseFuture.block(job);
     }

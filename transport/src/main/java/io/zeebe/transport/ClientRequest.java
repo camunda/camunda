@@ -15,11 +15,10 @@
  */
 package io.zeebe.transport;
 
-import java.util.concurrent.Future;
-
+import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
 
-public interface ClientRequest extends AutoCloseable, Future<DirectBuffer>
+public interface ClientRequest extends AutoCloseable, ActorFuture<DirectBuffer>
 {
     long getRequestId();
 
