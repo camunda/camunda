@@ -15,12 +15,13 @@
  */
 package io.zeebe.util.sched.channel;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import org.junit.Test;
+
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.ActorConditionImpl;
 import io.zeebe.util.sched.ActorJob;
-import org.junit.Test;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class ActorConditionsTest
 {
