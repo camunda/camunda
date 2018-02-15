@@ -15,6 +15,8 @@
  */
 package io.zeebe.gossip;
 
+import java.time.Duration;
+
 public class GossipMath
 {
 
@@ -23,9 +25,9 @@ public class GossipMath
         return repeatMult * ceilLog2(clusterSize);
     }
 
-    public static long suspicionTimeout(int suspicionMult, int clusterSize, long pingInterval)
+    public static Duration suspicionTimeout(int suspicionMult, int clusterSize, Duration pingInterval)
     {
-        return suspicionMult * ceilLog2(clusterSize) * pingInterval;
+        return Duration.ofMillis(suspicionMult * ceilLog2(clusterSize) * pingInterval.toMillis());
     }
 
     /**

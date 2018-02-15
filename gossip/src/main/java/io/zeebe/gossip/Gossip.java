@@ -17,9 +17,11 @@ package io.zeebe.gossip;
 
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
+import java.time.Duration;
 import java.util.List;
 
 import io.zeebe.clustering.gossip.GossipEventType;
+import io.zeebe.clustering.gossip.MembershipEventType;
 import io.zeebe.gossip.dissemination.CustomEventListenerConsumer;
 import io.zeebe.gossip.dissemination.CustomEventSyncResponseSupplier;
 import io.zeebe.gossip.dissemination.DisseminationComponent;
@@ -28,7 +30,6 @@ import io.zeebe.gossip.failuredetection.JoinController;
 import io.zeebe.gossip.failuredetection.PingController;
 import io.zeebe.gossip.failuredetection.PingEventHandler;
 import io.zeebe.gossip.failuredetection.PingReqEventHandler;
-import io.zeebe.gossip.failuredetection.SuspicionController;
 import io.zeebe.gossip.membership.GossipTerm;
 import io.zeebe.gossip.membership.Member;
 import io.zeebe.gossip.membership.MembershipList;
@@ -64,7 +65,6 @@ public class Gossip extends ZbActor implements GossipController, GossipEventPubl
     private final PingController pingController;
     private final PingReqEventHandler pingReqController;
     private final SyncRequestEventHandler syncRequestHandler;
-    private final SuspicionController suspicionController;
 
     private CustomEventListenerConsumer customEventListenerConsumer;
     private final BufferingServerTransport serverTransport;
@@ -77,7 +77,8 @@ public class Gossip extends ZbActor implements GossipController, GossipEventPubl
             final GossipConfiguration configuration)
     {
         this.serverTransport = serverTransport;
-        membershipList = new MembershipList(socketAddress, configuration);
+
+        membershipList = new MembershipList(socketAddress, this::onSuspectMember);
         disseminationComponent = new DisseminationComponent(configuration, membershipList);
 
         customEventListenerConsumer = new CustomEventListenerConsumer();
@@ -90,7 +91,6 @@ public class Gossip extends ZbActor implements GossipController, GossipEventPubl
         final GossipContext context = new GossipContext(configuration, membershipList, disseminationComponent, gossipEventSender, gossipEventFactory);
 
         joinController = new JoinController(context, actor);
-        suspicionController = new SuspicionController(context);
 
         pingController = new PingController(context, actor);
         pingReqController = new PingReqEventHandler(context, actor);
@@ -130,6 +130,34 @@ public class Gossip extends ZbActor implements GossipController, GossipEventPubl
 
         // suspicion -> in ping ctrl
         // run delayed with timeout time -> runnable checks if still suspected
+    }
+
+    private void onSuspectMember(Member member)
+    {
+        final GossipTerm suspictionTerm = new GossipTerm().wrap(member.getTerm());
+
+        final int multiplier = configuration.getSuspicionMultiplier();
+        final int clusterSize = 1 + membershipList.size();
+        final Duration probeInterval = configuration.getProbeInterval();
+        final Duration suspictionTimeout = GossipMath.suspicionTimeout(multiplier, clusterSize, probeInterval);
+
+        actor.runDelayed(suspictionTimeout, () ->
+        {
+            // ensure that the member is still suspected
+            if (member.getTerm().isEqual(suspictionTerm))
+            {
+                LOG.info("Remove suspicious member '{}'", member.getId());
+
+                membershipList.removeMember(member.getAddress());
+
+                LOG.trace("Spread CONFIRM event about '{}'", member.getId());
+
+                disseminationComponent.addMembershipEvent()
+                    .address(member.getAddress())
+                    .gossipTerm(member.getTerm())
+                    .type(MembershipEventType.CONFIRM);
+            }
+        });
     }
 
     @Override

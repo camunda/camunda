@@ -31,8 +31,6 @@ public class Member
     private final GossipTerm term = new GossipTerm();
     private MembershipStatus status = MembershipStatus.ALIVE;
 
-    private long suspicionTimeout = -1L;
-
     private final List<Tuple<DirectBuffer, GossipTerm>> gossipTermByEventType = new ArrayList<>();
 
     public Member(SocketAddress address)
@@ -61,11 +59,6 @@ public class Member
         return term;
     }
 
-    public long getSuspicionTimeout()
-    {
-        return suspicionTimeout;
-    }
-
     public Member setStatus(MembershipStatus status)
     {
         this.status = status;
@@ -75,12 +68,6 @@ public class Member
     public Member setGossipTerm(GossipTerm term)
     {
         this.term.wrap(term);
-        return this;
-    }
-
-    public Member setSuspicionTimeout(long suspicionTimeout)
-    {
-        this.suspicionTimeout = suspicionTimeout;
         return this;
     }
 

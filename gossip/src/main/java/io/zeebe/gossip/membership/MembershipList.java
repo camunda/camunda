@@ -15,16 +15,19 @@
  */
 package io.zeebe.gossip.membership;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.function.Consumer;
 
-import io.zeebe.gossip.*;
+import io.zeebe.gossip.GossipMembershipListener;
 import io.zeebe.transport.SocketAddress;
-import io.zeebe.util.time.ClockUtil;
 
 public class MembershipList implements Iterable<Member>
 {
     private final Member self;
-    private final GossipConfiguration configuration;
 
     private final List<Member> members = new ArrayList<>();
     private final List<Member> membersView = Collections.unmodifiableList(members);
@@ -35,10 +38,12 @@ public class MembershipList implements Iterable<Member>
 
     private final AliveMembershipIterator iterator = new AliveMembershipIterator();
 
-    public MembershipList(SocketAddress address, GossipConfiguration configuration)
+    private final Consumer<Member> onSuspectedMember;
+
+    public MembershipList(SocketAddress address, Consumer<Member> onSuspectedMember)
     {
         this.self = new Member(address);
-        this.configuration = configuration;
+        this.onSuspectedMember = onSuspectedMember;
     }
 
     public Member self()
@@ -116,8 +121,7 @@ public class MembershipList implements Iterable<Member>
 
             member
                 .setStatus(MembershipStatus.ALIVE)
-                .setGossipTerm(gossipTerm)
-                .setSuspicionTimeout(-1L);
+                .setGossipTerm(gossipTerm);
 
             if (isUndead)
             {
@@ -138,20 +142,10 @@ public class MembershipList implements Iterable<Member>
         {
             member
                 .setStatus(MembershipStatus.SUSPECT)
-                .setGossipTerm(gossipTerm)
-                .setSuspicionTimeout(calculateSuspicionTimeout());
+                .setGossipTerm(gossipTerm);
+
+            onSuspectedMember.accept(member);
         }
-    }
-
-    private long calculateSuspicionTimeout()
-    {
-        final int multiplier = configuration.getSuspicionMultiplier();
-        final int clusterSize = 1 + size();
-        final int probeInterval = configuration.getProbeInterval();
-
-        final long timeout = GossipMath.suspicionTimeout(multiplier, clusterSize, probeInterval);
-
-        return ClockUtil.getCurrentTimeInMillis() + timeout;
     }
 
     public int size()

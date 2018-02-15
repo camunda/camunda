@@ -15,17 +15,18 @@
  */
 package io.zeebe.gossip.protocol;
 
+import java.time.Duration;
+
 import io.zeebe.clustering.gossip.GossipEventType;
 import io.zeebe.gossip.Loggers;
 import io.zeebe.gossip.membership.MembershipList;
-import io.zeebe.transport.*;
+import io.zeebe.transport.ClientRequest;
+import io.zeebe.transport.ClientTransport;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.ServerResponse;
+import io.zeebe.transport.ServerTransport;
+import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.sched.future.ActorFuture;
-import org.agrona.DirectBuffer;
-
-import java.time.Duration;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 public class GossipEventSender
 {
@@ -128,62 +129,6 @@ public class GossipEventSender
         {
             Loggers.GOSSIP_LOGGER.error("Error on sending response.", t);
             // ignore
-        }
-    }
-
-    private static class FailedClientRequest implements ClientRequest
-    {
-        @Override
-        public boolean isFailed()
-        {
-            return true;
-        }
-
-        @Override
-        public boolean cancel(boolean mayInterruptIfRunning)
-        {
-            return false;
-        }
-
-        @Override
-        public boolean isCancelled()
-        {
-            return false;
-        }
-
-        @Override
-        public boolean isDone()
-        {
-            return true;
-        }
-
-        @Override
-        public DirectBuffer get() throws InterruptedException, ExecutionException
-        {
-            return null;
-        }
-
-        @Override
-        public DirectBuffer get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException
-        {
-            return null;
-        }
-
-        @Override
-        public long getRequestId()
-        {
-            return -1L;
-        }
-
-        @Override
-        public DirectBuffer join()
-        {
-            throw new RuntimeException("Request failed.");
-        }
-
-        @Override
-        public void close()
-        {
         }
     }
 
