@@ -18,6 +18,7 @@ package io.zeebe.transport.impl;
 import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.dispatcher.Subscription;
 import io.zeebe.transport.*;
+import io.zeebe.util.sched.ActorCondition;
 
 public class ServerInputSubscriptionImpl implements ServerInputSubscription
 {
@@ -39,6 +40,24 @@ public class ServerInputSubscriptionImpl implements ServerInputSubscription
     public int poll()
     {
         return poll(Integer.MAX_VALUE);
+    }
+
+    @Override
+    public boolean hasAvailable()
+    {
+        return subscription.hasAvailable();
+    }
+
+    @Override
+    public void registerConsumer(ActorCondition onDataAvailable)
+    {
+        subscription.registerConsumer(onDataAvailable);
+    }
+
+    @Override
+    public void removeConsumer(ActorCondition onDataAvailable)
+    {
+        subscription.removeConsumer(onDataAvailable);
     }
 
     @Override
