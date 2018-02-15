@@ -3,6 +3,7 @@ package org.camunda.optimize.service.alert;
 import com.icegreen.greenmail.util.GreenMail;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
+import org.camunda.optimize.dto.optimize.query.alert.EmailAlertEnabledDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.junit.After;
 import org.junit.Before;
@@ -153,6 +154,42 @@ public class AlertStateChangeIT extends AbstractAlertSchedulerIT {
     assertThat(emails[0].getSubject(), is("[Camunda-Optimize] - Report status"));
     assertThat(emails[0].getContent().toString(), containsString(simpleAlert.getName()));
     assertThat(emails[0].getContent().toString(), containsString("is not exceeded anymore."));
+  }
+
+  @Test
+  public void emailNotificationIsEnabled() {
+    //given
+    embeddedOptimizeRule.getConfigurationService().setEmailsEnabled(true);
+
+    // when
+    Response response =
+        embeddedOptimizeRule.target("alert/email/isEnabled")
+            .request()
+            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
+            .get();
+
+    // then the status code is authorized
+    assertThat(response.getStatus(), is(200));
+    EmailAlertEnabledDto emailEnabled = response.readEntity(EmailAlertEnabledDto.class);
+    assertThat(emailEnabled.isEnabled(), is(true));
+  }
+
+  @Test
+  public void emailNotificationIsDisabled() {
+    //given
+    embeddedOptimizeRule.getConfigurationService().setEmailsEnabled(false);
+
+    // when
+    Response response =
+        embeddedOptimizeRule.target("alert/email/isEnabled")
+            .request()
+            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
+            .get();
+
+    // then the status code is authorized
+    assertThat(response.getStatus(), is(200));
+    EmailAlertEnabledDto emailEnabled = response.readEntity(EmailAlertEnabledDto.class);
+    assertThat(emailEnabled.isEnabled(), is(false));
   }
 
   private AlertCreationDto createAlertWithReminder(String reportId) {

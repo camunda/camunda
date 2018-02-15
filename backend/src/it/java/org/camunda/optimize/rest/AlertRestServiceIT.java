@@ -3,6 +3,7 @@ package org.camunda.optimize.rest;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.alert.EmailAlertEnabledDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.junit.Rule;
@@ -30,7 +31,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 public class AlertRestServiceIT {
 
   public static final String BEARER = "Bearer ";
-  public static final String ALERT = "alert";
+  private static final String ALERT = "alert";
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
   @Rule
@@ -153,6 +154,31 @@ public class AlertRestServiceIT {
     // then the status code is okay
     assertThat(response.getStatus(), is(204));
     assertThat(getAllAlerts(token).size(), is(0));
+  }
+
+  @Test
+  public void emailNotificationIsEnabledCheckWithoutAuthentication() {
+    // when
+    Response response =
+        embeddedOptimizeRule.target( "alert/email/isEnabled")
+            .request()
+            .get();
+
+    // then the status code is not authorized
+    assertThat(response.getStatus(), is(401));
+  }
+
+  @Test
+  public void emailNotificationIsEnabledCheckWithAuthentication() {
+    // when
+    Response response =
+        embeddedOptimizeRule.target("alert/email/isEnabled")
+            .request()
+            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
+            .get();
+
+    // then the status code is authorized
+    assertThat(response.getStatus(), is(200));
   }
 
   private String addEmptyAlertToOptimize(String token) {

@@ -3,6 +3,7 @@ package org.camunda.optimize.rest;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.alert.EmailAlertEnabledDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.rest.util.AuthenticationUtil;
 import org.camunda.optimize.service.alert.AlertService;
@@ -72,4 +73,10 @@ public class AlertRestService {
     alertService.deleteAlert(alertId);
   }
 
+  @GET
+  @Path("/email/isEnabled")
+  @Produces(MediaType.APPLICATION_JSON)
+  public EmailAlertEnabledDto isAlertingEnabled() {
+    return alertService.isAlertingEnabled();
+  }
 }

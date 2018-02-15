@@ -3,6 +3,7 @@ package org.camunda.optimize.service.alert;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.alert.EmailAlertEnabledDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.service.es.reader.AlertReader;
 import org.camunda.optimize.service.es.writer.AlertWriter;
@@ -15,7 +16,6 @@ import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 import org.quartz.Trigger;
 import org.quartz.TriggerKey;
-import org.quartz.impl.matchers.GroupMatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_NONE_TYPE;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.SINGLE_NUMBER_VISUALIZATION;
@@ -113,6 +112,12 @@ public class  AlertService {
       schedulerFactoryBean.start();
     }
 
+  }
+
+  public EmailAlertEnabledDto isAlertingEnabled() {
+    EmailAlertEnabledDto check = new EmailAlertEnabledDto();
+    check.setEnabled(configurationService.isEmailEnabled());
+    return check;
   }
 
   private List<Trigger> createReminderTriggers(Map<AlertDefinitionDto, JobDetail> reminderDetails) {
