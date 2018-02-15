@@ -15,16 +15,17 @@
  */
 package io.zeebe.gossip.failuredetection;
 
-import io.zeebe.gossip.*;
+import io.zeebe.gossip.GossipConfiguration;
+import io.zeebe.gossip.GossipContext;
+import io.zeebe.gossip.Loggers;
 import io.zeebe.gossip.membership.Member;
 import io.zeebe.gossip.membership.MembershipList;
-import io.zeebe.gossip.protocol.*;
+import io.zeebe.gossip.protocol.GossipEvent;
+import io.zeebe.gossip.protocol.GossipEventConsumer;
+import io.zeebe.gossip.protocol.GossipEventSender;
 import io.zeebe.transport.ClientRequest;
-import io.zeebe.transport.SocketAddress;
-import io.zeebe.util.actor.Actor;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.state.*;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 

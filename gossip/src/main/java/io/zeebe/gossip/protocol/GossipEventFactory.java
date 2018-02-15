@@ -19,10 +19,12 @@ import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import java.util.Iterator;
 
-import io.zeebe.gossip.Gossip;
 import io.zeebe.gossip.GossipConfiguration;
 import io.zeebe.gossip.Loggers;
-import io.zeebe.gossip.dissemination.*;
+import io.zeebe.gossip.dissemination.DisseminationComponent;
+import io.zeebe.gossip.dissemination.MembershipCustomEventUpdater;
+import io.zeebe.gossip.dissemination.MembershipEventUpdater;
+import io.zeebe.gossip.dissemination.MembershipListEventSupplier;
 import io.zeebe.gossip.membership.MembershipList;
 import org.slf4j.Logger;
 
@@ -40,7 +42,6 @@ public class GossipEventFactory
     // for failure analysis and tests
     private final MembershipEventLogger membershipEventLogger = new MembershipEventLogger();
     private final CustomEventLogger customEventLogger = new CustomEventLogger();
-
 
     public GossipEventFactory(
             GossipConfiguration configuration,

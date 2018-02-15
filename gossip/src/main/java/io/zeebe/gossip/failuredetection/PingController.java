@@ -15,6 +15,9 @@
  */
 package io.zeebe.gossip.failuredetection;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import io.zeebe.clustering.gossip.MembershipEventType;
 import io.zeebe.gossip.GossipConfiguration;
 import io.zeebe.gossip.GossipContext;
@@ -32,9 +35,6 @@ import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class PingController
 {

@@ -17,18 +17,24 @@ package io.zeebe.gossip.dissemination;
 
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
-import io.zeebe.gossip.*;
-import io.zeebe.gossip.membership.*;
-import io.zeebe.gossip.protocol.*;
+import io.zeebe.gossip.GossipContext;
+import io.zeebe.gossip.GossipSyncRequestHandler;
+import io.zeebe.gossip.Loggers;
+import io.zeebe.gossip.membership.GossipTerm;
+import io.zeebe.gossip.membership.Member;
+import io.zeebe.gossip.membership.MembershipList;
+import io.zeebe.gossip.protocol.GossipEvent;
+import io.zeebe.gossip.protocol.GossipEventConsumer;
+import io.zeebe.gossip.protocol.GossipEventSender;
 import io.zeebe.transport.SocketAddress;
-import io.zeebe.util.actor.Actor;
 import io.zeebe.util.buffer.BufferUtil;
-import io.zeebe.util.collection.*;
+import io.zeebe.util.collection.ReusableObjectList;
+import io.zeebe.util.collection.Tuple;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.state.*;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 
@@ -56,7 +62,7 @@ public class SyncRequestEventHandler implements GossipEventConsumer
     @Override
     public void accept(GossipEvent event, long requestId, int streamId)
     {
-        List<ActorFuture<Void>> futures = new ArrayList<>();
+        final List<ActorFuture<Void>> futures = new ArrayList<>();
         for (Tuple<DirectBuffer, GossipSyncRequestHandler> tuple : handlers)
         {
             final GossipSyncRequest request = requests.add();

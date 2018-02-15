@@ -15,12 +15,20 @@
  */
 package io.zeebe.gossip;
 
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
+
+import java.util.List;
+
 import io.zeebe.clustering.gossip.GossipEventType;
 import io.zeebe.gossip.dissemination.CustomEventListenerConsumer;
 import io.zeebe.gossip.dissemination.CustomEventSyncResponseSupplier;
 import io.zeebe.gossip.dissemination.DisseminationComponent;
 import io.zeebe.gossip.dissemination.SyncRequestEventHandler;
-import io.zeebe.gossip.failuredetection.*;
+import io.zeebe.gossip.failuredetection.JoinController;
+import io.zeebe.gossip.failuredetection.PingController;
+import io.zeebe.gossip.failuredetection.PingEventHandler;
+import io.zeebe.gossip.failuredetection.PingReqEventHandler;
+import io.zeebe.gossip.failuredetection.SuspicionController;
 import io.zeebe.gossip.membership.GossipTerm;
 import io.zeebe.gossip.membership.Member;
 import io.zeebe.gossip.membership.MembershipList;
@@ -36,10 +44,6 @@ import io.zeebe.util.sched.ZbActor;
 import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
-
-import java.util.List;
-
-import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 /**
  * Implementation of the SWIM (Scalable Weakly-consistent Infection-style Membership) protocol.
@@ -105,10 +109,6 @@ public class Gossip extends ZbActor implements GossipController, GossipEventPubl
         // ping timer
 
 
-        // defered -> calls
-        // done
-
-        // subscriptionController -> consume
         final ActorFuture<ServerInputSubscription> serverInputSubscriptionActorFuture =
             serverTransport.openSubscription("gossip", null, requestHandler);
 
@@ -128,32 +128,9 @@ public class Gossip extends ZbActor implements GossipController, GossipEventPubl
 
         actor.runDelayed(configuration.getProbeInterval(), pingController::sendPing);
 
-        // sync same
-
         // suspicion -> in ping ctrl
         // run delayed with timeout time -> runnable checks if still suspected
-        //
-
     }
-
-
-
-    @Override
-    protected void onActorClosing()
-    {
-        super.onActorClosing();
-    }
-
-    @Override
-    public int doWork()
-    {
-        int workCount = 0;
-
-        workCount += suspicionController.doWork();
-
-        return workCount;
-    }
-
 
     @Override
     public ActorFuture<Void> join(List<SocketAddress> contactPoints)

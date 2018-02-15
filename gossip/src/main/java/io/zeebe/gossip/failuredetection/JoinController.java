@@ -15,6 +15,10 @@
  */
 package io.zeebe.gossip.failuredetection;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 import io.zeebe.clustering.gossip.MembershipEventType;
 import io.zeebe.gossip.GossipConfiguration;
 import io.zeebe.gossip.GossipContext;
@@ -33,10 +37,6 @@ import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 public class JoinController
 {
@@ -146,7 +146,8 @@ public class JoinController
         final ActorFuture<ClientRequest> clientRequestActorFuture =
             gossipEventSender.sendSyncRequest(contactPoint, configuration.getSyncTimeout());
 
-        actor.await(clientRequestActorFuture, (result, throwable) -> {
+        actor.await(clientRequestActorFuture, (result, throwable) ->
+        {
             if (throwable == null)
             {
                 // process response
@@ -199,7 +200,8 @@ public class JoinController
                     futureRequests.add(clientRequestActorFuture);
                 }
 
-                actor.awaitAll(futureRequests, (throwable) -> {
+                actor.awaitAll(futureRequests, (throwable) ->
+                {
 
                     completableActorFuture.complete(null);
                     if (throwable == null)

@@ -16,7 +16,6 @@
 package io.zeebe.gossip;
 
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.sched.future.ActorFuture;
