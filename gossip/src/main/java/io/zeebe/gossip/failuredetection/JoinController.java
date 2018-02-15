@@ -48,7 +48,6 @@ public class JoinController
     private final MembershipList membershipList;
     private final GossipEventSender gossipEventSender;
     private final GossipEventFactory gossipEventFactory;
-
     private final ActorControl actor;
 
     private List<SocketAddress> contactPoints;

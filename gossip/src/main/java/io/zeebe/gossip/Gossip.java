@@ -15,24 +15,31 @@
  */
 package io.zeebe.gossip;
 
-import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
-
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-
 import io.zeebe.clustering.gossip.GossipEventType;
-import io.zeebe.gossip.dissemination.*;
+import io.zeebe.gossip.dissemination.CustomEventListenerConsumer;
+import io.zeebe.gossip.dissemination.CustomEventSyncResponseSupplier;
+import io.zeebe.gossip.dissemination.DisseminationComponent;
+import io.zeebe.gossip.dissemination.SyncRequestEventHandler;
 import io.zeebe.gossip.failuredetection.*;
-import io.zeebe.gossip.membership.*;
-import io.zeebe.gossip.protocol.*;
-import io.zeebe.transport.*;
-import io.zeebe.util.DeferredCommandContext;
-import io.zeebe.util.actor.Actor;
+import io.zeebe.gossip.membership.GossipTerm;
+import io.zeebe.gossip.membership.Member;
+import io.zeebe.gossip.membership.MembershipList;
+import io.zeebe.gossip.protocol.GossipEventFactory;
+import io.zeebe.gossip.protocol.GossipEventSender;
+import io.zeebe.gossip.protocol.GossipRequestHandler;
+import io.zeebe.transport.BufferingServerTransport;
+import io.zeebe.transport.ClientTransport;
+import io.zeebe.transport.ServerInputSubscription;
+import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.ZbActor;
 import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
+
+import java.util.List;
+
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 /**
  * Implementation of the SWIM (Scalable Weakly-consistent Infection-style Membership) protocol.
@@ -44,6 +51,7 @@ public class Gossip extends ZbActor implements GossipController, GossipEventPubl
 {
     private static final Logger LOG = Loggers.GOSSIP_LOGGER;
 
+    private final GossipConfiguration configuration;
     private final MembershipList membershipList;
     private final DisseminationComponent disseminationComponent;
     private final GossipEventFactory gossipEventFactory;
@@ -74,13 +82,14 @@ public class Gossip extends ZbActor implements GossipController, GossipEventPubl
         gossipEventFactory = new GossipEventFactory(configuration, membershipList, disseminationComponent, customEventSyncRequestSupplier, customEventListenerConsumer);
         final GossipEventSender gossipEventSender = new GossipEventSender(clientTransport, serverTransport, membershipList, gossipEventFactory);
 
+        this.configuration = configuration
         final GossipContext context = new GossipContext(configuration, membershipList, disseminationComponent, gossipEventSender, gossipEventFactory);
 
         joinController = new JoinController(context, actor);
         suspicionController = new SuspicionController(context);
 
-        pingController = new PingController(context);
-        pingReqController = new PingReqEventHandler(context);
+        pingController = new PingController(context, actor);
+        pingReqController = new PingReqEventHandler(context, actor);
         syncRequestHandler = new SyncRequestEventHandler(context, customEventSyncRequestSupplier);
 
         requestHandler = new GossipRequestHandler(gossipEventFactory);
@@ -115,6 +124,10 @@ public class Gossip extends ZbActor implements GossipController, GossipEventPubl
             }
         });
 
+
+
+        actor.runDelayed(configuration.getProbeInterval(), pingController::sendPing);
+
         // ping req -> consume ? or condition
         // sync same
 
@@ -137,9 +150,6 @@ public class Gossip extends ZbActor implements GossipController, GossipEventPubl
     {
         int workCount = 0;
 
-
-        workCount += subscriptionController.doWork();
-        workCount += pingController.doWork();
         workCount += pingReqController.doWork();
         workCount += syncRequestHandler.doWork();
         workCount += suspicionController.doWork();
