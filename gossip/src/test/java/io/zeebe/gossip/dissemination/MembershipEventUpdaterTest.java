@@ -33,7 +33,7 @@ public class MembershipEventUpdaterTest
 {
     private static final GossipConfiguration CONFIGURATION = new GossipConfiguration();
 
-    private MembershipList members = new MembershipList(new SocketAddress(), CONFIGURATION);
+    private MembershipList members = new MembershipList(new SocketAddress(), (member) -> { });
     private DisseminationComponent disseminationComponent = new DisseminationComponent(CONFIGURATION, members);
     private MembershipEventUpdater membershipEventUpdater = new MembershipEventUpdater(members, disseminationComponent);
 

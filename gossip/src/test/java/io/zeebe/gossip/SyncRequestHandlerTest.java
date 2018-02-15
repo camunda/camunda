@@ -33,245 +33,245 @@ import org.junit.Test;
 
 public class SyncRequestHandlerTest
 {
-    private static final GossipConfiguration CONFIGURATION = new GossipConfiguration();
-
-    private static final DirectBuffer TYPE_1 = wrapString("CUST_1");
-    private static final DirectBuffer TYPE_2 = wrapString("CUST_2");
-
-    private static final DirectBuffer PAYLOAD_1 = wrapString("FOO");
-    private static final DirectBuffer PAYLOAD_2 = wrapString("BAR");
-
-    private ManualActorScheduler actorScheduler = new ManualActorScheduler();
-
-    private GossipRule gossip1 = new GossipRule(() -> actorScheduler, CONFIGURATION, "localhost", 8001);
-    private GossipRule gossip2 = new GossipRule(() -> actorScheduler, CONFIGURATION, "localhost", 8002);
-    private GossipRule gossip3 = new GossipRule(() -> actorScheduler, CONFIGURATION, "localhost", 8003);
-
-    @Rule
-    public GossipClusterRule cluster = new GossipClusterRule(actorScheduler, gossip1, gossip2, gossip3);
-
-    @Rule
-    public ClockRule clock = ClockRule.pinCurrentTime();
-
-    @Test
-    public void shouldInvokeSyncRequestHandler()
-    {
-        // given
-        final AtomicInteger invocationsHandler1 = new AtomicInteger(0);
-        final AtomicInteger invocationsHandler2 = new AtomicInteger(0);
-
-        gossip1.getController().registerSyncRequestHandler(TYPE_1, request ->
-        {
-            invocationsHandler1.incrementAndGet();
-            request.done();
-        });
-
-        gossip1.getController().registerSyncRequestHandler(TYPE_2, request ->
-        {
-            invocationsHandler2.incrementAndGet();
-            request.done();
-        });
-
-        // when
-        gossip2.join(gossip1);
-        gossip3.join(gossip1);
-
-        actorScheduler.waitUntilDone();
-        actorScheduler.waitUntilDone();
-
-        // then
-        assertThat(invocationsHandler1.get()).isEqualTo(2);
-        assertThat(invocationsHandler2.get()).isEqualTo(2);
-    }
-
-    @Test
-    public void shouldReceiveCustomEventFromOwner()
-    {
-        // given
-        gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
-
-        gossip1.getController().registerSyncRequestHandler(TYPE_1, request ->
-        {
-            request
-                .addPayload(gossip1.getAddress(), PAYLOAD_1)
-                .done();
-        });
-
-        gossip2.join(gossip1);
-
-        actorScheduler.waitUntilDone();
-        actorScheduler.waitUntilDone();
-
-        // wait until custom event is spread to ensure that it isn't send via ACK
-        clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
-        actorScheduler.waitUntilDone();
-
-        clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
-        actorScheduler.waitUntilDone();
-
-        clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
-        actorScheduler.waitUntilDone();
-
-        // when
-        gossip3.join(gossip1);
-
-        actorScheduler.waitUntilDone();
-        actorScheduler.waitUntilDone();
-
-        // then
-        final CustomEvent customEvent = gossip3.getReceivedCustomEvents(TYPE_1, gossip1).findFirst().get();
-        BufferAssert.assertThatBuffer(customEvent.getPayload())
-            .hasCapacity(PAYLOAD_1.capacity())
-            .hasBytes(PAYLOAD_1);
-    }
-
-    @Test
-    public void shouldReceiveCustomEventFromSomeoneElse()
-    {
-        // given
-        gossip2.join(gossip1);
-
-        actorScheduler.waitUntilDone();
-        actorScheduler.waitUntilDone();
-
-        gossip2.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
-
-        // wait until custom event is spread to ensure that it isn't send via ACK
-        clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
-        actorScheduler.waitUntilDone();
-
-        clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
-        actorScheduler.waitUntilDone();
-
-        clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
-        actorScheduler.waitUntilDone();
-
-        clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
-        actorScheduler.waitUntilDone();
-
-        gossip1.getController().registerSyncRequestHandler(TYPE_1, request ->
-        {
-            request
-                .addPayload(gossip2.getAddress(), PAYLOAD_1)
-                .done();
-        });
-
-        // when
-        gossip3.join(gossip1);
-
-        actorScheduler.waitUntilDone();
-        actorScheduler.waitUntilDone();
-
-        // then
-        final CustomEvent customEvent = gossip3.getReceivedCustomEvents(TYPE_1, gossip2).findFirst().get();
-        BufferAssert.assertThatBuffer(customEvent.getPayload())
-            .hasCapacity(PAYLOAD_1.capacity())
-            .hasBytes(PAYLOAD_1);
-    }
-
-    @Test
-    public void shouldReceiveCustomEventsWithDifferentTypes()
-    {
-        // given
-        gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
-        gossip1.getPushlisher().publishEvent(TYPE_2, PAYLOAD_2);
-
-        gossip1.getController().registerSyncRequestHandler(TYPE_1, request ->
-        {
-            request
-                .addPayload(gossip1.getAddress(), PAYLOAD_1)
-                .done();
-        });
-
-        gossip1.getController().registerSyncRequestHandler(TYPE_2, request ->
-        {
-            request
-                .addPayload(gossip1.getAddress(), PAYLOAD_2)
-                .done();
-        });
-
-        gossip2.join(gossip1);
-
-        actorScheduler.waitUntilDone();
-        actorScheduler.waitUntilDone();
-
-        // wait until custom event is spread to ensure that it isn't send via ACK
-        clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
-        actorScheduler.waitUntilDone();
-
-        clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
-        actorScheduler.waitUntilDone();
-
-        clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
-        actorScheduler.waitUntilDone();
-
-        // when
-        gossip3.join(gossip1);
-
-        actorScheduler.waitUntilDone();
-        actorScheduler.waitUntilDone();
-
-        // then
-        final CustomEvent customEvent1 = gossip3.getReceivedCustomEvents(TYPE_1, gossip1).findFirst().get();
-        BufferAssert.assertThatBuffer(customEvent1.getPayload())
-            .hasCapacity(PAYLOAD_1.capacity())
-            .hasBytes(PAYLOAD_1);
-
-        final CustomEvent customEvent2 = gossip3.getReceivedCustomEvents(TYPE_2, gossip1).findFirst().get();
-        BufferAssert.assertThatBuffer(customEvent2.getPayload())
-            .hasCapacity(PAYLOAD_2.capacity())
-            .hasBytes(PAYLOAD_2);
-    }
-
-    @Test
-    public void shouldReceiveCustomEventsWithSameTypes()
-    {
-        // given
-        gossip2.join(gossip1);
-
-        actorScheduler.waitUntilDone();
-        actorScheduler.waitUntilDone();
-
-        gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
-        gossip2.getPushlisher().publishEvent(TYPE_1, PAYLOAD_2);
-
-        // wait until custom event is spread to ensure that it isn't send via ACK
-        clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
-        actorScheduler.waitUntilDone();
-
-        clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
-        actorScheduler.waitUntilDone();
-
-        clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
-        actorScheduler.waitUntilDone();
-
-        clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
-        actorScheduler.waitUntilDone();
-
-        gossip1.getController().registerSyncRequestHandler(TYPE_1, request ->
-        {
-            request
-                .addPayload(gossip1.getAddress(), PAYLOAD_1)
-                .addPayload(gossip2.getAddress(), PAYLOAD_2)
-                .done();
-        });
-
-        // when
-        gossip3.join(gossip1);
-
-        actorScheduler.waitUntilDone();
-        actorScheduler.waitUntilDone();
-
-        // then
-        final CustomEvent customEvent1 = gossip3.getReceivedCustomEvents(TYPE_1, gossip1).findFirst().get();
-        BufferAssert.assertThatBuffer(customEvent1.getPayload())
-            .hasCapacity(PAYLOAD_1.capacity())
-            .hasBytes(PAYLOAD_1);
-
-        final CustomEvent customEvent2 = gossip3.getReceivedCustomEvents(TYPE_1, gossip2).findFirst().get();
-        BufferAssert.assertThatBuffer(customEvent2.getPayload())
-            .hasCapacity(PAYLOAD_2.capacity())
-            .hasBytes(PAYLOAD_2);
-    }
+//    private static final GossipConfiguration CONFIGURATION = new GossipConfiguration();
+//
+//    private static final DirectBuffer TYPE_1 = wrapString("CUST_1");
+//    private static final DirectBuffer TYPE_2 = wrapString("CUST_2");
+//
+//    private static final DirectBuffer PAYLOAD_1 = wrapString("FOO");
+//    private static final DirectBuffer PAYLOAD_2 = wrapString("BAR");
+//
+//    private ManualActorScheduler actorScheduler = new ManualActorScheduler();
+//
+//    private GossipRule gossip1 = new GossipRule(() -> actorScheduler, CONFIGURATION, "localhost", 8001);
+//    private GossipRule gossip2 = new GossipRule(() -> actorScheduler, CONFIGURATION, "localhost", 8002);
+//    private GossipRule gossip3 = new GossipRule(() -> actorScheduler, CONFIGURATION, "localhost", 8003);
+//
+//    @Rule
+//    public GossipClusterRule cluster = new GossipClusterRule(actorScheduler, gossip1, gossip2, gossip3);
+//
+//    @Rule
+//    public ClockRule clock = ClockRule.pinCurrentTime();
+//
+//    @Test
+//    public void shouldInvokeSyncRequestHandler()
+//    {
+//        // given
+//        final AtomicInteger invocationsHandler1 = new AtomicInteger(0);
+//        final AtomicInteger invocationsHandler2 = new AtomicInteger(0);
+//
+//        gossip1.getController().registerSyncRequestHandler(TYPE_1, request ->
+//        {
+//            invocationsHandler1.incrementAndGet();
+//            request.done();
+//        });
+//
+//        gossip1.getController().registerSyncRequestHandler(TYPE_2, request ->
+//        {
+//            invocationsHandler2.incrementAndGet();
+//            request.done();
+//        });
+//
+//        // when
+//        gossip2.join(gossip1);
+//        gossip3.join(gossip1);
+//
+//        actorScheduler.waitUntilDone();
+//        actorScheduler.waitUntilDone();
+//
+//        // then
+//        assertThat(invocationsHandler1.get()).isEqualTo(2);
+//        assertThat(invocationsHandler2.get()).isEqualTo(2);
+//    }
+//
+//    @Test
+//    public void shouldReceiveCustomEventFromOwner()
+//    {
+//        // given
+//        gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
+//
+//        gossip1.getController().registerSyncRequestHandler(TYPE_1, request ->
+//        {
+//            request
+//                .addPayload(gossip1.getAddress(), PAYLOAD_1)
+//                .done();
+//        });
+//
+//        gossip2.join(gossip1);
+//
+//        actorScheduler.waitUntilDone();
+//        actorScheduler.waitUntilDone();
+//
+//        // wait until custom event is spread to ensure that it isn't send via ACK
+//        clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
+//        actorScheduler.waitUntilDone();
+//
+//        clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
+//        actorScheduler.waitUntilDone();
+//
+//        clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
+//        actorScheduler.waitUntilDone();
+//
+//        // when
+//        gossip3.join(gossip1);
+//
+//        actorScheduler.waitUntilDone();
+//        actorScheduler.waitUntilDone();
+//
+//        // then
+//        final CustomEvent customEvent = gossip3.getReceivedCustomEvents(TYPE_1, gossip1).findFirst().get();
+//        BufferAssert.assertThatBuffer(customEvent.getPayload())
+//            .hasCapacity(PAYLOAD_1.capacity())
+//            .hasBytes(PAYLOAD_1);
+//    }
+//
+//    @Test
+//    public void shouldReceiveCustomEventFromSomeoneElse()
+//    {
+//        // given
+//        gossip2.join(gossip1);
+//
+//        actorScheduler.waitUntilDone();
+//        actorScheduler.waitUntilDone();
+//
+//        gossip2.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
+//
+//        // wait until custom event is spread to ensure that it isn't send via ACK
+//        clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
+//        actorScheduler.waitUntilDone();
+//
+//        clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
+//        actorScheduler.waitUntilDone();
+//
+//        clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
+//        actorScheduler.waitUntilDone();
+//
+//        clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
+//        actorScheduler.waitUntilDone();
+//
+//        gossip1.getController().registerSyncRequestHandler(TYPE_1, request ->
+//        {
+//            request
+//                .addPayload(gossip2.getAddress(), PAYLOAD_1)
+//                .done();
+//        });
+//
+//        // when
+//        gossip3.join(gossip1);
+//
+//        actorScheduler.waitUntilDone();
+//        actorScheduler.waitUntilDone();
+//
+//        // then
+//        final CustomEvent customEvent = gossip3.getReceivedCustomEvents(TYPE_1, gossip2).findFirst().get();
+//        BufferAssert.assertThatBuffer(customEvent.getPayload())
+//            .hasCapacity(PAYLOAD_1.capacity())
+//            .hasBytes(PAYLOAD_1);
+//    }
+//
+//    @Test
+//    public void shouldReceiveCustomEventsWithDifferentTypes()
+//    {
+//        // given
+//        gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
+//        gossip1.getPushlisher().publishEvent(TYPE_2, PAYLOAD_2);
+//
+//        gossip1.getController().registerSyncRequestHandler(TYPE_1, request ->
+//        {
+//            request
+//                .addPayload(gossip1.getAddress(), PAYLOAD_1)
+//                .done();
+//        });
+//
+//        gossip1.getController().registerSyncRequestHandler(TYPE_2, request ->
+//        {
+//            request
+//                .addPayload(gossip1.getAddress(), PAYLOAD_2)
+//                .done();
+//        });
+//
+//        gossip2.join(gossip1);
+//
+//        actorScheduler.waitUntilDone();
+//        actorScheduler.waitUntilDone();
+//
+//        // wait until custom event is spread to ensure that it isn't send via ACK
+//        clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
+//        actorScheduler.waitUntilDone();
+//
+//        clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
+//        actorScheduler.waitUntilDone();
+//
+//        clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
+//        actorScheduler.waitUntilDone();
+//
+//        // when
+//        gossip3.join(gossip1);
+//
+//        actorScheduler.waitUntilDone();
+//        actorScheduler.waitUntilDone();
+//
+//        // then
+//        final CustomEvent customEvent1 = gossip3.getReceivedCustomEvents(TYPE_1, gossip1).findFirst().get();
+//        BufferAssert.assertThatBuffer(customEvent1.getPayload())
+//            .hasCapacity(PAYLOAD_1.capacity())
+//            .hasBytes(PAYLOAD_1);
+//
+//        final CustomEvent customEvent2 = gossip3.getReceivedCustomEvents(TYPE_2, gossip1).findFirst().get();
+//        BufferAssert.assertThatBuffer(customEvent2.getPayload())
+//            .hasCapacity(PAYLOAD_2.capacity())
+//            .hasBytes(PAYLOAD_2);
+//    }
+//
+//    @Test
+//    public void shouldReceiveCustomEventsWithSameTypes()
+//    {
+//        // given
+//        gossip2.join(gossip1);
+//
+//        actorScheduler.waitUntilDone();
+//        actorScheduler.waitUntilDone();
+//
+//        gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
+//        gossip2.getPushlisher().publishEvent(TYPE_1, PAYLOAD_2);
+//
+//        // wait until custom event is spread to ensure that it isn't send via ACK
+//        clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
+//        actorScheduler.waitUntilDone();
+//
+//        clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
+//        actorScheduler.waitUntilDone();
+//
+//        clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
+//        actorScheduler.waitUntilDone();
+//
+//        clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
+//        actorScheduler.waitUntilDone();
+//
+//        gossip1.getController().registerSyncRequestHandler(TYPE_1, request ->
+//        {
+//            request
+//                .addPayload(gossip1.getAddress(), PAYLOAD_1)
+//                .addPayload(gossip2.getAddress(), PAYLOAD_2)
+//                .done();
+//        });
+//
+//        // when
+//        gossip3.join(gossip1);
+//
+//        actorScheduler.waitUntilDone();
+//        actorScheduler.waitUntilDone();
+//
+//        // then
+//        final CustomEvent customEvent1 = gossip3.getReceivedCustomEvents(TYPE_1, gossip1).findFirst().get();
+//        BufferAssert.assertThatBuffer(customEvent1.getPayload())
+//            .hasCapacity(PAYLOAD_1.capacity())
+//            .hasBytes(PAYLOAD_1);
+//
+//        final CustomEvent customEvent2 = gossip3.getReceivedCustomEvents(TYPE_1, gossip2).findFirst().get();
+//        BufferAssert.assertThatBuffer(customEvent2.getPayload())
+//            .hasCapacity(PAYLOAD_2.capacity())
+//            .hasBytes(PAYLOAD_2);
+//    }
 
 }

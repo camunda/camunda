@@ -107,14 +107,14 @@ public class GossipRule extends ExternalResource
         serverSendBuffer = Dispatchers
                 .create("serverSendBuffer-" + name)
                 .bufferSize(32 * 1024 * 1024)
-                .subscriptions("sender")
+                .subscriptions("sender" + name)
                 .actorScheduler(actorScheduler)
                 .build();
 
         serverReceiveBuffer = Dispatchers
                 .create("serverReceiveBuffer-" + name)
                 .bufferSize(32 * 1024 * 1024)
-                .subscriptions("sender")
+                .subscriptions("sender" + name)
                 .actorScheduler(actorScheduler)
                 .build();
 
@@ -128,7 +128,7 @@ public class GossipRule extends ExternalResource
         clientSendBuffer = Dispatchers
                 .create("clientSendBuffer-" + name)
                 .bufferSize(32 * 1024 * 1024)
-                .subscriptions("sender")
+                .subscriptions("sender" + name)
                 .actorScheduler(actorScheduler)
                 .build();
 

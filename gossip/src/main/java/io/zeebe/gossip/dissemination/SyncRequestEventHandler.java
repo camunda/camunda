@@ -35,6 +35,7 @@ import io.zeebe.util.collection.ReusableObjectList;
 import io.zeebe.util.collection.Tuple;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletedActorFuture;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 
@@ -63,29 +64,37 @@ public class SyncRequestEventHandler implements GossipEventConsumer
     public void accept(GossipEvent event, long requestId, int streamId)
     {
         final List<ActorFuture<Void>> futures = new ArrayList<>();
-        for (Tuple<DirectBuffer, GossipSyncRequestHandler> tuple : handlers)
+
+        if (!handlers.isEmpty())
         {
-            final GossipSyncRequest request = requests.add();
-            request.wrap(tuple.getLeft());
+            for (Tuple<DirectBuffer, GossipSyncRequestHandler> tuple : handlers)
+            {
+                final GossipSyncRequest request = requests.add();
+                request.wrap(tuple.getLeft());
 
-            LOG.trace("Request SYNC data for custom event type '{}'", bufferAsString(tuple.getLeft()));
+                LOG.trace("Request SYNC data for custom event type '{}'", bufferAsString(tuple.getLeft()));
 
-            final GossipSyncRequestHandler handler = tuple.getRight();
-            final ActorFuture<Void> future = handler.onSyncRequest(request);
-            futures.add(future);
+                final GossipSyncRequestHandler handler = tuple.getRight();
+                final ActorFuture<Void> future = handler.onSyncRequest(request);
+                futures.add(future);
+            }
+
+            actor.runOnCompletion(futures, (throwable) ->
+            {
+                if (throwable == null)
+                {
+                    actor.submit(() -> sendSyncResponse(requestId, streamId));
+                }
+                else
+                {
+                    Loggers.GOSSIP_LOGGER.warn("Can't produce sync response.", throwable);
+                }
+            });
         }
-
-        actor.runOnCompletion(futures, (throwable) ->
+        else
         {
-            if (throwable == null)
-            {
-                actor.submit(() -> sendSyncResponse(requestId, streamId));
-            }
-            else
-            {
-                Loggers.GOSSIP_LOGGER.warn("Can't produce sync response.", throwable);
-            }
-        });
+            actor.submit(() -> sendSyncResponse(requestId, streamId));
+        }
     }
 
     private void sendSyncResponse(long requestId, int streamId)

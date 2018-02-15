@@ -35,6 +35,7 @@ import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
+import io.zeebe.util.sched.future.CompletedActorFuture;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 
@@ -57,6 +58,7 @@ public class JoinController
     private boolean isJoined;
 
     private final GossipEvent ackResponse;
+    private CompletableActorFuture<Void> joinFuture;
 
     public JoinController(GossipContext context, ActorControl actor)
     {
@@ -71,33 +73,41 @@ public class JoinController
         this.ackResponse = gossipEventFactory.createAckResponse();
     }
 
+
+
     public ActorFuture<Void> join(List<SocketAddress> contactPoints)
     {
-        final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+        final CompletableActorFuture<Void> completedActorFuture = new CompletableActorFuture<>();
         actor.call(() ->
         {
-            if (contactPoints == null || contactPoints.isEmpty())
+            if (!isJoined)
             {
-                future.completeExceptionally(
-                    new IllegalArgumentException("Can't join cluster without contact points."));
-            }
-            else
-            {
-                if (!isJoined)
+                if (joinFuture == null)
                 {
-                    actor.run(this::sendJoin);
-                    isJoined = true;
-
-                    this.futureRequests = new ArrayList<>(contactPoints.size());
-                    this.contactPoints = contactPoints;
+                    joinFuture = completedActorFuture;
+                    if (contactPoints == null || contactPoints.isEmpty())
+                    {
+                        joinFuture.completeExceptionally(
+                            new IllegalArgumentException("Can't join cluster without contact points."));
+                    }
+                    else
+                    {
+                        actor.run(this::sendJoin);
+                        this.futureRequests = new ArrayList<>(contactPoints.size());
+                        this.contactPoints = contactPoints;
+                    }
                 }
                 else
                 {
-                    future.completeExceptionally(new IllegalStateException("Already joined."));
+                    completedActorFuture.completeExceptionally(new IllegalStateException(("Currently join in progress.")));
                 }
             }
+            else
+            {
+                completedActorFuture.completeExceptionally(new IllegalStateException("Already joined."));
+            }
         });
-        return future;
+        return completedActorFuture;
     }
 
 
@@ -151,10 +161,15 @@ public class JoinController
             if (throwable == null)
             {
                 // process response
+                LOG.debug("Received SYNC response.");
                 final GossipEvent syncResponse = gossipEventFactory.createSyncResponse();
                 final DirectBuffer join = result.join();
                 // wrap === process
                 syncResponse.wrap(join, 0, join.capacity());
+                LOG.debug("JOINED!");
+                isJoined = true;
+                joinFuture.complete(null);
+                joinFuture = null;
             }
             else
             {
