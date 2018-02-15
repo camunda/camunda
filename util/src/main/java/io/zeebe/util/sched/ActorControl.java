@@ -247,7 +247,7 @@ public class ActorControl
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public <T> void awaitAll(Collection<ActorFuture> futures, Consumer<Throwable> callback)
+    public <T> void awaitAll(Collection<ActorFuture<T>> futures, Consumer<Throwable> callback)
     {
         final int length = futures.size();
         final ActorFuture[] futureArray = futures.toArray(new ActorFuture[length]);
