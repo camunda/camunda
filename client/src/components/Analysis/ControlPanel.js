@@ -1,5 +1,5 @@
 import React from 'react';
-import {Select, ActionItem, Popover} from 'components';
+import {ActionItem, Popover, ProcessDefinitionSelection} from 'components';
 
 import {Filter} from '../Reports';
 import {loadProcessDefinitions} from './service';
@@ -41,10 +41,8 @@ export default class ControlPanel extends React.Component {
         <li className='ControlPanel__item ControlPanel__item--select'>
           <label htmlFor='ControlPanel__process-definition' className='ControlPanel__label'>Process definition</label>
           <Popover className='ControlPanel__popover' title={this.props.processDefinitionId || 'Select Process Definition'}>
-            <Select className='ControlPanel__select' name='ControlPanel__process-definition' value={this.props.processDefinitionId} onChange={this.changeDefinition}>
-              {addSelectionOption()}
-              {this.state.availableDefinitions.map(definition => <Select.Option value={definition.id} key={definition.id}>{definition.id}</Select.Option>)}
-            </Select>
+            <ProcessDefinitionSelection loadProcessDefinitions={loadProcessDefinitions} processDefinitionId={this.props.processDefinitionId} 
+              xml={this.props.xml} onChange={this.props.onChange} />
           </Popover>
         </li>
         {[
@@ -72,8 +70,4 @@ export default class ControlPanel extends React.Component {
       </ul>
     </div>
   }
-}
-
-function addSelectionOption() {
-  return <Select.Option value=''>Please select...</Select.Option>;
 }

@@ -11,13 +11,10 @@ jest.mock('../Reports', () => {return {
 }});
 
 jest.mock('components', () => {
-  const Select = props => <select {...props}>{props.children}</select>;
-  Select.Option = props => <option {...props}>{props.children}</option>;
-
   return {
-    Select,
     ActionItem: props => <button {...props}>{props.children}</button>,
-    Popover: ({children}) => children
+    Popover: ({children}) => children,
+    ProcessDefinitionSelection: (props) => <div>ProcessDefinitionSelection</div>
   };
 });
 
@@ -27,15 +24,6 @@ const data = {
 };
 
 const spy = jest.fn();
-
-it('should display available process definitions', async () => {
-  const node = mount(<ControlPanel {...data} onChange={spy} />);
-
-  await node.instance().loadAvailableDefinitions();
-
-  expect(node).toIncludeText('procdef1');
-  expect(node).toIncludeText('procdef2');
-});
 
 it('should contain a gateway and end Event field', () => {
   const node = mount(<ControlPanel {...data} onChange={spy} />);

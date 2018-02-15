@@ -48,6 +48,7 @@ export default class Analysis extends React.Component {
         endEvent={endEvent}
         updateHover={this.updateHoveredControl}
         updateSelection={this.updateSelection}
+        xml={xml}
         />
       <div className='Analysis__diagram'>
         {xml && <BPMNDiagram xml={xml}>

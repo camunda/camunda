@@ -1,30 +1,14 @@
 import React from 'react';
-import {Select, Popover} from 'components';
+import {Select, Popover, ProcessDefinitionSelection} from 'components';
+
+import {loadProcessDefinitions} from './service';
 
 import {Filter} from './filter';
-import {loadProcessDefinitions} from './service';
-import {reportLabelMap} from 'services';
+import {reportLabelMap, } from 'services';
 
 import './ControlPanel.css';
 
 export default class ControlPanel extends React.Component {
-  constructor(props) {
-    super(props);
-
-    this.state = {
-      availableDefinitions: [],
-      loaded: false
-    };
-
-    this.loadAvailableDefinitions();
-  }
-
-  loadAvailableDefinitions = async () => {
-    this.setState({
-      availableDefinitions: await loadProcessDefinitions(),
-      loaded: true
-    });
-  }
 
   changeDefinition = evt => {
     this.props.onChange('processDefinitionId', evt.target.value);
@@ -48,15 +32,8 @@ export default class ControlPanel extends React.Component {
         <li className='ControlPanel__item ControlPanel__item--select'>
           <label htmlFor='ControlPanel__process-definition' className='ControlPanel__label'>Process definition</label>
           <Popover className='ControlPanel__popover' title={this.props.processDefinitionId || 'Select Process Definition'}>
-            <Select className='ControlPanel__select' name='ControlPanel__process-definition' value={this.props.processDefinitionId} onChange={this.changeDefinition}>
-              {addSelectionOption()}
-              {this.state.availableDefinitions.map(definition => {
-                return (<React.Fragment key={definition.key}>
-                  <Select.Option disabled>--</Select.Option>
-                  {definition.versions.map(({id}) => <Select.Option value={id} key={id} >{id}</Select.Option>)}
-                </React.Fragment>);
-              })}
-            </Select>
+            <ProcessDefinitionSelection loadProcessDefinitions={loadProcessDefinitions} processDefinitionId={this.props.processDefinitionId} 
+              xml={this.props.configuration.xml} onChange={this.props.onChange} renderDiagram={true} />
           </Popover>
         </li>
         <li className='ControlPanel__item ControlPanel__item--select'>

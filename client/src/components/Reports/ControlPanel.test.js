@@ -3,11 +3,12 @@ import {mount} from 'enzyme';
 
 import ControlPanel from './ControlPanel';
 
-jest.mock('./service', () => {return {
-  loadProcessDefinitions: () => [{key:'foo', versions: [{id:'procdef1'}, {id:'procdef2'}]}]
-}});
 jest.mock('./filter', () => {return {
   Filter: () => 'Filter'
+}});
+
+jest.mock('./service', () => {return {
+  loadProcessDefinitions: () => [{key:'foo', versions: [{id:'procdef1'}, {id:'procdef2'}]}]
 }});
 
 jest.mock('components', () => {
@@ -15,7 +16,8 @@ jest.mock('components', () => {
   Select.Option = props => <option {...props}>{props.children}</option>;
 
   return {Select,
-    Popover: ({children}) => children
+    Popover: ({children}) => children,
+    ProcessDefinitionSelection: (props) => <div>ProcessDefinitionSelection</div>
   };
 });
 
@@ -39,15 +41,6 @@ const data = {
 };
 
 const spy = jest.fn();
-
-it('should display available process definitions', async () => {
-  const node = mount(<ControlPanel {...data} onChange={spy} />);
-
-  await node.instance().loadAvailableDefinitions();
-
-  expect(node).toIncludeText('procdef1');
-  expect(node).toIncludeText('procdef2');
-});
 
 it('should call the provided onChange property function when a setting changes', () => {
   const node = mount(<ControlPanel {...data} onChange={spy} />);

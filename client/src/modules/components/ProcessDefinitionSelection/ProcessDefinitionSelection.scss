@@ -1,0 +1,47 @@
+.ProcessDefinitionSelection {
+  display: flex;
+  flex-grow: 1;
+  flex-direction: column;
+}
+
+.ProcessDefinitionSelection--large {
+  width: 500px;
+  height: 400px;
+}
+
+.ProcessDefinitionSelection__list {
+  list-style: none;
+  display: inline;
+  border-bottom: 1px solid #dfdfdf;
+
+  padding-left: 20px;
+  padding-top:20px;
+  padding-right: 20px;
+}
+
+.ProcessDefinitionSelection__list-item {
+  display: inline-block;
+  position: relative;
+  padding-top: 25px;
+  
+  margin-right: 20px;
+  margin-bottom: 25px;
+}
+
+.ProcessDefinitionSelection__label {
+  color: #626262;
+  font-size: .875em;
+  top: 0px;
+  left: 0;
+  position: absolute;
+}
+
+.ProcessDefinitionSelection__select {
+  width: 200px;
+}
+
+.ProcessDefinitionSelection__diagram {
+  padding: 10px;
+  display: flex;
+  flex-grow: 1;
+}
