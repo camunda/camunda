@@ -21,6 +21,8 @@ public class ReportUtil {
   public static void copyReportData(ReportDataDto from, ReportResultDto to) {
     ReportDataDto reportDataDto = new ReportDataDto();
     reportDataDto.setProcessDefinitionId(from.getProcessDefinitionId());
+    reportDataDto.setProcessDefinitionKey(from.getProcessDefinitionKey());
+    reportDataDto.setProcessDefinitionVersion(from.getProcessDefinitionVersion());
     reportDataDto.setView(from.getView());
     reportDataDto.setGroupBy(from.getGroupBy());
     reportDataDto.setFilter(from.getFilter());

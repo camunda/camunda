@@ -8,6 +8,8 @@ import java.util.List;
 public class ReportDataDto {
 
   protected String processDefinitionId;
+  protected String processDefinitionKey;
+  protected String processDefinitionVersion;
   protected List<FilterDto> filter = new ArrayList<>();
   protected ViewDto view;
   protected GroupByDto groupBy;
@@ -61,5 +63,21 @@ public class ReportDataDto {
 
   public void setConfiguration(Object configuration) {
     this.configuration = configuration;
+  }
+
+  public String getProcessDefinitionKey() {
+    return processDefinitionKey;
+  }
+
+  public void setProcessDefinitionKey(String processDefinitionKey) {
+    this.processDefinitionKey = processDefinitionKey;
+  }
+
+  public String getProcessDefinitionVersion() {
+    return processDefinitionVersion;
+  }
+
+  public void setProcessDefinitionVersion(String processDefinitionVersion) {
+    this.processDefinitionVersion = processDefinitionVersion;
   }
 }
