@@ -102,13 +102,9 @@ public class Gossip extends ZbActor implements GossipController, GossipEventPubl
         requestHandler.registerGossipEventConsumer(GossipEventType.SYNC_REQUEST, syncRequestHandler);
     }
 
-
     @Override
     protected void onActorStarted()
     {
-        // ping timer
-
-
         final ActorFuture<ServerInputSubscription> serverInputSubscriptionActorFuture =
             serverTransport.openSubscription("gossip", null, requestHandler);
 
@@ -247,6 +243,11 @@ public class Gossip extends ZbActor implements GossipController, GossipEventPubl
     public void registerSyncRequestHandler(DirectBuffer eventType, GossipSyncRequestHandler handler)
     {
         actor.call(() -> syncRequestHandler.registerSyncRequestHandler(eventType, handler));
+    }
+
+    public ActorFuture<Void> close()
+    {
+        return actor.close();
     }
 
 }

@@ -16,14 +16,19 @@
 package io.zeebe.gossip;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import java.util.Collections;
 
 import io.zeebe.clustering.gossip.GossipEventType;
 import io.zeebe.clustering.gossip.MembershipEventType;
+import io.zeebe.gossip.protocol.MembershipEvent;
 import io.zeebe.gossip.util.GossipClusterRule;
 import io.zeebe.gossip.util.GossipRule;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -114,205 +119,145 @@ public class GossipJoinTest
         joinFuture.join();
         assertThat(gossip1.receivedMembershipEvent(MembershipEventType.JOIN, gossip2)).isTrue();
     }
-//
-//    @Test
-//    public void shouldJoinIfOneContactPointIsAvailable()
-//    {
-//        // given
-//        cluster.interruptConnectionBetween(gossip1, gossip3);
-//
-//        // when
-//        gossip3.join(gossip1, gossip2);
-//
-//        actorScheduler.waitUntilDone();
-//        actorScheduler.waitUntilDone();
-//
-//        // then
-//        assertThat(gossip2.receivedMembershipEvent(MembershipEventType.JOIN, gossip3)).isTrue();
-//        assertThat(gossip1.receivedMembershipEvent(MembershipEventType.JOIN, gossip3)).isFalse();
-//    }
-//
-//    @Test
-//    public void shouldJoinWithMultipleContactPoints()
-//    {
-//        // given
-//        gossip2.join(gossip1);
-//
-//        actorScheduler.waitUntilDone();
-//        actorScheduler.waitUntilDone();
-//
-//        // when
-//        gossip3.join(gossip1, gossip2);
-//
-//        actorScheduler.waitUntilDone();
-//        actorScheduler.waitUntilDone();
-//
-//        // then
-//        assertThat(gossip1.receivedMembershipEvent(MembershipEventType.JOIN, gossip3)).isTrue();
-//        assertThat(gossip2.receivedMembershipEvent(MembershipEventType.JOIN, gossip3)).isTrue();
-//    }
-//
-//    @Test
-//    public void shouldJoinDifferentNodes()
-//    {
-//        // given
-//        gossip2.join(gossip1);
-//        gossip3.join(gossip2);
-//
-//        // join
-//        actorScheduler.waitUntilDone();
-//        actorScheduler.waitUntilDone();
-//
-//        // when - sync response are spread via ping
-//        clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
-//
-//        actorScheduler.waitUntilDone();
-//        actorScheduler.waitUntilDone();
-//
-//        // then
-//        assertThat(gossip2.receivedMembershipEvent(MembershipEventType.JOIN, gossip3)).isTrue();
-//        assertThat(gossip1.receivedMembershipEvent(MembershipEventType.JOIN, gossip3)).isTrue();
-//
-//        assertThat(gossip3.hasMember(gossip1)).isTrue();
-//        assertThat(gossip3.hasMember(gossip2)).isTrue();
-//
-//        assertThat(gossip1.hasMember(gossip3)).isTrue();
-//        assertThat(gossip1.hasMember(gossip2)).isTrue();
-//
-//        assertThat(gossip2.hasMember(gossip3)).isTrue();
-//        assertThat(gossip2.hasMember(gossip1)).isTrue();
-//    }
-//
-//    @Test
-//    public void shouldCompleteFutureWhenJoined()
-//    {
-//        // when
-//        final CompletableFuture<Void> future = gossip2.join(gossip1);
-//
-//        actorScheduler.waitUntilDone();
-//        actorScheduler.waitUntilDone();
-//
-//        // then
-//        assertThat(gossip2.receivedEvent(GossipEventType.SYNC_RESPONSE, gossip1)).isTrue();
-//        assertThat(future).isDone().hasNotFailed();
-//    }
-//
-//    @Test
-//    public void shouldCompleteFutureWithFailureWhenAlreadyJoined()
-//    {
-//        // given
-//        gossip2.join(gossip1);
-//
-//        actorScheduler.waitUntilDone();
-//        actorScheduler.waitUntilDone();
-//
-//        // when
-//        final CompletableFuture<Void> future = gossip2.join(gossip1);
-//
-//        actorScheduler.waitUntilDone();
-//
-//        // then
-//        assertThat(future).hasFailedWithThrowableThat().hasMessage("Already joined.");
-//    }
-//
-//    @Test
-//    public void shouldJoinAfterLeave()
-//    {
-//        // given
-//        gossip2.join(gossip1);
-//
-//        actorScheduler.waitUntilDone();
-//        actorScheduler.waitUntilDone();
-//
-//        final CompletableFuture<Void> leaveFuture = gossip2.getController().leave();
-//        actorScheduler.waitUntilDone();
-//        actorScheduler.waitUntilDone();
-//
-//        assertThat(leaveFuture).isDone().hasNotFailed();
-//
-//        // when
-//        final CompletableFuture<Void> joinFuture = gossip2.join(gossip1);
-//        actorScheduler.waitUntilDone();
-//        actorScheduler.waitUntilDone();
-//
-//        // then
-//        assertThat(joinFuture).isDone().hasNotFailed();
-//        assertThat(gossip1.hasMember(gossip2)).isTrue();
-//    }
-//
-//    @Test
-//    public void shouldIncreaseGossipTermOnJoin()
-//    {
-//        // given
-//        gossip2.join(gossip1);
-//
-//        actorScheduler.waitUntilDone();
-//        actorScheduler.waitUntilDone();
-//
-//        final CompletableFuture<Void> leaveFuture = gossip2.getController().leave();
-//        actorScheduler.waitUntilDone();
-//
-//        assertThat(leaveFuture).isDone().hasNotFailed();
-//
-//        // when
-//        final CompletableFuture<Void> joinFuture = gossip2.join(gossip1);
-//        actorScheduler.waitUntilDone();
-//        actorScheduler.waitUntilDone();
-//
-//        // then
-//        assertThat(joinFuture).isDone().hasNotFailed();
-//
-//        final MembershipEvent leaveEvent = gossip1.getReceivedMembershipEvents(MembershipEventType.LEAVE, gossip2)
-//                .findFirst()
-//                .get();
-//
-//        final MembershipEvent secondJoinEvent = gossip1.getReceivedMembershipEvents(MembershipEventType.JOIN, gossip2)
-//                .distinct()
-//                .skip(1)
-//                .findFirst()
-//                .get();
-//
-//        assertThat(secondJoinEvent.getGossipTerm().isGreaterThan(leaveEvent.getGossipTerm())).isTrue();
-//    }
-//
-//    @Test
-//    public void shouldFailToJoinWithoutContactPoints()
-//    {
-//        // when
-//        final CompletableFuture<Void> future = gossip2.getController().join(Collections.emptyList());
-//
-//        actorScheduler.waitUntilDone();
-//        actorScheduler.waitUntilDone();
-//
-//        // then
-//        assertThat(future).hasFailedWithThrowableThat().hasMessage("Can't join cluster without contact points.");
-//    }
-//
-//    @Test
-//    public void shouldCloseClientRequestsOnJoinAndLeave()
-//    {
-//        // given
-//        final int joinLeaveCount = 1_000;
-//
-//        // when - then
-//        for (int i = 0; i < joinLeaveCount; i++)
-//        {
-//            gossip2.join(gossip1);
-//
-//            actorScheduler.waitUntilDone();
-//            actorScheduler.waitUntilDone();
-//
-//            assertThat(gossip1.hasMember(gossip2)).isTrue();
-//            assertThat(gossip2.hasMember(gossip1)).isTrue();
-//            assertThat(gossip1.receivedMembershipEvent(MembershipEventType.JOIN, gossip2)).isTrue();
-//
-//            gossip1.clearReceivedEvents();
-//            gossip2.getController().leave();
-//
-//            actorScheduler.waitUntilDone();
-//            actorScheduler.waitUntilDone();
-//
-//            assertThat(gossip1.receivedMembershipEvent(MembershipEventType.LEAVE, gossip2)).isTrue();
-//        }
-//    }
+
+    @Test
+    public void shouldJoinIfOneContactPointIsAvailable()
+    {
+        // given
+        cluster.interruptConnectionBetween(gossip1, gossip3);
+
+        // when
+        gossip3.join(gossip1, gossip2).join();
+
+        // then
+        assertThat(gossip2.receivedMembershipEvent(MembershipEventType.JOIN, gossip3)).isTrue();
+        assertThat(gossip1.receivedMembershipEvent(MembershipEventType.JOIN, gossip3)).isFalse();
+    }
+
+    @Test
+    public void shouldJoinWithMultipleContactPoints()
+    {
+        // given
+        gossip2.join(gossip1).join();
+
+        // when
+        gossip3.join(gossip1, gossip2).join();
+
+        // then
+        assertThat(gossip1.receivedMembershipEvent(MembershipEventType.JOIN, gossip3)).isTrue();
+        assertThat(gossip2.receivedMembershipEvent(MembershipEventType.JOIN, gossip3)).isTrue();
+    }
+
+    @Test
+    public void shouldJoinDifferentNodes()
+    {
+        // given
+        final ActorFuture<Void> joinGossip2 = gossip2.join(gossip1);
+        final ActorFuture<Void> joinGossip3 = gossip3.join(gossip2);
+
+        // when - sync response are spread via ping
+        joinGossip2.join();
+        joinGossip3.join();
+
+        clock.addTime(CONFIGURATION.getProbeInterval());
+
+        // then
+        assertThat(gossip2.receivedMembershipEvent(MembershipEventType.JOIN, gossip3)).isTrue();
+        assertThat(gossip1.receivedMembershipEvent(MembershipEventType.JOIN, gossip3)).isTrue();
+
+        assertThat(gossip3.hasMember(gossip1)).isTrue();
+        assertThat(gossip3.hasMember(gossip2)).isTrue();
+
+        assertThat(gossip1.hasMember(gossip3)).isTrue();
+        assertThat(gossip1.hasMember(gossip2)).isTrue();
+
+        assertThat(gossip2.hasMember(gossip3)).isTrue();
+        assertThat(gossip2.hasMember(gossip1)).isTrue();
+    }
+
+    @Test
+    public void shouldCompleteFutureWithFailureWhenAlreadyJoined()
+    {
+        // given
+        gossip2.join(gossip1).join();
+
+        // when
+        final ActorFuture<Void> future = gossip2.join(gossip1);
+
+        // then
+        assertThatThrownBy(() -> future.join()).hasMessageContaining("Already joined.");
+    }
+
+    @Test
+    public void shouldJoinAfterLeave()
+    {
+        // given
+        gossip2.join(gossip1).join();
+
+        gossip2.leave().join();
+
+        // when
+        gossip2.join(gossip1).join();
+
+        // then
+        assertThat(gossip1.hasMember(gossip2)).isTrue();
+    }
+
+    @Test
+    public void shouldIncreaseGossipTermOnJoin()
+    {
+        // given
+        gossip2.join(gossip1).join();
+        gossip2.leave().join();
+
+        // when
+        gossip2.join(gossip1).join();
+
+        // then
+        final MembershipEvent leaveEvent = gossip1.getReceivedMembershipEvents(MembershipEventType.LEAVE, gossip2)
+                .findFirst()
+                .get();
+
+        final MembershipEvent secondJoinEvent = gossip1.getReceivedMembershipEvents(MembershipEventType.JOIN, gossip2)
+                .distinct()
+                .skip(1)
+                .findFirst()
+                .get();
+
+        assertThat(secondJoinEvent.getGossipTerm().isGreaterThan(leaveEvent.getGossipTerm())).isTrue();
+    }
+
+    @Test
+    public void shouldFailToJoinWithoutContactPoints()
+    {
+        // when
+        final ActorFuture<Void> future = gossip2.getController().join(Collections.emptyList());
+
+        // then
+        assertThatThrownBy(() -> future.join()).hasMessageContaining("Can't join cluster without contact points.");
+    }
+
+    @Ignore("need to be rewritten since it uses a real actor scheduler")
+    @Test
+    public void shouldCloseClientRequestsOnJoinAndLeave()
+    {
+        // given
+        final int joinLeaveCount = 1_000;
+
+        // when - then
+        for (int i = 0; i < joinLeaveCount; i++)
+        {
+            gossip2.join(gossip1).join();
+
+            assertThat(gossip1.hasMember(gossip2)).isTrue();
+            assertThat(gossip2.hasMember(gossip1)).isTrue();
+            assertThat(gossip1.receivedMembershipEvent(MembershipEventType.JOIN, gossip2)).isTrue();
+
+            gossip1.clearReceivedEvents();
+
+            gossip2.leave().join();
+
+            assertThat(gossip1.receivedMembershipEvent(MembershipEventType.LEAVE, gossip2)).isTrue();
+        }
+    }
 }

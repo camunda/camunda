@@ -27,6 +27,7 @@ import io.zeebe.gossip.Loggers;
 import io.zeebe.gossip.dissemination.DisseminationComponent;
 import io.zeebe.gossip.membership.Member;
 import io.zeebe.gossip.membership.MembershipList;
+import io.zeebe.gossip.membership.MembershipStatus;
 import io.zeebe.gossip.protocol.GossipEvent;
 import io.zeebe.gossip.protocol.GossipEventFactory;
 import io.zeebe.gossip.protocol.GossipEventSender;
@@ -207,15 +208,21 @@ public class JoinController
 
                 futureRequests = new ArrayList<>(spreadCount);
 
-                for (int n = 0; n < spreadCount; n++)
+                int spread = 0;
+                for (int n = 0; spread < spreadCount && n < members.size(); n++)
                 {
                     final Member member = members.get(n);
 
-                    LOG.trace("Spread LEAVE event to '{}'", member.getAddress());
+                    if (member.getStatus() == MembershipStatus.ALIVE)
+                    {
+                        LOG.trace("Spread LEAVE event to '{}'", member.getAddress());
 
-                    final ActorFuture<ClientRequest> clientRequestActorFuture =
-                        gossipEventSender.sendPing(member.getAddress(), configuration.getLeaveTimeout());
-                    futureRequests.add(clientRequestActorFuture);
+                        final ActorFuture<ClientRequest> clientRequestActorFuture =
+                                gossipEventSender.sendPing(member.getAddress(), configuration.getLeaveTimeout());
+                        futureRequests.add(clientRequestActorFuture);
+
+                        spread += 1;
+                    }
                 }
 
                 actor.awaitAll(futureRequests, (throwable) ->
@@ -225,6 +232,7 @@ public class JoinController
                     if (throwable == null)
                     {
                         LOG.info("Left cluster successfully");
+                        isJoined = false;
                     }
                     else
                     {
@@ -234,7 +242,7 @@ public class JoinController
             }
             else
             {
-                completableActorFuture.completeExceptionally(new IllegalStateException("Not joined."));
+                completableActorFuture.complete((Void) null);
             }
         });
         return completableActorFuture;

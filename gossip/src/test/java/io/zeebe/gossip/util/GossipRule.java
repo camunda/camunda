@@ -173,6 +173,8 @@ public class GossipRule extends ExternalResource
     @Override
     protected void after()
     {
+        gossip.close().join();
+
         serverTransport.close();
         clientTransport.close();
 
@@ -187,6 +189,11 @@ public class GossipRule extends ExternalResource
         final List<SocketAddress> contactPointList = Arrays.asList(contactPoints).stream().map(c -> c.socketAddress).collect(toList());
 
         return getController().join(contactPointList);
+    }
+
+    public ActorFuture<Void> leave()
+    {
+        return getController().leave();
     }
 
     public void interruptConnectionTo(GossipRule other)
