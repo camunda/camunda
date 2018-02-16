@@ -121,7 +121,14 @@ public class ClientRequestRetryController extends ZbActor
                     {
                         if (!successfulRequest.isDone())
                         {
-                            successfulRequest.complete(request);
+                            if (e == null)
+                            {
+                                successfulRequest.complete(request);
+                            }
+                            else
+                            {
+                                successfulRequest.completeExceptionally(e);
+                            }
                         }
                     }
                     else
