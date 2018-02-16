@@ -80,13 +80,16 @@ export default class Report extends React.Component {
     });
   }
 
-  updateReport = async (field, newValue) => {
+  updateReport = async (updates) => {
     const data = {
-      ...this.state.data,
-      [field]: newValue
+      ...this.state.data
     };
-
-    if (field === 'processDefinitionId') {
+    updates.forEach( ({field, newValue}) => {
+      data[field] = newValue;
+    });
+    
+    const processDefinitionIdWasUpdated = updates.find(({field}) => field === 'processDefinitionId');
+    if (processDefinitionIdWasUpdated) {
       data.filter = data.filter.filter(({type}) => type !== 'executedFlowNodes' && type !== 'variable');
       await this.loadXmlToConfiguration(data);
     }

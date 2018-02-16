@@ -170,7 +170,7 @@ it('should update the report', async () => {
   const node = mount(<Report {...props} />);
 
   await node.instance().loadReport();
-  await node.instance().updateReport('visualization', 'customTestVis');
+  await node.instance().updateReport([{field:'visualization', newValue:'customTestVis'}]);
 
   expect(node.state().data.visualization).toBe('customTestVis');
 });
@@ -191,7 +191,7 @@ it('should evaluate the report after updating', async () => {
   });
 
   getReportData.mockClear();
-  await node.instance().updateReport('visualization', 'customTestVis');
+  await node.instance().updateReport([{field:'visualization', newValue:'customTestVis'}]);
 
   expect(getReportData).toHaveBeenCalled();
 });
@@ -203,7 +203,7 @@ it('should reset the report data to its original state after canceling', async (
 
   const dataBefore = node.state().data;
 
-  await node.instance().updateReport('visualization', 'customTestVis');
+  await node.instance().updateReport([{field:'visualization', newValue:'customTestVis'}]);
   await node.instance().cancel();
 
   expect(node.state().data).toEqual(dataBefore);
@@ -263,7 +263,7 @@ describe('edit mode', async () => {
       }
     }));
     
-    await node.instance().updateReport('processDefinitionId', 'asd');
+    await node.instance().updateReport([{field: 'processDefinitionId', newValue:'asd'}]);
     
     expect(node.state().data.filter.length).toBe(1);
     expect(node.state().data.filter[0].data).toBe('foo');
@@ -275,7 +275,7 @@ describe('edit mode', async () => {
     const node = mount(<Report {...props} />);
     
     await node.instance().loadReport();
-    await node.instance().updateReport('processDefinitionId', 'asd');
+    await node.instance().updateReport([{field: 'processDefinitionId', newValue:'asd'}]);
     
     expect(node.state().data.configuration.xml).toBe('some xml');
   });

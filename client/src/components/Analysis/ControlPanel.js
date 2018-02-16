@@ -10,6 +10,12 @@ export default class ControlPanel extends React.Component {
   constructor(props) {
     super(props);
 
+    this.definitionConfig = {
+      processDefinitionId: this.props.processDefinitionId,
+      processDefinitionKey: this.props.processDefinitionKey,
+      processDefinitionVersion: this.props.processDefinitionVersion
+    }
+
     this.state = {
       availableDefinitions: [],
       loaded: false
@@ -25,10 +31,6 @@ export default class ControlPanel extends React.Component {
     });
   }
 
-  changeDefinition = evt => {
-    this.props.onChange('processDefinitionId', evt.target.value);
-  }
-
   hover = element => () => {
     this.props.updateHover(element);
   }
@@ -41,7 +43,7 @@ export default class ControlPanel extends React.Component {
         <li className='ControlPanel__item ControlPanel__item--select'>
           <label htmlFor='ControlPanel__process-definition' className='ControlPanel__label'>Process definition</label>
           <Popover className='ControlPanel__popover' title={this.props.processDefinitionId || 'Select Process Definition'}>
-            <ProcessDefinitionSelection loadProcessDefinitions={loadProcessDefinitions} processDefinitionId={this.props.processDefinitionId} 
+            <ProcessDefinitionSelection loadProcessDefinitions={loadProcessDefinitions} {...this.definitionConfig}
               xml={this.props.xml} onChange={this.props.onChange} />
           </Popover>
         </li>

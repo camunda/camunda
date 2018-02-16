@@ -26,14 +26,22 @@ export default class ControlPanel extends React.Component {
     this.props.onChange('visualization', evt.target.value);
   }
 
+  definitionConfig = () => {
+    return {
+      processDefinitionId: this.props.processDefinitionId,
+      processDefinitionKey: this.props.processDefinitionKey,
+      processDefinitionVersion: this.props.processDefinitionVersion
+    };
+  }
+
   render() {
     return <div className='ControlPanel'>
       <ul className='ControlPanel__list'>
         <li className='ControlPanel__item ControlPanel__item--select'>
           <label htmlFor='ControlPanel__process-definition' className='ControlPanel__label'>Process definition</label>
           <Popover className='ControlPanel__popover' title={this.props.processDefinitionId || 'Select Process Definition'}>
-            <ProcessDefinitionSelection loadProcessDefinitions={loadProcessDefinitions} processDefinitionId={this.props.processDefinitionId} 
-              xml={this.props.configuration.xml} onChange={this.props.onChange} renderDiagram={true} />
+            <ProcessDefinitionSelection loadProcessDefinitions={loadProcessDefinitions} {...this.definitionConfig()} 
+              xml={this.props.configuration.xml} onChange={this.props.onChange} renderDiagram={true} enableAllVersionSelection={true}/>
           </Popover>
         </li>
         <li className='ControlPanel__item ControlPanel__item--select'>

@@ -16,6 +16,8 @@ export default class Analysis extends React.Component {
     this.state = {
       config: {
         processDefinitionId: '',
+        processDefinitionKey: '',
+        processDefinitionVersion: '',
         filter: []
       },
       data: null,
@@ -97,16 +99,19 @@ export default class Analysis extends React.Component {
     this.setState({[type]: node});
   }
 
-  updateConfig = async (field, newValue) => {
+  updateConfig = async (updates) => {
     const config = {
-      ...this.state.config,
-      [field]: newValue
+      ...this.state.config
     };
+    updates.forEach( ({field, newValue}) => {
+      config[field] = newValue;
+    });
     this.setState({config});
 
-    if(field === 'processDefinitionId' && newValue) {
+    const processDefinitionIdWasUpdated = updates.find(({field}) => field === 'processDefinitionId');
+    if(processDefinitionIdWasUpdated && processDefinitionIdWasUpdated.newValue) {
       this.setState({
-        xml: await loadProcessDefinitionXml(newValue),
+        xml: await loadProcessDefinitionXml(processDefinitionIdWasUpdated.newValue),
         gateway: null,
         endEvent: null
       });
