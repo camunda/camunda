@@ -120,7 +120,7 @@ public class CompletableActorFuture<V> implements ActorFuture<V>
     @Override
     public boolean block(Runnable onCompletion)
     {
-        if (!blockedTasks.add(onCompletion))
+        if (!blockedTasks.offer(onCompletion))
         {
             blockedTasksOverflow.add(onCompletion);
         }
