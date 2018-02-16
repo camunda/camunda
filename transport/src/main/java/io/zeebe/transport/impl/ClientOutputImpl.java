@@ -15,17 +15,20 @@
  */
 package io.zeebe.transport.impl;
 
-import java.time.Duration;
-import java.util.function.Function;
-import java.util.function.Supplier;
-
 import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.transport.*;
+import io.zeebe.transport.ClientOutput;
+import io.zeebe.transport.ClientRequest;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.TransportMessage;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.sched.ZbActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletedActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
+
+import java.time.Duration;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 public class ClientOutputImpl implements ClientOutput
 {
@@ -61,7 +64,7 @@ public class ClientOutputImpl implements ClientOutput
     @Override
     public ActorFuture<ClientRequest> sendRequestWithRetry(RemoteAddress addr, BufferWriter writer, Duration timeout)
     {
-        return sendRequestWithRetry(() -> new CompletedActorFuture<>(addr), (b) -> false, writer, timeout);
+        return sendRequestWithRetry(() -> CompletableActorFuture.completed(addr), (b) -> false, writer, timeout);
     }
 
     @Override
