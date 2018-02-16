@@ -24,6 +24,7 @@ import io.zeebe.util.sched.clock.DefaultActorClock;
 import io.zeebe.util.sched.metrics.ActorRunnerMetrics;
 import org.agrona.UnsafeAccess;
 import org.agrona.concurrent.BackoffIdleStrategy;
+import org.slf4j.MDC;
 import sun.misc.Unsafe;
 
 @SuppressWarnings("restriction")
@@ -112,6 +113,7 @@ public class ActorTaskRunner extends Thread
 
         if (currentTask != null)
         {
+
             executeCurrentTask();
         }
         else
@@ -131,6 +133,7 @@ public class ActorTaskRunner extends Thread
 
     private  void executeCurrentTask()
     {
+        MDC.put("actor-name", currentTask.actor.getName());
         idleStrategy.onTaskExecute();
         metrics.incrementTaskExecutionCount();
 
@@ -148,6 +151,10 @@ public class ActorTaskRunner extends Thread
 
             // TODO: resubmit on exception?
 //                resubmit = true;
+        }
+        finally
+        {
+            MDC.remove("actor-name");
         }
 
         if (resubmit)
