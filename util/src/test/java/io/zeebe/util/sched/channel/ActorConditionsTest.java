@@ -16,15 +16,30 @@
 package io.zeebe.util.sched.channel;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
+import io.zeebe.util.sched.*;
+import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
-
-import io.zeebe.util.sched.ActorCondition;
-import io.zeebe.util.sched.ActorConditionImpl;
-import io.zeebe.util.sched.ActorJob;
 
 public class ActorConditionsTest
 {
+    private int signals;
+
+    @Before
+    public void setup()
+    {
+        signals = 0;
+    }
+
+    private void conditionRun()
+    {
+        signals++;
+    }
 
     @Test
     public void shouldAddCondition()
@@ -33,13 +48,12 @@ public class ActorConditionsTest
         final ActorConditions actorConditions = new ActorConditions();
 
         // when
-        final ActorJob job = new ActorJob();
-        final ActorCondition condition = new ActorConditionImpl("name", job);
+        final ActorCondition condition = mock(ActorCondition.class);
         actorConditions.registerConsumer(condition);
 
         // then
-        assertThat(actorConditions.consumers).hasSize(1);
-        assertThat(actorConditions.consumers).containsExactly(condition);
+        actorConditions.signalConsumers();
+        verify(condition).signal();
     }
 
     @Test
@@ -49,19 +63,20 @@ public class ActorConditionsTest
         final ActorConditions actorConditions = new ActorConditions();
 
         // when
-        final ActorJob job = new ActorJob();
-        final ActorCondition condition1 = new ActorConditionImpl("1", job);
+        final ActorCondition condition1 = mock(ActorCondition.class);
         actorConditions.registerConsumer(condition1);
 
-        final ActorCondition condition2 = new ActorConditionImpl("2", job);
+        final ActorCondition condition2 = mock(ActorCondition.class);
         actorConditions.registerConsumer(condition2);
 
-        final ActorCondition condition3 = new ActorConditionImpl("3", job);
+        final ActorCondition condition3 = mock(ActorCondition.class);
         actorConditions.registerConsumer(condition3);
 
         // then
-        assertThat(actorConditions.consumers).hasSize(3);
-        assertThat(actorConditions.consumers).containsExactly(condition1, condition2, condition3);
+        actorConditions.signalConsumers();
+        verify(condition1).signal();
+        verify(condition2).signal();
+        verify(condition3).signal();
     }
 
     @Test
@@ -69,15 +84,15 @@ public class ActorConditionsTest
     {
         // given
         final ActorConditions actorConditions = new ActorConditions();
-        final ActorJob job = new ActorJob();
-        final ActorCondition condition = new ActorConditionImpl("name", job);
+        final ActorCondition condition = mock(ActorCondition.class);
         actorConditions.registerConsumer(condition);
 
         // when
         actorConditions.removeConsumer(condition);
 
         // then
-        assertThat(actorConditions.consumers).hasSize(0);
+        actorConditions.signalConsumers();
+        verify(condition, never()).signal();
     }
 
     @Test
@@ -85,22 +100,23 @@ public class ActorConditionsTest
     {
         // given
         final ActorConditions actorConditions = new ActorConditions();
-        final ActorJob job = new ActorJob();
-        final ActorCondition condition1 = new ActorConditionImpl("1", job);
+        final ActorCondition condition1 = mock(ActorCondition.class);
         actorConditions.registerConsumer(condition1);
 
-        final ActorCondition condition2 = new ActorConditionImpl("2", job);
+        final ActorCondition condition2 = mock(ActorCondition.class);
         actorConditions.registerConsumer(condition2);
 
-        final ActorCondition condition3 = new ActorConditionImpl("3", job);
+        final ActorCondition condition3 = mock(ActorCondition.class);
         actorConditions.registerConsumer(condition3);
 
         // when
         actorConditions.removeConsumer(condition2);
 
         // then
-        assertThat(actorConditions.consumers).hasSize(2);
-        assertThat(actorConditions.consumers).containsExactly(condition1, condition3);
+        actorConditions.signalConsumers();
+        verify(condition1).signal();
+        verify(condition2, never()).signal();
+        verify(condition3).signal();
     }
 
     @Test
@@ -108,22 +124,23 @@ public class ActorConditionsTest
     {
         // given
         final ActorConditions actorConditions = new ActorConditions();
-        final ActorJob job = new ActorJob();
-        final ActorCondition condition1 = new ActorConditionImpl("1", job);
+        final ActorCondition condition1 = mock(ActorCondition.class);
         actorConditions.registerConsumer(condition1);
 
-        final ActorCondition condition2 = new ActorConditionImpl("2", job);
+        final ActorCondition condition2 = mock(ActorCondition.class);
         actorConditions.registerConsumer(condition2);
 
-        final ActorCondition condition3 = new ActorConditionImpl("3", job);
+        final ActorCondition condition3 = mock(ActorCondition.class);
         actorConditions.registerConsumer(condition3);
 
         // when
         actorConditions.removeConsumer(condition1);
 
         // then
-        assertThat(actorConditions.consumers).hasSize(2);
-        assertThat(actorConditions.consumers).containsExactly(condition2, condition3);
+        actorConditions.signalConsumers();
+        verify(condition1, never()).signal();
+        verify(condition2).signal();
+        verify(condition3).signal();
     }
 
 }
