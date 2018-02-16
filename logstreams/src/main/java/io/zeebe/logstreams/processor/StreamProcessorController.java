@@ -15,9 +15,6 @@
  */
 package io.zeebe.logstreams.processor;
 
-import java.time.Duration;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
@@ -31,8 +28,10 @@ import io.zeebe.util.sched.ZbActor;
 import io.zeebe.util.sched.ZbActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
-import io.zeebe.util.sched.future.CompletedActorFuture;
 import org.slf4j.Logger;
+
+import java.time.Duration;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class StreamProcessorController extends ZbActor
 {
@@ -104,7 +103,7 @@ public class StreamProcessorController extends ZbActor
         }
         else
         {
-            return new CompletedActorFuture<>((Void) null);
+            return CompletableActorFuture.completed(null);
         }
     }
 
@@ -492,7 +491,7 @@ public class StreamProcessorController extends ZbActor
         }
         else
         {
-            return new CompletedActorFuture<>((Void) null);
+            return CompletableActorFuture.completed(null);
         }
     }
 

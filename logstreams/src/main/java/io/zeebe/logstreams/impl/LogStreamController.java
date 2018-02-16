@@ -15,12 +15,6 @@
  */
 package io.zeebe.logstreams.impl;
 
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.positionOffset;
-
-import java.nio.ByteBuffer;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import io.zeebe.dispatcher.BlockPeek;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Subscription;
@@ -29,9 +23,14 @@ import io.zeebe.util.sched.ZbActor;
 import io.zeebe.util.sched.ZbActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
-import io.zeebe.util.sched.future.CompletedActorFuture;
 import org.agrona.MutableDirectBuffer;
 import org.slf4j.Logger;
+
+import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.positionOffset;
 
 public class LogStreamController extends ZbActor
 {
@@ -181,7 +180,7 @@ public class LogStreamController extends ZbActor
         }
         else
         {
-            return new CompletedActorFuture<>(null);
+            return CompletableActorFuture.completed(null);
         }
     }
 

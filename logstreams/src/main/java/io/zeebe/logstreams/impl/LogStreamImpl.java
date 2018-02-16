@@ -15,19 +15,6 @@
  */
 package io.zeebe.logstreams.impl;
 
-import static io.zeebe.logstreams.log.LogStreamUtil.INVALID_ADDRESS;
-import static io.zeebe.logstreams.log.LogStreamUtil.getAddressForPosition;
-import static io.zeebe.util.EnsureUtil.ensureFalse;
-import static io.zeebe.util.EnsureUtil.ensureGreaterThanOrEqual;
-import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
-import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
-
-import java.io.File;
-import java.nio.ByteBuffer;
-import java.time.Duration;
-import java.util.Objects;
-import java.util.concurrent.Future;
-
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.dispatcher.impl.PositionUtil;
@@ -43,12 +30,24 @@ import io.zeebe.util.sched.ZbActorScheduler;
 import io.zeebe.util.sched.channel.ActorConditions;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
-import io.zeebe.util.sched.future.CompletedActorFuture;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicLongPosition;
 import org.agrona.concurrent.status.CountersManager;
 import org.agrona.concurrent.status.Position;
+
+import java.io.File;
+import java.nio.ByteBuffer;
+import java.time.Duration;
+import java.util.Objects;
+import java.util.concurrent.Future;
+
+import static io.zeebe.logstreams.log.LogStreamUtil.INVALID_ADDRESS;
+import static io.zeebe.logstreams.log.LogStreamUtil.getAddressForPosition;
+import static io.zeebe.util.EnsureUtil.ensureFalse;
+import static io.zeebe.util.EnsureUtil.ensureGreaterThanOrEqual;
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
+import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
 
 /**
  * Represents the implementation of the LogStream interface.
@@ -305,7 +304,7 @@ public final class LogStreamImpl extends ZbActor implements LogStream
         }
         else
         {
-            return new CompletedActorFuture<>(null);
+            return CompletableActorFuture.completed(null);
         }
     }
 
