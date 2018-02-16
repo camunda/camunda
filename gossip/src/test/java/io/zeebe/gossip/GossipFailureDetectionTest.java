@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.clustering.gossip.GossipEventType;
 import io.zeebe.clustering.gossip.MembershipEventType;
+import io.zeebe.gossip.protocol.MembershipEvent;
 import io.zeebe.gossip.util.GossipClusterRule;
 import io.zeebe.gossip.util.GossipRule;
 import io.zeebe.test.util.TestUtil;
@@ -28,6 +29,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
+
+import java.util.Optional;
 
 public class GossipFailureDetectionTest
 {
@@ -135,86 +138,62 @@ public class GossipFailureDetectionTest
         assertThat(gossip1.hasMember(gossip3)).isTrue();
         assertThat(gossip2.hasMember(gossip3)).isTrue();
     }
-//
-//    @Test
-//    public void shouldSpreadConfirmEvent()
-//    {
-//        // given
-//        cluster.interruptConnectionBetween(gossip3, gossip1);
-//        cluster.interruptConnectionBetween(gossip3, gossip2);
-//
-//        // when
-//        clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
-//        actorScheduler.waitUntilDone();
-//
-//        clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeTimeout()));
-//        actorScheduler.waitUntilDone();
-//
-//        clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeIndirectTimeout()));
-//        actorScheduler.waitUntilDone();
-//
-//        final long suspicionTimeout = GossipMath.suspicionTimeout(CONFIGURATION.getSuspicionMultiplier(), 3, CONFIGURATION.getProbeInterval());
-//        clock.addTime(Duration.ofMillis(suspicionTimeout));
-//        actorScheduler.waitUntilDone();
-//
-//        clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
-//        actorScheduler.waitUntilDone();
-//
-//        clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeTimeout()));
-//        actorScheduler.waitUntilDone();
-//
-//        clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeIndirectTimeout()));
-//        actorScheduler.waitUntilDone();
-//
-//        // then
-//        assertThat(gossip1.receivedMembershipEvent(MembershipEventType.CONFIRM, gossip3)).isTrue();
-//        assertThat(gossip2.receivedMembershipEvent(MembershipEventType.CONFIRM, gossip3)).isTrue();
-//
-//        assertThat(gossip1.hasMember(gossip3)).isFalse();
-//        assertThat(gossip2.hasMember(gossip3)).isFalse();
-//    }
-//
-//    @Test
-//    public void shouldCounterSuspectEventIfAlive()
-//    {
-//        // given
-//        cluster.interruptConnectionBetween(gossip3, gossip1);
-//        cluster.interruptConnectionBetween(gossip3, gossip2);
-//
-//        clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
-//        actorScheduler.waitUntilDone();
-//
-//        clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeTimeout()));
-//        actorScheduler.waitUntilDone();
-//
-//        clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeIndirectTimeout()));
-//        actorScheduler.waitUntilDone();
-//
-//        // when
-//        cluster.reconnect(gossip3, gossip1);
-//        cluster.reconnect(gossip3, gossip2);
-//
-//        clock.addTime(Duration.ofMillis(CONFIGURATION.getProbeInterval()));
-//        actorScheduler.waitUntilDone();
-//
-//        // then
-//        assertThat(gossip3.receivedMembershipEvent(MembershipEventType.SUSPECT, gossip3)).isTrue();
-//
-//        final MembershipEvent suspectEvent = gossip1.getReceivedMembershipEvents(MembershipEventType.SUSPECT, gossip3)
-//            .findFirst()
-//            .get();
-//
-//        final MembershipEvent counterAliveEvent = gossip1.getReceivedMembershipEvents(MembershipEventType.ALIVE, gossip3)
-//            .findFirst()
-//            .get();
-//
-//        assertThat(counterAliveEvent.getGossipTerm().isEqual(suspectEvent.getGossipTerm())).isTrue();
-//        final Optional<MembershipEvent> lastAliveEvent = gossip1.getReceivedMembershipEvents(MembershipEventType.ALIVE, gossip3)
-//                                                               .filter(e -> e.getGossipTerm()
-//                                                                     .isGreaterThan(suspectEvent.getGossipTerm()))
-//                                                               .findFirst();
-//
-//        assertThat(lastAliveEvent).isPresent();
-//    }
+
+    @Test
+    public void shouldSpreadConfirmEvent()
+    {
+        // given
+        cluster.interruptConnectionBetween(gossip3, gossip1);
+        cluster.interruptConnectionBetween(gossip3, gossip2);
+
+        // when
+        TestUtil.doRepeatedly(() ->
+        {
+            clock.addTime(CONFIGURATION.getProbeInterval());
+            return null;
+        }).until(v -> gossip1.receivedMembershipEvent(MembershipEventType.CONFIRM, gossip3)
+            && gossip2.receivedMembershipEvent(MembershipEventType.CONFIRM, gossip3));
+
+        // then
+        assertThat(gossip1.hasMember(gossip3)).isFalse();
+        assertThat(gossip2.hasMember(gossip3)).isFalse();
+    }
+
+    @Test
+    public void shouldCounterSuspectEventIfAlive()
+    {
+        // given
+        cluster.interruptConnectionBetween(gossip3, gossip1);
+        cluster.interruptConnectionBetween(gossip3, gossip2);
+
+        TestUtil.doRepeatedly(() ->
+        {
+            clock.addTime(CONFIGURATION.getProbeInterval());
+            return null;
+        }).until(v -> gossip1.receivedMembershipEvent(MembershipEventType.SUSPECT, gossip3)
+            && gossip2.receivedMembershipEvent(MembershipEventType.SUSPECT, gossip3));
+
+        // when
+        final MembershipEvent suspectEvent = gossip1.getReceivedMembershipEvents(MembershipEventType.SUSPECT, gossip3)
+            .findFirst()
+            .get();
+
+        gossip1.clearReceivedEvents();
+        gossip2.clearReceivedEvents();
+        cluster.reconnect(gossip3, gossip1);
+        cluster.reconnect(gossip3, gossip2);
+
+        TestUtil.doRepeatedly(() ->
+        {
+            clock.addTime(CONFIGURATION.getProbeInterval());
+            return null;
+        }).until(v -> gossip3.receivedMembershipEvent(MembershipEventType.SUSPECT, gossip3)
+                      && gossip1.getReceivedMembershipEvents(MembershipEventType.ALIVE, gossip3)
+                                 .anyMatch(e -> e.getGossipTerm().isGreaterThan(suspectEvent.getGossipTerm()))
+                      && gossip2.receivedMembershipEvent(MembershipEventType.ALIVE, gossip3));
+
+        // then
+        assertThat(gossip3.receivedMembershipEvent(MembershipEventType.SUSPECT, gossip3)).isTrue();
+    }
 
 }
