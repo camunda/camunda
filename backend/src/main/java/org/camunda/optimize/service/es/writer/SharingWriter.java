@@ -5,13 +5,20 @@ import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.reindex.BulkByScrollResponse;
+import org.elasticsearch.index.reindex.DeleteByQueryAction;
+import org.elasticsearch.index.reindex.DeleteByQueryRequestBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -39,8 +46,8 @@ public class SharingWriter {
         configurationService.getReportShareType(),
         id
       )
-      .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
       .setSource(objectMapper.convertValue(createSharingDto, Map.class))
+      .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
       .get();
 
     logger.debug("report share with id [{}] for resource [{}] has been created", id, createSharingDto.getReportId());
@@ -100,5 +107,38 @@ public class SharingWriter {
     )
     .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
     .get();
+  }
+
+  public void deleteReportShares(List<String> reportShares) {
+    logger.debug("Deleting report shares with ids [{}]", reportShares);
+
+    BulkByScrollResponse response =
+      DeleteByQueryAction.INSTANCE.newRequestBuilder(esclient)
+        .filter(QueryBuilders.idsQuery().addIds(reportShares.toArray(new String[reportShares.size()])))
+        .source(configurationService.getOptimizeIndex(configurationService.getReportShareType()))
+        .refresh(true)
+        .get();
+
+    response.getDeleted();
+  }
+
+  public List<String> saveReportShares(List<ReportShareDto> toPersist) {
+    List<String> result = new ArrayList<>();
+    BulkRequestBuilder bulkRequest = esclient.prepareBulk();
+    for (ReportShareDto share : toPersist) {
+      String id = IdGenerator.getNextId();
+      share.setId(id);
+      result.add(id);
+      bulkRequest.add(esclient
+        .prepareIndex(
+          configurationService.getOptimizeIndex(configurationService.getReportShareType()),
+          configurationService.getReportShareType(),
+          id
+        )
+        .setSource(objectMapper.convertValue(share, Map.class))
+      );
+    }
+    bulkRequest.get();
+    return result;
   }
 }

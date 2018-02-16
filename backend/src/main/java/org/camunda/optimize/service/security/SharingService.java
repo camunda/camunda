@@ -97,12 +97,8 @@ public class SharingService  {
           dashboardService.getDashboardDefinition(createSharingDto.getDashboardId());
 
       if (dashboardDefinition.getReports() != null) {
-        List<String> reportShares = new ArrayList<>();
-        for (ReportLocationDto report : dashboardDefinition.getReports()) {
-          IdDto idDto = this.createNewReportShare(constructDashboardReportShareDto(report));
-          reportShares.add(idDto.getId());
-        }
-        createSharingDto.setReportShares(reportShares);
+        List<String> newReportShares = createReportShares(dashboardDefinition);
+        createSharingDto.setReportShares(newReportShares);
       }
 
     } catch (IOException | OptimizeException e) {
@@ -290,21 +286,32 @@ public class SharingService  {
 
     dashboardShare.ifPresent(share -> {
       if (share.getReportShares() != null) {
-        for (String dashboardReportShareId : share.getReportShares()) {
-          this.deleteReportShare(dashboardReportShareId);
-        }
+        this.deleteReportShares(share.getReportShares());
       }
 
       if (updatedDashboard.getReports() != null) {
-        List<String> reportShares = new ArrayList<>();
-        for (ReportLocationDto report : updatedDashboard.getReports()) {
-          IdDto idDto = this.crateNewReportShareIfAbsent(constructDashboardReportShareDto(report));
-          reportShares.add(idDto.getId());
-        }
-        share.setReportShares(reportShares);
+        List<String> newReportShares = createReportShares(updatedDashboard);
+        share.setReportShares(newReportShares);
         sharingWriter.updateDashboardShare(share);
       }
     });
 
+  }
+
+  private List<String> createReportShares(DashboardDefinitionDto updatedDashboard) {
+    List<ReportShareDto> toPersist = new ArrayList<>();
+    for (ReportLocationDto report : updatedDashboard.getReports()) {
+      ReportShareDto createSharingDto = constructDashboardReportShareDto(report);
+      toPersist.add(createSharingDto);
+    }
+    return this.createNewReportShares(toPersist);
+  }
+
+  private List<String> createNewReportShares(List<ReportShareDto> toPersist) {
+    return sharingWriter.saveReportShares(toPersist);
+  }
+
+  private void deleteReportShares(List<String> reportShares) {
+    sharingWriter.deleteReportShares(reportShares);
   }
 }
