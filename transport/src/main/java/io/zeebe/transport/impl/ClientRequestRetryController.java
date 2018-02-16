@@ -104,8 +104,7 @@ public class ClientRequestRetryController extends ZbActor
             {
                 actor.done();
 
-                // TODO: add max await until deadline
-                actor.await(request, (DirectBuffer response, Throwable e) ->
+                actor.runOnCompletion(request, (response, e) ->
                 {
                     boolean shouldRetry = false;
 
@@ -120,12 +119,23 @@ public class ClientRequestRetryController extends ZbActor
 
                     if (!shouldRetry)
                     {
-                        successfulRequest.complete(request);
+                        if (!successfulRequest.isDone())
+                        {
+                            successfulRequest.complete(request);
+                        }
                     }
                     else
                     {
                         request.close();
                         actor.runDelayed(RESUBMIT_TIMEOUT, this::getRemoteAddress);
+                    }
+                });
+
+                actor.runDelayed(timeout, () ->
+                {
+                    if (!successfulRequest.isDone())
+                    {
+                        onRequestTimedOut();
                     }
                 });
             }
