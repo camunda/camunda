@@ -124,12 +124,24 @@ public class Gossip extends ZbActor implements GossipController, GossipEventPubl
             }
         });
 
+        membershipList.addListener(new GossipMembershipListener()
+        {
+            @Override
+            public void onAdd(Member member)
+            {
+                // start ping when the first member is added
+                if (membershipList.size() == 1)
+                {
+                    actor.submit(pingController::sendPing);
+                }
+            }
 
-
-        actor.runDelayed(configuration.getProbeInterval(), pingController::sendPing);
-
-        // suspicion -> in ping ctrl
-        // run delayed with timeout time -> runnable checks if still suspected
+            @Override
+            public void onRemove(Member member)
+            {
+                // do nothing
+            }
+        });
     }
 
     private void onSuspectMember(Member member)

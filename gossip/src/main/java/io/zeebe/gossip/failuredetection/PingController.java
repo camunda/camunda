@@ -70,30 +70,33 @@ public class PingController
 
     public void sendPing()
     {
-        final Member member = propbeMemberIterator.next();
-        probeMember = member;
-
-        LOG.trace("Send PING to '{}'", member.getId());
-
-        final ActorFuture<ClientRequest> clientRequestActorFuture =
-            gossipEventSender.sendPing(member.getAddress(), configuration.getProbeTimeout());
-
-        actor.runOnCompletion(clientRequestActorFuture, (request, throwable) ->
+        if (membershipList.size() > 0)
         {
+            final Member member = propbeMemberIterator.next();
+            probeMember = member;
 
-            if (throwable == null)
+            LOG.trace("Send PING to '{}'", member.getId());
+
+            final ActorFuture<ClientRequest> clientRequestActorFuture =
+                    gossipEventSender.sendPing(member.getAddress(), configuration.getProbeTimeout());
+
+            actor.runOnCompletion(clientRequestActorFuture, (request, throwable) ->
             {
-                LOG.trace("Received ACK from '{}'", probeMember.getId());
-                final DirectBuffer response = request.join();
-                ackResponse.wrap(response, 0, response.capacity());
-                actor.runDelayed(configuration.getProbeInterval(), this::sendPing);
-            }
-            else
-            {
-                LOG.trace("Doesn't receive ACK from '{}'", probeMember.getId());
-                actor.submit(this::sendPingReq);
-            }
-        });
+
+                if (throwable == null)
+                {
+                    LOG.trace("Received ACK from '{}'", probeMember.getId());
+                    final DirectBuffer response = request.join();
+                    ackResponse.wrap(response, 0, response.capacity());
+                    actor.runDelayed(configuration.getProbeInterval(), this::sendPing);
+                }
+                else
+                {
+                    LOG.trace("Doesn't receive ACK from '{}'", probeMember.getId());
+                    actor.submit(this::sendPingReq);
+                }
+            });
+        }
     }
 
     private void sendPingReq()

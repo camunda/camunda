@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -61,6 +62,7 @@ import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.ZbActor;
 import io.zeebe.util.sched.ZbActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletedActorFuture;
 import org.agrona.DirectBuffer;
 import org.junit.rules.ExternalResource;
 import org.mockito.ArgumentMatcher;
@@ -192,8 +194,17 @@ public class GossipRule extends ExternalResource
         final ClientRequest clientRequest = mock(ClientRequest.class);
 
         final ArgumentMatcher<RemoteAddress> remoteAddressMatcher = r -> r.getAddress().equals(other.socketAddress);
-        doReturn(clientRequest).when(spyClientOutput).sendRequest(argThat(remoteAddressMatcher), any());
-        doReturn(clientRequest).when(spyClientOutput).sendRequestWithRetry(argThat(remoteAddressMatcher), any());
+        doReturn(clientRequest)
+            .when(spyClientOutput)
+            .sendRequest(argThat(remoteAddressMatcher), any());
+
+        doReturn(new CompletedActorFuture<>(new RuntimeException("conection is interrupted")))
+            .when(spyClientOutput)
+            .sendRequestWithRetry(argThat(remoteAddressMatcher), any());
+
+        doReturn(new CompletedActorFuture<>(new TimeoutException("timeout")))
+            .when(spyClientOutput)
+            .sendRequestWithRetry(argThat(remoteAddressMatcher), any(), any());
     }
 
     public void reconnectTo(GossipRule other)
@@ -201,6 +212,7 @@ public class GossipRule extends ExternalResource
         final ArgumentMatcher<RemoteAddress> remoteAddressMatcher = r -> r.getAddress().equals(other.socketAddress);
         doCallRealMethod().when(spyClientOutput).sendRequest(argThat(r -> r.getAddress().equals(other.socketAddress)), any());
         doCallRealMethod().when(spyClientOutput).sendRequestWithRetry(argThat(remoteAddressMatcher), any());
+        doCallRealMethod().when(spyClientOutput).sendRequestWithRetry(argThat(remoteAddressMatcher), any(), any());
     }
 
     public GossipController getController()

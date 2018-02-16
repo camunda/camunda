@@ -22,6 +22,7 @@ import io.zeebe.clustering.gossip.MembershipEventType;
 import io.zeebe.gossip.util.GossipClusterRule;
 import io.zeebe.gossip.util.GossipRule;
 import io.zeebe.util.sched.clock.ControlledActorClock;
+import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -90,35 +91,29 @@ public class GossipJoinTest
         assertThat(gossip3.hasMember(gossip1)).isTrue();
         assertThat(gossip3.hasMember(gossip2)).isTrue();
     }
-//
-//    @Test
-//    public void shouldRetryJoinIfContactPointIsNotAvailable()
-//    {
-//        // given
-//        cluster.interruptConnectionBetween(gossip1, gossip2);
-//
-//        gossip2.join(gossip1);
-//
-//        actorScheduler.waitUntilDone();
-//        actorScheduler.waitUntilDone();
-//
-//        clock.addTime(Duration.ofMillis(CONFIGURATION.getJoinTimeout()));
-//
-//        actorScheduler.waitUntilDone();
-//
-//        assertThat(gossip1.receivedMembershipEvent(MembershipEventType.JOIN, gossip2)).isFalse();
-//
-//        // when
-//        cluster.reconnect(gossip1, gossip2);
-//
-//        clock.addTime(Duration.ofMillis(CONFIGURATION.getJoinInterval()));
-//
-//        actorScheduler.waitUntilDone();
-//        actorScheduler.waitUntilDone();
-//
-//        // then
-//        assertThat(gossip1.receivedMembershipEvent(MembershipEventType.JOIN, gossip2)).isTrue();
-//    }
+
+    @Test
+    public void shouldRetryJoinIfContactPointIsNotAvailable()
+    {
+        // given
+        cluster.interruptConnectionBetween(gossip1, gossip2);
+
+        final ActorFuture<Void> joinFuture = gossip2.join(gossip1);
+
+        clock.addTime(CONFIGURATION.getJoinTimeout());
+
+        assertThat(joinFuture).isNotDone();
+        assertThat(gossip1.receivedMembershipEvent(MembershipEventType.JOIN, gossip2)).isFalse();
+
+        // when
+        cluster.reconnect(gossip1, gossip2);
+
+        clock.addTime(CONFIGURATION.getJoinInterval());
+
+        // then
+        joinFuture.join();
+        assertThat(gossip1.receivedMembershipEvent(MembershipEventType.JOIN, gossip2)).isTrue();
+    }
 //
 //    @Test
 //    public void shouldJoinIfOneContactPointIsAvailable()

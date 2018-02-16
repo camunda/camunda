@@ -143,6 +143,8 @@ public class JoinController
             }
             else
             {
+                LOG.info("Failed to contact any of '{}'. Try again in {}", contactPoints, configuration.getJoinInterval());
+
                 actor.runDelayed(configuration.getJoinInterval(), this::sendJoin);
             }
         });
@@ -172,6 +174,8 @@ public class JoinController
             }
             else
             {
+                LOG.debug("Failed to receive SYNC response from '{}'. Try again in {}", contactPoint, configuration.getJoinInterval());
+
                 actor.runDelayed(configuration.getJoinInterval(), this::sendJoin);
             }
         });
