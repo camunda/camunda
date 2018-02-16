@@ -49,7 +49,7 @@ export default class Filter extends React.Component {
 
     filters.splice(index, numberToRemove, ...newFilters);
 
-    this.props.onChange('filter', filters);
+    this.props.onChange({'filter': filters});
     this.closeModal();
   }
 
@@ -60,12 +60,14 @@ export default class Filter extends React.Component {
       filters = filters.filter(({type}) => type !== 'date' && type !== 'rollingDate');
     }
 
-    this.props.onChange('filter', [...filters, ...newFilters]);
+    this.props.onChange({'filter': [...filters, ...newFilters]});
     this.closeModal();
   }
 
   deleteFilter = (...oldFilters) => {
-    this.props.onChange('filter', [...this.props.data.filter(filter => !oldFilters.includes(filter))]);
+    this.props.onChange({
+      'filter': [...this.props.data.filter(filter => !oldFilters.includes(filter))]
+    });
   }
 
   processDefinitionIsNotSelected = () => {

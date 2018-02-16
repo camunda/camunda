@@ -30,11 +30,11 @@ export default class ControlPanel extends React.Component {
   }  
 
   propagateChange = (id, key, version) => {
-    this.props.onChange([
-      {field: 'processDefinitionId', newValue: id},
-      {field: 'processDefinitionKey', newValue: key},
-      {field: 'processDefinitionVersion', newValue: version}
-    ]);   
+    this.props.onChange({
+      'processDefinitionId': id,
+      'processDefinitionKey': key,
+      'processDefinitionVersion': version
+   });   
   }
 
   changeKey = async evt => {

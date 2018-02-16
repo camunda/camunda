@@ -47,5 +47,5 @@ it('should call the provided onChange property function when a setting changes',
 
   node.instance().changeVisualization({target: {value: 'someTestVis'}});
 
-  expect(spy).toHaveBeenCalledWith('visualization', 'someTestVis');
+  expect(spy).toHaveBeenCalledWith({'visualization': 'someTestVis'});
 });

@@ -109,7 +109,7 @@ it('should add a filter to the list of filters', () => {
 
   node.instance().addFilter('Filter 2');
 
-  expect(spy.mock.calls[0][1]).toEqual([sampleFilter, 'Filter 2']);
+  expect(spy.mock.calls[0][0].filter).toEqual([sampleFilter, 'Filter 2']);
 });
 
 it('should edit the edited filter', () => {
@@ -132,7 +132,7 @@ it('should edit the edited filter', () => {
 
   node.instance().editFilter('bar');
 
-  expect(spy.mock.calls[0][1]).toEqual(['bar', 'foo']);
+  expect(spy.mock.calls[0][0].filter).toEqual(['bar', 'foo']);
 });
 
 it('should add multiple filters to the list of filters', () => {
@@ -151,7 +151,7 @@ it('should add multiple filters to the list of filters', () => {
 
   node.instance().addFilter('Filter 2', 'Filter 3');
 
-  expect(spy.mock.calls[0][1]).toEqual([sampleFilter, 'Filter 2', 'Filter 3']);
+  expect(spy.mock.calls[0][0].filter).toEqual([sampleFilter, 'Filter 2', 'Filter 3']);
 
 });
 
@@ -163,7 +163,7 @@ it('should remove a filter from the list of filters', () => {
 
   node.instance().deleteFilter('Filter 2');
 
-  expect(spy.mock.calls[0][1]).toEqual(['Filter 1', 'Filter 3']);
+  expect(spy.mock.calls[0][0].filter).toEqual(['Filter 1', 'Filter 3']);
 });
 
 it('should remove multiple filters from the list of filters', () => {
@@ -174,7 +174,7 @@ it('should remove multiple filters from the list of filters', () => {
 
   node.instance().deleteFilter('Filter 2', 'Filter 1');
 
-  expect(spy.mock.calls[0][1]).toEqual(['Filter 3']);
+  expect(spy.mock.calls[0][0].filter).toEqual(['Filter 3']);
 });
 
 it('should disable variable and executed flow node filter if no process definition is available', () => {
@@ -194,5 +194,5 @@ it('should remove any previous date and rolling date filters when adding a new d
 
   node.instance().addFilter({type:'date', value: 'new date'});
 
-  expect(spy.mock.calls[0][1]).toEqual([{type:'date', value: 'new date'}]);
+  expect(spy.mock.calls[0][0].filter).toEqual([{type:'date', value: 'new date'}]);
 });

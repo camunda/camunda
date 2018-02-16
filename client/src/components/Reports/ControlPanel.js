@@ -11,19 +11,19 @@ import './ControlPanel.css';
 export default class ControlPanel extends React.Component {
 
   changeDefinition = evt => {
-    this.props.onChange('processDefinitionId', evt.target.value);
+    this.props.onChange({'processDefinitionId': evt.target.value});
   }
   changeView = evt => {
     const viewKey = evt.target.value;
-    this.props.onChange('view', reportLabelMap.keyToObject(viewKey, reportLabelMap.view));
+    this.props.onChange({'view': reportLabelMap.keyToObject(viewKey, reportLabelMap.view)});
   }
   changeGroup = evt => {
     const groupByKey = evt.target.value;
-    this.props.onChange('groupBy', reportLabelMap.keyToObject(groupByKey, reportLabelMap.groupBy));
+    this.props.onChange({'groupBy': reportLabelMap.keyToObject(groupByKey, reportLabelMap.groupBy)});
   }
 
   changeVisualization = evt => {
-    this.props.onChange('visualization', evt.target.value);
+    this.props.onChange({'visualization': evt.target.value});
   }
 
   definitionConfig = () => {

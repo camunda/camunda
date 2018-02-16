@@ -101,17 +101,14 @@ export default class Analysis extends React.Component {
 
   updateConfig = async (updates) => {
     const config = {
-      ...this.state.config
+      ...this.state.config,
+      ...updates
     };
-    updates.forEach( ({field, newValue}) => {
-      config[field] = newValue;
-    });
     this.setState({config});
 
-    const processDefinitionIdWasUpdated = updates.find(({field}) => field === 'processDefinitionId');
-    if(processDefinitionIdWasUpdated && processDefinitionIdWasUpdated.newValue) {
+    if(updates.processDefinitionId) {
       this.setState({
-        xml: await loadProcessDefinitionXml(processDefinitionIdWasUpdated.newValue),
+        xml: await loadProcessDefinitionXml(updates.processDefinitionId),
         gateway: null,
         endEvent: null
       });

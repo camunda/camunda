@@ -26,7 +26,7 @@ it('should load the process definition xml when the process definition id is upd
   const node = mount(<Analysis />);
 
   loadProcessDefinitionXml.mockClear();
-  node.instance().updateConfig([{field:'processDefinitionId', newValue:'someId'}]);
+  node.instance().updateConfig({'processDefinitionId': 'someId'});
 
   expect(loadProcessDefinitionXml).toHaveBeenCalledWith('someId');
 });
@@ -35,7 +35,7 @@ it('should load frequency data when the process definition id changes', () => {
   const node = mount(<Analysis />);
 
   loadFrequencyData.mockClear();
-  node.instance().updateConfig([{field:'processDefinitionId', newValue:'someId'}]);
+  node.instance().updateConfig({'processDefinitionId': 'someId'});
 
   expect(loadFrequencyData.mock.calls[0][0]).toBe('someId');
 });
@@ -43,9 +43,9 @@ it('should load frequency data when the process definition id changes', () => {
 it('should load updated frequency data when the filter changed', () => {
   const node = mount(<Analysis />);
 
-  node.instance().updateConfig([{field:'processDefinitionId', newValue:'someId'}]);
+  node.instance().updateConfig({'processDefinitionId': 'someId'});
   loadFrequencyData.mockClear();
-  node.instance().updateConfig([{field:'filter', newValue:['someFilter']}]);
+  node.instance().updateConfig({'filter': ['someFilter']});
 
   expect(loadFrequencyData.mock.calls[0][1]).toEqual(['someFilter']);
 });
@@ -54,7 +54,7 @@ it('should not try to load frequency data if no process definition is selected',
   const node = mount(<Analysis />);
 
   loadFrequencyData.mockClear();
-  node.instance().updateConfig([{field:'filter', newValue:['someFilter']}]);
+  node.instance().updateConfig({'filter': ['someFilter']});
 
   expect(loadFrequencyData).not.toHaveBeenCalled();
 });
@@ -73,9 +73,9 @@ it('should contain a statistics section if gateway and endEvent is selected', ()
 it('should clear the selection when another process definition is selected', async () => {
   const node = mount(<Analysis />);
 
-  node.instance().updateConfig([{field:'processDefinitionId', newValue:'a'}]);
+  node.instance().updateConfig({'processDefinitionId': 'a'});
   node.instance().setState({gateway: 'g', endEvent: 'e'});
-  await node.instance().updateConfig([{field:'processDefinitionId', newValue:'b'}]);
+  await node.instance().updateConfig({'processDefinitionId':'b'});
 
   expect(node).toHaveState('gateway', null);
   expect(node).toHaveState('endEvent', null);
