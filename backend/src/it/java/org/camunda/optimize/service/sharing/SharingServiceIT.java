@@ -5,6 +5,7 @@ import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.EvaluatedDashboardShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
+import org.camunda.optimize.dto.optimize.query.sharing.ReportShareLocationDto;
 import org.camunda.optimize.dto.optimize.query.sharing.SharedResourceType;
 import org.junit.Rule;
 import org.junit.Test;
@@ -59,7 +60,10 @@ public class SharingServiceIT extends AbstractSharingIT {
 
     //then
     EvaluatedDashboardShareDto dashboardShareDto = response.readEntity(EvaluatedDashboardShareDto.class);
-    assertThat(dashboardShareDto.getDashboard().getReportShares().size(), is(2));
+    List<ReportShareLocationDto> reportShares = dashboardShareDto.getDashboard().getReportShares();
+    assertThat(reportShares.size(), is(2));
+    assertThat(reportShares.get(0).getShareId(), is(not(reportShares.get(1).getShareId())));
+    assertThat(reportShares.get(0).getPosition().getX(), is(not(reportShares.get(1).getPosition().getX())));
   }
 
   @Test

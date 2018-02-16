@@ -153,15 +153,6 @@ public class SharingReader {
     return result;
   }
 
-  public List<ReportShareDto> findReportSharesForResources(Set<String> resourceIds, SharedResourceType sharedResourceType) {
-    BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
-    boolQueryBuilder
-        .must(QueryBuilders.termsQuery(ReportShareType.REPORT_ID, resourceIds))
-        .must(QueryBuilders.termQuery(ReportShareType.TYPE, sharedResourceType.toString()));
-    QueryBuilder query = boolQueryBuilder;
-    return findReportSharesByQuery(query);
-  }
-
   private List<ReportShareDto> findReportSharesByQuery(QueryBuilder query) {
     List<ReportShareDto> result = new ArrayList<>();
     SearchResponse scrollResp = esclient
@@ -186,5 +177,13 @@ public class SharingReader {
           .get();
     } while (scrollResp.getHits().getHits().length != 0);
     return result;
+  }
+
+  public List<ReportShareDto> findReportShares(List<String> shareIds) {
+    BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+    boolQueryBuilder
+        .must(QueryBuilders.termsQuery(ReportShareType.ID, shareIds));
+    QueryBuilder query = boolQueryBuilder;
+    return findReportSharesByQuery(query);
   }
 }

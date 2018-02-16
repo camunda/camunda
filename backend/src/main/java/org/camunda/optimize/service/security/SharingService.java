@@ -29,7 +29,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 /**
  * @author Askar Akhmerov
@@ -110,6 +109,7 @@ public class SharingService  {
     ReportShareDto result = new ReportShareDto();
     result.setType(SharedResourceType.DASHBOARD_REPORT);
     result.setReportId(report.getId());
+    result.setPosition(report.getPosition());
     return result;
   }
 
@@ -216,10 +216,11 @@ public class SharingService  {
     if (reports != null) {
       Map<String, ReportLocationDto> reportLocationsMap = new HashMap<>();
       for (ReportLocationDto report : reports) {
-        reportLocationsMap.put(report.getId(), report);
+        String key = getReportKey(report);
+        reportLocationsMap.put(key, report);
       }
 
-      List<ReportShareDto> dashboardReports = this.findSharesForDashboardReports(reportLocationsMap.keySet());
+      List<ReportShareDto> dashboardReports = this.findShares(reportShares);
 
       result = new ArrayList<>();
       for (ReportShareDto reportShare : dashboardReports) {
@@ -232,16 +233,26 @@ public class SharingService  {
     return result;
   }
 
-  private List<ReportShareDto> findSharesForDashboardReports(Set<String> resourceIds) {
-    return sharingReader.findReportSharesForResources(resourceIds, SharedResourceType.DASHBOARD_REPORT);
+  private String getReportKey(ReportLocationDto report) {
+    String position = report.getPosition() != null ? (String.valueOf(report.getPosition().getX()) + String.valueOf(report.getPosition().getY())) : "null-null";
+    return report.getId() + position;
+  }
+
+  private List<ReportShareDto> findShares(List<String> shareIds) {
+    return sharingReader.findReportShares(shareIds);
   }
 
   private ReportShareLocationDto constructReportShareLocation(
       Map<String, ReportLocationDto> reportLocationsMap, ReportShareDto reportShare) {
-    ReportLocationDto reportLocationDto = reportLocationsMap.get(reportShare.getReportId());
+    ReportLocationDto reportLocationDto = reportLocationsMap.get(getReportKey(reportShare));
     ReportShareLocationDto toAdd = mapToReportShareLocationDto(
         reportLocationDto, reportShare.getId(), reportShare.getReportId());
     return toAdd;
+  }
+
+  private String getReportKey(ReportShareDto reportShare) {
+    String position = reportShare.getPosition() != null ? (String.valueOf(reportShare.getPosition().getX()) + String.valueOf(reportShare.getPosition().getY())) : "null-null";
+    return reportShare.getReportId() + position;
   }
 
   private ReportShareLocationDto mapToReportShareLocationDto(

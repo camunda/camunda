@@ -4,6 +4,7 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.PositionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -106,10 +107,16 @@ public abstract class AbstractSharingIT {
     List<ReportLocationDto> reports = new ArrayList<>();
 
     if (reportIds != null) {
+      int i = 0;
       for (String reportId : reportIds) {
         ReportLocationDto reportLocation = new ReportLocationDto();
         reportLocation.setId(reportId);
+        PositionDto position = new PositionDto();
+        position.setX(i);
+        position.setY(i);
+        reportLocation.setPosition(position);
         reports.add(reportLocation);
+        i = i + 2;
       }
     }
 

@@ -15,6 +15,9 @@ public class ReportShareType extends StrictTypeMappingCreator {
   public static final String ID = "id";
   public static final String TYPE = "type";
   public static final String REPORT_ID = "reportId";
+  public static final String POSITION = "position";
+  public static final String X_POSITION = "x";
+  public static final String Y_POSITION = "y";
 
   @Override
   public String getType() {
@@ -30,10 +33,26 @@ public class ReportShareType extends StrictTypeMappingCreator {
       .startObject(TYPE)
         .field("type", "keyword")
       .endObject()
+      .startObject(POSITION)
+        .field("type", "nested")
+        .startObject("properties");
+          addNestedPositionField(newBuilder)
+        .endObject()
+      .endObject()
       .startObject(REPORT_ID)
         .field("type", "keyword")
       .endObject();
 
     return newBuilder;
+  }
+
+  private XContentBuilder addNestedPositionField(XContentBuilder builder) throws IOException {
+    return builder
+      .startObject(X_POSITION)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(Y_POSITION)
+        .field("type", "keyword")
+      .endObject();
   }
 }
