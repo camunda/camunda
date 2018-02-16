@@ -86,7 +86,7 @@ public class ReportRestServiceIT {
     String id = addEmptyReportToOptimize(token);
 
     // when
-    ReportDefinitionDto reportDefinitionDto = new ReportDefinitionDto();
+    ReportDefinitionDto reportDefinitionDto = constructReportWithFakePD();
     Response response =
       embeddedOptimizeRule.target("report/" + id)
         .request()
@@ -95,6 +95,15 @@ public class ReportRestServiceIT {
 
     // then the status code is okay
     assertThat(response.getStatus(), is(204));
+  }
+
+  private ReportDefinitionDto constructReportWithFakePD() {
+    ReportDefinitionDto reportDefinitionDto = new ReportDefinitionDto();
+    ReportDataDto data = new ReportDataDto();
+    data.setProcessDefinitionVersion("FAKE");
+    data.setProcessDefinitionKey("FAKE");
+    reportDefinitionDto.setData(data);
+    return reportDefinitionDto;
   }
 
   @Test
@@ -218,7 +227,7 @@ public class ReportRestServiceIT {
   public void evaluateReportById() {
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
-    String id = createAndStoreDefaultReportDefinition("someRandomId");
+    String id = createAndStoreDefaultReportDefinition("someRandomKey", "someRandomVersion");
 
     // then
     Response response = embeddedOptimizeRule.target("report/" + id + "/evaluate")
@@ -246,7 +255,7 @@ public class ReportRestServiceIT {
   public void evaluateUnsavedReport() {
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
-    ReportDataDto reportDataDto = ReportDataHelper.createReportDataViewRawAsTable("someRandomId");
+    ReportDataDto reportDataDto = ReportDataHelper.createReportDataViewRawAsTable("someRandomKey", "someRandomVersion");
 
     // then
     Response response = embeddedOptimizeRule.target("report/evaluate")
@@ -258,9 +267,10 @@ public class ReportRestServiceIT {
     assertThat(response.getStatus(), is(200));
   }
 
-  private String createAndStoreDefaultReportDefinition(String processDefinitionId) {
+  private String createAndStoreDefaultReportDefinition(String processDefinitionKey,
+                                                       String processDefinitionVersion) {
     String id = createNewReportHelper();
-    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
     ReportDefinitionDto report = new ReportDefinitionDto();
     report.setData(reportData);
     report.setId("something");

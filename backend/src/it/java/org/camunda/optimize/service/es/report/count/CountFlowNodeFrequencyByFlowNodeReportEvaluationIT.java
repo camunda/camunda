@@ -3,6 +3,7 @@ package org.camunda.optimize.service.es.report.count;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.builder.AbstractServiceTaskBuilder;
+import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.DateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.ExecutedFlowNodeFilterDto;
@@ -65,13 +66,15 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    String processDefinitionId = processInstanceDto.getDefinitionId();
-    ReportDataDto reportData = ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNode(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNode(
+        processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion()
+    );
     MapReportResultDto result = evaluateReport(reportData);
 
     // then
     ReportDataDto resultReportDataDto = result.getData();
-    assertThat(resultReportDataDto.getProcessDefinitionId(), is(processDefinitionId));
+    assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
+    assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
     assertThat(resultReportDataDto.getView().getOperation(), is(VIEW_COUNT_OPERATION));
     assertThat(resultReportDataDto.getView().getEntity(), is(VIEW_FLOW_NODE_ENTITY));
@@ -92,7 +95,9 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNode(engineDto.getDefinitionId());
+    ReportDataDto reportData = ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNode(
+        engineDto.getProcessDefinitionKey(), engineDto.getProcessDefinitionVersion()
+    );
     MapReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -158,7 +163,9 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNode(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNode(
+        instanceDto.getProcessDefinitionKey(), instanceDto.getProcessDefinitionVersion()
+    );
     MapReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -178,7 +185,9 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNode(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNode(
+        processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion()
+    );
     reportData.setFilter(createDateFilter("<", "start_date", past));
     MapReportResultDto result = evaluateReport(reportData);
 
@@ -188,7 +197,9 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     assertThat(flowNodeIdToExecutionFrequency.size(), is(0));
 
     // when
-    reportData = ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNode(processDefinitionId);
+    reportData = ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNode(
+        processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion()
+    );
     reportData.setFilter(createDateFilter(">=", "start_date", past));
     result = evaluateReport(reportData);
 
@@ -222,7 +233,9 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNode(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNode(
+        processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion()
+    );
     reportData.setFilter(createVariableFilter());
     MapReportResultDto result = evaluateReport(reportData);
 
@@ -250,15 +263,17 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     // given
     Map<String, Object> variables = new HashMap<>();
     variables.put("goToTask1", true);
-    String processDefinitionId = deploySimpleGatewayProcessDefinition();
-    engineRule.startProcessInstance(processDefinitionId, variables);
+    ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition();
+    engineRule.startProcessInstance(processDefinition.getId(), variables);
     variables.put("goToTask1", false);
-    engineRule.startProcessInstance(processDefinitionId, variables);
+    engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNode(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNode(
+        processDefinition.getKey(), String.valueOf(processDefinition.getVersion())
+    );
     List<ExecutedFlowNodeFilterDto> flowNodeFilter = ExecutedFlowNodeFilterBuilder.construct()
           .id("task1")
           .build();
@@ -343,7 +358,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     return engineRule.deployAndStartProcessWithVariables(processModel, variables);
   }
 
-  private String deploySimpleGatewayProcessDefinition() throws Exception {
+  private ProcessDefinitionEngineDto deploySimpleGatewayProcessDefinition() throws Exception {
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
       .startEvent("startEvent")
       .exclusiveGateway("splittingGateway")
@@ -359,7 +374,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
           .camundaExpression("${true}")
         .connectTo("mergeGateway")
       .done();
-    String processDefinitionId = engineRule.deployProcessAndGetId(modelInstance);
+    ProcessDefinitionEngineDto processDefinitionId = engineRule.deployProcessAndGetProcessDefinition(modelInstance);
     return processDefinitionId;
   }
 

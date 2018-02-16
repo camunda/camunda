@@ -9,6 +9,24 @@ public class ProcessInstanceEngineDto {
   private boolean ended;
   private boolean suspended;
   private String tenantId;
+  private String processDefinitionKey;
+  private String processDefinitionVersion;
+
+  public String getProcessDefinitionKey() {
+    return processDefinitionKey;
+  }
+
+  public void setProcessDefinitionKey(String processDefinitionKey) {
+    this.processDefinitionKey = processDefinitionKey;
+  }
+
+  public String getProcessDefinitionVersion() {
+    return processDefinitionVersion;
+  }
+
+  public void setProcessDefinitionVersion(String processDefinitionVersion) {
+    this.processDefinitionVersion = processDefinitionVersion;
+  }
 
   public String getId() {
     return id;

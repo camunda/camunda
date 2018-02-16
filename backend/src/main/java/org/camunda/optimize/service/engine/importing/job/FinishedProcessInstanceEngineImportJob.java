@@ -43,6 +43,7 @@ public class FinishedProcessInstanceEngineImportJob
   protected ProcessInstanceDto mapEngineEntityToOptimizeEntity(HistoricProcessInstanceDto engineEntity) {
     ProcessInstanceDto processInstanceDto = new ProcessInstanceDto();
     processInstanceDto.setProcessDefinitionKey(engineEntity.getProcessDefinitionKey());
+    processInstanceDto.setProcessDefinitionVersion(engineEntity.getProcessDefinitionVersionAsString());
     processInstanceDto.setProcessDefinitionId(engineEntity.getProcessDefinitionId());
     processInstanceDto.setProcessInstanceId(engineEntity.getId());
     OffsetDateTime startDate = engineEntity.getStartTime();

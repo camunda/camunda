@@ -55,12 +55,12 @@ public abstract class AbstractRollingDateFilterIT {
 
   protected void assertResults(
       ProcessInstanceEngineDto processInstance,
-      String processDefinitionId,
       RawDataReportResultDto result,
       int expectedPiCount
   ) {
     ReportDataDto resultDataDto = result.getData();
-    assertThat(resultDataDto.getProcessDefinitionId(), is(processDefinitionId));
+    assertThat(resultDataDto.getProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
+    assertThat(resultDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
     assertThat(resultDataDto.getView(), is(notNullValue()));
     assertThat(resultDataDto.getView().getOperation(), is(VIEW_RAW_DATA_OPERATION));
     assertThat(result.getResult(), is(notNullValue()));
@@ -72,8 +72,13 @@ public abstract class AbstractRollingDateFilterIT {
     }
   }
 
-  protected RawDataReportResultDto createAndEvaluateReport(String processDefinitionId, String unit, boolean newToken) {
-    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
+  protected RawDataReportResultDto createAndEvaluateReport(
+      String processDefinitionKey,
+      String processDefinitionVersion,
+      String unit,
+      boolean newToken
+  ) {
+    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
     List<FilterDto> rollingDateFilter = DateUtilHelper.createRollingDateFilter(1L, unit);
     reportData.setFilter(rollingDateFilter);
     return evaluateReport(reportData, newToken);

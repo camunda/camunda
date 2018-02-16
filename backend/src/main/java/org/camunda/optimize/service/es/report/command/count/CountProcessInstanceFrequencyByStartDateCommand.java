@@ -32,7 +32,11 @@ public class CountProcessInstanceFrequencyByStartDateCommand extends ReportComma
     logger.debug("Evaluating count process instance frequency grouped by start date report " +
       "for process definition id [{}]", reportData.getProcessDefinitionId());
 
-    BoolQueryBuilder query = setupBaseQuery(reportData.getProcessDefinitionId());
+    BoolQueryBuilder query = setupBaseQuery(
+        reportData.getProcessDefinitionId(),
+        reportData.getProcessDefinitionKey(),
+        reportData.getProcessDefinitionVersion()
+    );
     queryFilterEnhancer.addFilterToQuery(query, reportData.getFilter());
 
     SearchResponse response = esclient
@@ -72,10 +76,4 @@ public class CountProcessInstanceFrequencyByStartDateCommand extends ReportComma
     return result;
   }
 
-  private BoolQueryBuilder setupBaseQuery(String processDefinitionId) {
-    BoolQueryBuilder query;
-    query = boolQuery()
-      .must(termQuery("processDefinitionId", processDefinitionId));
-    return query;
-  }
 }

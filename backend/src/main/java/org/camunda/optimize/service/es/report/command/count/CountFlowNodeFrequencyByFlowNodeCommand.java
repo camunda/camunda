@@ -27,12 +27,16 @@ public class CountFlowNodeFrequencyByFlowNodeCommand extends ReportCommand {
   static final String MI_BODY = "multiInstanceBody";
 
   @Override
-  protected ReportResultDto evaluate() throws IOException {
+  protected ReportResultDto evaluate() {
 
     logger.debug("Evaluating count flow node frequency grouped by flow node report " +
       "for process definition id [{}]", reportData.getProcessDefinitionId());
 
-    BoolQueryBuilder query = setupBaseQuery(reportData.getProcessDefinitionId());
+    BoolQueryBuilder query = setupBaseQuery(
+        reportData.getProcessDefinitionId(),
+        reportData.getProcessDefinitionKey(),
+        reportData.getProcessDefinitionVersion()
+    );
     queryFilterEnhancer.addFilterToQuery(query, reportData.getFilter());
 
     SearchResponse response = esclient
@@ -82,10 +86,4 @@ public class CountFlowNodeFrequencyByFlowNodeCommand extends ReportCommand {
     return result;
   }
 
-  private BoolQueryBuilder setupBaseQuery(String processDefinitionId) {
-    BoolQueryBuilder query;
-    query = boolQuery()
-      .must(termQuery("processDefinitionId", processDefinitionId));
-    return query;
-  }
 }

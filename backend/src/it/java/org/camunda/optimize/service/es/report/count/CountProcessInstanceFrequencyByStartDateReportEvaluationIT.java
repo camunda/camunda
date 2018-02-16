@@ -2,11 +2,10 @@ package org.camunda.optimize.service.es.report.count;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.report.GroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.ViewDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.DateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
@@ -38,7 +37,6 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.time.DayOfWeek;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -86,13 +84,15 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    String processDefinitionId = processInstanceDto.getDefinitionId();
-    ReportDataDto reportData = ReportDataHelper.createPICountFrequencyGroupByStartDate(processDefinitionId, DATE_UNIT_DAY);
+    ReportDataDto reportData = ReportDataHelper.createPICountFrequencyGroupByStartDate(
+        processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion(), DATE_UNIT_DAY
+    );
     MapReportResultDto result = evaluateReport(reportData);
 
     // then
     ReportDataDto resultReportDataDto = result.getData();
-    assertThat(resultReportDataDto.getProcessDefinitionId(), is(processDefinitionId));
+    assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
+    assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
     assertThat(resultReportDataDto.getView().getOperation(), is(VIEW_COUNT_OPERATION));
     assertThat(resultReportDataDto.getView().getEntity(), is(VIEW_PROCESS_INSTANCE_ENTITY));
@@ -107,9 +107,11 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     assertThat(resultMap.containsValue(1L), is(true));
   }
 
-  private String createAndStoreDefaultReportDefinition(String processDefinitionId, String dateInterval) {
+  private String createAndStoreDefaultReportDefinition(String processDefinitionKey, String processDefinitionVersion, String dateInterval) {
     String id = createNewReport();
-    ReportDataDto reportData = ReportDataHelper.createPICountFrequencyGroupByStartDate(processDefinitionId, dateInterval);
+    ReportDataDto reportData = ReportDataHelper.createPICountFrequencyGroupByStartDate(
+        processDefinitionKey, processDefinitionVersion, dateInterval
+    );
     ReportDefinitionDto report = new ReportDefinitionDto();
     report.setData(reportData);
     report.setId(id);
@@ -163,17 +165,19 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
   public void simpleReportEvaluationById() throws Exception {
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleServiceTaskProcess();
-    String processDefinitionId = processInstance.getDefinitionId();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-    String reportId = createAndStoreDefaultReportDefinition(processDefinitionId, DATE_UNIT_DAY);
+    String reportId = createAndStoreDefaultReportDefinition(
+        processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion(), DATE_UNIT_DAY
+    );
 
     // when
     MapReportResultDto result = evaluateReportById(reportId);
 
     // then
     ReportDataDto resultReportDataDto = result.getData();
-    assertThat(resultReportDataDto.getProcessDefinitionId(), is(processDefinitionId));
+    assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
+    assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
     assertThat(resultReportDataDto.getView().getOperation(), is(VIEW_COUNT_OPERATION));
     assertThat(resultReportDataDto.getView().getEntity(), is(VIEW_PROCESS_INSTANCE_ENTITY));
@@ -201,8 +205,9 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    String processDefinitionId = processInstanceDto.getDefinitionId();
-    ReportDataDto reportData = ReportDataHelper.createPICountFrequencyGroupByStartDate(processDefinitionId, DATE_UNIT_DAY);
+    ReportDataDto reportData = ReportDataHelper.createPICountFrequencyGroupByStartDate(
+        processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion(), DATE_UNIT_DAY
+    );
     MapReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -244,8 +249,9 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    String processDefinitionId = processInstanceDto.getDefinitionId();
-    ReportDataDto reportData = ReportDataHelper.createPICountFrequencyGroupByStartDate(processDefinitionId, DATE_UNIT_DAY);
+    ReportDataDto reportData = ReportDataHelper.createPICountFrequencyGroupByStartDate(
+        processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion(), DATE_UNIT_DAY
+    );
     MapReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -272,8 +278,9 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    String processDefinitionId = processInstanceDto.getDefinitionId();
-    ReportDataDto reportData = ReportDataHelper.createPICountFrequencyGroupByStartDate(processDefinitionId, DATE_UNIT_DAY);
+    ReportDataDto reportData = ReportDataHelper.createPICountFrequencyGroupByStartDate(
+        processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion(), DATE_UNIT_DAY
+    );
     MapReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -301,8 +308,10 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    String processDefinitionId = processInstanceDtos.get(0).getDefinitionId();
-    ReportDataDto reportData = ReportDataHelper.createPICountFrequencyGroupByStartDate(processDefinitionId, DATE_UNIT_HOUR);
+    ProcessInstanceEngineDto processInstanceEngineDto = processInstanceDtos.get(0);
+    ReportDataDto reportData = ReportDataHelper.createPICountFrequencyGroupByStartDate(
+        processInstanceEngineDto.getProcessDefinitionKey(), processInstanceEngineDto.getProcessDefinitionVersion(), DATE_UNIT_HOUR
+    );
     MapReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -360,8 +369,10 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    String processDefinitionId = processInstanceDtos.get(0).getDefinitionId();
-    ReportDataDto reportData = ReportDataHelper.createPICountFrequencyGroupByStartDate(processDefinitionId, DATE_UNIT_DAY);
+    ProcessInstanceEngineDto processInstanceEngineDto = processInstanceDtos.get(0);
+    ReportDataDto reportData = ReportDataHelper.createPICountFrequencyGroupByStartDate(
+        processInstanceEngineDto.getProcessDefinitionKey(), processInstanceEngineDto.getProcessDefinitionVersion(), DATE_UNIT_DAY
+    );
     MapReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -380,8 +391,10 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    String processDefinitionId = processInstanceDtos.get(0).getDefinitionId();
-    ReportDataDto reportData = ReportDataHelper.createPICountFrequencyGroupByStartDate(processDefinitionId, DATE_UNIT_WEEK);
+    ProcessInstanceEngineDto processInstanceEngineDto = processInstanceDtos.get(0);
+    ReportDataDto reportData = ReportDataHelper.createPICountFrequencyGroupByStartDate(
+        processInstanceEngineDto.getProcessDefinitionKey(),processInstanceEngineDto.getProcessDefinitionVersion(), DATE_UNIT_WEEK
+    );
     MapReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -400,8 +413,10 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    String processDefinitionId = processInstanceDtos.get(0).getDefinitionId();
-    ReportDataDto reportData = ReportDataHelper.createPICountFrequencyGroupByStartDate(processDefinitionId, DATE_UNIT_MONTH);
+    ProcessInstanceEngineDto processInstanceEngineDto = processInstanceDtos.get(0);
+    ReportDataDto reportData = ReportDataHelper.createPICountFrequencyGroupByStartDate(
+        processInstanceEngineDto.getProcessDefinitionKey(), processInstanceEngineDto.getProcessDefinitionVersion(), DATE_UNIT_MONTH
+    );
     MapReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -420,8 +435,10 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    String processDefinitionId = processInstanceDtos.get(0).getDefinitionId();
-    ReportDataDto reportData = ReportDataHelper.createPICountFrequencyGroupByStartDate(processDefinitionId, DATE_UNIT_YEAR);
+    ProcessInstanceEngineDto processInstanceEngineDto = processInstanceDtos.get(0);
+    ReportDataDto reportData = ReportDataHelper.createPICountFrequencyGroupByStartDate(
+        processInstanceEngineDto.getProcessDefinitionKey(), processInstanceEngineDto.getProcessDefinitionVersion(), DATE_UNIT_YEAR
+    );
     MapReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -439,8 +456,9 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    String processDefinitionId = processInstanceDto.getDefinitionId();
-    ReportDataDto reportData = ReportDataHelper.createPICountFrequencyGroupByStartDate(processDefinitionId, DATE_UNIT_DAY);
+    ReportDataDto reportData = ReportDataHelper.createPICountFrequencyGroupByStartDate(
+        processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion(), DATE_UNIT_DAY
+    );
     MapReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -461,7 +479,9 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = ReportDataHelper.createPICountFrequencyGroupByStartDate(processDefinitionId, DATE_UNIT_DAY);
+    ReportDataDto reportData = ReportDataHelper.createPICountFrequencyGroupByStartDate(
+        processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion(), DATE_UNIT_DAY
+    );
     reportData.setFilter(createDateFilter("<", "start_date", past));
     MapReportResultDto result = evaluateReport(reportData);
 
@@ -470,7 +490,8 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     assertThat(result.getResult().size(), is(0));
 
     // when
-    reportData = ReportDataHelper.createPICountFrequencyGroupByStartDate(processDefinitionId, DATE_UNIT_DAY);
+    reportData = ReportDataHelper.createPICountFrequencyGroupByStartDate(
+        processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion(), DATE_UNIT_DAY);
     reportData.setFilter(createDateFilter(">=", "start_date", past));
     result = evaluateReport(reportData);
 
@@ -503,7 +524,9 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = ReportDataHelper.createPICountFrequencyGroupByStartDate(processDefinitionId, DATE_UNIT_DAY);
+    ReportDataDto reportData = ReportDataHelper.createPICountFrequencyGroupByStartDate(
+        processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion(), DATE_UNIT_DAY
+    );
     reportData.setFilter(createVariableFilter());
     MapReportResultDto result = evaluateReport(reportData);
 
@@ -529,15 +552,17 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     // given
     Map<String, Object> variables = new HashMap<>();
     variables.put("goToTask1", true);
-    String processDefinitionId = deploySimpleGatewayProcessDefinition();
-    engineRule.startProcessInstance(processDefinitionId, variables);
+    ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition();
+    engineRule.startProcessInstance(processDefinition.getId(), variables);
     variables.put("goToTask1", false);
-    engineRule.startProcessInstance(processDefinitionId, variables);
+    engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = ReportDataHelper.createPICountFrequencyGroupByStartDate(processDefinitionId, DATE_UNIT_DAY);
+    ReportDataDto reportData = ReportDataHelper.createPICountFrequencyGroupByStartDate(
+        processDefinition.getKey(), String.valueOf(processDefinition.getVersion()), DATE_UNIT_DAY
+    );
     List<ExecutedFlowNodeFilterDto> flowNodeFilter = ExecutedFlowNodeFilterBuilder.construct()
           .id("task1")
           .build();
@@ -580,13 +605,18 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
   }
 
   private List<ProcessInstanceEngineDto> deployAndStartSimpleProcesses(int number) throws IOException {
-    String processDefinitionId = deploySimpleServiceTaskProcess();
+    ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcess();
     return IntStream.range(0, number)
-      .mapToObj( i -> engineRule.startProcessInstance(processDefinitionId))
+      .mapToObj( i -> {
+        ProcessInstanceEngineDto processInstanceEngineDto = engineRule.startProcessInstance(processDefinition.getId());
+        processInstanceEngineDto.setProcessDefinitionKey(processDefinition.getKey());
+        processInstanceEngineDto.setProcessDefinitionVersion(String.valueOf(processDefinition.getVersion()));
+        return processInstanceEngineDto;
+      })
       .collect(Collectors.toList());
   }
 
-  private String deploySimpleServiceTaskProcess() throws IOException {
+  private ProcessDefinitionEngineDto deploySimpleServiceTaskProcess() throws IOException {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .name("aProcessName")
       .startEvent()
@@ -594,7 +624,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
       .camundaExpression("${true}")
       .endEvent()
       .done();
-    return engineRule.deployProcessAndGetId(processModel);
+    return engineRule.deployProcessAndGetProcessDefinition(processModel);
   }
 
   private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcessWithVariables(Map<String, Object> variables) {
@@ -613,7 +643,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     return engineRule.deployAndStartProcessWithVariables(processModel, variables);
   }
 
-  private String deploySimpleGatewayProcessDefinition() throws Exception {
+  private ProcessDefinitionEngineDto deploySimpleGatewayProcessDefinition() throws Exception {
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
       .startEvent("startEvent")
       .exclusiveGateway("splittingGateway")
@@ -629,8 +659,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
           .camundaExpression("${true}")
         .connectTo("mergeGateway")
       .done();
-    String processDefinitionId = engineRule.deployProcessAndGetId(modelInstance);
-    return processDefinitionId;
+    return engineRule.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
   private MapReportResultDto evaluateReport(ReportDataDto reportData) {

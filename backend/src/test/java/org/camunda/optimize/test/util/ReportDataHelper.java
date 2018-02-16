@@ -33,6 +33,19 @@ public class ReportDataHelper {
     );
   }
 
+  public static ReportDataDto createReportDataViewRawAsTable(
+      String processDefinitionKey,
+      String processDefinitionVersion
+  ) {
+    return createReportDataViewRaw(
+        processDefinitionKey,
+        processDefinitionVersion,
+        TABLE_VISUALIZATION,
+        new ViewDto(VIEW_RAW_DATA_OPERATION),
+        null
+    );
+  }
+
   public static ReportDataDto createAvgPIDurationGroupByStartDateReport(String processDefinitionId, String dateInterval) {
 
     ViewDto view = createAvgPIDurationView();
@@ -49,14 +62,54 @@ public class ReportDataHelper {
     return reportData;
   }
 
-  public static ReportDataDto createPICountFrequencyGroupByStartDate(String processDefinitionId, String dateInterval) {
+  public static ReportDataDto createAvgPIDurationGroupByStartDateReport(
+      String processDefinitionKey,
+      String processDefinitionVersion,
+      String dateInterval
+  ) {
 
+    ViewDto view = createAvgPIDurationView();
+    GroupByDto groupByDto = createGroupByStartDateDto(dateInterval);
+
+    ReportDataDto reportData = createReportDataViewRaw(
+        processDefinitionKey,
+        processDefinitionVersion,
+        TABLE_VISUALIZATION,
+        view,
+        groupByDto
+    );
+
+    return reportData;
+  }
+
+  public static ReportDataDto createPICountFrequencyGroupByStartDate(String processDefinitionId, String dateInterval) {
 
     ViewDto view = createCountPiFrequencyView();
     GroupByDto groupByDto = createGroupByStartDateDto(dateInterval);
 
     ReportDataDto reportData = createReportDataViewRaw(
         processDefinitionId,
+        TABLE_VISUALIZATION,
+        view,
+        groupByDto
+    );
+
+    reportData.setGroupBy(groupByDto);
+    return reportData;
+  }
+
+  public static ReportDataDto createPICountFrequencyGroupByStartDate(
+      String processDefinitionKey,
+      String processDefinitionVersion,
+      String dateInterval
+  ) {
+
+    ViewDto view = createCountPiFrequencyView();
+    GroupByDto groupByDto = createGroupByStartDateDto(dateInterval);
+
+    ReportDataDto reportData = createReportDataViewRaw(
+        processDefinitionKey,
+        processDefinitionVersion,
         TABLE_VISUALIZATION,
         view,
         groupByDto
@@ -87,6 +140,22 @@ public class ReportDataHelper {
     return reportData;
   }
 
+  public static ReportDataDto createReportDataViewRaw(
+      String processDefinitionKey,
+      String processDefinitionVersion,
+      String visualization,
+      ViewDto viewDto,
+      GroupByDto groupByDto
+  ) {
+    ReportDataDto reportData = new ReportDataDto();
+    reportData.setProcessDefinitionKey(processDefinitionKey);
+    reportData.setProcessDefinitionVersion(processDefinitionVersion);
+    reportData.setVisualization(visualization);
+    reportData.setView(viewDto);
+    reportData.setGroupBy(groupByDto);
+    return reportData;
+  }
+
   public static ReportDataDto createCountFlowNodeFrequencyGroupByFlowNode (String processDefinitionId) {
 
     ViewDto view = new ViewDto();
@@ -99,6 +168,30 @@ public class ReportDataHelper {
 
     ReportDataDto reportData = createReportDataViewRaw(
         processDefinitionId,
+        HEAT_VISUALIZATION,
+        view,
+        groupByDto
+    );
+
+    return reportData;
+  }
+
+  public static ReportDataDto createCountFlowNodeFrequencyGroupByFlowNode(
+      String processDefinitionKey,
+      String processDefinitionVersion
+  ) {
+
+    ViewDto view = new ViewDto();
+    view.setOperation(VIEW_COUNT_OPERATION);
+    view.setEntity(VIEW_FLOW_NODE_ENTITY);
+    view.setProperty(VIEW_FREQUENCY_PROPERTY);
+
+
+    GroupByDto groupByDto = createGroupByFlowNode();
+
+    ReportDataDto reportData = createReportDataViewRaw(
+        processDefinitionKey,
+        processDefinitionVersion,
         HEAT_VISUALIZATION,
         view,
         groupByDto
@@ -122,6 +215,25 @@ public class ReportDataHelper {
     return reportData;
   }
 
+  public static ReportDataDto createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(
+      String processDefinitionKey,
+      String processDefinitionVersion
+  ) {
+    ViewDto view = createAvgFlowNodeDurationView();
+
+    GroupByDto groupByDto = createGroupByFlowNode();
+
+    ReportDataDto reportData = createReportDataViewRaw(
+        processDefinitionKey,
+        processDefinitionVersion,
+        HEAT_VISUALIZATION,
+        view,
+        groupByDto
+    );
+
+    return reportData;
+  }
+
   private static GroupByDto createGroupByFlowNode() {
     GroupByDto groupByDto = new GroupByDto();
     groupByDto.setType(GROUP_BY_FLOW_NODE_TYPE);
@@ -132,11 +244,29 @@ public class ReportDataHelper {
   public static ReportDataDto createAvgPiDurationHeatMapGroupByNone(String processDefinitionId) {
 
     ViewDto view = createAvgPIDurationView();
-
     GroupByDto groupByDto = createGroupByNone();
 
     ReportDataDto reportData = createReportDataViewRaw(
         processDefinitionId,
+        HEAT_VISUALIZATION,
+        view,
+        groupByDto
+    );
+
+    return reportData;
+  }
+
+  public static ReportDataDto createAvgPiDurationHeatMapGroupByNone(
+      String processDefinitionKey,
+      String processDefinitionVersion
+  ) {
+
+    ViewDto view = createAvgPIDurationView();
+    GroupByDto groupByDto = createGroupByNone();
+
+    ReportDataDto reportData = createReportDataViewRaw(
+        processDefinitionKey,
+        processDefinitionVersion,
         HEAT_VISUALIZATION,
         view,
         groupByDto
@@ -166,6 +296,24 @@ public class ReportDataHelper {
     return reportData;
   }
 
+  public static ReportDataDto createPiFrequencyCountGroupedByNone(
+      String processDefinitionKey,
+      String processDefinitionVersion
+  ) {
+    ViewDto view = createCountPiFrequencyView();
+    GroupByDto groupByDto = createGroupByNone();
+
+    ReportDataDto reportData = createReportDataViewRaw(
+        processDefinitionKey,
+        processDefinitionVersion,
+        HEAT_VISUALIZATION,
+        view,
+        groupByDto
+    );
+
+    return reportData;
+  }
+
   public static ReportDataDto createPiFrequencyCountGroupedByNoneAsNumber(String processDefinitionId) {
     ViewDto view = createCountPiFrequencyView();
 
@@ -183,14 +331,34 @@ public class ReportDataHelper {
     return reportData;
   }
 
-  public static ReportDataDto createAvgPiDurationAsNumberGroupByNone(String processDefinitionId) {
+  public static ReportDataDto createAvgPiDurationAsNumberGroupByNone(
+      String processDefinitionId
+  ) {
 
     ViewDto view = createAvgPIDurationView();
-
     GroupByDto groupByDto = createGroupByNone();
 
     ReportDataDto reportData = createReportDataViewRaw(
         processDefinitionId,
+        SINGLE_NUMBER_VISUALIZATION,
+        view,
+        groupByDto
+    );
+
+    return reportData;
+  }
+
+  public static ReportDataDto createAvgPiDurationAsNumberGroupByNone(
+      String processDefinitionKey,
+      String processDefinitionVersion
+  ) {
+
+    ViewDto view = createAvgPIDurationView();
+    GroupByDto groupByDto = createGroupByNone();
+
+    ReportDataDto reportData = createReportDataViewRaw(
+        processDefinitionKey,
+        processDefinitionVersion,
         SINGLE_NUMBER_VISUALIZATION,
         view,
         groupByDto

@@ -26,15 +26,27 @@ public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
-    RawDataReportResultDto result = createAndEvaluateReport(processDefinitionId, "days",  false);
-    assertResults(processInstance, processDefinitionId, result, 1);
+    RawDataReportResultDto result = createAndEvaluateReport(
+        processInstance.getProcessDefinitionKey(),
+        processInstance.getProcessDefinitionVersion(),
+        "days",
+        false
+    );
+
+    assertResults(processInstance, result, 1);
 
     //when
     LocalDateUtil.setCurrentTime(OffsetDateTime.now().plusDays(2));
 
     //token hast to be refreshed, as the old one expired already after moving the date
-    result = createAndEvaluateReport(processDefinitionId, "days",  true);
-    assertResults(processInstance, processDefinitionId, result, 0);
+    result = createAndEvaluateReport(
+        processInstance.getProcessDefinitionKey(),
+        processInstance.getProcessDefinitionVersion(),
+        "days",
+        true
+    );
+
+    assertResults(processInstance, result, 0);
 
     embeddedOptimizeRule.reloadConfiguration();
     embeddedOptimizeRule.getNewAuthenticationToken();

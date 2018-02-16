@@ -2,6 +2,7 @@ package org.camunda.optimize.service.es.report.avg;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.heatmap.HeatMapResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.DateFilterDto;
@@ -66,19 +67,21 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
   public void reportEvaluationForOneProcess() throws Exception {
 
     // given
-    String processDefinitionId = deploySimpleServiceTaskProcessDefinition();
-    ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinitionId);
+    ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessDefinition();
+    ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 20L);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(
+        processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
     MapReportResultDto result = evaluateReport(reportData);
 
     // then
     ReportDataDto resultReportDataDto = result.getData();
-    assertThat(resultReportDataDto.getProcessDefinitionId(), is(processDefinitionId));
+    assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processDefinition.getKey()));
+    assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(String.valueOf(processDefinition.getVersion())));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
     assertThat(resultReportDataDto.getView().getOperation(), is(VIEW_AVERAGE_OPERATION));
     assertThat(resultReportDataDto.getView().getEntity(), is(VIEW_FLOW_NODE_ENTITY));
@@ -94,16 +97,17 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
   @Test
   public void reportEvaluationForSeveralProcesses() throws Exception {
     // given
-    String processDefinitionId = deploySimpleServiceTaskProcessDefinition();
-    ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinitionId);
+    ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessDefinition();
+    ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 10L);
-    processInstanceDto = engineRule.startProcessInstance(processDefinitionId);
+    processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 30L);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(
+        processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
     MapReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -148,23 +152,25 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
   @Test
   public void otherProcessDefinitionsDoNotInfluenceResult() throws Exception {
     // given
-    String processDefinitionId = deploySimpleServiceTaskProcessDefinition();
-    String processDefinitionId2 = deploySimpleServiceTaskProcessDefinition();
-    ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinitionId);
+    ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessDefinition();
+    ProcessDefinitionEngineDto processDefinition2 = deploySimpleServiceTaskProcessDefinition();
+    ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 40L);
-    processInstanceDto = engineRule.startProcessInstance(processDefinitionId);
+    processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 40L);
-    processInstanceDto = engineRule.startProcessInstance(processDefinitionId2);
+    processInstanceDto = engineRule.startProcessInstance(processDefinition2.getId());
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 20L);
-    processInstanceDto = engineRule.startProcessInstance(processDefinitionId2);
+    processInstanceDto = engineRule.startProcessInstance(processDefinition2.getId());
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 20L);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData1 = ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinitionId);
+    ReportDataDto reportData1 = ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(
+        processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
     MapReportResultDto result1 = evaluateReport(reportData1);
-    ReportDataDto reportData2 = ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinitionId2);
+    ReportDataDto reportData2 = ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(
+        processDefinition2.getKey(), String.valueOf(processDefinition2.getVersion()));
     MapReportResultDto result2 = evaluateReport(reportData2);
 
     // then
@@ -179,18 +185,19 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
   @Test
   public void evaluateReportWithIrrationalAverageNumberAsResult() throws Exception {
     // given
-    String processDefinitionId = deploySimpleServiceTaskProcessDefinition();
-    ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinitionId);
+    ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessDefinition();
+    ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 100L);
-    processInstanceDto = engineRule.startProcessInstance(processDefinitionId);
+    processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 300L);
-    processInstanceDto = engineRule.startProcessInstance(processDefinitionId);
+    processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 600L);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(
+        processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
     MapReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -252,18 +259,19 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
   @Test
   public void evaluateReportForMoreThenTenEvents() throws Exception {
     // given
-    String processDefinitionId = deploySimpleServiceTaskProcessDefinition();
+    ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessDefinition();
 
     ProcessInstanceEngineDto processInstanceDto;
     for (int i = 0; i < 11; i++) {
-      processInstanceDto = engineRule.startProcessInstance(processDefinitionId);
+      processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
       engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 10L);
     }
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(
+        processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
     MapReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -275,15 +283,16 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
   @Test
   public void dateFilterInReport() throws Exception {
     // given
-    String processDefinitionId = deploySimpleServiceTaskProcessDefinition();
-    ProcessInstanceEngineDto processInstance = engineRule.startProcessInstance(processDefinitionId);
+    ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessDefinition();
+    ProcessInstanceEngineDto processInstance = engineRule.startProcessInstance(processDefinition.getId());
     engineDatabaseRule.changeActivityDuration(processInstance.getId(), 10L);
     OffsetDateTime past = engineRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(
+        processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
     reportData.setFilter(createDateFilter("<", "start_date", past));
     MapReportResultDto result = evaluateReport(reportData);
 
@@ -293,7 +302,8 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
     assertThat(flowNodeIdToExecutionFrequency.size(), is(0));
 
     // when
-    reportData = ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinitionId);
+    reportData = ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(
+        processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
     reportData.setFilter(createDateFilter(">=", "start_date", past));
     result = evaluateReport(reportData);
 
@@ -320,15 +330,16 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
     // given
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", true);
-    String processDefinitionId = deploySimpleServiceTaskProcessDefinition();
-    ProcessInstanceEngineDto processInstance = engineRule.startProcessInstance(processDefinitionId, variables);
+    ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessDefinition();
+    ProcessInstanceEngineDto processInstance = engineRule.startProcessInstance(processDefinition.getId(), variables);
     engineDatabaseRule.changeActivityDuration(processInstance.getId(), 10L);
-    engineRule.startProcessInstance(processDefinitionId);
+    engineRule.startProcessInstance(processDefinition.getId());
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(
+        processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
     reportData.setFilter(createVariableFilter());
     MapReportResultDto result = evaluateReport(reportData);
 
@@ -356,16 +367,17 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
     // given
     Map<String, Object> variables = new HashMap<>();
     variables.put("goToTask1", true);
-    String processDefinitionId = deploySimpleGatewayProcessDefinition();
-    ProcessInstanceEngineDto processInstance = engineRule.startProcessInstance(processDefinitionId, variables);
+    ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition();
+    ProcessInstanceEngineDto processInstance = engineRule.startProcessInstance(processDefinition.getId(), variables);
     engineDatabaseRule.changeActivityDuration(processInstance.getId(), 10L);
     variables.put("goToTask1", false);
-    engineRule.startProcessInstance(processDefinitionId, variables);
+    engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(
+        processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
     List<ExecutedFlowNodeFilterDto> flowNodeFilter = ExecutedFlowNodeFilterBuilder.construct()
           .id("task1")
           .build();
@@ -419,7 +431,7 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
     assertThat(response.getStatus(), is(500));
   }
 
-  private String deploySimpleGatewayProcessDefinition() throws Exception {
+  private ProcessDefinitionEngineDto deploySimpleGatewayProcessDefinition() throws Exception {
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
       .startEvent("startEvent")
       .exclusiveGateway("splittingGateway")
@@ -435,19 +447,17 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
           .camundaExpression("${true}")
         .connectTo("mergeGateway")
       .done();
-    String processDefinitionId = engineRule.deployProcessAndGetId(modelInstance);
-    return processDefinitionId;
+    return engineRule.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
-  private String deploySimpleServiceTaskProcessDefinition() throws IOException {
+  private ProcessDefinitionEngineDto deploySimpleServiceTaskProcessDefinition() throws IOException {
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("aProcess" + System.currentTimeMillis())
       .startEvent(START_EVENT)
       .serviceTask(SERVICE_TASK_ID)
         .camundaExpression("${true}")
       .endEvent(END_EVENT)
       .done();
-    String processDefinitionId = engineRule.deployProcessAndGetId(modelInstance);
-    return processDefinitionId;
+    return engineRule.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
   private void assertResults(HeatMapResponseDto resultMap, int activityCount, long piCount) {

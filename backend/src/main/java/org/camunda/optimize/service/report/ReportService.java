@@ -13,6 +13,7 @@ import org.camunda.optimize.service.es.writer.ReportWriter;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.security.SharingService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
+import org.camunda.optimize.service.util.ValidationHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -55,6 +56,7 @@ public class ReportService {
     updatedReport.setId(reportId);
     updatedReport.setLastModifier(userId);
     updatedReport.setLastModified(LocalDateUtil.getCurrentDateTime());
+    ValidationHelper.validateDefinition(updatedReport.getData());
     reportWriter.updateReport(updatedReport);
     alertService.deleteAlertsIfNeeded(reportId, updatedReport.getData());
   }

@@ -17,6 +17,7 @@ import java.util.List;
 public class ProcessInstanceDto implements OptimizeDto {
 
   protected String processDefinitionKey;
+  protected String processDefinitionVersion;
   protected String processDefinitionId;
   protected String processInstanceId;
   protected OffsetDateTime startDate;
@@ -68,6 +69,14 @@ public class ProcessInstanceDto implements OptimizeDto {
     variables.addAll(dateVariables);
     variables.addAll(booleanVariables);
     return variables;
+  }
+
+  public String getProcessDefinitionVersion() {
+    return processDefinitionVersion;
+  }
+
+  public void setProcessDefinitionVersion(String processDefinitionVersion) {
+    this.processDefinitionVersion = processDefinitionVersion;
   }
 
   public String getProcessDefinitionKey() {

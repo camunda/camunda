@@ -16,12 +16,16 @@ public class CountTotalProcessInstanceFrequencyCommand extends ReportCommand {
 
 
     @Override
-  protected ReportResultDto evaluate() throws IOException, OptimizeException {
+  protected ReportResultDto evaluate() {
 
     logger.debug("Evaluating count process instance frequency grouped by none report " +
       "for process definition id [{}]", reportData.getProcessDefinitionId());
 
-    BoolQueryBuilder query = setupBaseQuery(reportData.getProcessDefinitionId());
+    BoolQueryBuilder query = setupBaseQuery(
+        reportData.getProcessDefinitionId(),
+        reportData.getProcessDefinitionKey(),
+        reportData.getProcessDefinitionVersion()
+    );
     queryFilterEnhancer.addFilterToQuery(query, reportData.getFilter());
 
     SearchResponse response = esclient
@@ -37,10 +41,4 @@ public class CountTotalProcessInstanceFrequencyCommand extends ReportCommand {
     return numberResult;
   }
 
-  private BoolQueryBuilder setupBaseQuery(String processDefinitionId) {
-    BoolQueryBuilder query;
-    query = boolQuery()
-      .must(termQuery("processDefinitionId", processDefinitionId));
-    return query;
-  }
 }

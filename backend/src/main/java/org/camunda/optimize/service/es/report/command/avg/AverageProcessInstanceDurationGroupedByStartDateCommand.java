@@ -31,12 +31,17 @@ public class AverageProcessInstanceDurationGroupedByStartDateCommand extends Rep
   private static final String DATE_HISTOGRAM_AGGREGATION = "dateIntervalGrouping";
 
   @Override
-  protected ReportResultDto evaluate() throws IOException, OptimizeException {
+  protected ReportResultDto evaluate() throws OptimizeException {
 
     logger.debug("Evaluating average process instance duration grouped by start date report " +
       "for process definition id [{}]", reportData.getProcessDefinitionId());
 
-    BoolQueryBuilder query = setupBaseQuery(reportData.getProcessDefinitionId());
+    BoolQueryBuilder query = setupBaseQuery(
+        reportData.getProcessDefinitionId(),
+        reportData.getProcessDefinitionKey(),
+        reportData.getProcessDefinitionVersion()
+    );
+
     queryFilterEnhancer.addFilterToQuery(query, reportData.getFilter());
 
     SearchResponse response = esclient
@@ -84,10 +89,4 @@ public class AverageProcessInstanceDurationGroupedByStartDateCommand extends Rep
       );
   }
 
-  private BoolQueryBuilder setupBaseQuery(String processDefinitionId) {
-    BoolQueryBuilder query;
-    query = boolQuery()
-      .must(termQuery("processDefinitionId", processDefinitionId));
-    return query;
-  }
 }

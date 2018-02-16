@@ -3,6 +3,7 @@ package org.camunda.optimize.service.util;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.query.heatmap.HeatMapQueryDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ViewDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.DateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.ExecutedFlowNodeFilterDto;
@@ -64,13 +65,26 @@ public class ValidationHelper {
     }
   }
 
+  public static void validateDefinition(ReportDataDto data) {
+    boolean versionAndKeySet = data != null && data.getProcessDefinitionVersion() != null &&
+        data.getProcessDefinitionKey() != null;
+
+    boolean idSet = data != null && data.getProcessDefinitionId() != null;
+
+    boolean valid = versionAndKeySet || idSet;
+    if (!valid) {
+      throw new OptimizeValidationException("either process definition ID or Key + Version have to be provided");
+    }
+  }
+
   public static void validate(ReportDataDto dataDto) {
     ensureNotNull("report data", dataDto);
     ViewDto viewDto = dataDto.getView();
     ensureNotNull("view", viewDto);
     ensureNotEmpty("view operation", viewDto.getOperation());
     ensureNotEmpty("visualization", dataDto.getVisualization());
-    ValidationHelper.ensureNotEmpty("ProcessDefinitionId", dataDto.getProcessDefinitionId());
+    validateDefinition(dataDto);
+
     if (dataDto.getFilter() != null) {
       for (FilterDto filterDto : dataDto.getFilter()) {
         if (filterDto instanceof DateFilterDto) {

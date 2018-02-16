@@ -11,6 +11,7 @@ public class HistoricProcessInstanceDto implements EngineDto {
   protected String businessKey;
   protected String processDefinitionId;
   protected String processDefinitionKey;
+  protected Integer processDefinitionVersion;
   protected String processDefinitionName;
   protected OffsetDateTime startTime;
   protected OffsetDateTime endTime;
@@ -55,6 +56,18 @@ public class HistoricProcessInstanceDto implements EngineDto {
 
   public void setProcessDefinitionKey(String processDefinitionKey) {
     this.processDefinitionKey = processDefinitionKey;
+  }
+
+  public Integer getProcessDefinitionVersion() {
+    return processDefinitionVersion;
+  }
+
+  public String getProcessDefinitionVersionAsString() {
+    return processDefinitionVersion != null ? processDefinitionVersion.toString() : null;
+  }
+
+  public void setProcessDefinitionVersion(Integer processDefinitionVersion) {
+    this.processDefinitionVersion = processDefinitionVersion;
   }
 
   public String getProcessDefinitionName() {

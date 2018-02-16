@@ -171,6 +171,47 @@ public class ReportHandlingIT {
   }
 
   @Test
+  public void updateReportWithoutPDInformation() {
+    // given
+    String id = createNewReport();
+    ReportDefinitionDto updatedReport = new ReportDefinitionDto();
+
+    //when
+    Response updateReportResponse = getUpdateReportResponse(id, updatedReport);
+
+    //then
+    assertThat(updateReportResponse.getStatus(), is(500));
+
+    //when
+    ReportDataDto data = new ReportDataDto();
+    data.setProcessDefinitionVersion("BLAH");
+    updatedReport.setData(data);
+    updateReportResponse = getUpdateReportResponse(id, updatedReport);
+
+    //then
+    assertThat(updateReportResponse.getStatus(), is(500));
+
+    //when
+    data = new ReportDataDto();
+    data.setProcessDefinitionKey("BLAH");
+    updatedReport.setData(data);
+    updateReportResponse = getUpdateReportResponse(id, updatedReport);
+
+    //then
+    assertThat(updateReportResponse.getStatus(), is(500));
+
+    //when
+    data = new ReportDataDto();
+    data.setProcessDefinitionKey("BLAH");
+    data.setProcessDefinitionVersion("BLAH");
+    updatedReport.setData(data);
+    updateReportResponse = getUpdateReportResponse(id, updatedReport);
+
+    //then
+    assertThat(updateReportResponse.getStatus(), is(204));
+  }
+
+  @Test
   public void updateReportWithFilters() throws Exception {
     // given
     String id = createNewReport();
@@ -236,7 +277,7 @@ public class ReportHandlingIT {
   public void doNotUpdateNullFieldsInReport() throws Exception {
     // given
     String id = createNewReport();
-    ReportDefinitionDto report = new ReportDefinitionDto();
+    ReportDefinitionDto report = constructReportWithFakePD();
 
     // when
     updateReport(id, report);
@@ -287,7 +328,7 @@ public class ReportHandlingIT {
     String id3 = createNewReport();
     shiftTimeByOneSecond();
 
-    ReportDefinitionDto updatedReport = new ReportDefinitionDto();
+    ReportDefinitionDto updatedReport = constructReportWithFakePD();
     updatedReport.setName("B");
     updateReport(id1, updatedReport);
     updatedReport.setName("A");
@@ -324,7 +365,7 @@ public class ReportHandlingIT {
     shiftTimeByOneSecond();
     String id3 = createNewReport();
     shiftTimeByOneSecond();
-    updateReport(id1, new ReportDefinitionDto());
+    updateReport(id1, constructReportWithFakePD());
 
     // when
     Map<String, Object> queryParam = new HashMap<>();
@@ -356,7 +397,7 @@ public class ReportHandlingIT {
     shiftTimeByOneSecond();
     String id3 = createNewReport();
     shiftTimeByOneSecond();
-    updateReport(id1, new ReportDefinitionDto());
+    updateReport(id1, constructReportWithFakePD());
 
     // when
     Map<String, Object> queryParam = new HashMap<>();
@@ -380,7 +421,7 @@ public class ReportHandlingIT {
     shiftTimeByOneSecond();
     String id3 = createNewReport();
     shiftTimeByOneSecond();
-    updateReport(id1, new ReportDefinitionDto());
+    updateReport(id1, constructReportWithFakePD());
 
     // when
     Map<String, Object> queryParam = new HashMap<>();
@@ -394,6 +435,15 @@ public class ReportHandlingIT {
     assertThat(reports.get(1).getId(), is(id2));
   }
 
+  private ReportDefinitionDto constructReportWithFakePD() {
+    ReportDefinitionDto reportDefinitionDto = new ReportDefinitionDto();
+    ReportDataDto data = new ReportDataDto();
+    data.setProcessDefinitionVersion("FAKE");
+    data.setProcessDefinitionKey("FAKE");
+    reportDefinitionDto.setData(data);
+    return reportDefinitionDto;
+  }
+
   @Test
   public void resultListIsCutByMaxResults() throws Exception {
     // given
@@ -403,7 +453,7 @@ public class ReportHandlingIT {
     shiftTimeByOneSecond();
     String id3 = createNewReport();
     shiftTimeByOneSecond();
-    updateReport(id1, new ReportDefinitionDto());
+    updateReport(id1, constructReportWithFakePD());
 
     // when
     Map<String, Object> queryParam = new HashMap<>();
@@ -426,7 +476,7 @@ public class ReportHandlingIT {
     shiftTimeByOneSecond();
     String id3 = createNewReport();
     shiftTimeByOneSecond();
-    updateReport(id1, new ReportDefinitionDto());
+    updateReport(id1, constructReportWithFakePD());
 
     // when
     Map<String, Object> queryParam = new HashMap<>();
@@ -458,13 +508,16 @@ public class ReportHandlingIT {
   }
 
   private void updateReport(String id, ReportDefinitionDto updatedReport) {
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-    Response response =
-      embeddedOptimizeRule.target("report/" + id)
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
-        .put(Entity.json(updatedReport));
+    Response response = getUpdateReportResponse(id, updatedReport);
     assertThat(response.getStatus(), is(204));
+  }
+
+  private Response getUpdateReportResponse(String id, ReportDefinitionDto updatedReport) {
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+    return embeddedOptimizeRule.target("report/" + id)
+      .request()
+      .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+      .put(Entity.json(updatedReport));
   }
 
   private RawDataReportResultDto evaluateRawDataReportById(String reportId) {

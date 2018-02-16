@@ -35,7 +35,11 @@ public class RawDataCommand extends ReportCommand {
   public ReportResultDto evaluate() throws IOException {
     logger.debug("Evaluating raw data report for process definition id [{}]", reportData.getProcessDefinitionId());
 
-    BoolQueryBuilder query = setupBaseQuery(reportData.getProcessDefinitionId());
+    BoolQueryBuilder query = setupBaseQuery(
+        reportData.getProcessDefinitionId(),
+        reportData.getProcessDefinitionKey(),
+        reportData.getProcessDefinitionVersion()
+    );
     queryFilterEnhancer.addFilterToQuery(query, reportData.getFilter());
 
     SearchResponse scrollResp = esclient
@@ -124,10 +128,4 @@ public class RawDataCommand extends ReportCommand {
     return result;
   }
 
-  private BoolQueryBuilder setupBaseQuery(String processDefinitionId) {
-    BoolQueryBuilder query;
-    query = QueryBuilders.boolQuery()
-      .must(QueryBuilders.termQuery("processDefinitionId", processDefinitionId));
-    return query;
-  }
 }

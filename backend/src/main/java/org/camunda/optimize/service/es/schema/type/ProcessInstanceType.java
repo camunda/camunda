@@ -13,6 +13,7 @@ public class ProcessInstanceType extends StrictTypeMappingCreator {
   public static final String END_DATE = "endDate";
   public static final String DURATION = "durationInMs";
   public static final String PROCESS_DEFINITION_KEY = "processDefinitionKey";
+  public static final String PROCESS_DEFINITION_VERSION = "processDefinitionVersion";
   public static final String PROCESS_DEFINITION_ID = "processDefinitionId";
   public static final String PROCESS_INSTANCE_ID = "processInstanceId";
   public static final String EVENTS = "events";
@@ -46,6 +47,9 @@ public class ProcessInstanceType extends StrictTypeMappingCreator {
   protected XContentBuilder addProperties(XContentBuilder builder) throws IOException {
     XContentBuilder newBuilder =  builder
             .startObject(PROCESS_DEFINITION_KEY)
+              .field("type", "keyword")
+            .endObject()
+            .startObject(PROCESS_DEFINITION_VERSION)
               .field("type", "keyword")
             .endObject()
             .startObject(PROCESS_DEFINITION_ID)

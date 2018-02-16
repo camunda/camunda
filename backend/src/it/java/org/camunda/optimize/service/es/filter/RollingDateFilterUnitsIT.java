@@ -50,13 +50,17 @@ public class RollingDateFilterUnitsIT extends AbstractRollingDateFilterIT {
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-    String processDefinitionId = processInstance.getDefinitionId();
 
     // when
-    RawDataReportResultDto result = createAndEvaluateReport(processDefinitionId, unit,  false);
+    RawDataReportResultDto result = createAndEvaluateReport(
+        processInstance.getProcessDefinitionKey(),
+        processInstance.getProcessDefinitionVersion(),
+        unit,
+        false
+    );
 
     //then
-    assertResults(processInstance, processDefinitionId, result, expectedPiCount);
+    assertResults(processInstance, result, expectedPiCount);
   }
 
 

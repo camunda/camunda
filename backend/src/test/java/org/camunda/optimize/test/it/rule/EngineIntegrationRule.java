@@ -233,7 +233,12 @@ public class EngineIntegrationRule extends TestWatcher {
     try {
       List<ProcessDefinitionEngineDto> procDefs = getAllProcessDefinitions(deployment, client);
       assertThat(procDefs.size(), is(1));
-      processInstanceDto = startProcessInstance(procDefs.get(0).getId(), client, variables);
+
+      ProcessDefinitionEngineDto processDefinitionEngineDto = procDefs.get(0);
+      processInstanceDto = startProcessInstance(processDefinitionEngineDto.getId(), client, variables);
+      processInstanceDto.setProcessDefinitionKey(processDefinitionEngineDto.getKey());
+      processInstanceDto.setProcessDefinitionVersion(String.valueOf(processDefinitionEngineDto.getVersion()));
+
     } catch (IOException e) {
       logger.error("Could not start the given process model!", e);
     }
@@ -275,10 +280,14 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   public String deployProcessAndGetId(BpmnModelInstance modelInstance) throws IOException {
+    ProcessDefinitionEngineDto processDefinitionId = deployProcessAndGetProcessDefinition(modelInstance);
+    return processDefinitionId.getId();
+  }
+
+  public ProcessDefinitionEngineDto deployProcessAndGetProcessDefinition(BpmnModelInstance modelInstance) throws IOException {
     CloseableHttpClient client = getHttpClient();
     DeploymentDto deploymentDto = deployProcess(modelInstance, client);
-    String processDefinitionId = getProcessDefinitionId(deploymentDto, client);
-    return processDefinitionId;
+    return getProcessDefinitionEngineDto(deploymentDto, client);
   }
 
   public DeploymentDto deployProcess(BpmnModelInstance bpmnModelInstance, CloseableHttpClient client) {
@@ -338,9 +347,14 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   public String getProcessDefinitionId(DeploymentDto deployment, CloseableHttpClient client) throws IOException {
+    ProcessDefinitionEngineDto processDefinitionEngineDto = getProcessDefinitionEngineDto(deployment, client);
+    return processDefinitionEngineDto.getId();
+  }
+
+  private ProcessDefinitionEngineDto getProcessDefinitionEngineDto(DeploymentDto deployment, CloseableHttpClient client) throws IOException {
     List<ProcessDefinitionEngineDto> processDefinitions = getAllProcessDefinitions(deployment, client);
     assertThat("Deployment should contain only one process definition!", processDefinitions.size(), is(1));
-    return processDefinitions.get(0).getId();
+    return processDefinitions.get(0);
   }
 
   public List<ProcessDefinitionEngineDto> getAllProcessDefinitions(DeploymentDto deployment, CloseableHttpClient client) throws IOException {

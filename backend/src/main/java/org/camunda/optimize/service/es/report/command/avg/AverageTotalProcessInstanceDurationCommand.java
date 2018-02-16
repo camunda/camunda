@@ -14,21 +14,22 @@ import org.elasticsearch.search.aggregations.metrics.avg.InternalAvg;
 
 import java.io.IOException;
 
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-
 public class AverageTotalProcessInstanceDurationCommand extends ReportCommand {
 
 
   public static final String AVG_DURATION = "avgDuration";
 
   @Override
-  protected ReportResultDto evaluate() throws IOException, OptimizeException {
+  protected ReportResultDto evaluate() {
 
     logger.debug("Evaluating average process instance duration grouped by none report " +
       "for process definition id [{}]", reportData.getProcessDefinitionId());
 
-    BoolQueryBuilder query = setupBaseQuery(reportData.getProcessDefinitionId());
+    BoolQueryBuilder query = setupBaseQuery(
+        reportData.getProcessDefinitionId(),
+        reportData.getProcessDefinitionKey(),
+        reportData.getProcessDefinitionVersion()
+    );
     queryFilterEnhancer.addFilterToQuery(query, reportData.getFilter());
 
     SearchResponse response = esclient
@@ -57,10 +58,4 @@ public class AverageTotalProcessInstanceDurationCommand extends ReportCommand {
       .field(ProcessInstanceType.DURATION);
   }
 
-  private BoolQueryBuilder setupBaseQuery(String processDefinitionId) {
-    BoolQueryBuilder query;
-    query = boolQuery()
-      .must(termQuery("processDefinitionId", processDefinitionId));
-    return query;
-  }
 }

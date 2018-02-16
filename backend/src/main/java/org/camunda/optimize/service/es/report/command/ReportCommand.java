@@ -7,10 +7,14 @@ import org.camunda.optimize.service.es.filter.QueryFilterEnhancer;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 public abstract class ReportCommand implements Command {
 
@@ -33,4 +37,17 @@ public abstract class ReportCommand implements Command {
   }
 
   protected abstract ReportResultDto evaluate() throws IOException, OptimizeException;
+
+  protected BoolQueryBuilder setupBaseQuery(String processDefinitionId, String processDefinitionKey, String processDefinitionVersion) {
+    BoolQueryBuilder query;
+    if (processDefinitionKey != null && processDefinitionVersion != null) {
+      query = boolQuery()
+          .must(termQuery("processDefinitionKey", processDefinitionKey))
+          .must(termQuery("processDefinitionVersion", processDefinitionVersion));
+    } else {
+      query = boolQuery()
+          .must(termQuery("processDefinitionId", processDefinitionId));
+    }
+    return query;
+  }
 }

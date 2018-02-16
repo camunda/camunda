@@ -74,11 +74,14 @@ public class UnfinishedProcessInstanceWriter {
     Map<String, Object> params = new HashMap<>();
     params.put(ProcessInstanceType.START_DATE, dateTimeFormatter.format(procInst.getStartDate()));
     params.put(ProcessInstanceType.ENGINE, procInst.getEngine());
+    params.put(ProcessInstanceType.PROCESS_DEFINITION_VERSION, procInst.getProcessDefinitionVersion());
 
     Script updateScript = new Script(
       ScriptType.INLINE,
       Script.DEFAULT_SCRIPT_LANG,
-      "ctx._source.startDate = params.startDate; ctx._source.engine = params.engine",
+      "ctx._source.startDate = params.startDate;" +
+          "ctx._source.processDefinitionVersion = params.processDefinitionVersion;" +
+          " ctx._source.engine = params.engine",
       params
     );
 
