@@ -56,6 +56,8 @@ public class PingReqEventHandler implements GossipEventConsumer
         final Member probeMember = membershipList.get(event.getProbeMember());
         if (probeMember != null)
         {
+            LOG.trace("Forward PING to '{}'", probeMember.getId());
+
             final ActorFuture<ClientRequest> clientRequestActorFuture =
                 gossipEventSender.sendPing(probeMember.getAddress(), configuration.getProbeTimeout());
 
@@ -63,7 +65,7 @@ public class PingReqEventHandler implements GossipEventConsumer
             {
                 if (throwable == null)
                 {
-                    LOG.trace("Received ACK from '{}'", probeMember.getAddress());
+                    LOG.trace("Received ACK from probe member '{}'", probeMember.getAddress());
                     final DirectBuffer response = request.join();
                     ackResponse.wrap(response, 0, response.capacity());
 
@@ -72,7 +74,7 @@ public class PingReqEventHandler implements GossipEventConsumer
                 }
                 else
                 {
-                    LOG.trace("Doesn't receive ACK from '{}'", probeMember.getAddress());
+                    LOG.trace("Doesn't receive ACK from probe member '{}'", probeMember.getAddress());
                     // do nothing
                 }
             });

@@ -120,7 +120,6 @@ public class PingController
             }
         }
 
-
         actor.runOnFirstCompletion(indirectRequestFutures, (clientRequest, throwable) ->
         {
             if (throwable == null)
