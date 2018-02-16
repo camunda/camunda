@@ -15,16 +15,11 @@
  */
 package io.zeebe.util.sched.channel;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-
-import io.zeebe.util.sched.*;
-import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import io.zeebe.util.sched.ActorCondition;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
+
+import static org.mockito.Mockito.*;
 
 public class ActorConditionsTest
 {

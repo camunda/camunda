@@ -15,14 +15,17 @@
  */
 package io.zeebe.util.sched.future;
 
-import static org.agrona.UnsafeAccess.UNSAFE;
-
-import java.util.Queue;
-import java.util.concurrent.*;
-
-import io.zeebe.util.sched.*;
+import io.zeebe.util.sched.ActorTaskRunner;
+import io.zeebe.util.sched.FutureUtil;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
+
+import java.util.Queue;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import static org.agrona.UnsafeAccess.UNSAFE;
 
 /** Completable future implementation that is garbage free and reusable */
 @SuppressWarnings("restriction")
@@ -52,9 +55,36 @@ public class CompletableActorFuture<V> implements ActorFuture<V>
         setAwaitingResult();
     }
 
+    private CompletableActorFuture(V value)
+    {
+        this.value = value;
+        this.state = COMPLETED;
+    }
+
+    private CompletableActorFuture(Throwable throwable)
+    {
+        if (throwable == null)
+        {
+            throw new NullPointerException("Throwable must not be null.");
+        }
+        this.failure = throwable.getMessage();
+        this.failureCause = throwable;
+        this.state = COMPLETED_EXCEPTIONALLY;
+    }
+
     public void setAwaitingResult()
     {
         state = AWAITING_RESULT;
+    }
+
+    public static <V> CompletableActorFuture<V> completed(V result)
+    {
+        return new CompletableActorFuture<>((V) result); // cast for null result
+    }
+
+    public static <V> CompletableActorFuture<V> completedExceptionally(Throwable throwable)
+    {
+        return new CompletableActorFuture<>(throwable);
     }
 
     @Override
@@ -99,7 +129,7 @@ public class CompletableActorFuture<V> implements ActorFuture<V>
     }
 
     @Override
-    public V get() throws InterruptedException, ExecutionException
+    public V get() throws ExecutionException
     {
         try
         {
@@ -112,7 +142,7 @@ public class CompletableActorFuture<V> implements ActorFuture<V>
     }
 
     @Override
-    public V get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException
+    public V get(long timeout, TimeUnit unit) throws ExecutionException, TimeoutException
     {
         if (!isDone())
         {

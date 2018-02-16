@@ -16,6 +16,7 @@
 package io.zeebe.util.sched;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,7 +27,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import io.zeebe.util.collection.Tuple;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
-import io.zeebe.util.sched.future.CompletedActorFuture;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -308,7 +308,7 @@ public class ActorFutureTest
             @Override
             protected void onActorStarted()
             {
-                actor.await(new CompletedActorFuture<>("foo"), (r, t) -> futureResult.set(r));
+                actor.await(CompletableActorFuture.completed("foo"), (r, t) -> futureResult.set(r));
             }
         });
 
@@ -321,7 +321,6 @@ public class ActorFutureTest
 
     class BlockedCallActor extends ZbActor
     {
-
         @Override
         protected void onActorStarted()
         {
@@ -373,5 +372,60 @@ public class ActorFutureTest
         assertThat(lifecycle).containsExactly("futureDone", "call");
 
 
+    }
+
+    @Test
+    public void shouldReturnCompletedFutureWithNullValue()
+    {
+        // given
+
+        // when
+        final CompletableActorFuture<Void> completed = CompletableActorFuture.completed(null);
+
+        // then
+        assertThat(completed).isDone();
+        assertThat(completed.join()).isNull();
+    }
+
+
+    @Test
+    public void shouldReturnCompletedFuture()
+    {
+        // given
+        final Object result = new Object();
+
+        // when
+        final CompletableActorFuture<Object> completed = CompletableActorFuture.completed(result);
+
+        // then
+        assertThat(completed).isDone();
+        assertThat(completed.join()).isEqualTo(result);
+    }
+
+    @Test
+    public void shouldReturnCompletedExceptionallyFuture()
+    {
+        // given
+        final RuntimeException result = new RuntimeException("Something bad happend!");
+
+        // when
+        final CompletableActorFuture<Object> completed = CompletableActorFuture.completedExceptionally(result);
+
+        // then
+        assertThat(completed).isDone();
+        assertThat(completed.isCompletedExceptionally()).isTrue();
+
+        assertThatThrownBy(() -> completed.join()).hasMessageContaining("Something bad happend!");
+    }
+
+    @Test
+    public void shouldFailToCompletedExceptionallyFutureWithNull()
+    {
+        // when
+        final RuntimeException result = null;
+
+        // then
+        assertThatThrownBy(() -> CompletableActorFuture.completedExceptionally(result))
+            .hasMessageContaining("Throwable must not be null.");
     }
 }

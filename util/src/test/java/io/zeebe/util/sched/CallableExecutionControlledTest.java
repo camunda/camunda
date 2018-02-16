@@ -46,7 +46,7 @@ public class CallableExecutionControlledTest
         schedulerRule.workUntilDone();
 
         // then/when
-        assertThatThrownBy(() -> future.get(1, TimeUnit.SECONDS))
+        assertThatThrownBy(() -> future.get(1, TimeUnit.MILLISECONDS))
             .isInstanceOf(ExecutionException.class)
             .hasCause(expected);
 
