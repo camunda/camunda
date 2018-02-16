@@ -41,6 +41,28 @@ public class SharingServiceIT extends AbstractSharingIT {
       .around(embeddedOptimizeRule);
 
   @Test
+  public void dashboardsWithDuplicateReportsAreShared() throws Exception {
+    //given
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+
+    String reportId = createReport();
+    String dashboardId = addEmptyDashboardToOptimize(token);
+    addReportToDashboard(dashboardId, reportId, reportId);
+
+    String dashboardShareId = addShareForDashboard(token, dashboardId);
+
+    // when
+    Response response =
+      embeddedOptimizeRule.target(getSharedDashboardEvaluationPath(dashboardShareId))
+        .request()
+        .get();
+
+    //then
+    EvaluatedDashboardShareDto dashboardShareDto = response.readEntity(EvaluatedDashboardShareDto.class);
+    assertThat(dashboardShareDto.getDashboard().getReportShares().size(), is(2));
+  }
+
+  @Test
   public void individualReportShareIsNotAffectedByDashboard() throws Exception {
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
@@ -55,16 +77,16 @@ public class SharingServiceIT extends AbstractSharingIT {
 
     // when
     Response response =
-        embeddedOptimizeRule.target(SHARE + "/" + DASHBOARD + "/" + dashboardShareId)
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
-            .delete();
+      embeddedOptimizeRule.target(SHARE + "/" + DASHBOARD + "/" + dashboardShareId)
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .delete();
     assertThat(response.getStatus(), is(204));
 
     response =
-        embeddedOptimizeRule.target(getSharedReportEvaluationPath(reportShareId))
-            .request()
-            .get();
+      embeddedOptimizeRule.target(getSharedReportEvaluationPath(reportShareId))
+        .request()
+        .get();
     HashMap evaluatedReportAsMap = response.readEntity(HashMap.class);
 
     assertReportData(reportId2, reportShareId, evaluatedReportAsMap);
