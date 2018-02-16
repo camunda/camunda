@@ -15,74 +15,71 @@
  */
 package io.zeebe.gossip;
 
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.time.Duration;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import io.zeebe.gossip.protocol.CustomEvent;
 import io.zeebe.gossip.util.GossipClusterRule;
 import io.zeebe.gossip.util.GossipRule;
-import io.zeebe.test.util.BufferAssert;
-import io.zeebe.test.util.ClockRule;
-import io.zeebe.test.util.agent.ManualActorScheduler;
+import io.zeebe.util.sched.clock.ControlledActorClock;
+import io.zeebe.util.sched.future.CompletableActorFuture;
+import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.agrona.DirectBuffer;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static org.assertj.core.api.Assertions.assertThat;
+
 public class SyncRequestHandlerTest
 {
-//    private static final GossipConfiguration CONFIGURATION = new GossipConfiguration();
-//
-//    private static final DirectBuffer TYPE_1 = wrapString("CUST_1");
-//    private static final DirectBuffer TYPE_2 = wrapString("CUST_2");
-//
-//    private static final DirectBuffer PAYLOAD_1 = wrapString("FOO");
-//    private static final DirectBuffer PAYLOAD_2 = wrapString("BAR");
-//
-//    private ManualActorScheduler actorScheduler = new ManualActorScheduler();
-//
-//    private GossipRule gossip1 = new GossipRule(() -> actorScheduler, CONFIGURATION, "localhost", 8001);
-//    private GossipRule gossip2 = new GossipRule(() -> actorScheduler, CONFIGURATION, "localhost", 8002);
-//    private GossipRule gossip3 = new GossipRule(() -> actorScheduler, CONFIGURATION, "localhost", 8003);
-//
-//    @Rule
-//    public GossipClusterRule cluster = new GossipClusterRule(actorScheduler, gossip1, gossip2, gossip3);
-//
-//    @Rule
-//    public ClockRule clock = ClockRule.pinCurrentTime();
-//
-//    @Test
-//    public void shouldInvokeSyncRequestHandler()
-//    {
-//        // given
-//        final AtomicInteger invocationsHandler1 = new AtomicInteger(0);
-//        final AtomicInteger invocationsHandler2 = new AtomicInteger(0);
-//
-//        gossip1.getController().registerSyncRequestHandler(TYPE_1, request ->
-//        {
-//            invocationsHandler1.incrementAndGet();
-//            request.done();
-//        });
-//
-//        gossip1.getController().registerSyncRequestHandler(TYPE_2, request ->
-//        {
-//            invocationsHandler2.incrementAndGet();
-//            request.done();
-//        });
-//
-//        // when
-//        gossip2.join(gossip1);
-//        gossip3.join(gossip1);
-//
-//        actorScheduler.waitUntilDone();
-//        actorScheduler.waitUntilDone();
-//
-//        // then
-//        assertThat(invocationsHandler1.get()).isEqualTo(2);
-//        assertThat(invocationsHandler2.get()).isEqualTo(2);
-//    }
+    private static final DirectBuffer TYPE_1 = wrapString("CUST_1");
+    private static final DirectBuffer TYPE_2 = wrapString("CUST_2");
+
+    private static final DirectBuffer PAYLOAD_1 = wrapString("FOO");
+    private static final DirectBuffer PAYLOAD_2 = wrapString("BAR");
+
+    private static final GossipConfiguration CONFIGURATION = new GossipConfiguration();
+
+    private ControlledActorClock clock = new ControlledActorClock();
+
+    public ActorSchedulerRule actorScheduler = new ActorSchedulerRule(clock);
+
+    private GossipRule gossip1 = new GossipRule(() -> actorScheduler.get(), CONFIGURATION, "localhost", 8001);
+    private GossipRule gossip2 = new GossipRule(() -> actorScheduler.get(), CONFIGURATION, "localhost", 8002);
+    private GossipRule gossip3 = new GossipRule(() -> actorScheduler.get(), CONFIGURATION, "localhost", 8003);
+
+    @Rule
+    public GossipClusterRule cluster = new GossipClusterRule(actorScheduler, gossip1, gossip2, gossip3);
+
+    @Test
+    public void shouldInvokeSyncRequestHandler()
+    {
+        // given
+        final AtomicInteger invocationsHandler1 = new AtomicInteger(0);
+        final AtomicInteger invocationsHandler2 = new AtomicInteger(0);
+
+        gossip1.getController().registerSyncRequestHandler(TYPE_1, request ->
+        {
+            invocationsHandler1.incrementAndGet();
+            request.done();
+            return CompletableActorFuture.completed(null);
+
+        });
+
+        gossip1.getController().registerSyncRequestHandler(TYPE_2, request ->
+        {
+            invocationsHandler2.incrementAndGet();
+            request.done();
+            return CompletableActorFuture.completed(null);
+        });
+
+        // when
+        gossip2.join(gossip1).join();
+        gossip3.join(gossip1).join();
+
+        // then
+        assertThat(invocationsHandler1.get()).isEqualTo(2);
+        assertThat(invocationsHandler2.get()).isEqualTo(2);
+    }
 //
 //    @Test
 //    public void shouldReceiveCustomEventFromOwner()
