@@ -103,6 +103,12 @@ public class Gossip extends ZbActor implements GossipController, GossipEventPubl
     }
 
     @Override
+    public String getName()
+    {
+        return membershipList.self().getId();
+    }
+
+    @Override
     protected void onActorStarted()
     {
         final ActorFuture<ServerInputSubscription> serverInputSubscriptionActorFuture =
