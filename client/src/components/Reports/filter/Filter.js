@@ -90,8 +90,8 @@ export default class Filter extends React.Component {
         <Dropdown.Option disabled={this.processDefinitionIsNotSelected()} onClick={this.openNewFilterModal('variable')}>Variable</Dropdown.Option>
         <Dropdown.Option disabled={this.processDefinitionIsNotSelected()} onClick={this.openNewFilterModal('executedFlowNodes')}>Flow Node</Dropdown.Option>
       </Dropdown>
-      <FilterModal addFilter={this.addFilter} close={this.closeModal} xml={this.props.xml} />
-      <EditFilterModal addFilter={this.editFilter} filterData={this.state.editFilter} close={this.closeModal} xml={this.props.xml}/>
+      <FilterModal addFilter={this.addFilter} close={this.closeModal} xml={this.props.xml} processDefinitionId={this.props.processDefinitionId}/>
+      <EditFilterModal addFilter={this.editFilter} filterData={this.state.editFilter} close={this.closeModal} xml={this.props.xml} processDefinitionId={this.props.processDefinitionId}/>
     </div>);
   }
 }
