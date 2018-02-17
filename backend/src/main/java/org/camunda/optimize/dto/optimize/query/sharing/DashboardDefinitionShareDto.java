@@ -2,6 +2,7 @@ package org.camunda.optimize.dto.optimize.query.sharing;
 
 import org.camunda.optimize.dto.optimize.query.dashboard.BaseDashboardDefinitionDto;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -9,7 +10,7 @@ import java.util.List;
  */
 public class DashboardDefinitionShareDto extends BaseDashboardDefinitionDto {
 
-  private List<ReportShareLocationDto> reportShares;
+  private List<ReportShareLocationDto> reportShares = new ArrayList<>();
 
   public List<ReportShareLocationDto> getReportShares() {
     return reportShares;
