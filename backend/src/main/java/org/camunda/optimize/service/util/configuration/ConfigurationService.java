@@ -825,7 +825,7 @@ public class ConfigurationService {
     if (dashboardShareType == null) {
       dashboardShareType = jsonContext.read(ConfigurationServiceConstants.DASHBOARD_SHARE_TYPE);
     }
-    return reportShareType;
+    return dashboardShareType;
   }
 
   public Integer getImportResetIntervalValue() {

@@ -95,7 +95,7 @@ public class SharingService  {
       DashboardDefinitionDto dashboardDefinition =
           dashboardService.getDashboardDefinition(createSharingDto.getDashboardId());
 
-      if (dashboardDefinition.getReports() != null) {
+      if (dashboardDefinition.getReports() != null && !dashboardDefinition.getReports().isEmpty()) {
         List<String> newReportShares = createReportShares(dashboardDefinition);
         createSharingDto.setReportShares(newReportShares);
       }

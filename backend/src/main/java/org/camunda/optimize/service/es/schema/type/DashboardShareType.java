@@ -19,7 +19,7 @@ public class DashboardShareType extends StrictTypeMappingCreator {
 
   @Override
   public String getType() {
-    return configurationService.getReportShareType();
+    return configurationService.getDashboardShareType();
   }
 
   @Override

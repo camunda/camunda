@@ -718,7 +718,6 @@ public class ImportIT  {
     embeddedOptimizeRule.reloadConfiguration();
 
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(process1.getDefinitionId());
@@ -740,6 +739,7 @@ public class ImportIT  {
 
     //once new round starts reset will happen instead of restart
     embeddedOptimizeRule.importWithoutReset();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     reportData = ReportDataHelper.createReportDataViewRawAsTable(targetProcess.getDefinitionId());
     result = evaluateReport(reportData);

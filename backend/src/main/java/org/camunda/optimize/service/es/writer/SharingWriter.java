@@ -138,6 +138,7 @@ public class SharingWriter {
         .setSource(objectMapper.convertValue(share, Map.class))
       );
     }
+    bulkRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
     bulkRequest.get();
     return result;
   }
