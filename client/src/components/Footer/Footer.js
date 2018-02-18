@@ -5,6 +5,8 @@ import './Footer.css';
 
 import {getImportProgress, getConnectionStatus} from './service';
 
+import {getToken} from 'credentials';
+
 
 export default class Footer extends React.Component {
 
@@ -69,22 +71,16 @@ export default class Footer extends React.Component {
     }
     
 
-    return (
+    return ( getToken() ?
       <footer className='Footer'>
-
         {statusFragment}
-
         <div className='Footer__content'>
-
           {connectionFragment}
-
           <div className='Footer__colophon'>
             © Camunda Services GmbH 2017, All Rights Reserved. | {this.props.version}
           </div>
-
         </div>
-
-      </footer>
+      </footer> : ''
     );
   }
 }

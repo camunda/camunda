@@ -3,7 +3,11 @@ import { shallow, mount } from 'enzyme';
 
 import Footer from './Footer';
 import {getConnectionStatus, getImportProgress} from './service';
+import {getToken} from 'credentials';
 
+jest.mock('credentials', () => {return {
+  getToken: jest.fn(),
+}});
 
 jest.mock('./service', () => {return {
   getConnectionStatus: jest.fn(() => {
@@ -34,12 +38,14 @@ it('renders without crashing', () => {
 
 it('includes the version number provided as property', () => {
   const version = 'alpha';
+  getToken.mockReturnValue(true);
 
   const node = shallow(<Footer version={version} />);
   expect(node).toIncludeText(version);
 });
 
 it('displays the import status if it is less than 100', () => {
+  getToken.mockReturnValue(true);
   const node = mount(<Footer />);
 
   node.setState({
@@ -51,6 +57,7 @@ it('displays the import status if it is less than 100', () => {
 
 
 it('does not display the import status if it is 100', () => {
+  getToken.mockReturnValue(true);
   const node = mount(<Footer />);
 
   node.setState({
@@ -62,11 +69,13 @@ it('does not display the import status if it is 100', () => {
 
 
 it('should load import progress', () => {
+  getToken.mockReturnValue(true);
   shallow(<Footer version='2.0.0'/>);
   expect(getImportProgress).toBeCalled();
 });
 
 it('displays the connection status', () => {
+  getToken.mockReturnValue(true);
   const node = mount(<Footer version='2.0.0'/>);
 
   node.setState({
@@ -79,6 +88,17 @@ it('displays the connection status', () => {
 });
 
 it('should load connection status', () => {
+  getToken.mockReturnValue(true);
+
   shallow(<Footer version='2.0.0'/>);
+
   expect(getConnectionStatus).toBeCalled();
+});
+
+it('should not render the footer if the user is not logged in', () => {
+  getToken.mockReturnValue(false);
+
+  const node = mount(<Footer />);
+
+  expect(node.children().length).toBe(0);
 });
