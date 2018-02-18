@@ -246,7 +246,7 @@ export default class Report extends React.Component {
         <Modal open={shareModalVisible} onClose={this.closeShareModal} className='Report__share-modal'>
           <Modal.Header>Share {this.state.name}</Modal.Header>
           <Modal.Content>
-            <ShareEntity type={'report'}resourceId={this.id} shareEntity={shareReport} 
+            <ShareEntity type={'report'} resourceId={this.id} shareEntity={shareReport} 
               revokeEntitySharing={revokeReportSharing} getSharedEntity={getSharedReport}/>
           </Modal.Content>
           <Modal.Actions>

@@ -54,7 +54,18 @@ it('should construct special link', () => {
   
   node.setState({loaded: true, id: 10});
 
-  expect(node.find('#copy')).toIncludeText(`http://example.com/share/report/10`);
+  expect(node.find('#ShareLink')).toIncludeText(`http://example.com/share/report/10`);
+});
+
+it('should construct special link for embedding', () => {
+  const node = mount(<ShareEntity type={'report'} {...props} />);
+  Object.defineProperty(window.location, 'origin', {
+    value: 'http://example.com'
+  });
+  
+  node.setState({loaded: true, id: 10});
+
+  expect(node.find('#ShareEmbed')).toIncludeText(`<iframe src="http://example.com/share/report/10`);
 });
 
 it('should display a loading indicator', () => {

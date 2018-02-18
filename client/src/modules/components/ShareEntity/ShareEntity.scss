@@ -22,6 +22,25 @@
   display: table-cell;
 }
 
+.ShareEntity__link-area--disabled {
+  opacity: 0.50;
+}
+
+.ShareEntity__label {
+  color: #626262;
+  font-size: .875em;
+  font-weight: bold;
+  margin-bottom: 15px;
+  display: block;
+}
+
+.ShareEntity__label-description {
+  color: #626262;
+  font-size: .800em;
+  padding-bottom: 5px;
+  display: block;
+}
+
 .ShareEntity__clipboard {
   padding-top: 50px;
   padding-bottom: 20px;
