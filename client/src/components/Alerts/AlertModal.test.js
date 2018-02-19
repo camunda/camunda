@@ -63,7 +63,8 @@ it('should apply the alert property to the state when changing props', () => {
       unit: 'hours'
     },
     reminder: null,
-    fixNotification: true
+    fixNotification: true,
+    errorInput: null
   });
 });
 
@@ -89,36 +90,28 @@ it('should disable the submit button if the name is empty', () => {
   const node = mount(<AlertModal reports={reports} />);
 
   node.setProps({alert});
-  node.setState({name: ''});
-
-  expect(node.find('button[type="primary"]')).toBeDisabled();
+  node.setState({name: ''}, expect(node.find('button[type="primary"]')).toBeDisabled);
 });
 
 it('should disable the submit button if the email is not valid', () => {
   const node = mount(<AlertModal reports={reports} />);
 
   node.setProps({alert});
-  node.setState({email: 'this is not a valid email'});
-
-  expect(node.find('button[type="primary"]')).toBeDisabled();
+  node.setState({email: 'this is not a valid email'}, expect(node.find('button[type="primary"]')).toBeDisabled);
 });
 
 it('should disable the submit button if no report is selected', () => {
   const node = mount(<AlertModal reports={reports} />);
 
   node.setProps({alert});
-  node.setState({reportId: ''});
-
-  expect(node.find('button[type="primary"]')).toBeDisabled();
+  node.setState({reportId: ''}, expect(node.find('button[type="primary"]')).toBeDisabled);
 });
 
 it('should disable the submit button if the threshold is not a number', () => {
   const node = mount(<AlertModal reports={reports} />);
 
   node.setProps({alert});
-  node.setState({threshold: 'five'});
-
-  expect(node.find('button[type="primary"]')).toBeDisabled();
+  node.setState({threshold: 'five'}, expect(node.find('button[type="primary"]')).toBeDisabled);
 });
 
 it('should disable the submit button if the check interval is negative', () => {
@@ -128,9 +121,7 @@ it('should disable the submit button if the check interval is negative', () => {
   node.setState({checkInterval: {
     value: '-7',
     unit: 'seconds'
-  }});
-
-  expect(node.find('button[type="primary"]')).toBeDisabled();
+  }}, expect(node.find('button[type="primary"]')).toBeDisabled);
 });
 
 it('should show warning that email is not configured', async () => {

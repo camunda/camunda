@@ -4,8 +4,14 @@
   display: block;
 }
 
+.AlertModal__warning {
+  font-size: 0.8em;
+  color: red;
+  display: block;
+}
+
 .AlertModal__configuration-warning {
-  color: red; 
+  color: red;
   font-size: 0.8em;
   margin-bottom: 20px;
   display: inline-block;
@@ -14,6 +20,13 @@
 .AlertModal__input {
   width: 100%;
   flex-grow: 1;
+}
+
+.AlertModal__input.error {
+  border-color: #FF0000;
+  border-width: 1px;
+  border-style: solid;
+  background-color: rgba(255, 0, 0, 0.2);
 }
 
 .AlertModal__inputGroup {
