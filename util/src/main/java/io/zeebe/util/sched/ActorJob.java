@@ -19,7 +19,6 @@ import java.util.concurrent.Callable;
 
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
-import io.zeebe.util.sched.metrics.ActorRunnerMetrics;
 
 @SuppressWarnings({ "unchecked", "rawtypes" })
 public class ActorJob
@@ -96,11 +95,6 @@ public class ActorJob
 
     private void invoke(ActorTaskRunner runner) throws Exception
     {
-        long before = -1;
-        if (ActorRunnerMetrics.SHOULD_RECORD_JOB_EXECUTION_TIME)
-        {
-            before = System.nanoTime();
-        }
         if (callable != null)
         {
             invocationResult = callable.call();
@@ -126,12 +120,6 @@ public class ActorJob
             {
                 runnable.run();
             }
-        }
-
-        if (ActorRunnerMetrics.SHOULD_RECORD_JOB_EXECUTION_TIME)
-        {
-            final ActorRunnerMetrics metrics = runner.getMetrics();
-            metrics.recordJobExecutionTime(System.nanoTime() - before);
         }
     }
 

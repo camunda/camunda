@@ -17,17 +17,15 @@ package io.zeebe.util.sched;
 
 import java.io.PrintStream;
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.metrics.ActorRunnerMetrics;
-
+import io.zeebe.util.sched.metrics.SchedulerMetrics;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.ConcurrentCountersManager;
-import org.agrona.concurrent.status.CountersManager;
 
 public class ZbActorScheduler
 {
@@ -43,6 +41,8 @@ public class ZbActorScheduler
 
     public final int runnerCount;
 
+    private ConcurrentCountersManager countersManager;
+
     /**
      * For testing, else manage the counters manager outside
      */
@@ -51,31 +51,32 @@ public class ZbActorScheduler
         this(numOfRunnerThreads, buildDefaultCountersManager());
     }
 
-    protected static CountersManager buildDefaultCountersManager()
+    protected static ConcurrentCountersManager buildDefaultCountersManager()
     {
         final UnsafeBuffer valueBuffer = new UnsafeBuffer(new byte[16 * 1024]);
         final UnsafeBuffer labelBuffer = new UnsafeBuffer(new byte[valueBuffer.capacity() * 2 + 1]);
         return new ConcurrentCountersManager(labelBuffer, valueBuffer);
     }
 
-    public ZbActorScheduler(int numOfRunnerThreads, CountersManager countersManager)
+    public ZbActorScheduler(int numOfRunnerThreads, ConcurrentCountersManager countersManager)
     {
         this(numOfRunnerThreads, countersManager, null);
     }
 
-    public ZbActorScheduler(int numOfRunnerThreads, CountersManager countersManager, ActorClock clock)
+    public ZbActorScheduler(int numOfRunnerThreads, ConcurrentCountersManager countersManager, ActorClock clock)
     {
         this(numOfRunnerThreads, new RandomRunnerAssignmentStrategy(numOfRunnerThreads), countersManager, clock);
     }
 
-    public ZbActorScheduler(int numOfRunnerThreads, RunnerAssignmentStrategy initialRunnerAssignmentStrategy, CountersManager countersManager)
+    public ZbActorScheduler(int numOfRunnerThreads, RunnerAssignmentStrategy initialRunnerAssignmentStrategy, ConcurrentCountersManager countersManager)
     {
         this(numOfRunnerThreads, initialRunnerAssignmentStrategy, countersManager, null);
     }
 
-    public ZbActorScheduler(int numOfRunnerThreads, RunnerAssignmentStrategy initialRunnerAssignmentStrategy, CountersManager countersManager, ActorClock clock)
+    public ZbActorScheduler(int numOfRunnerThreads, RunnerAssignmentStrategy initialRunnerAssignmentStrategy, ConcurrentCountersManager countersManager, ActorClock clock)
     {
         this.runnerAssignmentStrategy = initialRunnerAssignmentStrategy;
+        this.countersManager = countersManager;
 
         state.set(SchedulerState.NEW);
         runnerCount = numOfRunnerThreads;
@@ -97,15 +98,42 @@ public class ZbActorScheduler
         return new ActorTaskRunner(this, i, metrics, clock);
     }
 
+    /**
+     * Submits an actor to the scheduler. Does not collect task metrics (see
+     * {@link #submitActor(ZbActor, boolean)}.
+     *
+     * @param actor
+     *            the actor to submit
+     */
     public void submitActor(ZbActor actor)
+    {
+        submitActor(actor, false);
+    }
+
+    /**
+     * Submits a new actor to the scheduler.
+     *
+     * @param actor
+     *            the actor to submit
+     * @param collectTaskMetrics
+     *            controls whether metrics should be written for this actor. This
+     *            has the overhead cost (time & memory) for allocating the
+     *            counters which are used to record the metrics. Generally,
+     *            metrics should not be recorded for short-lived tasks but only
+     *            make sense for long-lived tasks where a small overhead when
+     *            initially submitting the actor is acceptable.
+     *
+     */
+    public void submitActor(ZbActor actor, boolean collectTaskMetrics)
     {
         final ActorTaskRunner assignedRunner = runnerAssignmentStrategy.nextRunner(nonBlockingTasksRunners);
 
         final ActorTask task = actor.actor.task;
-        task.onTaskScheduled(this);
+        task.onTaskScheduled(this, collectTaskMetrics);
 
         assignedRunner.submit(task);
     }
+
 
     /** called when an actor returns from the blockedTasksRunner */
     public void reSubmitActor(ActorTask task)
@@ -210,12 +238,7 @@ public class ZbActorScheduler
 
     public void dumpMetrics(PrintStream ps)
     {
-        ps.println("# Per runner metrics");
-        Arrays.asList(nonBlockingTasksRunners).forEach((r) ->
-        {
-            ps.format("# runner-%d\n", r.getRunnerId());
-            r.getMetrics().dump(ps);
-        });
+        SchedulerMetrics.printMetrics(countersManager, ps);
     }
 
     private enum SchedulerState
@@ -224,5 +247,10 @@ public class ZbActorScheduler
         RUNNING,
         TERMINATING,
         TERMINATED // scheduler is not reusable
+    }
+
+    public ConcurrentCountersManager getCountersManager()
+    {
+        return countersManager;
     }
 }

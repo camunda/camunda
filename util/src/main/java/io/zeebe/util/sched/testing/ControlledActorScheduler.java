@@ -21,14 +21,14 @@ import io.zeebe.util.sched.ActorTaskRunner;
 import io.zeebe.util.sched.ZbActorScheduler;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.metrics.ActorRunnerMetrics;
-import org.agrona.concurrent.status.CountersManager;
+import org.agrona.concurrent.status.ConcurrentCountersManager;
 import org.junit.Assert;
 
 public class ControlledActorScheduler extends ZbActorScheduler
 {
     private ControlledActorTaskRunner controlledActorTaskRunner;
 
-    public ControlledActorScheduler(CountersManager countersManager)
+    public ControlledActorScheduler(ConcurrentCountersManager countersManager)
     {
         super(1, countersManager);
         blockingTaskShutdownTime = Duration.ofSeconds(0);

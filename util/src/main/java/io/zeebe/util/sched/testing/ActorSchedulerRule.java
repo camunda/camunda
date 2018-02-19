@@ -67,6 +67,11 @@ public class ActorSchedulerRule extends ExternalResource
         actorScheduler.submitActor(actor);
     }
 
+    public void submitActor(ZbActor actor, boolean useCountersManager)
+    {
+        actorScheduler.submitActor(actor, useCountersManager);
+    }
+
     public ZbActorScheduler get()
     {
         return actorScheduler;

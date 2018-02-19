@@ -113,7 +113,6 @@ public class ActorTaskRunner extends Thread
 
         if (currentTask != null)
         {
-
             executeCurrentTask();
         }
         else
@@ -131,11 +130,19 @@ public class ActorTaskRunner extends Thread
         }
     }
 
-    private  void executeCurrentTask()
+    private void executeCurrentTask()
     {
         MDC.put("actor-name", currentTask.actor.getName());
         idleStrategy.onTaskExecute();
         metrics.incrementTaskExecutionCount();
+
+        long nanoTimeBeforeTask = -1;
+
+        if (currentTask.isCollectTaskMetrics())
+        {
+            clock.update();
+            nanoTimeBeforeTask = clock.getNanoTime();
+        }
 
         boolean resubmit = false;
 
@@ -155,6 +162,12 @@ public class ActorTaskRunner extends Thread
         finally
         {
             MDC.remove("actor-name");
+
+            if (currentTask.isCollectTaskMetrics())
+            {
+                clock.update();
+                currentTask.reportExecutionTime(clock.getNanoTime() - nanoTimeBeforeTask);
+            }
         }
 
         if (resubmit)

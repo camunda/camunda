@@ -15,8 +15,7 @@
  */
 package io.zeebe.util.sched.metrics;
 
-import java.io.PrintStream;
-import java.util.concurrent.TimeUnit;
+import static io.zeebe.util.sched.metrics.SchedulerMetrics.TYPE_TEMPORAL_VALUE;
 
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
@@ -25,34 +24,23 @@ import org.agrona.concurrent.status.CountersManager;
  * Actor runner metrics
  *
  */
-public class ActorRunnerMetrics
+public class ActorRunnerMetrics implements AutoCloseable
 {
-    public static final String ENABLE_RECORD_JOB_EXECUTION_TIME = "io.zeebe.scheduler.enableRecordJobExecutionTime";
-    public static final boolean SHOULD_RECORD_JOB_EXECUTION_TIME = Boolean.getBoolean(ENABLE_RECORD_JOB_EXECUTION_TIME);
-
     private final CountersManager countersManager;
-    private final AtomicCounter jobExecutionTime;
     private final AtomicCounter runnerIdleTime;
     private final AtomicCounter runnerBusyTime;
     private final AtomicCounter jobExecutionCount;
     private final AtomicCounter taskExecutionCount;
     private final AtomicCounter taskStealCount;
 
-
     public ActorRunnerMetrics(String runnerName, CountersManager countersManager)
     {
         this.countersManager = countersManager;
-        jobExecutionTime = countersManager.newCounter(String.format("%s.jobExecutionTime", runnerName));
-        runnerIdleTime = countersManager.newCounter(String.format("%s.runnerIdleTime", runnerName));
-        runnerBusyTime = countersManager.newCounter(String.format("%s.runnerBusyTime", runnerName));
+        runnerIdleTime = countersManager.newCounter(String.format("%s.runnerIdleTime", runnerName), TYPE_TEMPORAL_VALUE);
+        runnerBusyTime = countersManager.newCounter(String.format("%s.runnerBusyTime", runnerName), TYPE_TEMPORAL_VALUE);
         jobExecutionCount = countersManager.newCounter(String.format("%s.jobCount", runnerName));
         taskExecutionCount = countersManager.newCounter(String.format("%s.taskExecutionCount", runnerName));
         taskStealCount = countersManager.newCounter(String.format("%s.taskStealCount", runnerName));
-    }
-
-    public void recordJobExecutionTime(long time)
-    {
-        jobExecutionTime.getAndAddOrdered(time);
     }
 
     public void incrementTaskStealCount()
@@ -80,60 +68,13 @@ public class ActorRunnerMetrics
         runnerBusyTime.getAndAddOrdered(time);
     }
 
+    @Override
     public void close()
     {
-        jobExecutionTime.close();
         jobExecutionCount.close();
         taskExecutionCount.close();
         taskStealCount.close();
         runnerIdleTime.close();
         runnerBusyTime.close();
     }
-
-    public void dump(PrintStream ps)
-    {
-        printCounter(ps, taskExecutionCount);
-        printCounter(ps, jobExecutionCount);
-        printCounter(ps, taskStealCount);
-        printTimeCounter(ps, runnerIdleTime);
-        printTimeCounter(ps, runnerBusyTime);
-
-        if (SHOULD_RECORD_JOB_EXECUTION_TIME)
-        {
-            printTimeCounter(ps, jobExecutionTime);
-        }
-    }
-
-    private void printCounter(PrintStream ps, AtomicCounter counter)
-    {
-        final String label = countersManager.getCounterLabel(counter.id());
-        final long value = counter.get();
-
-        ps.format("%s: %d\n", label, value);
-
-    }
-
-    private void printTimeCounter(PrintStream ps, AtomicCounter counter)
-    {
-        final String label = countersManager.getCounterLabel(counter.id());
-        long value = counter.get();
-
-        final long hours = TimeUnit.NANOSECONDS.toDays(value);
-        value -= TimeUnit.HOURS.toNanos(hours);
-
-        final long minutes = TimeUnit.NANOSECONDS.toMinutes(value);
-        value -= TimeUnit.MINUTES.toNanos(minutes);
-
-        final long seconds = TimeUnit.NANOSECONDS.toSeconds(value);
-        value -= TimeUnit.SECONDS.toNanos(seconds);
-
-        final long millis = TimeUnit.NANOSECONDS.toMillis(value);
-        value -= TimeUnit.MILLISECONDS.toNanos(millis);
-
-        final long micros = TimeUnit.NANOSECONDS.toMicros(value);
-
-        ps.format("%s:\t %dh %dm %02ds %03dms %03dμs\n", label, hours, minutes, seconds, millis, micros);
-    }
-
-
 }

@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import io.zeebe.util.sched.future.CompletableActorFuture;
+import io.zeebe.util.sched.metrics.TaskMetrics;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 
 /**
@@ -30,7 +31,7 @@ import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
  * Tasks are not reusable.
  *
  */
-@SuppressWarnings({"restriction", "rawtypes"})
+@SuppressWarnings("restriction")
 public class ActorTask
 {
     private static final long STATE_COUNT_OFFSET;
@@ -69,25 +70,35 @@ public class ActorTask
 
     boolean shouldYield;
 
+    boolean isClosing;
+
+    private TaskMetrics taskMetrics;
+
+    private boolean isCollectTaskMetrics;
+
     public ActorTask(ZbActor actor)
     {
         this.actor = actor;
     }
 
-    boolean isClosing;
-
-
     /**
      * called when the task is initially scheduled.
      * @param scheduler
+     * @param writeMetrics
      */
-    public void onTaskScheduled(ZbActorScheduler scheduler)
+    public void onTaskScheduled(ZbActorScheduler scheduler, boolean shouldCollectTaskMetrics)
     {
         // reset previous state to allow re-scheduling
         this.terminationFuture.close();
         this.terminationFuture.setAwaitingResult();
         this.isClosing = false;
         this.scheduler = scheduler;
+
+        this.isCollectTaskMetrics = shouldCollectTaskMetrics;
+        if (shouldCollectTaskMetrics)
+        {
+            this.taskMetrics = new TaskMetrics(actor.getName(), scheduler.getCountersManager());
+        }
 
         // create initial job to invoke on start callback
         final ActorJob j = new ActorJob();
@@ -209,6 +220,11 @@ public class ActorTask
         while (submittedJobs.poll() != null)
         {
             // discard jobs
+        }
+
+        if (taskMetrics != null)
+        {
+            taskMetrics.close();
         }
 
         terminationFuture.complete(null);
@@ -410,5 +426,20 @@ public class ActorTask
     public ZbActorScheduler getScheduler()
     {
         return scheduler;
+    }
+
+    public TaskMetrics getMetrics()
+    {
+        return taskMetrics;
+    }
+
+    public boolean isCollectTaskMetrics()
+    {
+        return isCollectTaskMetrics;
+    }
+
+    public void reportExecutionTime(long t)
+    {
+        taskMetrics.reportExecutionTime(t);
     }
 }
