@@ -135,9 +135,16 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
         joinController.open();
     }
 
+
+
     public void registerRaftStateListener(final RaftStateListener listener)
     {
         raftStateListeners.add(listener);
+    }
+
+    public void removeRaftStateListener(final RaftStateListener listener)
+    {
+        raftStateListeners.remove(listener);
     }
 
     private void notifyRaftStateListener(final RaftStateListener listener)
