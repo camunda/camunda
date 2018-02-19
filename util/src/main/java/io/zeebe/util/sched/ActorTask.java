@@ -20,7 +20,6 @@ import static org.agrona.UnsafeAccess.UNSAFE;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 
@@ -65,9 +64,6 @@ public class ActorTask
     volatile long stateCount = 0;
 
     ActorJob currentJob;
-
-    /** the future this task is currently blocked on */
-    protected ActorFuture awaitFuture;
 
     List<ActorSubscription> subscriptions = new ArrayList<>();
 
@@ -129,17 +125,6 @@ public class ActorTask
 
         while (!resubmit && (currentJob != null || poll()))
         {
-            if (currentJob.state == ActorState.BLOCKED)
-            {
-                // check whether the continuation trigger is in the list of submitted jobs
-                pollSubmittedJobs();
-
-                if (currentJob.state == ActorState.BLOCKED)
-                {
-                    break;
-                }
-            }
-
             try
             {
                 currentJob.execute(runner);
@@ -210,13 +195,6 @@ public class ActorTask
                     autoClose(runner);
                     resubmit = true;
                 }
-            }
-        }
-        else
-        {
-            if (currentJob.state == ActorState.BLOCKED)
-            {
-                resubmit = setStateActiveToBlocked();
             }
         }
 
@@ -312,29 +290,9 @@ public class ActorTask
         return false;
     }
 
-    boolean setStateActiveToBlocked()
-    {
-        state = ActorState.BLOCKED;
-
-        if (!submittedJobs.isEmpty())
-        {
-            if (setStateBlockedToUnblocking())
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     boolean setStateWaitingToWakingUp()
     {
         return casState(ActorState.WAITING, ActorState.WAKING_UP);
-    }
-
-    boolean setStateBlockedToUnblocking()
-    {
-        return casState(ActorState.BLOCKED, ActorState.UNBLOCKING);
     }
 
     private boolean poll()
@@ -414,13 +372,8 @@ public class ActorTask
                 else
                 {
                     currentJob.append(job);
-
-                    if (currentJob.state == ActorState.BLOCKED && job.isContinuationSignal(awaitFuture))
-                    {
-                        // continuation signal has been received, the blocked job can be removed
-                        currentJob = currentJob.getNext();
-                    }
                 }
+
                 hasJobs = true;
             }
         }
@@ -431,16 +384,6 @@ public class ActorTask
     public ActorState getState()
     {
         return state;
-    }
-
-    void onFutureCompleted(ActorJob continuationJob)
-    {
-        submittedJobs.offer(continuationJob);
-
-        if (setStateBlockedToUnblocking())
-        {
-            ActorTaskRunner.current().submit(this);
-        }
     }
 
     @Override

@@ -17,6 +17,8 @@ package io.zeebe.util.sched.future;
 
 import java.util.concurrent.Future;
 
+import io.zeebe.util.sched.ActorTask;
+
 /** interface for actor futures */
 public interface ActorFuture<V> extends Future<V>
 {
@@ -29,7 +31,7 @@ public interface ActorFuture<V> extends Future<V>
     V join();
 
     /** To be used by scheduler only */
-    boolean block(Runnable onCompletion);
+    void block(ActorTask onCompletion);
 
     boolean isCompletedExceptionally();
 

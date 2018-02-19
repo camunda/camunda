@@ -16,7 +16,6 @@
 package io.zeebe.util.sched;
 
 import java.util.concurrent.Callable;
-import java.util.function.BiConsumer;
 
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
@@ -82,18 +81,15 @@ public class ActorJob
             this.runner = null;
 
             // in any case, success or exception, decide if the job should be resubmitted
-            if (state != ActorState.BLOCKED)
+            if (isTriggeredBySubscription()
+                    || (isAutoCompleting && runnable == null)
+                    || isDoneCalled)
             {
-                if (isTriggeredBySubscription()
-                        || (isAutoCompleting && runnable == null)
-                        || isDoneCalled)
-                {
-                    state = ActorState.TERMINATED;
-                }
-                else
-                {
-                    state = ActorState.QUEUED;
-                }
+                state = ActorState.TERMINATED;
+            }
+            else
+            {
+                state = ActorState.QUEUED;
             }
         }
     }
@@ -190,64 +186,6 @@ public class ActorJob
         return resultFuture;
     }
 
-    public <T> void setBlockOnFuture(ActorFuture<T> future, BiConsumer<T, Throwable> callback)
-    {
-        final Runnable onCompletion = () -> task.onFutureCompleted(createContinuationJob(future, callback));
-        this.runnable = new AwaitFutureRunnable<>(this, future, onCompletion, true);
-    }
-
-    public <T> void setTriggerSubscriptionOnFuture(ActorFuture<T> future, ActorFutureSubscription subscription)
-    {
-        final Runnable onCompletion = () -> subscription.trigger();
-        runnable = new AwaitFutureRunnable<>(this, future, onCompletion, false);
-    }
-
-    static class AwaitFutureRunnable<T> implements Runnable
-    {
-        final ActorFuture<T> future;
-        final Runnable callback;
-        final ActorJob job;
-        final ActorTask task;
-        final boolean blockOnFuture;
-
-        AwaitFutureRunnable(
-                ActorJob job,
-                ActorFuture<T> future,
-                Runnable callback,
-                boolean blockOnFuture)
-        {
-            this.blockOnFuture = blockOnFuture;
-            this.job = job;
-            this.task = job.task;
-            this.future = future;
-            this.callback = callback;
-        }
-
-        @Override
-        public void run()
-        {
-            if (blockOnFuture)
-            {
-                task.awaitFuture = future;
-                job.state = ActorState.BLOCKED;
-            }
-
-            if (!future.block(callback))
-            {
-                callback.run();
-            }
-        }
-    }
-
-    private <T> ActorJob createContinuationJob(ActorFuture<T> future, BiConsumer<T, Throwable> callback)
-    {
-        final ActorJob continuationJob = new ActorJob();
-        continuationJob.setAutoCompleting(true);
-        continuationJob.onJobAddedToTask(task);
-        continuationJob.setRunnable(new FutureContinuationRunnable<>(task, future, callback, true));
-        return continuationJob;
-    }
-
     /**
      * used to recycle the job object
      */
@@ -286,11 +224,6 @@ public class ActorJob
         this.isAutoCompleting = isAutoCompleting;
     }
 
-    public void onFutureCompleted()
-    {
-        task.onFutureCompleted(this);
-    }
-
     @Override
     public String toString()
     {
@@ -308,16 +241,6 @@ public class ActorJob
         toString += " " + state;
 
         return toString;
-    }
-
-    public boolean isContinuationSignal(ActorFuture awaitFuture)
-    {
-        if (runnable != null && runnable instanceof FutureContinuationRunnable)
-        {
-            return ((FutureContinuationRunnable) runnable).future == awaitFuture;
-        }
-
-        return false;
     }
 
     public boolean isTriggeredBySubscription()

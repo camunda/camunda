@@ -24,9 +24,7 @@ import java.util.function.Consumer;
 
 import io.zeebe.util.sched.channel.ChannelConsumerCondition;
 import io.zeebe.util.sched.channel.ConsumableChannel;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.AllCompletedFutureConsumer;
-import io.zeebe.util.sched.future.FirstSuccessfullyCompletedFutureConsumer;
+import io.zeebe.util.sched.future.*;
 
 public class ActorControl
 {
@@ -219,23 +217,17 @@ public class ActorControl
      */
     public <T> void runOnCompletion(ActorFuture<T> future, BiConsumer<T, Throwable> callback)
     {
-        final ActorJob currentJob = ensureCalledFromWithinActor("runOnCompletion(...)");
+        ensureCalledFromWithinActor("runOnCompletion(...)");
 
         final ActorJob continuationJob = new ActorJob();
-        final FutureContinuationRunnable<T> continuationRunnable = new FutureContinuationRunnable<>(task, future, callback, false);
-        continuationJob.setRunnable(continuationRunnable);
+        continuationJob.setRunnable(new FutureContinuationRunnable<>(future, callback));
         continuationJob.setAutoCompleting(true);
         continuationJob.onJobAddedToTask(task);
 
-        final ActorFutureSubscription subscription = new ActorFutureSubscription(task, continuationJob);
+        final ActorFutureSubscription subscription = new ActorFutureSubscription(future, continuationJob);
         continuationJob.setSubscription(subscription);
 
-        final ActorJob registerJob = new ActorJob();
-        registerJob.onJobAddedToTask(task);
-        registerJob.setAutoCompleting(true);
-        registerJob.setTriggerSubscriptionOnFuture(future, subscription);
-
-        currentJob.appendChild(registerJob);
+        future.block(task);
     }
 
     /**
@@ -303,56 +295,25 @@ public class ActorControl
         }
     }
 
+    @Deprecated
     public <T> void await(ActorFuture<T> f, BiConsumer<T, Throwable> callback)
     {
-        final ActorJob currentJob = ensureCalledFromWithinActor("await(...)");
-
-        final ActorJob blockedJob = new ActorJob();
-        blockedJob.onJobAddedToTask(task);
-        blockedJob.setAutoCompleting(true);
-        blockedJob.setBlockOnFuture(f, callback);
-        currentJob.appendChild(blockedJob);
+        runOnCompletion(f, callback);
     }
 
+    @Deprecated
     public <T> void await(ActorFuture<T> f, Consumer<Throwable> callback)
     {
-        await(f, (r, t) ->
+        runOnCompletion(f, (r, t) ->
         {
             callback.accept(t);
         });
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @Deprecated
     public <T> void awaitAll(Collection<ActorFuture<T>> futures, Consumer<Throwable> callback)
     {
-        final int length = futures.size();
-        final ActorFuture[] futureArray = futures.toArray(new ActorFuture[length]);
-
-        final Consumer<Throwable>[] callbacks = new Consumer[length];
-        callbacks[length - 1] = (t) ->
-        {
-            for (int i = 0; i < futureArray.length; i++)
-            {
-                final ActorFuture future = futureArray[i];
-                if (future.isCompletedExceptionally())
-                {
-                    callback.accept(future.getException());
-                    return;
-                }
-            }
-            callback.accept(null);
-        };
-
-        for (int i = length - 2; i >= 0; i--)
-        {
-            final int offset = i;
-            callbacks[offset] = (t) ->
-            {
-                await(futureArray[offset + 1], callbacks[offset + 1]);
-            };
-        }
-
-        await(futureArray[0], callbacks[0]);
+        runOnCompletion(futures, callback);
     }
 
 
