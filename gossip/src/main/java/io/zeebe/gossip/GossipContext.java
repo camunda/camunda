@@ -25,7 +25,6 @@ public class GossipContext
     private final GossipConfiguration configuration;
 
     private final MembershipList memberList;
-
     private final DisseminationComponent disseminationComponent;
 
     private final GossipEventFactory gossipEventFactory;

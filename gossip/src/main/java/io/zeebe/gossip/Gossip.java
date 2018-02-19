@@ -43,6 +43,7 @@ import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.ZbActor;
 import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 
@@ -59,14 +60,12 @@ public class Gossip extends ZbActor implements GossipController, GossipEventPubl
     private final GossipConfiguration configuration;
     private final MembershipList membershipList;
     private final DisseminationComponent disseminationComponent;
-    private final GossipEventFactory gossipEventFactory;
 
     private final JoinController joinController;
     private final PingController pingController;
-    private final PingReqEventHandler pingReqController;
     private final SyncRequestEventHandler syncRequestHandler;
 
-    private CustomEventListenerConsumer customEventListenerConsumer;
+    private final CustomEventListenerConsumer customEventListenerConsumer;
     private final BufferingServerTransport serverTransport;
     private final GossipRequestHandler requestHandler;
 
@@ -77,6 +76,7 @@ public class Gossip extends ZbActor implements GossipController, GossipEventPubl
             final GossipConfiguration configuration)
     {
         this.serverTransport = serverTransport;
+        this.configuration = configuration;
 
         membershipList = new MembershipList(socketAddress, this::onSuspectMember);
         disseminationComponent = new DisseminationComponent(configuration, membershipList);
@@ -84,45 +84,36 @@ public class Gossip extends ZbActor implements GossipController, GossipEventPubl
         customEventListenerConsumer = new CustomEventListenerConsumer();
         final CustomEventSyncResponseSupplier customEventSyncRequestSupplier = new CustomEventSyncResponseSupplier();
 
-        gossipEventFactory = new GossipEventFactory(configuration, membershipList, disseminationComponent, customEventSyncRequestSupplier, customEventListenerConsumer);
+        final GossipEventFactory gossipEventFactory = new GossipEventFactory(configuration, membershipList, disseminationComponent, customEventSyncRequestSupplier, customEventListenerConsumer);
         final GossipEventSender gossipEventSender = new GossipEventSender(clientTransport, serverTransport, membershipList, gossipEventFactory);
 
-        this.configuration = configuration;
         final GossipContext context = new GossipContext(configuration, membershipList, disseminationComponent, gossipEventSender, gossipEventFactory);
 
         joinController = new JoinController(context, actor);
-
         pingController = new PingController(context, actor);
-        pingReqController = new PingReqEventHandler(context, actor);
         syncRequestHandler = new SyncRequestEventHandler(context, customEventSyncRequestSupplier, actor);
 
         requestHandler = new GossipRequestHandler(gossipEventFactory);
         requestHandler.registerGossipEventConsumer(GossipEventType.PING, new PingEventHandler(context));
-        requestHandler.registerGossipEventConsumer(GossipEventType.PING_REQ, pingReqController);
+        requestHandler.registerGossipEventConsumer(GossipEventType.PING_REQ, new PingReqEventHandler(context, actor));
         requestHandler.registerGossipEventConsumer(GossipEventType.SYNC_REQUEST, syncRequestHandler);
-    }
-
-    @Override
-    public String getName()
-    {
-        return membershipList.self().getId();
     }
 
     @Override
     protected void onActorStarted()
     {
-        final ActorFuture<ServerInputSubscription> serverInputSubscriptionActorFuture =
+        final ActorFuture<ServerInputSubscription> openSubscriptionFuture =
             serverTransport.openSubscription("gossip", null, requestHandler);
 
-        actor.await(serverInputSubscriptionActorFuture, (subscription, throwable) ->
+        actor.runOnCompletion(openSubscriptionFuture, (subscription, failure) ->
         {
-            if (throwable == null)
+            if (failure == null)
             {
                 actor.consume(subscription, () -> subscription.poll());
             }
             else
             {
-                LOG.error("Failed to open subscription!", throwable);
+                LOG.error("Failed to open subscription", failure);
             }
         });
 
@@ -141,24 +132,29 @@ public class Gossip extends ZbActor implements GossipController, GossipEventPubl
             @Override
             public void onRemove(Member member)
             {
-                // do nothing
+                // ping is stopped when the last member is removed
             }
         });
     }
 
+    public ActorFuture<Void> close()
+    {
+        return actor.close();
+    }
+
     private void onSuspectMember(Member member)
     {
-        final GossipTerm suspictionTerm = new GossipTerm().wrap(member.getTerm());
+        final GossipTerm suspicionTerm = new GossipTerm().wrap(member.getTerm());
 
         final int multiplier = configuration.getSuspicionMultiplier();
         final int clusterSize = 1 + membershipList.size();
         final Duration probeInterval = configuration.getProbeInterval();
-        final Duration suspictionTimeout = GossipMath.suspicionTimeout(multiplier, clusterSize, probeInterval);
+        final Duration suspicionTimeout = GossipMath.suspicionTimeout(multiplier, clusterSize, probeInterval);
 
-        actor.runDelayed(suspictionTimeout, () ->
+        actor.runDelayed(suspicionTimeout, () ->
         {
             // ensure that the member is still suspected
-            if (member.getTerm().isEqual(suspictionTerm))
+            if (member.getTerm().isEqual(suspicionTerm))
             {
                 LOG.info("Remove suspicious member '{}'", member.getId());
 
@@ -177,13 +173,21 @@ public class Gossip extends ZbActor implements GossipController, GossipEventPubl
     @Override
     public ActorFuture<Void> join(List<SocketAddress> contactPoints)
     {
-        return joinController.join(contactPoints);
+        final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+
+        actor.call(() -> joinController.join(contactPoints, future));
+
+        return future;
     }
 
     @Override
     public ActorFuture<Void> leave()
     {
-        return joinController.leave();
+        final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+
+        actor.call(() -> joinController.leave(future));
+
+        return future;
     }
 
     @Override
@@ -249,11 +253,6 @@ public class Gossip extends ZbActor implements GossipController, GossipEventPubl
     public void registerSyncRequestHandler(DirectBuffer eventType, GossipSyncRequestHandler handler)
     {
         actor.call(() -> syncRequestHandler.registerSyncRequestHandler(eventType, handler));
-    }
-
-    public ActorFuture<Void> close()
-    {
-        return actor.close();
     }
 
 }

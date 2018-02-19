@@ -15,6 +15,7 @@
  */
 package io.zeebe.gossip;
 
+import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -28,7 +29,6 @@ import io.zeebe.gossip.util.GossipRule;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -38,8 +38,7 @@ public class GossipJoinTest
     private static final GossipConfiguration CONFIGURATION = new GossipConfiguration();
 
     private ControlledActorClock clock = new ControlledActorClock();
-
-    public ActorSchedulerRule actorScheduler = new ActorSchedulerRule(clock);
+    private ActorSchedulerRule actorScheduler = new ActorSchedulerRule(clock);
 
     private GossipRule gossip1 = new GossipRule(() -> actorScheduler.get(), CONFIGURATION, "localhost", 8001);
     private GossipRule gossip2 = new GossipRule(() -> actorScheduler.get(), CONFIGURATION, "localhost", 8002);
@@ -159,12 +158,16 @@ public class GossipJoinTest
         joinGossip2.join();
         joinGossip3.join();
 
-        clock.addTime(CONFIGURATION.getProbeInterval());
+        doRepeatedly(() ->
+        {
+            clock.addTime(CONFIGURATION.getProbeInterval());
+        }).until(v ->
+        {
+            return gossip2.receivedMembershipEvent(MembershipEventType.JOIN, gossip3) &&
+                    gossip1.receivedMembershipEvent(MembershipEventType.JOIN, gossip3);
+        });
 
         // then
-        assertThat(gossip2.receivedMembershipEvent(MembershipEventType.JOIN, gossip3)).isTrue();
-        assertThat(gossip1.receivedMembershipEvent(MembershipEventType.JOIN, gossip3)).isTrue();
-
         assertThat(gossip3.hasMember(gossip1)).isTrue();
         assertThat(gossip3.hasMember(gossip2)).isTrue();
 
@@ -237,27 +240,4 @@ public class GossipJoinTest
         assertThatThrownBy(() -> future.join()).hasMessageContaining("Can't join cluster without contact points.");
     }
 
-    @Ignore("need to be rewritten since it uses a real actor scheduler")
-    @Test
-    public void shouldCloseClientRequestsOnJoinAndLeave()
-    {
-        // given
-        final int joinLeaveCount = 1_000;
-
-        // when - then
-        for (int i = 0; i < joinLeaveCount; i++)
-        {
-            gossip2.join(gossip1).join();
-
-            assertThat(gossip1.hasMember(gossip2)).isTrue();
-            assertThat(gossip2.hasMember(gossip1)).isTrue();
-            assertThat(gossip1.receivedMembershipEvent(MembershipEventType.JOIN, gossip2)).isTrue();
-
-            gossip1.clearReceivedEvents();
-
-            gossip2.leave().join();
-
-            assertThat(gossip1.receivedMembershipEvent(MembershipEventType.LEAVE, gossip2)).isTrue();
-        }
-    }
 }

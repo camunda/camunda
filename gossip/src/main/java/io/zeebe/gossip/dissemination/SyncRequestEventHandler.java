@@ -35,7 +35,6 @@ import io.zeebe.util.collection.ReusableObjectList;
 import io.zeebe.util.collection.Tuple;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletedActorFuture;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 
@@ -43,30 +42,30 @@ public class SyncRequestEventHandler implements GossipEventConsumer
 {
     private static final Logger LOG = Loggers.GOSSIP_LOGGER;
 
+    private final ActorControl actor;
     private final MembershipList membershipList;
     private final CustomEventSyncResponseSupplier customEventSyncRequestSupplier;
-    private final List<Tuple<DirectBuffer, GossipSyncRequestHandler>> handlers = new ArrayList<>();
-
     private final GossipEventSender gossipEventSender;
+
+    private final List<Tuple<DirectBuffer, GossipSyncRequestHandler>> handlers = new ArrayList<>();
     private final ReusableObjectList<GossipSyncRequest> requests = new ReusableObjectList<>(() -> new GossipSyncRequest());
 
-    private final ActorControl actor;
-
-    public SyncRequestEventHandler(GossipContext context, CustomEventSyncResponseSupplier customEventSyncRequestSupplier, ActorControl actorControl)
+    public SyncRequestEventHandler(GossipContext context, CustomEventSyncResponseSupplier customEventSyncRequestSupplier, ActorControl actor)
     {
         this.membershipList = context.getMembershipList();
         this.customEventSyncRequestSupplier = customEventSyncRequestSupplier;
-        this.actor = actorControl;
+        this.actor = actor;
         this.gossipEventSender = context.getGossipEventSender();
     }
 
     @Override
     public void accept(GossipEvent event, long requestId, int streamId)
     {
-        final List<ActorFuture<Void>> futures = new ArrayList<>();
-
+        // TODO handle concurrent SYNC requests
         if (!handlers.isEmpty())
         {
+            final List<ActorFuture<Void>> syncHandlerFutures = new ArrayList<>();
+
             for (Tuple<DirectBuffer, GossipSyncRequestHandler> tuple : handlers)
             {
                 final GossipSyncRequest request = requests.add();
@@ -76,18 +75,18 @@ public class SyncRequestEventHandler implements GossipEventConsumer
 
                 final GossipSyncRequestHandler handler = tuple.getRight();
                 final ActorFuture<Void> future = handler.onSyncRequest(request);
-                futures.add(future);
+                syncHandlerFutures.add(future);
             }
 
-            actor.runOnCompletion(futures, (throwable) ->
+            actor.runOnCompletion(syncHandlerFutures, (failure) ->
             {
-                if (throwable == null)
+                if (failure == null)
                 {
                     actor.submit(() -> sendSyncResponse(requestId, streamId));
                 }
                 else
                 {
-                    Loggers.GOSSIP_LOGGER.warn("Can't produce sync response.", throwable);
+                    LOG.warn("Can't produce sync response.", failure);
                 }
             });
         }
@@ -131,6 +130,8 @@ public class SyncRequestEventHandler implements GossipEventConsumer
 
         LOG.trace("Send SYNC response");
         gossipEventSender.responseSync(requestId, streamId);
+
+        requests.clear();
     }
 
     public void registerSyncRequestHandler(DirectBuffer eventType, GossipSyncRequestHandler handler)

@@ -32,13 +32,12 @@ public class MembershipList implements Iterable<Member>
     private final List<Member> members = new ArrayList<>();
     private final List<Member> membersView = Collections.unmodifiableList(members);
 
-    private int aliveMemberSize = 0;
-
-    private final List<GossipMembershipListener> listeners = new ArrayList<>();
-
     private final AliveMembershipIterator iterator = new AliveMembershipIterator();
 
     private final Consumer<Member> onSuspectedMember;
+    private final List<GossipMembershipListener> listeners = new ArrayList<>();
+
+    private int aliveMemberSize = 0;
 
     public MembershipList(SocketAddress address, Consumer<Member> onSuspectedMember)
     {

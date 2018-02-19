@@ -17,7 +17,9 @@ package io.zeebe.gossip.failuredetection;
 
 import io.zeebe.gossip.GossipContext;
 import io.zeebe.gossip.Loggers;
-import io.zeebe.gossip.protocol.*;
+import io.zeebe.gossip.protocol.GossipEvent;
+import io.zeebe.gossip.protocol.GossipEventConsumer;
+import io.zeebe.gossip.protocol.GossipEventSender;
 import org.slf4j.Logger;
 
 public class PingEventHandler implements GossipEventConsumer
@@ -34,7 +36,10 @@ public class PingEventHandler implements GossipEventConsumer
     @Override
     public void accept(GossipEvent event, long requestId, int streamId)
     {
-        LOG.trace("Send ACK to '{}'", event.getSender());
+        if (LOG.isTraceEnabled())
+        {
+            LOG.trace("Send ACK to '{}'", event.getSender());
+        }
 
         gossipEventSender.responseAck(requestId, streamId);
     }

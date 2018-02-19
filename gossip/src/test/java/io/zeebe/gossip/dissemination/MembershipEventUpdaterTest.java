@@ -33,9 +33,11 @@ public class MembershipEventUpdaterTest
 {
     private static final GossipConfiguration CONFIGURATION = new GossipConfiguration();
 
-    private MembershipList members = new MembershipList(new SocketAddress(), (member) -> { });
-    private DisseminationComponent disseminationComponent = new DisseminationComponent(CONFIGURATION, members);
-    private MembershipEventUpdater membershipEventUpdater = new MembershipEventUpdater(members, disseminationComponent);
+    private MembershipList membershipList = new MembershipList(new SocketAddress(), (member) ->
+    { });
+
+    private DisseminationComponent disseminationComponent = new DisseminationComponent(CONFIGURATION, membershipList);
+    private MembershipEventUpdater membershipEventUpdater = new MembershipEventUpdater(membershipList, disseminationComponent);
 
     @Test
     public void shouldNotConsumeOldRemoveEvent()
@@ -45,7 +47,7 @@ public class MembershipEventUpdaterTest
         final GossipTerm oldTerm = new GossipTerm();
         oldTerm.epoch(System.currentTimeMillis() - 1000);
         final GossipTerm newTerm = new GossipTerm();
-        members.newMember(memberAddress, newTerm);
+        membershipList.newMember(memberAddress, newTerm);
 
         // when
         final MembershipEvent membershipEvent = new MembershipEvent();
@@ -57,7 +59,7 @@ public class MembershipEventUpdaterTest
 
         // then
         assertThat(consumed).isFalse();
-        assertThat(members.get(memberAddress).getStatus()).isEqualByComparingTo(MembershipStatus.ALIVE);
+        assertThat(membershipList.get(memberAddress).getStatus()).isEqualByComparingTo(MembershipStatus.ALIVE);
     }
 
 }

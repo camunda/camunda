@@ -15,17 +15,47 @@
  */
 package io.zeebe.gossip.util;
 
+import static java.util.stream.Collectors.toList;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
+
 import io.zeebe.clustering.gossip.GossipEventType;
 import io.zeebe.clustering.gossip.MembershipEventType;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.dispatcher.FragmentHandler;
-import io.zeebe.gossip.*;
+import io.zeebe.gossip.Gossip;
+import io.zeebe.gossip.GossipConfiguration;
+import io.zeebe.gossip.GossipController;
+import io.zeebe.gossip.GossipCustomEventListener;
+import io.zeebe.gossip.GossipEventPublisher;
+import io.zeebe.gossip.GossipMembershipListener;
 import io.zeebe.gossip.membership.Member;
 import io.zeebe.gossip.protocol.CustomEvent;
 import io.zeebe.gossip.protocol.GossipEvent;
 import io.zeebe.gossip.protocol.MembershipEvent;
-import io.zeebe.transport.*;
+import io.zeebe.transport.BufferingServerTransport;
+import io.zeebe.transport.ClientInputListener;
+import io.zeebe.transport.ClientOutput;
+import io.zeebe.transport.ClientRequest;
+import io.zeebe.transport.ClientTransport;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.SocketAddress;
+import io.zeebe.transport.Transports;
 import io.zeebe.transport.impl.RequestResponseHeaderDescriptor;
 import io.zeebe.transport.impl.TransportHeaderDescriptor;
 import io.zeebe.util.buffer.BufferUtil;
@@ -36,16 +66,6 @@ import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
 import org.junit.rules.ExternalResource;
 import org.mockito.ArgumentMatcher;
-
-import java.util.*;
-import java.util.concurrent.TimeoutException;
-import java.util.function.Supplier;
-import java.util.stream.Stream;
-
-import static java.util.stream.Collectors.toList;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.*;
 
 public class GossipRule extends ExternalResource
 {
@@ -128,10 +148,15 @@ public class GossipRule extends ExternalResource
         final ClientTransport spyClientTransport = spy(clientTransport);
         when(spyClientTransport.getOutput()).thenReturn(spyClientOutput);
 
-        gossip = new Gossip(socketAddress, serverTransport, spyClientTransport, configuration);
-
-        // TODO make it easier to distinguish different gossip runners
-        // MDC.put("gossip-id", name);
+        gossip = new Gossip(socketAddress, serverTransport, spyClientTransport, configuration)
+        {
+            @Override
+            public String getName()
+            {
+                // make it easier to distinguish different gossip runners
+                return socketAddress.toString();
+            }
+        };
         actorScheduler.submitActor(gossip);
 
         localMembershipListener = new LocalMembershipListener();

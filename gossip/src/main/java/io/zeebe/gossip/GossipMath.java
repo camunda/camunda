@@ -27,7 +27,7 @@ public class GossipMath
 
     public static Duration suspicionTimeout(int suspicionMult, int clusterSize, Duration pingInterval)
     {
-        return Duration.ofMillis(suspicionMult * ceilLog2(clusterSize) * pingInterval.toMillis());
+        return pingInterval.multipliedBy(suspicionMult * ceilLog2(clusterSize));
     }
 
     /**

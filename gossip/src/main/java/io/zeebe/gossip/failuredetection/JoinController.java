@@ -42,33 +42,36 @@ import org.slf4j.Logger;
 public class JoinController
 {
     private static final Logger LOG = Loggers.GOSSIP_LOGGER;
-    private final GossipConfiguration configuration;
 
-    private final DisseminationComponent disseminationComponent;
-    private final Member self;
-    private final MembershipList membershipList;
-    private final GossipEventSender gossipEventSender;
-    private final GossipEventFactory gossipEventFactory;
     private final ActorControl actor;
 
-    private List<SocketAddress> contactPoints;
-    protected List<ActorFuture<ClientRequest>> futureRequests;
-    private SocketAddress contactPoint;
+    private final GossipConfiguration configuration;
 
-    private boolean isJoined;
+    private final Member self;
+    private final MembershipList membershipList;
+
+    private final DisseminationComponent disseminationComponent;
+
+    private final GossipEventSender gossipEventSender;
+    private final GossipEventFactory gossipEventFactory;
 
     private final GossipEvent ackResponse;
+    private final GossipEvent syncResponse;
+
+    private List<SocketAddress> contactPoints;
+
+    private boolean isJoined;
     private CompletableActorFuture<Void> joinFuture;
-    private GossipEvent syncResponse;
+    private CompletableActorFuture<Void> leaveFuture;
 
     public JoinController(GossipContext context, ActorControl actor)
     {
+        this.actor = actor;
         this.configuration = context.getConfiguration();
 
-        this.actor = actor;
-        this.disseminationComponent = context.getDisseminationComponent();
         this.self = context.getMembershipList().self();
         this.membershipList = context.getMembershipList();
+        this.disseminationComponent = context.getDisseminationComponent();
         this.gossipEventSender = context.getGossipEventSender();
         this.gossipEventFactory = context.getGossipEventFactory();
 
@@ -76,43 +79,33 @@ public class JoinController
         this.syncResponse = gossipEventFactory.createSyncResponse();
     }
 
-    public ActorFuture<Void> join(List<SocketAddress> contactPoints)
+    public void join(List<SocketAddress> contactPoints, CompletableActorFuture<Void> future)
     {
-        final CompletableActorFuture<Void> completedActorFuture = new CompletableActorFuture<>();
-        actor.call(() ->
+        if (isJoined)
         {
-            if (!isJoined)
-            {
-                if (joinFuture == null)
-                {
-                    joinFuture = completedActorFuture;
-                    if (contactPoints == null || contactPoints.isEmpty())
-                    {
-                        joinFuture.completeExceptionally(
-                            new IllegalArgumentException("Can't join cluster without contact points."));
-                    }
-                    else
-                    {
-                        actor.run(this::sendJoin);
-                        this.futureRequests = new ArrayList<>(contactPoints.size());
-                        this.contactPoints = contactPoints;
-                    }
-                }
-                else
-                {
-                    completedActorFuture.completeExceptionally(new IllegalStateException(("Currently join in progress.")));
-                }
-            }
-            else
-            {
-                completedActorFuture.completeExceptionally(new IllegalStateException("Already joined."));
-            }
-        });
-        return completedActorFuture;
+            future.completeExceptionally(new IllegalStateException("Already joined."));
+        }
+        else if (contactPoints == null || contactPoints.isEmpty())
+        {
+            future.completeExceptionally(new IllegalArgumentException("Can't join cluster without contact points."));
+        }
+        else if (joinFuture != null)
+        {
+            future.completeExceptionally(new IllegalStateException(("Currently join in progress.")));
+        }
+        else
+        {
+            this.joinFuture = future;
+            this.contactPoints = contactPoints;
+
+            sendJoinEvent();
+        }
     }
 
-    private void sendJoin()
+    private void sendJoinEvent()
     {
+        final List<ActorFuture<ClientRequest>> requestFutures = new ArrayList<>(contactPoints.size());
+
         self.getTerm().increment();
 
         for (SocketAddress contactPoint : contactPoints)
@@ -126,125 +119,133 @@ public class JoinController
                     .type(MembershipEventType.JOIN)
                     .gossipTerm(self.getTerm());
 
-                final ActorFuture<ClientRequest> clientRequestActorFuture =
+                final ActorFuture<ClientRequest> requestFuture =
                     gossipEventSender.sendPing(contactPoint, configuration.getJoinTimeout());
-                futureRequests.add(clientRequestActorFuture);
+                requestFutures.add(requestFuture);
             }
         }
 
-        actor.runOnFirstCompletion(futureRequests, (result, throwable) ->
+        actor.runOnFirstCompletion(requestFutures, (request, failure) ->
         {
-            if (throwable == null)
+            if (failure == null)
             {
-                final DirectBuffer response = result.join();
+                // process response
+                final DirectBuffer response = request.join();
                 ackResponse.wrap(response, 0, response.capacity());
 
-                contactPoint = ackResponse.getSender();
-                actor.submit(this::sendSync);
+                final SocketAddress contactPoint = ackResponse.getSender();
+                actor.submit(() -> sendSyncRequest(contactPoint));
             }
             else
             {
                 LOG.info("Failed to contact any of '{}'. Try again in {}", contactPoints, configuration.getJoinInterval());
 
-                actor.runDelayed(configuration.getJoinInterval(), this::sendJoin);
+                actor.runDelayed(configuration.getJoinInterval(), this::sendJoinEvent);
             }
         });
     }
 
-    private void sendSync()
+    private void sendSyncRequest(final SocketAddress contactPoint)
     {
         LOG.trace("Send SYNC request to '{}'", contactPoint);
 
-        final ActorFuture<ClientRequest> clientRequestActorFuture =
+        final ActorFuture<ClientRequest> requestFuture =
             gossipEventSender.sendSyncRequest(contactPoint, configuration.getSyncTimeout());
 
-        actor.await(clientRequestActorFuture, (response, throwable) ->
+        actor.runOnCompletion(requestFuture, (request, failure) ->
         {
-            if (throwable == null)
+            if (failure == null)
             {
                 LOG.debug("Received SYNC response.");
 
-                final DirectBuffer join = response.join();
-                syncResponse.wrap(join, 0, join.capacity());
-
-                LOG.debug("Joined cluster successfully");
+                // process response
+                final DirectBuffer response = request.join();
+                syncResponse.wrap(response, 0, response.capacity());
 
                 isJoined = true;
                 joinFuture.complete(null);
                 joinFuture = null;
+
+                LOG.debug("Joined cluster successfully");
             }
             else
             {
                 LOG.debug("Failed to receive SYNC response from '{}'. Try again in {}", contactPoint, configuration.getJoinInterval());
 
-                actor.runDelayed(configuration.getJoinInterval(), this::sendJoin);
+                actor.runDelayed(configuration.getJoinInterval(), this::sendJoinEvent);
             }
         });
     }
 
-    public ActorFuture<Void> leave()
+    public void leave(CompletableActorFuture<Void> future)
     {
-        final CompletableActorFuture<Void> completableActorFuture = new CompletableActorFuture<>();
-        actor.call(() ->
+        if (!isJoined)
         {
-            if (isJoined)
+            future.complete(null);
+        }
+        else if (leaveFuture != null)
+        {
+            future.completeExceptionally(new IllegalStateException(("Currently leave in progress.")));
+        }
+        else
+        {
+            this.leaveFuture = future;
+            sendLeaveEvent();
+        }
+    }
+
+    private void sendLeaveEvent()
+    {
+        final Member self = membershipList.self();
+
+        self.getTerm().increment();
+
+        disseminationComponent.addMembershipEvent()
+            .address(self.getAddress())
+            .type(MembershipEventType.LEAVE)
+            .gossipTerm(self.getTerm());
+
+        // spread LEAVE event to random members
+        final List<Member> members = new ArrayList<>(membershipList.getMembersView());
+        Collections.shuffle(members);
+
+        final int clusterSize = membershipList.size();
+        final int multiplier = configuration.getRetransmissionMultiplier();
+        final int spreadLimit = Math.min(GossipMath.gossipPeriodsToSpread(multiplier, clusterSize), clusterSize);
+
+        final List<ActorFuture<ClientRequest>> requestFutures = new ArrayList<>(spreadLimit);
+
+        int spreadCount = 0;
+        for (int m = 0; m < members.size() && spreadCount < spreadLimit; m++)
+        {
+            final Member member = members.get(m);
+
+            if (member.getStatus() == MembershipStatus.ALIVE)
             {
-                LOG.info("Leave cluster");
-                final Member self = membershipList.self();
+                LOG.trace("Spread LEAVE event to '{}'", member.getAddress());
 
-                self.getTerm().increment();
+                final ActorFuture<ClientRequest> requestFuture =
+                        gossipEventSender.sendPing(member.getAddress(), configuration.getLeaveTimeout());
+                requestFutures.add(requestFuture);
 
-                disseminationComponent.addMembershipEvent()
-                    .address(self.getAddress())
-                    .type(MembershipEventType.LEAVE)
-                    .gossipTerm(self.getTerm());
+                spreadCount += 1;
+            }
+        }
 
-                final int clusterSize = membershipList.size();
-                final int multiplier = configuration.getRetransmissionMultiplier();
-                final int spreadCount = Math.min(GossipMath.gossipPeriodsToSpread(multiplier, clusterSize), clusterSize);
-
-                final List<Member> members = new ArrayList<>(membershipList.getMembersView());
-                Collections.shuffle(members);
-
-                futureRequests = new ArrayList<>(spreadCount);
-
-                int spread = 0;
-                for (int n = 0; spread < spreadCount && n < members.size(); n++)
-                {
-                    final Member member = members.get(n);
-
-                    if (member.getStatus() == MembershipStatus.ALIVE)
-                    {
-                        LOG.trace("Spread LEAVE event to '{}'", member.getAddress());
-
-                        final ActorFuture<ClientRequest> clientRequestActorFuture =
-                                gossipEventSender.sendPing(member.getAddress(), configuration.getLeaveTimeout());
-                        futureRequests.add(clientRequestActorFuture);
-
-                        spread += 1;
-                    }
-                }
-
-                actor.awaitAll(futureRequests, (throwable) ->
-                {
-
-                    completableActorFuture.complete(null);
-                    if (throwable == null)
-                    {
-                        LOG.info("Left cluster successfully");
-                        isJoined = false;
-                    }
-                    else
-                    {
-                        LOG.info("Left cluster but timeout is reached before event is confirmed by all members");
-                    }
-                });
+        actor.runOnCompletion(requestFutures, (failure) ->
+        {
+            if (failure == null)
+            {
+                LOG.info("Left cluster successfully");
             }
             else
             {
-                completableActorFuture.complete((Void) null);
+                LOG.info("Left cluster but timeout is reached before event is confirmed by all members");
             }
+
+            isJoined = false;
+            leaveFuture.complete(null);
+            leaveFuture = null;
         });
-        return completableActorFuture;
     }
 }

@@ -42,7 +42,7 @@ public class GossipConfiguration
     private int subscriptionPollLimit = 3;
 
     /**
-     * The timeout of a join request in milliseconds.
+     * The timeout of a join request.
      */
     public Duration getJoinTimeout()
     {
@@ -50,7 +50,7 @@ public class GossipConfiguration
     }
 
     /**
-     * The timeout of a join request in milliseconds.
+     * The timeout of a join request.
      */
     public GossipConfiguration joinTimeout(int joinTimeout)
     {
@@ -59,7 +59,7 @@ public class GossipConfiguration
     }
 
     /**
-     * The time in milliseconds when a failed join request is send again.
+     * The time when a failed join request is send again.
      */
     public Duration getJoinInterval()
     {
@@ -67,7 +67,7 @@ public class GossipConfiguration
     }
 
     /**
-     * The time in milliseconds when a failed join request is send again.
+     * The time when a failed join request is send again.
      */
     public GossipConfiguration joinInterval(int joinInterval)
     {
@@ -99,7 +99,7 @@ public class GossipConfiguration
     }
 
     /**
-     * The time in milliseconds between two probe requests.
+     * The time between two probe requests.
      */
     public Duration getProbeInterval()
     {
@@ -107,7 +107,7 @@ public class GossipConfiguration
     }
 
     /**
-     * The time in milliseconds between two probe requests.
+     * The time between two probe requests.
      */
     public GossipConfiguration setProbeInterval(final int probeInterval)
     {
@@ -116,7 +116,7 @@ public class GossipConfiguration
     }
 
     /**
-     * The timeout of a probe request in milliseconds.
+     * The timeout of a probe request.
      */
     public Duration getProbeTimeout()
     {
@@ -124,7 +124,7 @@ public class GossipConfiguration
     }
 
     /**
-     * The timeout of a probe request in milliseconds.
+     * The timeout of a probe request.
      */
     public GossipConfiguration setProbeTimeout(final int probeTimeout)
     {
@@ -150,7 +150,7 @@ public class GossipConfiguration
     }
 
     /**
-     * The timeout of an indirect probe request in milliseconds.
+     * The timeout of an indirect probe request.
      */
     public Duration getProbeIndirectTimeout()
     {
@@ -158,7 +158,7 @@ public class GossipConfiguration
     }
 
     /**
-     * The timeout of an indirect probe request in milliseconds.
+     * The timeout of an indirect probe request.
      */
     public GossipConfiguration probeIndirectTimeout(int probeIndirectTimeout)
     {
@@ -167,7 +167,7 @@ public class GossipConfiguration
     }
 
     /**
-     * The timeout of a sync request in milliseconds.
+     * The timeout of a sync request.
      */
     public Duration getSyncTimeout()
     {
@@ -175,7 +175,7 @@ public class GossipConfiguration
     }
 
     /**
-     * The timeout of a sync request in milliseconds.
+     * The timeout of a sync request.
      */
     public GossipConfiguration syncTimeout(int syncTimeout)
     {
@@ -207,7 +207,7 @@ public class GossipConfiguration
     }
 
     /**
-     * The timeout of a leave request in milliseconds.
+     * The timeout of a leave request.
      */
     public Duration getLeaveTimeout()
     {
@@ -215,7 +215,7 @@ public class GossipConfiguration
     }
 
     /**
-     * The timeout of a leave request in milliseconds.
+     * The timeout of a leave request.
      */
     public GossipConfiguration leaveTimeout(int leaveTimeout)
     {
