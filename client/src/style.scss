@@ -12,6 +12,12 @@ html {
   height: 100%;
 }
 
+.Root-container {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
 body {
   margin: 0;
   padding: 0;

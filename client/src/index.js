@@ -26,7 +26,7 @@ import {
 import {ErrorBoundary} from 'components';
 
 ReactDOM.render(<Router>
-  <div style={{display: 'flex', flexDirection: 'column', flexGrow: 1}}>
+  <div className="Root-container">
     <Header name="Camunda Optimize" />
     <main >
       <ErrorBoundary>

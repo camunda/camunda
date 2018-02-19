@@ -273,7 +273,7 @@ export default class Report extends React.Component {
       return <Redirect to='/reports' />;
     }
 
-    return (<div style={{flexDirection: 'column', display: 'flex', flexGrow: 1}}>
+    return (<div className='Report-container'>
       {viewMode === 'edit' ? (this.renderEditMode()) : (this.renderViewMode())}
     </div>);
   }

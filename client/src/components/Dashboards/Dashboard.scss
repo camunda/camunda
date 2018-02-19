@@ -1,5 +1,10 @@
 @import "shared-styles.scss";
 
+.Dashboard-container {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
 
 .Dashboard__header {
   display: flex;
@@ -27,12 +32,12 @@
   font-size: 2em;
   width: 100%;
   font-weight: bold;
-  
+
   @include placeholder {
     font-weight: normal;
     color: #bdbdbd;
   }
-  
+
 }
 
 .Dashboard__tools {

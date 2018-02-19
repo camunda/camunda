@@ -198,7 +198,7 @@ export default class Dashboard extends React.Component {
         <Modal open={shareModalVisible} onClose={this.closeShareModal} className='Dashboard__share-modal'>
           <Modal.Header>Share {this.state.name}</Modal.Header>
           <Modal.Content>
-            <ShareEntity type={'dashboard'} resourceId={this.id} shareEntity={shareDashboard} 
+            <ShareEntity type={'dashboard'} resourceId={this.id} shareEntity={shareDashboard}
               revokeEntitySharing={revokeDashboardSharing} getSharedEntity={getSharedDashboard}/>
           </Modal.Content>
           <Modal.Actions>
@@ -248,7 +248,7 @@ export default class Dashboard extends React.Component {
       return <Redirect to='/dashboards' />;
     }
 
-    return (<div style={{display: 'flex', flexDirection: 'column', flexGrow: 1}}>
+    return (<div className='Dashboard-container'>
       {viewMode === 'edit' ? (this.renderEditMode(this.state)) : (this.renderViewMode(this.state))}
     </div>);
   }
