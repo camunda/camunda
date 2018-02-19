@@ -352,7 +352,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertSchedulerIT {
     alertService.getScheduler().scheduleJob(jobDetail, trigger);
     OffsetDateTime nextFireTime = getNextFireTime(trigger);
 
-    assertThat(nextFireTime.truncatedTo(ChronoUnit.SECONDS), is(OffsetDateTime.now().plus(intervalValue*7, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS)));
+    assertThat(nextFireTime.truncatedTo(ChronoUnit.MINUTES), is(OffsetDateTime.now().plus(intervalValue*7, ChronoUnit.DAYS).truncatedTo(ChronoUnit.MINUTES)));
   }
 
 
