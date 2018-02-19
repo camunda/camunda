@@ -17,25 +17,18 @@
  */
 package io.zeebe.broker.task;
 
+import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.time.Duration;
-import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import io.zeebe.test.broker.protocol.clientapi.TestTopicClient;
-import org.junit.After;
+import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.test.broker.protocol.clientapi.*;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-
-import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
-import io.zeebe.test.broker.protocol.clientapi.SubscribedEvent;
-import io.zeebe.util.time.ClockUtil;
 
 public class LockExpirationTest
 {
@@ -46,18 +39,10 @@ public class LockExpirationTest
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
-    @After
-    public void tearDown()
-    {
-        ClockUtil.reset();
-    }
-
     @Test
-    public void shouldExpireLockedTask() throws InterruptedException
+    public void shouldExpireLockedTask()
     {
         // given
-        ClockUtil.setCurrentTime(Instant.now());
-
         final String taskType = "foo";
         final long taskKey1 = createTask(taskType);
 
@@ -72,11 +57,13 @@ public class LockExpirationTest
         apiRule.moveMessageStreamToTail();
 
         // when expired
-        ClockUtil.addTime(Duration.ofSeconds(TaskQueueManagerService.LOCK_EXPIRATION_INTERVAL + 1));
+        doRepeatedly(() ->
+        {
+            brokerRule.getClock().addTime(TaskQueueManagerService.LOCK_EXPIRATION_INTERVAL);
+        }).until(v -> apiRule.numSubscribedEventsAvailable() == 1);
+
 
         // then locked again
-        waitUntil(() -> apiRule.numSubscribedEventsAvailable() == 1);
-
         final List<SubscribedEvent> events = apiRule.topic()
                                                      .receiveEvents(TestTopicClient.taskEvents())
                                                      .limit(8)
@@ -88,11 +75,9 @@ public class LockExpirationTest
     }
 
     @Test
-    public void shouldExpireMultipleLockedTasksAtOnce() throws InterruptedException
+    public void shouldExpireMultipleLockedTasksAtOnce()
     {
         // given
-        ClockUtil.setCurrentTime(Instant.now());
-
         final String taskType = "foo";
         final long taskKey1 = createTask(taskType);
         final long taskKey2 = createTask(taskType);
@@ -108,11 +93,12 @@ public class LockExpirationTest
         apiRule.moveMessageStreamToTail();
 
         // when
-        ClockUtil.addTime(Duration.ofSeconds(TaskQueueManagerService.LOCK_EXPIRATION_INTERVAL + 1));
+        doRepeatedly(() ->
+        {
+            brokerRule.getClock().addTime(TaskQueueManagerService.LOCK_EXPIRATION_INTERVAL);
+        }).until(v -> apiRule.numSubscribedEventsAvailable() == 2);
 
         // then
-        waitUntil(() -> apiRule.numSubscribedEventsAvailable() == 2);
-
         final List<SubscribedEvent> expiredEvents = apiRule.topic()
                                                     .receiveEvents(TestTopicClient.taskEvents())
                                                     .limit(16)

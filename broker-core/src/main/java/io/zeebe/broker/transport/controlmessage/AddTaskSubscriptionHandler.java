@@ -17,8 +17,6 @@
  */
 package io.zeebe.broker.transport.controlmessage;
 
-import java.util.concurrent.CompletableFuture;
-
 import io.zeebe.broker.task.TaskSubscriptionManager;
 import io.zeebe.broker.task.processor.TaskSubscription;
 import io.zeebe.broker.task.processor.TaskSubscriptionRequest;
@@ -27,7 +25,11 @@ import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.transport.ServerOutput;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
+
+import java.util.concurrent.CompletableFuture;
 
 public class AddTaskSubscriptionHandler implements ControlMessageHandler
 {
@@ -52,8 +54,9 @@ public class AddTaskSubscriptionHandler implements ControlMessageHandler
     }
 
     @Override
-    public CompletableFuture<Void> handle(int partitionId, DirectBuffer buffer, BrokerEventMetadata eventMetada)
+    public ActorFuture<Void> handle(int partitionId, DirectBuffer buffer, BrokerEventMetadata eventMetada)
     {
+        final CompletableActorFuture<Void> completableActorFuture = new CompletableActorFuture<>();
         request.reset();
         request.wrap(buffer);
 
@@ -66,15 +69,16 @@ public class AddTaskSubscriptionHandler implements ControlMessageHandler
 
         final CompletableFuture<Void> future = manager.addSubscription(taskSubscription);
 
-        return future.handle((v, failure) ->
+        future.handle((v, failure) ->
         {
             if (failure == null)
             {
                 request.setSubscriberKey(taskSubscription.getSubscriberKey());
 
-                final boolean success = responseWriter
+                responseWriter
                     .dataWriter(request)
                     .tryWriteResponse(eventMetada.getRequestStreamId(), eventMetada.getRequestId());
+                completableActorFuture.complete(null);
                 // TODO: proper back pressure
             }
             else
@@ -84,10 +88,12 @@ public class AddTaskSubscriptionHandler implements ControlMessageHandler
                     .errorMessage("Cannot add task subscription. %s", failure.getMessage())
                     .failedRequest(buffer, 0, buffer.capacity())
                     .tryWriteResponseOrLogFailure(requestStreamId, requestId);
+                completableActorFuture.completeExceptionally(failure);
                 // TODO: proper back pressure
             }
             return null;
         });
+        return completableActorFuture;
     }
 
 }

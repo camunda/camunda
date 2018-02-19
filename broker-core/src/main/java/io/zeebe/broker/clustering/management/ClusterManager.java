@@ -25,7 +25,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
@@ -34,9 +33,7 @@ import io.zeebe.broker.clustering.handler.Topology;
 import io.zeebe.broker.clustering.management.handler.ClusterManagerFragmentHandler;
 import io.zeebe.broker.clustering.management.memberList.ClusterMemberListManager;
 import io.zeebe.broker.clustering.management.memberList.MemberRaftComposite;
-import io.zeebe.broker.clustering.management.message.CreatePartitionRequest;
-import io.zeebe.broker.clustering.management.message.InvitationRequest;
-import io.zeebe.broker.clustering.management.message.InvitationResponse;
+import io.zeebe.broker.clustering.management.message.*;
 import io.zeebe.broker.clustering.raft.RaftPersistentFileStorage;
 import io.zeebe.broker.clustering.raft.RaftService;
 import io.zeebe.broker.logstreams.LogStreamsManager;
@@ -52,13 +49,13 @@ import io.zeebe.raft.state.RaftState;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.transport.*;
-import io.zeebe.util.DeferredCommandContext;
-import io.zeebe.util.actor.Actor;
+import io.zeebe.util.sched.ZbActor;
+import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
-public class ClusterManager implements Actor
+public class ClusterManager extends ZbActor
 {
     private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
     private static final DirectBuffer EMPTY_BUF = new UnsafeBuffer(0, 0);
@@ -67,11 +64,6 @@ public class ClusterManager implements Actor
     private final ServiceContainer serviceContainer;
 
     private final List<Raft> rafts;
-    private final List<StartLogStreamServiceController> startLogStreamServiceControllers;
-
-    private final DeferredCommandContext commandQueue;
-
-    private final List<RequestResponseController> activeRequestControllers;
 
     private final InvitationRequest invitationRequest;
     private final InvitationResponse invitationResponse;
@@ -80,43 +72,40 @@ public class ClusterManager implements Actor
     private TransportComponentCfg transportComponentCfg;
 
     private final ServerResponse response = new ServerResponse();
-    private final ServerInputSubscription inputSubscription;
 
     private final LogStreamsManager logStreamsManager;
     private final ClusterMemberListManager clusterMemberListManager;
 
-    public ClusterManager(final ClusterManagerContext context, final ServiceContainer serviceContainer, final TransportComponentCfg transportComponentCfg)
+    public ClusterManager(final ClusterManagerContext context,
+                          final ServiceContainer serviceContainer,
+                          final TransportComponentCfg transportComponentCfg)
     {
         this.context = context;
         this.serviceContainer = serviceContainer;
         this.transportComponentCfg = transportComponentCfg;
         this.rafts = new CopyOnWriteArrayList<>();
-        this.startLogStreamServiceControllers = new CopyOnWriteArrayList<>();
-        this.commandQueue = new DeferredCommandContext();
-        this.activeRequestControllers = new CopyOnWriteArrayList<>();
         this.invitationRequest = new InvitationRequest();
         this.logStreamsManager = context.getLogStreamsManager();
 
         this.invitationResponse = new InvitationResponse();
+        this.clusterMemberListManager = new ClusterMemberListManager(context, actor, transportComponentCfg, this::inviteUpdatedMember);
+    }
 
-        final ClusterManagerFragmentHandler fragmentHandler = new ClusterManagerFragmentHandler(this, context.getWorkflowRequestMessageHandler());
-        inputSubscription = context.getServerTransport()
-                                   .openSubscription("cluster-management", fragmentHandler, fragmentHandler)
-                                   .join();
+    public void close()
+    {
+        actor.close();
+    }
 
-        clusterMemberListManager = new ClusterMemberListManager(context, transportComponentCfg, this::inviteUpdatedMember);
-
+    private void open()
+    {
         final List<SocketAddress> collect = Arrays.stream(transportComponentCfg.gossip.initialContactPoints)
-                                                  .map(SocketAddress::from)
-                                                  .collect(Collectors.toList());
+            .map(SocketAddress::from)
+            .collect(Collectors.toList());
         if (!collect.isEmpty())
         {
             context.getGossip().join(collect);
         }
-    }
 
-    public void open()
-    {
         clusterMemberListManager.publishNodeAPIAddresses();
 
         final LogStreamsManager logStreamManager = context.getLogStreamsManager();
@@ -175,53 +164,38 @@ public class ClusterManager implements Actor
     }
 
     @Override
-    public String name()
+    public String getName()
     {
-        return "management";
+        return "cluster-manager";
     }
 
     @Override
-    public int doWork()
+    protected void onActorStarted()
     {
-        int workCount = 0;
+        final ClusterManagerFragmentHandler fragmentHandler = new ClusterManagerFragmentHandler(this, context.getWorkflowRequestMessageHandler());
 
-        workCount += commandQueue.doWork();
-        workCount += clusterMemberListManager.doWork();
-        workCount += inputSubscription.poll();
+        final ActorFuture<ServerInputSubscription> serverInputSubscriptionActorFuture = context.getServerTransport()
+            .openSubscription("cluster-management", fragmentHandler, fragmentHandler);
 
-        int i = 0;
-        while (i < activeRequestControllers.size())
+        actor.runOnCompletion(serverInputSubscriptionActorFuture, (subscription, throwable) ->
         {
-            final RequestResponseController requestController = activeRequestControllers.get(i);
-            workCount += requestController.doWork();
-
-            if (requestController.isFailed())
+            if (throwable == null)
             {
-                LOG.debug("Invitation request failed");
-            }
+                actor.consume(subscription, () ->
+                {
+                    if (subscription.poll() == 0)
+                    {
+                        actor.yield();
+                    }
+                });
 
-            if (requestController.isFailed() || requestController.isResponseAvailable())
-            {
-                requestController.close();
-            }
-
-            if (requestController.isClosed())
-            {
-                activeRequestControllers.remove(i);
+                open();
             }
             else
             {
-                i++;
+                Loggers.CLUSTERING_LOGGER.error("Failed to appendEvent a subscription.");
             }
-        }
-
-        for (int j = 0; j < startLogStreamServiceControllers.size(); j++)
-        {
-            workCount += startLogStreamServiceControllers.get(j)
-                                                         .doWork();
-        }
-
-        return workCount;
+        });
     }
 
     private void inviteUpdatedMember(SocketAddress updatedMember)
@@ -259,13 +233,20 @@ public class ClusterManager implements Actor
 
         LOG.debug("Send invitation request to {} for partition {} in term {}", member, logStream.getPartitionId(), raft.getTerm());
 
-        final RequestResponseController requestController = new RequestResponseController(context.getManagementClient());
+        final RemoteAddress remoteAddress = context.getManagementClient().registerRemoteAddress(member);
+        final ClientRequest clientRequest = context.getManagementClient().getOutput().sendRequest(remoteAddress, invitationRequest);
 
-        requestController.open(member, invitationRequest, (buffer, offset, length) ->
-            LOG.debug("Got invitation response from {} for partition id {}.",
-                      member,
-                      logStream.getPartitionId()));
-        activeRequestControllers.add(requestController);
+        actor.runOnCompletion(clientRequest, (request, throwable) ->
+        {
+            if (throwable == null)
+            {
+                LOG.debug("Got invitation response from {} for partition id {}.", member, logStream.getPartitionId());
+            }
+            else
+            {
+                LOG.debug("Invitation request failed");
+            }
+        });
     }
 
     public void createRaft(final SocketAddress socketAddress, final LogStream logStream, final List<SocketAddress> members)
@@ -286,9 +267,8 @@ public class ClusterManager implements Actor
     public void createRaft(final SocketAddress socketAddress, final LogStream logStream, final List<SocketAddress> members,
                            final RaftPersistentStorage persistentStorage)
     {
-        final RaftService raftService = new RaftService(transportComponentCfg.raft, socketAddress, logStream, members, persistentStorage, clusterMemberListManager);
-
         final ServiceName<Raft> raftServiceName = raftServiceName(logStream.getLogName());
+        final RaftService raftService = new RaftService(transportComponentCfg.raft, socketAddress, logStream, members, persistentStorage, clusterMemberListManager, clusterMemberListManager, raftServiceName);
 
         serviceContainer.createService(raftServiceName, raftService)
                         .group(RAFT_SERVICE_GROUP)
@@ -373,9 +353,10 @@ public class ClusterManager implements Actor
             .buffer(EMPTY_BUF);
 
         return output.sendResponse(response);
+//        return true;
     }
 
-    public CompletableFuture<Topology> requestTopology()
+    public ActorFuture<Topology> requestTopology()
     {
         return clusterMemberListManager.createTopology();
     }
@@ -387,14 +368,11 @@ public class ClusterManager implements Actor
     {
         // this must be determined before we cross the async boundary to avoid race conditions
         final boolean isRaftCreator = raft.getMemberSize() == 0;
-
-        commandQueue.runAsync(() ->
+        actor.call(() ->
         {
             LOG.trace("ADD raft {} for partition {} state {}.", raft.getSocketAddress(), raft.getLogStream()
                                                                                              .getPartitionId(), raft.getState());
             rafts.add(raft);
-
-            startLogStreamServiceControllers.add(new StartLogStreamServiceController(raftServiceName, raft, serviceContainer, clusterMemberListManager));
 
             if (isRaftCreator)
             {
@@ -423,7 +401,7 @@ public class ClusterManager implements Actor
         final LogStream logStream = raft.getLogStream();
         final int partitionId = logStream.getPartitionId();
 
-        commandQueue.runAsync(() ->
+        actor.call(() ->
         {
             for (int i = 0; i < rafts.size(); i++)
             {
@@ -432,18 +410,6 @@ public class ClusterManager implements Actor
                 if (partitionId == stream.getPartitionId())
                 {
                     rafts.remove(i);
-                    break;
-                }
-            }
-
-            for (int i = 0; i < startLogStreamServiceControllers.size(); i++)
-            {
-                final Raft r = startLogStreamServiceControllers.get(i)
-                                                               .getRaft();
-                final LogStream stream = r.getLogStream();
-                if (partitionId == stream.getPartitionId())
-                {
-                    startLogStreamServiceControllers.remove(i);
                     break;
                 }
             }

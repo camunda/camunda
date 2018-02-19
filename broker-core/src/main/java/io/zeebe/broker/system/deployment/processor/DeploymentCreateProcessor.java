@@ -44,7 +44,7 @@ import io.zeebe.msgpack.value.ValueArray;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.collection.IntArrayListIterator;
-import io.zeebe.util.time.ClockUtil;
+import io.zeebe.util.sched.clock.ActorClock;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.IntArrayList;
 import org.slf4j.Logger;
@@ -324,7 +324,7 @@ public class DeploymentCreateProcessor implements TypedEventProcessor<Deployment
         {
             updateWorkflowVersions(deploymentEvent.getTopicName(), deploymentEvent.deployedWorkflows());
 
-            final long timeout = ClockUtil.getCurrentTimeInMillis() + timeoutInMillis;
+            final long timeout = ActorClock.currentTimeMillis() + timeoutInMillis;
 
             pendingDeployments.put(event.getKey(), -1L, timeout, deploymentEvent.getTopicName());
         }

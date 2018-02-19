@@ -17,22 +17,21 @@
  */
 package io.zeebe.broker.transport.controlmessage;
 
-import java.util.concurrent.CompletableFuture;
-
-import org.agrona.DirectBuffer;
-
-import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.broker.task.CreditsRequest;
 import io.zeebe.broker.task.TaskSubscriptionManager;
 import io.zeebe.broker.task.processor.TaskSubscriptionRequest;
 import io.zeebe.broker.transport.clientapi.ErrorResponseWriter;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.ErrorCode;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.transport.ServerOutput;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
+import org.agrona.DirectBuffer;
 
 public class IncreaseTaskSubscriptionCreditsHandler implements ControlMessageHandler
 {
-    protected static final CompletableFuture<Void> COMPLETED_FUTURE = CompletableFuture.completedFuture(null);
+    protected static final CompletableActorFuture<Void> COMPLETED_FUTURE = CompletableActorFuture.completed(null);
 
     protected final TaskSubscriptionRequest subscription = new TaskSubscriptionRequest();
     protected final CreditsRequest creditsRequest = new CreditsRequest();
@@ -57,7 +56,7 @@ public class IncreaseTaskSubscriptionCreditsHandler implements ControlMessageHan
     }
 
     @Override
-    public CompletableFuture<Void> handle(int partitionId, DirectBuffer buffer, BrokerEventMetadata eventMetadata)
+    public ActorFuture<Void> handle(int partitionId, DirectBuffer buffer, BrokerEventMetadata eventMetadata)
     {
         subscription.reset();
 
@@ -76,7 +75,7 @@ public class IncreaseTaskSubscriptionCreditsHandler implements ControlMessageHan
 
         if (success)
         {
-            final boolean responseScheduled = responseWriter
+            responseWriter
                 .dataWriter(subscription)
                 .tryWriteResponse(eventMetadata.getRequestStreamId(), eventMetadata.getRequestId());
             // TODO: proper backpressure
@@ -92,7 +91,7 @@ public class IncreaseTaskSubscriptionCreditsHandler implements ControlMessageHan
 
     protected void sendError(BrokerEventMetadata metadata, DirectBuffer request, String errorMessage)
     {
-        final boolean success = errorResponseWriter
+        errorResponseWriter
             .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
             .errorMessage(errorMessage)
             .failedRequest(request, 0, request.capacity())

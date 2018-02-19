@@ -17,10 +17,6 @@
  */
 package io.zeebe.broker.event.processor;
 
-import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
-
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
 import io.zeebe.broker.logstreams.processor.NoopSnapshotSupport;
 import io.zeebe.broker.transport.clientapi.SubscribedEventWriter;
@@ -36,6 +32,8 @@ import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.util.collection.LongRingBuffer;
 import org.agrona.DirectBuffer;
+
+import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
 
 public class TopicSubscriptionPushProcessor implements StreamProcessor, EventProcessor
 {
@@ -55,8 +53,7 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
     protected final SubscribedEventWriter channelWriter;
 
     protected LongRingBuffer pendingEvents;
-    protected LongRingBuffer pendingAcks;
-    protected AtomicBoolean enabled;
+    private StreamProcessorContext context;
 
     public TopicSubscriptionPushProcessor(
             int clientStreamId,
@@ -72,25 +69,24 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
         this.startPosition = startPosition;
         this.name = cloneBuffer(name);
         this.nameString = name.getStringWithoutLengthUtf8(0, name.capacity());
-        this.enabled = new AtomicBoolean(false);
 
         if (prefetchCapacity > 0)
         {
             this.pendingEvents = new LongRingBuffer(prefetchCapacity);
-            this.pendingAcks = new LongRingBuffer(prefetchCapacity);
         }
     }
 
     @Override
     public void onOpen(StreamProcessorContext context)
     {
-
+        this.context = context;
         final LogStreamReader logReader = context.getLogStreamReader();
 
         final LogStream logStream = context.getLogStream();
         this.logStreamPartitionId = logStream.getPartitionId();
 
         setToStartPosition(logReader);
+        context.suspendController();
     }
 
     /**
@@ -160,39 +156,19 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
             {
                 throw new RuntimeException("Cannot record pending event " + elementAdded);
             }
+
+            if (pendingEvents.isSaturated())
+            {
+                this.context.suspendController();
+            }
         }
 
         return success;
     }
 
-    @Override
-    public boolean isSuspended()
-    {
-        if (!enabled.get())
-        {
-            return true;
-        }
-
-        if (recordsPendingEvents())
-        {
-            // first, process any ACKs if there are any pending
-            pendingAcks.consume((ackedPosition) -> pendingEvents.consumeAscendingUntilInclusive(ackedPosition));
-            return pendingEvents.isSaturated();
-        }
-        else
-        {
-            return false;
-        }
-    }
-
     public int getChannelId()
     {
         return clientStreamId;
-    }
-
-    public SubscribedEventWriter getChannelWriter()
-    {
-        return channelWriter;
     }
 
     public String getNameAsString()
@@ -202,15 +178,17 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
 
     public void onAck(long eventPosition)
     {
-        if (recordsPendingEvents())
+        context.getActorControl().call(() ->
         {
-            final boolean elementAdded = pendingAcks.addElementToHead(eventPosition);
-
-            if (!elementAdded)
+            if (recordsPendingEvents())
             {
-                throw new RuntimeException("Could not acknowledge event at position " + eventPosition + "; ACK capacity saturated");
+                pendingEvents.consumeAscendingUntilInclusive(eventPosition);
+                if (!pendingEvents.isSaturated())
+                {
+                    this.context.resumeController();
+                }
             }
-        }
+        });
     }
 
     /**
@@ -248,6 +226,9 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
 
     public void enable()
     {
-        this.enabled.set(true);
+        context.getActorControl().call(() ->
+        {
+            this.context.resumeController();
+        });
     }
 }

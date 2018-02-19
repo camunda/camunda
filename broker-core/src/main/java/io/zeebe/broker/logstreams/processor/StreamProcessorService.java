@@ -17,24 +17,28 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
-import java.time.Duration;
-
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.processor.*;
-import io.zeebe.logstreams.snapshot.TimeBasedSnapshotPolicy;
+import io.zeebe.logstreams.processor.EventFilter;
+import io.zeebe.logstreams.processor.StreamProcessor;
+import io.zeebe.logstreams.processor.StreamProcessorController;
 import io.zeebe.logstreams.spi.SnapshotStorage;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
-import io.zeebe.servicecontainer.*;
-import io.zeebe.util.actor.ActorScheduler;
+import io.zeebe.servicecontainer.Injector;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.util.sched.ZbActorScheduler;
+
+import java.time.Duration;
 
 public class StreamProcessorService implements Service<StreamProcessorController>
 {
     private final Injector<LogStream> logStreamInjector = new Injector<>();
     private final Injector<SnapshotStorage> snapshotStorageInjector = new Injector<>();
-    private final Injector<ActorScheduler> actorSchedulerInjector = new Injector<>();
+    private final Injector<ZbActorScheduler> actorSchedulerInjector = new Injector<>();
 
     private final String name;
     private final int id;
@@ -90,7 +94,7 @@ public class StreamProcessorService implements Service<StreamProcessorController
 
         final SnapshotStorage snapshotStorage = snapshotStorageInjector.getValue();
 
-        final ActorScheduler actorScheduler = actorSchedulerInjector.getValue();
+        final ZbActorScheduler actorScheduler = actorSchedulerInjector.getValue();
 
         MetadataFilter metadataFilter = versionFilter;
         if (customEventFilter != null)
@@ -108,7 +112,7 @@ public class StreamProcessorService implements Service<StreamProcessorController
         streamProcessorController = LogStreams.createStreamProcessor(name, id, streamProcessor)
             .logStream(logStream)
             .snapshotStorage(snapshotStorage)
-            .snapshotPolicy(new TimeBasedSnapshotPolicy(Duration.ofMinutes(15)))
+            .snapshotPeriod(Duration.ofMinutes(15))
             .actorScheduler(actorScheduler)
             .eventFilter(eventFilter)
             .reprocessingEventFilter(reprocessingEventFilter)
@@ -135,7 +139,7 @@ public class StreamProcessorService implements Service<StreamProcessorController
         return snapshotStorageInjector;
     }
 
-    public Injector<ActorScheduler> getActorSchedulerInjector()
+    public Injector<ZbActorScheduler> getActorSchedulerInjector()
     {
         return actorSchedulerInjector;
     }

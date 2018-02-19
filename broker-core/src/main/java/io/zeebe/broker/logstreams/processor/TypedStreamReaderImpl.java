@@ -32,7 +32,6 @@ import io.zeebe.util.ReflectUtil;
 
 public class TypedStreamReaderImpl implements TypedStreamReader
 {
-
     protected final LogStreamReader reader;
     protected final TypedEventImpl event = new TypedEventImpl();
     protected final BrokerEventMetadata metadata = new BrokerEventMetadata();

@@ -17,8 +17,6 @@
  */
 package io.zeebe.broker.task;
 
-import java.util.function.Consumer;
-
 import org.agrona.BitUtil;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.MessageHandler;
@@ -26,6 +24,8 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.broadcast.RecordDescriptor;
 import org.agrona.concurrent.ringbuffer.OneToOneRingBuffer;
 import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
+
+import java.util.function.Consumer;
 
 public class CreditsRequestBuffer
 {

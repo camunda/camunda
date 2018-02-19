@@ -23,11 +23,11 @@ import io.zeebe.broker.system.deployment.handler.WorkflowRequestMessageHandler;
 import io.zeebe.gossip.Gossip;
 import io.zeebe.transport.BufferingServerTransport;
 import io.zeebe.transport.ClientTransport;
-import io.zeebe.util.actor.ActorScheduler;
+import io.zeebe.util.sched.ZbActorScheduler;
 
 public class ClusterManagerContext
 {
-    private ActorScheduler actorScheduler;
+    private ZbActorScheduler actorScheduler;
     private LogStreamsManager logStreamsManager;
     private WorkflowRequestMessageHandler workflowRequestMessageHandler;
     private ClientTransport managementClient;
@@ -36,12 +36,12 @@ public class ClusterManagerContext
     private Gossip gossip;
     private MemberListService memberListService;
 
-    public ActorScheduler getActorScheduler()
+    public ZbActorScheduler getActorScheduler()
     {
         return actorScheduler;
     }
 
-    public void setActorScheduler(ActorScheduler actorScheduler)
+    public void setActorScheduler(ZbActorScheduler actorScheduler)
     {
         this.actorScheduler = actorScheduler;
     }

@@ -17,12 +17,10 @@
  */
 package io.zeebe.broker.transport.controlmessage;
 
-import java.util.concurrent.CompletableFuture;
-
-import org.agrona.DirectBuffer;
-
-import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.protocol.clientapi.ControlMessageType;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
+import io.zeebe.util.sched.future.ActorFuture;
+import org.agrona.DirectBuffer;
 
 /**
  * Handle a specific type of control messages.
@@ -48,5 +46,5 @@ public interface ControlMessageHandler
      * @return a future which indicates when the control message is handled
      *         completely
      */
-    CompletableFuture<Void> handle(int partitionId, DirectBuffer buffer, BrokerEventMetadata metadata);
+    ActorFuture<Void> handle(int partitionId, DirectBuffer buffer, BrokerEventMetadata metadata);
 }

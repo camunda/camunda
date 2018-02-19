@@ -31,9 +31,6 @@ import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.transport.SocketAddress;
 import org.agrona.DirectBuffer;
 
-/**
- *
- */
 public class MemberListService implements Service<MemberListService>
 {
     private final List<MemberRaftComposite> compositeList = new ArrayList<>();

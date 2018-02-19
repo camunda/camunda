@@ -17,17 +17,17 @@
  */
 package io.zeebe.broker.event.processor;
 
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-
-import io.zeebe.protocol.Protocol;
-import org.agrona.DirectBuffer;
-
-import io.zeebe.protocol.impl.BrokerEventMetadata;
+import io.zeebe.broker.Loggers;
 import io.zeebe.logstreams.log.LogStreamWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.processor.EventProcessor;
+import io.zeebe.protocol.Protocol;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
+import io.zeebe.util.sched.future.ActorFuture;
+import org.agrona.DirectBuffer;
+
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
 
 public class SubscribeProcessor implements EventProcessor
 {
@@ -66,7 +66,7 @@ public class SubscribeProcessor implements EventProcessor
 
         if (subscriptionName.capacity() > maximumNameLength)
         {
-            failedRequestState.wrapError("Cannot open topic subscription " + subscriberEvent.getNameAsString() +
+            failedRequestState.wrapError("Cannot appendEvent topic subscription " + subscriberEvent.getNameAsString() +
                     ". Subscription name must be " + maximumNameLength + " characters or shorter.");
             state = failedRequestState;
             return;
@@ -136,7 +136,7 @@ public class SubscribeProcessor implements EventProcessor
                     subscriberEvent.getStartPosition(),
                     subscriberEvent.getForceStart());
 
-            final CompletableFuture<TopicSubscriptionPushProcessor> processorFuture = manager.openPushProcessorAsync(
+            final ActorFuture<TopicSubscriptionPushProcessor> processorFuture = manager.openPushProcessorAsync(
                     metadata.getRequestStreamId(),
                     event.getKey(),
                     resumePosition,
@@ -152,9 +152,9 @@ public class SubscribeProcessor implements EventProcessor
 
     protected class AwaitSubscriptionServiceProcessor implements EventProcessor
     {
-        protected CompletableFuture<TopicSubscriptionPushProcessor> processorFuture;
+        protected ActorFuture<TopicSubscriptionPushProcessor> processorFuture;
 
-        public void wrap(CompletableFuture<TopicSubscriptionPushProcessor> processorFuture)
+        public void wrap(ActorFuture<TopicSubscriptionPushProcessor> processorFuture)
         {
             this.processorFuture = processorFuture;
         }
@@ -219,6 +219,7 @@ public class SubscribeProcessor implements EventProcessor
             // success response is written on SUBSCRIBED event, as only then it is guaranteed that
             //   the start position is persisted
 
+            Loggers.SERVICES_LOGGER.debug("Register topic push processor ");
             manager.registerPushProcessor(processor);
             return true;
         }

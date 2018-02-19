@@ -17,14 +17,23 @@
  */
 package io.zeebe.broker.workflow;
 
-import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.*;
+import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_STATE;
+import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_BPMN_PROCESS_ID;
+import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_VERSION;
 import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.workflowEvents;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.*;
-import java.util.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.broker.workflow.data.ResourceType;
@@ -32,7 +41,9 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.EventType;
-import io.zeebe.test.broker.protocol.clientapi.*;
+import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
+import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
+import io.zeebe.test.broker.protocol.clientapi.SubscribedEvent;
 import io.zeebe.util.StreamUtil;
 import org.assertj.core.util.Files;
 import org.junit.Rule;

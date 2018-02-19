@@ -17,6 +17,19 @@
  */
 package io.zeebe.broker.test;
 
+import io.zeebe.broker.Broker;
+import io.zeebe.broker.TestLoggers;
+import io.zeebe.broker.system.SystemServiceNames;
+import io.zeebe.broker.system.log.SystemPartitionManager;
+import io.zeebe.broker.topic.RequestPartitionsTest;
+import io.zeebe.broker.transport.TransportServiceNames;
+import io.zeebe.servicecontainer.*;
+import io.zeebe.test.util.TestFileUtil;
+import io.zeebe.util.allocation.DirectBufferAllocator;
+import io.zeebe.util.sched.clock.ControlledActorClock;
+import org.junit.rules.ExternalResource;
+import org.slf4j.Logger;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -26,28 +39,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
-import org.junit.rules.ExternalResource;
-import org.slf4j.Logger;
-
-import io.zeebe.broker.Broker;
-import io.zeebe.broker.TestLoggers;
-import io.zeebe.broker.system.SystemServiceNames;
-import io.zeebe.broker.system.log.SystemPartitionManager;
-import io.zeebe.broker.topic.RequestPartitionsTest;
-import io.zeebe.broker.transport.TransportServiceNames;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceContainer;
-import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
-import io.zeebe.test.util.TestFileUtil;
-import io.zeebe.util.allocation.DirectBufferAllocator;
-
 public class EmbeddedBrokerRule extends ExternalResource
 {
     protected static final Logger LOG = TestLoggers.TEST_LOGGER;
 
     protected Broker broker;
+
+    protected ControlledActorClock controlledActorClock = new ControlledActorClock();
 
     protected Supplier<InputStream> configSupplier;
 
@@ -79,11 +77,11 @@ public class EmbeddedBrokerRule extends ExternalResource
 
     protected long startTime;
     @Override
-    protected void before() throws Throwable
+    protected void before()
     {
         startTime = System.currentTimeMillis();
         startBroker();
-        LOG.info("Broker startup time: " + (System.currentTimeMillis() - startTime));
+        LOG.info("\n====\nBroker startup time: {}\n====\n", (System.currentTimeMillis() - startTime));
         startTime = System.currentTimeMillis();
     }
 
@@ -107,6 +105,11 @@ public class EmbeddedBrokerRule extends ExternalResource
         return this.broker;
     }
 
+    public ControlledActorClock getClock()
+    {
+        return controlledActorClock;
+    }
+
     public void restartBroker()
     {
         stopBroker();
@@ -124,11 +127,11 @@ public class EmbeddedBrokerRule extends ExternalResource
     {
         try (InputStream configStream = configSupplier.get())
         {
-            broker = new Broker(configStream);
+            broker = new Broker(configStream, controlledActorClock);
         }
         catch (final IOException e)
         {
-            throw new RuntimeException("Unable to open configuration", e);
+            throw new RuntimeException("Unable to appendEvent configuration", e);
         }
 
         final ServiceContainer serviceContainer = broker.getBrokerContext().getServiceContainer();

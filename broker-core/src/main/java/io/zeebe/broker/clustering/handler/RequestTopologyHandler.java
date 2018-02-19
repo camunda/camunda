@@ -17,8 +17,6 @@
  */
 package io.zeebe.broker.clustering.handler;
 
-import java.util.concurrent.CompletableFuture;
-
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.management.ClusterManager;
 import io.zeebe.broker.transport.clientapi.ErrorResponseWriter;
@@ -28,20 +26,30 @@ import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.transport.ServerOutput;
+import io.zeebe.util.sched.ZbActor;
+import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
 
-public class RequestTopologyHandler implements ControlMessageHandler
+public class RequestTopologyHandler extends ZbActor implements ControlMessageHandler
 {
-
     protected final ClusterManager clusterManager;
     protected final ControlMessageResponseWriter responseWriter;
     protected final ErrorResponseWriter errorResponseWriter;
+    private final ZbActorScheduler actorScheduler;
 
-    public RequestTopologyHandler(final ServerOutput ouput, final ClusterManager clusterManager)
+    private ActorFuture<Topology> topologyActorFuture;
+    private CompletableActorFuture<Void> completableFuture;
+    private DirectBuffer requestBuffer;
+    private BrokerEventMetadata metadata;
+
+    public RequestTopologyHandler(ZbActorScheduler actorScheduler, final ServerOutput ouput, final ClusterManager clusterManager)
     {
         this.clusterManager = clusterManager;
         this.responseWriter = new ControlMessageResponseWriter(ouput);
         this.errorResponseWriter = new ErrorResponseWriter(ouput);
+        this.actorScheduler = actorScheduler;
     }
 
     @Override
@@ -51,38 +59,48 @@ public class RequestTopologyHandler implements ControlMessageHandler
     }
 
     @Override
-    public CompletableFuture<Void> handle(int partitionId, final DirectBuffer buffer, final BrokerEventMetadata metadata)
+    protected void onActorStarted()
     {
-        // call cluster manager
-        final CompletableFuture<Topology> future = clusterManager.requestTopology();
-        return future.handle(((topology, throwable) ->
+        actor.runOnCompletion(topologyActorFuture, ((topology, throwable) ->
         {
             if (throwable == null)
             {
                 responseWriter.dataWriter(topology);
 
-
                 if (!responseWriter.tryWriteResponse(metadata.getRequestStreamId(), metadata.getRequestId()))
                 {
                     errorResponseWriter.errorCode(ErrorCode.REQUEST_WRITE_FAILURE)
-                                       .errorMessage("Cannot write topology response.")
-                                       .failedRequest(buffer, 0, buffer.capacity())
-                                       .tryWriteResponseOrLogFailure(metadata.getRequestStreamId(), metadata.getRequestId());
+                        .errorMessage("Cannot write topology response.")
+                        .failedRequest(requestBuffer, 0, requestBuffer.capacity())
+                        .tryWriteResponseOrLogFailure(metadata.getRequestStreamId(), metadata.getRequestId());
                 }
+                completableFuture.complete(null);
             }
             else
             {
                 Loggers.CLUSTERING_LOGGER.debug("Problem on requesting topology. Exception {}", throwable);
                 errorResponseWriter.errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
-                                   .errorMessage("Cannot request topology!")
-                                   .failedRequest(buffer, 0, buffer.capacity())
-                                   .tryWriteResponseOrLogFailure(metadata.getRequestStreamId(), metadata.getRequestId());
+                    .errorMessage("Cannot request topology!")
+                    .failedRequest(requestBuffer, 0, requestBuffer.capacity())
+                    .tryWriteResponseOrLogFailure(metadata.getRequestStreamId(), metadata.getRequestId());
+
+                completableFuture.completeExceptionally(throwable);
 
             }
-
-
-            return null;
         }));
     }
 
+    @Override
+    public ActorFuture<Void> handle(int partitionId, final DirectBuffer buffer, final BrokerEventMetadata metadata)
+    {
+        // call cluster manager
+        this.requestBuffer = buffer;
+        this.metadata = metadata;
+
+        this.completableFuture = new CompletableActorFuture<>();
+        this.topologyActorFuture = clusterManager.requestTopology();
+        actorScheduler.submitActor(this);
+
+        return completableFuture;
+    }
 }

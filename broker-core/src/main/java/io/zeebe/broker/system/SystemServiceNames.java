@@ -21,19 +21,16 @@ import io.zeebe.broker.clustering.management.PartitionManager;
 import io.zeebe.broker.services.Counters;
 import io.zeebe.broker.system.deployment.handler.WorkflowRequestMessageHandler;
 import io.zeebe.broker.system.deployment.service.DeploymentManager;
-import io.zeebe.broker.system.executor.ScheduledExecutor;
 import io.zeebe.broker.system.log.SystemPartitionManager;
 import io.zeebe.logstreams.processor.StreamProcessorController;
 import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.util.actor.ActorScheduler;
+import io.zeebe.util.sched.ZbActorScheduler;
 
 public class SystemServiceNames
 {
-    public static final ServiceName<ActorScheduler> ACTOR_SCHEDULER_SERVICE = ServiceName.newServiceName("broker.task.scheduler", ActorScheduler.class);
+    public static final ServiceName<ZbActorScheduler> ACTOR_SCHEDULER_SERVICE = ServiceName.newServiceName("broker.task.scheduler", ZbActorScheduler.class);
 
     public static final ServiceName<Counters> COUNTERS_MANAGER_SERVICE = ServiceName.newServiceName("broker.countersManager", Counters.class);
-
-    public static final ServiceName<ScheduledExecutor> EXECUTOR_SERVICE = ServiceName.newServiceName("broker.executor", ScheduledExecutor.class);
 
     public static final ServiceName<SystemPartitionManager> SYSTEM_LOG_MANAGER = ServiceName.newServiceName("broker.system.log", SystemPartitionManager.class);
 

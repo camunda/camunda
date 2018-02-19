@@ -17,15 +17,6 @@
  */
 package io.zeebe.broker.system.threads;
 
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
-import org.agrona.ErrorHandler;
-import org.agrona.concurrent.BackoffIdleStrategy;
-import org.agrona.concurrent.BusySpinIdleStrategy;
-import org.agrona.concurrent.IdleStrategy;
-import org.slf4j.Logger;
-
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.system.ConfigurationManager;
 import io.zeebe.broker.system.threads.cfg.ThreadingCfg;
@@ -33,10 +24,12 @@ import io.zeebe.broker.system.threads.cfg.ThreadingCfg.BrokerIdleStrategy;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
-import io.zeebe.util.actor.ActorScheduler;
-import io.zeebe.util.actor.ActorSchedulerBuilder;
+import io.zeebe.util.sched.ZbActorScheduler;
+import org.slf4j.Logger;
 
-public class ActorSchedulerService implements Service<ActorScheduler>
+import java.util.Map;
+
+public class ActorSchedulerService implements Service<ZbActorScheduler>
 {
     public static final Logger LOG = Loggers.SYSTEM_LOGGER;
 
@@ -47,7 +40,7 @@ public class ActorSchedulerService implements Service<ActorScheduler>
     protected final BrokerIdleStrategy brokerIdleStrategy;
     protected final int maxIdleTimeMs;
 
-    protected ActorScheduler scheduler;
+    protected ZbActorScheduler scheduler;
     protected final Map<String, String> diagnosticContext;
 
     public ActorSchedulerService(Map<String, String> diagnosticContext, ConfigurationManager configurationManager)
@@ -78,17 +71,10 @@ public class ActorSchedulerService implements Service<ActorScheduler>
     @Override
     public void start(ServiceStartContext serviceContext)
     {
-        final IdleStrategy idleStrategy = createIdleStrategy(brokerIdleStrategy);
-        final ErrorHandler errorHandler = t -> t.printStackTrace();
-
-        scheduler = new ActorSchedulerBuilder()
-                .name("broker")
-                .threadCount(availableThreads)
-                .runnerIdleStrategy(idleStrategy)
-                .runnerErrorHander(errorHandler)
-                .baseIterationsPerActor(37)
-                .diagnosticContext(diagnosticContext)
-                .build();
+        LOG.debug("Start scheduler with {} threads", availableThreads);
+//        scheduler = new ZbActorScheduler(availableThreads);
+//        scheduler.start();
+        scheduler = serviceContext.getScheduler();
     }
 
     @Override
@@ -96,7 +82,7 @@ public class ActorSchedulerService implements Service<ActorScheduler>
     {
         try
         {
-            scheduler.close();
+//            scheduler.stop();
         }
         catch (Exception e)
         {
@@ -105,20 +91,9 @@ public class ActorSchedulerService implements Service<ActorScheduler>
     }
 
     @Override
-    public ActorScheduler get()
+    public ZbActorScheduler get()
     {
         return scheduler;
-    }
-
-    protected IdleStrategy createIdleStrategy(BrokerIdleStrategy idleStrategy)
-    {
-        switch (idleStrategy)
-        {
-            case BUSY_SPIN:
-                return new BusySpinIdleStrategy();
-            default:
-                return new BackoffIdleStrategy(10_000, 10_000, 100, TimeUnit.MILLISECONDS.toNanos(maxIdleTimeMs));
-        }
     }
 
     @Override

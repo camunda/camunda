@@ -17,25 +17,10 @@
  */
 package io.zeebe.broker.transport;
 
-import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
-import static io.zeebe.broker.system.SystemServiceNames.COUNTERS_MANAGER_SERVICE;
-import static io.zeebe.broker.transport.TransportServiceNames.CLIENT_API_MESSAGE_HANDLER;
-import static io.zeebe.broker.transport.TransportServiceNames.CLIENT_API_SERVER_NAME;
-import static io.zeebe.broker.transport.TransportServiceNames.MANAGEMENT_API_CLIENT_NAME;
-import static io.zeebe.broker.transport.TransportServiceNames.MANAGEMENT_API_SERVER_NAME;
-import static io.zeebe.broker.transport.TransportServiceNames.REPLICATION_API_CLIENT_NAME;
-import static io.zeebe.broker.transport.TransportServiceNames.REPLICATION_API_SERVER_NAME;
-
-import java.net.InetSocketAddress;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.concurrent.CompletableFuture;
-
 import io.zeebe.broker.clustering.ClusterServiceNames;
 import io.zeebe.broker.event.TopicSubscriptionServiceNames;
 import io.zeebe.broker.logstreams.LogStreamServiceNames;
 import io.zeebe.broker.services.DispatcherService;
-import io.zeebe.broker.services.DispatcherSubscriptionNames;
 import io.zeebe.broker.system.Component;
 import io.zeebe.broker.system.SystemContext;
 import io.zeebe.broker.system.SystemServiceNames;
@@ -51,8 +36,16 @@ import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.transport.ServerMessageHandler;
 import io.zeebe.transport.ServerRequestHandler;
-import io.zeebe.transport.ServerTransportBuilder;
 import io.zeebe.transport.SocketAddress;
+
+import java.net.InetSocketAddress;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.concurrent.CompletableFuture;
+
+import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
+import static io.zeebe.broker.system.SystemServiceNames.COUNTERS_MANAGER_SERVICE;
+import static io.zeebe.broker.transport.TransportServiceNames.*;
 
 public class TransportComponent implements Component
 {
@@ -103,8 +96,7 @@ public class TransportComponent implements Component
         final ServiceName<Dispatcher> controlMessageBufferService = createReceiveBuffer(
             serviceContainer,
             CLIENT_API_SERVER_NAME,
-            transportComponentCfg.clientApi.getReceiveBufferSize(transportComponentCfg.defaultReceiveBufferSize),
-            DispatcherSubscriptionNames.TRANSPORT_CONTROL_MESSAGE_HANDLER_SUBSCRIPTION);
+            transportComponentCfg.clientApi.getReceiveBufferSize(transportComponentCfg.defaultReceiveBufferSize));
 
         final ClientApiMessageHandlerService messageHandlerService = new ClientApiMessageHandlerService();
         serviceContainer.createService(CLIENT_API_MESSAGE_HANDLER, messageHandlerService)
@@ -211,11 +203,10 @@ public class TransportComponent implements Component
             .install();
     }
 
-    protected void createDispatcher(ServiceContainer serviceContainer, ServiceName<Dispatcher> name, int bufferSize, String... subscriptions)
+    protected void createDispatcher(ServiceContainer serviceContainer, ServiceName<Dispatcher> name, int bufferSize)
     {
         final DispatcherBuilder dispatcherBuilder = Dispatchers.create(null)
-            .bufferSize(bufferSize)
-            .subscriptions(subscriptions);
+            .bufferSize(bufferSize);
 
         final DispatcherService receiveBufferService = new DispatcherService(dispatcherBuilder);
         serviceContainer.createService(name, receiveBufferService)
@@ -227,7 +218,7 @@ public class TransportComponent implements Component
     protected ServiceName<Dispatcher> createSendBuffer(ServiceContainer serviceContainer, String transportName, int bufferSize)
     {
         final ServiceName<Dispatcher> serviceName = TransportServiceNames.sendBufferName(transportName);
-        createDispatcher(serviceContainer, serviceName, bufferSize, ServerTransportBuilder.SEND_BUFFER_SUBSCRIPTION_NAME);
+        createDispatcher(serviceContainer, serviceName, bufferSize);
 
         return serviceName;
     }
@@ -235,11 +226,10 @@ public class TransportComponent implements Component
     protected ServiceName<Dispatcher> createReceiveBuffer(
             ServiceContainer serviceContainer,
             String transportName,
-            int bufferSize,
-            String... subscriptionNames)
+            int bufferSize)
     {
         final ServiceName<Dispatcher> serviceName = TransportServiceNames.receiveBufferName(transportName);
-        createDispatcher(serviceContainer, serviceName, bufferSize, subscriptionNames);
+        createDispatcher(serviceContainer, serviceName, bufferSize);
 
         return serviceName;
     }

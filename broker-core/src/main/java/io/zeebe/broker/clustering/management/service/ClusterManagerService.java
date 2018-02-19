@@ -22,19 +22,16 @@ import io.zeebe.broker.clustering.management.ClusterManagerContext;
 import io.zeebe.broker.transport.cfg.TransportComponentCfg;
 import io.zeebe.raft.Raft;
 import io.zeebe.servicecontainer.*;
-import io.zeebe.util.actor.ActorReference;
-import io.zeebe.util.actor.ActorScheduler;
+import io.zeebe.util.sched.ZbActorScheduler;
 
 public class ClusterManagerService implements Service<ClusterManager>
 {
     private final Injector<ClusterManagerContext> clusterManagementContextInjector = new Injector<>();
-    private Injector<ActorScheduler> actorSchedulerInjector = new Injector<>();
+    private Injector<ZbActorScheduler> actorSchedulerInjector = new Injector<>();
 
     private ClusterManager clusterManager;
     private TransportComponentCfg config;
     private ServiceContainer serviceContainer;
-
-    private ActorReference actorRef;
 
     public ClusterManagerService(final ServiceContainer serviceContainer, final TransportComponentCfg config)
     {
@@ -53,13 +50,12 @@ public class ClusterManagerService implements Service<ClusterManager>
         startContext.run(() ->
         {
             final ClusterManagerContext context = clusterManagementContextInjector.getValue();
-            final ActorScheduler actorScheduler = actorSchedulerInjector.getValue();
 
 
             clusterManager = new ClusterManager(context, serviceContainer, config);
-            clusterManager.open();
 
-            actorRef = actorScheduler.schedule(clusterManager);
+            actorSchedulerInjector.getValue().submitActor(clusterManager);
+//            context.getActorScheduler().submitActor(clusterManager);
         });
 
     }
@@ -67,7 +63,7 @@ public class ClusterManagerService implements Service<ClusterManager>
     @Override
     public void stop(ServiceStopContext stopContext)
     {
-        actorRef.close();
+        clusterManager.close();
     }
 
     @Override
@@ -87,7 +83,7 @@ public class ClusterManagerService implements Service<ClusterManager>
         return raftGroupReference;
     }
 
-    public Injector<ActorScheduler> getActorSchedulerInjector()
+    public Injector<ZbActorScheduler> getActorSchedulerInjector()
     {
         return actorSchedulerInjector;
     }

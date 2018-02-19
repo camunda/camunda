@@ -17,8 +17,6 @@
  */
 package io.zeebe.broker;
 
-import java.io.InputStream;
-
 import io.zeebe.broker.clustering.ClusterComponent;
 import io.zeebe.broker.logstreams.LogStreamsComponent;
 import io.zeebe.broker.system.ConfigurationManager;
@@ -28,8 +26,10 @@ import io.zeebe.broker.task.TaskQueueComponent;
 import io.zeebe.broker.transport.TransportComponent;
 import io.zeebe.broker.workflow.WorkflowComponent;
 import io.zeebe.util.LogUtil;
-
+import io.zeebe.util.sched.clock.ActorClock;
 import org.slf4j.Logger;
+
+import java.io.InputStream;
 
 public class Broker implements AutoCloseable
 {
@@ -48,17 +48,22 @@ public class Broker implements AutoCloseable
 
     public Broker(String configFileLocation)
     {
-        this(new SystemContext(configFileLocation));
+        this(new SystemContext(configFileLocation, null));
     }
 
-    public Broker(InputStream configStream)
+    public Broker(String configFileLocation, ActorClock clock)
     {
-        this(new SystemContext(configStream));
+        this(new SystemContext(configFileLocation, clock));
+    }
+
+    public Broker(InputStream configStream, ActorClock clock)
+    {
+        this(new SystemContext(configStream, clock));
     }
 
     public Broker(ConfigurationManager configurationManager)
     {
-        this(new SystemContext(configurationManager));
+        this(new SystemContext(configurationManager, null));
     }
 
     public Broker(SystemContext brokerContext)

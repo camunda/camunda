@@ -21,13 +21,18 @@ import static io.zeebe.broker.workflow.data.DeploymentState.CREATED;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
-import io.zeebe.broker.logstreams.processor.*;
+import io.zeebe.broker.Loggers;
+import io.zeebe.broker.logstreams.processor.TypedEvent;
+import io.zeebe.broker.logstreams.processor.TypedEventProcessor;
+import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
+import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.system.deployment.data.PendingDeployments;
-import io.zeebe.broker.system.deployment.data.PendingWorkflows;
 import io.zeebe.broker.system.deployment.data.PendingDeployments.PendingDeployment;
+import io.zeebe.broker.system.deployment.data.PendingWorkflows;
 import io.zeebe.broker.system.deployment.data.PendingWorkflows.PendingWorkflow;
 import io.zeebe.broker.system.deployment.data.PendingWorkflows.PendingWorkflowIterator;
 import io.zeebe.broker.workflow.data.DeploymentEvent;
+import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.ExpandableArrayBuffer;
 
 public class DeploymentDistributedProcessor implements TypedEventProcessor<DeploymentEvent>
@@ -51,6 +56,10 @@ public class DeploymentDistributedProcessor implements TypedEventProcessor<Deplo
         if (pendingDeployment != null)
         {
             event.getValue().setState(CREATED);
+
+            Loggers.SYSTEM_LOGGER.debug("Deployment with key '{}' on topic '{}' successful.",
+                                        pendingDeployment.getDeploymentKey(),
+                                        BufferUtil.bufferAsString(pendingDeployment.getTopicName()));
         }
 
         if (!event.getMetadata().hasRequestMetadata())

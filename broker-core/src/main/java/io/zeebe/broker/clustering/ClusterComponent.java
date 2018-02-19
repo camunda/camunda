@@ -17,14 +17,6 @@
  */
 package io.zeebe.broker.clustering;
 
-import static io.zeebe.broker.clustering.ClusterServiceNames.*;
-import static io.zeebe.broker.logstreams.LogStreamServiceNames.LOG_STREAMS_MANAGER_SERVICE;
-import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
-import static io.zeebe.broker.system.SystemServiceNames.WORKFLOW_REQUEST_MESSAGE_HANDLER_SERVICE;
-import static io.zeebe.broker.transport.TransportServiceNames.MANAGEMENT_API_CLIENT_NAME;
-import static io.zeebe.broker.transport.TransportServiceNames.MANAGEMENT_API_SERVER_NAME;
-import static io.zeebe.broker.transport.TransportServiceNames.REPLICATION_API_CLIENT_NAME;
-
 import io.zeebe.broker.clustering.gossip.service.GossipService;
 import io.zeebe.broker.clustering.management.memberList.MemberListService;
 import io.zeebe.broker.clustering.management.service.ClusterManagerContextService;
@@ -35,6 +27,12 @@ import io.zeebe.broker.system.SystemContext;
 import io.zeebe.broker.transport.TransportServiceNames;
 import io.zeebe.broker.transport.cfg.TransportComponentCfg;
 import io.zeebe.servicecontainer.ServiceContainer;
+
+import static io.zeebe.broker.clustering.ClusterServiceNames.*;
+import static io.zeebe.broker.logstreams.LogStreamServiceNames.LOG_STREAMS_MANAGER_SERVICE;
+import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
+import static io.zeebe.broker.system.SystemServiceNames.WORKFLOW_REQUEST_MESSAGE_HANDLER_SERVICE;
+import static io.zeebe.broker.transport.TransportServiceNames.*;
 
 public class ClusterComponent implements Component
 {

@@ -66,7 +66,7 @@ public class ServicesLifecycleTest
         serviceContainer.removeService(raftServiceName).get();
 
         // then
-        assertThat(streamProcessorController.isClosed()).isTrue();
+        assertThat(!streamProcessorController.isOpened()).isTrue();
         assertThat(streamProcessorController.isFailed()).isFalse();
     }
 

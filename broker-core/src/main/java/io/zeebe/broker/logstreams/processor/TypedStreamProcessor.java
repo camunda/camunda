@@ -17,12 +17,6 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
-import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
-
 import io.zeebe.broker.system.log.PartitionEvent;
 import io.zeebe.broker.system.log.TopicEvent;
 import io.zeebe.broker.workflow.data.DeploymentEvent;
@@ -38,8 +32,12 @@ import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.transport.ServerOutput;
-import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.ReflectUtil;
+import io.zeebe.util.sched.ActorControl;
+
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.List;
 
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class TypedStreamProcessor implements StreamProcessor
@@ -56,8 +54,7 @@ public class TypedStreamProcessor implements StreamProcessor
 
     protected final TypedEventImpl typedEvent = new TypedEventImpl();
     protected DelegatingEventProcessor eventProcessorWrapper;
-
-    private DeferredCommandContext cmdQueue;
+    protected ActorControl actor;
 
     public TypedStreamProcessor(
             SnapshotSupport snapshotSupport,
@@ -87,7 +84,7 @@ public class TypedStreamProcessor implements StreamProcessor
                 context.getLogStream(),
                 eventRegistry);
 
-        cmdQueue = context.getStreamProcessorCmdQueue();
+        this.actor = context.getActorControl();
         lifecycleListeners.forEach(e -> e.onOpen(this));
     }
 
@@ -95,7 +92,6 @@ public class TypedStreamProcessor implements StreamProcessor
     public void onClose()
     {
         lifecycleListeners.forEach(e -> e.onClose());
-        cmdQueue = null;
     }
 
     @Override
@@ -142,22 +138,7 @@ public class TypedStreamProcessor implements StreamProcessor
 
     public void runAsync(Runnable runnable)
     {
-        if (cmdQueue != null)
-        {
-            cmdQueue.runAsync(runnable);
-        }
-    }
-
-    public <T> CompletableFuture<T> runAsync(Consumer<CompletableFuture<T>> action)
-    {
-        if (cmdQueue != null)
-        {
-            return cmdQueue.runAsync(action);
-        }
-        else
-        {
-            return null;
-        }
+        actor.call(runnable);
     }
 
     // TODO: this goes away when we move the state into the event header => https://github.com/zeebe-io/zeebe/issues/367
@@ -241,4 +222,8 @@ public class TypedStreamProcessor implements StreamProcessor
 
     }
 
+    public ActorControl getActor()
+    {
+        return actor;
+    }
 }

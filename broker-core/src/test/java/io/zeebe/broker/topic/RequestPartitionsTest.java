@@ -39,6 +39,7 @@ import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ControlMessageResponse;
 import io.zeebe.test.broker.protocol.clientapi.ErrorResponse;
 
+@SuppressWarnings("unchecked")
 public class RequestPartitionsTest
 {
     public ClientApiRule apiRule = new ClientApiRule(false);

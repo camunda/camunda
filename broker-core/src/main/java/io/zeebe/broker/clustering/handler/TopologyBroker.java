@@ -30,7 +30,6 @@ public class TopologyBroker extends UnpackedObject
     protected StringProperty hostProp = new StringProperty("host");
     protected IntegerProperty portProp = new IntegerProperty("port");
 
-
     protected ArrayProperty<BrokerPartitionState> partitionStatesProp =
         new ArrayProperty<>("partitions", new BrokerPartitionState());
 

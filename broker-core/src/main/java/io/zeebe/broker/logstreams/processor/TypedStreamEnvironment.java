@@ -30,7 +30,6 @@ import io.zeebe.transport.ServerOutput;
 
 public class TypedStreamEnvironment
 {
-
     protected final ServerOutput output;
     protected final LogStream stream;
     protected static final EnumMap<EventType, Class<? extends UnpackedObject>> EVENT_REGISTRY = new EnumMap<>(EventType.class);

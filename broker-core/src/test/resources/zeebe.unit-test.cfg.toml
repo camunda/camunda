@@ -35,7 +35,7 @@ maxIdleTimeMs = 100
 idleStrategy = "BACKOFF"
 
 [system]
-deploymentCreationTimeoutSeconds = 1
+deploymentCreationTimeoutSeconds = 10
 
 # Log Configuration -----------------------------------
 

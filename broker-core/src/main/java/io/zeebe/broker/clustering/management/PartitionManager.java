@@ -19,6 +19,8 @@ package io.zeebe.broker.clustering.management;
 
 import java.util.Iterator;
 
+import io.zeebe.transport.ClientRequest;
+import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
 
 import io.zeebe.broker.clustering.member.Member;
@@ -27,7 +29,7 @@ import io.zeebe.transport.SocketAddress;
 public interface PartitionManager
 {
 
-    boolean createPartitionRemote(SocketAddress remote, DirectBuffer topicName, int partitionId);
+    ActorFuture<ClientRequest> createPartitionRemote(SocketAddress remote, DirectBuffer topicName, int partitionId);
 
     Iterator<Member> getKnownMembers();
 

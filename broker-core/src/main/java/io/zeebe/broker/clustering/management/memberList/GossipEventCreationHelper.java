@@ -29,9 +29,6 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-/**
- *
- */
 public final class GossipEventCreationHelper
 {
     public static DirectBuffer writeAPIAddressesIntoBuffer(SocketAddress managementApi,

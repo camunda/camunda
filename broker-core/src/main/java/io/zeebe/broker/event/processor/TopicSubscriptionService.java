@@ -34,35 +34,37 @@ import io.zeebe.broker.transport.clientapi.SubscribedEventWriter;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.processor.StreamProcessor;
 import io.zeebe.logstreams.processor.StreamProcessorController;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.Injector;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceGroupReference;
+import io.zeebe.servicecontainer.ServiceName;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerTransport;
 import io.zeebe.transport.TransportListener;
-import io.zeebe.util.DeferredCommandContext;
-import io.zeebe.util.actor.Actor;
-import io.zeebe.util.actor.ActorReference;
-import io.zeebe.util.actor.ActorScheduler;
+import io.zeebe.util.sched.ZbActor;
+import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.collections.Int2ObjectHashMap;
 
-public class TopicSubscriptionService implements Service<TopicSubscriptionService>, Actor, TransportListener
+public class TopicSubscriptionService extends ZbActor implements Service<TopicSubscriptionService>, TransportListener
 {
-    protected final Injector<ActorScheduler> actorSchedulerInjector = new Injector<>();
+    protected final Injector<ZbActorScheduler> actorSchedulerInjector = new Injector<>();
     protected final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
     protected final SubscriptionCfg config;
 
-    protected ActorScheduler actorScheduler;
+    protected ZbActorScheduler actorScheduler;
     protected ServiceStartContext serviceContext;
     protected Int2ObjectHashMap<TopicSubscriptionManagementProcessor> managersByLog = new Int2ObjectHashMap<>();
     protected ServerOutput serverOutput;
 
-    protected ActorReference actorRef;
-
-    protected DeferredCommandContext asyncContext;
 
     protected final ServiceGroupReference<LogStream> logStreamsGroupReference = ServiceGroupReference.<LogStream>create()
         .onAdd(this::onStreamAdded)
-        .onRemove(this::onStreamRemoved)
+        .onRemove((logStreamServiceName, logStream) -> onStreamRemoved(logStream))
         .build();
 
     public TopicSubscriptionService(ConfigurationManager configurationManager)
@@ -77,7 +79,7 @@ public class TopicSubscriptionService implements Service<TopicSubscriptionServic
         return this;
     }
 
-    public Injector<ActorScheduler> getActorSchedulerInjector()
+    public Injector<ZbActorScheduler> getActorSchedulerInjector()
     {
         return actorSchedulerInjector;
     }
@@ -99,24 +101,23 @@ public class TopicSubscriptionService implements Service<TopicSubscriptionServic
         this.serverOutput = transport.getOutput();
 
         actorScheduler = actorSchedulerInjector.getValue();
-        asyncContext = new DeferredCommandContext();
         this.serviceContext = startContext;
 
-        final CompletableFuture<Void> registration = transport.registerChannelListener(this);
+        final ActorFuture<Void> registration = transport.registerChannelListener(this);
         startContext.async(registration);
 
-        actorRef = actorScheduler.schedule(this);
+        actorScheduler.submitActor(this);
     }
 
     @Override
     public void stop(ServiceStopContext stopContext)
     {
-        actorRef.close();
+        actor.close();
     }
 
     public void onStreamAdded(ServiceName<LogStream> logStreamServiceName, LogStream logStream)
     {
-        asyncContext.runAsync(() ->
+        actor.call(() ->
         {
             final TopicSubscriptionManagementProcessor ackProcessor = new TopicSubscriptionManagementProcessor(
                 logStreamServiceName,
@@ -126,47 +127,79 @@ public class TopicSubscriptionService implements Service<TopicSubscriptionServic
                 serviceContext
                 );
 
-            createStreamProcessorService(
-                    logStreamServiceName,
-                    TopicSubscriptionServiceNames.subscriptionManagementServiceName(logStream.getLogName()),
-                    StreamProcessorIds.TOPIC_SUBSCRIPTION_MANAGEMENT_PROCESSOR_ID,
-                    ackProcessor,
-                    TopicSubscriptionManagementProcessor.filter())
-                .thenAccept((v) ->
-                    managersByLog.put(logStream.getPartitionId(), ackProcessor)
-                );
+
+            final ActorFuture<Void> future = createStreamProcessorService(
+                logStreamServiceName,
+                TopicSubscriptionServiceNames.subscriptionManagementServiceName(logStream.getLogName()),
+                StreamProcessorIds.TOPIC_SUBSCRIPTION_MANAGEMENT_PROCESSOR_ID,
+                ackProcessor,
+                TopicSubscriptionManagementProcessor.filter());
+
+            actor.runOnCompletion(future, (aVoid, throwable) ->
+            {
+                if (throwable == null)
+                {
+                    managersByLog.put(logStream.getPartitionId(), ackProcessor);
+                }
+                else
+                {
+                    // TODO LOG
+                }
+            });
         });
     }
 
-    protected CompletableFuture<Void> createStreamProcessorService(
+    @Override
+    protected void onActorStarted()
+    {
+        actor.onCondition("alive-topic-subscription", () ->
+        { });
+    }
+
+    protected ActorFuture<Void> createStreamProcessorService(
             ServiceName<LogStream> logStreamName,
             ServiceName<StreamProcessorController> processorName,
             int processorId,
             StreamProcessor streamProcessor,
             MetadataFilter eventFilter)
     {
+        final CompletableActorFuture<Void> completableActorFuture = new CompletableActorFuture<>();
+
         final StreamProcessorService streamProcessorService = new StreamProcessorService(
-                processorName.getName(),
-                processorId,
-                streamProcessor)
+            processorName.getName(),
+            processorId,
+            streamProcessor)
             .eventFilter(eventFilter);
 
-        return serviceContext.createService(processorName, streamProcessorService)
+        final CompletableFuture<Void> installFuture = serviceContext.createService(processorName, streamProcessorService)
             .dependency(logStreamName, streamProcessorService.getLogStreamInjector())
             .dependency(SNAPSHOT_STORAGE_SERVICE, streamProcessorService.getSnapshotStorageInjector())
             .dependency(ACTOR_SCHEDULER_SERVICE, streamProcessorService.getActorSchedulerInjector())
             .install();
+
+        installFuture.whenComplete((aVoid, throwable) ->
+        {
+            if (throwable == null)
+            {
+                completableActorFuture.complete(null);
+            }
+            else
+            {
+                // TODO LOG
+            }
+        });
+
+        return completableActorFuture;
     }
 
-    public void onStreamRemoved(ServiceName<LogStream> logStreamServiceName, LogStream logStream)
+    public void onStreamRemoved(LogStream logStream)
     {
-
-        asyncContext.runAsync(() -> managersByLog.remove(logStream.getPartitionId()));
+        actor.call(() -> managersByLog.remove(logStream.getPartitionId()));
     }
 
     public void onClientChannelCloseAsync(int channelId)
     {
-        asyncContext.runAsync(() ->
+        actor.call(() ->
         {
             // TODO(menski): probably not garbage free
             managersByLog.forEach((partitionId, manager) -> manager.onClientChannelCloseAsync(channelId));
@@ -174,19 +207,7 @@ public class TopicSubscriptionService implements Service<TopicSubscriptionServic
     }
 
     @Override
-    public int doWork() throws Exception
-    {
-        return asyncContext.doWork();
-    }
-
-    @Override
-    public int getPriority(long now)
-    {
-        return PRIORITY_LOW;
-    }
-
-    @Override
-    public String name()
+    public String getName()
     {
         return "subscription-service";
     }

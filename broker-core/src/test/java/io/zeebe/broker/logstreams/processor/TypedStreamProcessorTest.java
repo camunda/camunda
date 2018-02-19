@@ -20,6 +20,7 @@ package io.zeebe.broker.logstreams.processor;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -50,8 +51,10 @@ public class TypedStreamProcessorTest
     public TemporaryFolder tempFolder = new TemporaryFolder();
     public AutoCloseableRule closeables = new AutoCloseableRule();
 
+    public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
+
     @Rule
-    public RuleChain ruleChain = RuleChain.outerRule(tempFolder).around(closeables);
+    public RuleChain ruleChain = RuleChain.outerRule(tempFolder).around(actorSchedulerRule).around(closeables);
 
     protected TestStreams streams;
     protected LogStream stream;
@@ -67,7 +70,7 @@ public class TypedStreamProcessorTest
         final ActorScheduler scheduler = ActorSchedulerBuilder.createDefaultScheduler("foo");
         closeables.manage(scheduler);
 
-        streams = new TestStreams(tempFolder.getRoot(), closeables, scheduler);
+        streams = new TestStreams(tempFolder.getRoot(), closeables, actorSchedulerRule.get());
 
         stream = streams.createLogStream(STREAM_NAME);
     }

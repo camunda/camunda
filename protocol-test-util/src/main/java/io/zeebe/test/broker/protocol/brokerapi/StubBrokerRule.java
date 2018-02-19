@@ -15,20 +15,6 @@
  */
 package io.zeebe.test.broker.protocol.brokerapi;
 
-import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
-
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
-
-import org.junit.rules.ExternalResource;
-
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.protocol.Protocol;
@@ -44,6 +30,20 @@ import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.ServerTransport;
 import io.zeebe.transport.Transports;
 import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.clock.ControlledActorClock;
+import org.junit.rules.ExternalResource;
+
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+
+import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
 
 public class StubBrokerRule extends ExternalResource
 {
@@ -52,6 +52,7 @@ public class StubBrokerRule extends ExternalResource
     public static final int TEST_PARTITION_ID = 99;
 
 
+    private ControlledActorClock clock = new ControlledActorClock();
     protected ZbActorScheduler scheduler;
 
     protected final String host;
@@ -82,8 +83,11 @@ public class StubBrokerRule extends ExternalResource
     {
         msgPackHelper = new MsgPackHelper();
 
-        final int numThreads = 2;
-        scheduler = new ZbActorScheduler(numThreads);
+        final int numThreads = Math.min(1, Runtime.getRuntime().availableProcessors() - 1);
+        scheduler = ZbActorScheduler.newActorScheduler()
+            .setCpuBoundActorThreadCount(numThreads)
+            .setActorClock(clock)
+            .build();
         scheduler.start();
 
         sendBuffer = Dispatchers.create("send-buffer")
@@ -428,5 +432,10 @@ public class StubBrokerRule extends ExternalResource
     public int getPort()
     {
         return port;
+    }
+
+    public ControlledActorClock getClock()
+    {
+        return clock;
     }
 }

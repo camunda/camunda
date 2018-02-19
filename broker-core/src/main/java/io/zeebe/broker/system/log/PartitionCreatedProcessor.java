@@ -18,13 +18,9 @@
 package io.zeebe.broker.system.log;
 
 import io.zeebe.broker.Loggers;
+import io.zeebe.broker.logstreams.processor.*;
+import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
-
-import io.zeebe.broker.logstreams.processor.TypedEvent;
-import io.zeebe.broker.logstreams.processor.TypedEventProcessor;
-import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
-import io.zeebe.broker.logstreams.processor.TypedStreamReader;
-import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 
 public class PartitionCreatedProcessor implements TypedEventProcessor<PartitionEvent>
 {
@@ -49,14 +45,18 @@ public class PartitionCreatedProcessor implements TypedEventProcessor<PartitionE
 
         final boolean topicCreationComplete = topics.getRemainingPartitions() == 1; // == 1 because this is the last partition
 
-        Loggers.CLUSTERING_LOGGER.debug("Remaining partitions {}.", topics.getRemainingPartitions());
         if (topicCreationComplete)
         {
             createRequest = reader.readValue(topics.getRequestPosition(), TopicEvent.class);
             createRequest.getValue().setState(TopicState.CREATED);
+
+            Loggers.SYSTEM_LOGGER.debug("Topic '{}' created.", BufferUtil.bufferAsString(topicName));
         }
         else
         {
+            Loggers.SYSTEM_LOGGER.debug("Partition '{}' created. Topic '{}' has {} remaining partitions.",
+                                        BufferUtil.bufferAsString(topicName), topics.getRemainingPartitions());
+
             createRequest = null;
         }
     }

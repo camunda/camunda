@@ -39,11 +39,11 @@ import io.zeebe.logstreams.log.*;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.*;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
-import io.zeebe.test.util.agent.ManualActorScheduler;
+import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.impl.RemoteAddressImpl;
-
+import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.*;
@@ -95,7 +95,8 @@ public class ClientApiMessageHandlerTest
     public TemporaryFolder tempFolder = new TemporaryFolder();
 
     @Rule
-    public ManualActorScheduler agentRunnerService = new ManualActorScheduler();
+    public ActorSchedulerRule agentRunnerService = new ActorSchedulerRule();
+
 
     protected BufferingServerOutput serverOutput;
 
@@ -108,25 +109,22 @@ public class ClientApiMessageHandlerTest
 
         logStream = LogStreams.createFsLogStream(LOG_STREAM_TOPIC_NAME, LOG_STREAM_PARTITION_ID)
             .logRootPath(tempFolder.getRoot().getAbsolutePath())
-            .actorScheduler(agentRunnerService)
+            .actorScheduler(agentRunnerService.get())
             .build();
 
-        logStream.openAsync();
+        logStream.open();
+        logStream.openLogStreamController().join();
 
         messageHandler = new ClientApiMessageHandler(mockControlMessageDispatcher);
 
         messageHandler.addStream(logStream);
         logStream.setTerm(RAFT_TERM);
-
-        agentRunnerService.waitUntilDone();
     }
 
     @After
     public void cleanUp()
     {
-        logStream.closeAsync();
-
-        agentRunnerService.waitUntilDone();
+        logStream.close();
     }
 
     @Test
@@ -205,7 +203,7 @@ public class ClientApiMessageHandlerTest
     }
 
     @Test
-    public void shouldHandleControlRequest() throws InterruptedException, ExecutionException
+    public void shouldHandleControlRequest()
     {
         // given
         final int writtenLength = writeControlRequestToBuffer(buffer);
@@ -402,7 +400,8 @@ public class ClientApiMessageHandlerTest
 
             fragmentOffset = claimedFragment.getOffset();
 
-            claimedFragment.wrap(sendBuffer, 0, alignedFramedLength(length));
+            claimedFragment.wrap(sendBuffer, 0, alignedFramedLength(length), () ->
+            { });
 
             final long claimedPosition = offset + alignedFramedLength(length);
             return claimedPosition;
@@ -411,12 +410,7 @@ public class ClientApiMessageHandlerTest
 
     protected void waitForAvailableEvent(BufferedLogStreamReader logStreamReader)
     {
-        agentRunnerService.waitUntilDone();
-
-        while (!logStreamReader.hasNext())
-        {
-            // wait for event
-        }
+        TestUtil.waitUntil(() -> logStreamReader.hasNext());
     }
 
 }

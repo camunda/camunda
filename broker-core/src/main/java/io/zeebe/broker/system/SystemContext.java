@@ -19,31 +19,29 @@ package io.zeebe.broker.system;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
-import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.status.ConcurrentCountersManager;
-import org.slf4j.Logger;
+import java.util.*;
+import java.util.concurrent.*;
 
 import io.zeebe.broker.Loggers;
+import io.zeebe.broker.system.threads.cfg.ThreadingCfg;
 import io.zeebe.broker.transport.cfg.SocketBindingCfg;
 import io.zeebe.broker.transport.cfg.TransportComponentCfg;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.impl.ServiceContainerImpl;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.clock.ActorClock;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.ConcurrentCountersManager;
+import org.slf4j.Logger;
 
 public class SystemContext implements AutoCloseable
 {
+    private static final int MAX_THREAD_COUNT = Math.max(Runtime.getRuntime().availableProcessors() - 1, 1);
+
     public static final Logger LOG = Loggers.SYSTEM_LOGGER;
     public static final String BROKER_ID_LOG_PROPERTY = "broker-id";
+    public static final int CLOSE_TIMEOUT = 2;
 
     protected final ServiceContainer serviceContainer;
 
@@ -56,30 +54,60 @@ public class SystemContext implements AutoCloseable
     protected Map<String, String> diagnosticContext;
     protected final ZbActorScheduler scheduler;
 
-    public SystemContext(ConfigurationManager configurationManager)
+
+    public SystemContext(String configFileLocation, ActorClock clock)
+    {
+        this(new ConfigurationManagerImpl(configFileLocation), clock);
+    }
+
+    public SystemContext(InputStream configStream, ActorClock clock)
+    {
+        this(new ConfigurationManagerImpl(configStream), clock);
+    }
+
+    public SystemContext(ConfigurationManager configurationManager, ActorClock clock)
     {
         final String brokerId = readBrokerId(configurationManager);
         this.diagnosticContext = Collections.singletonMap(BROKER_ID_LOG_PROPERTY, brokerId);
 
-        // TODO: submit diagnosticContext to actor scheduler once supported
-        this.scheduler = initScheduler();
-        this.serviceContainer = new ServiceContainerImpl(this.scheduler);
         this.configurationManager = configurationManager;
+        // TODO: submit diagnosticContext to actor scheduler once supported
+        this.scheduler = initScheduler(clock);
+        this.serviceContainer = new ServiceContainerImpl(this.scheduler);
         this.scheduler.start();
-
     }
 
-    private int determineNumberOfRunnerThreads()
+    private ZbActorScheduler initScheduler(ActorClock clock)
     {
-        return Math.min(1, Runtime.getRuntime().availableProcessors() - 1);
-    }
+        final ThreadingCfg cfg = configurationManager.readEntry("threading", ThreadingCfg.class);
+        int numberOfThreads = cfg.numberOfThreads;
 
-    private ZbActorScheduler initScheduler()
-    {
-        final UnsafeBuffer valueBuffer = new UnsafeBuffer(new byte[16 * 1024]);
+        if (numberOfThreads > MAX_THREAD_COUNT)
+        {
+            LOG.warn("Configured thread count {} is larger than MAX_THREAD_COUNT {}. Falling back max thread count.", numberOfThreads, MAX_THREAD_COUNT);
+            numberOfThreads = MAX_THREAD_COUNT;
+        }
+        else if (numberOfThreads < 1)
+        {
+            // use max threads by default
+            numberOfThreads = MAX_THREAD_COUNT;
+        }
+
+        final UnsafeBuffer valueBuffer = new UnsafeBuffer(new byte[32 * 1024]);
         final UnsafeBuffer labelBuffer = new UnsafeBuffer(new byte[valueBuffer.capacity() * 2 + 1]);
         final ConcurrentCountersManager countersManager = new ConcurrentCountersManager(labelBuffer, valueBuffer);
-        return new ZbActorScheduler(determineNumberOfRunnerThreads(), countersManager);
+        Loggers.SYSTEM_LOGGER.debug("Start scheduler with {} threads.", numberOfThreads);
+
+        // TODO find a balance between CPU and IO bound threads
+        final int ioBoundThreads = 1;
+        final int cpuBoundThreads = Math.min(1, numberOfThreads - ioBoundThreads);
+
+        return ZbActorScheduler.newActorScheduler()
+            .setActorClock(clock)
+            .setCountersManager(countersManager)
+            .setCpuBoundActorThreadCount(cpuBoundThreads)
+            .setIoBoundActorThreadCount(ioBoundThreads)
+            .build();
     }
 
     protected static String readBrokerId(ConfigurationManager configurationManager)
@@ -89,15 +117,6 @@ public class SystemContext implements AutoCloseable
         return clientApiCfg.getHost(transportComponentCfg.host) + ":" + clientApiCfg.getPort();
     }
 
-    public SystemContext(String configFileLocation)
-    {
-        this(new ConfigurationManagerImpl(configFileLocation));
-    }
-
-    public SystemContext(InputStream configStream)
-    {
-        this(new ConfigurationManagerImpl(configStream));
-    }
 
     public ZbActorScheduler getScheduler()
     {
@@ -150,17 +169,18 @@ public class SystemContext implements AutoCloseable
 
     }
 
+    @Override
     public void close()
     {
         LOG.info("Closing...");
 
         try
         {
-            serviceContainer.close(10, TimeUnit.SECONDS);
+            serviceContainer.close(CLOSE_TIMEOUT, TimeUnit.SECONDS);
         }
         catch (TimeoutException e)
         {
-            LOG.error("Failed to close broker within 10 seconds", e);
+            LOG.error("Failed to close broker within {} seconds.", CLOSE_TIMEOUT, e);
         }
         catch (ExecutionException | InterruptedException e)
         {
@@ -168,19 +188,36 @@ public class SystemContext implements AutoCloseable
         }
         finally
         {
-            final GlobalConfiguration config = configurationManager.getGlobalConfiguration();
-            final String directory = config.getDirectory();
-            if (config.isTempDirectory())
+            try
             {
-                try
-                {
-                    FileUtil.deleteFolder(directory);
-                }
-                catch (IOException e)
-                {
-                    LOG.error("Exception while deleting temp folder", e);
-                }
+                scheduler.stop().get(2, TimeUnit.SECONDS);
             }
+            catch (TimeoutException e)
+            {
+                LOG.error("Failed to close scheduler within 2 seconds", e);
+            }
+            catch (ExecutionException | InterruptedException e)
+            {
+                LOG.error("Exception while closing scheduler", e);
+            }
+            finally
+            {
+                final GlobalConfiguration config = configurationManager.getGlobalConfiguration();
+                final String directory = config.getDirectory();
+                if (config.isTempDirectory())
+                {
+                    try
+                    {
+                        FileUtil.deleteFolder(directory);
+                    }
+                    catch (IOException e)
+                    {
+                        LOG.error("Exception while deleting temp folder", e);
+                    }
+                }
+
+            }
+
         }
     }
 

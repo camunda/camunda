@@ -20,5 +20,4 @@ package io.zeebe.broker.services;
 public class DispatcherSubscriptionNames
 {
     public static final String TRANSPORT_CONTROL_MESSAGE_HANDLER_SUBSCRIPTION = "control-message-handler";
-
 }

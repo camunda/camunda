@@ -35,7 +35,8 @@ import io.zeebe.broker.workflow.data.DeploymentState;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.transport.ClientRequest;
 import io.zeebe.util.CloseableSilently;
-import io.zeebe.util.time.ClockUtil;
+import io.zeebe.util.sched.clock.ActorClock;
+import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.LongArrayList;
 import org.slf4j.Logger;
@@ -93,20 +94,21 @@ public class PendingDeploymentCheck implements Runnable, CloseableSilently
     {
         // it's okay to work on the pending request because
         // the command runs in the context of the stream processor which creates new requests
-        final Iterator<ClientRequest> iterator = workflowRequestSender.getPendingRequests().iterator();
+        final Iterator<ActorFuture<ClientRequest>> iterator = workflowRequestSender.getPendingRequests().iterator();
         while (iterator.hasNext())
         {
-            final ClientRequest pendingRequest = iterator.next();
+            final ActorFuture<ClientRequest> pendingRequest = iterator.next();
 
             if (pendingRequest.isDone())
             {
-                if (pendingRequest.isFailed())
+                final ClientRequest request = pendingRequest.join();
+                if (request.isCompletedExceptionally())
                 {
-                    LOG.info("Create workflow request with id '{}' failed.", pendingRequest.getRequestId());
+                    LOG.info("Create workflow request with id '{}' failed.", request.getRequestId());
                 }
                 else
                 {
-                    final DirectBuffer responseBuffer = pendingRequest.join();
+                    final DirectBuffer responseBuffer = request.join();
                     response.wrap(responseBuffer, 0, responseBuffer.capacity());
 
                     final long workflowKey = response.getWorkflowKey();
@@ -121,7 +123,7 @@ public class PendingDeploymentCheck implements Runnable, CloseableSilently
                     }
                 }
 
-                pendingRequest.close();
+                request.close();
                 // remove completed request
                 iterator.remove();
             }
@@ -160,15 +162,17 @@ public class PendingDeploymentCheck implements Runnable, CloseableSilently
 
     private void collectTimedOutDeployments()
     {
-        final long currentTime = ClockUtil.getCurrentTimeInMillis();
+        final long currentTime = ActorClock.currentTimeMillis();
 
         final PendingDeploymentIterator iterator = pendingDeployments.iterator();
         while (iterator.hasNext())
         {
             final PendingDeployment pendingDeployment = iterator.next();
+            // the event position is set when the VALIDATED event is processed
+            final boolean isDeploymentEventWritten = pendingDeployment.getDeploymentEventPosition() > 0;
             final long timeout = pendingDeployment.getTimeout();
 
-            if (timeout > 0 && timeout <= currentTime)
+            if (isDeploymentEventWritten && timeout > 0 && timeout <= currentTime)
             {
                 timedOutDeploymentKeys.add(pendingDeployment.getDeploymentKey());
             }

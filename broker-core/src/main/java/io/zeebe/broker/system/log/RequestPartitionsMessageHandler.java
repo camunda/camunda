@@ -17,10 +17,6 @@
  */
 package io.zeebe.broker.system.log;
 
-import java.util.concurrent.CompletableFuture;
-
-import org.agrona.DirectBuffer;
-
 import io.zeebe.broker.transport.clientapi.ErrorResponseWriter;
 import io.zeebe.broker.transport.controlmessage.ControlMessageHandler;
 import io.zeebe.protocol.Protocol;
@@ -28,6 +24,11 @@ import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.transport.ServerOutput;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
+import org.agrona.DirectBuffer;
+
+import java.util.concurrent.CompletableFuture;
 
 public class RequestPartitionsMessageHandler implements ControlMessageHandler
 {
@@ -47,15 +48,16 @@ public class RequestPartitionsMessageHandler implements ControlMessageHandler
     }
 
     @Override
-    public CompletableFuture<Void> handle(int partitionId, DirectBuffer buffer, BrokerEventMetadata metadata)
+    public ActorFuture<Void> handle(int partitionId, DirectBuffer buffer, BrokerEventMetadata metadata)
     {
+        final CompletableActorFuture<Void> completableActorFuture = new CompletableActorFuture<>();
         final int requestStreamId = metadata.getRequestStreamId();
         final long requestId = metadata.getRequestId();
 
         if (partitionId != Protocol.SYSTEM_PARTITION)
         {
             sendErrorResponse(ErrorCode.REQUEST_PROCESSING_FAILURE, "Partitions request must address the system partition " + Protocol.SYSTEM_PARTITION, buffer, requestStreamId, requestId);
-            return CompletableFuture.completedFuture(null);
+            return CompletableActorFuture.completed(null);
         }
 
         final CompletableFuture<Void> handlerFuture = systemPartitionManager.sendPartitions(requestStreamId, requestId);
@@ -64,11 +66,22 @@ public class RequestPartitionsMessageHandler implements ControlMessageHandler
             // it is important that partition not found is returned here to signal a client that it may have addressed a broker
             // that appeared as the system partition leader but is not (yet) able to respond
             sendErrorResponse(ErrorCode.PARTITION_NOT_FOUND, "System partition processor not available", buffer, requestStreamId, requestId);
-            return CompletableFuture.completedFuture(null);
+            return CompletableActorFuture.completed(null);
         }
         else
         {
-            return handlerFuture;
+            handlerFuture.whenComplete(((aVoid, throwable) ->
+            {
+                if (throwable == null)
+                {
+                    completableActorFuture.complete(aVoid);
+                }
+                else
+                {
+                    completableActorFuture.completeExceptionally(throwable);
+                }
+            }));
+            return completableActorFuture;
         }
     }
 

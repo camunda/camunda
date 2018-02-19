@@ -17,14 +17,13 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
-import java.util.function.Consumer;
-
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 
+import java.util.function.Consumer;
+
 public interface TypedStreamWriter
 {
-
     /**
      * @return position of new event, negative value on failure
      */

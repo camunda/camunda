@@ -17,41 +17,60 @@
  */
 package io.zeebe.broker.clustering.raft;
 
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-
+import io.zeebe.broker.Loggers;
+import io.zeebe.broker.clustering.management.OnOpenLogStreamListener;
+import io.zeebe.broker.logstreams.LogStreamService;
+import io.zeebe.broker.logstreams.LogStreamServiceNames;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.raft.Raft;
 import io.zeebe.raft.RaftConfiguration;
 import io.zeebe.raft.RaftPersistentStorage;
 import io.zeebe.raft.RaftStateListener;
-import io.zeebe.servicecontainer.Injector;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.raft.state.RaftState;
+import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.BufferingServerTransport;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.SocketAddress;
-import io.zeebe.util.actor.ActorReference;
-import io.zeebe.util.actor.ActorScheduler;
+import io.zeebe.util.buffer.BufferUtil;
+import io.zeebe.util.sched.ZbActor;
+import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.future.CompletableActorFuture;
+import org.agrona.DirectBuffer;
 
-public class RaftService implements Service<Raft>
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+
+import static io.zeebe.broker.clustering.ClusterServiceNames.CLUSTER_MANAGER_SERVICE;
+import static io.zeebe.broker.logstreams.LogStreamServiceNames.logStreamServiceName;
+import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
+
+public class RaftService extends ZbActor implements Service<Raft>, RaftStateListener
 {
-
     private final RaftConfiguration configuration;
     private final SocketAddress socketAddress;
     private final LogStream logStream;
     private final List<SocketAddress> members;
     private final RaftPersistentStorage persistentStorage;
     private final RaftStateListener raftStateListener;
-    private Injector<ActorScheduler> actorSchedulerInjector = new Injector<>();
+    private final ServiceName<LogStream> logStreamServiceName;
+    private final OnOpenLogStreamListener onOpenLogStreamListener;
+    private final ServiceName<Raft> raftServiceName;
+
+    private Injector<ZbActorScheduler> actorSchedulerInjector = new Injector<>();
     private Injector<BufferingServerTransport> serverTransportInjector = new Injector<>();
     private Injector<ClientTransport> clientTransportInjector = new Injector<>();
-
     private Raft raft;
-    private ActorReference actorReference;
 
-    public RaftService(final RaftConfiguration configuration, final SocketAddress socketAddress, final LogStream logStream, final List<SocketAddress> members, final RaftPersistentStorage persistentStorage, final RaftStateListener raftStateListener)
+    private CompletableActorFuture<Void> raftServiceCloseFuture;
+    private CompletableActorFuture<Void> raftServiceOpenFuture;
+    private ServiceStartContext startContext;
+    private RaftState currentRaftState;
+
+    public RaftService(final RaftConfiguration configuration, final SocketAddress socketAddress, final LogStream logStream,
+                       final List<SocketAddress> members, final RaftPersistentStorage persistentStorage,
+                       RaftStateListener raftStateListener, OnOpenLogStreamListener onOpenLogStreamListener,
+                       ServiceName<Raft> raftServiceName)
     {
         this.configuration = configuration;
         this.socketAddress = socketAddress;
@@ -59,39 +78,86 @@ public class RaftService implements Service<Raft>
         this.members = members;
         this.persistentStorage = persistentStorage;
         this.raftStateListener = raftStateListener;
+        this.logStreamServiceName = logStreamServiceName(logStream.getLogName());
+        this.onOpenLogStreamListener = onOpenLogStreamListener;
+        this.raftServiceName = raftServiceName;
+
+    }
+
+    @Override
+    protected void onActorStarted()
+    {
+        actor.runOnCompletion(logStream.openAsync(), ((aVoid, throwable) ->
+        {
+            if (throwable == null)
+            {
+                final BufferingServerTransport serverTransport = serverTransportInjector.getValue();
+                final ClientTransport clientTransport = clientTransportInjector.getValue();
+
+                raft = new Raft(configuration, socketAddress, logStream, serverTransport, clientTransport, persistentStorage);
+                raft.registerRaftStateListener(raftStateListener);
+                raft.registerRaftStateListener(RaftService.this);
+
+                raft.addMembers(members);
+                final ZbActorScheduler actorScheduler = actorSchedulerInjector.getValue();
+                actorScheduler.submitActor(raft);
+
+                raftServiceOpenFuture.complete(null);
+            }
+            else
+            {
+                raftServiceOpenFuture.completeExceptionally(throwable);
+                Loggers.CLUSTERING_LOGGER.debug("Failed to appendEvent log stream.");
+            }
+        }));
+
+        actor.onCondition("keep-alive", () ->
+        { });
     }
 
     @Override
     public void start(final ServiceStartContext startContext)
     {
+        raftServiceOpenFuture = new CompletableActorFuture<>();
+        actorSchedulerInjector.getValue().submitActor(this);
 
-        final CompletableFuture<Void> startFuture =
-            logStream.openAsync().thenAccept(v ->
-            {
-                final BufferingServerTransport serverTransport = serverTransportInjector.getValue();
-                final ClientTransport clientTransport = clientTransportInjector.getValue();
-                raft = new Raft(configuration, socketAddress, logStream, serverTransport, clientTransport, persistentStorage);
-                raft.registerRaftStateListener(raftStateListener);
+        this.startContext = startContext;
+        this.startContext.async(raftServiceOpenFuture);
+    }
 
-                raft.addMembers(members);
-
-                final ActorScheduler actorScheduler = actorSchedulerInjector.getValue();
-                actorReference = actorScheduler.schedule(raft);
-            });
-
-        startContext.async(startFuture);
+    @Override
+    protected void onActorClosing()
+    {
     }
 
     @Override
     public void stop(final ServiceStopContext stopContext)
     {
-        actorReference.close();
-        raft.close();
+        raftServiceCloseFuture = new CompletableActorFuture<>();
 
-        final CompletableFuture<Void> stopFuture =
-            logStream.closeLogStreamController().thenCompose(v -> logStream.closeAsync());
-
-        stopContext.async(stopFuture);
+        actor.call(() ->
+        {
+            actor.runOnCompletion(raft.close(), (v1, t1) ->
+            {
+                actor.runOnCompletion(logStream.closeAsync(), ((v2, t2) ->
+                {
+                    if (t1 != null)
+                    {
+                        raftServiceCloseFuture.completeExceptionally(t1);
+                    }
+                    else if (t2 != null)
+                    {
+                        raftServiceCloseFuture.completeExceptionally(t2);
+                    }
+                    else
+                    {
+                        raftServiceCloseFuture.complete(null);
+                    }
+                    actor.close();
+                }));
+            });
+        });
+        stopContext.async(raftServiceCloseFuture);
     }
 
     @Override
@@ -100,7 +166,7 @@ public class RaftService implements Service<Raft>
         return raft;
     }
 
-    public Injector<ActorScheduler> getActorSchedulerInjector()
+    public Injector<ZbActorScheduler> getActorSchedulerInjector()
     {
         return actorSchedulerInjector;
     }
@@ -115,4 +181,46 @@ public class RaftService implements Service<Raft>
         return clientTransportInjector;
     }
 
+    @Override
+    public void onStateChange(int partitionId, DirectBuffer topicName, SocketAddress socketAddress, RaftState raftState)
+    {
+        actor.call(() ->
+        {
+            currentRaftState = raftState;
+
+            if (currentRaftState == RaftState.LEADER)
+            {
+                Loggers.CLUSTERING_LOGGER.debug("Start log stream...topic {}", BufferUtil.bufferAsString(raft.getLogStream().getTopicName()));
+                final LogStream logStream = raft.getLogStream();
+                final LogStreamService service = new LogStreamService(logStream);
+
+                final ServiceName<LogStream> streamGroup = Protocol.SYSTEM_TOPIC_BUF.equals(logStream.getTopicName()) ?
+                    LogStreamServiceNames.SYSTEM_STREAM_GROUP :
+                    LogStreamServiceNames.WORKFLOW_STREAM_GROUP;
+
+                final CompletableFuture<Void> future =
+                    startContext
+                        .createService(logStreamServiceName, service)
+                        .dependency(ACTOR_SCHEDULER_SERVICE)
+                        .dependency(CLUSTER_MANAGER_SERVICE)
+                        .dependency(raftServiceName)
+                        .group(streamGroup)
+                        .install();
+
+                future.whenComplete((v, throwable) ->
+                {
+                    actor.call(() ->
+                    {
+                        onOpenLogStreamListener.onOpenLogStreamService(raft.getLogStream());
+                    });
+                });
+            }
+            else if (currentRaftState == RaftState.FOLLOWER &&
+                     startContext.hasService(logStreamServiceName))
+            {
+                startContext.removeService(logStreamServiceName);
+            }
+
+        });
+    }
 }

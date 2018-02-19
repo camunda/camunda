@@ -17,23 +17,22 @@
  */
 package io.zeebe.broker.system.log;
 
-import java.time.Duration;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicReference;
-
+import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.management.PartitionManager;
 import io.zeebe.broker.logstreams.LogStreamServiceNames;
 import io.zeebe.broker.logstreams.processor.*;
 import io.zeebe.broker.system.SystemConfiguration;
 import io.zeebe.broker.system.SystemServiceNames;
 import io.zeebe.broker.system.deployment.processor.PartitionCollector;
-import io.zeebe.broker.system.executor.ScheduledCommand;
-import io.zeebe.broker.system.executor.ScheduledExecutor;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerTransport;
+
+import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class SystemPartitionManager implements Service<SystemPartitionManager>
 {
@@ -43,21 +42,18 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
     private ServiceStartContext serviceContext;
 
     private final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
-    private final Injector<ScheduledExecutor> executorInjector = new Injector<>();
     private final Injector<PartitionManager> partitionManagerInjector = new Injector<>();
 
     private final SystemConfiguration systemConfiguration;
 
     private PartitionManager partitionManager;
     private ServerTransport clientApiTransport;
-    private ScheduledExecutor executor;
 
     private final ServiceGroupReference<LogStream> logStreamsGroupReference = ServiceGroupReference.<LogStream>create()
         .onAdd((name, stream) -> addSystemPartition(stream, name))
-        .onRemove((name, stream) -> removeSystemPartition(stream, name))
+        .onRemove((name, stream) -> removeSystemPartition())
         .build();
 
-    private ScheduledCommand command;
     private ResolvePendingPartitionsCommand resolvePendingPartitionsCommand;
 
     private AtomicReference<PartitionResponder> partitionResponderRef = new AtomicReference<>();
@@ -69,6 +65,7 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
 
     public void addSystemPartition(LogStream logStream, ServiceName<LogStream> serviceName)
     {
+        Loggers.SYSTEM_LOGGER.debug("Add system partiton");
         final ServerOutput serverOutput = clientApiTransport.getOutput();
 
         final TypedStreamEnvironment streamEnvironment = new TypedStreamEnvironment(logStream, serverOutput);
@@ -120,8 +117,7 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
                         partitionManager,
                         topicsIndex,
                         partitionsIndex,
-                        Duration.ofSeconds(systemConfiguration.getPartitionCreationTimeoutSeconds()));
-        command = executor.scheduleAtFixedRate(() -> streamProcessor.runAsync(resolvePendingPartitionsCommand), Duration.ofMillis(100));
+                        Duration.ofSeconds(systemConfiguration.getPartitionCreationTimeoutSeconds()), resolvePendingPartitionsCommand);
 
         final StreamProcessorService streamProcessorService = new StreamProcessorService(
             CREATE_TOPICS_PROCESSOR,
@@ -136,8 +132,9 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
             .install();
     }
 
-    private void removeSystemPartition(LogStream stream, ServiceName<LogStream> name)
+    private void removeSystemPartition()
     {
+        Loggers.SYSTEM_LOGGER.debug("Remove");
         partitionResponderRef.set(null);
     }
 
@@ -146,7 +143,8 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
             PartitionManager partitionManager,
             TopicsIndex topicsIndex,
             PendingPartitionsIndex partitionsIndex,
-            Duration creationExpiration)
+            Duration creationExpiration,
+            Runnable onOpen)
     {
         final PartitionIdGenerator idGenerator = new PartitionIdGenerator();
         final PartitionCreatorSelectionStrategy creationStrategy = new RoundRobinSelectionStrategy(partitionManager);
@@ -160,6 +158,15 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
             .withStateResource(topicsIndex.getRawMap())
             .withStateResource(partitionsIndex.getRawMap())
             .withStateResource(idGenerator)
+            .withListener(new StreamProcessorLifecycleAware()
+            {
+                @Override
+                public void onOpen(TypedStreamProcessor streamProcessor)
+                {
+                    // TODO check needs to be re-implemented
+                    streamProcessor.getActor().runAtFixedRate(Duration.ofMillis(100), onOpen);
+                }
+            })
             .build();
     }
 
@@ -181,16 +188,14 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
     {
         this.serviceContext = startContext;
         this.clientApiTransport = clientApiTransportInjector.getValue();
-        this.executor = executorInjector.getValue();
         this.partitionManager = getPartitionManagerInjector().getValue();
     }
 
     @Override
     public void stop(ServiceStopContext stopContext)
     {
-        if (command != null)
+        if (resolvePendingPartitionsCommand != null)
         {
-            command.cancel();
             resolvePendingPartitionsCommand.close();
         }
         partitionResponderRef.set(null);
@@ -225,11 +230,6 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
     public Injector<ServerTransport> getClientApiTransportInjector()
     {
         return clientApiTransportInjector;
-    }
-
-    public Injector<ScheduledExecutor> getExecutorInjector()
-    {
-        return executorInjector;
     }
 
     public Injector<PartitionManager> getPartitionManagerInjector()

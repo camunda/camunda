@@ -22,53 +22,37 @@ import static io.zeebe.broker.logstreams.LogStreamServiceNames.logStreamServiceN
 import static io.zeebe.broker.logstreams.processor.StreamProcessorIds.TASK_EXPIRE_LOCK_STREAM_PROCESSOR_ID;
 import static io.zeebe.broker.logstreams.processor.StreamProcessorIds.TASK_QUEUE_STREAM_PROCESSOR_ID;
 import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
-import static io.zeebe.broker.task.TaskQueueServiceNames.TASK_QUEUE_STREAM_PROCESSOR_SERVICE_GROUP_NAME;
-import static io.zeebe.broker.task.TaskQueueServiceNames.taskQueueExpireLockStreamProcessorServiceName;
-import static io.zeebe.broker.task.TaskQueueServiceNames.taskQueueInstanceStreamProcessorServiceName;
+import static io.zeebe.broker.task.TaskQueueServiceNames.*;
 
 import java.time.Duration;
 
 import io.zeebe.broker.logstreams.processor.StreamProcessorService;
-import io.zeebe.broker.system.executor.ScheduledCommand;
-import io.zeebe.broker.system.executor.ScheduledExecutor;
 import io.zeebe.broker.task.processor.TaskExpireLockStreamProcessor;
 import io.zeebe.broker.task.processor.TaskInstanceStreamProcessor;
 import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
 import io.zeebe.broker.transport.clientapi.SubscribedEventWriter;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.processor.StreamProcessorController;
-import io.zeebe.servicecontainer.Injector;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceGroupReference;
-import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.ServerTransport;
-import io.zeebe.util.DeferredCommandContext;
-import io.zeebe.util.actor.Actor;
-import io.zeebe.util.actor.ActorReference;
-import io.zeebe.util.actor.ActorScheduler;
+import io.zeebe.util.sched.ZbActor;
+import io.zeebe.util.sched.ZbActorScheduler;
 
-public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQueueManager, Actor
+public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQueueManager
 {
     protected static final String NAME = "task.queue.manager";
-    public static final int LOCK_EXPIRATION_INTERVAL = 30; // in seconds
+    public static final Duration LOCK_EXPIRATION_INTERVAL = Duration.ofSeconds(30);
 
     protected final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
-    protected final Injector<ScheduledExecutor> executorInjector = new Injector<>();
     protected final Injector<TaskSubscriptionManager> taskSubscriptionManagerInjector = new Injector<>();
-    protected final Injector<ActorScheduler> actorSchedulerInjector = new Injector<>();
+    protected final Injector<ZbActorScheduler> actorSchedulerInjector = new Injector<>();
 
     protected final ServiceGroupReference<LogStream> logStreamsGroupReference = ServiceGroupReference.<LogStream>create()
-            .onAdd((name, stream) -> addStream(stream, name))
+            .onAdd((name, stream) -> addStream(stream))
             .build();
 
-    protected ServiceStartContext serviceContext;
-    protected DeferredCommandContext asyncContext;
-
-    protected ActorReference actorRef;
-
-    protected ScheduledCommand scheduledCheckExpirationCmd;
+    private ServiceStartContext serviceContext;
+    private ZbActorScheduler actorScheduler;
 
     @Override
     public void startTaskQueue(final String logName)
@@ -107,7 +91,6 @@ public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQ
 
     protected void startExpireLockService(String logStreamName, ServiceName<LogStream> logStreamServiceName)
     {
-        final ScheduledExecutor executor = executorInjector.getValue();
 
         final ServiceName<StreamProcessorController> expireLockStreamProcessorServiceName = taskQueueExpireLockStreamProcessorServiceName(logStreamName);
         final TaskExpireLockStreamProcessor expireLockStreamProcessor = new TaskExpireLockStreamProcessor();
@@ -122,36 +105,20 @@ public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQ
             .dependency(logStreamServiceName, expireLockStreamProcessorService.getLogStreamInjector())
             .dependency(SNAPSHOT_STORAGE_SERVICE, expireLockStreamProcessorService.getSnapshotStorageInjector())
             .dependency(ACTOR_SCHEDULER_SERVICE, expireLockStreamProcessorService.getActorSchedulerInjector())
-            .install()
-            .thenRun(() ->
-            {
-                scheduledCheckExpirationCmd = executor.scheduleAtFixedRate(expireLockStreamProcessor::checkLockExpirationAsync, Duration.ofSeconds(LOCK_EXPIRATION_INTERVAL));
-            });
+            .install();
     }
 
     @Override
     public void start(ServiceStartContext serviceContext)
     {
         this.serviceContext = serviceContext;
-        this.asyncContext = new DeferredCommandContext();
 
-        final ActorScheduler actorScheduler = actorSchedulerInjector.getValue();
-        actorRef = actorScheduler.schedule(this);
-
+        actorScheduler = actorSchedulerInjector.getValue();
     }
 
     @Override
     public void stop(ServiceStopContext ctx)
     {
-        ctx.run(() ->
-        {
-            if (scheduledCheckExpirationCmd != null)
-            {
-                scheduledCheckExpirationCmd.cancel();
-            }
-
-            actorRef.close();
-        });
     }
 
     @Override
@@ -165,11 +132,6 @@ public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQ
         return clientApiTransportInjector;
     }
 
-    public Injector<ScheduledExecutor> getExecutorInjector()
-    {
-        return executorInjector;
-    }
-
     public Injector<TaskSubscriptionManager> getTaskSubscriptionManagerInjector()
     {
         return taskSubscriptionManagerInjector;
@@ -180,29 +142,21 @@ public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQ
         return logStreamsGroupReference;
     }
 
-    public Injector<ActorScheduler> getActorSchedulerInjector()
+    public Injector<ZbActorScheduler> getActorSchedulerInjector()
     {
         return actorSchedulerInjector;
     }
 
-    public void addStream(LogStream logStream, ServiceName<LogStream> logStreamServiceName)
+    public void addStream(LogStream logStream)
     {
-        asyncContext.runAsync((r) ->
+        actorScheduler.submitActor(new ZbActor()
         {
-            startTaskQueue(logStream.getLogName());
+            @Override
+            protected void onActorStarted()
+            {
+                startTaskQueue(logStream.getLogName());
+            }
         });
-    }
-
-    @Override
-    public int doWork() throws Exception
-    {
-        return asyncContext.doWork();
-    }
-
-    @Override
-    public String name()
-    {
-        return NAME;
     }
 
 }

@@ -24,9 +24,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import org.agrona.DirectBuffer;
-import org.junit.rules.ExternalResource;
-
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.protocol.Protocol;
@@ -37,12 +34,13 @@ import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
 import io.zeebe.protocol.clientapi.SubscribedEventDecoder;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.transport.ClientTransport;
-import io.zeebe.transport.ClientTransportBuilder;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.Transports;
-import io.zeebe.util.actor.ActorScheduler;
-import io.zeebe.util.actor.ActorSchedulerBuilder;
+import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.clock.ControlledActorClock;
+import org.agrona.DirectBuffer;
+import org.junit.rules.ExternalResource;
 
 public class ClientApiRule extends ExternalResource
 {
@@ -58,7 +56,8 @@ public class ClientApiRule extends ExternalResource
     protected MsgPackHelper msgPackHelper;
     protected RawMessageCollector incomingMessageCollector;
 
-    private ActorScheduler scheduler;
+    private ControlledActorClock controlledActorClock = new ControlledActorClock();
+    private ZbActorScheduler scheduler;
 
     protected int defaultPartitionId = -1;
     protected boolean createDefaultTopic = true;
@@ -82,11 +81,14 @@ public class ClientApiRule extends ExternalResource
     @Override
     protected void before() throws Throwable
     {
-        scheduler = ActorSchedulerBuilder.createDefaultScheduler("client-rule");
+        scheduler = ZbActorScheduler.newActorScheduler()
+            .setCpuBoundActorThreadCount(1)
+            .setActorClock(controlledActorClock)
+            .build();
+        scheduler.start();
 
         sendBuffer = Dispatchers.create("clientSendBuffer")
             .bufferSize(32 * 1024 * 1024)
-            .subscriptions(ClientTransportBuilder.SEND_BUFFER_SUBSCRIPTION_NAME)
             .actorScheduler(scheduler)
             .build();
 
@@ -114,20 +116,19 @@ public class ClientApiRule extends ExternalResource
     @Override
     protected void after()
     {
+        if (transport != null)
+        {
+            transport.close();
+        }
 
         if (sendBuffer != null)
         {
             sendBuffer.close();
         }
 
-        if (transport != null)
-        {
-            transport.close();
-        }
-
         if (scheduler != null)
         {
-            scheduler.close();
+            scheduler.stop();
         }
     }
 
@@ -294,6 +295,7 @@ public class ClientApiRule extends ExternalResource
             .sendAndAwait();
     }
 
+    @SuppressWarnings("unchecked")
     public List<Integer> getPartitionIds(String topicName)
     {
         final ControlMessageResponse response = createControlMessageRequest()
@@ -340,5 +342,10 @@ public class ClientApiRule extends ExternalResource
     public ClientTransport getTransport()
     {
         return transport;
+    }
+
+    public ControlledActorClock getClock()
+    {
+        return controlledActorClock;
     }
 }

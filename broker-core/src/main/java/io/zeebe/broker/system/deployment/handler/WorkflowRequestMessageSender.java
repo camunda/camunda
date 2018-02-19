@@ -17,9 +17,6 @@
  */
 package io.zeebe.broker.system.deployment.handler;
 
-import java.util.*;
-import java.util.function.IntConsumer;
-
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.management.PartitionManager;
 import io.zeebe.broker.clustering.member.Member;
@@ -29,8 +26,15 @@ import io.zeebe.broker.workflow.data.WorkflowEvent;
 import io.zeebe.transport.*;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.collection.IntIterator;
+import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.collections.IntArrayList;
 import org.slf4j.Logger;
+
+import java.util.ArrayDeque;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Queue;
+import java.util.function.IntConsumer;
 
 public class WorkflowRequestMessageSender
 {
@@ -42,7 +46,7 @@ public class WorkflowRequestMessageSender
 
     private final TransportMessage transportMessage = new TransportMessage();
 
-    private final Queue<ClientRequest> pendingRequests = new ArrayDeque<>();
+    private final Queue<ActorFuture<ClientRequest>> pendingRequests = new ArrayDeque<>();
 
     private final PartitionManager partitionManager;
     private final ClientTransport managementClient;
@@ -69,12 +73,11 @@ public class WorkflowRequestMessageSender
 
         return forEachPartition(partitionIds, createRequest::partitionId, addr ->
         {
-            final long requestId = sendRequest(createRequest, addr);
+            LOG.debug("Send create workflow request to '{}'. Deployment-Key: {}, Workflow-Key: {}",
+                addr, event.getDeploymentKey(), workflowKey);
 
-            LOG.debug("Send create workflow request to '{}'. Request-Id: {}, Deployment-Key: {}, Workflow-Key: {}",
-                      addr, requestId, event.getDeploymentKey(), workflowKey);
-
-            return requestId >= 0;
+            sendRequest(createRequest, addr);
+            return true;
         });
     }
 
@@ -94,7 +97,6 @@ public class WorkflowRequestMessageSender
         {
             LOG.debug("Send delete workflow message to '{}'. Deployment-Key: {}, Workflow-Key: {}",
                       addr, event.getDeploymentKey(), workflowKey);
-
             return sendMessage(deleteMessage, addr);
         });
     }
@@ -123,25 +125,15 @@ public class WorkflowRequestMessageSender
             }
         }
 
-        return success;
+        return true;
     }
 
-    private long sendRequest(final BufferWriter request, final SocketAddress addr)
+    private void sendRequest(final BufferWriter request, final SocketAddress addr)
     {
         final RemoteAddress remoteAddress = managementClient.registerRemoteAddress(addr);
 
-        final ClientRequest clientRequest = output.sendRequestWithRetry(remoteAddress, request);
-
-        if (clientRequest != null)
-        {
-            pendingRequests.add(clientRequest);
-
-            return clientRequest.getRequestId();
-        }
-        else
-        {
-            return -1L;
-        }
+        final ActorFuture<ClientRequest> clientRequestActorFuture = output.sendRequestWithRetry(remoteAddress, request);
+        pendingRequests.add(clientRequestActorFuture);
     }
 
     private boolean sendMessage(final BufferWriter message, final SocketAddress addr)
@@ -153,7 +145,7 @@ public class WorkflowRequestMessageSender
         return output.sendMessage(transportMessage);
     }
 
-    public Collection<ClientRequest> getPendingRequests()
+    public Collection<ActorFuture<ClientRequest>> getPendingRequests()
     {
         return pendingRequests;
     }

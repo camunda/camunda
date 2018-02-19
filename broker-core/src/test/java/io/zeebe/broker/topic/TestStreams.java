@@ -23,7 +23,6 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -33,16 +32,8 @@ import java.util.stream.StreamSupport;
 import io.zeebe.broker.system.log.PartitionEvent;
 import io.zeebe.broker.system.log.TopicEvent;
 import io.zeebe.logstreams.LogStreams;
-import io.zeebe.logstreams.log.BufferedLogStreamReader;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamReader;
-import io.zeebe.logstreams.log.LogStreamWriter;
-import io.zeebe.logstreams.log.LogStreamWriterImpl;
-import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.processor.EventProcessor;
-import io.zeebe.logstreams.processor.StreamProcessor;
-import io.zeebe.logstreams.processor.StreamProcessorContext;
-import io.zeebe.logstreams.processor.StreamProcessorController;
+import io.zeebe.logstreams.log.*;
+import io.zeebe.logstreams.processor.*;
 import io.zeebe.logstreams.spi.SnapshotStorage;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.msgpack.UnpackedObject;
@@ -50,8 +41,8 @@ import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.test.util.AutoCloseableRule;
-import io.zeebe.util.actor.ActorScheduler;
 import io.zeebe.util.buffer.BufferUtil;
+import io.zeebe.util.sched.*;
 
 public class TestStreams
 {
@@ -70,14 +61,14 @@ public class TestStreams
 
     protected Map<String, LogStream> managedLogs = new HashMap<>();
 
-    protected ActorScheduler actorScheduler;
+    protected ZbActorScheduler actorScheduler;
 
     protected SnapshotStorage snapshotStorage;
 
     public TestStreams(
-            File storageDirectory,
-            AutoCloseableRule closeables,
-            ActorScheduler actorScheduler)
+        File storageDirectory,
+        AutoCloseableRule closeables,
+        ZbActorScheduler actorScheduler)
     {
         this.storageDirectory = storageDirectory;
         this.closeables = closeables;
@@ -93,8 +84,18 @@ public class TestStreams
             .deleteOnClose(true)
             .build();
 
-        logStream.setCommitPosition(Long.MAX_VALUE);
         logStream.open();
+        logStream.openLogStreamController().join();
+
+        actorScheduler.submitActor(new ZbActor()
+        {
+            @Override
+            protected void onActorStarted()
+            {
+                final ActorCondition condition = actor.onCondition("on-append", () -> logStream.setCommitPosition(Long.MAX_VALUE));
+                logStream.registerOnAppendCondition(condition);
+            }
+        });
 
         managedLogs.put(name, logStream);
         closeables.manage(logStream);
@@ -205,7 +206,7 @@ public class TestStreams
         @Override
         public void purgeSnapshot()
         {
-            snapshotStorage.purgeSnapshot(controller.name());
+            snapshotStorage.purgeSnapshot(controller.getName());
         }
 
 
@@ -218,7 +219,7 @@ public class TestStreams
         @Override
         public boolean isBlocked()
         {
-            return streamProcessor.isBlocked();
+            return controller.isSuspended();
         }
 
         @Override
@@ -230,7 +231,7 @@ public class TestStreams
         @Override
         public void close()
         {
-            if (!controller.isClosed())
+            if (controller.isOpened())
             {
                 try
                 {
@@ -262,9 +263,9 @@ public class TestStreams
         protected final StreamProcessor wrappedProcessor;
 
         protected AtomicReference<Predicate<LoggedEvent>> blockAfterCondition = new AtomicReference<>(null);
-        protected AtomicBoolean suspended = new AtomicBoolean(true);
 
         protected boolean blockAfterCurrentEvent;
+        private StreamProcessorContext context;
 
         public SuspendableStreamProcessor(StreamProcessor wrappedProcessor)
         {
@@ -279,7 +280,10 @@ public class TestStreams
 
         public void resume()
         {
-            this.suspended.set(false);
+            context.getActorControl().call(() ->
+            {
+                context.resumeController();
+            });
         }
 
         public void blockAfterEvent(Predicate<LoggedEvent> test)
@@ -331,27 +335,12 @@ public class TestStreams
         }
 
         @Override
-        public boolean isSuspended()
-        {
-            if (suspended.get())
-            {
-                return true;
-            }
-            else
-            {
-                return wrappedProcessor.isSuspended();
-            }
-        }
-
-        public boolean isBlocked()
-        {
-            return suspended.get();
-        }
-
-        @Override
         public void onOpen(StreamProcessorContext context)
         {
-            wrappedProcessor.onOpen(context);
+            this.context = context;
+            wrappedProcessor.onOpen(this.context);
+
+            context.suspendController();
         }
 
         @Override
@@ -366,7 +355,7 @@ public class TestStreams
             if (blockAfterCurrentEvent)
             {
                 blockAfterCurrentEvent = false;
-                suspended.set(true);
+                context.suspendController();
             }
         }
 

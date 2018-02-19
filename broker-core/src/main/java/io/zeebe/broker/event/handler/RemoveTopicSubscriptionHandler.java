@@ -17,23 +17,23 @@
  */
 package io.zeebe.broker.event.handler;
 
-import java.util.concurrent.CompletableFuture;
-
-import org.agrona.DirectBuffer;
-
 import io.zeebe.broker.event.processor.CloseSubscriptionRequest;
 import io.zeebe.broker.event.processor.TopicSubscriptionService;
-import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.broker.transport.clientapi.ErrorResponseWriter;
 import io.zeebe.broker.transport.controlmessage.ControlMessageHandler;
 import io.zeebe.broker.transport.controlmessage.ControlMessageResponseWriter;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.ErrorCode;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.transport.ServerOutput;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
+import org.agrona.DirectBuffer;
+
+import java.util.concurrent.CompletableFuture;
 
 public class RemoveTopicSubscriptionHandler implements ControlMessageHandler
 {
-
     protected final CloseSubscriptionRequest request = new CloseSubscriptionRequest();
 
     protected final TopicSubscriptionService subscriptionService;
@@ -54,8 +54,9 @@ public class RemoveTopicSubscriptionHandler implements ControlMessageHandler
     }
 
     @Override
-    public CompletableFuture<Void> handle(int partitionId, DirectBuffer buffer, BrokerEventMetadata metadata)
+    public ActorFuture<Void> handle(int partitionId, DirectBuffer buffer, BrokerEventMetadata metadata)
     {
+        final CompletableActorFuture<Void> completableActorFuture = new CompletableActorFuture<>();
         request.reset();
         request.wrap(buffer);
 
@@ -64,26 +65,29 @@ public class RemoveTopicSubscriptionHandler implements ControlMessageHandler
             request.getSubscriberKey()
         );
 
-        return future.handle((v, failure) ->
+        future.handle((v, failure) ->
         {
             if (failure == null)
             {
-                final boolean success = responseWriter
+                responseWriter
                     .dataWriter(request)
                     .tryWriteResponse(metadata.getRequestStreamId(), metadata.getRequestId());
                 // TODO: proper backpressure
+                completableActorFuture.complete(null);
             }
             else
             {
-                final boolean success = errorResponseWriter
+                errorResponseWriter
                     .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
                     .errorMessage("Cannot close topic subscription. %s", failure.getMessage())
                     .failedRequest(buffer, 0, buffer.capacity())
                     .tryWriteResponseOrLogFailure(metadata.getRequestStreamId(), metadata.getRequestId());
                 // TODO: proper backpressure
+                completableActorFuture.completeExceptionally(failure);
             }
             return null;
         });
+        return completableActorFuture;
     }
 
 

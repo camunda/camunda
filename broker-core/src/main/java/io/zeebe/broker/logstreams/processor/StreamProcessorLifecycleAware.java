@@ -22,6 +22,7 @@ public interface StreamProcessorLifecycleAware
 
     default void onOpen(TypedStreamProcessor streamProcessor)
     {
+
     };
 
     default void onClose()

@@ -18,43 +18,32 @@
 package io.zeebe.broker.task.processor;
 
 import static io.zeebe.protocol.clientapi.EventType.TASK_EVENT;
-import static io.zeebe.util.EnsureUtil.ensureGreaterThan;
-import static io.zeebe.util.EnsureUtil.ensureLessThanOrEqual;
-import static io.zeebe.util.EnsureUtil.ensureNotNull;
+import static io.zeebe.util.EnsureUtil.*;
 
 import java.util.concurrent.CompletableFuture;
 
-import org.agrona.DirectBuffer;
-
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
 import io.zeebe.broker.logstreams.processor.NoopSnapshotSupport;
-import io.zeebe.broker.task.CreditsRequest;
-import io.zeebe.broker.task.CreditsRequestBuffer;
-import io.zeebe.broker.task.TaskSubscriptionManager;
+import io.zeebe.broker.task.*;
 import io.zeebe.broker.task.data.TaskEvent;
 import io.zeebe.broker.task.data.TaskState;
 import io.zeebe.broker.task.processor.TaskSubscriptions.SubscriptionIterator;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamWriter;
-import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.processor.EventFilter;
-import io.zeebe.logstreams.processor.EventProcessor;
-import io.zeebe.logstreams.processor.StreamProcessor;
-import io.zeebe.logstreams.processor.StreamProcessorContext;
+import io.zeebe.logstreams.log.*;
+import io.zeebe.logstreams.processor.*;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
-import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.buffer.BufferUtil;
-import io.zeebe.util.time.ClockUtil;
+import io.zeebe.util.sched.ActorControl;
+import io.zeebe.util.sched.clock.ActorClock;
+import org.agrona.DirectBuffer;
 
 public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
 {
     protected final BrokerEventMetadata targetEventMetadata = new BrokerEventMetadata();
 
     protected final NoopSnapshotSupport noopSnapshotSupport = new NoopSnapshotSupport();
-    protected DeferredCommandContext cmdQueue;
     protected CreditsRequestBuffer creditsBuffer = new CreditsRequestBuffer(TaskSubscriptionManager.NUM_CONCURRENT_REQUESTS, this::increaseSubscriptionCredits);
 
     protected final TaskSubscriptions subscriptions = new TaskSubscriptions(8);
@@ -73,8 +62,9 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
     protected boolean hasLockedTask;
     protected TaskSubscription lockSubscription;
 
-    // activate the processor while adding the first subscription
-    protected boolean isSuspended = true;
+
+    private ActorControl actor;
+    private StreamProcessorContext context;
 
     public LockTaskStreamProcessor(DirectBuffer taskType)
     {
@@ -90,14 +80,6 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
         return noopSnapshotSupport;
     }
 
-    @Override
-    public boolean isSuspended()
-    {
-        creditsBuffer.handleRequests();
-
-        return isSuspended;
-    }
-
     public DirectBuffer getSubscriptedTaskType()
     {
         return subscribedTaskType;
@@ -111,12 +93,16 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
     @Override
     public void onOpen(StreamProcessorContext context)
     {
-        cmdQueue = context.getStreamProcessorCmdQueue();
-
+        creditsBuffer.handleRequests();
+        this.context = context;
         final LogStream logStream = context.getLogStream();
         logStreamPartitionId = logStream.getPartitionId();
 
         targetStream = logStream;
+        actor = context.getActorControl();
+
+        // activate the processor while adding the first subscription
+        context.suspendController();
     }
 
     public CompletableFuture<Void> addSubscription(TaskSubscription subscription)
@@ -135,30 +121,39 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
             throw new RuntimeException(errorMessage);
         }
 
-        return cmdQueue.runAsync(future ->
+        final CompletableFuture<Void> completableFuture = new CompletableFuture<>();
+        actor.call(() ->
         {
             subscriptions.addSubscription(subscription);
 
-            isSuspended = false;
+            context.resumeController();
 
-            future.complete(null);
+            completableFuture.complete(null);
         });
+        return completableFuture;
     }
 
     public CompletableFuture<Boolean> removeSubscription(long subscriberKey)
     {
-        return cmdQueue.runAsync(future ->
+        final CompletableFuture<Boolean> completableFuture = new CompletableFuture<>();
+        actor.call(() ->
         {
             subscriptions.removeSubscription(subscriberKey);
-            isSuspended = subscriptions.isEmpty();
+            final boolean isSuspended = subscriptions.isEmpty();
+            if (isSuspended)
+            {
+                context.suspendController();
+            }
 
-            future.complete(!isSuspended);
+            completableFuture.complete(!isSuspended);
         });
+        return completableFuture;
     }
 
     public CompletableFuture<Boolean> onClientChannelCloseAsync(int channelId)
     {
-        return cmdQueue.runAsync(future ->
+        final CompletableFuture<Boolean> completableFuture = new CompletableFuture<>();
+        actor.call(() ->
         {
             managementIterator.reset();
 
@@ -171,14 +166,24 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
                 }
             }
 
-            isSuspended = subscriptions.isEmpty();
+            final boolean isSuspended = subscriptions.isEmpty();
+            if (isSuspended)
+            {
+                context.suspendController();
+            }
 
-            future.complete(!isSuspended);
+            completableFuture.complete(!isSuspended);
         });
+        return completableFuture;
     }
 
     public boolean increaseSubscriptionCreditsAsync(CreditsRequest request)
     {
+        actor.call(() ->
+        {
+            creditsBuffer.handleRequests();
+        });
+
         return this.creditsBuffer.offerRequest(request);
     }
 
@@ -188,7 +193,8 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
         final int credits = request.getCredits();
 
         subscriptions.addCredits(subscriberKey, credits);
-        isSuspended = false;
+
+        context.resumeController();
     }
 
     protected TaskSubscription getNextAvailableSubscription()
@@ -276,7 +282,7 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
             lockSubscription = getNextAvailableSubscription();
             if (lockSubscription != null)
             {
-                final long lockTimeout = ClockUtil.getCurrentTimeInMillis() + lockSubscription.getLockDuration();
+                final long lockTimeout = ActorClock.currentTimeMillis() + lockSubscription.getLockDuration();
 
                 taskEvent
                     .setState(TaskState.LOCK)
@@ -320,7 +326,7 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
 
             if (subscriptions.getTotalCredits() <= 0)
             {
-                isSuspended = true;
+                context.suspendController();
             }
         }
     }

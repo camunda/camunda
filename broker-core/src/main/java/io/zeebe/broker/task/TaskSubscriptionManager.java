@@ -25,18 +25,11 @@ import static io.zeebe.util.EnsureUtil.ensureNotNull;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
-
-import org.agrona.DirectBuffer;
-import org.agrona.collections.Int2ObjectHashMap;
-import org.agrona.collections.Long2ObjectHashMap;
 
 import io.zeebe.broker.logstreams.processor.StreamProcessorService;
 import io.zeebe.broker.task.processor.LockTaskStreamProcessor;
@@ -47,13 +40,15 @@ import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.TransportListener;
-import io.zeebe.util.DeferredCommandContext;
-import io.zeebe.util.actor.Actor;
 import io.zeebe.util.allocation.HeapBufferAllocator;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.collection.CompactList;
+import io.zeebe.util.sched.ZbActor;
+import org.agrona.DirectBuffer;
+import org.agrona.collections.Int2ObjectHashMap;
+import org.agrona.collections.Long2ObjectHashMap;
 
-public class TaskSubscriptionManager implements Actor, TransportListener
+public class TaskSubscriptionManager extends ZbActor implements TransportListener
 {
     protected static final String NAME = "taskqueue.subscription.manager";
     public static final int NUM_CONCURRENT_REQUESTS = 1_024;
@@ -63,8 +58,6 @@ public class TaskSubscriptionManager implements Actor, TransportListener
 
     protected final Int2ObjectHashMap<LogStreamBucket> logStreamBuckets = new Int2ObjectHashMap<>();
     protected final Long2ObjectHashMap<LockTaskStreamProcessor> streamProcessorBySubscriptionId = new Long2ObjectHashMap<>();
-
-    protected final DeferredCommandContext asyncContext = new DeferredCommandContext(NUM_CONCURRENT_REQUESTS);
 
     /*
      * For credits handling, we use two datastructures here:
@@ -82,7 +75,6 @@ public class TaskSubscriptionManager implements Actor, TransportListener
     protected final CreditsRequest creditsRequest = new CreditsRequest();
 
     protected long nextSubscriptionId = 0;
-
 
 
     public TaskSubscriptionManager(ServiceStartContext serviceContext)
@@ -110,35 +102,15 @@ public class TaskSubscriptionManager implements Actor, TransportListener
     }
 
     @Override
-    public String name()
+    public String getName()
     {
         return NAME;
     }
 
-    @Override
-    public int doWork() throws Exception
-    {
-        final int asyncWork = asyncContext.doWork();
-
-        final int backpressuredWork = dispatchBackpressuredSubscriptionCredits();
-        final int creditsRequests;
-        if (backPressuredCreditsRequests.size() == 0)
-        {
-            // only accept new requests when backpressured ones have been processed
-            // this is required to guarantee that backPressuredCreditsRequests won't overflow
-            creditsRequests = creditRequestBuffer.handleRequests();
-        }
-        else
-        {
-            creditsRequests = 0;
-        }
-
-        return asyncWork + backpressuredWork + creditsRequests;
-    }
-
     public CompletableFuture<Void> addSubscription(final TaskSubscription subscription)
     {
-        return asyncContext.runAsync(future ->
+        final CompletableFuture<Void> future = new CompletableFuture<>();
+        actor.call(() ->
         {
             ensureNotNull("subscription", subscription);
 
@@ -181,6 +153,7 @@ public class TaskSubscriptionManager implements Actor, TransportListener
                     .handle((r, t) -> t == null ? future.complete(null) : future.completeExceptionally(t));
             }
         });
+        return future;
     }
 
     protected CompletableFuture<LockTaskStreamProcessor> createStreamProcessorService(final LogStreamBucket logStreamBucket, final DirectBuffer taskType)
@@ -216,7 +189,8 @@ public class TaskSubscriptionManager implements Actor, TransportListener
 
     public CompletableFuture<Void> removeSubscription(long subscriptionId)
     {
-        return asyncContext.runAsync(future ->
+        final CompletableFuture<Void> future = new CompletableFuture<>();
+        actor.call(() ->
         {
             final LockTaskStreamProcessor streamProcessor = streamProcessorBySubscriptionId.remove(subscriptionId);
             if (streamProcessor != null)
@@ -231,6 +205,7 @@ public class TaskSubscriptionManager implements Actor, TransportListener
                 future.complete(null);
             }
         });
+        return future;
     }
 
     protected CompletionStage<Void> removeStreamProcessorService(final LockTaskStreamProcessor streamProcessor)
@@ -273,6 +248,17 @@ public class TaskSubscriptionManager implements Actor, TransportListener
     protected void backpressureRequest(CreditsRequest request)
     {
         request.appendTo(backPressuredCreditsRequests);
+        actor.call(() ->
+        {
+            dispatchBackpressuredSubscriptionCredits();
+            if (backPressuredCreditsRequests.size() == 0)
+            {
+                // TODO check comment below
+                // only accept new requests when backpressured ones have been processed
+                // this is required to guarantee that backPressuredCreditsRequests won't overflow
+                creditRequestBuffer.handleRequests();
+            }
+        });
     }
 
     protected int dispatchBackpressuredSubscriptionCredits()
@@ -302,12 +288,15 @@ public class TaskSubscriptionManager implements Actor, TransportListener
 
     public void addStream(LogStream logStream, ServiceName<LogStream> logStreamServiceName)
     {
-        asyncContext.runAsync(() -> logStreamBuckets.put(logStream.getPartitionId(), new LogStreamBucket(logStream, logStreamServiceName)));
+        actor.call(() ->
+        {
+            logStreamBuckets.put(logStream.getPartitionId(), new LogStreamBucket(logStream, logStreamServiceName));
+        });
     }
 
     public void removeStream(LogStream logStream)
     {
-        asyncContext.runAsync(future ->
+        actor.call(() ->
         {
             final int partitionId = logStream.getPartitionId();
             logStreamBuckets.remove(partitionId);
@@ -330,7 +319,7 @@ public class TaskSubscriptionManager implements Actor, TransportListener
 
     public void onClientChannelCloseAsync(int channelId)
     {
-        asyncContext.runAsync(() ->
+        actor.call(() ->
         {
             final Iterator<LockTaskStreamProcessor> processorIt = streamProcessorBySubscriptionId.values().iterator();
             while (processorIt.hasNext())
@@ -415,4 +404,10 @@ public class TaskSubscriptionManager implements Actor, TransportListener
         onClientChannelCloseAsync(remoteAddress.getStreamId());
     }
 
+    @Override
+    protected void onActorStarted()
+    {
+        actor.onCondition("alive-task-subscription", () ->
+        { });
+    }
 }

@@ -17,22 +17,22 @@
  */
 package io.zeebe.broker.clustering.management;
 
-import java.util.Iterator;
-
-import org.agrona.DirectBuffer;
-
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.management.memberList.MemberListService;
 import io.zeebe.broker.clustering.management.memberList.MemberRaftComposite;
 import io.zeebe.broker.clustering.management.message.CreatePartitionRequest;
 import io.zeebe.broker.clustering.member.Member;
-import io.zeebe.broker.system.log.CloseResolvedRequestsCommand;
 import io.zeebe.transport.ClientRequest;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.collection.IntIterator;
+import io.zeebe.util.sched.future.ActorFuture;
+import org.agrona.DirectBuffer;
+
+import java.time.Duration;
+import java.util.Iterator;
 
 public class PartitionManagerImpl implements PartitionManager
 {
@@ -42,17 +42,15 @@ public class PartitionManagerImpl implements PartitionManager
     protected final ClientTransport transport;
 
     protected final MemberIterator memberIterator = new MemberIterator();
-    private final CloseResolvedRequestsCommand closeRequestsCommand;
 
-    public PartitionManagerImpl(MemberListService memberListService, ClientTransport transport, CloseResolvedRequestsCommand closeRequestsCommand)
+    public PartitionManagerImpl(MemberListService memberListService, ClientTransport transport)
     {
         this.memberListService = memberListService;
         this.transport = transport;
-        this.closeRequestsCommand = closeRequestsCommand;
     }
 
     @Override
-    public boolean createPartitionRemote(SocketAddress remote, DirectBuffer topicName, int partitionId)
+    public ActorFuture<ClientRequest> createPartitionRemote(SocketAddress remote, DirectBuffer topicName, int partitionId)
     {
         final DirectBuffer nameBuffer = BufferUtil.cloneBuffer(topicName);
 
@@ -64,17 +62,7 @@ public class PartitionManagerImpl implements PartitionManager
 
         Loggers.SYSTEM_LOGGER.info("Creating partition {}/{} at {}", BufferUtil.bufferAsString(topicName), partitionId, remote);
 
-        final ClientRequest request = transport.getOutput().sendRequestWithRetry(remoteAddress, messageWriter);
-
-        if (request != null)
-        {
-            closeRequestsCommand.addRequest(request);
-            return true;
-        }
-        else
-        {
-            return false;
-        }
+        return transport.getOutput().sendRequestWithRetry(remoteAddress, messageWriter, Duration.ofSeconds(5));
     }
 
     /*

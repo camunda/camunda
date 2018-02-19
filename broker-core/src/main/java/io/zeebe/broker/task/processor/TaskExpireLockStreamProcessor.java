@@ -23,15 +23,11 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
 import java.util.Iterator;
 
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
+import io.zeebe.broker.task.TaskQueueManagerService;
 import io.zeebe.broker.task.data.TaskEvent;
 import io.zeebe.broker.task.data.TaskState;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamReader;
-import io.zeebe.logstreams.log.LogStreamWriter;
-import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.processor.EventProcessor;
-import io.zeebe.logstreams.processor.StreamProcessor;
-import io.zeebe.logstreams.processor.StreamProcessorContext;
+import io.zeebe.logstreams.log.*;
+import io.zeebe.logstreams.processor.*;
 import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.map.Long2BytesZbMap;
@@ -39,7 +35,6 @@ import io.zeebe.map.iterator.Long2BytesZbMapEntry;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
-import io.zeebe.util.DeferredCommandContext;
 import io.zeebe.util.time.ClockUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
@@ -57,8 +52,6 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
 
     protected Long2BytesZbMap expirationMap = new Long2BytesZbMap(MAP_VALUE_MAX_LENGTH);
     protected ZbMapSnapshotSupport<Long2BytesZbMap> mapSnapshotSupport = new ZbMapSnapshotSupport<>(expirationMap);
-
-    protected DeferredCommandContext cmdQueue;
 
     protected LogStreamReader logStreamReader;
     protected LogStreamWriter logStreamWriter;
@@ -84,7 +77,8 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
     public void onOpen(StreamProcessorContext context)
     {
         streamProcessorId = context.getId();
-        cmdQueue = context.getStreamProcessorCmdQueue();
+
+        context.getActorControl().runAtFixedRate(TaskQueueManagerService.LOCK_EXPIRATION_INTERVAL, checkLockExpirationCmd);
         logStreamReader = context.getLogStreamReader();
         logStreamWriter = context.getLogStreamWriter();
 
@@ -191,11 +185,6 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
             return lastWrittenEventPosition;
         }
 
-    }
-
-    public void checkLockExpirationAsync()
-    {
-        cmdQueue.runAsync(checkLockExpirationCmd);
     }
 
     class CheckLockExpirationCmd implements Runnable

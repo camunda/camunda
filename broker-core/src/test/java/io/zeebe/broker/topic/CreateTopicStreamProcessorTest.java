@@ -24,52 +24,36 @@ import static org.assertj.core.api.Assertions.fail;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.zeebe.broker.clustering.handler.TopologyBroker;
-import org.agrona.DirectBuffer;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TemporaryFolder;
-
 import io.zeebe.broker.clustering.management.PartitionManager;
 import io.zeebe.broker.clustering.member.Member;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
-import io.zeebe.broker.system.log.PartitionEvent;
-import io.zeebe.broker.system.log.PartitionState;
-import io.zeebe.broker.system.log.PendingPartitionsIndex;
-import io.zeebe.broker.system.log.ResolvePendingPartitionsCommand;
-import io.zeebe.broker.system.log.SystemPartitionManager;
-import io.zeebe.broker.system.log.TopicEvent;
-import io.zeebe.broker.system.log.TopicState;
-import io.zeebe.broker.system.log.TopicsIndex;
+import io.zeebe.broker.system.log.*;
 import io.zeebe.broker.transport.clientapi.BufferingServerOutput;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.test.util.AutoCloseableRule;
+import io.zeebe.transport.ClientRequest;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.impl.RequestResponseHeaderDescriptor;
 import io.zeebe.transport.impl.TransportHeaderDescriptor;
-import io.zeebe.util.actor.ActorScheduler;
-import io.zeebe.util.actor.ActorSchedulerBuilder;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.collection.IntIterator;
 import io.zeebe.util.collection.IntListIterator;
-import io.zeebe.util.time.ClockUtil;
+import io.zeebe.util.sched.clock.ControlledActorClock;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
+import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import org.agrona.DirectBuffer;
+import org.junit.*;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TemporaryFolder;
 
 public class CreateTopicStreamProcessorTest
 {
@@ -83,8 +67,11 @@ public class CreateTopicStreamProcessorTest
     public TemporaryFolder tempFolder = new TemporaryFolder();
     public AutoCloseableRule closeables = new AutoCloseableRule();
 
+    public ControlledActorClock clock = new ControlledActorClock();
+    public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(clock);
+
     @Rule
-    public RuleChain ruleChain = RuleChain.outerRule(tempFolder).around(closeables);
+    public RuleChain ruleChain = RuleChain.outerRule(tempFolder).around(actorSchedulerRule).around(closeables);
 
     public BufferingServerOutput output;
 
@@ -99,10 +86,7 @@ public class CreateTopicStreamProcessorTest
     {
         output = new BufferingServerOutput();
 
-        final ActorScheduler scheduler = ActorSchedulerBuilder.createDefaultScheduler("foo");
-        closeables.manage(scheduler);
-
-        streams = new TestStreams(tempFolder.getRoot(), closeables, scheduler);
+        streams = new TestStreams(tempFolder.getRoot(), closeables, actorSchedulerRule.get());
         streams.createLogStream(STREAM_NAME);
 
         streams.newEvent(STREAM_NAME) // TODO: workaround for https://github.com/zeebe-io/zeebe/issues/478
@@ -126,20 +110,16 @@ public class CreateTopicStreamProcessorTest
                 streamEnvironment.buildStreamReader(),
                 streamEnvironment.buildStreamWriter());
 
-        streamProcessor = SystemPartitionManager.buildTopicCreationProcessor(
-                streamEnvironment,
-                partitionManager,
-                topicsIndex,
-                partitionsIndex,
-                CREATION_EXPIRATION);
+        streamProcessor = SystemPartitionManager
+                .buildTopicCreationProcessor(
+                    streamEnvironment,
+                    partitionManager,
+                    topicsIndex,
+                    partitionsIndex,
+                    CREATION_EXPIRATION,
+                    () ->
+                    { });
     }
-
-    @After
-    public void reset()
-    {
-        ClockUtil.reset();
-    }
-
 
     /**
      * Tests the case where the stream processor is slower than the interval in which
@@ -247,7 +227,7 @@ public class CreateTopicStreamProcessorTest
     }
 
     @Test
-    public void shouldResendPartitionRequestToSameBrokerOnRecovery() throws InterruptedException
+    public void shouldResendPartitionRequestToSameBrokerOnRecovery()
     {
         // given
         partitionManager.addMember(SOCKET_ADDRESS1);
@@ -291,7 +271,7 @@ public class CreateTopicStreamProcessorTest
     }
 
     @Test
-    public void shouldNotSendPartitionRequestToAnotherBrokerOnRecoveryIfOriginalBrokerNotAvailable() throws InterruptedException
+    public void shouldNotSendPartitionRequestToAnotherBrokerOnRecoveryIfOriginalBrokerNotAvailable()
     {
         // given
         partitionManager.addMember(SOCKET_ADDRESS1);
@@ -463,7 +443,7 @@ public class CreateTopicStreamProcessorTest
     public void shouldCreateNewPartitionOnExpiration()
     {
         // given
-        ClockUtil.pinCurrentTime();
+        clock.pinCurrentTime();
 
         partitionManager.addMember(SOCKET_ADDRESS1);
         partitionManager.addMember(SOCKET_ADDRESS2);
@@ -477,7 +457,7 @@ public class CreateTopicStreamProcessorTest
         waitUntil(() -> partitionEventsInState(PartitionState.CREATING).count() == 2);
 
         // when
-        ClockUtil.addTime(CREATION_EXPIRATION.plusSeconds(1));
+        clock.addTime(CREATION_EXPIRATION.plusSeconds(1));
         streamProcessor.runAsync(checkPartitionsCmd);
         waitUntil(() -> partitionEventsInState(PartitionState.CREATE).count() == 4);
 
@@ -496,7 +476,7 @@ public class CreateTopicStreamProcessorTest
     public void shouldSetCreationExpirationTimeInEvent()
     {
         // given
-        ClockUtil.pinCurrentTime();
+        clock.pinCurrentTime();
 
         partitionManager.addMember(SOCKET_ADDRESS1);
 
@@ -511,7 +491,7 @@ public class CreateTopicStreamProcessorTest
 
         // then
         final PartitionEvent creatingEvent = partitionEventsInState(PartitionState.CREATING).findFirst().get();
-        final Instant expectedExpirationTime = ClockUtil.getCurrentTime().plus(CREATION_EXPIRATION);
+        final Instant expectedExpirationTime = clock.getCurrentTime().plus(CREATION_EXPIRATION);
         assertThat(creatingEvent.getCreationTimeout()).isEqualTo(expectedExpirationTime.toEpochMilli());
     }
 
@@ -519,7 +499,7 @@ public class CreateTopicStreamProcessorTest
     public void shouldSendResponseAfterTheDefinedNumberOfPartitionsIsCreated()
     {
         // given
-        ClockUtil.pinCurrentTime();
+        clock.pinCurrentTime();
 
         partitionManager.addMember(SOCKET_ADDRESS1);
 
@@ -536,7 +516,7 @@ public class CreateTopicStreamProcessorTest
         partitionManager.declarePartitionLeader(SOCKET_ADDRESS1, firstRequest.getPartitionId());
 
         // a partition with expired creation
-        ClockUtil.addTime(CREATION_EXPIRATION.plusSeconds(1));
+        clock.addTime(CREATION_EXPIRATION.plusSeconds(1));
         streamProcessor.runAsync(checkPartitionsCmd);
         waitUntil(() -> partitionEventsInState(PartitionState.CREATING).count() == 3);
 
@@ -559,7 +539,7 @@ public class CreateTopicStreamProcessorTest
     public void shouldTriggerExpirationOnlyOnce() throws InterruptedException
     {
         // given
-        ClockUtil.pinCurrentTime();
+        clock.pinCurrentTime();
         partitionManager.addMember(SOCKET_ADDRESS1);
 
         final StreamProcessorControl processorControl = streams.runStreamProcessor(STREAM_NAME, streamProcessor);
@@ -571,7 +551,7 @@ public class CreateTopicStreamProcessorTest
         waitUntil(() -> partitionEventsInState(PartitionState.CREATING).count() == 1);
 
         // creation expires
-        ClockUtil.addTime(CREATION_EXPIRATION.plusSeconds(1));
+        clock.addTime(CREATION_EXPIRATION.plusSeconds(1));
         streamProcessor.runAsync(checkPartitionsCmd);
         waitUntil(() -> partitionEventsInState(PartitionState.CREATING).count() == 2);
 
@@ -587,7 +567,7 @@ public class CreateTopicStreamProcessorTest
     public void shouldRejectSecondExpirationCommand()
     {
         // given
-        ClockUtil.pinCurrentTime();
+        clock.pinCurrentTime();
         partitionManager.addMember(SOCKET_ADDRESS1);
 
         final StreamProcessorControl processorControl = streams.runStreamProcessor(STREAM_NAME, streamProcessor);
@@ -602,7 +582,7 @@ public class CreateTopicStreamProcessorTest
         waitUntil(() -> partitionEventsInState(PartitionState.CREATING).count() == 1);
 
         // creation expires once
-        ClockUtil.addTime(CREATION_EXPIRATION.plusSeconds(1));
+        clock.addTime(CREATION_EXPIRATION.plusSeconds(1));
         streamProcessor.runAsync(checkPartitionsCmd);
 
         // when the expiration check is run a second time before the stream processor handles the first command
@@ -632,7 +612,7 @@ public class CreateTopicStreamProcessorTest
     @Test
     public void shouldRejectExpirationOnIntermittentCompletion()
     {
-        ClockUtil.pinCurrentTime();
+        clock.pinCurrentTime();
         partitionManager.addMember(SOCKET_ADDRESS1);
 
         final StreamProcessorControl processorControl = streams.runStreamProcessor(STREAM_NAME, streamProcessor);
@@ -650,7 +630,7 @@ public class CreateTopicStreamProcessorTest
         partitionManager.declarePartitionLeader(SOCKET_ADDRESS1, request.getPartitionId());
 
         // when creating a complete and expire command
-        ClockUtil.addTime(CREATION_EXPIRATION.plusSeconds(1));
+        clock.addTime(CREATION_EXPIRATION.plusSeconds(1));
         streamProcessor.runAsync(checkPartitionsCmd);
 
         // then
@@ -703,7 +683,7 @@ public class CreateTopicStreamProcessorTest
 
     @Test
     @Ignore("Requires fix for https://github.com/zeebe-io/zeebe/issues/478")
-    public void shouldGenerateUniquePartitionIdsAfterRestartWithoutSnapshot() throws InterruptedException
+    public void shouldGenerateUniquePartitionIdsAfterRestartWithoutSnapshot()
     {
         // given
         StreamProcessorControl processorControl = streams.runStreamProcessor(STREAM_NAME, streamProcessor);
@@ -810,10 +790,10 @@ public class CreateTopicStreamProcessorTest
         }
 
         @Override
-        public boolean createPartitionRemote(SocketAddress remote, DirectBuffer topicName, int partitionId)
+        public ActorFuture<ClientRequest> createPartitionRemote(SocketAddress remote, DirectBuffer topicName, int partitionId)
         {
             partitionRequests.add(new PartitionRequest(remote, partitionId));
-            return true;
+            return CompletableActorFuture.completed(null);
         }
 
         public List<PartitionRequest> getPartitionRequests()
@@ -843,11 +823,6 @@ public class CreateTopicStreamProcessorTest
         public int getPartitionId()
         {
             return partitionId;
-        }
-
-        public SocketAddress getEndpoint()
-        {
-            return endpoint;
         }
     }
 

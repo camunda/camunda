@@ -283,7 +283,7 @@ public class TopicSubscriptionTest
 
         // then
         assertThat(errorResponse.getErrorCode()).isEqualTo(ErrorCode.REQUEST_PROCESSING_FAILURE);
-        assertThat(errorResponse.getErrorData()).isEqualTo("Cannot open topic subscription " + subscriptionName +
+        assertThat(errorResponse.getErrorData()).isEqualTo("Cannot appendEvent topic subscription " + subscriptionName +
                 ". Subscription name must be " + MAXIMUM_SUBSCRIPTION_NAME_LENGTH + " characters or shorter.");
     }
 

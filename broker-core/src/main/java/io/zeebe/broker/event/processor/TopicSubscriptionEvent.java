@@ -18,11 +18,10 @@
 package io.zeebe.broker.event.processor;
 
 import io.zeebe.msgpack.UnpackedObject;
-import org.agrona.DirectBuffer;
-
 import io.zeebe.msgpack.property.EnumProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
+import org.agrona.DirectBuffer;
 
 public class TopicSubscriptionEvent extends UnpackedObject
 {

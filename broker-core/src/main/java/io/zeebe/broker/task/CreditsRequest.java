@@ -17,13 +17,12 @@
  */
 package io.zeebe.broker.task;
 
+import io.zeebe.util.buffer.BufferReader;
+import io.zeebe.util.collection.CompactList;
 import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.OneToOneRingBuffer;
-
-import io.zeebe.util.collection.CompactList;
-import io.zeebe.util.buffer.BufferReader;
 
 public class CreditsRequest implements BufferReader
 {
@@ -34,12 +33,6 @@ public class CreditsRequest implements BufferReader
 
     public CreditsRequest()
     {
-    }
-
-    public CreditsRequest(long subscriberKey, int credits)
-    {
-        setSubscriberKey(subscriberKey);
-        setCredits(credits);
     }
 
     @Override

@@ -17,8 +17,6 @@
  */
 package io.zeebe.broker.system.deployment.service;
 
-import java.time.Duration;
-
 import io.zeebe.broker.clustering.management.PartitionManager;
 import io.zeebe.broker.logstreams.LogStreamServiceNames;
 import io.zeebe.broker.logstreams.processor.*;
@@ -31,8 +29,6 @@ import io.zeebe.broker.system.deployment.data.TopicPartitions;
 import io.zeebe.broker.system.deployment.data.WorkflowVersions;
 import io.zeebe.broker.system.deployment.handler.WorkflowRequestMessageSender;
 import io.zeebe.broker.system.deployment.processor.*;
-import io.zeebe.broker.system.executor.ScheduledCommand;
-import io.zeebe.broker.system.executor.ScheduledExecutor;
 import io.zeebe.broker.workflow.data.DeploymentState;
 import io.zeebe.broker.workflow.data.WorkflowState;
 import io.zeebe.logstreams.log.LogStream;
@@ -41,12 +37,13 @@ import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.ServerTransport;
 
+import java.time.Duration;
+
 public class DeploymentManager implements Service<DeploymentManager>
 {
     private final Injector<PartitionManager> partitionManagerInjector = new Injector<>();
     private final Injector<ClientTransport> managementClientInjector = new Injector<>();
     private final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
-    private final Injector<ScheduledExecutor> scheduledExecutorInjector = new Injector<>();
 
     private final SystemConfiguration systemConfiguration;
 
@@ -55,9 +52,6 @@ public class DeploymentManager implements Service<DeploymentManager>
     private PartitionManager partitionManager;
     private ClientTransport managementClient;
     private ServerTransport clientApiTransport;
-    private ScheduledExecutor scheduledExecutor;
-
-    private ScheduledCommand scheduledChecker;
     private PendingDeploymentCheck pendingDeploymentCheck;
 
     private final ServiceGroupReference<LogStream> systemStreamGroupReference = ServiceGroupReference.<LogStream>create()
@@ -77,11 +71,11 @@ public class DeploymentManager implements Service<DeploymentManager>
         partitionManager = partitionManagerInjector.getValue();
         managementClient = managementClientInjector.getValue();
         clientApiTransport = clientApiTransportInjector.getValue();
-        scheduledExecutor = getScheduledExecutorInjector().getValue();
     }
 
     private void installDeploymentStreamProcessor(final LogStream logStream, ServiceName<LogStream> serviceName)
     {
+
         final WorkflowVersions workflowVersions = new WorkflowVersions();
         final PendingDeployments pendingDeployments = new PendingDeployments();
         final PendingWorkflows pendingWorkflows = new PendingWorkflows();
@@ -98,6 +92,13 @@ public class DeploymentManager implements Service<DeploymentManager>
         partitionCollector.registerWith(streamProcessorBuilder);
         final TopicPartitions partitions = partitionCollector.getPartitions();
 
+        pendingDeploymentCheck = new PendingDeploymentCheck(
+            workflowRequestMessageSender,
+            streamEnvironment.buildStreamReader(),
+            streamEnvironment.buildStreamWriter(),
+            pendingDeployments,
+            pendingWorkflows);
+
         final TypedStreamProcessor streamProcessor = streamProcessorBuilder
             .onEvent(EventType.DEPLOYMENT_EVENT, DeploymentState.CREATE, new DeploymentCreateProcessor(partitions, workflowVersions, pendingDeployments, deploymentRequestTimeout))
             .onEvent(EventType.DEPLOYMENT_EVENT, DeploymentState.VALIDATED, new DeploymentValidatedProcessor(pendingDeployments))
@@ -109,6 +110,15 @@ public class DeploymentManager implements Service<DeploymentManager>
             .withStateResource(workflowVersions.getRawMap())
             .withStateResource(pendingDeployments.getRawMap())
             .withStateResource(pendingWorkflows.getRawMap())
+            .withListener(new StreamProcessorLifecycleAware()
+            {
+                @Override
+                public void onOpen(TypedStreamProcessor streamProcessor)
+                {
+                    // TODO check needs to be re-implemented
+                    streamProcessor.getActor().runAtFixedRate(Duration.ofMillis(250), pendingDeploymentCheck);
+                }
+            })
             .build();
 
         final StreamProcessorService streamProcessorService = new StreamProcessorService(
@@ -121,36 +131,14 @@ public class DeploymentManager implements Service<DeploymentManager>
              .dependency(serviceName, streamProcessorService.getLogStreamInjector())
              .dependency(LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE, streamProcessorService.getSnapshotStorageInjector())
              .dependency(SystemServiceNames.ACTOR_SCHEDULER_SERVICE, streamProcessorService.getActorSchedulerInjector())
-             .install()
-             .thenRun(() ->
-             {
-                 scheduledChecker = scheduleChecker(streamEnvironment, streamProcessor, workflowRequestMessageSender, pendingDeployments, pendingWorkflows);
-             });
-    }
-
-    private ScheduledCommand scheduleChecker(
-            final TypedStreamEnvironment streamEnvironment,
-            final TypedStreamProcessor streamProcessor,
-            final WorkflowRequestMessageSender workflowRequestSender,
-            final PendingDeployments pendingDeployments,
-            final PendingWorkflows pendingWorkflows)
-    {
-        pendingDeploymentCheck = new PendingDeploymentCheck(
-               workflowRequestSender,
-               streamEnvironment.buildStreamReader(),
-               streamEnvironment.buildStreamWriter(),
-               pendingDeployments,
-               pendingWorkflows);
-
-        return scheduledExecutor.scheduleAtFixedRate(() -> streamProcessor.runAsync(pendingDeploymentCheck), Duration.ofMillis(250));
+             .install();
     }
 
     @Override
     public void stop(ServiceStopContext stopContext)
     {
-        if (scheduledChecker != null)
+        if (pendingDeploymentCheck != null)
         {
-            scheduledChecker.cancel();
             pendingDeploymentCheck.close();
         }
     }
@@ -178,11 +166,6 @@ public class DeploymentManager implements Service<DeploymentManager>
     public Injector<ServerTransport> getClientApiTransportInjector()
     {
         return clientApiTransportInjector;
-    }
-
-    public Injector<ScheduledExecutor> getScheduledExecutorInjector()
-    {
-        return scheduledExecutorInjector;
     }
 
 }

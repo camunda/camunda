@@ -19,6 +19,8 @@ package io.zeebe.broker.transport.controlmessage;
 
 import java.util.concurrent.CompletableFuture;
 
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
 
 import io.zeebe.protocol.impl.BrokerEventMetadata;
@@ -52,34 +54,38 @@ public class RemoveTaskSubscriptionHandler implements ControlMessageHandler
     }
 
     @Override
-    public CompletableFuture<Void> handle(int partitionId, DirectBuffer buffer, BrokerEventMetadata eventMetada)
+    public ActorFuture<Void> handle(int partitionId, DirectBuffer buffer, BrokerEventMetadata eventMetada)
     {
         subscription.reset();
 
         subscription.wrap(buffer);
 
+        final CompletableActorFuture<Void> completableActorFuture = new CompletableActorFuture<>();
         final CompletableFuture<Void> future = manager.removeSubscription(subscription.getSubscriberKey());
 
-        return future.handle((v, failure) ->
+        future.handle((v, failure) ->
         {
             if (failure == null)
             {
-                final boolean success = responseWriter
+                responseWriter
                     .dataWriter(subscription)
                     .tryWriteResponse(eventMetada.getRequestStreamId(), eventMetada.getRequestId());
+                completableActorFuture.complete(null);
                 // TODO: proper backpressure
             }
             else
             {
-                final boolean success = errorResponseWriter
+                errorResponseWriter
                     .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
                     .errorMessage("Cannot remove task subscription. %s", failure.getMessage())
                     .failedRequest(buffer, 0, buffer.capacity())
                     .tryWriteResponseOrLogFailure(eventMetada.getRequestStreamId(), eventMetada.getRequestId());
+                completableActorFuture.completeExceptionally(failure);
                 // TODO: proper backpressure
             }
             return null;
         });
+        return completableActorFuture;
     }
 
 }

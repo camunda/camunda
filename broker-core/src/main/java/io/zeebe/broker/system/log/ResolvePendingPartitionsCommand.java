@@ -21,13 +21,11 @@ import java.util.Iterator;
 
 import io.zeebe.broker.clustering.management.PartitionManager;
 import io.zeebe.broker.clustering.member.Member;
-import io.zeebe.broker.logstreams.processor.TypedEvent;
-import io.zeebe.broker.logstreams.processor.TypedStreamReader;
-import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
+import io.zeebe.broker.logstreams.processor.*;
 import io.zeebe.broker.system.log.PendingPartitionsIndex.PendingPartition;
 import io.zeebe.util.CloseableSilently;
 import io.zeebe.util.collection.IntIterator;
-import io.zeebe.util.time.ClockUtil;
+import io.zeebe.util.sched.clock.ActorClock;
 
 public class ResolvePendingPartitionsCommand implements Runnable, CloseableSilently
 {
@@ -71,7 +69,7 @@ public class ResolvePendingPartitionsCommand implements Runnable, CloseableSilen
     private void checkExpiredCreation()
     {
         final Iterator<PendingPartition> partitionIt = partitions.iterator();
-        final long now = ClockUtil.getCurrentTimeInMillis();
+        final long now = ActorClock.currentTimeMillis();
 
         while (partitionIt.hasNext())
         {
@@ -99,6 +97,7 @@ public class ResolvePendingPartitionsCommand implements Runnable, CloseableSilen
             final Member currentMember = currentMembers.next();
 
             final IntIterator partitionsLeadByMember = currentMember.getLeadingPartitions();
+
 
 
             while (partitionsLeadByMember.hasNext())

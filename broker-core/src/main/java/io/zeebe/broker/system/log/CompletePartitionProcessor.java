@@ -17,11 +17,7 @@
  */
 package io.zeebe.broker.system.log;
 
-import io.zeebe.broker.Loggers;
-import io.zeebe.broker.logstreams.processor.TypedEvent;
-import io.zeebe.broker.logstreams.processor.TypedEventProcessor;
-import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
-import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
+import io.zeebe.broker.logstreams.processor.*;
 import io.zeebe.broker.system.log.PendingPartitionsIndex.PendingPartition;
 
 public class CompletePartitionProcessor implements TypedEventProcessor<PartitionEvent>
@@ -42,7 +38,6 @@ public class CompletePartitionProcessor implements TypedEventProcessor<Partition
 
         if (partition != null)
         {
-            Loggers.CLUSTERING_LOGGER.debug("Partition {} created.", value.id);
             value.setState(PartitionState.CREATED);
         }
         else
@@ -72,7 +67,6 @@ public class CompletePartitionProcessor implements TypedEventProcessor<Partition
         {
             partitions.removePartitionKey(value.getId());
         }
-
     }
 
 }

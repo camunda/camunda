@@ -50,11 +50,6 @@ public class BrokerPartitionState extends UnpackedObject
         return this;
     }
 
-    public DirectBuffer getTopicNameProp()
-    {
-        return topicNameProp.getValue();
-    }
-
     public BrokerPartitionState setTopicName(final DirectBuffer topicName, final int offset, final int length)
     {
         this.topicNameProp.setValue(topicName, offset, length);
