@@ -15,7 +15,8 @@ import org.camunda.optimize.dto.optimize.query.report.filter.data.FilterDataDto;
     @JsonSubTypes.Type(value = RollingDateFilterDto.class, name = "rollingDate"),
     @JsonSubTypes.Type(value = VariableFilterDto.class, name = "variable"),
     @JsonSubTypes.Type(value = ExecutedFlowNodeFilterDto.class, name = "executedFlowNodes"),
-    @JsonSubTypes.Type(value = RunningInstancesOnlyFilterDto.class, name = "runningInstancesOnly")
+    @JsonSubTypes.Type(value = RunningInstancesOnlyFilterDto.class, name = "runningInstancesOnly"),
+    @JsonSubTypes.Type(value = CompletedInstancesOnlyFilterDto.class, name = "completedInstancesOnly")
 }
 )
 public abstract class FilterDto<DATA extends FilterDataDto> {

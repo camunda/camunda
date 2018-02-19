@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.es.filter;
 
+import org.camunda.optimize.dto.optimize.query.report.filter.CompletedInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.DateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.DurationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.ExecutedFlowNodeFilterDto;
@@ -7,6 +8,7 @@ import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.RollingDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.RunningInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.VariableFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.filter.data.CompletedInstancesOnlyFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.data.DateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.data.DurationFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.data.ExecutedFlowNodeFilterDataDto;
@@ -41,6 +43,9 @@ public class QueryFilterEnhancer {
   @Autowired
   private RunningInstancesOnlyQueryFilter runningInstancesOnlyQueryFilter;
 
+  @Autowired
+  private CompletedInstancesOnlyQueryFilter completedInstancesOnlyQueryFilter;
+
   public void addFilterToQuery(BoolQueryBuilder query, List<FilterDto> filter) {
     if (filter != null) {
       dateQueryFilter.addFilters(query, extractDateFilters(filter));
@@ -49,6 +54,7 @@ public class QueryFilterEnhancer {
       rollingDateQueryFilter.addFilters(query, extractRollingDateFilter(filter));
       durationQueryFilter.addFilters(query, extractDurationFilters(filter));
       runningInstancesOnlyQueryFilter.addFilters(query, extractRunningInstancesOnlyFilters(filter));
+      completedInstancesOnlyQueryFilter.addFilters(query, extractCompletedInstancesOnlyFilters(filter));
     }
   }
 
@@ -119,5 +125,16 @@ public class QueryFilterEnhancer {
       .collect(Collectors.toList());
   }
 
+  private List<CompletedInstancesOnlyFilterDataDto> extractCompletedInstancesOnlyFilters(List<FilterDto> filter) {
+    return filter
+      .stream()
+      .filter(CompletedInstancesOnlyFilterDto.class::isInstance)
+      .map(completedInstancesOnlyFilter -> {
+        CompletedInstancesOnlyFilterDto completedInstancesOnlyFilterDto =
+          (CompletedInstancesOnlyFilterDto) completedInstancesOnlyFilter;
+        return completedInstancesOnlyFilterDto.getData();
+      })
+      .collect(Collectors.toList());
+  }
 
 }
