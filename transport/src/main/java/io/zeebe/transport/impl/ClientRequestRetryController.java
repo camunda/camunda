@@ -32,7 +32,6 @@ import io.zeebe.transport.RequestTimeoutException;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.buffer.DirectBufferWriter;
 import io.zeebe.util.sched.ZbActor;
-import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 
@@ -46,7 +45,6 @@ public class ClientRequestRetryController extends ZbActor
 
     private final Supplier<ActorFuture<RemoteAddress>> remoteAddressSupplier;
     private final Duration timeout;
-    private long deadline;
 
     private final Predicate<DirectBuffer> responseHandler;
 
@@ -76,8 +74,8 @@ public class ClientRequestRetryController extends ZbActor
     @Override
     protected void onActorStarted()
     {
-        deadline = ActorClock.currentTimeMillis() + timeout.toMillis();
         actor.run(this::getRemoteAddress);
+        actor.runDelayed(timeout, this::onRequestTimedOut);
     }
 
     private void getRemoteAddress()
@@ -100,72 +98,70 @@ public class ClientRequestRetryController extends ZbActor
         });
     }
 
+    private ClientRequestImpl currentRequest;
+
     private void sendRequest()
     {
-        if (ActorClock.currentTimeMillis() > deadline)
+        currentRequest = requestPool.openRequest(remotesTried.peek(), requestWriter);
+
+        if (currentRequest != null)
         {
             actor.done();
-            actor.run(this::onRequestTimedOut);
-        }
-        else
-        {
-            final ClientRequestImpl request = requestPool.openRequest(remotesTried.peek(), requestWriter);
 
-            if (request != null)
+            actor.runOnCompletion(currentRequest, (response, e) ->
             {
-                actor.done();
+                boolean shouldRetry = false;
 
-                actor.runOnCompletion(request, (response, e) ->
+                if (e != null)
                 {
-                    boolean shouldRetry = false;
+                    shouldRetry = e instanceof ExecutionException && e.getCause() instanceof NotConnectedException;
+                }
+                else
+                {
+                    shouldRetry = responseHandler.test(response);
+                }
 
-                    if (e != null)
-                    {
-                        shouldRetry = e instanceof ExecutionException && e.getCause() instanceof NotConnectedException;
-                    }
-                    else
-                    {
-                        shouldRetry = responseHandler.test(response);
-                    }
-
-                    if (!shouldRetry)
-                    {
-                        if (!successfulRequest.isDone())
-                        {
-                            if (e == null)
-                            {
-                                successfulRequest.complete(request);
-                            }
-                            else
-                            {
-                                successfulRequest.completeExceptionally(e);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        request.close();
-                        actor.runDelayed(RESUBMIT_TIMEOUT, this::getRemoteAddress);
-                    }
-                });
-
-                actor.runDelayed(timeout, () ->
+                if (!shouldRetry)
                 {
                     if (!successfulRequest.isDone())
                     {
-                        onRequestTimedOut();
+                        if (e == null)
+                        {
+                            successfulRequest.complete(currentRequest);
+                            currentRequest = null;
+                        }
+                        else
+                        {
+                            successfulRequest.completeExceptionally(e);
+                        }
                     }
-                });
-            }
-            else
-            {
-                actor.yield(); // retry send
-            }
+                }
+                else
+                {
+                    currentRequest.close();
+                    actor.runDelayed(RESUBMIT_TIMEOUT, this::getRemoteAddress);
+                }
+            });
+        }
+        else
+        {
+            actor.yield(); // retry send
         }
     }
 
     private void onRequestTimedOut()
     {
+        if (successfulRequest.isDone())
+        {
+            return;
+        }
+
+        if (currentRequest != null)
+        {
+            currentRequest.close();
+            currentRequest = null;
+        }
+
         final StringBuilder errBuilder = new StringBuilder("Request timed out after ")
                  .append(timeout)
                  .append(".\nRemotes tried (in reverse order):\n");
@@ -179,6 +175,7 @@ public class ClientRequestRetryController extends ZbActor
 
         final String errorMessage = errBuilder.toString();
         successfulRequest.completeExceptionally(errorMessage, new RequestTimeoutException(errorMessage));
+        actor.close();
     }
 
     public ActorFuture<ClientRequest> getRequest()

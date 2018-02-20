@@ -31,4 +31,10 @@ public interface ClientRequest extends AutoCloseable, ActorFuture<DirectBuffer>
     void close();
 
     boolean isFailed();
+
+    /**
+     * @return the remote to which this request was supposed to be sent
+     * (does not incidicate that the request was actually sent)
+     */
+    RemoteAddress getRemoteAddress();
 }
