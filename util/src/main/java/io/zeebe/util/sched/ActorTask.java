@@ -102,6 +102,16 @@ public class ActorTask
         currentJob = j;
     }
 
+    public void submit(Runnable runnable)
+    {
+        final ActorJob actorJob = new ActorJob();
+        actorJob.setRunnable(runnable);
+        actorJob.setAutoCompleting(true);
+        actorJob.onJobAddedToTask(this);
+
+        submit(actorJob);
+    }
+
     /** Used to externally submit a job. */
     public void submit(ActorJob job)
     {

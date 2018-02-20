@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import io.zeebe.util.Loggers;
 import io.zeebe.util.collection.Tuple;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
@@ -72,6 +73,148 @@ public class ActorFutureTest
 
         // then
         assertThat(callbackInvocations).hasValue(1);
+    }
+
+    @Test
+    public void shouldRunOnCompleteInCompletedActor()
+    {
+        // given
+        final AtomicInteger callbackInvocations = new AtomicInteger(0);
+        final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+
+        future.onComplete((v, throwable) ->
+            {
+                    assertThat(ActorTaskRunner.current().getCurrentTask().actor.getName()).isEqualTo("completing");
+                    callbackInvocations.incrementAndGet();
+            });
+
+        final ZbActor completingActor = new ZbActor()
+        {
+            @Override
+            public String getName()
+            {
+                return "completing";
+            }
+
+            @Override
+            protected void onActorStarted()
+            {
+                future.complete(null);
+            }
+        };
+
+        // when
+        schedulerRule.submitActor(completingActor);
+        schedulerRule.workUntilDone();
+
+        // then
+        assertThat(callbackInvocations).hasValue(1);
+    }
+
+    @Test
+    public void shouldRunChainedOnComplete()
+    {
+        // given
+        final AtomicInteger callbackInvocations = new AtomicInteger(0);
+        final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+
+        future.onComplete((v, throwable) -> callbackInvocations.incrementAndGet())
+              .onComplete((v, throwable) -> callbackInvocations.incrementAndGet())
+              .onComplete((v, throwable) -> callbackInvocations.incrementAndGet());
+
+
+        final ZbActor completingActor = new ZbActor()
+        {
+            @Override
+            protected void onActorStarted()
+            {
+                future.complete(null);
+            }
+        };
+
+        // when
+        schedulerRule.submitActor(completingActor);
+        schedulerRule.workUntilDone();
+
+        // then
+        assertThat(callbackInvocations).hasValue(3);
+    }
+
+    @Test
+    public void shouldGetCompleteValueOnComplete()
+    {
+        // given
+        final AtomicInteger callbackInvocations = new AtomicInteger(0);
+        final CompletableActorFuture<Integer> future = new CompletableActorFuture<>();
+        future.onComplete((v, throwable) -> callbackInvocations.set(v));
+
+        final ZbActor completingActor = new ZbActor()
+        {
+            @Override
+            protected void onActorStarted()
+            {
+                future.complete(10);
+            }
+        };
+
+        // when
+        schedulerRule.submitActor(completingActor);
+        schedulerRule.workUntilDone();
+
+        // then
+        assertThat(callbackInvocations).hasValue(10);
+    }
+
+    @Test
+    public void shouldGetCompleteValueOnChainedOnComplete()
+    {
+        // given
+        final AtomicInteger callbackInvocations = new AtomicInteger(0);
+        final CompletableActorFuture<Integer> future = new CompletableActorFuture<>();
+        future.onComplete((v, throwable) -> callbackInvocations.set(v + 1))
+              .onComplete((v, throwable) -> callbackInvocations.set(v + 2));
+
+        final ZbActor completingActor = new ZbActor()
+        {
+            @Override
+            protected void onActorStarted()
+            {
+                future.complete(10);
+            }
+        };
+
+        // when
+        schedulerRule.submitActor(completingActor);
+        schedulerRule.workUntilDone();
+
+        // then
+        assertThat(callbackInvocations).hasValue(12);
+    }
+
+    @Test
+    public void shouldGetCompleteThrowableOnComplete()
+    {
+        // given
+        final CompletableActorFuture<Integer> future = new CompletableActorFuture<>();
+        final List<Throwable> throwables = new ArrayList<>();
+        future.onComplete((v, throwable) -> throwables.add(throwable));
+
+        final ZbActor completingActor = new ZbActor()
+        {
+            @Override
+            protected void onActorStarted()
+            {
+                future.completeExceptionally(new RuntimeException());
+            }
+        };
+
+        // when
+        schedulerRule.submitActor(completingActor);
+        schedulerRule.workUntilDone();
+
+        // then
+        assertThat(throwables).hasSize(1);
+        assertThat(throwables.get(0)).isInstanceOf(RuntimeException.class);
     }
 
     @Test
