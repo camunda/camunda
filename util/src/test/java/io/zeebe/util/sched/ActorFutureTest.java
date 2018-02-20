@@ -15,16 +15,6 @@
  */
 package io.zeebe.util.sched;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-
-import io.zeebe.util.Loggers;
 import io.zeebe.util.collection.Tuple;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
@@ -32,6 +22,15 @@ import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class ActorFutureTest
 {
@@ -83,10 +82,10 @@ public class ActorFutureTest
         final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
 
         future.onComplete((v, throwable) ->
-            {
-                    assertThat(ActorTaskRunner.current().getCurrentTask().actor.getName()).isEqualTo("completing");
-                    callbackInvocations.incrementAndGet();
-            });
+        {
+            assertThat(ActorTaskRunner.current().getCurrentTask().actor.getName()).isEqualTo("completing");
+            callbackInvocations.incrementAndGet();
+        });
 
         final ZbActor completingActor = new ZbActor()
         {
