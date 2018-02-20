@@ -19,6 +19,7 @@ import static org.agrona.UnsafeAccess.UNSAFE;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import io.zeebe.util.sched.metrics.TaskMetrics;
@@ -76,6 +77,8 @@ public class ActorTask
 
     private boolean isCollectTaskMetrics;
 
+    private boolean isJumbo = false;
+
     public ActorTask(ZbActor actor)
     {
         this.actor = actor;
@@ -93,6 +96,7 @@ public class ActorTask
         this.terminationFuture.setAwaitingResult();
         this.isClosing = false;
         this.scheduler = scheduler;
+        this.isJumbo = false;
 
         this.isCollectTaskMetrics = shouldCollectTaskMetrics;
         if (shouldCollectTaskMetrics)
@@ -441,5 +445,22 @@ public class ActorTask
     public void reportExecutionTime(long t)
     {
         taskMetrics.reportExecutionTime(t);
+    }
+
+    public void warnMaxTaskExecutionTimeExceeded(long taskExecutionTime)
+    {
+        if (!isJumbo)
+        {
+            isJumbo = true;
+
+            System.err.println(String.format("%s reported running for %dµs. Jumbo task detected! " +
+                    "Will not print further warnings for this task.",
+                    actor.getName(), TimeUnit.NANOSECONDS.toMicros(taskExecutionTime)));
+        }
+    }
+
+    public boolean isHasWarnedJumbo()
+    {
+        return isJumbo;
     }
 }

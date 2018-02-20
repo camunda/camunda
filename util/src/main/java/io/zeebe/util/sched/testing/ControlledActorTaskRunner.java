@@ -37,9 +37,9 @@ public class ControlledActorTaskRunner extends ActorTaskRunner
     class ControlledIdleStartegy extends ActorTaskRunnerIdleStrategy
     {
         @Override
-        protected void idle()
+        protected void onIdle()
         {
-            super.idle();
+            super.onIdle();
 
             try
             {

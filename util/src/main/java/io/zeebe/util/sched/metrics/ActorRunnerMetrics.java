@@ -26,7 +26,6 @@ import org.agrona.concurrent.status.CountersManager;
  */
 public class ActorRunnerMetrics implements AutoCloseable
 {
-    private final CountersManager countersManager;
     private final AtomicCounter runnerIdleTime;
     private final AtomicCounter runnerBusyTime;
     private final AtomicCounter jobExecutionCount;
@@ -35,7 +34,6 @@ public class ActorRunnerMetrics implements AutoCloseable
 
     public ActorRunnerMetrics(String runnerName, CountersManager countersManager)
     {
-        this.countersManager = countersManager;
         runnerIdleTime = countersManager.newCounter(String.format("%s.runnerIdleTime", runnerName), TYPE_TEMPORAL_VALUE);
         runnerBusyTime = countersManager.newCounter(String.format("%s.runnerBusyTime", runnerName), TYPE_TEMPORAL_VALUE);
         jobExecutionCount = countersManager.newCounter(String.format("%s.jobCount", runnerName));

@@ -24,6 +24,10 @@ import org.agrona.concurrent.status.CountersReader.MetaData;
 
 public class SchedulerMetrics
 {
+    public static final String TASK_MAX_EXECUTION_TIME_MICROS_PROP = "io.zeebe.scheduler.taskMaxExecutionTimeMicros";
+    public static final int TASK_MAX_EXECUTION_TIME_NANOS = 1000 * Integer.getInteger(TASK_MAX_EXECUTION_TIME_MICROS_PROP, -1);
+    public static final boolean SHOULD_ENABLE_JUMBO_TASK_DETECTION = TASK_MAX_EXECUTION_TIME_NANOS >= 0;
+
     public static final int TYPE_TEMPORAL_VALUE = 1;
 
     public static void printMetrics(ConcurrentCountersManager countersManager, PrintStream ps)

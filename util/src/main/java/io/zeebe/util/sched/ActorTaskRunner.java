@@ -15,6 +15,9 @@
  */
 package io.zeebe.util.sched;
 
+import static io.zeebe.util.sched.metrics.SchedulerMetrics.SHOULD_ENABLE_JUMBO_TASK_DETECTION;
+import static io.zeebe.util.sched.metrics.SchedulerMetrics.TASK_MAX_EXECUTION_TIME_NANOS;
+
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -125,7 +128,7 @@ public class ActorTaskRunner extends Thread
             }
             else
             {
-                idleStrategy.idle();
+                idleStrategy.onIdle();
             }
         }
     }
@@ -133,16 +136,11 @@ public class ActorTaskRunner extends Thread
     private void executeCurrentTask()
     {
         MDC.put("actor-name", currentTask.actor.getName());
-        idleStrategy.onTaskExecute();
+        idleStrategy.onTaskExecuted();
         metrics.incrementTaskExecutionCount();
 
-        long nanoTimeBeforeTask = -1;
-
-        if (currentTask.isCollectTaskMetrics())
-        {
-            clock.update();
-            nanoTimeBeforeTask = clock.getNanoTime();
-        }
+        clock.update();
+        final long nanoTimeBeforeTask = clock.getNanoTime();
 
         boolean resubmit = false;
 
@@ -163,10 +161,20 @@ public class ActorTaskRunner extends Thread
         {
             MDC.remove("actor-name");
 
+            clock.update();
+            final long taskExecutionTime = clock.getNanoTime() - nanoTimeBeforeTask;
+
             if (currentTask.isCollectTaskMetrics())
             {
-                clock.update();
-                currentTask.reportExecutionTime(clock.getNanoTime() - nanoTimeBeforeTask);
+                currentTask.reportExecutionTime(taskExecutionTime);
+            }
+
+            if (SHOULD_ENABLE_JUMBO_TASK_DETECTION)
+            {
+                if (TASK_MAX_EXECUTION_TIME_NANOS < taskExecutionTime)
+                {
+                    currentTask.warnMaxTaskExecutionTimeExceeded(taskExecutionTime);
+                }
             }
         }
 
@@ -190,7 +198,7 @@ public class ActorTaskRunner extends Thread
             idleTimeStart = System.nanoTime();
         }
 
-        protected void idle()
+        protected void onIdle()
         {
             if (!isIdle)
             {
@@ -204,7 +212,7 @@ public class ActorTaskRunner extends Thread
         }
 
 
-        protected void onTaskExecute()
+        protected void onTaskExecuted()
         {
             backoff.reset();
 
