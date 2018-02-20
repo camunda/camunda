@@ -27,7 +27,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public final class BufferUtil
 {
-    public static final int NO_WRAP = 0;
+    public static final int NO_WRAP = 1;
     public static final int DEFAULT_WRAP = 16; // bytes
 
     private static final char[] HEX_CODE = "0123456789ABCDEF".toCharArray();
