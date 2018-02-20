@@ -9,8 +9,8 @@ export default class Sharing extends React.Component {
   constructor(props) {
     super(props);
 
-    this.id = props.match.params.id;
-    this.type = props.match.params.type;
+    this.getId = () => props.match.params.id;
+    this.getType = () => props.match.params.type;
 
     this.state = {
       evaluationResult: null,
@@ -22,7 +22,7 @@ export default class Sharing extends React.Component {
 
   performEvaluation = async () => {
 
-    const evaluationResult = await evaluateEntity(this.id, this.type);
+    const evaluationResult = await evaluateEntity(this.getId(), this.getType());
 
     this.setState({
       evaluationResult,
@@ -31,7 +31,7 @@ export default class Sharing extends React.Component {
   }
 
   getSharingView = () => {
-    if(this.type === 'report') {
+    if(this.getType() === 'report') {
       return <ReportView report={this.state.evaluationResult.report}/>;
     } else {
       return <DashboardView loadReport={loadReport} reports={this.state.evaluationResult.dashboard.reportShares}/>;
@@ -48,7 +48,7 @@ export default class Sharing extends React.Component {
       return <div className='Sharing__loading-indicator'>loading...</div>;
     }
 
-    if(!evaluationResult || !this.hasValidType(this.type)) {
+    if(!evaluationResult || !this.hasValidType(this.getType())) {
       return <div className='Sharing__error-message'>The resource you want to access is not available!</div>;
     }
 
@@ -56,7 +56,7 @@ export default class Sharing extends React.Component {
     return (<div className='Sharing'>
     <div className='Sharing__header'>
           <div className='Sharing__title-container'>
-            <h1 className='Sharing__tilte'>{evaluationResult[this.type].name}</h1>
+            <h1 className='Sharing__tilte'>{evaluationResult[this.getType()].name}</h1>
           </div>
         </div>
       <div className='Sharing__content' >

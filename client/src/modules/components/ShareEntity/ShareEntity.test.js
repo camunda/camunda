@@ -36,7 +36,7 @@ it('should share entity if is checked', () => {
   expect(props.shareEntity).toHaveBeenCalled();
 });
 
-it('should delete entity if is unchecked', () => {
+it('should delete entity if sharing is revoked', () => {
   props.getSharedEntity.mockReturnValue(10);
   
   const node = mount(<ShareEntity {...props} />);

@@ -10,14 +10,9 @@ export default class ShareEntity extends React.Component {
   constructor(props) {
     super(props);
 
-    this.shareEntity = this.props.shareEntity;
-    this.revokeEntitySharing = this.props.revokeEntitySharing;
-    this.getSharedEntity = this.props.getSharedEntity;
-
     this.state = {
       loaded: false, 
-      checked: false,
-      resourceId: this.props.resourceId,
+      isShared: false,
       id: ''
     }
 
@@ -25,30 +20,26 @@ export default class ShareEntity extends React.Component {
   }
 
   loadSharedEntity = async () => {
-    const id = await this.getSharedEntity(this.props.resourceId);
+    const id = await this.props.getSharedEntity(this.props.resourceId);
     this.setState(
       {
         id,
-        resourceId: this.props.resourceId,
-        checked: id
+        isShared: Boolean(id),
+        loaded: true
       }
     );
-    this.setState({
-      loaded: true
-    })
   }
 
   toggleValue = async ({target: {checked}}) => {
-    this.setState(prevState => {
-        return {
-          checked
-        };
+    this.setState({
+      isShared: checked
     });
+
     if(checked) {
-      const id = await this.shareEntity(this.state.resourceId);
+      const id = await this.props.shareEntity(this.props.resourceId);
       this.setState({id});
     } else {
-      await this.revokeEntitySharing(this.state.id);
+      await this.props.revokeEntitySharing(this.state.id);
       this.setState({id: ''});
     }
   }
@@ -70,7 +61,7 @@ export default class ShareEntity extends React.Component {
   }
 
   disabled = () => {
-    return !this.state.checked;
+    return !this.state.isShared;
   }
   
   render() {
@@ -83,7 +74,7 @@ export default class ShareEntity extends React.Component {
         <form>
           <div className='ShareEntity__enable'>
             <div className='ShareEntity__enable-text' >Enable sharing </div>
-            <div className='ShareEntity__enable-switch'><Switch checked={this.state.checked} onChange={this.toggleValue}/></div>
+            <div className='ShareEntity__enable-switch'><Switch checked={this.state.isShared} onChange={this.toggleValue}/></div>
           </div>
           <div className={('ShareEntity__link-area') + (this.disabled()? '--disabled': '')}>
             <div className='ShareEntity__clipboard'>
