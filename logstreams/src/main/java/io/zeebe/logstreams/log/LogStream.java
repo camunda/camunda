@@ -15,8 +15,6 @@
  */
 package io.zeebe.logstreams.log;
 
-import java.util.concurrent.Future;
-
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.logstreams.impl.LogBlockIndexController;
 import io.zeebe.logstreams.impl.LogStreamController;
@@ -24,6 +22,7 @@ import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
 
 
@@ -44,7 +43,6 @@ import org.agrona.DirectBuffer;
  */
 public interface LogStream extends AutoCloseable
 {
-    int DEFAULT_WRITE_BUFFER_SIZE = 1024 * 1024 * 16;
     int DEFAULT_MAX_APPEND_BLOCK_SIZE = 1024 * 1024 * 4;
 
     int MAX_TOPIC_NAME_LENGTH = 128;
@@ -75,7 +73,7 @@ public interface LogStream extends AutoCloseable
     /**
      * Opens the log stream asynchronously.
      */
-    Future<Void> openAsync();
+    ActorFuture<Void> openAsync();
 
     /**
      * Closes the log stream synchronously. This blocks until the log stream is
@@ -87,7 +85,7 @@ public interface LogStream extends AutoCloseable
     /**
      * Closes the log stream asynchronous.
      */
-    Future<Void> closeAsync();
+    ActorFuture<Void> closeAsync();
 
     /**
      * @return the current position of the log appender, or a negative value if
@@ -131,13 +129,6 @@ public interface LogStream extends AutoCloseable
     LogBlockIndex getLogBlockIndex();
 
     /**
-     * Returns the maximum size of a block for which an index is created.
-     *
-     * @return  the index block size
-     */
-    int getIndexBlockSize();
-
-    /**
      * Returns the writeBuffer, which is used by the LogStreamController to stream the content into the log storage.
      *
      * @return the writebuffer, which is used by the LogStreamController
@@ -160,7 +151,7 @@ public interface LogStream extends AutoCloseable
     /**
      * Stops the streaming to the log storage. New events are no longer append to the log storage.
      */
-    Future<Void> closeLogStreamController();
+    ActorFuture<Void> closeLogStreamController();
 
     /**
      * This method delegates to {@link #openLogStreamController(AgentRunnerService, int)}.
@@ -171,7 +162,7 @@ public interface LogStream extends AutoCloseable
      * @see {@link #openLogStreamController(AgentRunnerService, int)}
      * @return returns the future for the log stream controller opening
      */
-    Future<Void> openLogStreamController();
+    ActorFuture<Void> openLogStreamController();
 
     /**
      * This method delegates to {@link #openLogStreamController(AgentRunnerService, int)}.
@@ -182,7 +173,7 @@ public interface LogStream extends AutoCloseable
      * @param actorScheduler the agent runner service which is used for the scheduling
      * @return returns the future for the log stream controller opening
      */
-    Future<Void> openLogStreamController(ZbActorScheduler actorScheduler);
+    ActorFuture<Void> openLogStreamController(ZbActorScheduler actorScheduler);
 
     /**
      * Starts the log streaming from the write buffer into log storage. The write buffer
@@ -195,7 +186,7 @@ public interface LogStream extends AutoCloseable
      * @param maxAppendBlockSize the maximum block size which should been appended
      * @return returns the future for the log stream controller opening
      */
-    Future<Void> openLogStreamController(ZbActorScheduler actorScheduler, int maxAppendBlockSize);
+    ActorFuture<Void> openLogStreamController(ZbActorScheduler actorScheduler, int maxAppendBlockSize);
 
     /**
      * Truncates the log stream from the given position to the end of the stream.

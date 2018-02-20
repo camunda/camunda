@@ -40,7 +40,6 @@ import java.io.File;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.Objects;
-import java.util.concurrent.Future;
 
 import static io.zeebe.logstreams.log.LogStreamUtil.INVALID_ADDRESS;
 import static io.zeebe.logstreams.log.LogStreamUtil.getAddressForPosition;
@@ -275,13 +274,7 @@ public final class LogStreamImpl extends ZbActor implements LogStream
     }
 
     @Override
-    public int getIndexBlockSize()
-    {
-        return logBlockIndexController.getIndexBlockSize();
-    }
-
-    @Override
-    public Future<Void> closeLogStreamController()
+    public ActorFuture<Void> closeLogStreamController()
     {
         if (logStreamController != null)
         {
@@ -309,19 +302,19 @@ public final class LogStreamImpl extends ZbActor implements LogStream
     }
 
     @Override
-    public Future<Void> openLogStreamController()
+    public ActorFuture<Void> openLogStreamController()
     {
         return openLogStreamController(actorScheduler, DEFAULT_MAX_APPEND_BLOCK_SIZE);
     }
 
     @Override
-    public Future<Void> openLogStreamController(ZbActorScheduler actorScheduler)
+    public ActorFuture<Void> openLogStreamController(ZbActorScheduler actorScheduler)
     {
         return openLogStreamController(actorScheduler, DEFAULT_MAX_APPEND_BLOCK_SIZE);
     }
 
     @Override
-    public Future<Void> openLogStreamController(ZbActorScheduler actorScheduler,
+    public ActorFuture<Void> openLogStreamController(ZbActorScheduler actorScheduler,
                                                            int maxAppendBlockSize)
     {
         return openStreamControlling(actorScheduler, maxAppendBlockSize);

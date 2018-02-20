@@ -15,14 +15,14 @@
  */
 package io.zeebe.logstreams.processor;
 
-import java.time.Duration;
-
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LogStreamWriter;
 import io.zeebe.logstreams.spi.SnapshotStorage;
-import io.zeebe.util.DeferredCommandContext;
+import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.ZbActorScheduler;
+
+import java.time.Duration;
 
 public class StreamProcessorContext
 {
@@ -41,11 +41,10 @@ public class StreamProcessorContext
     protected SnapshotStorage snapshotStorage;
 
     protected ZbActorScheduler actorScheduler;
+    private ActorControl actorControl;
 
     protected EventFilter eventFilter;
     protected EventFilter reprocessingEventFilter;
-
-    protected DeferredCommandContext streamProcessorCmdContext;
 
     public LogStream getLogStream()
     {
@@ -137,16 +136,6 @@ public class StreamProcessorContext
         this.snapshotStorage = snapshotStorage;
     }
 
-    public DeferredCommandContext getStreamProcessorCmdQueue()
-    {
-        return streamProcessorCmdContext;
-    }
-
-    public void setStreamProcessorCmdQueue(DeferredCommandContext streamProcessorCmdQueue)
-    {
-        this.streamProcessorCmdContext = streamProcessorCmdQueue;
-    }
-
     public void setEventFilter(EventFilter eventFilter)
     {
         this.eventFilter = eventFilter;
@@ -177,4 +166,13 @@ public class StreamProcessorContext
         return isReadOnlyProcessor;
     }
 
+    public ActorControl getActorControl()
+    {
+        return actorControl;
+    }
+
+    public void setActorControl(ActorControl actorControl)
+    {
+        this.actorControl = actorControl;
+    }
 }

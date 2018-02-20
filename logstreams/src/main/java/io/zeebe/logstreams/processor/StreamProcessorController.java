@@ -74,6 +74,7 @@ public class StreamProcessorController extends ZbActor
     public StreamProcessorController(StreamProcessorContext context)
     {
         this.streamProcessorContext = context;
+        this.streamProcessorContext.setActorControl(actor);
         this.actorScheduler = context.getActorScheduler();
         this.streamProcessor = context.getStreamProcessor();
         this.logStreamReader = context.getLogStreamReader();

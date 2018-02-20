@@ -15,18 +15,12 @@
  */
 package io.zeebe.logstreams.processor;
 
+import io.zeebe.logstreams.log.*;
+import io.zeebe.logstreams.spi.SnapshotStorage;
+import io.zeebe.util.sched.ZbActorScheduler;
+
 import java.time.Duration;
 import java.util.Objects;
-
-import io.zeebe.logstreams.log.BufferedLogStreamReader;
-import io.zeebe.logstreams.log.DisabledLogStreamWriter;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamReader;
-import io.zeebe.logstreams.log.LogStreamWriter;
-import io.zeebe.logstreams.log.LogStreamWriterImpl;
-import io.zeebe.logstreams.spi.SnapshotStorage;
-import io.zeebe.util.DeferredCommandContext;
-import io.zeebe.util.sched.ZbActorScheduler;
 
 public class StreamProcessorBuilder
 {
@@ -47,8 +41,6 @@ public class StreamProcessorBuilder
 
     protected EventFilter eventFilter;
     protected EventFilter reprocessingEventFilter;
-
-    protected DeferredCommandContext streamProcessorCmdQueue;
 
     protected boolean readOnly;
 
@@ -83,12 +75,6 @@ public class StreamProcessorBuilder
         return this;
     }
 
-    public StreamProcessorBuilder streamProcessorCmdQueue(DeferredCommandContext streamProcessorCmdQueue)
-    {
-        this.streamProcessorCmdQueue = streamProcessorCmdQueue;
-        return this;
-    }
-
     /**
      * @param eventFilter may be null to accept all events
      */
@@ -120,11 +106,6 @@ public class StreamProcessorBuilder
         Objects.requireNonNull(actorScheduler, "No task scheduler provided.");
         Objects.requireNonNull(snapshotStorage, "No snapshot storage provided.");
 
-        if (streamProcessorCmdQueue == null)
-        {
-            streamProcessorCmdQueue = new DeferredCommandContext(100);
-        }
-
         if (snapshotPeriod == null)
         {
             snapshotPeriod = Duration.ofMinutes(1);
@@ -152,7 +133,6 @@ public class StreamProcessorBuilder
         ctx.setName(name);
 
         ctx.setStreamProcessor(streamProcessor);
-        ctx.setStreamProcessorCmdQueue(streamProcessorCmdQueue);
 
         ctx.setLogStream(logStream);
 
