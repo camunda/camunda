@@ -28,8 +28,7 @@ import static org.junit.Assert.assertThat;
 /**
  * @author Askar Akhmerov
  */
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {"/it/it-applicationContext.xml"})
+
 public class AuthenticationRestServiceIT {
 
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();

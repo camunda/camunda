@@ -23,8 +23,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {"/it/it-applicationContext.xml"})
+
 public class DashboardRestServiceIT {
 
   public static final String BEARER = "Bearer ";

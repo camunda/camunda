@@ -42,8 +42,7 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNull.notNullValue;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {"/it/it-applicationContext.xml"})
+
 public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
 
   private static final String ALL_VERSIONS = "ALL";

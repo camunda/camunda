@@ -1,59 +1,25 @@
 package org.camunda.optimize.service.schema;
 
 import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
-import org.camunda.optimize.service.es.ElasticSearchSchemaInitializer;
-import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.schema.type.MyUpdatedEventType;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.spring.OptimizeAwareDependencyInjectionListener;
 import org.elasticsearch.action.admin.indices.mapping.get.GetFieldMappingsResponse;
 import org.elasticsearch.action.admin.indices.mapping.get.GetFieldMappingsResponse.FieldMappingMetaData;
 import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsResponse;
-import org.elasticsearch.client.Client;
 import org.elasticsearch.index.IndexNotFoundException;
 import org.elasticsearch.index.mapper.StrictDynamicMappingException;
-import org.elasticsearch.indices.TypeMissingException;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.TestExecutionListeners;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.support.DirtiesContextTestExecutionListener;
-import org.springframework.test.context.transaction.TransactionalTestExecutionListener;
-import org.springframework.test.context.web.ServletTestExecutionListener;
-
-import java.io.IOException;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration( locations = {"/it/it-applicationContext.xml"})
-@TestExecutionListeners({
-    ServletTestExecutionListener.class,
-    OptimizeAwareDependencyInjectionListener.class,
-    DirtiesContextTestExecutionListener.class,
-    TransactionalTestExecutionListener.class
-})
 public class SchemaInitializerIT {
-
-  @Autowired
-  private ConfigurationService configurationService;
-  @Autowired
-  private ElasticSearchSchemaInitializer schemaInitializer;
-  @Autowired
-  private ElasticSearchSchemaManager manager;
-  @Autowired
-  private Client transportClient;
 
   @Rule
   public ExpectedException thrown = ExpectedException.none();
@@ -75,8 +41,8 @@ public class SchemaInitializerIT {
   public void schemaIsNotInitializedTwice() {
 
     // when I initialize schema twice
-    schemaInitializer.initializeSchema();
-    schemaInitializer.initializeSchema();
+    embeddedOptimizeRule.getSchemaInitializer().initializeSchema();
+    embeddedOptimizeRule.getSchemaInitializer().initializeSchema();
 
     // then throws no errors
   }
@@ -85,35 +51,35 @@ public class SchemaInitializerIT {
   public void optimizeIndexExistsAfterSchemaInitialization() {
 
     // when
-    schemaInitializer.initializeSchema();
+    embeddedOptimizeRule.getSchemaInitializer().initializeSchema();
 
     // then
-    assertThat(manager.schemaAlreadyExists(), is(true));
+    assertThat(embeddedOptimizeRule.getElasticSearchSchemaManager().schemaAlreadyExists(), is(true));
   }
 
   @Test
   public void typesExistsAfterSchemaInitialization() {
 
     // when
-    schemaInitializer.initializeSchema();
+    embeddedOptimizeRule.getSchemaInitializer().initializeSchema();
 
     // then
-    assertTypeExists(configurationService.getEventType());
-    assertTypeExists(configurationService.getProcessInstanceType());
-    assertTypeExists(configurationService.getDurationHeatmapTargetValueType());
-    assertTypeExists(configurationService.getImportIndexType());
-    assertTypeExists(configurationService.getProcessDefinitionType());
-    assertTypeExists(configurationService.getProcessDefinitionXmlType());
-    assertTypeExists(configurationService.getVariableType());
+    assertTypeExists(embeddedOptimizeRule.getConfigurationService().getEventType());
+    assertTypeExists(embeddedOptimizeRule.getConfigurationService().getProcessInstanceType());
+    assertTypeExists(embeddedOptimizeRule.getConfigurationService().getDurationHeatmapTargetValueType());
+    assertTypeExists(embeddedOptimizeRule.getConfigurationService().getImportIndexType());
+    assertTypeExists(embeddedOptimizeRule.getConfigurationService().getProcessDefinitionType());
+    assertTypeExists(embeddedOptimizeRule.getConfigurationService().getProcessDefinitionXmlType());
+    assertTypeExists(embeddedOptimizeRule.getConfigurationService().getVariableType());
   }
 
   private void assertTypeExists(String type) {
-    GetMappingsResponse response = transportClient.admin().indices()
-        .prepareGetMappings(configurationService.getOptimizeIndex(type))
+    GetMappingsResponse response = embeddedOptimizeRule.getTransportClient().admin().indices()
+        .prepareGetMappings(embeddedOptimizeRule.getConfigurationService().getOptimizeIndex(type))
         .get();
 
     boolean containsType = response.mappings()
-        .get(configurationService.getOptimizeIndex(type))
+        .get(embeddedOptimizeRule.getConfigurationService().getOptimizeIndex(type))
         .containsKey(type);
     assertThat(containsType, is(true));
   }
@@ -122,29 +88,29 @@ public class SchemaInitializerIT {
   public void oldMappingsAreUpdated() {
 
     // given schema is created
-    schemaInitializer.initializeSchema();
+    embeddedOptimizeRule.getSchemaInitializer().initializeSchema();
 
     // when there is a new mapping and I update the mapping
-    MyUpdatedEventType updatedEventType = new MyUpdatedEventType(configurationService);
-    manager.addMapping(updatedEventType);
-    schemaInitializer.setInitialized(false);
-    schemaInitializer.initializeSchema();
+    MyUpdatedEventType updatedEventType = new MyUpdatedEventType(embeddedOptimizeRule.getConfigurationService());
+    embeddedOptimizeRule.getElasticSearchSchemaManager().addMapping(updatedEventType);
+    embeddedOptimizeRule.getSchemaInitializer().setInitialized(false);
+    embeddedOptimizeRule.getSchemaInitializer().initializeSchema();
 
     // then the mapping contains the new fields
     assertThatNewFieldExists();
   }
 
   private void assertThatNewFieldExists() {
-    GetFieldMappingsResponse response = transportClient.admin().indices()
-        .prepareGetFieldMappings(configurationService.getOptimizeIndex(configurationService.getEventType()))
-        .setTypes(configurationService.getEventType())
+    GetFieldMappingsResponse response = embeddedOptimizeRule.getTransportClient().admin().indices()
+        .prepareGetFieldMappings(embeddedOptimizeRule.getConfigurationService().getOptimizeIndex(embeddedOptimizeRule.getConfigurationService().getEventType()))
+        .setTypes(embeddedOptimizeRule.getConfigurationService().getEventType())
         .setFields(MyUpdatedEventType.MY_NEW_FIELD)
         .get();
 
     FieldMappingMetaData fieldEntry =
         response.fieldMappings(
-            configurationService.getOptimizeIndex(configurationService.getEventType()),
-            configurationService.getEventType(),
+            embeddedOptimizeRule.getConfigurationService().getOptimizeIndex(embeddedOptimizeRule.getConfigurationService().getEventType()),
+            embeddedOptimizeRule.getConfigurationService().getEventType(),
             MyUpdatedEventType.MY_NEW_FIELD
         );
 
@@ -154,7 +120,7 @@ public class SchemaInitializerIT {
   @Test
   public void newTypeIsNotAddedDynamically() {
     // given schema is created
-    schemaInitializer.initializeSchema();
+    embeddedOptimizeRule.getSchemaInitializer().initializeSchema();
 
     // then an exception is thrown
     thrown.expect(IndexNotFoundException.class);
@@ -167,14 +133,14 @@ public class SchemaInitializerIT {
   @Test
   public void onlyAcceptDocumentsThatComplyWithTheSchema() {
     // given schema is created
-    schemaInitializer.initializeSchema();
+    embeddedOptimizeRule.getSchemaInitializer().initializeSchema();
 
     // then
     thrown.expect(StrictDynamicMappingException.class);
 
     // when we add an event with an undefined type in schema
     ExtendedFlowNodeEventDto extendedEventDto = new ExtendedFlowNodeEventDto();
-    elasticSearchRule.addEntryToElasticsearch(configurationService.getEventType(), "12312412", extendedEventDto);
+    elasticSearchRule.addEntryToElasticsearch(embeddedOptimizeRule.getConfigurationService().getEventType(), "12312412", extendedEventDto);
   }
 
 }

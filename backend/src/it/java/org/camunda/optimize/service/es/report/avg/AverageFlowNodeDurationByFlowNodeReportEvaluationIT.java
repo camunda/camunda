@@ -44,8 +44,7 @@ import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.notNullValue;
 import static org.hamcrest.core.IsNull.nullValue;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {"/it/it-applicationContext.xml"})
+
 public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
 
   public static final String START_EVENT = "startEvent";

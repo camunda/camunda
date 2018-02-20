@@ -26,8 +26,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 /**
  * @author Askar Akhmerov
  */
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {"/it/it-applicationContext.xml"})
+
 public class SharingRestServiceIT extends AbstractSharingIT {
 
   @Rule

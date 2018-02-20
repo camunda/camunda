@@ -13,8 +13,7 @@ import java.time.OffsetDateTime;
 /**
  * @author Askar Akhmerov
  */
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {"/it/it-applicationContext.xml"})
+
 public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
 
   @Test

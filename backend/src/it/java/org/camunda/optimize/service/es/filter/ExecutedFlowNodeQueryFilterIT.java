@@ -34,8 +34,7 @@ import java.util.Map;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {"/it/it-applicationContext.xml"})
+
 public class ExecutedFlowNodeQueryFilterIT {
 
   public static final String TEST_DEFINITION = "TestDefinition";

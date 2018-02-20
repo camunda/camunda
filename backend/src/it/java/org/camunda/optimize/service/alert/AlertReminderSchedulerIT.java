@@ -26,8 +26,6 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 /**
  * @author Askar Akhmerov
  */
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {"/it/it-applicationContext.xml"})
 public class AlertReminderSchedulerIT extends AbstractAlertSchedulerIT {
 
   @Rule

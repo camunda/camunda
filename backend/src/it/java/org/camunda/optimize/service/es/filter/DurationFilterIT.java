@@ -19,8 +19,7 @@ import static org.hamcrest.CoreMatchers.is;
 /**
  * @author Askar Akhmerov
  */
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {"/it/it-applicationContext.xml"})
+
 public class DurationFilterIT extends AbstractDurationFilterIT {
 
   @Test

@@ -28,8 +28,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.CoreMatchers.is;
 
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {"/it/it-applicationContext.xml"})
+
 public class RunningInstancesOnlyFilterIT {
 
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();

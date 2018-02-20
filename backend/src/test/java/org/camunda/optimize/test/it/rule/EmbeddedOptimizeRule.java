@@ -14,11 +14,14 @@ import org.camunda.optimize.service.engine.importing.index.handler.DefinitionBas
 import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandlerProvider;
 import org.camunda.optimize.service.engine.importing.job.factory.StoreIndexesEngineImportJobFactory;
+import org.camunda.optimize.service.es.ElasticSearchSchemaInitializer;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
+import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.BeanHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.test.util.SynchronizationEngineImportJob;
+import org.elasticsearch.client.Client;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.quartz.SchedulerException;
@@ -397,4 +400,15 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   }
 
 
+  public ElasticSearchSchemaInitializer getSchemaInitializer() {
+    return getApplicationContext().getBean(ElasticSearchSchemaInitializer.class);
+  }
+
+  public ElasticSearchSchemaManager getElasticSearchSchemaManager() {
+    return getApplicationContext().getBean(ElasticSearchSchemaManager.class);
+  }
+
+  public Client getTransportClient() {
+    return getApplicationContext().getBean(Client.class);
+  }
 }

@@ -56,8 +56,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {"/it/it-applicationContext.xml"})
+
 public class ImportIT  {
   private static final String SUB_PROCESS_ID = "testProcess";
   private static final String CALL_ACTIVITY = "callActivity";

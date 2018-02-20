@@ -29,8 +29,7 @@ import static org.camunda.optimize.rest.VariableRestService.TYPE;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {"/it/it-applicationContext.xml"})
+
 public class VariableValueRetrievalIT {
 
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();

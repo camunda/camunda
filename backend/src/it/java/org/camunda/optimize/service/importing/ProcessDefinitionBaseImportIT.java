@@ -38,8 +38,7 @@ import static org.hamcrest.Matchers.isIn;
 import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.fail;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {"/it/it-applicationContext.xml"})
+
 public class ProcessDefinitionBaseImportIT {
 
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();

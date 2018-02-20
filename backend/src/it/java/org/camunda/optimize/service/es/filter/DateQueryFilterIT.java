@@ -31,8 +31,7 @@ import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.LES
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {"/it/it-applicationContext.xml"})
+
 public class DateQueryFilterIT {
 
   private static final String TEST_ACTIVITY = "testActivity";

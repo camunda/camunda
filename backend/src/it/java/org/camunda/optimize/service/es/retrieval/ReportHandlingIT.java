@@ -50,8 +50,7 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNull.notNullValue;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {"/it/it-applicationContext.xml"})
+
 public class ReportHandlingIT {
 
   public static final String FOO_PROCESS_DEFINITION_ID = "fooProcessDefinitionId";
