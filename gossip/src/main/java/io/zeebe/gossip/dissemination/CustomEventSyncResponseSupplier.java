@@ -28,14 +28,30 @@ public class CustomEventSyncResponseSupplier implements CustomEventSupplier
     private final BufferedEventIterator<CustomEvent> viewIterator = new BufferedEventIterator<>(false);
     private final BufferedEventIterator<CustomEvent> drainIterator = new BufferedEventIterator<>(true);
 
+    private int spreadLimit = 1;
+
     public CustomEventSyncResponseSupplier()
     {
-        drainIterator.setSpreadLimit(1);
+        reset();
     }
 
     public CustomEvent add()
     {
         return customEvents.add().getEvent();
+    }
+
+    public void increaseSpreadLimit()
+    {
+        spreadLimit += 1;
+
+        drainIterator.setSpreadLimit(spreadLimit);
+    }
+
+    public void reset()
+    {
+        spreadLimit = 1;
+
+        drainIterator.setSpreadLimit(1);
     }
 
     @Override

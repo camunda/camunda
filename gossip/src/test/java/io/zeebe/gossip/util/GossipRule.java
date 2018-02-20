@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -205,12 +206,12 @@ public class GossipRule extends ExternalResource
     {
         final ClientRequest clientRequest = mock(ClientRequest.class);
 
-        final ArgumentMatcher<RemoteAddress> remoteAddressMatcher = r -> r.getAddress().equals(other.socketAddress);
+        final ArgumentMatcher<RemoteAddress> remoteAddressMatcher = r -> other.socketAddress.equals(r.getAddress());
         doReturn(clientRequest)
             .when(spyClientOutput)
             .sendRequest(argThat(remoteAddressMatcher), any());
 
-        doReturn(CompletableActorFuture.completedExceptionally(new RuntimeException("conection is interrupted")))
+        doReturn(CompletableActorFuture.completedExceptionally(new RuntimeException("connection is interrupted")))
             .when(spyClientOutput)
             .sendRequestWithRetry(argThat(remoteAddressMatcher), any());
 
@@ -328,7 +329,7 @@ public class GossipRule extends ExternalResource
             }
         }
 
-        private final List<ReceivedEvent> receivedEvents = new ArrayList<>();
+        private final List<ReceivedEvent> receivedEvents = new CopyOnWriteArrayList<>();
 
         @Override
         public void onResponse(int streamId, long requestId, DirectBuffer buffer, int offset, int length)

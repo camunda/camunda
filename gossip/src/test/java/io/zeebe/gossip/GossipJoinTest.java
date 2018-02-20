@@ -158,18 +158,14 @@ public class GossipJoinTest
         joinGossip2.join();
         joinGossip3.join();
 
+        // then
         doRepeatedly(() ->
         {
             clock.addTime(CONFIGURATION.getProbeInterval());
         }).until(v ->
         {
-            return gossip2.receivedMembershipEvent(MembershipEventType.JOIN, gossip3) &&
-                    gossip1.receivedMembershipEvent(MembershipEventType.JOIN, gossip3);
+            return gossip3.hasMember(gossip1) && gossip3.hasMember(gossip2);
         });
-
-        // then
-        assertThat(gossip3.hasMember(gossip1)).isTrue();
-        assertThat(gossip3.hasMember(gossip2)).isTrue();
 
         assertThat(gossip1.hasMember(gossip3)).isTrue();
         assertThat(gossip1.hasMember(gossip2)).isTrue();

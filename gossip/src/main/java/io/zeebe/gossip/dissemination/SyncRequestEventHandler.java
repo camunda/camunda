@@ -31,6 +31,7 @@ import io.zeebe.gossip.protocol.GossipEventConsumer;
 import io.zeebe.gossip.protocol.GossipEventSender;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.buffer.BufferUtil;
+import io.zeebe.util.collection.Reusable;
 import io.zeebe.util.collection.ReusableObjectList;
 import io.zeebe.util.collection.Tuple;
 import io.zeebe.util.sched.ActorControl;
@@ -48,7 +49,9 @@ public class SyncRequestEventHandler implements GossipEventConsumer
     private final GossipEventSender gossipEventSender;
 
     private final List<Tuple<DirectBuffer, GossipSyncRequestHandler>> handlers = new ArrayList<>();
-    private final ReusableObjectList<GossipSyncRequest> requests = new ReusableObjectList<>(() -> new GossipSyncRequest());
+    private final ReusableObjectList<GossipSyncRequest> syncRequests = new ReusableObjectList<>(() -> new GossipSyncRequest());
+
+    private final ReusableObjectList<ReceivedRequest> receivedRequests = new ReusableObjectList<>(() -> new ReceivedRequest());
 
     public SyncRequestEventHandler(GossipContext context, CustomEventSyncResponseSupplier customEventSyncRequestSupplier, ActorControl actor)
     {
@@ -61,44 +64,54 @@ public class SyncRequestEventHandler implements GossipEventConsumer
     @Override
     public void accept(GossipEvent event, long requestId, int streamId)
     {
-        // TODO handle concurrent SYNC requests
-        if (!handlers.isEmpty())
+        receivedRequests.add().wrap(requestId, streamId);
+
+        if (receivedRequests.size() == 1)
         {
-            final List<ActorFuture<Void>> syncHandlerFutures = new ArrayList<>();
-
-            for (Tuple<DirectBuffer, GossipSyncRequestHandler> tuple : handlers)
+            if (!handlers.isEmpty())
             {
-                final GossipSyncRequest request = requests.add();
-                request.wrap(tuple.getLeft());
+                final List<ActorFuture<Void>> syncHandlerFutures = new ArrayList<>();
 
-                LOG.trace("Request SYNC data for custom event type '{}'", bufferAsString(tuple.getLeft()));
+                for (Tuple<DirectBuffer, GossipSyncRequestHandler> tuple : handlers)
+                {
+                    final GossipSyncRequest request = syncRequests.add();
+                    request.wrap(tuple.getLeft());
 
-                final GossipSyncRequestHandler handler = tuple.getRight();
-                final ActorFuture<Void> future = handler.onSyncRequest(request);
-                syncHandlerFutures.add(future);
+                    LOG.trace("Request SYNC data for custom event type '{}'", bufferAsString(tuple.getLeft()));
+
+                    final GossipSyncRequestHandler handler = tuple.getRight();
+                    final ActorFuture<Void> future = handler.onSyncRequest(request);
+                    syncHandlerFutures.add(future);
+                }
+
+                actor.runOnCompletion(syncHandlerFutures, (failure) ->
+                {
+                    if (failure == null)
+                    {
+                        actor.submit(this::sendSyncResponse);
+                    }
+                    else
+                    {
+                        LOG.warn("Can't produce sync response.", failure);
+                    }
+                });
             }
-
-            actor.runOnCompletion(syncHandlerFutures, (failure) ->
+            else
             {
-                if (failure == null)
-                {
-                    actor.submit(() -> sendSyncResponse(requestId, streamId));
-                }
-                else
-                {
-                    LOG.warn("Can't produce sync response.", failure);
-                }
-            });
+                actor.submit(this::sendSyncResponse);
+            }
         }
         else
         {
-            actor.submit(() -> sendSyncResponse(requestId, streamId));
+            // don't request the data again if already requested
+            // - instead, response the data from the ongoing request
+            customEventSyncRequestSupplier.increaseSpreadLimit();
         }
     }
 
-    private void sendSyncResponse(long requestId, int streamId)
+    private void sendSyncResponse()
     {
-        for (GossipSyncRequest request : requests)
+        for (GossipSyncRequest request : syncRequests)
         {
             for (GossipSyncResponsePart response : request.getResponse())
             {
@@ -128,15 +141,52 @@ public class SyncRequestEventHandler implements GossipEventConsumer
             }
         }
 
-        LOG.trace("Send SYNC response");
-        gossipEventSender.responseSync(requestId, streamId);
+        for (ReceivedRequest request : receivedRequests)
+        {
+            final long requestId = request.getRequestId();
+            final int streamId = request.getStreamId();
 
-        requests.clear();
+            LOG.trace("Send SYNC response");
+            gossipEventSender.responseSync(requestId, streamId);
+        }
+
+        syncRequests.clear();
+        receivedRequests.clear();
+        customEventSyncRequestSupplier.reset();
     }
 
     public void registerSyncRequestHandler(DirectBuffer eventType, GossipSyncRequestHandler handler)
     {
         final Tuple<DirectBuffer, GossipSyncRequestHandler> tuple = new Tuple<>(BufferUtil.cloneBuffer(eventType), handler);
         handlers.add(tuple);
+    }
+
+    private class ReceivedRequest implements Reusable
+    {
+        private long requestId;
+        private int streamId;
+
+        public void wrap(long requestId, int streamId)
+        {
+            this.requestId = requestId;
+            this.streamId = streamId;
+        }
+
+        public long getRequestId()
+        {
+            return requestId;
+        }
+
+        public int getStreamId()
+        {
+            return streamId;
+        }
+
+        @Override
+        public void reset()
+        {
+            requestId = -1L;
+            streamId = -1;
+        }
     }
 }

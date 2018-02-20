@@ -16,16 +16,19 @@
 package io.zeebe.gossip;
 
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
+import static io.zeebe.test.util.TestUtil.waitUntil;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+import io.zeebe.clustering.gossip.GossipEventType;
 import io.zeebe.gossip.protocol.CustomEvent;
 import io.zeebe.gossip.util.GossipClusterRule;
 import io.zeebe.gossip.util.GossipRule;
 import io.zeebe.test.util.BufferAssert;
 import io.zeebe.util.sched.clock.ControlledActorClock;
+import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.agrona.DirectBuffer;
@@ -94,7 +97,7 @@ public class SyncRequestHandlerTest
         gossip1.getController().registerSyncRequestHandler(TYPE_1, request ->
         {
             request
-            .addPayload(gossip1.getAddress(), PAYLOAD_1);
+                .addPayload(gossip1.getAddress(), PAYLOAD_1);
 
             return CompletableActorFuture.completed(null);
         });
@@ -246,6 +249,52 @@ public class SyncRequestHandlerTest
         BufferAssert.assertThatBuffer(customEvent2.getPayload())
             .hasCapacity(PAYLOAD_2.capacity())
             .hasBytes(PAYLOAD_2);
+    }
+
+    @Test
+    public void shouldProcessConcurrentSyncRequest()
+    {
+        // given
+        gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
+
+        final CompletableActorFuture<Void> syncRequestFuture = new CompletableActorFuture<>();
+
+        gossip1.getController().registerSyncRequestHandler(TYPE_1, request ->
+        {
+            request
+                .addPayload(gossip1.getAddress(), PAYLOAD_1);
+
+            return syncRequestFuture;
+        });
+
+        // when
+        final ActorFuture<Void> joinFuture1 = gossip2.join(gossip1);
+        final ActorFuture<Void> joinFuture2 = gossip3.join(gossip1);
+
+        waitUntil(() ->
+        {
+            return gossip1.receivedEvent(GossipEventType.SYNC_REQUEST, gossip2) &&
+                    gossip1.receivedEvent(GossipEventType.SYNC_REQUEST, gossip3);
+        });
+
+        syncRequestFuture.complete(null);
+
+        joinFuture1.join();
+        joinFuture2.join();
+
+        // then
+        assertThat(gossip2.receivedEvent(GossipEventType.SYNC_RESPONSE, gossip1)).isTrue();
+        assertThat(gossip3.receivedEvent(GossipEventType.SYNC_RESPONSE, gossip1)).isTrue();
+
+        final CustomEvent customEvent = gossip2.getReceivedCustomEvents(TYPE_1, gossip1).findFirst().get();
+        BufferAssert.assertThatBuffer(customEvent.getPayload())
+            .hasCapacity(PAYLOAD_1.capacity())
+            .hasBytes(PAYLOAD_1);
+
+        final CustomEvent customEvent2 = gossip3.getReceivedCustomEvents(TYPE_1, gossip1).findFirst().get();
+        BufferAssert.assertThatBuffer(customEvent2.getPayload())
+            .hasCapacity(PAYLOAD_1.capacity())
+            .hasBytes(PAYLOAD_1);
     }
 
 }

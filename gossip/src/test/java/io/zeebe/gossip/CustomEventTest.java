@@ -385,16 +385,14 @@ public class CustomEventTest
         // when
         gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
 
+        // then
         doRepeatedly(() ->
         {
             clock.addTime(CONFIGURATION.getProbeInterval());
         }).until(v ->
         {
-            return gossip2.receivedCustomEvent(TYPE_1, gossip1);
+            return counter.get() == 2;
         });
-
-        // then
-        assertThat(counter.get()).isEqualTo(2);
     }
 
 }
