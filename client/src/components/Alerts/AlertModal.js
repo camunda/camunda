@@ -120,7 +120,6 @@ export default class AlertModal extends React.Component {
   }
 
   render() {
-    console.log(this.state);
     const {name, email, reportId, thresholdOperator, threshold,
       checkInterval, reminder, fixNotification, emailNotificationIsEnabled, errorInput} = this.state;
     return <Modal open={this.props.alert} onClose={this.props.onClose}>
