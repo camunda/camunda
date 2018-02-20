@@ -206,3 +206,14 @@ it('should display a running instances only filter', () => {
 
   expect(node).toIncludeText('Running Process Instances Only');
 });
+
+it('should display a completed instances only filter', () => {
+  const data = [{
+    type: 'completedInstancesOnly',
+    data: null
+  }];
+
+  const node = mount(<FilterList data={data} openEditFilterModal={jest.fn()}a/>);
+
+  expect(node).toIncludeText('Completed Process Instances Only');
+});

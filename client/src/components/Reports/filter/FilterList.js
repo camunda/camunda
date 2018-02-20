@@ -119,6 +119,12 @@ export default class FilterList extends React.Component {
               <span className='FilterList__parameter-name'>Running Process Instances Only</span>
             </ActionItem>
           </li>);
+        } else if (filter.type === 'completedInstancesOnly') {
+          list.push(<li key={i} className='FilterList__item'>
+            <ActionItem onClick={(evt) => {evt.stopPropagation(); this.props.deleteFilter(filter)}}>
+              <span className='FilterList__parameter-name'>Completed Process Instances Only</span>
+            </ActionItem>
+          </li>);
         }
       }
 
