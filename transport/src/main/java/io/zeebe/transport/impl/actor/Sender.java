@@ -96,10 +96,18 @@ public class Sender extends ZbActor
     @Override
     protected void onActorClosing()
     {
-        actor.await(sendBuffer.closeSubscriptionAsync(senderSubscription), (t) ->
+        /*
+         * TODO: Workaround: It can happen that the #close job is executed before
+         *   the continuation of #await in onActorStarted (i.e. we don't have a subscription yet
+         *   at this point, although the subscription exists)
+         */
+        if (senderSubscription != null)
         {
-            // done
-        });
+            actor.await(sendBuffer.closeSubscriptionAsync(senderSubscription), (t) ->
+            {
+                // done
+            });
+        }
     }
 
     private void peekNextBlock()
