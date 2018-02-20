@@ -8,6 +8,8 @@ import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.report.ReportEvaluator;
 import org.camunda.optimize.service.es.writer.AlertWriter;
 import org.camunda.optimize.service.exceptions.OptimizeException;
+import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.quartz.Job;
 import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
@@ -24,7 +26,11 @@ import java.io.IOException;
  */
 @Component
 public class AlertJob implements Job {
+  private static final String HTTP_PREFIX = "http://";
   private Logger logger = LoggerFactory.getLogger(getClass());
+
+  @Autowired
+  private ConfigurationService configurationService;
 
   @Autowired
   private NotificationService notificationService;
@@ -97,8 +103,14 @@ public class AlertJob implements Job {
         "] is not exceeded anymore. " +
         "Current value: " +
         result.getResult() +
-        ". Please check your Optimize dashboard for more information!";
+        ". Please check your Optimize dashboard for more information! \n" +
+        createViewLink(alert);
     return emailBody;
+  }
+
+  private String createViewLink(AlertDefinitionDto alert) {
+    return HTTP_PREFIX + configurationService.getContainerHost() + ":" +
+        configurationService.getContainerHttpPort() + "/report/" + alert.getReportId();
   }
 
   private AlertJobResult notifyIfNeeded(
@@ -147,7 +159,8 @@ public class AlertJob implements Job {
         "] was exceeded. " +
         "Current value: " +
         result.getResult() +
-        ". Please check your Optimize dashboard for more information!";
+        ". Please check your Optimize dashboard for more information!\n" +
+        createViewLink(alert);
     return emailBody;
   }
 

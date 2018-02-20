@@ -272,7 +272,9 @@ public class AlertCheckSchedulerIT extends AbstractAlertSchedulerIT {
       MimeMessage[] emails = greenMail.getReceivedMessages();
       assertThat(emails.length, is(1));
       assertThat(emails[0].getSubject(), is("[Camunda-Optimize] - Report status"));
-      assertThat(emails[0].getContent().toString(), containsString(simpleAlert.getName()));
+      String content = emails[0].getContent().toString();
+      assertThat(content, containsString(simpleAlert.getName()));
+      assertThat(content, containsString("http://localhost:8090/report/" + reportId));
     } finally {
       greenMail.stop();
     }
