@@ -19,18 +19,22 @@ import java.time.Duration;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.concurrent.ExecutionException;
-import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import io.zeebe.transport.*;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+
+import io.zeebe.transport.ClientRequest;
+import io.zeebe.transport.NotConnectedException;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.RequestTimeoutException;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.buffer.DirectBufferWriter;
 import io.zeebe.util.sched.ZbActor;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public class ClientRequestRetryController extends ZbActor
 {
@@ -44,7 +48,7 @@ public class ClientRequestRetryController extends ZbActor
     private final Duration timeout;
     private long deadline;
 
-    private final Function<DirectBuffer, Boolean> responseHandler;
+    private final Predicate<DirectBuffer> responseHandler;
 
     private final UnsafeBuffer writeBuffer = new UnsafeBuffer(0, 0);
     private final DirectBufferWriter requestWriter = new DirectBufferWriter();
@@ -53,7 +57,7 @@ public class ClientRequestRetryController extends ZbActor
 
     public ClientRequestRetryController(
             Supplier<ActorFuture<RemoteAddress>> remoteAddressSupplier,
-            Function<DirectBuffer, Boolean> responseInspector,
+            Predicate<DirectBuffer> responseInspector,
             ClientRequestPool requestPool,
             BufferWriter writer,
             Duration timeout)
@@ -80,12 +84,19 @@ public class ClientRequestRetryController extends ZbActor
     {
         actor.await(remoteAddressSupplier.get(), (address, throwable) ->
         {
-            if (remotesTried.isEmpty() || !address.equals(remotesTried.peek()))
+            if (address != null)
             {
-                remotesTried.push(address);
-            }
+                if (remotesTried.isEmpty() || !address.equals(remotesTried.peek()))
+                {
+                    remotesTried.push(address);
+                }
 
-            actor.runUntilDone(this::sendRequest);
+                actor.runUntilDone(this::sendRequest);
+            }
+            else
+            {
+                actor.runDelayed(RESUBMIT_TIMEOUT, this::getRemoteAddress);
+            }
         });
     }
 
@@ -114,7 +125,7 @@ public class ClientRequestRetryController extends ZbActor
                     }
                     else
                     {
-                        shouldRetry = responseHandler.apply(response);
+                        shouldRetry = responseHandler.test(response);
                     }
 
                     if (!shouldRetry)

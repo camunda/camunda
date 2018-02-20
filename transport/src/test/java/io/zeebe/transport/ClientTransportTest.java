@@ -15,6 +15,32 @@
  */
 package io.zeebe.transport;
 
+import static io.zeebe.test.util.BufferAssert.assertThatBuffer;
+import static io.zeebe.test.util.TestUtil.doRepeatedly;
+import static io.zeebe.test.util.TestUtil.waitUntil;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.time.Duration;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
+import org.mockito.ArgumentMatchers;
+
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.dispatcher.FragmentHandler;
@@ -25,32 +51,18 @@ import io.zeebe.test.util.io.FailingBufferWriter;
 import io.zeebe.test.util.io.FailingBufferWriter.FailingBufferWriterException;
 import io.zeebe.transport.impl.TransportChannel;
 import io.zeebe.transport.impl.TransportHeaderDescriptor;
-import io.zeebe.transport.util.*;
+import io.zeebe.transport.util.ControllableServerTransport;
+import io.zeebe.transport.util.EchoRequestResponseHandler;
+import io.zeebe.transport.util.RecordingChannelListener;
+import io.zeebe.transport.util.RecordingMessageHandler;
+import io.zeebe.transport.util.TransportTestUtil;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.buffer.DirectBufferWriter;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.mockito.ArgumentMatchers;
-
-import java.time.Duration;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
-
-import static io.zeebe.test.util.BufferAssert.assertThatBuffer;
-import static io.zeebe.test.util.TestUtil.doRepeatedly;
-import static io.zeebe.test.util.TestUtil.waitUntil;
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 public class ClientTransportTest
 {
@@ -632,6 +644,32 @@ public class ClientTransportTest
         Thread.sleep(500L);
         subscription.poll(counter, Integer.MAX_VALUE);
         assertThat(counter.getCount()).isEqualTo(2);
+    }
+
+    @Test
+    public void shouldRetryAfterTimeoutWhenAddressSupplierReturnsNull()
+    {
+        // given
+        buildServerTransport(b -> b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress())
+                .build(null, new EchoRequestResponseHandler()));
+
+        final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+
+        final AtomicInteger attemptCounter = new AtomicInteger(0);
+        final Supplier<ActorFuture<RemoteAddress>> addressSupplier =
+            () -> attemptCounter.getAndIncrement() == 0 ?
+                    CompletableActorFuture.completed((RemoteAddress) null) : CompletableActorFuture.completed(remote);
+
+        // when
+        final ActorFuture<ClientRequest> request =
+                clientTransport.getOutput().sendRequestWithRetry(
+                    addressSupplier,
+                    b -> false,
+                    new DirectBufferWriter().wrap(BUF1),
+                    Duration.ofSeconds(2));
+
+        final DirectBuffer response = request.join().join();
+        assertThatBuffer(response).hasBytes(BUF1);
     }
 
     protected class CountFragmentsHandler implements FragmentHandler

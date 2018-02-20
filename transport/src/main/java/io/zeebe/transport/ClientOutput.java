@@ -16,12 +16,13 @@
 package io.zeebe.transport;
 
 import java.time.Duration;
-import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
+
+import org.agrona.DirectBuffer;
 
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.sched.future.ActorFuture;
-import org.agrona.DirectBuffer;
 
 public interface ClientOutput
 {
@@ -86,7 +87,8 @@ public interface ClientOutput
      *
      * @param remoteAddressSupplier
      *            supplier for the remote address the retries are executed against (retries may
-     *            be executed against different remotes)
+     *            be executed against different remotes). The future may resolve to <code>null</code> to signal that
+     *            a remote can not be determined. In that case, the request is retried after resubmit timeout.
      * @param responseInspector
      *            function getting the response and returning a boolean. If the function returns true,
      *            the request will be retried: usecase: in a system like zeebe, we may send a request to the
@@ -96,5 +98,5 @@ public interface ClientOutput
      * @param timeout The timeout until the returned future fails if no response is received.
      * @return the last request which eventually succeeded.
      */
-    ActorFuture<ClientRequest> sendRequestWithRetry(Supplier<ActorFuture<RemoteAddress>> remoteAddressSupplier, Function<DirectBuffer, Boolean> responseInspector, BufferWriter writer, Duration timeout);
+    ActorFuture<ClientRequest> sendRequestWithRetry(Supplier<ActorFuture<RemoteAddress>> remoteAddressSupplier, Predicate<DirectBuffer> responseInspector, BufferWriter writer, Duration timeout);
 }

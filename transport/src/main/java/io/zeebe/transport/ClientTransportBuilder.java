@@ -42,7 +42,6 @@ public class ClientTransportBuilder
     protected List<ClientInputListener> listeners;
     protected TransportChannelFactory channelFactory;
 
-    protected boolean enableManagedRequests = false;
     protected Duration defaultRequestRetryTimeout = Duration.ofSeconds(15);
 
     public ClientTransportBuilder scheduler(ZbActorScheduler scheduler)

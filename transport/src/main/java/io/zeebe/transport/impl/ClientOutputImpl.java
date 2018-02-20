@@ -15,6 +15,12 @@
  */
 package io.zeebe.transport.impl;
 
+import java.time.Duration;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+
+import org.agrona.DirectBuffer;
+
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.transport.ClientOutput;
 import io.zeebe.transport.ClientRequest;
@@ -24,11 +30,6 @@ import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.sched.ZbActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
-import org.agrona.DirectBuffer;
-
-import java.time.Duration;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
 public class ClientOutputImpl implements ClientOutput
 {
@@ -74,7 +75,7 @@ public class ClientOutputImpl implements ClientOutput
     }
 
     @Override
-    public ActorFuture<ClientRequest> sendRequestWithRetry(Supplier<ActorFuture<RemoteAddress>> remoteAddressSupplier, Function<DirectBuffer, Boolean> responseInspector,
+    public ActorFuture<ClientRequest> sendRequestWithRetry(Supplier<ActorFuture<RemoteAddress>> remoteAddressSupplier, Predicate<DirectBuffer> responseInspector,
             BufferWriter writer, Duration timeout)
     {
         final ClientRequestRetryController ctrl = new ClientRequestRetryController(remoteAddressSupplier, responseInspector, requestPool, writer, timeout);
