@@ -31,6 +31,15 @@ public class TestUtil
         return new Invocation<>(callable);
     }
 
+    public static Invocation<Void> doRepeatedly(Runnable runnable)
+    {
+        return new Invocation<>(() ->
+        {
+            runnable.run();
+            return null;
+        });
+    }
+
     public static void waitUntil(final BooleanSupplier condition)
     {
         doRepeatedly(() -> null).until((r) -> condition.getAsBoolean());
