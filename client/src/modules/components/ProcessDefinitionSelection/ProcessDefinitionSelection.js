@@ -48,7 +48,7 @@ export default class ControlPanel extends React.Component {
   }
 
   changeVersion = async evt => {
-    const version = evt.target.value === 'all'? 'all': parseInt(evt.target.value, 10);
+    const version = evt.target.value === 'ALL'? 'ALL': parseInt(evt.target.value, 10);
     const key = this.state.key;
     const selectedDefinition = 
       this.findSelectedKeyGroup(key)
@@ -103,7 +103,7 @@ export default class ControlPanel extends React.Component {
             <Select className='ProcessDefinitionSelection__select' name='ProcessDefinitionSelection__version' 
                   value={this.getVersion()} onChange={this.changeVersion} disabled={!key}>
               <Select.Option defaultValue disabled value=''>Please select...</Select.Option>
-              { this.props.enableAllVersionSelection && <Select.Option value='all' key='all'>all</Select.Option>}
+              { this.props.enableAllVersionSelection && <Select.Option value='ALL' key='all'>all</Select.Option>}
               {this.renderAllDefinitionVersions(key)}
             </Select>
           </li>

@@ -124,14 +124,14 @@ it('should display all option in version selection if enabled', async () => {
   const node = await mount(<ProcessDefinitionSelection enableAllVersionSelection={true} processDefinitionId={'procdef2'} {...props} />);
   await node.update();
 
-  expect(node.find('option[value="all"]').exists()).toBe(true);
+  expect(node.find('option[value="ALL"]').text()).toBe('all');
 });
 
 it('should not display all option in version selection if disabled', async () => {
   const node = await mount(<ProcessDefinitionSelection enableAllVersionSelection={false} processDefinitionId={'procdef2'} {...props} />);
   await node.update();
 
-  expect(node.find('option[value="all"]').exists()).toBe(false);
+  expect(node.find('option[value="ALL"]').exists()).toBe(false);
 });
 
 it('should set latest process definition if verions field is set to all', async () => {
@@ -141,8 +141,8 @@ it('should set latest process definition if verions field is set to all', async 
   await node.instance().changeKey({target: {value:'foo'}});
   await node.instance().changeVersion({target: {value:'1'}});
 
-  await node.instance().changeVersion({target: {value:'all'}});
+  await node.instance().changeVersion({target: {value:'ALL'}});
 
-  expect(node.state().version).toBe('all');
+  expect(node.state().version).toBe('ALL');
   expect(node.state().id).toBe('procdef2');
 });
