@@ -55,13 +55,18 @@ export default class Filter extends React.Component {
 
   addFilter = (...newFilters) => {
     let filters = this.props.data;
-
-    if(newFilters[0].type === 'date' || newFilters[0].type === 'rollingDate') {
-      filters = filters.filter(({type}) => type !== 'date' && type !== 'rollingDate');
-    }
+    filters = this.filterUniqueFilters(filters, newFilters[0].type, ['date', 'rollingDate']);
+    filters = this.filterUniqueFilters(filters, newFilters[0].type, ['runningInstancesOnly']);  
 
     this.props.onChange({'filter': [...filters, ...newFilters]});
     this.closeModal();
+  }
+
+  filterUniqueFilters = (filters, newFilterType, uniqueTypes)  => {
+    if(uniqueTypes.includes(newFilterType)) {
+      filters = filters.filter(({type}) => !uniqueTypes.includes(type));
+    }
+    return filters;
   }
 
   deleteFilter = (...oldFilters) => {
@@ -75,6 +80,14 @@ export default class Filter extends React.Component {
     this.props.processDefinitionId === '';
   }
 
+  filterByRunningInstancesOnly = (evt) => {
+    evt.preventDefault();
+    this.addFilter({
+      type: 'runningInstancesOnly',
+      data: null
+    });
+  }
+
   render() {
     const FilterModal = this.getFilterModal(this.state.newFilterType);
 
@@ -85,6 +98,7 @@ export default class Filter extends React.Component {
       <label htmlFor='ControlPanel__filters' className='visually-hidden'>Filters</label>
       <FilterList processDefinitionId={this.props.processDefinitionId} openEditFilterModal={this.openEditFilterModal} data={this.props.data} deleteFilter={this.deleteFilter} />
       <Dropdown label='Add Filter' id='ControlPanel__filters' className='Filter__dropdown' >
+        <Dropdown.Option onClick={this.filterByRunningInstancesOnly}>Running Instances Only</Dropdown.Option>
         <Dropdown.Option onClick={this.openNewFilterModal('date')}>Start Date</Dropdown.Option>
         <Dropdown.Option onClick={this.openNewFilterModal('processInstanceDuration')}>Duration</Dropdown.Option>
         <Dropdown.Option disabled={this.processDefinitionIsNotSelected()} onClick={this.openNewFilterModal('variable')}>Variable</Dropdown.Option>

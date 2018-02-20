@@ -196,3 +196,14 @@ it('should remove any previous date and rolling date filters when adding a new d
 
   expect(spy.mock.calls[0][0].filter).toEqual([{type:'date', value: 'new date'}]);
 });
+
+it('should not add running instances only filter twice', () => {
+  const spy = jest.fn();
+  const previousFilters = [{type: 'runningInstancesOnly'}];
+
+  const node = mount(<Filter data={previousFilters} onChange={spy} />);
+
+  node.instance().addFilter({type:'runningInstancesOnly'});
+
+  expect(spy.mock.calls[0][0].filter).toEqual([{type:'runningInstancesOnly'}]);
+});

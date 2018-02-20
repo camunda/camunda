@@ -45,7 +45,7 @@ export default class FilterList extends React.Component {
 
         list.push(<li key={i} onClick={this.props.openEditFilterModal(filter, nextFilter)} className='FilterList__item'>
           <ActionItem onClick={(evt) => {evt.stopPropagation(); this.props.deleteFilter(filter, nextFilter)}}>
-            <span className='FilterList__parameter-name'>Start Date </span> between
+            <span className='FilterList__parameter-name'>Start Date </span> is between
             {' '}<span className='FilterList__value'>{moment(filter.data.value).format('YYYY-MM-DD')}</span>{' '}
             {this.createOperator('and')}
             {' '}<span className='FilterList__value'>{moment(nextFilter.data.value).format('YYYY-MM-DD')}</span>
@@ -111,6 +111,12 @@ export default class FilterList extends React.Component {
               {operator === '<' && this.createOperator('is less than')}
               {operator === '>' && this.createOperator('is more than')}
               <span className='FilterList__value'>{value.toString()} {unit.slice(0,-1)}{value > 1 && 's'}</span>
+            </ActionItem>
+          </li>);
+        } else if (filter.type === 'runningInstancesOnly') {
+          list.push(<li key={i} className='FilterList__item'>
+            <ActionItem onClick={(evt) => {evt.stopPropagation(); this.props.deleteFilter(filter)}}>
+              <span className='FilterList__parameter-name'>Running Process Instances Only</span>
             </ActionItem>
           </li>);
         }

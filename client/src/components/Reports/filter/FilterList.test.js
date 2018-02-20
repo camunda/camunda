@@ -195,3 +195,14 @@ it('should display a duration filter', () => {
 
   expect(node).toIncludeText('Duration is less than 18 hours');
 });
+
+it('should display a running instances only filter', () => {
+  const data = [{
+    type: 'runningInstancesOnly',
+    data: null
+  }];
+
+  const node = mount(<FilterList data={data} openEditFilterModal={jest.fn()}a/>);
+
+  expect(node).toIncludeText('Running Process Instances Only');
+});
