@@ -99,7 +99,7 @@ export default class AlertModal extends React.Component {
         this.setErrorField('checkInterval');
         return false
       }
-      if (!this.state.reminder === null && (!(this.state.reminder.value.trim() && !isNaN(this.state.reminder.value.trim()) && +this.state.reminder.value > 0))) {
+      if (this.state.reminder !== null && (!this.state.reminder.value.trim() || isNaN(this.state.reminder.value.trim()) || !this.state.reminder.value > 0)) {
         this.setErrorField('reminder');
         return false;
       }
@@ -120,6 +120,7 @@ export default class AlertModal extends React.Component {
   }
 
   render() {
+    console.log(this.state);
     const {name, email, reportId, thresholdOperator, threshold,
       checkInterval, reminder, fixNotification, emailNotificationIsEnabled, errorInput} = this.state;
     return <Modal open={this.props.alert} onClose={this.props.onClose}>
@@ -216,7 +217,7 @@ export default class AlertModal extends React.Component {
                 <span className="AlertModal__label">every</span>
                 <div className="AlertModal__combinedInput">
                   <Input
-                    className="AlertModal__input"
+                    className={"AlertModal__input" + ((errorInput==="reminder") ? " error" : "")}
                     value={reminder.value}
                     onChange={({target: {value}}) => this.setState(update(this.state, {reminder: {value: {$set: value}}}))}
                   />
@@ -231,6 +232,7 @@ export default class AlertModal extends React.Component {
                     <Select.Option value='months'>Months</Select.Option>
                   </Select>
                 </div>
+                {(errorInput==='reminder') && <span className="AlertModal__warning">Please enter a numeric value</span>}
               </label>
             </div>
           }
