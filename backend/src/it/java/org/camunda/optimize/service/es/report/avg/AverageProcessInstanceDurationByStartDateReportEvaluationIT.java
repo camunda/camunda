@@ -68,6 +68,7 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
 
   public static final String PROCESS_DEFINITION_ID = "123";
   private static final String TEST_ACTIVITY = "testActivity";
+  private static final String ALL_VERSIONS = "ALL";
 
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
@@ -435,6 +436,32 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
     assertThat(result.getResult(), is(notNullValue()));
     Map<String, Long> resultMap = result.getResult();
     assertDateResultMap(resultMap, 8, now, ChronoUnit.YEARS);
+  }
+
+  @Test
+  public void reportAcrossAllVersions() throws Exception {
+    //given
+    OffsetDateTime startDate = OffsetDateTime.now().withOffsetSameInstant(ZoneOffset.UTC).minusDays(2);
+    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
+    adjustProcessInstanceDates(processInstanceDto.getId(), startDate, 0L, 1L);
+    processInstanceDto = deployAndStartSimpleServiceTaskProcess();
+    adjustProcessInstanceDates(processInstanceDto.getId(), startDate, 0L, 2L);
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    //when
+    // when
+    ReportDataDto reportData = ReportDataHelper.createAvgPIDurationGroupByStartDateReport(
+        processInstanceDto.getProcessDefinitionKey(), ALL_VERSIONS, DATE_UNIT_DAY);
+    MapReportResultDto result = evaluateReport(reportData);
+
+    // then
+    Map<String, Long> resultMap = result.getResult();
+    OffsetDateTime startOfToday = startDate.truncatedTo(ChronoUnit.DAYS);
+    String expectedStartDateString = localDateTimeToString(startOfToday);
+    assertThat(resultMap.size(), is(1));
+    assertThat(resultMap.containsKey(expectedStartDateString), is(true));
+    assertThat(resultMap.get(expectedStartDateString), is(1500L));
   }
 
   @Test

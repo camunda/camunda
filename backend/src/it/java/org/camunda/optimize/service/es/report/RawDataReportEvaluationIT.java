@@ -54,6 +54,7 @@ import static org.hamcrest.core.IsNull.notNullValue;
 public class RawDataReportEvaluationIT {
 
 
+  private static final String ALL_VERSIONS = "ALL";
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
@@ -65,6 +66,63 @@ public class RawDataReportEvaluationIT {
       .around(engineRule)
       .around(embeddedOptimizeRule)
       .around(engineDatabaseRule);
+
+  @Test
+  public void reportAcrossAllVersions() throws Exception {
+// given
+    ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
+    ProcessInstanceEngineDto processInstance2 = deployAndStartSimpleProcess();
+
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(
+        processInstance.getProcessDefinitionKey(), ALL_VERSIONS);
+    RawDataReportResultDto result = evaluateReport(reportData);
+
+    // then
+    ReportDataDto resultDataDto = result.getData();
+    assertThat(resultDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
+    assertThat(resultDataDto.getProcessDefinitionVersion(), is(ALL_VERSIONS));
+    assertThat(resultDataDto.getView(), is(notNullValue()));
+    assertThat(resultDataDto.getView().getOperation(), is(VIEW_RAW_DATA_OPERATION));
+    assertThat(result.getResult(), is(notNullValue()));
+    assertThat(result.getResult().size(), is(2));
+  }
+
+  @Test
+  public void otherProcessDefinitionsDoNoAffectResult() throws Exception {
+    // given
+    ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
+    deployAndStartSimpleProcess();
+
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(
+        processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion());
+    RawDataReportResultDto result = evaluateReport(reportData);
+
+    // then
+    ReportDataDto resultDataDto = result.getData();
+    assertThat(resultDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
+    assertThat(resultDataDto.getProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
+    assertThat(resultDataDto.getView(), is(notNullValue()));
+    assertThat(resultDataDto.getView().getOperation(), is(VIEW_RAW_DATA_OPERATION));
+    assertThat(result.getResult(), is(notNullValue()));
+    assertThat(result.getResult().size(), is(1));
+    RawDataProcessInstanceDto rawDataProcessInstanceDto = result.getResult().get(0);
+
+    assertThat(rawDataProcessInstanceDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
+    assertThat(rawDataProcessInstanceDto.getProcessInstanceId(), is(processInstance.getId()));
+    assertThat(rawDataProcessInstanceDto.getStartDate(), is(notNullValue()));
+    assertThat(rawDataProcessInstanceDto.getEndDate(), is(notNullValue()));
+    assertThat(rawDataProcessInstanceDto.getEngineName(), is("1"));
+    assertThat(rawDataProcessInstanceDto.getVariables(), is(notNullValue()));
+    assertThat(rawDataProcessInstanceDto.getVariables().size(), is(0));
+  }
 
   @Test
   public void reportEvaluationForOneProcessInstance() throws Exception {

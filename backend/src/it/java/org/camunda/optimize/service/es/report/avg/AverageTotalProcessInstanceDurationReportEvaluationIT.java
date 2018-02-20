@@ -49,6 +49,7 @@ import static org.hamcrest.core.IsNull.notNullValue;
 public class AverageTotalProcessInstanceDurationReportEvaluationIT {
 
   public static final String PROCESS_DEFINITION_ID = "123";
+  private static final String ALL_VERSIONS = "ALL";
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
@@ -163,6 +164,36 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
   }
 
   @Test
+  public void reportAcrossAllVersions() throws Exception {
+    //given
+    OffsetDateTime startDate = OffsetDateTime.now();
+    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
+
+    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
+    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(1));
+    processInstanceDto = engineRule.startProcessInstance(processInstanceDto.getDefinitionId());
+    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
+    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(3));
+    processInstanceDto = deployAndStartSimpleServiceTaskProcess();
+    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
+    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(2));
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+
+    // when
+    ReportDataDto reportData = ReportDataHelper.createAvgPiDurationHeatMapGroupByNone(
+        processInstanceDto.getProcessDefinitionKey(), ALL_VERSIONS
+    );
+    NumberReportResultDto result = evaluateReport(reportData);
+
+    // then
+    assertThat(result.getResult(), is(notNullValue()));
+    assertThat(result.getResult(), is(2000L));
+
+  }
+
+  @Test
   public void otherProcessDefinitionsDoNoAffectResult() throws Exception {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
@@ -182,7 +213,8 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
 
     // when
     ReportDataDto reportData = ReportDataHelper.createAvgPiDurationHeatMapGroupByNone(
-        processDefinitionKey, processDefinitionVersion);
+        processDefinitionKey, processDefinitionVersion
+    );
     NumberReportResultDto result = evaluateReport(reportData);
 
     // then

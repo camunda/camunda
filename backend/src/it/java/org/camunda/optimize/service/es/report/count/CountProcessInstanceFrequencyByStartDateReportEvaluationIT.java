@@ -65,6 +65,7 @@ import static org.hamcrest.core.IsNull.notNullValue;
 @ContextConfiguration(locations = {"/it/it-applicationContext.xml"})
 public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
 
+  private static final String ALL_VERSIONS = "ALL";
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
@@ -445,6 +446,28 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     assertThat(result.getResult(), is(notNullValue()));
     Map<String, Long> resultMap = result.getResult();
     assertStartDateResultMap(resultMap, 8, now, ChronoUnit.YEARS);
+  }
+
+  @Test
+  public void reportAcrossAllVersions() throws Exception {
+    // given
+    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
+    deployAndStartSimpleServiceTaskProcess();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    ReportDataDto reportData = ReportDataHelper.createPICountFrequencyGroupByStartDate(
+        processInstanceDto.getProcessDefinitionKey(), ALL_VERSIONS, DATE_UNIT_DAY
+    );
+    MapReportResultDto result = evaluateReport(reportData);
+
+    // then
+    Map<String, Long> resultMap = result.getResult();
+    OffsetDateTime startOfToday = new Date().toInstant().atOffset(ZoneOffset.UTC).truncatedTo(ChronoUnit.DAYS);
+    String expectedStartDateString = localDateTimeToString(startOfToday);
+    assertThat("contains [" + expectedStartDateString + "]", resultMap.containsKey(expectedStartDateString), is(true));
+    assertThat(resultMap.get(expectedStartDateString), is(2L));
   }
 
   @Test

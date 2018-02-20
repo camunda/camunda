@@ -46,6 +46,7 @@ import static org.hamcrest.core.IsNull.notNullValue;
 public class CountTotalProcessInstanceFrequencyReportEvaluationIT {
 
   public static final String PROCESS_DEFINITION_ID = "123";
+  private static final String ALL_VERSIONS = "ALL";
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
@@ -95,6 +96,25 @@ public class CountTotalProcessInstanceFrequencyReportEvaluationIT {
     // when
     ReportDataDto reportData = ReportDataHelper.createPiFrequencyCountGroupedByNone(
         engineDto.getProcessDefinitionKey(), engineDto.getProcessDefinitionVersion()
+    );
+    NumberReportResultDto result = evaluateReport(reportData);
+
+    // then
+    assertThat(result.getResult(), is(3L));
+  }
+
+  @Test
+  public void reportAcrossAllVersions() throws Exception {
+    // given
+    ProcessInstanceEngineDto engineDto = deployAndStartSimpleServiceTaskProcess(TEST_ACTIVITY);
+    engineRule.startProcessInstance(engineDto.getDefinitionId());
+    deployAndStartSimpleServiceTaskProcess(TEST_ACTIVITY);
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    ReportDataDto reportData = ReportDataHelper.createPiFrequencyCountGroupedByNone(
+        engineDto.getProcessDefinitionKey(), ALL_VERSIONS
     );
     NumberReportResultDto result = evaluateReport(reportData);
 

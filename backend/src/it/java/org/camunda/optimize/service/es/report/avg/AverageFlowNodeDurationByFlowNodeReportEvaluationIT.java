@@ -53,6 +53,7 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
   private static final String SERVICE_TASK_ID = "aSimpleServiceTask";
   private static final String SERVICE_TASK_ID_2 = "aSimpleServiceTask2";
   public static final String PROCESS_DEFINITION_ID = "123";
+  private static final String ALL_VERSIONS = "ALL";
 
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
@@ -147,6 +148,31 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
     assertThat(flowNodeIdToAverageExecutionDuration.size(), is(4));
     assertThat(flowNodeIdToAverageExecutionDuration.get(SERVICE_TASK_ID ), is(10L));
     assertThat(flowNodeIdToAverageExecutionDuration.get(SERVICE_TASK_ID_2 ), is(20L));
+  }
+
+  @Test
+  public void reportAcrossAllVersions() throws Exception {
+    //given
+    ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessDefinition();
+    ProcessDefinitionEngineDto processDefinition2 = deploySimpleServiceTaskProcessDefinition();
+    ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
+    engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 40L);
+    processInstanceDto = engineRule.startProcessInstance(processDefinition2.getId());
+    engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 40L);
+
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    //when
+    ReportDataDto reportData = ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(
+        processDefinition.getKey(), ALL_VERSIONS
+    );
+    MapReportResultDto result = evaluateReport(reportData);
+
+    //then
+    Map<String, Long> flowNodeIdToAverageExecutionDuration = result.getResult();
+    assertThat(flowNodeIdToAverageExecutionDuration.size(), is(3));
+    assertThat(flowNodeIdToAverageExecutionDuration.get(SERVICE_TASK_ID ), is(40L));
   }
 
   @Test

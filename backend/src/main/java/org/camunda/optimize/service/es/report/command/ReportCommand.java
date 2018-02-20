@@ -18,6 +18,7 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 public abstract class ReportCommand implements Command {
 
+  private static final String ALL_VERSIONS = "ALL";
   protected Logger logger = LoggerFactory.getLogger(getClass());
 
   protected ReportDataDto reportData;
@@ -42,8 +43,11 @@ public abstract class ReportCommand implements Command {
     BoolQueryBuilder query;
     if (processDefinitionKey != null && processDefinitionVersion != null) {
       query = boolQuery()
-          .must(termQuery("processDefinitionKey", processDefinitionKey))
-          .must(termQuery("processDefinitionVersion", processDefinitionVersion));
+          .must(termQuery("processDefinitionKey", processDefinitionKey));
+      if (!ALL_VERSIONS.equalsIgnoreCase(processDefinitionVersion)) {
+        query = query
+            .must(termQuery("processDefinitionVersion", processDefinitionVersion));
+      }
     } else {
       query = boolQuery()
           .must(termQuery("processDefinitionId", processDefinitionId));

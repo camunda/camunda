@@ -46,6 +46,7 @@ import static org.hamcrest.core.IsNull.notNullValue;
 @ContextConfiguration(locations = {"/it/it-applicationContext.xml"})
 public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
 
+  private static final String ALL_VERSIONS = "ALL";
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
@@ -56,6 +57,62 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
   @Rule
   public RuleChain chain = RuleChain
     .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
+
+  @Test
+  public void reportAcrossAllVersions() throws Exception {
+    // given
+    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
+    ProcessInstanceEngineDto processInstanceDto2 = deployAndStartSimpleServiceTaskProcess();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    ReportDataDto reportData = ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNode(
+        processInstanceDto.getProcessDefinitionKey(), ALL_VERSIONS
+    );
+    MapReportResultDto result = evaluateReport(reportData);
+
+    // then
+    ReportDataDto resultReportDataDto = result.getData();
+    assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
+    assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(ALL_VERSIONS));
+    assertThat(resultReportDataDto.getView(), is(notNullValue()));
+    assertThat(resultReportDataDto.getView().getOperation(), is(VIEW_COUNT_OPERATION));
+    assertThat(resultReportDataDto.getView().getEntity(), is(VIEW_FLOW_NODE_ENTITY));
+    assertThat(resultReportDataDto.getView().getProperty(), is(VIEW_FREQUENCY_PROPERTY));
+    assertThat(result.getResult(), is(notNullValue()));
+    Map<String, Long> flowNodeIdToExecutionFrequency = result.getResult();
+    assertThat(flowNodeIdToExecutionFrequency.size(), is(5));
+    assertThat(flowNodeIdToExecutionFrequency.get(TEST_ACTIVITY ), is(2L));
+  }
+
+  @Test
+  public void otherProcessDefinitionsDoNoAffectResult() throws Exception {
+    // given
+    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
+    ProcessInstanceEngineDto processInstanceDto2 = deployAndStartSimpleServiceTaskProcess();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    ReportDataDto reportData = ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNode(
+        processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion()
+    );
+    MapReportResultDto result = evaluateReport(reportData);
+
+    // then
+    ReportDataDto resultReportDataDto = result.getData();
+    assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
+    assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
+    assertThat(resultReportDataDto.getView(), is(notNullValue()));
+    assertThat(resultReportDataDto.getView().getOperation(), is(VIEW_COUNT_OPERATION));
+    assertThat(resultReportDataDto.getView().getEntity(), is(VIEW_FLOW_NODE_ENTITY));
+    assertThat(resultReportDataDto.getView().getProperty(), is(VIEW_FREQUENCY_PROPERTY));
+    assertThat(result.getResult(), is(notNullValue()));
+    Map<String, Long> flowNodeIdToExecutionFrequency = result.getResult();
+    assertThat(flowNodeIdToExecutionFrequency.size(), is(3));
+    assertThat(flowNodeIdToExecutionFrequency.get(TEST_ACTIVITY ), is(1L));
+  }
 
   @Test
   public void reportEvaluationForOneProcess() throws Exception {
@@ -158,7 +215,6 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
         .done();
 
     ProcessInstanceEngineDto instanceDto = engineRule.deployAndStartProcess(processModel);
-    String processDefinitionId = instanceDto.getDefinitionId();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
@@ -180,7 +236,6 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleServiceTaskProcess();
     OffsetDateTime past = engineRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
-    String processDefinitionId = processInstance.getDefinitionId();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
@@ -374,8 +429,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
           .camundaExpression("${true}")
         .connectTo("mergeGateway")
       .done();
-    ProcessDefinitionEngineDto processDefinitionId = engineRule.deployProcessAndGetProcessDefinition(modelInstance);
-    return processDefinitionId;
+    return engineRule.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
 
