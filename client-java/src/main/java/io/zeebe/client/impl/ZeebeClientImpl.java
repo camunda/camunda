@@ -15,18 +15,9 @@
  */
 package io.zeebe.client.impl;
 
-import static io.zeebe.client.ClientProperties.CLIENT_MAXREQUESTS;
-import static io.zeebe.client.ClientProperties.CLIENT_REQUEST_TIMEOUT_SEC;
-import static io.zeebe.client.ClientProperties.CLIENT_SENDBUFFER_SIZE;
+import static io.zeebe.client.ClientProperties.*;
 
 import java.util.Properties;
-
-import org.msgpack.jackson.dataformat.MessagePackFactory;
-
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.InjectableValues;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.zeebe.client.ClientProperties;
 import io.zeebe.client.WorkflowsClient;
@@ -71,7 +62,7 @@ public class ZeebeClientImpl implements ZeebeClient
 
     protected ClientTransport transport;
 
-    protected final ObjectMapper objectMapper;
+    protected final ZeebeObjectMapper objectMapper;
 
     protected SubscriptionManager subscriptionManager;
 
@@ -80,8 +71,6 @@ public class ZeebeClientImpl implements ZeebeClient
 
     protected ActorReference topologyManagerActorReference;
     protected ActorReference commandManagerActorReference;
-
-    protected final MsgPackConverter msgPackConverter;
 
     protected boolean isClosed;
 
@@ -100,25 +89,25 @@ public class ZeebeClientImpl implements ZeebeClient
         this.transportActorScheduler = ActorSchedulerBuilder.createDefaultScheduler("transport");
 
         dataFrameReceiveBuffer = Dispatchers.create("receive-buffer")
-            .bufferSize(1024 * 1024 * sendBufferSize)
-            .modePubSub()
-            .frameMaxLength(1024 * 1024)
-            .actorScheduler(transportActorScheduler)
-            .build();
+                                            .bufferSize(1024 * 1024 * sendBufferSize)
+                                            .modePubSub()
+                                            .frameMaxLength(1024 * 1024)
+                                            .actorScheduler(transportActorScheduler)
+                                            .build();
         sendBuffer = Dispatchers.create("send-buffer")
-            .actorScheduler(transportActorScheduler)
-            .bufferSize(1024 * 1024 * sendBufferSize)
-            .subscriptions(ClientTransportBuilder.SEND_BUFFER_SUBSCRIPTION_NAME)
-//                .countersManager(countersManager) // TODO: counters manager
-            .build();
+                                .actorScheduler(transportActorScheduler)
+                                .bufferSize(1024 * 1024 * sendBufferSize)
+                                .subscriptions(ClientTransportBuilder.SEND_BUFFER_SUBSCRIPTION_NAME)
+                                //                .countersManager(countersManager) // TODO: counters manager
+                                .build();
 
         final ClientTransportBuilder transportBuilder = Transports.newClientTransport()
-            .messageMaxLength(1024 * 1024)
-            .messageReceiveBuffer(dataFrameReceiveBuffer)
-            .requestPoolSize(maxRequests + 16)
-            .scheduler(transportActorScheduler)
-            .sendBuffer(sendBuffer)
-            .enableManagedRequests();
+                                                                  .messageMaxLength(1024 * 1024)
+                                                                  .messageReceiveBuffer(dataFrameReceiveBuffer)
+                                                                  .requestPoolSize(maxRequests + 16)
+                                                                  .scheduler(transportActorScheduler)
+                                                                  .sendBuffer(sendBuffer)
+                                                                  .enableManagedRequests();
 
         if (properties.containsKey(ClientProperties.CLIENT_TCP_CHANNEL_KEEP_ALIVE_PERIOD))
         {
@@ -128,19 +117,7 @@ public class ZeebeClientImpl implements ZeebeClient
 
         transport = transportBuilder.build();
 
-        msgPackConverter = new MsgPackConverter();
-
-        final MessagePackFactory messagePackFactory = new MessagePackFactory()
-                .setReuseResourceInGenerator(false)
-                .setReuseResourceInParser(false);
-        objectMapper = new ObjectMapper(messagePackFactory);
-        objectMapper.setSerializationInclusion(Include.NON_NULL);
-        objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
-
-        final InjectableValues injectionContext = new InjectableValues.Std()
-                .addValue(MsgPackConverter.class, msgPackConverter);
-        objectMapper.setInjectableValues(injectionContext);
-
+        this.objectMapper = new ZeebeObjectMapper();
 
         final int numExecutionThreads = Integer.parseInt(properties.getProperty(ClientProperties.CLIENT_TASK_EXECUTION_THREADS));
 
@@ -150,13 +127,11 @@ public class ZeebeClientImpl implements ZeebeClient
 
         topologyManager = new ClientTopologyManager(transport, objectMapper, contactPoint);
 
-        subscriptionManager = new SubscriptionManager(
-                this,
-                numExecutionThreads,
-                prefetchCapacity);
+        subscriptionManager = new SubscriptionManager(this, numExecutionThreads, prefetchCapacity);
         transport.registerChannelListener(subscriptionManager);
 
-        apiCommandManager = new RequestManager(transport, topologyManager, new RoundRobinDispatchStrategy(topologyManager), objectMapper, maxRequests, requestTimeout);
+        apiCommandManager = new RequestManager(transport, topologyManager, new RoundRobinDispatchStrategy(topologyManager), objectMapper, maxRequests,
+            requestTimeout);
 
         commandManagerActorReference = transportActorScheduler.schedule(apiCommandManager);
         topologyManagerActorReference = transportActorScheduler.schedule(topologyManager);
@@ -254,7 +229,7 @@ public class ZeebeClientImpl implements ZeebeClient
         return subscriptionManager;
     }
 
-    public ObjectMapper getObjectMapper()
+    public ZeebeObjectMapper getObjectMapper()
     {
         return objectMapper;
     }
@@ -271,6 +246,6 @@ public class ZeebeClientImpl implements ZeebeClient
 
     public MsgPackConverter getMsgPackConverter()
     {
-        return msgPackConverter;
+        return objectMapper.getMsgPackConverter();
     }
 }
