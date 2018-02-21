@@ -15,23 +15,24 @@
  */
 package io.zeebe.transport.impl;
 
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.function.Consumer;
-
-import org.agrona.DirectBuffer;
-import org.agrona.ExpandableArrayBuffer;
-import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-
 import io.zeebe.dispatcher.ClaimedFragment;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.transport.ClientRequest;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.impl.ClientRequestPool.RequestIdGenerator;
 import io.zeebe.util.buffer.BufferWriter;
+import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
+import org.agrona.DirectBuffer;
+import org.agrona.ExpandableArrayBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 public class ClientRequestImpl implements ClientRequest
 {
@@ -153,9 +154,15 @@ public class ClientRequestImpl implements ClientRequest
     }
 
     @Override
-    public DirectBuffer get() throws InterruptedException, ExecutionException
+    public DirectBuffer get() throws ExecutionException
     {
         return responseFuture.get();
+    }
+
+    @Override
+    public ActorFuture<DirectBuffer> onComplete(BiConsumer<DirectBuffer, Throwable> consumer)
+    {
+        return responseFuture.onComplete(consumer);
     }
 
     @Override
