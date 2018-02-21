@@ -15,6 +15,20 @@
  */
 package io.zeebe.logstreams.impl;
 
+import static io.zeebe.logstreams.log.LogStreamUtil.INVALID_ADDRESS;
+import static io.zeebe.logstreams.log.LogStreamUtil.getAddressForPosition;
+import static io.zeebe.util.EnsureUtil.ensureFalse;
+import static io.zeebe.util.EnsureUtil.ensureGreaterThanOrEqual;
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
+import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
+
+import java.io.File;
+import java.nio.ByteBuffer;
+import java.time.Duration;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.dispatcher.impl.PositionUtil;
@@ -36,22 +50,10 @@ import org.agrona.concurrent.status.AtomicLongPosition;
 import org.agrona.concurrent.status.CountersManager;
 import org.agrona.concurrent.status.Position;
 
-import java.io.File;
-import java.nio.ByteBuffer;
-import java.time.Duration;
-import java.util.Objects;
-
-import static io.zeebe.logstreams.log.LogStreamUtil.INVALID_ADDRESS;
-import static io.zeebe.logstreams.log.LogStreamUtil.getAddressForPosition;
-import static io.zeebe.util.EnsureUtil.ensureFalse;
-import static io.zeebe.util.EnsureUtil.ensureGreaterThanOrEqual;
-import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
-import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
-
 /**
  * Represents the implementation of the LogStream interface.
  */
-public final class LogStreamImpl extends ZbActor implements LogStream
+public final class LogStreamImpl implements LogStream
 {
     public static final String EXCEPTION_MSG_TRUNCATE_FAILED = "Truncation failed! Position %d was not found.";
     public static final String EXCEPTION_MSG_TRUNCATE_AND_LOG_STREAM_CTRL_IN_PARALLEL = "Can't truncate the log storage and have a log stream controller active at the same time.";
@@ -101,16 +103,6 @@ public final class LogStreamImpl extends ZbActor implements LogStream
             this.logStreamController = new LogStreamController(logStreamBuilder);
             this.writeBuffer = logStreamBuilder.getWriteBuffer();
         }
-
-        actorScheduler.submitActor(this);
-    }
-
-    @Override
-    protected void onActorStarted()
-    {
-        // avoid that this actor is closed
-        actor.onCondition("is-running", () ->
-        { });
     }
 
     @Override
@@ -156,15 +148,26 @@ public final class LogStreamImpl extends ZbActor implements LogStream
         {
             final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
 
-            actor.call(() ->
+            actorScheduler.submitActor(new ZbActor()
             {
-                actor.await(logBlockIndexController.openAsync(), t ->
+                @Override
+                protected void onActorStarted()
                 {
-                    actor.await(openStreamControlling(actorScheduler, logStreamController.getMaxAppendBlockSize()), t2 ->
+                    final List<ActorFuture<Void>> openFutures = Arrays
+                            .asList(logBlockIndexController.openAsync(), openStreamControlling(actorScheduler, logStreamController.getMaxAppendBlockSize()));
+
+                    actor.runOnCompletion(openFutures, failure ->
                     {
-                        future.complete(null);
+                        if (failure == null)
+                        {
+                            future.complete(null);
+                        }
+                        else
+                        {
+                            future.completeExceptionally(failure);
+                        }
                     });
-                });
+                }
             });
 
             return future;
@@ -184,37 +187,64 @@ public final class LogStreamImpl extends ZbActor implements LogStream
     @Override
     public ActorFuture<Void> closeAsync()
     {
-        final CompletableActorFuture<Void> completableActorFuture = new CompletableActorFuture<>();
-        actor.call(() ->
+        final CompletableActorFuture<Void> closeFuture = new CompletableActorFuture<>();
+
+        actorScheduler.submitActor(new ZbActor()
         {
-
-            if (writeBuffer != null)
+            @Override
+            protected void onActorStarted()
             {
-                actor.await(logBlockIndexController.closeAsync(), t ->
+                if (writeBuffer != null)
                 {
-                    actor.await(logStreamController.closeAsync(), t2 ->
+                    actor.runOnCompletion(logBlockIndexController.closeAsync(), (v1, t1) ->
                     {
-                        actor.await(writeBuffer.closeAsync(), t3 ->
+                        actor.runOnCompletion(logStreamController.closeAsync(), (v2, t2) ->
                         {
-                            logStorage.close();
+                            actor.runOnCompletion(writeBuffer.closeAsync(), (v3, t3) ->
+                            {
+                                logStorage.close();
 
-                            writeBuffer = null;
-                            completableActorFuture.complete(null);
+                                writeBuffer = null;
+
+                                if (t1 != null)
+                                {
+                                    closeFuture.completeExceptionally(t1);
+                                }
+                                else if (t2 != null)
+                                {
+                                    closeFuture.completeExceptionally(t2);
+                                }
+                                else if (t3 != null)
+                                {
+                                    closeFuture.completeExceptionally(t3);
+                                }
+                                else
+                                {
+                                    closeFuture.complete(null);
+                                }
+                            });
                         });
                     });
-                });
-            }
-            else
-            {
-                actor.await(logBlockIndexController.closeAsync(), t ->
+                }
+                else
                 {
-                    logStorage.close();
-                    completableActorFuture.complete(null);
-                });
-            }
+                    actor.runOnCompletion(logBlockIndexController.closeAsync(), (v, t) ->
+                    {
+                        logStorage.close();
 
+                        if (t == null)
+                        {
+                            closeFuture.complete(null);
+                        }
+                        else
+                        {
+                            closeFuture.completeExceptionally(t);
+                        }
+                    });
+                }
+            }
         });
-        return completableActorFuture;
+        return closeFuture;
     }
 
     @Override
@@ -280,17 +310,32 @@ public final class LogStreamImpl extends ZbActor implements LogStream
         {
             final CompletableActorFuture<Void> closeFuture = new CompletableActorFuture<>();
 
-            actor.call(() ->
+            actorScheduler.submitActor(new ZbActor()
             {
-                actor.await(writeBuffer.closeAsync(), (v1, t1) ->
+                @Override
+                protected void onActorStarted()
                 {
-                    actor.await(logStreamController.closeAsync(), (v2, t2) ->
+                    actor.runOnCompletion(writeBuffer.closeAsync(), (v1, t1) ->
                     {
-                        writeBuffer = null;
+                        actor.runOnCompletion(logStreamController.closeAsync(), (v2, t2) ->
+                        {
+                            writeBuffer = null;
 
-                        closeFuture.complete(null);
+                            if (t1 != null)
+                            {
+                                closeFuture.completeExceptionally(t1);
+                            }
+                            else if (t2 != null)
+                            {
+                                closeFuture.completeExceptionally(t2);
+                            }
+                            else
+                            {
+                                closeFuture.complete(null);
+                            }
+                        });
                     });
-                });
+                }
             });
 
             return closeFuture;
