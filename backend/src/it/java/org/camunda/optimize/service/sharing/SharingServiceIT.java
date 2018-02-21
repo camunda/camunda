@@ -41,6 +41,26 @@ public class SharingServiceIT extends AbstractSharingIT {
       .around(embeddedOptimizeRule);
 
   @Test
+  public void dashboardWithoutReportsShare() {
+    //given
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+
+    String dashboardId = addEmptyDashboardToOptimize(token);
+    String dashboardShareId = addShareForDashboard(token, dashboardId);
+
+    // when
+    Response response =
+      embeddedOptimizeRule.target(getSharedDashboardEvaluationPath(dashboardShareId))
+        .request()
+        .get();
+
+    //then
+    EvaluatedDashboardShareDto dashboardShareDto = response.readEntity(EvaluatedDashboardShareDto.class);
+    List<ReportShareLocationDto> reportShares = dashboardShareDto.getDashboard().getReportShares();
+    assertThat(reportShares.size(), is(nullValue()));
+  }
+
+  @Test
   public void dashboardsWithDuplicateReportsAreShared() throws Exception {
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
