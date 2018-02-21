@@ -57,7 +57,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     //then
     EvaluatedDashboardShareDto dashboardShareDto = response.readEntity(EvaluatedDashboardShareDto.class);
     List<ReportShareLocationDto> reportShares = dashboardShareDto.getDashboard().getReportShares();
-    assertThat(reportShares.size(), is(nullValue()));
+    assertThat(reportShares, is(nullValue()));
   }
 
   @Test
