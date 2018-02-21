@@ -15,346 +15,174 @@
  */
 package io.zeebe.raft.controller;
 
-import static io.zeebe.raft.PollRequestEncoder.lastEventPositionNullValue;
-import static io.zeebe.raft.PollRequestEncoder.lastEventTermNullValue;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import org.agrona.DirectBuffer;
-import org.slf4j.Logger;
-
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.raft.Loggers;
 import io.zeebe.raft.Raft;
 import io.zeebe.raft.RaftMember;
 import io.zeebe.transport.ClientRequest;
 import io.zeebe.util.buffer.BufferWriter;
-import io.zeebe.util.state.LimitedStateMachineAgent;
-import io.zeebe.util.state.SimpleStateMachineContext;
-import io.zeebe.util.state.State;
-import io.zeebe.util.state.StateMachine;
-import io.zeebe.util.state.StateMachineAgent;
-import io.zeebe.util.state.StateMachineCommand;
-import io.zeebe.util.state.WaitState;
+import io.zeebe.util.sched.ActorControl;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
+import org.agrona.DirectBuffer;
+import org.slf4j.Logger;
+
+import java.time.Duration;
+
+import static io.zeebe.raft.PollRequestEncoder.lastEventPositionNullValue;
+import static io.zeebe.raft.PollRequestEncoder.lastEventTermNullValue;
 
 public class ConsensusRequestController
 {
+    private static final Logger LOG = Loggers.RAFT_LOGGER;
 
-    private static final int TRANSITION_DEFAULT = 0;
-    private static final int TRANSITION_OPEN = 1;
-    private static final int TRANSITION_CLOSE = 2;
+    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
 
-    private static final StateMachineCommand<Context> OPEN_COMMAND = context -> context.take(TRANSITION_OPEN);
-    private static final StateMachineCommand<Context> CLOSE_COMMAND = context -> context.take(TRANSITION_CLOSE);
+    private final Raft raft;
+    private BufferedLogStreamReader reader;
 
-    private final StateMachine<Context> stateMachine;
-    private final StateMachineAgent<Context> stateMachineAgent;
+    private final ConsensusRequestHandler consensusRequestHandler;
+    private final ActorControl actor;
 
-    public ConsensusRequestController(final Raft raft, final ConsensusRequestHandler consensusRequestHandler)
+    private int granted;
+    private int pendingRequests = -1;
+
+    public ConsensusRequestController(final Raft raft, ActorControl actorControl, final ConsensusRequestHandler consensusRequestHandler)
     {
-        final State<Context> opening = new OpeningState();
-        final State<Context> open = new OpenState();
-        final State<Context> closing = new ClosingState();
-        final WaitState<Context> closed = context -> { };
-
-        stateMachine = StateMachine.<Context>builder(s -> new Context(s, raft, consensusRequestHandler))
-            .initialState(closed)
-            .from(closed).take(TRANSITION_OPEN).to(opening)
-            .from(closed).take(TRANSITION_CLOSE).to(closed)
-            .from(opening).take(TRANSITION_DEFAULT).to(open)
-            .from(open).take(TRANSITION_OPEN).to(open)
-            .from(open).take(TRANSITION_CLOSE).to(closing)
-            .from(closing).take(TRANSITION_DEFAULT).to(closed)
-            .build();
-
-        stateMachineAgent = new LimitedStateMachineAgent<>(stateMachine);
+        this.actor = actorControl;
+        this.raft = raft;
+        this.consensusRequestHandler = consensusRequestHandler;
     }
 
-    public int doWork()
+    public void sendRequest()
     {
-        return stateMachineAgent.doWork();
+        this.reader = new BufferedLogStreamReader(raft.getLogStream(), true);
+        final BufferWriter request = createRequest();
+        sendRequestToMembers(request);
     }
 
-    public void reset()
+    protected BufferWriter createRequest()
     {
-        stateMachineAgent.reset();
-        stateMachine.getContext().close();
+        final LoggedEvent lastEvent = getLastEvent();
+
+        final long lastEventPosition;
+        final int lastEventTerm;
+        if (lastEvent != null)
+        {
+            lastEventPosition = lastEvent.getPosition();
+            lastEventTerm = lastEvent.getRaftTerm();
+        }
+        else
+        {
+            lastEventPosition = lastEventPositionNullValue();
+            lastEventTerm = lastEventTermNullValue();
+        }
+
+        return consensusRequestHandler.createRequest(raft, lastEventPosition, lastEventTerm);
     }
 
-    public void open()
+    protected void sendRequestToMembers(final BufferWriter pollRequest)
     {
-        stateMachineAgent.addCommand(OPEN_COMMAND);
+        // always vote for yourself
+        granted = 1;
+        final String requestName = consensusRequestHandler.requestName();
+        final int memberSize = raft.getMemberSize();
+        final CompletableActorFuture<Void> grantedFuture = new CompletableActorFuture<>();
+
+        if (memberSize == 0)
+        {
+            grantedFuture.complete(null);
+        }
+        else
+        {
+            sendRequestToMembers(pollRequest, requestName, memberSize, grantedFuture);
+        }
+
+        actor.runOnCompletion(grantedFuture, ((aVoid, throwable) ->
+        {
+            if (throwable == null)
+            {
+                LOG.debug("{} request successful with {} votes for a quorum of {}", requestName, granted, raft.requiredQuorum());
+                consensusRequestHandler.consensusGranted(raft);
+            }
+            else
+            {
+                LOG.debug("{} request failed with {} votes for a quorum of {}", requestName, granted, raft.requiredQuorum());
+                consensusRequestHandler.consensusFailed(raft);
+            }
+            close();
+        }));
+
+        LOG.debug("{} request send to {} other members", requestName, memberSize);
+    }
+
+    private void sendRequestToMembers(BufferWriter pollRequest, String requestName, int memberSize, CompletableActorFuture<Void> grantedFuture)
+    {
+        pendingRequests = memberSize;
+        for (int i = 0; i < memberSize; i++)
+        {
+            final RaftMember member = raft.getMember(i);
+
+            final ActorFuture<ClientRequest> clientRequestActorFuture =
+                raft.sendRequest(member.getRemoteAddress(), pollRequest, REQUEST_TIMEOUT);
+
+            actor.runOnCompletion(clientRequestActorFuture, (clientRequest, throwable) ->
+            {
+                pendingRequests--;
+                if (throwable == null)
+                {
+                    final DirectBuffer responseBuffer = clientRequest.join();
+
+                    if (consensusRequestHandler.isResponseGranted(raft, responseBuffer))
+                    {
+                        granted++;
+                        if (isGranted() && !grantedFuture.isDone())
+                        {
+                            grantedFuture.complete(null);
+                        }
+                    }
+                    clientRequest.close();
+                }
+                else
+                {
+                    LOG.debug("Failed to receive {} response", requestName, throwable);
+                }
+
+                if (pendingRequests == 0 && !isGranted())
+                {
+                    grantedFuture.completeExceptionally(new RuntimeException("Failed to get quorum."));
+                }
+            });
+        }
     }
 
     public void close()
     {
-        stateMachineAgent.addCommand(CLOSE_COMMAND);
-    }
-
-    static class OpeningState implements State<Context>
-    {
-
-        @Override
-        public int doWork(final Context context) throws Exception
+        if (reader != null)
         {
-            final BufferWriter request = createRequest(context);
-
-            final int workCount = sendRequestToMembers(context, request);
-
-            context.take(TRANSITION_DEFAULT);
-
-            return workCount;
-        }
-
-        protected BufferWriter createRequest(final Context context)
-        {
-            final LoggedEvent lastEvent = context.getLastEvent();
-
-            final long lastEventPosition;
-            final int lastEventTerm;
-
-            if (lastEvent != null)
-            {
-                lastEventPosition = lastEvent.getPosition();
-                lastEventTerm = lastEvent.getRaftTerm();
-            }
-            else
-            {
-                lastEventPosition = lastEventPositionNullValue();
-                lastEventTerm = lastEventTermNullValue();
-            }
-
-            return context.getConsensusRequestHandler()
-                   .createRequest(context.getRaft(), lastEventPosition, lastEventTerm);
-        }
-
-        protected int sendRequestToMembers(final Context context, final BufferWriter pollRequest)
-        {
-            final Raft raft = context.getRaft();
-            final Logger logger = raft.getLogger();
-
-            final String requestName = context.getConsensusRequestHandler().requestName();
-
-            final int memberSize = raft.getMemberSize();
-            for (int i = 0; i < memberSize; i++)
-            {
-                final RaftMember member = raft.getMember(i);
-
-                try
-                {
-                    final ClientRequest clientRequest = raft.sendRequest(member.getRemoteAddress(), pollRequest);
-
-                    if (clientRequest != null)
-                    {
-                        context.addClientRequest(clientRequest);
-                    }
-                }
-                catch (final Exception e)
-                {
-                    logger.debug("Failed to send {} request to {}", requestName, member.getRemoteAddress(), e);
-                }
-
-            }
-
-            logger.debug("{} request send to {} other members", requestName, memberSize);
-
-            return memberSize;
-        }
-
-        @Override
-        public boolean isInterruptable()
-        {
-            return false;
-        }
-    }
-
-    static class OpenState implements State<Context>
-    {
-
-        @Override
-        public int doWork(final Context context) throws Exception
-        {
-            final Raft raft = context.getRaft();
-            final Logger logger = raft.getLogger();
-
-            final String requestName = context.getConsensusRequestHandler().requestName();
-
-            final int remainingClientRequests = checkResponses(context);
-
-            if (context.isGranted())
-            {
-                logger.debug("{} request successful with {} votes for a quorum of {}", requestName, context.getGranted(), raft.requiredQuorum());
-                context.getConsensusRequestHandler().consensusGranted(raft);
-                context.take(TRANSITION_CLOSE);
-            }
-            else if (remainingClientRequests == 0)
-            {
-                logger.debug("{} request failed with {} votes for a quorum of {}", requestName, context.getGranted(), raft.requiredQuorum());
-                context.getConsensusRequestHandler().consensusFailed(raft);
-                context.take(TRANSITION_CLOSE);
-            }
-
-            return 1;
-        }
-
-        protected int checkResponses(final Context context)
-        {
-            final Raft raft = context.getRaft();
-            final Logger logger = raft.getLogger();
-
-            final String requestName = context.getConsensusRequestHandler().requestName();
-
-            final List<ClientRequest> clientRequests = context.getClientRequests();
-
-            for (int i = 0; i < clientRequests.size(); i++)
-            {
-                final ClientRequest clientRequest = clientRequests.get(i);
-
-                if (clientRequest.isDone())
-                {
-                    try
-                    {
-
-                        final DirectBuffer responseBuffer = clientRequest.get();
-
-                        if (context.getConsensusRequestHandler().isResponseGranted(raft, responseBuffer))
-                        {
-                            context.registerGranted();
-                        }
-
-                    }
-                    catch (final Exception e)
-                    {
-                        logger.debug("Failed to receive {} response", requestName, e);
-                    }
-                    finally
-                    {
-                        clientRequest.close();
-                        clientRequests.remove(i);
-                        i--;
-                    }
-                }
-            }
-
-            return clientRequests.size();
-        }
-
-    }
-
-    static class ClosingState implements State<Context>
-    {
-
-        @Override
-        public int doWork(final Context context) throws Exception
-        {
-            // abort remaining requests and reset context for next iteration
-            context.reset();
-
-            context.take(TRANSITION_DEFAULT);
-
-            return 1;
-        }
-
-        @Override
-        public boolean isInterruptable()
-        {
-            return false;
-        }
-
-    }
-
-    static class Context extends SimpleStateMachineContext
-    {
-
-        private final Raft raft;
-        private final BufferedLogStreamReader reader;
-
-        private final List<ClientRequest> clientRequests = new ArrayList<>();
-
-        private final ConsensusRequestHandler consensusRequestHandler;
-
-        private int granted;
-
-        Context(final StateMachine<Context> stateMachine, final Raft raft, final ConsensusRequestHandler consensusRequestHandler)
-        {
-            super(stateMachine);
-
-            this.raft = raft;
-            this.reader = new BufferedLogStreamReader(raft.getLogStream(), true);
-            this.consensusRequestHandler = consensusRequestHandler;
-
-            reset();
-        }
-
-        public ConsensusRequestHandler getConsensusRequestHandler()
-        {
-            return consensusRequestHandler;
-        }
-
-        @Override
-        public void reset()
-        {
-            for (final ClientRequest clientRequest : clientRequests)
-            {
-                clientRequest.close();
-            }
-            clientRequests.clear();
-
-            consensusRequestHandler.reset();
-
-            granted = 1; // always vote for self
-        }
-
-        public void close()
-        {
-            reset();
             reader.close();
+            reader = null;
         }
+    }
 
-        public List<ClientRequest> getClientRequests()
+    public LoggedEvent getLastEvent()
+    {
+        reader.seekToLastEvent();
+
+        if (reader.hasNext())
         {
-            return clientRequests;
+            return reader.next();
         }
-
-        public void addClientRequest(final ClientRequest request)
+        else
         {
-            this.clientRequests.add(request);
+            return null;
         }
+    }
 
-        public Raft getRaft()
-        {
-            return raft;
-        }
-
-        public LoggedEvent getLastEvent()
-        {
-            reader.seekToLastEvent();
-
-            if (reader.hasNext())
-            {
-                return reader.next();
-            }
-            else
-            {
-                return null;
-            }
-        }
-
-        public void registerGranted()
-        {
-            granted++;
-        }
-
-        public boolean isGranted()
-        {
-            return granted >= raft.requiredQuorum();
-        }
-
-        public int getGranted()
-        {
-            return granted;
-        }
+    public boolean isGranted()
+    {
+        return granted >= raft.requiredQuorum();
     }
 
 }

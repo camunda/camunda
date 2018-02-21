@@ -15,20 +15,19 @@
  */
 package io.zeebe.raft;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.util.List;
-
 import io.zeebe.raft.state.RaftState;
-import io.zeebe.raft.util.ActorSchedulerRule;
 import io.zeebe.raft.util.RaftClusterRule;
 import io.zeebe.raft.util.RaftRule;
+import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
 public class RaftTwoNodesTest
 {
-
     public ActorSchedulerRule actorScheduler = new ActorSchedulerRule();
 
     public RaftRule raft1 = new RaftRule(actorScheduler, "localhost", 8001, "default", 0);

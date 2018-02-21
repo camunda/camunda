@@ -15,32 +15,34 @@
  */
 package io.zeebe.raft.util;
 
-import static io.zeebe.protocol.clientapi.EventType.NOOP_EVENT;
-import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
-
-import java.util.*;
-import java.util.function.BooleanSupplier;
-import java.util.function.Supplier;
-
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
+import io.zeebe.raft.Loggers;
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.test.util.TestUtil;
+import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.*;
+import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
+
+import static io.zeebe.protocol.clientapi.EventType.NOOP_EVENT;
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
+
 public class RaftClusterRule implements TestRule
 {
 
     public static final int DEFAULT_RETRIES = 20;
     public static final int COMMITTED_RETRIES = 40;
-    public static final int ALL_COMMITTED_RETRIES = 100;
+    public static final int ALL_COMMITTED_RETRIES = 1000;
 
     public static final Logger LOG = LoggerFactory.getLogger("io.zeebe.raft.test");
 
@@ -80,7 +82,15 @@ public class RaftClusterRule implements TestRule
     {
         raft.clearSubscription();
 
-        raft.schedule();
+//        doCallRealMethod()
+//            .when(raft.spyClientOutput)
+//        .sendMessage(any());
+        rafts.forEach(raftRule ->
+        {
+            raft.reconnectTo(raftRule);
+            raftRule.reconnectTo(raft);
+        });
+
         this.rafts.add(raft);
 
         return this;
@@ -98,8 +108,23 @@ public class RaftClusterRule implements TestRule
 
     public RaftClusterRule removeRaft(final RaftRule raft)
     {
-        raft.unschedule();
+        Loggers.RAFT_LOGGER.debug("Interrupt connections for {}", raft.getSocketAddress());
+
+//        doReturn(false)
+//            .when(raft.spyClientOutput)
+//            .sendMessage(any());
+
+        final RaftRule[] otherRafts = getOtherRafts(raft);
+        Arrays.stream(otherRafts)
+            .forEach(raftRule ->
+            {
+                raft.interruptConnectionTo(raftRule);
+                raftRule.interruptConnectionTo(raft);
+            });
+
         this.rafts.remove(raft);
+
+//        raft.clientTransport.interruptAllChannels();
 
         return this;
     }
@@ -114,6 +139,23 @@ public class RaftClusterRule implements TestRule
         return this;
     }
 
+    public RaftRule[] getOtherRafts(RaftRule toBeRemoved)
+    {
+        final RaftRule[] other = new RaftRule[rafts.size() - 1];
+
+        int idx = 0;
+        for (RaftRule rule : rafts)
+        {
+            if (!rule.equals(toBeRemoved))
+            {
+                other[idx] = rule;
+                idx++;
+            }
+        }
+        return other;
+    }
+
+
     public void awaitRaftState(final RaftRule raft, final RaftState state)
     {
         awaitCondition(() -> raft.getState() == state, "Failed to wait for %s to become %s", raft, state);
@@ -121,7 +163,7 @@ public class RaftClusterRule implements TestRule
 
     public void awaitLogControllerOpen(final RaftRule raft)
     {
-        awaitCondition(() -> raft.getLogStream().getLogStreamController() != null, "Failed to wait for %s to open log stream controller", raft);
+        awaitCondition(() -> raft.getLogStream().getLogStreamController() != null, "Failed to wait for %s to appendEvent log stream controller", raft);
     }
 
     public void awaitEventCommitted(final RaftRule raftToWait, final long position, final int term, final String message)

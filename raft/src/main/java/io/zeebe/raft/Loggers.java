@@ -15,19 +15,10 @@
  */
 package io.zeebe.raft;
 
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.transport.SocketAddress;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class Loggers
 {
-
-    public static Logger getRaftLogger(final SocketAddress socketAddress, final LogStream logStream)
-    {
-        final String loggerName = String.format("io.zeebe.raft - %s - %s:%d", logStream.getLogName(), socketAddress.host(), socketAddress.port());
-
-        return LoggerFactory.getLogger(loggerName);
-    }
-
+    public static final Logger RAFT_LOGGER = LoggerFactory.getLogger("io.zeebe.raft");
 }

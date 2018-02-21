@@ -18,6 +18,7 @@ package io.zeebe.raft.state;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.raft.BufferedLogStorageAppender;
+import io.zeebe.raft.Loggers;
 import io.zeebe.raft.Raft;
 import io.zeebe.raft.protocol.*;
 import io.zeebe.transport.RemoteAddress;
@@ -65,7 +66,6 @@ public abstract class AbstractRaftState
 
     public void pollRequest(final ServerOutput serverOutput, final RemoteAddress remoteAddress, final long requestId, final PollRequest pollRequest)
     {
-        raft.resetElectionTimeout();
         raft.mayStepDown(pollRequest);
 
         final boolean granted = raft.isTermCurrent(pollRequest) &&
@@ -73,6 +73,8 @@ public abstract class AbstractRaftState
 
         if (granted)
         {
+            Loggers.RAFT_LOGGER.debug("accept poll request");
+            raft.skipNextElection();
             acceptPollRequest(serverOutput, remoteAddress, requestId);
         }
         else
@@ -83,7 +85,7 @@ public abstract class AbstractRaftState
 
     public void voteRequest(final ServerOutput serverOutput, final RemoteAddress remoteAddress, final long requestId, final VoteRequest voteRequest)
     {
-        raft.resetElectionTimeout();
+        raft.skipNextElection();
         raft.mayStepDown(voteRequest);
 
         final boolean granted = raft.isTermCurrent(voteRequest) &&
@@ -103,6 +105,7 @@ public abstract class AbstractRaftState
 
     public void appendRequest(final AppendRequest appendRequest)
     {
+        Loggers.RAFT_LOGGER.debug("Got Append request in leader state ");
         raft.mayStepDown(appendRequest);
         rejectAppendRequest(appendRequest, appendRequest.getPreviousEventPosition());
     }

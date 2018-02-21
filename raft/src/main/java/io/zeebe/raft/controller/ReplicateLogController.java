@@ -16,184 +16,85 @@
 package io.zeebe.raft.controller;
 
 import io.zeebe.logstreams.impl.LoggedEventImpl;
+import io.zeebe.raft.Loggers;
 import io.zeebe.raft.Raft;
 import io.zeebe.raft.RaftMember;
 import io.zeebe.raft.protocol.AppendRequest;
-import io.zeebe.util.state.*;
-import io.zeebe.util.time.ClockUtil;
+import io.zeebe.util.sched.ActorControl;
+import io.zeebe.util.sched.ScheduledTimer;
 
 public class ReplicateLogController
 {
+    private final Raft raft;
 
-    private static final int TRANSITION_DEFAULT = 0;
-    private static final int TRANSITION_OPEN = 1;
-    private static final int TRANSITION_CLOSE = 2;
+    private final AppendRequest appendRequest = new AppendRequest();
+    private final ActorControl actor;
+    private ScheduledTimer heartBeatTimer;
 
-    private static final StateMachineCommand<Context> OPEN_COMMAND = context -> context.take(TRANSITION_OPEN);
-    private static final StateMachineCommand<Context> CLOSE_COMMAND = context -> context.take(TRANSITION_CLOSE);
-
-    private final StateMachineAgent<Context> stateMachineAgent;
-
-    public ReplicateLogController(final Raft raft)
+    public ReplicateLogController(final Raft raft, ActorControl actorControl)
     {
-        final State<Context> opening = new OpeningState();
-        final State<Context> open = new OpenState();
-        final WaitState<Context> closed = context -> { };
-
-        final StateMachine<Context> stateMachine = StateMachine.<Context>builder(s -> new Context(s, raft))
-            .initialState(closed)
-            .from(closed).take(TRANSITION_OPEN).to(opening)
-            .from(closed).take(TRANSITION_CLOSE).to(closed)
-            .from(opening).take(TRANSITION_DEFAULT).to(open)
-            .from(open).take(TRANSITION_OPEN).to(open)
-            .from(open).take(TRANSITION_CLOSE).to(closed)
-            .build();
-
-        stateMachineAgent = new LimitedStateMachineAgent<>(stateMachine);
-    }
-
-    public int doWork()
-    {
-        return stateMachineAgent.doWork();
-    }
-
-    public void reset()
-    {
-        stateMachineAgent.reset();
+        this.raft = raft;
+        this.actor = actorControl;
     }
 
     public void open()
     {
-        stateMachineAgent.addCommand(OPEN_COMMAND);
+        final int memberSize = raft.getMemberSize();
+        for (int i = 0; i < memberSize; i++)
+        {
+            raft.getMember(i).reset();
+        }
+
+        heartBeatTimer = actor.runAtFixedRate(raft.getConfiguration().getHeartbeatInterval(), this::sendAppendRequest);
+    }
+
+    // TODO perhaps possible to improve this
+    // only send events if available - otherwise empty heartbeat
+    public void sendAppendRequest()
+    {
+        final int memberSize = raft.getMemberSize();
+
+        for (int i = 0; i < memberSize; i++)
+        {
+            final RaftMember member = raft.getMember(i);
+            LoggedEventImpl event = null;
+            if (!member.hasFailures())
+            {
+                event = member.getNextEvent();
+            }
+
+
+            appendRequest.reset().setRaft(raft);
+
+            appendRequest
+                .setPreviousEventPosition(member.getPreviousPosition())
+                .setPreviousEventTerm(member.getPreviousTerm())
+                .setEvent(event);
+
+            final boolean sent = raft.sendMessage(member.getRemoteAddress(), appendRequest);
+
+            Loggers.RAFT_LOGGER.debug("Send append request to {}, sent {}", member.getRemoteAddress().getAddress(), sent);
+            if (event != null)
+            {
+                if (sent)
+                {
+                    member.setPreviousEvent(event);
+                }
+                else
+                {
+                    member.setBufferedEvent(event);
+                }
+            }
+        }
     }
 
     public void close()
     {
-        stateMachineAgent.addCommand(CLOSE_COMMAND);
+        if (heartBeatTimer != null)
+        {
+            heartBeatTimer.cancel();
+            heartBeatTimer = null;
+        }
     }
 
-    static class OpeningState implements State<Context>
-    {
-
-        @Override
-        public int doWork(final Context context) throws Exception
-        {
-            final Raft raft = context.getRaft();
-
-            final long nextHeartbeat = raft.nextHeartbeat();
-
-            final int memberSize = raft.getMemberSize();
-
-            for (int i = 0; i < memberSize; i++)
-            {
-                raft.getMember(i).reset(nextHeartbeat);
-            }
-
-            context.take(TRANSITION_DEFAULT);
-
-            return memberSize;
-        }
-
-        @Override
-        public boolean isInterruptable()
-        {
-            return false;
-        }
-
-    }
-
-    static class OpenState implements State<Context>
-    {
-
-        @Override
-        public int doWork(final Context context) throws Exception
-        {
-            int workCount = 0;
-
-            final Raft raft = context.getRaft();
-
-            final long now = ClockUtil.getCurrentTimeInMillis();
-            final long nextHeartbeat = raft.nextHeartbeat();
-
-            final AppendRequest appendRequest = context.getAppendRequest().reset().setRaft(raft);
-
-            final int memberSize = raft.getMemberSize();
-
-            for (int i = 0; i < memberSize; i++)
-            {
-                final RaftMember member = raft.getMember(i);
-                final boolean heartbeatRequired = member.getHeartbeat() <= now;
-
-                LoggedEventImpl event = null;
-
-                if (!member.hasFailures())
-                {
-                    event = member.getNextEvent();
-                }
-
-                if (event != null || heartbeatRequired)
-                {
-                    workCount++;
-
-                    member.setHeartbeat(nextHeartbeat);
-
-                    appendRequest
-                        .setPreviousEventPosition(member.getPreviousPosition())
-                        .setPreviousEventTerm(member.getPreviousTerm())
-                        .setEvent(event);
-
-                    final boolean sent = raft.sendMessage(member.getRemoteAddress(), appendRequest);
-
-                    if (event != null)
-                    {
-                        if (sent)
-                        {
-                            member.setPreviousEvent(event);
-                        }
-                        else
-                        {
-                            member.setBufferedEvent(event);
-                        }
-                    }
-                }
-
-            }
-
-            return workCount;
-        }
-
-    }
-
-    static class Context extends SimpleStateMachineContext
-    {
-
-        private final Raft raft;
-
-        private final AppendRequest appendRequest = new AppendRequest();
-
-        Context(final StateMachine<Context> stateMachine, final Raft raft)
-        {
-            super(stateMachine);
-            this.raft = raft;
-
-            reset();
-        }
-
-        @Override
-        public void reset()
-        {
-            appendRequest.reset();
-        }
-
-        public Raft getRaft()
-        {
-            return raft;
-        }
-
-        public AppendRequest getAppendRequest()
-        {
-            return appendRequest;
-        }
-
-    }
 }

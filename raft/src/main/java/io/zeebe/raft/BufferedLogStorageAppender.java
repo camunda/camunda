@@ -37,7 +37,7 @@ import org.slf4j.Logger;
 
 public class BufferedLogStorageAppender
 {
-
+    private static final Logger LOG = Loggers.RAFT_LOGGER;
     public static final int INITIAL_CAPACITY = 32 * 1024;
 
     private final BrokerEventMetadata metadata = new BrokerEventMetadata();
@@ -45,7 +45,6 @@ public class BufferedLogStorageAppender
     private final AppendResponse appendResponse = new AppendResponse();
 
     private final Raft raft;
-    private final Logger logger;
     private final LogStream logStream;
     private final BufferedLogStreamReader reader;
 
@@ -65,7 +64,6 @@ public class BufferedLogStorageAppender
     public BufferedLogStorageAppender(final Raft raft)
     {
         this.raft = raft;
-        this.logger = raft.getLogger();
         this.logStream = raft.getLogStream();
         this.reader = new BufferedLogStreamReader(logStream, true);
 
@@ -157,7 +155,7 @@ public class BufferedLogStorageAppender
             }
             else
             {
-                logger.warn("Event to append does not follow previous event {}/{} != {}/{}", lastBufferedPosition, lastBufferedTerm, previousPosition,
+                LOG.warn("Event to append does not follow previous event {}/{} != {}/{}", lastBufferedPosition, lastBufferedTerm, previousPosition,
                     previousTerm);
             }
         }
@@ -175,7 +173,7 @@ public class BufferedLogStorageAppender
         if (previousEventPosition >= lastBufferedPosition || raft.isLogStreamControllerOpen())
         {
             // event is either after our last position or the log stream controller
-            // is still open, which does not allow to truncate the log
+            // is still appendEvent, which does not allow to truncate the log
             rejectAppendRequest(appendRequest, lastBufferedPosition);
         }
         else if (previousEventPosition < currentCommit)

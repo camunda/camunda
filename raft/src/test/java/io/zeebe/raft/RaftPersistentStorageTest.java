@@ -15,22 +15,21 @@
  */
 package io.zeebe.raft;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import io.zeebe.raft.util.ActorSchedulerRule;
 import io.zeebe.raft.util.InMemoryRaftPersistentStorage;
 import io.zeebe.raft.util.RaftClusterRule;
 import io.zeebe.raft.util.RaftRule;
+import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.junit.Rule;
 import org.junit.Test;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 public class RaftPersistentStorageTest
 {
-
     public ActorSchedulerRule actorScheduler = new ActorSchedulerRule();
 
     public RaftRule raft1 = new RaftRule(actorScheduler, "localhost", 8001, "default", 0);
-    public RaftRule raft2 = new RaftRule(actorScheduler, "localhost", 8002, "default", 0, raft1);
+    public RaftRule raft2 = new RaftRule(actorScheduler,  "localhost", 8002, "default", 0, raft1);
 
     @Rule
     public RaftClusterRule cluster = new RaftClusterRule(actorScheduler, raft1, raft2);

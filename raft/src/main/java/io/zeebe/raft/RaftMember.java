@@ -15,9 +15,6 @@
  */
 package io.zeebe.raft;
 
-import static io.zeebe.raft.AppendRequestEncoder.previousEventPositionNullValue;
-import static io.zeebe.raft.AppendRequestEncoder.previousEventTermNullValue;
-
 import io.zeebe.logstreams.impl.LoggedEventImpl;
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
@@ -25,13 +22,15 @@ import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.transport.RemoteAddress;
 
+import static io.zeebe.raft.AppendRequestEncoder.previousEventPositionNullValue;
+import static io.zeebe.raft.AppendRequestEncoder.previousEventTermNullValue;
+
 public class RaftMember
 {
     private final RemoteAddress remoteAddress;
     private final LogStream logStream;
     private final BufferedLogStreamReader reader;
 
-    private long heartbeat;
     private boolean failures;
 
     private long matchPosition;
@@ -77,16 +76,6 @@ public class RaftMember
         return previousTerm;
     }
 
-    public long getHeartbeat()
-    {
-        return heartbeat;
-    }
-
-    public void setHeartbeat(final long heartbeat)
-    {
-        this.heartbeat = heartbeat;
-    }
-
     public void failure()
     {
         failures = true;
@@ -114,9 +103,8 @@ public class RaftMember
         return event;
     }
 
-    public void reset(final long nextHeartbeat)
+    public void reset()
     {
-        setHeartbeat(nextHeartbeat);
         resetFailures();
         setPreviousEventToEndOfLog();
     }

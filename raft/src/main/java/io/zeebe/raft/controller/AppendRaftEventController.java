@@ -15,327 +15,103 @@
  */
 package io.zeebe.raft.controller;
 
-import io.zeebe.logstreams.log.LogStreamFailureListener;
+import io.zeebe.raft.Loggers;
 import io.zeebe.raft.Raft;
 import io.zeebe.raft.event.RaftEvent;
 import io.zeebe.raft.protocol.JoinResponse;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.ServerOutput;
-import io.zeebe.util.state.*;
+import io.zeebe.util.sched.ActorCondition;
+import io.zeebe.util.sched.ActorControl;
 import org.slf4j.Logger;
+
+import java.time.Duration;
 
 public class AppendRaftEventController
 {
+    private static final Logger LOG = Loggers.RAFT_LOGGER;
+    public static final Duration COMMIT_TIMEOUT = Duration.ofSeconds(15);
 
-    private static final int TRANSITION_DEFAULT = 0;
-    private static final int TRANSITION_FAILED = 1;
-    private static final int TRANSITION_OPEN = 2;
-    private static final int TRANSITION_CLOSE = 3;
+    private final Raft raft;
+    private final ActorControl actor;
 
-    private static final StateMachineCommand<Context> CLOSE_COMMAND = context -> context.take(TRANSITION_CLOSE);
+    private final RaftEvent raftEvent = new RaftEvent();
+    private final JoinResponse joinResponse = new JoinResponse();
+    private final ActorCondition actorCondition;
 
-    private final WaitState<Context> committed = context -> { };
+    private long position;
 
-    private final StateMachine<Context> stateMachine;
-    private final StateMachineAgent<Context> stateMachineAgent;
+    // response state
+    private ServerOutput serverOutput;
+    private RemoteAddress remoteAddress;
+    private long requestId;
+    private boolean isCommited;
 
-    public AppendRaftEventController(final Raft raft)
+    public AppendRaftEventController(final Raft raft, ActorControl actorControl)
     {
-        final State<Context> registerFailureListener = new RegisterFailureListenerState();
-        final State<Context> appendRaftEvent = new AppendRaftEventState();
-        final State<Context> awaitAppendRaftEvent = new AwaitAppendRaftEventState();
-        final State<Context> awaitCommitRaftEvent = new AwaitCommitRaftEventState();
+        this.raft = raft;
+        this.actor = actorControl;
 
-        stateMachine = StateMachine.<Context>builder(s -> new Context(s, raft))
-            .initialState(committed)
-            .from(committed).take(TRANSITION_OPEN).to(registerFailureListener)
-            .from(committed).take(TRANSITION_CLOSE).to(committed)
-
-            .from(registerFailureListener).take(TRANSITION_DEFAULT).to(appendRaftEvent)
-
-            .from(appendRaftEvent).take(TRANSITION_DEFAULT).to(awaitAppendRaftEvent)
-            .from(appendRaftEvent).take(TRANSITION_FAILED).to(appendRaftEvent)
-
-            .from(awaitAppendRaftEvent).take(TRANSITION_DEFAULT).to(awaitCommitRaftEvent)
-            .from(awaitAppendRaftEvent).take(TRANSITION_FAILED).to(appendRaftEvent)
-            .from(awaitAppendRaftEvent).take(TRANSITION_OPEN).to(appendRaftEvent)
-            .from(awaitAppendRaftEvent).take(TRANSITION_CLOSE).to(committed)
-
-            .from(awaitCommitRaftEvent).take(TRANSITION_DEFAULT).to(committed)
-            .from(awaitCommitRaftEvent).take(TRANSITION_FAILED).to(appendRaftEvent)
-            .from(awaitCommitRaftEvent).take(TRANSITION_OPEN).to(appendRaftEvent)
-            .from(awaitCommitRaftEvent).take(TRANSITION_CLOSE).to(committed)
-
-            .build();
-
-        stateMachineAgent = new LimitedStateMachineAgent<>(stateMachine);
+        this.actorCondition = actor.onCondition("raft-event-commited", this::commited);
     }
 
-    public int doWork()
-    {
-        return stateMachineAgent.doWork();
-    }
-
-    public void reset()
-    {
-        stateMachineAgent.reset();
-    }
-
-    public void open(final ServerOutput serverOutput, final RemoteAddress remoteAddress, final long requestId)
+    public void appendEvent(final ServerOutput serverOutput, final RemoteAddress remoteAddress, final long requestId)
     {
         // this has to happen immediately so multiple join request are not accepted
-        final Context context = stateMachine.getContext();
-        context.take(TRANSITION_OPEN);
+        this.serverOutput = serverOutput;
+        this.remoteAddress = remoteAddress;
+        this.requestId = requestId;
 
-        context.setServerOutput(serverOutput);
-        context.setRemoteAddress(remoteAddress);
-        context.setRequestId(requestId);
+        final long position = raftEvent.tryWrite(raft);
+        if (position >= 0)
+        {
+            this.position = position;
+            raft.getLogStream().registerOnCommitPositionUpdatedCondition(actorCondition);
+            actor.runDelayed(COMMIT_TIMEOUT, () ->
+            {
+                if (!isCommited)
+                {
+                    actor.submit(() -> appendEvent(serverOutput, remoteAddress, requestId));
+                }
+            });
+        }
+        else
+        {
+            LOG.debug("Failed to append raft event");
+            actor.submit(() -> appendEvent(serverOutput, remoteAddress, requestId));
+        }
     }
 
-    public void close()
+    private void commited()
     {
-        stateMachineAgent.addCommand(CLOSE_COMMAND);
+        if (isCommitted())
+        {
+            LOG.debug("Raft event for term {} was committed on position {}", raft.getTerm(), position);
+
+            // send response
+            acceptJoinRequest();
+
+            isCommited = true;
+            raft.getLogStream().removeOnCommitPositionUpdatedCondition(actorCondition);
+        }
     }
 
     public boolean isCommitted()
     {
-        return stateMachineAgent.getCurrentState() == committed;
+        return position >= 0 && position <= raft.getLogStream().getCommitPosition();
     }
 
-    static class RegisterFailureListenerState implements State<Context>
+    private void acceptJoinRequest()
     {
+        joinResponse
+            .reset()
+            .setSucceeded(true)
+            .setRaft(raft);
 
-        @Override
-        public int doWork(final Context context) throws Exception
-        {
-            // make sure we were unregistered before
-            context.unregisterFailureListener();
-
-            context.registerFailureListener();
-
-            context.take(TRANSITION_DEFAULT);
-
-            return 1;
-        }
-
-        @Override
-        public boolean isInterruptable()
-        {
-            return false;
-        }
-
+        raft.sendResponse(serverOutput, remoteAddress, requestId, joinResponse);
     }
-
-
-    static class AppendRaftEventState implements State<Context>
+    public long getPosition()
     {
-
-        @Override
-        public int doWork(final Context context) throws Exception
-        {
-            final long position = context.tryWriteRaftEvent();
-
-            if (position >= 0)
-            {
-                context.setPosition(position);
-                context.take(TRANSITION_DEFAULT);
-            }
-            else
-            {
-                context.getRaft().getLogger().debug("Failed to append raft event");
-                context.take(TRANSITION_FAILED);
-            }
-
-            return 1;
-        }
-
-        @Override
-        public boolean isInterruptable()
-        {
-            return false;
-        }
-
-    }
-
-    static class AwaitAppendRaftEventState implements State<Context>
-    {
-
-        @Override
-        public int doWork(final Context context) throws Exception
-        {
-            int workCount = 0;
-
-            final Raft raft = context.getRaft();
-            final Logger logger = raft.getLogger();
-
-            if (context.isAppended())
-            {
-                logger.debug("Raft event for term {} was appended in position {}", raft.getTerm(), context.getPosition());
-
-                workCount++;
-                context.take(TRANSITION_DEFAULT);
-            }
-            else if (context.isAppendFailed())
-            {
-                logger.debug("Failed to append initial event in position {}", context.getPosition());
-
-                workCount++;
-                context.take(TRANSITION_FAILED);
-                context.resetPosition();
-            }
-
-            return workCount;
-        }
-
-    }
-
-    static class AwaitCommitRaftEventState implements State<Context>
-    {
-
-        @Override
-        public int doWork(final Context context) throws Exception
-        {
-            int workCount = 0;
-
-            if (context.isCommitted())
-            {
-                workCount++;
-
-                final Raft raft = context.getRaft();
-                raft.getLogger().debug("Raft event for term {} was committed on position {}", raft.getTerm(), context.getPosition());
-
-                // send response
-                context.acceptJoinRequest();
-
-                context.unregisterFailureListener();
-                context.take(TRANSITION_DEFAULT);
-            }
-
-            return workCount;
-        }
-
-    }
-
-
-    static class Context extends SimpleStateMachineContext implements LogStreamFailureListener
-    {
-
-        private final Raft raft;
-
-        private final RaftEvent raftEvent = new RaftEvent();
-        private final JoinResponse joinResponse = new JoinResponse();
-
-        private long position;
-        private long failedPosition;
-
-        // response state
-        private ServerOutput serverOutput;
-        private RemoteAddress remoteAddress;
-        private long requestId;
-
-        Context(final StateMachine<Context> stateMachine, final Raft raft)
-        {
-            super(stateMachine);
-            this.raft = raft;
-
-            reset();
-        }
-
-        @Override
-        public void reset()
-        {
-            raftEvent.reset();
-
-            resetPosition();
-            unregisterFailureListener();
-        }
-
-        public Raft getRaft()
-        {
-            return raft;
-        }
-
-        public long tryWriteRaftEvent()
-        {
-            return raftEvent.tryWrite(raft);
-        }
-
-        public void setPosition(final long position)
-        {
-            this.position = position;
-        }
-
-        public boolean isAppended()
-        {
-            return position >= 0 && position < raft.getLogStream().getCurrentAppenderPosition();
-        }
-
-        public boolean isCommitted()
-        {
-            return position >= 0 && position <= raft.getLogStream().getCommitPosition();
-        }
-
-        public boolean isAppendFailed()
-        {
-            return position >= 0 && failedPosition >= 0 && position >= failedPosition;
-        }
-
-        public void registerFailureListener()
-        {
-            raft.getLogStream().registerFailureListener(this);
-        }
-
-        public void unregisterFailureListener()
-        {
-            raft.getLogStream().removeFailureListener(this);
-        }
-
-        public void resetPosition()
-        {
-            position = -1;
-            failedPosition = -1;
-        }
-
-        @Override
-        public void onFailed(final long failedPosition)
-        {
-            this.failedPosition = failedPosition;
-        }
-
-        @Override
-        public void onRecovered()
-        {
-            // ignore
-        }
-
-        public void setServerOutput(final ServerOutput serverOutput)
-        {
-            this.serverOutput = serverOutput;
-        }
-
-        public void setRemoteAddress(final RemoteAddress remoteAddress)
-        {
-            this.remoteAddress = remoteAddress;
-        }
-
-        public void setRequestId(final long requestId)
-        {
-            this.requestId = requestId;
-        }
-
-        public void acceptJoinRequest()
-        {
-            joinResponse
-                .reset()
-                .setSucceeded(true)
-                .setRaft(raft);
-
-            raft.sendResponse(serverOutput, remoteAddress, requestId, joinResponse);
-        }
-        public long getPosition()
-        {
-            return position;
-        }
-
+        return position;
     }
 }

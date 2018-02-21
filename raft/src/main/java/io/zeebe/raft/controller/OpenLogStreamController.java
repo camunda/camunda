@@ -15,466 +15,143 @@
  */
 package io.zeebe.raft.controller;
 
-import java.util.concurrent.CompletableFuture;
-
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamFailureListener;
+import io.zeebe.raft.Loggers;
 import io.zeebe.raft.Raft;
 import io.zeebe.raft.event.InitialEvent;
-import io.zeebe.util.state.*;
+import io.zeebe.util.sched.ActorCondition;
+import io.zeebe.util.sched.ActorControl;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.slf4j.Logger;
+
+import java.time.Duration;
 
 public class OpenLogStreamController
 {
+    private static final Logger LOG = Loggers.RAFT_LOGGER;
+    public static final Duration COMMIT_TIMEOUT = Duration.ofMinutes(15);
 
-    private static final int TRANSITION_DEFAULT = 0;
-    private static final int TRANSITION_FAILED = 1;
-    private static final int TRANSITION_OPEN = 2;
-    private static final int TRANSITION_CLOSE = 3;
+    private final ActorControl actor;
+    private final Raft raft;
+    private final InitialEvent initialEvent = new InitialEvent();
+    private final ActorCondition actorCondition;
 
-    private static final StateMachineCommand<Context> OPEN_COMMAND = context -> context.take(TRANSITION_OPEN);
-    private static final StateMachineCommand<Context> CLOSE_COMMAND = context -> context.take(TRANSITION_CLOSE);
+    private long position;
+    private long retries = 10;
+    private boolean isCommited;
 
-    private final WaitState<Context> committed = context -> { };
-
-    private final StateMachine<Context> stateMachine;
-    private final StateMachineAgent<Context> stateMachineAgent;
-
-    public OpenLogStreamController(final Raft raft)
+    public OpenLogStreamController(final Raft raft, ActorControl actorControl)
     {
-        final State<Context> openLogController = new OpenLogControllerState();
-        final State<Context> awaitOpenLogController = new AwaitOpenLogControllerState();
-        final State<Context> appendInitialEvent = new AppendInitialEventState();
-        final State<Context> awaitInitialEventAppended = new AwaitInitialEventAppendedState();
-        final State<Context> awaitInitialEventCommitted = new AwaitInitialEventCommittedState();
-        final State<Context> closeLogController = new CloseLogControllerState();
-        final State<Context> awaitCloseLogController = new AwaitCloseLogControllerState();
-        final State<Context> failedToOpenLogController = new FailedToOpenLogControllerState();
-        final WaitState<Context> closed = context -> { };
+        this.raft = raft;
+        this.actor = actorControl;
 
-        stateMachine = StateMachine.<Context>builder(s -> new Context(s, raft))
-            .initialState(closed)
-
-            .from(closed).take(TRANSITION_OPEN).to(openLogController)
-            .from(closed).take(TRANSITION_CLOSE).to(closed)
-
-            .from(openLogController).take(TRANSITION_DEFAULT).to(awaitOpenLogController)
-            .from(openLogController).take(TRANSITION_FAILED).to(failedToOpenLogController)
-
-            .from(awaitOpenLogController).take(TRANSITION_DEFAULT).to(appendInitialEvent)
-            .from(awaitOpenLogController).take(TRANSITION_FAILED).to(openLogController)
-
-            .from(appendInitialEvent).take(TRANSITION_DEFAULT).to(awaitInitialEventAppended)
-            .from(appendInitialEvent).take(TRANSITION_FAILED).to(appendInitialEvent)
-
-            .from(awaitInitialEventAppended).take(TRANSITION_DEFAULT).to(awaitInitialEventCommitted)
-            .from(awaitInitialEventAppended).take(TRANSITION_FAILED).to(appendInitialEvent)
-            .from(awaitInitialEventAppended).take(TRANSITION_OPEN).to(awaitInitialEventAppended)
-            .from(awaitInitialEventAppended).take(TRANSITION_CLOSE).to(closeLogController)
-
-            .from(awaitInitialEventCommitted).take(TRANSITION_DEFAULT).to(committed)
-            .from(awaitInitialEventCommitted).take(TRANSITION_OPEN).to(awaitInitialEventCommitted)
-            .from(awaitInitialEventCommitted).take(TRANSITION_CLOSE).to(closeLogController)
-
-            .from(committed).take(TRANSITION_OPEN).to(committed)
-            .from(committed).take(TRANSITION_CLOSE).to(closeLogController)
-
-            .from(closeLogController).take(TRANSITION_DEFAULT).to(awaitCloseLogController)
-            .from(awaitCloseLogController).take(TRANSITION_DEFAULT).to(closed)
-
-            .from(failedToOpenLogController).take(TRANSITION_DEFAULT).to(closed)
-
-            .build();
-
-        stateMachineAgent = new LimitedStateMachineAgent<>(stateMachine);
+        this.actorCondition = actor.onCondition("raft-event-commited", this::commited);
     }
 
-    public int doWork()
+    public long getPosition()
     {
-        return stateMachineAgent.doWork();
-    }
-
-    public void reset()
-    {
-        stateMachineAgent.reset();
+        return position;
     }
 
     public void open()
     {
-        stateMachineAgent.addCommand(OPEN_COMMAND);
-    }
-
-    public void close()
-    {
-        stateMachineAgent.addCommand(CLOSE_COMMAND);
-    }
-
-    public long getInitialEventPosition()
-    {
-        return stateMachine.getContext().getPosition();
-    }
-
-    public boolean isCommitted()
-    {
-        return stateMachineAgent.getCurrentState() == committed;
-    }
-
-    static class OpenLogControllerState implements State<Context>
-    {
-
-        @Override
-        public int doWork(final Context context) throws Exception
+        if (hasRetriesLeft())
         {
-            if (context.hasRetriesLeft())
+            final LogStream logStream = raft.getLogStream();
+
+            final ActorFuture<Void> future = logStream.openLogStreamController();
+
+            actor.runOnCompletion(future, ((aVoid, throwable) ->
             {
-                final LogStream logStream = context.getRaft().getLogStream();
-
-                context.setFuture(logStream.openLogStreamController());
-                context.take(TRANSITION_DEFAULT);
-            }
-            else
-            {
-                context.take(TRANSITION_FAILED);
-            }
-
-            return 1;
-        }
-
-        @Override
-        public boolean isInterruptable()
-        {
-            return false;
-        }
-
-    }
-
-    static class AwaitOpenLogControllerState implements State<Context>
-    {
-
-        @Override
-        public int doWork(final Context context) throws Exception
-        {
-            int workCount = 0;
-
-            final Logger logger = context.getRaft().getLogger();
-            final CompletableFuture<Void> future = context.getFuture();
-
-            if (future.isDone())
-            {
-                workCount++;
-
-                try
+                if (throwable == null)
                 {
-                    future.get();
-                    context.registerFailureListener();
-                    context.take(TRANSITION_DEFAULT);
+                    retries = 10;
+                    actor.submit(this::appendInitialEvent);
                 }
-                catch (final Exception e)
+                else
                 {
-                    logger.warn("Failed to open log stream controller", e);
-                    context.decreaseRetries();
-                    context.take(TRANSITION_FAILED);
+                    LOG.warn("Failed to sendRequest log stream controller.r", throwable);
+                    decreaseRetries();
+                    actor.submit(this::open);
                 }
-                finally
-                {
-                    context.setFuture(null);
-                }
-            }
-
-            return workCount;
+            }));
         }
-
-        @Override
-        public boolean isInterruptable()
+        else
         {
-            return false;
-        }
-
-    }
-
-    static class AppendInitialEventState implements State<Context>
-    {
-
-        @Override
-        public int doWork(final Context context) throws Exception
-        {
-            final long position = context.tryWriteInitialEvent();
-
-            if (position >= 0)
-            {
-                context.setPosition(position);
-                context.take(TRANSITION_DEFAULT);
-            }
-            else
-            {
-                context.getRaft().getLogger().debug("Failed to append initial event");
-                context.take(TRANSITION_FAILED);
-            }
-
-            return 1;
-        }
-
-        @Override
-        public boolean isInterruptable()
-        {
-            return false;
+            raft.becomeFollower();
         }
     }
 
-    static class AwaitInitialEventAppendedState implements State<Context>
+    private void appendInitialEvent()
     {
-
-        @Override
-        public int doWork(final Context context) throws Exception
-        {
-            int workCount = 0;
-
-            final Raft raft = context.getRaft();
-            final Logger logger = raft.getLogger();
-
-            if (context.isAppended())
-            {
-                logger.debug("Initial event for term {} was appended in position {}", raft.getTerm(), context.getPosition());
-
-                workCount++;
-                context.take(TRANSITION_DEFAULT);
-            }
-            else if (context.isAppendFailed())
-            {
-                logger.debug("Failed to append initial event in position {}", context.getPosition());
-
-                workCount++;
-                context.resetPosition();
-                context.take(TRANSITION_FAILED);
-            }
-
-            return workCount;
-        }
-
-    }
-
-    static class AwaitInitialEventCommittedState implements State<Context>
-    {
-
-        @Override
-        public int doWork(final Context context) throws Exception
-        {
-            int workCount = 0;
-
-            if (context.isCommitted())
-            {
-                final Raft raft = context.getRaft();
-                raft.getLogger().debug("Initial event for term {} was committed on position {}", raft.getTerm(), context.getPosition());
-
-                workCount++;
-                context.take(TRANSITION_DEFAULT);
-            }
-
-            return workCount;
-        }
-
-    }
-
-    static class CloseLogControllerState implements State<Context>
-    {
-
-        @Override
-        public int doWork(final Context context) throws Exception
-        {
-            final LogStream logStream = context.getRaft().getLogStream();
-
-            context.setFuture(logStream.closeLogStreamController());
-            context.take(TRANSITION_DEFAULT);
-
-            return 1;
-        }
-
-        @Override
-        public boolean isInterruptable()
-        {
-            return false;
-        }
-
-    }
-
-    static class AwaitCloseLogControllerState implements State<Context>
-    {
-
-        @Override
-        public int doWork(final Context context) throws Exception
-        {
-            int workCount = 0;
-
-            final Logger logger = context.getRaft().getLogger();
-            final CompletableFuture<Void> future = context.getFuture();
-
-            if (future.isDone())
-            {
-                workCount++;
-
-                try
-                {
-                    future.get();
-                    context.take(TRANSITION_DEFAULT);
-                }
-                catch (final Exception e)
-                {
-                    logger.warn("Failed to close log stream controller", e);
-                    context.take(TRANSITION_DEFAULT);
-                }
-                finally
-                {
-                    context.reset();
-                }
-            }
-
-            return workCount;
-        }
-
-        @Override
-        public boolean isInterruptable()
-        {
-            return false;
-        }
-
-    }
-
-    static class FailedToOpenLogControllerState implements State<Context>
-    {
-
-        @Override
-        public int doWork(final Context context) throws Exception
-        {
-            // step down as we failed to open the log controller to write events
-            context.getRaft().becomeFollower();
-            context.reset();
-            context.take(TRANSITION_DEFAULT);
-            return 1;
-        }
-
-        @Override
-        public boolean isInterruptable()
-        {
-            return false;
-        }
-
-    }
-
-    static class Context extends SimpleStateMachineContext implements LogStreamFailureListener
-    {
-
-        private final Raft raft;
-
-        private final InitialEvent initialEvent = new InitialEvent();
-
-        private CompletableFuture<Void> future;
-        private long position;
-        private long failedPosition;
-        private long retries;
-
-        Context(final StateMachine<Context> stateMachine, final Raft raft)
-        {
-            super(stateMachine);
-            this.raft = raft;
-
-            reset();
-        }
-
-        @Override
-        public void reset()
-        {
-            initialEvent.reset();
-
-            future = null;
-            position = -1;
-            failedPosition = -1;
-            retries = 10;
-
-            unregisterFailureListener();
-        }
-
-        public Raft getRaft()
-        {
-            return raft;
-        }
-
-        public void setFuture(final CompletableFuture<Void> future)
-        {
-            this.future = future;
-        }
-
-        public CompletableFuture<Void> getFuture()
-        {
-            return future;
-        }
-
-        public long tryWriteInitialEvent()
-        {
-            return initialEvent.tryWrite(raft);
-        }
-
-        public void setPosition(final long position)
+        final long position = initialEvent.tryWrite(raft);
+        if (position >= 0)
         {
             this.position = position;
-        }
 
-        public boolean isAppended()
-        {
-            return position >= 0 && position < raft.getLogStream().getCurrentAppenderPosition();
-        }
+            raft.getLogStream().registerOnCommitPositionUpdatedCondition(actorCondition);
+            actor.runDelayed(COMMIT_TIMEOUT, () ->
+            {
+                if (!isCommited)
+                {
+                    actor.submit(() -> appendInitialEvent());
+                }
+            });
 
-        public boolean isCommitted()
-        {
-            return position >= 0 && position <= raft.getLogStream().getCommitPosition();
         }
+        else
+        {
+            LOG.debug("Failed to append initial event");
+            actor.submit(this::appendInitialEvent);
+        }
+    }
 
-        public boolean isAppendFailed()
+    private void commited()
+    {
+        if (isPositionCommited())
         {
-            return position >= 0 && failedPosition >= 0 && position >= failedPosition;
-        }
+            LOG.debug("Initial event for term {} was committed on position {}", raft.getTerm(), position);
 
-        public void registerFailureListener()
-        {
-            raft.getLogStream().registerFailureListener(this);
+            isCommited = true;
+            raft.getLogStream().removeOnCommitPositionUpdatedCondition(actorCondition);
         }
+    }
 
-        public void unregisterFailureListener()
+    public ActorFuture<Void> close()
+    {
+        final CompletableActorFuture<Void> completableActorFuture = new CompletableActorFuture<>();
+        final LogStream logStream = raft.getLogStream();
+        logStream.removeOnCommitPositionUpdatedCondition(actorCondition);
+        actor.runOnCompletion(logStream.closeLogStreamController(), ((aVoid, throwable) ->
         {
-            raft.getLogStream().removeFailureListener(this);
-        }
+            if (throwable != null)
+            {
+                completableActorFuture.completeExceptionally(throwable);
+                LOG.warn("Failed to close log stream controller", throwable);
+            }
+            else
+            {
+                completableActorFuture.complete(null);
+            }
+        }));
+        retries = 10;
+        return completableActorFuture;
+    }
 
-        public void resetPosition()
-        {
-            position = -1;
-            failedPosition = -1;
-        }
+    public boolean isPositionCommited()
+    {
+        return position >= 0 && position <= raft.getLogStream().getCommitPosition();
+    }
 
-        @Override
-        public void onFailed(final long failedPosition)
-        {
-            this.failedPosition = failedPosition;
-        }
+    public boolean hasRetriesLeft()
+    {
+        return retries > 0;
+    }
 
-        @Override
-        public void onRecovered()
-        {
-            // ignore
-        }
-
-        public long getPosition()
-        {
-            return position;
-        }
-
-        public boolean hasRetriesLeft()
-        {
-            return retries > 0;
-        }
-
-        public void decreaseRetries()
-        {
-            retries--;
-        }
+    public void decreaseRetries()
+    {
+        retries--;
     }
 
 }

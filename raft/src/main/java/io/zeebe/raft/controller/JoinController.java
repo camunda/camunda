@@ -15,165 +15,60 @@
  */
 package io.zeebe.raft.controller;
 
+import io.zeebe.raft.Loggers;
 import io.zeebe.raft.Raft;
 import io.zeebe.raft.protocol.JoinRequest;
 import io.zeebe.raft.protocol.JoinResponse;
 import io.zeebe.transport.ClientRequest;
 import io.zeebe.transport.RemoteAddress;
-import io.zeebe.util.state.*;
-import io.zeebe.util.time.ClockUtil;
+import io.zeebe.util.sched.ActorControl;
+import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 
+import java.time.Duration;
+
 public class JoinController
 {
+    private static final Logger LOG = Loggers.RAFT_LOGGER;
 
-    public static final long DEFAULT_JOIN_TIMEOUT_MS = 500;
-    public static final long DEFAULT_JOIN_RETRY_MS = 200;
+    public static final Duration DEFAULT_JOIN_TIMEOUT = Duration.ofMillis(500);
+    public static final Duration DEFAULT_JOIN_RETRY = Duration.ofMillis(200);
 
-    private static final int TRANSITION_DEFAULT = 0;
-    private static final int TRANSITION_FAILED = 1;
-    private static final int TRANSITION_OPEN = 2;
-    private static final int TRANSITION_CLOSE = 3;
-    private static final int TRANSITION_SINGLE_NODE = 4;
-    private static final int TRANSITION_TIMEOUT = 5;
+    private final ActorControl actor;
+    private final JoinRequest joinRequest = new JoinRequest();
+    private final JoinResponse joinResponse = new JoinResponse();
+    private final Raft raft;
 
-    private static final StateMachineCommand<Context> OPEN_COMMAND = context -> context.take(TRANSITION_OPEN);
+    // will not be reset to continue to select new members on every retry
+    private int currentMember;
+    private boolean isJoined;
 
-    private final StateMachineAgent<Context> stateMachineAgent;
-
-    private final WaitState<Context> joined = context -> { };
-
-    public JoinController(final Raft raft)
+    public JoinController(final Raft raft, ActorControl actorControl)
     {
-        final State<Context> sendJoinRequest = new SendJoinRequestState();
-        final State<Context> awaitJoinResponse = new AwaitJoinResponseState();
-        final State<Context> awaitJoinRetry = new AwaitJoinRetry();
-        final State<Context> abortRequest = new AbortRequestState();
-        final WaitState<Context> closed = context -> { };
-
-        final StateMachine<Context> stateMachine = StateMachine.<Context>builder(s -> new Context(s, raft))
-            .initialState(closed)
-            .from(closed).take(TRANSITION_OPEN).to(sendJoinRequest)
-            .from(closed).take(TRANSITION_CLOSE).to(closed)
-
-            .from(sendJoinRequest).take(TRANSITION_DEFAULT).to(awaitJoinResponse)
-            .from(sendJoinRequest).take(TRANSITION_FAILED).to(awaitJoinRetry)
-            .from(sendJoinRequest).take(TRANSITION_SINGLE_NODE).to(joined)
-
-            .from(awaitJoinResponse).take(TRANSITION_DEFAULT).to(joined)
-            .from(awaitJoinResponse).take(TRANSITION_FAILED).to(awaitJoinRetry)
-            .from(awaitJoinResponse).take(TRANSITION_TIMEOUT).to(sendJoinRequest)
-            .from(awaitJoinResponse).take(TRANSITION_OPEN).to(awaitJoinResponse)
-            .from(awaitJoinResponse).take(TRANSITION_CLOSE).to(abortRequest)
-
-            .from(awaitJoinRetry).take(TRANSITION_DEFAULT).to(sendJoinRequest)
-            .from(awaitJoinRetry).take(TRANSITION_OPEN).to(awaitJoinRetry)
-            .from(awaitJoinRetry).take(TRANSITION_CLOSE).to(closed)
-
-            .from(abortRequest).take(TRANSITION_DEFAULT).to(closed)
-
-            .from(joined).take(TRANSITION_OPEN).to(joined)
-            .from(joined).take(TRANSITION_CLOSE).to(closed)
-
-            .build();
-
-        stateMachineAgent = new LimitedStateMachineAgent<>(stateMachine);
+        this.actor = actorControl;
+        this.raft = raft;
     }
 
-    public int doWork()
+    public void join()
     {
-        return stateMachineAgent.doWork();
-    }
+        final RemoteAddress nextMember = getNextMember();
 
-    public void reset()
-    {
-        stateMachineAgent.reset();
-    }
-
-    public void open()
-    {
-        stateMachineAgent.addCommand(OPEN_COMMAND);
-    }
-
-    public boolean isJoined()
-    {
-        return stateMachineAgent.getCurrentState() == joined;
-    }
-
-    static class SendJoinRequestState implements State<Context>
-    {
-
-        @Override
-        public int doWork(final Context context) throws Exception
+        if (nextMember != null)
         {
-            final RemoteAddress nextMember = context.getNextMember();
+            joinRequest.reset().setRaft(raft);
 
-            if (nextMember != null)
+            LOG.debug("Send join request to {}", nextMember);
+            final ActorFuture<ClientRequest> requestFuture = raft.sendRequest(nextMember, joinRequest, DEFAULT_JOIN_TIMEOUT);
+
+            actor.runOnCompletion(requestFuture, ((clientRequest, throwable) ->
             {
-                final Raft raft = context.getRaft();
-
-                final JoinRequest joinRequest = context.getJoinRequest().reset().setRaft(raft);
-
-                try
+                if (throwable == null)
                 {
-                    raft.getLogger().debug("Send join request to {}", nextMember);
-                    final ClientRequest clientRequest = raft.sendRequest(nextMember, joinRequest);
-                    if (clientRequest != null)
-                    {
-                        context.setClientRequest(clientRequest);
-                        context.take(TRANSITION_DEFAULT);
-                    }
-                    else
-                    {
-                        raft.getLogger().debug("Failed to send join request to {}", nextMember);
-                        context.take(TRANSITION_FAILED);
-                    }
-                }
-                catch (final Exception e)
-                {
-                    raft.getLogger().debug("Failed to send join request to {}", nextMember, e);
-                    context.take(TRANSITION_FAILED);
-                }
-            }
-            else
-            {
-                context.take(TRANSITION_SINGLE_NODE);
-            }
-
-            return 1;
-        }
-
-        @Override
-        public boolean isInterruptable()
-        {
-            return false;
-        }
-
-    }
-
-    static class AwaitJoinResponseState implements State<Context>
-    {
-
-        @Override
-        public int doWork(final Context context) throws Exception
-        {
-            int workCount = 0;
-
-            final Raft raft = context.getRaft();
-            final Logger logger = raft.getLogger();
-            final ClientRequest clientRequest = context.getClientRequest();
-
-            if (clientRequest.isDone())
-            {
-                workCount++;
-
-                try
-                {
-                    final JoinResponse joinResponse = context.getJoinResponse();
-
-                    final DirectBuffer responseBuffer = clientRequest.get();
+                    //
+                    final DirectBuffer responseBuffer = clientRequest.join();
                     joinResponse.wrap(responseBuffer, 0, responseBuffer.capacity());
+                    clientRequest.close();
 
                     if (!raft.mayStepDown(joinResponse) && raft.isTermCurrent(joinResponse))
                     {
@@ -182,170 +77,58 @@ public class JoinController
 
                         if (joinResponse.isSucceeded())
                         {
-                            logger.debug("Join request was accepted in term {}", joinResponse.getTerm());
-                            context.take(TRANSITION_DEFAULT);
-
+                            LOG.debug("Join request was accepted in term {}", joinResponse.getTerm());
+                            isJoined = true;
                             // as this will not trigger a state change in raft we have to notify listeners
                             // that this raft is now in a visible state
                             raft.notifyRaftStateListeners();
                         }
                         else
                         {
-                            context.take(TRANSITION_FAILED);
+                            LOG.debug("Join was not accepted!");
+                            actor.runDelayed(DEFAULT_JOIN_RETRY, this::join);
                         }
                     }
                     else
                     {
+                        LOG.debug("Join response with different term.");
                         // received response from different term
-                        context.take(TRANSITION_FAILED);
+                        actor.runDelayed(DEFAULT_JOIN_RETRY, this::join);
                     }
-
                 }
-                catch (final Exception e)
+                else
                 {
-                    logger.debug("Failed to read join response", e);
-                    context.take(TRANSITION_FAILED);
+                    LOG.debug("Failed to send join request to {}", nextMember);
+                    actor.runDelayed(DEFAULT_JOIN_RETRY, this::join);
                 }
-                finally
-                {
-                    context.reset();
-                }
-            }
-            else if (context.isTimeout())
-            {
-                logger.debug("Timeout while waiting for join response");
-                context.take(TRANSITION_TIMEOUT);
-                context.reset();
-            }
-
-            return workCount;
+            }));
         }
-
-    }
-
-    static class AwaitJoinRetry implements WaitState<Context>
-    {
-        long nextJoinInterval;
-
-        @Override
-        public void onEnter(Context context)
+        else
         {
-            nextJoinInterval = ClockUtil.getCurrentTimeInMillis() + DEFAULT_JOIN_RETRY_MS;
-        }
-
-        @Override
-        public void work(Context context)
-        {
-            if (ClockUtil.getCurrentTimeInMillis() >= nextJoinInterval)
-            {
-                context.take(TRANSITION_DEFAULT);
-            }
+            LOG.debug("Joined single node cluster.");
+            isJoined = true;
         }
     }
 
-    static class AbortRequestState implements State<Context>
+    public boolean isJoined()
     {
-
-        @Override
-        public int doWork(final Context context) throws Exception
-        {
-            context.reset();
-
-            return 1;
-        }
-
-
-        @Override
-        public boolean isInterruptable()
-        {
-            return false;
-        }
+        return isJoined;
     }
 
-    static class Context extends SimpleStateMachineContext
+    private RemoteAddress getNextMember()
     {
-
-        private final JoinRequest joinRequest = new JoinRequest();
-        private final JoinResponse joinResponse = new JoinResponse();
-
-        private final Raft raft;
-
-        // will not be reset to continue to select new members on every retry
-        private int currentMember;
-
-        private ClientRequest clientRequest;
-        private long timeout;
-
-        Context(final StateMachine<Context> stateMachine, final Raft raft)
+        final int memberSize = raft.getMemberSize();
+        if (memberSize > 0)
         {
-            super(stateMachine);
-            this.raft = raft;
+            final int nextMember = currentMember % memberSize;
+            currentMember++;
 
-            reset();
+            return raft.getMember(nextMember).getRemoteAddress();
         }
-
-        @Override
-        public void reset()
+        else
         {
-            joinRequest.reset();
-            joinResponse.reset();
-
-            if (clientRequest != null)
-            {
-                clientRequest.close();
-            }
-            clientRequest = null;
-            timeout = -1;
+            return null;
         }
-
-        public Raft getRaft()
-        {
-            return raft;
-        }
-
-        public JoinRequest getJoinRequest()
-        {
-            return joinRequest;
-        }
-
-        public JoinResponse getJoinResponse()
-        {
-            return joinResponse;
-        }
-
-        public RemoteAddress getNextMember()
-        {
-            final int memberSize = raft.getMemberSize();
-            if (memberSize > 0)
-            {
-                final int nextMember = currentMember % memberSize;
-
-                currentMember++;
-
-                return raft.getMember(nextMember).getRemoteAddress();
-            }
-            else
-            {
-                return null;
-            }
-        }
-
-        public void setClientRequest(final ClientRequest clientRequest)
-        {
-            this.timeout = ClockUtil.getCurrentTimeInMillis() + DEFAULT_JOIN_TIMEOUT_MS;
-            this.clientRequest = clientRequest;
-        }
-
-        public ClientRequest getClientRequest()
-        {
-            return clientRequest;
-        }
-
-        public boolean isTimeout()
-        {
-            return ClockUtil.getCurrentTimeInMillis() > timeout;
-        }
-
     }
 
 }

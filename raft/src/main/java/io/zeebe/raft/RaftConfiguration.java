@@ -15,6 +15,8 @@
  */
 package io.zeebe.raft;
 
+import java.time.Duration;
+
 public class RaftConfiguration
 {
     protected int heartbeatIntervalMs = 250;
@@ -24,6 +26,11 @@ public class RaftConfiguration
     public int getHeartbeatIntervalMs()
     {
         return heartbeatIntervalMs;
+    }
+
+    public Duration getHeartbeatInterval()
+    {
+        return Duration.ofMillis(heartbeatIntervalMs);
     }
 
     public RaftConfiguration setHeartbeatIntervalMs(final int heartbeatIntervalMs)
@@ -48,11 +55,17 @@ public class RaftConfiguration
         return flushIntervalMs;
     }
 
+    public Duration getFlushInterval()
+    {
+        return Duration.ofMillis(flushIntervalMs);
+    }
+
     public RaftConfiguration setFlushIntervalMs(final int flushIntervalMs)
     {
         this.flushIntervalMs = flushIntervalMs;
         return this;
     }
+
 
     @Override
     public String toString()
