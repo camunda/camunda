@@ -330,7 +330,7 @@ public class ServiceController extends ZbActor
         }
         catch (Throwable t)
         {
-            LOG.error("Exception while stopping servic %s: %s", this, t);
+            LOG.error("Exception while stopping service {}: {}", this, t);
             fireEvent(ServiceEventType.SERVICE_STOPPED);
         }
     }
