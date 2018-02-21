@@ -16,13 +16,10 @@
 package io.zeebe.util.sched.future;
 
 import java.util.concurrent.Future;
-import java.util.function.BiConsumer;
 
 /** interface for actor futures */
 public interface ActorFuture<V> extends Future<V>
 {
-    ActorFuture<V> onComplete(BiConsumer<V, Throwable> consumer);
-
     void complete(V value);
 
     void completeExceptionally(String failure, Throwable throwable);

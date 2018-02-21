@@ -24,7 +24,6 @@ import java.util.Queue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.BiConsumer;
 
 import static org.agrona.UnsafeAccess.UNSAFE;
 
@@ -51,9 +50,6 @@ public class CompletableActorFuture<V> implements ActorFuture<V>
     protected String failure;
     protected Throwable failureCause;
 
-    private BiConsumer<V, Throwable> onComplete;
-    private CompletableActorFuture<V> onCompletedFuture;
-
     public CompletableActorFuture()
     {
         setAwaitingResult();
@@ -74,13 +70,6 @@ public class CompletableActorFuture<V> implements ActorFuture<V>
         this.failure = throwable.getMessage();
         this.failureCause = throwable;
         this.state = COMPLETED_EXCEPTIONALLY;
-    }
-
-    public CompletableActorFuture<V> onComplete(BiConsumer<V, Throwable> consumer)
-    {
-        this.onCompletedFuture = new CompletableActorFuture<>();
-        this.onComplete = consumer;
-        return onCompletedFuture;
     }
 
     public void setAwaitingResult()
@@ -197,15 +186,6 @@ public class CompletableActorFuture<V> implements ActorFuture<V>
             this.value = value;
             this.state = COMPLETED;
             notifyBlockedTasks();
-
-            if (onComplete != null)
-            {
-                ActorTaskRunner.current().getCurrentTask().submit(() ->
-                {
-                    onComplete.accept(value, null);
-                    onCompletedFuture.complete(value);
-                });
-            }
         }
         else
         {
@@ -226,15 +206,6 @@ public class CompletableActorFuture<V> implements ActorFuture<V>
             this.failureCause = throwable;
             this.state = COMPLETED_EXCEPTIONALLY;
             notifyBlockedTasks();
-
-            if (onComplete != null)
-            {
-                ActorTaskRunner.current().getCurrentTask().submit(() ->
-                {
-                    onComplete.accept(null, throwable);
-                    onCompletedFuture.completeExceptionally(throwable);
-                });
-            }
         }
         else
         {
