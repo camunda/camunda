@@ -15,13 +15,8 @@
  */
 package io.zeebe.util.sched;
 
-import io.zeebe.util.collection.Tuple;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
-import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,8 +24,13 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import io.zeebe.util.collection.Tuple;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
+import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
 
 public class ActorFutureTest
 {
@@ -191,6 +191,48 @@ public class ActorFutureTest
         assertThat(invocations).hasSize(1);
         assertThat(invocations.get(0).getLeft()).isNull();
         assertThat(invocations.get(0).getRight().getMessage()).isEqualTo("bar");
+    }
+
+    @Test
+    public void shouldInvokeCloseCallbackAfterFirstFutureCompletion()
+    {
+        // given
+        final CompletableActorFuture<String> future1 = new CompletableActorFuture<>();
+        final CompletableActorFuture<String> future2 = new CompletableActorFuture<>();
+        final CompletableActorFuture<String> future3 = new CompletableActorFuture<>();
+
+        final List<String> invocations = new ArrayList<>();
+
+        final ZbActor waitingActor = new ZbActor()
+        {
+            @Override
+            protected void onActorStarted()
+            {
+                actor.runOnFirstCompletion(Arrays.asList(future1, future2, future3), (r, t) ->
+                { }, invocations::add);
+            }
+        };
+
+        final ZbActor completingActor = new ZbActor()
+        {
+            @Override
+            protected void onActorStarted()
+            {
+                future1.complete("foo");
+                future2.complete("bar");
+                future3.complete("baz");
+            }
+        };
+
+        schedulerRule.submitActor(waitingActor);
+        schedulerRule.workUntilDone();
+
+        // when
+        schedulerRule.submitActor(completingActor);
+        schedulerRule.workUntilDone();
+
+        // then
+        assertThat(invocations).hasSize(2).contains("bar", "baz");
     }
 
     @Test

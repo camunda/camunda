@@ -206,14 +206,21 @@ public class ActorControl
     }
 
     /**
-     * Like {@link #await(ActorFuture, BiConsumer)} but does not block the actor
+     * Invoke the callback when the given future is completed (successfully or
+     * exceptionally). This call does not block the actor.
+     *
+     * @param future
+     *            the future to wait on
+     * @param callback
+     *            the callback that handle the future's result. The throwable is
+     *            <code>null</code> when the future is completed successfully.
      */
-    public <T> void runOnCompletion(ActorFuture<T> f, BiConsumer<T, Throwable> callback)
+    public <T> void runOnCompletion(ActorFuture<T> future, BiConsumer<T, Throwable> callback)
     {
         final ActorJob currentJob = ensureCalledFromWithinActor("runOnCompletion(...)");
 
         final ActorJob continuationJob = new ActorJob();
-        final FutureContinuationRunnable<T> continuationRunnable = new FutureContinuationRunnable<>(task, f, callback, false);
+        final FutureContinuationRunnable<T> continuationRunnable = new FutureContinuationRunnable<>(task, future, callback, false);
         continuationJob.setRunnable(continuationRunnable);
         continuationJob.setAutoCompleting(true);
         continuationJob.onJobAddedToTask(task);
@@ -224,14 +231,25 @@ public class ActorControl
         final ActorJob registerJob = new ActorJob();
         registerJob.onJobAddedToTask(task);
         registerJob.setAutoCompleting(true);
-        registerJob.setTriggerSubscriptionOnFuture(f, subscription);
+        registerJob.setTriggerSubscriptionOnFuture(future, subscription);
 
         currentJob.appendChild(registerJob);
     }
 
-    public <T> void runOnFirstCompletion(Collection<ActorFuture<T>> futures, BiConsumer<T, Throwable> callback)
+    /**
+     * Invoke the callback when the given futures are completed (successfully or
+     * exceptionally). This call does not block the actor.
+     *
+     * @param futures
+     *            the futures to wait on
+     * @param callback
+     *            The throwable is <code>null</code> when all futures are
+     *            completed successfully. Otherwise, it holds the exception of
+     *            the last completed future.
+     */
+    public <T> void runOnCompletion(Collection<ActorFuture<T>> futures, Consumer<Throwable> callback)
     {
-        final BiConsumer<T, Throwable> futureConsumer = new FirstSuccessfullyCompletedFutureConsumer<>(futures.size(), callback);
+        final BiConsumer<T, Throwable> futureConsumer = new AllCompletedFutureConsumer<>(futures.size(), callback);
 
         for (ActorFuture<T> future : futures)
         {
@@ -239,9 +257,43 @@ public class ActorControl
         }
     }
 
-    public <T> void runOnCompletion(Collection<ActorFuture<T>> futures, Consumer<Throwable> callback)
+    /**
+     * Invoke the callback when the first future is completed successfully, or
+     * when all futures are completed exceptionally. This call does not block
+     * the actor.
+     *
+     * @param futures
+     *            the futures to wait on
+     * @param callback
+     *            the callback that handle the future's result. The throwable is
+     *            <code>null</code> when the first future is completed
+     *            successfully. Otherwise, it holds the exception of the last
+     *            completed future.
+     */
+    public <T> void runOnFirstCompletion(Collection<ActorFuture<T>> futures, BiConsumer<T, Throwable> callback)
     {
-        final BiConsumer<T, Throwable> futureConsumer = new AllCompletedFutureConsumer<>(futures.size(), callback);
+        runOnFirstCompletion(futures, callback, null);
+    }
+
+    /**
+     * Invoke the callback when the first future is completed successfully, or
+     * when all futures are completed exceptionally. This call does not block
+     * the actor.
+     *
+     * @param futures
+     *            the futures to wait on
+     * @param callback
+     *            the callback that handle the future's result. The throwable is
+     *            <code>null</code> when the first future is completed
+     *            successfully. Otherwise, it holds the exception of the last
+     *            completed future.
+     * @param closer
+     *            the callback that is invoked when a future is completed after
+     *            the first future is completed
+     */
+    public <T> void runOnFirstCompletion(Collection<ActorFuture<T>> futures, BiConsumer<T, Throwable> callback, Consumer<T> closer)
+    {
+        final BiConsumer<T, Throwable> futureConsumer = new FirstSuccessfullyCompletedFutureConsumer<>(futures.size(), callback, closer);
 
         for (ActorFuture<T> future : futures)
         {
