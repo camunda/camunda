@@ -55,10 +55,7 @@ public class GossipLeaveTest
         doRepeatedly(() ->
         {
             clock.addTime(CONFIGURATION.getProbeInterval());
-        }).until(v ->
-        {
-            return gossip2.hasMember(gossip3) && gossip3.hasMember(gossip2);
-        });
+        }).until(v -> gossip2.hasMember(gossip3) && gossip3.hasMember(gossip2));
 
         gossip1.clearReceivedEvents();
         gossip2.clearReceivedEvents();

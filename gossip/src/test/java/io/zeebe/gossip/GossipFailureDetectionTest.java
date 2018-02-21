@@ -56,10 +56,7 @@ public class GossipFailureDetectionTest
         doRepeatedly(() ->
         {
             clock.addTime(CONFIGURATION.getProbeInterval());
-        }).until(v ->
-        {
-            return gossip2.hasMember(gossip3) && gossip3.hasMember(gossip2);
-        });
+        }).until(v -> gossip2.hasMember(gossip3) && gossip3.hasMember(gossip2));
 
         gossip1.clearReceivedEvents();
         gossip2.clearReceivedEvents();
@@ -73,15 +70,9 @@ public class GossipFailureDetectionTest
         doRepeatedly(() ->
         {
             clock.addTime(CONFIGURATION.getProbeInterval());
-        }).until(v ->
-        {
-            return gossip1.receivedEvent(GossipEventType.PING, gossip2) &&
-                    gossip1.receivedEvent(GossipEventType.PING, gossip3) &&
-                    gossip2.receivedEvent(GossipEventType.PING, gossip1) &&
-                    gossip2.receivedEvent(GossipEventType.PING, gossip3) &&
-                    gossip3.receivedEvent(GossipEventType.PING, gossip1) &&
-                    gossip3.receivedEvent(GossipEventType.PING, gossip2);
-        });
+        })  .until(v -> gossip1.receivedEvent(GossipEventType.PING, gossip2) && gossip1.receivedEvent(GossipEventType.PING, gossip3)
+                && gossip2.receivedEvent(GossipEventType.PING, gossip1) && gossip2.receivedEvent(GossipEventType.PING, gossip3)
+                && gossip3.receivedEvent(GossipEventType.PING, gossip1) && gossip3.receivedEvent(GossipEventType.PING, gossip2));
 
         // then
         assertThat(gossip1.receivedEvent(GossipEventType.ACK, gossip2)).isTrue();
@@ -104,13 +95,8 @@ public class GossipFailureDetectionTest
         doRepeatedly(() ->
         {
             clock.addTime(CONFIGURATION.getProbeInterval());
-        }).until(v ->
-        {
-            return gossip3.receivedEvent(GossipEventType.PING_REQ, gossip1) &&
-                    gossip2.receivedEvent(GossipEventType.PING, gossip3) &&
-                    gossip3.receivedEvent(GossipEventType.ACK, gossip2) &&
-                    gossip1.receivedEvent(GossipEventType.ACK, gossip3);
-        });
+        })  .until(v -> gossip3.receivedEvent(GossipEventType.PING_REQ, gossip1) && gossip2.receivedEvent(GossipEventType.PING, gossip3)
+                && gossip3.receivedEvent(GossipEventType.ACK, gossip2) && gossip1.receivedEvent(GossipEventType.ACK, gossip3));
 
         // then
         assertThat(gossip2.receivedEvent(GossipEventType.PING, gossip1)).isFalse();
@@ -131,11 +117,8 @@ public class GossipFailureDetectionTest
         doRepeatedly(() ->
         {
             clock.addTime(CONFIGURATION.getProbeInterval());
-        }).until(v ->
-        {
-            return gossip1.receivedMembershipEvent(MembershipEventType.SUSPECT, gossip3)
-                    && gossip2.receivedMembershipEvent(MembershipEventType.SUSPECT, gossip3);
-        });
+        })  .until(v -> gossip1.receivedMembershipEvent(MembershipEventType.SUSPECT, gossip3)
+                && gossip2.receivedMembershipEvent(MembershipEventType.SUSPECT, gossip3));
 
         // then
         assertThat(gossip1.hasMember(gossip3)).isTrue();
@@ -153,11 +136,8 @@ public class GossipFailureDetectionTest
         doRepeatedly(() ->
         {
             clock.addTime(CONFIGURATION.getProbeInterval());
-        }).until(v ->
-        {
-            return gossip1.receivedMembershipEvent(MembershipEventType.CONFIRM, gossip3)
-                    && gossip2.receivedMembershipEvent(MembershipEventType.CONFIRM, gossip3);
-        });
+        })  .until(v -> gossip1.receivedMembershipEvent(MembershipEventType.CONFIRM, gossip3)
+                && gossip2.receivedMembershipEvent(MembershipEventType.CONFIRM, gossip3));
 
         // then
         assertThat(gossip1.hasMember(gossip3)).isFalse();
@@ -174,11 +154,8 @@ public class GossipFailureDetectionTest
         doRepeatedly(() ->
         {
             clock.addTime(CONFIGURATION.getProbeInterval());
-        }).until(v ->
-        {
-            return gossip1.receivedMembershipEvent(MembershipEventType.SUSPECT, gossip3)
-                    && gossip2.receivedMembershipEvent(MembershipEventType.SUSPECT, gossip3);
-        });
+        })  .until(v -> gossip1.receivedMembershipEvent(MembershipEventType.SUSPECT, gossip3)
+                && gossip2.receivedMembershipEvent(MembershipEventType.SUSPECT, gossip3));
 
         final MembershipEvent suspectEvent = gossip1.getReceivedMembershipEvents(MembershipEventType.SUSPECT, gossip3)
                 .findFirst()
@@ -192,12 +169,9 @@ public class GossipFailureDetectionTest
         doRepeatedly(() ->
         {
             clock.addTime(CONFIGURATION.getProbeInterval());
-        }).until(v ->
-        {
-            return gossip3.receivedMembershipEvent(MembershipEventType.SUSPECT, gossip3) &&
-                    gossip1.getReceivedMembershipEvents(MembershipEventType.ALIVE, gossip3)
-                           .anyMatch(e -> e.getGossipTerm().isGreaterThan(suspectEvent.getGossipTerm()));
-        });
+        })  .until(v -> gossip3.receivedMembershipEvent(MembershipEventType.SUSPECT, gossip3) &&
+                 gossip1.getReceivedMembershipEvents(MembershipEventType.ALIVE, gossip3)
+                     .anyMatch(e -> e.getGossipTerm().isGreaterThan(suspectEvent.getGossipTerm())));
     }
 
 }

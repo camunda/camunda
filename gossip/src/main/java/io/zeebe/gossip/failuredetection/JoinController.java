@@ -133,6 +133,8 @@ public class JoinController
                 final DirectBuffer response = request.join();
                 ackResponse.wrap(response, 0, response.capacity());
 
+                request.close();
+
                 final SocketAddress contactPoint = ackResponse.getSender();
                 actor.submit(() -> sendSyncRequest(contactPoint));
             }
@@ -142,7 +144,7 @@ public class JoinController
 
                 actor.runDelayed(configuration.getJoinInterval(), this::sendJoinEvent);
             }
-        });
+        }, ClientRequest::close);
     }
 
     private void sendSyncRequest(final SocketAddress contactPoint)
@@ -161,6 +163,8 @@ public class JoinController
                 // process response
                 final DirectBuffer response = request.join();
                 syncResponse.wrap(response, 0, response.capacity());
+
+                request.close();
 
                 isJoined = true;
                 joinFuture.complete(null);
@@ -242,6 +246,14 @@ public class JoinController
             {
                 LOG.info("Left cluster but timeout is reached before event is confirmed by all members");
             }
+
+            requestFutures.forEach(future ->
+            {
+                if (!future.isCompletedExceptionally())
+                {
+                    future.join().close();
+                }
+            });
 
             isJoined = false;
             leaveFuture.complete(null);

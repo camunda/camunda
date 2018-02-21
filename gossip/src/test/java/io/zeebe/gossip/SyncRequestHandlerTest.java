@@ -107,10 +107,7 @@ public class SyncRequestHandlerTest
         doRepeatedly(() ->
         {
             clock.addTime(CONFIGURATION.getProbeInterval());
-        }).until(v ->
-        {
-            return gossip2.getReceivedCustomEvents(TYPE_1, gossip1).count() == spreadCount;
-        });
+        }).until(v -> gossip2.getReceivedCustomEvents(TYPE_1, gossip1).count() == spreadCount);
 
         // when
         gossip3.join(gossip1).join();
@@ -143,10 +140,7 @@ public class SyncRequestHandlerTest
         doRepeatedly(() ->
         {
             clock.addTime(CONFIGURATION.getProbeInterval());
-        }).until(v ->
-        {
-            return gossip2.getReceivedCustomEvents(TYPE_1, gossip2).count() == spreadCount;
-        });
+        }).until(v -> gossip2.getReceivedCustomEvents(TYPE_1, gossip2).count() == spreadCount);
 
         // when
         gossip3.join(gossip1).join();
@@ -188,10 +182,7 @@ public class SyncRequestHandlerTest
         doRepeatedly(() ->
         {
             clock.addTime(CONFIGURATION.getProbeInterval());
-        }).until(v ->
-        {
-            return gossip2.getReceivedCustomEvents(TYPE_1, gossip1).count() == spreadCount;
-        });
+        }).until(v -> gossip2.getReceivedCustomEvents(TYPE_1, gossip1).count() == spreadCount);
 
         // when
         gossip3.join(gossip1).join();
@@ -231,10 +222,7 @@ public class SyncRequestHandlerTest
         doRepeatedly(() ->
         {
             clock.addTime(CONFIGURATION.getProbeInterval());
-        }).until(v ->
-        {
-            return gossip2.getReceivedCustomEvents(TYPE_1, gossip1).count() == spreadCount;
-        });
+        }).until(v -> gossip2.getReceivedCustomEvents(TYPE_1, gossip1).count() == spreadCount);
 
         // when
         gossip3.join(gossip1).join();
@@ -271,11 +259,8 @@ public class SyncRequestHandlerTest
         final ActorFuture<Void> joinFuture1 = gossip2.join(gossip1);
         final ActorFuture<Void> joinFuture2 = gossip3.join(gossip1);
 
-        waitUntil(() ->
-        {
-            return gossip1.receivedEvent(GossipEventType.SYNC_REQUEST, gossip2) &&
-                    gossip1.receivedEvent(GossipEventType.SYNC_REQUEST, gossip3);
-        });
+        waitUntil(() -> gossip1.receivedEvent(GossipEventType.SYNC_REQUEST, gossip2) &&
+                  gossip1.receivedEvent(GossipEventType.SYNC_REQUEST, gossip3));
 
         syncRequestFuture.complete(null);
 

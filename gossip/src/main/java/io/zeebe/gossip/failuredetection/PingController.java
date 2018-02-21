@@ -94,6 +94,8 @@ public class PingController
                     final DirectBuffer response = request.join();
                     ackResponse.wrap(response, 0, response.capacity());
 
+                    request.close();
+
                     actor.runDelayed(configuration.getProbeInterval(), this::sendPing);
                 }
                 else
@@ -142,6 +144,8 @@ public class PingController
                 final DirectBuffer response = request.join();
                 ackResponse.wrap(response, 0, response.capacity());
 
+                request.close();
+
                 actor.runDelayed(configuration.getProbeInterval(), this::sendPing);
             }
             else
@@ -150,7 +154,7 @@ public class PingController
 
                 actor.submit(this::sendSuspect);
             }
-        });
+        }, ClientRequest::close);
     }
 
     private void sendSuspect()

@@ -71,10 +71,7 @@ public class CustomEventTest
         doRepeatedly(() ->
         {
             clock.addTime(CONFIGURATION.getProbeInterval());
-        }).until(v ->
-        {
-            return gossip2.hasMember(gossip3) && gossip3.hasMember(gossip2);
-        });
+        }).until(v -> gossip2.hasMember(gossip3) && gossip3.hasMember(gossip2));
 
         gossip1.clearReceivedEvents();
         gossip2.clearReceivedEvents();
@@ -90,10 +87,7 @@ public class CustomEventTest
         doRepeatedly(() ->
         {
             clock.addTime(CONFIGURATION.getProbeInterval());
-        }).until(v ->
-        {
-            return gossip2.receivedCustomEvent(TYPE_1, gossip1);
-        });
+        }).until(v -> gossip2.receivedCustomEvent(TYPE_1, gossip1));
 
         // then
         final CustomEvent customEvent = gossip2.getReceivedCustomEvents(TYPE_1, gossip1).findFirst().get();
@@ -111,11 +105,7 @@ public class CustomEventTest
         doRepeatedly(() ->
         {
             clock.addTime(CONFIGURATION.getProbeInterval());
-        }).until(v ->
-        {
-            return gossip2.receivedCustomEvent(TYPE_1, gossip1) &&
-                    gossip3.receivedCustomEvent(TYPE_1, gossip1);
-        });
+        }).until(v -> gossip2.receivedCustomEvent(TYPE_1, gossip1) && gossip3.receivedCustomEvent(TYPE_1, gossip1));
 
         // then
         final CustomEvent customEvent = gossip2.getReceivedCustomEvents(TYPE_1, gossip1).findFirst().get();
@@ -142,10 +132,7 @@ public class CustomEventTest
         doRepeatedly(() ->
         {
             clock.addTime(CONFIGURATION.getProbeInterval());
-        }).until(v ->
-        {
-            return gossip2.receivedCustomEvent(TYPE_1, gossip1);
-        });
+        }).until(v -> gossip2.receivedCustomEvent(TYPE_1, gossip1));
 
         // then
         assertThat(customEventListener.getInvocations().count()).isEqualTo(1);
@@ -173,11 +160,7 @@ public class CustomEventTest
         doRepeatedly(() ->
         {
             clock.addTime(CONFIGURATION.getProbeInterval());
-        }).until(v ->
-        {
-            return gossip2.receivedCustomEvent(TYPE_1, gossip1) &&
-                    gossip3.receivedCustomEvent(TYPE_1, gossip1);
-        });
+        }).until(v -> gossip2.receivedCustomEvent(TYPE_1, gossip1) && gossip3.receivedCustomEvent(TYPE_1, gossip1));
 
         // then
         assertThat(customEventListener2.getInvocations().count()).isEqualTo(1);
@@ -214,10 +197,7 @@ public class CustomEventTest
         doRepeatedly(() ->
         {
             clock.addTime(CONFIGURATION.getProbeInterval());
-        }).until(v ->
-        {
-            return customEventListener.getInvocations().count() == customEventCount;
-        });
+        }).until(v -> customEventListener.getInvocations().count() == customEventCount);
 
         // then
         final List<ReceivedCustomEvent> customEvents = customEventListener.getInvocations().collect(toList());
@@ -251,11 +231,7 @@ public class CustomEventTest
         doRepeatedly(() ->
         {
             clock.addTime(CONFIGURATION.getProbeInterval());
-        }).until(v ->
-        {
-            return customEventListener1.getInvocations().count() == 1 &&
-                    customEventListener2.getInvocations().count() == 1;
-        });
+        }).until(v -> customEventListener1.getInvocations().count() == 1 && customEventListener2.getInvocations().count() == 1);
 
         // then
         final ReceivedCustomEvent customEvent1 = customEventListener1.getInvocations().findFirst().get();
@@ -278,10 +254,7 @@ public class CustomEventTest
         TestUtil.doRepeatedly(() ->
         {
             clock.addTime(CONFIGURATION.getProbeInterval());
-        }).until(v ->
-        {
-            return gossip1.receivedCustomEvent(TYPE_1, gossip1);
-        });
+        }).until(v -> gossip1.receivedCustomEvent(TYPE_1, gossip1));
 
         // then
         assertThat(invoked.get()).isFalse();
@@ -298,10 +271,7 @@ public class CustomEventTest
         doRepeatedly(() ->
         {
             clock.addTime(CONFIGURATION.getProbeInterval());
-        }).until(v ->
-        {
-            return gossip2.receivedCustomEvent(TYPE_2, gossip1);
-        });
+        }).until(v -> gossip2.receivedCustomEvent(TYPE_2, gossip1));
 
         // then
         assertThat(gossip2.getReceivedCustomEvents(TYPE_1, gossip1).distinct())
@@ -330,10 +300,7 @@ public class CustomEventTest
         doRepeatedly(() ->
         {
             clock.addTime(CONFIGURATION.getProbeInterval());
-        }).until(v ->
-        {
-            return gossip2.receivedCustomEvent(TYPE_1, gossip1);
-        });
+        }).until(v -> gossip2.receivedCustomEvent(TYPE_1, gossip1));
 
         // then
         assertThat(counter.get()).isEqualTo(3);
@@ -359,10 +326,7 @@ public class CustomEventTest
         doRepeatedly(() ->
         {
             clock.addTime(CONFIGURATION.getProbeInterval());
-        }).until(v ->
-        {
-            return gossip2.receivedCustomEvent(TYPE_1, gossip1);
-        });
+        }).until(v -> gossip2.receivedCustomEvent(TYPE_1, gossip1));
 
         // then
         assertThat(counter.get()).isEqualTo(2);
@@ -389,10 +353,7 @@ public class CustomEventTest
         doRepeatedly(() ->
         {
             clock.addTime(CONFIGURATION.getProbeInterval());
-        }).until(v ->
-        {
-            return counter.get() == 2;
-        });
+        }).until(v -> counter.get() == 2);
     }
 
 }
