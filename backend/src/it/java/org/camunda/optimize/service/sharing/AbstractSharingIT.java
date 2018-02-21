@@ -146,7 +146,7 @@ public abstract class AbstractSharingIT {
   }
 
   protected String addShareForDashboard(String token, String dashboardId) {
-    DashboardShareDto share = createDashboardShare(dashboardId);
+    DashboardShareDto share = createDashboardShareDto(dashboardId);
     Response response = createDashboardShareResponse(token, share);
 
     return response.readEntity(IdDto.class).getId();
@@ -177,7 +177,7 @@ public abstract class AbstractSharingIT {
     return sharingDto;
   }
 
-  protected DashboardShareDto createDashboardShare(String dashboardId) {
+  protected DashboardShareDto createDashboardShareDto(String dashboardId) {
     DashboardShareDto sharingDto = new DashboardShareDto();
     sharingDto.setDashboardId(dashboardId);
     sharingDto.setType(SharedResourceType.DASHBOARD);
