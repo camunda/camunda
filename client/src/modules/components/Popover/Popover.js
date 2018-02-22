@@ -14,11 +14,13 @@ export default class Popover extends React.Component {
   }
 
   componentDidMount() {
+    this.mounted = true;
     document.body.addEventListener('click', this.close);
   }
 
   componentWillUnmount() {
     document.body.removeEventListener('click', this.close);
+    this.mounted = false;
   }
 
   toggleOpen = evt => {
@@ -34,7 +36,7 @@ export default class Popover extends React.Component {
     // so we know whether the click occured inside the popover,
     // in which case we do not want to close the popover
     setTimeout(() => {
-      if(!evt.inOverlay) {
+      if(!evt.inOverlay && this.mounted) {
         this.setState({
           open: false
         });
