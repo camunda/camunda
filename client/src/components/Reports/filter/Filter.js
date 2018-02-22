@@ -55,16 +55,16 @@ export default class Filter extends React.Component {
 
   addFilter = (...newFilters) => {
     let filters = this.props.data;
-    filters = this.filterUniqueFilters(filters, newFilters[0].type, ['date', 'rollingDate']);
-    filters = this.filterUniqueFilters(filters, newFilters[0].type, ['runningInstancesOnly', 'completedInstancesOnly']);  
+    filters = this.filterIncompatibleExistingFilters(filters, newFilters[0].type, ['date', 'rollingDate']);
+    filters = this.filterIncompatibleExistingFilters(filters, newFilters[0].type, ['runningInstancesOnly', 'completedInstancesOnly']);  
 
     this.props.onChange({'filter': [...filters, ...newFilters]});
     this.closeModal();
   }
 
-  filterUniqueFilters = (filters, newFilterType, uniqueTypes)  => {
+  filterIncompatibleExistingFilters = (filters, newFilterType, uniqueTypes)  => {
     if(uniqueTypes.includes(newFilterType)) {
-      filters = filters.filter(({type}) => !uniqueTypes.includes(type));
+      return filters.filter(({type}) => !uniqueTypes.includes(type));
     }
     return filters;
   }
@@ -80,18 +80,9 @@ export default class Filter extends React.Component {
     this.props.processDefinitionId === '';
   }
 
-  filterByRunningInstancesOnly = (evt) => {
-    evt.preventDefault();
+  filterByInstancesOnly = type => evt => {
     this.addFilter({
-      type: 'runningInstancesOnly',
-      data: null
-    });
-  }
-
-  filterByCompletedInstancesOnly = (evt) => {
-    evt.preventDefault();
-    this.addFilter({
-      type: 'completedInstancesOnly',
+      type,
       data: null
     });
   }
@@ -106,8 +97,8 @@ export default class Filter extends React.Component {
       <label htmlFor='ControlPanel__filters' className='visually-hidden'>Filters</label>
       <FilterList processDefinitionId={this.props.processDefinitionId} openEditFilterModal={this.openEditFilterModal} data={this.props.data} deleteFilter={this.deleteFilter} />
       <Dropdown label='Add Filter' id='ControlPanel__filters' className='Filter__dropdown' >
-        <Dropdown.Option onClick={this.filterByRunningInstancesOnly}>Running Instances Only</Dropdown.Option>
-        <Dropdown.Option onClick={this.filterByCompletedInstancesOnly}>Completed Instances Only</Dropdown.Option>
+        <Dropdown.Option onClick={this.filterByInstancesOnly('runningInstancesOnly')}>Running Instances Only</Dropdown.Option>
+        <Dropdown.Option onClick={this.filterByInstancesOnly('completedInstancesOnly')}>Completed Instances Only</Dropdown.Option>
         <Dropdown.Option onClick={this.openNewFilterModal('date')}>Start Date</Dropdown.Option>
         <Dropdown.Option onClick={this.openNewFilterModal('processInstanceDuration')}>Duration</Dropdown.Option>
         <Dropdown.Option disabled={this.processDefinitionIsNotSelected()} onClick={this.openNewFilterModal('variable')}>Variable</Dropdown.Option>
