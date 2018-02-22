@@ -11,16 +11,12 @@
     "heatmap.js": "^2.0.5",
     "immutability-helper": "^2.6.0",
     "moment": "^2.19.1",
-    "node-sass-chokidar": "^0.0.3",
-    "npm-run-all": "^4.1.2",
     "object.values": "^1.0.4",
     "react": "16.2.0",
     "react-date-range": "^0.9.4",
     "react-dom": "16.2.0",
     "react-router-dom": "^4.2.2",
-    "react-scripts": "1.0.14",
-    "string.prototype.includes": "^1.0.0",
-    "license-checker": "^14.0.0"
+    "string.prototype.includes": "^1.0.0"
   },
   "scripts": {
     "build-css": "node-sass-chokidar --include-path ./src/shared-styles src/ -o src/",
@@ -42,6 +38,10 @@
     "enzyme-adapter-react-16": "^1.0.2",
     "jest-enzyme": "^4.0.1",
     "js-yaml": "^3.10.0",
+    "license-checker": "^14.0.0",
+    "node-sass-chokidar": "^0.0.3",
+    "npm-run-all": "^4.1.2",
+    "react-scripts": "1.0.14",
     "request": "^2.83.0",
     "shelljs": "^0.7.8",
     "tarball-extract": "^0.0.6"
