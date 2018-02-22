@@ -213,7 +213,7 @@ public class SharingService  {
 
   private List<ReportShareLocationDto> constructReportShares(List<ReportLocationDto> reports, List<String> reportShares) {
     List<ReportShareLocationDto> result = null;
-    if (reports != null) {
+    if (reports != null && !reports.isEmpty()) {
       Map<String, ReportLocationDto> reportLocationsMap = new HashMap<>();
       for (ReportLocationDto report : reports) {
         String key = getReportKey(report);
@@ -229,6 +229,8 @@ public class SharingService  {
           result.add(toAdd);
         }
       }
+    } else {
+      return new ArrayList<>();
     }
     return result;
   }
