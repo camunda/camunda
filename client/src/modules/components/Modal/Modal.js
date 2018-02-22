@@ -14,6 +14,7 @@ export default class Modal extends React.Component {
     document.body.appendChild(this.el);
     this.fixPositioning();
     this.setFocus();
+    new MutationObserver(this.fixPositioning).observe(this.el, {childList: true, subtree: true});
   }
 
   componentWillUnmount() {
@@ -63,8 +64,8 @@ export default class Modal extends React.Component {
     if(open) {
       return ReactDOM.createPortal(
         <div className='Modal' onClick={this.onBackdropClick}>
-          <div className={(`Modal__container ${this.props.className || ''}`) + (this.props.size ? ' Modal__container--' + this.props.size : '')} 
-              tabIndex="-1" 
+          <div className={(`Modal__container ${this.props.className || ''}`) + (this.props.size ? ' Modal__container--' + this.props.size : '')}
+              tabIndex="-1"
               ref={this.storeContainer}
               onClick={this.catchClick} onKeyDown={this.handleKeyPress}>
             {children}
