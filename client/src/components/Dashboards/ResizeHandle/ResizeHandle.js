@@ -19,6 +19,7 @@ export default class ResizeHandle extends React.Component {
     evt.preventDefault();
 
     this.reportCard = this.resizeHandle.closest('.DashboardObject');
+    this.scrollContainer = this.resizeHandle.closest('main');
 
     if(this.dragging) {
       // do not reset previous drag values in case drag-end did not register
@@ -39,13 +40,13 @@ export default class ResizeHandle extends React.Component {
       height: parseInt(this.reportCard.style.height, 10)
     };
     this.startScrollPosition = {
-      x: window.pageXOffset,
-      y: window.pageYOffset
+      x: this.scrollContainer.scrollLeft,
+      y: this.scrollContainer.scrollTop
     };
 
     document.body.addEventListener('mousemove', this.saveMouseAndUpdateCardSize);
     document.body.addEventListener('mouseup', this.stopDragging);
-    window.addEventListener('scroll', this.updateCardSize);
+    this.scrollContainer.addEventListener('scroll', this.updateCardSize);
 
     // make sure report card is topmost element
     this.reportCard.parentNode.appendChild(this.reportCard);
@@ -64,11 +65,11 @@ export default class ResizeHandle extends React.Component {
 
   updateCardSize = () => {
     this.reportCard.style.width = Math.max(
-      this.cardStartSize.width + this.lastMousePosition.x - this.mouseStartPosition.x + window.pageXOffset - this.startScrollPosition.x,
+      this.cardStartSize.width + this.lastMousePosition.x - this.mouseStartPosition.x + this.scrollContainer.scrollLeft - this.startScrollPosition.x,
       this.props.tileDimensions.innerWidth
     ) + 'px';
     this.reportCard.style.height = Math.max(
-      this.cardStartSize.height + this.lastMousePosition.y - this.mouseStartPosition.y + window.pageYOffset - this.startScrollPosition.y,
+      this.cardStartSize.height + this.lastMousePosition.y - this.mouseStartPosition.y + this.scrollContainer.scrollTop - this.startScrollPosition.y,
       this.props.tileDimensions.innerHeight
     ) + 'px';
   }
@@ -82,7 +83,7 @@ export default class ResizeHandle extends React.Component {
 
     document.body.removeEventListener('mousemove', this.saveMouseAndUpdateCardSize);
     document.body.removeEventListener('mouseup', this.stopDragging);
-    window.removeEventListener('scroll', this.updateCardSize);
+    this.scrollContainer.removeEventListener('scroll', this.updateCardSize);
 
     const newPlacement = snapInPosition({
       tileDimensions: this.props.tileDimensions,

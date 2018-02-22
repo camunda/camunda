@@ -33,7 +33,7 @@ const props = {
 
 it('should call the dragStart callback when starting to drag', () => {
   const spy = jest.fn();
-  const node = mount(<div className='DashboardObject'><DragBehavior onDragStart={spy} /></div>);
+  const node = mount(<main><div className='DashboardObject'><DragBehavior onDragStart={spy} /></div></main>);
 
   node.find(DragBehavior).instance().startDragging({preventDefault: jest.fn()});
 
@@ -42,19 +42,19 @@ it('should call the dragStart callback when starting to drag', () => {
 
 it('should add dragging CSS class to surrounding dashboard object', () => {
   const spy = jest.fn();
-  const node = mount(<div className='DashboardObject'><DragBehavior onDragStart={spy} /></div>);
+  const node = mount(<main><div className='DashboardObject'><DragBehavior onDragStart={spy} /></div></main>);
 
   node.find(DragBehavior).instance().startDragging({preventDefault: jest.fn()});
 
-  expect(node.getDOMNode().className).toContain('DragBehavior--dragging');
+  expect(node.find('.DashboardObject').getDOMNode().className).toContain('DragBehavior--dragging');
 });
 
 it('should update the x and y position of the report when dragging', () => {
   const spy = jest.fn();
-  const node = mount(<div className='DashboardObject' style={{
+  const node = mount(<main><div className='DashboardObject' style={{
     top: '10px',
     left: '10px'
-  }}><DragBehavior onDragStart={spy} /></div>);
+  }}><DragBehavior onDragStart={spy} /></div></main>);
 
   node.find(DragBehavior).instance().startDragging({
     preventDefault: jest.fn(),
@@ -67,28 +67,28 @@ it('should update the x and y position of the report when dragging', () => {
     screenY: 5
   });
 
-  expect(node.getDOMNode().style.top).toBe('15px');
-  expect(node.getDOMNode().style.left).toBe('15px');
+  expect(node.find('.DashboardObject').getDOMNode().style.top).toBe('15px');
+  expect(node.find('.DashboardObject').getDOMNode().style.left).toBe('15px');
 });
 
 it('should update the x and y position of the report when scrolling', () => {
   const spy = jest.fn();
-  const node = mount(<div className='DashboardObject' style={{
+  const node = mount(<main><div className='DashboardObject' style={{
     top: '10px',
     left: '10px'
-  }}><DragBehavior onDragStart={spy} /></div>);
-  window.pageYOffset = 0;
+  }}><DragBehavior onDragStart={spy} /></div></main>);
+  node.getDOMNode().scrollTop = 0;
   node.find(DragBehavior).instance().startDragging({
     preventDefault: jest.fn(),
     screenX: 0,
     screenY: 0
   });
 
-  window.pageYOffset = 5;
+  node.getDOMNode().scrollTop = 5;
   node.find(DragBehavior).instance().updateCardPosition();
 
-  expect(node.getDOMNode().style.top).toBe('15px');
-  expect(node.getDOMNode().style.left).toBe('10px');
+  expect(node.find('.DashboardObject').getDOMNode().style.top).toBe('15px');
+  expect(node.find('.DashboardObject').getDOMNode().style.left).toBe('10px');
 });
 
 it('should call the update report callback on drop', () => {
@@ -97,10 +97,10 @@ it('should call the update report callback on drop', () => {
     dimensions: {width: 1, height: 1}
   });
   const spy = jest.fn();
-  const node = mount(<div className='DashboardObject' style={{
+  const node = mount(<main><div className='DashboardObject' style={{
     top: '0px',
     left: '0px'
-  }}><DragBehavior {...props} updateReport={spy} /></div>);
+  }}><DragBehavior {...props} updateReport={spy} /></div></main>);
 
   node.find(DragBehavior).instance().startDragging({
     preventDefault: jest.fn(),
@@ -126,10 +126,10 @@ it('should call the update report callback on drop', () => {
 
 it('should call the dragEnd callback on drop', () => {
   const spy = jest.fn();
-  const node = mount(<div className='DashboardObject' style={{
+  const node = mount(<main><div className='DashboardObject' style={{
     top: '0px',
     left: '0px'
-  }}><DragBehavior {...props} onDragEnd={spy} /></div>);
+  }}><DragBehavior {...props} onDragEnd={spy} /></div></main>);
 
   node.find(DragBehavior).instance().startDragging({
     preventDefault: jest.fn(),
@@ -149,7 +149,7 @@ it('should call the dragEnd callback on drop', () => {
 
 it('should not update the report when it is dropped somewhere where is no space', () => {
   const spy = jest.fn();
-  const node = mount(<div className='DashboardObject' style={{
+  const node = mount(<main><div className='DashboardObject' style={{
     top: '0px',
     left: '0px'
   }}><DragBehavior {...props} reports={[
@@ -161,7 +161,7 @@ it('should not update the report when it is dropped somewhere where is no space'
       position: {x: 3, y: 1},
       dimensions: {width: 2, height: 2}
     }
-  ]} /></div>);
+  ]} /></div></main>);
 
   node.find(DragBehavior).instance().startDragging({
     preventDefault: jest.fn(),
