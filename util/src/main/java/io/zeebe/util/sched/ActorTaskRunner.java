@@ -38,7 +38,7 @@ public class ActorTaskRunner extends Thread
 
     private static final long STATE_OFFSET;
 
-    private final CompletableFuture<Void> terminationFuture = new CompletableFuture<Void>();
+    private final CompletableFuture<Void> terminationFuture = new CompletableFuture<>();
 
     private final Random localRandom = new Random();
 
@@ -268,6 +268,14 @@ public class ActorTaskRunner extends Thread
     public void scheduleTimer(TimerSubscription timer)
     {
         timerJobQueue.schedule(timer, clock);
+    }
+
+    /**
+     * Must be called from this thread, remove a scheduled job.
+     */
+    public void removeTimer(TimerSubscription timer)
+    {
+        timerJobQueue.remove(timer);
     }
 
     /**

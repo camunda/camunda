@@ -162,10 +162,10 @@ public class ActorControl
         scheduleRunnable(runnable, false);
     }
 
-    public void runDelayed(Duration delay, Runnable runnable)
+    public ScheduledTimer runDelayed(Duration delay, Runnable runnable)
     {
         ensureCalledFromWithinActor("runDelayed(...)");
-        scheduleTimer(delay, false, runnable);
+        return scheduleTimer(delay, false, runnable);
     }
 
     /**
@@ -187,13 +187,13 @@ public class ActorControl
         yield();
     }
 
-    public void runAtFixedRate(Duration delay, Runnable runnable)
+    public ScheduledTimer runAtFixedRate(Duration delay, Runnable runnable)
     {
         ensureCalledFromWithinActor("runAtFixedRate(...)");
-        scheduleTimer(delay, true, runnable);
+        return scheduleTimer(delay, true, runnable);
     }
 
-    private void scheduleTimer(Duration delay, boolean isRecurring, Runnable runnable)
+    private TimerSubscription scheduleTimer(Duration delay, boolean isRecurring, Runnable runnable)
     {
         final ActorJob job = new ActorJob();
         job.setRunnable(runnable);
@@ -203,6 +203,8 @@ public class ActorControl
         job.setSubscription(timerSubscription);
 
         timerSubscription.submit();
+
+        return timerSubscription;
     }
 
     /**

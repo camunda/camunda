@@ -17,14 +17,17 @@ package io.zeebe.util.sched;
 
 import java.util.concurrent.TimeUnit;
 
-public class TimerSubscription implements ActorSubscription
+public class TimerSubscription implements ActorSubscription, ScheduledTimer
 {
     private volatile boolean isDone = false;
+    private volatile boolean isCanceled = false;
 
     private final ActorJob job;
     private final TimeUnit timeUnit;
     private final long deadline;
     private final boolean isRecurring;
+
+    private long timerId = -1L;
 
     public TimerSubscription(ActorJob job, long deadline, TimeUnit timeUnit, boolean isRecurring)
     {
@@ -57,9 +60,30 @@ public class TimerSubscription implements ActorSubscription
     {
         isDone = false;
 
-        if (isRecurring)
+        if (isRecurring && !isCanceled)
         {
             submit();
+        }
+    }
+
+    public void setTimerId(long timerId)
+    {
+        this.timerId = timerId;
+    }
+
+    public long getTimerId()
+    {
+        return timerId;
+    }
+
+    @Override
+    public void cancel()
+    {
+        if (!isCanceled && !isDone)
+        {
+            isCanceled = true;
+
+            ActorTaskRunner.current().removeTimer(this);
         }
     }
 
@@ -81,13 +105,16 @@ public class TimerSubscription implements ActorSubscription
 
     public void onTimerExpired(TimeUnit timeUnit, long now)
     {
-        isDone = true;
-
-        final ActorTask task = job.task;
-
-        if (task.tryWakeup())
+        if (!isCanceled)
         {
-            ActorTaskRunner.current().submit(task);
+            isDone = true;
+
+            final ActorTask task = job.task;
+
+            if (task.tryWakeup())
+            {
+                ActorTaskRunner.current().submit(task);
+            }
         }
     }
 }

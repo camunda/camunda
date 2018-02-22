@@ -15,11 +15,14 @@
  */
 package io.zeebe.util.sched;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.fail;
 
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.junit.Rule;
@@ -113,6 +116,70 @@ public class TimerExecutionTest
         }
 
         schedulerRule.get().dumpMetrics(System.out);
+    }
+
+    @Test
+    public void testCancelRunDelayed() throws InterruptedException
+    {
+        final CountDownLatch latch = new CountDownLatch(1);
+        final AtomicBoolean isInvoked = new AtomicBoolean();
+
+        schedulerRule.submitActor(new ZbActor()
+        {
+            @Override
+            protected void onActorStarted()
+            {
+                final ScheduledTimer subscription = actor.runDelayed(Duration.ofMillis(100), this::timedMethod);
+                subscription.cancel();
+
+                actor.runDelayed(Duration.ofMillis(500), () -> latch.countDown());
+            }
+
+            void timedMethod()
+            {
+                isInvoked.set(true);
+            }
+        });
+
+        if (!latch.await(5, TimeUnit.MINUTES))
+        {
+            fail("onActorStarted() never called");
+        }
+
+        assertThat(isInvoked).isFalse();
+    }
+
+    @Test
+    public void testCancelRunAtFixedRate() throws InterruptedException
+    {
+        final CountDownLatch latch = new CountDownLatch(1);
+        final AtomicInteger invocations = new AtomicInteger(0);
+
+        schedulerRule.submitActor(new ZbActor()
+        {
+            ScheduledTimer subscription;
+
+            @Override
+            protected void onActorStarted()
+            {
+                subscription = actor.runDelayed(Duration.ofMillis(100), this::timedMethod);
+
+                actor.runDelayed(Duration.ofMillis(500), () -> latch.countDown());
+            }
+
+            void timedMethod()
+            {
+                invocations.incrementAndGet();
+                subscription.cancel();
+            }
+        });
+
+        if (!latch.await(5, TimeUnit.MINUTES))
+        {
+            fail("onActorStarted() never called");
+        }
+
+        assertThat(invocations.get()).isEqualTo(1);
     }
 
 }
