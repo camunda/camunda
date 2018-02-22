@@ -18,22 +18,22 @@ import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.camunda.optimize.test.util.ReportDataHelper;
+import org.hamcrest.core.Is;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
+import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_COUNT_OPERATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_FLOW_NODE_ENTITY;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_FREQUENCY_PROPERTY;
@@ -45,7 +45,6 @@ import static org.hamcrest.core.IsNull.notNullValue;
 
 public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
 
-  private static final String ALL_VERSIONS = "ALL";
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
@@ -58,10 +57,56 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
 
   @Test
+  public void allVersionsRespectLatestNodesOnlyWhereLatestHasMoreNodes() throws Exception {
+    //given
+    deployAndStartSimpleServiceTaskProcess();
+    ProcessInstanceEngineDto latestProcess = deployProcessWithTwoTasks(TEST_ACTIVITY);
+    assertThat(latestProcess.getProcessDefinitionVersion(), Is.is("2"));
+
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    ReportDataDto reportData = ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNode(
+        latestProcess.getProcessDefinitionKey(), ALL_VERSIONS
+    );
+    MapReportResultDto result = evaluateReport(reportData);
+
+    //then
+    assertThat(result.getResult(), is(notNullValue()));
+    Map<String, Long> flowNodeIdToExecutionFrequency = result.getResult();
+    assertThat(flowNodeIdToExecutionFrequency.size(), is(2));
+    assertThat(flowNodeIdToExecutionFrequency.get(TEST_ACTIVITY), is(2L));
+  }
+
+  @Test
+  public void allVersionsRespectLatestNodesOnlyWhereLatestHasLessNodes() throws Exception {
+    //given
+    deployProcessWithTwoTasks(TEST_ACTIVITY);
+    ProcessInstanceEngineDto latestProcess = deployAndStartSimpleServiceTaskProcess();
+    assertThat(latestProcess.getProcessDefinitionVersion(), Is.is("2"));
+
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    ReportDataDto reportData = ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNode(
+        latestProcess.getProcessDefinitionKey(), ALL_VERSIONS
+    );
+    MapReportResultDto result = evaluateReport(reportData);
+
+    //then
+    assertThat(result.getResult(), is(notNullValue()));
+    Map<String, Long> flowNodeIdToExecutionFrequency = result.getResult();
+    assertThat(flowNodeIdToExecutionFrequency.size(), is(1));
+    assertThat(flowNodeIdToExecutionFrequency.get(TEST_ACTIVITY ), is(2L));
+  }
+
+  @Test
   public void reportAcrossAllVersions() throws Exception {
     // given
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    ProcessInstanceEngineDto processInstanceDto2 = deployAndStartSimpleServiceTaskProcess();
+    deployAndStartSimpleServiceTaskProcess();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
@@ -81,7 +126,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     assertThat(resultReportDataDto.getView().getProperty(), is(VIEW_FREQUENCY_PROPERTY));
     assertThat(result.getResult(), is(notNullValue()));
     Map<String, Long> flowNodeIdToExecutionFrequency = result.getResult();
-    assertThat(flowNodeIdToExecutionFrequency.size(), is(5));
+    assertThat(flowNodeIdToExecutionFrequency.size(), is(1));
     assertThat(flowNodeIdToExecutionFrequency.get(TEST_ACTIVITY ), is(2L));
   }
 
@@ -89,7 +134,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
   public void otherProcessDefinitionsDoNoAffectResult() throws Exception {
     // given
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    ProcessInstanceEngineDto processInstanceDto2 = deployAndStartSimpleServiceTaskProcess();
+    deployAndStartSimpleServiceTaskProcess();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
@@ -385,12 +430,25 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     return deployAndStartSimpleServiceTaskProcess(TEST_ACTIVITY);
   }
 
+  public ProcessInstanceEngineDto deployProcessWithTwoTasks(String activityId) {
+    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("aProcess")
+      .name("aProcessName")
+      .startEvent()
+      .serviceTask(activityId)
+        .camundaExpression("${true}")
+      .serviceTask(TEST_ACTIVITY_2)
+        .camundaExpression("${true}")
+      .endEvent()
+      .done();
+    return engineRule.deployAndStartProcess(modelInstance);
+  }
+
   private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess(String activityId) {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .name("aProcessName")
       .startEvent()
-      .serviceTask(activityId)
-      .camundaExpression("${true}")
+        .serviceTask(activityId)
+        .camundaExpression("${true}")
       .endEvent()
       .done();
     return engineRule.deployAndStartProcess(processModel);
@@ -405,8 +463,8 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .name("aProcessName")
       .startEvent()
-      .serviceTask(activityId)
-      .camundaExpression("${true}")
+        .serviceTask(activityId)
+        .camundaExpression("${true}")
       .endEvent()
       .done();
     return engineRule.deployAndStartProcessWithVariables(processModel, variables);

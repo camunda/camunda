@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
-public class NotSupportedCommand extends ReportCommand {
+public class NotSupportedCommand extends ReportCommand <ReportResultDto> {
 
   private Logger logger = LoggerFactory.getLogger(getClass());
 

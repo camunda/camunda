@@ -8,7 +8,6 @@ import org.camunda.optimize.dto.optimize.rest.FlowNodeNamesDto;
 import org.camunda.optimize.service.es.schema.type.ProcessDefinitionType;
 import org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.service.util.EsHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchResponse;
@@ -129,17 +128,23 @@ public class ProcessDefinitionReader {
 
     ProcessDefinitionXmlOptimizeDto xml = null;
     if (response.isExists()) {
-      xml = new ProcessDefinitionXmlOptimizeDto ();
-
-      xml.setBpmn20Xml(response.getSource().get(ProcessDefinitionXmlType.BPMN_20_XML).toString());
-      xml.setId(response.getSource().get(ProcessDefinitionXmlType.ID).toString());
-      if (response.getSource().get(ProcessDefinitionXmlType.ENGINE) != null) {
-        xml.setEngine(response.getSource().get(ProcessDefinitionXmlType.ENGINE).toString());
-      }
-      xml.setFlowNodeNames((Map<String, String>) response.getSource().get(ProcessDefinitionXmlType.FLOW_NODE_NAMES));
+      xml = getProcessDefinitionXmlOptimizeDto(response);
     } else {
       logger.warn("Could not find process definition xml with id {}", processDefinitionId);
     }
+    return xml;
+  }
+
+  public static ProcessDefinitionXmlOptimizeDto getProcessDefinitionXmlOptimizeDto(GetResponse response) {
+    ProcessDefinitionXmlOptimizeDto xml;
+    xml = new ProcessDefinitionXmlOptimizeDto ();
+
+    xml.setBpmn20Xml(response.getSource().get(ProcessDefinitionXmlType.BPMN_20_XML).toString());
+    xml.setId(response.getSource().get(ProcessDefinitionXmlType.ID).toString());
+    if (response.getSource().get(ProcessDefinitionXmlType.ENGINE) != null) {
+      xml.setEngine(response.getSource().get(ProcessDefinitionXmlType.ENGINE).toString());
+    }
+    xml.setFlowNodeNames((Map<String, String>) response.getSource().get(ProcessDefinitionXmlType.FLOW_NODE_NAMES));
     return xml;
   }
 

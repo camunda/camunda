@@ -25,4 +25,6 @@ public class ReportConstants {
   public static final String TABLE_VISUALIZATION = "table";
   public static final String HEAT_VISUALIZATION = "heat";
   public static final String SINGLE_NUMBER_VISUALIZATION = "number";
+
+  public static final String ALL_VERSIONS = "ALL";
 }

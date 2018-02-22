@@ -14,6 +14,7 @@ import org.camunda.optimize.dto.optimize.query.report.filter.data.VariableFilter
 import org.camunda.optimize.dto.optimize.query.report.filter.util.ExecutedFlowNodeFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.result.MapReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.es.report.command.util.ReportConstants;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
@@ -49,10 +50,9 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
 
   public static final String START_EVENT = "startEvent";
   public static final String END_EVENT = "endEvent";
+  public static final String PROCESS_DEFINITION_ID = "123";
   private static final String SERVICE_TASK_ID = "aSimpleServiceTask";
   private static final String SERVICE_TASK_ID_2 = "aSimpleServiceTask2";
-  public static final String PROCESS_DEFINITION_ID = "123";
-  private static final String ALL_VERSIONS = "ALL";
 
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
@@ -119,27 +119,19 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
   @Test
   public void evaluateReportForMultipleEvents() throws Exception {
     // given
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("aProcess" + System.currentTimeMillis())
-      .startEvent()
-      .serviceTask(SERVICE_TASK_ID)
-        .camundaExpression("${true}")
-      .serviceTask(SERVICE_TASK_ID_2)
-        .camundaExpression("${true}")
-      .endEvent()
-      .done();
-    String processDefinitionId = engineRule.deployProcessAndGetId(modelInstance);
+    ProcessDefinitionEngineDto processDefinition = deployProcessWithTwoTasks();
 
-    ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinitionId);
+    ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 10L);
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 20L);
-    processInstanceDto = engineRule.startProcessInstance(processDefinitionId);
+    processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 10L);
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 20L);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition.getId());
     MapReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -147,6 +139,73 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
     assertThat(flowNodeIdToAverageExecutionDuration.size(), is(4));
     assertThat(flowNodeIdToAverageExecutionDuration.get(SERVICE_TASK_ID ), is(10L));
     assertThat(flowNodeIdToAverageExecutionDuration.get(SERVICE_TASK_ID_2 ), is(20L));
+  }
+
+  public ProcessDefinitionEngineDto deployProcessWithTwoTasks() throws IOException {
+    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("aProcess")
+      .startEvent()
+      .serviceTask(SERVICE_TASK_ID)
+        .camundaExpression("${true}")
+      .serviceTask(SERVICE_TASK_ID_2)
+        .camundaExpression("${true}")
+      .endEvent()
+      .done();
+    return engineRule.deployProcessAndGetProcessDefinition(modelInstance);
+  }
+
+  @Test
+  public void allVersionsRespectLatestNodesOnlyWhereLatestHasMoreNodes() throws Exception {
+    //given
+    ProcessDefinitionEngineDto firstDefinition = deploySimpleServiceTaskProcessDefinition();
+    ProcessDefinitionEngineDto latestDefinition = deployProcessWithTwoTasks();
+    assertThat(latestDefinition.getVersion(), is(2));
+
+    ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(firstDefinition.getId());
+    engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 40L);
+    processInstanceDto = engineRule.startProcessInstance(latestDefinition.getId());
+    engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 40L);
+
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    //when
+    ReportDataDto reportData = ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(
+        latestDefinition.getKey(), ReportConstants.ALL_VERSIONS
+    );
+    MapReportResultDto result = evaluateReport(reportData);
+
+    //then
+    Map<String, Long> flowNodeIdToAverageExecutionDuration = result.getResult();
+    assertThat(flowNodeIdToAverageExecutionDuration.size(), is(2));
+    assertThat(flowNodeIdToAverageExecutionDuration.get(SERVICE_TASK_ID ), is(40L));
+    assertThat(flowNodeIdToAverageExecutionDuration.get(SERVICE_TASK_ID_2 ), is(40L));
+  }
+
+  @Test
+  public void allVersionsRespectLatestNodesOnlyWhereLatestHasLessNodes() throws Exception {
+    //given
+    ProcessDefinitionEngineDto firstDefinition = deployProcessWithTwoTasks();
+    ProcessDefinitionEngineDto latestDefinition = deploySimpleServiceTaskProcessDefinition();
+    assertThat(latestDefinition.getVersion(), is(2));
+
+    ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(firstDefinition.getId());
+    engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 40L);
+    processInstanceDto = engineRule.startProcessInstance(latestDefinition.getId());
+    engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 40L);
+
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    //when
+    ReportDataDto reportData = ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(
+        latestDefinition.getKey(), ReportConstants.ALL_VERSIONS
+    );
+    MapReportResultDto result = evaluateReport(reportData);
+
+    //then
+    Map<String, Long> flowNodeIdToAverageExecutionDuration = result.getResult();
+    assertThat(flowNodeIdToAverageExecutionDuration.size(), is(3));
+    assertThat(flowNodeIdToAverageExecutionDuration.get(SERVICE_TASK_ID ), is(40L));
   }
 
   @Test
@@ -164,7 +223,7 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
 
     //when
     ReportDataDto reportData = ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(
-        processDefinition.getKey(), ALL_VERSIONS
+        processDefinition.getKey(), ReportConstants.ALL_VERSIONS
     );
     MapReportResultDto result = evaluateReport(reportData);
 
@@ -476,23 +535,13 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
   }
 
   private ProcessDefinitionEngineDto deploySimpleServiceTaskProcessDefinition() throws IOException {
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("aProcess" + System.currentTimeMillis())
+    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("aProcess" )
       .startEvent(START_EVENT)
       .serviceTask(SERVICE_TASK_ID)
         .camundaExpression("${true}")
       .endEvent(END_EVENT)
       .done();
     return engineRule.deployProcessAndGetProcessDefinition(modelInstance);
-  }
-
-  private void assertResults(HeatMapResponseDto resultMap, int activityCount, long piCount) {
-    assertThat(resultMap.getFlowNodes().size(), is(activityCount));
-    assertThat(resultMap.getPiCount(), is(piCount));
-  }
-
-  public void assertResults(HeatMapResponseDto resultMap, int activityCount, String activity, Long averageDuration, Long piCount) {
-    this.assertResults(resultMap, activityCount, piCount);
-    assertThat(resultMap.getFlowNodes().get(activity), is(averageDuration));
   }
 
   private MapReportResultDto evaluateReport(ReportDataDto reportData) {

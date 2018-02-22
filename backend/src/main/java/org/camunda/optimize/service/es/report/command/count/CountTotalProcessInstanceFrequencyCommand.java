@@ -1,22 +1,14 @@
 package org.camunda.optimize.service.es.report.command.count;
 
 import org.camunda.optimize.dto.optimize.query.report.result.NumberReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.result.ReportResultDto;
 import org.camunda.optimize.service.es.report.command.ReportCommand;
-import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 
-import java.io.IOException;
+public class CountTotalProcessInstanceFrequencyCommand extends ReportCommand<NumberReportResultDto> {
 
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-
-public class CountTotalProcessInstanceFrequencyCommand extends ReportCommand {
-
-
-    @Override
-  protected ReportResultDto evaluate() {
+  @Override
+  protected NumberReportResultDto evaluate() {
 
     logger.debug("Evaluating count process instance frequency grouped by none report " +
       "for process definition id [{}]", reportData.getProcessDefinitionId());

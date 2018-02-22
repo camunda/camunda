@@ -1,11 +1,14 @@
 package org.camunda.optimize.service.es.report.command;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionXmlOptimizeDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.report.result.MapReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.result.ReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.result.raw.RawDataReportResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.value.VariableInstanceDto;
+import org.camunda.optimize.service.es.report.command.util.ReportConstants;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.common.unit.TimeValue;
@@ -19,6 +22,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -28,11 +32,11 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
 
-public class RawDataCommand extends ReportCommand {
+public class RawDataCommand extends ReportCommand<RawDataReportResultDto> {
 
   private static final Long RAW_DATA_LIMIT = 1_000L;
 
-  public ReportResultDto evaluate() throws IOException {
+  public RawDataReportResultDto evaluate() throws IOException {
     logger.debug("Evaluating raw data report for process definition id [{}]", reportData.getProcessDefinitionId());
 
     BoolQueryBuilder query = setupBaseQuery(

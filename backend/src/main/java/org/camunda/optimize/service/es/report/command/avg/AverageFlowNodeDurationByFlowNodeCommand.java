@@ -1,8 +1,7 @@
 package org.camunda.optimize.service.es.report.command.avg;
 
 import org.camunda.optimize.dto.optimize.query.report.result.MapReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.result.ReportResultDto;
-import org.camunda.optimize.service.es.report.command.ReportCommand;
+import org.camunda.optimize.service.es.report.command.FlowNodeGroupingCommand;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -14,7 +13,6 @@ import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.metrics.avg.InternalAvg;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -24,12 +22,12 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.avg;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
-public class AverageFlowNodeDurationByFlowNodeCommand extends ReportCommand {
+public class AverageFlowNodeDurationByFlowNodeCommand extends FlowNodeGroupingCommand {
 
   static final String MI_BODY = "multiInstanceBody";
 
   @Override
-  protected ReportResultDto evaluate() {
+  protected MapReportResultDto evaluate() {
 
     logger.debug("Evaluating average flow node duration grouped by flow node report " +
       "for process definition id [{}]", reportData.getProcessDefinitionId());

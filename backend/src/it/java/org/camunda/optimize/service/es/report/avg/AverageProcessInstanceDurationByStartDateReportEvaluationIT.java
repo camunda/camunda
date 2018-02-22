@@ -15,6 +15,7 @@ import org.camunda.optimize.dto.optimize.query.report.filter.data.VariableFilter
 import org.camunda.optimize.dto.optimize.query.report.filter.util.ExecutedFlowNodeFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.result.MapReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.es.report.command.util.ReportConstants;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
@@ -67,7 +68,6 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
 
   public static final String PROCESS_DEFINITION_ID = "123";
   private static final String TEST_ACTIVITY = "testActivity";
-  private static final String ALL_VERSIONS = "ALL";
 
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
@@ -451,7 +451,7 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
     //when
     // when
     ReportDataDto reportData = ReportDataHelper.createAvgPIDurationGroupByStartDateReport(
-        processInstanceDto.getProcessDefinitionKey(), ALL_VERSIONS, DATE_UNIT_DAY);
+        processInstanceDto.getProcessDefinitionKey(), ReportConstants.ALL_VERSIONS, DATE_UNIT_DAY);
     MapReportResultDto result = evaluateReport(reportData);
 
     // then

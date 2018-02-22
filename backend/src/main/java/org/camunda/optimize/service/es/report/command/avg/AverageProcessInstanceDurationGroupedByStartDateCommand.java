@@ -1,7 +1,6 @@
 package org.camunda.optimize.service.es.report.command.avg;
 
 import org.camunda.optimize.dto.optimize.query.report.result.MapReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.result.ReportResultDto;
 import org.camunda.optimize.service.es.report.command.ReportCommand;
 import org.camunda.optimize.service.es.report.command.util.ReportUtil;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
@@ -17,21 +16,16 @@ import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
 import org.elasticsearch.search.aggregations.metrics.avg.InternalAvg;
 import org.joda.time.DateTime;
 
-import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-
-public class AverageProcessInstanceDurationGroupedByStartDateCommand extends ReportCommand {
-
+public class AverageProcessInstanceDurationGroupedByStartDateCommand extends ReportCommand<MapReportResultDto> {
 
   private static final String AVG_DURATION = "avgDuration";
   private static final String DATE_HISTOGRAM_AGGREGATION = "dateIntervalGrouping";
 
   @Override
-  protected ReportResultDto evaluate() throws OptimizeException {
+  protected MapReportResultDto evaluate() throws OptimizeException {
 
     logger.debug("Evaluating average process instance duration grouped by start date report " +
       "for process definition id [{}]", reportData.getProcessDefinitionId());

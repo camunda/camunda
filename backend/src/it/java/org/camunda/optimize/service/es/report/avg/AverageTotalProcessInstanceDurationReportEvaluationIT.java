@@ -15,6 +15,7 @@ import org.camunda.optimize.dto.optimize.query.report.filter.data.VariableFilter
 import org.camunda.optimize.dto.optimize.query.report.filter.util.ExecutedFlowNodeFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.result.NumberReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.es.report.command.util.ReportConstants;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
@@ -23,9 +24,6 @@ import org.camunda.optimize.test.util.ReportDataHelper;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
@@ -48,7 +46,6 @@ import static org.hamcrest.core.IsNull.notNullValue;
 public class AverageTotalProcessInstanceDurationReportEvaluationIT {
 
   public static final String PROCESS_DEFINITION_ID = "123";
-  private static final String ALL_VERSIONS = "ALL";
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
@@ -58,7 +55,10 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
 
   @Rule
   public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule).around(engineDatabaseRule);
+    .outerRule(elasticSearchRule)
+      .around(engineRule)
+      .around(embeddedOptimizeRule)
+      .around(engineDatabaseRule);
 
   @Test
   public void reportEvaluationForOneProcess() throws Exception {
@@ -182,7 +182,7 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
 
     // when
     ReportDataDto reportData = ReportDataHelper.createAvgPiDurationHeatMapGroupByNone(
-        processInstanceDto.getProcessDefinitionKey(), ALL_VERSIONS
+        processInstanceDto.getProcessDefinitionKey(), ReportConstants.ALL_VERSIONS
     );
     NumberReportResultDto result = evaluateReport(reportData);
 

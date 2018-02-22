@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.report.filter.data.VariableFilter
 import org.camunda.optimize.dto.optimize.query.report.filter.util.ExecutedFlowNodeFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.result.NumberReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.es.report.command.util.ReportConstants;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
@@ -45,7 +46,6 @@ import static org.hamcrest.core.IsNull.notNullValue;
 public class CountTotalProcessInstanceFrequencyReportEvaluationIT {
 
   public static final String PROCESS_DEFINITION_ID = "123";
-  private static final String ALL_VERSIONS = "ALL";
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
@@ -113,7 +113,7 @@ public class CountTotalProcessInstanceFrequencyReportEvaluationIT {
 
     // when
     ReportDataDto reportData = ReportDataHelper.createPiFrequencyCountGroupedByNone(
-        engineDto.getProcessDefinitionKey(), ALL_VERSIONS
+        engineDto.getProcessDefinitionKey(), ReportConstants.ALL_VERSIONS
     );
     NumberReportResultDto result = evaluateReport(reportData);
 

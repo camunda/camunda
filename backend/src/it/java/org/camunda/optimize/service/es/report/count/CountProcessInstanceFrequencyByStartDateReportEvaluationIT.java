@@ -15,6 +15,7 @@ import org.camunda.optimize.dto.optimize.query.report.filter.data.VariableFilter
 import org.camunda.optimize.dto.optimize.query.report.filter.util.ExecutedFlowNodeFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.result.MapReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.es.report.command.util.ReportConstants;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
@@ -64,7 +65,6 @@ import static org.hamcrest.core.IsNull.notNullValue;
 
 public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
 
-  private static final String ALL_VERSIONS = "ALL";
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
@@ -457,7 +457,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
 
     // when
     ReportDataDto reportData = ReportDataHelper.createPICountFrequencyGroupByStartDate(
-        processInstanceDto.getProcessDefinitionKey(), ALL_VERSIONS, DATE_UNIT_DAY
+        processInstanceDto.getProcessDefinitionKey(), ReportConstants.ALL_VERSIONS, DATE_UNIT_DAY
     );
     MapReportResultDto result = evaluateReport(reportData);
 

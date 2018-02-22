@@ -1,8 +1,7 @@
 package org.camunda.optimize.service.es.report.command.count;
 
 import org.camunda.optimize.dto.optimize.query.report.result.MapReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.result.ReportResultDto;
-import org.camunda.optimize.service.es.report.command.ReportCommand;
+import org.camunda.optimize.service.es.report.command.FlowNodeGroupingCommand;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -13,7 +12,6 @@ import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -22,12 +20,12 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
-public class CountFlowNodeFrequencyByFlowNodeCommand extends ReportCommand {
+public class CountFlowNodeFrequencyByFlowNodeCommand extends FlowNodeGroupingCommand {
 
   static final String MI_BODY = "multiInstanceBody";
 
   @Override
-  protected ReportResultDto evaluate() {
+  protected MapReportResultDto evaluate() {
 
     logger.debug("Evaluating count flow node frequency grouped by flow node report " +
       "for process definition id [{}]", reportData.getProcessDefinitionId());
@@ -59,7 +57,7 @@ public class CountFlowNodeFrequencyByFlowNodeCommand extends ReportCommand {
     return
       nested("events", "events")
         .subAggregation(
-          filter(
+            filter(
             "filteredEvents",
             boolQuery()
               .mustNot(
