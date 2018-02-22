@@ -112,6 +112,12 @@ export default class Analysis extends React.Component {
         gateway: null,
         endEvent: null
       });
+    } else {
+      this.setState({
+        xml: null,
+        gateway: null,
+        endEvent: null
+      });
     }
   }
 }

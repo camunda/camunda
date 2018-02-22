@@ -1,10 +1,8 @@
 import React from 'react';
 import {Select, Popover, ProcessDefinitionSelection} from 'components';
 
-import {loadProcessDefinitions} from './service';
-
 import {Filter} from './filter';
-import {reportLabelMap, } from 'services';
+import {reportLabelMap} from 'services';
 
 import './ControlPanel.css';
 
@@ -40,8 +38,8 @@ export default class ControlPanel extends React.Component {
         <li className='ControlPanel__item ControlPanel__item--select'>
           <label htmlFor='ControlPanel__process-definition' className='ControlPanel__label'>Process definition</label>
           <Popover className='ControlPanel__popover' title={this.props.processDefinitionId || 'Select Process Definition'}>
-            <ProcessDefinitionSelection loadProcessDefinitions={loadProcessDefinitions} {...this.definitionConfig()} 
-              xml={this.props.configuration.xml} onChange={this.props.onChange} renderDiagram={true} enableAllVersionSelection={true}/>
+            <ProcessDefinitionSelection {...this.definitionConfig()} xml={this.props.configuration.xml} 
+              onChange={this.props.onChange} renderDiagram={true} enableAllVersionSelection={true}/>
           </Popover>
         </li>
         <li className='ControlPanel__item ControlPanel__item--select'>

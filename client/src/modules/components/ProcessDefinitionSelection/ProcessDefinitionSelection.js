@@ -2,6 +2,8 @@ import React from 'react';
 
 import {Select, BPMNDiagram} from 'components';
 
+import {loadProcessDefinitions} from './service';
+
 import './ProcessDefinitionSelection.css';
 
 export default class ControlPanel extends React.Component {
@@ -11,9 +13,6 @@ export default class ControlPanel extends React.Component {
     this.state = {
         availableDefinitions: [],
         loaded: false,
-        id: this.props.processDefinitionId,
-        key: this.props.processDefinitionKey,
-        version: this.props.processDefinitionVersion
     };
 
     this.loadAvailableDefinitions();
@@ -21,7 +20,7 @@ export default class ControlPanel extends React.Component {
 
   loadAvailableDefinitions = async () => {
 
-    const availableDefinitions = await this.props.loadProcessDefinitions();
+    const availableDefinitions = await loadProcessDefinitions();
 
     this.setState({
       availableDefinitions, 
@@ -38,25 +37,35 @@ export default class ControlPanel extends React.Component {
   }
 
   changeKey = async evt => {
-    const key = evt.target.value;
-    const selectedDefinition = this.getLatestDefinition(key);
-    
-    const id = selectedDefinition.id;
-    const version = selectedDefinition.version;
+    let key = evt.target.value;
+    let version, id;
+    if(!key) {
+      version = id = '';
+    } else {
+      const selectedDefinition = this.getLatestDefinition(key);
+      id = selectedDefinition.id;
+      version = selectedDefinition.version;
+    }
     this.propagateChange(id, key, version);
-    this.setState({key, id, version});
   }
 
   changeVersion = async evt => {
-    const version = evt.target.value === 'ALL'? 'ALL': parseInt(evt.target.value, 10);
-    const key = this.state.key;
-    const selectedDefinition = 
-      this.findSelectedKeyGroup(key)
-        .versions.find( def => def.version === version);
-    
-    const id = selectedDefinition? selectedDefinition.id :this.getLatestDefinition(key).id;
+    let version = evt.target.value;
+    let key = this.props.processDefinitionKey;
+    let id;
+    if(!version) {
+      // reset to please select
+      id = version = '';
+    } else if(version === 'ALL') {
+      id = this.getLatestDefinition(key).id;
+    } else {
+      version = parseInt(version, 10);
+      const selectedDefinition = 
+        this.findSelectedKeyGroup(key)
+          .versions.find( def => def.version === version);
+      id = selectedDefinition.id;
+    }
     this.propagateChange(id, key, version);
-    this.setState({id, version});
   }
 
   getLatestDefinition = (key) => {
@@ -70,15 +79,17 @@ export default class ControlPanel extends React.Component {
   }
 
   getKey = () => {
-    return this.state.key? this.state.key : '';
+    return this.props.processDefinitionKey? this.props.processDefinitionKey : '';
   }
 
   getVersion = () => {
-    return this.state.version? this.state.version: '';
+    return this.props.processDefinitionVersion? this.props.processDefinitionVersion: '';
   }
 
   render() {
-    const {loaded, id, key} = this.state;
+    const {loaded} = this.state;
+    const key = this.props.processDefinitionKey;
+    const id = this.props.processDefinitionId;
 
     if(!loaded) {
       return <div className='ProcessDefinitionSelection__loading-indicator'>loading...</div>;
@@ -90,7 +101,7 @@ export default class ControlPanel extends React.Component {
           <li className='ProcessDefinitionSelection__list-item'>
             <label htmlFor='ProcessDefinitionSelection__process-definition' className='ProcessDefinitionSelection__label'>Key</label>        
             <Select className='ProcessDefinitionSelection__select' name='ProcessDefinitionSelection__key' value={this.getKey()} onChange={this.changeKey}>
-                {<Select.Option defaultValue disabled value=''>Please select...</Select.Option>}
+                {<Select.Option defaultValue value=''>Please select...</Select.Option>}
                 {this.state.availableDefinitions.map(
                   ({key}) => {
                     return <Select.Option value={key} key={key} >{key}</Select.Option>;
@@ -102,7 +113,7 @@ export default class ControlPanel extends React.Component {
             <label htmlFor='ProcessDefinitionSelection__process-definition' className='ProcessDefinitionSelection__label'>Version</label>                    
             <Select className='ProcessDefinitionSelection__select' name='ProcessDefinitionSelection__version' 
                   value={this.getVersion()} onChange={this.changeVersion} disabled={!key}>
-              <Select.Option defaultValue disabled value=''>Please select...</Select.Option>
+              <Select.Option defaultValue value=''>Please select...</Select.Option>
               { this.props.enableAllVersionSelection && <Select.Option value='ALL' key='all'>all</Select.Option>}
               {this.renderAllDefinitionVersions(key)}
             </Select>

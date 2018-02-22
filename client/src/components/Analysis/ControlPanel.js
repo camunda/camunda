@@ -2,49 +2,29 @@ import React from 'react';
 import {ActionItem, Popover, ProcessDefinitionSelection} from 'components';
 
 import {Filter} from '../Reports';
-import {loadProcessDefinitions} from './service';
 
 import './ControlPanel.css';
 
-export default class ControlPanel extends React.Component {
-  constructor(props) {
-    super(props);
+const ControlPanel = (props) => {
 
-    this.definitionConfig = {
-      processDefinitionId: this.props.processDefinitionId,
-      processDefinitionKey: this.props.processDefinitionKey,
-      processDefinitionVersion: this.props.processDefinitionVersion
-    }
-
-    this.state = {
-      availableDefinitions: [],
-      loaded: false
-    };
-
-    this.loadAvailableDefinitions();
+  const definitionConfig = {
+    processDefinitionId: props.processDefinitionId,
+    processDefinitionKey: props.processDefinitionKey,
+    processDefinitionVersion: props.processDefinitionVersion
   }
 
-  loadAvailableDefinitions = async () => {
-    this.setState({
-      availableDefinitions: await loadProcessDefinitions(),
-      loaded: true
-    });
+  const hover = element => () => {
+    props.updateHover(element);
   }
 
-  hover = element => () => {
-    this.props.updateHover(element);
-  }
+  const {hoveredControl, hoveredNode} = props;
 
-  render() {
-    const {hoveredControl, hoveredNode} = this.props;
-
-    return <div className='ControlPanel'>
+  return (<div className='ControlPanel'>
       <ul className='ControlPanel__list'>
         <li className='ControlPanel__item ControlPanel__item--select'>
           <label htmlFor='ControlPanel__process-definition' className='ControlPanel__label'>Process definition</label>
-          <Popover className='ControlPanel__popover' title={this.props.processDefinitionId || 'Select Process Definition'}>
-            <ProcessDefinitionSelection loadProcessDefinitions={loadProcessDefinitions} {...this.definitionConfig}
-              xml={this.props.xml} onChange={this.props.onChange} />
+          <Popover className='ControlPanel__popover' title={props.processDefinitionId || 'Select Process Definition'}>
+            <ProcessDefinitionSelection {...definitionConfig} xml={props.xml} onChange={props.onChange} />
           </Popover>
         </li>
         {[
@@ -55,21 +35,24 @@ export default class ControlPanel extends React.Component {
             <div
               className={'ControlPanel__config' + (hoveredControl === type || (hoveredNode && hoveredNode.$instanceOf(bpmnKey)) ? ' ControlPanel__config--hover' : '')}
               name={'ControlPanel__' + type}
-              onMouseOver={this.hover(type)}
-              onMouseOut={this.hover(null)}
+              onMouseOver={hover(type)}
+              onMouseOut={hover(null)}
               >
-                <ActionItem onClick={() => this.props.updateSelection(type, null)}>
-                  {this.props[type] ?
-                    this.props[type].name || this.props[type].id
+                <ActionItem onClick={() => props.updateSelection(type, null)}>
+                  {props[type] ?
+                    props[type].name || props[type].id
                   : 'Please Select ' + label}
                 </ActionItem>
             </div>
           </li>
         )}
         <li className='ControlPanel__item ControlPanel__item--filter'>
-          <Filter data={this.props.filter} onChange={this.props.onChange} processDefinitionId={this.props.processDefinitionId} />
+          <Filter data={props.filter} onChange={props.onChange} processDefinitionId={props.processDefinitionId} />
         </li>
       </ul>
     </div>
-  }
-}
+  );
+
+};
+
+export default ControlPanel;

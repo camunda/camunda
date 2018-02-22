@@ -1,11 +1,5 @@
 import {get, post} from 'request';
 
-export async function loadProcessDefinitions() {
-  const response = await get('/api/process-definition/groupedByKey');
-
-  return await response.json();
-}
-
 export async function loadProcessDefinitionXml(id) {
   const response = await get('/api/process-definition/xml', {ids: [id]});
 

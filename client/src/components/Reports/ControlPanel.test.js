@@ -7,10 +7,6 @@ jest.mock('./filter', () => {return {
   Filter: () => 'Filter'
 }});
 
-jest.mock('./service', () => {return {
-  loadProcessDefinitions: () => [{key:'foo', versions: [{id:'procdef1'}, {id:'procdef2'}]}]
-}});
-
 jest.mock('components', () => {
   const Select = props => <select {...props}>{props.children}</select>;
   Select.Option = props => <option {...props}>{props.children}</option>;
