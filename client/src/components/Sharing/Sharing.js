@@ -9,15 +9,20 @@ export default class Sharing extends React.Component {
   constructor(props) {
     super(props);
 
-    this.getId = () => props.match.params.id;
-    this.getType = () => props.match.params.type;
-
     this.state = {
       evaluationResult: null,
       loading: true
     };
 
     this.performEvaluation();
+  }
+
+  getId = () => {
+    return this.props.match.params.id;
+  }
+
+  getType = () => {
+    return this.props.match.params.type;
   }
 
   performEvaluation = async () => {

@@ -24,7 +24,7 @@ export default class ShareEntity extends React.Component {
     this.setState(
       {
         id,
-        isShared: Boolean(id),
+        isShared: !!id,
         loaded: true
       }
     );
