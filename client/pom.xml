@@ -41,6 +41,7 @@
                 <configuration>
                   <tasks>
                     <exec executable="/bin/bash" failonerror="true">
+                      <arg value="-i" />
                       <arg value="build_client.sh" />
                       <arg value="${project.basedir}" />
                     </exec>
