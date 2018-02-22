@@ -23,18 +23,6 @@ import static org.mockito.Mockito.*;
 
 public class ActorConditionsTest
 {
-    private int signals;
-
-    @Before
-    public void setup()
-    {
-        signals = 0;
-    }
-
-    private void conditionRun()
-    {
-        signals++;
-    }
 
     @Test
     public void shouldAddCondition()
@@ -88,6 +76,23 @@ public class ActorConditionsTest
         // then
         actorConditions.signalConsumers();
         verify(condition, never()).signal();
+    }
+
+    @Test
+    public void shouldRemoveNotRegisteredCondition()
+    {
+        // given
+        final ActorConditions actorConditions = new ActorConditions();
+        final ActorCondition condition = mock(ActorCondition.class);
+        final ActorCondition notRegistered = mock(ActorCondition.class);
+        actorConditions.registerConsumer(condition);
+
+        // when
+        actorConditions.removeConsumer(notRegistered);
+
+        // then
+        actorConditions.signalConsumers();
+        verify(condition).signal();
     }
 
     @Test

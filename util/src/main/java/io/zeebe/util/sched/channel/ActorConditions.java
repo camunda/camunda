@@ -63,14 +63,20 @@ public class ActorConditions
             }
         }
 
-        final ActorCondition[] result = new ActorCondition[length - 1];
-        System.arraycopy(array, 0, result, 0, index);
-        if (index < length - 1)
+        if (index != -1)
         {
-            System.arraycopy(array, index + 1, result, index, length - index - 1);
+            final ActorCondition[] result = new ActorCondition[length - 1];
+            System.arraycopy(array, 0, result, 0, index);
+            if (index < length - 1)
+            {
+                System.arraycopy(array, index + 1, result, index, length - index - 1);
+            }
+            return result;
         }
-
-        return result;
+        else
+        {
+            return array;
+        }
     }
 
 }
