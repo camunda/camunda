@@ -78,15 +78,15 @@ export default class ShareEntity extends React.Component {
           </div>
           <div className={('ShareEntity__link-area') + (this.disabled()? '--disabled': '')}>
             <div className='ShareEntity__clipboard'>
-              <label className='ShareEntity__label' htmlFor="ShareLink">Link</label>
+              <span className='ShareEntity__label'>Link</span>
               <span className='ShareEntity__label-description'>{`Use the following URL to share the ${this.props.type} 
                 with people who don't have a Camunda Optimize account:`}</span>
-              <CopyToClipboard id={"ShareLink"} disabled={this.disabled()} value={this.buildShareLink()} />
+              <CopyToClipboard className='ShareEntity__share-link' disabled={this.disabled()} value={this.buildShareLink()} />
             </div>
             <div className='ShareEntity__clipboard'>
-              <label className='ShareEntity__label' htmlFor="ShareEmbed">Embed</label>
+              <span className='ShareEntity__label'>Embed</span>
               <span className='ShareEntity__label-description'>{`Use the following URL to embed the ${this.props.type} into blogs and web pages:`}</span>
-              <CopyToClipboard id={"ShareEmbed"} disabled={this.disabled()} value={this.buildShareLinkForEmbedding()} />
+              <CopyToClipboard className='ShareEntity__embed-link' disabled={this.disabled()} value={this.buildShareLinkForEmbedding()} />
             </div>
           </div>
         </form>

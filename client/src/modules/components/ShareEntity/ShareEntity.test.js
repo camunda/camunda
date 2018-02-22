@@ -54,7 +54,7 @@ it('should construct special link', () => {
   
   node.setState({loaded: true, id: 10});
 
-  expect(node.find('#ShareLink')).toIncludeText(`http://example.com/share/report/10`);
+  expect(node.find('.ShareEntity__share-link')).toIncludeText(`http://example.com/share/report/10`);
 });
 
 it('should construct special link for embedding', () => {
@@ -65,7 +65,7 @@ it('should construct special link for embedding', () => {
   
   node.setState({loaded: true, id: 10});
 
-  expect(node.find('#ShareEmbed')).toIncludeText(`<iframe src="http://example.com/share/report/10`);
+  expect(node.find('.ShareEntity__embed-link')).toIncludeText(`<iframe src="http://example.com/share/report/10`);
 });
 
 it('should display a loading indicator', () => {
