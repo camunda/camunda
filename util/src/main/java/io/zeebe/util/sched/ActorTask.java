@@ -55,7 +55,7 @@ public class ActorTask
 
     final ZbActor actor;
 
-    private ZbActorScheduler scheduler;
+    private ActorExecutor actorTaskExecutor;
 
     /** jobs that are submitted to this task externally. A job is submitted "internally" if it is submitted
      * from a job within the same actor while the task is in RUNNING state. */
@@ -79,6 +79,8 @@ public class ActorTask
 
     private boolean isJumbo = false;
 
+    private int priority = ActorPriority.REGULAR.getPriorityClass();
+
     public ActorTask(ZbActor actor)
     {
         this.actor = actor;
@@ -86,23 +88,18 @@ public class ActorTask
 
     /**
      * called when the task is initially scheduled.
-     * @param scheduler
-     * @param writeMetrics
      */
-    public void onTaskScheduled(ZbActorScheduler scheduler, boolean shouldCollectTaskMetrics)
+    public void onTaskScheduled(ActorExecutor actorTaskExecutor, TaskMetrics taskMetrics)
     {
+        this.actorTaskExecutor = actorTaskExecutor;
         // reset previous state to allow re-scheduling
         this.terminationFuture.close();
         this.terminationFuture.setAwaitingResult();
         this.isClosing = false;
-        this.scheduler = scheduler;
         this.isJumbo = false;
 
-        this.isCollectTaskMetrics = shouldCollectTaskMetrics;
-        if (shouldCollectTaskMetrics)
-        {
-            this.taskMetrics = new TaskMetrics(actor.getName(), scheduler.getCountersManager());
-        }
+        this.isCollectTaskMetrics = taskMetrics != null;
+        this.taskMetrics = taskMetrics;
 
         // create initial job to invoke on start callback
         final ActorJob j = new ActorJob();
@@ -120,19 +117,19 @@ public class ActorTask
 
         if (setStateWaitingToWakingUp())
         {
-            final ActorTaskRunner current = ActorTaskRunner.current();
+            final ActorThread current = ActorThread.current();
             if (current != null)
             {
                 current.submit(this);
             }
             else
             {
-                scheduler.reSubmitActor(this);
+                actorTaskExecutor.reSubmit(this);
             }
         }
     }
 
-    public boolean execute(ActorTaskRunner runner)
+    public boolean execute(ActorThread runner)
     {
         state = ActorState.ACTIVE;
 
@@ -234,7 +231,7 @@ public class ActorTask
         terminationFuture.complete(null);
     }
 
-    private void autoClose(ActorTaskRunner runner)
+    private void autoClose(ActorThread runner)
     {
         final ActorJob closeJob = runner.newJob();
 
@@ -259,7 +256,7 @@ public class ActorTask
             {
                 // discard jobs
             }
-            ActorTaskRunner.current().getCurrentJob().next = null;
+            ActorThread.current().getCurrentJob().next = null;
 
             actor.onActorClosing();
         }
@@ -275,7 +272,7 @@ public class ActorTask
         return UNSAFE.compareAndSwapObject(this, STATE_OFFSET, expectedState, newState);
     }
 
-    boolean claim(long stateCount)
+    public boolean claim(long stateCount)
     {
         if (casStateCount(stateCount))
         {
@@ -427,11 +424,6 @@ public class ActorTask
         return setStateWaitingToWakingUp();
     }
 
-    public ZbActorScheduler getScheduler()
-    {
-        return scheduler;
-    }
-
     public TaskMetrics getMetrics()
     {
         return taskMetrics;
@@ -462,5 +454,40 @@ public class ActorTask
     public boolean isHasWarnedJumbo()
     {
         return isJumbo;
+    }
+
+    public long getStateCount()
+    {
+        return stateCount;
+    }
+
+    public ActorExecutor getActorTaskExecutor()
+    {
+        return actorTaskExecutor;
+    }
+
+    public String getName()
+    {
+        return actor.getName();
+    }
+
+    public ZbActor getActor()
+    {
+        return actor;
+    }
+
+    public boolean isClosing()
+    {
+        return isClosing;
+    }
+
+    public int getPriority()
+    {
+        return priority;
+    }
+
+    public void setPriority(int priority)
+    {
+        this.priority = priority;
     }
 }

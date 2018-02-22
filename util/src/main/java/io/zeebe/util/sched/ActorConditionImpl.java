@@ -45,7 +45,7 @@ public class ActorConditionImpl implements ActorCondition, ActorSubscription
     {
         this.conditionName = conditionName;
         this.job = job;
-        this.task = job.task;
+        this.task = job.getTask();
     }
 
     @Override
@@ -55,14 +55,14 @@ public class ActorConditionImpl implements ActorCondition, ActorSubscription
 
         if (task.tryWakeup())
         {
-            final ActorTaskRunner taskRunner = ActorTaskRunner.current();
+            final ActorThread taskRunner = ActorThread.current();
             if (taskRunner != null)
             {
                 taskRunner.submit(task);
             }
             else
             {
-                task.getScheduler().reSubmitActor(task);
+                task.getActorTaskExecutor().reSubmit(task);
             }
         }
     }

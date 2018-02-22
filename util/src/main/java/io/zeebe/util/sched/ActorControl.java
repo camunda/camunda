@@ -61,7 +61,7 @@ public class ActorControl
         job.setRunnable(action);
         job.onJobAddedToTask(task);
 
-        final BlockingPollSubscription subscription = new BlockingPollSubscription(job, condition, task.getScheduler(), true);
+        final BlockingPollSubscription subscription = new BlockingPollSubscription(job, condition, task.getActorTaskExecutor(), true);
         job.setSubscription(subscription);
 
         subscription.submit();
@@ -84,7 +84,7 @@ public class ActorControl
     @SuppressWarnings("unchecked")
     public <T> ActorFuture<T> call(Callable<T> callable)
     {
-        final ActorTaskRunner runner = ActorTaskRunner.current();
+        final ActorThread runner = ActorThread.current();
         if (runner != null && runner.getCurrentTask() == task)
         {
             throw new UnsupportedOperationException("Incorrect usage of actor.call(...) cannot be called from current actor.");
@@ -128,7 +128,7 @@ public class ActorControl
             // noop
         });
 
-        final BlockingPollSubscription subscription = new BlockingPollSubscription(noop, runnable, task.getScheduler(), false);
+        final BlockingPollSubscription subscription = new BlockingPollSubscription(noop, runnable, task.getActorTaskExecutor(), false);
         noop.setSubscription(subscription);
 
         subscription.submit();
@@ -145,7 +145,7 @@ public class ActorControl
         noop.setAutoCompleting(true);
         noop.setRunnable(adapter.wrapConsumer(whenDone));
 
-        final BlockingPollSubscription subscription = new BlockingPollSubscription(noop, adapter, task.getScheduler(), false);
+        final BlockingPollSubscription subscription = new BlockingPollSubscription(noop, adapter, task.getActorTaskExecutor(), false);
         noop.setSubscription(subscription);
 
         subscription.submit();
@@ -175,7 +175,7 @@ public class ActorControl
      */
     public void submit(Runnable action)
     {
-        final ActorTaskRunner currentActorRunner = ensureCalledFromActorRunner("run(...)");
+        final ActorThread currentActorRunner = ensureCalledFromActorThread("run(...)");
 
         final ActorJob job = currentActorRunner.newJob();
         job.setRunnable(action);
@@ -322,7 +322,7 @@ public class ActorControl
     public void yield()
     {
         final ActorJob job = ensureCalledFromWithinActor("yield()");
-        job.task.yield();
+        job.getTask().yield();
     }
 
 
@@ -342,10 +342,10 @@ public class ActorControl
 
     private void scheduleRunnable(Runnable runnable, boolean autocompleting)
     {
-        final ActorTaskRunner currentActorRunner = ensureCalledFromActorRunner("run(...)");
+        final ActorThread currentActorRunner = ensureCalledFromActorThread("run(...)");
         final ActorJob currentJob = currentActorRunner.getCurrentJob();
 
-        if (currentActorRunner == currentJob.runner)
+        if (currentActorRunner == currentJob.getActorThread())
         {
             /*
              attempt "hot" replace of runnable in the job.
@@ -387,13 +387,19 @@ public class ActorControl
     public boolean isClosing()
     {
         ensureCalledFromWithinActor("isClosing()");
-        return task.isClosing;
+        return task.isClosing();
+    }
+
+    public void setPriority(ActorPriority priority)
+    {
+        ensureCalledFromActorThread("setPriority()");
+        task.setPriority(priority.getPriorityClass());
     }
 
     private ActorJob ensureCalledFromWithinActor(String methodName)
     {
-        final ActorJob currentJob = ensureCalledFromActorRunner(methodName).getCurrentJob();
-        if (currentJob == null || currentJob.actor != this.actor)
+        final ActorJob currentJob = ensureCalledFromActorThread(methodName).getCurrentJob();
+        if (currentJob == null || currentJob.getActor() != this.actor)
         {
             throw new UnsupportedOperationException("Incorrect usage of actor." + methodName + ": must only be called from within the actor itself.");
         }
@@ -401,16 +407,15 @@ public class ActorControl
         return currentJob;
     }
 
-    private ActorTaskRunner ensureCalledFromActorRunner(String methodName)
+    private ActorThread ensureCalledFromActorThread(String methodName)
     {
-        final ActorTaskRunner runner = ActorTaskRunner.current();
+        final ActorThread thread = ActorThread.current();
 
-        if (runner == null)
+        if (thread == null)
         {
             throw new UnsupportedOperationException("Incorrect usage of actor." + methodName + ": must be called from actor thread");
         }
 
-        return runner;
-
+        return thread;
     }
 }

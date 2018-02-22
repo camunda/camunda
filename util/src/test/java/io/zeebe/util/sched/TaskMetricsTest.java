@@ -108,7 +108,7 @@ public class TaskMetricsTest
 
     private Set<String> getAllocatedCounterLabels()
     {
-        final ConcurrentCountersManager manager = actorSchedulerRule.get().getCountersManager();
+        final ConcurrentCountersManager manager = actorSchedulerRule.getBuilder().getCountersManager();
         final Set<String> labels = new HashSet<>();
 
         manager.forEach((id, l) ->

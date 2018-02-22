@@ -17,21 +17,23 @@ package io.zeebe.util.sched.testing;
 
 import io.zeebe.util.sched.ZbActor;
 import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.ZbActorScheduler.ActorSchedulerBuilder;
 import io.zeebe.util.sched.clock.ActorClock;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.status.ConcurrentCountersManager;
 import org.junit.rules.ExternalResource;
 
 public class ActorSchedulerRule extends ExternalResource
 {
     private final ZbActorScheduler actorScheduler;
+    private ActorSchedulerBuilder builder;
 
     public ActorSchedulerRule(int numOfThreads, ActorClock clock)
     {
-        final UnsafeBuffer valueBuffer = new UnsafeBuffer(new byte[16 * 1024]);
-        final UnsafeBuffer labelBuffer = new UnsafeBuffer(new byte[valueBuffer.capacity() * 2 + 1]);
-        final ConcurrentCountersManager countersManager = new ConcurrentCountersManager(labelBuffer, valueBuffer);
-        actorScheduler = new ZbActorScheduler(numOfThreads, countersManager, clock);
+        builder = ZbActorScheduler.newActorScheduler()
+            .setActorThreadCount(numOfThreads)
+            .setActorClock(clock);
+
+        actorScheduler = builder
+            .build();
     }
 
     public ActorSchedulerRule(int numOfThreads)
@@ -75,5 +77,10 @@ public class ActorSchedulerRule extends ExternalResource
     public ZbActorScheduler get()
     {
         return actorScheduler;
+    }
+
+    public ActorSchedulerBuilder getBuilder()
+    {
+        return builder;
     }
 }

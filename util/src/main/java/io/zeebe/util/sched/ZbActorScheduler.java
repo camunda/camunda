@@ -22,80 +22,21 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import io.zeebe.util.sched.clock.ActorClock;
-import io.zeebe.util.sched.metrics.ActorRunnerMetrics;
 import io.zeebe.util.sched.metrics.SchedulerMetrics;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.ConcurrentCountersManager;
 
 public class ZbActorScheduler
 {
-    protected Duration blockingTaskShutdownTime = Duration.ofSeconds(15);
-
     private final AtomicReference<SchedulerState> state = new AtomicReference<>();
+    private final ActorExecutor actorTaskExecutor;
+    private final ConcurrentCountersManager countersManager;
 
-    private final RunnerAssignmentStrategy runnerAssignmentStrategy;
-
-    final ActorTaskRunner[] nonBlockingTasksRunners;
-
-    protected final ThreadPoolExecutor blockingTasksRunner;
-
-    public final int runnerCount;
-
-    private ConcurrentCountersManager countersManager;
-
-    /**
-     * For testing, else manage the counters manager outside
-     */
-    public ZbActorScheduler(int numOfRunnerThreads)
+    public ZbActorScheduler(ActorSchedulerBuilder builder)
     {
-        this(numOfRunnerThreads, buildDefaultCountersManager());
-    }
-
-    protected static ConcurrentCountersManager buildDefaultCountersManager()
-    {
-        final UnsafeBuffer valueBuffer = new UnsafeBuffer(new byte[16 * 1024]);
-        final UnsafeBuffer labelBuffer = new UnsafeBuffer(new byte[valueBuffer.capacity() * 2 + 1]);
-        return new ConcurrentCountersManager(labelBuffer, valueBuffer);
-    }
-
-    public ZbActorScheduler(int numOfRunnerThreads, ConcurrentCountersManager countersManager)
-    {
-        this(numOfRunnerThreads, countersManager, null);
-    }
-
-    public ZbActorScheduler(int numOfRunnerThreads, ConcurrentCountersManager countersManager, ActorClock clock)
-    {
-        this(numOfRunnerThreads, new RandomRunnerAssignmentStrategy(numOfRunnerThreads), countersManager, clock);
-    }
-
-    public ZbActorScheduler(int numOfRunnerThreads, RunnerAssignmentStrategy initialRunnerAssignmentStrategy, ConcurrentCountersManager countersManager)
-    {
-        this(numOfRunnerThreads, initialRunnerAssignmentStrategy, countersManager, null);
-    }
-
-    public ZbActorScheduler(int numOfRunnerThreads, RunnerAssignmentStrategy initialRunnerAssignmentStrategy, ConcurrentCountersManager countersManager, ActorClock clock)
-    {
-        this.runnerAssignmentStrategy = initialRunnerAssignmentStrategy;
-        this.countersManager = countersManager;
-
         state.set(SchedulerState.NEW);
-        runnerCount = numOfRunnerThreads;
-
-        nonBlockingTasksRunners = new ActorTaskRunner[runnerCount];
-
-        for (int i = 0; i < runnerCount; i++)
-        {
-            final ActorRunnerMetrics metrics = new ActorRunnerMetrics(String.format("runner-%d", i), countersManager);
-            nonBlockingTasksRunners[i] = createTaskRunner(i, metrics, clock);
-        }
-
-        blockingTasksRunner = new ThreadPoolExecutor(1, Integer.MAX_VALUE, 60L, TimeUnit.SECONDS, new SynchronousQueue<>(), new BlockingTasksThreadFactory());
-    }
-
-
-    protected ActorTaskRunner createTaskRunner(int i, final ActorRunnerMetrics metrics, ActorClock clock)
-    {
-        return new ActorTaskRunner(this, i, metrics, clock);
+        actorTaskExecutor = builder.getActorExecutor();
+        countersManager = builder.getCountersManager();
     }
 
     /**
@@ -126,66 +67,14 @@ public class ZbActorScheduler
      */
     public void submitActor(ZbActor actor, boolean collectTaskMetrics)
     {
-        final ActorTaskRunner assignedRunner = runnerAssignmentStrategy.nextRunner(nonBlockingTasksRunners);
-
-        final ActorTask task = actor.actor.task;
-        task.onTaskScheduled(this, collectTaskMetrics);
-
-        assignedRunner.submit(task);
-    }
-
-
-    /** called when an actor returns from the blockedTasksRunner */
-    public void reSubmitActor(ActorTask task)
-    {
-        final ActorTaskRunner assignedRunner = runnerAssignmentStrategy.nextRunner(nonBlockingTasksRunners);
-        assignedRunner.submit(task);
-    }
-
-    private final class BlockingTasksThreadFactory implements ThreadFactory
-    {
-        final AtomicLong idGenerator = new AtomicLong();
-
-        @Override
-        public Thread newThread(Runnable r)
-        {
-            final Thread thread = new Thread(r);
-            thread.setName("zb-blocking-task-runner-" + idGenerator.incrementAndGet());
-            return thread;
-        }
-    }
-
-    public interface RunnerAssignmentStrategy
-    {
-        ActorTaskRunner nextRunner(ActorTaskRunner[] runners);
-    }
-
-    static class RandomRunnerAssignmentStrategy implements RunnerAssignmentStrategy
-    {
-        private final int numOfRunnerThreads;
-
-        RandomRunnerAssignmentStrategy(int numOfRunnerThreads)
-        {
-            this.numOfRunnerThreads = numOfRunnerThreads;
-        }
-
-        @Override
-        public ActorTaskRunner nextRunner(ActorTaskRunner[] runners)
-        {
-            final int runnerOffset = ThreadLocalRandom.current().nextInt(numOfRunnerThreads);
-
-            return runners[runnerOffset];
-        }
+        actorTaskExecutor.submit(actor.actor.task, collectTaskMetrics);
     }
 
     public void start()
     {
         if (state.compareAndSet(SchedulerState.NEW, SchedulerState.RUNNING))
         {
-            for (int i = 0; i < nonBlockingTasksRunners.length; i++)
-            {
-                nonBlockingTasksRunners[i].start();
-            }
+            actorTaskExecutor.start();
         }
         else
         {
@@ -193,42 +82,16 @@ public class ZbActorScheduler
         }
     }
 
-    @SuppressWarnings("unchecked")
     public Future<Void> stop()
     {
         if (state.compareAndSet(SchedulerState.RUNNING, SchedulerState.TERMINATING))
         {
-            blockingTasksRunner.shutdown();
 
-            final CompletableFuture<Void>[] terminationFutures = new CompletableFuture[nonBlockingTasksRunners.length];
-
-            for (int i = 0; i < runnerCount; i++)
-            {
-                try
+            return actorTaskExecutor.closeAsync()
+                .thenRun(() ->
                 {
-                    terminationFutures[i] = nonBlockingTasksRunners[i].close();
-                }
-                catch (IllegalStateException e)
-                {
-                    e.printStackTrace();
-                    terminationFutures[i] = CompletableFuture.completedFuture(null);
-                }
-            }
-
-            try
-            {
-                blockingTasksRunner.awaitTermination(blockingTaskShutdownTime.getSeconds(), TimeUnit.SECONDS);
-            }
-            catch (InterruptedException e)
-            {
-                e.printStackTrace();
-            }
-
-            return CompletableFuture.allOf(terminationFutures)
-                    .thenRun(() ->
-                    {
-                        state.set(SchedulerState.TERMINATED);
-                    });
+                    state.set(SchedulerState.TERMINATED);
+                });
         }
         else
         {
@@ -241,16 +104,262 @@ public class ZbActorScheduler
         SchedulerMetrics.printMetrics(countersManager, ps);
     }
 
+    public static ActorSchedulerBuilder newActorScheduler()
+    {
+        return new ActorSchedulerBuilder();
+    }
+
+    public static ZbActorScheduler newDefaultActorScheduler()
+    {
+        return new ActorSchedulerBuilder().build();
+    }
+
+    public static class ActorSchedulerBuilder
+    {
+        private ActorClock actorClock;
+        private ConcurrentCountersManager countersManager;
+        private int actorThreadCount = Math.max(1, Runtime.getRuntime().availableProcessors() - 1);
+        private double[] priorityQuotas = new double[] { 0.60, 0.30, 0.10 };
+        private ThreadAssignmentStrategy threadAssignmentStrategy;
+        private ActorThread[] actorThreads;
+        private ActorThreadFactory actorThreadFactory;
+        private ThreadPoolExecutor blockingTasksRunner;
+        private Duration blockingTasksShutdownTime = Duration.ofSeconds(15);
+        private ActorExecutor actorExecutor;
+
+        public ActorSchedulerBuilder setActorClock(ActorClock actorClock)
+        {
+            this.actorClock = actorClock;
+            return this;
+        }
+
+        public ActorSchedulerBuilder setCountersManager(ConcurrentCountersManager countersManager)
+        {
+            this.countersManager = countersManager;
+            return this;
+        }
+
+        public ActorSchedulerBuilder setActorThreadCount(int actorThreadCount)
+        {
+            this.actorThreadCount = actorThreadCount;
+            return this;
+        }
+
+        public ActorSchedulerBuilder setPriorityQuotas(double[] priorityQuotas)
+        {
+            this.priorityQuotas = priorityQuotas;
+            return this;
+        }
+
+        public ActorSchedulerBuilder setThreadAssignmentStrategy(ThreadAssignmentStrategy threadAssignmentStrategy)
+        {
+            this.threadAssignmentStrategy = threadAssignmentStrategy;
+            return this;
+        }
+
+        public ActorSchedulerBuilder setActorThreadFactory(ActorThreadFactory actorThreadFactory)
+        {
+            this.actorThreadFactory = actorThreadFactory;
+            return this;
+        }
+
+        public ActorSchedulerBuilder setBlockingTasksRunner(ThreadPoolExecutor blockingTasksRunner)
+        {
+            this.blockingTasksRunner = blockingTasksRunner;
+            return this;
+        }
+
+        public ActorSchedulerBuilder setBlockingTasksShutdownTime(Duration blockingTasksShutdownTime)
+        {
+            this.blockingTasksShutdownTime = blockingTasksShutdownTime;
+            return this;
+        }
+
+        public ActorSchedulerBuilder setActorExecutor(ActorExecutor actorExecutor)
+        {
+            this.actorExecutor = actorExecutor;
+            return this;
+        }
+
+        public ActorClock getActorClock()
+        {
+            return actorClock;
+        }
+
+        public ConcurrentCountersManager getCountersManager()
+        {
+            return countersManager;
+        }
+
+        public int getActorThreadCount()
+        {
+            return actorThreadCount;
+        }
+
+        public double[] getPriorityQuotas()
+        {
+            return priorityQuotas;
+        }
+
+        public ThreadAssignmentStrategy getThreadAssignmentStrategy()
+        {
+            return threadAssignmentStrategy;
+        }
+
+        public ActorThread[] getActorThreads()
+        {
+            return actorThreads;
+        }
+
+        public ActorThreadFactory getActorThreadFactory()
+        {
+            return actorThreadFactory;
+        }
+
+        public ThreadPoolExecutor getBlockingTasksRunner()
+        {
+            return blockingTasksRunner;
+        }
+
+        public Duration getBlockingTasksShutdownTime()
+        {
+            return blockingTasksShutdownTime;
+        }
+
+        public ActorExecutor getActorExecutor()
+        {
+            return actorExecutor;
+        }
+
+        private void initCountersManager()
+        {
+            if (countersManager == null)
+            {
+                final UnsafeBuffer valueBuffer = new UnsafeBuffer(new byte[64 * 1024]);
+                final UnsafeBuffer labelBuffer = new UnsafeBuffer(new byte[valueBuffer.capacity() * 2 + 1]);
+                countersManager = new ConcurrentCountersManager(labelBuffer, valueBuffer);
+            }
+        }
+
+        private void initThreadAssignmentStrategy()
+        {
+            if (threadAssignmentStrategy == null)
+            {
+                threadAssignmentStrategy = new RandomThreadAssignmentStrategy(actorThreadCount);
+            }
+        }
+
+        private void initActorThreadFactory()
+        {
+            if (actorThreadFactory == null)
+            {
+                actorThreadFactory = new DefaultActorThreadFactory();
+            }
+        }
+
+        private void initActorThreads()
+        {
+            actorThreads = new ActorThread[actorThreadCount];
+
+            for (int i = 0; i < actorThreadCount; i++)
+            {
+                actorThreads[i] = actorThreadFactory.newThread(i, this);
+            }
+        }
+
+        private void initBlockingTaskRunner()
+        {
+            if (blockingTasksRunner == null)
+            {
+                blockingTasksRunner = new ThreadPoolExecutor(1,
+                    Integer.MAX_VALUE,
+                    60L,
+                    TimeUnit.SECONDS,
+                    new SynchronousQueue<>(),
+                    new BlockingTasksThreadFactory());
+            }
+        }
+
+        private void initActorExecutor()
+        {
+            if (actorExecutor == null)
+            {
+                actorExecutor = new ActorExecutor(actorThreads,
+                    blockingTasksRunner,
+                    countersManager,
+                    threadAssignmentStrategy,
+                    blockingTasksShutdownTime);
+            }
+        }
+
+        public ZbActorScheduler build()
+        {
+            initCountersManager();
+            initThreadAssignmentStrategy();
+            initActorThreadFactory();
+            initActorThreads();
+            initBlockingTaskRunner();
+            initActorExecutor();
+
+            return new ZbActorScheduler(this);
+        }
+    }
+
+    public interface ActorThreadFactory
+    {
+        ActorThread newThread(int runnerId, ActorSchedulerBuilder builder);
+    }
+
+    public static class DefaultActorThreadFactory implements ActorThreadFactory
+    {
+        @Override
+        public ActorThread newThread(int runnerId, ActorSchedulerBuilder builder)
+        {
+            return new ActorThread(runnerId, builder);
+        }
+    }
+
+    public static class BlockingTasksThreadFactory implements ThreadFactory
+    {
+        final AtomicLong idGenerator = new AtomicLong();
+
+        @Override
+        public Thread newThread(Runnable r)
+        {
+            final Thread thread = new Thread(r);
+            thread.setName("zb-blocking-task-runner-" + idGenerator.incrementAndGet());
+            return thread;
+        }
+    }
+
+    public interface ThreadAssignmentStrategy
+    {
+        ActorThread nextRunner(ActorThread[] runners);
+    }
+
+    public static class RandomThreadAssignmentStrategy implements ThreadAssignmentStrategy
+    {
+        private final int numOfRunnerThreads;
+
+        RandomThreadAssignmentStrategy(int numOfRunnerThreads)
+        {
+            this.numOfRunnerThreads = numOfRunnerThreads;
+        }
+
+        @Override
+        public ActorThread nextRunner(ActorThread[] runners)
+        {
+            final int runnerOffset = ThreadLocalRandom.current().nextInt(numOfRunnerThreads);
+
+            return runners[runnerOffset];
+        }
+    }
+
     private enum SchedulerState
     {
         NEW,
         RUNNING,
         TERMINATING,
         TERMINATED // scheduler is not reusable
-    }
-
-    public ConcurrentCountersManager getCountersManager()
-    {
-        return countersManager;
     }
 }

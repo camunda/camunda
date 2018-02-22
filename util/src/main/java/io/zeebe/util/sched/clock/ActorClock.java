@@ -15,7 +15,7 @@
  */
 package io.zeebe.util.sched.clock;
 
-import io.zeebe.util.sched.ActorTaskRunner;
+import io.zeebe.util.sched.ActorThread;
 
 public interface ActorClock
 {
@@ -29,7 +29,7 @@ public interface ActorClock
 
     static ActorClock current()
     {
-        final ActorTaskRunner current = ActorTaskRunner.current();
+        final ActorThread current = ActorThread.current();
         if (current == null)
         {
             throw new UnsupportedOperationException("ActorClock.current() can only be called from actor thread.");

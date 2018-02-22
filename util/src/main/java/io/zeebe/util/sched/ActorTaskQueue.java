@@ -126,11 +126,8 @@ public class ActorTaskQueue extends ActorTaskQueueHead
 
     private final ActorTaskQueueNode empty = new ActorTaskQueueNode();
 
-    private final int queueId;
-
-    public ActorTaskQueue(int queueId)
+    public ActorTaskQueue()
     {
-        this.queueId = queueId;
         headOrdered(empty);
         UNSAFE.putOrderedObject(this, TAIL_OFFSET, empty);
     }
@@ -143,7 +140,7 @@ public class ActorTaskQueue extends ActorTaskQueueHead
         // TODO: make garbage free again
         final ActorTaskQueueNode tail = new ActorTaskQueueNode();
         tail.task = task;
-        tail.stateCount = task.stateCount;
+        tail.stateCount = task.getStateCount();
         final ActorTaskQueueNode previousTail = swapTail(tail);
         previousTail.nextOrdered(tail);
         tail.prevOrdered(previousTail);
@@ -155,13 +152,8 @@ public class ActorTaskQueue extends ActorTaskQueueHead
      *
      * @return the actor which was stolen or null in case no actor is available
      */
-    public ActorTask trySteal(ActorTaskQueue thief)
+    public ActorTask trySteal()
     {
-        if (thief == this)
-        {
-            throw new RuntimeException("Queue cannot steal it's own tasks");
-        }
-
         ActorTaskQueueNode node = this.tail;
 
         while (node != null && node != empty)

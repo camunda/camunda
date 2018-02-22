@@ -17,6 +17,8 @@ package io.zeebe.util.sched.metrics;
 
 import static io.zeebe.util.sched.metrics.SchedulerMetrics.TYPE_TEMPORAL_VALUE;
 
+import java.util.Arrays;
+
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
 
@@ -29,16 +31,21 @@ public class ActorRunnerMetrics implements AutoCloseable
     private final AtomicCounter runnerIdleTime;
     private final AtomicCounter runnerBusyTime;
     private final AtomicCounter jobExecutionCount;
-    private final AtomicCounter taskExecutionCount;
     private final AtomicCounter taskStealCount;
+    private final AtomicCounter[] taskPriorityCounters;
 
-    public ActorRunnerMetrics(String runnerName, CountersManager countersManager)
+    public ActorRunnerMetrics(String runnerName, CountersManager countersManager, int priorityCount)
     {
         runnerIdleTime = countersManager.newCounter(String.format("%s.runnerIdleTime", runnerName), TYPE_TEMPORAL_VALUE);
         runnerBusyTime = countersManager.newCounter(String.format("%s.runnerBusyTime", runnerName), TYPE_TEMPORAL_VALUE);
         jobExecutionCount = countersManager.newCounter(String.format("%s.jobCount", runnerName));
-        taskExecutionCount = countersManager.newCounter(String.format("%s.taskExecutionCount", runnerName));
         taskStealCount = countersManager.newCounter(String.format("%s.taskStealCount", runnerName));
+
+        taskPriorityCounters = new AtomicCounter[priorityCount];
+        for (int i = 0; i < taskPriorityCounters.length; i++)
+        {
+            taskPriorityCounters[i] = countersManager.newCounter(String.format("%s.taskExecutionCount-%d", runnerName, i));
+        }
     }
 
     public void incrementTaskStealCount()
@@ -46,9 +53,9 @@ public class ActorRunnerMetrics implements AutoCloseable
         taskStealCount.incrementOrdered();
     }
 
-    public void incrementTaskExecutionCount()
+    public void incrementTaskExecutionCount(int priority)
     {
-        taskExecutionCount.incrementOrdered();
+        taskPriorityCounters[priority].incrementOrdered();
     }
 
     public void incrementJobCount()
@@ -70,9 +77,9 @@ public class ActorRunnerMetrics implements AutoCloseable
     public void close()
     {
         jobExecutionCount.close();
-        taskExecutionCount.close();
         taskStealCount.close();
         runnerIdleTime.close();
         runnerBusyTime.close();
+        Arrays.asList(taskPriorityCounters).forEach(AtomicCounter::close);
     }
 }

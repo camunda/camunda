@@ -38,7 +38,7 @@ public class ActorJob
 
     private ActorFuture resultFuture;
 
-    ActorTaskRunner runner;
+    ActorThread actorThread;
 
     private ActorSubscription subscription;
 
@@ -49,11 +49,11 @@ public class ActorJob
         this.state = ActorState.QUEUED;
     }
 
-    void execute(ActorTaskRunner runner)
+    void execute(ActorThread runner)
     {
         runner.getMetrics().incrementJobCount();
 
-        this.runner = runner;
+        this.actorThread = runner;
         try
         {
             invoke(runner);
@@ -77,7 +77,7 @@ public class ActorJob
         }
         finally
         {
-            this.runner = null;
+            this.actorThread = null;
 
             // in any case, success or exception, decide if the job should be resubmitted
             if (isTriggeredBySubscription()
@@ -93,7 +93,7 @@ public class ActorJob
         }
     }
 
-    private void invoke(ActorTaskRunner runner) throws Exception
+    private void invoke(ActorThread runner) throws Exception
     {
         if (callable != null)
         {
@@ -127,7 +127,7 @@ public class ActorJob
      * Append a child task to this task. The new child task is appended to the list of tasks
      * spawned by this task such that it is executed last.
      */
-    protected void appendChild(ActorJob spawnedTask)
+    public void appendChild(ActorJob spawnedTask)
     {
         spawnedTask.next = this.next;
         this.next = spawnedTask;
@@ -185,7 +185,7 @@ public class ActorJob
         actor = null;
 
         task = null;
-        runner = null;
+        actorThread = null;
 
         callable = null;
         runnable = null;
@@ -250,6 +250,16 @@ public class ActorJob
     public ActorTask getTask()
     {
         return task;
+    }
+
+    public ZbActor getActor()
+    {
+        return actor;
+    }
+
+    public ActorThread getActorThread()
+    {
+        return actorThread;
     }
 
 }

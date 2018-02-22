@@ -66,14 +66,14 @@ public class ChannelConsumerCondition implements ActorCondition, ActorSubscripti
 
         if (task.tryWakeup())
         {
-            final ActorTaskRunner taskRunner = ActorTaskRunner.current();
+            final ActorThread taskRunner = ActorThread.current();
             if (taskRunner != null)
             {
                 taskRunner.submit(task);
             }
             else
             {
-                task.getScheduler().reSubmitActor(task);
+                task.getActorTaskExecutor().reSubmit(task);
             }
         }
     }

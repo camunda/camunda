@@ -141,7 +141,7 @@ public class CompletableActorFuture<V> implements ActorFuture<V>
     {
         if (!isDone())
         {
-            if (ActorTaskRunner.current() != null)
+            if (ActorThread.current() != null)
             {
                 throw new IllegalStateException(
                         "Actor call get() on future which has not completed. " + "Actors must be non-blocking. Use actor.awaitFuture().");
@@ -232,14 +232,14 @@ public class CompletableActorFuture<V> implements ActorFuture<V>
             {
                 if (task.tryWakeup())
                 {
-                    final ActorTaskRunner taskRunner = ActorTaskRunner.current();
+                    final ActorThread taskRunner = ActorThread.current();
                     if (taskRunner != null)
                     {
                         taskRunner.submit(task);
                     }
                     else
                     {
-                        task.getScheduler().reSubmitActor(task);
+                        task.getActorTaskExecutor().reSubmit(task);
                     }
                 }
             }

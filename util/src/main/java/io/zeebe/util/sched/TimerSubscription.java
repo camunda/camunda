@@ -83,13 +83,13 @@ public class TimerSubscription implements ActorSubscription, ScheduledTimer
         {
             isCanceled = true;
 
-            ActorTaskRunner.current().removeTimer(this);
+            ActorThread.current().removeTimer(this);
         }
     }
 
     public void submit()
     {
-        final ActorTaskRunner runner = ActorTaskRunner.current();
+        final ActorThread runner = ActorThread.current();
         runner.scheduleTimer(this);
     }
 
@@ -109,11 +109,11 @@ public class TimerSubscription implements ActorSubscription, ScheduledTimer
         {
             isDone = true;
 
-            final ActorTask task = job.task;
+            final ActorTask task = job.getTask();
 
             if (task.tryWakeup())
             {
-                ActorTaskRunner.current().submit(task);
+                ActorThread.current().submit(task);
             }
         }
     }
