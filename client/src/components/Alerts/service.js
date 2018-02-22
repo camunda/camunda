@@ -31,6 +31,6 @@ export async function deleteAlert(id) {
 export async function emailNotificationIsEnabled() {
   const response = await get('/api/alert/email/isEnabled');
 
-  return await response.json().isEnabled;
+  return (await response.json()).enabled;
 }
 
