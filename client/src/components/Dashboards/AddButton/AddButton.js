@@ -2,7 +2,6 @@ import React from 'react';
 
 import {Modal, Button, Select, ControlGroup, DashboardObject} from 'components';
 
-// import {DashboardObject} from '../DashboardObject';
 import {loadReports, getOccupiedTiles} from '../service';
 
 import './AddButton.css';

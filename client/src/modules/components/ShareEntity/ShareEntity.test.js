@@ -47,7 +47,7 @@ it('should delete entity if sharing is revoked', () => {
 });
 
 it('should construct special link', () => {
-  const node = mount(<ShareEntity type={'report'} {...props} />);
+  const node = mount(<ShareEntity type='report' {...props} />);
   Object.defineProperty(window.location, 'origin', {
     value: 'http://example.com'
   });
@@ -58,7 +58,7 @@ it('should construct special link', () => {
 });
 
 it('should construct special link for embedding', () => {
-  const node = mount(<ShareEntity type={'report'} {...props} />);
+  const node = mount(<ShareEntity type='report' {...props} />);
   Object.defineProperty(window.location, 'origin', {
     value: 'http://example.com'
   });
