@@ -108,7 +108,7 @@ public class LogStreamController extends ZbActor
             logStorage.open();
         }
 
-        actor.await(writeBuffer.getSubscriptionAsync("log-appender"), (subscription, failure) ->
+        actor.runOnCompletion(writeBuffer.getSubscriptionAsync("log-appender"), (subscription, failure) ->
         {
             if (failure == null)
             {
