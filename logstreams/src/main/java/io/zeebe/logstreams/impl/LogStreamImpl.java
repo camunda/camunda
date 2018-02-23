@@ -268,13 +268,13 @@ public final class LogStreamImpl implements LogStream
     }
 
     @Override
-    public void registerOnCommitPositionUpdatedCondition(ActorCondition condition)
+    public synchronized void registerOnCommitPositionUpdatedCondition(ActorCondition condition)
     {
         onCommitPositionUpdatedConditions.registerConsumer(condition);
     }
 
     @Override
-    public void removeOnCommitPositionUpdatedCondition(ActorCondition condition)
+    public synchronized void removeOnCommitPositionUpdatedCondition(ActorCondition condition)
     {
         onCommitPositionUpdatedConditions.removeConsumer(condition);
     }

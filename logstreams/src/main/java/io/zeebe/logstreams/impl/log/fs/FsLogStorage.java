@@ -564,6 +564,6 @@ public class FsLogStorage implements LogStorage
     @Override
     public synchronized void removeOnAppendCondition(ActorCondition condition)
     {
-        onAppendConditions.registerConsumer(condition);
+        onAppendConditions.removeConsumer(condition);
     }
 }

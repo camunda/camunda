@@ -15,6 +15,12 @@
  */
 package io.zeebe.logstreams.impl;
 
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.positionOffset;
+
+import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import io.zeebe.dispatcher.BlockPeek;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Subscription;
@@ -25,12 +31,6 @@ import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.MutableDirectBuffer;
 import org.slf4j.Logger;
-
-import java.nio.ByteBuffer;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.positionOffset;
 
 public class LogStreamController extends ZbActor
 {
@@ -43,8 +43,7 @@ public class LogStreamController extends ZbActor
 
     private long firstEventPosition;
 
-    private final CompletableActorFuture<Void> openFuture = new CompletableActorFuture<>();
-    private final CompletableActorFuture<Void> recoverFuture = new CompletableActorFuture<>();
+    private CompletableActorFuture<Void> openFuture;
 
     //  MANDATORY //////////////////////////////////////////////////
     private String name;
@@ -84,20 +83,18 @@ public class LogStreamController extends ZbActor
 
     public ActorFuture<Void> openAsync()
     {
-        // reset future
-        openFuture.close();
-        openFuture.setAwaitingResult();
-
         if (isOpenend.compareAndSet(false, true))
         {
+            this.openFuture = new CompletableActorFuture<>();
+
             actorScheduler.submitActor(this);
+
+            return openFuture;
         }
         else
         {
-            openFuture.complete(null);
+            return CompletableActorFuture.completed(null);
         }
-
-        return openFuture;
     }
 
     @Override
@@ -118,10 +115,12 @@ public class LogStreamController extends ZbActor
                 actor.consume(writeBufferSubscription, this::peek);
 
                 openFuture.complete(null);
+                openFuture = null;
             }
             else
             {
                 openFuture.completeExceptionally(failure);
+                openFuture = null;
             }
         });
     }

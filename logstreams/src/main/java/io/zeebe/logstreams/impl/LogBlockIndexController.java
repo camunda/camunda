@@ -15,6 +15,15 @@
  */
 package io.zeebe.logstreams.impl;
 
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.getPosition;
+import static io.zeebe.logstreams.log.LogStreamUtil.INVALID_ADDRESS;
+import static io.zeebe.logstreams.spi.LogStorage.OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY;
+import static io.zeebe.logstreams.spi.LogStorage.OP_RESULT_INVALID_ADDR;
+
+import java.nio.ByteBuffer;
+import java.time.Duration;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.spi.ReadableSnapshot;
@@ -31,15 +40,6 @@ import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.Position;
 import org.slf4j.Logger;
-
-import java.nio.ByteBuffer;
-import java.time.Duration;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.getPosition;
-import static io.zeebe.logstreams.log.LogStreamUtil.INVALID_ADDRESS;
-import static io.zeebe.logstreams.spi.LogStorage.OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY;
-import static io.zeebe.logstreams.spi.LogStorage.OP_RESULT_INVALID_ADDR;
 
 /**
  * Represents the log block index controller, which creates the log block index
@@ -91,7 +91,7 @@ public class LogBlockIndexController extends ZbActor
 
     private final AtomicBoolean isOpenend = new AtomicBoolean(false);
 
-    private final CompletableActorFuture<Void> openFuture = new CompletableActorFuture<>();
+    private CompletableActorFuture<Void> openFuture;
 
 
     // INTERNAL ///////////////////////////////////////////////////
@@ -137,20 +137,18 @@ public class LogBlockIndexController extends ZbActor
 
     public ActorFuture<Void> openAsync()
     {
-        // reset future
-        openFuture.close();
-        openFuture.setAwaitingResult();
-
         if (isOpenend.compareAndSet(false, true))
         {
+            this.openFuture = new CompletableActorFuture<>();
+
             actorScheduler.submitActor(this);
+
+            return openFuture;
         }
         else
         {
-            openFuture.complete(null);
+            return CompletableActorFuture.completed(null);
         }
-
-        return openFuture;
     }
 
     @Override
@@ -197,6 +195,7 @@ public class LogBlockIndexController extends ZbActor
             onCommitPositionUpdatedConditions.registerConsumer(onCommitCondition);
 
             openFuture.complete(null);
+            openFuture = null;
 
             actor.runAtFixedRate(snapshotPeriod, createSnapshot);
             // start reading after started
@@ -206,6 +205,7 @@ public class LogBlockIndexController extends ZbActor
         {
             LOG.error("Fail to recover block index.", e);
             openFuture.completeExceptionally(e);
+            openFuture = null;
         }
     }
 
