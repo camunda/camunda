@@ -189,6 +189,8 @@ public final class LogStreamImpl implements LogStream
     {
         final CompletableActorFuture<Void> closeFuture = new CompletableActorFuture<>();
 
+        final LogStreamController logStreamController = this.logStreamController;
+        final Dispatcher writeBuffer = this.writeBuffer;
         actorScheduler.submitActor(new ZbActor()
         {
             @Override
@@ -204,7 +206,7 @@ public final class LogStreamImpl implements LogStream
                             {
                                 logStorage.close();
 
-                                writeBuffer = null;
+                                LogStreamImpl.this.writeBuffer = null;
 
                                 if (t1 != null)
                                 {
@@ -306,7 +308,9 @@ public final class LogStreamImpl implements LogStream
     @Override
     public ActorFuture<Void> closeLogStreamController()
     {
-        if (logStreamController != null)
+        final LogStreamController logStreamController = this.logStreamController;
+        final Dispatcher writeBuffer = this.writeBuffer;
+        if (logStreamController != null && writeBuffer != null)
         {
             final CompletableActorFuture<Void> closeFuture = new CompletableActorFuture<>();
 
@@ -315,11 +319,11 @@ public final class LogStreamImpl implements LogStream
                 @Override
                 protected void onActorStarted()
                 {
-                    actor.runOnCompletion(writeBuffer.closeAsync(), (v1, t1) ->
+                    actor.runOnCompletion(logStreamController.closeAsync(), (v2, t2) ->
                     {
-                        actor.runOnCompletion(logStreamController.closeAsync(), (v2, t2) ->
+                        actor.runOnCompletion(writeBuffer.closeAsync(), (v1, t1) ->
                         {
-                            writeBuffer = null;
+                            LogStreamImpl.this.writeBuffer = null;
 
                             if (t1 != null)
                             {
