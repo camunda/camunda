@@ -1,3 +1,18 @@
+/*
+ * Copyright © 2017 camunda services GmbH (info@camunda.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.zeebe.util.sched;
 
 import static java.lang.Math.floorMod;
@@ -11,7 +26,7 @@ import io.zeebe.util.sched.clock.ActorClock;
  * Logic and state for the priority scheduling. Each {@link ActorThread}
  * maintains a local instance if this class.
  */
-public class PriorityScheduler
+public class PriorityScheduler implements TaskScheduler
 {
     private static final int TIME_SLICES_PER_SECOND = 100;
     private static final long TIME_SLICE_LENTH_NS = TimeUnit.MILLISECONDS.toNanos(1000 / TIME_SLICES_PER_SECOND);
@@ -123,6 +138,7 @@ public class PriorityScheduler
      * calculates and returns the next task to execute or null if no such task
      * can be determined.
      */
+    @Override
     public ActorTask getNextTask(ActorClock clock)
     {
         final int priotiy = currentRun.getTimeSlicePriority(clock.getNanoTime());

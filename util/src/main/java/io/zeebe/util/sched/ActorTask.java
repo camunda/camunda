@@ -17,8 +17,7 @@ package io.zeebe.util.sched;
 
 import static org.agrona.UnsafeAccess.UNSAFE;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import io.zeebe.util.sched.future.CompletableActorFuture;
@@ -28,9 +27,6 @@ import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 /**
  * A task executed by the scheduler. For each actor (instance), exactly one task is created.
  * Each invocation of one of the actor's methods is an {@link ActorJob}.
- *
- * Tasks are not reusable.
- *
  */
 @SuppressWarnings("restriction")
 public class ActorTask
@@ -55,7 +51,8 @@ public class ActorTask
 
     final ZbActor actor;
 
-    private ActorExecutor actorTaskExecutor;
+    private ActorExecutor actorExecutor;
+    private ActorThreadGroup actorThreadGroup;
 
     /** jobs that are submitted to this task externally. A job is submitted "internally" if it is submitted
      * from a job within the same actor while the task is in RUNNING state. */
@@ -67,7 +64,7 @@ public class ActorTask
 
     ActorJob currentJob;
 
-    List<ActorSubscription> subscriptions = new ArrayList<>();
+    private ActorSubscription[] subscriptions = new ActorSubscription[0];
 
     boolean shouldYield;
 
@@ -79,7 +76,11 @@ public class ActorTask
 
     private boolean isJumbo = false;
 
+    /** the priority class of the task. Only set if the task is scheduled as non-blocking, CPU-bound */
     private int priority = ActorPriority.REGULAR.getPriorityClass();
+
+    /** the id of the io device used. Only set if this task is scheduled as a blocking io task*/
+    private int deviceId;
 
     public ActorTask(ZbActor actor)
     {
@@ -89,9 +90,10 @@ public class ActorTask
     /**
      * called when the task is initially scheduled.
      */
-    public void onTaskScheduled(ActorExecutor actorTaskExecutor, TaskMetrics taskMetrics)
+    public void onTaskScheduled(ActorExecutor actorExecutor, ActorThreadGroup actorThreadGroup, TaskMetrics taskMetrics)
     {
-        this.actorTaskExecutor = actorTaskExecutor;
+        this.actorExecutor = actorExecutor;
+        this.actorThreadGroup = actorThreadGroup;
         // reset previous state to allow re-scheduling
         this.terminationFuture.close();
         this.terminationFuture.setAwaitingResult();
@@ -113,20 +115,10 @@ public class ActorTask
     /** Used to externally submit a job. */
     public void submit(ActorJob job)
     {
+        // add job to queue
         submittedJobs.offer(job);
-
-        if (setStateWaitingToWakingUp())
-        {
-            final ActorThread current = ActorThread.current();
-            if (current != null)
-            {
-                current.submit(this);
-            }
-            else
-            {
-                actorTaskExecutor.reSubmit(this);
-            }
-        }
+        // wakeup task if waiting
+        tryWakeup();
     }
 
     public boolean execute(ActorThread runner)
@@ -160,7 +152,7 @@ public class ActorTask
 
                         if (!subscription.isRecurring())
                         {
-                            subscriptions.remove(subscription);
+                            removeSubscription(subscription);
                         }
 
                         subscription.onJobCompleted();
@@ -192,7 +184,7 @@ public class ActorTask
 
         if (currentJob == null)
         {
-            if (subscriptions.size() > 0 && !isClosing)
+            if (subscriptions.length > 0 && !isClosing)
             {
                 resubmit = setStateActiveToWaiting();
             }
@@ -216,7 +208,7 @@ public class ActorTask
     private void cleanUpOnClose()
     {
         state = ActorState.TERMINATED;
-        subscriptions.clear();
+        subscriptions = new ActorSubscription[0];
 
         while (submittedJobs.poll() != null)
         {
@@ -250,7 +242,7 @@ public class ActorTask
         {
             isClosing = true;
 
-            subscriptions.clear();
+            subscriptions = new ActorSubscription[0];
 
             while (submittedJobs.poll() != null)
             {
@@ -288,6 +280,11 @@ public class ActorTask
      */
     boolean setStateActiveToWaiting()
     {
+        // take copy of subscriptions list: once we set the state to WAITING, the task could be woken up by another
+        // thread. That thread could modify the subscriptions array.
+        final ActorSubscription[] subscriptionsCopy = this.subscriptions;
+
+        // first set state to waiting
         state = ActorState.WAITING;
 
         /*
@@ -296,8 +293,9 @@ public class ActorTask
          * yet in state waiting. After transitioning to waiting we check if we need to wake
          * up right away.
          */
-        if (!submittedJobs.isEmpty() || pollSubscriptionsWithoutAddingJobs())
+        if (!submittedJobs.isEmpty() || pollSubscriptionsWithoutAddingJobs(subscriptionsCopy))
         {
+            // could be that another thread already woke up this task
             if (casState(ActorState.WAITING, ActorState.WAKING_UP))
             {
                 return true;
@@ -307,9 +305,17 @@ public class ActorTask
         return false;
     }
 
-    boolean setStateWaitingToWakingUp()
+    public boolean tryWakeup()
     {
-        return casState(ActorState.WAITING, ActorState.WAKING_UP);
+        boolean didWakeup = false;
+
+        if (casState(ActorState.WAITING, ActorState.WAKING_UP))
+        {
+            actorThreadGroup.submit(this);
+            didWakeup = true;
+        }
+
+        return didWakeup;
     }
 
     private boolean poll()
@@ -331,9 +337,9 @@ public class ActorTask
 
         boolean hasJobs = false;
 
-        for (int i = 0; i < subscriptions.size(); i++)
+        for (int i = 0; i < subscriptions.length; i++)
         {
-            final ActorSubscription subscription = subscriptions.get(i);
+            final ActorSubscription subscription = subscriptions[i];
 
             if (subscription.poll())
             {
@@ -356,7 +362,7 @@ public class ActorTask
         return hasJobs;
     }
 
-    private boolean pollSubscriptionsWithoutAddingJobs()
+    private boolean pollSubscriptionsWithoutAddingJobs(ActorSubscription[] subscriptions)
     {
         if (isClosing)
         {
@@ -365,9 +371,9 @@ public class ActorTask
 
         boolean result = false;
 
-        for (int i = 0; i < subscriptions.size() && !result; i++)
+        for (int i = 0; i < subscriptions.length && !result; i++)
         {
-            result |= subscriptions.get(i).poll();
+            result |= subscriptions[i].poll();
         }
 
         return result;
@@ -409,19 +415,9 @@ public class ActorTask
         return actor.getName() + " " + state;
     }
 
-    public void addSubscription(ActorSubscription subscription)
-    {
-        subscriptions.add(subscription);
-    }
-
     public void yield()
     {
         shouldYield = true;
-    }
-
-    public boolean tryWakeup()
-    {
-        return setStateWaitingToWakingUp();
     }
 
     public TaskMetrics getMetrics()
@@ -461,9 +457,9 @@ public class ActorTask
         return stateCount;
     }
 
-    public ActorExecutor getActorTaskExecutor()
+    public ActorThreadGroup getActorThreadGroup()
     {
-        return actorTaskExecutor;
+        return actorThreadGroup;
     }
 
     public String getName()
@@ -489,5 +485,52 @@ public class ActorTask
     public void setPriority(int priority)
     {
         this.priority = priority;
+    }
+
+    public int getDeviceId()
+    {
+        return deviceId;
+    }
+
+    public void setDeviceId(int deviceId)
+    {
+        this.deviceId = deviceId;
+    }
+
+    public ActorExecutor getActorExecutor()
+    {
+        return actorExecutor;
+    }
+
+    // subscription helpers
+
+    public void addSubscription(ActorSubscription subscription)
+    {
+        final ActorSubscription[] arrayCopy = Arrays.copyOf(subscriptions, subscriptions.length + 1);
+        arrayCopy[arrayCopy.length - 1] = subscription;
+        subscriptions = arrayCopy;
+    }
+
+    private void removeSubscription(ActorSubscription subscription)
+    {
+        final int length = subscriptions.length;
+
+        int index = -1;
+        for (int i = 0; i < subscriptions.length; i++)
+        {
+            if (subscriptions[i] == subscription)
+            {
+                index = i;
+            }
+        }
+
+        final ActorSubscription[] newSubscriptions = new ActorSubscription[length - 1];
+        System.arraycopy(subscriptions, 0, newSubscriptions, 0, index);
+        if (index < length - 1)
+        {
+            System.arraycopy(subscriptions, index + 1, newSubscriptions, index, length - index - 1);
+        }
+
+        this.subscriptions = newSubscriptions;
     }
 }

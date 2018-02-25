@@ -1,9 +1,24 @@
+/*
+ * Copyright © 2017 camunda services GmbH (info@camunda.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.zeebe.util.sched;
 
 import java.time.Duration;
 import java.util.concurrent.*;
 
-import io.zeebe.util.sched.ZbActorScheduler.ThreadAssignmentStrategy;
+import io.zeebe.util.sched.ZbActorScheduler.ActorSchedulerBuilder;
 import io.zeebe.util.sched.metrics.TaskMetrics;
 import org.agrona.concurrent.status.ConcurrentCountersManager;
 
@@ -11,31 +26,25 @@ import org.agrona.concurrent.status.ConcurrentCountersManager;
  * Used to submit {@link ActorTask ActorTasks} and Blocking Actions to
  * the scheduler's internal runners and queues.
  */
-@SuppressWarnings("unchecked")
 public class ActorExecutor
 {
-    private final ActorThread[] runners;
+    private final ActorThreadGroup cpuBoundThreads;
+    private final ActorThreadGroup ioBoundThreads;
     private final ThreadPoolExecutor blockingTasksRunner;
     private final ConcurrentCountersManager countersManager;
-    private final ThreadAssignmentStrategy runnerAssignmentStrategy;
     private final Duration blockingTasksShutdownTime;
 
-    public ActorExecutor(ActorThread[] runners,
-        ThreadPoolExecutor blockingTasksRunner,
-        ConcurrentCountersManager countersManager,
-        ThreadAssignmentStrategy runnerAssignmentStrategy,
-        Duration blockingTasksShutdownTime)
+    public ActorExecutor(ActorSchedulerBuilder builder)
     {
-        this.runners = runners;
-        this.blockingTasksRunner = blockingTasksRunner;
-        this.countersManager = countersManager;
-        this.runnerAssignmentStrategy = runnerAssignmentStrategy;
-        this.blockingTasksShutdownTime = blockingTasksShutdownTime;
+        this.ioBoundThreads = builder.getIoBoundActorThreads();
+        this.cpuBoundThreads = builder.getCpuBoundActorThreads();
+        this.blockingTasksRunner = builder.getBlockingTasksRunner();
+        this.countersManager = builder.getCountersManager();
+        this.blockingTasksShutdownTime = builder.getBlockingTasksShutdownTime();
     }
 
     /**
-     * Initially submit an actor to be managed by this schedueler. If the task
-     * has already been submitted, use {@link #reSubmit(ActorTask)} instead.
+     * Initially submit a non-blocking actor to be managed by this schedueler.
      *
      * @param task
      *            the task to submit
@@ -43,33 +52,28 @@ public class ActorExecutor
      *            Controls whether metrics should be collected. (See
      *            {@link ZbActorScheduler#submitActor(ZbActor, boolean)})
      */
-    public void submit(ActorTask task, boolean collectTaskMetrics)
+    public void submitCpuBound(ActorTask task, boolean collectTaskMetrics)
     {
-        final ActorThread assignedRunner = runnerAssignmentStrategy.nextRunner(runners);
+        submitTask(task, collectTaskMetrics, cpuBoundThreads);
+    }
 
+    public void submitIoBoundTask(ActorTask task, boolean collectTaskMetrics)
+    {
+        submitTask(task, collectTaskMetrics, ioBoundThreads);
+    }
+
+    private void submitTask(ActorTask task, boolean collectMetrics, ActorThreadGroup threadGroup)
+    {
         TaskMetrics taskMetrics = null;
-        if (collectTaskMetrics)
+
+        if (collectMetrics)
         {
             taskMetrics = new TaskMetrics(task.getName(), countersManager);
         }
-        task.onTaskScheduled(this, taskMetrics);
 
-        assignedRunner.submit(task);
-    }
+        task.onTaskScheduled(this, threadGroup, taskMetrics);
 
-    /**
-     * External re-submit of a task which was already executed by this
-     * scheduler: This is used when a task was in state
-     * {@link ActorState#WAITING} and has either completed a blocking action or
-     * was woken up by a non-actor thread.
-     *
-     * @param task
-     *            the task to resubmit
-     */
-    public void reSubmit(ActorTask task)
-    {
-        final ActorThread assignedRunner = runnerAssignmentStrategy.nextRunner(runners);
-        assignedRunner.submit(task);
+        threadGroup.submit(task);
     }
 
     /**
@@ -86,31 +90,15 @@ public class ActorExecutor
 
     public void start()
     {
-        for (int i = 0; i < runners.length; i++)
-        {
-            runners[i].start();
-        }
+        cpuBoundThreads.start();
+        ioBoundThreads.start();
     }
 
     public CompletableFuture<Void> closeAsync()
     {
         blockingTasksRunner.shutdown();
 
-        final int runnerCount = runners.length;
-        final CompletableFuture<Void>[] terminationFutures = new CompletableFuture[runnerCount];
-
-        for (int i = 0; i < runnerCount; i++)
-        {
-            try
-            {
-                terminationFutures[i] = runners[i].close();
-            }
-            catch (IllegalStateException e)
-            {
-                e.printStackTrace();
-                terminationFutures[i] = CompletableFuture.completedFuture(null);
-            }
-        }
+        final CompletableFuture<Void> resultFuture = CompletableFuture.allOf(ioBoundThreads.closeAsync(), cpuBoundThreads.closeAsync());
 
         try
         {
@@ -121,7 +109,7 @@ public class ActorExecutor
             e.printStackTrace();
         }
 
-        return CompletableFuture.allOf(terminationFutures);
+        return resultFuture;
     }
 
     public ConcurrentCountersManager getCountersManager()

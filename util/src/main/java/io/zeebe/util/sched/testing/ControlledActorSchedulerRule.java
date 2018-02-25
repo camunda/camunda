@@ -21,26 +21,29 @@ import java.util.concurrent.ThreadPoolExecutor;
 import io.zeebe.util.sched.*;
 import io.zeebe.util.sched.ZbActorScheduler.ActorSchedulerBuilder;
 import io.zeebe.util.sched.ZbActorScheduler.ActorThreadFactory;
+import io.zeebe.util.sched.clock.ActorClock;
+import io.zeebe.util.sched.metrics.ActorThreadMetrics;
 import org.junit.Assert;
 import org.junit.rules.ExternalResource;
 
 public class ControlledActorSchedulerRule extends ExternalResource
 {
     private final ZbActorScheduler actorScheduler;
-    private final ControlledActorTaskRunner controlledActorTaskRunner;
+    private final ControlledActorThread controlledActorTaskRunner;
     private final ThreadPoolExecutor blockingTasksRunner;
 
     public ControlledActorSchedulerRule()
     {
-        final ControlledActorTaskRunnerFactory actorTaskRunnerFactory = new ControlledActorTaskRunnerFactory();
+        final ControlledActorThreadFactory actorTaskRunnerFactory = new ControlledActorThreadFactory();
         final ActorSchedulerBuilder builder = ZbActorScheduler.newActorScheduler()
-            .setActorThreadCount(1)
+            .setCpuBoundActorThreadCount(1)
+            .setIoBoundActorThreadCount(0)
             .setActorThreadFactory(actorTaskRunnerFactory)
             .setBlockingTasksShutdownTime(Duration.ofSeconds(0));
 
         actorScheduler = builder.build();
 
-        controlledActorTaskRunner = actorTaskRunnerFactory.controlledActorTaskRunner;
+        controlledActorTaskRunner = actorTaskRunnerFactory.controlledThread;
         blockingTasksRunner = builder.getBlockingTasksRunner();
     }
 
@@ -88,15 +91,21 @@ public class ControlledActorSchedulerRule extends ExternalResource
     }
 
 
-    static class ControlledActorTaskRunnerFactory implements ActorThreadFactory
+    static class ControlledActorThreadFactory implements ActorThreadFactory
     {
-        private ControlledActorTaskRunner controlledActorTaskRunner;
+        private ControlledActorThread controlledThread;
 
         @Override
-        public ActorThread newThread(int runnerId, ActorSchedulerBuilder builder)
+        public ActorThread newThread(
+                String name,
+                int id,
+                ActorThreadGroup threadGroup,
+                TaskScheduler taskScheduler,
+                ActorClock clock,
+                ActorThreadMetrics metrics)
         {
-            controlledActorTaskRunner = new ControlledActorTaskRunner(runnerId, builder);
-            return controlledActorTaskRunner;
+            controlledThread = new ControlledActorThread(name, id, threadGroup, taskScheduler, clock, metrics);
+            return controlledThread;
         }
     }
 }

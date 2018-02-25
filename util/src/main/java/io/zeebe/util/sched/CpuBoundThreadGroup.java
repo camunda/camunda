@@ -15,26 +15,27 @@
  */
 package io.zeebe.util.sched;
 
+import io.zeebe.util.sched.ZbActorScheduler.ActorSchedulerBuilder;
+
 /**
- * Default Actor Priority Classes
+ * Thread group for the non-blocking, CPU bound, tasks.
  */
-public enum ActorPriority
+public class CpuBoundThreadGroup extends ActorThreadGroup
 {
-    HIGH(0),
-
-    REGULAR(1),
-
-    LOW(2);
-
-    private short priorityClass;
-
-    ActorPriority(int priorityClass)
+    public CpuBoundThreadGroup(ActorSchedulerBuilder builder)
     {
-        this.priorityClass = (short) priorityClass;
+        super("zb-actors", builder.getCpuBoundActorThreadCount(), builder.getPriorityQuotas().length, builder);
     }
 
-    public short getPriorityClass()
+    @Override
+    protected TaskScheduler createTaskScheduler(MultiLevelWorkstealingGroup tasks, ActorSchedulerBuilder builder)
     {
-        return priorityClass;
+        return new PriorityScheduler(tasks::getNextTask, builder.getPriorityQuotas());
+    }
+
+    @Override
+    protected int getLevel(ActorTask actorTask)
+    {
+        return actorTask.getPriority();
     }
 }

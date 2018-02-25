@@ -71,13 +71,7 @@ public class BlockingPollSubscription implements ActorSubscription, Runnable
     private void onBlockingActionCompleted()
     {
         isDone = true;
-
-        final ActorTask task = subscriptionJob.getTask();
-
-        if (task.tryWakeup())
-        {
-            actorTaskExecutor.reSubmit(task);
-        }
+        subscriptionJob.getTask().tryWakeup();
     }
 
     @Override

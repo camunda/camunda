@@ -1,4 +1,19 @@
 /*
+ * Copyright © 2017 camunda services GmbH (info@camunda.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/*
   * Copyright © 2017 camunda services GmbH (info@camunda.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,12 +33,13 @@ package io.zeebe.util.sched;
 import static io.zeebe.util.sched.metrics.SchedulerMetrics.SHOULD_ENABLE_JUMBO_TASK_DETECTION;
 import static io.zeebe.util.sched.metrics.SchedulerMetrics.TASK_MAX_EXECUTION_TIME_NANOS;
 
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 
-import io.zeebe.util.sched.ZbActorScheduler.ActorSchedulerBuilder;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.clock.DefaultActorClock;
-import io.zeebe.util.sched.metrics.ActorRunnerMetrics;
+import io.zeebe.util.sched.metrics.ActorThreadMetrics;
 import org.agrona.UnsafeAccess;
 import org.agrona.concurrent.BackoffIdleStrategy;
 import org.slf4j.MDC;
@@ -34,7 +50,7 @@ public class ActorThread extends Thread
 {
     static final Unsafe UNSAFE = UnsafeAccess.UNSAFE;
 
-    private final ActorRunnerMetrics metrics;
+    private final ActorThreadMetrics metrics;
 
     private volatile ActorThreadState state;
 
@@ -58,41 +74,34 @@ public class ActorThread extends Thread
 
     private final int threadId;
 
-    private final PriorityScheduler priorityScheduler;
-
-    /**
-     * Multi-level queues, one for each priority
-     */
-    private final ActorTaskQueue[] taskQueues;
+    private final TaskScheduler taskScheduler;
 
     private final ActorTimerQueue timerJobQueue;
 
     private final ActorJobPool jobPool = new ActorJobPool();
 
+    private final ActorThreadGroup actorThreadGroup;
+
     protected ActorTaskRunnerIdleStrategy idleStrategy = new ActorTaskRunnerIdleStrategy();
 
     ActorTask currentTask;
 
-    private ActorThread[] actorTaskRunners;
-
-    public ActorThread(int id, ActorSchedulerBuilder builder)
+    public ActorThread(
+            String name,
+            int id,
+            ActorThreadGroup threadGroup,
+            TaskScheduler taskScheduler,
+            ActorClock clock,
+            ActorThreadMetrics metrics)
     {
-        setName("zb-non-blocking-task-runner-" + id);
+        setName(name);
         this.state = ActorThreadState.NEW;
         this.threadId = id;
-        this.clock = builder.getActorClock() != null ? builder.getActorClock() : new DefaultActorClock();
+        this.clock = clock != null ? clock : new DefaultActorClock();
         this.timerJobQueue = new ActorTimerQueue(this.clock);
-        this.actorTaskRunners = builder.getActorThreads();
-
-        final double[] priorityQuotas = builder.getPriorityQuotas();
-        final int priorityCount = priorityQuotas.length;
-        this.metrics = new ActorRunnerMetrics(String.format("thread-%d", id), builder.getCountersManager(), builder.getPriorityQuotas().length);
-        this.priorityScheduler = new PriorityScheduler(this::getNextTaskByPriority, priorityQuotas);
-        this.taskQueues = new ActorTaskQueue[priorityCount];
-        for (int i = 0; i < taskQueues.length; i++)
-        {
-            taskQueues[i] = new ActorTaskQueue();
-        }
+        this.actorThreadGroup = threadGroup;
+        this.metrics = metrics;
+        this.taskScheduler = taskScheduler;
     }
 
     @Override
@@ -123,11 +132,18 @@ public class ActorThread extends Thread
 
         timerJobQueue.processExpiredTimers(clock);
 
-        currentTask = priorityScheduler.getNextTask(clock);
+        currentTask = taskScheduler.getNextTask(clock);
 
         if (currentTask != null)
         {
-            executeCurrentTask();
+            try
+            {
+                executeCurrentTask();
+            }
+            finally
+            {
+                taskScheduler.onTaskReleased(currentTask);
+            }
         }
         else
         {
@@ -139,7 +155,7 @@ public class ActorThread extends Thread
     {
         MDC.put("actor-name", currentTask.getName());
         idleStrategy.onTaskExecuted();
-        metrics.incrementTaskExecutionCount(currentTask.getPriority());
+        metrics.incrementTaskExecutionCount();
 
         final long nanoTimeBeforeTask = clock.getNanoTime();
 
@@ -165,6 +181,7 @@ public class ActorThread extends Thread
             clock.update();
             final long taskExecutionTime = clock.getNanoTime() - nanoTimeBeforeTask;
 
+            // FIXME: if the task was woken up concurrently, we do not own it anymore and cannot report metrics
             if (currentTask.isCollectTaskMetrics())
             {
                 currentTask.reportExecutionTime(taskExecutionTime);
@@ -181,8 +198,13 @@ public class ActorThread extends Thread
 
         if (resubmit)
         {
-            submit(currentTask);
+            actorThreadGroup.submit(currentTask);
         }
+    }
+
+    public void hintWorkAvailable()
+    {
+        idleStrategy.hintWorkAvailable();
     }
 
     protected class ActorTaskRunnerIdleStrategy
@@ -197,6 +219,11 @@ public class ActorThread extends Thread
         {
             isIdle = true;
             idleTimeStart = System.nanoTime();
+        }
+
+        public void hintWorkAvailable()
+        {
+            LockSupport.unpark(ActorThread.this);
         }
 
         protected void onIdle()
@@ -224,83 +251,6 @@ public class ActorThread extends Thread
                 isIdle = false;
             }
         }
-    }
-
-    /**
-     * Attempts to acquire the next task for the specified priority by first
-     * attempting to pop it from the local queue and if unavailable, attempting
-     * to steal it from another thread's queue.
-     *
-     * @param priority
-     *            the priority of the task to acquire
-     * @return the acquired task or null if no task for the specified priority
-     *         is available.
-     */
-    private ActorTask getNextTaskByPriority(int priority)
-    {
-        ActorTask nextTask = taskQueues[priority].pop();
-
-        if (nextTask == null)
-        {
-            nextTask = trySteal(priority);
-        }
-
-        return nextTask;
-    }
-
-    /**
-     * Work stealing: when this runner (aka. the "thief") has no more tasks to run, it attempts to take ("steal")
-     * a task from another runner (aka. the "victim").
-     *<p>
-     * Work stealing is a mechanism for <em>load balancing</em>: it relies upon the assumption that there is more
-     * work to do than there is resources (threads) to run it.
-     */
-    private ActorTask trySteal(int priority)
-    {
-        /*
-         * This implementation uses a random offset into the runner array. The idea is to
-         *
-         * a) reduce probability for contention in situations where we have multiple runners
-         *    (threads) trying to steal work at the same time: if they all started at the same
-         *    offset, they would all look at the same runner as potential victim and contend
-         *    on it's job queue
-         *
-         * b) to make sure a runner does not always look at the same other runner first and by
-         *    this potentially increase the probability to find work on the first attempt
-         *
-         * However, the calculation of the random and the handling also needs additional compute time.
-         * Experimental verification of the effectiveness of the optimization has not been conducted yet.
-         * Also, the optimization only makes sense if the system uses at least 3 runners.
-         */
-        final int offset = ThreadLocalRandom.current().nextInt(actorTaskRunners.length);
-
-        for (int i = offset; i < offset + actorTaskRunners.length; i++)
-        {
-            final int runnerId = i % actorTaskRunners.length;
-
-            if (runnerId != this.threadId)
-            {
-                final ActorThread victim = actorTaskRunners[runnerId];
-                final ActorTask stolenActor = victim.taskQueues[priority].trySteal();
-
-                if (stolenActor != null)
-                {
-                    metrics.incrementTaskStealCount();
-                    return stolenActor;
-                }
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Submits an actor task to this thread. Can be called by any thread.
-     */
-    public void submit(ActorTask task)
-    {
-        task.state = ActorState.QUEUED;
-        taskQueues[task.getPriority()].append(task);
     }
 
     /**
@@ -363,7 +313,7 @@ public class ActorThread extends Thread
         return threadId;
     }
 
-    public ActorRunnerMetrics getMetrics()
+    public ActorThreadMetrics getMetrics()
     {
         return metrics;
     }
@@ -423,4 +373,8 @@ public class ActorThread extends Thread
         return clock;
     }
 
+    public ActorThreadGroup getActorThreadGroup()
+    {
+        return actorThreadGroup;
+    }
 }

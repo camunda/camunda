@@ -61,7 +61,7 @@ public class ActorControl
         job.setRunnable(action);
         job.onJobAddedToTask(task);
 
-        final BlockingPollSubscription subscription = new BlockingPollSubscription(job, condition, task.getActorTaskExecutor(), true);
+        final BlockingPollSubscription subscription = new BlockingPollSubscription(job, condition, task.getActorExecutor(), true);
         job.setSubscription(subscription);
 
         subscription.submit();
@@ -128,7 +128,7 @@ public class ActorControl
             // noop
         });
 
-        final BlockingPollSubscription subscription = new BlockingPollSubscription(noop, runnable, task.getActorTaskExecutor(), false);
+        final BlockingPollSubscription subscription = new BlockingPollSubscription(noop, runnable, task.getActorExecutor(), false);
         noop.setSubscription(subscription);
 
         subscription.submit();
@@ -145,7 +145,7 @@ public class ActorControl
         noop.setAutoCompleting(true);
         noop.setRunnable(adapter.wrapConsumer(whenDone));
 
-        final BlockingPollSubscription subscription = new BlockingPollSubscription(noop, adapter, task.getActorTaskExecutor(), false);
+        final BlockingPollSubscription subscription = new BlockingPollSubscription(noop, adapter, task.getActorExecutor(), false);
         noop.setSubscription(subscription);
 
         subscription.submit();

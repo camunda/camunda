@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import io.zeebe.util.sched.clock.ActorClock;
+import io.zeebe.util.sched.metrics.ActorThreadMetrics;
 import io.zeebe.util.sched.metrics.SchedulerMetrics;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.ConcurrentCountersManager;
@@ -40,11 +41,18 @@ public class ZbActorScheduler
     }
 
     /**
-     * Submits an actor to the scheduler. Does not collect task metrics (see
-     * {@link #submitActor(ZbActor, boolean)}.
+     * Submits an non-blocking, CPU-bound actor.
      *
      * @param actor
      *            the actor to submit
+     *
+     * @param collectTaskMetrics
+     *            controls whether metrics should be written for this actor.
+     *            This has the overhead cost (time & memory) for allocating the
+     *            counters which are used to record the metrics. Generally,
+     *            metrics should not be recorded for short-lived tasks but only
+     *            make sense for long-lived tasks where a small overhead when
+     *            initially submitting the actor is acceptable.
      */
     public void submitActor(ZbActor actor)
     {
@@ -52,22 +60,65 @@ public class ZbActorScheduler
     }
 
     /**
-     * Submits a new actor to the scheduler.
+     * Submits an non-blocking, CPU-bound actor.
      *
      * @param actor
      *            the actor to submit
+     *
      * @param collectTaskMetrics
-     *            controls whether metrics should be written for this actor. This
-     *            has the overhead cost (time & memory) for allocating the
+     *            controls whether metrics should be written for this actor.
+     *            This has the overhead cost (time & memory) for allocating the
+     *            counters which are used to record the metrics. Generally,
+     *            metrics should not be recorded for short-lived tasks but only
+     *            make sense for long-lived tasks where a small overhead when
+     *            initially submitting the actor is acceptable.
+     */
+    public void submitActor(ZbActor actor, boolean collectTaskMetrics)
+    {
+        actorTaskExecutor.submitCpuBound(actor.actor.task, collectTaskMetrics);
+    }
+
+    /**
+     * Submits an actor providing hints to the scheduler about how to best
+     * schedule the actor. Actors must always be non-blocking. On top of that,
+     * the scheduler distinguishes
+     * <ul>
+     * <li>CPU-bound actors: actors which perform no or very little blocking
+     * I/O. It is possible to specify a priority.</li>
+     * <li>I/O-bound actors: actors where the runtime is dominated by performing
+     * <strong>blocking I/O</strong> (usually filesystem writes). It is possible to
+     * specify the I/O device used by the actor.</li>
+     * </ul>
+     * Scheduling hints can be created using the {@link SchedulingHints} class.
+     *
+     * @param actor
+     *            the actor to submit
+     *
+     * @param collectTaskMetrics
+     *            controls whether metrics should be written for this actor.
+     *            This has the overhead cost (time & memory) for allocating the
      *            counters which are used to record the metrics. Generally,
      *            metrics should not be recorded for short-lived tasks but only
      *            make sense for long-lived tasks where a small overhead when
      *            initially submitting the actor is acceptable.
      *
+     * @param schedulingHints
+     *            additional scheduling hint
      */
-    public void submitActor(ZbActor actor, boolean collectTaskMetrics)
+    public void submitActor(ZbActor actor, boolean collectTaskMetrics, int schedulingHints)
     {
-        actorTaskExecutor.submit(actor.actor.task, collectTaskMetrics);
+        final ActorTask task = actor.actor.task;
+
+        if (SchedulingHints.isCpuBound(schedulingHints))
+        {
+            task.setPriority(SchedulingHints.getPriority(schedulingHints));
+            actorTaskExecutor.submitCpuBound(task, collectTaskMetrics);
+        }
+        else
+        {
+            task.setDeviceId(SchedulingHints.getIoDevice(schedulingHints));
+            actorTaskExecutor.submitIoBoundTask(task, collectTaskMetrics);
+        }
     }
 
     public void start()
@@ -118,10 +169,15 @@ public class ZbActorScheduler
     {
         private ActorClock actorClock;
         private ConcurrentCountersManager countersManager;
-        private int actorThreadCount = Math.max(1, Runtime.getRuntime().availableProcessors() - 1);
+
+        private int cpuBoundThreadsCount = Math.max(1, Runtime.getRuntime().availableProcessors() - 2);
+        private ActorThreadGroup cpuBoundActorGroup;
         private double[] priorityQuotas = new double[] { 0.60, 0.30, 0.10 };
-        private ThreadAssignmentStrategy threadAssignmentStrategy;
-        private ActorThread[] actorThreads;
+
+        private int ioBoundThreadsCount = 2;
+        private ActorThreadGroup ioBoundActorGroup;
+        private int[] ioDeviceConcurrency = new int[] { 2 };
+
         private ActorThreadFactory actorThreadFactory;
         private ThreadPoolExecutor blockingTasksRunner;
         private Duration blockingTasksShutdownTime = Duration.ofSeconds(15);
@@ -139,21 +195,21 @@ public class ZbActorScheduler
             return this;
         }
 
-        public ActorSchedulerBuilder setActorThreadCount(int actorThreadCount)
+        public ActorSchedulerBuilder setCpuBoundActorThreadCount(int actorThreadCount)
         {
-            this.actorThreadCount = actorThreadCount;
+            this.cpuBoundThreadsCount = actorThreadCount;
+            return this;
+        }
+
+        public ActorSchedulerBuilder setIoBoundActorThreadCount(int ioBoundActorsThreadCount)
+        {
+            this.ioBoundThreadsCount = ioBoundActorsThreadCount;
             return this;
         }
 
         public ActorSchedulerBuilder setPriorityQuotas(double[] priorityQuotas)
         {
             this.priorityQuotas = priorityQuotas;
-            return this;
-        }
-
-        public ActorSchedulerBuilder setThreadAssignmentStrategy(ThreadAssignmentStrategy threadAssignmentStrategy)
-        {
-            this.threadAssignmentStrategy = threadAssignmentStrategy;
             return this;
         }
 
@@ -181,6 +237,12 @@ public class ZbActorScheduler
             return this;
         }
 
+        public ActorSchedulerBuilder setIoDeviceConcurrency(int[] ioDeviceConcurrency)
+        {
+            this.ioDeviceConcurrency = ioDeviceConcurrency;
+            return this;
+        }
+
         public ActorClock getActorClock()
         {
             return actorClock;
@@ -191,24 +253,19 @@ public class ZbActorScheduler
             return countersManager;
         }
 
-        public int getActorThreadCount()
+        public int getCpuBoundActorThreadCount()
         {
-            return actorThreadCount;
+            return cpuBoundThreadsCount;
+        }
+
+        public int getIoBoundActorThreadCount()
+        {
+            return ioBoundThreadsCount;
         }
 
         public double[] getPriorityQuotas()
         {
             return priorityQuotas;
-        }
-
-        public ThreadAssignmentStrategy getThreadAssignmentStrategy()
-        {
-            return threadAssignmentStrategy;
-        }
-
-        public ActorThread[] getActorThreads()
-        {
-            return actorThreads;
         }
 
         public ActorThreadFactory getActorThreadFactory()
@@ -231,6 +288,21 @@ public class ZbActorScheduler
             return actorExecutor;
         }
 
+        public int[] getIoDeviceConcurrency()
+        {
+            return ioDeviceConcurrency;
+        }
+
+        public ActorThreadGroup getCpuBoundActorThreads()
+        {
+            return cpuBoundActorGroup;
+        }
+
+        public ActorThreadGroup getIoBoundActorThreads()
+        {
+            return ioBoundActorGroup;
+        }
+
         private void initCountersManager()
         {
             if (countersManager == null)
@@ -241,29 +313,11 @@ public class ZbActorScheduler
             }
         }
 
-        private void initThreadAssignmentStrategy()
-        {
-            if (threadAssignmentStrategy == null)
-            {
-                threadAssignmentStrategy = new RandomThreadAssignmentStrategy(actorThreadCount);
-            }
-        }
-
         private void initActorThreadFactory()
         {
             if (actorThreadFactory == null)
             {
                 actorThreadFactory = new DefaultActorThreadFactory();
-            }
-        }
-
-        private void initActorThreads()
-        {
-            actorThreads = new ActorThread[actorThreadCount];
-
-            for (int i = 0; i < actorThreadCount; i++)
-            {
-                actorThreads[i] = actorThreadFactory.newThread(i, this);
             }
         }
 
@@ -280,42 +334,66 @@ public class ZbActorScheduler
             }
         }
 
+        private void initIoBoundActorThreadGroup()
+        {
+            if (ioBoundActorGroup == null)
+            {
+                ioBoundActorGroup = new IoBoundThreadGroup(this);
+            }
+        }
+
+        private void initCpuBoundActorThreadGroup()
+        {
+            if (cpuBoundActorGroup == null)
+            {
+                cpuBoundActorGroup = new CpuBoundThreadGroup(this);
+            }
+        }
+
+
         private void initActorExecutor()
         {
             if (actorExecutor == null)
             {
-                actorExecutor = new ActorExecutor(actorThreads,
-                    blockingTasksRunner,
-                    countersManager,
-                    threadAssignmentStrategy,
-                    blockingTasksShutdownTime);
+                actorExecutor = new ActorExecutor(this);
             }
         }
 
         public ZbActorScheduler build()
         {
             initCountersManager();
-            initThreadAssignmentStrategy();
             initActorThreadFactory();
-            initActorThreads();
             initBlockingTaskRunner();
+            initCpuBoundActorThreadGroup();
+            initIoBoundActorThreadGroup();
             initActorExecutor();
-
             return new ZbActorScheduler(this);
         }
     }
 
     public interface ActorThreadFactory
     {
-        ActorThread newThread(int runnerId, ActorSchedulerBuilder builder);
+        ActorThread newThread(
+                String name,
+                int id,
+                ActorThreadGroup threadGroup,
+                TaskScheduler taskScheduler,
+                ActorClock clock,
+                ActorThreadMetrics metrics);
     }
 
     public static class DefaultActorThreadFactory implements ActorThreadFactory
     {
         @Override
-        public ActorThread newThread(int runnerId, ActorSchedulerBuilder builder)
+        public ActorThread newThread(
+                String name,
+                int id,
+                ActorThreadGroup threadGroup,
+                TaskScheduler taskScheduler,
+                ActorClock clock,
+                ActorThreadMetrics metrics)
         {
-            return new ActorThread(runnerId, builder);
+            return new ActorThread(name, id, threadGroup, taskScheduler, clock, metrics);
         }
     }
 
@@ -329,29 +407,6 @@ public class ZbActorScheduler
             final Thread thread = new Thread(r);
             thread.setName("zb-blocking-task-runner-" + idGenerator.incrementAndGet());
             return thread;
-        }
-    }
-
-    public interface ThreadAssignmentStrategy
-    {
-        ActorThread nextRunner(ActorThread[] runners);
-    }
-
-    public static class RandomThreadAssignmentStrategy implements ThreadAssignmentStrategy
-    {
-        private final int numOfRunnerThreads;
-
-        RandomThreadAssignmentStrategy(int numOfRunnerThreads)
-        {
-            this.numOfRunnerThreads = numOfRunnerThreads;
-        }
-
-        @Override
-        public ActorThread nextRunner(ActorThread[] runners)
-        {
-            final int runnerOffset = ThreadLocalRandom.current().nextInt(numOfRunnerThreads);
-
-            return runners[runnerOffset];
         }
     }
 

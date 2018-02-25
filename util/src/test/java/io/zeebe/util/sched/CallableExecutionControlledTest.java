@@ -29,7 +29,6 @@ import org.junit.Test;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 
 public class CallableExecutionControlledTest
-
 {
     @Rule
     public final ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();

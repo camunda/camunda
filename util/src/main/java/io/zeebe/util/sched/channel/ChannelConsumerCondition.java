@@ -63,19 +63,7 @@ public class ChannelConsumerCondition implements ActorCondition, ActorSubscripti
     public void signal()
     {
         UNSAFE.getAndAddInt(this, TRIGGER_COUNT_OFFSET, 1);
-
-        if (task.tryWakeup())
-        {
-            final ActorThread taskRunner = ActorThread.current();
-            if (taskRunner != null)
-            {
-                taskRunner.submit(task);
-            }
-            else
-            {
-                task.getActorTaskExecutor().reSubmit(task);
-            }
-        }
+        task.tryWakeup();
     }
 
     @Override

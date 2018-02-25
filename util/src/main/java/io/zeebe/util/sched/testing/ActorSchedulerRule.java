@@ -29,7 +29,7 @@ public class ActorSchedulerRule extends ExternalResource
     public ActorSchedulerRule(int numOfThreads, ActorClock clock)
     {
         builder = ZbActorScheduler.newActorScheduler()
-            .setActorThreadCount(numOfThreads)
+            .setCpuBoundActorThreadCount(numOfThreads)
             .setActorClock(clock);
 
         actorScheduler = builder
@@ -43,7 +43,7 @@ public class ActorSchedulerRule extends ExternalResource
 
     public ActorSchedulerRule(ActorClock clock)
     {
-        this(Math.min(1, Runtime.getRuntime().availableProcessors() - 1), clock);
+        this(Math.max(1, Runtime.getRuntime().availableProcessors() - 2), clock);
     }
 
 

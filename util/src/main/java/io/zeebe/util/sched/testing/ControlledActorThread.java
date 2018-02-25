@@ -19,16 +19,18 @@ import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 
 import io.zeebe.util.LangUtil;
-import io.zeebe.util.sched.ActorThread;
-import io.zeebe.util.sched.ZbActorScheduler.ActorSchedulerBuilder;
+import io.zeebe.util.sched.*;
+import io.zeebe.util.sched.clock.ActorClock;
+import io.zeebe.util.sched.metrics.ActorThreadMetrics;
 
-public class ControlledActorTaskRunner extends ActorThread
+public class ControlledActorThread extends ActorThread
 {
     private CyclicBarrier barrier = new CyclicBarrier(2);
 
-    public ControlledActorTaskRunner(int runnerId, ActorSchedulerBuilder builder)
+    public ControlledActorThread(String name, int id, ActorThreadGroup threadGroup, TaskScheduler taskScheduler, ActorClock clock,
+            ActorThreadMetrics metrics)
     {
-        super(runnerId, builder);
+        super(name, id, threadGroup, taskScheduler, clock, metrics);
         idleStrategy = new ControlledIdleStartegy();
     }
 

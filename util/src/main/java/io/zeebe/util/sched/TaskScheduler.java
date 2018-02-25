@@ -15,26 +15,14 @@
  */
 package io.zeebe.util.sched;
 
-/**
- * Default Actor Priority Classes
- */
-public enum ActorPriority
+import io.zeebe.util.sched.clock.ActorClock;
+
+public interface TaskScheduler
 {
-    HIGH(0),
+    ActorTask getNextTask(ActorClock now);
 
-    REGULAR(1),
-
-    LOW(2);
-
-    private short priorityClass;
-
-    ActorPriority(int priorityClass)
+    default void onTaskReleased(ActorTask task)
     {
-        this.priorityClass = (short) priorityClass;
-    }
-
-    public short getPriorityClass()
-    {
-        return priorityClass;
+        // no-op
     }
 }

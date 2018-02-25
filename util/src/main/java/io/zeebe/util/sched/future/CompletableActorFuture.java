@@ -228,20 +228,10 @@ public class CompletableActorFuture<V> implements ActorFuture<V>
         while (!tasks.isEmpty())
         {
             final ActorTask task = tasks.poll();
+
             if (task != null)
             {
-                if (task.tryWakeup())
-                {
-                    final ActorThread taskRunner = ActorThread.current();
-                    if (taskRunner != null)
-                    {
-                        taskRunner.submit(task);
-                    }
-                    else
-                    {
-                        task.getActorTaskExecutor().reSubmit(task);
-                    }
-                }
+                task.tryWakeup();
             }
         }
 
