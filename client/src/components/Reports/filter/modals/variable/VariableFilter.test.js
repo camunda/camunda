@@ -220,7 +220,7 @@ describe('string variables', () => {
 
     node.find('select').simulate('change', {target: {value: '0'}});
 
-    expect(loadValues).toHaveBeenCalledWith('procDefId', 'foo', 'String', 0, 20);
+    expect(loadValues).toHaveBeenCalledWith('procDefId', 'foo', 'String', 0, 21);
   });
 
   it('should show available values', () => {
@@ -260,7 +260,7 @@ describe('string variables', () => {
 
     node.find('.VariableFilter__valueFields button').simulate('click');
 
-    expect(loadValues).toHaveBeenCalledWith('procDefId', 'foo', 'String', 0, 40);
+    expect(loadValues).toHaveBeenCalledWith('procDefId', 'foo', 'String', 0, 41);
   });
 });
 
