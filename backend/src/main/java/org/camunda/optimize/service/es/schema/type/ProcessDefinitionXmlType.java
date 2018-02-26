@@ -9,7 +9,9 @@ import java.io.IOException;
 @Component
 public class ProcessDefinitionXmlType extends StrictTypeMappingCreator {
 
-  public static final String ID = "id";
+  public static final String PROCESSS_DEFINITION_ID = "processDefinitionId";
+  public static final String PROCESS_DEFINITION_KEY = "processDefinitionKey";
+  public static final String PROCESS_DEFINITION_VERSION = "processDefinitionVersion";
   public static final String BPMN_20_XML = "bpmn20Xml";
   public static final String ENGINE = "engine";
   public static final String FLOW_NODE_NAMES = "flowNodeNames";
@@ -22,7 +24,13 @@ public class ProcessDefinitionXmlType extends StrictTypeMappingCreator {
   @Override
   protected XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
     return xContentBuilder
-      .startObject(ID)
+      .startObject(PROCESSS_DEFINITION_ID)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(PROCESS_DEFINITION_KEY)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(PROCESS_DEFINITION_VERSION)
         .field("type", "keyword")
       .endObject()
       .startObject(ENGINE)

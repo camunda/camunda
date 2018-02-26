@@ -30,7 +30,7 @@ public class ProcessDefinitionOptimizeDto
     this.name = name;
   }
 
-  public long getVersion() {
+  public Long getVersion() {
     return version;
   }
 

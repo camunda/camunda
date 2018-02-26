@@ -15,9 +15,6 @@ import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.GenericType;
@@ -33,7 +30,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -131,7 +127,7 @@ public class ProcessDefinitionRestServiceIT {
   private void createProcessDefinitionXml(String expectedProcessDefinitionXmlId) {
     ProcessDefinitionXmlOptimizeDto expectedXml = new ProcessDefinitionXmlOptimizeDto();
     expectedXml.setBpmn20Xml(BPMN_20_XML);
-    expectedXml.setId(expectedProcessDefinitionXmlId);
+    expectedXml.setProcessDefinitionId(expectedProcessDefinitionXmlId);
     elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessDefinitionXmlType(), expectedProcessDefinitionXmlId, expectedXml);
   }
 
@@ -153,9 +149,12 @@ public class ProcessDefinitionRestServiceIT {
   public void getProcessDefinitionXmlWithoutAuthentication() {
     // when
     Response response =
-        embeddedOptimizeRule.target("process-definition/123/xml")
+        embeddedOptimizeRule.target("process-definition/xml")
+            .queryParam("processDefinitionKey", "aProcDefKey")
+            .queryParam("processDefinitionVersion", "aProcDefVersion")
             .request()
             .get();
+
 
     // then the status code is not authorized
     assertThat(response.getStatus(), is(401));
@@ -164,18 +163,20 @@ public class ProcessDefinitionRestServiceIT {
   @Test
   public void getProcessDefinitionXml() {
     //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-
     ProcessDefinitionXmlOptimizeDto expectedXml = new ProcessDefinitionXmlOptimizeDto();
     expectedXml.setBpmn20Xml("ProcessModelXml");
-    expectedXml.setId(ID);
+    expectedXml.setProcessDefinitionKey("aProcDefKey");
+    expectedXml.setProcessDefinitionVersion("aProcDefVersion");
+    expectedXml.setProcessDefinitionId("aProcDefId");
     elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessDefinitionXmlType(), ID, expectedXml);
 
     // when
     Response response =
-        embeddedOptimizeRule.target("process-definition/123/xml")
+        embeddedOptimizeRule.target("process-definition/xml")
+            .queryParam("processDefinitionKey", "aProcDefKey")
+            .queryParam("processDefinitionVersion", "aProcDefVersion")
             .request()
-            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
             .get();
 
     // then the status code is okay
@@ -186,27 +187,55 @@ public class ProcessDefinitionRestServiceIT {
   }
 
   @Test
-  public void getProcessDefinitionXmlWithNonsenseIdReturns404Code() {
+  public void getProcessDefinitionXmlWithNonsenseVersionReturns404Code() {
     //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-
     ProcessDefinitionXmlOptimizeDto expectedXml = new ProcessDefinitionXmlOptimizeDto();
     expectedXml.setBpmn20Xml("ProcessModelXml");
-    expectedXml.setId(ID);
+    expectedXml.setProcessDefinitionKey("aProcDefKey");
+    expectedXml.setProcessDefinitionVersion("aProcDefVersion");
+    expectedXml.setProcessDefinitionId("aProcDefId");
     elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessDefinitionXmlType(), ID, expectedXml);
 
     // when
     Response response =
-        embeddedOptimizeRule.target("process-definition/nonsenseId/xml")
+        embeddedOptimizeRule.target("process-definition/xml")
+            .queryParam("processDefinitionKey", "aProcDefKey")
+            .queryParam("processDefinitionVersion", "nonsenseVersion")
             .request()
-            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
             .get();
 
     // then the status code is okay
     assertThat(response.getStatus(), is(404));
     String message =
         response.readEntity(String.class);
-    assertThat(message.contains("Could not find xml for process definition with id"), is(true));
+    assertThat(message.contains("Could not find xml for process definition with key"), is(true));
+  }
+
+  @Test
+  public void getProcessDefinitionXmlWithNonsenseKeyReturns404Code() {
+    //given
+    ProcessDefinitionXmlOptimizeDto expectedXml = new ProcessDefinitionXmlOptimizeDto();
+    expectedXml.setBpmn20Xml("ProcessModelXml");
+    expectedXml.setProcessDefinitionKey("aProcDefKey");
+    expectedXml.setProcessDefinitionVersion("aProcDefVersion");
+    expectedXml.setProcessDefinitionId("aProcDefId");
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessDefinitionXmlType(), ID, expectedXml);
+
+    // when
+    Response response =
+        embeddedOptimizeRule.target("process-definition/xml")
+            .queryParam("processDefinitionKey", "nonsenseKey")
+            .queryParam("processDefinitionVersion", "aProcDefVersion")
+            .request()
+            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
+            .get();
+
+    // then the status code is okay
+    assertThat(response.getStatus(), is(404));
+    String message =
+        response.readEntity(String.class);
+    assertThat(message.contains("Could not find xml for process definition with key"), is(true));
   }
 
   @Test
@@ -380,44 +409,13 @@ public class ProcessDefinitionRestServiceIT {
     );
   }
 
-  @Test
-  public void getProcessDefinitionsXml() {
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-    String expectedProcessDefinitionId = ID;
-
-    createProcessDefinition(expectedProcessDefinitionId, KEY);
-    createProcessDefinitionXml(expectedProcessDefinitionId);
-
-    String expectedProcessDefinitionId_2 = ID + "2";
-    createProcessDefinition(expectedProcessDefinitionId_2, KEY);
-    createProcessDefinitionXml(expectedProcessDefinitionId_2);
-
-    List<String> ids = new ArrayList<>();
-    ids.add(expectedProcessDefinitionId);
-    ids.add(expectedProcessDefinitionId_2);
-    Response response =
-        embeddedOptimizeRule.target("process-definition/xml")
-            .queryParam("ids", ids.toArray())
-            .request(MediaType.APPLICATION_JSON)
-            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
-            .get();
-    assertThat(response.getStatus(), is(200));
-    Map<String,String> actual =
-        response.readEntity(new GenericType<Map<String,String>>() {});
-    assertThat(actual, is(notNullValue()));
-    assertThat(actual.get(expectedProcessDefinitionId), is(BPMN_20_XML));
-    assertThat(actual.get(expectedProcessDefinitionId_2), is(BPMN_20_XML));
-  }
-
-
-
   private void setupFullInstanceFlow() throws IOException {
 
     ProcessDefinitionXmlOptimizeDto processDefinitionXmlDto = new ProcessDefinitionXmlOptimizeDto();
-    processDefinitionXmlDto.setId(PROCESS_DEFINITION_ID);
+    processDefinitionXmlDto.setProcessDefinitionId(PROCESS_DEFINITION_ID);
     processDefinitionXmlDto.setBpmn20Xml(readDiagram(DIAGRAM));
     elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessDefinitionXmlType(), PROCESS_DEFINITION_ID, processDefinitionXmlDto);
-    processDefinitionXmlDto.setId(PROCESS_DEFINITION_ID_2);
+    processDefinitionXmlDto.setProcessDefinitionId(PROCESS_DEFINITION_ID_2);
     elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessDefinitionXmlType(), PROCESS_DEFINITION_ID_2, processDefinitionXmlDto);
 
     ProcessInstanceDto procInst = new ProcessInstanceDto();

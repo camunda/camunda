@@ -7,7 +7,9 @@ import java.util.Map;
 
 public class ProcessDefinitionXmlOptimizeDto implements OptimizeDto {
 
-  protected String id;
+  protected String processDefinitionId;
+  protected String processDefinitionKey;
+  protected String processDefinitionVersion;
   protected String bpmn20Xml;
   protected String engine;
   protected Map<String, String> flowNodeNames = new HashMap<>();
@@ -20,12 +22,28 @@ public class ProcessDefinitionXmlOptimizeDto implements OptimizeDto {
     this.flowNodeNames = flowNodeNames;
   }
 
-  public String getId() {
-    return id;
+  public String getProcessDefinitionId() {
+    return processDefinitionId;
   }
 
-  public void setId(String id) {
-    this.id = id;
+  public void setProcessDefinitionId(String processDefinitionId) {
+    this.processDefinitionId = processDefinitionId;
+  }
+
+  public String getProcessDefinitionKey() {
+    return processDefinitionKey;
+  }
+
+  public void setProcessDefinitionKey(String processDefinitionKey) {
+    this.processDefinitionKey = processDefinitionKey;
+  }
+
+  public String getProcessDefinitionVersion() {
+    return processDefinitionVersion;
+  }
+
+  public void setProcessDefinitionVersion(String processDefinitionVersion) {
+    this.processDefinitionVersion = processDefinitionVersion;
   }
 
   public String getBpmn20Xml() {

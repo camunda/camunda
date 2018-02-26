@@ -3,15 +3,13 @@ package org.camunda.optimize.rest;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.query.definition.ExtendedProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.query.definition.ProcessDefinitionGroupOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.heatmap.HeatMapQueryDto;
 import org.camunda.optimize.dto.optimize.query.heatmap.HeatMapResponseDto;
-import org.camunda.optimize.dto.optimize.query.definition.ProcessDefinitionGroupOptimizeDto;
-import org.camunda.optimize.dto.optimize.rest.FlowNodeNamesDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.es.reader.BranchAnalysisReader;
 import org.camunda.optimize.service.es.reader.FrequencyHeatMapReader;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
-import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -42,29 +40,16 @@ public class ProcessDefinitionRestService {
   @Autowired
   private ProcessDefinitionReader processDefinitionReader;
 
-
-  @POST
-  @Path("/{id}/flowNodeNames")
-  @Produces(MediaType.APPLICATION_JSON)
-  @Consumes(MediaType.APPLICATION_JSON)
-  public FlowNodeNamesDto getFlowNodeNames(
-      @PathParam("id") String processDefinitionId,
-      List<String> nodeIds
-  ) {
-    return processDefinitionReader.getFlowNodeNames(processDefinitionId, nodeIds);
-  }
-
   /**
    * Retrieves all process definition stored in Optimize.
    *
    * @param includeXml A parameter saying if the process definition xml should be included to the response.
    * @return A collection of process definitions.
-   * @throws OptimizeException Something went wrong while fetching the process definitions.
    */
   @GET
   @Produces(MediaType.APPLICATION_JSON)
   public Collection<ExtendedProcessDefinitionOptimizeDto> getProcessDefinitions(
-      @QueryParam("includeXml") boolean includeXml) throws OptimizeException {
+      @QueryParam("includeXml") boolean includeXml) {
     return processDefinitionReader.getProcessDefinitions(includeXml);
   }
 
@@ -72,28 +57,31 @@ public class ProcessDefinitionRestService {
    * Retrieves all process definition stored in Optimize and groups them by key.
    *
    * @return A collection of process definitions.
-   * @throws OptimizeException Something went wrong while fetching the process definitions.
    */
   @GET
   @Produces(MediaType.APPLICATION_JSON)
   @Path("/groupedByKey")
-  public List<ProcessDefinitionGroupOptimizeDto> getProcessDefinitionsGroupedByKey() throws OptimizeException {
+  public List<ProcessDefinitionGroupOptimizeDto> getProcessDefinitionsGroupedByKey() {
     return processDefinitionReader.getProcessDefinitionsGroupedByKey();
   }
 
   /**
-   * Get the process definition xml to a given process definition id.
+   * Get the process definition xml to a given process definition key and version.
    *
-   * @param processDefinitionId The process definition id the xml should be returned.
+   * @param processDefinitionKey The process definition key of the desired process definition xml.
+   * @param processDefinitionVersion The process definition version of the desired process definition xml.
    * @return The process definition xml requested.
    */
   @GET
-  @Path("/{id}/xml")
-  public String getProcessDefinitionXml(@PathParam("id") String processDefinitionId) {
+  @Path("/xml")
+  public String getProcessDefinitionXml(
+      @QueryParam("processDefinitionKey") String processDefinitionKey,
+      @QueryParam("processDefinitionVersion") String processDefinitionVersion) {
     String response;
-    String xml = processDefinitionReader.getProcessDefinitionXml(processDefinitionId);
+    String xml = processDefinitionReader.getProcessDefinitionXml(processDefinitionKey, processDefinitionVersion);
     if (xml == null) {
-      String notFoundErrorMessage = "Could not find xml for process definition with id :" + processDefinitionId;
+      String notFoundErrorMessage = "Could not find xml for process definition with key: " + processDefinitionKey +
+        " and version: " + processDefinitionVersion;
       throw new NotFoundException(notFoundErrorMessage);
     } else {
       response = xml;
@@ -108,7 +96,7 @@ public class ProcessDefinitionRestService {
    * @return The process definition xml requested.
    */
   @GET
-  @Path("/xml")
+  @Path("/xmlsToIds")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public Map<String, String> getProcessDefinitionsXml(@QueryParam("ids") List<String> ids) {

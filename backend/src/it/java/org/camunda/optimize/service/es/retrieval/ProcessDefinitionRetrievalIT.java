@@ -2,6 +2,7 @@ package org.camunda.optimize.service.es.retrieval;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.definition.ExtendedProcessDefinitionOptimizeDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -155,7 +156,7 @@ public class ProcessDefinitionRetrievalIT {
   }
 
   @Test
-  public void getProcessDefinitionXml() throws Exception {
+  public void getProcessDefinitionXmlByKeyAndVersion() throws Exception {
     // given
     String processId = PROCESS_DEFINITION_KEY + System.currentTimeMillis();
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(processId)
@@ -164,7 +165,7 @@ public class ProcessDefinitionRetrievalIT {
             .camundaExpression("${true}")
         .endEvent()
         .done();
-    String processDefinitionId = engineRule.deployProcessAndGetId(modelInstance);
+    ProcessDefinitionEngineDto processDefinition = engineRule.deployProcessAndGetProcessDefinition(modelInstance);
 
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -172,7 +173,9 @@ public class ProcessDefinitionRetrievalIT {
     // when
     String token = embeddedOptimizeRule.getAuthenticationToken();
     Response response =
-        embeddedOptimizeRule.target("process-definition/" + processDefinitionId + "/xml")
+        embeddedOptimizeRule.target("process-definition/xml")
+            .queryParam("processDefinitionKey", processDefinition.getKey())
+            .queryParam("processDefinitionVersion", processDefinition.getVersion())
             .request()
             .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
             .get();
@@ -199,7 +202,7 @@ public class ProcessDefinitionRetrievalIT {
     // when
     String token = embeddedOptimizeRule.getAuthenticationToken();
     Response response =
-        embeddedOptimizeRule.target("process-definition/xml")
+        embeddedOptimizeRule.target("process-definition/xmlsToIds")
             .queryParam("ids", ids.toArray())
             .request()
             .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)

@@ -13,6 +13,7 @@ import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.ProcessDefinitionXmlElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.ProcessDefinitionWriter;
+import org.camunda.optimize.service.es.writer.ProcessDefinitionXmlWriter;
 
 import java.io.ByteArrayInputStream;
 import java.util.HashMap;
@@ -22,10 +23,10 @@ import java.util.Map;
 public class ProcessDefinitionXmlEngineImportJob extends
     EngineImportJob<ProcessDefinitionXmlEngineDto, ProcessDefinitionXmlOptimizeDto, DefinitionBasedImportPage> {
 
-  private ProcessDefinitionWriter processDefinitionWriter;
+  private ProcessDefinitionXmlWriter processDefinitionXmlWriter;
 
   public ProcessDefinitionXmlEngineImportJob(
-      ProcessDefinitionWriter processDefinitionWriter,
+      ProcessDefinitionXmlWriter processDefinitionXmlWriter,
       DefinitionBasedImportPage importIndex,
       ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
       MissingEntitiesFinder<ProcessDefinitionXmlEngineDto> missingEntitiesFinder,
@@ -33,14 +34,14 @@ public class ProcessDefinitionXmlEngineImportJob extends
       EngineContext engineContext
   ) {
     super(importIndex, elasticsearchImportJobExecutor, missingEntitiesFinder, engineEntityFetcher, engineContext);
-    this.processDefinitionWriter = processDefinitionWriter;
+    this.processDefinitionXmlWriter = processDefinitionXmlWriter;
 
   }
 
   @Override
   protected ElasticsearchImportJob<ProcessDefinitionXmlOptimizeDto>
   createElasticsearchImportJob(List<ProcessDefinitionXmlOptimizeDto> processDefinitions) {
-    ProcessDefinitionXmlElasticsearchImportJob procDefImportJob = new ProcessDefinitionXmlElasticsearchImportJob(processDefinitionWriter);
+    ProcessDefinitionXmlElasticsearchImportJob procDefImportJob = new ProcessDefinitionXmlElasticsearchImportJob(processDefinitionXmlWriter);
     procDefImportJob.setEntitiesToImport(processDefinitions);
     return procDefImportJob;
   }
@@ -49,7 +50,7 @@ public class ProcessDefinitionXmlEngineImportJob extends
   protected ProcessDefinitionXmlOptimizeDto mapEngineEntityToOptimizeEntity(ProcessDefinitionXmlEngineDto engineEntity) {
     ProcessDefinitionXmlOptimizeDto optimizeDto = new ProcessDefinitionXmlOptimizeDto();
     optimizeDto.setBpmn20Xml(engineEntity.getBpmn20Xml());
-    optimizeDto.setId(engineEntity.getId());
+    optimizeDto.setProcessDefinitionId(engineEntity.getId());
     optimizeDto.setFlowNodeNames(constructFlowNodeNames(engineEntity.getBpmn20Xml()));
     optimizeDto.setEngine(engineContext.getEngineAlias());
     return optimizeDto;

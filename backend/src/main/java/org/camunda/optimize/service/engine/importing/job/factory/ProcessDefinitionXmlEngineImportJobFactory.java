@@ -4,16 +4,10 @@ import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.diff.MissingEntitiesFinder;
 import org.camunda.optimize.service.engine.importing.fetcher.instance.ProcessDefinitionXmlFetcher;
-import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandlerProvider;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.ProcessDefinitionXmlImportIndexHandler;
-import org.camunda.optimize.service.engine.importing.index.page.AllEntitiesBasedImportPage;
 import org.camunda.optimize.service.engine.importing.index.page.DefinitionBasedImportPage;
 import org.camunda.optimize.service.engine.importing.job.ProcessDefinitionXmlEngineImportJob;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
-import org.camunda.optimize.service.es.writer.ProcessDefinitionWriter;
-import org.camunda.optimize.service.util.BeanHelper;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.elasticsearch.client.Client;
+import org.camunda.optimize.service.es.writer.ProcessDefinitionXmlWriter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -31,7 +25,7 @@ public class ProcessDefinitionXmlEngineImportJobFactory
   private ProcessDefinitionXmlFetcher engineEntityFetcher;
 
   @Autowired
-  private ProcessDefinitionWriter processDefinitionWriter;
+  private ProcessDefinitionXmlWriter processDefinitionXmlWriter;
 
   protected EngineContext engineContext;
 
@@ -60,7 +54,7 @@ public class ProcessDefinitionXmlEngineImportJobFactory
     Optional<DefinitionBasedImportPage> page = importIndexHandler.getNextPage();
     return page.map(
       definitionBasedImportPage -> new ProcessDefinitionXmlEngineImportJob(
-        processDefinitionWriter,
+        processDefinitionXmlWriter,
         definitionBasedImportPage,
         elasticsearchImportJobExecutor,
         missingEntitiesFinder,

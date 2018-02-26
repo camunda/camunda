@@ -7,9 +7,6 @@ import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
@@ -74,7 +71,7 @@ public class FlowNodeRestServiceIT {
   private void createProcessDefinitionXml(String expectedProcessDefinitionXmlId) {
     ProcessDefinitionXmlOptimizeDto expectedXml = new ProcessDefinitionXmlOptimizeDto();
     expectedXml.setBpmn20Xml("XML123");
-    expectedXml.setId(expectedProcessDefinitionXmlId);
+    expectedXml.setProcessDefinitionId(expectedProcessDefinitionXmlId);
     elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessDefinitionXmlType(), expectedProcessDefinitionXmlId, expectedXml);
   }
 }

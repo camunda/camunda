@@ -2,8 +2,8 @@ package org.camunda.optimize.service.importing;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.optimize.dto.optimize.query.status.ConnectionStatusDto;
+import org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
-import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.EngineAuthenticationConfiguration;
 import org.camunda.optimize.service.util.configuration.EngineConfiguration;
@@ -17,9 +17,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
@@ -220,8 +217,7 @@ public class MultipleEngineSupportIT {
     allowedProcessDefinitionKeys.add("TestProcess2");
     assertThat(searchResponse.getHits().getTotalHits(), is(2L));
     for (SearchHit searchHit : searchResponse.getHits().getHits()) {
-      String processDefinitionId = (String) searchHit.getSourceAsMap().get(PROCESS_DEFINITION_ID);
-      String processDefinitionKey = getKeyForProcessDefinitionId(processDefinitionId);
+      String processDefinitionKey = (String) searchHit.getSourceAsMap().get(ProcessDefinitionXmlType.PROCESS_DEFINITION_KEY);
       assertThat(allowedProcessDefinitionKeys.contains(processDefinitionKey), is(true));
       allowedProcessDefinitionKeys.remove(processDefinitionKey);
     }
