@@ -17,7 +17,9 @@ package io.zeebe.util.sched;
 
 import java.util.concurrent.ExecutionException;
 import java.util.function.BiConsumer;
+import java.util.logging.Logger;
 
+import io.zeebe.util.Loggers;
 import io.zeebe.util.sched.future.ActorFuture;
 
 public class FutureContinuationRunnable<T> implements Runnable
@@ -47,7 +49,7 @@ public class FutureContinuationRunnable<T> implements Runnable
             }
             else
             {
-                System.out.println("Not calling continuation future");
+                Loggers.ACTOR_LOGGER.debug("Not calling continuation future.");
             }
         }
         catch (ExecutionException e)
