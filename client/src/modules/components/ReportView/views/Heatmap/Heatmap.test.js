@@ -49,6 +49,12 @@ it('should display a heatmap overlay', () => {
   expect(node).toIncludeText('HeatmapOverlay');
 });
 
+it('should not display the default heatmap overlay when targetValueMode is active', () => {
+  const node = mount(<Heatmap data={data} xml={diagramXml} targetValue={{active: true}} />);
+
+  expect(node).not.toIncludeText('HeatmapOverlay');
+});
+
 it('should not display an error message if data is valid', () => {
   const node = mount(<Heatmap data={data} errorMessage='Error' />);
 

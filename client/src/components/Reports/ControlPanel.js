@@ -4,6 +4,8 @@ import {Select, Popover, ProcessDefinitionSelection} from 'components';
 import {Filter} from './filter';
 import {reportLabelMap} from 'services';
 
+import TargetValueComparison from './TargetValueComparison';
+
 import './ControlPanel.css';
 
 export default class ControlPanel extends React.Component {
@@ -38,7 +40,7 @@ export default class ControlPanel extends React.Component {
         <li className='ControlPanel__item ControlPanel__item--select'>
           <label htmlFor='ControlPanel__process-definition' className='ControlPanel__label'>Process definition</label>
           <Popover className='ControlPanel__popover' title={this.props.processDefinitionId || 'Select Process Definition'}>
-            <ProcessDefinitionSelection {...this.definitionConfig()} xml={this.props.configuration.xml} 
+            <ProcessDefinitionSelection {...this.definitionConfig()} xml={this.props.configuration.xml}
               onChange={this.props.onChange} renderDiagram={true} enableAllVersionSelection={true}/>
           </Popover>
         </li>
@@ -65,6 +67,9 @@ export default class ControlPanel extends React.Component {
         </li>
         <li className='ControlPanel__item ControlPanel__item--filter'>
           <Filter data={this.props.filter} onChange={this.props.onChange} processDefinitionId={this.props.processDefinitionId} xml={this.props.configuration.xml} />
+        </li>
+        <li className='ControlPanel__item'>
+          <TargetValueComparison reportResult={this.props.reportResult} configuration={this.props.configuration} onChange={this.props.onChange} />
         </li>
       </ul>
     </div>

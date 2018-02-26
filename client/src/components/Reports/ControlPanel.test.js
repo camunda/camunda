@@ -27,6 +27,8 @@ jest.mock('services', () => {return {
   }
 }});
 
+jest.mock('./TargetValueComparison', () => () => <div>TargetValueComparison</div>);
+
 const data = {
   processDefinitionId: '',
   view: {operation: 'count', entity: 'processInstance'},

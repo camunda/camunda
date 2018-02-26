@@ -9,20 +9,22 @@ export default class Tooltip extends React.Component {
   }
 
   componentDidMount() {
-    this.renderTooltip();
+    this.props.viewer.get('eventBus').on('element.hover', this.renderTooltip);
   }
 
-  renderTooltip = () => {
+  componentWillUnmount() {
+    this.props.viewer.get('eventBus').off('element.hover', this.renderTooltip);
+  }
+
+  renderTooltip = ({element: {id}}) => {
     const {viewer} = this.props;
-    viewer.get('eventBus').on('element.hover', ({element: {id}}) => {
 
-      this.removeOverlays(viewer);
-      const value = this.props.data[id];
-      if (value !== undefined) {
-        addDiagramTooltip(viewer, id, this.props.formatter(value));
-      }
-    });
-  }
+    this.removeOverlays(viewer);
+    const value = this.props.data[id];
+    if (value !== undefined) {
+      addDiagramTooltip(viewer, id, this.props.formatter(value));
+    }
+  };
 
   removeOverlays = (viewer) => {
     viewer.get('overlays').clear();

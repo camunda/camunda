@@ -1,13 +1,11 @@
 import React from 'react';
 
 import {ErrorBoundary} from 'components';
-import {reportLabelMap, getFlowNodeNames} from 'services';
+import {reportLabelMap, getFlowNodeNames, formatters} from 'services';
 import moment from 'moment';
 import ReportBlankSlate from './ReportBlankSlate';
 
 import {Number, Json, Table, Heatmap, Chart} from './views';
-
-import {frequencyFormatter, durationFormatter} from './service';
 
 const defaultErrorMessage = 'Cannot display data for the given report builder settings. Please choose another combination!';
 
@@ -139,7 +137,7 @@ export default class ReportView extends React.Component {
       case 'heat':
         config = {
           component: Heatmap,
-          props: {data: result, xml: data.configuration.xml}
+          props: {data: result, xml: data.configuration.xml, targetValue: data.configuration.targetValue}
         }; break;
       case 'bar':
       case 'line':
@@ -160,8 +158,8 @@ export default class ReportView extends React.Component {
     }
 
     switch(data.view.property) {
-      case 'frequency': config.props.formatter = frequencyFormatter; break;
-      case 'duration': config.props.formatter = durationFormatter; break;
+      case 'frequency': config.props.formatter = formatters.frequency; break;
+      case 'duration': config.props.formatter = formatters.duration; break;
       default: config.props.formatter = v => v;
     }
 

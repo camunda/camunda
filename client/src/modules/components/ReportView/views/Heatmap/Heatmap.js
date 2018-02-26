@@ -7,7 +7,7 @@ import './Heatmap.css';
 
 const Heatmap = (props) => {
   const {xml} = props;
-  const {data, errorMessage} = props;
+  const {data, errorMessage, targetValue} = props;
 
   if(!data || typeof data !== 'object') {
     return <p>{errorMessage}</p>;
@@ -19,7 +19,7 @@ const Heatmap = (props) => {
 
   return (<div className='Heatmap'>
     <BPMNDiagram xml={xml}>
-      <HeatmapOverlay data={data} formatter={props.formatter} />
+      {targetValue && targetValue.active ? null : <HeatmapOverlay data={data} formatter={props.formatter} />}
     </BPMNDiagram>
   </div>);
 }

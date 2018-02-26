@@ -1,4 +1,4 @@
-import {frequencyFormatter, durationFormatter} from './service';
+import {frequency as frequencyFormatter, duration as durationFormatter} from './formatters';
 
 const separator = '\u202F';
 const nbsp = '\u00A0';

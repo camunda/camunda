@@ -1,4 +1,4 @@
-export function frequencyFormatter(number) {
+export function frequency(number) {
   const separator = '\u202F';
   const numberString = '' + number;
   const formattedNumberString = numberString
@@ -13,7 +13,7 @@ export function frequencyFormatter(number) {
   return formattedNumberString.replace(/\s/g, separator);
 }
 
-export function durationFormatter(time, config = {}) {
+export function duration(time) {
   if (time === 0) {
     return '0ms';
   }

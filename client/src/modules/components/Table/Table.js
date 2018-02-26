@@ -4,9 +4,9 @@ import {Button} from 'components';
 
 import './Table.css';
 
-export default function Table({head, body, foot}) {
+export default function Table({className, head, body, foot}) {
   return (
-    <div className='Table'>
+    <div className={className ? 'Table '+className : 'Table'}>
       <table className='Table__content'>
         <thead>{Table.renderRow(head, 0)}</thead>
         <tbody>
@@ -45,4 +45,6 @@ Table.renderCell = cell => {
   if(cell.onClick) {
     return (<Button {...cell.props} onClick={cell.onClick} className={cell.className}>{cell.content}</Button>);
   }
+
+  return cell;
 }

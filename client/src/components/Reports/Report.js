@@ -197,7 +197,7 @@ export default class Report extends React.Component {
           </div>
         </div>
 
-        <ControlPanel {...data} onChange={this.updateReport} />
+        <ControlPanel {...data} reportResult={reportResult} onChange={this.updateReport} />
         <div className='Report__content' >
           <ReportView report={reportResult} />
         </div>

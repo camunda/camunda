@@ -20,3 +20,9 @@ it('should apply passed classNames', () => {
 
   expect(node.find('.CustomClass')).toBePresent();
 });
+
+it('should also work when not providing classNames', () => {
+  const node = mount(<ButtonGroup />);
+
+  expect(node.find('.ButtonGroup')).toBePresent();
+});

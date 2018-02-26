@@ -17,7 +17,7 @@ it('should render without crashing', () => {
   mount(<Table {...{head: [], body: [], foot: []}} />);
 });
 
-it('shoud display header'), () => {
+it('shoud display header', () => {
   const node = mount(<Table head={['x', 'y', 'z']} body={[
     ['a', 'b', 'c'],
     ['a', 'b', 'c'],
@@ -25,8 +25,7 @@ it('shoud display header'), () => {
   ]} />);
 
   expect(node.find('thead')).toBePresent();
-  expect(node.find('thead').find('tr')).toHaveLength(3);
-}
+});
 
 it('should display a row for each entry in the data array', () => {
   const node = mount(<Table body={[
@@ -78,4 +77,16 @@ it('should render apply the className to links', () => {
   const node = mount(<Table body={[[{content: 'cell', link: '/newRoute', className: 'linkClass'}]]} />);
 
   expect(node.find('.linkClass')).toBePresent();
+});
+
+it('should apply custom classNames for the Table', () => {
+  const node = mount(<Table className='myCustomClass' body={[[]]} />);
+
+  expect(node.getDOMNode().classList.contains('myCustomClass')).toBe(true);
+});
+
+it('should render predefined react components', () => {
+  const node = mount(<Table body={[[<p>Hello world</p>]]} />);
+
+  expect(node).toIncludeText('Hello world');
 });
