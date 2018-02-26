@@ -501,9 +501,8 @@ public class StreamProcessorController extends ZbActor
     {
         if (!isFailed())
         {
-            streamProcessor.onClose();
-
             createSnapshot();
+            streamProcessor.onClose();
         }
 
         streamProcessorContext.getLogStreamReader().close();
