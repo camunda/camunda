@@ -48,16 +48,10 @@ export default class VariableFilter extends React.Component {
     }, async () => {
       const values = await loadValues(this.props.processDefinitionId, name, type, 0, this.state.availableValues.length + valuesToLoad + 1);
 
-      let valuesAreComplete;
-      if (values.length === this.state.availableValues.length + valuesToLoad + 1) {
-        valuesAreComplete = false;
-        values.splice(values.length - 1);
-      } else {
-        valuesAreComplete = true;
-      }
+      const valuesAreComplete = values.length !== (this.state.availableValues.length + valuesToLoad + 1);
 
       this.setState({
-        availableValues: values,
+        availableValues: (valuesAreComplete) ? values : values.splice(0, values.length - 1),
         valuesAreComplete,
         loading: false
       });
