@@ -11,7 +11,7 @@ export default class ShareEntity extends React.Component {
     super(props);
 
     this.state = {
-      loaded: false, 
+      loaded: false,
       isShared: false,
       id: ''
     }
@@ -51,7 +51,7 @@ export default class ShareEntity extends React.Component {
       return '';
     }
   }
-  
+
   buildShareLinkForEmbedding = () => {
     if(this.state.id) {
       return `<iframe src="${this.buildShareLink()}" frameborder="0" style="width: 1000px; height: 700px; allowtransparency; overflow: scroll"></iframe>`;
@@ -63,7 +63,7 @@ export default class ShareEntity extends React.Component {
   disabled = () => {
     return !this.state.isShared;
   }
-  
+
   render() {
     if(!this.state.loaded) {
       return <div className='ShareEntity__loading-indicator'>loading...</div>;
@@ -77,17 +77,23 @@ export default class ShareEntity extends React.Component {
             <div className='ShareEntity__enable-switch'><Switch checked={this.state.isShared} onChange={this.toggleValue}/></div>
           </div>
           <div className={('ShareEntity__link-area') + (this.disabled()? '--disabled': '')}>
+          <div className='ShareEntity__icon-container'>
+            <div className='ShareEntity__icon Link'></div>
             <div className='ShareEntity__clipboard'>
               <span className='ShareEntity__label'>Link</span>
-              <span className='ShareEntity__label-description'>{`Use the following URL to share the ${this.props.type} 
+              <span className='ShareEntity__label-description'>{`Use the following URL to share the ${this.props.type}
                 with people who don't have a Camunda Optimize account:`}</span>
               <CopyToClipboard className='ShareEntity__share-link' disabled={this.disabled()} value={this.buildShareLink()} />
             </div>
+          </div>
+          <div className='ShareEntity__icon-container'>
+          <div className='ShareEntity__icon Embed'></div>
             <div className='ShareEntity__clipboard'>
               <span className='ShareEntity__label'>Embed</span>
               <span className='ShareEntity__label-description'>{`Use the following URL to embed the ${this.props.type} into blogs and web pages:`}</span>
               <CopyToClipboard className='ShareEntity__embed-link' disabled={this.disabled()} value={this.buildShareLinkForEmbedding()} />
             </div>
+          </div>
           </div>
         </form>
       </div>

@@ -22,6 +22,30 @@
   display: table-cell;
 }
 
+.ShareEntity__icon {
+  width: 125px;
+  height: 100px;
+  position: relative;
+  top: 50px;
+  margin-right: 13px;
+  display:inline-block;
+  background-repeat: no-repeat;
+}
+
+.ShareEntity__icon.Embed {
+  background-image: url(./embed.svg);
+}
+
+.ShareEntity__icon.Link {
+  background-image: url(./link.svg);
+}
+
+
+.ShareEntity__icon-container {
+  display: inline-flex;
+  width: 100%;
+}
+
 .ShareEntity__link-area--disabled {
   opacity: 0.50;
 }
@@ -42,6 +66,7 @@
 }
 
 .ShareEntity__clipboard {
+  width: 100%;
   padding-top: 50px;
   padding-bottom: 20px;
 }
