@@ -67,6 +67,7 @@ public class ProcessDefinitionRestService {
 
   /**
    * Get the process definition xml to a given process definition key and version.
+   * If the version is set to "ALL", the xml of the latest version is returned.
    *
    * @param processDefinitionKey The process definition key of the desired process definition xml.
    * @param processDefinitionVersion The process definition version of the desired process definition xml.

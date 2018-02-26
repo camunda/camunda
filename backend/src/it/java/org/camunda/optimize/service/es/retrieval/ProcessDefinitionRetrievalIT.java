@@ -11,9 +11,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.HttpHeaders;
@@ -23,8 +20,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.ALL_VERSIONS;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
 
 
@@ -176,6 +173,46 @@ public class ProcessDefinitionRetrievalIT {
         embeddedOptimizeRule.target("process-definition/xml")
             .queryParam("processDefinitionKey", processDefinition.getKey())
             .queryParam("processDefinitionVersion", processDefinition.getVersion())
+            .request()
+            .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+            .get();
+
+    String actualXml =
+        response.readEntity(String.class);
+
+    // then
+    assertThat(actualXml, is(Bpmn.convertToString(modelInstance)));
+  }
+
+  @Test
+  public void getProcessDefinitionXmlByKeyAndAllVersion() throws Exception {
+    // given
+    String processId = PROCESS_DEFINITION_KEY + System.currentTimeMillis();
+    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(processId)
+        .startEvent()
+          .serviceTask()
+            .camundaExpression("${true}")
+        .endEvent()
+        .done();
+    engineRule.deployProcessAndGetProcessDefinition(modelInstance);
+    modelInstance = Bpmn.createExecutableProcess(processId)
+        .startEvent()
+          .name("Add name to ensure that this is the latest version!")
+          .serviceTask()
+            .camundaExpression("${true}")
+        .endEvent()
+        .done();
+    ProcessDefinitionEngineDto processDefinition = engineRule.deployProcessAndGetProcessDefinition(modelInstance);
+
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+    Response response =
+        embeddedOptimizeRule.target("process-definition/xml")
+            .queryParam("processDefinitionKey", processDefinition.getKey())
+            .queryParam("processDefinitionVersion", ALL_VERSIONS)
             .request()
             .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
             .get();

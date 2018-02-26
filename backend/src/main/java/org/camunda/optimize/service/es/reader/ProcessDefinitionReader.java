@@ -5,7 +5,7 @@ import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionXmlOptimizeD
 import org.camunda.optimize.dto.optimize.query.definition.ExtendedProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.definition.ProcessDefinitionGroupOptimizeDto;
 import org.camunda.optimize.dto.optimize.rest.FlowNodeNamesDto;
-import org.camunda.optimize.service.es.schema.type.ProcessDefinitionType;
+import org.camunda.optimize.service.es.report.command.util.ReportConstants;
 import org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -119,8 +119,17 @@ public class ProcessDefinitionReader {
   }
 
   public String getProcessDefinitionXml(String processDefinitionKey, String processDefinitionVersion) {
+    processDefinitionVersion = convertToValidVersion(processDefinitionKey, processDefinitionVersion);
     ProcessDefinitionXmlOptimizeDto processDefinitionXmlDto = getProcessDefinitionXmlDto(processDefinitionKey, processDefinitionVersion);
     return processDefinitionXmlDto == null ? null : processDefinitionXmlDto.getBpmn20Xml();
+  }
+
+  private String convertToValidVersion(String processDefinitionKey, String processDefinitionVersion) {
+    if (ReportConstants.ALL_VERSIONS.equals(processDefinitionVersion)) {
+      return getLatestVersionToKey(processDefinitionKey);
+    } else {
+      return processDefinitionVersion;
+    }
   }
 
   private ProcessDefinitionXmlOptimizeDto getProcessDefinitionXmlDto(String processDefinitionKey, String processDefinitionVersion) {
@@ -188,6 +197,25 @@ public class ProcessDefinitionReader {
 
 
   public List<ProcessDefinitionGroupOptimizeDto> getProcessDefinitionsGroupedByKey() {
+    Map<String, ProcessDefinitionGroupOptimizeDto> resultMap = getKeyToProcessDefinitionMap();
+    return new ArrayList<>(resultMap.values());
+  }
+
+  public String getLatestVersionToKey(String key) {
+    Map<String, ProcessDefinitionGroupOptimizeDto> keyToVersionsMap = getKeyToProcessDefinitionMap();
+    if (keyToVersionsMap.containsKey(key)) {
+      List<ExtendedProcessDefinitionOptimizeDto> versions = keyToVersionsMap.get(key).getVersions();
+      if (versions != null && !versions.isEmpty()) {
+        return versions.get(0).getVersion().toString();
+      } else {
+        throw new OptimizeRuntimeException("Unable to retrieve latest version for process definition key: " + key);
+      }
+    } else {
+      throw new OptimizeRuntimeException("Unable to retrieve latest version for process definition key: " + key);
+    }
+  }
+
+  private Map<String, ProcessDefinitionGroupOptimizeDto> getKeyToProcessDefinitionMap() {
     Map<String, ProcessDefinitionGroupOptimizeDto> resultMap = new HashMap<>();
     List<ExtendedProcessDefinitionOptimizeDto> allDefinitions = getProcessDefinitions();
     for (ExtendedProcessDefinitionOptimizeDto process : allDefinitions) {
@@ -198,7 +226,7 @@ public class ProcessDefinitionReader {
       resultMap.get(key).getVersions().add(process);
     }
     resultMap.values().forEach(ProcessDefinitionGroupOptimizeDto::sort);
-    return new ArrayList<>(resultMap.values());
+    return resultMap;
   }
 
 
