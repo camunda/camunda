@@ -9,7 +9,7 @@ function getAllFilesInDirectory(dir, filelist) {
     if (fs.statSync(dir + file).isDirectory()) {
       filelist = getAllFilesInDirectory(dir + file + '/', filelist);
     }
-    else {
+    else { 
       filelist.push(dir + file);
     }
   });
