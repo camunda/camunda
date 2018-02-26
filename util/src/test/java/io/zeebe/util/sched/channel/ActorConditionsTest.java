@@ -16,7 +16,6 @@
 package io.zeebe.util.sched.channel;
 
 import io.zeebe.util.sched.ActorCondition;
-import org.junit.Before;
 import org.junit.Test;
 
 import static org.mockito.Mockito.*;

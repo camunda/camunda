@@ -15,12 +15,11 @@
  */
 package io.zeebe.util.sched;
 
-import java.util.concurrent.ExecutionException;
-import java.util.function.BiConsumer;
-import java.util.logging.Logger;
-
 import io.zeebe.util.Loggers;
 import io.zeebe.util.sched.future.ActorFuture;
+
+import java.util.concurrent.ExecutionException;
+import java.util.function.BiConsumer;
 
 public class FutureContinuationRunnable<T> implements Runnable
 {
