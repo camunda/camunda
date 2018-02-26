@@ -24,8 +24,7 @@ public class EngineDatabaseRule extends TestWatcher {
 
   private static Connection connection = null;
 
-  @Override
-  protected void starting(Description description) {
+  public EngineDatabaseRule() {
     try {
       if (connection == null || connection.isClosed()) {
         // Register JDBC driver
@@ -38,12 +37,16 @@ public class EngineDatabaseRule extends TestWatcher {
         // to be able to batch sql statements
         connection.setAutoCommit(false);
       }
-      super.starting(description);
     } catch (SQLException e) {
       logger.error("Error while trying to connect to database!", e);
     } catch (ClassNotFoundException e) {
       logger.error("Could not find h2 jdbc driver class!", e);
     }
+  }
+
+  @Override
+  protected void starting(Description description) {
+    super.starting(description);
   }
 
   public void changeActivityDuration(String processInstanceId,

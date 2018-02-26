@@ -4,6 +4,7 @@ import org.camunda.optimize.dto.optimize.query.report.GroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ViewDto;
 
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.DATE_UNIT_DAY;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_FLOW_NODE_TYPE;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_NONE_TYPE;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_START_DATE_TYPE;
@@ -30,6 +31,27 @@ public class ReportDataHelper {
         TABLE_VISUALIZATION,
         new ViewDto(VIEW_RAW_DATA_OPERATION),
         null
+    );
+  }
+
+
+  public static ReportDataDto createReportRawDataGroupByFlowNodesAsTable(String processDefinitionKey, String processDefinitionVersion) {
+    return createReportDataViewRaw(
+        processDefinitionKey,
+        processDefinitionVersion,
+        TABLE_VISUALIZATION,
+        new ViewDto(VIEW_RAW_DATA_OPERATION),
+        createGroupByFlowNode()
+    );
+  }
+
+  public static ReportDataDto createReportRawDataGroupByStartDateAsTable(String processDefinitionKey, String processDefinitionVersion) {
+    return createReportDataViewRaw(
+        processDefinitionKey,
+        processDefinitionVersion,
+        TABLE_VISUALIZATION,
+        new ViewDto(VIEW_RAW_DATA_OPERATION),
+        createGroupByStartDateDto(DATE_UNIT_DAY)
     );
   }
 

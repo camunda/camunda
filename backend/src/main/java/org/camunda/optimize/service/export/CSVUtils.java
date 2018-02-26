@@ -8,8 +8,10 @@ import java.beans.IntrospectionException;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -108,5 +110,17 @@ public class CSVUtils {
     //one less then all fields due to variables map
     int sizeWithoutMap = RawDataProcessInstanceDto.class.getDeclaredFields().length - 1;
     return new String[sizeWithoutMap + variableKeys.size()];
+  }
+
+  public static List<String[]> map(Map<String, Long> valuesMap) {
+    List<String[]> result = new ArrayList<>();
+
+    for (Map.Entry<String, Long> value : valuesMap.entrySet()) {
+      String[] line = new String[2];
+      line[0] = value.getKey();
+      line[1] = value.getValue().toString();
+      result.add(line);
+    }
+    return result;
   }
 }
