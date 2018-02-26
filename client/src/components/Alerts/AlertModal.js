@@ -78,35 +78,6 @@ export default class AlertModal extends React.Component {
     }
   }
 
-  alertValid = () => {
-      if (!this.state.name.trim()) {
-        this.setErrorField('name');
-        return false
-      }
-      if (!this.state.email.match(/^[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/)) { // taken from https://www.w3.org/TR/2012/WD-html-markup-20120320/input.email.html#input.email.attrs.value.single
-        this.setErrorField('email');
-        return false
-      }
-      if(!this.state.reportId) {
-        this.setErrorField('report');
-        return false
-      }
-      if (!this.state.threshold.trim() || isNaN(this.state.threshold.trim())) {
-        this.setErrorField('threshold');
-        return false
-      }
-      if (!this.state.checkInterval.value.trim() || isNaN(this.state.checkInterval.value.trim()) || !(this.state.checkInterval.value > 0)) {
-        this.setErrorField('checkInterval');
-        return false
-      }
-      if (this.state.reminder !== null && (!this.state.reminder.value.trim() || isNaN(this.state.reminder.value.trim()) || !this.state.reminder.value > 0)) {
-        this.setErrorField('reminder');
-        return false;
-      }
-      this.setErrorField(null);
-      return true;
-  }
-
   confirm = () => {
     this.props.onConfirm(this.state);
   }
@@ -116,7 +87,31 @@ export default class AlertModal extends React.Component {
   }
 
   componentDidUpdate() {
-    this.isValidInput = this.alertValid();
+    if (!this.state.name.trim()) {
+      this.setErrorField('name');
+      return;
+    }
+    if (!this.state.email.match(/^[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/)) { // taken from https://www.w3.org/TR/2012/WD-html-markup-20120320/input.email.html#input.email.attrs.value.single
+      this.setErrorField('email');
+      return;
+    }
+    if(!this.state.reportId) {
+      this.setErrorField('report');
+      return;
+    }
+    if (!this.state.threshold.trim() || isNaN(this.state.threshold.trim())) {
+      this.setErrorField('threshold');
+      return;
+    }
+    if (!this.state.checkInterval.value.trim() || isNaN(this.state.checkInterval.value.trim()) || !(this.state.checkInterval.value > 0)) {
+      this.setErrorField('checkInterval');
+      return;
+    }
+    if (this.state.reminder !== null && (!this.state.reminder.value.trim() || isNaN(this.state.reminder.value.trim()) || !this.state.reminder.value > 0)) {
+      this.setErrorField('reminder');
+      return;
+    }
+    this.setErrorField(null);
   }
 
   render() {
@@ -138,21 +133,21 @@ export default class AlertModal extends React.Component {
             }
             <label>
               <span className="AlertModal__label">Name</span>
-              <Input className={"AlertModal__input" + ((errorInput==="name") ? " error" : "")} value={name} onChange={({target: {value}}) => this.setState({name: value})}/>
+              <Input className={"AlertModal__input" + ((errorInput==="name") ? "--error" : "")} value={name} onChange={({target: {value}}) => this.setState({name: value})}/>
               {(errorInput==='name') && <span className="AlertModal__warning">Please enter a name</span>}
             </label>
           </div>
           <div className="AlertModal__inputGroup">
             <label>
               <span className="AlertModal__label">Send Email to</span>
-              <Input className={"AlertModal__input" + ((errorInput==="email") ? " error" : "")} value={email} onChange={({target: {value}}) => this.setState({email: value})} />
+              <Input className={"AlertModal__input" + ((errorInput==="email") ? "--error" : "")} value={email} onChange={({target: {value}}) => this.setState({email: value})} />
               {(errorInput==='email') && <span className="AlertModal__warning">Please enter a valid Email address</span>}
             </label>
           </div>
           <div className="AlertModal__inputGroup">
             <label>
               <span className="AlertModal__label">when Report</span>
-              <Select className={"AlertModal__input" + ((errorInput==="report") ? " error" : "")} value={reportId} onChange={({target: {value}}) => this.setState({reportId: value})}>
+              <Select className={"AlertModal__input" + ((errorInput==="report") ? "--error" : "")} value={reportId} onChange={({target: {value}}) => this.setState({reportId: value})}>
                 <Select.Option disabled value=''>Please select Report</Select.Option>
                 {this.props.reports.map(({id, name}) => {
                   return <Select.Option key={id} value={id}>{name}</Select.Option>
@@ -169,7 +164,7 @@ export default class AlertModal extends React.Component {
                   <Select.Option value='>'>above</Select.Option>
                   <Select.Option value='<'>below</Select.Option>
                 </Select>
-                <Input className={"AlertModal__input" + ((errorInput==="threshold") ? " error" : "")} value={threshold} onChange={({target: {value}}) => this.setState({threshold: value})} />
+                <Input className={"AlertModal__input" + ((errorInput==="threshold") ? "--error" : "")} value={threshold} onChange={({target: {value}}) => this.setState({threshold: value})} />
               </div>
               {(errorInput==='threshold') && <span className="AlertModal__warning">Please enter a numeric value</span>}
             </label>
@@ -180,7 +175,7 @@ export default class AlertModal extends React.Component {
             <span className="AlertModal__label">Check Report every</span>
             <div className="AlertModal__combinedInput">
               <Input
-                className={"AlertModal__input" + ((errorInput==="checkInterval") ? " error" : "")}
+                className={"AlertModal__input" + ((errorInput==="checkInterval") ? "--error" : "")}
                 value={checkInterval.value}
                 onChange={({target: {value}}) => this.setState(update(this.state, {checkInterval: {value: {$set: value}}}))}
               />
@@ -216,7 +211,7 @@ export default class AlertModal extends React.Component {
                 <span className="AlertModal__label">every</span>
                 <div className="AlertModal__combinedInput">
                   <Input
-                    className={"AlertModal__input" + ((errorInput==="reminder") ? " error" : "")}
+                    className={"AlertModal__input" + ((errorInput==="reminder") ? "--error" : "")}
                     value={reminder.value}
                     onChange={({target: {value}}) => this.setState(update(this.state, {reminder: {value: {$set: value}}}))}
                   />

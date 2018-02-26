@@ -22,7 +22,9 @@
   flex-grow: 1;
 }
 
-.AlertModal__input.error {
+.AlertModal__input--error {
+  width: 100%;
+  flex-grow: 1;
   border-color: #FF0000;
   border-width: 1px;
   border-style: solid;
