@@ -262,7 +262,6 @@ public class ActorThread extends Thread
     }
 
     /**
-<<<<<<< HEAD:util/src/main/java/io/zeebe/util/sched/ActorTaskRunner.java
      * Must be called from this thread, remove a scheduled job.
      */
     public void removeTimer(TimerSubscription timer)
@@ -271,12 +270,8 @@ public class ActorThread extends Thread
     }
 
     /**
-     * Returns the current {@link ActorTaskRunner} or null if the current thread is not
-     * an {@link ActorTaskRunner} thread.
-=======
      * Returns the current {@link ActorThread} or null if the current thread is not
      * an {@link ActorThread}.
->>>>>>> feat(priorities): initial implementation:util/src/main/java/io/zeebe/util/sched/ActorThread.java
      *
      * @return the current {@link ActorThread} or null
      */
