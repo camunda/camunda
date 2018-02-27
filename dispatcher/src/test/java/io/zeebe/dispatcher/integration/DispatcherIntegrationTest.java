@@ -436,6 +436,7 @@ public class DispatcherIntegrationTest
 
         // then
         assertThat(dispatcher.isClosed()).isTrue();
+        assertThat(dispatcher.getLogBuffer().isClosed()).isTrue();
     }
 
     @Test

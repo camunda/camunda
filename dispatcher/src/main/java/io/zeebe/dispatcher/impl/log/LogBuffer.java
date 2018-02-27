@@ -113,6 +113,11 @@ public class LogBuffer
         rawBuffer.close();
     }
 
+    public boolean isClosed()
+    {
+        return rawBuffer.isClosed();
+    }
+
     public int getPartitionSize()
     {
         return partitionSize;

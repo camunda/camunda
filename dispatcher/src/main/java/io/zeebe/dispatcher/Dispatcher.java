@@ -117,6 +117,7 @@ public class Dispatcher extends ZbActor implements AutoCloseable
             doCloseSubscription(subscription);
         }
 
+        logBuffer.close();
         isClosed = true;
     }
 
