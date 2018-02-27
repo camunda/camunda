@@ -109,7 +109,7 @@ public class ServerConductor extends Conductor
 
         actor.call(() ->
         {
-            actor.await(transportContext.getReceiveBuffer().openSubscriptionAsync(subscriptionName), (s, t) ->
+            actor.runOnCompletion(transportContext.getReceiveBuffer().openSubscriptionAsync(subscriptionName), (s, t) ->
             {
                 if (t == null)
                 {
