@@ -10,10 +10,6 @@ def mvnGoals = 'clean generate-sources license:check source:jar javadoc:jar depl
 def mavenVersion = 'maven-3.3-latest'
 def mavenSettingsId = 'camunda-maven-settings'
 
-def downstreamProjects = [
-    'zeebe-QA-performance-tests-trigger',
-]
-
 // script to set access rights on ssh keys
 // and configure git user name and email
 def setupGitConfig = '''\
@@ -243,7 +239,6 @@ mavenJob(jobName)
           }
         }
 
-        downstream(downstreamProjects.join(','), 'SUCCESS')
     }
 
     blockOnUpstreamProjects()
