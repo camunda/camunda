@@ -23,7 +23,7 @@ if (broken) {
 }
 '''
 
-job('seed-job-optimize') {
+def seedJob = job('seed-job-optimize') {
 
   displayName 'Seed Job Optimize'
   description 'JobDSL Seed Job for Camunda Optimize'
@@ -87,6 +87,7 @@ job('seed-job-optimize') {
 
 }
 
+queue(seedJob)
 
 
 multibranchPipelineJob('camunda-optimize') {
