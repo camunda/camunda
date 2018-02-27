@@ -273,7 +273,7 @@ public class TransportChannel
         return STATE_FIELD.get(this) == CONNECTING;
     }
 
-    private void doClose()
+    protected void doClose()
     {
         try
         {

@@ -15,8 +15,8 @@
  */
 package io.zeebe.transport.util;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.TransportListener;
@@ -24,8 +24,9 @@ import io.zeebe.transport.TransportListener;
 public class RecordingChannelListener implements TransportListener
 {
 
-    protected List<RemoteAddress> closedConnections = new ArrayList<>();
-    protected List<RemoteAddress> openedConnections = new ArrayList<>();
+    protected List<RemoteAddress> closedConnections = new CopyOnWriteArrayList<>();
+    protected List<RemoteAddress> openedConnections = new CopyOnWriteArrayList<>();
+    protected List<Event> events = new CopyOnWriteArrayList<>();
 
     public List<RemoteAddress> getClosedConnections()
     {
@@ -37,16 +38,29 @@ public class RecordingChannelListener implements TransportListener
         return openedConnections;
     }
 
+    public List<Event> getEvents()
+    {
+        return events;
+    }
+
     @Override
     public void onConnectionEstablished(RemoteAddress remoteAddress)
     {
+        events.add(Event.ESTABLISHED);
         openedConnections.add(remoteAddress);
     }
 
     @Override
     public void onConnectionClosed(RemoteAddress remoteAddress)
     {
+        events.add(Event.CLOSED);
         closedConnections.add(remoteAddress);
+    }
+
+    public enum Event
+    {
+        ESTABLISHED,
+        CLOSED
     }
 
 }
