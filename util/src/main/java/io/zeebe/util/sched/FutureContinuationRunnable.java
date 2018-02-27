@@ -13,42 +13,51 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.util.sched.future;
-
-import java.util.function.BiConsumer;
+package io.zeebe.util.sched;
 
 import io.zeebe.util.Loggers;
+import io.zeebe.util.sched.future.ActorFuture;
+
+import java.util.concurrent.ExecutionException;
+import java.util.function.BiConsumer;
 
 public class FutureContinuationRunnable<T> implements Runnable
 {
-    private ActorFuture<T> future;
-    private BiConsumer<T, Throwable> consumer;
+    final ActorTask task;
+    final ActorFuture<T> future;
+    final BiConsumer<T, Throwable> callback;
+    final boolean ensureBlockedOnFuture;
 
-    public FutureContinuationRunnable(ActorFuture<T> future, BiConsumer<T, Throwable> consumer)
+    FutureContinuationRunnable(ActorTask task, ActorFuture<T> future, BiConsumer<T, Throwable> callback, boolean ensureBlockedOnFuture)
     {
+        this.task = task;
         this.future = future;
-        this.consumer = consumer;
+        this.callback = callback;
+        this.ensureBlockedOnFuture = ensureBlockedOnFuture;
     }
 
     @Override
     public void run()
     {
-        if (!future.isCompletedExceptionally())
+        try
         {
-            try
+            if (!ensureBlockedOnFuture || task.awaitFuture == future)
             {
                 final T res = future.get();
-                consumer.accept(res, null);
+                callback.accept(res, null);
             }
-            catch (Throwable e)
+            else
             {
                 Loggers.ACTOR_LOGGER.debug("Not calling continuation future.");
             }
         }
-        else
+        catch (ExecutionException e)
         {
-            consumer.accept(null, future.getException());
+            callback.accept(null, e);
+        }
+        catch (InterruptedException e)
+        {
+            e.printStackTrace();
         }
     }
-
 }

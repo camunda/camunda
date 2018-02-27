@@ -21,12 +21,12 @@ package io.zeebe.util.sched;
 public interface ActorSubscription
 {
     /**
-     * called by the {@link ActorThread} to determine whether the subscription has work available.
+     * called by the {@link ActorTaskRunner} to determine whether the subscription has work available.
      */
     boolean poll();
 
     /**
-     * called by the {@link ActorThread} after {@link #poll()} returned true to get the job to be run
+     * called by the {@link ActorTaskRunner} after {@link #poll()} returned true to get the job to be run
      */
     ActorJob getJob();
 

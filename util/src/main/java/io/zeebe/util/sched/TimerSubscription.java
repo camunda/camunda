@@ -23,7 +23,6 @@ public class TimerSubscription implements ActorSubscription, ScheduledTimer
     private volatile boolean isCanceled = false;
 
     private final ActorJob job;
-    private final ActorTask task;
     private final TimeUnit timeUnit;
     private final long deadline;
     private final boolean isRecurring;
@@ -33,7 +32,6 @@ public class TimerSubscription implements ActorSubscription, ScheduledTimer
     public TimerSubscription(ActorJob job, long deadline, TimeUnit timeUnit, boolean isRecurring)
     {
         this.job = job;
-        task = job.getTask();
         this.timeUnit = timeUnit;
         this.deadline = deadline;
         this.isRecurring = isRecurring;
@@ -85,14 +83,14 @@ public class TimerSubscription implements ActorSubscription, ScheduledTimer
         {
             isCanceled = true;
 
-            ActorThread.current().removeTimer(this);
+            ActorTaskRunner.current().removeTimer(this);
         }
     }
 
     public void submit()
     {
-        final ActorThread thread = ActorThread.current();
-        thread.scheduleTimer(this);
+        final ActorTaskRunner runner = ActorTaskRunner.current();
+        runner.scheduleTimer(this);
     }
 
     public long getDeadline()
@@ -110,7 +108,13 @@ public class TimerSubscription implements ActorSubscription, ScheduledTimer
         if (!isCanceled)
         {
             isDone = true;
-            task.tryWakeup();
+
+            final ActorTask task = job.task;
+
+            if (task.tryWakeup())
+            {
+                ActorTaskRunner.current().submit(task);
+            }
         }
     }
 }

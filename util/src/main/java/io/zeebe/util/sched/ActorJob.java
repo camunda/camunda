@@ -16,9 +16,11 @@
 package io.zeebe.util.sched;
 
 import java.util.concurrent.Callable;
+import java.util.function.BiConsumer;
 
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
+import io.zeebe.util.sched.metrics.ActorRunnerMetrics;
 
 @SuppressWarnings({ "unchecked", "rawtypes" })
 public class ActorJob
@@ -38,7 +40,7 @@ public class ActorJob
 
     private ActorFuture resultFuture;
 
-    ActorThread actorThread;
+    ActorTaskRunner runner;
 
     private ActorSubscription subscription;
 
@@ -49,11 +51,11 @@ public class ActorJob
         this.state = ActorState.QUEUED;
     }
 
-    void execute(ActorThread runner)
+    void execute(ActorTaskRunner runner)
     {
         runner.getMetrics().incrementJobCount();
 
-        this.actorThread = runner;
+        this.runner = runner;
         try
         {
             invoke(runner);
@@ -77,24 +79,32 @@ public class ActorJob
         }
         finally
         {
-            this.actorThread = null;
+            this.runner = null;
 
             // in any case, success or exception, decide if the job should be resubmitted
-            if (isTriggeredBySubscription()
-                    || (isAutoCompleting && runnable == null)
-                    || isDoneCalled)
+            if (state != ActorState.BLOCKED)
             {
-                state = ActorState.TERMINATED;
-            }
-            else
-            {
-                state = ActorState.QUEUED;
+                if (isTriggeredBySubscription()
+                        || (isAutoCompleting && runnable == null)
+                        || isDoneCalled)
+                {
+                    state = ActorState.TERMINATED;
+                }
+                else
+                {
+                    state = ActorState.QUEUED;
+                }
             }
         }
     }
 
-    private void invoke(ActorThread runner) throws Exception
+    private void invoke(ActorTaskRunner runner) throws Exception
     {
+        long before = -1;
+        if (ActorRunnerMetrics.SHOULD_RECORD_JOB_EXECUTION_TIME)
+        {
+            before = System.nanoTime();
+        }
         if (callable != null)
         {
             invocationResult = callable.call();
@@ -121,13 +131,19 @@ public class ActorJob
                 runnable.run();
             }
         }
+
+        if (ActorRunnerMetrics.SHOULD_RECORD_JOB_EXECUTION_TIME)
+        {
+            final ActorRunnerMetrics metrics = runner.getMetrics();
+            metrics.recordJobExecutionTime(System.nanoTime() - before);
+        }
     }
 
     /**
      * Append a child task to this task. The new child task is appended to the list of tasks
      * spawned by this task such that it is executed last.
      */
-    public void appendChild(ActorJob spawnedTask)
+    protected void appendChild(ActorJob spawnedTask)
     {
         spawnedTask.next = this.next;
         this.next = spawnedTask;
@@ -174,6 +190,64 @@ public class ActorJob
         return resultFuture;
     }
 
+    public <T> void setBlockOnFuture(ActorFuture<T> future, BiConsumer<T, Throwable> callback)
+    {
+        final Runnable onCompletion = () -> task.onFutureCompleted(createContinuationJob(future, callback));
+        this.runnable = new AwaitFutureRunnable<>(this, future, onCompletion, true);
+    }
+
+    public <T> void setTriggerSubscriptionOnFuture(ActorFuture<T> future, ActorFutureSubscription subscription)
+    {
+        final Runnable onCompletion = () -> subscription.trigger();
+        runnable = new AwaitFutureRunnable<>(this, future, onCompletion, false);
+    }
+
+    static class AwaitFutureRunnable<T> implements Runnable
+    {
+        final ActorFuture<T> future;
+        final Runnable callback;
+        final ActorJob job;
+        final ActorTask task;
+        final boolean blockOnFuture;
+
+        AwaitFutureRunnable(
+                ActorJob job,
+                ActorFuture<T> future,
+                Runnable callback,
+                boolean blockOnFuture)
+        {
+            this.blockOnFuture = blockOnFuture;
+            this.job = job;
+            this.task = job.task;
+            this.future = future;
+            this.callback = callback;
+        }
+
+        @Override
+        public void run()
+        {
+            if (blockOnFuture)
+            {
+                task.awaitFuture = future;
+                job.state = ActorState.BLOCKED;
+            }
+
+            if (!future.block(callback))
+            {
+                callback.run();
+            }
+        }
+    }
+
+    private <T> ActorJob createContinuationJob(ActorFuture<T> future, BiConsumer<T, Throwable> callback)
+    {
+        final ActorJob continuationJob = new ActorJob();
+        continuationJob.setAutoCompleting(true);
+        continuationJob.onJobAddedToTask(task);
+        continuationJob.setRunnable(new FutureContinuationRunnable<>(task, future, callback, true));
+        return continuationJob;
+    }
+
     /**
      * used to recycle the job object
      */
@@ -185,7 +259,7 @@ public class ActorJob
         actor = null;
 
         task = null;
-        actorThread = null;
+        runner = null;
 
         callable = null;
         runnable = null;
@@ -212,6 +286,11 @@ public class ActorJob
         this.isAutoCompleting = isAutoCompleting;
     }
 
+    public void onFutureCompleted()
+    {
+        task.onFutureCompleted(this);
+    }
+
     @Override
     public String toString()
     {
@@ -229,6 +308,16 @@ public class ActorJob
         toString += " " + state;
 
         return toString;
+    }
+
+    public boolean isContinuationSignal(ActorFuture awaitFuture)
+    {
+        if (runnable != null && runnable instanceof FutureContinuationRunnable)
+        {
+            return ((FutureContinuationRunnable) runnable).future == awaitFuture;
+        }
+
+        return false;
     }
 
     public boolean isTriggeredBySubscription()
@@ -250,16 +339,6 @@ public class ActorJob
     public ActorTask getTask()
     {
         return task;
-    }
-
-    public ZbActor getActor()
-    {
-        return actor;
-    }
-
-    public ActorThread getActorThread()
-    {
-        return actorThread;
     }
 
 }

@@ -24,7 +24,9 @@ import java.util.function.Consumer;
 
 import io.zeebe.util.sched.channel.ChannelConsumerCondition;
 import io.zeebe.util.sched.channel.ConsumableChannel;
-import io.zeebe.util.sched.future.*;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.AllCompletedFutureConsumer;
+import io.zeebe.util.sched.future.FirstSuccessfullyCompletedFutureConsumer;
 
 public class ActorControl
 {
@@ -61,7 +63,7 @@ public class ActorControl
         job.setRunnable(action);
         job.onJobAddedToTask(task);
 
-        final BlockingPollSubscription subscription = new BlockingPollSubscription(job, condition, task.getActorExecutor(), true);
+        final BlockingPollSubscription subscription = new BlockingPollSubscription(job, condition, task.getScheduler(), true);
         job.setSubscription(subscription);
 
         subscription.submit();
@@ -84,7 +86,7 @@ public class ActorControl
     @SuppressWarnings("unchecked")
     public <T> ActorFuture<T> call(Callable<T> callable)
     {
-        final ActorThread runner = ActorThread.current();
+        final ActorTaskRunner runner = ActorTaskRunner.current();
         if (runner != null && runner.getCurrentTask() == task)
         {
             throw new UnsupportedOperationException("Incorrect usage of actor.call(...) cannot be called from current actor.");
@@ -128,7 +130,7 @@ public class ActorControl
             // noop
         });
 
-        final BlockingPollSubscription subscription = new BlockingPollSubscription(noop, runnable, task.getActorExecutor(), false);
+        final BlockingPollSubscription subscription = new BlockingPollSubscription(noop, runnable, task.getScheduler(), false);
         noop.setSubscription(subscription);
 
         subscription.submit();
@@ -145,7 +147,7 @@ public class ActorControl
         noop.setAutoCompleting(true);
         noop.setRunnable(adapter.wrapConsumer(whenDone));
 
-        final BlockingPollSubscription subscription = new BlockingPollSubscription(noop, adapter, task.getActorExecutor(), false);
+        final BlockingPollSubscription subscription = new BlockingPollSubscription(noop, adapter, task.getScheduler(), false);
         noop.setSubscription(subscription);
 
         subscription.submit();
@@ -175,7 +177,7 @@ public class ActorControl
      */
     public void submit(Runnable action)
     {
-        final ActorThread currentActorRunner = ensureCalledFromActorThread("run(...)");
+        final ActorTaskRunner currentActorRunner = ensureCalledFromActorRunner("run(...)");
 
         final ActorJob job = currentActorRunner.newJob();
         job.setRunnable(action);
@@ -217,17 +219,23 @@ public class ActorControl
      */
     public <T> void runOnCompletion(ActorFuture<T> future, BiConsumer<T, Throwable> callback)
     {
-        ensureCalledFromWithinActor("runOnCompletion(...)");
+        final ActorJob currentJob = ensureCalledFromWithinActor("runOnCompletion(...)");
 
         final ActorJob continuationJob = new ActorJob();
-        continuationJob.setRunnable(new FutureContinuationRunnable<>(future, callback));
+        final FutureContinuationRunnable<T> continuationRunnable = new FutureContinuationRunnable<>(task, future, callback, false);
+        continuationJob.setRunnable(continuationRunnable);
         continuationJob.setAutoCompleting(true);
         continuationJob.onJobAddedToTask(task);
 
-        final ActorFutureSubscription subscription = new ActorFutureSubscription(future, continuationJob);
+        final ActorFutureSubscription subscription = new ActorFutureSubscription(task, continuationJob);
         continuationJob.setSubscription(subscription);
 
-        future.block(task);
+        final ActorJob registerJob = new ActorJob();
+        registerJob.onJobAddedToTask(task);
+        registerJob.setAutoCompleting(true);
+        registerJob.setTriggerSubscriptionOnFuture(future, subscription);
+
+        currentJob.appendChild(registerJob);
     }
 
     /**
@@ -295,25 +303,56 @@ public class ActorControl
         }
     }
 
-    @Deprecated
     public <T> void await(ActorFuture<T> f, BiConsumer<T, Throwable> callback)
     {
-        runOnCompletion(f, callback);
+        final ActorJob currentJob = ensureCalledFromWithinActor("await(...)");
+
+        final ActorJob blockedJob = new ActorJob();
+        blockedJob.onJobAddedToTask(task);
+        blockedJob.setAutoCompleting(true);
+        blockedJob.setBlockOnFuture(f, callback);
+        currentJob.appendChild(blockedJob);
     }
 
-    @Deprecated
     public <T> void await(ActorFuture<T> f, Consumer<Throwable> callback)
     {
-        runOnCompletion(f, (r, t) ->
+        await(f, (r, t) ->
         {
             callback.accept(t);
         });
     }
 
-    @Deprecated
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     public <T> void awaitAll(Collection<ActorFuture<T>> futures, Consumer<Throwable> callback)
     {
-        runOnCompletion(futures, callback);
+        final int length = futures.size();
+        final ActorFuture[] futureArray = futures.toArray(new ActorFuture[length]);
+
+        final Consumer<Throwable>[] callbacks = new Consumer[length];
+        callbacks[length - 1] = (t) ->
+        {
+            for (int i = 0; i < futureArray.length; i++)
+            {
+                final ActorFuture future = futureArray[i];
+                if (future.isCompletedExceptionally())
+                {
+                    callback.accept(future.getException());
+                    return;
+                }
+            }
+            callback.accept(null);
+        };
+
+        for (int i = length - 2; i >= 0; i--)
+        {
+            final int offset = i;
+            callbacks[offset] = (t) ->
+            {
+                await(futureArray[offset + 1], callbacks[offset + 1]);
+            };
+        }
+
+        await(futureArray[0], callbacks[0]);
     }
 
 
@@ -322,7 +361,7 @@ public class ActorControl
     public void yield()
     {
         final ActorJob job = ensureCalledFromWithinActor("yield()");
-        job.getTask().yield();
+        job.task.yield();
     }
 
 
@@ -342,10 +381,10 @@ public class ActorControl
 
     private void scheduleRunnable(Runnable runnable, boolean autocompleting)
     {
-        final ActorThread currentActorRunner = ensureCalledFromActorThread("run(...)");
+        final ActorTaskRunner currentActorRunner = ensureCalledFromActorRunner("run(...)");
         final ActorJob currentJob = currentActorRunner.getCurrentJob();
 
-        if (currentActorRunner == currentJob.getActorThread())
+        if (currentActorRunner == currentJob.runner)
         {
             /*
              attempt "hot" replace of runnable in the job.
@@ -387,19 +426,13 @@ public class ActorControl
     public boolean isClosing()
     {
         ensureCalledFromWithinActor("isClosing()");
-        return task.isClosing();
-    }
-
-    public void setPriority(ActorPriority priority)
-    {
-        ensureCalledFromActorThread("setPriority()");
-        task.setPriority(priority.getPriorityClass());
+        return task.isClosing;
     }
 
     private ActorJob ensureCalledFromWithinActor(String methodName)
     {
-        final ActorJob currentJob = ensureCalledFromActorThread(methodName).getCurrentJob();
-        if (currentJob == null || currentJob.getActor() != this.actor)
+        final ActorJob currentJob = ensureCalledFromActorRunner(methodName).getCurrentJob();
+        if (currentJob == null || currentJob.actor != this.actor)
         {
             throw new UnsupportedOperationException("Incorrect usage of actor." + methodName + ": must only be called from within the actor itself.");
         }
@@ -407,15 +440,16 @@ public class ActorControl
         return currentJob;
     }
 
-    private ActorThread ensureCalledFromActorThread(String methodName)
+    private ActorTaskRunner ensureCalledFromActorRunner(String methodName)
     {
-        final ActorThread thread = ActorThread.current();
+        final ActorTaskRunner runner = ActorTaskRunner.current();
 
-        if (thread == null)
+        if (runner == null)
         {
             throw new UnsupportedOperationException("Incorrect usage of actor." + methodName + ": must be called from actor thread");
         }
 
-        return thread;
+        return runner;
+
     }
 }

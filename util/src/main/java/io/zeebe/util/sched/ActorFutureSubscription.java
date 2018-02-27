@@ -15,23 +15,23 @@
  */
 package io.zeebe.util.sched;
 
-import io.zeebe.util.sched.future.ActorFuture;
-
 public class ActorFutureSubscription implements ActorSubscription
 {
-    private final ActorJob callbackJob;
-    private ActorFuture<?> future;
 
-    public ActorFutureSubscription(ActorFuture<?> future, ActorJob callbackJob)
+    private volatile boolean completed = false;
+    private final ActorTask task;
+    private final ActorJob callbackJob;
+
+    public ActorFutureSubscription(ActorTask task, ActorJob callbackJob)
     {
-        this.future = future;
+        this.task = task;
         this.callbackJob = callbackJob;
     }
 
     @Override
     public boolean poll()
     {
-        return future.isDone();
+        return completed;
     }
 
     @Override
@@ -45,4 +45,23 @@ public class ActorFutureSubscription implements ActorSubscription
     {
         return false;
     }
+
+    public void trigger()
+    {
+        completed = true;
+
+        if (task.tryWakeup())
+        {
+            final ActorTaskRunner taskRunner = ActorTaskRunner.current();
+            if (taskRunner != null)
+            {
+                taskRunner.submit(task);
+            }
+            else
+            {
+                task.getScheduler().reSubmitActor(task);
+            }
+        }
+    }
+
 }

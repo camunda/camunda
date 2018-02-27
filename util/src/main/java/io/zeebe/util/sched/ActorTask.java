@@ -17,18 +17,21 @@ package io.zeebe.util.sched;
 
 import static org.agrona.UnsafeAccess.UNSAFE;
 
-import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
+import java.util.ArrayList;
+import java.util.List;
 
+import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
-import io.zeebe.util.sched.metrics.TaskMetrics;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 
 /**
  * A task executed by the scheduler. For each actor (instance), exactly one task is created.
  * Each invocation of one of the actor's methods is an {@link ActorJob}.
+ *
+ * Tasks are not reusable.
+ *
  */
-@SuppressWarnings("restriction")
+@SuppressWarnings({"restriction", "rawtypes"})
 public class ActorTask
 {
     private static final long STATE_COUNT_OFFSET;
@@ -51,8 +54,7 @@ public class ActorTask
 
     final ZbActor actor;
 
-    private ActorExecutor actorExecutor;
-    private ActorThreadGroup actorThreadGroup;
+    private ZbActorScheduler scheduler;
 
     /** jobs that are submitted to this task externally. A job is submitted "internally" if it is submitted
      * from a job within the same actor while the task is in RUNNING state. */
@@ -64,44 +66,32 @@ public class ActorTask
 
     ActorJob currentJob;
 
-    private ActorSubscription[] subscriptions = new ActorSubscription[0];
+    /** the future this task is currently blocked on */
+    protected ActorFuture awaitFuture;
+
+    List<ActorSubscription> subscriptions = new ArrayList<>();
 
     boolean shouldYield;
-
-    boolean isClosing;
-
-    private TaskMetrics taskMetrics;
-
-    private boolean isCollectTaskMetrics;
-
-    private boolean isJumbo = false;
-
-    /** the priority class of the task. Only set if the task is scheduled as non-blocking, CPU-bound */
-    private int priority = ActorPriority.REGULAR.getPriorityClass();
-
-    /** the id of the io device used. Only set if this task is scheduled as a blocking io task*/
-    private int deviceId;
 
     public ActorTask(ZbActor actor)
     {
         this.actor = actor;
     }
 
+    boolean isClosing;
+
+
     /**
      * called when the task is initially scheduled.
+     * @param scheduler
      */
-    public void onTaskScheduled(ActorExecutor actorExecutor, ActorThreadGroup actorThreadGroup, TaskMetrics taskMetrics)
+    public void onTaskScheduled(ZbActorScheduler scheduler)
     {
-        this.actorExecutor = actorExecutor;
-        this.actorThreadGroup = actorThreadGroup;
         // reset previous state to allow re-scheduling
         this.terminationFuture.close();
         this.terminationFuture.setAwaitingResult();
         this.isClosing = false;
-        this.isJumbo = false;
-
-        this.isCollectTaskMetrics = taskMetrics != null;
-        this.taskMetrics = taskMetrics;
+        this.scheduler = scheduler;
 
         // create initial job to invoke on start callback
         final ActorJob j = new ActorJob();
@@ -115,13 +105,23 @@ public class ActorTask
     /** Used to externally submit a job. */
     public void submit(ActorJob job)
     {
-        // add job to queue
         submittedJobs.offer(job);
-        // wakeup task if waiting
-        tryWakeup();
+
+        if (setStateWaitingToWakingUp())
+        {
+            final ActorTaskRunner current = ActorTaskRunner.current();
+            if (current != null)
+            {
+                current.submit(this);
+            }
+            else
+            {
+                scheduler.reSubmitActor(this);
+            }
+        }
     }
 
-    public boolean execute(ActorThread runner)
+    public boolean execute(ActorTaskRunner runner)
     {
         state = ActorState.ACTIVE;
 
@@ -129,6 +129,17 @@ public class ActorTask
 
         while (!resubmit && (currentJob != null || poll()))
         {
+            if (currentJob.state == ActorState.BLOCKED)
+            {
+                // check whether the continuation trigger is in the list of submitted jobs
+                pollSubmittedJobs();
+
+                if (currentJob.state == ActorState.BLOCKED)
+                {
+                    break;
+                }
+            }
+
             try
             {
                 currentJob.execute(runner);
@@ -152,7 +163,7 @@ public class ActorTask
 
                         if (!subscription.isRecurring())
                         {
-                            removeSubscription(subscription);
+                            subscriptions.remove(subscription);
                         }
 
                         subscription.onJobCompleted();
@@ -184,7 +195,7 @@ public class ActorTask
 
         if (currentJob == null)
         {
-            if (subscriptions.length > 0 && !isClosing)
+            if (subscriptions.size() > 0 && !isClosing)
             {
                 resubmit = setStateActiveToWaiting();
             }
@@ -201,6 +212,13 @@ public class ActorTask
                 }
             }
         }
+        else
+        {
+            if (currentJob.state == ActorState.BLOCKED)
+            {
+                resubmit = setStateActiveToBlocked();
+            }
+        }
 
         return resubmit;
     }
@@ -208,22 +226,17 @@ public class ActorTask
     private void cleanUpOnClose()
     {
         state = ActorState.TERMINATED;
-        subscriptions = new ActorSubscription[0];
+        subscriptions.clear();
 
         while (submittedJobs.poll() != null)
         {
             // discard jobs
         }
 
-        if (taskMetrics != null)
-        {
-            taskMetrics.close();
-        }
-
         terminationFuture.complete(null);
     }
 
-    private void autoClose(ActorThread runner)
+    private void autoClose(ActorTaskRunner runner)
     {
         final ActorJob closeJob = runner.newJob();
 
@@ -242,13 +255,13 @@ public class ActorTask
         {
             isClosing = true;
 
-            subscriptions = new ActorSubscription[0];
+            subscriptions.clear();
 
             while (submittedJobs.poll() != null)
             {
                 // discard jobs
             }
-            ActorThread.current().getCurrentJob().next = null;
+            ActorTaskRunner.current().getCurrentJob().next = null;
 
             actor.onActorClosing();
         }
@@ -264,7 +277,7 @@ public class ActorTask
         return UNSAFE.compareAndSwapObject(this, STATE_OFFSET, expectedState, newState);
     }
 
-    public boolean claim(long stateCount)
+    boolean claim(long stateCount)
     {
         if (casStateCount(stateCount))
         {
@@ -280,11 +293,6 @@ public class ActorTask
      */
     boolean setStateActiveToWaiting()
     {
-        // take copy of subscriptions list: once we set the state to WAITING, the task could be woken up by another
-        // thread. That thread could modify the subscriptions array.
-        final ActorSubscription[] subscriptionsCopy = this.subscriptions;
-
-        // first set state to waiting
         state = ActorState.WAITING;
 
         /*
@@ -293,9 +301,8 @@ public class ActorTask
          * yet in state waiting. After transitioning to waiting we check if we need to wake
          * up right away.
          */
-        if (!submittedJobs.isEmpty() || pollSubscriptionsWithoutAddingJobs(subscriptionsCopy))
+        if (!submittedJobs.isEmpty() || pollSubscriptionsWithoutAddingJobs())
         {
-            // could be that another thread already woke up this task
             if (casState(ActorState.WAITING, ActorState.WAKING_UP))
             {
                 return true;
@@ -305,17 +312,29 @@ public class ActorTask
         return false;
     }
 
-    public boolean tryWakeup()
+    boolean setStateActiveToBlocked()
     {
-        boolean didWakeup = false;
+        state = ActorState.BLOCKED;
 
-        if (casState(ActorState.WAITING, ActorState.WAKING_UP))
+        if (!submittedJobs.isEmpty())
         {
-            actorThreadGroup.submit(this);
-            didWakeup = true;
+            if (setStateBlockedToUnblocking())
+            {
+                return true;
+            }
         }
 
-        return didWakeup;
+        return false;
+    }
+
+    boolean setStateWaitingToWakingUp()
+    {
+        return casState(ActorState.WAITING, ActorState.WAKING_UP);
+    }
+
+    boolean setStateBlockedToUnblocking()
+    {
+        return casState(ActorState.BLOCKED, ActorState.UNBLOCKING);
     }
 
     private boolean poll()
@@ -337,9 +356,9 @@ public class ActorTask
 
         boolean hasJobs = false;
 
-        for (int i = 0; i < subscriptions.length; i++)
+        for (int i = 0; i < subscriptions.size(); i++)
         {
-            final ActorSubscription subscription = subscriptions[i];
+            final ActorSubscription subscription = subscriptions.get(i);
 
             if (subscription.poll())
             {
@@ -362,7 +381,7 @@ public class ActorTask
         return hasJobs;
     }
 
-    private boolean pollSubscriptionsWithoutAddingJobs(ActorSubscription[] subscriptions)
+    private boolean pollSubscriptionsWithoutAddingJobs()
     {
         if (isClosing)
         {
@@ -371,9 +390,9 @@ public class ActorTask
 
         boolean result = false;
 
-        for (int i = 0; i < subscriptions.length && !result; i++)
+        for (int i = 0; i < subscriptions.size() && !result; i++)
         {
-            result |= subscriptions[i].poll();
+            result |= subscriptions.get(i).poll();
         }
 
         return result;
@@ -395,8 +414,13 @@ public class ActorTask
                 else
                 {
                     currentJob.append(job);
-                }
 
+                    if (currentJob.state == ActorState.BLOCKED && job.isContinuationSignal(awaitFuture))
+                    {
+                        // continuation signal has been received, the blocked job can be removed
+                        currentJob = currentJob.getNext();
+                    }
+                }
                 hasJobs = true;
             }
         }
@@ -409,10 +433,25 @@ public class ActorTask
         return state;
     }
 
+    void onFutureCompleted(ActorJob continuationJob)
+    {
+        submittedJobs.offer(continuationJob);
+
+        if (setStateBlockedToUnblocking())
+        {
+            ActorTaskRunner.current().submit(this);
+        }
+    }
+
     @Override
     public String toString()
     {
         return actor.getName() + " " + state;
+    }
+
+    public void addSubscription(ActorSubscription subscription)
+    {
+        subscriptions.add(subscription);
     }
 
     public void yield()
@@ -420,117 +459,13 @@ public class ActorTask
         shouldYield = true;
     }
 
-    public TaskMetrics getMetrics()
+    public boolean tryWakeup()
     {
-        return taskMetrics;
+        return setStateWaitingToWakingUp();
     }
 
-    public boolean isCollectTaskMetrics()
+    public ZbActorScheduler getScheduler()
     {
-        return isCollectTaskMetrics;
-    }
-
-    public void reportExecutionTime(long t)
-    {
-        taskMetrics.reportExecutionTime(t);
-    }
-
-    public void warnMaxTaskExecutionTimeExceeded(long taskExecutionTime)
-    {
-        if (!isJumbo)
-        {
-            isJumbo = true;
-
-            System.err.println(String.format("%s reported running for %dµs. Jumbo task detected! " +
-                    "Will not print further warnings for this task.",
-                    actor.getName(), TimeUnit.NANOSECONDS.toMicros(taskExecutionTime)));
-        }
-    }
-
-    public boolean isHasWarnedJumbo()
-    {
-        return isJumbo;
-    }
-
-    public long getStateCount()
-    {
-        return stateCount;
-    }
-
-    public ActorThreadGroup getActorThreadGroup()
-    {
-        return actorThreadGroup;
-    }
-
-    public String getName()
-    {
-        return actor.getName();
-    }
-
-    public ZbActor getActor()
-    {
-        return actor;
-    }
-
-    public boolean isClosing()
-    {
-        return isClosing;
-    }
-
-    public int getPriority()
-    {
-        return priority;
-    }
-
-    public void setPriority(int priority)
-    {
-        this.priority = priority;
-    }
-
-    public int getDeviceId()
-    {
-        return deviceId;
-    }
-
-    public void setDeviceId(int deviceId)
-    {
-        this.deviceId = deviceId;
-    }
-
-    public ActorExecutor getActorExecutor()
-    {
-        return actorExecutor;
-    }
-
-    // subscription helpers
-
-    public void addSubscription(ActorSubscription subscription)
-    {
-        final ActorSubscription[] arrayCopy = Arrays.copyOf(subscriptions, subscriptions.length + 1);
-        arrayCopy[arrayCopy.length - 1] = subscription;
-        subscriptions = arrayCopy;
-    }
-
-    private void removeSubscription(ActorSubscription subscription)
-    {
-        final int length = subscriptions.length;
-
-        int index = -1;
-        for (int i = 0; i < subscriptions.length; i++)
-        {
-            if (subscriptions[i] == subscription)
-            {
-                index = i;
-            }
-        }
-
-        final ActorSubscription[] newSubscriptions = new ActorSubscription[length - 1];
-        System.arraycopy(subscriptions, 0, newSubscriptions, 0, index);
-        if (index < length - 1)
-        {
-            System.arraycopy(subscriptions, index + 1, newSubscriptions, index, length - index - 1);
-        }
-
-        this.subscriptions = newSubscriptions;
+        return scheduler;
     }
 }

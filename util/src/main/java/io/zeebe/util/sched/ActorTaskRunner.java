@@ -13,50 +13,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/*
-  * Copyright © 2017 camunda services GmbH (info@camunda.com)
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package io.zeebe.util.sched;
 
-import static io.zeebe.util.sched.metrics.SchedulerMetrics.SHOULD_ENABLE_JUMBO_TASK_DETECTION;
-import static io.zeebe.util.sched.metrics.SchedulerMetrics.TASK_MAX_EXECUTION_TIME_NANOS;
-
+import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.LockSupport;
 
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.clock.DefaultActorClock;
-import io.zeebe.util.sched.metrics.ActorThreadMetrics;
+import io.zeebe.util.sched.metrics.ActorRunnerMetrics;
 import org.agrona.UnsafeAccess;
 import org.agrona.concurrent.BackoffIdleStrategy;
 import org.slf4j.MDC;
 import sun.misc.Unsafe;
 
 @SuppressWarnings("restriction")
-public class ActorThread extends Thread
+public class ActorTaskRunner extends Thread
 {
     static final Unsafe UNSAFE = UnsafeAccess.UNSAFE;
 
-    private final ActorThreadMetrics metrics;
+    private final ActorRunnerMetrics metrics;
 
-    private volatile ActorThreadState state;
+    private volatile TaskRunnerState state;
 
     private static final long STATE_OFFSET;
 
     private final CompletableFuture<Void> terminationFuture = new CompletableFuture<>();
+
+    private final Random localRandom = new Random();
 
     private final ActorClock clock;
 
@@ -64,7 +48,7 @@ public class ActorThread extends Thread
     {
         try
         {
-            STATE_OFFSET = UNSAFE.objectFieldOffset(ActorThread.class.getDeclaredField("state"));
+            STATE_OFFSET = UNSAFE.objectFieldOffset(ActorTaskRunner.class.getDeclaredField("state"));
         }
         catch (Exception e)
         {
@@ -72,36 +56,30 @@ public class ActorThread extends Thread
         }
     }
 
-    private final int threadId;
+    private final int runnerId;
 
-    private final TaskScheduler taskScheduler;
+    private final ZbActorScheduler scheduler;
+
+    private final ActorTaskQueue taskQueue;
 
     private final ActorTimerQueue timerJobQueue;
 
     private final ActorJobPool jobPool = new ActorJobPool();
 
-    private final ActorThreadGroup actorThreadGroup;
-
     protected ActorTaskRunnerIdleStrategy idleStrategy = new ActorTaskRunnerIdleStrategy();
 
     ActorTask currentTask;
 
-    public ActorThread(
-            String name,
-            int id,
-            ActorThreadGroup threadGroup,
-            TaskScheduler taskScheduler,
-            ActorClock clock,
-            ActorThreadMetrics metrics)
+    public ActorTaskRunner(ZbActorScheduler scheduler, int runnerId, ActorRunnerMetrics metrics, ActorClock clock)
     {
-        setName(name);
-        this.state = ActorThreadState.NEW;
-        this.threadId = id;
+        setName("zb-non-blocking-task-runner-" + runnerId);
+        this.scheduler = scheduler;
+        this.runnerId = runnerId;
+        this.metrics = metrics;
+        this.state = TaskRunnerState.NEW;
+        this.taskQueue = new ActorTaskQueue(runnerId);
         this.clock = clock != null ? clock : new DefaultActorClock();
         this.timerJobQueue = new ActorTimerQueue(this.clock);
-        this.actorThreadGroup = threadGroup;
-        this.metrics = metrics;
-        this.taskScheduler = taskScheduler;
     }
 
     @Override
@@ -109,7 +87,7 @@ public class ActorThread extends Thread
     {
         idleStrategy.init();
 
-        while (state == ActorThreadState.RUNNING)
+        while (state == TaskRunnerState.RUNNING)
         {
             try
             {
@@ -121,7 +99,7 @@ public class ActorThread extends Thread
             }
         }
 
-        state = ActorThreadState.TERMINATED;
+        state = TaskRunnerState.TERMINATED;
 
         terminationFuture.complete(null);
     }
@@ -129,35 +107,35 @@ public class ActorThread extends Thread
     private void doWork()
     {
         clock.update();
-
         timerJobQueue.processExpiredTimers(clock);
 
-        currentTask = taskScheduler.getNextTask(clock);
+        currentTask = taskQueue.pop();
 
         if (currentTask != null)
         {
-            try
-            {
-                executeCurrentTask();
-            }
-            finally
-            {
-                taskScheduler.onTaskReleased(currentTask);
-            }
+
+            executeCurrentTask();
         }
         else
         {
-            idleStrategy.onIdle();
+            currentTask = trySteal();
+
+            if (currentTask != null)
+            {
+                executeCurrentTask();
+            }
+            else
+            {
+                idleStrategy.idle();
+            }
         }
     }
 
-    private void executeCurrentTask()
+    private  void executeCurrentTask()
     {
-        MDC.put("actor-name", currentTask.getName());
-        idleStrategy.onTaskExecuted();
+        MDC.put("actor-name", currentTask.actor.getName());
+        idleStrategy.onTaskExecute();
         metrics.incrementTaskExecutionCount();
-
-        final long nanoTimeBeforeTask = clock.getNanoTime();
 
         boolean resubmit = false;
 
@@ -177,34 +155,12 @@ public class ActorThread extends Thread
         finally
         {
             MDC.remove("actor-name");
-
-            clock.update();
-            final long taskExecutionTime = clock.getNanoTime() - nanoTimeBeforeTask;
-
-            // FIXME: if the task was woken up concurrently, we do not own it anymore and cannot report metrics
-            if (currentTask.isCollectTaskMetrics())
-            {
-                currentTask.reportExecutionTime(taskExecutionTime);
-            }
-
-            if (SHOULD_ENABLE_JUMBO_TASK_DETECTION)
-            {
-                if (TASK_MAX_EXECUTION_TIME_NANOS < taskExecutionTime)
-                {
-                    currentTask.warnMaxTaskExecutionTimeExceeded(taskExecutionTime);
-                }
-            }
         }
 
         if (resubmit)
         {
-            actorThreadGroup.submit(currentTask);
+            submit(currentTask);
         }
-    }
-
-    public void hintWorkAvailable()
-    {
-        idleStrategy.hintWorkAvailable();
     }
 
     protected class ActorTaskRunnerIdleStrategy
@@ -221,12 +177,7 @@ public class ActorThread extends Thread
             idleTimeStart = System.nanoTime();
         }
 
-        public void hintWorkAvailable()
-        {
-            LockSupport.unpark(ActorThread.this);
-        }
-
-        protected void onIdle()
+        protected void idle()
         {
             if (!isIdle)
             {
@@ -240,7 +191,7 @@ public class ActorThread extends Thread
         }
 
 
-        protected void onTaskExecuted()
+        protected void onTaskExecute()
         {
             backoff.reset();
 
@@ -251,6 +202,64 @@ public class ActorThread extends Thread
                 isIdle = false;
             }
         }
+    }
+
+    /**
+     * Work stealing: when this runner (aka. the "thief") has no more tasks to run, it attempts to take ("steal")
+     * a task from another runner (aka. the "victim").
+     *<p>
+     * Work stealing in a mechanism for <em>load balancing</em>: it relies upon the assumption that there is more
+     * work to do than there is resources (threads) to run it.
+     */
+    private ActorTask trySteal()
+    {
+        final ActorTaskRunner[] runners = scheduler.nonBlockingTasksRunners;
+
+        /*
+         * This implementation uses a random offset into the runner array. The idea is to
+         *
+         * a) reduce probability for contention in situations where we have multiple runners
+         *    (threads) trying to steal work at the same time: if they all started at the same
+         *    offset, they would all look at the same runner as potential victim and contend
+         *    on it's job queue
+         *
+         * b) to make sure a runner does not always look at the same other runner first and by
+         *    this potentially increase the probability to find work on the first attempt
+         *
+         * However, the calculation of the random and the handling also needs additional compute time.
+         * Experimental verification of the effectiveness of the optimization has not been conducted yet.
+         * Also, the optimization only makes sense if the system uses at least 3 runners.
+         */
+        final int offset = localRandom.nextInt(runners.length);
+
+        for (int i = offset; i < offset + runners.length; i++)
+        {
+            final int runnerId = i % runners.length;
+
+            if (runnerId != this.runnerId)
+            {
+                final ActorTaskRunner victim = runners[runnerId];
+                final ActorTask stolenActor = victim.taskQueue.trySteal(taskQueue);
+
+                if (stolenActor != null)
+                {
+                    metrics.incrementTaskStealCount();
+                    return stolenActor;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Submits an actor task to this runner. Can be called by any thread
+     * The method appends the task to this runner's queue.
+     */
+    public void submit(ActorTask task)
+    {
+        task.state = ActorState.QUEUED;
+        taskQueue.append(task);
     }
 
     /**
@@ -270,12 +279,12 @@ public class ActorThread extends Thread
     }
 
     /**
-     * Returns the current {@link ActorThread} or null if the current thread is not
-     * an {@link ActorThread}.
+     * Returns the current {@link ActorTaskRunner} or null if the current thread is not
+     * an {@link ActorTaskRunner} thread.
      *
-     * @return the current {@link ActorThread} or null
+     * @return the current {@link ActorTaskRunner} or null
      */
-    public static ActorThread current()
+    public static ActorTaskRunner current()
     {
         /*
          * Yes, we could work with a thread-local. Except thread locals are slow as f***
@@ -285,7 +294,7 @@ public class ActorThread extends Thread
          */
         try
         {
-            return (ActorThread) Thread.currentThread();
+            return (ActorTaskRunner) Thread.currentThread();
         }
         catch (ClassCastException e)
         {
@@ -293,7 +302,7 @@ public class ActorThread extends Thread
         }
     }
 
-    public ActorJob newJob()
+    ActorJob newJob()
     {
         return jobPool.nextJob();
     }
@@ -305,10 +314,10 @@ public class ActorThread extends Thread
 
     public int getRunnerId()
     {
-        return threadId;
+        return runnerId;
     }
 
-    public ActorThreadMetrics getMetrics()
+    public ActorRunnerMetrics getMetrics()
     {
         return metrics;
     }
@@ -316,7 +325,7 @@ public class ActorThread extends Thread
     @Override
     public void start()
     {
-        if (UNSAFE.compareAndSwapObject(this, STATE_OFFSET, ActorThreadState.NEW, ActorThreadState.RUNNING))
+        if (UNSAFE.compareAndSwapObject(this, STATE_OFFSET, TaskRunnerState.NEW, TaskRunnerState.RUNNING))
         {
             super.start();
         }
@@ -328,7 +337,7 @@ public class ActorThread extends Thread
 
     public CompletableFuture<Void> close()
     {
-        if (UNSAFE.compareAndSwapObject(this, STATE_OFFSET, ActorThreadState.RUNNING, ActorThreadState.TERMINATING))
+        if (UNSAFE.compareAndSwapObject(this, STATE_OFFSET, TaskRunnerState.RUNNING, TaskRunnerState.TERMINATING))
         {
             return terminationFuture;
         }
@@ -338,7 +347,7 @@ public class ActorThread extends Thread
         }
     }
 
-    public enum ActorThreadState
+    public enum TaskRunnerState
     {
         NEW,
         RUNNING,
@@ -368,8 +377,4 @@ public class ActorThread extends Thread
         return clock;
     }
 
-    public ActorThreadGroup getActorThreadGroup()
-    {
-        return actorThreadGroup;
-    }
 }

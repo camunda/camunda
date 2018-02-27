@@ -19,16 +19,16 @@ public class BlockingPollSubscription implements ActorSubscription, Runnable
 {
     private final ActorJob subscriptionJob;
     private final Runnable blockingAction;
-    private final ActorExecutor actorTaskExecutor;
+    private final ZbActorScheduler scheduler;
 
     private volatile boolean isDone;
     private boolean isRecurring;
 
-    public BlockingPollSubscription(ActorJob subscriptionJob, Runnable blockingAction, ActorExecutor actorTaskExecutor, boolean isRecurring)
+    public BlockingPollSubscription(ActorJob subscriptionJob, Runnable blockingAction, ZbActorScheduler scheduler, boolean isRecurring)
     {
         this.subscriptionJob = subscriptionJob;
         this.blockingAction = blockingAction;
-        this.actorTaskExecutor = actorTaskExecutor;
+        this.scheduler = scheduler;
         this.isRecurring = isRecurring;
     }
 
@@ -71,7 +71,13 @@ public class BlockingPollSubscription implements ActorSubscription, Runnable
     private void onBlockingActionCompleted()
     {
         isDone = true;
-        subscriptionJob.getTask().tryWakeup();
+
+        final ActorTask task = subscriptionJob.getTask();
+
+        if (task.tryWakeup())
+        {
+            scheduler.reSubmitActor(task);
+        }
     }
 
     @Override
@@ -87,6 +93,6 @@ public class BlockingPollSubscription implements ActorSubscription, Runnable
     public void submit()
     {
         isDone = false;
-        actorTaskExecutor.submitBlocking(this);
+        scheduler.blockingTasksRunner.execute(this);
     }
 }

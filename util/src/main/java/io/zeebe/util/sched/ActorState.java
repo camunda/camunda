@@ -38,6 +38,16 @@ public enum ActorState
     QUEUED,
 
     /**
+     * The task is currently awaiting a future to complete. Results from a call to
+     * <ul>
+     * <li>{@link ActorControl#await(java.util.concurrent.Future, java.util.function.BiConsumer)}</li>
+     * <ul>
+     */
+    BLOCKED,
+
+    UNBLOCKING,
+
+    /**
      * Top-level tasks only:
      * The actor is waiting on more work to become available. An actor is in this state if it has no more tasks to run and has
      * subscribed to more work to become available through
