@@ -139,7 +139,7 @@ export default class ControlPanel extends React.Component {
           </Select>
         </li>
         <li className='ControlPanel__item ControlPanel__item--filter'>
-          <Filter data={this.props.filter} onChange={this.props.onChange} processDefinitionId={this.props.processDefinitionId} xml={this.props.configuration.xml} />
+          <Filter data={this.props.filter} onChange={this.props.onChange} {...this.definitionConfig()} xml={this.props.configuration.xml} />
         </li>
         <li className='ControlPanel__item'>
           <TargetValueComparison reportResult={this.props.reportResult} configuration={this.props.configuration} onChange={this.props.onChange} />

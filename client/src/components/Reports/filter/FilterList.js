@@ -16,15 +16,27 @@ export default class FilterList extends React.Component {
     this.loadFlowNodeNames();
   }
 
+  getProcDefKey = () => {
+    return this.props.processDefinitionKey;
+  }
+
+  getProcDefVersion = () => {
+    return this.props.processDefinitionVersion;
+  }
+
   componentDidUpdate(prevProps, prevState) {
-    if (prevProps.processDefinitionId !== this.props.processDefinitionId) {
+    const prevProcDefKey = prevProps.processDefinitionKey;
+    const prevProcDefVersion = prevProps.processDefinitionVersion;
+    const procDefKeyWillChange = prevProcDefKey !== this.getProcDefKey();
+    const procDefVersionWillChange = prevProcDefVersion !== this.getProcDefVersion();
+    if (procDefKeyWillChange || procDefVersionWillChange) {
       this.loadFlowNodeNames();
     }
   }
 
   loadFlowNodeNames = async () => {
-    if(this.props.processDefinitionId) {
-      const flowNodeNames = await getFlowNodeNames(this.props.processDefinitionId);
+    if(this.getProcDefKey() && this.getProcDefVersion()) {
+      const flowNodeNames = await getFlowNodeNames(this.getProcDefKey(), this.getProcDefVersion());
       this.setState({flowNodeNames})
     }
   }

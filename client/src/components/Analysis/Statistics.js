@@ -21,7 +21,7 @@ export default class Statistics extends React.Component {
 
   loadFlowNodeNames = async () => {
     this.setState({
-      flowNodeNames: await getFlowNodeNames(this.props.config.processDefinitionId)
+      flowNodeNames: await getFlowNodeNames(this.props.config.processDefinitionKey, this.props.config.processDefinitionVersion)
     });
   }
 
@@ -48,13 +48,15 @@ export default class Statistics extends React.Component {
   }
 
   componentDidUpdate(prevProps) {
+    const procDefDidNotChanged = (prevProps.config.processDefinitionKey === this.props.config.processDefinitionKey) &&
+                                  (prevProps.config.processDefinitionVersion === this.props.config.processDefinitionVersion);
     if(
       prevProps.gateway !== this.props.gateway ||
       prevProps.endEvent !== this.props.endEvent ||
       prevProps.config.filter !== this.props.config.filter
     ) {
       this.loadCorrelation();
-    } else if(this.state.data && prevProps.config.processDefinitionId === this.props.config.processDefinitionId) {
+    } else if(this.state.data && procDefDidNotChanged) {
       // relative chart
       if(this.chart1) {
         this.chart1.destroy();
@@ -78,6 +80,8 @@ export default class Statistics extends React.Component {
   }
 
   loadCorrelation = async () => {
+    // this is not working right now and will be implemented as soon as
+    // the back end can evaluate the correlation by key + version
     this.setState({
       data: await loadCorrelationData(
         this.props.config.processDefinitionId,

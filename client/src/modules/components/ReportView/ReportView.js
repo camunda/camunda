@@ -17,10 +17,17 @@ export default class ReportView extends React.Component {
       flowNodeNames: null,
       loaded: true
     };
-    if (props.report.data.processDefinitionId) {
-      // this will be implemented as soon as the backend is available for this
-      this.loadFlowNodeNames(props.report.data.processDefinitionId);
+    if ( this.getProcDefKey() && this.getProcDefVersion() ) {
+      this.loadFlowNodeNames(this.getProcDefKey(), this.getProcDefVersion());
     }
+  }
+
+  getProcDefKey = () => {
+    return this.props.report.data.processDefinitionKey;
+  }
+
+  getProcDefVersion = () => {
+    return this.props.report.data.processDefinitionVersion;
   }
 
   render() {
@@ -81,19 +88,21 @@ export default class ReportView extends React.Component {
     return (!str || 0 === str.length);
   }
 
-  loadFlowNodeNames = async (id) => {
+  loadFlowNodeNames = async (key, version) => {
     this.setState({
-      flowNodeNames: await getFlowNodeNames(id),
+      flowNodeNames: await getFlowNodeNames(key, version),
       loaded: true
     });
   }
 
   componentWillReceiveProps(nextProps) {
-    const thisProcDefId = this.props.report.data.processDefinitionId;
-    const nextProcDefId = nextProps.report.data.processDefinitionId;
-    if(nextProcDefId && (thisProcDefId !== nextProcDefId)) {
+    const nextProcDefKey = nextProps.report.data.processDefinitionKey;
+    const nextProcDefVersion = nextProps.report.data.processDefinitionVersion;
+    const procDefKeyChanged = nextProcDefKey && (nextProcDefKey !== this.getProcDefKey());
+    const procDefVersionChanged = nextProcDefVersion && (nextProcDefVersion !== this.getProcDefVersion());
+    if(procDefKeyChanged || procDefVersionChanged) {
       this.setState({loaded: false})
-      this.loadFlowNodeNames(nextProcDefId);
+      this.loadFlowNodeNames(nextProcDefKey, nextProcDefVersion);
     }
   }
 

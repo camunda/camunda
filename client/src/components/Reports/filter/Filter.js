@@ -75,9 +75,18 @@ export default class Filter extends React.Component {
     });
   }
 
+  definitionConfig = () => {
+    return {
+      processDefinitionKey: this.props.processDefinitionKey,
+      processDefinitionVersion: this.props.processDefinitionVersion
+    };
+  }
+
   processDefinitionIsNotSelected = () => {
-    return !this.props.processDefinitionId ||
-    this.props.processDefinitionId === '';
+    return !this.props.processDefinitionKey ||
+    this.props.processDefinitionKey === ''|| 
+    !this.props.processDefinitionVersion ||
+    this.props.processDefinitionVersion === '';
   }
 
   filterByInstancesOnly = type => evt => {
@@ -95,7 +104,7 @@ export default class Filter extends React.Component {
 
     return (<div className='Filter'>
       <label htmlFor='ControlPanel__filters' className='visually-hidden'>Filters</label>
-      <FilterList processDefinitionId={this.props.processDefinitionId} openEditFilterModal={this.openEditFilterModal} data={this.props.data} deleteFilter={this.deleteFilter} />
+      <FilterList {...this.definitionConfig()} openEditFilterModal={this.openEditFilterModal} data={this.props.data} deleteFilter={this.deleteFilter} />
       <Dropdown label='Add Filter' id='ControlPanel__filters' className='Filter__dropdown' >
         <Dropdown.Option onClick={this.filterByInstancesOnly('runningInstancesOnly')}>Running Instances Only</Dropdown.Option>
         <Dropdown.Option onClick={this.filterByInstancesOnly('completedInstancesOnly')}>Completed Instances Only</Dropdown.Option>
@@ -104,8 +113,8 @@ export default class Filter extends React.Component {
         <Dropdown.Option disabled={this.processDefinitionIsNotSelected()} onClick={this.openNewFilterModal('variable')}>Variable</Dropdown.Option>
         <Dropdown.Option disabled={this.processDefinitionIsNotSelected()} onClick={this.openNewFilterModal('executedFlowNodes')}>Flow Node</Dropdown.Option>
       </Dropdown>
-      <FilterModal addFilter={this.addFilter} close={this.closeModal} xml={this.props.xml} processDefinitionId={this.props.processDefinitionId}/>
-      <EditFilterModal addFilter={this.editFilter} filterData={this.state.editFilter} close={this.closeModal} xml={this.props.xml} processDefinitionId={this.props.processDefinitionId}/>
+      <FilterModal addFilter={this.addFilter} close={this.closeModal} xml={this.props.xml} {...this.definitionConfig()}/>
+      <EditFilterModal addFilter={this.editFilter} filterData={this.state.editFilter} close={this.closeModal} xml={this.props.xml} {...this.definitionConfig()}/>
     </div>);
   }
 }

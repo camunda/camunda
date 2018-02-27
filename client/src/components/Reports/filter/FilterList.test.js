@@ -147,7 +147,8 @@ it('should display flow node name instead of id after the names are loaded', asy
     }
   }];
 
-  const node = mount(<FilterList id={'qwe'} processDefinitionId={12} data={data} openEditFilterModal={jest.fn()}/>);
+  const node = mount(<FilterList id={'qwe'} processDefinitionKey='aKey' processDefinitionVersion='1' 
+      data={data} openEditFilterModal={jest.fn()}/>);
   await node.instance().loadFlowNodeNames();
 
   expect(node).toIncludeText('Executed Flow Node is flow Node hello');
