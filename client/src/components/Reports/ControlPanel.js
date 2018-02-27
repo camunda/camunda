@@ -98,7 +98,7 @@ export default class ControlPanel extends React.Component {
       return prop === '';
     }
   }
-
+  
   isViewSelected = () => {
     return !this.isEmpty(this.props.view);
   }
