@@ -15,14 +15,13 @@
  */
 package io.zeebe.servicecontainer.impl;
 
+import io.zeebe.servicecontainer.ServiceGroupReference;
+import io.zeebe.servicecontainer.ServiceName;
+
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-
-import io.zeebe.servicecontainer.ServiceGroupReference;
-import io.zeebe.servicecontainer.ServiceName;
 
 @SuppressWarnings("rawtypes")
 public class ServiceGroupReferenceImpl
