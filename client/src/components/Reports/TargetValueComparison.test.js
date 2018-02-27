@@ -159,3 +159,64 @@ it('should display a list of flow nodes in a table', async () => {
   expect(node).toIncludeText('Element B');
   expect(node).toIncludeText('Element C');
 });
+
+it('should save the changes target values', async () => {
+  const spy = jest.fn();
+
+  const node = mount(<TargetValueComparison {...validProps} onChange={spy} />);
+
+  await node.instance().openModal();
+
+  node.instance().setTarget('value', 'a')({target:{value: '34'}});
+  node.instance().setTarget('unit', 'a')({target:{value: 'years'}});
+
+  spy.mockClear();
+
+  node.find('button[type="primary"]').simulate('click');
+
+  expect(spy).toHaveBeenCalledWith({
+    configuration: {
+      targetValue: {
+        active: true,
+        values: {
+          a: {
+            unit: 'years',
+            value: 34
+          }
+        }
+      }
+    }
+  });
+});
+
+it('should apply previously defined target values to input fields', async () => {
+  const node = mount(<TargetValueComparison {...validProps} />);
+
+  await node.instance().openModal();
+
+  expect(node.state('values').a.value).toBe('12');
+  expect(node.state('values').a.unit).toBe('days');
+});
+
+it('it should toggle target value view mode off if no target values are defined', async () => {
+  const spy = jest.fn();
+
+  const node = mount(<TargetValueComparison {...validProps} onChange={spy} />);
+
+  await node.instance().openModal();
+
+  node.instance().setTarget('value', 'a')({target:{value: ''}});
+
+  spy.mockClear();
+
+  node.find('button[type="primary"]').simulate('click');
+
+  expect(spy).toHaveBeenCalledWith({
+    configuration: {
+      targetValue: {
+        active: false,
+        values: {}
+      }
+    }
+  });
+});

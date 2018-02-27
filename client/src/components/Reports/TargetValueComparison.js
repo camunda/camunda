@@ -66,8 +66,35 @@ export default class TargetValueComparison extends React.Component {
   }
 
   confirmModal = () => {
-    this.setActive(true);
+    const values = this.cleanUpValues();
+
+    this.props.onChange({
+      configuration: {
+        ...this.props.configuration,
+        targetValue: {
+          active: Object.keys(values).length > 0,
+          values
+        }
+      }
+    });
     this.closeModal();
+  }
+
+  cleanUpValues = () => {
+    // this function removes all entries without value and converts values into numbers
+    const values = {};
+
+    Object.keys(this.state.values).forEach(key => {
+      const entry = this.state.values[key];
+      if(entry && entry.value.trim()) {
+        values[key] = {
+          value: parseFloat(entry.value),
+          unit: entry.unit
+        };
+      }
+    });
+
+    return values;
   }
 
   constructValues = () => {
@@ -82,13 +109,23 @@ export default class TargetValueComparison extends React.Component {
           .filter(element => element.businessObject.$instanceOf('bpmn:FlowNode'))
           .map(element => element.businessObject)
         ).forEach(element => {
-          values[element.id] = predefinedValues[element.id];
+          values[element.id] = this.copyObjectIfExistsAndStringifyValue(predefinedValues[element.id]);
           nodeNames[element.id] = element.name || element.id;
         });
 
         resolve({values, nodeNames});
       });
     });
+  }
+
+  copyObjectIfExistsAndStringifyValue = obj => {
+    if(obj) {
+      return {
+        ...obj,
+        value: '' + obj.value
+      };
+    }
+    return obj;
   }
 
   setTarget = (type, id) => ({target: {value}}) => {
@@ -104,7 +141,7 @@ export default class TargetValueComparison extends React.Component {
       this.setState(update(this.state, {
         values: {
           [id]: {$set: {
-            value: 0,
+            value: '0',
             unit: 'hours',
             [type]: value
           }}
@@ -145,13 +182,35 @@ export default class TargetValueComparison extends React.Component {
       visualization === 'heat';
   }
 
+  validChanges = () => {
+    return this.hasSomethingChanged() && this.areAllFieldsNumbers();
+  }
+
+  hasSomethingChanged = () => {
+    const prev = this.getConfig().values || {};
+    const now = this.cleanUpValues();
+
+    return JSON.stringify(prev) !== JSON.stringify(now);
+  }
+
+  areAllFieldsNumbers = () => {
+    return Object.keys(this.state.values)
+      .filter(key => this.state.values[key])
+      .every(key => {
+        const entry = this.state.values[key];
+        const value = entry && entry.value;
+
+        return value.trim() === '' || (!isNaN(value.trim()) && (+value > 0));
+    });
+  }
+
   render() {
     const isEnabled = this.isEnabled();
 
     return (<ButtonGroup>
       <Button className='TargetValueComparison__toggleButton' disabled={!isEnabled} active={this.getConfig().active} onClick={this.toggleMode}>Target Value</Button>
       <Button className='TargetValueComparison__editButton' disabled={!isEnabled} onClick={this.openModal}><img src={settingsIcon} alt="settings" className='TargetValueComparison__settingsIcon' /></Button>
-      <Modal open={this.state.modalOpen} onClose={this.closeModal} className='TargetValueComparison__Modal'>
+      <Modal open={this.state.modalOpen} onClose={this.closeModal} className='TargetValueComparison__Modal' size='large'>
         <Modal.Header>Target Value Comparison</Modal.Header>
         <Modal.Content>
           <div className='TargetValueComparison__DiagramContainer'>
@@ -166,7 +225,7 @@ export default class TargetValueComparison extends React.Component {
         </Modal.Content>
         <Modal.Actions>
           <Button onClick={this.closeModal}>Cancel</Button>
-          <Button type="primary" color="blue" onClick={this.confirmModal}>Apply</Button>
+          <Button type="primary" color="blue" onClick={this.confirmModal} disabled={!this.validChanges()}>Apply</Button>
         </Modal.Actions>
       </Modal>
     </ButtonGroup>);

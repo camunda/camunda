@@ -88,6 +88,7 @@ export default class Report extends React.Component {
 
     const processDefinitionIdWasUpdated = updates.processDefinitionId;
     if (processDefinitionIdWasUpdated) {
+      data.configuration = {...data.configuration, targetValue: {}};
       data.filter = data.filter.filter(({type}) => type !== 'executedFlowNodes' && type !== 'variable');
       await this.loadXmlToConfiguration(data);
     }

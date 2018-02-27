@@ -45,7 +45,16 @@ it('should call the provided onChange property function when a setting changes',
 
   node.instance().changeVisualization({target: {value: 'someTestVis'}});
 
-  expect(spy).toHaveBeenCalledWith({'visualization': 'someTestVis'});
+  expect(spy).toHaveBeenCalled();
+  expect(spy.mock.calls[0][0].visualization).toBe('someTestVis');
+});
+
+it('should toggle target value view mode off when a setting changes', () => {
+  const node = mount(<ControlPanel {...data} onChange={spy} />);
+
+  node.instance().changeVisualization({target: {value: 'someTestVis'}});
+
+  expect(spy.mock.calls[0][0].configuration.targetValue.active).toBe(false);
 });
 
 it('should disable the groupBy and visualizeAs Selects if view is not selected', () => {
