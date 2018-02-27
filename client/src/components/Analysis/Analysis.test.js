@@ -26,9 +26,9 @@ it('should load the process definition xml when the process definition id is upd
   const node = mount(<Analysis />);
 
   loadProcessDefinitionXml.mockClear();
-  node.instance().updateConfig({'processDefinitionId': 'someId'});
+  node.instance().updateConfig({'processDefinitionKey': 'someKey', 'processDefinitionVersion': 'someVersion'});
 
-  expect(loadProcessDefinitionXml).toHaveBeenCalledWith('someId');
+  expect(loadProcessDefinitionXml).toHaveBeenCalledWith('someKey', 'someVersion');
 });
 
 it('should load frequency data when the process definition id changes', () => {

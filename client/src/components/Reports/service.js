@@ -10,10 +10,10 @@ export async function remove(id) {
   return await del(`/api/report/${id}`);
 }
 
-export async function loadProcessDefinitionXml(id) {
-  const response = await get('/api/process-definition/xml', {ids: [id]});
+export async function loadProcessDefinitionXml(processDefinitionKey, processDefinitionVersion) {
+  const response = await get('/api/process-definition/xml', {processDefinitionKey, processDefinitionVersion});
 
-  return (await response.json())[id];
+  return await response.text();
 }
 
 export async function getReportData(query) {

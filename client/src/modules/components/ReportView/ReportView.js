@@ -15,9 +15,10 @@ export default class ReportView extends React.Component {
 
     this.state = {
       flowNodeNames: null,
-      loaded: false
+      loaded: true
     };
     if (props.report.data.processDefinitionId) {
+      // this will be implemented as soon as the backend is available for this
       this.loadFlowNodeNames(props.report.data.processDefinitionId);
     }
   }
@@ -34,7 +35,7 @@ export default class ReportView extends React.Component {
 
   checkProcDefAndRenderReport = (report) => {
     const {data} = report;
-    if(this.isEmpty(data.processDefinitionId)) {
+    if(this.isEmpty(data.processDefinitionKey) || this.isEmpty(data.processDefinitionVersion)) {
       return this.buildInstructionMessage('Process definition');
     } else {
       return this.checkViewAndRenderReport(report);

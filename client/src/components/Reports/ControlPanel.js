@@ -9,6 +9,7 @@ import {TargetValueComparison} from './targetValue';
 import './ControlPanel.css';
 
 export default class ControlPanel extends React.Component {
+
   changeView = evt => {
     const viewKey = evt.target.value;
     this.props.onChange({
@@ -69,10 +70,18 @@ export default class ControlPanel extends React.Component {
 
   definitionConfig = () => {
     return {
-      processDefinitionId: this.props.processDefinitionId,
       processDefinitionKey: this.props.processDefinitionKey,
       processDefinitionVersion: this.props.processDefinitionVersion
     };
+  }
+
+  createTitle = () => {
+    const {processDefinitionKey, processDefinitionVersion} = this.props;
+    if(processDefinitionKey && processDefinitionVersion) {
+      return `${processDefinitionKey} : ${processDefinitionVersion}`;
+    } else {
+      return 'Select Process Definition';
+    }
   }
 
   isEmpty = (prop) => {
@@ -103,8 +112,8 @@ export default class ControlPanel extends React.Component {
       <ul className='ControlPanel__list'>
         <li className='ControlPanel__item ControlPanel__item--select'>
           <label htmlFor='ControlPanel__process-definition' className='ControlPanel__label'>Process definition</label>
-          <Popover className='ControlPanel__popover' title={this.props.processDefinitionId || 'Select Process Definition'}>
-            <ProcessDefinitionSelection {...this.definitionConfig()} xml={this.props.configuration.xml}
+          <Popover className='ControlPanel__popover' title={ this.createTitle()}>
+            <ProcessDefinitionSelection {...this.definitionConfig()} xml={this.props.configuration.xml} 
               onChange={this.props.onChange} renderDiagram={true} enableAllVersionSelection={true}/>
           </Popover>
         </li>

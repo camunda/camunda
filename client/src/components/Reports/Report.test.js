@@ -179,7 +179,8 @@ it('should evaluate the report after updating', async () => {
   const node = mount(<Report {...props} />);
 
   node.setState({data: {
-    processDefinitionId : 'test id',
+    processDefinitionKey : 'test key',
+    processDefinitionVersion: 'test version',
     view : {
       operation: 'foo'
     },
@@ -240,7 +241,7 @@ describe('edit mode', async () => {
 
   it('should remove flow node and variable filter after changing ProcDef', async () => {
     props.match.params.viewMode = 'edit';
-    const node = mount(<Report {...props} />);
+    const node = await mount(<Report {...props} />);
 
     node.setState(prevState => ({
       loaded: true,
@@ -263,7 +264,7 @@ describe('edit mode', async () => {
       }
     }));
     
-    await node.instance().updateReport({'processDefinitionId': 'asd'});
+    await node.instance().updateReport({'processDefinitionKey': 'foo'});
     
     expect(node.state().data.filter.length).toBe(1);
     expect(node.state().data.filter[0].data).toBe('foo');
@@ -272,10 +273,10 @@ describe('edit mode', async () => {
 
   it('should store xml if process definition is changed', async () => {
     props.match.params.viewMode = 'edit';
-    const node = mount(<Report {...props} />);
+    const node = await mount(<Report {...props} />);
     
     await node.instance().loadReport();
-    await node.instance().updateReport({'processDefinitionId': 'asd'});
+    await node.instance().updateReport({'processDefinitionKey': 'asd', 'processDefinitionVersion': '123'});
     
     expect(node.state().data.configuration.xml).toBe('some xml');
   });

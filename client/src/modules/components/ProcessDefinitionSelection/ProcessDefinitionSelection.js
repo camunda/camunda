@@ -28,9 +28,8 @@ export default class ControlPanel extends React.Component {
     });
   }  
 
-  propagateChange = (id, key, version) => {
+  propagateChange = (key, version) => {
     this.props.onChange({
-      'processDefinitionId': id,
       'processDefinitionKey': key,
       'processDefinitionVersion': version
    });   
@@ -38,34 +37,24 @@ export default class ControlPanel extends React.Component {
 
   changeKey = async evt => {
     let key = evt.target.value;
-    let version, id;
+    let version;
     if(!key) {
-      version = id = '';
+      version = '';
     } else {
       const selectedDefinition = this.getLatestDefinition(key);
-      id = selectedDefinition.id;
       version = selectedDefinition.version;
     }
-    this.propagateChange(id, key, version);
+    this.propagateChange(key, version);
   }
 
   changeVersion = async evt => {
     let version = evt.target.value;
     let key = this.props.processDefinitionKey;
-    let id;
     if(!version) {
       // reset to please select
-      id = version = '';
-    } else if(version === 'ALL') {
-      id = this.getLatestDefinition(key).id;
-    } else {
-      version = parseInt(version, 10);
-      const selectedDefinition = 
-        this.findSelectedKeyGroup(key)
-          .versions.find( def => def.version === version);
-      id = selectedDefinition.id;
-    }
-    this.propagateChange(id, key, version);
+      version = '';
+    } 
+    this.propagateChange(key, version);
   }
 
   getLatestDefinition = (key) => {
@@ -89,7 +78,7 @@ export default class ControlPanel extends React.Component {
   render() {
     const {loaded} = this.state;
     const key = this.props.processDefinitionKey;
-    const id = this.props.processDefinitionId;
+    const version = this.props.processDefinitionVersion;
 
     if(!loaded) {
       return <div className='ProcessDefinitionSelection__loading-indicator'>loading...</div>;
@@ -119,7 +108,7 @@ export default class ControlPanel extends React.Component {
             </Select>
           </li>
         </ul>
-        { this.props.renderDiagram && id &&
+        { this.props.renderDiagram && key && version &&
           <div className={'ProcessDefinitionSelection__diagram'}> 
               <BPMNDiagram xml={this.props.xml} />
           </div>

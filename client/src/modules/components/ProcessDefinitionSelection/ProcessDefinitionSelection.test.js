@@ -74,13 +74,12 @@ it('should update definition if versions is changed', async () => {
 
   await node.instance().changeVersion({target: {value:'1'}});
 
-  expect(spy.mock.calls[0][0].processDefinitionId).toBe('procdef1');
+  expect(spy.mock.calls[0][0].processDefinitionVersion).toBe('1');
 });
 
 it('should set key and version, if process definition is already available', async () => {
   spy.mockClear();
   const definitionConfig = {
-    processDefinitionId: 'procdef2',
     processDefinitionKey: 'foo',
     processDefinitionVersion: 2
   };
@@ -94,7 +93,6 @@ it('should set key and version, if process definition is already available', asy
 it('should call onChange function on change of the definition', async () => {
   spy.mockClear();
   const definitionConfig = {
-    processDefinitionId: 'procdef2',
     processDefinitionKey: 'foo',
     processDefinitionVersion: 2
   };
@@ -107,7 +105,11 @@ it('should call onChange function on change of the definition', async () => {
 });
 
 it('should render diagram if enabled and definition is selected', async () => {
-  const node = await mount(<ProcessDefinitionSelection renderDiagram={true} processDefinitionId={'procdef2'} {...props} />);
+  const definitionConfig = {
+    processDefinitionKey: 'foo',
+    processDefinitionVersion: 2
+  };
+  const node = await mount(<ProcessDefinitionSelection renderDiagram={true} {...definitionConfig} {...props} />);
   await node.update();
 
 
@@ -134,15 +136,4 @@ it('should not display all option in version selection if disabled', async () =>
   await node.update();
 
   expect(node.find('option[value="ALL"]').exists()).toBe(false);
-});
-
-it('should set latest process definition if versions field is set to all', async () => {
-  spy.mockClear();
-  const node = await mount(<ProcessDefinitionSelection processDefinitionKey='foo' {...props}/>);
-  await node.update();
-
-  await node.instance().changeVersion({target: {value:'ALL'}});
-
-  expect(spy.mock.calls[0][0].processDefinitionVersion).toBe('ALL');
-  expect(spy.mock.calls[0][0].processDefinitionId).toBe('procdef2');
 });

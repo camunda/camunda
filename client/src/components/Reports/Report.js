@@ -31,7 +31,8 @@ export default class Report extends React.Component {
 
   initializeReport = () => {
     return ({
-      processDefinitionId: '',
+      processDefinitionKey: '',
+      processDefinitionVersion: '',
       view: {operation: '', entity: '', property: ''},
       groupBy: {type: '', unit: null},
       visualization: '',
@@ -86,8 +87,8 @@ export default class Report extends React.Component {
       ...updates
     };
 
-    const processDefinitionIdWasUpdated = updates.processDefinitionId;
-    if (processDefinitionIdWasUpdated) {
+    const processDefinitionWasUpdated = updates.processDefinitionKey || updates.processDefinitionVersion;
+    if (processDefinitionWasUpdated) {
       data.configuration = {...data.configuration, targetValue: {}};
       data.filter = data.filter.filter(({type}) => type !== 'executedFlowNodes' && type !== 'variable');
       await this.loadXmlToConfiguration(data);
@@ -106,15 +107,15 @@ export default class Report extends React.Component {
   }
 
   loadXmlToConfiguration = async (data) => {
-    if(data.processDefinitionId) {
-      const xml = await loadProcessDefinitionXml(data.processDefinitionId);
+    if(data.processDefinitionKey && data.processDefinitionVersion) {
+      const xml = await loadProcessDefinitionXml(data.processDefinitionKey, data.processDefinitionVersion);
       data.configuration = {...data.configuration, xml};
     }
   }
 
   allFieldsAreSelected = (data) => {
-    const {processDefinitionId, view, groupBy, visualization} = data;
-    return this.isNotEmpty(processDefinitionId) &&
+    const {processDefinitionKey, view, groupBy, visualization} = data;
+    return this.isNotEmpty(processDefinitionKey) &&
     (this.viewGroupbyAndVisualizationFieldsAreSelected(view, groupBy, visualization) ||
     this.rawDataCombinationIsSelected(view.operation, visualization));
   }

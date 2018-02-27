@@ -106,9 +106,9 @@ export default class Analysis extends React.Component {
     };
     this.setState({config});
 
-    if(updates.processDefinitionId) {
+    if(updates.processDefinitionKey || updates.processDefinitionVersion) {
       this.setState({
-        xml: await loadProcessDefinitionXml(updates.processDefinitionId),
+        xml: await loadProcessDefinitionXml(config.processDefinitionKey, config.processDefinitionVersion),
         gateway: null,
         endEvent: null
       });

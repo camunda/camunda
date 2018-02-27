@@ -36,7 +36,8 @@ jest.mock('./ReportBlankSlate', () => {return (props) => {
 it('should display a number if visualization is number', () => {
   const report = {
     data: {
-      processDefinitionId: '123',
+      processDefinitionKey: 'aKey',
+      processDefinitionVersion: '1',
       view : {
         operation: 'foo'
       },
@@ -58,7 +59,8 @@ it('should display a number if visualization is number', () => {
 it('should display a json if visualization is json', () => {
   const report = {
     data: {
-      processDefinitionId: '123',
+      processDefinitionKey: 'aKey',
+      processDefinitionVersion: '1',
       view : {
         operation: 'foo'
       },
@@ -80,7 +82,8 @@ it('should display a json if visualization is json', () => {
 it('should provide an errorMessage property to the component', () => {
   const report = {
     data: {
-      processDefinitionId: '123',
+      processDefinitionKey: 'aKey',
+      processDefinitionVersion: '1',
       view : {
         operation: 'foo'
       },
@@ -99,10 +102,34 @@ it('should provide an errorMessage property to the component', () => {
   expect(node.find(Number)).toHaveProp('errorMessage');
 });
 
-it('should instruct to add a process definition id if not available', () => {
+it('should instruct to add a process definition key if not available', () => {
   const report = {
     data: {
-      processDefinitionId: '',
+      processDefinitionKey: '',
+      processDefinitionVersion: '1',
+      view : {
+        operation: 'foo'
+      },
+      groupBy : {
+        type: 'bar'
+      },
+      visualization: 'number'
+    },
+    result: 1234
+  }
+
+  const node = mount(<ReportView report={report}/>);
+  node.setState({
+    loaded: true
+  });
+  expect(node.find('.message')).toIncludeText('Process definition');
+});
+
+it('should instruct to add a process definition version if not available', () => {
+  const report = {
+    data: {
+      processDefinitionKey: 'aKey',
+      processDefinitionVersion: '',
       view : {
         operation: 'foo'
       },
@@ -124,7 +151,8 @@ it('should instruct to add a process definition id if not available', () => {
 it('should instruct to add view option if not available', () => {
   const report = {
     data: {
-      processDefinitionId: '123',
+      processDefinitionKey: 'aKey',
+      processDefinitionVersion: '1',
       view : {
         operation: ''
       },
@@ -146,7 +174,8 @@ it('should instruct to add view option if not available', () => {
 it('should instruct to add group by option if not available', () => {
   const report = {
     data: {
-      processDefinitionId: '123',
+      processDefinitionKey: 'aKey',
+      processDefinitionVersion: '1',
       view : {
         operation: 'foo'
       },
@@ -168,7 +197,8 @@ it('should instruct to add group by option if not available', () => {
 it('should instruct to add visualization option if not available', () => {
   const report = {
     data: {
-      processDefinitionId: '123',
+      processDefinitionKey: 'aKey',
+      processDefinitionVersion: '1',
       view : {
         operation: 'foo'
       },
@@ -190,7 +220,8 @@ it('should instruct to add visualization option if not available', () => {
 it('should not add instruction for group by if operation is raw data', () => {
   const report = {
     data: {
-      processDefinitionId: '123',
+      processDefinitionKey: 'aKey',
+      processDefinitionVersion: '1',
       view : {
         operation: 'rawData'
       },
@@ -212,7 +243,8 @@ it('should not add instruction for group by if operation is raw data', () => {
 it('should adjust date shown in table to unit', () => {
   const report = {
     data: {
-      processDefinitionId: '123',
+      processDefinitionKey: 'aKey',
+      processDefinitionVersion: '1',
       view : {
         operation: 'foo'
       },
