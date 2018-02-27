@@ -6,7 +6,7 @@ import java.util.Map;
 /**
  * @author Askar Akhmerov
  */
-public class FlowNodeNamesDto {
+public class FlowNodeNamesResponseDto {
 
   private Map<String, String> flowNodeNames = new HashMap<>();
 

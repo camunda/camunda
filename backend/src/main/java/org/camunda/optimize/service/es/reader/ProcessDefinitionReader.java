@@ -4,7 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionXmlOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.definition.ExtendedProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.definition.ProcessDefinitionGroupOptimizeDto;
-import org.camunda.optimize.dto.optimize.rest.FlowNodeNamesDto;
+import org.camunda.optimize.dto.optimize.rest.FlowNodeIdsToNamesRequestDto;
+import org.camunda.optimize.dto.optimize.rest.FlowNodeNamesResponseDto;
 import org.camunda.optimize.service.es.report.command.util.ReportConstants;
 import org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -262,9 +263,13 @@ public class ProcessDefinitionReader {
     return result;
   }
 
-  public FlowNodeNamesDto getFlowNodeNames(String processDefinitionId, List<String> nodeIds) {
-    FlowNodeNamesDto result = new FlowNodeNamesDto();
-    ProcessDefinitionXmlOptimizeDto processDefinitionXmlDto = getProcessDefinitionXmlDto(processDefinitionId);
+  public FlowNodeNamesResponseDto getFlowNodeNames(FlowNodeIdsToNamesRequestDto flowNodeIdsToNamesRequestDto) {
+    FlowNodeNamesResponseDto result = new FlowNodeNamesResponseDto();
+    ProcessDefinitionXmlOptimizeDto processDefinitionXmlDto =
+      getProcessDefinitionXmlDto(
+        flowNodeIdsToNamesRequestDto.getProcessDefinitionKey(),
+        flowNodeIdsToNamesRequestDto.getProcessDefinitionVersion());
+    List<String> nodeIds = flowNodeIdsToNamesRequestDto.getNodeIds();
     if (nodeIds != null && !nodeIds.isEmpty()) {
       for (String id : nodeIds) {
         result.getFlowNodeNames().put(id, processDefinitionXmlDto.getFlowNodeNames().get(id));

@@ -3,16 +3,15 @@ package org.camunda.optimize.service.es.retrieval;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.StartEvent;
-import org.camunda.optimize.dto.optimize.rest.FlowNodeNamesDto;
+import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.rest.FlowNodeNamesResponseDto;
+import org.camunda.optimize.dto.optimize.rest.FlowNodeIdsToNamesRequestDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
@@ -48,21 +47,24 @@ public class FlowNodeMappingIT {
   public void mapFlowNodeIdsToNames() throws Exception {
     // given
     BpmnModelInstance modelInstance = getNamedBpmnModelInstance();
-    String processDefinitionId = engineRule.deployProcessAndGetId(modelInstance);
+    ProcessDefinitionEngineDto processDefinition = engineRule.deployProcessAndGetProcessDefinition(modelInstance);
 
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
+    FlowNodeIdsToNamesRequestDto flowNodeIdsToNamesRequestDto = new FlowNodeIdsToNamesRequestDto();
+    flowNodeIdsToNamesRequestDto.setProcessDefinitionKey(processDefinition.getKey());
+    flowNodeIdsToNamesRequestDto.setProcessDefinitionVersion(String.valueOf(processDefinition.getVersion()));
     Response response =
-        embeddedOptimizeRule.target("flow-node/" + processDefinitionId + "/flowNodeNames")
+        embeddedOptimizeRule.target("flow-node/flowNodeNames")
             .request()
             .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
             .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
-            .post(null);
+            .post(Entity.json(flowNodeIdsToNamesRequestDto));
 
     // then
-    FlowNodeNamesDto result = response.readEntity(FlowNodeNamesDto.class);
+    FlowNodeNamesResponseDto result = response.readEntity(FlowNodeNamesResponseDto.class);
     assertThat(result, is(notNullValue()));
     assertThat(result.getFlowNodeNames(), is(notNullValue()));
 
@@ -89,24 +91,28 @@ public class FlowNodeMappingIT {
   public void mapFilteredFlowNodeIdsToNames() throws Exception {
     // given
     BpmnModelInstance modelInstance = getNamedBpmnModelInstance();
-    String processDefinitionId = engineRule.deployProcessAndGetId(modelInstance);
+    ProcessDefinitionEngineDto processDefinition = engineRule.deployProcessAndGetProcessDefinition(modelInstance);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
     StartEvent start = modelInstance.getModelElementsByType(StartEvent.class).iterator().next();
 
 
     // when
+    FlowNodeIdsToNamesRequestDto flowNodeIdsToNamesRequestDto = new FlowNodeIdsToNamesRequestDto();
+    flowNodeIdsToNamesRequestDto.setProcessDefinitionKey(processDefinition.getKey());
+    flowNodeIdsToNamesRequestDto.setProcessDefinitionVersion(String.valueOf(processDefinition.getVersion()));
     List<String> ids = new ArrayList<>();
     ids.add(start.getId());
+    flowNodeIdsToNamesRequestDto.setNodeIds(ids);
     Response response =
-        embeddedOptimizeRule.target("flow-node/" + processDefinitionId + "/flowNodeNames")
+        embeddedOptimizeRule.target("flow-node/flowNodeNames")
             .request()
             .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
             .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
-            .post(Entity.json(ids));
+            .post(Entity.json(flowNodeIdsToNamesRequestDto));
 
     // then
-    FlowNodeNamesDto result = response.readEntity(FlowNodeNamesDto.class);
+    FlowNodeNamesResponseDto result = response.readEntity(FlowNodeNamesResponseDto.class);
     assertThat(result, is(notNullValue()));
     assertThat(result.getFlowNodeNames(), is(notNullValue()));
 
