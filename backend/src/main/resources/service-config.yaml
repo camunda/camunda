@@ -277,5 +277,7 @@ alerting:
     securityProtocol: 'NONE'
 export:
   csv:
+    # Maximum number of records returned by CSV export
     limit: 1000
+    # Position of first record which will be exported in CSV
     offset: 0
