@@ -54,6 +54,8 @@ public abstract class DataGenerationStep extends PerfTestStep {
 
   private void setContextParameter() {
     context.addParameter("processDefinitionId", "myDataGenerationProcessDefinitionId");
+    context.addParameter("processDefinitionKey", "myDataGenerationProcessDefinitionKey");
+    context.addParameter("processDefinitionVersion", "1");
   }
 
   private boolean wasDataAlreadyGenerated() {

@@ -1,9 +1,7 @@
 package org.camunda.optimize.service.util;
 
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
-import org.camunda.optimize.dto.optimize.query.heatmap.HeatMapQueryDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ViewDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.DateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.ExecutedFlowNodeFilterDto;
@@ -19,9 +17,12 @@ import org.camunda.optimize.service.exceptions.OptimizeValidationException;
  */
 public class ValidationHelper {
 
-  public static void validate(HeatMapQueryDto dto) throws OptimizeValidationException {
+  public static void validate(BranchAnalysisQueryDto dto) throws OptimizeValidationException {
+    ensureNotEmpty("gateway activity id", dto.getGateway());
+    ensureNotEmpty("end activity id", dto.getEnd());
     ensureNotEmpty("query dto", dto);
-    ValidationHelper.ensureNotEmpty("ProcessDefinitionId", dto.getProcessDefinitionId());
+    ValidationHelper.ensureNotEmpty("ProcessDefinitionKey", dto.getProcessDefinitionKey());
+    ValidationHelper.ensureNotEmpty("ProcessDefinitionVersion", dto.getProcessDefinitionVersion());
     if (dto.getFilter() != null) {
       for (FilterDto filterDto : dto.getFilter()) {
         if (filterDto instanceof DateFilterDto) {
@@ -45,12 +46,6 @@ public class ValidationHelper {
         }
       }
     }
-  }
-
-  public static void validate(BranchAnalysisQueryDto dto) throws OptimizeValidationException {
-    ValidationHelper.validate((HeatMapQueryDto) dto);
-    ValidationHelper.ensureNotEmpty("gateway activity id", dto.getGateway());
-    ValidationHelper.ensureNotEmpty("end activity id", dto.getEnd());
   }
 
   public static void ensureNotEmpty(String fieldName, Object target) {

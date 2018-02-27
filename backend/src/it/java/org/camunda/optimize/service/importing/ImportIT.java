@@ -1,15 +1,8 @@
 package org.camunda.optimize.service.importing;
 
-import org.apache.http.impl.client.CloseableHttpClient;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.query.definition.ExtendedProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.query.heatmap.HeatMapQueryDto;
-import org.camunda.optimize.dto.optimize.query.heatmap.HeatMapResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.VariableFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.data.VariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.result.raw.RawDataReportResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableRetrievalDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -30,9 +23,7 @@ import org.junit.rules.RuleChain;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -40,7 +31,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.IntStream;
 
-import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.NOT_IN;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.END_DATE;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
@@ -55,9 +45,6 @@ import static org.hamcrest.Matchers.lessThanOrEqualTo;
 
 
 public class ImportIT  {
-  private static final String SUB_PROCESS_ID = "testProcess";
-  private static final String CALL_ACTIVITY = "callActivity";
-  private static final String TEST_MI_PROCESS = "testMIProcess";
 
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
@@ -386,67 +373,6 @@ public class ImportIT  {
     assertThat(variablesResponseDtos.size(),is(0));
   }
 
-  @Test
-  public void variableFilterWorks() throws Exception {
-    //given
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .name("aProcessName")
-        .startEvent()
-        .serviceTask()
-          .camundaExpression("${true}")
-        .endEvent()
-      .done();
-
-    Map<String, Object> variables = createPrimitiveTypeVariables();
-    engineRule.deployAndStartProcessWithVariables(processModel, variables);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-
-    //when
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-    List<ExtendedProcessDefinitionOptimizeDto> definitions = embeddedOptimizeRule.target()
-        .path(embeddedOptimizeRule.getProcessDefinitionEndpoint())
-        .request()
-        .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
-        .get(new GenericType<List<ExtendedProcessDefinitionOptimizeDto>>(){});
-    assertThat(definitions.size(),is(1));
-
-    String id = definitions.get(0).getId();
-    assertThat(id, is(notNullValue()));
-
-    //when
-    HeatMapQueryDto dto = new HeatMapQueryDto();
-    dto.setProcessDefinitionId(id);
-
-    VariableFilterDataDto data = new VariableFilterDataDto();
-    data.setName("stringVar");
-    data.setType("String");
-    data.setOperator(NOT_IN);
-    data.setValues(Collections.singletonList("aStringValue"));
-    VariableFilterDto variableFilterDto = new VariableFilterDto();
-    variableFilterDto.setData(data);
-    dto.setFilter(Collections.singletonList(variableFilterDto));
-
-    HeatMapResponseDto heatMap = getHeatMapResponseDto(token, dto);
-    //then
-    assertThat(heatMap.getPiCount(), is(0L));
-  }
-
-  private HeatMapResponseDto getHeatMapResponseDto(String token, HeatMapQueryDto dto) {
-    Response response = getResponse(token, dto);
-
-    // then the status code is okay
-    return response.readEntity(HeatMapResponseDto.class);
-  }
-
-  private Response getResponse(String token, HeatMapQueryDto dto) {
-    Entity<HeatMapQueryDto> entity = Entity.entity(dto, MediaType.APPLICATION_JSON);
-    return embeddedOptimizeRule.target("process-definition/heatmap/frequency")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
-        .post(entity);
-  }
-
   private Map<String, Object> createPrimitiveTypeVariables() {
     Map<String, Object> variables = new HashMap<>();
     Integer integer = 1;
@@ -503,7 +429,6 @@ public class ImportIT  {
     deployAndStartSimpleUserTask();
     engineRule.finishAllUserTasks();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-//    embeddedOptimizeRule.resetProcessDefinitionManager();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // then
@@ -594,72 +519,12 @@ public class ImportIT  {
   }
 
   @Test
-  public void importWithMi() throws Exception {
-    //given
-    BpmnModelInstance subProcess = Bpmn.createExecutableProcess(SUB_PROCESS_ID)
-        .startEvent()
-          .serviceTask("MI-Body-Task")
-            .camundaExpression("${true}")
-        .endEvent()
-        .done();
-    CloseableHttpClient client = engineRule.getHttpClient();
-    engineRule.deployProcess(subProcess, client);
-
-    BpmnModelInstance model = Bpmn.createExecutableProcess(TEST_MI_PROCESS)
-        .name("MultiInstance")
-          .startEvent("miStart")
-          .parallelGateway()
-            .endEvent("end1")
-          .moveToLastGateway()
-            .callActivity(CALL_ACTIVITY)
-            .calledElement(SUB_PROCESS_ID)
-            .multiInstance()
-              .cardinality("2")
-            .multiInstanceDone()
-          .endEvent("miEnd")
-        .done();
-    engineRule.deployAndStartProcess(model);
-
-    engineRule.waitForAllProcessesToFinish();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-    List<ExtendedProcessDefinitionOptimizeDto> definitions = embeddedOptimizeRule.target()
-        .path(embeddedOptimizeRule.getProcessDefinitionEndpoint())
-        .request()
-        .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
-        .get(new GenericType<List<ExtendedProcessDefinitionOptimizeDto>>(){});
-    assertThat(definitions.size(),is(2));
-
-    String id = null;
-    for (ProcessDefinitionOptimizeDto dto : definitions) {
-      if (TEST_MI_PROCESS.equals(dto.getKey())) {
-        id = dto.getId();
-      }
-    }
-    assertThat(id, is(notNullValue()));
-
-
-    //when
-    HeatMapResponseDto heatMap = embeddedOptimizeRule.target()
-        .path(embeddedOptimizeRule.getProcessDefinitionEndpoint() + "/" + id + "/" + "heatmap/frequency")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
-        .get(HeatMapResponseDto.class);
-
-    //then
-    assertThat(heatMap.getPiCount(), is(1L));
-    assertThat(heatMap.getFlowNodes().size(), is(5));
-  }
-
-  @Test
   public void importProgressContinuesAfterRestartOnceNewDataAppears() throws Exception {
     ProcessInstanceEngineDto process1 = deployAndStartSimpleServiceTask();
     ProcessInstanceEngineDto process2 = deployAndStartSimpleServiceTask();
 
     long initialBackoff = embeddedOptimizeRule.getConfigurationService().getMaximumBackoff();
-    embeddedOptimizeRule.getConfigurationService().setMaximumBackoff(2l);
+    embeddedOptimizeRule.getConfigurationService().setMaximumBackoff(2L);
     embeddedOptimizeRule.getConfigurationService().setBackoffEnabled(true);
     embeddedOptimizeRule.reloadConfiguration();
 
@@ -679,14 +544,13 @@ public class ImportIT  {
     assertThat(embeddedOptimizeRule.getProgressValue(), is(100L));
 
     //when
-    ProcessInstanceEngineDto targetProcess = process2;
-    ProcessInstanceEngineDto process3 = engineRule.startProcessInstance(targetProcess.getDefinitionId());
-    assertThat(targetProcess.getId(), is(not(process3.getId())));
-    assertThat(targetProcess.getDefinitionId(), is(process3.getDefinitionId()));
+    ProcessInstanceEngineDto process3 = engineRule.startProcessInstance(process2.getDefinitionId());
+    assertThat(process2.getId(), is(not(process3.getId())));
+    assertThat(process2.getDefinitionId(), is(process3.getDefinitionId()));
 
     embeddedOptimizeRule.importWithoutReset();
 
-    reportData = ReportDataHelper.createReportDataViewRawAsTable(targetProcess.getDefinitionId());
+    reportData = ReportDataHelper.createReportDataViewRawAsTable(process2.getDefinitionId());
     result = evaluateReport(reportData);
 
     assertThat(result.getResult().size(), is(2));
@@ -709,7 +573,7 @@ public class ImportIT  {
 
     embeddedOptimizeRule.getConfigurationService().setImportResetIntervalUnit("SECONDS");
     embeddedOptimizeRule.getConfigurationService().setImportResetIntervalValue(1);
-    embeddedOptimizeRule.getConfigurationService().setMaximumBackoff(2l);
+    embeddedOptimizeRule.getConfigurationService().setMaximumBackoff(2L);
     embeddedOptimizeRule.getConfigurationService().setBackoffEnabled(true);
     embeddedOptimizeRule.reloadConfiguration();
 
@@ -728,16 +592,15 @@ public class ImportIT  {
     assertThat(embeddedOptimizeRule.getProgressValue(), is(100L));
 
     //when
-    ProcessInstanceEngineDto targetProcess = process2;
-    ProcessInstanceEngineDto process3 = engineRule.startProcessInstance(targetProcess.getDefinitionId());
-    assertThat(targetProcess.getId(), is(not(process3.getId())));
-    assertThat(targetProcess.getDefinitionId(), is(process3.getDefinitionId()));
+    ProcessInstanceEngineDto process3 = engineRule.startProcessInstance(process2.getDefinitionId());
+    assertThat(process2.getId(), is(not(process3.getId())));
+    assertThat(process2.getDefinitionId(), is(process3.getDefinitionId()));
 
     //once new round starts reset will happen instead of restart
     embeddedOptimizeRule.importWithoutReset();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
-    reportData = ReportDataHelper.createReportDataViewRawAsTable(targetProcess.getDefinitionId());
+    reportData = ReportDataHelper.createReportDataViewRawAsTable(process2.getDefinitionId());
     result = evaluateReport(reportData);
 
     assertThat(result.getResult().size(), is(2));

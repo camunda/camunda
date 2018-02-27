@@ -8,8 +8,6 @@ import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.query.definition.ExtendedProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.definition.ProcessDefinitionGroupOptimizeDto;
-import org.camunda.optimize.dto.optimize.query.heatmap.HeatMapQueryDto;
-import org.camunda.optimize.dto.optimize.query.heatmap.HeatMapResponseDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.junit.Rule;
@@ -27,7 +25,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -45,6 +42,9 @@ public class ProcessDefinitionRestServiceIT {
   private static final String DIAGRAM = "org/camunda/optimize/service/es/reader/gateway_process.bpmn";
   private static final String PROCESS_DEFINITION_ID_2 = "procDef2";
   private static final String PROCESS_DEFINITION_ID = "procDef1";
+  private static final String PROCESS_DEFINITION_KEY = "procDef";
+  private static final String PROCESS_DEFINITION_VERSION_1 = "1";
+  private static final String PROCESS_DEFINITION_VERSION_2 = "2";
   private static final String END_ACTIVITY = "endActivity";
   private static final String GATEWAY_ACTIVITY = "gw_1";
   private static final String PROCESS_INSTANCE_ID = "processInstanceId";
@@ -54,7 +54,7 @@ public class ProcessDefinitionRestServiceIT {
   private static final String ID = "123";
   public static final String BEARER = "Bearer ";
   private static final String KEY = "testKey";
-  public static final String BPMN_20_XML = "test";
+  private static final String BPMN_20_XML = "test";
   private static final String TEST_ENGINE = "1";
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
@@ -239,93 +239,6 @@ public class ProcessDefinitionRestServiceIT {
   }
 
   @Test
-  public void getFrequencyHeatMapWithoutAuthentication() {
-    // when
-    Response response =
-        embeddedOptimizeRule.target("process-definition/123/heatmap/frequency")
-            .request()
-            .get();
-
-    // then the status code is not authorized
-    assertThat(response.getStatus(), is(401));
-  }
-
-  @Test
-  public void getFrequencyHeatMap() {
-    //given
-    insert10ActivitiesWithDifferentPis();
-
-    // when
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-    Response response =
-        embeddedOptimizeRule.target("process-definition/123/heatmap/frequency")
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
-            .get();
-
-    // then the status code is okay
-    assertThat(response.getStatus(), is(200));
-    HeatMapResponseDto actual =
-        response.readEntity(HeatMapResponseDto.class);
-    assertThat(actual, is(notNullValue()));
-    assertThat(actual.getPiCount(), is(10L));
-  }
-
-  private void insert10ActivitiesWithDifferentPis() {
-    for (int i = 0; i < 10; i++) {
-      String processInstanceId = "PI_" + i;
-
-      SimpleEventDto event = new SimpleEventDto();
-      event.setActivityId("A_" + i);
-      event.setDurationInMs(Long.valueOf(i));
-      ProcessInstanceDto procInst = new ProcessInstanceDto();
-      procInst.setProcessDefinitionId(ID);
-      procInst.setProcessInstanceId(processInstanceId);
-      procInst.setEvents(Collections.singletonList(event));
-
-      elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), processInstanceId, procInst);
-    }
-  }
-
-  @Test
-  public void getFrequencyHeatMapPostWithoutAuthentication() {
-    // when
-    Entity<HeatMapQueryDto> entity = Entity.entity(new HeatMapQueryDto(), MediaType.APPLICATION_JSON);
-    Response response =
-        embeddedOptimizeRule.target("process-definition/heatmap/frequency")
-            .request()
-            .post(entity);
-
-    // then the status code is not authorized
-    assertThat(response.getStatus(), is(401));
-  }
-
-  @Test
-  public void getFrequencyHeatPostMap() {
-    //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-    insert10ActivitiesWithDifferentPis();
-
-    // when
-    HeatMapQueryDto heatMapQueryDto = new HeatMapQueryDto();
-    heatMapQueryDto.setProcessDefinitionId(ID);
-
-    Entity<HeatMapQueryDto> entity = Entity.entity(heatMapQueryDto, MediaType.APPLICATION_JSON);
-    Response response =
-        embeddedOptimizeRule.target("process-definition/heatmap/frequency")
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
-            .post(entity);
-
-    // then the status code is okay
-    assertThat(response.getStatus(), is(200));
-    HeatMapResponseDto actual =
-        response.readEntity(HeatMapResponseDto.class);
-    assertThat(actual, is(notNullValue()));
-    assertThat(actual.getPiCount(), is(10L));
-  }
-
-  @Test
   public void getCorrelationWithoutAuthentication() {
     // when
     Entity<BranchAnalysisQueryDto> entity = Entity.entity(new BranchAnalysisQueryDto(), MediaType.APPLICATION_JSON);
@@ -346,7 +259,8 @@ public class ProcessDefinitionRestServiceIT {
 
     // when
     BranchAnalysisQueryDto branchAnalysisQueryDto = new BranchAnalysisQueryDto();
-    branchAnalysisQueryDto.setProcessDefinitionId(PROCESS_DEFINITION_ID);
+    branchAnalysisQueryDto.setProcessDefinitionKey(PROCESS_DEFINITION_KEY);
+    branchAnalysisQueryDto.setProcessDefinitionVersion(PROCESS_DEFINITION_VERSION_1);
     branchAnalysisQueryDto.setGateway(GATEWAY_ACTIVITY);
     branchAnalysisQueryDto.setEnd(END_ACTIVITY);
 
@@ -413,13 +327,18 @@ public class ProcessDefinitionRestServiceIT {
 
     ProcessDefinitionXmlOptimizeDto processDefinitionXmlDto = new ProcessDefinitionXmlOptimizeDto();
     processDefinitionXmlDto.setProcessDefinitionId(PROCESS_DEFINITION_ID);
+    processDefinitionXmlDto.setProcessDefinitionKey(PROCESS_DEFINITION_KEY);
+    processDefinitionXmlDto.setProcessDefinitionVersion(PROCESS_DEFINITION_VERSION_1);
     processDefinitionXmlDto.setBpmn20Xml(readDiagram(DIAGRAM));
     elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessDefinitionXmlType(), PROCESS_DEFINITION_ID, processDefinitionXmlDto);
     processDefinitionXmlDto.setProcessDefinitionId(PROCESS_DEFINITION_ID_2);
+    processDefinitionXmlDto.setProcessDefinitionVersion(PROCESS_DEFINITION_VERSION_2);
     elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessDefinitionXmlType(), PROCESS_DEFINITION_ID_2, processDefinitionXmlDto);
 
     ProcessInstanceDto procInst = new ProcessInstanceDto();
     procInst.setProcessDefinitionId(PROCESS_DEFINITION_ID);
+    procInst.setProcessDefinitionKey(PROCESS_DEFINITION_KEY);
+    procInst.setProcessDefinitionVersion(PROCESS_DEFINITION_VERSION_1);
     procInst.setProcessInstanceId(PROCESS_INSTANCE_ID);
     procInst.setStartDate(OffsetDateTime.now());
     procInst.setEndDate(OffsetDateTime.now());
@@ -447,7 +366,7 @@ public class ProcessDefinitionRestServiceIT {
     return read(Thread.currentThread().getContextClassLoader().getResourceAsStream(diagramPath));
   }
 
-  public static String read(InputStream input) throws IOException {
+  private static String read(InputStream input) throws IOException {
     try (BufferedReader buffer = new BufferedReader(new InputStreamReader(input))) {
       return buffer.lines().collect(Collectors.joining("\n"));
     }

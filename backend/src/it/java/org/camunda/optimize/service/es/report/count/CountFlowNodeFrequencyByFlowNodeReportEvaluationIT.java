@@ -4,6 +4,7 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.builder.AbstractServiceTaskBuilder;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.query.definition.ExtendedProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.DateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.ExecutedFlowNodeFilterDto;
@@ -24,9 +25,9 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import javax.ws.rs.client.Entity;
+import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
-import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.HashMap;
@@ -273,6 +274,58 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     Map<String, Long> flowNodeIdToExecutionFrequency = result.getResult();
     assertThat(flowNodeIdToExecutionFrequency.size(), is(13));
     assertThat(flowNodeIdToExecutionFrequency.get(TEST_ACTIVITY + 0), is(1L));
+  }
+
+  @Test
+  public void importWithMi() throws Exception {
+    //given
+    final String subProcessKey = "testProcess";
+    final String callActivity = "callActivity";
+    final String testMIProcess = "testMIProcess";
+
+    BpmnModelInstance subProcess = Bpmn.createExecutableProcess(subProcessKey)
+        .startEvent()
+          .serviceTask("MI-Body-Task")
+            .camundaExpression("${true}")
+        .endEvent()
+        .done();
+    engineRule.deployProcessAndGetId(subProcess);
+
+    BpmnModelInstance model = Bpmn.createExecutableProcess(testMIProcess)
+        .name("MultiInstance")
+          .startEvent("miStart")
+          .parallelGateway()
+            .endEvent("end1")
+          .moveToLastGateway()
+            .callActivity(callActivity)
+            .calledElement(subProcessKey)
+            .multiInstance()
+              .cardinality("2")
+            .multiInstanceDone()
+          .endEvent("miEnd")
+        .done();
+    engineRule.deployAndStartProcess(model);
+
+    engineRule.waitForAllProcessesToFinish();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    List<ExtendedProcessDefinitionOptimizeDto> definitions = embeddedOptimizeRule.target()
+        .path(embeddedOptimizeRule.getProcessDefinitionEndpoint())
+        .request()
+        .header(HttpHeaders.AUTHORIZATION,embeddedOptimizeRule.getAuthorizationHeader())
+        .get(new GenericType<List<ExtendedProcessDefinitionOptimizeDto>>(){});
+    assertThat(definitions.size(),is(2));
+
+    //when
+    ReportDataDto reportData =
+      ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNode(testMIProcess, "1");
+    MapReportResultDto result = evaluateReport(reportData);
+
+    //then
+    assertThat(result.getResult(), is(notNullValue()));
+    Map<String, Long> flowNodeIdToExecutionFrequency = result.getResult();
+    assertThat(flowNodeIdToExecutionFrequency.size(), is(5));
   }
 
   @Test

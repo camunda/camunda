@@ -72,10 +72,12 @@ public class GetBranchAnalysisStep extends PerfTestStep {
     post.addHeader("content-type", "application/json");
     post.addHeader("Authorization", "Bearer " + context.getConfiguration().getAuthorizationToken());
     BranchAnalysisQueryDto queryDto = new BranchAnalysisQueryDto();
-    String processDefinitionId = (String) context.getParameter("processDefinitionId");
+    String processDefinitionKey = (String) context.getParameter("processDefinitionKey");
+    String processDefinitionVersion = (String) context.getParameter("processDefinitionVersion");
     String gatewayId = (String) context.getParameter("gatewayActivityId");
     String endEventId = (String) context.getParameter("endActivityId");
-    queryDto.setProcessDefinitionId(processDefinitionId);
+    queryDto.setProcessDefinitionKey(processDefinitionKey);
+    queryDto.setProcessDefinitionVersion(processDefinitionVersion);
     queryDto.setGateway(gatewayId);
     queryDto.setEnd(endEventId);
     queryDto.setFilter(filter);

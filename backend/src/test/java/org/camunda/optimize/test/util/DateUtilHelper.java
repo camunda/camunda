@@ -1,6 +1,6 @@
 package org.camunda.optimize.test.util;
 
-import org.camunda.optimize.dto.optimize.query.heatmap.HeatMapQueryDto;
+import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.DateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.DurationFilterDto;
@@ -24,7 +24,7 @@ public class DateUtilHelper {
     dto.getFilter().addAll(dateFilter);
   }
 
-  public static void addDateFilter(String operator, String type, OffsetDateTime dateValue, HeatMapQueryDto dto) {
+  public static void addDateFilter(String operator, String type, OffsetDateTime dateValue, BranchAnalysisQueryDto dto) {
     List<FilterDto> dateFilter = createDateFilter(operator, type, dateValue);
     dto.getFilter().addAll(dateFilter);
   }

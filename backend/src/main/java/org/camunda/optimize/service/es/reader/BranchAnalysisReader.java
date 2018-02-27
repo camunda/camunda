@@ -10,8 +10,8 @@ import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisOutcomeDto
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
 import org.camunda.optimize.service.es.filter.QueryFilterEnhancer;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.ValidationHelper;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -29,6 +29,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_DEFINITION_KEY;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_DEFINITION_VERSION;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -54,10 +56,14 @@ public class BranchAnalysisReader {
 
   public BranchAnalysisDto branchAnalysis(BranchAnalysisQueryDto request) {
     ValidationHelper.validate(request);
-    logger.debug("Performing branch analysis on process definition: {}", request.getProcessDefinitionId());
+    logger.debug("Performing branch analysis on process definition with key [{}] and version [{}]",
+      request.getProcessDefinitionKey(),
+      request.getProcessDefinitionVersion()
+    );
     
     BranchAnalysisDto result = new BranchAnalysisDto();
-    BpmnModelInstance bpmnModelInstance = getBpmnModelInstance(request.getProcessDefinitionId());
+    BpmnModelInstance bpmnModelInstance =
+      getBpmnModelInstance(request.getProcessDefinitionKey(), request.getProcessDefinitionVersion());
     List<FlowNode> gatewayOutcomes = fetchGatewayOutcomes(bpmnModelInstance, request.getGateway());
     Set<String> activityIdsWithMultipleIncomingSequenceFlows =
       extractFlowNodesWithMultipleIncomingSequenceFlows(bpmnModelInstance);
@@ -103,7 +109,8 @@ public class BranchAnalysisReader {
 
   private long calculateReachedEndEventActivityCount(String activityId, BranchAnalysisQueryDto request, Set<String> activitiesToExclude) {
     BoolQueryBuilder query = boolQuery()
-      .must(termQuery("processDefinitionId", request.getProcessDefinitionId()))
+      .must(termQuery(PROCESS_DEFINITION_KEY, request.getProcessDefinitionKey()))
+      .must(termQuery(PROCESS_DEFINITION_VERSION, request.getProcessDefinitionVersion()))
       .must(createMustMatchActivityIdQuery(request.getGateway()))
       .must(createMustMatchActivityIdQuery(activityId))
       .must(createMustMatchActivityIdQuery(request.getEnd())
@@ -115,7 +122,8 @@ public class BranchAnalysisReader {
 
   private long calculateActivityCount(String activityId, BranchAnalysisQueryDto request, Set<String> activitiesToExclude) {
     BoolQueryBuilder query = boolQuery()
-      .must(termQuery("processDefinitionId", request.getProcessDefinitionId()))
+      .must(termQuery(PROCESS_DEFINITION_KEY, request.getProcessDefinitionKey()))
+      .must(termQuery(PROCESS_DEFINITION_VERSION, request.getProcessDefinitionVersion()))
       .must(createMustMatchActivityIdQuery(request.getGateway()))
       .must(createMustMatchActivityIdQuery(activityId));
     excludeActivities(activitiesToExclude, query);
@@ -161,8 +169,8 @@ public class BranchAnalysisReader {
     return result;
   }
 
-  private BpmnModelInstance getBpmnModelInstance(String processDefinitionId) {
-    String xml = processDefinitionReader.getProcessDefinitionXml(processDefinitionId);
+  private BpmnModelInstance getBpmnModelInstance(String processDefinitionKey, String processDefinitionVersion) {
+    String xml = processDefinitionReader.getProcessDefinitionXml(processDefinitionKey, processDefinitionVersion);
     return Bpmn.readModelFromStream(new ByteArrayInputStream(xml.getBytes()));
   }
 
