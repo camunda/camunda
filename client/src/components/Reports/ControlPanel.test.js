@@ -22,8 +22,8 @@ jest.mock('services', () => {return {
     objectToLabel: () => 'foo',
     objectToKey: () => 'foo',
     keyToLabel: () => 'foo',
-    getOptions: () => [],
-    keyToObject: () => 'foo',
+    getOptions: () => [{key: 'foo',label: 'foo',allowedNext:['not_foo']}],
+    keyToObject: (key) => key,
   }
 }});
 
@@ -46,4 +46,25 @@ it('should call the provided onChange property function when a setting changes',
   node.instance().changeVisualization({target: {value: 'someTestVis'}});
 
   expect(spy).toHaveBeenCalledWith({'visualization': 'someTestVis'});
+});
+
+it('should disable the groupBy and visualizeAs Selects if view is not selected', () => {
+  const node = mount(<ControlPanel {...data} view=''/>);
+
+  expect(node.find('.ControlPanel__select').at(2)).toBeDisabled();
+  expect(node.find('.ControlPanel__select').at(3)).toBeDisabled();
+});
+
+it('should not disable the groupBy and visualizeAs Selects if view is selected', () => {
+  const node = mount(<ControlPanel {...data}/>);
+
+  expect(node.find('.ControlPanel__select').at(2)).not.toBeDisabled();
+  expect(node.find('.ControlPanel__select').at(3)).not.toBeDisabled();
+});
+
+it('should reset the next Selects if in conflict with previous one', () => {
+  const node = mount(<ControlPanel {...data} onChange={spy} />);
+  node.setProps({view: 'foo'});
+
+  expect(spy).toHaveBeenCalledWith({'groupBy': '', 'visualization': ''});
 });

@@ -1,20 +1,39 @@
 const options = {
     view: [
-      {key: 'rawData_ignored_ignored', label: 'Raw Data'},
-      {key: 'count_processInstance_frequency', label: 'Count Process Instance Frequency'},
-      {key: 'count_flowNode_frequency', label: 'Count Flow Node Frequency'},
-      {key: 'avg_processInstance_duration', label: 'Average Process Instance Duration'},
-      {key: 'avg_flowNode_duration', label: 'Average Flow Node Duration'}
-  
+      {
+        key: 'rawData_ignored_ignored',
+        label: 'Raw Data',
+        allowedNext:['none_null']
+      },
+      {
+        key: 'count_processInstance_frequency',
+        label: 'Count Process Instance Frequency',
+        allowedNext:['none_null','startDate_year', 'startDate_month', 'startDate_week', 'startDate_day', 'startDate_hour']
+      },
+      {
+        key: 'count_flowNode_frequency', 
+        label: 'Count Flow Node Frequency',
+        allowedNext:['flowNode_null']
+      },
+      {
+        key: 'avg_processInstance_duration',
+        label: 'Average Process Instance Duration',
+        allowedNext:['none_null','startDate_year', 'startDate_month', 'startDate_week', 'startDate_day', 'startDate_hour']
+      },
+      {
+      key: 'avg_flowNode_duration',
+      label: 'Average Flow Node Duration',
+      allowedNext:['flowNode_null']
+      }
     ],
     groupBy: [
-      {key: 'none_null', label: 'None'},
-      {key: 'flowNode_null', label: 'Flow Nodes'},
-      {key: 'startDate_year', label: 'Start Date of Process Instance - Year'},
-      {key: 'startDate_month', label: 'Start Date of Process Instance - Month'},
-      {key: 'startDate_week', label: 'Start Date of Process Instance - Week'},
-      {key: 'startDate_day', label: 'Start Date of Process Instance - Day'},
-      {key: 'startDate_hour', label: 'Start Date of Process Instance - Hour'}
+      {key: 'none_null', label: 'None', allowedNext:['table', 'number']},
+      {key: 'flowNode_null', label: 'Flow Nodes', allowedNext:['heat', 'pie', 'line', 'bar']},
+      {key: 'startDate_year', label: 'Start Date of Process Instance - Year', allowedNext:['table', 'pie', 'line', 'bar']},
+      {key: 'startDate_month', label: 'Start Date of Process Instance - Month', allowedNext:['table', 'pie', 'line', 'bar']},
+      {key: 'startDate_week', label: 'Start Date of Process Instance - Week', allowedNext:['table', 'pie', 'line', 'bar']},
+      {key: 'startDate_day', label: 'Start Date of Process Instance - Day', allowedNext:['table', 'pie', 'line', 'bar']},
+      {key: 'startDate_hour', label: 'Start Date of Process Instance - Hour', allowedNext:['table', 'pie', 'line', 'bar']}
     ],
     visualizeAs: [
       {key: 'number', label: 'Number'},
@@ -39,6 +58,9 @@ const options = {
     },
 
     objectToKey: function(object, type) {
+      if(typeof(object) === 'string') {
+        return object;
+      }
       if(type === this.view) {
         const {operation, entity, property} = object;
         return `${operation}_${entity}_${property}`;
@@ -67,5 +89,3 @@ const options = {
   };
 
   export default reportLabelMap;
-
-  

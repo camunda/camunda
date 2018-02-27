@@ -26,12 +26,71 @@ export default class ControlPanel extends React.Component {
     this.props.onChange({'visualization': evt.target.value});
   }
 
+  componentDidUpdate(prevProps) {
+    if (this.props.groupBy !== prevProps.groupBy) {
+      this.checkCombination('groupBy');
+    } else if(this.props.view !== prevProps.view) {
+      this.checkCombination('view')
+    }
+  }
+
+  checkCombination = type => {
+    const option = reportLabelMap.getOptions(type).find((v) => {
+      return v.key === reportLabelMap.objectToKey(this.props[type], type);
+    });
+    const nextFieldObject = this.props[this.getNextField(type)];
+    const nextFieldType = this.getNextField(type);
+    const nextFieldKey = reportLabelMap.objectToKey(nextFieldObject, nextFieldType);
+
+    if (option && !option.allowedNext.includes(nextFieldKey)) {
+      if(this.getNextField(nextFieldType)) {
+        this.props.onChange({
+          [nextFieldType]: '',
+          [this.getNextField(nextFieldType)]: ''
+        });
+      } else {
+        this.props.onChange({[nextFieldType]: ''});
+      }
+    }
+  }
+
+  getNextField = (type) => {
+    switch (type) {
+      case 'groupBy': return 'visualization';
+      case 'view':  return 'groupBy';
+      default: return null;
+    }
+  }
+
   definitionConfig = () => {
     return {
       processDefinitionId: this.props.processDefinitionId,
       processDefinitionKey: this.props.processDefinitionKey,
       processDefinitionVersion: this.props.processDefinitionVersion
     };
+  }
+
+  isEmpty = (prop) => {
+    if (typeof(prop) === 'object') {
+      let result = false;
+      if (Object.keys(prop).length === 0) return true;
+      Object.values(prop).forEach((str) => {
+        if (str !== null && this.isEmpty(str)) {
+          result = true;
+        };
+      });
+      return result;
+    } else if(typeof(prop) === 'string') {
+      return prop === '';
+    }
+  }
+
+  isViewSelected = () => {
+    return !this.isEmpty(this.props.view);
+  }
+
+  isGroupBySelected = () => {
+    return !this.isEmpty(this.props.groupBy);
   }
 
   render() {
@@ -53,16 +112,16 @@ export default class ControlPanel extends React.Component {
         </li>
         <li className='ControlPanel__item ControlPanel__item--select'>
           <label htmlFor='ControlPanel__group-by' className='ControlPanel__label'>Group by</label>
-          <Select className='ControlPanel__select' name='ControlPanel__group-by' value={reportLabelMap.objectToKey(this.props.groupBy, reportLabelMap.groupBy)} onChange={this.changeGroup}>
+          <Select disabled={!this.isViewSelected()} className='ControlPanel__select' name='ControlPanel__group-by' value={reportLabelMap.objectToKey(this.props.groupBy, reportLabelMap.groupBy)} onChange={this.changeGroup}>
             {addSelectionOption()}
-            {renderOptions(reportLabelMap.getOptions('groupBy'))}
+            {this.isViewSelected() && renderOptions(reportLabelMap.getOptions('groupBy'))}
           </Select>
         </li>
         <li className='ControlPanel__item ControlPanel__item--select'>
           <label htmlFor='ControlPanel__visualize-as' className='ControlPanel__label'>Visualize as</label>
-          <Select className='ControlPanel__select' name='ControlPanel__visualize-as' value={this.props.visualization} onChange={this.changeVisualization}>
+          <Select disabled={!this.isGroupBySelected() || !this.isViewSelected()} className='ControlPanel__select' name='ControlPanel__visualize-as' value={this.props.visualization} onChange={this.changeVisualization}>
             {addSelectionOption()}
-            {renderOptions(reportLabelMap.getOptions('visualizeAs'))}
+            {this.isGroupBySelected() && this.isViewSelected() && renderOptions(reportLabelMap.getOptions('visualizeAs'))}
           </Select>
         </li>
         <li className='ControlPanel__item ControlPanel__item--filter'>
@@ -81,5 +140,7 @@ function addSelectionOption() {
 }
 
 function renderOptions(options) {
-  return options.map(({key, label}) => <Select.Option key={key} value={key}>{label}</Select.Option>);
+  return options.map(({key, label}) => {
+    return <Select.Option key={key} value={key}>{label}</Select.Option>;
+  });
 }
