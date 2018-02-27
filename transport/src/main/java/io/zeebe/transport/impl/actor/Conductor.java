@@ -15,18 +15,20 @@
  */
 package io.zeebe.transport.impl.actor;
 
-import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import io.zeebe.transport.Loggers;
 import io.zeebe.transport.TransportListener;
 import io.zeebe.transport.impl.*;
 import io.zeebe.transport.impl.TransportChannel.ChannelLifecycleListener;
-import io.zeebe.util.sched.ActorTaskRunner;
+import io.zeebe.util.sched.ActorThread;
 import io.zeebe.util.sched.ZbActor;
 import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.slf4j.Logger;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class Conductor extends ZbActor implements ChannelLifecycleListener
 {
@@ -63,7 +65,7 @@ public abstract class Conductor extends ZbActor implements ChannelLifecycleListe
     public void removeListener(TransportListener channelListener)
     {
         // TODO make better
-        if (ActorTaskRunner.current() != null)
+        if (ActorThread.current() != null)
         {
             actor.run(() ->
             {
