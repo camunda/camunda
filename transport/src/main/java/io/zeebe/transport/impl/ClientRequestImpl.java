@@ -21,7 +21,6 @@ import io.zeebe.transport.ClientRequest;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.impl.ClientRequestPool.RequestIdGenerator;
 import io.zeebe.util.buffer.BufferWriter;
-import io.zeebe.util.sched.ActorTask;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
@@ -218,9 +217,9 @@ public class ClientRequestImpl implements ClientRequest
     }
 
     @Override
-    public void block(ActorTask onCompletion)
+    public boolean block(Runnable onCompletion)
     {
-        responseFuture.block(onCompletion);
+        return responseFuture.block(onCompletion);
     }
 
     @Override
