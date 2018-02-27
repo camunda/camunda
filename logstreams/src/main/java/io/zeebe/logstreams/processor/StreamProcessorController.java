@@ -15,23 +15,16 @@
  */
 package io.zeebe.logstreams.processor;
 
+import java.time.Duration;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import io.zeebe.logstreams.impl.Loggers;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamReader;
-import io.zeebe.logstreams.log.LogStreamWriter;
-import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.spi.ReadableSnapshot;
-import io.zeebe.logstreams.spi.SnapshotStorage;
-import io.zeebe.logstreams.spi.SnapshotWriter;
-import io.zeebe.util.sched.ActorCondition;
-import io.zeebe.util.sched.ZbActor;
-import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.logstreams.log.*;
+import io.zeebe.logstreams.spi.*;
+import io.zeebe.util.sched.*;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.slf4j.Logger;
-
-import java.time.Duration;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class StreamProcessorController extends ZbActor
 {
@@ -64,7 +57,7 @@ public class StreamProcessorController extends ZbActor
     private long snapshotPosition = -1L;
     private long lastSourceEventPosition = -1L;
     private long eventPosition = -1L;
-    private long lastSuccessfulProcessedEventPosition = 1L;
+    private long lastSuccessfulProcessedEventPosition = -1L;
     private long lastWrittenEventPosition = -1L;
 
     private LoggedEvent currentEvent;
