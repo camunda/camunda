@@ -478,9 +478,16 @@ public class ServiceController extends ZbActor
         @Override
         public ZbActorScheduler getScheduler()
         {
+            validCheck();
             return container.getActorScheduler();
         }
 
+        @Override
+        public <S> boolean hasService(ServiceName<S> name)
+        {
+            validCheck();
+            return container.hasService(name);
+        }
     }
 
     class StopContextImpl implements ServiceStopContext, Consumer<Throwable>
@@ -488,12 +495,6 @@ public class ServiceController extends ZbActor
         boolean isValid = true;
         boolean isAsync = false;
         Runnable action;
-
-        protected void invalidate()
-        {
-            isValid = false;
-            stopContext = null;
-        }
 
         @Override
         public void async(Future<?> future)
@@ -526,16 +527,6 @@ public class ServiceController extends ZbActor
             if (!isValid)
             {
                 throw new IllegalStateException("Service Context is invalid");
-            }
-        }
-
-        void dependencyCheck(ServiceName<?> name)
-        {
-            if (!dependencies.contains(name))
-            {
-                final String errorMessage = String.format("Cannot get service '%s' from context '%s'. Requested Service is not a dependency.", name,
-                                                          ServiceController.this.name);
-                throw new IllegalArgumentException(errorMessage);
             }
         }
 

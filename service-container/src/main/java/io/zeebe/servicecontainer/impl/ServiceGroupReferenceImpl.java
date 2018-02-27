@@ -16,8 +16,10 @@
 package io.zeebe.servicecontainer.impl;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import io.zeebe.servicecontainer.ServiceGroupReference;
 import io.zeebe.servicecontainer.ServiceName;
@@ -69,9 +71,13 @@ public class ServiceGroupReferenceImpl
 
     public void uninject()
     {
-        for (Entry<ServiceName, Object> e : injectedValues.entrySet())
+        final Set<Entry<ServiceName, Object>> entries = injectedValues.entrySet();
+        for (Entry<ServiceName, Object> e : entries)
         {
-            removeValue(e.getKey(), e.getValue());
+            if (injectedValues.containsKey(e.getKey()))
+            {
+                referringService.removeReferencedValue(injector, e.getKey(), e.getValue());
+            }
         }
         injectedValues.clear();
     }

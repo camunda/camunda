@@ -15,12 +15,13 @@
  */
 package io.zeebe.servicecontainer.impl;
 
-import java.util.*;
-
 import io.zeebe.servicecontainer.ServiceGroupReference;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.impl.ServiceEvent.ServiceEventType;
 import org.slf4j.Logger;
+
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Stream processor tracking the dependencies of services.
@@ -96,7 +97,6 @@ public class ServiceDependencyResolver
         // update injected references
         final Map<ServiceName<?>, ServiceGroupReference<?>> injectedReferences = controller.getInjectedReferences();
         injectedReferences.entrySet()
-            .stream()
             .forEach((e) ->
             {
                 final ServiceName<?> refGroupName = e.getKey();
@@ -169,7 +169,6 @@ public class ServiceDependencyResolver
         // update injected references
         final Map<ServiceName<?>, ServiceGroupReference<?>> injectedReferences = controller.getInjectedReferences();
         injectedReferences.entrySet()
-            .stream()
             .forEach((e) ->
             {
                 final ServiceName<?> refGroupName = e.getKey();
@@ -295,6 +294,14 @@ public class ServiceDependencyResolver
     public Collection<ServiceController> getControllers()
     {
         return installedServices.values();
+    }
+
+    public Collection<ServiceController> getControllerWithoutDependencies()
+    {
+        return getControllers()
+            .stream()
+            .filter((c) -> c.getDependencies().isEmpty())
+            .collect(Collectors.toList());
     }
 
 }

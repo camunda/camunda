@@ -31,5 +31,7 @@ public interface ServiceStartContext extends AsyncContext
 
     <S> CompletableFuture<Void> removeService(ServiceName<S> name);
 
+    <S> boolean hasService(ServiceName<S> name);
+
     ZbActorScheduler getScheduler();
 }
