@@ -51,7 +51,7 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
 
     public static final int HEARTBEAT_INTERVAL_MS = 250;
     public static final int ELECTION_INTERVAL_MS = 1000;
-    public static final int FLUSH_INTERVAL_MS = 500;
+    public static final int FLUSH_INTERVAL_MS = 10;
 
     // environment
     private final SocketAddress socketAddress;
