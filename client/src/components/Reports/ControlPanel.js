@@ -45,8 +45,8 @@ export default class ControlPanel extends React.Component {
     if (option && !option.allowedNext.includes(nextFieldKey)) {
       if(this.getNextField(nextFieldType)) {
         this.props.onChange({
-          [nextFieldType]: '',
-          [this.getNextField(nextFieldType)]: ''
+          [nextFieldType]: reportLabelMap.keyToObject('', nextFieldType),
+          [this.getNextField(nextFieldType)]: reportLabelMap.keyToObject('', this.getNextField(nextFieldType))
         });
       } else {
         this.props.onChange({[nextFieldType]: ''});
@@ -107,21 +107,21 @@ export default class ControlPanel extends React.Component {
           <label htmlFor='ControlPanel__view' className='ControlPanel__label'>View</label>
           <Select className='ControlPanel__select' name='ControlPanel__view' value={reportLabelMap.objectToKey(this.props.view, reportLabelMap.view)} onChange={this.changeView}>
             {addSelectionOption()}
-            {renderOptions(reportLabelMap.getOptions('view'))}
+            {renderOptions('view')}
           </Select>
         </li>
         <li className='ControlPanel__item ControlPanel__item--select'>
           <label htmlFor='ControlPanel__group-by' className='ControlPanel__label'>Group by</label>
           <Select disabled={!this.isViewSelected()} className='ControlPanel__select' name='ControlPanel__group-by' value={reportLabelMap.objectToKey(this.props.groupBy, reportLabelMap.groupBy)} onChange={this.changeGroup}>
             {addSelectionOption()}
-            {this.isViewSelected() && renderOptions(reportLabelMap.getOptions('groupBy'))}
+            {this.isViewSelected() && renderOptions('groupBy')}
           </Select>
         </li>
         <li className='ControlPanel__item ControlPanel__item--select'>
           <label htmlFor='ControlPanel__visualize-as' className='ControlPanel__label'>Visualize as</label>
           <Select disabled={!this.isGroupBySelected() || !this.isViewSelected()} className='ControlPanel__select' name='ControlPanel__visualize-as' value={this.props.visualization} onChange={this.changeVisualization}>
             {addSelectionOption()}
-            {this.isGroupBySelected() && this.isViewSelected() && renderOptions(reportLabelMap.getOptions('visualizeAs'))}
+            {this.isGroupBySelected() && this.isViewSelected() && renderOptions('visualizeAs')}
           </Select>
         </li>
         <li className='ControlPanel__item ControlPanel__item--filter'>
@@ -139,7 +139,9 @@ function addSelectionOption() {
   return <Select.Option value=''>Please select...</Select.Option>;
 }
 
-function renderOptions(options) {
+function renderOptions(type) {
+  const options = reportLabelMap.getOptions(type);
+
   return options.map(({key, label}) => {
     return <Select.Option key={key} value={key}>{label}</Select.Option>;
   });

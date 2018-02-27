@@ -11,7 +11,7 @@ const options = {
         allowedNext:['none_null','startDate_year', 'startDate_month', 'startDate_week', 'startDate_day', 'startDate_hour']
       },
       {
-        key: 'count_flowNode_frequency', 
+        key: 'count_flowNode_frequency',
         label: 'Count Flow Node Frequency',
         allowedNext:['flowNode_null']
       },
@@ -28,7 +28,7 @@ const options = {
     ],
     groupBy: [
       {key: 'none_null', label: 'None', allowedNext:['table', 'number']},
-      {key: 'flowNode_null', label: 'Flow Nodes', allowedNext:['heat', 'pie', 'line', 'bar']},
+      {key: 'flowNode_null', label: 'Flow Nodes', allowedNext:['heat', 'pie', 'line', 'bar', 'table']},
       {key: 'startDate_year', label: 'Start Date of Process Instance - Year', allowedNext:['table', 'pie', 'line', 'bar']},
       {key: 'startDate_month', label: 'Start Date of Process Instance - Month', allowedNext:['table', 'pie', 'line', 'bar']},
       {key: 'startDate_week', label: 'Start Date of Process Instance - Week', allowedNext:['table', 'pie', 'line', 'bar']},
@@ -78,14 +78,19 @@ const options = {
     keyToObject: function(key, type) {
       const data = key.split('_');
       if(type === this.view) {
-          return {operation: data[0], entity: data[1], property: data[2]};
+        if (key === '') return {operation: '', entity: '', property: ''};
+
+        return {operation: data[0], entity: data[1], property: data[2]};
       } else if(type === this.groupBy) {
-          const type = data[0];
-          const unit = data[1] === 'null' ? null : data[1];
-          return {type, unit};
+        if (key === '') return {type: '', unit: null};
+
+        const type = data[0];
+        const unit = data[1] === 'null' ? null : data[1];
+        return {type, unit};
+      } else {
+        return key;
       }
     }
-
   };
 
   export default reportLabelMap;
