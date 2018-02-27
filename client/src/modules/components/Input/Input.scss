@@ -18,5 +18,11 @@ textarea {
   &[disabled="disabled"] {
     cursor: not-allowed;
   }
+  
+  &.is-invalid {
+    border: 1px solid #B5152B;
+    background-color: lighten(#B5152B, 55);
+    color: #B5152B; 
+  }
 
 }
