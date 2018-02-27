@@ -1,10 +1,10 @@
-package org.camunda.optimize.rest;
+package org.camunda.optimize.service.export;
 
+import com.opencsv.CSVReader;
 import org.apache.commons.io.IOUtils;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -19,21 +19,23 @@ import org.junit.rules.RuleChain;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.ALL_VERSIONS;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsNot.not;
 
 /**
  * @author Askar Akhmerov
  */
-public class ExportRestServiceIT {
+public class ExportLimitsIT {
   protected static final String CSV_EXPORT = "export/csv";
   public static final String BEARER = "Bearer ";
 
@@ -49,47 +51,21 @@ public class ExportRestServiceIT {
 
 
   @Test
-  public void exportWithoutAuthorization() {
-    // when
-    Response response =
-        embeddedOptimizeRule.target(CSV_EXPORT + "/fake_id/my_file.csv")
-            .request()
-            .get();
-
-    // then the status code is not authorized
-    assertThat(response.getStatus(), is(401));
-  }
-
-  @Test
-  public void exportExistingReportWithoutFilename() throws IOException {
-    //given
+  public void exportWithOffset() throws Exception {
     String token = embeddedOptimizeRule.getAuthenticationToken();
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     String reportId = createAndStoreDefaultReportDefinition(
         processInstance.getProcessDefinitionKey(),
-        processInstance.getProcessDefinitionVersion()
+        ALL_VERSIONS
     );
+    deployAndStartSimpleProcess();
+    deployAndStartSimpleProcess();
 
-    // when
-    Response response =
-        embeddedOptimizeRule.target(CSV_EXPORT + "/" + reportId + "/")
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
-            .get();
+    embeddedOptimizeRule.getConfigurationService().setExportCsvOffset(1);
+    embeddedOptimizeRule.getConfigurationService().setExportCsvLimit(null);
 
-    // then
-    assertThat(response.getStatus(), is(404));
-  }
-
-  @Test
-  public void exportExistingReport() throws IOException {
-    //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-    ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
-    String reportId = createAndStoreDefaultReportDefinition(
-        processInstance.getProcessDefinitionKey(),
-        processInstance.getProcessDefinitionVersion()
-    );
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
     Response response =
@@ -98,27 +74,89 @@ public class ExportRestServiceIT {
             .header(HttpHeaders.AUTHORIZATION, BEARER + token)
             .get();
 
-    // then
+
     assertThat(response.getStatus(), is(200));
     ByteArrayOutputStream bos = new ByteArrayOutputStream();
     IOUtils.copy(response.readEntity(InputStream.class), bos);
     byte[] result = bos.toByteArray();
-    assertThat(result.length, is(not(0)));
+    CSVReader reader = new CSVReader(new InputStreamReader(new ByteArrayInputStream(result)));
+
+    // then
+    List<String[]> csvLines = reader.readAll();
+    assertThat(csvLines.size(), is(3));
+    reader.close();
   }
 
   @Test
-  public void exportNotExistingReport() {
-    //given
+  public void exportWithLimit() throws Exception {
     String token = embeddedOptimizeRule.getAuthenticationToken();
+    ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
+    String reportId = createAndStoreDefaultReportDefinition(
+        processInstance.getProcessDefinitionKey(),
+        ALL_VERSIONS
+    );
+    deployAndStartSimpleProcess();
+    deployAndStartSimpleProcess();
+
+    embeddedOptimizeRule.getConfigurationService().setExportCsvOffset(null);
+    embeddedOptimizeRule.getConfigurationService().setExportCsvLimit(1);
+
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
     Response response =
-        embeddedOptimizeRule.target(CSV_EXPORT + "/fake_id/my_file.csv")
+        embeddedOptimizeRule.target(CSV_EXPORT + "/" + reportId + "/my_file.csv")
             .request()
             .header(HttpHeaders.AUTHORIZATION, BEARER + token)
-            .post(Entity.json(new AlertCreationDto()));
-    // then the status code is not authorized
-    assertThat(response.getStatus(), is(500));
+            .get();
+
+
+    assertThat(response.getStatus(), is(200));
+    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+    IOUtils.copy(response.readEntity(InputStream.class), bos);
+    byte[] result = bos.toByteArray();
+    CSVReader reader = new CSVReader(new InputStreamReader(new ByteArrayInputStream(result)));
+
+    // then
+    assertThat(reader.readAll().size(), is(2));
+    reader.close();
+  }
+
+  @Test
+  public void exportWithOffsetAndLimit() throws Exception {
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+    ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
+    String reportId = createAndStoreDefaultReportDefinition(
+        processInstance.getProcessDefinitionKey(),
+        ALL_VERSIONS
+    );
+    deployAndStartSimpleProcess();
+    deployAndStartSimpleProcess();
+
+    embeddedOptimizeRule.getConfigurationService().setExportCsvOffset(1);
+    embeddedOptimizeRule.getConfigurationService().setExportCsvLimit(1);
+
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    Response response =
+        embeddedOptimizeRule.target(CSV_EXPORT + "/" + reportId + "/my_file.csv")
+            .request()
+            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+            .get();
+
+
+    assertThat(response.getStatus(), is(200));
+    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+    IOUtils.copy(response.readEntity(InputStream.class), bos);
+    byte[] result = bos.toByteArray();
+    CSVReader reader = new CSVReader(new InputStreamReader(new ByteArrayInputStream(result)));
+
+    // then
+    assertThat(reader.readAll().size(), is(2));
+    reader.close();
   }
 
   private String createAndStoreDefaultReportDefinition(String processDefinitionKey,

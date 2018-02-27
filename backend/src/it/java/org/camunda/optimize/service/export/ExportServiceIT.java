@@ -131,7 +131,6 @@ public class ExportServiceIT {
     this.expectedCSV = expectedCSV;
   }
 
-
   @Test
   public void reportCsvHasExpectedValue() throws Exception {
     //given

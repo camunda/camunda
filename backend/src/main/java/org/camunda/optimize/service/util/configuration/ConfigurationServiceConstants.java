@@ -101,6 +101,7 @@ public interface ConfigurationServiceConstants {
   String CONTAINER_HTTPS_PORT = "$.container.ports.https";
   String CONTAINER_HTTP_PORT = "$.container.ports.http";
 
-
+  String EXPORT_CSV_LIMIT = "$.export.csv.limit";
+  String EXPORT_CSV_OFFSET = "$.export.csv.offset";
 
 }

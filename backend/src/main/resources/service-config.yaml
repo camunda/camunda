@@ -275,3 +275,7 @@ alerting:
     # States how the connection to the server should be secured.
     # Possible values are 'NONE', 'STARTTLS' or 'SSL/TLS'
     securityProtocol: 'NONE'
+export:
+  csv:
+    limit: 1000
+    offset: 0

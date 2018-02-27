@@ -19,13 +19,15 @@ import javax.ws.rs.core.Response;
 @Secured
 @Component
 public class ExportRestService {
-
   @Autowired
   private ExportService exportService;
 
   @GET
-  @Path("/csv/{reportId}/{fileName}")
-  public Response getCsvReport (@PathParam("reportId") String reportId, @PathParam("fileName") String fileName) {
+  @Path("csv/{reportId}/{fileName}")
+  public Response getCsvReport (
+      @PathParam("reportId") String reportId,
+      @PathParam("fileName") String fileName
+  ) {
     String resultFileName = fileName == null ? System.currentTimeMillis() + ".csv" : fileName;
     return Response.ok(exportService.getCSVForReport(reportId), MediaType.APPLICATION_OCTET_STREAM)
         .header("Content-Disposition", "attachment; filename=" + resultFileName)

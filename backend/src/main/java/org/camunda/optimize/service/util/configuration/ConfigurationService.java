@@ -133,6 +133,9 @@ public class ConfigurationService {
   private Integer alertEmailPort;
   private String alertEmailProtocol;
 
+  private Integer exportCsvLimit;
+  private Integer exportCsvOffset;
+
   private Properties quartzProperties;
 
 
@@ -977,6 +980,28 @@ public class ConfigurationService {
       alertEmailProtocol = jsonContext.read(ConfigurationServiceConstants.EMAIL_PROTOCOL);
     }
     return alertEmailProtocol;
+  }
+
+  public Integer getExportCsvLimit() {
+    if (exportCsvLimit == null) {
+      exportCsvLimit = jsonContext.read(ConfigurationServiceConstants.EXPORT_CSV_LIMIT);
+    }
+    return exportCsvLimit;
+  }
+
+  public Integer getExportCsvOffset() {
+    if (exportCsvOffset == null) {
+      exportCsvOffset = jsonContext.read(ConfigurationServiceConstants.EXPORT_CSV_OFFSET);
+    }
+    return exportCsvOffset;
+  }
+
+  public void setExportCsvLimit(Integer exportCsvLimit) {
+    this.exportCsvLimit = exportCsvLimit;
+  }
+
+  public void setExportCsvOffset(Integer exportCsvOffset) {
+    this.exportCsvOffset = exportCsvOffset;
   }
 
   public void setVariableImportPluginBasePackages(List<String> variableImportPluginBasePackages) {

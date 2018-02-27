@@ -9,6 +9,7 @@ import org.camunda.optimize.dto.optimize.query.report.result.raw.RawDataProcessI
 import org.camunda.optimize.dto.optimize.query.report.result.raw.RawDataReportResultDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.report.ReportService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +19,6 @@ import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -31,10 +31,21 @@ public class ExportService {
   @Autowired
   private ReportService reportService;
 
+  @Autowired
+  private ConfigurationService configurationService;
+
   private Logger logger = LoggerFactory.getLogger(getClass());
 
-  private byte[] writeRawDataToBytes(Map<String, Long> result, GroupByDto groupBy, ViewDto view) {
-    List<String[]> csvStrings = CSVUtils.map(result);
+  private byte[] writeRawDataToBytes(
+      Map<String, Long> result,
+      GroupByDto groupBy,
+      ViewDto view,
+      Integer limit,
+      Integer offset
+  ) {
+
+    List<String[]> csvStrings = CSVUtils.map(result, limit, offset);
+
     String[] header = new String [2];
     String unit = groupBy.getUnit() != null ? "_" + groupBy.getUnit() : "";
     header[0] = groupBy.getType() + unit;
@@ -45,8 +56,8 @@ public class ExportService {
     return bytes;
   }
 
-  public byte[] writeRawDataToBytes (List<RawDataProcessInstanceDto> rawData) {
-    List<String[]> csvStrings = CSVUtils.map(rawData);
+  public byte[] writeRawDataToBytes(List<RawDataProcessInstanceDto> rawData, Integer limit, Integer offset) {
+    List<String[]> csvStrings = CSVUtils.map(rawData, limit, offset);
 
     byte[] bytes = getCSVBytes(csvStrings);
 
@@ -72,7 +83,7 @@ public class ExportService {
     return bytes;
   }
 
-  public byte[] getCSVForReport(String reportId) {
+  public byte[] getCSVForReport(String reportId, Integer limit, Integer offset) {
 
     Optional<ReportResultDto> reportResultDto = Optional.empty();
     try {
@@ -87,13 +98,20 @@ public class ExportService {
       byte[] bytes = null;
       if (reportResult.getClass().equals(RawDataReportResultDto.class)) {
         RawDataReportResultDto cast = (RawDataReportResultDto) reportResult;
-        bytes = this.writeRawDataToBytes(cast.getResult());
+        bytes = this.writeRawDataToBytes(
+            cast.getResult(),
+            limit,
+            offset
+        );
+
       } else if (reportResult.getClass().equals(MapReportResultDto.class)) {
         MapReportResultDto cast = (MapReportResultDto) reportResult;
         bytes = this.writeRawDataToBytes(
             cast.getResult(),
             reportResult.getData().getGroupBy(),
-            reportResult.getData().getView()
+            reportResult.getData().getView(),
+            limit,
+            offset
         );
       }
       return bytes;
@@ -103,4 +121,11 @@ public class ExportService {
   }
 
 
+  public byte[] writeRawDataToBytes(List<RawDataProcessInstanceDto> toMap) {
+    return this.writeRawDataToBytes(toMap, null, null);
+  }
+
+  public byte[] getCSVForReport(String reportId) {
+    return this.getCSVForReport(reportId, configurationService.getExportCsvLimit(), configurationService.getExportCsvOffset());
+  }
 }

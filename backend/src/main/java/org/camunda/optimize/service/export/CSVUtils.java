@@ -8,7 +8,6 @@ import java.beans.IntrospectionException;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -23,7 +22,7 @@ public class CSVUtils {
   private static final String VARIABLE_PREFIX = "variable:";
   private static Logger logger = LoggerFactory.getLogger(CSVUtils.class);
 
-  public static List<String[]> map(List<RawDataProcessInstanceDto> rawData) {
+  public static List<String[]> map(List<RawDataProcessInstanceDto> rawData, Integer limit, Integer offset) {
     List<String[]> result = new ArrayList<>();
 
     Set<String> variableKeys = new HashSet<>();
@@ -36,12 +35,18 @@ public class CSVUtils {
     String[] headerLine = constructHeaderLine(variableKeys);
     result.add(headerLine);
 
+    int currentPosition = 0;
     for (RawDataProcessInstanceDto pi : rawData) {
-      String[] dataLine = newEmptyDataLine(variableKeys);
-      for (int i = 0; i < dataLine.length; i++) {
-        dataLine[i] = getDataValueForHeader(headerLine[i], pi);
+      boolean limitNotExceeded = isLimitNotExceeded(limit, result);
+      boolean offsetPassed = isOffsetPassed(offset, currentPosition);
+      if ((offset == null && limitNotExceeded) || (offsetPassed && limitNotExceeded)) {
+        String[] dataLine = newEmptyDataLine(variableKeys);
+        for (int i = 0; i < dataLine.length; i++) {
+          dataLine[i] = getDataValueForHeader(headerLine[i], pi);
+        }
+        result.add(dataLine);
       }
-      result.add(dataLine);
+      currentPosition = currentPosition + 1;
     }
 
     for (int i = 0; i < result.get(0).length; i++) {
@@ -51,6 +56,10 @@ public class CSVUtils {
     }
 
     return result;
+  }
+
+  public static boolean isOffsetPassed(Integer offset, int currentPosition) {
+    return offset != null && currentPosition >= offset;
   }
 
   private static String getDataValueForHeader(String headerName, RawDataProcessInstanceDto pi) {
@@ -112,15 +121,29 @@ public class CSVUtils {
     return new String[sizeWithoutMap + variableKeys.size()];
   }
 
-  public static List<String[]> map(Map<String, Long> valuesMap) {
+  public static List<String[]> map(Map<String, Long> valuesMap, Integer limit, Integer offset) {
     List<String[]> result = new ArrayList<>();
 
+    int currentPosition = 0;
     for (Map.Entry<String, Long> value : valuesMap.entrySet()) {
-      String[] line = new String[2];
-      line[0] = value.getKey();
-      line[1] = value.getValue().toString();
-      result.add(line);
+      boolean limitNotExceeded = isLimitNotExceeded(limit, result);
+      boolean offsetPassed = isOffsetPassed(offset, currentPosition);
+      if ((offset == null && limitNotExceeded) || (offsetPassed && limitNotExceeded)) {
+        String[] line = new String[2];
+        line[0] = value.getKey();
+        line[1] = value.getValue().toString();
+        result.add(line);
+      }
+      currentPosition = currentPosition + 1;
     }
     return result;
+  }
+
+  public static boolean isLimitNotExceeded(Integer limit, List<String[]> result) {
+    return limit == null || (limit != null && result.size() <= limit);
+  }
+
+  public static List<String[]> map(List<RawDataProcessInstanceDto> toMap) {
+    return CSVUtils.map(toMap, null, null);
   }
 }
