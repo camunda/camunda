@@ -30,7 +30,7 @@
     <version.build-tools>0.1.0</version.build-tools>
 
     <!-- EXTERNAL LIBS -->
-    <version.agrona>0.9.12</version.agrona>
+    <version.agrona>0.9.13</version.agrona>
     <version.junit>4.12</version.junit>
     <version.mockito>2.13.0</version.mockito>
     <version.assertj>3.8.0</version.assertj>
