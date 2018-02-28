@@ -120,7 +120,6 @@ public class ProcessDefinitionReader {
   }
 
   public String getProcessDefinitionXml(String processDefinitionKey, String processDefinitionVersion) {
-    processDefinitionVersion = convertToValidVersion(processDefinitionKey, processDefinitionVersion);
     ProcessDefinitionXmlOptimizeDto processDefinitionXmlDto = getProcessDefinitionXmlDto(processDefinitionKey, processDefinitionVersion);
     return processDefinitionXmlDto == null ? null : processDefinitionXmlDto.getBpmn20Xml();
   }
@@ -134,6 +133,7 @@ public class ProcessDefinitionReader {
   }
 
   private ProcessDefinitionXmlOptimizeDto getProcessDefinitionXmlDto(String processDefinitionKey, String processDefinitionVersion) {
+    processDefinitionVersion = convertToValidVersion(processDefinitionKey, processDefinitionVersion);
     SearchResponse response = esclient.prepareSearch(
         configurationService.getOptimizeIndex(configurationService.getProcessDefinitionXmlType()))
         .setQuery(
@@ -154,11 +154,6 @@ public class ProcessDefinitionReader {
       );
     }
     return xml;
-  }
-
-  public String getProcessDefinitionXml(String processDefinitionId) {
-    ProcessDefinitionXmlOptimizeDto processDefinitionXmlDto = getProcessDefinitionXmlDto(processDefinitionId);
-    return processDefinitionXmlDto == null ? null : processDefinitionXmlDto.getBpmn20Xml();
   }
 
   private ProcessDefinitionXmlOptimizeDto getProcessDefinitionXmlDto(String processDefinitionId) {
