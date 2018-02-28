@@ -27,8 +27,6 @@ export default class Tooltip extends React.Component {
   };
 
   removeOverlays = (viewer) => {
-    viewer.get('overlays').clear();
+    viewer.get('overlays').remove({type: 'TOOLTIP'});
   }
-
-
 }

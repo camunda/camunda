@@ -7,7 +7,8 @@ import {calculateTargetValueHeat, convertToMilliseconds} from './service';
 import {formatters} from 'services';
 
 jest.mock('components', () => {return {
-  BPMNDiagram: props => <div id='diagram'>Diagram {props.children} {props.xml}</div>
+  BPMNDiagram: props => <div id='diagram'>Diagram {props.children} {props.xml}</div>,
+  TargetValueBadge: () => <div>TargetValuesBadge</div>
 }});
 jest.mock('./HeatmapOverlay', () => props => <div>HeatmapOverlay</div>);
 

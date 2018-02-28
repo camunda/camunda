@@ -37,6 +37,7 @@ jest.mock('components', () =>{
     Button: props => <button {...props} active="true">{props.children}</button>,
     ButtonGroup: props => <div {...props}>{props.children}</div>,
     BPMNDiagram: () => <div>BPMNDiagram</div>,
+    TargetValueBadge: () => <div>TargetValueBadge</div>,
     Input: props => <input ref={props.reference} id={props.id} readOnly={props.readOnly} type={props.type} onChange={props.onChange} value={props.value} className={props.className}/>,
     Table: ({body}) => <div>{JSON.stringify(body.map(row => [row[0], row[1]]))}</div>
   }

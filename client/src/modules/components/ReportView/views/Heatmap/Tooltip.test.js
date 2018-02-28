@@ -8,13 +8,12 @@ jest.mock('./service', () => {return {
   addDiagramTooltip: jest.fn()
 }});
 
-const onSpy = jest.fn();
-const clearSpy = jest.fn();
+const removeSpy = jest.fn();
 
 const viewer = {
   get: () => { return {
     on:  (__, fct) => {return fct({element: {id: 'elementId'}});},
-    clear: clearSpy
+    remove: removeSpy
   }}
 };
 const data = { elementId: 'elementName'};
@@ -26,9 +25,8 @@ it('should create a tooltip', () => {
 });
 
 it('should remove old tooltips on rerendering', () => {
-  clearSpy.mockClear();
+  removeSpy.mockClear();
   mount(<Tooltip viewer={viewer} data={data} formatter={v=>v} />);
 
-  expect(clearSpy).toHaveBeenCalledTimes(1);
+  expect(removeSpy).toHaveBeenCalledTimes(1);
 });
-

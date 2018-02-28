@@ -13,20 +13,25 @@ export function frequency(number) {
   return formattedNumberString.replace(/\s/g, separator);
 }
 
-export function duration(time) {
+export function duration(timeObject) {
+  const units = [
+    {name: 'y',   longName: 'years',   value: 1000 * 60 * 60 * 24 * 30 * 12},
+    {name: 'm',   longName: 'months',  value: 1000 * 60 * 60 * 24 * 30},
+    {name: 'wk',  longName: 'weeks',   value: 1000 * 60 * 60 * 24 * 7},
+    {name: 'd',   longName: 'days',    value: 1000 * 60 * 60 * 24},
+    {name: 'h',   longName: 'hours',   value: 1000 * 60 * 60},
+    {name: 'min', longName: 'minutes', value: 1000 * 60},
+    {name: 's',   longName: 'seconds', value: 1000},
+    {name: 'ms',  longName: 'millis',  value: 1}
+  ];
+
+  const time = typeof timeObject === 'object' ?
+    timeObject.value * units.find(({longName}) => longName === timeObject.unit).value :
+    timeObject;
+
   if (time === 0) {
     return '0ms';
   }
-
-  const units = [
-    {name: 'y',   value: 1000 * 60 * 60 * 24 * 30 * 12},
-    {name: 'm',   value: 1000 * 60 * 60 * 24 * 30},
-    {name: 'd',   value: 1000 * 60 * 60 * 24},
-    {name: 'h',   value: 1000 * 60 * 60},
-    {name: 'min', value: 1000 * 60},
-    {name: 's',   value: 1000},
-    {name: 'ms',  value: 1}
-  ];
 
   const timeSegments = [];
   let remainingTime = time;

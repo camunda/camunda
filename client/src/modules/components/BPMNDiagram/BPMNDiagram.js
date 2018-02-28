@@ -25,7 +25,11 @@ export default class BPMNDiagram extends React.Component {
 
   render() {
     return <div className='BPMNDiagram' style={this.props.style} ref={this.storeContainer}>
-      {this.state.loaded && this.props.children && React.cloneElement(this.props.children, { viewer: this.viewer })}
+      {this.state.loaded && this.props.children &&
+        React.Children.map(this.props.children, child =>
+          React.cloneElement(child, { viewer: this.viewer })
+        )
+      }
     </div>;
   }
 

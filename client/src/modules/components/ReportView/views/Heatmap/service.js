@@ -224,7 +224,7 @@ export function addDiagramTooltip(viewer, element, tooltipContent) {
   }
 
   // add overlay to viewer
-  return viewer.get('overlays').add(element, {
+  return viewer.get('overlays').add(element, 'TOOLTIP', {
     position,
     show: {
       minZoom: -Infinity,

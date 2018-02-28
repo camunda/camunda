@@ -22,4 +22,4 @@ export {Popover} from './Popover';
 export {DashboardView} from './DashboardView'
 export {DashboardObject} from './DashboardView'
 export {ProcessDefinitionSelection} from './ProcessDefinitionSelection'
-
+export {TargetValueBadge} from './TargetValueBadge';

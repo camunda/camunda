@@ -5,7 +5,7 @@ import Viewer from 'bpmn-js/lib/NavigatedViewer';
 
 import TargetValueDiagramBehavior from './TargetValueDiagramBehavior';
 
-import {ButtonGroup, Button, Modal, BPMNDiagram, Table, Input, Select} from 'components';
+import {ButtonGroup, Button, Modal, BPMNDiagram, Table, Input, Select, TargetValueBadge} from 'components';
 import settingsIcon from './settings.svg';
 import {formatters} from 'services';
 
@@ -248,6 +248,7 @@ export default class TargetValueComparison extends React.Component {
           <div className='TargetValueComparison__DiagramContainer'>
             <BPMNDiagram xml={this.props.configuration.xml}>
               <TargetValueDiagramBehavior onClick={this.updateFocus} focus={this.state.focus} />
+              <TargetValueBadge values={this.state.values} />
             </BPMNDiagram>
           </div>
           <Table

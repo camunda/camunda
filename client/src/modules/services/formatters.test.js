@@ -42,4 +42,12 @@ describe('durationFormatter', () => {
   it('should handle single millisecond durations', () => {
     expect(durationFormatter(1)).toBe('1ms');
   });
+
+  it('should handle a time object', () => {
+    expect(durationFormatter({value: 14, unit: 'seconds'})).toBe('14s');
+  });
+
+  it('should normalize a time object', () => {
+    expect(durationFormatter({value: 15, unit: 'days'})).toBe(`2wk${nbsp}1d`);
+  });
 });
