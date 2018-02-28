@@ -8,7 +8,10 @@ export default class HeatmapOverlay extends React.Component {
   heatmap = undefined;
 
   render() {
-    return <Tooltip viewer={this.props.viewer} data={this.props.data} formatter={this.props.formatter} />;
+    if(this.props.formatter) {
+      return <Tooltip viewer={this.props.viewer} data={this.props.data} formatter={this.props.formatter} />;
+    }
+    return null;
   }
 
   componentDidMount() {

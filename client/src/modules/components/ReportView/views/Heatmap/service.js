@@ -106,7 +106,7 @@ function generateData(values, viewer, {x: xOffset, y: yOffset}) {
   for (const key in values) {
     const element = elementRegistry.get(key);
 
-    if (!element) {
+    if (!element || typeof values[key] !== 'number') {
       // for example for multi instance bodies
       continue;
     }
@@ -183,7 +183,6 @@ export function addDiagramTooltip(viewer, element, tooltipContent) {
     document.createTextNode(tooltipContent);
 
   overlayHtml.querySelector('.Tooltip__text-top').appendChild(tooltipContentNode);
-
   // calculate overlay width
   document.body.appendChild(overlayHtml);
   const overlayWidth = overlayHtml.clientWidth;
@@ -233,4 +232,35 @@ export function addDiagramTooltip(viewer, element, tooltipContent) {
     },
     html: overlayHtml
   });
+}
+
+export function calculateTargetValueHeat(durationData, targetValues) {
+  const data = {};
+
+  Object.keys(targetValues).forEach(element => {
+    const targetValueInMs = convertToMilliseconds(targetValues[element].value, targetValues[element].unit);
+
+    if(durationData[element] > targetValueInMs) {
+      data[element] = (durationData[element] / targetValueInMs) - 1;
+    } else {
+      data[element] = null;
+    }
+  });
+
+  return data;
+}
+
+const units = {
+  years: 1000 * 60 * 60 * 24 * 30 * 12,
+  months: 1000 * 60 * 60 * 24 * 30,
+  weeks: 1000 * 60 * 60 * 24 * 7,
+  days: 1000 * 60 * 60 * 24,
+  hours: 1000 * 60 * 60,
+  minutes: 1000 * 60,
+  seconds: 1000,
+  millis: 1
+};
+
+export function convertToMilliseconds(value, unit) {
+  return value * units[unit];
 }

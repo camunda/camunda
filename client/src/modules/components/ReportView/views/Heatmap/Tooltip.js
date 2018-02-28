@@ -22,7 +22,7 @@ export default class Tooltip extends React.Component {
     this.removeOverlays(viewer);
     const value = this.props.data[id];
     if (value !== undefined) {
-      addDiagramTooltip(viewer, id, this.props.formatter(value));
+      addDiagramTooltip(viewer, id, this.props.formatter(value, id));
     }
   };
 

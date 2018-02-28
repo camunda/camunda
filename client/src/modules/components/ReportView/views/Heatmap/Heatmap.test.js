@@ -2,11 +2,24 @@ import React from 'react';
 import {mount} from 'enzyme';
 
 import Heatmap from './Heatmap';
+import HeatmapOverlay from './HeatmapOverlay';
+import {calculateTargetValueHeat, convertToMilliseconds} from './service';
+import {formatters} from 'services';
 
 jest.mock('components', () => {return {
   BPMNDiagram: props => <div id='diagram'>Diagram {props.children} {props.xml}</div>
 }});
 jest.mock('./HeatmapOverlay', () => props => <div>HeatmapOverlay</div>);
+
+jest.mock('./service', () => {return {
+  calculateTargetValueHeat: jest.fn(),
+  convertToMilliseconds: jest.fn()
+}});
+
+jest.mock('services', () => {
+  const durationFct = jest.fn();
+  return {formatters: {duration: durationFct}
+}});
 
 const diagramXml = 'some diagram XML';
 const data = {'a': 1, 'b': 2};
@@ -49,10 +62,38 @@ it('should display a heatmap overlay', () => {
   expect(node).toIncludeText('HeatmapOverlay');
 });
 
-it('should not display the default heatmap overlay when targetValueMode is active', () => {
-  const node = mount(<Heatmap data={data} xml={diagramXml} targetValue={{active: true}} />);
+it('should convert the data to target value heat when target value mode is active', () => {
+  const targetValue = {
+    active: true,
+    values: 'some values'
+  };
 
-  expect(node).not.toIncludeText('HeatmapOverlay');
+  mount(<Heatmap data={data} xml={diagramXml} targetValue={targetValue} />);
+
+  expect(calculateTargetValueHeat).toHaveBeenCalledWith(data, targetValue.values);
+});
+
+it('should show a tooltip with information about actual and target value', () => {
+  const targetValue = {
+    active: true,
+    values: {
+      b: {value: 1, unit: 'millis'}
+    }
+  };
+
+  calculateTargetValueHeat.mockReturnValue({b: 1});
+  formatters.duration
+    .mockReturnValueOnce('1ms')
+    .mockReturnValueOnce('2ms');
+  convertToMilliseconds.mockReturnValue(1);
+
+  const node = mount(<Heatmap data={data} xml={diagramXml} targetValue={targetValue} />);
+
+  const tooltip = node.find(HeatmapOverlay).props().formatter('', 'b');
+
+  expect(tooltip.textContent).toContain('target duration: 1ms'.replace(/ /g, '\u00A0'));
+  expect(tooltip.textContent).toContain('actual duration: 2ms'.replace(/ /g, '\u00A0'));
+  expect(tooltip.textContent).toContain('100% above target value'.replace(/ /g, '\u00A0'));
 });
 
 it('should not display an error message if data is valid', () => {
