@@ -58,6 +58,7 @@ public class LogStreamRule extends ExternalResource
                               .build();
 
         logStream.open();
+        logStream.openLogStreamController().join();
     }
 
     @Override

@@ -15,10 +15,7 @@
  */
 package io.zeebe.logstreams.integration;
 
-import static io.zeebe.logstreams.integration.util.LogIntegrationTestUtil.waitUntilWrittenEvents;
-import static io.zeebe.logstreams.integration.util.LogIntegrationTestUtil.waitUntilWrittenKey;
-import static io.zeebe.logstreams.integration.util.LogIntegrationTestUtil.writeLogEvents;
-import static io.zeebe.logstreams.integration.util.LogIntegrationTestUtil.writeLogEventsAndReturnPosition;
+import static io.zeebe.logstreams.integration.util.LogIntegrationTestUtil.*;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -33,34 +30,16 @@ import java.util.function.Predicate;
 
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.integration.util.Counter;
-import io.zeebe.logstreams.log.BufferedLogStreamReader;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamBatchWriter;
-import io.zeebe.logstreams.log.LogStreamBatchWriterImpl;
-import io.zeebe.logstreams.log.LogStreamReader;
-import io.zeebe.logstreams.log.LogStreamWriter;
-import io.zeebe.logstreams.log.LogStreamWriterImpl;
-import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.processor.EventProcessor;
-import io.zeebe.logstreams.processor.StreamProcessor;
-import io.zeebe.logstreams.processor.StreamProcessorContext;
-import io.zeebe.logstreams.processor.StreamProcessorController;
+import io.zeebe.logstreams.log.*;
+import io.zeebe.logstreams.processor.*;
 import io.zeebe.logstreams.snapshot.SerializableWrapper;
-import io.zeebe.logstreams.spi.ReadableSnapshot;
-import io.zeebe.logstreams.spi.SnapshotStorage;
-import io.zeebe.logstreams.spi.SnapshotSupport;
-import io.zeebe.logstreams.spi.SnapshotWriter;
+import io.zeebe.logstreams.spi.*;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.TestUtil;
-import io.zeebe.util.sched.ActorCondition;
-import io.zeebe.util.sched.FutureUtil;
-import io.zeebe.util.sched.ZbActor;
+import io.zeebe.util.sched.*;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 import org.mockito.Mockito;
@@ -114,6 +93,7 @@ public class StreamProcessorIntegrationTest
                 .build();
 
         logStream.open();
+        logStream.openLogStreamController().join();
         autoCloseableRule.manage(logStream);
 
         controllers = new ArrayList<>();

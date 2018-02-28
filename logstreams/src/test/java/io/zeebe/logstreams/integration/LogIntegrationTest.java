@@ -15,26 +15,17 @@
  */
 package io.zeebe.logstreams.integration;
 
-import static io.zeebe.logstreams.integration.util.LogIntegrationTestUtil.readLogAndAssertEvents;
-import static io.zeebe.logstreams.integration.util.LogIntegrationTestUtil.waitUntilWrittenEvents;
-import static io.zeebe.logstreams.integration.util.LogIntegrationTestUtil.writeLogEvents;
+import static io.zeebe.logstreams.integration.util.LogIntegrationTestUtil.*;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
 import java.nio.ByteBuffer;
 
 import io.zeebe.logstreams.LogStreams;
-import io.zeebe.logstreams.log.BufferedLogStreamReader;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamBatchWriter;
-import io.zeebe.logstreams.log.LogStreamBatchWriterImpl;
-import io.zeebe.logstreams.log.LogStreamReader;
+import io.zeebe.logstreams.log.*;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 
 public class LogIntegrationTest
@@ -63,6 +54,7 @@ public class LogIntegrationTest
                 .build();
 
         logStream.open();
+        logStream.openLogStreamController().join();
     }
 
     @After

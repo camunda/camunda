@@ -15,33 +15,27 @@
  */
 package io.zeebe.logstreams.integration;
 
+import static io.zeebe.logstreams.integration.util.LogIntegrationTestUtil.waitUntilWrittenKey;
+import static io.zeebe.logstreams.integration.util.LogIntegrationTestUtil.writeLogEvents;
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.time.Duration;
+import java.util.concurrent.ExecutionException;
+
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.fs.FsLogStreamBuilder;
-import io.zeebe.logstreams.impl.snapshot.fs.FsSnapshotStorage;
-import io.zeebe.logstreams.impl.snapshot.fs.FsSnapshotStorageConfiguration;
-import io.zeebe.logstreams.impl.snapshot.fs.FsSnapshotWriter;
+import io.zeebe.logstreams.impl.snapshot.fs.*;
 import io.zeebe.logstreams.integration.util.LogIntegrationTestUtil;
-import io.zeebe.logstreams.log.BufferedLogStreamReader;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamReader;
+import io.zeebe.logstreams.log.*;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.ZbActor;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.agrona.DirectBuffer;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.TemporaryFolder;
-
-import java.time.Duration;
-import java.util.concurrent.ExecutionException;
-
-import static io.zeebe.logstreams.integration.util.LogIntegrationTestUtil.waitUntilWrittenKey;
-import static io.zeebe.logstreams.integration.util.LogIntegrationTestUtil.writeLogEvents;
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class LogRecoveryTest
 {
@@ -141,6 +135,7 @@ public class LogRecoveryTest
         final LogStream logStream = logStreamBuilder.build();
         scheduleCommitPositionUpdated(logStream);
         logStream.open();
+        logStream.openLogStreamController().join();
         writeLogEvents(logStream, WORK_COUNT, MSG_SIZE, 0);
         waitUntilWrittenKey(logStream, WORK_COUNT);
 
@@ -163,6 +158,7 @@ public class LogRecoveryTest
         final LogStream logStream = logStreamBuilder.build();
         scheduleCommitPositionUpdated(logStream);
         logStream.open();
+        logStream.openLogStreamController().join();
         writeLogEvents(logStream, WORK_COUNT, MSG_SIZE, 0);
         waitUntilWrittenKey(logStream, WORK_COUNT);
         logStream.close();
@@ -178,7 +174,6 @@ public class LogRecoveryTest
             .indexBlockSize(INDEX_BLOCK_SIZE)
             .readBlockSize(INDEX_BLOCK_SIZE)
             .actorScheduler(actorScheduler.get())
-            .logStreamControllerDisabled(true)
             .build();
         newLog.open();
 
@@ -199,6 +194,8 @@ public class LogRecoveryTest
         final LogStream log = logStreamBuilder.build();
         scheduleCommitPositionUpdated(log);
         log.open();
+        log.openLogStreamController().join();
+
         writeLogEvents(log, WORK_COUNT / 2, MSG_SIZE, 0);
         waitUntilWrittenKey(log, WORK_COUNT / 2);
         final int indexSize = log.getLogBlockIndex().size();
@@ -214,7 +211,6 @@ public class LogRecoveryTest
 
         // when new log stream is opened
         final LogStream newLog = getLogStreamBuilder()
-            .logStreamControllerDisabled(true)
             .build();
         newLog.setCommitPosition(Long.MAX_VALUE);
         newLog.open();
@@ -237,6 +233,7 @@ public class LogRecoveryTest
         final LogStream log = logStreamBuilder.build();
         scheduleCommitPositionUpdated(log);
         log.open();
+        log.openLogStreamController().join();
         writeLogEvents(log, WORK_COUNT / 2, MSG_SIZE, 0);
         waitUntilWrittenKey(log, WORK_COUNT / 2);
         final int indexSize = log.getLogBlockIndex().size();
@@ -260,7 +257,6 @@ public class LogRecoveryTest
             .indexBlockSize(INDEX_BLOCK_SIZE)
             .readBlockSize(INDEX_BLOCK_SIZE)
             .actorScheduler(actorScheduler.get())
-            .logStreamControllerDisabled(true)
             .build();
         newLog.open();
 
@@ -288,6 +284,7 @@ public class LogRecoveryTest
         scheduleCommitPositionUpdated(log);
         controlledActorClock.addTime(Duration.ofMinutes(1));
         log.open();
+        log.openLogStreamController().join();
         writeLogEvents(log, WORK_COUNT, MSG_SIZE, 0);
         waitUntilWrittenKey(log, WORK_COUNT);
         TestUtil.waitUntil(() -> wrappedSnapshotStorage.lastSnapshotPosition > 0);
@@ -300,7 +297,6 @@ public class LogRecoveryTest
             .indexBlockSize(INDEX_BLOCK_SIZE)
             .readBlockSize(INDEX_BLOCK_SIZE)
             .actorScheduler(actorScheduler.get())
-            .logStreamControllerDisabled(true)
             .build();
         newLog.open();
 
@@ -321,6 +317,7 @@ public class LogRecoveryTest
         final LogStream log = logStreamBuilder.build();
         scheduleCommitPositionUpdated(log);
         log.open();
+        log.openLogStreamController().join();
 
         // write events
         writeLogEvents(log, 2 * WORK_COUNT_PER_BLOCK_IDX, MSG_SIZE, 0);
@@ -334,6 +331,7 @@ public class LogRecoveryTest
         final LogStream newLog = getLogStreamBuilder().build();
         newLog.setCommitPosition(Long.MAX_VALUE);
         newLog.open();
+        newLog.openLogStreamController().join();
 
         // check if new log creates indices
         // perhaps not equal since he has to process all events
@@ -358,6 +356,7 @@ public class LogRecoveryTest
         final LogStream logStream = logStreamBuilder.build();
         scheduleCommitPositionUpdated(logStream);
         logStream.open();
+        logStream.openLogStreamController().join();
         // write events
         writeLogEvents(logStream, WORK_COUNT_PER_BLOCK_IDX / 10, MSG_SIZE, 0);
         waitUntilWrittenKey(logStream, WORK_COUNT_PER_BLOCK_IDX / 10);
@@ -368,6 +367,7 @@ public class LogRecoveryTest
 
         // resume the log
         logStream.open();
+        logStream.openLogStreamController().join();
 
         // write more events
         writeLogEvents(logStream, 2 * WORK_COUNT_PER_BLOCK_IDX, MSG_SIZE, WORK_COUNT_PER_BLOCK_IDX / 10);
@@ -388,7 +388,6 @@ public class LogRecoveryTest
     {
         final LogStream newLog = getLogStreamBuilder()
             .deleteOnClose(true)
-            .logStreamControllerDisabled(true)
             .build();
         newLog.setCommitPosition(Long.MAX_VALUE);
         newLog.open();

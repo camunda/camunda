@@ -21,7 +21,6 @@ import io.zeebe.logstreams.impl.LogStreamController;
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.util.sched.ActorCondition;
-import io.zeebe.util.sched.ZbActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
 
@@ -163,30 +162,6 @@ public interface LogStream extends AutoCloseable
      * @return returns the future for the log stream controller opening
      */
     ActorFuture<Void> openLogStreamController();
-
-    /**
-     * This method delegates to {@link #openLogStreamController(AgentRunnerService, int)}.
-     *
-     * The {@link #DEFAULT_MAX_APPEND_BLOCK_SIZE} is used as default max append block size.
-     *
-     * @see {@link #openLogStreamController(AgentRunnerService, int)}
-     * @param actorScheduler the agent runner service which is used for the scheduling
-     * @return returns the future for the log stream controller opening
-     */
-    ActorFuture<Void> openLogStreamController(ZbActorScheduler actorScheduler);
-
-    /**
-     * Starts the log streaming from the write buffer into log storage. The write buffer
-     * is internally created .The given agent runner service is used to schedule the writing.
-     *
-     * The {@link #DEFAULT_MAX_APPEND_BLOCK_SIZE} is used as default max append block size.
-     * This method delegates to {@link #openLogStreamController(AgentRunnerService, int)}.
-     *
-     * @param actorScheduler the agent runner service which is used for the scheduling
-     * @param maxAppendBlockSize the maximum block size which should been appended
-     * @return returns the future for the log stream controller opening
-     */
-    ActorFuture<Void> openLogStreamController(ZbActorScheduler actorScheduler, int maxAppendBlockSize);
 
     /**
      * Truncates the log stream from the given position to the end of the stream.

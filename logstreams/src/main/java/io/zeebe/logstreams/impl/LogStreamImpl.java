@@ -25,35 +25,28 @@ import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.dispatcher.impl.PositionUtil;
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
-import io.zeebe.logstreams.log.BufferedLogStreamReader;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.logstreams.log.*;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.spi.SnapshotStorage;
-import io.zeebe.util.sched.ActorCondition;
-import io.zeebe.util.sched.ZbActor;
-import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.*;
 import io.zeebe.util.sched.channel.ActorConditions;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.status.AtomicLongPosition;
-import org.agrona.concurrent.status.CountersManager;
-import org.agrona.concurrent.status.Position;
+import org.agrona.concurrent.status.*;
 
 /**
  * Represents the implementation of the LogStream interface.
  */
-public final class LogStreamImpl implements LogStream
+public final class LogStreamImpl extends ZbActor implements LogStream
 {
     public static final String EXCEPTION_MSG_TRUNCATE_FAILED = "Truncation failed! Position %d was not found.";
     public static final String EXCEPTION_MSG_TRUNCATE_AND_LOG_STREAM_CTRL_IN_PARALLEL = "Can't truncate the log storage and have a log stream controller active at the same time.";
@@ -74,11 +67,19 @@ public final class LogStreamImpl implements LogStream
 
     private final LogBlockIndexController logBlockIndexController;
 
+    private final Position commitPosition = new AtomicLongPosition();
     private final ActorConditions onCommitPositionUpdatedConditions = new ActorConditions();
 
     private LogStreamController logStreamController;
     private Dispatcher writeBuffer;
-    private final Position commitPosition = new AtomicLongPosition();
+
+    private final AtomicBoolean isOpen = new AtomicBoolean();
+    private final AtomicBoolean isAppendControllerOpen = new AtomicBoolean();
+
+    private CompletableActorFuture<Void> openFuture;
+    private CompletableActorFuture<Void> closeFuture;
+    private CompletableActorFuture<Void> openAppendControllerFuture;
+    private CompletableActorFuture<Void> closeAppendControllerFuture;
 
     private LogStreamImpl(final LogStreamBuilder logStreamBuilder)
     {
@@ -98,11 +99,14 @@ public final class LogStreamImpl implements LogStream
         commitPosition.setOrdered(INVALID_ADDRESS);
         this.logBlockIndexController = new LogBlockIndexController(logStreamBuilder, commitPosition, onCommitPositionUpdatedConditions);
 
-        if (!logStreamBuilder.isLogStreamControllerDisabled())
-        {
-            this.logStreamController = new LogStreamController(logStreamBuilder);
-            this.writeBuffer = logStreamBuilder.getWriteBuffer();
-        }
+        actorScheduler.submitActor(this);
+    }
+
+    @Override
+    protected void onActorStarted()
+    {
+        actor.onCondition("keep-alive", () ->
+        { });
     }
 
     @Override
@@ -144,38 +148,158 @@ public final class LogStreamImpl implements LogStream
     @Override
     public ActorFuture<Void> openAsync()
     {
-        if (logStreamController != null)
+        if (isOpen.compareAndSet(false, true))
         {
-            final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+            openFuture = new CompletableActorFuture<>();
 
-            actorScheduler.submitActor(new ZbActor()
+            actor.call(() ->
             {
-                @Override
-                protected void onActorStarted()
+                if (closeFuture == null)
                 {
-                    final List<ActorFuture<Void>> openFutures = Arrays
-                            .asList(logBlockIndexController.openAsync(), openStreamControlling(actorScheduler, logStreamController.getMaxAppendBlockSize()));
-
-                    actor.runOnCompletion(openFutures, failure ->
-                    {
-                        if (failure == null)
-                        {
-                            future.complete(null);
-                        }
-                        else
-                        {
-                            future.completeExceptionally(failure);
-                        }
-                    });
+                    openBlockIndexController();
+                }
+                else
+                {
+                    actor.runOnCompletion(closeFuture, (v, t) -> openBlockIndexController());
                 }
             });
 
-            return future;
+            return openFuture;
         }
         else
         {
-            return logBlockIndexController.openAsync();
+            return CompletableActorFuture.completedExceptionally(new IllegalStateException("log stream is already open."));
         }
+    }
+
+    private void openBlockIndexController()
+    {
+        actor.runOnCompletion(logBlockIndexController.openAsync(), (v, t) ->
+        {
+            if (t == null)
+            {
+                openFuture.complete(null);
+            }
+            else
+            {
+                openFuture.completeExceptionally(t);
+            }
+            openFuture = null;
+        });
+    }
+
+    @Override
+    public ActorFuture<Void> openLogStreamController()
+    {
+        if (!isOpen.get())
+        {
+            return CompletableActorFuture.completedExceptionally(new IllegalArgumentException("log stream is not open"));
+        }
+        else if (isAppendControllerOpen.compareAndSet(false, true))
+        {
+            openAppendControllerFuture = new CompletableActorFuture<>();
+
+            actor.call(() ->
+            {
+                if (closeAppendControllerFuture == null)
+                {
+                    doOpenLogStreamController();
+                }
+                else
+                {
+                    actor.runOnCompletion(closeAppendControllerFuture, (v, t) -> doOpenLogStreamController());
+                }
+            });
+            return openAppendControllerFuture;
+        }
+        else
+        {
+            return CompletableActorFuture.completedExceptionally(new IllegalArgumentException("log stream controller is already open"));
+        }
+    }
+
+    private void doOpenLogStreamController()
+    {
+        final LogStreamBuilder logStreamBuilder = createNewBuilder(actorScheduler, DEFAULT_MAX_APPEND_BLOCK_SIZE);
+        writeBuffer = logStreamBuilder.getWriteBuffer();
+
+        if (logStreamController == null)
+        {
+            logStreamController = new LogStreamController(logStreamBuilder);
+        }
+        else
+        {
+            logStreamController.wrap(logStreamBuilder);
+        }
+
+        actor.runOnCompletion(logStreamController.openAsync(), (v, t) ->
+        {
+            if (t == null)
+            {
+                openAppendControllerFuture.complete(null);
+            }
+            else
+            {
+                openAppendControllerFuture.completeExceptionally(t);
+            }
+            openAppendControllerFuture = null;
+        });
+    }
+
+    @Override
+    public ActorFuture<Void> closeLogStreamController()
+    {
+        if (!isOpen.get())
+        {
+            return CompletableActorFuture.completed(null);
+        }
+        else if (isAppendControllerOpen.compareAndSet(true, false))
+        {
+            closeAppendControllerFuture = new CompletableActorFuture<>();
+
+            actor.call(() ->
+            {
+                if (openAppendControllerFuture == null)
+                {
+                    doCloseLogStreamController();
+                }
+                else
+                {
+                    actor.runOnCompletion(openAppendControllerFuture, (v, t) -> doCloseLogStreamController());
+                }
+            });
+
+            return closeAppendControllerFuture;
+        }
+        else
+        {
+            return CompletableActorFuture.completed(null);
+        }
+    }
+
+    private void doCloseLogStreamController()
+    {
+        actor.runOnCompletion(logStreamController.closeAsync(), (v1, t1) ->
+        {
+            actor.runOnCompletion(writeBuffer.closeAsync(), (v2, t2) ->
+            {
+                writeBuffer = null;
+
+                if (t1 != null)
+                {
+                    closeAppendControllerFuture.completeExceptionally(t1);
+                }
+                else if (t2 != null)
+                {
+                    closeAppendControllerFuture.completeExceptionally(t2);
+                }
+                else
+                {
+                    closeAppendControllerFuture.complete(null);
+                }
+                closeAppendControllerFuture = null;
+            });
+        });
     }
 
     @Override
@@ -187,66 +311,72 @@ public final class LogStreamImpl implements LogStream
     @Override
     public ActorFuture<Void> closeAsync()
     {
-        final CompletableActorFuture<Void> closeFuture = new CompletableActorFuture<>();
-
-        final LogStreamController logStreamController = this.logStreamController;
-        final Dispatcher writeBuffer = this.writeBuffer;
-        actorScheduler.submitActor(new ZbActor()
+        if (isOpen.compareAndSet(true, false))
         {
-            @Override
-            protected void onActorStarted()
+            closeFuture = new CompletableActorFuture<>();
+
+            actor.call(() ->
             {
-                if (writeBuffer != null)
+                if (openFuture == null)
                 {
-                    actor.runOnCompletion(logBlockIndexController.closeAsync(), (v1, t1) ->
-                    {
-                        actor.runOnCompletion(logStreamController.closeAsync(), (v2, t2) ->
-                        {
-                            actor.runOnCompletion(writeBuffer.closeAsync(), (v3, t3) ->
-                            {
-                                logStorage.close();
-
-                                LogStreamImpl.this.writeBuffer = null;
-
-                                if (t1 != null)
-                                {
-                                    closeFuture.completeExceptionally(t1);
-                                }
-                                else if (t2 != null)
-                                {
-                                    closeFuture.completeExceptionally(t2);
-                                }
-                                else if (t3 != null)
-                                {
-                                    closeFuture.completeExceptionally(t3);
-                                }
-                                else
-                                {
-                                    closeFuture.complete(null);
-                                }
-                            });
-                        });
-                    });
+                    doCloseLogStream();
                 }
                 else
                 {
-                    actor.runOnCompletion(logBlockIndexController.closeAsync(), (v, t) ->
-                    {
-                        logStorage.close();
-
-                        if (t == null)
-                        {
-                            closeFuture.complete(null);
-                        }
-                        else
-                        {
-                            closeFuture.completeExceptionally(t);
-                        }
-                    });
+                    actor.runOnCompletion(openFuture, (v, t) -> doCloseLogStream());
                 }
+            });
+
+            return closeFuture;
+        }
+        else
+        {
+            return CompletableActorFuture.completed(null);
+        }
+    }
+
+    private void doCloseLogStream()
+    {
+        if (isAppendControllerOpen.compareAndSet(true, false))
+        {
+            closeAppendControllerFuture = new CompletableActorFuture<>();
+
+            if (openAppendControllerFuture == null)
+            {
+                doCloseLogStreamController();
             }
+            else
+            {
+                actor.runOnCompletion(openAppendControllerFuture, (v, t) -> doCloseLogStreamController());
+            }
+        }
+
+        if (closeAppendControllerFuture != null)
+        {
+            actor.runOnCompletion(closeAppendControllerFuture, (v, t) -> doCloseLogBlockIndex());
+        }
+        else
+        {
+            doCloseLogBlockIndex();
+        }
+    }
+
+    private void doCloseLogBlockIndex()
+    {
+        actor.runOnCompletion(logBlockIndexController.closeAsync(), (v, t) ->
+        {
+            logStorage.close();
+
+            if (t == null)
+            {
+                closeFuture.complete(null);
+            }
+            else
+            {
+                closeFuture.completeExceptionally(t);
+            }
+            closeFuture = null;
         });
-        return closeFuture;
     }
 
     @Override
@@ -303,88 +433,6 @@ public final class LogStreamImpl implements LogStream
     public LogBlockIndex getLogBlockIndex()
     {
         return blockIndex;
-    }
-
-    @Override
-    public ActorFuture<Void> closeLogStreamController()
-    {
-        final LogStreamController logStreamController = this.logStreamController;
-        final Dispatcher writeBuffer = this.writeBuffer;
-        if (logStreamController != null && writeBuffer != null)
-        {
-            final CompletableActorFuture<Void> closeFuture = new CompletableActorFuture<>();
-
-            actorScheduler.submitActor(new ZbActor()
-            {
-                @Override
-                protected void onActorStarted()
-                {
-                    actor.runOnCompletion(logStreamController.closeAsync(), (v2, t2) ->
-                    {
-                        actor.runOnCompletion(writeBuffer.closeAsync(), (v1, t1) ->
-                        {
-                            LogStreamImpl.this.writeBuffer = null;
-
-                            if (t1 != null)
-                            {
-                                closeFuture.completeExceptionally(t1);
-                            }
-                            else if (t2 != null)
-                            {
-                                closeFuture.completeExceptionally(t2);
-                            }
-                            else
-                            {
-                                closeFuture.complete(null);
-                            }
-                        });
-                    });
-                }
-            });
-
-            return closeFuture;
-        }
-        else
-        {
-            return CompletableActorFuture.completed(null);
-        }
-    }
-
-    @Override
-    public ActorFuture<Void> openLogStreamController()
-    {
-        return openLogStreamController(actorScheduler, DEFAULT_MAX_APPEND_BLOCK_SIZE);
-    }
-
-    @Override
-    public ActorFuture<Void> openLogStreamController(ZbActorScheduler actorScheduler)
-    {
-        return openLogStreamController(actorScheduler, DEFAULT_MAX_APPEND_BLOCK_SIZE);
-    }
-
-    @Override
-    public ActorFuture<Void> openLogStreamController(ZbActorScheduler actorScheduler,
-                                                           int maxAppendBlockSize)
-    {
-        return openStreamControlling(actorScheduler, maxAppendBlockSize);
-    }
-
-    private ActorFuture<Void> openStreamControlling(ZbActorScheduler actorScheduler, int maxAppendBlockSize)
-    {
-        if ((writeBuffer != null && writeBuffer.isClosed()) || writeBuffer == null)
-        {
-            final LogStreamBuilder logStreamBuilder = createNewBuilder(actorScheduler, maxAppendBlockSize);
-            writeBuffer = logStreamBuilder.getWriteBuffer();
-            if (logStreamController == null)
-            {
-                logStreamController = new LogStreamController(logStreamBuilder);
-            }
-            else
-            {
-                logStreamController.wrap(logStreamBuilder);
-            }
-        }
-        return logStreamController.openAsync();
     }
 
     private LogStreamBuilder createNewBuilder(ZbActorScheduler actorScheduler, int maxAppendBlockSize)
@@ -565,12 +613,6 @@ public final class LogStreamImpl implements LogStream
             return self();
         }
 
-        public T logStreamControllerDisabled(boolean logStreamControllerDisabled)
-        {
-            this.logStreamControllerDisabled = logStreamControllerDisabled;
-            return self();
-        }
-
         public T writeBuffer(Dispatcher writeBuffer)
         {
             this.writeBuffer = writeBuffer;
@@ -719,11 +761,6 @@ public final class LogStreamImpl implements LogStream
                 logReader.close();
             }
             return writeBuffer;
-        }
-
-        public boolean isLogStreamControllerDisabled()
-        {
-            return logStreamControllerDisabled;
         }
 
         public void initSnapshotStorage()

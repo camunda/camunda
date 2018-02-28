@@ -15,6 +15,19 @@
  */
 package io.zeebe.logstreams.log;
 
+import static io.zeebe.logstreams.log.LogStream.MAX_TOPIC_NAME_LENGTH;
+import static io.zeebe.test.util.TestUtil.waitUntil;
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static java.lang.String.join;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
+
+import java.time.Duration;
+import java.util.Collections;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.logstreams.fs.FsLogStreamBuilder;
 import io.zeebe.logstreams.impl.LogStreamController;
@@ -27,22 +40,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TemporaryFolder;
-
-import java.time.Duration;
-import java.util.Collections;
-import java.util.function.Consumer;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
-
-import static io.zeebe.logstreams.log.LogStream.MAX_TOPIC_NAME_LENGTH;
-import static io.zeebe.test.util.TestUtil.waitUntil;
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
-import static java.lang.String.join;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.*;
+import org.junit.rules.*;
 
 public class LogStreamTest
 {
@@ -102,8 +100,8 @@ public class LogStreamTest
     @Test
     public void shouldInitWithoutLogStreamController()
     {
-        // when log stream is created with builder and without flag is set
-        final LogStream stream = buildLogStream(b -> b.logStreamControllerDisabled(true));
+        // when log stream is created
+        final LogStream stream = buildLogStream();
 
         // then log stream contains
         // log storage
@@ -129,6 +127,7 @@ public class LogStreamTest
 
         // when log stream is open
         logStream.open();
+        logStream.openLogStreamController().join();
         closeables.manage(logStream);
 
         // then
@@ -145,8 +144,8 @@ public class LogStreamTest
     @Test
     public void shouldOpenLogBlockIndexControllerOnly()
     {
-        // given log stream with without flag
-        final LogStream logStream = buildLogStream(b -> b.logStreamControllerDisabled(true));
+        // given log stream
+        final LogStream logStream = buildLogStream();
 
         // when log stream is open
         logStream.open();
@@ -170,6 +169,8 @@ public class LogStreamTest
 
         // given open log stream
         logStream.open();
+        logStream.openLogStreamController().join();
+
         final Dispatcher writeBuffer = logStream.getWriteBuffer();
 
         // when log streaming is stopped
@@ -194,6 +195,7 @@ public class LogStreamTest
 
         // given open log stream with stopped log stream controller
         logStream.open();
+        logStream.openLogStreamController().join();
         final LogStreamController controller1 = logStream.getLogStreamController();
 
         logStream.closeLogStreamController().get();
@@ -215,39 +217,14 @@ public class LogStreamTest
     }
 
     @Test
-    public void shouldStopAndStartLogStreamControllerWithDifferentAgentRunners() throws Exception
-    {
-        // given
-        final LogStream logStream = buildLogStream();
-
-        // TODO set up block index and log storage
-
-        // given open log stream with stopped log stream controller
-        logStream.open();
-        closeables.manage(logStream);
-        logStream.closeLogStreamController().get();
-
-        // when log streaming is started
-        logStream.openLogStreamController(actorScheduler.get()).get();
-        final LogStreamController logStreamController2 = logStream.getLogStreamController();
-
-        // then
-        // log stream controller has been set and is running
-        assertNotNull(logStreamController2);
-        assertTrue(logStreamController2.isOpened());
-
-        // dispatcher is initialized
-        assertNotNull(logStream.getWriteBuffer());
-    }
-
-    @Test
     public void shouldStartLogStreamController()
     {
         // given log stream with without flag
-        final LogStream logStream = buildLogStream(b -> b.logStreamControllerDisabled(true));
+        final LogStream logStream = buildLogStream();
 
         // when log streaming is started
-        logStream.openLogStreamController(actorScheduler.get());
+        logStream.open();
+        logStream.openLogStreamController().join();
         final LogStreamController logStreamController = logStream.getLogStreamController();
 
         // then
@@ -267,6 +244,7 @@ public class LogStreamTest
         final LogStream logStream = buildLogStream();
 
         logStream.open();
+        logStream.openLogStreamController().join();
 
         // when log stream is closed
         logStream.close();
@@ -285,6 +263,7 @@ public class LogStreamTest
         // given open log stream
         final LogStream logStream = buildLogStream();
         logStream.open();
+        logStream.openLogStreamController().join();
 
         // when log stream controller is closed
         logStream.closeLogStreamController().get();
@@ -304,7 +283,7 @@ public class LogStreamTest
     public void shouldCloseLogBlockIndexController() throws Exception
     {
         // given open log stream without log stream controller
-        final LogStream logStream = buildLogStream(b -> b.logStreamControllerDisabled(true));
+        final LogStream logStream = buildLogStream();
         logStream.open();
 
         // when log stream is closed
@@ -326,10 +305,12 @@ public class LogStreamTest
         closeables.manage(logStream);
 
         logStream.open();
+        logStream.openLogStreamController().join();
         logStream.close();
 
         // when open log stream again
         logStream.open();
+        logStream.openLogStreamController().join();
 
         // then controllers run again
         assertTrue(logStream.getLogBlockIndexController().isOpened());
@@ -340,7 +321,7 @@ public class LogStreamTest
     public void shouldOpenClosedLogBlockIndexController()
     {
         // given open->close log stream without log stream controller
-        final LogStream logStream = buildLogStream(b -> b.logStreamControllerDisabled(true));
+        final LogStream logStream = buildLogStream();
         logStream.open();
         closeables.manage(logStream);
 
@@ -360,6 +341,7 @@ public class LogStreamTest
         final LogStream logStream = buildLogStream();
 
         logStream.open();
+        logStream.openLogStreamController().join();
         closeables.manage(logStream);
 
         // expect exception
@@ -375,7 +357,7 @@ public class LogStreamTest
     {
         // given
         final int truncatePosition = 101;
-        final LogStream logStream = buildLogStream(b -> b.logStreamControllerDisabled(true));
+        final LogStream logStream = buildLogStream();
 
         // given open log stream and committed position
         logStream.open();
@@ -399,6 +381,7 @@ public class LogStreamTest
 
         // given open log stream and open block index controller
         logStream.open();
+        logStream.openLogStreamController().join();
         closeables.manage(logStream);
 
         final LogStreamWriter writer = new LogStreamWriterImpl(logStream);
@@ -432,6 +415,7 @@ public class LogStreamTest
 
         // given open log stream and open block index controller
         logStream.open();
+        logStream.openLogStreamController().join();
         closeables.manage(logStream);
 
         final LogStreamWriter writer = new LogStreamWriterImpl(logStream);
@@ -458,6 +442,7 @@ public class LogStreamTest
         final LogStream logStream = buildLogStream();
 
         logStream.open();
+        logStream.openLogStreamController().join();
         closeables.manage(logStream);
 
         final LogStreamWriter writer = new LogStreamWriterImpl(logStream);
@@ -485,6 +470,7 @@ public class LogStreamTest
         // given
         final LogStream logStream = buildLogStream(b -> b.indexBlockSize(20).readBlockSize(20));
         logStream.open();
+        logStream.openLogStreamController().join();
         closeables.manage(logStream);
 
         final LogStreamWriter writer = new LogStreamWriterImpl(logStream);
@@ -515,6 +501,7 @@ public class LogStreamTest
         // given
         final LogStream logStream = buildLogStream();
         logStream.open();
+        logStream.openLogStreamController().join();
         closeables.manage(logStream);
         logStream.getLogStreamController().close();
 
@@ -546,6 +533,7 @@ public class LogStreamTest
 
         // given open log stream and open block index controller
         logStream.open();
+        logStream.openLogStreamController().join();
         closeables.manage(logStream);
 
         final LogStreamWriter writer = new LogStreamWriterImpl(logStream);
