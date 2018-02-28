@@ -22,6 +22,7 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -110,7 +111,6 @@ public class ExportServiceIT {
   private ReportDataDto currentReport;
   private String expectedCSV;
 
-  protected static final String BEARER = "Bearer ";
   protected static final String FAKE = "FAKE";
   protected static final String CSV_EXPORT = "export/csv";
 
@@ -148,16 +148,26 @@ public class ExportServiceIT {
     Response response =
         embeddedOptimizeRule.target(CSV_EXPORT + "/" + reportId + "/my_file.csv")
             .request()
-            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
             .get();
 
     // then
     assertThat(response.getStatus(), is(200));
+
+    String actualContent = getActualContentAsString(response);
+    String stringExpected = getExpectedContentAsString(processInstance);
+
+    assertThat(actualContent, is(stringExpected));
+  }
+
+  public String getActualContentAsString(Response response) throws IOException {
     ByteArrayOutputStream bos = new ByteArrayOutputStream();
     IOUtils.copy(response.readEntity(InputStream.class), bos);
     byte[] result = bos.toByteArray();
-    assertThat(result.length, is(not(0)));
+    return new String(result);
+  }
 
+  public String getExpectedContentAsString(ProcessInstanceEngineDto processInstance) throws IOException {
     Path path = Paths.get(this.getClass().getResource(expectedCSV).getPath());
     byte[] expectedContent = Files.readAllBytes(path);
     String stringExpected = new String(expectedContent);
@@ -165,8 +175,7 @@ public class ExportServiceIT {
       replace("${PI_ID}", processInstance.getId());
     stringExpected  = stringExpected.
       replace("${PD_ID}", processInstance.getDefinitionId());
-
-    assertThat(new String(result), is(stringExpected));
+    return stringExpected;
   }
 
   private String createAndStoreDefaultReportDefinition(ReportDataDto reportData) {
@@ -189,7 +198,7 @@ public class ExportServiceIT {
     Response response =
         embeddedOptimizeRule.target("report/" + id)
             .request()
-            .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
             .put(Entity.json(updatedReport));
     assertThat(response.getStatus(), is(204));
   }
@@ -200,7 +209,7 @@ public class ExportServiceIT {
     Response response =
         embeddedOptimizeRule.target("report")
             .request()
-            .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
             .post(Entity.json(""));
     assertThat(response.getStatus(), is(200));
 

@@ -31,8 +31,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
  * @author Askar Akhmerov
  */
 public class UnsupportedReportExportServiceIT {
-
-  protected static final String BEARER = "Bearer ";
   protected static final String CSV_EXPORT = "export/csv";
 
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
@@ -63,7 +61,7 @@ public class UnsupportedReportExportServiceIT {
     Response response =
         embeddedOptimizeRule.target(CSV_EXPORT + "/" + reportId + "/my_file.csv")
             .request()
-            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
             .get();
 
     // then

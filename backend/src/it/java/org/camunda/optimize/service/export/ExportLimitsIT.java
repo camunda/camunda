@@ -37,7 +37,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
  */
 public class ExportLimitsIT {
   protected static final String CSV_EXPORT = "export/csv";
-  public static final String BEARER = "Bearer ";
 
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
@@ -71,7 +70,7 @@ public class ExportLimitsIT {
     Response response =
         embeddedOptimizeRule.target(CSV_EXPORT + "/" + reportId + "/my_file.csv")
             .request()
-            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
             .get();
 
 
@@ -108,7 +107,7 @@ public class ExportLimitsIT {
     Response response =
         embeddedOptimizeRule.target(CSV_EXPORT + "/" + reportId + "/my_file.csv")
             .request()
-            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
             .get();
 
 
@@ -144,7 +143,7 @@ public class ExportLimitsIT {
     Response response =
         embeddedOptimizeRule.target(CSV_EXPORT + "/" + reportId + "/my_file.csv")
             .request()
-            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
             .get();
 
 
@@ -181,7 +180,7 @@ public class ExportLimitsIT {
     Response response =
         embeddedOptimizeRule.target("report/" + id)
             .request()
-            .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
             .put(Entity.json(updatedReport));
     assertThat(response.getStatus(), is(204));
   }
@@ -192,7 +191,7 @@ public class ExportLimitsIT {
     Response response =
         embeddedOptimizeRule.target("report")
             .request()
-            .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
             .post(Entity.json(""));
     assertThat(response.getStatus(), is(200));
 

@@ -18,7 +18,7 @@ import java.util.Set;
  * @author Askar Akhmerov
  */
 public class CSVUtils {
-  private static final String MAP = "Map";
+  private static final String MAP = "java.util.Map";
   private static final String VARIABLE_PREFIX = "variable:";
   private static Logger logger = LoggerFactory.getLogger(CSVUtils.class);
 
@@ -97,7 +97,7 @@ public class CSVUtils {
     String[] headerLine = newEmptyHeaderLine(variableKeys);
     int i = 0;
     for (Field f : RawDataProcessInstanceDto.class.getDeclaredFields()) {
-      if (!f.getType().getName().contains(MAP)) {
+      if (!MAP.equals(f.getType().getName())) {
         headerLine[i] = f.getName();
         i = i + 1;
       }
