@@ -2,6 +2,9 @@ import React from 'react';
 import update from 'immutability-helper';
 
 import Viewer from 'bpmn-js/lib/NavigatedViewer';
+
+import TargetValueDiagramBehavior from './TargetValueDiagramBehavior';
+
 import {ButtonGroup, Button, Modal, BPMNDiagram, Table, Input, Select} from 'components';
 import settingsIcon from './settings.svg';
 import {formatters} from 'services';
@@ -12,8 +15,11 @@ export default class TargetValueComparison extends React.Component {
   constructor(props) {
     super(props);
 
+    this.inputRefs = {};
+
     this.state = {
       modalOpen: false,
+      focus: null,
       values: {},
       nodeNames: {}
     };
@@ -52,6 +58,7 @@ export default class TargetValueComparison extends React.Component {
 
     this.setState({
       modalOpen: true,
+      focus: null,
       values,
       nodeNames
     });
@@ -150,6 +157,10 @@ export default class TargetValueComparison extends React.Component {
     }
   }
 
+  storeInputReferenceFor = id => input => {
+    this.inputRefs[id] = input;
+  }
+
   constructTableBody = () => {
     return Object.keys(this.state.values).map(id => {
       const settings = this.state.values[id] || {value: '', unit: 'hours'};
@@ -157,8 +168,20 @@ export default class TargetValueComparison extends React.Component {
         this.state.nodeNames[id],
         formatters.duration(this.props.reportResult.result[id] || 0),
         <React.Fragment>
-          <Input value={settings.value} onChange={this.setTarget('value', id)} />
-          <Select value={settings.unit} onChange={this.setTarget('unit', id)}>
+          <Input
+            value={settings.value}
+            reference={this.storeInputReferenceFor(id)}
+            onChange={this.setTarget('value', id)}
+            onFocus={() => {this.updateFocus(id)}}
+            onBlur={() => {this.updateFocus(null)}}
+          />
+          <Select
+            value={settings.unit}
+            onChange={evt => {
+              this.setTarget('unit', id)(evt);
+              this.updateFocus(id);
+            }}
+          >
             <Select.Option value='millis'>Milliseconds</Select.Option>
             <Select.Option value='seconds'>Seconds</Select.Option>
             <Select.Option value='minutes'>Minutes</Select.Option>
@@ -204,6 +227,15 @@ export default class TargetValueComparison extends React.Component {
     });
   }
 
+  updateFocus = focus => this.setState({focus});
+
+  componentDidUpdate(_, prevState) {
+    if(this.state.focus && this.state.focus !== prevState.focus) {
+      this.inputRefs[this.state.focus].focus();
+      this.inputRefs[this.state.focus].select();
+    }
+  }
+
   render() {
     const isEnabled = this.isEnabled();
 
@@ -214,7 +246,9 @@ export default class TargetValueComparison extends React.Component {
         <Modal.Header>Target Value Comparison</Modal.Header>
         <Modal.Content>
           <div className='TargetValueComparison__DiagramContainer'>
-            <BPMNDiagram xml={this.props.configuration.xml} />
+            <BPMNDiagram xml={this.props.configuration.xml}>
+              <TargetValueDiagramBehavior onClick={this.updateFocus} focus={this.state.focus} />
+            </BPMNDiagram>
           </div>
           <Table
             head={['Activity', 'Actual Value', 'Target Value']}
