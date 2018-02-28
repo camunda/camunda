@@ -75,7 +75,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     //then
     assertThat(result.getResult(), is(notNullValue()));
     Map<String, Long> flowNodeIdToExecutionFrequency = result.getResult();
-    assertThat(flowNodeIdToExecutionFrequency.size(), is(2));
+    assertThat(flowNodeIdToExecutionFrequency.size(), is(4));
     assertThat(flowNodeIdToExecutionFrequency.get(TEST_ACTIVITY), is(2L));
   }
 
@@ -98,7 +98,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     //then
     assertThat(result.getResult(), is(notNullValue()));
     Map<String, Long> flowNodeIdToExecutionFrequency = result.getResult();
-    assertThat(flowNodeIdToExecutionFrequency.size(), is(1));
+    assertThat(flowNodeIdToExecutionFrequency.size(), is(3));
     assertThat(flowNodeIdToExecutionFrequency.get(TEST_ACTIVITY ), is(2L));
   }
 
@@ -126,7 +126,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     assertThat(resultReportDataDto.getView().getProperty(), is(VIEW_FREQUENCY_PROPERTY));
     assertThat(result.getResult(), is(notNullValue()));
     Map<String, Long> flowNodeIdToExecutionFrequency = result.getResult();
-    assertThat(flowNodeIdToExecutionFrequency.size(), is(1));
+    assertThat(flowNodeIdToExecutionFrequency.size(), is(3));
     assertThat(flowNodeIdToExecutionFrequency.get(TEST_ACTIVITY ), is(2L));
   }
 
@@ -433,12 +433,12 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
   public ProcessInstanceEngineDto deployProcessWithTwoTasks(String activityId) {
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("aProcess")
       .name("aProcessName")
-      .startEvent()
+      .startEvent("start")
       .serviceTask(activityId)
         .camundaExpression("${true}")
       .serviceTask(TEST_ACTIVITY_2)
         .camundaExpression("${true}")
-      .endEvent()
+      .endEvent("end")
       .done();
     return engineRule.deployAndStartProcess(modelInstance);
   }
@@ -446,10 +446,10 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
   private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess(String activityId) {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .name("aProcessName")
-      .startEvent()
+      .startEvent("start")
         .serviceTask(activityId)
         .camundaExpression("${true}")
-      .endEvent()
+      .endEvent("end")
       .done();
     return engineRule.deployAndStartProcess(processModel);
   }

@@ -20,7 +20,7 @@ public abstract class FlowNodeGroupingCommand extends ReportCommand<MapReportRes
       Map<String, Long> filteredNodes = new HashMap<>();
 
       for (Map.Entry<String, Long> node : resultDto.getResult().entrySet()) {
-        if (latestXml.getFlowNodeNames().containsValue(node.getKey())) {
+        if (latestXml.getFlowNodeNames().containsKey(node.getKey())) {
           filteredNodes.put(node.getKey(), node.getValue());
         }
       }

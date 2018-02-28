@@ -143,12 +143,12 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
 
   public ProcessDefinitionEngineDto deployProcessWithTwoTasks() throws IOException {
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("aProcess")
-      .startEvent()
+      .startEvent(START_EVENT)
       .serviceTask(SERVICE_TASK_ID)
         .camundaExpression("${true}")
       .serviceTask(SERVICE_TASK_ID_2)
         .camundaExpression("${true}")
-      .endEvent()
+      .endEvent(END_EVENT)
       .done();
     return engineRule.deployProcessAndGetProcessDefinition(modelInstance);
   }
@@ -176,7 +176,7 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
 
     //then
     Map<String, Long> flowNodeIdToAverageExecutionDuration = result.getResult();
-    assertThat(flowNodeIdToAverageExecutionDuration.size(), is(2));
+    assertThat(flowNodeIdToAverageExecutionDuration.size(), is(4));
     assertThat(flowNodeIdToAverageExecutionDuration.get(SERVICE_TASK_ID ), is(40L));
     assertThat(flowNodeIdToAverageExecutionDuration.get(SERVICE_TASK_ID_2 ), is(40L));
   }
