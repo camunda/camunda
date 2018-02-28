@@ -675,6 +675,30 @@ public class IncidentTest
     }
 
     @Test
+    public void shouldResolveMultipleIncidents() throws Exception
+    {
+        // given
+        testClient.deploy(WORKFLOW_INPUT_MAPPING);
+
+        // create and resolve an first incident
+        long workflowInstanceKey = testClient.createWorkflowInstance("process");
+        SubscribedEvent failureEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_READY", workflowInstanceKey));
+        updatePayload(workflowInstanceKey, failureEvent.key(), PAYLOAD);
+
+        // create a second incident
+        workflowInstanceKey = testClient.createWorkflowInstance("process");
+        failureEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_READY", workflowInstanceKey));
+        final SubscribedEvent incidentEvent = testClient.receiveSingleEvent(incidentEvents("CREATED", workflowInstanceKey));
+
+        // when
+        updatePayload(workflowInstanceKey, failureEvent.key(), PAYLOAD);
+
+        // then
+        final SubscribedEvent incidentResolvedEvent = testClient.receiveSingleEvent(incidentEvents("RESOLVED", workflowInstanceKey));
+        assertThat(incidentResolvedEvent.key()).isEqualTo(incidentEvent.key());
+    }
+
+    @Test
     public void shouldDeleteIncidentIfActivityTerminated()
     {
         // given
@@ -689,6 +713,40 @@ public class IncidentTest
 
         // then
         final SubscribedEvent incidentEvent = testClient.receiveSingleEvent(incidentEvents("DELETED"));
+
+        assertThat(incidentEvent.key()).isEqualTo(incidentCreatedEvent.key());
+        assertThat(incidentEvent.event())
+            .containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
+            .containsEntry("errorMessage", "No data found for query $.foo.")
+            .containsEntry("bpmnProcessId", "process")
+            .containsEntry("workflowInstanceKey", workflowInstanceKey)
+            .containsEntry("activityId", "failingTask")
+            .containsEntry("activityInstanceKey", incidentEvent.event().get("activityInstanceKey"));
+    }
+
+    @Test
+    public void shouldProcessIncidentsAfterMultipleTerminations()
+    {
+        // given
+        testClient.deploy(WORKFLOW_INPUT_MAPPING);
+
+        // create and cancel instance with incident
+        long workflowInstanceKey = testClient.createWorkflowInstance("process");
+        cancelWorkflowInstance(workflowInstanceKey);
+
+        // create and cancel instance without incident
+        workflowInstanceKey = testClient.createWorkflowInstance("process", PAYLOAD);
+        cancelWorkflowInstance(workflowInstanceKey);
+
+        // create another instance which creates an incident
+        workflowInstanceKey = testClient.createWorkflowInstance("process");
+        final SubscribedEvent incidentCreatedEvent = testClient.receiveSingleEvent(incidentEvents("CREATED", workflowInstanceKey));
+
+        // when
+        cancelWorkflowInstance(workflowInstanceKey);
+
+        // then
+        final SubscribedEvent incidentEvent = testClient.receiveSingleEvent(incidentEvents("DELETED", workflowInstanceKey));
 
         assertThat(incidentEvent.key()).isEqualTo(incidentCreatedEvent.key());
         assertThat(incidentEvent.event())

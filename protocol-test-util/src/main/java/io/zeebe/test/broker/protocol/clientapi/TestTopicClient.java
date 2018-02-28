@@ -277,6 +277,11 @@ public class TestTopicClient
         return incidentEvents().and(state(eventType));
     }
 
+    public static Predicate<SubscribedEvent> incidentEvents(String eventType, long workflowInstanceKey)
+    {
+        return incidentEvents(eventType).and(workflowInstanceKey(workflowInstanceKey));
+    }
+
     public static Predicate<SubscribedEvent> workflowEvents(String eventType)
     {
         return workflowEvents().and(state(eventType));

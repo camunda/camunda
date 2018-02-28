@@ -502,12 +502,12 @@ public class IncidentStreamProcessor implements StreamProcessor
         @Override
         public void processEvent()
         {
+            isResolved = false;
+
             final long value = resolvingEvents.get(sourceEventPosition, -1);
             if (value > 0)
             {
                 currentIncidentKey = value;
-
-                isResolved = false;
 
                 incidentMap.wrapIncidentKey(currentIncidentKey);
 
@@ -557,6 +557,8 @@ public class IncidentStreamProcessor implements StreamProcessor
         @Override
         public void processEvent()
         {
+            isTerminated = false;
+
             incidentKey = activityInstanceMap.get(eventKey, -1L);
 
             if (incidentKey > 0)
