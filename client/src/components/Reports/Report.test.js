@@ -357,14 +357,14 @@ describe('edit mode', async () => {
       {
         loaded: true,
         originalData: {
-          processDefinitionId : "123"
+          processDefinitionKey : "123"
         }
       }
     );
     getReportData.mockReturnValueOnce(null);
     await node.instance().cancel();
 
-    expect(node.state().reportResult.data.processDefinitionId).toEqual('123');
+    expect(node.state().reportResult.data.processDefinitionKey).toEqual('123');
   });
 
   it('should select the name input field if Report is just created', () => {

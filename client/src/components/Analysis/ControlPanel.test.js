@@ -16,7 +16,8 @@ jest.mock('components', () => {
 });
 
 const data = {
-  processDefinitionId: '',
+  processDefinitionKey: '',
+  processDefinitionVersion: '',
   filter: null
 };
 

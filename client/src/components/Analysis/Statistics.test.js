@@ -33,7 +33,6 @@ jest.mock('chart.js', () => jest.fn().mockImplementation(() =>{return {destroy: 
 
 const props = {
   config: {
-    processDefinitionId: 'a',
     filter: []
   },
   gateway: {id: 'g'},
@@ -53,13 +52,13 @@ it('should load updated correlation when selection or configuration changes', ()
   node.setProps({gateway: {id: 'g2'}});
 
   expect(loadCorrelationData).toHaveBeenCalled();
-  expect(loadCorrelationData.mock.calls[0][2]).toBe('g2');
+  expect(loadCorrelationData.mock.calls[0][3]).toBe('g2');
 
   loadCorrelationData.mockClear();
-  node.setProps({config: {processDefinitionId: 'a', filter: ['aFilter']}});
+  node.setProps({config: {filter: ['aFilter']}});
 
   expect(loadCorrelationData).toHaveBeenCalled();
-  expect(loadCorrelationData.mock.calls[0][1]).toEqual(['aFilter']);
+  expect(loadCorrelationData.mock.calls[0][2]).toEqual(['aFilter']);
 });
 
 it('should create two Charts', async () => {

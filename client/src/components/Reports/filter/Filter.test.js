@@ -178,7 +178,7 @@ it('should remove multiple filters from the list of filters', () => {
 });
 
 it('should disable variable and executed flow node filter if no process definition is available', () => {
-  const node = mount(<Filter processDefinitionId="" />);
+  const node = mount(<Filter />);
 
   const buttons = node.find("#dropdown button");
   expect(buttons.find('[children="Start Date"]').prop("disabled")).toBeFalsy();

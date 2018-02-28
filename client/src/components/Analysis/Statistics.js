@@ -80,11 +80,10 @@ export default class Statistics extends React.Component {
   }
 
   loadCorrelation = async () => {
-    // this is not working right now and will be implemented as soon as
-    // the back end can evaluate the correlation by key + version
     this.setState({
       data: await loadCorrelationData(
-        this.props.config.processDefinitionId,
+        this.props.config.processDefinitionKey,
+        this.props.config.processDefinitionVersion,
         this.props.config.filter,
         this.props.gateway.id,
         this.props.endEvent.id

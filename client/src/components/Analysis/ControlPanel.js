@@ -8,7 +8,6 @@ import './ControlPanel.css';
 const ControlPanel = (props) => {
 
   const definitionConfig = {
-    processDefinitionId: props.processDefinitionId,
     processDefinitionKey: props.processDefinitionKey,
     processDefinitionVersion: props.processDefinitionVersion
   }
@@ -17,13 +16,22 @@ const ControlPanel = (props) => {
     props.updateHover(element);
   }
 
+  const createTitle = () => {
+    const {processDefinitionKey, processDefinitionVersion} = props;
+    if(processDefinitionKey && processDefinitionVersion) {
+      return `${processDefinitionKey} : ${processDefinitionVersion}`;
+    } else {
+      return 'Select Process Definition';
+    }
+  }
+
   const {hoveredControl, hoveredNode} = props;
 
   return (<div className='ControlPanel'>
       <ul className='ControlPanel__list'>
         <li className='ControlPanel__item ControlPanel__item--select'>
           <label htmlFor='ControlPanel__process-definition' className='ControlPanel__label'>Process definition</label>
-          <Popover className='ControlPanel__popover' title={props.processDefinitionId || 'Select Process Definition'}>
+          <Popover className='ControlPanel__popover' title={createTitle()}>
             <ProcessDefinitionSelection {...definitionConfig} xml={props.xml} onChange={props.onChange} />
           </Popover>
         </li>
@@ -47,7 +55,7 @@ const ControlPanel = (props) => {
           </li>
         )}
         <li className='ControlPanel__item ControlPanel__item--filter'>
-          <Filter data={props.filter} onChange={props.onChange} processDefinitionId={props.processDefinitionId} />
+          <Filter data={props.filter} onChange={props.onChange} {...definitionConfig} />
         </li>
       </ul>
     </div>

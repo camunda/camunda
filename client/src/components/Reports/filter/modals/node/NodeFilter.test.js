@@ -25,13 +25,13 @@ it('should contain a modal', () => {
 });
 
 it('should display a diagram', () => {
-  const node = mount(<NodeFilter processDefinitionId='procDefId' xml='fooXml'/>);
+  const node = mount(<NodeFilter xml='fooXml'/>);
 
   expect(node.find('#diagram')).toIncludeText('fooXml');
 });
 
 it('should add an unselected node to the selectedNodes on toggle', () => {
-  const node = mount(<NodeFilter processDefinitionId='procDefId' />);
+  const node = mount(<NodeFilter />);
 
   const flowNode = {
     name: 'foo',
@@ -44,7 +44,7 @@ it('should add an unselected node to the selectedNodes on toggle', () => {
 });
 
 it('should remove a selected node from the selectedNodes on toggle', () => {
-  const node = mount(<NodeFilter processDefinitionId='procDefId' />);
+  const node = mount(<NodeFilter />);
 
   const flowNode = {
     name: 'foo',
@@ -59,7 +59,7 @@ it('should remove a selected node from the selectedNodes on toggle', () => {
 
 it('should create a new filter', () => {
   const spy = jest.fn();
-  const node = mount(<NodeFilter processDefinitionId='procDefId' addFilter={spy} />);
+  const node = mount(<NodeFilter addFilter={spy} />);
 
   const flowNode1 = {
     name: 'foo',
@@ -87,7 +87,7 @@ it('should create a new filter', () => {
 });
 
 it('should disable create filter button if no node was selected', () => {
-  const node = mount(<NodeFilter processDefinitionId='procDefId'  />);
+  const node = mount(<NodeFilter />);
   node.setState({
     selectedNodes: []
   });
@@ -98,7 +98,7 @@ it('should disable create filter button if no node was selected', () => {
 });
 
 it('should create preview of selected node', () => {
-  const node = mount(<NodeFilter processDefinitionId='procDefId' />);
+  const node = mount(<NodeFilter />);
 
   const flowNode = {
     name: 'foo',
@@ -111,7 +111,7 @@ it('should create preview of selected node', () => {
 });
 
 it('should create preview of selected nodes linked by or', () => {
-  const node = mount(<NodeFilter processDefinitionId='procDefId' />);
+  const node = mount(<NodeFilter />);
 
     const flowNode1 = {
       name: 'foo',

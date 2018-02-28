@@ -15,7 +15,6 @@ export default class Analysis extends React.Component {
 
     this.state = {
       config: {
-        processDefinitionId: '',
         processDefinitionKey: '',
         processDefinitionVersion: '',
         filter: []
@@ -76,14 +75,14 @@ export default class Analysis extends React.Component {
     </div>;
   }
 
-  async componentDidUpdate(prevProps, prevState) {
+  async componentDidUpdate(_, prevState) {
     const {config} = this.state;
     const {config: prevConfig} = prevState;
-    if(config.processDefinitionId &&
-        (prevConfig.filter !== config.filter ||
-         prevConfig.processDefinitionId !== config.processDefinitionId)) {
-
-      this.setState({data: await loadFrequencyData(config.processDefinitionId, config.filter)});
+    const procDefConfigured = config.processDefinitionKey && config.processDefinitionVersion;
+    const procDefChanged =  (prevConfig.processDefinitionKey !== config.processDefinitionKey) ||
+                             (prevConfig.processDefinitionVersion !== config.processDefinitionVersion);                             
+    if(procDefConfigured && (procDefChanged || prevConfig.filter !== config.filter)) {
+      this.setState({data: await loadFrequencyData(config.processDefinitionKey, config.processDefinitionVersion, config.filter)});
     }
   }
 

@@ -31,23 +31,34 @@ it('should load the process definition xml when the process definition id is upd
   expect(loadProcessDefinitionXml).toHaveBeenCalledWith('someKey', 'someVersion');
 });
 
-it('should load frequency data when the process definition id changes', () => {
+it('should load frequency data when the process definition key changes', async () => {
   const node = mount(<Analysis />);
 
+  node.instance().updateConfig({'processDefinitionKey': 'someKey', 'processDefinitionVersion': 'someVersion'});
   loadFrequencyData.mockClear();
-  node.instance().updateConfig({'processDefinitionId': 'someId'});
+  await node.instance().updateConfig({'processDefinitionKey': 'anotherKey'});
 
-  expect(loadFrequencyData.mock.calls[0][0]).toBe('someId');
+  expect(loadFrequencyData.mock.calls[0][0]).toBe('anotherKey');
 });
 
-it('should load updated frequency data when the filter changed', () => {
+it('should load frequency data when the process definition version changes', async () => {
   const node = mount(<Analysis />);
 
-  node.instance().updateConfig({'processDefinitionId': 'someId'});
+  await node.instance().updateConfig({'processDefinitionKey': 'someKey', 'processDefinitionVersion': 'someVersion'});
   loadFrequencyData.mockClear();
-  node.instance().updateConfig({'filter': ['someFilter']});
+  await node.instance().updateConfig({'processDefinitionVersion': 'anotherVersion'});
 
-  expect(loadFrequencyData.mock.calls[0][1]).toEqual(['someFilter']);
+  expect(loadFrequencyData.mock.calls[0][1]).toBe('anotherVersion');
+});
+
+it('should load updated frequency data when the filter changed', async () => {
+  const node = mount(<Analysis />);
+
+  await node.instance().updateConfig({'processDefinitionKey': 'someKey', 'processDefinitionVersion': 'someVersion'});
+  loadFrequencyData.mockClear();
+  await node.instance().updateConfig({'filter': ['someFilter']});
+
+  expect(loadFrequencyData.mock.calls[0][2]).toEqual(['someFilter']);
 });
 
 it('should not try to load frequency data if no process definition is selected', () => {
@@ -73,9 +84,8 @@ it('should contain a statistics section if gateway and endEvent is selected', ()
 it('should clear the selection when another process definition is selected', async () => {
   const node = mount(<Analysis />);
 
-  node.instance().updateConfig({'processDefinitionId': 'a'});
-  node.instance().setState({gateway: 'g', endEvent: 'e'});
-  await node.instance().updateConfig({'processDefinitionId':'b'});
+  await node.instance().setState({gateway: 'g', endEvent: 'e'});
+  await node.instance().updateConfig({'processDefinitionKey':'newKey'});
 
   expect(node).toHaveState('gateway', null);
   expect(node).toHaveState('endEvent', null);

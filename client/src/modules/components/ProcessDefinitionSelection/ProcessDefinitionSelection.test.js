@@ -125,14 +125,14 @@ it('should disable version selection, if no key is selected', async () => {
 });
 
 it('should display all option in version selection if enabled', async () => {
-  const node = await mount(<ProcessDefinitionSelection enableAllVersionSelection={true} processDefinitionId={'procdef2'} {...props} />);
+  const node = await mount(<ProcessDefinitionSelection enableAllVersionSelection={true} {...props} />);
   await node.update();
 
   expect(node.find('option[value="ALL"]').text()).toBe('all');
 });
 
 it('should not display all option in version selection if disabled', async () => {
-  const node = await mount(<ProcessDefinitionSelection enableAllVersionSelection={false} processDefinitionId={'procdef2'} {...props} />);
+  const node = await mount(<ProcessDefinitionSelection enableAllVersionSelection={false} {...props} />);
   await node.update();
 
   expect(node.find('option[value="ALL"]').exists()).toBe(false);

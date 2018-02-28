@@ -6,18 +6,20 @@ export async function loadProcessDefinitionXml(processDefinitionKey, processDefi
   return await response.text();
 }
 
-export async function loadFrequencyData(id, filter) {
+export async function loadFrequencyData(processDefinitionKey, processDefinitionVersion, filter) {
   const response = await post('/api/process-definition/heatmap/frequency', {
-    processDefinitionId: id,
+    processDefinitionKey,
+    processDefinitionVersion,
     filter
   });
 
   return await response.json();
 }
 
-export async function loadCorrelationData(processDefinitionId, filter, gateway, end) {
+export async function loadCorrelationData(processDefinitionKey, processDefinitionVersion, filter, gateway, end) {
   const response = await post('/api/process-definition/correlation', {
-    processDefinitionId,
+    processDefinitionKey,
+    processDefinitionVersion,
     filter,
     gateway,
     end
