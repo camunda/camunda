@@ -15,16 +15,23 @@
  */
 package io.zeebe.logstreams.processor;
 
-import java.time.Duration;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import io.zeebe.logstreams.impl.Loggers;
-import io.zeebe.logstreams.log.*;
-import io.zeebe.logstreams.spi.*;
-import io.zeebe.util.sched.*;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamReader;
+import io.zeebe.logstreams.log.LogStreamWriter;
+import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.logstreams.spi.ReadableSnapshot;
+import io.zeebe.logstreams.spi.SnapshotStorage;
+import io.zeebe.logstreams.spi.SnapshotWriter;
+import io.zeebe.util.sched.ActorCondition;
+import io.zeebe.util.sched.ZbActor;
+import io.zeebe.util.sched.ZbActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.slf4j.Logger;
+
+import java.time.Duration;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class StreamProcessorController extends ZbActor
 {
@@ -64,10 +71,16 @@ public class StreamProcessorController extends ZbActor
     private EventProcessor eventProcessor;
     private ActorCondition onCommitPositionUpdatedCondition;
 
+    private boolean suspended = false;
+
     public StreamProcessorController(StreamProcessorContext context)
     {
         this.streamProcessorContext = context;
         this.streamProcessorContext.setActorControl(actor);
+
+        this.streamProcessorContext.setSuspendRunnable(this::suspend);
+        this.streamProcessorContext.setResumeRunnable(this::resume);
+
         this.actorScheduler = context.getActorScheduler();
         this.streamProcessor = context.getStreamProcessor();
         this.logStreamReader = context.getLogStreamReader();
@@ -297,7 +310,7 @@ public class StreamProcessorController extends ZbActor
 
     private void readNextEvent()
     {
-        if (isOpened() && !streamProcessor.isSuspended() && logStreamReader.hasNext())
+        if (isOpened() && !isSuspended() && logStreamReader.hasNext())
         {
             final LoggedEvent event = logStreamReader.next();
             currentEvent = event;
@@ -335,6 +348,11 @@ public class StreamProcessorController extends ZbActor
                 LOG.error(ERROR_MESSAGE_PROCESSING_FAILED, getName(), e);
                 onFailure();
             }
+        }
+        else
+        {
+            // continue with the next event
+            actor.submit(readNextEvent);
         }
     }
 
@@ -534,4 +552,19 @@ public class StreamProcessorController extends ZbActor
         return reprocessingEventFilter;
     }
 
+    public boolean isSuspended()
+    {
+        return suspended;
+    }
+
+    private void suspend()
+    {
+        suspended = true;
+    }
+
+    private void resume()
+    {
+        suspended = false;
+        actor.submit(readNextEvent);
+    }
 }

@@ -46,6 +46,9 @@ public class StreamProcessorContext
     protected EventFilter eventFilter;
     protected EventFilter reprocessingEventFilter;
 
+    private Runnable suspendRunnable;
+    private Runnable resumeRunnable;
+
     public LogStream getLogStream()
     {
         return logStream;
@@ -174,5 +177,35 @@ public class StreamProcessorContext
     public void setActorControl(ActorControl actorControl)
     {
         this.actorControl = actorControl;
+    }
+
+    public Runnable getSuspendRunnable()
+    {
+        return suspendRunnable;
+    }
+
+    public void setSuspendRunnable(Runnable suspendRunnable)
+    {
+        this.suspendRunnable = suspendRunnable;
+    }
+
+    public void suspendController()
+    {
+        suspendRunnable.run();
+    }
+
+    public Runnable getResumeRunnable()
+    {
+        return resumeRunnable;
+    }
+
+    public void setResumeRunnable(Runnable resumeRunnable)
+    {
+        this.resumeRunnable = resumeRunnable;
+    }
+
+    public void resumeController()
+    {
+        resumeRunnable.run();
     }
 }

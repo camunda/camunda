@@ -52,18 +52,6 @@ public interface StreamProcessor
     }
 
     /**
-     * Checks if the stream processor is currently suspended. If yes, the stream
-     * processor controller stop polling new events until the processor is
-     * active again.
-     *
-     * @return <code>true</code> if the stream processor is suspended
-     */
-    default boolean isSuspended()
-    {
-        return false;
-    }
-
-    /**
      * Callback which is invoked by the controller when it opens. An
      * implementation can provide any setup logic here.
      */
