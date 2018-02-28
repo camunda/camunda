@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
 
 import org.slf4j.Logger;
@@ -44,7 +45,7 @@ public abstract class EventSubscriberGroup<T extends EventSubscriber>
     protected static final String LOG_MESSAGE_PREFIX = "Subscriber Group {}: ";
 
     protected List<Partition> partitions;
-    protected List<T> subscribers = new ArrayList<>();
+    protected List<T> subscribers = new CopyOnWriteArrayList<>();
 
     protected CompletableFuture<EventSubscriberGroup<T>> openFuture;
     protected CompletableFuture<EventSubscriberGroup<T>> closeFuture;
