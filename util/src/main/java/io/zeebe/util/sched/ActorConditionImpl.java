@@ -45,26 +45,14 @@ public class ActorConditionImpl implements ActorCondition, ActorSubscription
     {
         this.conditionName = conditionName;
         this.job = job;
-        this.task = job.task;
+        this.task = job.getTask();
     }
 
     @Override
     public void signal()
     {
         UNSAFE.getAndAddInt(this, TRIGGER_COUNT_OFFSET, 1);
-
-        if (task.tryWakeup())
-        {
-            final ActorTaskRunner taskRunner = ActorTaskRunner.current();
-            if (taskRunner != null)
-            {
-                taskRunner.submit(task);
-            }
-            else
-            {
-                task.getScheduler().reSubmitActor(task);
-            }
-        }
+        task.tryWakeup();
     }
 
     @Override

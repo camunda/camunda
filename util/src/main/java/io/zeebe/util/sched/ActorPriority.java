@@ -13,33 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.util.sched.clock;
+package io.zeebe.util.sched;
 
-import io.zeebe.util.sched.ActorThread;
-
-public interface ActorClock
+/**
+ * Default Actor Priority Classes
+ */
+public enum ActorPriority
 {
-    void update();
+    HIGH(0),
 
-    long getTimeMillis();
+    REGULAR(1),
 
-    long getNanosSinceLastMillisecond();
+    LOW(2);
 
-    long getNanoTime();
+    private short priorityClass;
 
-    static ActorClock current()
+    ActorPriority(int priorityClass)
     {
-        final ActorThread current = ActorThread.current();
-        if (current == null)
-        {
-            throw new UnsupportedOperationException("ActorClock.current() can only be called from actor thread.");
-        }
-
-        return current.getClock();
+        this.priorityClass = (short) priorityClass;
     }
 
-    static long currentTimeMillis()
+    public short getPriorityClass()
     {
-        return current().getTimeMillis();
+        return priorityClass;
     }
 }

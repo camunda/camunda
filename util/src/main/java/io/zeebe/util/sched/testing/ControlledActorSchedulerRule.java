@@ -15,22 +15,36 @@
  */
 package io.zeebe.util.sched.testing;
 
-import io.zeebe.util.sched.ZbActor;
-import io.zeebe.util.sched.ZbActorScheduler;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.status.ConcurrentCountersManager;
+import java.time.Duration;
+import java.util.concurrent.ThreadPoolExecutor;
+
+import io.zeebe.util.sched.*;
+import io.zeebe.util.sched.ZbActorScheduler.ActorSchedulerBuilder;
+import io.zeebe.util.sched.ZbActorScheduler.ActorThreadFactory;
+import io.zeebe.util.sched.clock.ActorClock;
+import io.zeebe.util.sched.metrics.ActorThreadMetrics;
+import org.junit.Assert;
 import org.junit.rules.ExternalResource;
 
 public class ControlledActorSchedulerRule extends ExternalResource
 {
-    private final ControlledActorScheduler actorScheduler;
+    private final ZbActorScheduler actorScheduler;
+    private final ControlledActorThread controlledActorTaskRunner;
+    private final ThreadPoolExecutor blockingTasksRunner;
 
     public ControlledActorSchedulerRule()
     {
-        final UnsafeBuffer valueBuffer = new UnsafeBuffer(new byte[16 * 1024]);
-        final UnsafeBuffer labelBuffer = new UnsafeBuffer(new byte[valueBuffer.capacity() * 2 + 1]);
-        final ConcurrentCountersManager countersManager = new ConcurrentCountersManager(labelBuffer, valueBuffer);
-        actorScheduler = new ControlledActorScheduler(countersManager);
+        final ControlledActorThreadFactory actorTaskRunnerFactory = new ControlledActorThreadFactory();
+        final ActorSchedulerBuilder builder = ZbActorScheduler.newActorScheduler()
+            .setCpuBoundActorThreadCount(1)
+            .setIoBoundActorThreadCount(0)
+            .setActorThreadFactory(actorTaskRunnerFactory)
+            .setBlockingTasksShutdownTime(Duration.ofSeconds(0));
+
+        actorScheduler = builder.build();
+
+        controlledActorTaskRunner = actorTaskRunnerFactory.controlledThread;
+        blockingTasksRunner = builder.getBlockingTasksRunner();
     }
 
     @Override
@@ -57,11 +71,41 @@ public class ControlledActorSchedulerRule extends ExternalResource
 
     public void awaitBlockingTasksCompleted(int i)
     {
-        actorScheduler.awaitBlockingTasksCompleted(i);
+        final long currentTimeMillis = System.currentTimeMillis();
+
+        while (System.currentTimeMillis() - currentTimeMillis < 5000)
+        {
+            final long completedTaskCount = blockingTasksRunner.getCompletedTaskCount();
+            if (completedTaskCount >= i)
+            {
+                return;
+            }
+        }
+
+        Assert.fail("could not complete " + i + " blocking tasks within 5s");
     }
 
     public void workUntilDone()
     {
-        actorScheduler.workUntilDone();
+        controlledActorTaskRunner.workUntilDone();
+    }
+
+
+    static class ControlledActorThreadFactory implements ActorThreadFactory
+    {
+        private ControlledActorThread controlledThread;
+
+        @Override
+        public ActorThread newThread(
+                String name,
+                int id,
+                ActorThreadGroup threadGroup,
+                TaskScheduler taskScheduler,
+                ActorClock clock,
+                ActorThreadMetrics metrics)
+        {
+            controlledThread = new ControlledActorThread(name, id, threadGroup, taskScheduler, clock, metrics);
+            return controlledThread;
+        }
     }
 }

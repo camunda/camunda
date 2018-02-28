@@ -17,104 +17,387 @@ package io.zeebe.util.sched;
 
 import java.io.PrintStream;
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import io.zeebe.util.sched.clock.ActorClock;
-import io.zeebe.util.sched.metrics.ActorRunnerMetrics;
-
+import io.zeebe.util.sched.metrics.ActorThreadMetrics;
+import io.zeebe.util.sched.metrics.SchedulerMetrics;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.ConcurrentCountersManager;
-import org.agrona.concurrent.status.CountersManager;
 
 public class ZbActorScheduler
 {
-    protected Duration blockingTaskShutdownTime = Duration.ofSeconds(15);
-
     private final AtomicReference<SchedulerState> state = new AtomicReference<>();
+    private final ActorExecutor actorTaskExecutor;
+    private final ConcurrentCountersManager countersManager;
 
-    private final RunnerAssignmentStrategy runnerAssignmentStrategy;
-
-    final ActorTaskRunner[] nonBlockingTasksRunners;
-
-    protected final ThreadPoolExecutor blockingTasksRunner;
-
-    public final int runnerCount;
+    public ZbActorScheduler(ActorSchedulerBuilder builder)
+    {
+        state.set(SchedulerState.NEW);
+        actorTaskExecutor = builder.getActorExecutor();
+        countersManager = builder.getCountersManager();
+    }
 
     /**
-     * For testing, else manage the counters manager outside
+     * Submits an non-blocking, CPU-bound actor.
+     *
+     * @param actor
+     *            the actor to submit
+     *
+     * @param collectTaskMetrics
+     *            controls whether metrics should be written for this actor.
+     *            This has the overhead cost (time & memory) for allocating the
+     *            counters which are used to record the metrics. Generally,
+     *            metrics should not be recorded for short-lived tasks but only
+     *            make sense for long-lived tasks where a small overhead when
+     *            initially submitting the actor is acceptable.
      */
-    public ZbActorScheduler(int numOfRunnerThreads)
-    {
-        this(numOfRunnerThreads, buildDefaultCountersManager());
-    }
-
-    protected static CountersManager buildDefaultCountersManager()
-    {
-        final UnsafeBuffer valueBuffer = new UnsafeBuffer(new byte[16 * 1024]);
-        final UnsafeBuffer labelBuffer = new UnsafeBuffer(new byte[valueBuffer.capacity() * 2 + 1]);
-        return new ConcurrentCountersManager(labelBuffer, valueBuffer);
-    }
-
-    public ZbActorScheduler(int numOfRunnerThreads, CountersManager countersManager)
-    {
-        this(numOfRunnerThreads, countersManager, null);
-    }
-
-    public ZbActorScheduler(int numOfRunnerThreads, CountersManager countersManager, ActorClock clock)
-    {
-        this(numOfRunnerThreads, new RandomRunnerAssignmentStrategy(numOfRunnerThreads), countersManager, clock);
-    }
-
-    public ZbActorScheduler(int numOfRunnerThreads, RunnerAssignmentStrategy initialRunnerAssignmentStrategy, CountersManager countersManager)
-    {
-        this(numOfRunnerThreads, initialRunnerAssignmentStrategy, countersManager, null);
-    }
-
-    public ZbActorScheduler(int numOfRunnerThreads, RunnerAssignmentStrategy initialRunnerAssignmentStrategy, CountersManager countersManager, ActorClock clock)
-    {
-        this.runnerAssignmentStrategy = initialRunnerAssignmentStrategy;
-
-        state.set(SchedulerState.NEW);
-        runnerCount = numOfRunnerThreads;
-
-        nonBlockingTasksRunners = new ActorTaskRunner[runnerCount];
-
-        for (int i = 0; i < runnerCount; i++)
-        {
-            final ActorRunnerMetrics metrics = new ActorRunnerMetrics(String.format("runner-%d", i), countersManager);
-            nonBlockingTasksRunners[i] = createTaskRunner(i, metrics, clock);
-        }
-
-        blockingTasksRunner = new ThreadPoolExecutor(1, Integer.MAX_VALUE, 60L, TimeUnit.SECONDS, new SynchronousQueue<>(), new BlockingTasksThreadFactory());
-    }
-
-
-    protected ActorTaskRunner createTaskRunner(int i, final ActorRunnerMetrics metrics, ActorClock clock)
-    {
-        return new ActorTaskRunner(this, i, metrics, clock);
-    }
-
     public void submitActor(ZbActor actor)
     {
-        final ActorTaskRunner assignedRunner = runnerAssignmentStrategy.nextRunner(nonBlockingTasksRunners);
-
-        final ActorTask task = actor.actor.task;
-        task.onTaskScheduled(this);
-
-        assignedRunner.submit(task);
+        submitActor(actor, false);
     }
 
-    /** called when an actor returns from the blockedTasksRunner */
-    public void reSubmitActor(ActorTask task)
+    /**
+     * Submits an non-blocking, CPU-bound actor.
+     *
+     * @param actor
+     *            the actor to submit
+     *
+     * @param collectTaskMetrics
+     *            controls whether metrics should be written for this actor.
+     *            This has the overhead cost (time & memory) for allocating the
+     *            counters which are used to record the metrics. Generally,
+     *            metrics should not be recorded for short-lived tasks but only
+     *            make sense for long-lived tasks where a small overhead when
+     *            initially submitting the actor is acceptable.
+     */
+    public void submitActor(ZbActor actor, boolean collectTaskMetrics)
     {
-        final ActorTaskRunner assignedRunner = runnerAssignmentStrategy.nextRunner(nonBlockingTasksRunners);
-        assignedRunner.submit(task);
+        actorTaskExecutor.submitCpuBound(actor.actor.task, collectTaskMetrics);
     }
 
-    private final class BlockingTasksThreadFactory implements ThreadFactory
+    /**
+     * Submits an actor providing hints to the scheduler about how to best
+     * schedule the actor. Actors must always be non-blocking. On top of that,
+     * the scheduler distinguishes
+     * <ul>
+     * <li>CPU-bound actors: actors which perform no or very little blocking
+     * I/O. It is possible to specify a priority.</li>
+     * <li>I/O-bound actors: actors where the runtime is dominated by performing
+     * <strong>blocking I/O</strong> (usually filesystem writes). It is possible to
+     * specify the I/O device used by the actor.</li>
+     * </ul>
+     * Scheduling hints can be created using the {@link SchedulingHints} class.
+     *
+     * @param actor
+     *            the actor to submit
+     *
+     * @param collectTaskMetrics
+     *            controls whether metrics should be written for this actor.
+     *            This has the overhead cost (time & memory) for allocating the
+     *            counters which are used to record the metrics. Generally,
+     *            metrics should not be recorded for short-lived tasks but only
+     *            make sense for long-lived tasks where a small overhead when
+     *            initially submitting the actor is acceptable.
+     *
+     * @param schedulingHints
+     *            additional scheduling hint
+     */
+    public void submitActor(ZbActor actor, boolean collectTaskMetrics, int schedulingHints)
+    {
+        final ActorTask task = actor.actor.task;
+
+        if (SchedulingHints.isCpuBound(schedulingHints))
+        {
+            task.setPriority(SchedulingHints.getPriority(schedulingHints));
+            actorTaskExecutor.submitCpuBound(task, collectTaskMetrics);
+        }
+        else
+        {
+            task.setDeviceId(SchedulingHints.getIoDevice(schedulingHints));
+            actorTaskExecutor.submitIoBoundTask(task, collectTaskMetrics);
+        }
+    }
+
+    public void start()
+    {
+        if (state.compareAndSet(SchedulerState.NEW, SchedulerState.RUNNING))
+        {
+            actorTaskExecutor.start();
+        }
+        else
+        {
+            throw new IllegalStateException("Cannot start scheduler already started.");
+        }
+    }
+
+    public Future<Void> stop()
+    {
+        if (state.compareAndSet(SchedulerState.RUNNING, SchedulerState.TERMINATING))
+        {
+
+            return actorTaskExecutor.closeAsync()
+                .thenRun(() ->
+                {
+                    state.set(SchedulerState.TERMINATED);
+                });
+        }
+        else
+        {
+            throw new IllegalStateException("Cannot stop scheduler not running");
+        }
+    }
+
+    public void dumpMetrics(PrintStream ps)
+    {
+        SchedulerMetrics.printMetrics(countersManager, ps);
+    }
+
+    public static ActorSchedulerBuilder newActorScheduler()
+    {
+        return new ActorSchedulerBuilder();
+    }
+
+    public static ZbActorScheduler newDefaultActorScheduler()
+    {
+        return new ActorSchedulerBuilder().build();
+    }
+
+    public static class ActorSchedulerBuilder
+    {
+        private ActorClock actorClock;
+        private ConcurrentCountersManager countersManager;
+
+        private int cpuBoundThreadsCount = Math.max(1, Runtime.getRuntime().availableProcessors() - 2);
+        private ActorThreadGroup cpuBoundActorGroup;
+        private double[] priorityQuotas = new double[] { 0.60, 0.30, 0.10 };
+
+        private int ioBoundThreadsCount = 2;
+        private ActorThreadGroup ioBoundActorGroup;
+        private int[] ioDeviceConcurrency = new int[] { 2 };
+
+        private ActorThreadFactory actorThreadFactory;
+        private ThreadPoolExecutor blockingTasksRunner;
+        private Duration blockingTasksShutdownTime = Duration.ofSeconds(15);
+        private ActorExecutor actorExecutor;
+
+        public ActorSchedulerBuilder setActorClock(ActorClock actorClock)
+        {
+            this.actorClock = actorClock;
+            return this;
+        }
+
+        public ActorSchedulerBuilder setCountersManager(ConcurrentCountersManager countersManager)
+        {
+            this.countersManager = countersManager;
+            return this;
+        }
+
+        public ActorSchedulerBuilder setCpuBoundActorThreadCount(int actorThreadCount)
+        {
+            this.cpuBoundThreadsCount = actorThreadCount;
+            return this;
+        }
+
+        public ActorSchedulerBuilder setIoBoundActorThreadCount(int ioBoundActorsThreadCount)
+        {
+            this.ioBoundThreadsCount = ioBoundActorsThreadCount;
+            return this;
+        }
+
+        public ActorSchedulerBuilder setPriorityQuotas(double[] priorityQuotas)
+        {
+            this.priorityQuotas = priorityQuotas;
+            return this;
+        }
+
+        public ActorSchedulerBuilder setActorThreadFactory(ActorThreadFactory actorThreadFactory)
+        {
+            this.actorThreadFactory = actorThreadFactory;
+            return this;
+        }
+
+        public ActorSchedulerBuilder setBlockingTasksRunner(ThreadPoolExecutor blockingTasksRunner)
+        {
+            this.blockingTasksRunner = blockingTasksRunner;
+            return this;
+        }
+
+        public ActorSchedulerBuilder setBlockingTasksShutdownTime(Duration blockingTasksShutdownTime)
+        {
+            this.blockingTasksShutdownTime = blockingTasksShutdownTime;
+            return this;
+        }
+
+        public ActorSchedulerBuilder setActorExecutor(ActorExecutor actorExecutor)
+        {
+            this.actorExecutor = actorExecutor;
+            return this;
+        }
+
+        public ActorSchedulerBuilder setIoDeviceConcurrency(int[] ioDeviceConcurrency)
+        {
+            this.ioDeviceConcurrency = ioDeviceConcurrency;
+            return this;
+        }
+
+        public ActorClock getActorClock()
+        {
+            return actorClock;
+        }
+
+        public ConcurrentCountersManager getCountersManager()
+        {
+            return countersManager;
+        }
+
+        public int getCpuBoundActorThreadCount()
+        {
+            return cpuBoundThreadsCount;
+        }
+
+        public int getIoBoundActorThreadCount()
+        {
+            return ioBoundThreadsCount;
+        }
+
+        public double[] getPriorityQuotas()
+        {
+            return priorityQuotas;
+        }
+
+        public ActorThreadFactory getActorThreadFactory()
+        {
+            return actorThreadFactory;
+        }
+
+        public ThreadPoolExecutor getBlockingTasksRunner()
+        {
+            return blockingTasksRunner;
+        }
+
+        public Duration getBlockingTasksShutdownTime()
+        {
+            return blockingTasksShutdownTime;
+        }
+
+        public ActorExecutor getActorExecutor()
+        {
+            return actorExecutor;
+        }
+
+        public int[] getIoDeviceConcurrency()
+        {
+            return ioDeviceConcurrency;
+        }
+
+        public ActorThreadGroup getCpuBoundActorThreads()
+        {
+            return cpuBoundActorGroup;
+        }
+
+        public ActorThreadGroup getIoBoundActorThreads()
+        {
+            return ioBoundActorGroup;
+        }
+
+        private void initCountersManager()
+        {
+            if (countersManager == null)
+            {
+                final UnsafeBuffer valueBuffer = new UnsafeBuffer(new byte[64 * 1024]);
+                final UnsafeBuffer labelBuffer = new UnsafeBuffer(new byte[valueBuffer.capacity() * 2 + 1]);
+                countersManager = new ConcurrentCountersManager(labelBuffer, valueBuffer);
+            }
+        }
+
+        private void initActorThreadFactory()
+        {
+            if (actorThreadFactory == null)
+            {
+                actorThreadFactory = new DefaultActorThreadFactory();
+            }
+        }
+
+        private void initBlockingTaskRunner()
+        {
+            if (blockingTasksRunner == null)
+            {
+                blockingTasksRunner = new ThreadPoolExecutor(1,
+                    Integer.MAX_VALUE,
+                    60L,
+                    TimeUnit.SECONDS,
+                    new SynchronousQueue<>(),
+                    new BlockingTasksThreadFactory());
+            }
+        }
+
+        private void initIoBoundActorThreadGroup()
+        {
+            if (ioBoundActorGroup == null)
+            {
+                ioBoundActorGroup = new IoBoundThreadGroup(this);
+            }
+        }
+
+        private void initCpuBoundActorThreadGroup()
+        {
+            if (cpuBoundActorGroup == null)
+            {
+                cpuBoundActorGroup = new CpuBoundThreadGroup(this);
+            }
+        }
+
+
+        private void initActorExecutor()
+        {
+            if (actorExecutor == null)
+            {
+                actorExecutor = new ActorExecutor(this);
+            }
+        }
+
+        public ZbActorScheduler build()
+        {
+            initCountersManager();
+            initActorThreadFactory();
+            initBlockingTaskRunner();
+            initCpuBoundActorThreadGroup();
+            initIoBoundActorThreadGroup();
+            initActorExecutor();
+            return new ZbActorScheduler(this);
+        }
+    }
+
+    public interface ActorThreadFactory
+    {
+        ActorThread newThread(
+                String name,
+                int id,
+                ActorThreadGroup threadGroup,
+                TaskScheduler taskScheduler,
+                ActorClock clock,
+                ActorThreadMetrics metrics);
+    }
+
+    public static class DefaultActorThreadFactory implements ActorThreadFactory
+    {
+        @Override
+        public ActorThread newThread(
+                String name,
+                int id,
+                ActorThreadGroup threadGroup,
+                TaskScheduler taskScheduler,
+                ActorClock clock,
+                ActorThreadMetrics metrics)
+        {
+            return new ActorThread(name, id, threadGroup, taskScheduler, clock, metrics);
+        }
+    }
+
+    public static class BlockingTasksThreadFactory implements ThreadFactory
     {
         final AtomicLong idGenerator = new AtomicLong();
 
@@ -125,97 +408,6 @@ public class ZbActorScheduler
             thread.setName("zb-blocking-task-runner-" + idGenerator.incrementAndGet());
             return thread;
         }
-    }
-
-    public interface RunnerAssignmentStrategy
-    {
-        ActorTaskRunner nextRunner(ActorTaskRunner[] runners);
-    }
-
-    static class RandomRunnerAssignmentStrategy implements RunnerAssignmentStrategy
-    {
-        private final int numOfRunnerThreads;
-
-        RandomRunnerAssignmentStrategy(int numOfRunnerThreads)
-        {
-            this.numOfRunnerThreads = numOfRunnerThreads;
-        }
-
-        @Override
-        public ActorTaskRunner nextRunner(ActorTaskRunner[] runners)
-        {
-            final int runnerOffset = ThreadLocalRandom.current().nextInt(numOfRunnerThreads);
-
-            return runners[runnerOffset];
-        }
-    }
-
-    public void start()
-    {
-        if (state.compareAndSet(SchedulerState.NEW, SchedulerState.RUNNING))
-        {
-            for (int i = 0; i < nonBlockingTasksRunners.length; i++)
-            {
-                nonBlockingTasksRunners[i].start();
-            }
-        }
-        else
-        {
-            throw new IllegalStateException("Cannot start scheduler already started.");
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    public Future<Void> stop()
-    {
-        if (state.compareAndSet(SchedulerState.RUNNING, SchedulerState.TERMINATING))
-        {
-            blockingTasksRunner.shutdown();
-
-            final CompletableFuture<Void>[] terminationFutures = new CompletableFuture[nonBlockingTasksRunners.length];
-
-            for (int i = 0; i < runnerCount; i++)
-            {
-                try
-                {
-                    terminationFutures[i] = nonBlockingTasksRunners[i].close();
-                }
-                catch (IllegalStateException e)
-                {
-                    e.printStackTrace();
-                    terminationFutures[i] = CompletableFuture.completedFuture(null);
-                }
-            }
-
-            try
-            {
-                blockingTasksRunner.awaitTermination(blockingTaskShutdownTime.getSeconds(), TimeUnit.SECONDS);
-            }
-            catch (InterruptedException e)
-            {
-                e.printStackTrace();
-            }
-
-            return CompletableFuture.allOf(terminationFutures)
-                    .thenRun(() ->
-                    {
-                        state.set(SchedulerState.TERMINATED);
-                    });
-        }
-        else
-        {
-            throw new IllegalStateException("Cannot stop scheduler not running");
-        }
-    }
-
-    public void dumpMetrics(PrintStream ps)
-    {
-        ps.println("# Per runner metrics");
-        Arrays.asList(nonBlockingTasksRunners).forEach((r) ->
-        {
-            ps.format("# runner-%d\n", r.getRunnerId());
-            r.getMetrics().dump(ps);
-        });
     }
 
     private enum SchedulerState

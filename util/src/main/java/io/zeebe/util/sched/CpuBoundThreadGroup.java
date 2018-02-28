@@ -15,34 +15,27 @@
  */
 package io.zeebe.util.sched;
 
-import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.ZbActorScheduler.ActorSchedulerBuilder;
 
-public class ActorFutureSubscription implements ActorSubscription
+/**
+ * Thread group for the non-blocking, CPU bound, tasks.
+ */
+public class CpuBoundThreadGroup extends ActorThreadGroup
 {
-    private final ActorJob callbackJob;
-    private ActorFuture<?> future;
-
-    public ActorFutureSubscription(ActorFuture<?> future, ActorJob callbackJob)
+    public CpuBoundThreadGroup(ActorSchedulerBuilder builder)
     {
-        this.future = future;
-        this.callbackJob = callbackJob;
+        super("zb-actors", builder.getCpuBoundActorThreadCount(), builder.getPriorityQuotas().length, builder);
     }
 
     @Override
-    public boolean poll()
+    protected TaskScheduler createTaskScheduler(MultiLevelWorkstealingGroup tasks, ActorSchedulerBuilder builder)
     {
-        return future.isDone();
+        return new PriorityScheduler(tasks::getNextTask, builder.getPriorityQuotas());
     }
 
     @Override
-    public ActorJob getJob()
+    protected int getLevel(ActorTask actorTask)
     {
-        return callbackJob;
-    }
-
-    @Override
-    public boolean isRecurring()
-    {
-        return false;
+        return actorTask.getPriority();
     }
 }

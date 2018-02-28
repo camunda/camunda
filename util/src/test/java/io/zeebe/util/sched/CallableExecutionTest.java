@@ -74,7 +74,7 @@ public class CallableExecutionTest
         void sendPing()
         {
             final ActorFuture<Integer> future = pongActor.onPing(count);
-            actor.await(future, (r, t) ->
+            actor.runOnCompletion(future, (r, t) ->
             {
                 count = r;
                 if (count == 1_000_000)
@@ -118,7 +118,7 @@ public class CallableExecutionTest
             final ActorFuture<Integer> future2 = pongActor.onPing(count);
             final ActorFuture<Integer> future3 = pongActor.onPing(count);
 
-            actor.awaitAll(Arrays.asList(future1, future2, future3), (t) ->
+            actor.runOnCompletion(Arrays.asList(future1, future2, future3), (t) ->
             {
                 count = Math.max(Math.max(future1.join(), future2.join()), future3.join());
 

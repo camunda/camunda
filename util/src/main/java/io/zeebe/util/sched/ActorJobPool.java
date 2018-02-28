@@ -18,7 +18,7 @@ package io.zeebe.util.sched;
 /**
  * Pool used for recycling {@link ActorJob} objects.
  *<p>
- * This pool is not threadsafe and each {@link ActorTaskRunner} must have their own local pool.
+ * This pool is not threadsafe and each {@link ActorThread} must have their own local pool.
  *<p>
  * Jobs created by a pool instance are not "owned" by it. Due to work stealing or other
  * scheduling conditions, a job may be created by one runner but be executed by another.

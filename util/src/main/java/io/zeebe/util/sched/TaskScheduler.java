@@ -13,33 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.util.sched.clock;
+package io.zeebe.util.sched;
 
-import io.zeebe.util.sched.ActorThread;
+import io.zeebe.util.sched.clock.ActorClock;
 
-public interface ActorClock
+public interface TaskScheduler
 {
-    void update();
+    ActorTask getNextTask(ActorClock now);
 
-    long getTimeMillis();
-
-    long getNanosSinceLastMillisecond();
-
-    long getNanoTime();
-
-    static ActorClock current()
+    default void onTaskReleased(ActorTask task)
     {
-        final ActorThread current = ActorThread.current();
-        if (current == null)
-        {
-            throw new UnsupportedOperationException("ActorClock.current() can only be called from actor thread.");
-        }
-
-        return current.getClock();
-    }
-
-    static long currentTimeMillis()
-    {
-        return current().getTimeMillis();
+        // no-op
     }
 }
