@@ -1,32 +1,18 @@
+import com.atlassian.jira.component.ComponentAccessor
+import com.atlassian.jira.issue.label.LabelManager
 
-import com.atlassian.jira.ComponentManager
-import com.atlassian.jira.issue.Issue
-import Category
-import com.atlassian.jira.issue.link.IssueLink;
+LabelManager labelManager = ComponentAccessor.getComponent(LabelManager)
+def labels = labelManager.getLabels(issue.id).collect{it.getLabel()}
+def passesCondition = labels.toSet().contains('needs_testing')
 
-log = Category.getInstance("com.onresolve.jira.groovy.SubTasksAssignedToMe")
-passesCondition = true
-
-// Add other link types here, however for Blocks, to get a similar meaning,
-// you will need to check inward links
-linkType = ["subtask"]
-
-linkMgr = ComponentManager.getInstance().getIssueLinkManager()
-for (IssueLink link in linkMgr.getOutwardLinks(issue.id)) {
-  if (linkType.contains(link.issueLinkType.name)) {
-    if (! link.getDestinationObject().resolutionId) {
-      passesCondition = false
-    }
-  }
-
-}
-
-if (issue.issueType.name == 'Feature Request' && passesCondition) {
+if (passesCondition) {
   def urlBase = 'https://api.trello.com/1/cards'
+  def issueLink = 'https://app.camunda.com/jira/browse/' + issue.key
+  def description = issue.description == null ? ("\n" + issueLink) : (issue.description + "\n" + issueLink)
   def queryParams =
       'name=' + java.net.URLEncoder.encode(issue.summary, "UTF-8") +
-      '&desc=' + java.net.URLEncoder.encode(issue.description, "UTF-8") +
-      '&idList=5a7adb393d41337d452c77c1&keepFromSource=all&key=af2eff0e801b75b6c70d30f18bc4d800&token=c89d1c922d522e15c178f6322d92c7e54306ec286a467b92835c7e5bf2d5aa38'
+      '&desc=' + java.net.URLEncoder.encode(description, "UTF-8") +
+      '&idList=5a7adb393d41337d452c77c1&keepFromSource=all&key=af2eff0e801b75b6c70d30f18bc4d800&token=e8cfbc069d19337974ce9cfb21e6392e9d386b511f1ad7d3f6c7b3a98e43628c'
   def baseUrl = new URL(urlBase + '?' + queryParams)
   def queryString = ''
   def connection = baseUrl.openConnection()
