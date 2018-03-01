@@ -126,6 +126,10 @@ public class Sender extends ZbActor
                 blockPeek.markCompleted();
             }
         }
+        else
+        {
+            actor.yield();
+        }
     }
 
     private void sendData()
