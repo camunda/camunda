@@ -4,7 +4,6 @@ import org.camunda.optimize.dto.optimize.query.status.ConnectionStatusDto;
 import org.camunda.optimize.dto.optimize.query.status.ProgressDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
-import org.camunda.optimize.service.exceptions.InvalidTokenException;
 import org.camunda.optimize.service.security.TokenService;
 import org.camunda.optimize.service.status.StatusCheckingService;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -14,14 +13,10 @@ import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
 import org.mockito.Mockito;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.core.Response;
-
 import java.util.ArrayList;
 import java.util.List;
 
