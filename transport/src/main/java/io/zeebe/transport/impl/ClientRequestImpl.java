@@ -18,6 +18,7 @@ package io.zeebe.transport.impl;
 import io.zeebe.dispatcher.ClaimedFragment;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.transport.ClientRequest;
+import io.zeebe.transport.Loggers;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.impl.ClientRequestPool.RequestIdGenerator;
 import io.zeebe.util.buffer.BufferWriter;
@@ -134,7 +135,16 @@ public class ClientRequestImpl implements ClientRequest
 
     public void fail(String failure, Exception cause)
     {
-        responseFuture.completeExceptionally(failure, cause);
+        try
+        {
+            responseFuture.completeExceptionally(failure, cause);
+        }
+        catch (IllegalStateException e)
+        {
+            // ignore; this exception is expected when the request was resolved by the sender
+            // in the meantime
+            Loggers.TRANSPORT_LOGGER.debug("Could not fail request future", e);
+        }
     }
 
     @Override

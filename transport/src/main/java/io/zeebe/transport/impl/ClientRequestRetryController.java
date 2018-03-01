@@ -15,23 +15,26 @@
  */
 package io.zeebe.transport.impl;
 
-import io.zeebe.transport.ClientRequest;
-import io.zeebe.transport.NotConnectedException;
-import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.RequestTimeoutException;
-import io.zeebe.util.buffer.BufferWriter;
-import io.zeebe.util.buffer.DirectBufferWriter;
-import io.zeebe.util.sched.ZbActor;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-
 import java.time.Duration;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+
+import io.zeebe.transport.ClientRequest;
+import io.zeebe.transport.Loggers;
+import io.zeebe.transport.NotConnectedException;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.RequestTimeoutException;
+import io.zeebe.transport.impl.actor.ClientConductor;
+import io.zeebe.util.buffer.BufferWriter;
+import io.zeebe.util.buffer.DirectBufferWriter;
+import io.zeebe.util.sched.ZbActor;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 
 public class ClientRequestRetryController extends ZbActor
 {
@@ -40,6 +43,7 @@ public class ClientRequestRetryController extends ZbActor
     private final CompletableActorFuture<ClientRequest> successfulRequest = new CompletableActorFuture<>();
 
     private final ClientRequestPool requestPool;
+    private final ClientConductor conductor;
 
     private final Supplier<ActorFuture<RemoteAddress>> remoteAddressSupplier;
     private final Duration timeout;
@@ -50,14 +54,17 @@ public class ClientRequestRetryController extends ZbActor
     private final DirectBufferWriter requestWriter = new DirectBufferWriter();
 
     private final Deque<RemoteAddress> remotesTried = new LinkedList<>();
+    private boolean isClosing = false;
 
     public ClientRequestRetryController(
+            ClientConductor conductor,
             Supplier<ActorFuture<RemoteAddress>> remoteAddressSupplier,
             Predicate<DirectBuffer> responseInspector,
             ClientRequestPool requestPool,
             BufferWriter writer,
             Duration timeout)
     {
+        this.conductor = conductor;
         this.remoteAddressSupplier = remoteAddressSupplier;
         this.responseHandler = responseInspector;
         this.requestPool = requestPool;
@@ -74,6 +81,26 @@ public class ClientRequestRetryController extends ZbActor
     {
         actor.submit(this::getRemoteAddress);
         actor.runDelayed(timeout, this::onRequestTimedOut);
+        conductor.onManagedRequestStarted(this);
+    }
+
+    @Override
+    protected void onActorClosing()
+    {
+        conductor.onManagedRequestFinished(this);
+        Loggers.TRANSPORT_LOGGER.debug("Request Controller "  + System.identityHashCode(this) + " closed");
+    }
+
+    @Override
+    protected void onActorCloseRequested()
+    {
+        this.isClosing = true;
+
+        // timeout will no longer trigger, so we must fail the request here
+        if (currentRequest != null && !currentRequest.isDone())
+        {
+            currentRequest.fail("Request closed", new RuntimeException());
+        }
     }
 
     private void getRemoteAddress()
@@ -91,7 +118,7 @@ public class ClientRequestRetryController extends ZbActor
             }
             else
             {
-                actor.runDelayed(RESUBMIT_TIMEOUT, this::getRemoteAddress);
+                retryRequest();
             }
         });
     }
@@ -108,42 +135,61 @@ public class ClientRequestRetryController extends ZbActor
 
             actor.runOnCompletion(currentRequest, (response, e) ->
             {
-                boolean shouldRetry = false;
-
-                if (e != null)
-                {
-                    shouldRetry = e instanceof NotConnectedException;
-                }
-                else
-                {
-                    shouldRetry = responseHandler.test(response);
-                }
-
-                if (!shouldRetry)
-                {
-                    if (!successfulRequest.isDone())
-                    {
-                        if (e == null)
-                        {
-                            successfulRequest.complete(currentRequest);
-                            currentRequest = null;
-                        }
-                        else
-                        {
-                            successfulRequest.completeExceptionally(e);
-                        }
-                    }
-                }
-                else
-                {
-                    currentRequest.close();
-                    actor.runDelayed(RESUBMIT_TIMEOUT, this::getRemoteAddress);
-                }
+                onRequestResolved(response, e);
             });
         }
         else
         {
             actor.yield(); // retry send
+        }
+    }
+
+    private void onRequestResolved(DirectBuffer response, Throwable e)
+    {
+        boolean shouldRetry = false;
+
+        if (e != null)
+        {
+            shouldRetry = e instanceof NotConnectedException;
+        }
+        else
+        {
+            shouldRetry = responseHandler.test(response);
+        }
+
+        if (!shouldRetry)
+        {
+            if (!successfulRequest.isDone())
+            {
+                if (e == null)
+                {
+                    successfulRequest.complete(currentRequest);
+                    currentRequest = null;
+                }
+                else
+                {
+                    currentRequest.close();
+                    currentRequest = null;
+                    successfulRequest.completeExceptionally(e);
+                }
+
+                close();
+            }
+        }
+        else
+        {
+            currentRequest.close();
+            currentRequest = null;
+
+            retryRequest();
+        }
+    }
+
+    private void retryRequest()
+    {
+        if (!isClosing)
+        {
+            actor.runDelayed(RESUBMIT_TIMEOUT, this::getRemoteAddress);
         }
     }
 
@@ -154,10 +200,10 @@ public class ClientRequestRetryController extends ZbActor
             return;
         }
 
-        if (currentRequest != null)
+        if (currentRequest != null && !currentRequest.isDone())
         {
-            currentRequest.close();
-            currentRequest = null;
+            final String reason = "Time out";
+            currentRequest.fail(reason, new RuntimeException(reason));
         }
 
         final StringBuilder errBuilder = new StringBuilder("Request timed out after ")
@@ -173,11 +219,17 @@ public class ClientRequestRetryController extends ZbActor
 
         final String errorMessage = errBuilder.toString();
         successfulRequest.completeExceptionally(errorMessage, new RequestTimeoutException(errorMessage));
-        actor.close();
+        close();
     }
 
     public ActorFuture<ClientRequest> getRequest()
     {
         return successfulRequest;
+    }
+
+    public ActorFuture<Void> close()
+    {
+        Loggers.TRANSPORT_LOGGER.debug("Request Controller " + System.identityHashCode(this) + " closing");
+        return actor.close();
     }
 }

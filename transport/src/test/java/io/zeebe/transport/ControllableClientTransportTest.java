@@ -15,18 +15,30 @@
  */
 package io.zeebe.transport;
 
+import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
+
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.test.util.AutoCloseableRule;
+import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.buffer.DirectBufferWriter;
-import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
+import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import io.zeebe.util.time.ClockUtil;
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.*;
-import org.junit.rules.RuleChain;
 
 public class ControllableClientTransportTest
 {
@@ -38,7 +50,7 @@ public class ControllableClientTransportTest
 
     public static final int MESSAGES_REQUIRED_TO_SATURATE_SEND_BUFFER = SEND_BUFFER_SIZE / BUF1.capacity();
 
-    public ControlledActorSchedulerRule actorSchedulerRule = new ControlledActorSchedulerRule();
+    public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
     public AutoCloseableRule closeables = new AutoCloseableRule();
 
     @Rule
@@ -59,14 +71,14 @@ public class ControllableClientTransportTest
             .requestPoolSize(MESSAGES_REQUIRED_TO_SATURATE_SEND_BUFFER + 1)
             .scheduler(actorSchedulerRule.get())
             .build();
+
+        closeables.manage(clientTransport);
     }
 
     @After
     public void tearDown()
     {
         ClockUtil.reset();
-        clientTransport.closeAsync();
-        actorSchedulerRule.workUntilDone();
     }
 
     @Test
@@ -111,4 +123,65 @@ public class ControllableClientTransportTest
         assertThat(success).isFalse();
     }
 
+    @Test
+    public void shouldCloseTransportWhileWaitingForResponse() throws Exception
+    {
+        // given
+        final AtomicBoolean requestReceived = new AtomicBoolean(false);
+        final AtomicBoolean transportClosed = new AtomicBoolean(false);
+
+        buildServerTransport(b -> b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress())
+                .build(null, (output, remoteAddress, buffer, offset, length, requestId) ->
+                {
+                    requestReceived.set(true);
+                    return false;
+                }));
+
+        final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+
+        final BufferWriter writer = mock(BufferWriter.class);
+        when(writer.getLength()).thenReturn(16);
+
+        clientTransport.getOutput().sendRequestWithRetry(remote, writer);
+
+        final Thread closerThread = new Thread(() ->
+        {
+            clientTransport.close();
+            transportClosed.set(true);
+        });
+        waitUntil(() -> requestReceived.get());
+
+        // when
+        closerThread.start();
+
+        // then
+        closerThread.join(1000L);
+        assertThat(transportClosed).isTrue();
+    }
+
+
+    protected ServerTransport buildServerTransport(Function<ServerTransportBuilder, ServerTransport> builderConsumer)
+    {
+        final ZbActorScheduler serverScheduler = ZbActorScheduler.newDefaultActorScheduler();
+        closeables.manage(() ->
+        {
+            serverScheduler.stop().get();
+        });
+        serverScheduler.start();
+
+        final Dispatcher serverSendBuffer = Dispatchers.create("serverSendBuffer")
+            .bufferSize(SEND_BUFFER_SIZE)
+            .actorScheduler(actorSchedulerRule.get())
+            .build();
+        closeables.manage(serverSendBuffer);
+
+        final ServerTransportBuilder transportBuilder = Transports.newServerTransport()
+            .sendBuffer(serverSendBuffer)
+            .scheduler(actorSchedulerRule.get());
+
+        final ServerTransport serverTransport = builderConsumer.apply(transportBuilder);
+        closeables.manage(serverTransport);
+
+        return serverTransport;
+    }
 }

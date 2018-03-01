@@ -26,6 +26,7 @@ import io.zeebe.transport.ClientOutput;
 import io.zeebe.transport.ClientRequest;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.TransportMessage;
+import io.zeebe.transport.impl.actor.ClientConductor;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.sched.ZbActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -33,17 +34,20 @@ import io.zeebe.util.sched.future.CompletableActorFuture;
 
 public class ClientOutputImpl implements ClientOutput
 {
+    private final ClientConductor conductor;
     protected final Dispatcher sendBuffer;
     protected final ClientRequestPool requestPool;
     protected final Duration defaultRequestRetryTimeout;
     protected final ZbActorScheduler scheduler;
 
     public ClientOutputImpl(
+            ClientConductor conductor,
             ZbActorScheduler scheduler,
             Dispatcher sendBuffer,
             ClientRequestPool requestPool,
             Duration defaultRequestRetryTimeout)
     {
+        this.conductor = conductor;
         this.scheduler = scheduler;
         this.sendBuffer = sendBuffer;
         this.requestPool = requestPool;
@@ -78,7 +82,13 @@ public class ClientOutputImpl implements ClientOutput
     public ActorFuture<ClientRequest> sendRequestWithRetry(Supplier<ActorFuture<RemoteAddress>> remoteAddressSupplier, Predicate<DirectBuffer> responseInspector,
             BufferWriter writer, Duration timeout)
     {
-        final ClientRequestRetryController ctrl = new ClientRequestRetryController(remoteAddressSupplier, responseInspector, requestPool, writer, timeout);
+        final ClientRequestRetryController ctrl = new ClientRequestRetryController(
+                conductor,
+                remoteAddressSupplier,
+                responseInspector,
+                requestPool,
+                writer,
+                timeout);
 
         scheduler.submitActor(ctrl);
 
