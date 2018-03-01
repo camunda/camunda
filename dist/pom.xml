@@ -70,6 +70,26 @@
         </executions>
       </plugin>
       <plugin>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>copy-zbctl</id>
+            <phase>package</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <tasks>
+                <copy file="${env.GOPATH}/src/github.com/zeebe-io/zbc-go/dist/linux_amd64/zbctl" tofile="${project.build.directory}/zeebe-broker/bin/zbctl" failonerror="false" />
+                <copy file="${env.GOPATH}/src/github.com/zeebe-io/zbc-go/dist/windows_amd64/zbctl.exe" tofile="${project.build.directory}/zeebe-broker/bin/zbctl.exe" failonerror="false" />
+                <copy file="${env.GOPATH}/src/github.com/zeebe-io/zbc-go/dist/darwin_amd64/zbctl" tofile="${project.build.directory}/zeebe-broker/bin/zbctl.darwin" failonerror="false" />
+                <chmod dir="${project.build.directory}/zeebe-broker/bin" perm="ugo+rx" includes="zbctl*" />
+              </tasks>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <artifactId>maven-assembly-plugin</artifactId>
         <executions>
           <execution>
