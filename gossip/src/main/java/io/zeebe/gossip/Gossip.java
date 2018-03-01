@@ -109,7 +109,12 @@ public class Gossip extends ZbActor implements GossipController, GossipEventPubl
         {
             if (failure == null)
             {
-                actor.consume(subscription, () -> subscription.poll());
+                actor.consume(subscription, () -> {
+                    if (subscription.poll() == 0)
+                    {
+                        actor.yield();
+                    }
+                });
             }
             else
             {
