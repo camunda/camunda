@@ -35,6 +35,7 @@ import java.util.function.Supplier;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -107,6 +108,12 @@ public class ClientTransportTest
                 .messageReceiveBuffer(clientReceiveBuffer)
                 .build();
         closeables.manage(clientTransport);
+    }
+
+    @After
+    public void tearDown()
+    {
+        clientTransport.close();
     }
 
     protected ControllableServerTransport buildControllableServerTransport()
