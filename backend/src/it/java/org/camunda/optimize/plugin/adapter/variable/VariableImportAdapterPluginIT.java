@@ -14,21 +14,17 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.HttpHeaders;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 
 public class VariableImportAdapterPluginIT {
@@ -41,7 +37,7 @@ public class VariableImportAdapterPluginIT {
   private ImportAdapterProvider pluginProvider;
 
   @Before
-  public void setup() throws IOException {
+  public void setup() {
     configurationService = embeddedOptimizeRule.getConfigurationService();
     pluginProvider = embeddedOptimizeRule.getApplicationContext().getBean(ImportAdapterProvider.class);
   }
@@ -66,12 +62,12 @@ public class VariableImportAdapterPluginIT {
     variables.put("var2", 1);
     variables.put("var3", 1);
     variables.put("var4", 1);
-    String processDefinitionId = deploySimpleServiceTaskWithVariables(variables);
+    ProcessInstanceEngineDto processDefinition = deploySimpleServiceTaskWithVariables(variables);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    List<VariableRetrievalDto> variablesResponseDtos = getVariables(processDefinitionId);
+    List<VariableRetrievalDto> variablesResponseDtos = getVariables(processDefinition);
 
     //then only half the variables are added to Optimize
     assertThat(variablesResponseDtos.size(), is(2));
@@ -89,12 +85,12 @@ public class VariableImportAdapterPluginIT {
     variables.put("var2", "bar");
     variables.put("var3", "bar");
     variables.put("var4", "bar");
-    String processDefinitionId = deploySimpleServiceTaskWithVariables(variables);
+    ProcessInstanceEngineDto processDefinition = deploySimpleServiceTaskWithVariables(variables);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    List<VariableRetrievalDto> variablesResponseDtos = getVariables(processDefinitionId);
+    List<VariableRetrievalDto> variablesResponseDtos = getVariables(processDefinition);
 
     //then only half the variables are added to Optimize
     assertThat(variablesResponseDtos.size(), is(2));
@@ -108,12 +104,12 @@ public class VariableImportAdapterPluginIT {
     Map<String, Object> variables = new HashMap<>();
     variables.put("var1", 1);
     variables.put("var2", 1);
-    String processDefinitionId = deploySimpleServiceTaskWithVariables(variables);
+    ProcessInstanceEngineDto processDefinition = deploySimpleServiceTaskWithVariables(variables);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    List<VariableRetrievalDto> variablesResponseDtos = getVariables(processDefinitionId);
+    List<VariableRetrievalDto> variablesResponseDtos = getVariables(processDefinition);
 
     //then only half the variables are added to Optimize
     assertThat(variablesResponseDtos.size(), is(2));
@@ -127,12 +123,12 @@ public class VariableImportAdapterPluginIT {
     Map<String, Object> variables = new HashMap<>();
     variables.put("var1", 1);
     variables.put("var2", 1);
-    String processDefinitionId = deploySimpleServiceTaskWithVariables(variables);
+    ProcessInstanceEngineDto processDefinition = deploySimpleServiceTaskWithVariables(variables);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    List<VariableRetrievalDto> variablesResponseDtos = getVariables(processDefinitionId);
+    List<VariableRetrievalDto> variablesResponseDtos = getVariables(processDefinition);
 
     //then only half the variables are added to Optimize
     assertThat(variablesResponseDtos.size(), is(2));
@@ -146,12 +142,12 @@ public class VariableImportAdapterPluginIT {
     Map<String, Object> variables = new HashMap<>();
     variables.put("var1", 1);
     variables.put("var2", 1);
-    String processDefinitionId = deploySimpleServiceTaskWithVariables(variables);
+    ProcessInstanceEngineDto processDefinition = deploySimpleServiceTaskWithVariables(variables);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    List<VariableRetrievalDto> variablesResponseDtos = getVariables(processDefinitionId);
+    List<VariableRetrievalDto> variablesResponseDtos = getVariables(processDefinition);
 
     //then only half the variables are added to Optimize
     assertThat(variablesResponseDtos.size(), is(2));
@@ -165,12 +161,12 @@ public class VariableImportAdapterPluginIT {
     Map<String, Object> variables = new HashMap<>();
     variables.put("var1", 1);
     variables.put("var2", 1);
-    String processDefinitionId = deploySimpleServiceTaskWithVariables(variables);
+    ProcessInstanceEngineDto processDefinition = deploySimpleServiceTaskWithVariables(variables);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    List<VariableRetrievalDto> variablesResponseDtos = getVariables(processDefinitionId);
+    List<VariableRetrievalDto> variablesResponseDtos = getVariables(processDefinition);
 
     //then extra variable is added to Optimize
     assertThat(variablesResponseDtos.size(), is(3));
@@ -183,29 +179,28 @@ public class VariableImportAdapterPluginIT {
     pluginProvider.resetAdapters();
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", 1);
-    String processDefinitionId = deploySimpleServiceTaskWithVariables(variables);
+    ProcessInstanceEngineDto processDefinition = deploySimpleServiceTaskWithVariables(variables);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    List<VariableRetrievalDto> variablesResponseDtos = getVariables(processDefinitionId);
+    List<VariableRetrievalDto> variablesResponseDtos = getVariables(processDefinition);
 
     //then only half the variables are added to Optimize
     assertThat(variablesResponseDtos.size(), is(1));
     assertThat(variablesResponseDtos.get(0).getName(), is("var"));
   }
 
-  private List<VariableRetrievalDto> getVariables(String processDefinitionId) {
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-    List<VariableRetrievalDto> variablesResponseDtos =
-      embeddedOptimizeRule.target("variables/" + processDefinitionId)
-        .request()
-        .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
-        .get(new GenericType<List<VariableRetrievalDto>>(){});
-    return variablesResponseDtos;
+  private List<VariableRetrievalDto> getVariables(ProcessInstanceEngineDto processDefinition) {
+    return embeddedOptimizeRule.target("variables")
+      .queryParam("processDefinitionKey", processDefinition.getProcessDefinitionKey())
+      .queryParam("processDefinitionVersion", processDefinition.getProcessDefinitionVersion())
+      .request()
+      .header(HttpHeaders.AUTHORIZATION,embeddedOptimizeRule.getAuthorizationHeader())
+      .get(new GenericType<List<VariableRetrievalDto>>(){});
   }
 
-  private String deploySimpleServiceTaskWithVariables(Map<String, Object> variables) throws Exception {
+  private ProcessInstanceEngineDto deploySimpleServiceTaskWithVariables(Map<String, Object> variables) throws Exception {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess" + System.currentTimeMillis())
       .name("aProcessName" + System.currentTimeMillis())
         .startEvent()
@@ -215,7 +210,7 @@ public class VariableImportAdapterPluginIT {
       .done();
     ProcessInstanceEngineDto procInstance = engineRule.deployAndStartProcessWithVariables(processModel, variables);
     engineRule.waitForAllProcessesToFinish();
-    return procInstance.getDefinitionId();
+    return procInstance;
   }
 
   private void addVariableImportPluginBasePackagesToConfiguration(String... basePackages) {

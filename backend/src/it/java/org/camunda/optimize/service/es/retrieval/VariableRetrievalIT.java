@@ -2,8 +2,8 @@ package org.camunda.optimize.service.es.retrieval;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableRetrievalDto;
-import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.util.VariableHelper;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -11,9 +11,6 @@ import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.HttpHeaders;
@@ -43,20 +40,20 @@ public class VariableRetrievalIT {
   @Test
   public void getVariables() throws Exception {
     // given
-    String processDefinitionId = deploySimpleProcessDefinition();
+    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
     variables.put("var1", "value1");
     variables.put("var2", "value2");
     variables.put("var3", "value3");
-    engineRule.startProcessInstance(processDefinitionId, variables);
+    engineRule.startProcessInstance(processDefinition.getId(), variables);
     variables.clear();
     variables.put("var4", "value4");
-    engineRule.startProcessInstance(processDefinitionId, variables);
+    engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    List<VariableRetrievalDto> variableResponse = getVariables(processDefinitionId);
+    List<VariableRetrievalDto> variableResponse = getVariables(processDefinition);
 
     // then
     assertThat(variableResponse.size(), is(4));
@@ -69,19 +66,19 @@ public class VariableRetrievalIT {
   @Test
   public void noVariablesFromAnotherProcessDefinition() throws Exception {
     // given
-    String processDefinitionId = deploySimpleProcessDefinition();
-    String processDefinitionId2 = deploySimpleProcessDefinition();
+    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
+    ProcessDefinitionEngineDto processDefinition2 = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
     variables.put("var1", "value1");
-    engineRule.startProcessInstance(processDefinitionId, variables);
+    engineRule.startProcessInstance(processDefinition.getId(), variables);
     variables.clear();
     variables.put("var2", "value2");
-    engineRule.startProcessInstance(processDefinitionId2, variables);
+    engineRule.startProcessInstance(processDefinition2.getId(), variables);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    List<VariableRetrievalDto> variableResponse = getVariables(processDefinitionId);
+    List<VariableRetrievalDto> variableResponse = getVariables(processDefinition);
 
     // then
     assertThat(variableResponse.size(), is(1));
@@ -92,17 +89,17 @@ public class VariableRetrievalIT {
   @Test
   public void variablesAreSortedAlphabetically() throws Exception {
     // given
-    String processDefinitionId = deploySimpleProcessDefinition();
+    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
     variables.put("b", "value1");
     variables.put("c", "value2");
     variables.put("a", "value3");
-    engineRule.startProcessInstance(processDefinitionId, variables);
+    engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    List<VariableRetrievalDto> variableResponse = getVariables(processDefinitionId);
+    List<VariableRetrievalDto> variableResponse = getVariables(processDefinition);
 
     // then
     assertThat(variableResponse.size(), is(3));
@@ -114,16 +111,16 @@ public class VariableRetrievalIT {
   @Test
   public void variablesDoNotContainDuplicates() throws Exception {
     // given
-    String processDefinitionId = deploySimpleProcessDefinition();
+    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
     variables.put("var1", "value1");
-    engineRule.startProcessInstance(processDefinitionId, variables);
-    engineRule.startProcessInstance(processDefinitionId, variables);
+    engineRule.startProcessInstance(processDefinition.getId(), variables);
+    engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    List<VariableRetrievalDto> variableResponse = getVariables(processDefinitionId);
+    List<VariableRetrievalDto> variableResponse = getVariables(processDefinition);
 
     // then
     assertThat(variableResponse.size(), is(1));
@@ -133,17 +130,17 @@ public class VariableRetrievalIT {
   @Test
   public void variableWithSameNameAndDifferentType() throws Exception {
     // given
-    String processDefinitionId = deploySimpleProcessDefinition();
+    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", "value1");
-    engineRule.startProcessInstance(processDefinitionId, variables);
+    engineRule.startProcessInstance(processDefinition.getId(), variables);
     variables.put("var", true);
-    engineRule.startProcessInstance(processDefinitionId, variables);
+    engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    List<VariableRetrievalDto> variableResponse = getVariables(processDefinitionId);
+    List<VariableRetrievalDto> variableResponse = getVariables(processDefinition);
 
     // then
     assertThat(variableResponse.size(), is(2));
@@ -163,14 +160,14 @@ public class VariableRetrievalIT {
     variables.put("doubleVar", 5.5);
     variables.put("stringVar", "aString");
 
-    String processDefinitionId = deploySimpleProcessDefinition();
-    engineRule.startProcessInstance(processDefinitionId, variables);
+    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
+    engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     embeddedOptimizeRule.resetImportStartIndexes();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    List<VariableRetrievalDto> variableResponse = getVariables(processDefinitionId);
+    List<VariableRetrievalDto> variableResponse = getVariables(processDefinition);
 
     // then
     assertThat(variableResponse.size(), is(variables.size()));
@@ -180,21 +177,21 @@ public class VariableRetrievalIT {
     }
   }
 
-  private String deploySimpleProcessDefinition() throws IOException {
+  private ProcessDefinitionEngineDto deploySimpleProcessDefinition() throws IOException {
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
       .startEvent()
       .endEvent()
       .done();
-    String processDefinitionId = engineRule.deployProcessAndGetId(modelInstance);
-    return processDefinitionId;
+    return engineRule.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
-  private List<VariableRetrievalDto> getVariables(String processDefinitionId) {
-    String token = embeddedOptimizeRule.getAuthenticationToken();
+  private List<VariableRetrievalDto> getVariables(ProcessDefinitionEngineDto processDefinition) {
     Response response =
-        embeddedOptimizeRule.target("variables/" + processDefinitionId)
+        embeddedOptimizeRule.target("variables/")
+            .queryParam("processDefinitionKey", processDefinition.getKey())
+            .queryParam("processDefinitionVersion", processDefinition.getVersion())
             .request()
-            .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
+            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
             .get();
     return response.readEntity(new GenericType<List<VariableRetrievalDto>>() {});
   }

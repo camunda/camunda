@@ -24,7 +24,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.DATE_VARIABLES;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_DEFINITION_ID;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_DEFINITION_KEY;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_DEFINITION_VERSION;
 import static org.camunda.optimize.service.util.VariableHelper.getAllVariableTypeFieldLabels;
 import static org.camunda.optimize.service.util.VariableHelper.getNestedVariableNameFieldLabel;
 import static org.camunda.optimize.service.util.VariableHelper.getNestedVariableValueFieldLabel;
@@ -38,21 +39,24 @@ public class VariableReader {
 
   private final Logger logger = LoggerFactory.getLogger(VariableReader.class);
 
-  public static final String FILTER_FOR_NAME_AGGREGATION = "filterForName";
-  public static final String NAMES_AGGREGATION = "names";
-  public static final String VALUE_AGGREGATION = "values";
+  private static final String FILTER_FOR_NAME_AGGREGATION = "filterForName";
+  private static final String NAMES_AGGREGATION = "names";
+  private static final String VALUE_AGGREGATION = "values";
 
   @Autowired
   private Client esclient;
   @Autowired
   private ConfigurationService configurationService;
 
-  public List<VariableRetrievalDto> getVariables(String processDefinitionId) {
-    logger.debug("Fetching variables for process definition: {}", processDefinitionId);
+  public List<VariableRetrievalDto> getVariables(String processDefinitionKey, String processDefinitionVersion) {
+    logger.debug("Fetching variables for process definition with key [{}] and version [{}]",
+      processDefinitionKey,
+      processDefinitionVersion);
     QueryBuilder query;
     query =
       QueryBuilders.boolQuery()
-        .must(QueryBuilders.termsQuery(PROCESS_DEFINITION_ID, processDefinitionId));
+        .must(QueryBuilders.termsQuery(PROCESS_DEFINITION_KEY, processDefinitionKey))
+        .must(QueryBuilders.termsQuery(PROCESS_DEFINITION_VERSION, processDefinitionVersion));
 
     SearchRequestBuilder requestBuilder =
       esclient
@@ -102,12 +106,15 @@ public class VariableReader {
     }
   }
 
-  public List<String> getVariableValues(String processDefinitionId, String name, String type) {
-    logger.debug("Fetching variable values for process definition: {}", processDefinitionId);
+  public List<String> getVariableValues(String processDefinitionKey, String processDefinitionVersion, String name, String type) {
+    logger.debug("Fetching variable values for process definition with key [{}] and version [{}]",
+      processDefinitionKey,
+      processDefinitionVersion);
     QueryBuilder query;
     query =
       QueryBuilders.boolQuery()
-        .must(QueryBuilders.termsQuery(PROCESS_DEFINITION_ID, processDefinitionId));
+        .must(QueryBuilders.termsQuery(PROCESS_DEFINITION_KEY, processDefinitionKey))
+        .must(QueryBuilders.termsQuery(PROCESS_DEFINITION_VERSION, processDefinitionVersion));
 
     String variableFieldLabel = VariableHelper.variableTypeToFieldLabel(type);
     SearchResponse response =
@@ -138,7 +145,7 @@ public class VariableReader {
       terms(VALUE_AGGREGATION)
         .field(getNestedVariableValueFieldLabel(variableFieldLabel))
         .order(BucketOrder.key(true));
-    if (variableFieldLabel.equals(DATE_VARIABLES)) {
+    if (DATE_VARIABLES.equals(variableFieldLabel)) {
       variableValuesAgg.format(configurationService.getOptimizeDateFormat());
     }
     return

@@ -303,12 +303,12 @@ public class ImportIT  {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-    String procDefId = instanceDto.getDefinitionId();
     List<VariableRetrievalDto> variablesResponseDtos =
-      embeddedOptimizeRule.target("variables/" + procDefId)
+      embeddedOptimizeRule.target("variables")
+        .queryParam("processDefinitionKey", instanceDto.getProcessDefinitionKey())
+        .queryParam("processDefinitionVersion", instanceDto.getProcessDefinitionVersion())
         .request()
-        .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
+        .header(HttpHeaders.AUTHORIZATION,embeddedOptimizeRule.getAuthorizationHeader())
         .get(new GenericType<List<VariableRetrievalDto>>(){});
 
     //then
@@ -327,22 +327,22 @@ public class ImportIT  {
     Map<String, Object> variables = createPrimitiveTypeVariables();
     ProcessInstanceEngineDto instanceDto =
       engineRule.deployAndStartProcessWithVariables(processModel, variables);
-    embeddedOptimizeRule.importWithoutReset();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-    String procDefId = instanceDto.getDefinitionId();
     List<VariableRetrievalDto> variablesResponseDtos =
-      embeddedOptimizeRule.target("variables/" + procDefId)
+      embeddedOptimizeRule.target("variables")
+        .queryParam("processDefinitionKey", instanceDto.getProcessDefinitionKey())
+        .queryParam("processDefinitionVersion", instanceDto.getProcessDefinitionVersion())
         .request()
-        .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
+        .header(HttpHeaders.AUTHORIZATION,embeddedOptimizeRule.getAuthorizationHeader())
         .get(new GenericType<List<VariableRetrievalDto>>(){});
 
     //then
     assertThat(variablesResponseDtos.size(),is(variables.size()));
   }
-
 
   @Test
   public void variablesWithComplexTypeAreNotImported() throws Exception {
@@ -356,17 +356,19 @@ public class ImportIT  {
     complexVariableDto.setValueInfo(info);
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", complexVariableDto);
-    deployAndStartSimpleServiceTaskWithVariables(variables);
+    ProcessInstanceEngineDto instanceDto = deployAndStartSimpleServiceTaskWithVariables(variables);
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    String token = embeddedOptimizeRule.getAuthenticationToken();
     String procDefId = engineRule.getProcessDefinitionId();
     List<VariableRetrievalDto> variablesResponseDtos =
-      embeddedOptimizeRule.target("variables/" + procDefId)
+      embeddedOptimizeRule.target("variables")
+        .queryParam("processDefinitionKey", instanceDto.getProcessDefinitionKey())
+        .queryParam("processDefinitionVersion", instanceDto.getProcessDefinitionVersion())
         .request()
-        .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
+        .header(HttpHeaders.AUTHORIZATION,embeddedOptimizeRule.getAuthorizationHeader())
         .get(new GenericType<List<VariableRetrievalDto>>(){});
 
     //then
