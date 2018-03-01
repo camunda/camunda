@@ -38,8 +38,7 @@ import io.zeebe.servicecontainer.ServiceGroupReference;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
-import io.zeebe.util.sched.ActorTask;
-import io.zeebe.util.sched.ActorTaskRunner;
+import io.zeebe.util.sched.*;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 
 @SuppressWarnings("unchecked")
@@ -360,7 +359,7 @@ public class ServiceGroupReferenceTest
 
         protected void recordCurrentTask(String identifier)
         {
-            final ActorTask currentTask = ActorTaskRunner.current().getCurrentTask();
+            final ActorTask currentTask = ActorThread.current().getCurrentTask();
             actorContext.put(identifier, currentTask);
         }
 
