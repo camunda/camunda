@@ -3,7 +3,7 @@
 def backendModuleName = "backend"
 
 pipeline {
-  agent { label 'Optimize engine-7.7' }
+  agent { label 'optimize-build' }
 
   // Environment
   environment {
