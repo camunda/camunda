@@ -41,6 +41,8 @@ pipeline {
   stages {
     stage('Prepare') {
       steps {
+        git url: 'git@github.com:camunda/camunda-optimize', branch: 'master', credentialsId: 'camunda-jenkins-github-ssh', poll: false
+
         configFileProvider([
             configFile(fileId: 'camunda-maven-settings', replaceTokens: true, targetLocation: 'settings.xml')
         ]) {}
