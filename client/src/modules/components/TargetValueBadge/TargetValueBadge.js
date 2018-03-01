@@ -6,6 +6,10 @@ import './TargetValueBadge.css';
 const badgeType = 'TARGET_VALUE_BADGE';
 
 export default class TargetValueBadge extends React.Component {
+  componentWillUnmount() {
+    this.props.viewer.get('overlays').remove({type: badgeType});
+  }
+
   render() {
     const {viewer, values} = this.props;
 

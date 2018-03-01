@@ -19,11 +19,20 @@ const viewer = {
   add: jest.fn()
 };
 
-it('should add an overlay with the formatted target value', () => {
-  formatters.duration.mockReturnValue('some duration');
+formatters.duration.mockReturnValue('some duration');
 
+it('should add an overlay with the formatted target value', () => {
   mount(<TargetValueBadge viewer={viewer} values={{a: {value: 8, unit: 'hours'}}} />);
 
   expect(viewer.add).toHaveBeenCalled();
   expect(viewer.add.mock.calls[0][2].html.textContent).toBe('some duration');
+});
+
+it('should remove overlays when unmounting', () => {
+  const node = mount(<TargetValueBadge viewer={viewer} values={{a: {value: 8, unit: 'hours'}}} />);
+
+  viewer.remove.mockClear();
+  node.unmount();
+
+  expect(viewer.remove).toHaveBeenCalled();
 });
