@@ -28,7 +28,7 @@ export default class TargetValueDiagramBehavior extends React.Component {
     const elementRegistry = viewer.get('elementRegistry');
     const canvas = viewer.get('canvas');
 
-    // remove existing selection markers and indicate selectable status for all flownodes
+    // indicate selectable status for all valid flownodes
     elementRegistry.forEach(({businessObject}) => {
       if(this.isValidNode(businessObject)) {
         canvas.addMarker(businessObject.id, 'TargetValueDiagramBehavior__clickable');
