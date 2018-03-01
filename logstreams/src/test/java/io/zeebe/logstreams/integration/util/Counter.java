@@ -21,7 +21,7 @@ public class Counter implements Serializable
 {
     private static final long serialVersionUID = 1L;
 
-    private long count = 0;
+    private volatile long count = 0;
 
     public long getCount()
     {

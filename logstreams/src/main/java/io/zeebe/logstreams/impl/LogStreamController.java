@@ -25,8 +25,7 @@ import io.zeebe.dispatcher.BlockPeek;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Subscription;
 import io.zeebe.logstreams.spi.LogStorage;
-import io.zeebe.util.sched.ZbActor;
-import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.*;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.MutableDirectBuffer;
@@ -85,9 +84,10 @@ public class LogStreamController extends ZbActor
     {
         if (isOpenend.compareAndSet(false, true))
         {
-            this.openFuture = new CompletableActorFuture<>();
+            final CompletableActorFuture<Void> openFuture = new CompletableActorFuture<>();
+            this.openFuture = openFuture;
 
-            actorScheduler.submitActor(this);
+            actorScheduler.submitActor(this, true, SchedulingHints.ioBound((short) 0));
 
             return openFuture;
         }

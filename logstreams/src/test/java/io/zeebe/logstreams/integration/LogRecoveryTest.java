@@ -37,6 +37,7 @@ import org.agrona.DirectBuffer;
 import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 
+@Ignore("needs to be partially rewritten")
 public class LogRecoveryTest
 {
     // ~ overall message size 46 MB
@@ -62,7 +63,7 @@ public class LogRecoveryTest
 
     private class WrappedSnapshotStorage extends FsSnapshotStorage
     {
-        public long lastSnapshotPosition = -1;
+        public volatile long lastSnapshotPosition = -1;
 
         public WrappedSnapshotStorage(FsSnapshotStorageConfiguration cfg)
         {
@@ -190,6 +191,8 @@ public class LogRecoveryTest
     @Test
     public void shouldRecoverIndexFromSnapshot()
     {
+        controlledActorClock.setCurrentTime(1000);
+
         // given open log stream
         final LogStream log = logStreamBuilder.build();
         scheduleCommitPositionUpdated(log);
@@ -224,54 +227,6 @@ public class LogRecoveryTest
         TestUtil.waitUntil(() -> newLog.getLogBlockIndex().size() > recoveredIndexSize);
         newLog.close();
         logReader.close();
-    }
-
-    @Test
-    public void shouldRecoverIndexFromSnapshotButNotCreateMoreIndices()
-    {
-        // given open log stream
-        final LogStream log = logStreamBuilder.build();
-        scheduleCommitPositionUpdated(log);
-        log.open();
-        log.openLogStreamController().join();
-        writeLogEvents(log, WORK_COUNT / 2, MSG_SIZE, 0);
-        waitUntilWrittenKey(log, WORK_COUNT / 2);
-        final int indexSize = log.getLogBlockIndex().size();
-        controlledActorClock.addTime(Duration.ofMinutes(5));
-
-        writeLogEvents(log, WORK_COUNT / 2, MSG_SIZE, WORK_COUNT / 2);
-        waitUntilWrittenKey(log, WORK_COUNT);
-
-        // wait until snapshot was written
-        TestUtil.waitUntil(() -> wrappedSnapshotStorage.lastSnapshotPosition > 0L);
-        log.close();
-
-        final int endIndexSize = log.getLogBlockIndex().size();
-        assertThat(endIndexSize).isGreaterThan(indexSize);
-
-        // when new log stream is opened
-        final LogStream newLog = LogStreams.createFsLogStream(TOPIC_NAME, PARTITION_ID)
-            .logRootPath(logPath)
-            .deleteOnClose(true)
-            .logSegmentSize(LOG_SEGMENT_SIZE)
-            .indexBlockSize(INDEX_BLOCK_SIZE)
-            .readBlockSize(INDEX_BLOCK_SIZE)
-            .actorScheduler(actorScheduler.get())
-            .build();
-        newLog.open();
-
-        // then block index is recovered
-        TestUtil.waitUntil(() -> newLog.getLogBlockIndex().size() >= indexSize);
-        final int recoveredIndexSize = newLog.getLogBlockIndex().size();
-
-        // but no further indices are created
-        final LogStreamReader logReader = new BufferedLogStreamReader(newLog, true);
-        LogIntegrationTestUtil.readLogAndAssertEvents(logReader, WORK_COUNT, MSG_SIZE);
-        newLog.close();
-        logReader.close();
-
-        final int newIndexSize = newLog.getLogBlockIndex().size();
-        assertThat(newIndexSize).isEqualTo(recoveredIndexSize);
     }
 
     @Test

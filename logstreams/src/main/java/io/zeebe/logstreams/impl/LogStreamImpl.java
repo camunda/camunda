@@ -150,7 +150,8 @@ public final class LogStreamImpl extends ZbActor implements LogStream
     {
         if (isOpen.compareAndSet(false, true))
         {
-            openFuture = new CompletableActorFuture<>();
+            final CompletableActorFuture<Void> openFuture = new CompletableActorFuture<>();
+            this.openFuture = openFuture;
 
             actor.call(() ->
             {
@@ -197,7 +198,8 @@ public final class LogStreamImpl extends ZbActor implements LogStream
         }
         else if (isAppendControllerOpen.compareAndSet(false, true))
         {
-            openAppendControllerFuture = new CompletableActorFuture<>();
+            final CompletableActorFuture<Void> openAppendControllerFuture = new CompletableActorFuture<>();
+            this.openAppendControllerFuture = openAppendControllerFuture;
 
             actor.call(() ->
             {
@@ -313,7 +315,8 @@ public final class LogStreamImpl extends ZbActor implements LogStream
     {
         if (isOpen.compareAndSet(true, false))
         {
-            closeFuture = new CompletableActorFuture<>();
+            final CompletableActorFuture<Void> closeFuture = new CompletableActorFuture<>();
+            this.closeFuture = closeFuture;
 
             actor.call(() ->
             {

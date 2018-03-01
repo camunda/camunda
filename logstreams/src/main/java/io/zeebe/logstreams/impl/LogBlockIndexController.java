@@ -139,9 +139,10 @@ public class LogBlockIndexController extends ZbActor
     {
         if (isOpenend.compareAndSet(false, true))
         {
-            this.openFuture = new CompletableActorFuture<>();
+            final CompletableActorFuture<Void> openFuture = new CompletableActorFuture<>();
+            this.openFuture = openFuture;
 
-            actorScheduler.submitActor(this);
+            actorScheduler.submitActor(this, true);
 
             return openFuture;
         }
