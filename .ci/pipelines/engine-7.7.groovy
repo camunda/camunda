@@ -4,20 +4,20 @@ def backendModuleName = "backend"
 
 def copySnapshots() {
   script {
-    sh 'sh ./../scripts/copy_snapshots.sh'
+    sh 'sh ./.ci/scripts/copy_snapshots.sh'
   }
 }
 
 def startElasticsearch() {
   stopAllOptimizeComponents()
   script {
-    sh 'sh ./../scripts/start-es.sh'
+    sh 'sh ./.ci/scripts/start-es.sh'
   }
 }
 
 def stopAllOptimizeComponents() {
   script {
-    sh 'sh ./../scripts/kill-all-components.sh'
+    sh 'sh ./.ci/scripts/kill-all-components.sh'
   }
 }
 
