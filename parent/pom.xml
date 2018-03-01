@@ -57,6 +57,8 @@
     <plugin.version.exec>1.6.0</plugin.version.exec>
     <plugin.version.resources>2.6</plugin.version.resources>
     <plugin.version.scala>3.2.1</plugin.version.scala>
+    <plugin.version.antrun>1.8</plugin.version.antrun>
+    <plugin.version.versions>2.5</plugin.version.versions>
   </properties>
 
   <dependencyManagement>
@@ -342,6 +344,20 @@
               </pluginExecutions>
             </lifecycleMappingMetadata>
           </configuration>
+        </plugin>
+
+        <!-- Ant run plugin -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-antrun-plugin</artifactId>
+          <version>${plugin.version.antrun}</version>
+        </plugin>
+
+        <!-- Versions plugin to update versions in pom files -->
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>versions-maven-plugin</artifactId>
+          <version>${plugin.version.versions}</version>
         </plugin>
 
       </plugins>
