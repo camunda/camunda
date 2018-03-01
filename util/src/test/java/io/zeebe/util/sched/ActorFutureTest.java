@@ -34,9 +34,9 @@ import org.junit.Test;
 
 public class ActorFutureTest
 {
-
     @Rule
     public ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
+
 
     @Test
     public void shouldInvokeCallbackOnFutureCompletion()
@@ -328,6 +328,7 @@ public class ActorFutureTest
         // given
         final BlockedCallActor actor = new BlockedCallActor();
         schedulerRule.submitActor(actor);
+        actor.waitOnFuture(); // actor is waiting on future
         schedulerRule.workUntilDone();
 
         // when
@@ -366,9 +367,20 @@ public class ActorFutureTest
         @Override
         protected void onActorStarted()
         {
-            final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
-            actor.runOnCompletion(future, (r, t) ->
+            actor.onCondition("foo", () ->
             {
+                // prevent auto-close
+            });
+        }
+
+        public void waitOnFuture()
+        {
+            actor.call(() ->
+            {
+                actor.runOnCompletion(new CompletableActorFuture<>(), (r, t) ->
+                {
+                    // never called since future is never completed
+                });
             });
         }
 

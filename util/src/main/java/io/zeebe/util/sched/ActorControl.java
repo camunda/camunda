@@ -332,12 +332,11 @@ public class ActorControl
 
         closeJob.onJobAddedToTask(task);
         closeJob.setAutoCompleting(true);
-
-        closeJob.setRunnable(task::closingBehavior);
+        closeJob.setRunnable(task::requestClose);
 
         task.submit(closeJob);
 
-        return task.terminationFuture;
+        return task.closeFuture;
     }
 
     private void scheduleRunnable(Runnable runnable, boolean autocompleting)

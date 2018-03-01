@@ -17,13 +17,14 @@ package io.zeebe.util.sched;
 
 import java.util.concurrent.Callable;
 
+import io.zeebe.util.sched.ActorTask.TaskSchedulingState;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 
 @SuppressWarnings({ "unchecked", "rawtypes" })
 public class ActorJob
 {
-    ActorState state;
+    TaskSchedulingState schedulingState;
 
     ZbActor actor;
     ActorTask task;
@@ -46,7 +47,7 @@ public class ActorJob
     {
         this.actor = task.actor;
         this.task = task;
-        this.state = ActorState.QUEUED;
+        this.schedulingState = TaskSchedulingState.QUEUED;
     }
 
     void execute(ActorThread runner)
@@ -84,11 +85,11 @@ public class ActorJob
                     || (isAutoCompleting && runnable == null)
                     || isDoneCalled)
             {
-                state = ActorState.TERMINATED;
+                schedulingState = TaskSchedulingState.TERMINATED;
             }
             else
             {
-                state = ActorState.QUEUED;
+                schedulingState = TaskSchedulingState.QUEUED;
             }
         }
     }
@@ -179,7 +180,7 @@ public class ActorJob
      */
     void reset()
     {
-        state = ActorState.NOT_SCHEDULED;
+        schedulingState = TaskSchedulingState.NOT_SCHEDULED;
 
         next = null;
         actor = null;
@@ -226,7 +227,7 @@ public class ActorJob
             toString += callable.getClass().getName();
         }
 
-        toString += " " + state;
+        toString += " " + schedulingState;
 
         return toString;
     }

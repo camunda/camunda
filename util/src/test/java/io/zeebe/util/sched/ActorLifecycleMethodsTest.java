@@ -98,7 +98,7 @@ public class ActorLifecycleMethodsTest
             }
         });
 
-        if (!latch.await(5, TimeUnit.SECONDS))
+        if (!latch.await(5, TimeUnit.MINUTES))
         {
             fail("onActorStarted() never called");
         }

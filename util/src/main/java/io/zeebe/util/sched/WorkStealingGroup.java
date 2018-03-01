@@ -15,6 +15,8 @@
  */
 package io.zeebe.util.sched;
 
+import static io.zeebe.util.sched.ActorTask.TaskSchedulingState.QUEUED;
+
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -42,7 +44,7 @@ public class WorkStealingGroup
      */
     public void submit(ActorTask task, int threadId)
     {
-        task.state = ActorState.QUEUED;
+        task.schedulingState = QUEUED;
         taskQueues[threadId].append(task);
     }
 

@@ -31,15 +31,41 @@ import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 @SuppressWarnings("restriction")
 public class ActorTask
 {
+    /**
+     * Describes an actor's scheduling state
+     */
+    public enum TaskSchedulingState
+    {
+        NOT_SCHEDULED,
+        ACTIVE,
+        QUEUED,
+        WAITING,
+        WAKING_UP,
+        TERMINATED
+    }
+
+    /**
+     * An actor task's lifecycle phases
+     *
+     */
+    public enum ActorLifecyclePhase
+    {
+        STARTING,
+        STARTED,
+        CLOSE_REQUESTED,
+        CLOSING,
+        CLOSED
+    }
+
     private static final long STATE_COUNT_OFFSET;
-    private static final long STATE_OFFSET;
+    private static final long SCHEDULING_STATE_OFFSET;
 
     static
     {
         try
         {
             STATE_COUNT_OFFSET = UNSAFE.objectFieldOffset(ActorTask.class.getDeclaredField("stateCount"));
-            STATE_OFFSET = UNSAFE.objectFieldOffset(ActorTask.class.getDeclaredField("state"));
+            SCHEDULING_STATE_OFFSET = UNSAFE.objectFieldOffset(ActorTask.class.getDeclaredField("schedulingState"));
         }
         catch (Exception e)
         {
@@ -47,7 +73,7 @@ public class ActorTask
         }
     }
 
-    public final CompletableActorFuture<Void> terminationFuture = new CompletableActorFuture<>();
+    public final CompletableActorFuture<Void> closeFuture = new CompletableActorFuture<>();
 
     final ZbActor actor;
 
@@ -58,7 +84,9 @@ public class ActorTask
      * from a job within the same actor while the task is in RUNNING state. */
     final ManyToOneConcurrentLinkedQueue<ActorJob> submittedJobs = new ManyToOneConcurrentLinkedQueue<>();
 
-    volatile ActorState state = null;
+    private ActorLifecyclePhase lifecyclePhase = ActorLifecyclePhase.CLOSED;
+
+    volatile TaskSchedulingState schedulingState = null;
 
     volatile long stateCount = 0;
 
@@ -67,8 +95,6 @@ public class ActorTask
     private ActorSubscription[] subscriptions = new ActorSubscription[0];
 
     boolean shouldYield;
-
-    boolean isClosing;
 
     private TaskMetrics taskMetrics;
 
@@ -95,10 +121,10 @@ public class ActorTask
         this.actorExecutor = actorExecutor;
         this.actorThreadGroup = actorThreadGroup;
         // reset previous state to allow re-scheduling
-        this.terminationFuture.close();
-        this.terminationFuture.setAwaitingResult();
-        this.isClosing = false;
+        this.closeFuture.close();
+        this.closeFuture.setAwaitingResult();
         this.isJumbo = false;
+        this.lifecyclePhase = ActorLifecyclePhase.STARTING;
 
         this.isCollectTaskMetrics = taskMetrics != null;
         this.taskMetrics = taskMetrics;
@@ -123,7 +149,7 @@ public class ActorTask
 
     public boolean execute(ActorThread runner)
     {
-        state = ActorState.ACTIVE;
+        schedulingState = TaskSchedulingState.ACTIVE;
 
         boolean resubmit = false;
 
@@ -139,7 +165,7 @@ public class ActorTask
                 e.printStackTrace();
             }
 
-            switch (currentJob.state)
+            switch (currentJob.schedulingState)
             {
                 case TERMINATED:
 
@@ -184,30 +210,71 @@ public class ActorTask
 
         if (currentJob == null)
         {
-            if (subscriptions.length > 0 && !isClosing)
+            resubmit = onAllJobsDone();
+        }
+
+        return resubmit;
+    }
+
+    private boolean onAllJobsDone()
+    {
+        boolean resubmit = false;
+
+        if (allPhaseSubscriptionsTriggered())
+        {
+            switch (lifecyclePhase)
             {
-                resubmit = setStateActiveToWaiting();
-            }
-            else
-            {
-                if (isClosing)
-                {
-                    cleanUpOnClose();
-                }
-                else
-                {
-                    autoClose(runner);
+                case STARTING:
+                    lifecyclePhase = ActorLifecyclePhase.STARTED;
                     resubmit = true;
-                }
+                    break;
+
+                case CLOSING:
+                    lifecyclePhase = ActorLifecyclePhase.CLOSED;
+                    resubmit = true;
+                    break;
+
+                case STARTED:
+                    lifecyclePhase = ActorLifecyclePhase.CLOSING;
+                    submitCloseJob();
+                    resubmit = true;
+                    break;
+
+                case CLOSE_REQUESTED:
+                    lifecyclePhase = ActorLifecyclePhase.CLOSING;
+                    submitCloseJob();
+                    resubmit = true;
+                    break;
+
+                case CLOSED:
+                    onClosed();
+                    resubmit = false;
+                    break;
+            }
+        }
+        else
+        {
+            if (lifecyclePhase != ActorLifecyclePhase.CLOSED)
+            {
+                resubmit = tryWait();
             }
         }
 
         return resubmit;
     }
 
-    private void cleanUpOnClose()
+    private void submitCloseJob()
     {
-        state = ActorState.TERMINATED;
+        final ActorJob closeJob = ActorThread.current().newJob();
+        closeJob.onJobAddedToTask(this);
+        closeJob.setAutoCompleting(true);
+        closeJob.setRunnable(actor::onActorClosing);
+        currentJob = closeJob;
+    }
+
+    private void onClosed()
+    {
+        schedulingState = TaskSchedulingState.NOT_SCHEDULED;
         subscriptions = new ActorSubscription[0];
 
         while (submittedJobs.poll() != null)
@@ -220,37 +287,16 @@ public class ActorTask
             taskMetrics.close();
         }
 
-        terminationFuture.complete(null);
+        closeFuture.complete(null);
     }
 
-    private void autoClose(ActorThread runner)
+    public void requestClose()
     {
-        final ActorJob closeJob = runner.newJob();
-
-        closeJob.onJobAddedToTask(this);
-        closeJob.setAutoCompleting(true);
-
-        closeJob.setRunnable(this::closingBehavior);
-
-        currentJob = closeJob;
-    }
-
-    public void closingBehavior()
-    {
-        // could be that we both autoclose but also get close job externallly
-        if (!isClosing)
+        if (lifecyclePhase == ActorLifecyclePhase.STARTED)
         {
-            isClosing = true;
-
-            subscriptions = new ActorSubscription[0];
-
-            while (submittedJobs.poll() != null)
-            {
-                // discard jobs
-            }
-            ActorThread.current().getCurrentJob().next = null;
-
-            actor.onActorClosing();
+            this.lifecyclePhase = ActorLifecyclePhase.CLOSE_REQUESTED;
+            // discard next jobs
+            currentJob.next = null;
         }
     }
 
@@ -259,9 +305,9 @@ public class ActorTask
         return UNSAFE.compareAndSwapLong(this, STATE_COUNT_OFFSET, expectedCount, expectedCount + 1);
     }
 
-    boolean casState(ActorState expectedState, ActorState newState)
+    boolean casState(TaskSchedulingState expectedState, TaskSchedulingState newState)
     {
-        return UNSAFE.compareAndSwapObject(this, STATE_OFFSET, expectedState, newState);
+        return UNSAFE.compareAndSwapObject(this, SCHEDULING_STATE_OFFSET, expectedState, newState);
     }
 
     public boolean claim(long stateCount)
@@ -275,17 +321,17 @@ public class ActorTask
     }
 
     /**
-     * used to transition from the {@link ActorState#ACTIVE} to the {@link ActorState#WAITING}
+     * used to transition from the {@link TaskSchedulingState#ACTIVE} to the {@link TaskSchedulingState#WAITING}
      * state
      */
-    boolean setStateActiveToWaiting()
+    boolean tryWait()
     {
         // take copy of subscriptions list: once we set the state to WAITING, the task could be woken up by another
         // thread. That thread could modify the subscriptions array.
         final ActorSubscription[] subscriptionsCopy = this.subscriptions;
 
         // first set state to waiting
-        state = ActorState.WAITING;
+        schedulingState = TaskSchedulingState.WAITING;
 
         /*
          * Accounts for the situation where a job is appended while in state active.
@@ -296,7 +342,7 @@ public class ActorTask
         if (!submittedJobs.isEmpty() || pollSubscriptionsWithoutAddingJobs(subscriptionsCopy))
         {
             // could be that another thread already woke up this task
-            if (casState(ActorState.WAITING, ActorState.WAKING_UP))
+            if (casState(TaskSchedulingState.WAITING, TaskSchedulingState.WAKING_UP))
             {
                 return true;
             }
@@ -309,7 +355,7 @@ public class ActorTask
     {
         boolean didWakeup = false;
 
-        if (casState(ActorState.WAITING, ActorState.WAKING_UP))
+        if (casState(TaskSchedulingState.WAITING, TaskSchedulingState.WAKING_UP))
         {
             actorThreadGroup.submit(this);
             didWakeup = true;
@@ -330,21 +376,16 @@ public class ActorTask
 
     private boolean pollSubscriptions()
     {
-        if (isClosing)
-        {
-            return false;
-        }
-
         boolean hasJobs = false;
 
         for (int i = 0; i < subscriptions.length; i++)
         {
             final ActorSubscription subscription = subscriptions[i];
 
-            if (subscription.poll())
+            if (pollSubscription(subscription))
             {
                 final ActorJob job = subscription.getJob();
-                job.state = ActorState.QUEUED;
+                job.schedulingState = TaskSchedulingState.QUEUED;
 
                 if (currentJob == null)
                 {
@@ -362,28 +403,41 @@ public class ActorTask
         return hasJobs;
     }
 
+    private boolean pollSubscription(final ActorSubscription subscription)
+    {
+        return subscription.triggersInPhase(lifecyclePhase) && subscription.poll();
+    }
+
     private boolean pollSubscriptionsWithoutAddingJobs(ActorSubscription[] subscriptions)
     {
-        if (isClosing)
-        {
-            return false;
-        }
-
         boolean result = false;
 
         for (int i = 0; i < subscriptions.length && !result; i++)
         {
-            result |= subscriptions[i].poll();
+            result |= pollSubscription(subscriptions[i]);
         }
 
         return result;
+    }
+
+    private boolean allPhaseSubscriptionsTriggered()
+    {
+        boolean allTriggered = true;
+
+        for (int i = 0; i < subscriptions.length && allTriggered; i++)
+        {
+            allTriggered &= !subscriptions[i].triggersInPhase(lifecyclePhase);
+        }
+
+        return allTriggered;
     }
 
     private boolean pollSubmittedJobs()
     {
         boolean hasJobs = false;
 
-        while (!submittedJobs.isEmpty())
+        while (lifecyclePhase == ActorLifecyclePhase.STARTED
+                && !submittedJobs.isEmpty())
         {
             final ActorJob job = submittedJobs.poll();
             if (job != null)
@@ -404,15 +458,15 @@ public class ActorTask
         return hasJobs;
     }
 
-    public ActorState getState()
+    public TaskSchedulingState getState()
     {
-        return state;
+        return schedulingState;
     }
 
     @Override
     public String toString()
     {
-        return actor.getName() + " " + state;
+        return actor.getName() + " " + schedulingState;
     }
 
     public void yield()
@@ -474,7 +528,7 @@ public class ActorTask
 
     public boolean isClosing()
     {
-        return isClosing;
+        return lifecyclePhase == ActorLifecyclePhase.CLOSING;
     }
 
     public int getPriority()

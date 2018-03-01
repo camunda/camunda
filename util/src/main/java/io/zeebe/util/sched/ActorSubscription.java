@@ -15,11 +15,19 @@
  */
 package io.zeebe.util.sched;
 
+import io.zeebe.util.sched.ActorTask.ActorLifecyclePhase;
+
 /**
  * Subscription to some external source of work / jobs.
  */
 public interface ActorSubscription
 {
+    /** returns true if the subscription should be able to trigger in the provided phase */
+    default boolean triggersInPhase(ActorLifecyclePhase phase)
+    {
+        return phase == ActorLifecyclePhase.STARTED;
+    }
+
     /**
      * called by the {@link ActorThread} to determine whether the subscription has work available.
      */

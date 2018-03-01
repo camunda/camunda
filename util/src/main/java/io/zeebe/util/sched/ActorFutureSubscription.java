@@ -15,6 +15,7 @@
  */
 package io.zeebe.util.sched;
 
+import io.zeebe.util.sched.ActorTask.ActorLifecyclePhase;
 import io.zeebe.util.sched.future.ActorFuture;
 
 public class ActorFutureSubscription implements ActorSubscription
@@ -26,6 +27,13 @@ public class ActorFutureSubscription implements ActorSubscription
     {
         this.future = future;
         this.callbackJob = callbackJob;
+    }
+
+    @Override
+    public boolean triggersInPhase(ActorLifecyclePhase phase)
+    {
+        // triggers in all phases
+        return true;
     }
 
     @Override
