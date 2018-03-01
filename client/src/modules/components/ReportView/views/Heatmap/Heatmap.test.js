@@ -97,6 +97,28 @@ it('should show a tooltip with information about actual and target value', () =>
   expect(tooltip.textContent).toContain('100% above target value'.replace(/ /g, '\u00A0'));
 });
 
+
+it('should show a tooltip with information if no actual value is available', () => {
+  const targetValue = {
+    active: true,
+    values: {
+      b: {value: 1, unit: 'millis'}
+    }
+  };
+
+  calculateTargetValueHeat.mockReturnValue({b: undefined});
+  formatters.duration.mockReturnValueOnce('1ms');
+  convertToMilliseconds.mockReturnValue(1);
+
+  const node = mount(<Heatmap data={{}} xml={diagramXml} targetValue={targetValue} />);
+
+  const tooltip = node.find(HeatmapOverlay).props().formatter('', 'b');
+
+  expect(tooltip.textContent).toContain('target duration: 1ms'.replace(/ /g, '\u00A0'));
+  expect(tooltip.textContent).toContain('No actual value available.'.replace(/ /g, '\u00A0'));
+  expect(tooltip.textContent).toContain('Cannot compare target and actual value'.replace(/ /g, '\u00A0'));
+});
+
 it('should not display an error message if data is valid', () => {
   const node = mount(<Heatmap data={data} errorMessage='Error' />);
 

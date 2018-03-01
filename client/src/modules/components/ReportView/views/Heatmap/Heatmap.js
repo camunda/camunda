@@ -30,16 +30,24 @@ const Heatmap = (props) => {
         const target = convertToMilliseconds(targetValue.values[id].value, targetValue.values[id].unit);
         const real = data[id];
 
-        node.innerHTML =
-          `target duration: ${formatters.duration(target)}<br/>` +
-          `actual duration: ${formatters.duration(real)}<br/>`;
+        node.innerHTML = `target duration: ${formatters.duration(target)}<br/>`;
+
+        if(typeof real === 'number') {
+          node.innerHTML += `actual duration: ${formatters.duration(real)}<br/>`;
+        } else {
+          node.innerHTML += `No actual value available.<br/>`;
+        }
 
         if(heat[id]) {
           // above target value
           node.innerHTML += `${Math.round(heat[id] * 100)}% above target value`;
         } else {
           // no heat set: below target value
-          node.innerHTML += `${Math.round((1 - real / target) * 100)}% below target value`;
+          if(typeof real === 'number') {
+            node.innerHTML += `${Math.round((1 - real / target) * 100)}% below target value`;
+          } else {
+            node.innerHTML += `Cannot compare target and actual value.`;
+          }
         }
 
         // tooltips don't work well with spaces
