@@ -98,9 +98,6 @@ public class RequestResponseTest
                 nextPendingRequest.close();
                 pendingRequests.remove();
             }
-
-
-
         }
 
         actorSchedulerRule.get().dumpMetrics(System.out);

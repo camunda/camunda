@@ -177,9 +177,9 @@ public class ClientTransportBuilder
         final Sender sender = new Sender(actorContext, context);
         final Receiver receiver = new Receiver(actorContext, context);
 
-        scheduler.submitActor(conductor);
-        scheduler.submitActor(sender);
-        scheduler.submitActor(receiver);
+        scheduler.submitActor(conductor, true);
+        scheduler.submitActor(sender, true);
+        scheduler.submitActor(receiver, true);
 
         return new ClientTransport(actorContext, context);
     }

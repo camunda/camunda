@@ -72,7 +72,7 @@ public class Sender extends ZbActor
     @Override
     protected void onActorStarted()
     {
-        actor.await(sendBuffer.openSubscriptionAsync(SUBSCRIPTION_NAME), (subscription, t) ->
+        actor.runOnCompletion(sendBuffer.openSubscriptionAsync(SUBSCRIPTION_NAME), (subscription, t) ->
         {
             senderSubscription = subscription;
 
@@ -103,7 +103,7 @@ public class Sender extends ZbActor
          */
         if (senderSubscription != null)
         {
-            actor.await(sendBuffer.closeSubscriptionAsync(senderSubscription), (t) ->
+            actor.runOnCompletion(sendBuffer.closeSubscriptionAsync(senderSubscription), (r, t) ->
             {
                 // done
             });

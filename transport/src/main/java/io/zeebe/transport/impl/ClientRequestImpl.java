@@ -21,6 +21,7 @@ import io.zeebe.transport.ClientRequest;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.impl.ClientRequestPool.RequestIdGenerator;
 import io.zeebe.util.buffer.BufferWriter;
+import io.zeebe.util.sched.ActorTask;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
@@ -112,6 +113,7 @@ public class ClientRequestImpl implements ClientRequest
         }
     }
 
+    @Override
     public RemoteAddress getRemoteAddress()
     {
         return remoteAddress;
@@ -217,9 +219,9 @@ public class ClientRequestImpl implements ClientRequest
     }
 
     @Override
-    public boolean block(Runnable onCompletion)
+    public void block(ActorTask onCompletion)
     {
-        return responseFuture.block(onCompletion);
+        responseFuture.block(onCompletion);
     }
 
     @Override

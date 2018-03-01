@@ -18,22 +18,17 @@ package io.zeebe.transport.impl;
 import java.time.Duration;
 import java.util.Deque;
 import java.util.LinkedList;
-import java.util.concurrent.ExecutionException;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-
-import io.zeebe.transport.ClientRequest;
-import io.zeebe.transport.NotConnectedException;
-import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.RequestTimeoutException;
+import io.zeebe.transport.*;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.buffer.DirectBufferWriter;
 import io.zeebe.util.sched.ZbActor;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class ClientRequestRetryController extends ZbActor
 {
@@ -80,7 +75,7 @@ public class ClientRequestRetryController extends ZbActor
 
     private void getRemoteAddress()
     {
-        actor.await(remoteAddressSupplier.get(), (address, throwable) ->
+        actor.runOnCompletion(remoteAddressSupplier.get(), (address, throwable) ->
         {
             if (address != null)
             {
@@ -114,7 +109,7 @@ public class ClientRequestRetryController extends ZbActor
 
                 if (e != null)
                 {
-                    shouldRetry = e instanceof ExecutionException && e.getCause() instanceof NotConnectedException;
+                    shouldRetry = e instanceof NotConnectedException;
                 }
                 else
                 {

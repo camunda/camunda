@@ -129,8 +129,8 @@ public class ClientChannelKeepAliveTest
     public void shouldSendFirstKeepAlive()
     {
         // given
-        final ClientTransport transport = buildClientTransport(KEEP_ALIVE_PERIOD);
         clock.setCurrentTime(1000);
+        final ClientTransport transport = buildClientTransport(KEEP_ALIVE_PERIOD);
 
         openChannel(transport, ADDRESS);
 
@@ -148,8 +148,8 @@ public class ClientChannelKeepAliveTest
     public void shouldSendSubsequentKeepAlives()
     {
         // given
-        final ClientTransport transport = buildClientTransport(KEEP_ALIVE_PERIOD);
         clock.setCurrentTime(Instant.now());
+        final ClientTransport transport = buildClientTransport(KEEP_ALIVE_PERIOD);
 
         openChannel(transport, ADDRESS);
 

@@ -22,8 +22,7 @@ import io.zeebe.transport.Loggers;
 import io.zeebe.transport.TransportListener;
 import io.zeebe.transport.impl.*;
 import io.zeebe.transport.impl.TransportChannel.ChannelLifecycleListener;
-import io.zeebe.util.sched.ActorTaskRunner;
-import io.zeebe.util.sched.ZbActor;
+import io.zeebe.util.sched.*;
 import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.slf4j.Logger;
@@ -63,7 +62,7 @@ public abstract class Conductor extends ZbActor implements ChannelLifecycleListe
     public void removeListener(TransportListener channelListener)
     {
         // TODO make better
-        if (ActorTaskRunner.current() != null)
+        if (ActorThread.current() != null)
         {
             actor.run(() ->
             {
@@ -89,7 +88,7 @@ public abstract class Conductor extends ZbActor implements ChannelLifecycleListe
         final ActorFuture<Void> f1 = actorContext.getReceiver().registerChannel(ch);
         final ActorFuture<Void> f2 = actorContext.getSender().registerChannel(ch);
 
-        actor.awaitAll(Arrays.asList(f1, f2), (t) ->
+        actor.runOnCompletion(Arrays.asList(f1, f2), (t) ->
         {
             transportListeners.forEach(l ->
             {
@@ -163,7 +162,7 @@ public abstract class Conductor extends ZbActor implements ChannelLifecycleListe
         final ActorFuture<Void> senderClose = actorContext.closeSender();
         final ActorFuture<Void> receiverClose = actorContext.closeReceiver();
 
-        actor.awaitAll(Arrays.asList(senderClose, receiverClose), (t) ->
+        actor.runOnCompletion(Arrays.asList(senderClose, receiverClose), (t) ->
         {
             onSenderAndReceiverClosed();
         });

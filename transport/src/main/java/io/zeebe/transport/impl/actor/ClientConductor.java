@@ -119,7 +119,7 @@ public class ClientConductor extends Conductor
         {
             final ActorFuture<Subscription> subscriptionFuture = transportContext.getReceiveBuffer().openSubscriptionAsync(subscriptionName);
 
-            actor.await(subscriptionFuture, (s, t) ->
+            actor.runOnCompletion(subscriptionFuture, (s, t) ->
             {
                 if (t != null)
                 {

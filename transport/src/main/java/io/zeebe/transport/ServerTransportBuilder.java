@@ -130,9 +130,9 @@ public class ServerTransportBuilder
         final Sender sender = new Sender(actorContext, context);
         final Receiver receiver = new Receiver(actorContext, context);
 
-        scheduler.submitActor(conductor);
-        scheduler.submitActor(sender);
-        scheduler.submitActor(receiver);
+        scheduler.submitActor(conductor, true);
+        scheduler.submitActor(sender, true);
+        scheduler.submitActor(receiver, true);
     }
 
     protected void validate()
