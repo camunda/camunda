@@ -17,7 +17,7 @@ def startElasticsearch() {
 
 def stopAllOptimizeComponents() {
   script {
-    sh 'ls -l'
+    sh 'sh ./.ci/scripts/kill-all-components.sh'
   }
 }
 
