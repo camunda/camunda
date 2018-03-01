@@ -28,6 +28,7 @@ public class TimerSubscription implements ActorSubscription, ScheduledTimer
     private final boolean isRecurring;
 
     private long timerId = -1L;
+    private long submittedRunnerId = -1L;
 
     public TimerSubscription(ActorJob job, long deadline, TimeUnit timeUnit, boolean isRecurring)
     {
@@ -79,18 +80,25 @@ public class TimerSubscription implements ActorSubscription, ScheduledTimer
     @Override
     public void cancel()
     {
-        if (!isCanceled && !isDone)
+        if (!isCanceled && (!isDone || isRecurring))
         {
             isCanceled = true;
 
-            ActorTaskRunner.current().removeTimer(this);
+            final ActorTaskRunner runner = ActorTaskRunner.current();
+            if (runner.getId() == submittedRunnerId)
+            {
+                runner.removeTimer(this);
+            }
         }
     }
 
     public void submit()
     {
         final ActorTaskRunner runner = ActorTaskRunner.current();
+
         runner.scheduleTimer(this);
+
+        submittedRunnerId = runner.getId();
     }
 
     public long getDeadline()

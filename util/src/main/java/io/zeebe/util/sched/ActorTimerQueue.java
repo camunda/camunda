@@ -63,13 +63,17 @@ public class ActorTimerQueue extends DeadlineTimerWheel
                 timeUnit().convert(timer.getDeadline(), timer.getTimeUnit());
 
         final long timerId = scheduleTimer(deadline);
+        timer.setTimerId(timerId);
 
         timerJobMap.put(timerId, timer);
     }
 
     public void remove(TimerSubscription timer)
     {
-        timerJobMap.remove(timer.getTimerId());
+        final long timerId = timer.getTimerId();
+
+        timerJobMap.remove(timerId);
+        cancelTimer(timerId);
     }
 
 }

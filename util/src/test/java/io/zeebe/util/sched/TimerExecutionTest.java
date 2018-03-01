@@ -162,7 +162,7 @@ public class TimerExecutionTest
             @Override
             protected void onActorStarted()
             {
-                subscription = actor.runDelayed(Duration.ofMillis(100), this::timedMethod);
+                subscription = actor.runAtFixedRate(Duration.ofMillis(100), this::timedMethod);
 
                 actor.runDelayed(Duration.ofMillis(500), () -> latch.countDown());
             }
