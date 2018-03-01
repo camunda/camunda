@@ -2,6 +2,25 @@
 
 def backendModuleName = "backend"
 
+def copySnapshots() {
+  script {
+    sh 'sh ./../scripts/copy_snapshots.sh'
+  }
+}
+
+def startElasticsearch() {
+  stopAllOptimizeComponents()
+  script {
+    sh 'sh ./../scripts/start-es.sh'
+  }
+}
+
+def stopAllOptimizeComponents() {
+  script {
+    sh 'sh ./../scripts/kill-all-components.sh'
+  }
+}
+
 pipeline {
   agent { label 'optimize-build' }
 
