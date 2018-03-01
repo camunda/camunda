@@ -4,7 +4,7 @@ import {Select, Popover, ProcessDefinitionSelection} from 'components';
 import {Filter} from './filter';
 import {reportLabelMap} from 'services';
 
-import TargetValueComparison from './TargetValueComparison';
+import {TargetValueComparison} from './targetValue';
 
 import './ControlPanel.css';
 

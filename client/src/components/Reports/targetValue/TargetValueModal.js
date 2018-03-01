@@ -5,11 +5,10 @@ import Viewer from 'bpmn-js/lib/NavigatedViewer';
 
 import TargetValueDiagramBehavior from './TargetValueDiagramBehavior';
 
-import {ButtonGroup, Button, Modal, BPMNDiagram, Table, Input, Select, TargetValueBadge} from 'components';
-import settingsIcon from './settings.svg';
+import {Button, Modal, BPMNDiagram, Table, Input, Select, TargetValueBadge} from 'components';
 import {formatters} from 'services';
 
-import './TargetValueComparison.css';
+import './TargetValueModal.css';
 
 export default class TargetValueComparison extends React.Component {
   constructor(props) {
@@ -18,7 +17,6 @@ export default class TargetValueComparison extends React.Component {
     this.inputRefs = {};
 
     this.state = {
-      modalOpen: false,
       focus: null,
       values: {},
       nodeNames: {}
@@ -29,62 +27,27 @@ export default class TargetValueComparison extends React.Component {
     return (this.props.configuration.targetValue) || {};
   }
 
-  toggleMode = () => {
-    const {active, values} = this.getConfig();
+  async componentWillReceiveProps(nextProps) {
+    if(this.props.open !== nextProps.open) {
+      if(nextProps.open) {
+        const {values, nodeNames} = await this.constructValues();
 
-    if(active) {
-      this.setActive(false);
-    } else if(!values || Object.keys(values).length === 0) {
-      this.openModal();
-    } else {
-      this.setActive(true);
+        this.setState({
+          focus: null,
+          values,
+          nodeNames
+        });
+      } else {
+        this.setState({
+          values: {},
+          nodeNames: {}
+        });
+      }
     }
   }
 
-  setActive = active => {
-    this.props.onChange({
-      configuration: {
-        ...this.props.configuration,
-        targetValue: {
-          ...this.getConfig(),
-          active
-        }
-      }
-    });
-  }
-
-  openModal = async () => {
-    const {values, nodeNames} = await this.constructValues();
-
-    this.setState({
-      modalOpen: true,
-      focus: null,
-      values,
-      nodeNames
-    });
-  }
-
-  closeModal = () => {
-    this.setState({
-      modalOpen: false,
-      values: {},
-      nodeNames: {}
-    });
-  }
-
   confirmModal = () => {
-    const values = this.cleanUpValues();
-
-    this.props.onChange({
-      configuration: {
-        ...this.props.configuration,
-        targetValue: {
-          active: Object.keys(values).length > 0,
-          values
-        }
-      }
-    });
-    this.closeModal();
+    this.props.onConfirm(this.cleanUpValues());
   }
 
   cleanUpValues = () => {
@@ -196,15 +159,6 @@ export default class TargetValueComparison extends React.Component {
     });
   }
 
-  isEnabled = () => {
-    const {processDefinitionKey, processDefinitionVersion, view, groupBy, visualization} = this.props.reportResult.data;
-
-    return processDefinitionKey && processDefinitionVersion &&
-      view.entity === 'flowNode' && view.operation === 'avg' && view.property === 'duration' &&
-      groupBy.type === 'flowNode' &&
-      visualization === 'heat';
-  }
-
   validChanges = () => {
     return this.hasSomethingChanged() && this.areAllFieldsNumbers();
   }
@@ -237,32 +191,26 @@ export default class TargetValueComparison extends React.Component {
   }
 
   render() {
-    const isEnabled = this.isEnabled();
-
-    return (<ButtonGroup>
-      <Button className='TargetValueComparison__toggleButton' disabled={!isEnabled} active={this.getConfig().active} onClick={this.toggleMode}>Target Value</Button>
-      <Button className='TargetValueComparison__editButton' disabled={!isEnabled} onClick={this.openModal}><img src={settingsIcon} alt="settings" className='TargetValueComparison__settingsIcon' /></Button>
-      <Modal open={this.state.modalOpen} onClose={this.closeModal} className='TargetValueComparison__Modal' size='large'>
-        <Modal.Header>Target Value Comparison</Modal.Header>
-        <Modal.Content>
-          <div className='TargetValueComparison__DiagramContainer'>
-            <BPMNDiagram xml={this.props.configuration.xml}>
-              <TargetValueDiagramBehavior onClick={this.updateFocus} focus={this.state.focus} />
-              <TargetValueBadge values={this.state.values} />
-            </BPMNDiagram>
-          </div>
-          <Table
-            head={['Activity', 'Actual Value', 'Target Value']}
-            body={this.constructTableBody()}
-            foot={[]}
-            className='TargetValueComparison__Table'
-          />
-        </Modal.Content>
-        <Modal.Actions>
-          <Button onClick={this.closeModal}>Cancel</Button>
-          <Button type="primary" color="blue" onClick={this.confirmModal} disabled={!this.validChanges()}>Apply</Button>
-        </Modal.Actions>
-      </Modal>
-    </ButtonGroup>);
+    return (<Modal open={this.props.open} onClose={this.props.onClose} className='TargetValueModal__Modal' size='large'>
+      <Modal.Header>Target Value Comparison</Modal.Header>
+      <Modal.Content>
+        <div className='TargetValueModal__DiagramContainer'>
+          <BPMNDiagram xml={this.props.configuration.xml}>
+            <TargetValueDiagramBehavior onClick={this.updateFocus} focus={this.state.focus} />
+            <TargetValueBadge values={this.state.values} />
+          </BPMNDiagram>
+        </div>
+        <Table
+          head={['Activity', 'Actual Value', 'Target Value']}
+          body={this.constructTableBody()}
+          foot={[]}
+          className='TargetValueModal__Table'
+        />
+      </Modal.Content>
+      <Modal.Actions>
+        <Button onClick={this.props.onClose}>Cancel</Button>
+        <Button type="primary" color="blue" onClick={this.confirmModal} disabled={!this.validChanges()}>Apply</Button>
+      </Modal.Actions>
+    </Modal>);
   }
 }
