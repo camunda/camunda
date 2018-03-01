@@ -90,3 +90,7 @@ it('should render predefined react components', () => {
 
   expect(node).toIncludeText('Hello world');
 });
+
+it('should not crash when providing an unrecognized object as cell content', () => {
+  mount(<Table body={[[{foo: 'bar'}]]} />)
+});

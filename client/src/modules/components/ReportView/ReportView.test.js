@@ -214,7 +214,7 @@ it('should adjust date shown in table to unit', () => {
     data: {
       processDefinitionId: '123',
       view : {
-        operation: 'rawData'
+        operation: 'foo'
       },
       groupBy : {
         type: 'processInstance',

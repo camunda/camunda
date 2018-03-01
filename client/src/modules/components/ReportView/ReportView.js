@@ -173,7 +173,7 @@ export default class ReportView extends React.Component {
 
   formatResult = (data, result) => {
     const groupBy = data.groupBy;
-    if (!groupBy.unit || !result) {
+    if (!groupBy.unit || !result || data.view.operation === 'rawData') {
       // the result data is no time series
       return result;
     }

@@ -32,7 +32,7 @@ Table.renderRow = (row, idx) => {
 }
 
 Table.renderCell = cell => {
-  if(typeof cell !== 'object') {
+  if(typeof cell !== 'object' || React.isValidElement(cell)) {
     return cell;
   }
 
@@ -45,6 +45,4 @@ Table.renderCell = cell => {
   if(cell.onClick) {
     return (<Button {...cell.props} onClick={cell.onClick} className={cell.className}>{cell.content}</Button>);
   }
-
-  return cell;
 }
