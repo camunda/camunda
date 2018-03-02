@@ -15,32 +15,6 @@
  */
 package io.zeebe.transport;
 
-import static io.zeebe.test.util.BufferAssert.assertThatBuffer;
-import static io.zeebe.test.util.TestUtil.doRepeatedly;
-import static io.zeebe.test.util.TestUtil.waitUntil;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.fail;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import java.time.Duration;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
-import java.util.function.Supplier;
-
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.mockito.ArgumentMatchers;
-
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.dispatcher.FragmentHandler;
@@ -51,11 +25,7 @@ import io.zeebe.test.util.io.FailingBufferWriter;
 import io.zeebe.test.util.io.FailingBufferWriter.FailingBufferWriterException;
 import io.zeebe.transport.impl.TransportChannel;
 import io.zeebe.transport.impl.TransportHeaderDescriptor;
-import io.zeebe.transport.util.ControllableServerTransport;
-import io.zeebe.transport.util.EchoRequestResponseHandler;
-import io.zeebe.transport.util.RecordingChannelListener;
-import io.zeebe.transport.util.RecordingMessageHandler;
-import io.zeebe.transport.util.TransportTestUtil;
+import io.zeebe.transport.util.*;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.buffer.DirectBufferWriter;
@@ -63,6 +33,26 @@ import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
+import org.mockito.ArgumentMatchers;
+
+import java.time.Duration;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
+import static io.zeebe.test.util.BufferAssert.assertThatBuffer;
+import static io.zeebe.test.util.TestUtil.doRepeatedly;
+import static io.zeebe.test.util.TestUtil.waitUntil;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 public class ClientTransportTest
 {
@@ -551,25 +541,6 @@ public class ClientTransportTest
     }
 
     @Test
-    public void shouldTimeoutRequest()
-    {
-        // given
-        buildServerTransport(b -> b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress())
-            .build(null, (output, remoteAddress, buffer, offset, length, requestId) -> false));
-
-        final RemoteAddress remote1 = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
-
-        // when
-        final ActorFuture<ClientRequest> request = clientTransport.getOutput().sendRequestWithRetry(
-            remote1,
-            new DirectBufferWriter().wrap(BUF1),
-            Duration.ofMillis(100));
-
-        // expect
-        assertThatThrownBy(() -> request.join()).hasMessageContaining("Request timed out after PT0.1S");
-    }
-
-    @Test
     public void shouldThrowSynchronousExceptionOnRequestWithRetriesWithFailingWriter()
     {
         // given
@@ -644,6 +615,28 @@ public class ClientTransportTest
         Thread.sleep(500L);
         subscription.poll(counter, Integer.MAX_VALUE);
         assertThat(counter.getCount()).isEqualTo(2);
+    }
+
+    @Test
+    public void shouldTimeoutRequest()
+    {
+        // given
+        buildServerTransport(b -> b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress())
+                .build(null, (output, remoteAddress, buffer, offset, length, requestId) -> false));
+
+        final BufferWriter writer = mock(BufferWriter.class);
+        when(writer.getLength()).thenReturn(16);
+
+        final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+
+        // when
+        final ActorFuture<ClientRequest> clientRequestActorFuture =
+            clientTransport.getOutput().sendRequestWithRetry(remote, writer, Duration.ofSeconds(10));
+
+        // then
+        doRepeatedly(() -> clock.addTime(Duration.ofSeconds(10))).until((v) -> clientRequestActorFuture.isDone());
+
+        assertThatThrownBy(() -> clientRequestActorFuture.join()).hasMessageContaining("Request timed out after PT10S");
     }
 
     @Test
