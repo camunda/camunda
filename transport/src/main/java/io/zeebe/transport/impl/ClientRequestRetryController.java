@@ -15,14 +15,10 @@
  */
 package io.zeebe.transport.impl;
 
-import java.time.Duration;
-import java.util.Deque;
-import java.util.LinkedList;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
-import java.util.logging.Logger;
-
-import io.zeebe.transport.*;
+import io.zeebe.transport.ClientRequest;
+import io.zeebe.transport.NotConnectedException;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.RequestTimeoutException;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.buffer.DirectBufferWriter;
 import io.zeebe.util.sched.ZbActor;
@@ -30,6 +26,12 @@ import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+
+import java.time.Duration;
+import java.util.Deque;
+import java.util.LinkedList;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 public class ClientRequestRetryController extends ZbActor
 {
