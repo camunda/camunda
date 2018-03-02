@@ -1,13 +1,15 @@
 # Gateways
 
-Currently, Zeebe supports the exclusive gateway.
+Currently supported elements:
+
+![workflow](/bpmn-workflows/exclusive-gateway.png)
 
 ## Exclusive Gateway (XOR)
 
 ![workflow](/bpmn-workflows/xor-gateway.png)
 
-An exclusive gateway allows to choose between different sequence flows.
-Each sequence flow has a condition based on the workflow instance payload.
+An exclusive gateway chooses one of its outgoing sequence flows for continuation.
+Each sequence flow has a condition that is evaluated in the context of the current workflow instance payload.
 The workflow instance takes the first sequence flow which condition is fulfilled.
 
 If no condition is fulfilled, then it takes the default flow which has no condition.
