@@ -52,9 +52,9 @@ public class Receiver extends ZbActor
         return name;
     }
 
-    public ActorFuture<Void> removeChannel(TransportChannel c)
+    public void removeChannel(TransportChannel c)
     {
-        return actor.call(() ->
+        actor.run(() ->
         {
             transportPoller.removeChannel(c);
         });

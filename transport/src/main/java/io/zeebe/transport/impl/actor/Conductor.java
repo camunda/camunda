@@ -116,45 +116,30 @@ public abstract class Conductor extends ZbActor implements ChannelLifecycleListe
     @Override
     public void onChannelClosed(TransportChannel ch, boolean wasConnected)
     {
-        Runnable action = () ->
+        actor.run(() ->
         {
             if (channels.remove(ch.getRemoteAddress().getStreamId()) != null)
             {
                 if (wasConnected)
                 {
                     failRequestsOnChannel(ch, "Socket channel has been disconnected");
-                    final ActorFuture<Void> f1 = actorContext.getReceiver().removeChannel(ch);
-                    final ActorFuture<Void> f2 = actorContext.getSender().removeChannel(ch);
+                    actorContext.getReceiver().removeChannel(ch);
+                    actorContext.getSender().removeChannel(ch);
 
-                    // wait for deregistration in order to not mix up the order of listener callbacks
-                    actor.runOnCompletion(Arrays.asList(f1, f2), t ->
+                    transportListeners.forEach(l ->
                     {
-                        transportListeners.forEach(l ->
+                        try
                         {
-                            try
-                            {
-                                l.onConnectionClosed(ch.getRemoteAddress());
-                            }
-                            catch (Exception e)
-                            {
-                                LOG.debug("Failed to call transport listener {} on disconnect", l, e);
-                            }
-                        });
+                            l.onConnectionClosed(ch.getRemoteAddress());
+                        }
+                        catch (Exception e)
+                        {
+                            LOG.debug("Failed to call transport listener {} on disconnect", l, e);
+                        }
                     });
                 }
             }
-        };
-
-        // TODO: workaround for https://github.com/zeebe-io/zeebe/issues/682
-        if (ActorThread.current().getCurrentTask().getActor() == this)
-        {
-            actor.run(action);
-        }
-        else
-        {
-            actor.call(action);
-        }
-
+        });
     }
 
     protected void failRequestsOnChannel(TransportChannel ch, String reason)
