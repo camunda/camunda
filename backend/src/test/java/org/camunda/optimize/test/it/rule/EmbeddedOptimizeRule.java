@@ -32,6 +32,7 @@ import org.springframework.context.ApplicationContext;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Response;
+import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedList;
 import java.util.List;
@@ -410,5 +411,9 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
   public Client getTransportClient() {
     return getApplicationContext().getBean(Client.class);
+  }
+
+  public String format(OffsetDateTime offsetDateTime) {
+    return this.getDateTimeFormatter().format(offsetDateTime);
   }
 }

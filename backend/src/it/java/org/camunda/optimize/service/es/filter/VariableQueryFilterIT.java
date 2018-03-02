@@ -26,6 +26,7 @@ import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.text.ParseException;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -61,13 +62,6 @@ public class VariableQueryFilterIT {
   @Rule
   public RuleChain chain = RuleChain
       .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
-
-  private DateTimeFormatter dateTimeFormatter;
-
-  @Before
-  public void init() {
-    dateTimeFormatter = embeddedOptimizeRule.getDateTimeFormatter();
-  }
 
   private final String TEST_DEFINITION = "testDefinition";
 
@@ -671,7 +665,7 @@ public class VariableQueryFilterIT {
   public void dateLessThanEqualVariableFilter() throws Exception {
     // given
     OffsetDateTime now = nowDate();
-    String nowAsString = dateTimeFormatter.format(now);
+    String nowAsString = embeddedOptimizeRule.format(now);
     String processDefinitionId = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", nowDateMinusSeconds(2));
@@ -699,7 +693,7 @@ public class VariableQueryFilterIT {
     variables.put("var", nowDate());
     engineRule.startProcessInstance(processDefinitionId, variables);
     OffsetDateTime nowMinusTwoSeconds = nowDateMinusSeconds(2);
-    String nowMinusTwoSecondsAsString = dateTimeFormatter.format(nowMinusTwoSeconds);
+    String nowMinusTwoSecondsAsString = embeddedOptimizeRule.format(nowMinusTwoSeconds);
     variables.put("var", nowMinusTwoSeconds);
     engineRule.startProcessInstance(processDefinitionId, variables);
     variables.put("var", nowDatePlus10Seconds());
@@ -718,7 +712,7 @@ public class VariableQueryFilterIT {
   public void dateGreaterThanEqualVariableFilter() throws Exception {
     // given
     OffsetDateTime now = nowDate();
-    String nowAsString = dateTimeFormatter.format(now);
+    String nowAsString = embeddedOptimizeRule.format(now);
     String processDefinitionId = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", now);
@@ -742,7 +736,7 @@ public class VariableQueryFilterIT {
   public void dateEqualVariableFilter() throws Exception {
     // given
     OffsetDateTime now = nowDate();
-    String nowAsString = dateTimeFormatter.format(now);
+    String nowAsString = embeddedOptimizeRule.format(now);
     String processDefinitionId = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", now);
@@ -767,7 +761,7 @@ public class VariableQueryFilterIT {
 
     // given
     OffsetDateTime now = nowDate();
-    String nowAsString = dateTimeFormatter.format(now);
+    String nowAsString = embeddedOptimizeRule.format(now);
     String processDefinitionId = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", now);
@@ -804,8 +798,8 @@ public class VariableQueryFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    VariableFilterDto filter = createVariableFilter(GREATER_THAN, "var", DATE_TYPE, dateTimeFormatter.format(nowMinus2Seconds));
-    VariableFilterDto filter2 = createVariableFilter(LESS_THAN, "var", DATE_TYPE, dateTimeFormatter.format(nowPlus10Seconds));
+    VariableFilterDto filter = createVariableFilter(GREATER_THAN, "var", DATE_TYPE, embeddedOptimizeRule.format(nowMinus2Seconds));
+    VariableFilterDto filter2 = createVariableFilter(LESS_THAN, "var", DATE_TYPE, embeddedOptimizeRule.format(nowPlus10Seconds));
     List<FilterDto> filters = Stream.of(filter, filter2).collect(Collectors.toList());
     RawDataReportResultDto result = evaluateReportWithFilter(processDefinitionId, filters);
 
@@ -817,7 +811,7 @@ public class VariableQueryFilterIT {
   public void dateOffRangeVariableFilter() throws Exception {
     // given
     OffsetDateTime now = nowDate();
-    String nowAsString = dateTimeFormatter.format(now);
+    String nowAsString = embeddedOptimizeRule.format(now);
     String processDefinitionId = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", now);
@@ -927,7 +921,7 @@ public class VariableQueryFilterIT {
 
 
   private String nowDateAsString() {
-    return dateTimeFormatter.format(nowDate());
+    return embeddedOptimizeRule.format(nowDate());
   }
 
   private OffsetDateTime nowDateMinusSeconds(int nSeconds) {

@@ -24,8 +24,6 @@
     <maven.compiler.source>1.8</maven.compiler.source>
 
     <jackson.version>2.9.0</jackson.version>
-    <camunda.engine.version>7.8.0</camunda.engine.version>
-    <version.tomcat>8.0.47</version.tomcat>
     <log4j.version>2.9.1</log4j.version>
     <elasticsearch.version>6.0.0</elasticsearch.version>
     <elasticsearch.plugin.version>5.7</elasticsearch.plugin.version>
@@ -38,6 +36,35 @@
   </properties>
 
   <profiles>
+    <profile>
+      <id>production</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <properties>
+        <camunda.engine.version>7.8.0</camunda.engine.version>
+        <version.tomcat>8.0.47</version.tomcat>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>engine-7.7</id>
+
+      <properties>
+        <camunda.engine.version>7.7.0</camunda.engine.version>
+        <version.tomcat>8.0.24</version.tomcat>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>engine-7.6</id>
+
+      <properties>
+        <camunda.engine.version>7.6.0</camunda.engine.version>
+        <version.tomcat>8.0.24</version.tomcat>
+      </properties>
+    </profile>
+
     <profile>
       <id>release</id>
       <build>

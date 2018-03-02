@@ -20,6 +20,8 @@ import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -152,7 +154,7 @@ public class VariableValueRetrievalIT {
     String processDefinitionId = deploySimpleProcessDefinition();
     Map<String, String> varNameToTypeMap = createVarNameToTypeMap();
     Map<String, Object> variables = new HashMap<>();
-    variables.put("dateVar", OffsetDateTime.now().withOffsetSameLocal(ZoneOffset.UTC));
+    variables.put("dateVar", OffsetDateTime.now());
     variables.put("boolVar", true);
     variables.put("shortVar", (short)2);
     variables.put("intVar", 5);
@@ -175,7 +177,9 @@ public class VariableValueRetrievalIT {
       String expectedValue;
       if (name.equals("dateVar")) {
         OffsetDateTime temporal = (OffsetDateTime) variables.get(name);
-        expectedValue = embeddedOptimizeRule.getDateTimeFormatter().format(temporal.withOffsetSameLocal(ZoneOffset.UTC));
+        expectedValue = embeddedOptimizeRule.format(
+            temporal.withOffsetSameInstant(ZoneOffset.UTC)
+        );
       } else {
         expectedValue = variables.get(name).toString();
       }

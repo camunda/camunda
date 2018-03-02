@@ -440,24 +440,6 @@
     </profile>
 
     <profile>
-      <id>engine-7.7</id>
-
-      <properties>
-        <camunda.engine.version>7.7.0</camunda.engine.version>
-        <version.tomcat>8.0.24</version.tomcat>
-      </properties>
-    </profile>
-
-    <profile>
-      <id>engine-7.6</id>
-
-      <properties>
-        <camunda.engine.version>7.6.0</camunda.engine.version>
-        <version.tomcat>8.0.24</version.tomcat>
-      </properties>
-    </profile>
-
-    <profile>
       <id>it</id>
 
       <!-- DO NOT REMOVE IF YOU DON'T KNOW WHAT YOU DO -->
