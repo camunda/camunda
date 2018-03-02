@@ -3,11 +3,13 @@ package org.camunda.optimize.service.es.retrieval;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.service.exceptions.OptimizeException;
+import org.camunda.optimize.test.it.Engine78;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.springframework.test.context.ContextConfiguration;
@@ -149,6 +151,7 @@ public class VariableValueRetrievalIT {
   }
 
   @Test
+  @Category(Engine78.class)
   public void retrieveValuesForAllPrimitiveTypes() throws Exception {
     // given
     String processDefinitionId = deploySimpleProcessDefinition();

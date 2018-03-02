@@ -573,8 +573,9 @@
           </plugin>
           <plugin>
             <artifactId>maven-failsafe-plugin</artifactId>
-            <version>2.20</version>
+            <version>${failsafe.version}</version>
             <configuration>
+              <excludedGroups>${it.test.excludedGroups}</excludedGroups>
               <redirectTestOutputToFile>true</redirectTestOutputToFile>
               <properties>
                 <property>
