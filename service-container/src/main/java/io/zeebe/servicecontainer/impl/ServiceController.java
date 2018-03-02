@@ -103,10 +103,14 @@ public class ServiceController extends ZbActor
 
     private void onServiceEvent()
     {
-        ServiceEvent event = null;
-        while ((event = channel.poll()) != null)
+        final ServiceEvent event = channel.poll();
+        if (event != null)
         {
             state.accept(event);
+        }
+        else
+        {
+            actor.yield();
         }
     }
 

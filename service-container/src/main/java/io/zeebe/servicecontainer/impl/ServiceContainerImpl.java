@@ -86,13 +86,14 @@ public class ServiceContainerImpl extends ZbActor implements ServiceContainer
 
     protected void onServiceEvent()
     {
-        while (!channel.isEmpty())
+        final ServiceEvent serviceEvent = channel.poll();
+        if (serviceEvent != null)
         {
-            final ServiceEvent serviceEvent = channel.poll();
-            if (serviceEvent != null)
-            {
-                dependencyResolver.onServiceEvent(serviceEvent);
-            }
+            dependencyResolver.onServiceEvent(serviceEvent);
+        }
+        else
+        {
+            actor.yield();
         }
     }
 
