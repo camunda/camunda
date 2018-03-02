@@ -131,6 +131,10 @@ public class LogStreamController extends ZbActor
         {
             peekedBlockHandler.run();
         }
+        else
+        {
+            actor.yield();
+        }
     }
 
     private void appendBlock()
