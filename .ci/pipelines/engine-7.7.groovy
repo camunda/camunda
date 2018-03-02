@@ -53,7 +53,7 @@ pipeline {
         stopAllOptimizeComponents()
         sh 'mvn -s settings.xml -Pit,engine-7.7,jenkins clean'
         startElasticsearch()
-        sh 'mvn -s settings.xml -Pit,engine-7.7,jenkins  -f ' + backendModuleName + '/pom.xml verify'
+        sh 'mvn -s settings.xml -Pproduction,it,engine-7.7,jenkins clean install'
       }
       post {
         always {
