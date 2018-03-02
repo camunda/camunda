@@ -15,8 +15,12 @@
  */
 package io.zeebe.util.sched;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.fail;
+import io.zeebe.util.Loggers;
+import io.zeebe.util.sched.future.CompletableActorFuture;
+import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
 
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
@@ -24,9 +28,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import io.zeebe.util.sched.testing.ActorSchedulerRule;
-import org.junit.Rule;
-import org.junit.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.fail;
 
 public class TimerExecutionTest
 {
@@ -61,6 +64,73 @@ public class TimerExecutionTest
         }
 
         schedulerRule.get().dumpMetrics(System.out);
+    }
+
+    public class Act extends ZbActor
+    {
+        private final CountDownLatch latch;
+
+        public Act(CountDownLatch latch)
+        {
+            this.latch = latch;
+        }
+
+        @Override
+        protected void onActorStarted()
+        {
+            Loggers.ACTOR_LOGGER.debug("started");
+            // with submit this is fixed
+            actor.run(this::call);
+            actor.runDelayed(Duration.ofMillis(200), this::timeout);
+        }
+
+        private void call()
+        {
+            actor.runOnCompletion(CompletableActorFuture.completed(null), (v, t) ->
+            {
+                Loggers.ACTOR_LOGGER.debug("call on completion");
+                actor.runUntilDone(this::untilDone);
+            });
+        }
+
+        private void untilDone()
+        {
+            Loggers.ACTOR_LOGGER.debug("until done");
+            final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+            actor.done();
+            actor.runOnCompletion(future, (v, t) ->
+            {
+                Loggers.ACTOR_LOGGER.debug("Should never happen");
+                // never happens
+            });
+        }
+
+        private void timeout()
+        {
+            Loggers.ACTOR_LOGGER.debug("TIMEOUT");
+            latch.countDown();
+            actor.close();
+        }
+
+        @Override
+        protected void onActorClosing()
+        {
+            super.onActorClosing();
+        }
+    }
+
+    @Test
+    @Ignore
+    public void testRunDelayedAfterRun() throws Exception
+    {
+        // given
+        final CountDownLatch latch = new CountDownLatch(1);
+        schedulerRule.submitActor(new Act(latch));
+
+        if (!latch.await(5, TimeUnit.SECONDS))
+        {
+            fail("Timeout never happens");
+        }
     }
 
     @Test
