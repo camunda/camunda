@@ -22,6 +22,7 @@ import java.nio.channels.SocketChannel;
 import io.zeebe.transport.*;
 import io.zeebe.transport.impl.*;
 import io.zeebe.transport.impl.selector.AcceptTransportPoller;
+import io.zeebe.util.sched.ActorThread;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 
@@ -125,4 +126,20 @@ public class ServerConductor extends Conductor
         return future;
     }
 
+    @Override
+    public void onChannelClosed(TransportChannel ch, boolean wasConnected)
+    {
+        if (ActorThread.current() != null
+            && ActorThread.current().getCurrentTask().getActor() == this)
+        {
+            super.onChannelClosed(ch, wasConnected);
+        }
+        else
+        {
+            actor.call(() ->
+            {
+                super.onChannelClosed(ch, wasConnected);
+            });
+        }
+    }
 }

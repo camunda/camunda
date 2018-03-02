@@ -15,18 +15,18 @@
  */
 package io.zeebe.transport.impl.selector;
 
-import java.io.IOException;
-import java.nio.channels.SelectionKey;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.ToIntFunction;
-
 import io.zeebe.transport.Loggers;
 import io.zeebe.transport.impl.TransportChannel;
 import io.zeebe.util.sched.ActorControl;
 import org.agrona.LangUtil;
 import org.agrona.nio.TransportPoller;
 import org.slf4j.Logger;
+
+import java.io.IOException;
+import java.nio.channels.SelectionKey;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.ToIntFunction;
 
 public class ReadTransportPoller extends TransportPoller
 {

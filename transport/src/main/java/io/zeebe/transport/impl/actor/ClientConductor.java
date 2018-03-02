@@ -21,6 +21,7 @@ import io.zeebe.dispatcher.Subscription;
 import io.zeebe.transport.*;
 import io.zeebe.transport.impl.*;
 import io.zeebe.transport.impl.selector.ConnectTransportPoller;
+import io.zeebe.util.sched.ActorThread;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 
@@ -74,18 +75,38 @@ public class ClientConductor extends Conductor
     @Override
     public void onChannelClosed(TransportChannel channel, boolean wasConnected)
     {
-        actor.run(() ->
+        if (ActorThread.current() != null
+            && ActorThread.current().getCurrentTask().getActor() == this)
         {
-            final RemoteAddressImpl remoteAddress = channel.getRemoteAddress();
-
-            if (remoteAddress.isActive())
+            actor.submit(() ->
             {
-                final int openAttempt = channel.getOpenAttempt() + 1;
-                openChannel(remoteAddress, openAttempt);
-            }
+                final RemoteAddressImpl remoteAddress = channel.getRemoteAddress();
 
-            super.onChannelClosed(channel, wasConnected);
-        });
+                if (remoteAddress.isActive())
+                {
+                    final int openAttempt = channel.getOpenAttempt() + 1;
+                    openChannel(remoteAddress, openAttempt);
+                }
+
+                super.onChannelClosed(channel, wasConnected);
+            });
+        }
+        else
+        {
+            actor.call(() ->
+            {
+                final RemoteAddressImpl remoteAddress = channel.getRemoteAddress();
+
+                if (remoteAddress.isActive())
+                {
+                    final int openAttempt = channel.getOpenAttempt() + 1;
+                    openChannel(remoteAddress, openAttempt);
+                }
+
+                super.onChannelClosed(channel, wasConnected);
+            });
+
+        }
     }
 
     private void onRemoteAddressAdded(RemoteAddressImpl remoteAddress)

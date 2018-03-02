@@ -213,7 +213,7 @@ public class Sender extends ZbActor
 
     public void removeChannel(TransportChannel c)
     {
-        actor.run(() ->
+        actor.call(() ->
         {
             channelMap.remove(c.getStreamId());
         });

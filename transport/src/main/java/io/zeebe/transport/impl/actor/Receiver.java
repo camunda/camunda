@@ -54,7 +54,7 @@ public class Receiver extends ZbActor
 
     public void removeChannel(TransportChannel c)
     {
-        actor.run(() ->
+        actor.call(() ->
         {
             transportPoller.removeChannel(c);
         });
