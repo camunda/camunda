@@ -263,4 +263,8 @@ public class ActorJob
         return actorThread;
     }
 
+    public void setResultFuture(ActorFuture resultFuture)
+    {
+        this.resultFuture = resultFuture;
+    }
 }

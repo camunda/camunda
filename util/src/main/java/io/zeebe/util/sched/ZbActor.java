@@ -26,14 +26,25 @@ public abstract class ZbActor
         return getClass().getName();
     }
 
+    protected void onActorStarting()
+    {
+        // setup
+    }
+
     protected void onActorStarted()
     {
-        // do nothing
+        // logic
     }
+
 
     protected void onActorClosing()
     {
-        // do nothing
+        // tear down
+    }
+
+    protected void onActorClosed()
+    {
+        // what ever
     }
 
     public static ZbActor wrap(Consumer<ActorControl> r)

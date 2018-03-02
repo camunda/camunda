@@ -108,6 +108,7 @@ public class RunnableExecutionTest
                 if (++innerIterationCount == 10)
                 {
                     actor.done();
+                    actor.close();
                 }
             }
 
@@ -272,12 +273,16 @@ public class RunnableExecutionTest
     }
 
     @Test
-    public void testCloseActorInEndlessSubmitLoop() throws InterruptedException
+    public void shouldCloseActorInEndlessSubmitLoop() throws InterruptedException
     {
+        // given
         final ActorSubmittingActionsInEndlessLoop actor = new ActorSubmittingActionsInEndlessLoop();
+        schedulerRule.submitActor(actor).join();
 
-        schedulerRule.submitActor(actor);
+        // when
+        final ActorFuture<Void> closeFuture = actor.close();
 
-        actor.close().join();
+        // then
+        closeFuture.join();
     }
 }

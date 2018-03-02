@@ -15,16 +15,19 @@
  */
 package io.zeebe.util.sched;
 
+import io.zeebe.util.sched.channel.ChannelConsumerCondition;
+import io.zeebe.util.sched.channel.ConsumableChannel;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.AllCompletedFutureConsumer;
+import io.zeebe.util.sched.future.FirstSuccessfullyCompletedFutureConsumer;
+import io.zeebe.util.sched.future.FutureContinuationRunnable;
+
 import java.time.Duration;
 import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-
-import io.zeebe.util.sched.channel.ChannelConsumerCondition;
-import io.zeebe.util.sched.channel.ConsumableChannel;
-import io.zeebe.util.sched.future.*;
 
 public class ActorControl
 {
@@ -41,6 +44,7 @@ public class ActorControl
     public void consume(ConsumableChannel channel, Runnable consumer)
     {
         ensureCalledFromWithinActor("consume(...)");
+        ensureCalledInStartedState("consume(...)");
 
         final ActorJob job = new ActorJob();
         job.setRunnable(consumer);
@@ -56,6 +60,7 @@ public class ActorControl
     public void pollBlocking(Runnable condition, Runnable action)
     {
         ensureCalledFromWithinActor("pollBlocking(...)");
+        ensureCalledInStartedState("pollBlocking(...)");
 
         final ActorJob job = new ActorJob();
         job.setRunnable(action);
@@ -70,6 +75,7 @@ public class ActorControl
     public ActorCondition onCondition(String conditionName, Runnable conditionAction)
     {
         ensureCalledFromWithinActor("onCondition(...)");
+        ensureCalledInStartedState("onCondition(...)");
 
         final ActorJob job = new ActorJob();
         job.setRunnable(conditionAction);
@@ -118,7 +124,7 @@ public class ActorControl
     /** run a blocking task */
     public void runBlocking(Runnable runnable)
     {
-        ensureCalledFromWithinActor("pollBlocking(...)");
+        ensureCalledFromWithinActor("runBlocking(...)");
 
         final ActorJob noop = new ActorJob();
         noop.onJobAddedToTask(task);
@@ -137,8 +143,7 @@ public class ActorControl
     public void runBlocking(Runnable runnable, Consumer<Throwable> whenDone)
     {
         final RunnableAdapter<Void> adapter = RunnableAdapter.wrapRunnable(runnable);
-
-        ensureCalledFromWithinActor("pollBlocking(...)");
+        ensureCalledFromWithinActor("runBlocking(...)");
 
         final ActorJob noop = new ActorJob();
         noop.onJobAddedToTask(task);
@@ -163,6 +168,7 @@ public class ActorControl
     public ScheduledTimer runDelayed(Duration delay, Runnable runnable)
     {
         ensureCalledFromWithinActor("runDelayed(...)");
+        ensureCalledInStartedState("runDelayed(...)");
         return scheduleTimer(delay, false, runnable);
     }
 
@@ -188,6 +194,7 @@ public class ActorControl
     public ScheduledTimer runAtFixedRate(Duration delay, Runnable runnable)
     {
         ensureCalledFromWithinActor("runAtFixedRate(...)");
+        ensureCalledInStartedState("runAtFixedRate(...)");
         return scheduleTimer(delay, true, runnable);
     }
 
@@ -326,8 +333,10 @@ public class ActorControl
     }
 
 
+
     public ActorFuture<Void> close()
     {
+        ensureCalledInStartedState("close(...)");
         final ActorJob closeJob = new ActorJob();
 
         closeJob.onJobAddedToTask(task);
@@ -393,6 +402,17 @@ public class ActorControl
     {
         ensureCalledFromActorThread("setPriority()");
         task.setPriority(priority.getPriorityClass());
+    }
+
+    private void ensureCalledInStartedState(String methodName)
+    {
+        if (task.getLifecyclePhase() != ActorTask.ActorLifecyclePhase.STARTED)
+        {
+            throw new UnsupportedOperationException("Incorrect usage of actor." +
+                methodName + ": must only be called in " +
+                ActorTask.ActorLifecyclePhase.STARTED.name() + " phase, was called in " +
+                task.getLifecyclePhase() + " phase.");
+        }
     }
 
     private ActorJob ensureCalledFromWithinActor(String methodName)

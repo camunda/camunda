@@ -19,6 +19,7 @@ import java.time.Duration;
 import java.util.concurrent.*;
 
 import io.zeebe.util.sched.ZbActorScheduler.ActorSchedulerBuilder;
+import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.metrics.TaskMetrics;
 import org.agrona.concurrent.status.ConcurrentCountersManager;
 
@@ -52,17 +53,17 @@ public class ActorExecutor
      *            Controls whether metrics should be collected. (See
      *            {@link ZbActorScheduler#submitActor(ZbActor, boolean)})
      */
-    public void submitCpuBound(ActorTask task, boolean collectTaskMetrics)
+    public ActorFuture<Void> submitCpuBound(ActorTask task, boolean collectTaskMetrics)
     {
-        submitTask(task, collectTaskMetrics, cpuBoundThreads);
+        return submitTask(task, collectTaskMetrics, cpuBoundThreads);
     }
 
-    public void submitIoBoundTask(ActorTask task, boolean collectTaskMetrics)
+    public ActorFuture<Void> submitIoBoundTask(ActorTask task, boolean collectTaskMetrics)
     {
-        submitTask(task, collectTaskMetrics, ioBoundThreads);
+        return submitTask(task, collectTaskMetrics, ioBoundThreads);
     }
 
-    private void submitTask(ActorTask task, boolean collectMetrics, ActorThreadGroup threadGroup)
+    private ActorFuture<Void> submitTask(ActorTask task, boolean collectMetrics, ActorThreadGroup threadGroup)
     {
         TaskMetrics taskMetrics = null;
 
@@ -71,9 +72,10 @@ public class ActorExecutor
             taskMetrics = new TaskMetrics(task.getName(), countersManager);
         }
 
-        task.onTaskScheduled(this, threadGroup, taskMetrics);
+        final ActorFuture<Void> startingFuture = task.onTaskScheduled(this, threadGroup, taskMetrics);
 
         threadGroup.submit(task);
+        return startingFuture;
     }
 
     /**

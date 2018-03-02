@@ -19,6 +19,7 @@ import io.zeebe.util.sched.ZbActor;
 import io.zeebe.util.sched.ZbActorScheduler;
 import io.zeebe.util.sched.ZbActorScheduler.ActorSchedulerBuilder;
 import io.zeebe.util.sched.clock.ActorClock;
+import io.zeebe.util.sched.future.ActorFuture;
 import org.junit.rules.ExternalResource;
 
 public class ActorSchedulerRule extends ExternalResource
@@ -53,7 +54,7 @@ public class ActorSchedulerRule extends ExternalResource
     }
 
     @Override
-    protected void before() throws Throwable
+    protected void before()
     {
         actorScheduler.start();
     }
@@ -64,14 +65,14 @@ public class ActorSchedulerRule extends ExternalResource
         actorScheduler.stop();
     }
 
-    public void submitActor(ZbActor actor)
+    public ActorFuture<Void> submitActor(ZbActor actor)
     {
-        actorScheduler.submitActor(actor);
+        return actorScheduler.submitActor(actor);
     }
 
-    public void submitActor(ZbActor actor, boolean useCountersManager)
+    public ActorFuture<Void> submitActor(ZbActor actor, boolean useCountersManager)
     {
-        actorScheduler.submitActor(actor, useCountersManager);
+        return actorScheduler.submitActor(actor, useCountersManager);
     }
 
     public ZbActorScheduler get()

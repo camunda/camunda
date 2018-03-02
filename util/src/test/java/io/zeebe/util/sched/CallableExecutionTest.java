@@ -15,14 +15,15 @@
  */
 package io.zeebe.util.sched;
 
-import java.time.Duration;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import org.junit.Assert;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.testing.ActorSchedulerRule;
-import org.junit.*;
 
 public class CallableExecutionTest
 {
@@ -31,15 +32,6 @@ public class CallableExecutionTest
 
     class PongActor extends ZbActor
     {
-        @Override
-        protected void onActorStarted()
-        {
-            actor.runAtFixedRate(Duration.ofMillis(1), () ->
-            {
-                // keepalive
-            });
-        }
-
         ActorFuture<Integer> onPing(int val)
         {
             return actor.call(() ->

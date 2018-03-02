@@ -15,14 +15,15 @@
  */
 package io.zeebe.util.sched;
 
-import static org.agrona.UnsafeAccess.UNSAFE;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
+import io.zeebe.util.sched.metrics.TaskMetrics;
+import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
-import io.zeebe.util.sched.future.CompletableActorFuture;
-import io.zeebe.util.sched.metrics.TaskMetrics;
-import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
+import static org.agrona.UnsafeAccess.UNSAFE;
 
 /**
  * A task executed by the scheduler. For each actor (instance), exactly one task is created.
@@ -74,6 +75,10 @@ public class ActorTask
     }
 
     public final CompletableActorFuture<Void> closeFuture = new CompletableActorFuture<>();
+    private final CompletableActorFuture<Void> jobClosingTaskFuture = new CompletableActorFuture<>();
+
+    private final CompletableActorFuture<Void> startingFuture = new CompletableActorFuture<>();
+    private final CompletableActorFuture<Void> jobStartingTaskFuture = new CompletableActorFuture<>();
 
     final ZbActor actor;
 
@@ -116,26 +121,33 @@ public class ActorTask
     /**
      * called when the task is initially scheduled.
      */
-    public void onTaskScheduled(ActorExecutor actorExecutor, ActorThreadGroup actorThreadGroup, TaskMetrics taskMetrics)
+    public ActorFuture<Void> onTaskScheduled(ActorExecutor actorExecutor, ActorThreadGroup actorThreadGroup, TaskMetrics taskMetrics)
     {
         this.actorExecutor = actorExecutor;
         this.actorThreadGroup = actorThreadGroup;
         // reset previous state to allow re-scheduling
         this.closeFuture.close();
         this.closeFuture.setAwaitingResult();
+
+        jobClosingTaskFuture.close();
+        jobClosingTaskFuture.setAwaitingResult();
+
         this.isJumbo = false;
         this.lifecyclePhase = ActorLifecyclePhase.STARTING;
 
         this.isCollectTaskMetrics = taskMetrics != null;
         this.taskMetrics = taskMetrics;
 
+
         // create initial job to invoke on start callback
         final ActorJob j = new ActorJob();
-        j.setRunnable(actor::onActorStarted);
+        j.setRunnable(actor::onActorStarting);
+        j.setResultFuture(jobStartingTaskFuture);
         j.setAutoCompleting(true);
         j.onJobAddedToTask(this);
 
         currentJob = j;
+        return startingFuture;
     }
 
     /** Used to externally submit a job. */
@@ -226,28 +238,30 @@ public class ActorTask
             {
                 case STARTING:
                     lifecyclePhase = ActorLifecyclePhase.STARTED;
+                    submitStartedJob();
+                    startingFuture.completeWith(jobStartingTaskFuture);
                     resubmit = true;
                     break;
 
                 case CLOSING:
                     lifecyclePhase = ActorLifecyclePhase.CLOSED;
+                    submitClosedJob();
                     resubmit = true;
                     break;
 
                 case STARTED:
-                    lifecyclePhase = ActorLifecyclePhase.CLOSING;
-                    submitCloseJob();
-                    resubmit = true;
+                    resubmit = tryWait();
                     break;
 
                 case CLOSE_REQUESTED:
                     lifecyclePhase = ActorLifecyclePhase.CLOSING;
-                    submitCloseJob();
+                    submitClosingJob();
                     resubmit = true;
                     break;
 
                 case CLOSED:
                     onClosed();
+                    closeFuture.completeWith(jobClosingTaskFuture);
                     resubmit = false;
                     break;
             }
@@ -263,12 +277,32 @@ public class ActorTask
         return resubmit;
     }
 
-    private void submitCloseJob()
+    private void submitStartedJob()
+    {
+        final ActorJob startedJob = ActorThread.current().newJob();
+        startedJob.onJobAddedToTask(this);
+        startedJob.setAutoCompleting(true);
+        startedJob.setRunnable(actor::onActorStarted);
+        currentJob = startedJob;
+    }
+
+    private void submitClosedJob()
+    {
+        final ActorJob closedJob = ActorThread.current().newJob();
+        closedJob.onJobAddedToTask(this);
+        closedJob.setAutoCompleting(true);
+        closedJob.setRunnable(actor::onActorClosed);
+        currentJob = closedJob;
+    }
+
+
+    private void submitClosingJob()
     {
         final ActorJob closeJob = ActorThread.current().newJob();
         closeJob.onJobAddedToTask(this);
         closeJob.setAutoCompleting(true);
         closeJob.setRunnable(actor::onActorClosing);
+        closeJob.setResultFuture(jobClosingTaskFuture);
         currentJob = closeJob;
     }
 
@@ -287,7 +321,11 @@ public class ActorTask
             taskMetrics.close();
         }
 
-        closeFuture.complete(null);
+        startingFuture.close();
+        startingFuture.setAwaitingResult();
+
+        jobStartingTaskFuture.close();
+        jobStartingTaskFuture.setAwaitingResult();
     }
 
     public void requestClose()
@@ -554,6 +592,16 @@ public class ActorTask
     public ActorExecutor getActorExecutor()
     {
         return actorExecutor;
+    }
+
+    public ActorLifecyclePhase getLifecyclePhase()
+    {
+        return lifecyclePhase;
+    }
+
+    public CompletableActorFuture<Void> getStartingFuture()
+    {
+        return startingFuture;
     }
 
     // subscription helpers

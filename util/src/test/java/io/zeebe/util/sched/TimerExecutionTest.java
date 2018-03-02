@@ -18,7 +18,6 @@ package io.zeebe.util.sched;
 import io.zeebe.util.Loggers;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -29,7 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.fail;
+import static org.assertj.core.api.Fail.fail;
 
 public class TimerExecutionTest
 {
@@ -78,31 +77,13 @@ public class TimerExecutionTest
         @Override
         protected void onActorStarted()
         {
-            Loggers.ACTOR_LOGGER.debug("started");
             // with submit this is fixed
-            actor.run(this::call);
-            actor.runDelayed(Duration.ofMillis(200), this::timeout);
-        }
-
-        private void call()
-        {
-            actor.runOnCompletion(CompletableActorFuture.completed(null), (v, t) ->
-            {
-                Loggers.ACTOR_LOGGER.debug("call on completion");
-                actor.runUntilDone(this::untilDone);
-            });
-        }
-
-        private void untilDone()
-        {
-            Loggers.ACTOR_LOGGER.debug("until done");
             final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
-            actor.done();
             actor.runOnCompletion(future, (v, t) ->
             {
-                Loggers.ACTOR_LOGGER.debug("Should never happen");
-                // never happens
+                throw new IllegalStateException("Should never happen!");
             });
+            actor.runDelayed(Duration.ofMillis(200), this::timeout);
         }
 
         private void timeout()
@@ -120,13 +101,15 @@ public class TimerExecutionTest
     }
 
     @Test
-    @Ignore
     public void testRunDelayedAfterRun() throws Exception
     {
         // given
         final CountDownLatch latch = new CountDownLatch(1);
+
+        // when
         schedulerRule.submitActor(new Act(latch));
 
+        // then
         if (!latch.await(5, TimeUnit.SECONDS))
         {
             fail("Timeout never happens");

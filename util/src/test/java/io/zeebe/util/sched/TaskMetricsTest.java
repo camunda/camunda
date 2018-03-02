@@ -15,17 +15,16 @@
  */
 package io.zeebe.util.sched;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.time.Duration;
-import java.util.HashSet;
-import java.util.Set;
-
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.agrona.concurrent.status.ConcurrentCountersManager;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.HashSet;
+import java.util.Set;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TaskMetricsTest
 {
@@ -40,15 +39,6 @@ public class TaskMetricsTest
         public String getName()
         {
             return SOME_ACTOR;
-        }
-
-        @Override
-        protected void onActorStarted()
-        {
-            actor.runDelayed(Duration.ofHours(1), () ->
-            {
-                // keepalive
-            });
         }
 
         public ActorFuture<Void> close()
@@ -89,7 +79,8 @@ public class TaskMetricsTest
     {
         // given
         final MyActor actor = new MyActor();
-        actorSchedulerRule.submitActor(actor, true);
+        final ActorFuture<Void> startingFuture = actorSchedulerRule.submitActor(actor, true);
+        startingFuture.join();
         Set<String> labels = getAllocatedCounterLabels();
         assertThat(labels).contains(String.format("%s.taskExecutionCount", SOME_ACTOR));
         assertThat(labels).contains(String.format("%s.taskTotalExecutionTime", SOME_ACTOR));

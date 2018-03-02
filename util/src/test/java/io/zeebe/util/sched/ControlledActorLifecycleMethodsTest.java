@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.zeebe.util.sched.future.ActorFuture;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -46,7 +47,9 @@ public class ControlledActorLifecycleMethodsTest
             }
         };
 
-        schedulerRule.submitActor(actor);
+        final ActorFuture<Void> startingFuture = schedulerRule.submitActor(actor);
+        schedulerRule.workUntilDone();
+        startingFuture.join();
 
         // when
         actor.actor.close(); // => adds closejob

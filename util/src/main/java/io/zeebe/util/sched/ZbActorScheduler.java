@@ -15,17 +15,18 @@
  */
 package io.zeebe.util.sched;
 
+import io.zeebe.util.sched.clock.ActorClock;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.metrics.ActorThreadMetrics;
+import io.zeebe.util.sched.metrics.SchedulerMetrics;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.ConcurrentCountersManager;
+
 import java.io.PrintStream;
 import java.time.Duration;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-
-import io.zeebe.util.sched.clock.ActorClock;
-import io.zeebe.util.sched.metrics.ActorThreadMetrics;
-import io.zeebe.util.sched.metrics.SchedulerMetrics;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.status.ConcurrentCountersManager;
 
 public class ZbActorScheduler
 {
@@ -54,9 +55,9 @@ public class ZbActorScheduler
      *            make sense for long-lived tasks where a small overhead when
      *            initially submitting the actor is acceptable.
      */
-    public void submitActor(ZbActor actor)
+    public ActorFuture<Void> submitActor(ZbActor actor)
     {
-        submitActor(actor, false);
+        return submitActor(actor, false);
     }
 
     /**
@@ -73,9 +74,9 @@ public class ZbActorScheduler
      *            make sense for long-lived tasks where a small overhead when
      *            initially submitting the actor is acceptable.
      */
-    public void submitActor(ZbActor actor, boolean collectTaskMetrics)
+    public ActorFuture<Void> submitActor(ZbActor actor, boolean collectTaskMetrics)
     {
-        actorTaskExecutor.submitCpuBound(actor.actor.task, collectTaskMetrics);
+        return actorTaskExecutor.submitCpuBound(actor.actor.task, collectTaskMetrics);
     }
 
     /**
@@ -105,20 +106,22 @@ public class ZbActorScheduler
      * @param schedulingHints
      *            additional scheduling hint
      */
-    public void submitActor(ZbActor actor, boolean collectTaskMetrics, int schedulingHints)
+    public ActorFuture<Void> submitActor(ZbActor actor, boolean collectTaskMetrics, int schedulingHints)
     {
         final ActorTask task = actor.actor.task;
 
+        final ActorFuture<Void> startingFuture;
         if (SchedulingHints.isCpuBound(schedulingHints))
         {
             task.setPriority(SchedulingHints.getPriority(schedulingHints));
-            actorTaskExecutor.submitCpuBound(task, collectTaskMetrics);
+            startingFuture = actorTaskExecutor.submitCpuBound(task, collectTaskMetrics);
         }
         else
         {
             task.setDeviceId(SchedulingHints.getIoDevice(schedulingHints));
-            actorTaskExecutor.submitIoBoundTask(task, collectTaskMetrics);
+            startingFuture = actorTaskExecutor.submitIoBoundTask(task, collectTaskMetrics);
         }
+        return startingFuture;
     }
 
     public void start()

@@ -286,4 +286,22 @@ public class CompletableActorFuture<V> implements ActorFuture<V>
             throw new RuntimeException(ex);
         }
     }
+
+    public void completeWith(CompletableActorFuture<V> otherFuture)
+    {
+        if (!otherFuture.isDone())
+        {
+            throw new IllegalArgumentException("Future is not completed, can't complete this future with uncompleted future.");
+        }
+
+        if (otherFuture.isCompletedExceptionally())
+        {
+            this.completeExceptionally(otherFuture.failureCause);
+        }
+        else
+        {
+            this.complete(otherFuture.value);
+        }
+    }
+
 }
