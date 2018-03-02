@@ -123,11 +123,17 @@ public class ClientTransportBuilder
     {
         validate();
         final ClientRequestPool clientRequestPool = new ClientRequestPool(requestPoolSize, sendBuffer);
+        final ClientOutput output = new ClientOutputImpl(
+                scheduler,
+                sendBuffer,
+                clientRequestPool,
+                defaultRequestRetryTimeout);
 
         final RemoteAddressListImpl remoteAddressList = new RemoteAddressListImpl();
 
         final TransportContext transportContext =
                 buildTransportContext(
+                        output,
                         clientRequestPool,
                         remoteAddressList,
                         new ClientReceiveHandler(clientRequestPool, receiveBuffer, listeners),
@@ -137,6 +143,7 @@ public class ClientTransportBuilder
     }
 
     protected TransportContext buildTransportContext(
+            ClientOutput output,
             ClientRequestPool clientRequestPool,
             RemoteAddressListImpl addressList,
             FragmentHandler receiveHandler,
@@ -144,6 +151,7 @@ public class ClientTransportBuilder
     {
         final TransportContext context = new TransportContext();
         context.setName("client");
+        context.setClientOutput(output);
         context.setReceiveBuffer(receiveBuffer);
         context.setMessageMaxLength(messageMaxLength);
         context.setClientRequestPool(clientRequestPool);
@@ -168,14 +176,6 @@ public class ClientTransportBuilder
         final ClientConductor conductor = new ClientConductor(actorContext, context);
         final Sender sender = new Sender(actorContext, context);
         final Receiver receiver = new Receiver(actorContext, context);
-
-        final ClientOutput output = new ClientOutputImpl(
-                conductor,
-                scheduler,
-                sendBuffer,
-                context.getClientRequestPool(),
-                defaultRequestRetryTimeout);
-        context.setClientOutput(output);
 
         scheduler.submitActor(conductor, true);
         scheduler.submitActor(sender, true);

@@ -16,22 +16,10 @@
 package io.zeebe.transport.impl.actor;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 import io.zeebe.dispatcher.Subscription;
-import io.zeebe.transport.ClientInputMessageSubscription;
-import io.zeebe.transport.ClientMessageHandler;
-import io.zeebe.transport.ClientOutput;
-import io.zeebe.transport.Loggers;
-import io.zeebe.transport.RemoteAddressList;
-import io.zeebe.transport.impl.ClientInputMessageSubscriptionImpl;
-import io.zeebe.transport.impl.ClientRequestRetryController;
-import io.zeebe.transport.impl.RemoteAddressImpl;
-import io.zeebe.transport.impl.TransportChannel;
-import io.zeebe.transport.impl.TransportContext;
+import io.zeebe.transport.*;
+import io.zeebe.transport.impl.*;
 import io.zeebe.transport.impl.selector.ConnectTransportPoller;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
@@ -39,7 +27,6 @@ import io.zeebe.util.sched.future.CompletableActorFuture;
 public class ClientConductor extends Conductor
 {
     private final ConnectTransportPoller connectTransportPoller;
-    private final Set<ClientRequestRetryController> activeManagedRequests = new HashSet<>();
 
     public ClientConductor(ActorContext actorContext, TransportContext context)
     {
@@ -59,41 +46,7 @@ public class ClientConductor extends Conductor
     protected void onActorClosing()
     {
         connectTransportPoller.close();
-
-        transportContext.getClientRequestPool().close();
-
-        final List<ActorFuture<Void>> controllerFutures = new ArrayList<>();
-        Loggers.TRANSPORT_LOGGER.debug("Closing conductor");
-        activeManagedRequests.forEach(c -> controllerFutures.add(c.close()));
-
-        if (!controllerFutures.isEmpty())
-        {
-            actor.runOnCompletion(controllerFutures, (t) ->
-            {
-                Loggers.TRANSPORT_LOGGER.debug("All controllers closed");
-                super.onActorClosing();
-            });
-        }
-        else
-        {
-            super.onActorClosing();
-        }
-    }
-
-    public void onManagedRequestStarted(ClientRequestRetryController requestController)
-    {
-        actor.call(() ->
-        {
-            this.activeManagedRequests.add(requestController);
-        });
-    }
-
-    public void onManagedRequestFinished(ClientRequestRetryController requestController)
-    {
-        actor.call(() ->
-        {
-            this.activeManagedRequests.remove(requestController);
-        });
+        super.onActorClosing();
     }
 
     public void openChannel(RemoteAddressImpl address, int connectAttempt)

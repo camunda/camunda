@@ -21,20 +21,14 @@ import java.util.LinkedList;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-
-import io.zeebe.transport.ClientRequest;
-import io.zeebe.transport.Loggers;
-import io.zeebe.transport.NotConnectedException;
-import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.RequestTimeoutException;
-import io.zeebe.transport.impl.actor.ClientConductor;
+import io.zeebe.transport.*;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.buffer.DirectBufferWriter;
 import io.zeebe.util.sched.ZbActor;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class ClientRequestRetryController extends ZbActor
 {
@@ -43,7 +37,6 @@ public class ClientRequestRetryController extends ZbActor
     private final CompletableActorFuture<ClientRequest> successfulRequest = new CompletableActorFuture<>();
 
     private final ClientRequestPool requestPool;
-    private final ClientConductor conductor;
 
     private final Supplier<ActorFuture<RemoteAddress>> remoteAddressSupplier;
     private final Duration timeout;
@@ -56,14 +49,12 @@ public class ClientRequestRetryController extends ZbActor
     private final Deque<RemoteAddress> remotesTried = new LinkedList<>();
 
     public ClientRequestRetryController(
-            ClientConductor conductor,
             Supplier<ActorFuture<RemoteAddress>> remoteAddressSupplier,
             Predicate<DirectBuffer> responseInspector,
             ClientRequestPool requestPool,
             BufferWriter writer,
             Duration timeout)
     {
-        this.conductor = conductor;
         this.remoteAddressSupplier = remoteAddressSupplier;
         this.responseHandler = responseInspector;
         this.requestPool = requestPool;
@@ -80,14 +71,6 @@ public class ClientRequestRetryController extends ZbActor
     {
         actor.run(this::getRemoteAddress);
         actor.runDelayed(timeout, this::onRequestTimedOut);
-        conductor.onManagedRequestStarted(this);
-    }
-
-    @Override
-    protected void onActorClosing()
-    {
-        conductor.onManagedRequestFinished(this);
-        Loggers.TRANSPORT_LOGGER.debug("Request Controller closed");
     }
 
     private void getRemoteAddress()
@@ -146,8 +129,6 @@ public class ClientRequestRetryController extends ZbActor
                         {
                             successfulRequest.completeExceptionally(e);
                         }
-
-                        close();
                     }
                 }
                 else
@@ -159,7 +140,6 @@ public class ClientRequestRetryController extends ZbActor
         }
         else
         {
-            currentRequest.close();
             actor.yield(); // retry send
         }
     }
@@ -190,17 +170,11 @@ public class ClientRequestRetryController extends ZbActor
 
         final String errorMessage = errBuilder.toString();
         successfulRequest.completeExceptionally(errorMessage, new RequestTimeoutException(errorMessage));
-        close();
+        actor.close();
     }
 
     public ActorFuture<ClientRequest> getRequest()
     {
         return successfulRequest;
-    }
-
-    public ActorFuture<Void> close()
-    {
-        Loggers.TRANSPORT_LOGGER.debug("Request Controller closing");
-        return actor.close();
     }
 }
