@@ -20,6 +20,7 @@ import java.util.Deque;
 import java.util.LinkedList;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.logging.Logger;
 
 import io.zeebe.transport.*;
 import io.zeebe.util.buffer.BufferWriter;
@@ -69,7 +70,7 @@ public class ClientRequestRetryController extends ZbActor
     @Override
     protected void onActorStarted()
     {
-        actor.run(this::getRemoteAddress);
+        actor.submit(this::getRemoteAddress);
         actor.runDelayed(timeout, this::onRequestTimedOut);
     }
 
