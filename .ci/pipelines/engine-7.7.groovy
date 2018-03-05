@@ -63,7 +63,7 @@ pipeline {
           archiveArtifacts artifacts:  backendModuleName + '/target/it-elasticsearch/**/logs/*.log', onlyIfSuccessful: false
           archiveArtifacts artifacts:  backendModuleName + '/target/it-elasticsearch/**/_snapshots/*.gz', onlyIfSuccessful: false
           archiveArtifacts artifacts:  backendModuleName + '/target/failsafe-reports/*.txt', onlyIfSuccessful: false
-          archiveArtifacts artifacts:  backendModuleName + '/target/camunda-tomcat/server/apache-tomcat-8.0.47/logs/*.out', onlyIfSuccessful: false
+          archiveArtifacts artifacts:  backendModuleName + '/target/camunda-tomcat/server/apache-tomcat-8.0.24/logs/*.out', onlyIfSuccessful: false
         }
       }
 
