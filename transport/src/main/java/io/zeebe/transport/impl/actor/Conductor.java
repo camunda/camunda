@@ -119,7 +119,7 @@ public abstract class Conductor extends ZbActor implements ChannelLifecycleListe
     @Override
     public void onChannelClosed(TransportChannel ch, boolean wasConnected)
     {
-        actor.submit(() ->
+        actor.run(() ->
         {
             if (channels.remove(ch.getRemoteAddress().getStreamId()) != null)
             {

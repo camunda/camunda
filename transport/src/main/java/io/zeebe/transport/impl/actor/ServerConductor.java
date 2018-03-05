@@ -19,10 +19,18 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
 
-import io.zeebe.transport.*;
-import io.zeebe.transport.impl.*;
+import io.zeebe.transport.ServerInputSubscription;
+import io.zeebe.transport.ServerMessageHandler;
+import io.zeebe.transport.ServerOutput;
+import io.zeebe.transport.ServerRequestHandler;
+import io.zeebe.transport.SocketAddress;
+import io.zeebe.transport.impl.RemoteAddressImpl;
+import io.zeebe.transport.impl.RemoteAddressListImpl;
+import io.zeebe.transport.impl.ServerInputSubscriptionImpl;
+import io.zeebe.transport.impl.ServerSocketBinding;
+import io.zeebe.transport.impl.TransportChannel;
+import io.zeebe.transport.impl.TransportContext;
 import io.zeebe.transport.impl.selector.AcceptTransportPoller;
-import io.zeebe.util.sched.ActorThread;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 
@@ -124,22 +132,5 @@ public class ServerConductor extends Conductor
         });
 
         return future;
-    }
-
-    @Override
-    public void onChannelClosed(TransportChannel ch, boolean wasConnected)
-    {
-        if (ActorThread.current() != null
-            && ActorThread.current().getCurrentTask().getActor() == this)
-        {
-            super.onChannelClosed(ch, wasConnected);
-        }
-        else
-        {
-            actor.call(() ->
-            {
-                super.onChannelClosed(ch, wasConnected);
-            });
-        }
     }
 }
