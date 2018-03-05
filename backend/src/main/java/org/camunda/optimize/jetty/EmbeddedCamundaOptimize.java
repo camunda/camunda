@@ -25,6 +25,7 @@ import org.springframework.context.ApplicationContext;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 import java.util.Properties;
 
 /**
@@ -211,9 +212,15 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
     boolean oneStarted = false;
 
     while (!oneStarted) {
-      for (EngineImportJobScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
-        scheduler.start();
-        oneStarted = true;
+      EngineImportJobSchedulerFactory importSchedulerFactory = getImportSchedulerFactory();
+      if (importSchedulerFactory != null) {
+        List<EngineImportJobScheduler> importSchedulers = importSchedulerFactory.getImportSchedulers();
+        if (importSchedulers != null) {
+          for (EngineImportJobScheduler scheduler : importSchedulers) {
+            scheduler.start();
+            oneStarted = true;
+          }
+        }
       }
     }
   }
