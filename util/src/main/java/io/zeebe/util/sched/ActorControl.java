@@ -344,7 +344,7 @@ public class ActorControl
         final ActorThread currentActorRunner = ensureCalledFromActorThread("run(...)");
         final ActorJob currentJob = currentActorRunner.getCurrentJob();
 
-        if (currentActorRunner == currentJob.getActorThread())
+        if (currentActorRunner.getCurrentTask() == this.task)
         {
             /*
              attempt "hot" replace of runnable in the job.
@@ -412,7 +412,7 @@ public class ActorControl
 
         if (thread == null)
         {
-            throw new UnsupportedOperationException("Incorrect usage of actor." + methodName + ": must be called from actor thread");
+            throw new UnsupportedOperationException("Incorrect usage of actor. " + methodName + ": must be called from actor thread");
         }
 
         return thread;
