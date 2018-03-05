@@ -112,7 +112,10 @@ public class GossipJoinTest
         // when
         cluster.reconnect(gossip1, gossip2);
 
-        clock.addTime(CONFIGURATION.getJoinInterval());
+        doRepeatedly(() ->
+        {
+            clock.addTime(CONFIGURATION.getJoinInterval());
+        }).until(v -> joinFuture.isDone());
 
         // then
         joinFuture.join();

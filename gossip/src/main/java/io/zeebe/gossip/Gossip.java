@@ -22,24 +22,11 @@ import java.util.List;
 
 import io.zeebe.clustering.gossip.GossipEventType;
 import io.zeebe.clustering.gossip.MembershipEventType;
-import io.zeebe.gossip.dissemination.CustomEventListenerConsumer;
-import io.zeebe.gossip.dissemination.CustomEventSyncResponseSupplier;
-import io.zeebe.gossip.dissemination.DisseminationComponent;
-import io.zeebe.gossip.dissemination.SyncRequestEventHandler;
-import io.zeebe.gossip.failuredetection.JoinController;
-import io.zeebe.gossip.failuredetection.PingController;
-import io.zeebe.gossip.failuredetection.PingEventHandler;
-import io.zeebe.gossip.failuredetection.PingReqEventHandler;
-import io.zeebe.gossip.membership.GossipTerm;
-import io.zeebe.gossip.membership.Member;
-import io.zeebe.gossip.membership.MembershipList;
-import io.zeebe.gossip.protocol.GossipEventFactory;
-import io.zeebe.gossip.protocol.GossipEventSender;
-import io.zeebe.gossip.protocol.GossipRequestHandler;
-import io.zeebe.transport.BufferingServerTransport;
-import io.zeebe.transport.ClientTransport;
-import io.zeebe.transport.ServerInputSubscription;
-import io.zeebe.transport.SocketAddress;
+import io.zeebe.gossip.dissemination.*;
+import io.zeebe.gossip.failuredetection.*;
+import io.zeebe.gossip.membership.*;
+import io.zeebe.gossip.protocol.*;
+import io.zeebe.transport.*;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.ZbActor;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -109,7 +96,8 @@ public class Gossip extends ZbActor implements GossipController, GossipEventPubl
         {
             if (failure == null)
             {
-                actor.consume(subscription, () -> {
+                actor.consume(subscription, () ->
+                {
                     if (subscription.poll() == 0)
                     {
                         actor.yield();
