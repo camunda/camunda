@@ -43,13 +43,13 @@ it('should contain a modal', () => {
 });
 
 it('should initially load available variables', () => {
-  mount(<VariableFilter processDefinitionId='procDefId' />);
+  mount(<VariableFilter processDefinitionKey='procDefKey' processDefinitionVersion='1'/>);
 
-  expect(loadVariables).toHaveBeenCalledWith('procDefId');
+  expect(loadVariables).toHaveBeenCalledWith('procDefKey', '1');
 });
 
 it('should display available variables', () => {
-  const node = mount(<VariableFilter processDefinitionId='procDefId' />);
+  const node = mount(<VariableFilter processDefinitionKey='procDefKey' />);
 
   node.setState({
     variables: [{name: 'foo', type: 'String'}, {name: 'bar', type: 'String'}]
@@ -60,7 +60,7 @@ it('should display available variables', () => {
 });
 
 it('should disable add filter button if no variable is selected', () => {
-  const node = mount(<VariableFilter processDefinitionId='procDefId' />);
+  const node = mount(<VariableFilter processDefinitionKey='procDefKey' processDefinitionVersion='1'/>);
 
   node.setState({
     variables: [{name: 'foo', type: 'String'}, {name: 'bar', type: 'String'}]
@@ -72,7 +72,7 @@ it('should disable add filter button if no variable is selected', () => {
 });
 
 it('should enable add filter button if variable selection is valid', () => {
-  const node = mount(<VariableFilter processDefinitionId='procDefId' />);
+  const node = mount(<VariableFilter processDefinitionKey='procDefKey' processDefinitionVersion='1'/>);
 
   node.setState({
     variables: [{name: 'foo', type: 'String'}, {name: 'bar', type: 'String'}],
@@ -88,7 +88,7 @@ it('should enable add filter button if variable selection is valid', () => {
 
 describe('boolean variables', () => {
   it('should assume variable value true per default', () => {
-    const node = mount(<VariableFilter processDefinitionId='procDefId' />);
+    const node = mount(<VariableFilter processDefinitionKey='procDefKey' processDefinitionVersion='1'/>);
     node.setState({
       variables: [{name: 'foo', type: 'Boolean'}]
     });
@@ -99,7 +99,7 @@ describe('boolean variables', () => {
   });
 
   it('should show true and false operator fields', () => {
-    const node = mount(<VariableFilter processDefinitionId='procDefId' />);
+    const node = mount(<VariableFilter processDefinitionKey='procDefKey' processDefinitionVersion='1'/>);
     node.setState({
       variables: [{name: 'foo', type: 'Boolean'}],
       selectedVariableIdx: 0,
@@ -110,7 +110,7 @@ describe('boolean variables', () => {
   });
 
   it('should set the value when clicking on the operator fields', () => {
-    const node = mount(<VariableFilter processDefinitionId='procDefId' />);
+    const node = mount(<VariableFilter processDefinitionKey='procDefKey' processDefinitionVersion='1'/>);
     node.setState({
       variables: [{name: 'foo', type: 'Boolean'}],
       selectedVariableIdx: 0
@@ -124,7 +124,7 @@ describe('boolean variables', () => {
 
 describe('number variables', () => {
   it('should be initialized with an empty variable value', () => {
-    const node = mount(<VariableFilter processDefinitionId='procDefId' />);
+    const node = mount(<VariableFilter processDefinitionKey='procDefKey' processDefinitionVersion='1'/>);
     node.setState({
       variables: [{name: 'foo', type: 'Float'}]
     });
@@ -135,7 +135,7 @@ describe('number variables', () => {
   });
 
   it('should store the input in the state value array at the correct position', () => {
-    const node = mount(<VariableFilter processDefinitionId='procDefId' />);
+    const node = mount(<VariableFilter processDefinitionKey='procDefKey' processDefinitionVersion='1'/>);
     node.setState({
       variables: [{name: 'foo', type: 'Float'}],
       selectedVariableIdx: 0,
@@ -148,7 +148,7 @@ describe('number variables', () => {
   });
 
   it('should display the possibility to add another value', () => {
-    const node = mount(<VariableFilter processDefinitionId='procDefId' />);
+    const node = mount(<VariableFilter processDefinitionKey='procDefKey' processDefinitionVersion='1'/>);
     node.setState({
       variables: [{name: 'foo', type: 'Float'}],
       selectedVariableIdx: 0,
@@ -159,7 +159,7 @@ describe('number variables', () => {
   });
 
   it('should not display the possibility to add another value if last field is empty', () => {
-    const node = mount(<VariableFilter processDefinitionId='procDefId' />);
+    const node = mount(<VariableFilter processDefinitionKey='procDefKey' />);
     node.setState({
       variables: [{name: 'foo', type: 'Float'}],
       selectedVariableIdx: 0,
@@ -170,7 +170,7 @@ describe('number variables', () => {
   });
 
   it('should add another value when clicking add another value button', () => {
-    const node = mount(<VariableFilter processDefinitionId='procDefId' />);
+    const node = mount(<VariableFilter processDefinitionKey='procDefKey' processDefinitionVersion='1'/>);
     node.setState({
       variables: [{name: 'foo', type: 'Float'}],
       selectedVariableIdx: 0,
@@ -183,7 +183,7 @@ describe('number variables', () => {
   });
 
   it('should disable add filter button if provided value is invalid', () => {
-    const node = mount(<VariableFilter processDefinitionId='procDefId' />);
+    const node = mount(<VariableFilter processDefinitionKey='procDefKey' processDefinitionVersion='1'/>);
 
     node.setState({
       variables: [{name: 'foo', type: 'Float'}],
@@ -197,7 +197,7 @@ describe('number variables', () => {
   });
 
   it('should disable add filter button if variable is integer but provided input is float', () => {
-    const node = mount(<VariableFilter processDefinitionId='procDefId' />);
+    const node = mount(<VariableFilter processDefinitionKey='procDefKey' processDefinitionVersion='1' />);
 
     node.setState({
       variables: [{name: 'foo', type: 'Integer'}],
@@ -213,18 +213,18 @@ describe('number variables', () => {
 
 describe('string variables', () => {
   it('should load 20 values initially', () => {
-    const node = mount(<VariableFilter processDefinitionId='procDefId' />);
+    const node = mount(<VariableFilter processDefinitionKey='procDefKey' processDefinitionVersion='1'/>);
     node.setState({
       variables: [{name: 'foo', type: 'String'}]
     });
 
     node.find('select').simulate('change', {target: {value: '0'}});
 
-    expect(loadValues).toHaveBeenCalledWith('procDefId', 'foo', 'String', 0, 21);
+    expect(loadValues).toHaveBeenCalledWith('procDefKey', '1', 'foo', 'String', 0, 21);
   });
 
   it('should show available values', () => {
-    const node = mount(<VariableFilter processDefinitionId='procDefId' />);
+    const node = mount(<VariableFilter processDefinitionKey='procDefKey' processDefinitionVersion='1'/>);
     node.setState({
       variables: [{name: 'foo', type: 'String'}],
       selectedVariableIdx: 0,
@@ -237,7 +237,7 @@ describe('string variables', () => {
   });
 
   it('should add a value to the list of values when the checkbox is clicked', () => {
-    const node = mount(<VariableFilter processDefinitionId='procDefId' />);
+    const node = mount(<VariableFilter processDefinitionKey='procDefKey' processDefinitionVersion='1'/>);
     node.setState({
       variables: [{name: 'foo', type: 'String'}],
       selectedVariableIdx: 0,
@@ -250,7 +250,7 @@ describe('string variables', () => {
   });
 
   it('should load 20 more values if the user wants more', () => {
-    const node = mount(<VariableFilter processDefinitionId='procDefId' />);
+    const node = mount(<VariableFilter processDefinitionKey='procDefKey' processDefinitionVersion='1'/>);
     node.setState({
       variables: [{name: 'foo', type: 'String'}],
       selectedVariableIdx: 0,
@@ -260,13 +260,13 @@ describe('string variables', () => {
 
     node.find('.VariableFilter__valueFields button').simulate('click');
 
-    expect(loadValues).toHaveBeenCalledWith('procDefId', 'foo', 'String', 0, 41);
+    expect(loadValues).toHaveBeenCalledWith('procDefKey', '1', 'foo', 'String', 0, 41);
   });
 });
 
 it('should create a new filter', () => {
   const spy = jest.fn();
-  const node = mount(<VariableFilter processDefinitionId='procDefId' addFilter={spy} />);
+  const node = mount(<VariableFilter processDefinitionKey='procDefKey' processDefinitionVersion='1' addFilter={spy} />);
 
   node.setState({
     variables: [{name: 'foo', type: 'String'}],
@@ -288,7 +288,7 @@ it('should create a new filter', () => {
   });
 
   it('should disable add filter button if no value is selected', () => {
-    const node = mount(<VariableFilter processDefinitionId='procDefId' />);
+    const node = mount(<VariableFilter processDefinitionKey='procDefKey' processDefinitionVersion='1'/>);
 
     node.setState({
       variables: [{name: 'foo', type: 'String'}],

@@ -24,7 +24,7 @@ export default class VariableFilter extends React.Component {
   }
 
   loadAvailableVariables = async () => {
-    const variables = await loadVariables(this.props.processDefinitionId);
+    const variables = await loadVariables(this.props.processDefinitionKey, this.props.processDefinitionVersion);
 
     if(this.props.filterData) {
       const filterData = this.props.filterData[0].data;
@@ -46,7 +46,13 @@ export default class VariableFilter extends React.Component {
     this.setState({
       loading: true
     }, async () => {
-      const values = await loadValues(this.props.processDefinitionId, name, type, 0, this.state.availableValues.length + valuesToLoad + 1);
+      const values = await loadValues(
+        this.props.processDefinitionKey,
+        this.props.processDefinitionVersion,
+        name, 
+        type, 
+        0, 
+        this.state.availableValues.length + valuesToLoad + 1);
 
       const valuesAreComplete = values.length !== (this.state.availableValues.length + valuesToLoad + 1);
 
