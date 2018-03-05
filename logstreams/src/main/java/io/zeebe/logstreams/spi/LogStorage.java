@@ -17,8 +17,6 @@ package io.zeebe.logstreams.spi;
 
 import java.nio.ByteBuffer;
 
-import io.zeebe.util.sched.ActorCondition;
-
 /**
  * Log structured storage abstraction
  */
@@ -161,9 +159,5 @@ public interface LogStorage
      * @throws Exception if fails to flush all blocks
      */
     void flush() throws Exception;
-
-    void registerOnAppendCondition(ActorCondition condition);
-
-    void removeOnAppendCondition(ActorCondition condition);
 
 }

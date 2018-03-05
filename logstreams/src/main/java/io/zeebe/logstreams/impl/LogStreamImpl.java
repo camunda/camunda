@@ -68,6 +68,7 @@ public final class LogStreamImpl extends ZbActor implements LogStream
     private final LogBlockIndexController logBlockIndexController;
 
     private final Position commitPosition = new AtomicLongPosition();
+    private final ActorConditions onLogStorageAppendedConditions = new ActorConditions();
     private final ActorConditions onCommitPositionUpdatedConditions = new ActorConditions();
 
     private LogStreamController logStreamController;
@@ -227,7 +228,7 @@ public final class LogStreamImpl extends ZbActor implements LogStream
 
         if (logStreamController == null)
         {
-            logStreamController = new LogStreamController(logStreamBuilder);
+            logStreamController = new LogStreamController(logStreamBuilder, onLogStorageAppendedConditions);
         }
         else
         {
@@ -385,7 +386,7 @@ public final class LogStreamImpl extends ZbActor implements LogStream
     @Override
     public long getCurrentAppenderPosition()
     {
-        return logStreamController == null ? 0 : logStreamController.getCurrentAppenderPosition();
+        return logStreamController == null ? -1L : logStreamController.getCurrentAppenderPosition();
     }
 
     @Override
@@ -412,6 +413,18 @@ public final class LogStreamImpl extends ZbActor implements LogStream
     public synchronized void removeOnCommitPositionUpdatedCondition(ActorCondition condition)
     {
         onCommitPositionUpdatedConditions.removeConsumer(condition);
+    }
+
+    @Override
+    public synchronized void registerOnAppendCondition(ActorCondition condition)
+    {
+        onLogStorageAppendedConditions.registerConsumer(condition);
+    }
+
+    @Override
+    public synchronized void removeOnAppendCondition(ActorCondition condition)
+    {
+        onLogStorageAppendedConditions.removeConsumer(condition);
     }
 
     @Override

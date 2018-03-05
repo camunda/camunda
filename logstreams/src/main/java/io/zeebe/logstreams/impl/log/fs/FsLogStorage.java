@@ -15,9 +15,7 @@
  */
 package io.zeebe.logstreams.impl.log.fs;
 
-import static io.zeebe.dispatcher.impl.PositionUtil.partitionId;
-import static io.zeebe.dispatcher.impl.PositionUtil.partitionOffset;
-import static io.zeebe.dispatcher.impl.PositionUtil.position;
+import static io.zeebe.dispatcher.impl.PositionUtil.*;
 import static io.zeebe.logstreams.impl.log.fs.FsLogSegment.END_OF_SEGMENT;
 import static io.zeebe.logstreams.impl.log.fs.FsLogSegment.NO_DATA;
 import static io.zeebe.logstreams.impl.log.fs.FsLogSegmentDescriptor.METADATA_LENGTH;
@@ -31,19 +29,13 @@ import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.nio.file.*;
+import java.util.*;
 
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.spi.ReadResultProcessor;
 import io.zeebe.util.FileUtil;
-import io.zeebe.util.sched.ActorCondition;
-import io.zeebe.util.sched.channel.ActorConditions;
 import org.agrona.IoUtil;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -59,8 +51,6 @@ public class FsLogStorage implements LogStorage
 
     protected final FsLogStorageConfiguration config;
     protected final ReadResultProcessor defaultReadResultProcessor = (buffer, readResult) -> readResult;
-
-    private final ActorConditions onAppendConditions = new ActorConditions();
 
     /**
      * Readable log segments
@@ -115,8 +105,6 @@ public class FsLogStorage implements LogStorage
                 opresult = position(currentSegment.getSegmentId(), appendResult);
 
                 markSegmentAsDirty(currentSegment);
-
-                signalOnAppendConditions();
             }
             else
             {
@@ -548,22 +536,5 @@ public class FsLogStorage implements LogStorage
         segment.closeSegment();
 
         return segmentId;
-    }
-
-    private void signalOnAppendConditions()
-    {
-        onAppendConditions.signalConsumers();
-    }
-
-    @Override
-    public synchronized void registerOnAppendCondition(ActorCondition condition)
-    {
-        onAppendConditions.registerConsumer(condition);
-    }
-
-    @Override
-    public synchronized void removeOnAppendCondition(ActorCondition condition)
-    {
-        onAppendConditions.removeConsumer(condition);
     }
 }

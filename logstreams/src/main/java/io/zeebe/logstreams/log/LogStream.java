@@ -177,4 +177,8 @@ public interface LogStream extends AutoCloseable
 
     void removeOnCommitPositionUpdatedCondition(ActorCondition condition);
 
+    void registerOnAppendCondition(ActorCondition condition);
+
+    void removeOnAppendCondition(ActorCondition condition);
+
 }

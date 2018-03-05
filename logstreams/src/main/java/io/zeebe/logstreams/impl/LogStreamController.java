@@ -21,11 +21,10 @@ import static io.zeebe.logstreams.impl.LogEntryDescriptor.positionOffset;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import io.zeebe.dispatcher.BlockPeek;
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.dispatcher.Subscription;
+import io.zeebe.dispatcher.*;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.util.sched.*;
+import io.zeebe.util.sched.channel.ActorConditions;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.MutableDirectBuffer;
@@ -37,6 +36,8 @@ public class LogStreamController extends ZbActor
 
     private final AtomicBoolean isOpenend = new AtomicBoolean(false);
     private final AtomicBoolean isFailed = new AtomicBoolean(false);
+
+    private final ActorConditions onLogStorageAppendedConditions;
 
     private Runnable peekedBlockHandler;
 
@@ -54,9 +55,11 @@ public class LogStreamController extends ZbActor
     private Dispatcher writeBuffer;
     private Subscription writeBufferSubscription;
 
-    public LogStreamController(LogStreamImpl.LogStreamBuilder logStreamBuilder)
+    public LogStreamController(LogStreamImpl.LogStreamBuilder logStreamBuilder, ActorConditions onLogStorageAppendedConditions)
     {
         wrap(logStreamBuilder);
+
+        this.onLogStorageAppendedConditions = onLogStorageAppendedConditions;
     }
 
     protected void wrap(LogStreamImpl.LogStreamBuilder logStreamBuilder)
@@ -150,6 +153,8 @@ public class LogStreamController extends ZbActor
         if (address >= 0)
         {
             blockPeek.markCompleted();
+
+            onLogStorageAppendedConditions.signalConsumers();
         }
         else
         {
@@ -217,7 +222,7 @@ public class LogStreamController extends ZbActor
         }
         else
         {
-            return -1;
+            return -1L;
         }
     }
 

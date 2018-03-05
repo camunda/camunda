@@ -124,7 +124,7 @@ public class LogRecoveryTest
                 {
                     logStream.setCommitPosition(Long.MAX_VALUE);
                 });
-                logStream.getLogStorage().registerOnAppendCondition(condition);
+                logStream.registerOnAppendCondition(condition);
             }
         });
     }
