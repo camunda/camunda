@@ -99,9 +99,6 @@ public class GossipFailureDetectionTest
                 && gossip3.receivedEvent(GossipEventType.ACK, gossip2) && gossip1.receivedEvent(GossipEventType.ACK, gossip3));
 
         // then
-        assertThat(gossip2.receivedEvent(GossipEventType.PING, gossip1)).isFalse();
-        assertThat(gossip1.receivedEvent(GossipEventType.ACK, gossip2)).isFalse();
-
         assertThat(gossip1.hasMember(gossip2)).isTrue();
         assertThat(gossip2.hasMember(gossip1)).isTrue();
     }
