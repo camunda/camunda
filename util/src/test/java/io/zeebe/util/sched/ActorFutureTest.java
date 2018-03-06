@@ -15,24 +15,22 @@
  */
 package io.zeebe.util.sched;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-
 import io.zeebe.util.collection.Tuple;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class ActorFutureTest
 {
@@ -366,15 +364,6 @@ public class ActorFutureTest
 
     class BlockedCallActor extends ZbActor
     {
-        @Override
-        protected void onActorStarted()
-        {
-            actor.onCondition("foo", () ->
-            {
-                // prevent auto-close
-            });
-        }
-
         public void waitOnFuture()
         {
             actor.call(() ->
