@@ -48,6 +48,7 @@ public class CountProcessInstanceFrequencyByStartDateCommand extends ReportComma
 
     MapReportResultDto mapResult = new MapReportResultDto();
     mapResult.setResult(processAggregations(response.getAggregations()));
+    mapResult.setProcessInstanceCount(response.getHits().getTotalHits());
     return mapResult;
   }
 

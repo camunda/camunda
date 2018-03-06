@@ -27,9 +27,6 @@ import org.hamcrest.TypeSafeMatcher;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
@@ -67,9 +64,9 @@ public class RawDataReportEvaluationIT {
 
   @Test
   public void reportAcrossAllVersions() throws Exception {
-// given
+    // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
-    ProcessInstanceEngineDto processInstance2 = deployAndStartSimpleProcess();
+    deployAndStartSimpleProcess();
 
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -81,6 +78,7 @@ public class RawDataReportEvaluationIT {
 
     // then
     ReportDataDto resultDataDto = result.getData();
+    assertThat(result.getProcessInstanceCount(), is(2L));
     assertThat(resultDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
     assertThat(resultDataDto.getProcessDefinitionVersion(), is(ReportConstants.ALL_VERSIONS));
     assertThat(resultDataDto.getView(), is(notNullValue()));
@@ -105,6 +103,7 @@ public class RawDataReportEvaluationIT {
 
     // then
     ReportDataDto resultDataDto = result.getData();
+    assertThat(result.getProcessInstanceCount(), is(1L));
     assertThat(resultDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
     assertThat(resultDataDto.getProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
     assertThat(resultDataDto.getView(), is(notNullValue()));

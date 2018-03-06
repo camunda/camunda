@@ -120,6 +120,7 @@ public class RawDataCommand extends ReportCommand<RawDataReportResultDto> {
   private RawDataReportResultDto createResult(List<RawDataProcessInstanceDto> rawDataResult) {
     RawDataReportResultDto result = new RawDataReportResultDto();
     result.setResult(rawDataResult);
+    result.setProcessInstanceCount(rawDataResult.size());
     return result;
   }
 

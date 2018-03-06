@@ -40,6 +40,7 @@ public class AverageTotalProcessInstanceDurationCommand extends ReportCommand<Nu
 
     NumberReportResultDto numberResult = new NumberReportResultDto();
     numberResult.setResult(processAggregations(response.getAggregations()));
+    numberResult.setProcessInstanceCount(response.getHits().getTotalHits());
     return numberResult;
   }
 

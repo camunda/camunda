@@ -54,6 +54,7 @@ public class AverageFlowNodeDurationByFlowNodeCommand extends FlowNodeGroupingCo
     MapReportResultDto resultDto =
       new MapReportResultDto();
     resultDto.setResult(resultMap);
+    resultDto.setProcessInstanceCount(response.getHits().getTotalHits());
     return resultDto;
   }
 

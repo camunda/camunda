@@ -50,6 +50,7 @@ public class AverageProcessInstanceDurationGroupedByStartDateCommand extends Rep
 
     MapReportResultDto mapResult = new MapReportResultDto();
     mapResult.setResult(processAggregations(response.getAggregations()));
+    mapResult.setProcessInstanceCount(response.getHits().getTotalHits());
     return mapResult;
   }
 

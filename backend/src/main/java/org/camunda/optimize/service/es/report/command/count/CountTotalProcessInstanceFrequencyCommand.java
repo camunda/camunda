@@ -31,6 +31,7 @@ public class CountTotalProcessInstanceFrequencyCommand extends ReportCommand<Num
 
     NumberReportResultDto numberResult = new NumberReportResultDto();
     numberResult.setResult(response.getHits().getTotalHits());
+    numberResult.setProcessInstanceCount(response.getHits().getTotalHits());
     return numberResult;
   }
 

@@ -95,6 +95,7 @@ public class AverageProcessInstanceDurationByStartDateReportEvaluationIT {
 
     // then
     ReportDataDto resultReportDataDto = result.getData();
+    assertThat(result.getProcessInstanceCount(), is(1L));
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
 

@@ -44,8 +44,8 @@ import static org.hamcrest.core.IsNull.nullValue;
 
 public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
 
-  public static final String START_EVENT = "startEvent";
-  public static final String END_EVENT = "endEvent";
+  private static final String START_EVENT = "startEvent";
+  private static final String END_EVENT = "endEvent";
   public static final String PROCESS_DEFINITION_KEY = "123";
   private static final String SERVICE_TASK_ID = "aSimpleServiceTask";
   private static final String SERVICE_TASK_ID_2 = "aSimpleServiceTask2";
@@ -75,6 +75,7 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
 
     // then
     ReportDataDto resultReportDataDto = result.getData();
+    assertThat(result.getProcessInstanceCount(), is(1L));
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processDefinition.getKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(String.valueOf(processDefinition.getVersion())));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
@@ -136,7 +137,7 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
     assertThat(flowNodeIdToAverageExecutionDuration.get(SERVICE_TASK_ID_2 ), is(20L));
   }
 
-  public ProcessDefinitionEngineDto deployProcessWithTwoTasks() throws IOException {
+  private ProcessDefinitionEngineDto deployProcessWithTwoTasks() throws IOException {
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("aProcess")
       .startEvent(START_EVENT)
       .serviceTask(SERVICE_TASK_ID)
@@ -494,7 +495,7 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
   }
 
   @Test
-  public void optimizeExceptionOnGroupByTypeIsNull() throws Exception {
+  public void optimizeExceptionOnGroupByTypeIsNull() {
     // given
     ReportDataDto dataDto =
       createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(PROCESS_DEFINITION_KEY, "1");
