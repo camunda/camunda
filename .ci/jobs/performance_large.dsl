@@ -13,7 +13,7 @@ pipelineJob('Performance Large Dataset') {
   jdk '(Default)'
 
   triggers {
-    upstream('camunda-optimize/master', 'SUCCESS')
+    cron('0 3 * * *')
   }
 
   publishers {

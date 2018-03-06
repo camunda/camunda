@@ -13,7 +13,7 @@ pipelineJob('Performance') {
   jdk '(Default)'
 
   triggers {
-    upstream('camunda-optimize/master', 'SUCCESS')
+    cron('0 2 * * *')
   }
 
   publishers {

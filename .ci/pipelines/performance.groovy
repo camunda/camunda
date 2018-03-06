@@ -18,10 +18,6 @@ pipeline {
     timestamps()
     timeout(time: 30, unit: 'MINUTES')
   }
-  
-  triggers {
-    cron('0 2 * * *')
-  }
 
   stages {
     stage('Prepare') {
