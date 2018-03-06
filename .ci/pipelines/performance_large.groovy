@@ -55,6 +55,7 @@ pipeline {
     }
     stage('Performance') {
       steps {
+        sh 'mvn -DskipTests -s settings.xml clean install'
         startElasticsearch()
         startEngine()
         sh 'mvn -Ptest-only -f qa/import-performance-tests/pom.xml -s settings.xml clean install'
