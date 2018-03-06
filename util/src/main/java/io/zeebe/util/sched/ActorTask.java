@@ -132,6 +132,12 @@ public class ActorTask
         jobClosingTaskFuture.close();
         jobClosingTaskFuture.setAwaitingResult();
 
+        startingFuture.close();
+        startingFuture.setAwaitingResult();
+
+        jobStartingTaskFuture.close();
+        jobStartingTaskFuture.setAwaitingResult();
+
         this.isJumbo = false;
         this.lifecyclePhase = ActorLifecyclePhase.STARTING;
 
@@ -320,12 +326,6 @@ public class ActorTask
         {
             taskMetrics.close();
         }
-
-        startingFuture.close();
-        startingFuture.setAwaitingResult();
-
-        jobStartingTaskFuture.close();
-        jobStartingTaskFuture.setAwaitingResult();
     }
 
     public void requestClose()

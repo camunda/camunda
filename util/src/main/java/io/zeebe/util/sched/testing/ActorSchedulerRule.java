@@ -15,6 +15,7 @@
  */
 package io.zeebe.util.sched.testing;
 
+import io.zeebe.util.sched.FutureUtil;
 import io.zeebe.util.sched.ZbActor;
 import io.zeebe.util.sched.ZbActorScheduler;
 import io.zeebe.util.sched.ZbActorScheduler.ActorSchedulerBuilder;
@@ -62,7 +63,7 @@ public class ActorSchedulerRule extends ExternalResource
     @Override
     protected void after()
     {
-        actorScheduler.stop();
+        FutureUtil.join(actorScheduler.stop());
     }
 
     public ActorFuture<Void> submitActor(ZbActor actor)

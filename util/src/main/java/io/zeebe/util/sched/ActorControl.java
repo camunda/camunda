@@ -323,8 +323,6 @@ public class ActorControl
         runOnCompletion(futures, callback);
     }
 
-
-
     /** can be called by the actor to yield the thread */
     public void yield()
     {
@@ -332,11 +330,8 @@ public class ActorControl
         job.getTask().yield();
     }
 
-
-
     public ActorFuture<Void> close()
     {
-        ensureCalledInStartedState("close(...)");
         final ActorJob closeJob = new ActorJob();
 
         closeJob.onJobAddedToTask(task);

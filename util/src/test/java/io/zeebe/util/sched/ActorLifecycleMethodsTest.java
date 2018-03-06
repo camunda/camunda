@@ -15,6 +15,7 @@
  */
 package io.zeebe.util.sched;
 
+import io.zeebe.util.Loggers;
 import io.zeebe.util.TestUtil;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
@@ -25,6 +26,7 @@ import org.junit.Test;
 
 import java.time.Duration;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -233,25 +235,79 @@ public class ActorLifecycleMethodsTest
     }
 
     @Test
-    public void shouldNotCallCloseOnStarting()
+    public void shouldCallCloseOnStarting() throws Exception
     {
         // given
+        final CountDownLatch latch = new CountDownLatch(2);
+        final AtomicInteger called = new AtomicInteger(0);
+
         final ZbActor actor = new ZbActor()
         {
             @Override
             protected void onActorStarting()
             {
+                Loggers.ACTOR_LOGGER.debug("Starting");
                 actor.close();
+                actor.submit(() -> {
+                    Loggers.ACTOR_LOGGER.debug("Submit job");
+                    called.incrementAndGet();
+                });
+            }
+
+            @Override
+            protected void onActorStarted()
+            {
+                Loggers.ACTOR_LOGGER.debug("Started");
+                latch.countDown();
+            }
+
+            @Override
+            protected void onActorClosing()
+            {
+                Loggers.ACTOR_LOGGER.debug("Closing");
+                latch.countDown();
             }
         };
 
         final ActorFuture<Void> startingFuture = schedulerRule.submitActor(actor);
+        startingFuture.join();
 
-        // expect
-        assertThatThrownBy(() ->
-            startingFuture.join())
-            .hasMessageContaining("STARTING")
-            .hasMessageContaining("close");
+        // then
+        if (!latch.await(1, TimeUnit.SECONDS))
+        {
+            fail("onActorClosing() is never called");
+        }
+        assertThat(called).hasValue(0);
+    }
+
+    @Test
+    public void shouldDoNothingOnCallCloseOnClosing() throws Exception
+    {
+        // given
+        final CountDownLatch latch = new CountDownLatch(1);
+        final AtomicInteger called = new AtomicInteger(0);
+
+        final ZbActor actor = new ZbActor()
+        {
+            @Override
+            protected void onActorClosing()
+            {
+                actor.close();
+                called.incrementAndGet();
+                latch.countDown();
+            }
+        };
+        final ActorFuture<Void> startingFuture = schedulerRule.submitActor(actor);
+        startingFuture.join();
+
+        // when
+        actor.actor.close();
+
+        if (!latch.await(1, TimeUnit.SECONDS))
+        {
+            fail("onActorClosing() is never called");
+        }
+        assertThat(called).hasValue(1);
     }
 
     @Test
@@ -332,10 +388,9 @@ public class ActorLifecycleMethodsTest
             }
         };
         final ActorFuture<Void> startingFuture = schedulerRule.submitActor(zbActor);
-        TestUtil.waitUntil(() -> startingFuture.isDone());
+        TestUtil.waitUntil(() -> startingFuture.isDone() && latch.getCount() == 1);
 
-        //when
-        assertThat(latch.getCount()).isEqualTo(1);
+        // when
         zbActor.actor.close();
 
         // then
@@ -530,29 +585,6 @@ public class ActorLifecycleMethodsTest
         assertThatThrownBy(() -> closeFuture.join())
             .hasMessageContaining("CLOSING")
             .hasMessageContaining("runAtFixedRate");
-    }
-
-    @Test
-    public void shouldNotCallCloseOnClosing()
-    {
-        // given
-        final ZbActor actor = new ZbActor()
-        {
-            @Override
-            protected void onActorClosing()
-            {
-                actor.close();
-            }
-        };
-
-        final ActorFuture<Void> startingFuture = schedulerRule.submitActor(actor);
-        startingFuture.join();
-
-        // expect
-        final ActorFuture<Void> closeFuture = actor.actor.close();
-        assertThatThrownBy(() -> closeFuture.join())
-            .hasMessageContaining("CLOSING")
-            .hasMessageContaining("close");
     }
 
     @Test

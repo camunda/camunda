@@ -128,7 +128,7 @@ public class CompletableActorFuture<V> implements ActorFuture<V>
     {
         try
         {
-            return get(Integer.MAX_VALUE, TimeUnit.MILLISECONDS);
+            return get(1000, TimeUnit.MILLISECONDS);
         }
         catch (TimeoutException e)
         {
@@ -304,4 +304,13 @@ public class CompletableActorFuture<V> implements ActorFuture<V>
         }
     }
 
+
+    @Override
+    public String toString()
+    {
+        return "CompletableActorFuture{" +
+            (isDone() ?
+                (state == COMPLETED ? "value= " + value : "failure= " + failureCause) :
+                " not completed");
+    }
 }
