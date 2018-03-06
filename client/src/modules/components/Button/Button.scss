@@ -141,3 +141,10 @@ a.Button--green[disabled="disabled"]:hover {
   background-color: #00c364;
   border: 1px solid #00c364;
 }
+
+// Modify .Icon when used inside .Button to keep  distance to button label:
+.Button {
+  .Icon {
+    margin-right: .65em;
+  }
+}
