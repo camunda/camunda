@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/bin/sh -xe
 
 mkdir -p ./backend/target/it-elasticsearch
 cd ./backend/target/it-elasticsearch

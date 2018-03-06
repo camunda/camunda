@@ -30,6 +30,10 @@ pipeline {
     NODE_ENV = "ci"
   }
 
+  triggers {
+    scm('@daily')
+  }
+
   options {
     // General Jenkins job properties
     buildDiscarder(logRotator(numToKeepStr:'10'))

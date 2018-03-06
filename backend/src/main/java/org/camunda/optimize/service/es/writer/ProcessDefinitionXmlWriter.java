@@ -1,5 +1,7 @@
 package org.camunda.optimize.service.es.writer;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionXmlOptimizeDto;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
@@ -29,6 +31,8 @@ public class ProcessDefinitionXmlWriter {
   private Client esclient;
   @Autowired
   private ConfigurationService configurationService;
+  @Autowired
+  private ObjectMapper objectMapper;
 
   public void importProcessDefinitionXmls(List<ProcessDefinitionXmlOptimizeDto> xmls) {
     logger.debug("writing [{}] process definition XMLs to ES", xmls.size());
@@ -66,6 +70,13 @@ public class ProcessDefinitionXmlWriter {
         params
     );
 
+    String source = null;
+    try {
+      source = objectMapper.writeValueAsString(newEntryIfAbsent);
+    } catch (JsonProcessingException e) {
+      logger.error("can't serialize to JSON", e);
+    }
+
     bulkRequest.add(esclient
         .prepareUpdate(
             configurationService.getOptimizeIndex(configurationService.getProcessDefinitionXmlType()),
@@ -73,7 +84,7 @@ public class ProcessDefinitionXmlWriter {
             newEntryIfAbsent.getProcessDefinitionId()
         )
         .setScript(updateScript)
-        .setUpsert(newEntryIfAbsent, XContentType.JSON)
+        .setUpsert(source, XContentType.JSON)
         .setRetryOnConflict(configurationService.getNumberOfRetriesOnConflict())
     );
   }

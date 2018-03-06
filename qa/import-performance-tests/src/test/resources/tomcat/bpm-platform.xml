@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpm-platform xmlns="http://www.camunda.org/schema/1.0/BpmPlatform" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.camunda.org/schema/1.0/BpmPlatform http://www.camunda.org/schema/1.0/BpmPlatform ">
+
+  <job-executor>
+    <job-acquisition name="default" />
+  </job-executor>
+
+  <process-engine name="default">
+    <job-acquisition>default</job-acquisition>
+    <configuration>org.camunda.bpm.engine.impl.cfg.StandaloneProcessEngineConfiguration</configuration>
+    <datasource>java:jdbc/ProcessEngine</datasource>
+
+    <properties>
+      <property name="history">full</property>
+      <property name="databaseSchemaUpdate">true</property>
+      <property name="authorizationEnabled">true</property>
+      <property name="jobExecutorDeploymentAware">true</property>
+      <property name="jobExecutorActivate">false</property>
+      <property name="historyCleanupBatchWindowStartTime">00:01</property>
+    </properties>
+
+    <plugins>
+      <!-- plugin enabling Process Application event listener support -->
+      <plugin>
+        <class>org.camunda.bpm.application.impl.event.ProcessApplicationEventListenerPlugin</class>
+      </plugin>
+
+      <!-- plugin enabling integration of camunda Spin -->
+      <plugin>
+        <class>org.camunda.spin.plugin.impl.SpinProcessEnginePlugin</class>
+      </plugin>
+
+      <!-- plugin enabling connect support -->
+      <plugin>
+        <class>org.camunda.connect.plugin.impl.ConnectProcessEnginePlugin</class>
+      </plugin>
+    </plugins>
+
+
+  </process-engine>
+
+</bpm-platform>
