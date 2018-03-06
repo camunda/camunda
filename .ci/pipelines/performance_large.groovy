@@ -1,6 +1,7 @@
 #!/usr/bin/env groovy
 
 // https://github.com/jenkinsci/pipeline-model-definition-plugin/wiki/Getting-Started
+def backendModuleName = "backend"
 
 def startElasticsearch() {
   stopAllOptimizeComponents()
@@ -55,8 +56,12 @@ pipeline {
         startElasticsearch()
         startEngine()
         sh 'mvn -Ptest-only -f qa/import-performance-tests/pom.xml -s settings.xml clean install'
-
-        stopAllOptimizeComponents()
+      }
+      post {
+        always {
+          stopAllOptimizeComponents()
+          archiveArtifacts artifacts:  backendModuleName + '/target/it-elasticsearch/**/logs/*.log', onlyIfSuccessful: false
+        }
       }
     }
   }
