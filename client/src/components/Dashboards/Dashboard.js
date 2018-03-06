@@ -1,9 +1,10 @@
 import React from 'react';
 import moment from 'moment';
+import Fullscreen from "react-full-screen";
 import {default as updateState} from 'immutability-helper';
 import {Link, Redirect} from 'react-router-dom';
 
-import {Button, Modal, Input, ShareEntity, DashboardView} from 'components';
+import {Button, Modal, Input, ShareEntity, DashboardView, Icon} from 'components';
 
 import {loadDashboard, remove, update, loadReport, getSharedDashboard, shareDashboard, revokeDashboardSharing} from './service';
 
@@ -34,7 +35,8 @@ export default class Dashboard extends React.Component {
       originalReports : [],
       shareModalVisible: false,
       deleteModalVisible: false,
-      addButtonVisible: true
+      addButtonVisible: true,
+      fullScreenActive: false
     };
 
     this.load();
@@ -150,6 +152,14 @@ export default class Dashboard extends React.Component {
     });
   }
 
+  toggleFullscreen = () => {
+    this.setState(prevState => {
+      return {
+        fullScreenActive: !prevState.fullScreenActive
+      }
+    });
+  }
+
   renderEditMode = (state) => {
     const {name, lastModifier, lastModified} = state;
 
@@ -178,47 +188,54 @@ export default class Dashboard extends React.Component {
     )
   }
 
-
   renderViewMode = (state) => {
     const {name, lastModifier, lastModified, shareModalVisible, deleteModalVisible} = state;
 
     return (
-      <div className='Dashboard'>
-        <div className='Dashboard__header'>
-          <div className='Dashboard__name-container'>
-            <h1 className='Dashboard__heading'>{name}</h1>
-            <div className='Dashboard__metadata'>Last modified {moment(lastModified).format('lll')} by {lastModifier}</div>
+      <Fullscreen enabled={this.state.fullScreenActive} onChange={fullScreenActive => this.setState({fullScreenActive})}>
+        <div className={`Dashboard ${this.state.fullScreenActive ? 'Dashboard--fullscreen' : ''}`}>
+          <div className='Dashboard__header'>
+            <div className='Dashboard__name-container'>
+              <h1 className='Dashboard__heading'>{name}</h1>
+              <div className='Dashboard__metadata'>Last modified {moment(lastModified).format('lll')} by {lastModifier}</div>
+            </div>
+            <div className='Dashboard__tools'>
+              {!this.state.fullScreenActive &&
+              <React.Fragment>
+                <Link className='Dashboard__tool-button Dashboard__edit-button' to={`/dashboard/${this.id}/edit`}><Button>Edit</Button></Link>
+                <Button onClick={this.showDeleteModal} className='Dashboard__tool-button Dashboard__delete-button'>Delete</Button>
+                <Button onClick={this.showShareModal} className='Dashboard__tool-button Dashboard__share-button'>Share</Button>
+              </React.Fragment>}
+              <Button onClick={this.toggleFullscreen} className='Dashboard__tool-button Dashboard__fullscreen-button'>
+                <Icon type={this.state.fullScreenActive ? 'exit-fullscreen' : 'fullscreen'} />
+                {this.state.fullScreenActive ? ' Leave' : ' Enter'} Fullscreen</Button>
+            </div>
           </div>
-          <div className='Dashboard__tools'>
-            <Link className='Dashboard__tool-button Dashboard__edit-button' to={`/dashboard/${this.id}/edit`}><Button>Edit</Button></Link>
-            <Button onClick={this.showDeleteModal} className='Dashboard__tool-button Dashboard__delete-button'>Delete</Button>
-            <Button onClick={this.showShareModal} className='Dashboard__tool-button Dashboard__share-button'>Share</Button>
-          </div>
+          <Modal open={shareModalVisible} onClose={this.closeShareModal} className='Dashboard__share-modal'>
+            <Modal.Header>Share {this.state.name}</Modal.Header>
+            <Modal.Content>
+              <ShareEntity type='dashboard' resourceId={this.id} shareEntity={shareDashboard}
+                revokeEntitySharing={revokeDashboardSharing} getSharedEntity={getSharedDashboard}/>
+            </Modal.Content>
+            <Modal.Actions>
+              <Button className="Dashboard__close-share-modal-button" onClick={this.closeShareModal}>Close</Button>
+            </Modal.Actions>
+          </Modal>
+          <Modal open={deleteModalVisible} onClose={this.closeDeleteModal} className='Dashboard__delete-modal'>
+            <Modal.Header>Delete {this.state.name}</Modal.Header>
+            <Modal.Content>
+              <p>You are about to delete {this.state.name}. Are you sure you want to proceed?</p>
+            </Modal.Content>
+            <Modal.Actions>
+              <Button className="Dashboard__close-delete-modal-button" onClick={this.closeDeleteModal}>Cancel</Button>
+              <Button type="primary" color="red" className="Dashboard__delete-dashboard-modal-button" onClick={this.deleteDashboard}>Delete</Button>
+            </Modal.Actions>
+          </Modal>
+          <DashboardView loadReport={loadReport} reports={this.state.reports}>
+            <DimensionSetter reports={this.state.reports} />
+          </DashboardView>
         </div>
-        <Modal open={shareModalVisible} onClose={this.closeShareModal} className='Dashboard__share-modal'>
-          <Modal.Header>Share {this.state.name}</Modal.Header>
-          <Modal.Content>
-            <ShareEntity type='dashboard' resourceId={this.id} shareEntity={shareDashboard}
-              revokeEntitySharing={revokeDashboardSharing} getSharedEntity={getSharedDashboard}/>
-          </Modal.Content>
-          <Modal.Actions>
-            <Button className="Dashboard__close-share-modal-button" onClick={this.closeShareModal}>Close</Button>
-          </Modal.Actions>
-        </Modal>
-        <Modal open={deleteModalVisible} onClose={this.closeDeleteModal} className='Dashboard__delete-modal'>
-          <Modal.Header>Delete {this.state.name}</Modal.Header>
-          <Modal.Content>
-            <p>You are about to delete {this.state.name}. Are you sure you want to proceed?</p>
-          </Modal.Content>
-          <Modal.Actions>
-            <Button className="Dashboard__close-delete-modal-button" onClick={this.closeDeleteModal}>Cancel</Button>
-            <Button type="primary" color="red" className="Dashboard__delete-dashboard-modal-button" onClick={this.deleteDashboard}>Delete</Button>
-          </Modal.Actions>
-        </Modal>
-        <DashboardView loadReport={loadReport} reports={this.state.reports}>
-          <DimensionSetter reports={this.state.reports} />
-        </DashboardView>
-      </div>
+      </Fullscreen>
     )
   }
 

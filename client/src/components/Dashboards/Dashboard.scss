@@ -1,5 +1,13 @@
 @import "shared-styles.scss";
 
+.fullscreen {
+  background-color: white;
+}
+
+.Dashboard--fullscreen {
+  padding: 20px;
+}
+
 .Dashboard-container {
   flex-grow: 1;
   display: flex;

@@ -17,6 +17,7 @@ jest.mock('components', () => {
     ControlGroup: props => <div {...props}>{props.children}</div>,
     ShareEntity: () => <div></div>,
     DashboardView: ({children, reportAddons}) => <div className='DashboardView'>{children} Addons: {reportAddons}</div>,
+    Icon: ({type}) => <span>Icon: {type}</span>
   };
 });
 
@@ -44,6 +45,8 @@ jest.mock('moment', () => () => {
     format: () => 'some date'
   }
 });
+
+jest.mock('react-full-screen', () => ({children}) => <div>{children}</div>);
 
 jest.mock('./AddButton', () => {return {AddButton: ({visible}) => <div>AddButton visible: {''+visible}</div>}});
 jest.mock('./Grid', () => {return {Grid: () => <div>Grid</div>}});
@@ -157,6 +160,24 @@ it('should hide the modal on close button click', () => {
   node.find('.Dashboard__close-share-modal-button').first().simulate('click');
 
   expect(node.find('.Dashboard__share-modal')).toHaveProp('open', false);
+});
+
+it('should enter fullscreen mode', () => {
+  const node = mount(<Dashboard {...props} />);
+  node.setState({loaded: true});
+
+  node.find('.Dashboard__fullscreen-button').first().simulate('click');
+
+  expect(node.state('fullScreenActive')).toBe(true);
+});
+
+it('should leave fullscreen mode', () => {
+  const node = mount(<Dashboard {...props} />);
+  node.setState({loaded: true, fullScreenActive: true});
+
+  node.find('.Dashboard__fullscreen-button').first().simulate('click');
+
+  expect(node.state('fullScreenActive')).toBe(false);
 });
 
 
