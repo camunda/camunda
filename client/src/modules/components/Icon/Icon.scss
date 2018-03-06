@@ -2,6 +2,8 @@
   display: inline-block;  
   width: 1em;
   height: 1em;
+  min-width: 16px;
+  min-height: 16px;
   background-repeat: no-repeat;
   background-size: cover;
   vertical-align: text-bottom;
@@ -36,6 +38,8 @@ $icons: (
 .Icon--svg {
   
   svg {
+    min-height: 16px;
+    min-width: 16px;
     max-height: 1em;
     max-width: 1em;
   }
