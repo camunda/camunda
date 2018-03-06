@@ -15,7 +15,7 @@ export default class ReportView extends React.Component {
 
     this.state = {
       flowNodeNames: null,
-      loaded: true
+      loaded: false
     };
     if ( this.getProcDefKey() && this.getProcDefVersion() ) {
       this.loadFlowNodeNames(this.getProcDefKey(), this.getProcDefVersion());
