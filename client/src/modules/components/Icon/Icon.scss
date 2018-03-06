@@ -12,17 +12,26 @@
   
 }
 
-.Icon--plus {
-  background-image: url('./icons/plus.svg');
+// Create classes for all known icons to be used as a background-image:
+$icons: (
+  'autorefresh',
+  'check',
+  'close',
+  'delete',
+  'edit',
+  'exit-fullscreen',
+  'fullscreen',
+  'plus',
+  'share',
+  'stop'
+);
+
+@each $icon in $icons {
+  .Icon--#{$icon} {
+    background-image: url('./icons/#{$icon}.svg');
+  } 
 }
 
-.Icon--close {
-  background-image: url('./icons/close.svg');
-}
-
-.Icon--edit {
-  background-image: url('./icons/edit.svg');
-}
 
 .Icon--svg {
   
