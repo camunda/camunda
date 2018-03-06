@@ -9,7 +9,7 @@ function getAllFilesInDirectory(dir, filelist) {
     if (fs.statSync(dir + file).isDirectory()) {
       filelist = getAllFilesInDirectory(dir + file + '/', filelist);
     }
-    else { 
+    else {
       filelist.push(dir + file);
     }
   });
@@ -35,7 +35,7 @@ function getImportedModules(content) {
   let result = regex.exec(content);
 
   while(result !== null) {
-    if(result[1]) {
+    if(result[1] && !result[1].includes('!')) {
       matches.push(result[1].split('/')[0]);
     }
     result = regex.exec(content);
