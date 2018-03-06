@@ -105,7 +105,11 @@ public class ZeebeClientImpl implements ZeebeClient
         final int sendBufferSize = Integer.parseInt(properties.getProperty(CLIENT_SENDBUFFER_SIZE));
 
         final int numSchedulerThreads = Integer.parseInt(properties.getProperty(ClientProperties.CLIENT_MANAGEMENT_THREADS));
-        this.scheduler = new ZbActorScheduler(numSchedulerThreads, actorClock);
+        this.scheduler = ZbActorScheduler.newActorScheduler()
+            .setIoBoundActorThreadCount(1)
+            .setCpuBoundActorThreadCount(Math.max(numSchedulerThreads - 1, 1))
+            .setActorClock(actorClock)
+            .build();
         this.scheduler.start();
 
         dataFrameReceiveBuffer = Dispatchers.create("receive-buffer")
