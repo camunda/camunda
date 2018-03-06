@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Rule;
 import org.junit.Test;
 
+import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 
 public class CallableExecutionControlledTest
@@ -53,6 +54,47 @@ public class CallableExecutionControlledTest
 
     }
 
+    @Test
+    public void shouldCompleteFutureExceptionallyWhenCalledAfterActorClosed()
+    {
+        // given
+        final CloseableActor actor = new CloseableActor();
+        schedulerRule.submitActor(actor);
+
+        actor.close();
+        schedulerRule.workUntilDone();
+
+        // when
+        final ActorFuture<Void> future = actor.doCall();
+        schedulerRule.workUntilDone();
+
+        // then
+        assertThat(future).isDone();
+        assertThatThrownBy(() -> future.get())
+            .isInstanceOf(ExecutionException.class)
+            .hasMessage("Actor is closed");
+    }
+
+    @Test
+    public void shouldCompleteFutureExceptionallyWhenActorClosesAfterSubmission()
+    {
+        // given
+        final CloseableActor actor = new CloseableActor();
+        schedulerRule.submitActor(actor);
+
+        actor.close();
+        final ActorFuture<Void> future = actor.doCall();
+
+        // when
+        schedulerRule.workUntilDone();
+
+        // then
+        assertThat(future).isDone();
+        assertThatThrownBy(() -> future.get())
+            .isInstanceOf(ExecutionException.class)
+            .hasMessage("Actor is closed");
+    }
+
     protected static class ExceptionActor extends ZbActor
     {
         protected AtomicInteger invocations = new AtomicInteger(0);
@@ -64,6 +106,21 @@ public class CallableExecutionControlledTest
                 invocations.incrementAndGet();
                 throw e;
             });
+        }
+    }
+
+    class CloseableActor extends ZbActor
+    {
+        ActorFuture<Void> doCall()
+        {
+            return actor.call(() ->
+            {
+            });
+        }
+
+        void close()
+        {
+            actor.close();
         }
     }
 

@@ -175,6 +175,11 @@ public class ActorJob
         return resultFuture;
     }
 
+    public ActorFuture getResultFuture()
+    {
+        return resultFuture;
+    }
+
     /**
      * used to recycle the job object
      */
@@ -266,5 +271,13 @@ public class ActorJob
     public void setResultFuture(ActorFuture resultFuture)
     {
         this.resultFuture = resultFuture;
+    }
+
+    public void failFuture(String reason)
+    {
+        if (this.resultFuture != null)
+        {
+            resultFuture.completeExceptionally(new RuntimeException(reason));
+        }
     }
 }

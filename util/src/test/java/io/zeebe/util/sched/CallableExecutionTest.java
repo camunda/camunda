@@ -15,15 +15,23 @@
  */
 package io.zeebe.util.sched;
 
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import java.util.Arrays;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.Arrays;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import io.zeebe.util.TestUtil;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.testing.ActorSchedulerRule;
 
 public class CallableExecutionTest
 {
@@ -180,5 +188,59 @@ public class CallableExecutionTest
 
         final ZbActorScheduler actorScheduler = schedulerRule.get();
         actorScheduler.dumpMetrics(System.out);
+    }
+
+    @Test
+    public void shouldCompleteFutureExceptionallyWhenSubmittedDuringActorClosedJob() throws InterruptedException, BrokenBarrierException
+    {
+        // given
+        final CyclicBarrier barrier = new CyclicBarrier(2);
+        final CloseableActor actor = new CloseableActor()
+        {
+            @Override
+            protected void onActorClosed()
+            {
+                try
+                {
+                    barrier.await(); // signal arrival at barrier
+                    barrier.await(); // wait for continuation
+                }
+                catch (InterruptedException | BrokenBarrierException e)
+                {
+                    throw new RuntimeException(e);
+                }
+            }
+        };
+
+        schedulerRule.submitActor(actor);
+        actor.close();
+        barrier.await(); // wait for actor to reach onActorClosed callback
+
+        final ActorFuture<Void> future = actor.doCall();
+
+        // when
+        barrier.await(); // signal actor to continue
+
+        // then
+        TestUtil.waitUntil(() -> future.isDone());
+        assertThat(future).isDone();
+        assertThatThrownBy(() -> future.get())
+            .isInstanceOf(ExecutionException.class)
+            .hasMessage("Actor is closed");
+    }
+
+    class CloseableActor extends ZbActor
+    {
+        ActorFuture<Void> doCall()
+        {
+            return actor.call(() ->
+            {
+            });
+        }
+
+        void close()
+        {
+            actor.close();
+        }
     }
 }

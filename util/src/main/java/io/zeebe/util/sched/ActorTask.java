@@ -15,15 +15,17 @@
  */
 package io.zeebe.util.sched;
 
+import static org.agrona.UnsafeAccess.UNSAFE;
+
+import java.util.Arrays;
+import java.util.Queue;
+import java.util.concurrent.TimeUnit;
+
+import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
+
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import io.zeebe.util.sched.metrics.TaskMetrics;
-import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
-
-import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
-
-import static org.agrona.UnsafeAccess.UNSAFE;
 
 /**
  * A task executed by the scheduler. For each actor (instance), exactly one task is created.
@@ -87,7 +89,7 @@ public class ActorTask
 
     /** jobs that are submitted to this task externally. A job is submitted "internally" if it is submitted
      * from a job within the same actor while the task is in RUNNING state. */
-    final ManyToOneConcurrentLinkedQueue<ActorJob> submittedJobs = new ManyToOneConcurrentLinkedQueue<>();
+    private volatile Queue<ActorJob> submittedJobs = new ClosedQueue();
 
     private ActorLifecyclePhase lifecyclePhase = ActorLifecyclePhase.CLOSED;
 
@@ -139,6 +141,7 @@ public class ActorTask
         jobStartingTaskFuture.setAwaitingResult();
 
         this.isJumbo = false;
+        this.submittedJobs = new ManyToOneConcurrentLinkedQueue<>();
         this.lifecyclePhase = ActorLifecyclePhase.STARTING;
 
         this.isCollectTaskMetrics = taskMetrics != null;
@@ -317,9 +320,15 @@ public class ActorTask
         schedulingState = TaskSchedulingState.NOT_SCHEDULED;
         subscriptions = new ActorSubscription[0];
 
-        while (submittedJobs.poll() != null)
+        final Queue<ActorJob> activeJobsQueue = submittedJobs;
+        submittedJobs = new ClosedQueue();
+
+        ActorJob j;
+
+        while ((j = activeJobsQueue.poll()) != null)
         {
-            // discard jobs
+            // cancel and discard jobs
+            j.failFuture("Actor is closed");
         }
 
         if (taskMetrics != null)
@@ -333,7 +342,14 @@ public class ActorTask
         if (lifecyclePhase == ActorLifecyclePhase.STARTED)
         {
             this.lifecyclePhase = ActorLifecyclePhase.CLOSE_REQUESTED;
+
             // discard next jobs
+            ActorJob next = currentJob;
+            while ((next = next.next) != null)
+            {
+                next.failFuture("Actor is closed");
+            }
+
             currentJob.next = null;
         }
     }
