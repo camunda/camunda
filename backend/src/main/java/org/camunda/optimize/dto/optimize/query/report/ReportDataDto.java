@@ -7,7 +7,6 @@ import java.util.List;
 
 public class ReportDataDto {
 
-  protected String processDefinitionId;
   protected String processDefinitionKey;
   protected String processDefinitionVersion;
   protected List<FilterDto> filter = new ArrayList<>();
@@ -15,15 +14,6 @@ public class ReportDataDto {
   protected GroupByDto groupBy;
   protected String visualization;
   protected Object configuration;
-
-
-  public String getProcessDefinitionId() {
-    return processDefinitionId;
-  }
-
-  public void setProcessDefinitionId(String processDefinitionId) {
-    this.processDefinitionId = processDefinitionId;
-  }
 
   public List<FilterDto> getFilter() {
     return filter;

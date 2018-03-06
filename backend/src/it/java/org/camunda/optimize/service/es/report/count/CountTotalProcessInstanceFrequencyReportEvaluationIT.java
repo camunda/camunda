@@ -21,9 +21,6 @@ import org.camunda.optimize.test.util.ReportDataHelper;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
@@ -45,7 +42,7 @@ import static org.hamcrest.core.IsNull.notNullValue;
 
 public class CountTotalProcessInstanceFrequencyReportEvaluationIT {
 
-  public static final String PROCESS_DEFINITION_ID = "123";
+  public static final String PROCESS_DEFINITION_KEY = "123";
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
@@ -244,9 +241,10 @@ public class CountTotalProcessInstanceFrequencyReportEvaluationIT {
 
 
   @Test
-  public void optimizeExceptionOnViewPropertyIsNull() throws Exception {
+  public void optimizeExceptionOnViewPropertyIsNull() {
     // given
-    ReportDataDto dataDto = ReportDataHelper.createPiFrequencyCountGroupedByNone(PROCESS_DEFINITION_ID);
+    ReportDataDto dataDto =
+      ReportDataHelper.createPiFrequencyCountGroupedByNone(PROCESS_DEFINITION_KEY, "1");
     dataDto.getView().setProperty(null);
 
     //when
@@ -257,9 +255,10 @@ public class CountTotalProcessInstanceFrequencyReportEvaluationIT {
   }
 
   @Test
-  public void optimizeExceptionOnGroupByTypeIsNull() throws Exception {
+  public void optimizeExceptionOnGroupByTypeIsNull() {
     // given
-    ReportDataDto dataDto = ReportDataHelper.createPiFrequencyCountGroupedByNone(PROCESS_DEFINITION_ID);
+    ReportDataDto dataDto =
+      ReportDataHelper.createPiFrequencyCountGroupedByNone(PROCESS_DEFINITION_KEY, "1");
     dataDto.getGroupBy().setType(null);
 
     //when

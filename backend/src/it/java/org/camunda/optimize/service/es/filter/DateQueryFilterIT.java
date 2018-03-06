@@ -14,9 +14,6 @@ import org.hamcrest.MatcherAssert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
@@ -47,7 +44,8 @@ public class DateQueryFilterIT {
 
 
   private OffsetDateTime past;
-  private String processDefinitionId;
+  private String processDefinitionKey;
+  private String processDefinitionVersion;
 
   @Test
   public void testGetReportWithLtStartDateCriteria() throws Exception {
@@ -59,7 +57,7 @@ public class DateQueryFilterIT {
     String type = "start_date";
 
     //when
-    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
     reportData.setFilter(DateUtilHelper.createDateFilter(operator, type, past.plus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS)));
     RawDataReportResultDto result = evaluateReport(reportData);
 
@@ -88,7 +86,7 @@ public class DateQueryFilterIT {
     String type = "start_date";
 
     //when
-    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
     reportData.setFilter(DateUtilHelper.createDateFilter(operator, type, past.plus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS)));
     RawDataReportResultDto result = evaluateReport(reportData);
 
@@ -113,7 +111,8 @@ public class DateQueryFilterIT {
     //given
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getEndTime();
-    processDefinitionId = processInstanceDto.getDefinitionId();
+    processDefinitionKey = processInstanceDto.getProcessDefinitionKey();
+    processDefinitionVersion = processInstanceDto.getProcessDefinitionVersion();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
@@ -121,7 +120,7 @@ public class DateQueryFilterIT {
     String type = "end_date";
 
     //when
-    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
     reportData.setFilter(DateUtilHelper.createDateFilter(operator, type, past.plus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS)));
     RawDataReportResultDto result = evaluateReport(reportData);
 
@@ -150,7 +149,7 @@ public class DateQueryFilterIT {
     String type = "start_date";
 
     //when
-    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
     reportData.setFilter(DateUtilHelper.createDateFilter(operator, type, past.plus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS)));
     RawDataReportResultDto result = evaluateReport(reportData);
 
@@ -178,7 +177,7 @@ public class DateQueryFilterIT {
     String operator = GREATER_THAN;
     String type = "start_date";
 
-    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
     reportData.setFilter(DateUtilHelper.createDateFilter(operator, type, past.minus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS)));
 
     operator = LESS_THAN;
@@ -212,7 +211,8 @@ public class DateQueryFilterIT {
     //given
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getEndTime();
-    processDefinitionId = processInstanceDto.getDefinitionId();
+    processDefinitionKey = processInstanceDto.getProcessDefinitionKey();
+    processDefinitionVersion = processInstanceDto.getProcessDefinitionVersion();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
@@ -220,7 +220,7 @@ public class DateQueryFilterIT {
     String type = "end_date";
 
     //when
-    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
     reportData.setFilter(DateUtilHelper.createDateFilter(operator, type, past.plus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS)));
     RawDataReportResultDto result = evaluateReport(reportData);
 
@@ -249,7 +249,7 @@ public class DateQueryFilterIT {
     String type = "start_date";
 
     //when
-    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
+    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
     reportData.setFilter(DateUtilHelper.createDateFilter(operator, type, past.plus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS)));
     RawDataReportResultDto result = evaluateReport(reportData);
 
@@ -272,13 +272,14 @@ public class DateQueryFilterIT {
   private void startAndImportSimpleProcess() throws InterruptedException {
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getStartTime();
-    processDefinitionId = processInstanceDto.getDefinitionId();
+    processDefinitionKey = processInstanceDto.getProcessDefinitionKey();
+    processDefinitionVersion = processInstanceDto.getProcessDefinitionVersion();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
   }
 
 
-  public void assertResults(RawDataReportResultDto resultMap, int size) {
+  private void assertResults(RawDataReportResultDto resultMap, int size) {
     assertThat(resultMap.getResult().size(), is(size));
   }
 

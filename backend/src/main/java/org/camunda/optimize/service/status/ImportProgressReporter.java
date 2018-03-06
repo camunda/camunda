@@ -2,7 +2,6 @@ package org.camunda.optimize.service.status;
 
 import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandlerProvider;
-import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

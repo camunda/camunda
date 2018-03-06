@@ -4,6 +4,7 @@ import com.icegreen.greenmail.util.GreenMail;
 import com.icegreen.greenmail.util.ServerSetup;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
@@ -28,6 +29,7 @@ import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.camunda.optimize.test.util.ReportDataHelper.createAvgPiDurationAsNumberGroupByNone;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -36,7 +38,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
  */
 public abstract class AbstractAlertSchedulerIT {
 
-  protected static final String BEARER = "Bearer ";
   protected static final String ALERT = "alert";
 
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
@@ -44,11 +45,11 @@ public abstract class AbstractAlertSchedulerIT {
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
   public EngineDatabaseRule engineDatabaseRule = new EngineDatabaseRule();
 
-  protected String createAlert(String token, AlertCreationDto simpleAlert) {
+  protected String createAlert(AlertCreationDto simpleAlert) {
     Response response =
         embeddedOptimizeRule.target(ALERT)
             .request()
-            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
             .post(Entity.json(simpleAlert));
     return response.readEntity(IdDto.class).getId();
   }
@@ -120,13 +121,13 @@ public abstract class AbstractAlertSchedulerIT {
   }
 
   protected AlertCreationDto setupBasicAlert() throws IOException, InterruptedException {
-    String processDefinitionId = deploySimpleServiceTaskProcess();
-    engineRule.startProcessInstance(processDefinitionId);
+    ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcess();
+    engineRule.startProcessInstance(processDefinition.getId());
 
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
-    String reportId = createAndStoreNumberReport(processDefinitionId);
+    String reportId = createAndStoreNumberReport(processDefinition);
     return createSimpleAlert(reportId);
   }
 
@@ -163,15 +164,21 @@ public abstract class AbstractAlertSchedulerIT {
   }
 
 
-  protected String createAndStoreNumberReport(String processDefinitionId) {
+  protected String createAndStoreNumberReport(ProcessDefinitionEngineDto processDefinition) {
     String id = createNewReportHelper();
-    ReportDefinitionDto report = getReportDefinitionDto(processDefinitionId);
+    ReportDefinitionDto report = getReportDefinitionDto(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
     updateReport(id, report);
     return id;
   }
 
-  protected ReportDefinitionDto getReportDefinitionDto(String processDefinitionId) {
-    ReportDataDto reportData = ReportDataHelper.createPiFrequencyCountGroupedByNoneAsNumber(processDefinitionId);
+  protected ReportDefinitionDto getReportDefinitionDto(ProcessDefinitionEngineDto processDefinition) {
+    return getReportDefinitionDto(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
+  }
+
+
+  protected ReportDefinitionDto getReportDefinitionDto(String processDefinitionKey, String processDefinitionVersion) {
+    ReportDataDto reportData =
+      ReportDataHelper.createPiFrequencyCountGroupedByNoneAsNumber(processDefinitionKey, processDefinitionVersion);
     ReportDefinitionDto report = new ReportDefinitionDto();
     report.setData(reportData);
     report.setId("something");
@@ -189,12 +196,12 @@ public abstract class AbstractAlertSchedulerIT {
     Response response =
         embeddedOptimizeRule.target("report/" + id)
             .request()
-            .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
             .put(Entity.json(updatedReport));
     assertThat(response.getStatus(), is(204));
   }
 
-  protected String deploySimpleServiceTaskProcess() throws IOException {
+  protected ProcessDefinitionEngineDto deploySimpleServiceTaskProcess() throws IOException {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .name("aProcessName")
         .startEvent()
@@ -202,18 +209,28 @@ public abstract class AbstractAlertSchedulerIT {
             .camundaExpression("${true}")
         .endEvent()
         .done();
-    return engineRule.deployProcessAndGetId(processModel);
+    return engineRule.deployProcessAndGetProcessDefinition(processModel);
   }
 
-  protected String createAndStoreDurationNumberReport(String processDefinitionId) {
+  protected String createAndStoreDurationNumberReport(ProcessInstanceEngineDto instanceEngineDto) {
+    return createAndStoreDurationNumberReport(instanceEngineDto.getProcessDefinitionKey(), instanceEngineDto.getProcessDefinitionVersion());
+  }
+
+  protected String createAndStoreDurationNumberReport(ProcessDefinitionEngineDto definition) {
+    return createAndStoreDurationNumberReport(definition.getKey(), String.valueOf(definition.getVersion()));
+  }
+
+  protected String createAndStoreDurationNumberReport(String processDefinitionKey, String processDefinitionVersion) {
     String id = createNewReportHelper();
-    ReportDefinitionDto report = getDurationReportDefinitionDto(processDefinitionId);
+    ReportDefinitionDto report =
+      getDurationReportDefinitionDto(processDefinitionKey, processDefinitionVersion);
     updateReport(id, report);
     return id;
   }
 
-  protected ReportDefinitionDto getDurationReportDefinitionDto(String processDefinitionId) {
-    ReportDataDto reportData = ReportDataHelper.createAvgPiDurationAsNumberGroupByNone(processDefinitionId);
+  protected ReportDefinitionDto getDurationReportDefinitionDto(String processDefinitionKey, String processDefinitionVersion) {
+    ReportDataDto reportData =
+      createAvgPiDurationAsNumberGroupByNone(processDefinitionKey, processDefinitionVersion);
     ReportDefinitionDto report = new ReportDefinitionDto();
     report.setData(reportData);
     report.setId("something");

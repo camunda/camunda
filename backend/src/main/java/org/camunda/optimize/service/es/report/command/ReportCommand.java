@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionXmlOptimizeDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.result.NumberReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.result.ReportResultDto;
 import org.camunda.optimize.service.es.filter.QueryFilterEnhancer;
 import org.camunda.optimize.service.es.report.command.util.ReportConstants;
@@ -24,11 +23,9 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Map;
 
-import static org.camunda.optimize.service.es.reader.ProcessDefinitionReader.getProcessDefinitionXmlOptimizeDto;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType.BPMN_20_XML;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType.ENGINE;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType.PROCESSS_DEFINITION_ID;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
@@ -59,18 +56,13 @@ public abstract class ReportCommand <T extends ReportResultDto>  implements Comm
 
   protected abstract T evaluate() throws IOException, OptimizeException;
 
-  protected BoolQueryBuilder setupBaseQuery(String processDefinitionId, String processDefinitionKey, String processDefinitionVersion) {
+  protected BoolQueryBuilder setupBaseQuery(String processDefinitionKey, String processDefinitionVersion) {
     BoolQueryBuilder query;
-    if (processDefinitionKey != null && processDefinitionVersion != null) {
-      query = boolQuery()
-          .must(termQuery("processDefinitionKey", processDefinitionKey));
-      if (!ReportConstants.ALL_VERSIONS.equalsIgnoreCase(processDefinitionVersion)) {
-        query = query
-            .must(termQuery("processDefinitionVersion", processDefinitionVersion));
-      }
-    } else {
-      query = boolQuery()
-          .must(termQuery("processDefinitionId", processDefinitionId));
+    query = boolQuery()
+      .must(termQuery("processDefinitionKey", processDefinitionKey));
+    if (!ReportConstants.ALL_VERSIONS.equalsIgnoreCase(processDefinitionVersion)) {
+      query = query
+        .must(termQuery("processDefinitionVersion", processDefinitionVersion));
     }
     return query;
   }

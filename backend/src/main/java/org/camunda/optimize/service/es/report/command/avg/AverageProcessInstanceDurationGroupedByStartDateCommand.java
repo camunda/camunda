@@ -28,10 +28,11 @@ public class AverageProcessInstanceDurationGroupedByStartDateCommand extends Rep
   protected MapReportResultDto evaluate() throws OptimizeException {
 
     logger.debug("Evaluating average process instance duration grouped by start date report " +
-      "for process definition id [{}]", reportData.getProcessDefinitionId());
+      "for process definition key [{}] and version [{}]",
+      reportData.getProcessDefinitionKey(),
+      reportData.getProcessDefinitionVersion());
 
     BoolQueryBuilder query = setupBaseQuery(
-        reportData.getProcessDefinitionId(),
         reportData.getProcessDefinitionKey(),
         reportData.getProcessDefinitionVersion()
     );

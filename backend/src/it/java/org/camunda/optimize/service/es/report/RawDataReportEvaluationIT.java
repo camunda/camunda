@@ -544,7 +544,7 @@ public class RawDataReportEvaluationIT {
   public void missingProcessDefinition() {
 
     //when
-    ReportDataDto dataDto = ReportDataHelper.createReportDataViewRawAsTable(null);
+    ReportDataDto dataDto = ReportDataHelper.createReportDataViewRawAsTable(null, null);
     Response response = evaluateReportAndReturnResponse(dataDto);
 
     // then
@@ -554,7 +554,7 @@ public class RawDataReportEvaluationIT {
   @Test
   public void missingViewField() {
     //when
-    ReportDataDto dataDto = ReportDataHelper.createReportDataViewRawAsTable(null);
+    ReportDataDto dataDto = ReportDataHelper.createReportDataViewRawAsTable(null, null);
     dataDto.setView(null);
     Response response = evaluateReportAndReturnResponse(dataDto);
 
@@ -563,9 +563,9 @@ public class RawDataReportEvaluationIT {
   }
 
   @Test
-  public void missingOperationField() throws Exception {
+  public void missingOperationField() {
     //when
-    ReportDataDto dataDto = ReportDataHelper.createReportDataViewRawAsTable(null);
+    ReportDataDto dataDto = ReportDataHelper.createReportDataViewRawAsTable(null, null);
     dataDto.getView().setOperation(null);
     Response response = evaluateReportAndReturnResponse(dataDto);
 
@@ -574,9 +574,9 @@ public class RawDataReportEvaluationIT {
   }
 
   @Test
-  public void missingVisualizationField() throws Exception {
+  public void missingVisualizationField() {
     //when
-    ReportDataDto dataDto = ReportDataHelper.createReportDataViewRawAsTable(null);
+    ReportDataDto dataDto = ReportDataHelper.createReportDataViewRawAsTable(null, null);
     dataDto.setVisualization(null);
     Response response = evaluateReportAndReturnResponse(dataDto);
 

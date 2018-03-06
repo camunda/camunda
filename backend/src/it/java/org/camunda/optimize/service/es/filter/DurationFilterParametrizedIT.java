@@ -4,16 +4,14 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.result.raw.RawDataReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.util.DateUtilHelper;
-import org.camunda.optimize.test.util.ReportDataHelper;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.TestContextManager;
 
 import java.util.Arrays;
 import java.util.Collection;
+
+import static org.camunda.optimize.test.util.ReportDataHelper.createReportDataViewRawAsTable;
 
 /**
  * @author Askar Akhmerov
@@ -72,17 +70,17 @@ public class DurationFilterParametrizedIT extends AbstractDurationFilterIT {
       processInstance = deployAndStartSimpleProcess();
     }
 
-    String processDefinitionId = processInstance.getDefinitionId();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
+    ReportDataDto reportData =
+      createReportDataViewRawAsTable(processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion());
     reportData.setFilter(DateUtilHelper.createDurationFilter(this.operator, this.duration, this.unit));
     RawDataReportResultDto result = evaluateReport(reportData);
 
     // then
-    assertResult(processInstance, processDefinitionId, result);
+    assertResult(processInstance, result);
   }
 
 

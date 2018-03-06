@@ -18,7 +18,6 @@ import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.camunda.optimize.test.util.ReportDataHelper;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -36,6 +35,7 @@ import java.util.Map;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_AVERAGE_OPERATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_DURATION_PROPERTY;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_FLOW_NODE_ENTITY;
+import static org.camunda.optimize.test.util.ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.notNullValue;
@@ -46,7 +46,7 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
 
   public static final String START_EVENT = "startEvent";
   public static final String END_EVENT = "endEvent";
-  public static final String PROCESS_DEFINITION_ID = "123";
+  public static final String PROCESS_DEFINITION_KEY = "123";
   private static final String SERVICE_TASK_ID = "aSimpleServiceTask";
   private static final String SERVICE_TASK_ID_2 = "aSimpleServiceTask2";
 
@@ -70,8 +70,7 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(
-        processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
+    ReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
     MapReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -102,8 +101,7 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(
-        processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
+    ReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
     MapReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -127,7 +125,8 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition.getId());
+    ReportDataDto reportData =
+      getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
     MapReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -165,7 +164,7 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
-    ReportDataDto reportData = ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(
+    ReportDataDto reportData = createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(
         latestDefinition.getKey(), ReportConstants.ALL_VERSIONS
     );
     MapReportResultDto result = evaluateReport(reportData);
@@ -193,7 +192,7 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
-    ReportDataDto reportData = ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(
+    ReportDataDto reportData = createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(
         latestDefinition.getKey(), ReportConstants.ALL_VERSIONS
     );
     MapReportResultDto result = evaluateReport(reportData);
@@ -218,7 +217,7 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
-    ReportDataDto reportData = ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(
+    ReportDataDto reportData = createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(
         processDefinition.getKey(), ReportConstants.ALL_VERSIONS
     );
     MapReportResultDto result = evaluateReport(reportData);
@@ -246,11 +245,9 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData1 = ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(
-        processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
+    ReportDataDto reportData1 = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
     MapReportResultDto result1 = evaluateReport(reportData1);
-    ReportDataDto reportData2 = ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(
-        processDefinition2.getKey(), String.valueOf(processDefinition2.getVersion()));
+    ReportDataDto reportData2 = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition2);
     MapReportResultDto result2 = evaluateReport(reportData2);
 
     // then
@@ -276,8 +273,7 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(
-        processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
+    ReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
     MapReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -290,7 +286,8 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
   public void noEventMatchesReturnsEmptyResult() {
 
     // when
-    ReportDataDto reportData = ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport("nonExistingProcessDefinitionId");
+    ReportDataDto reportData =
+      createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport("nonExistingProcessDefinitionId", "1");
     MapReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -319,15 +316,16 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
             .multiInstanceDone()
           .endEvent("miEnd")
         .done();
-    String subProcessDefinitionId = engineRule.deployProcessAndGetId(subProcess);
+    ProcessDefinitionEngineDto subProcessDefinition = engineRule.deployProcessAndGetProcessDefinition(subProcess);
     String processDefinitionId = engineRule.deployProcessAndGetId(miProcess);
     engineRule.startProcessInstance(processDefinitionId);
-    engineDatabaseRule.changeActivityDurationForProcessDefinition(subProcessDefinitionId, 10L);
+    engineDatabaseRule.changeActivityDurationForProcessDefinition(subProcessDefinition.getId(), 10L);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(subProcessDefinitionId);
+    ReportDataDto reportData =
+      createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(subProcessDefinition.getKey(), String.valueOf(subProcessDefinition.getVersion()));
     MapReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -350,8 +348,7 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(
-        processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
+    ReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
     MapReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -371,8 +368,7 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(
-        processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
+    ReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
     reportData.setFilter(createDateFilter("<", "start_date", past));
     MapReportResultDto result = evaluateReport(reportData);
 
@@ -382,8 +378,7 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
     assertThat(flowNodeIdToExecutionFrequency.size(), is(0));
 
     // when
-    reportData = ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(
-        processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
+    reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
     reportData.setFilter(createDateFilter(">=", "start_date", past));
     result = evaluateReport(reportData);
 
@@ -418,8 +413,7 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(
-        processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
+    ReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
     reportData.setFilter(createVariableFilter());
     MapReportResultDto result = evaluateReport(reportData);
 
@@ -456,8 +450,7 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(
-        processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
+    ReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
     List<ExecutedFlowNodeFilterDto> flowNodeFilter = ExecutedFlowNodeFilterBuilder.construct()
           .id("task1")
           .build();
@@ -473,9 +466,10 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
   }
 
   @Test
-  public void optimizeExceptionOnViewEntityIsNull() throws Exception {
+  public void optimizeExceptionOnViewEntityIsNull() {
     // given
-    ReportDataDto dataDto = ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(PROCESS_DEFINITION_ID);
+    ReportDataDto dataDto =
+      createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(PROCESS_DEFINITION_KEY, "1");
     dataDto.getView().setEntity(null);
 
     //when
@@ -486,9 +480,10 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
   }
 
   @Test
-  public void optimizeExceptionOnViewPropertyIsNull() throws Exception {
+  public void optimizeExceptionOnViewPropertyIsNull() {
     // given
-    ReportDataDto dataDto = ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(PROCESS_DEFINITION_ID);
+    ReportDataDto dataDto =
+      createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(PROCESS_DEFINITION_KEY, "1");
     dataDto.getView().setProperty(null);
 
     //when
@@ -501,7 +496,8 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
   @Test
   public void optimizeExceptionOnGroupByTypeIsNull() throws Exception {
     // given
-    ReportDataDto dataDto = ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(PROCESS_DEFINITION_ID);
+    ReportDataDto dataDto =
+      createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(PROCESS_DEFINITION_KEY, "1");
     dataDto.getGroupBy().setType(null);
 
     //when
@@ -554,5 +550,9 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
       .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
       .post(Entity.json(reportData));
   }
-  
+
+  private ReportDataDto getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(ProcessDefinitionEngineDto processDefinition) {
+    return createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
+  }
+
 }

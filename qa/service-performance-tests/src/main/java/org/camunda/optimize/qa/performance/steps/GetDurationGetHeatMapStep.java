@@ -5,13 +5,12 @@ import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
 import org.camunda.optimize.dto.optimize.query.report.result.MapReportResultDto;
 import org.camunda.optimize.qa.performance.framework.PerfTestContext;
 import org.camunda.optimize.qa.performance.framework.PerfTestStepResult;
-import org.camunda.optimize.test.util.ReportDataHelper;
 import ru.yandex.qatools.allure.annotations.Step;
-
 
 import java.util.List;
 
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.DATE_UNIT_YEAR;
+import static org.camunda.optimize.test.util.ReportDataHelper.createAvgPIDurationGroupByStartDateReport;
 
 public class GetDurationGetHeatMapStep extends GetHeatMapStep {
 
@@ -31,7 +30,7 @@ public class GetDurationGetHeatMapStep extends GetHeatMapStep {
   }
 
   @Override
-  protected ReportDataDto createRequest(String processDefinitionId) {
-    return ReportDataHelper.createAvgPIDurationGroupByStartDateReport(processDefinitionId, DATE_UNIT_YEAR);
+  protected ReportDataDto createRequest(String processDefinitionKey, String processDefinitionVersion) {
+    return createAvgPIDurationGroupByStartDateReport(processDefinitionKey,  processDefinitionVersion, DATE_UNIT_YEAR);
   }
 }

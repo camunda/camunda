@@ -46,12 +46,14 @@ public abstract class AbstractSharingIT {
 
   protected String createReport() throws InterruptedException {
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
-    String processDefinitionId = processInstance.getDefinitionId();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     String reportId = this.createNewReport();
-    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
+    ReportDataDto reportData =
+      ReportDataHelper.createReportDataViewRawAsTable(
+        processInstance.getProcessDefinitionKey(),
+        processInstance.getProcessDefinitionVersion());
     ReportDefinitionDto report = new ReportDefinitionDto();
     report.setData(reportData);
     updateReport(reportId, report);

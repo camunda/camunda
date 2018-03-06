@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.alert;
 
 import com.icegreen.greenmail.util.GreenMail;
+import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
@@ -54,27 +55,25 @@ public class AlertCheckSchedulerIT extends AbstractAlertSchedulerIT {
   @Test
   public void reportUpdateToNotNumberRemovesAlert() throws Exception {
     //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-
-    String processDefinitionId = deploySimpleServiceTaskProcess();
-    engineRule.startProcessInstance(processDefinitionId);
+    ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcess();
+    engineRule.startProcessInstance(processDefinition.getId());
 
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
-    String reportId = createAndStoreNumberReport(processDefinitionId);
+    String reportId = createAndStoreNumberReport(processDefinition);
     AlertCreationDto simpleAlert = createSimpleAlert(reportId);
 
     Response response =
       embeddedOptimizeRule.target(ALERT)
         .request()
-        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .post(Entity.json(simpleAlert));
 
     assertThat(response.getStatus(), is(200));
 
     // when
-    ReportDefinitionDto report = getReportDefinitionDto(processDefinitionId);
+    ReportDefinitionDto report = getReportDefinitionDto(processDefinition);
     report.getData().getGroupBy().setType(GROUP_BY_FLOW_NODE_TYPE);
     report.getData().setVisualization(HEAT_VISUALIZATION);
     updateReport(simpleAlert.getReportId(), report);
@@ -90,7 +89,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertSchedulerIT {
     response =
       embeddedOptimizeRule.target(ALERT)
         .request()
-        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .get();
 
     assertThat(response.getStatus(), is(200));
@@ -103,14 +102,12 @@ public class AlertCheckSchedulerIT extends AbstractAlertSchedulerIT {
   @Test
   public void reportDeletionRemovesAlert() throws Exception {
     //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-
     AlertCreationDto simpleAlert = setupBasicAlert();
 
     Response response =
       embeddedOptimizeRule.target(ALERT)
         .request()
-        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .post(Entity.json(simpleAlert));
 
     assertThat(response.getStatus(), is(200));
@@ -119,7 +116,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertSchedulerIT {
     response =
       embeddedOptimizeRule.target("report/" + simpleAlert.getReportId())
         .request()
-        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .delete();
 
     // then
@@ -132,7 +129,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertSchedulerIT {
     response =
       embeddedOptimizeRule.target(ALERT)
         .request()
-        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .get();
 
     assertThat(response.getStatus(), is(200));
@@ -145,15 +142,13 @@ public class AlertCheckSchedulerIT extends AbstractAlertSchedulerIT {
   @Test
   public void createNewAlertPropagatedToScheduler() throws Exception {
     //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-
     AlertCreationDto simpleAlert = setupBasicAlert();
 
     // when
     Response response =
       embeddedOptimizeRule.target(ALERT)
         .request()
-        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .post(Entity.json(simpleAlert));
 
     // then
@@ -169,14 +164,12 @@ public class AlertCheckSchedulerIT extends AbstractAlertSchedulerIT {
   @Test
   public void deletedAlertsAreRemovedFromScheduler() throws Exception {
     //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-
     AlertCreationDto simpleAlert = setupBasicAlert();
 
     Response response =
       embeddedOptimizeRule.target(ALERT)
         .request()
-        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .post(Entity.json(simpleAlert));
 
     String alertId = response.readEntity(IdDto.class).getId();
@@ -185,7 +178,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertSchedulerIT {
     response =
       embeddedOptimizeRule.target("alert/" + alertId)
         .request()
-        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .delete();
 
     // then
@@ -199,14 +192,12 @@ public class AlertCheckSchedulerIT extends AbstractAlertSchedulerIT {
   @Test
   public void updatedAlertIsRescheduled() throws Exception {
     //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-
     AlertCreationDto simpleAlert = setupBasicAlert();
 
     Response response =
       embeddedOptimizeRule.target(ALERT)
         .request()
-        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .post(Entity.json(simpleAlert));
 
     String alertId = response.readEntity(IdDto.class).getId();
@@ -224,13 +215,13 @@ public class AlertCheckSchedulerIT extends AbstractAlertSchedulerIT {
     response =
       embeddedOptimizeRule.target("alert/" + alertId)
         .request()
-        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .put(Entity.json(simpleAlert));
 
     // then
     assertThat(response.getStatus(), is(204));
 
-    List<AlertDefinitionDto> allAlerts = getAllAlerts(token);
+    List<AlertDefinitionDto> allAlerts = getAllAlerts();
     assertThat(allAlerts.get(0).isTriggered(), is(false));
 
     trigger = embeddedOptimizeRule.getAlertService().getScheduler().getTrigger(getTriggerKey(alertId));
@@ -254,11 +245,10 @@ public class AlertCheckSchedulerIT extends AbstractAlertSchedulerIT {
       setEmailConfiguration();
 
       // when
-      String token = embeddedOptimizeRule.getAuthenticationToken();
       AlertCreationDto simpleAlert = createSimpleAlert(reportId);
       embeddedOptimizeRule.target(ALERT)
         .request()
-        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .post(Entity.json(simpleAlert));
       assertThat(greenMail.waitForIncomingEmail(3000, 1), is(true));
 
@@ -275,13 +265,13 @@ public class AlertCheckSchedulerIT extends AbstractAlertSchedulerIT {
   }
 
   private String startProcessAndCreateReport() throws IOException, InterruptedException {
-    String processDefinitionId = deploySimpleServiceTaskProcess();
-    engineRule.startProcessInstance(processDefinitionId);
+    ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcess();
+    engineRule.startProcessInstance(processDefinition.getId());
 
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
-    return createAndStoreNumberReport(processDefinitionId);
+    return createAndStoreNumberReport(processDefinition);
   }
 
 
@@ -337,7 +327,6 @@ public class AlertCheckSchedulerIT extends AbstractAlertSchedulerIT {
     assertThat(nextFireTime.truncatedTo(ChronoUnit.DAYS), is(targetTime));
   }
 
-
   @Test
   public void testCronWeeksInterval() throws Exception {
     //given
@@ -391,11 +380,11 @@ public class AlertCheckSchedulerIT extends AbstractAlertSchedulerIT {
     }
   }
 
-  private List<AlertDefinitionDto> getAllAlerts(String token) {
+  private List<AlertDefinitionDto> getAllAlerts() {
     Response response =
       embeddedOptimizeRule.target(ALERT)
         .request()
-        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .get();
 
     assertThat(response.getStatus(), is(200));

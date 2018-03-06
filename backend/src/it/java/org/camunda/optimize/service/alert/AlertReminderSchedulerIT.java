@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.alert;
 
+import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
@@ -9,9 +10,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
@@ -42,20 +40,18 @@ public class AlertReminderSchedulerIT extends AbstractAlertSchedulerIT {
 
   @Test
   public void reminderJobsAreRemovedOnAlertDeletion() throws Exception {
-    String token = embeddedOptimizeRule.getAuthenticationToken();
 
+    // given
     AlertCreationDto simpleAlert = createBasicAlertWithReminder();
-
-    String id = createAlert(token, simpleAlert);
-
+    String id = createAlert(simpleAlert);
     triggerAndCompleteCheckJob(id);
 
     //when
-    Response response =
-      embeddedOptimizeRule.target("alert/" + id)
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
-        .delete();
+    embeddedOptimizeRule.target("alert/" + id)
+      .request()
+      .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
+      .delete();
+
     //then
     assertThat(
       embeddedOptimizeRule.getAlertService().getScheduler().getJobGroupNames().size(),
@@ -65,20 +61,17 @@ public class AlertReminderSchedulerIT extends AbstractAlertSchedulerIT {
 
   @Test
   public void reminderJobsAreRemovedOnReportDeletion() throws Exception {
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-
+    // given
     AlertCreationDto simpleAlert = createBasicAlertWithReminder();
-
-    String id = createAlert(token, simpleAlert);
-
+    String id = createAlert(simpleAlert);
     triggerAndCompleteCheckJob(id);
 
     //when
-    Response response =
-      embeddedOptimizeRule.target("report/" + simpleAlert.getReportId())
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
-        .delete();
+    embeddedOptimizeRule.target("report/" + simpleAlert.getReportId())
+      .request()
+      .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
+      .delete();
+
     //then
     assertThat(
       embeddedOptimizeRule.getAlertService().getScheduler().getJobGroupNames().size(),
@@ -89,15 +82,13 @@ public class AlertReminderSchedulerIT extends AbstractAlertSchedulerIT {
 
   @Test
   public void reminderJobsAreRemovedOnReportUpdate() throws Exception {
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-
-    String processDefinitionId = deploySimpleServiceTaskProcess();
-    engineRule.startProcessInstance(processDefinitionId);
+    ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcess();
+    engineRule.startProcessInstance(processDefinition.getId());
 
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
-    String reportId = createAndStoreNumberReport(processDefinitionId);
+    String reportId = createAndStoreNumberReport(processDefinition);
     AlertCreationDto simpleAlert = createSimpleAlert(reportId);
 
     AlertInterval reminderInterval = new AlertInterval();
@@ -105,7 +96,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertSchedulerIT {
     reminderInterval.setUnit("Seconds");
     simpleAlert.setReminder(reminderInterval);
 
-    String id = createAlert(token, simpleAlert);
+    String id = createAlert(simpleAlert);
 
     triggerAndCompleteCheckJob(id);
 
@@ -115,7 +106,8 @@ public class AlertReminderSchedulerIT extends AbstractAlertSchedulerIT {
     );
 
     //when
-    ReportDefinitionDto report = getReportDefinitionDto(processDefinitionId);
+    ReportDefinitionDto report =
+      getReportDefinitionDto(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
     report.getData().getGroupBy().setType(GROUP_BY_FLOW_NODE_TYPE);
     report.getData().setVisualization(HEAT_VISUALIZATION);
     updateReport(simpleAlert.getReportId(), report);
@@ -130,15 +122,14 @@ public class AlertReminderSchedulerIT extends AbstractAlertSchedulerIT {
   @Test
   public void reminderJobsAreRemovedOnEvaluationResultChange() throws Exception {
     //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
     long daysToShift = 0L;
     long durationInSec = 2L;
 
     ProcessInstanceEngineDto processInstance = deployWithTimeShift(daysToShift, durationInSec);
 
-    String processDefinitionId = processInstance.getDefinitionId();
     // when
-    String reportId = createAndStoreDurationNumberReport(processDefinitionId);
+    String reportId =
+      createAndStoreDurationNumberReport(processInstance);
     AlertCreationDto simpleAlert = createSimpleAlert(reportId);
     AlertInterval reminderInterval = new AlertInterval();
     reminderInterval.setValue(1);
@@ -147,7 +138,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertSchedulerIT {
 
     simpleAlert.setThreshold(1500);
 
-    String id = createAlert(token, simpleAlert);
+    String id = createAlert(simpleAlert);
 
     triggerAndCompleteCheckJob(id);
 
@@ -156,7 +147,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertSchedulerIT {
         is(greaterThanOrEqualTo(2))
     );
     //when
-    engineRule.startProcessInstance(processDefinitionId);
+    engineRule.startProcessInstance(processInstance.getDefinitionId());
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
@@ -172,11 +163,9 @@ public class AlertReminderSchedulerIT extends AbstractAlertSchedulerIT {
   @Test
   public void reminderJobsAreRemovedOnAlertDefinitionChange() throws Exception {
     //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-
     AlertCreationDto simpleAlert = createBasicAlertWithReminder();
 
-    String id = createAlert(token, simpleAlert);
+    String id = createAlert(simpleAlert);
 
     triggerAndCompleteCheckJob(id);
 
@@ -189,7 +178,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertSchedulerIT {
 
     embeddedOptimizeRule.target("alert/" + id)
       .request()
-      .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+      .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
       .put(Entity.json(simpleAlert));
 
     //then
@@ -211,15 +200,13 @@ public class AlertReminderSchedulerIT extends AbstractAlertSchedulerIT {
   @Test
   public void reminderJobsAreScheduledOnAlertCreation() throws Exception {
     //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-
     AlertCreationDto simpleAlert = createBasicAlertWithReminder();
 
     // when
     Response response =
       embeddedOptimizeRule.target(ALERT)
         .request()
-        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .post(Entity.json(simpleAlert));
     String id = response.readEntity(IdDto.class).getId();
 
@@ -236,11 +223,9 @@ public class AlertReminderSchedulerIT extends AbstractAlertSchedulerIT {
   @Test
   public void reminderJobsAreScheduledAfterRestart() throws Exception {
     //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-
     AlertCreationDto simpleAlert = createBasicAlertWithReminder();
 
-    String id = createAlert(token, simpleAlert);
+    String id = createAlert(simpleAlert);
 
     triggerAndCompleteCheckJob(id);
 

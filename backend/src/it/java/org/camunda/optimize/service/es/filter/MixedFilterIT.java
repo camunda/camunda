@@ -2,6 +2,7 @@ package org.camunda.optimize.service.es.filter;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
@@ -14,14 +15,10 @@ import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.camunda.optimize.test.util.DateUtilHelper;
-import org.camunda.optimize.test.util.ReportDataHelper;
 import org.hamcrest.MatcherAssert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
@@ -36,6 +33,7 @@ import java.util.Map;
 
 import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.IN;
 import static org.camunda.optimize.service.util.VariableHelper.STRING_TYPE;
+import static org.camunda.optimize.test.util.ReportDataHelper.createReportDataViewRawAsTable;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -52,8 +50,9 @@ public class MixedFilterIT {
   public RuleChain chain = RuleChain
       .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
 
-  private RawDataReportResultDto evaluateReportWithFilter(String processDefinitionId, List<FilterDto> filter) {
-    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
+  private RawDataReportResultDto evaluateReportWithFilter(ProcessDefinitionEngineDto processDefinition, List<FilterDto> filter) {
+    ReportDataDto reportData =
+      createReportDataViewRawAsTable(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
     reportData.setFilter(filter);
     return evaluateReport(reportData);
   }
@@ -76,26 +75,26 @@ public class MixedFilterIT {
   @Test
   public void applyAllPossibleFilters() throws Exception {
     // given
-    String processDefinitionId = deploySimpleProcessDefinition();
+    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", "value");
 
       // this is the process instance that should be filtered
-    ProcessInstanceEngineDto instanceEngineDto = engineRule.startProcessInstance(processDefinitionId, variables);
+    ProcessInstanceEngineDto instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId(), variables);
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
 
       // wrong not executed flow node
-    engineRule.startProcessInstance(processDefinitionId, variables);
+    engineRule.startProcessInstance(processDefinition.getId(), variables);
 
     // wrong variable
     variables.put("var", "anotherValue");
-    instanceEngineDto = engineRule.startProcessInstance(processDefinitionId, variables);
+    instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId(), variables);
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
 
     // wrong date
     Thread.sleep(1000L);
     variables.put("var", "value");
-    instanceEngineDto = engineRule.startProcessInstance(processDefinitionId, variables);
+    instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId(), variables);
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
     OffsetDateTime date = engineRule.getHistoricProcessInstance(instanceEngineDto.getId()).getStartTime();
 
@@ -114,7 +113,7 @@ public class MixedFilterIT {
 
     filterList.addAll(flowNodeFilter);
     filterList.addAll(DateUtilHelper.createDateFilter("<", "start_date", date));
-    RawDataReportResultDto rawDataReportResultDto = evaluateReportWithFilter(processDefinitionId, filterList);
+    RawDataReportResultDto rawDataReportResultDto = evaluateReportWithFilter(processDefinition, filterList);
 
     // then
     assertThat(rawDataReportResultDto.getResult().size(), is(1));
@@ -132,14 +131,13 @@ public class MixedFilterIT {
     return variableFilterDto;
   }
 
-  private String deploySimpleProcessDefinition() throws IOException {
+  private ProcessDefinitionEngineDto deploySimpleProcessDefinition() throws IOException {
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
       .startEvent()
       .userTask(USER_TASK_ACTIVITY_ID)
       .endEvent()
       .done();
-    String processDefinitionId = engineRule.deployProcessAndGetId(modelInstance);
-    return processDefinitionId;
+    return engineRule.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
 

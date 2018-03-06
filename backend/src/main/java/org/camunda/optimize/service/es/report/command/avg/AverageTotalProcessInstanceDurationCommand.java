@@ -19,10 +19,11 @@ public class AverageTotalProcessInstanceDurationCommand extends ReportCommand<Nu
   protected NumberReportResultDto evaluate() {
 
     logger.debug("Evaluating average process instance duration grouped by none report " +
-      "for process definition id [{}]", reportData.getProcessDefinitionId());
+      "for process definition key [{}] and version [{}]",
+      reportData.getProcessDefinitionKey(),
+      reportData.getProcessDefinitionVersion());
 
     BoolQueryBuilder query = setupBaseQuery(
-        reportData.getProcessDefinitionId(),
         reportData.getProcessDefinitionKey(),
         reportData.getProcessDefinitionVersion()
     );

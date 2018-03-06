@@ -20,7 +20,6 @@ import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.camunda.optimize.test.util.ReportDataHelper;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -38,6 +37,7 @@ import static org.camunda.optimize.service.es.report.command.util.ReportConstant
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_AVERAGE_OPERATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_DURATION_PROPERTY;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_PROCESS_INSTANCE_ENTITY;
+import static org.camunda.optimize.test.util.ReportDataHelper.createAvgPiDurationHeatMapGroupByNone;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNull.notNullValue;
@@ -45,7 +45,7 @@ import static org.hamcrest.core.IsNull.notNullValue;
 
 public class AverageTotalProcessInstanceDurationReportEvaluationIT {
 
-  public static final String PROCESS_DEFINITION_ID = "123";
+  public static final String PROCESS_DEFINITION_KEY = "123";
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
@@ -73,7 +73,7 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = ReportDataHelper.createAvgPiDurationHeatMapGroupByNone(
+    ReportDataDto reportData = createAvgPiDurationHeatMapGroupByNone(
         processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion());
     NumberReportResultDto result = evaluateReport(reportData);
 
@@ -142,7 +142,7 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = ReportDataHelper.createAvgPiDurationHeatMapGroupByNone(
+    ReportDataDto reportData = createAvgPiDurationHeatMapGroupByNone(
         processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion());
     NumberReportResultDto result = evaluateReport(reportData);
 
@@ -152,9 +152,10 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
   }
 
   @Test
-  public void noAvailableProcessInstancesReturnsZero() throws Exception {
+  public void noAvailableProcessInstancesReturnsZero() {
     // when
-    ReportDataDto reportData = ReportDataHelper.createAvgPiDurationHeatMapGroupByNone("fooProcessDefinitionId");
+    ReportDataDto reportData =
+      createAvgPiDurationHeatMapGroupByNone("fooProcessDefinition", "1");
     NumberReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -181,7 +182,7 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
 
 
     // when
-    ReportDataDto reportData = ReportDataHelper.createAvgPiDurationHeatMapGroupByNone(
+    ReportDataDto reportData = createAvgPiDurationHeatMapGroupByNone(
         processInstanceDto.getProcessDefinitionKey(), ReportConstants.ALL_VERSIONS
     );
     NumberReportResultDto result = evaluateReport(reportData);
@@ -211,7 +212,7 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = ReportDataHelper.createAvgPiDurationHeatMapGroupByNone(
+    ReportDataDto reportData = createAvgPiDurationHeatMapGroupByNone(
         processDefinitionKey, processDefinitionVersion
     );
     NumberReportResultDto result = evaluateReport(reportData);
@@ -234,7 +235,7 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = ReportDataHelper.createAvgPiDurationHeatMapGroupByNone(
+    ReportDataDto reportData = createAvgPiDurationHeatMapGroupByNone(
         processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion());
     reportData.setFilter(createDateFilter("<", "start_date", past));
     NumberReportResultDto result = evaluateReport(reportData);
@@ -244,7 +245,7 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
     assertThat(result.getResult(), is(0L));
 
     // when
-    reportData = ReportDataHelper.createAvgPiDurationHeatMapGroupByNone(
+    reportData = createAvgPiDurationHeatMapGroupByNone(
         processInstanceDto.getProcessDefinitionKey(),processInstanceDto.getProcessDefinitionVersion());
     reportData.setFilter(createDateFilter(">=", "start_date", past));
     result = evaluateReport(reportData);
@@ -280,7 +281,7 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = ReportDataHelper.createAvgPiDurationHeatMapGroupByNone(
+    ReportDataDto reportData = createAvgPiDurationHeatMapGroupByNone(
         processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion()
     );
     reportData.setFilter(createVariableFilter());
@@ -318,7 +319,7 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = ReportDataHelper.createAvgPiDurationHeatMapGroupByNone(
+    ReportDataDto reportData = createAvgPiDurationHeatMapGroupByNone(
         processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
     List<ExecutedFlowNodeFilterDto> flowNodeFilter = ExecutedFlowNodeFilterBuilder.construct()
           .id("task1")
@@ -331,9 +332,9 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
   }
 
   @Test
-  public void optimizeExceptionOnViewPropertyIsNull() throws Exception {
+  public void optimizeExceptionOnViewPropertyIsNull() {
     // given
-    ReportDataDto dataDto = ReportDataHelper.createAvgPiDurationHeatMapGroupByNone(PROCESS_DEFINITION_ID);
+    ReportDataDto dataDto = createAvgPiDurationHeatMapGroupByNone(PROCESS_DEFINITION_KEY, "1");
     dataDto.getView().setProperty(null);
 
     //when
@@ -346,7 +347,7 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
   @Test
   public void optimizeExceptionOnGroupByTypeIsNull() throws Exception {
     // given
-    ReportDataDto dataDto = ReportDataHelper.createAvgPiDurationHeatMapGroupByNone(PROCESS_DEFINITION_ID);
+    ReportDataDto dataDto = createAvgPiDurationHeatMapGroupByNone(PROCESS_DEFINITION_KEY, "1");
     dataDto.getGroupBy().setType(null);
 
     //when
@@ -423,7 +424,7 @@ public class AverageTotalProcessInstanceDurationReportEvaluationIT {
 
   private String createAndStoreDefaultReportDefinition(ProcessInstanceEngineDto processDefinition) {
     String id = createNewReport();
-    ReportDataDto reportData = ReportDataHelper.createAvgPiDurationHeatMapGroupByNone(
+    ReportDataDto reportData = createAvgPiDurationHeatMapGroupByNone(
         processDefinition.getProcessDefinitionKey(), processDefinition.getProcessDefinitionVersion());
 
     ReportDefinitionDto report = new ReportDefinitionDto();

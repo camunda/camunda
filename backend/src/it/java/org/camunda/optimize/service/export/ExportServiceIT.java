@@ -38,7 +38,6 @@ import java.util.Map;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.DATE_UNIT_DAY;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsNot.not;
 
 /**
  * @author Askar Akhmerov
@@ -114,8 +113,8 @@ public class ExportServiceIT {
   private ReportDataDto currentReport;
   private String expectedCSV;
 
-  protected static final String FAKE = "FAKE";
-  protected static final String CSV_EXPORT = "export/csv";
+  private static final String FAKE = "FAKE";
+  private static final String CSV_EXPORT = "export/csv";
 
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
@@ -137,7 +136,6 @@ public class ExportServiceIT {
   @Test
   public void reportCsvHasExpectedValue() throws Exception {
     //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
 
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
@@ -163,14 +161,14 @@ public class ExportServiceIT {
     assertThat(actualContent, is(stringExpected));
   }
 
-  public String getActualContentAsString(Response response) throws IOException {
+  private String getActualContentAsString(Response response) throws IOException {
     ByteArrayOutputStream bos = new ByteArrayOutputStream();
     IOUtils.copy(response.readEntity(InputStream.class), bos);
     byte[] result = bos.toByteArray();
     return new String(result);
   }
 
-  public String getExpectedContentAsString(ProcessInstanceEngineDto processInstance) throws IOException {
+  private String getExpectedContentAsString(ProcessInstanceEngineDto processInstance) throws IOException {
     Path path = Paths.get(this.getClass().getResource(expectedCSV).getPath());
     byte[] expectedContent = Files.readAllBytes(path);
     String stringExpected = new String(expectedContent);
@@ -197,7 +195,6 @@ public class ExportServiceIT {
   }
 
   private void updateReport(String id, ReportDefinitionDto updatedReport) {
-    String token = embeddedOptimizeRule.getAuthenticationToken();
     Response response =
         embeddedOptimizeRule.target("report/" + id)
             .request()
@@ -207,8 +204,7 @@ public class ExportServiceIT {
   }
 
 
-  protected String createNewReportHelper() {
-    String token = embeddedOptimizeRule.getAuthenticationToken();
+  private String createNewReportHelper() {
     Response response =
         embeddedOptimizeRule.target("report")
             .request()

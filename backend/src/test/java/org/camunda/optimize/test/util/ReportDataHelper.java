@@ -24,17 +24,6 @@ import static org.camunda.optimize.service.es.report.command.util.ReportConstant
  */
 public class ReportDataHelper {
 
-
-  public static ReportDataDto createReportDataViewRawAsTable(String processDefinitionId) {
-    return createReportDataViewRaw(
-        processDefinitionId,
-        TABLE_VISUALIZATION,
-        new ViewDto(VIEW_RAW_DATA_OPERATION),
-        null
-    );
-  }
-
-
   public static ReportDataDto createReportRawDataGroupByFlowNodesAsTable(String processDefinitionKey, String processDefinitionVersion) {
     return createReportDataViewRaw(
         processDefinitionKey,
@@ -68,22 +57,6 @@ public class ReportDataHelper {
     );
   }
 
-  public static ReportDataDto createAvgPIDurationGroupByStartDateReport(String processDefinitionId, String dateInterval) {
-
-    ViewDto view = createAvgPIDurationView();
-
-    GroupByDto groupByDto = createGroupByStartDateDto(dateInterval);
-
-    ReportDataDto reportData = createReportDataViewRaw(
-        processDefinitionId,
-        TABLE_VISUALIZATION,
-        view,
-        groupByDto
-    );
-
-    return reportData;
-  }
-
   public static ReportDataDto createAvgPIDurationGroupByStartDateReport(
       String processDefinitionKey,
       String processDefinitionVersion,
@@ -101,22 +74,6 @@ public class ReportDataHelper {
         groupByDto
     );
 
-    return reportData;
-  }
-
-  public static ReportDataDto createPICountFrequencyGroupByStartDate(String processDefinitionId, String dateInterval) {
-
-    ViewDto view = createCountPiFrequencyView();
-    GroupByDto groupByDto = createGroupByStartDateDto(dateInterval);
-
-    ReportDataDto reportData = createReportDataViewRaw(
-        processDefinitionId,
-        TABLE_VISUALIZATION,
-        view,
-        groupByDto
-    );
-
-    reportData.setGroupBy(groupByDto);
     return reportData;
   }
 
@@ -149,20 +106,6 @@ public class ReportDataHelper {
   }
 
   public static ReportDataDto createReportDataViewRaw(
-      String processDefinitionId,
-      String visualization,
-      ViewDto viewDto,
-      GroupByDto groupByDto
-  ) {
-    ReportDataDto reportData = new ReportDataDto();
-    reportData.setProcessDefinitionId(processDefinitionId);
-    reportData.setVisualization(visualization);
-    reportData.setView(viewDto);
-    reportData.setGroupBy(groupByDto);
-    return reportData;
-  }
-
-  public static ReportDataDto createReportDataViewRaw(
       String processDefinitionKey,
       String processDefinitionVersion,
       String visualization,
@@ -175,26 +118,6 @@ public class ReportDataHelper {
     reportData.setVisualization(visualization);
     reportData.setView(viewDto);
     reportData.setGroupBy(groupByDto);
-    return reportData;
-  }
-
-  public static ReportDataDto createCountFlowNodeFrequencyGroupByFlowNode (String processDefinitionId) {
-
-    ViewDto view = new ViewDto();
-    view.setOperation(VIEW_COUNT_OPERATION);
-    view.setEntity(VIEW_FLOW_NODE_ENTITY);
-    view.setProperty(VIEW_FREQUENCY_PROPERTY);
-
-
-    GroupByDto groupByDto = createGroupByFlowNode();
-
-    ReportDataDto reportData = createReportDataViewRaw(
-        processDefinitionId,
-        HEAT_VISUALIZATION,
-        view,
-        groupByDto
-    );
-
     return reportData;
   }
 
@@ -214,21 +137,6 @@ public class ReportDataHelper {
     ReportDataDto reportData = createReportDataViewRaw(
         processDefinitionKey,
         processDefinitionVersion,
-        HEAT_VISUALIZATION,
-        view,
-        groupByDto
-    );
-
-    return reportData;
-  }
-
-  public static ReportDataDto createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(String processDefinitionId) {
-    ViewDto view = createAvgFlowNodeDurationView();
-
-    GroupByDto groupByDto = createGroupByFlowNode();
-
-    ReportDataDto reportData = createReportDataViewRaw(
-        processDefinitionId,
         HEAT_VISUALIZATION,
         view,
         groupByDto
@@ -262,22 +170,6 @@ public class ReportDataHelper {
     return groupByDto;
   }
 
-
-  public static ReportDataDto createAvgPiDurationHeatMapGroupByNone(String processDefinitionId) {
-
-    ViewDto view = createAvgPIDurationView();
-    GroupByDto groupByDto = createGroupByNone();
-
-    ReportDataDto reportData = createReportDataViewRaw(
-        processDefinitionId,
-        HEAT_VISUALIZATION,
-        view,
-        groupByDto
-    );
-
-    return reportData;
-  }
-
   public static ReportDataDto createAvgPiDurationHeatMapGroupByNone(
       String processDefinitionKey,
       String processDefinitionVersion
@@ -303,21 +195,6 @@ public class ReportDataHelper {
     return groupByDto;
   }
 
-  public static ReportDataDto createPiFrequencyCountGroupedByNone(String processDefinitionId) {
-    ViewDto view = createCountPiFrequencyView();
-
-    GroupByDto groupByDto = createGroupByNone();
-
-    ReportDataDto reportData = createReportDataViewRaw(
-        processDefinitionId,
-        HEAT_VISUALIZATION,
-        view,
-        groupByDto
-    );
-
-    return reportData;
-  }
-
   public static ReportDataDto createPiFrequencyCountGroupedByNone(
       String processDefinitionKey,
       String processDefinitionVersion
@@ -336,32 +213,16 @@ public class ReportDataHelper {
     return reportData;
   }
 
-  public static ReportDataDto createPiFrequencyCountGroupedByNoneAsNumber(String processDefinitionId) {
+  public static ReportDataDto createPiFrequencyCountGroupedByNoneAsNumber(String processDefinitionKey, String processDefinitionVersion) {
     ViewDto view = createCountPiFrequencyView();
 
     GroupByDto groupByDto = createGroupByNone();
 
     ReportDataDto reportData = createReportDataViewRaw(
-        processDefinitionId,
+        processDefinitionKey,
+        processDefinitionVersion,
         //does not really affect backend, since command object is instantiated based on
         //group by criterion
-        SINGLE_NUMBER_VISUALIZATION,
-        view,
-        groupByDto
-    );
-
-    return reportData;
-  }
-
-  public static ReportDataDto createAvgPiDurationAsNumberGroupByNone(
-      String processDefinitionId
-  ) {
-
-    ViewDto view = createAvgPIDurationView();
-    GroupByDto groupByDto = createGroupByNone();
-
-    ReportDataDto reportData = createReportDataViewRaw(
-        processDefinitionId,
         SINGLE_NUMBER_VISUALIZATION,
         view,
         groupByDto

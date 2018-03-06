@@ -22,16 +22,17 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
 public class CountFlowNodeFrequencyByFlowNodeCommand extends FlowNodeGroupingCommand {
 
-  static final String MI_BODY = "multiInstanceBody";
+  private static final String MI_BODY = "multiInstanceBody";
 
   @Override
   protected MapReportResultDto evaluate() {
 
     logger.debug("Evaluating count flow node frequency grouped by flow node report " +
-      "for process definition id [{}]", reportData.getProcessDefinitionId());
+      "for process definition key [{}] and version [{}]",
+      reportData.getProcessDefinitionKey(),
+      reportData.getProcessDefinitionVersion());
 
     BoolQueryBuilder query = setupBaseQuery(
-        reportData.getProcessDefinitionId(),
         reportData.getProcessDefinitionKey(),
         reportData.getProcessDefinitionVersion()
     );

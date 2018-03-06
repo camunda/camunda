@@ -21,16 +21,17 @@ import static org.camunda.optimize.service.es.report.command.util.ReportUtil.get
 
 public class CountProcessInstanceFrequencyByStartDateCommand extends ReportCommand<MapReportResultDto> {
 
-  public static final String DATE_HISTOGRAM_AGGREGATION = "dateIntervalGrouping";
+  private static final String DATE_HISTOGRAM_AGGREGATION = "dateIntervalGrouping";
 
   @Override
   protected MapReportResultDto evaluate() throws OptimizeException {
 
     logger.debug("Evaluating count process instance frequency grouped by start date report " +
-      "for process definition id [{}]", reportData.getProcessDefinitionId());
+      "for process definition key [{}] and version [{}]",
+      reportData.getProcessDefinitionKey(),
+      reportData.getProcessDefinitionVersion());
 
     BoolQueryBuilder query = setupBaseQuery(
-        reportData.getProcessDefinitionId(),
         reportData.getProcessDefinitionKey(),
         reportData.getProcessDefinitionVersion()
     );
@@ -59,7 +60,7 @@ public class CountProcessInstanceFrequencyByStartDateCommand extends ReportComma
       .dateHistogramInterval(interval);
   }
 
-  Map<String, Long> processAggregations(Aggregations aggregations) {
+  private Map<String, Long> processAggregations(Aggregations aggregations) {
     Histogram agg = aggregations.get(DATE_HISTOGRAM_AGGREGATION);
 
     Map<String, Long> result = new LinkedHashMap<>();

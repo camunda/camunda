@@ -64,11 +64,8 @@ public class ValidationHelper {
     boolean versionAndKeySet = data != null && data.getProcessDefinitionVersion() != null &&
         data.getProcessDefinitionKey() != null;
 
-    boolean idSet = data != null && data.getProcessDefinitionId() != null;
-
-    boolean valid = versionAndKeySet || idSet;
-    if (!valid) {
-      throw new OptimizeValidationException("either process definition ID or Key + Version have to be provided");
+    if (!versionAndKeySet) {
+      throw new OptimizeValidationException("process definition key and version have to be provided");
     }
   }
 

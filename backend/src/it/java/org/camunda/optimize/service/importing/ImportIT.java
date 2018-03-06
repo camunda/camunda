@@ -12,7 +12,6 @@ import org.camunda.optimize.service.util.configuration.EngineConfiguration;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.camunda.optimize.test.util.ReportDataHelper;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.SearchHit;
@@ -33,6 +32,7 @@ import java.util.stream.IntStream;
 
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.END_DATE;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
+import static org.camunda.optimize.test.util.ReportDataHelper.createReportDataViewRawAsTable;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
@@ -534,12 +534,14 @@ public class ImportIT  {
 
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
-    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(process1.getDefinitionId());
+    ReportDataDto reportData =
+      createReportDataViewRawAsTable(process1.getProcessDefinitionKey(), process1.getProcessDefinitionVersion());
     RawDataReportResultDto result = evaluateReport(reportData);
 
     assertThat(result.getResult().size(), is(1));
 
-    reportData = ReportDataHelper.createReportDataViewRawAsTable(process2.getDefinitionId());
+    reportData =
+      createReportDataViewRawAsTable(process2.getProcessDefinitionKey(), process2.getProcessDefinitionVersion());
     result = evaluateReport(reportData);
 
     assertThat(result.getResult().size(), is(1));
@@ -552,7 +554,7 @@ public class ImportIT  {
 
     embeddedOptimizeRule.importWithoutReset();
 
-    reportData = ReportDataHelper.createReportDataViewRawAsTable(process2.getDefinitionId());
+    reportData = createReportDataViewRawAsTable(process2.getProcessDefinitionKey(), process2.getProcessDefinitionVersion());
     result = evaluateReport(reportData);
 
     assertThat(result.getResult().size(), is(2));
@@ -582,12 +584,14 @@ public class ImportIT  {
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
-    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(process1.getDefinitionId());
+    ReportDataDto reportData =
+      createReportDataViewRawAsTable(process1.getProcessDefinitionKey(), process1.getProcessDefinitionVersion());
     RawDataReportResultDto result = evaluateReport(reportData);
 
     assertThat(result.getResult().size(), is(1));
 
-    reportData = ReportDataHelper.createReportDataViewRawAsTable(process2.getDefinitionId());
+    reportData =
+      createReportDataViewRawAsTable(process2.getProcessDefinitionKey(), process2.getProcessDefinitionVersion());
     result = evaluateReport(reportData);
 
     assertThat(result.getResult().size(), is(1));
@@ -602,7 +606,8 @@ public class ImportIT  {
     embeddedOptimizeRule.importWithoutReset();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
-    reportData = ReportDataHelper.createReportDataViewRawAsTable(process2.getDefinitionId());
+    reportData =
+      createReportDataViewRawAsTable(process2.getProcessDefinitionKey(), process2.getProcessDefinitionVersion());
     result = evaluateReport(reportData);
 
     assertThat(result.getResult().size(), is(2));

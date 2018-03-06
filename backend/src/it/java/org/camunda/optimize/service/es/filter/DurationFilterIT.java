@@ -5,15 +5,12 @@ import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
 import org.camunda.optimize.dto.optimize.query.report.result.raw.RawDataReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.util.DateUtilHelper;
-import org.camunda.optimize.test.util.ReportDataHelper;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.util.List;
 
+import static org.camunda.optimize.test.util.ReportDataHelper.createReportDataViewRawAsTable;
 import static org.hamcrest.CoreMatchers.is;
 
 /**
@@ -30,9 +27,9 @@ public class DurationFilterIT extends AbstractDurationFilterIT {
 
     ProcessInstanceEngineDto processInstance = deployWithTimeShift(daysToShift, durationInSec);
 
-    String processDefinitionId = processInstance.getDefinitionId();
     // when
-    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
+    ReportDataDto reportData =
+      createReportDataViewRawAsTable(processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion());
     List<FilterDto> gte = DateUtilHelper.createDurationFilter(">=", 2, "Seconds");
     List<FilterDto> lt = DateUtilHelper.createDurationFilter("<", 1, "Days");
     gte.addAll(lt);
@@ -40,18 +37,18 @@ public class DurationFilterIT extends AbstractDurationFilterIT {
     RawDataReportResultDto result = evaluateReport(reportData);
 
     // then
-    assertResult(processInstance, processDefinitionId, result);
+    assertResult(processInstance, result);
   }
 
   @Test
   public void testValidationExceptionOnNullFilterField() throws Exception {
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
-    String processDefinitionId = processInstance.getDefinitionId();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
-    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
+    ReportDataDto reportData =
+      createReportDataViewRawAsTable(processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion());
     reportData.setFilter(DateUtilHelper.createDurationFilter(">=", 2, null));
 
 

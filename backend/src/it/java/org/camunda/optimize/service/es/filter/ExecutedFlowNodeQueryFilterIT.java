@@ -2,6 +2,7 @@ package org.camunda.optimize.service.es.filter;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
@@ -12,14 +13,10 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.camunda.optimize.test.util.ReportDataHelper;
 import org.hamcrest.MatcherAssert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
@@ -31,13 +28,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.camunda.optimize.test.util.ReportDataHelper.createReportDataViewRawAsTable;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 
 public class ExecutedFlowNodeQueryFilterIT {
 
-  public static final String TEST_DEFINITION = "TestDefinition";
+  private static final String TEST_DEFINITION = "TestDefinition";
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
@@ -48,8 +46,9 @@ public class ExecutedFlowNodeQueryFilterIT {
   private final static String USER_TASK_ACTIVITY_ID = "User-Task";
   private final static String USER_TASK_ACTIVITY_ID_2 = "User-Task2";
 
-  private RawDataReportResultDto evaluateReportWithFilter(String processDefinitionId, List<FilterDto> filter) {
-    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
+  private RawDataReportResultDto evaluateReportWithFilter(ProcessDefinitionEngineDto processDefinition, List<FilterDto> filter) {
+    ReportDataDto reportData =
+      createReportDataViewRawAsTable(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
     reportData.setFilter(filter);
     return evaluateReport(reportData);
   }
@@ -60,8 +59,8 @@ public class ExecutedFlowNodeQueryFilterIT {
     return response.readEntity(RawDataReportResultDto.class);
   }
 
-  private Response evaluateReportAndReturnResponse(String processDefinitionId, ExecutedFlowNodeFilterDto filterDto) {
-    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionId);
+  private Response evaluateReportAndReturnResponse(String processDefinitionKey, ExecutedFlowNodeFilterDto filterDto) {
+    ReportDataDto reportData = createReportDataViewRawAsTable(processDefinitionKey, "1");
     List<FilterDto> filter = new ArrayList<>();
     filter.add(filterDto);
     reportData.setFilter(filter);
@@ -69,20 +68,19 @@ public class ExecutedFlowNodeQueryFilterIT {
   }
 
   private Response evaluateReportAndReturnResponse(ReportDataDto reportData) {
-    String token = embeddedOptimizeRule.getAuthenticationToken();
     return embeddedOptimizeRule.target("report/evaluate")
         .request()
-        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .post(Entity.json(reportData));
   }
 
   @Test
   public void filterByOneFlowNode() throws Exception {
     // given
-    String processDefinitionId = deploySimpleUserTaskProcessDefinition();
-    ProcessInstanceEngineDto instanceEngineDto = engineRule.startProcessInstance(processDefinitionId);
+    ProcessDefinitionEngineDto processDefinition = deploySimpleUserTaskProcessDefinition();
+    ProcessInstanceEngineDto instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId());
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
-    engineRule.startProcessInstance(processDefinitionId);
+    engineRule.startProcessInstance(processDefinition.getId());
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
@@ -92,7 +90,7 @@ public class ExecutedFlowNodeQueryFilterIT {
           .inOperator()
           .build();
 
-    RawDataReportResultDto result = getRawDataReportResultDto(processDefinitionId, executedFlowNodes);
+    RawDataReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
     // then
     assertResults(result, 1);
   }
@@ -100,10 +98,10 @@ public class ExecutedFlowNodeQueryFilterIT {
   @Test
   public void filterByOneFlowNodeWithUnequalOperator() throws Exception {
     // given
-    String processDefinitionId = deploySimpleUserTaskProcessDefinition();
-    ProcessInstanceEngineDto instanceEngineDto = engineRule.startProcessInstance(processDefinitionId);
+    ProcessDefinitionEngineDto processDefinition = deploySimpleUserTaskProcessDefinition();
+    ProcessInstanceEngineDto instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId());
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
-    engineRule.startProcessInstance(processDefinitionId);
+    engineRule.startProcessInstance(processDefinition.getId());
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
@@ -113,7 +111,7 @@ public class ExecutedFlowNodeQueryFilterIT {
           .notInOperator()
           .build();
 
-    RawDataReportResultDto result = getRawDataReportResultDto(processDefinitionId, executedFlowNodes);
+    RawDataReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
 
     // then
     assertResults(result, 1);
@@ -122,14 +120,14 @@ public class ExecutedFlowNodeQueryFilterIT {
   @Test
   public void filterMultipleProcessInstancesByOneFlowNode() throws Exception {
     // given
-    String processDefinitionId = deploySimpleUserTaskProcessDefinition();
-    ProcessInstanceEngineDto instanceEngineDto = engineRule.startProcessInstance(processDefinitionId);
+    ProcessDefinitionEngineDto processDefinition = deploySimpleUserTaskProcessDefinition();
+    ProcessInstanceEngineDto instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId());
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
-    instanceEngineDto = engineRule.startProcessInstance(processDefinitionId);
+    instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId());
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
-    instanceEngineDto = engineRule.startProcessInstance(processDefinitionId);
+    instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId());
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
-    engineRule.startProcessInstance(processDefinitionId);
+    engineRule.startProcessInstance(processDefinition.getId());
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
@@ -138,7 +136,7 @@ public class ExecutedFlowNodeQueryFilterIT {
           .id(USER_TASK_ACTIVITY_ID)
           .inOperator()
           .build();
-    RawDataReportResultDto result = getRawDataReportResultDto(processDefinitionId, executedFlowNodes);
+    RawDataReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
 
     // then
     assertResults(result, 3);
@@ -147,15 +145,15 @@ public class ExecutedFlowNodeQueryFilterIT {
   @Test
   public void filterMultipleProcessInstancesByOneFlowNodeWithUnequalOperator() throws Exception {
     // given
-    String processDefinitionId = deploySimpleUserTaskProcessDefinition();
-    ProcessInstanceEngineDto instanceEngineDto = engineRule.startProcessInstance(processDefinitionId);
+    ProcessDefinitionEngineDto processDefinition = deploySimpleUserTaskProcessDefinition();
+    ProcessInstanceEngineDto instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId());
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
-    instanceEngineDto = engineRule.startProcessInstance(processDefinitionId);
+    instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId());
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
-    instanceEngineDto = engineRule.startProcessInstance(processDefinitionId);
+    instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId());
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
-    engineRule.startProcessInstance(processDefinitionId);
-    engineRule.startProcessInstance(processDefinitionId);
+    engineRule.startProcessInstance(processDefinition.getId());
+    engineRule.startProcessInstance(processDefinition.getId());
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
@@ -164,7 +162,7 @@ public class ExecutedFlowNodeQueryFilterIT {
           .id(USER_TASK_ACTIVITY_ID)
           .notInOperator()
           .build();
-    RawDataReportResultDto result = getRawDataReportResultDto(processDefinitionId, executedFlowNodes);
+    RawDataReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
 
     // then
     assertResults(result, 2);
@@ -173,16 +171,16 @@ public class ExecutedFlowNodeQueryFilterIT {
   @Test
   public void filterByMultipleAndCombinedFlowNodes() throws Exception {
     // given
-    String processDefinitionId = deployProcessDefinitionWithTwoUserTasks();
-    ProcessInstanceEngineDto instanceEngineDto = engineRule.startProcessInstance(processDefinitionId);
+    ProcessDefinitionEngineDto processDefinition = deployProcessDefinitionWithTwoUserTasks();
+    ProcessInstanceEngineDto instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId());
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
-    instanceEngineDto = engineRule.startProcessInstance(processDefinitionId);
+    instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId());
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
-    instanceEngineDto = engineRule.startProcessInstance(processDefinitionId);
+    instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId());
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
-    engineRule.startProcessInstance(processDefinitionId);
+    engineRule.startProcessInstance(processDefinition.getId());
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
@@ -192,7 +190,7 @@ public class ExecutedFlowNodeQueryFilterIT {
           .and()
           .id(USER_TASK_ACTIVITY_ID_2)
           .build();
-    RawDataReportResultDto result = getRawDataReportResultDto(processDefinitionId, executedFlowNodes);
+    RawDataReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
 
     // then
     assertResults(result, 2);
@@ -201,17 +199,17 @@ public class ExecutedFlowNodeQueryFilterIT {
   @Test
   public void filterByMultipleAndCombinedFlowNodesWithUnequalOperator() throws Exception {
     // given
-    String processDefinitionId = deployProcessDefinitionWithTwoUserTasks();
-    ProcessInstanceEngineDto instanceEngineDto = engineRule.startProcessInstance(processDefinitionId);
+    ProcessDefinitionEngineDto processDefinition = deployProcessDefinitionWithTwoUserTasks();
+    ProcessInstanceEngineDto instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId());
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
-    instanceEngineDto = engineRule.startProcessInstance(processDefinitionId);
+    instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId());
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
-    instanceEngineDto = engineRule.startProcessInstance(processDefinitionId);
+    instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId());
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
-    engineRule.startProcessInstance(processDefinitionId);
-    engineRule.startProcessInstance(processDefinitionId);
+    engineRule.startProcessInstance(processDefinition.getId());
+    engineRule.startProcessInstance(processDefinition.getId());
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
@@ -223,7 +221,7 @@ public class ExecutedFlowNodeQueryFilterIT {
           .id(USER_TASK_ACTIVITY_ID_2)
           .notInOperator()
           .build();
-    RawDataReportResultDto result = getRawDataReportResultDto(processDefinitionId, executedFlowNodes);
+    RawDataReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
 
     // then
     assertResults(result, 1);
@@ -236,32 +234,31 @@ public class ExecutedFlowNodeQueryFilterIT {
           .id(USER_TASK_ACTIVITY_ID_2)
           .notInOperator()
           .build();
-    result = getRawDataReportResultDto(processDefinitionId, executedFlowNodes);
+    result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
 
     // then
     assertResults(result, 2);
   }
 
-  private RawDataReportResultDto getRawDataReportResultDto(String processDefinitionId, List<ExecutedFlowNodeFilterDto> executedFlowNodes) {
-    ArrayList<FilterDto> filter = new ArrayList<>();
-    filter.addAll(executedFlowNodes);
-    return evaluateReportWithFilter(processDefinitionId, filter);
+  private RawDataReportResultDto getRawDataReportResultDto(ProcessDefinitionEngineDto processDefinition, List<ExecutedFlowNodeFilterDto> executedFlowNodes) {
+    ArrayList<FilterDto> filter = new ArrayList<>(executedFlowNodes);
+    return evaluateReportWithFilter(processDefinition, filter);
   }
 
   @Test
   public void filterByMultipleOrCombinedFlowNodes() throws Exception {
     // given
-    String processDefinitionId = deployProcessDefinitionWithTwoUserTasks();
-    ProcessInstanceEngineDto instanceEngineDto = engineRule.startProcessInstance(processDefinitionId);
+    ProcessDefinitionEngineDto processDefinition = deployProcessDefinitionWithTwoUserTasks();
+    ProcessInstanceEngineDto instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId());
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
-    instanceEngineDto = engineRule.startProcessInstance(processDefinitionId);
+    instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId());
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
-    instanceEngineDto = engineRule.startProcessInstance(processDefinitionId);
+    instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId());
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
-    engineRule.startProcessInstance(processDefinitionId);
-    engineRule.startProcessInstance(processDefinitionId);
+    engineRule.startProcessInstance(processDefinition.getId());
+    engineRule.startProcessInstance(processDefinition.getId());
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
@@ -270,7 +267,7 @@ public class ExecutedFlowNodeQueryFilterIT {
           .ids(USER_TASK_ACTIVITY_ID, USER_TASK_ACTIVITY_ID_2)
           .inOperator()
           .build();
-    RawDataReportResultDto result = getRawDataReportResultDto(processDefinitionId, executedFlowNodes);
+    RawDataReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
 
     // then
     assertResults(result, 3);
@@ -279,24 +276,24 @@ public class ExecutedFlowNodeQueryFilterIT {
   @Test
   public void filterByMultipleOrCombinedFlowNodesWithUnequalOperator() throws Exception {
     // given
-    String processDefinitionId = deployProcessWIthGatewayAndOneUserTaskEachBranch();
+    ProcessDefinitionEngineDto processDefinition = deployProcessWIthGatewayAndOneUserTaskEachBranch();
 
     Map<String, Object> takePathA = new HashMap<>();
     takePathA.put("takePathA", true);
     Map<String, Object> takePathB = new HashMap<>();
     takePathB.put("takePathA", false);
-    ProcessInstanceEngineDto instanceEngineDto = engineRule.startProcessInstance(processDefinitionId, takePathA);
+    ProcessInstanceEngineDto instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId(), takePathA);
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
-    instanceEngineDto = engineRule.startProcessInstance(processDefinitionId, takePathB);
+    instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId(), takePathB);
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
-    instanceEngineDto = engineRule.startProcessInstance(processDefinitionId, takePathA);
+    instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId(), takePathA);
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
-    instanceEngineDto = engineRule.startProcessInstance(processDefinitionId, takePathB);
+    instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId(), takePathB);
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
-    engineRule.startProcessInstance(processDefinitionId, takePathA);
-    engineRule.startProcessInstance(processDefinitionId, takePathB);
+    engineRule.startProcessInstance(processDefinition.getId(), takePathA);
+    engineRule.startProcessInstance(processDefinition.getId(), takePathB);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
@@ -305,7 +302,7 @@ public class ExecutedFlowNodeQueryFilterIT {
           .ids("UserTask-PathA", "FinalUserTask")
           .notInOperator()
           .build();
-    RawDataReportResultDto result = getRawDataReportResultDto(processDefinitionId, executedFlowNodes);
+    RawDataReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
 
     // then
     assertResults(result, 3);
@@ -314,29 +311,29 @@ public class ExecutedFlowNodeQueryFilterIT {
   @Test
   public void filterByMultipleAndOrCombinedFlowNodes() throws Exception {
     // given
-    String processDefinitionId = deployProcessWIthGatewayAndOneUserTaskEachBranch();
+    ProcessDefinitionEngineDto processDefinition = deployProcessWIthGatewayAndOneUserTaskEachBranch();
 
     Map<String, Object> takePathA = new HashMap<>();
     takePathA.put("takePathA", true);
     Map<String, Object> takePathB = new HashMap<>();
     takePathB.put("takePathA", false);
-    ProcessInstanceEngineDto instanceEngineDto = engineRule.startProcessInstance(processDefinitionId, takePathA);
+    ProcessInstanceEngineDto instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId(), takePathA);
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
-    instanceEngineDto = engineRule.startProcessInstance(processDefinitionId, takePathA);
+    instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId(), takePathA);
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
-    instanceEngineDto = engineRule.startProcessInstance(processDefinitionId, takePathB);
+    instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId(), takePathB);
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
-    instanceEngineDto = engineRule.startProcessInstance(processDefinitionId, takePathB);
+    instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId(), takePathB);
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
-    instanceEngineDto = engineRule.startProcessInstance(processDefinitionId, takePathB);
+    instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId(), takePathB);
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
-    instanceEngineDto = engineRule.startProcessInstance(processDefinitionId, takePathA);
+    instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId(), takePathA);
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
-    engineRule.startProcessInstance(processDefinitionId, takePathA);
-    engineRule.startProcessInstance(processDefinitionId, takePathB);
+    engineRule.startProcessInstance(processDefinition.getId(), takePathA);
+    engineRule.startProcessInstance(processDefinition.getId(), takePathB);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
@@ -349,7 +346,7 @@ public class ExecutedFlowNodeQueryFilterIT {
           .and()
             .id("FinalUserTask")
           .build();
-    RawDataReportResultDto result = getRawDataReportResultDto(processDefinitionId, executedFlowNodes);
+    RawDataReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
 
     // then
     assertResults(result,3);
@@ -358,24 +355,24 @@ public class ExecutedFlowNodeQueryFilterIT {
   @Test
   public void equalAndUnequalOperatorCombined() throws Exception {
     // given
-    String processDefinitionId = deployProcessWIthGatewayAndOneUserTaskEachBranch();
+    ProcessDefinitionEngineDto processDefinition = deployProcessWIthGatewayAndOneUserTaskEachBranch();
 
     Map<String, Object> takePathA = new HashMap<>();
     takePathA.put("takePathA", true);
     Map<String, Object> takePathB = new HashMap<>();
     takePathB.put("takePathA", false);
-    ProcessInstanceEngineDto instanceEngineDto = engineRule.startProcessInstance(processDefinitionId, takePathA);
+    ProcessInstanceEngineDto instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId(), takePathA);
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
-    instanceEngineDto = engineRule.startProcessInstance(processDefinitionId, takePathB);
+    instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId(), takePathB);
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
-    instanceEngineDto = engineRule.startProcessInstance(processDefinitionId, takePathA);
+    instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId(), takePathA);
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
-    instanceEngineDto = engineRule.startProcessInstance(processDefinitionId, takePathB);
+    instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId(), takePathB);
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
-    engineRule.startProcessInstance(processDefinitionId, takePathA);
-    engineRule.startProcessInstance(processDefinitionId, takePathB);
+    engineRule.startProcessInstance(processDefinition.getId(), takePathA);
+    engineRule.startProcessInstance(processDefinition.getId(), takePathB);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
@@ -389,13 +386,13 @@ public class ExecutedFlowNodeQueryFilterIT {
             .id("UserTask-PathB")
             .inOperator()
           .build();
-    RawDataReportResultDto result = getRawDataReportResultDto(processDefinitionId, executedFlowNodes);
+    RawDataReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
 
     // then
     assertResults(result, 1);
   }
 
-  private String deployProcessWIthGatewayAndOneUserTaskEachBranch() throws IOException {
+  private ProcessDefinitionEngineDto deployProcessWIthGatewayAndOneUserTaskEachBranch() throws IOException {
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
         .startEvent()
         .exclusiveGateway("splittingGateway")
@@ -410,19 +407,19 @@ public class ExecutedFlowNodeQueryFilterIT {
           .userTask("UserTask-PathB")
           .connectTo("mergeExclusiveGateway")
         .done();
-    return engineRule.deployProcessAndGetId(modelInstance);
+    return engineRule.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
   @Test
   public void sameFlowNodeInDifferentProcessDefinitionDoesNotDistortResult() throws Exception {
     // given
-    String processDefinitionId = deploySimpleUserTaskProcessDefinition();
-    String processDefinitionId2 = deploySimpleUserTaskProcessDefinition();
-    ProcessInstanceEngineDto instanceEngineDto = engineRule.startProcessInstance(processDefinitionId);
+    ProcessDefinitionEngineDto processDefinition = deploySimpleUserTaskProcessDefinition();
+    ProcessDefinitionEngineDto processDefinition2 = deploySimpleUserTaskProcessDefinition();
+    ProcessInstanceEngineDto instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId());
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
-    instanceEngineDto = engineRule.startProcessInstance(processDefinitionId);
+    instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId());
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
-    instanceEngineDto = engineRule.startProcessInstance(processDefinitionId2);
+    instanceEngineDto = engineRule.startProcessInstance(processDefinition2.getId());
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -431,7 +428,7 @@ public class ExecutedFlowNodeQueryFilterIT {
     List<ExecutedFlowNodeFilterDto> executedFlowNodes = ExecutedFlowNodeFilterBuilder.construct()
           .id(USER_TASK_ACTIVITY_ID)
           .build();
-    RawDataReportResultDto result = getRawDataReportResultDto(processDefinitionId, executedFlowNodes);
+    RawDataReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
 
     // then
     assertResults(result, 2);
@@ -473,29 +470,27 @@ public class ExecutedFlowNodeQueryFilterIT {
   }
 
 
-  private String deployProcessDefinitionWithTwoUserTasks() throws IOException {
+  private ProcessDefinitionEngineDto deployProcessDefinitionWithTwoUserTasks() throws IOException {
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
         .startEvent()
           .userTask(USER_TASK_ACTIVITY_ID)
           .userTask(USER_TASK_ACTIVITY_ID_2)
         .endEvent()
       .done();
-    String processDefinitionId = engineRule.deployProcessAndGetId(modelInstance);
-    return processDefinitionId;
+    return engineRule.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
-  private String deploySimpleUserTaskProcessDefinition() throws IOException {
+  private ProcessDefinitionEngineDto deploySimpleUserTaskProcessDefinition() throws IOException {
     return deploySimpleUserTaskProcessDefinition(USER_TASK_ACTIVITY_ID);
   }
 
-  private String deploySimpleUserTaskProcessDefinition(String userTaskActivityId) throws IOException {
+  private ProcessDefinitionEngineDto deploySimpleUserTaskProcessDefinition(String userTaskActivityId) throws IOException {
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("ASimpleUserTaskProcess" + System.currentTimeMillis())
         .startEvent()
           .userTask(userTaskActivityId)
         .endEvent()
       .done();
-    String processDefinitionId = engineRule.deployProcessAndGetId(modelInstance);
-    return processDefinitionId;
+    return engineRule.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
 

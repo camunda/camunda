@@ -11,10 +11,11 @@ public class CountTotalProcessInstanceFrequencyCommand extends ReportCommand<Num
   protected NumberReportResultDto evaluate() {
 
     logger.debug("Evaluating count process instance frequency grouped by none report " +
-      "for process definition id [{}]", reportData.getProcessDefinitionId());
+      "for process definition key [{}] and version [{}]",
+      reportData.getProcessDefinitionKey(),
+      reportData.getProcessDefinitionVersion());
 
     BoolQueryBuilder query = setupBaseQuery(
-        reportData.getProcessDefinitionId(),
         reportData.getProcessDefinitionKey(),
         reportData.getProcessDefinitionVersion()
     );

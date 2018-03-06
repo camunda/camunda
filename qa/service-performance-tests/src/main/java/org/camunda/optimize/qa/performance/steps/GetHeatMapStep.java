@@ -72,15 +72,16 @@ abstract class GetHeatMapStep extends PerfTestStep {
     post.addHeader("content-type", "application/json");
     post.addHeader("Authorization", "Bearer " + context.getConfiguration().getAuthorizationToken());
 
-    String processDefinitionId = (String) context.getParameter("processDefinitionId");
-    ReportDataDto reportData = createRequest(processDefinitionId);
+    String processDefinitionKey = (String) context.getParameter("processDefinitionKey");
+    String processDefinitionVersion = (String) context.getParameter("processDefinitionVersion");
+    ReportDataDto reportData = createRequest(processDefinitionKey, processDefinitionVersion);
     reportData.setFilter(filter);
 
     post.setEntity(new StringEntity(objectMapper.writeValueAsString(reportData)));
     return post;
   }
 
-  protected abstract ReportDataDto createRequest(String processDefinitionId);
+  protected abstract ReportDataDto createRequest(String processDefinitionKey, String processDefinitionVersion);
 
   abstract String getRestEndpoint(PerfTestContext context);
 }

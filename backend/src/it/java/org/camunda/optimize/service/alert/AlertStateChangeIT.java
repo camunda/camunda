@@ -12,7 +12,6 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import javax.mail.internet.MimeMessage;
-import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 
@@ -49,14 +48,12 @@ public class AlertStateChangeIT extends AbstractAlertSchedulerIT {
   public void reminderJobsSendEmailEveryTime() throws Exception {
     //given
     setEmailConfiguration();
-    String token = embeddedOptimizeRule.getAuthenticationToken();
     long daysToShift = 0L;
     long durationInSec = 2L;
     ProcessInstanceEngineDto processInstance = deployWithTimeShift(daysToShift, durationInSec);
-    String processDefinitionId = processInstance.getDefinitionId();
-    String reportId = createAndStoreDurationNumberReport(processDefinitionId);
+    String reportId = createAndStoreDurationNumberReport(processInstance);
     AlertCreationDto simpleAlert = createAlertWithReminder(reportId);
-    String id = createAlert(token, simpleAlert);
+    String id = createAlert(simpleAlert);
 
     triggerAndCompleteCheckJob(id);
 
@@ -91,23 +88,21 @@ public class AlertStateChangeIT extends AbstractAlertSchedulerIT {
   public void changeNotificationIsNotSentByDefault() throws Exception {
     //given
     setEmailConfiguration();
-    String token = embeddedOptimizeRule.getAuthenticationToken();
     long daysToShift = 0L;
     long durationInSec = 2L;
 
     ProcessInstanceEngineDto processInstance = deployWithTimeShift(daysToShift, durationInSec);
 
-    String processDefinitionId = processInstance.getDefinitionId();
     // when
-    String reportId = createAndStoreDurationNumberReport(processDefinitionId);
+    String reportId = createAndStoreDurationNumberReport(processInstance);
     AlertCreationDto simpleAlert = createAlertWithReminder(reportId);
 
-    String id = createAlert(token, simpleAlert);
+    String id = createAlert(simpleAlert);
 
     triggerAndCompleteCheckJob(id);
 
     //when
-    engineRule.startProcessInstance(processDefinitionId);
+    engineRule.startProcessInstance(processInstance.getDefinitionId());
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
     greenMail.purgeEmailFromAllMailboxes();
@@ -124,24 +119,22 @@ public class AlertStateChangeIT extends AbstractAlertSchedulerIT {
     //given
     setEmailConfiguration();
 
-    String token = embeddedOptimizeRule.getAuthenticationToken();
     long daysToShift = 0L;
     long durationInSec = 2L;
 
     ProcessInstanceEngineDto processInstance = deployWithTimeShift(daysToShift, durationInSec);
 
-    String processDefinitionId = processInstance.getDefinitionId();
     // when
-    String reportId = createAndStoreDurationNumberReport(processDefinitionId);
+    String reportId = createAndStoreDurationNumberReport(processInstance);
     AlertCreationDto simpleAlert = createAlertWithReminder(reportId);
     simpleAlert.setFixNotification(true);
 
-    String id = createAlert(token, simpleAlert);
+    String id = createAlert(simpleAlert);
 
     triggerAndCompleteCheckJob(id);
 
     //when
-    engineRule.startProcessInstance(processDefinitionId);
+    engineRule.startProcessInstance(processInstance.getDefinitionId());
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 

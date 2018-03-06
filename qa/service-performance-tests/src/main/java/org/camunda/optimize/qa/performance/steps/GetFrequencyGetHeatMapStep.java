@@ -6,9 +6,10 @@ import org.camunda.optimize.dto.optimize.query.report.result.MapReportResultDto;
 import org.camunda.optimize.qa.performance.framework.PerfTestContext;
 import org.camunda.optimize.qa.performance.framework.PerfTestStepResult;
 import ru.yandex.qatools.allure.annotations.Step;
-import org.camunda.optimize.test.util.ReportDataHelper;
 
 import java.util.List;
+
+import static org.camunda.optimize.test.util.ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport;
 
 public class GetFrequencyGetHeatMapStep extends GetHeatMapStep {
 
@@ -28,7 +29,7 @@ public class GetFrequencyGetHeatMapStep extends GetHeatMapStep {
   }
 
   @Override
-  protected ReportDataDto createRequest(String processDefinitionId) {
-    return ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinitionId);
+  protected ReportDataDto createRequest(String processDefinitionKey, String processDefinitionVersion) {
+    return createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinitionKey, processDefinitionVersion);
   }
 }

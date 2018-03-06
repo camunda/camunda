@@ -3,7 +3,6 @@ package org.camunda.optimize.service.es.retrieval;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.ViewDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.DateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
@@ -16,35 +15,29 @@ import org.camunda.optimize.dto.optimize.query.report.result.raw.RawDataReportRe
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.util.ReportDataHelper;
 import org.elasticsearch.action.get.GetResponse;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
-import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_RAW_DATA_OPERATION;
 import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.test.util.ReportDataHelper.createReportDataViewRawAsTable;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -53,7 +46,8 @@ import static org.hamcrest.core.IsNull.notNullValue;
 
 public class ReportHandlingIT {
 
-  public static final String FOO_PROCESS_DEFINITION_ID = "fooProcessDefinitionId";
+  private static final String FOO_PROCESS_DEFINITION_KEY = "fooProcessDefinitionKey";
+  private static final String FOO_PROCESS_DEFINITION_VERSION = "1";
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 
@@ -85,7 +79,7 @@ public class ReportHandlingIT {
   }
 
   @Test
-  public void writeAndThenReadGivesTheSameResult() throws IOException {
+  public void writeAndThenReadGivesTheSameResult() {
     // given
     String id = createNewReport();
 
@@ -99,7 +93,7 @@ public class ReportHandlingIT {
   }
 
   @Test
-  public void createAndGetSeveralReports() throws IOException {
+  public void createAndGetSeveralReports() {
     // given
     String id = createNewReport();
     String id2 = createNewReport();
@@ -121,7 +115,7 @@ public class ReportHandlingIT {
   }
 
   @Test
-  public void noReportAvailableReturnsEmptyList() throws IOException {
+  public void noReportAvailableReturnsEmptyList() {
 
     // when
     List<ReportDefinitionDto> reports = getAllReports();
@@ -132,11 +126,10 @@ public class ReportHandlingIT {
   }
 
   @Test
-  public void updateReport() throws Exception {
+  public void updateReport() {
     // given
     String id = createNewReport();
     ReportDataDto reportData = new ReportDataDto();
-    reportData.setProcessDefinitionId("procdef-123");
     reportData.setProcessDefinitionKey("procdef");
     reportData.setProcessDefinitionVersion("123");
     reportData.setFilter(Collections.emptyList());
@@ -158,7 +151,6 @@ public class ReportHandlingIT {
     // then
     assertThat(reports.size(), is(1));
     ReportDefinitionDto newReport = reports.get(0);
-    assertThat(newReport.getData().getProcessDefinitionId(), is("procdef-123"));
     assertThat(newReport.getData().getProcessDefinitionKey(), is("procdef"));
     assertThat(newReport.getData().getProcessDefinitionVersion(), is("123"));
     assertThat(newReport.getData().getConfiguration(), is("aRandomConfiguration"));
@@ -211,11 +203,12 @@ public class ReportHandlingIT {
   }
 
   @Test
-  public void updateReportWithFilters() throws Exception {
+  public void updateReportWithFilters() {
     // given
     String id = createNewReport();
     ReportDataDto reportData = new ReportDataDto();
-    reportData.setProcessDefinitionId("procdef-123");
+    reportData.setProcessDefinitionKey("procdef");
+    reportData.setProcessDefinitionVersion("123");
 
     reportData.getFilter().addAll(createDateFilter());
     reportData.getFilter().addAll(createVariableFilter());
@@ -273,7 +266,7 @@ public class ReportHandlingIT {
   }
 
   @Test
-  public void doNotUpdateNullFieldsInReport() throws Exception {
+  public void doNotUpdateNullFieldsInReport() {
     // given
     String id = createNewReport();
     ReportDefinitionDto report = constructReportWithFakePD();
@@ -294,10 +287,11 @@ public class ReportHandlingIT {
   }
 
   @Test
-  public void reportEvaluationReturnsMetaData() throws Exception {
+  public void reportEvaluationReturnsMetaData() {
     // given
     String reportId = createNewReport();
-    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(FOO_PROCESS_DEFINITION_ID);
+    ReportDataDto reportData =
+      createReportDataViewRawAsTable(FOO_PROCESS_DEFINITION_KEY, FOO_PROCESS_DEFINITION_VERSION);
     ReportDefinitionDto report = new ReportDefinitionDto();
     report.setData(reportData);
     report.setName("name");
@@ -318,7 +312,7 @@ public class ReportHandlingIT {
   }
 
   @Test
-  public void resultListIsSortedByName() throws IOException {
+  public void resultListIsSortedByName() {
     // given
     String id1 = createNewReport();
     shiftTimeByOneSecond();
@@ -356,7 +350,7 @@ public class ReportHandlingIT {
   }
 
   @Test
-  public void resultListIsSortedByLastModified() throws IOException {
+  public void resultListIsSortedByLastModified() {
     // given
     String id1 = createNewReport();
     shiftTimeByOneSecond();
@@ -388,7 +382,7 @@ public class ReportHandlingIT {
   }
 
   @Test
-  public void resultListIsReversed() throws Exception {
+  public void resultListIsReversed() {
     // given
     String id1 = createNewReport();
     shiftTimeByOneSecond();
@@ -412,7 +406,7 @@ public class ReportHandlingIT {
   }
 
   @Test
-  public void resultListIsCutByAnOffset() throws Exception {
+  public void resultListIsCutByAnOffset() {
     // given
     String id1 = createNewReport();
     shiftTimeByOneSecond();
@@ -444,7 +438,7 @@ public class ReportHandlingIT {
   }
 
   @Test
-  public void resultListIsCutByMaxResults() throws Exception {
+  public void resultListIsCutByMaxResults() {
     // given
     String id1 = createNewReport();
     shiftTimeByOneSecond();
@@ -467,7 +461,7 @@ public class ReportHandlingIT {
   }
 
   @Test
-  public void combineAllResultListQueryParameterRestrictions() throws Exception {
+  public void combineAllResultListQueryParameterRestrictions() {
     // given
     String id1 = createNewReport();
     shiftTimeByOneSecond();
@@ -530,11 +524,11 @@ public class ReportHandlingIT {
     return response.readEntity(RawDataReportResultDto.class);
   }
 
-  private List<ReportDefinitionDto> getAllReports() throws IOException {
+  private List<ReportDefinitionDto> getAllReports() {
     return getAllReportsWithQueryParam(new HashMap<>());
   }
 
-  private List<ReportDefinitionDto> getAllReportsWithQueryParam(Map<String, Object> queryParams) throws IOException {
+  private List<ReportDefinitionDto> getAllReportsWithQueryParam(Map<String, Object> queryParams) {
     String token = embeddedOptimizeRule.getAuthenticationToken();
       WebTarget webTarget = embeddedOptimizeRule.target("report");
     for (Map.Entry<String, Object> queryParam : queryParams.entrySet()) {
