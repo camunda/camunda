@@ -26,7 +26,7 @@ import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
-import io.zeebe.raft.event.RaftConfiguration;
+import io.zeebe.raft.event.RaftConfigurationEvent;
 import io.zeebe.raft.protocol.AppendRequest;
 import io.zeebe.raft.protocol.AppendResponse;
 import io.zeebe.util.allocation.AllocatedBuffer;
@@ -41,7 +41,7 @@ public class BufferedLogStorageAppender
     public static final int INITIAL_CAPACITY = 32 * 1024;
 
     private final BrokerEventMetadata metadata = new BrokerEventMetadata();
-    private final RaftConfiguration configuration = new RaftConfiguration();
+    private final RaftConfigurationEvent configuration = new RaftConfigurationEvent();
     private final AppendResponse appendResponse = new AppendResponse();
 
     private final Raft raft;

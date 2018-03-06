@@ -30,9 +30,10 @@ import io.zeebe.logstreams.log.*;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.raft.Raft;
+import io.zeebe.raft.RaftConfiguration;
 import io.zeebe.raft.RaftStateListener;
-import io.zeebe.raft.event.RaftConfiguration;
-import io.zeebe.raft.event.RaftConfigurationMember;
+import io.zeebe.raft.event.RaftConfigurationEvent;
+import io.zeebe.raft.event.RaftConfigurationEventMember;
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.*;
@@ -47,10 +48,11 @@ public class RaftRule extends ExternalResource implements RaftStateListener
     public static final FragmentHandler NOOP_FRAGMENT_HANDLER = (buffer, offset, length, streamId, isMarkedFailed) -> FragmentHandler.CONSUME_FRAGMENT_RESULT;
 
     protected final ActorSchedulerRule actorSchedulerRule;
+    protected final RaftConfiguration configuration;
     protected final SocketAddress socketAddress;
     protected final String topicName;
     protected final int partition;
-    protected final RaftConfiguration configuration = new RaftConfiguration();
+    protected final RaftConfigurationEvent configurationEvent = new RaftConfigurationEvent();
     protected final LogStreamWriterImpl writer = new LogStreamWriterImpl();
     protected final List<RaftRule> members;
     protected final BrokerEventMetadata metadata = new BrokerEventMetadata();
@@ -76,7 +78,13 @@ public class RaftRule extends ExternalResource implements RaftStateListener
 
     public RaftRule(final ActorSchedulerRule actorSchedulerRule, final String host, final int port, final String topicName, final int partition, final RaftRule... members)
     {
+        this(actorSchedulerRule, new RaftConfiguration(), host, port, topicName, partition, members);
+    }
+
+    public RaftRule(final ActorSchedulerRule actorSchedulerRule, final RaftConfiguration configuration, final String host, final int port, final String topicName, final int partition, final RaftRule... members)
+    {
         this.actorSchedulerRule = actorSchedulerRule;
+        this.configuration = configuration;
         this.socketAddress = new SocketAddress(host, port);
         this.topicName = topicName;
         this.partition = partition;
@@ -136,7 +144,7 @@ public class RaftRule extends ExternalResource implements RaftStateListener
 
         persistentStorage = new InMemoryRaftPersistentStorage(logStream);
 
-        raft = new Raft(socketAddress, logStream, serverTransport, clientTransport, persistentStorage);
+        raft = new Raft(configuration, socketAddress, logStream, serverTransport, clientTransport, persistentStorage);
         raft.registerRaftStateListener(this);
 
         raft.addMembers(members.stream().map(RaftRule::getSocketAddress).collect(Collectors.toList()));
@@ -202,6 +210,11 @@ public class RaftRule extends ExternalResource implements RaftStateListener
     public Raft getRaft()
     {
         return raft;
+    }
+
+    public RaftConfiguration getConfiguration()
+    {
+        return raft.getConfiguration();
     }
 
     public RaftState getState()
@@ -379,15 +392,15 @@ public class RaftRule extends ExternalResource implements RaftStateListener
 
             if (event.getRaftTerm() == term && metadata.getEventType() == EventType.RAFT_EVENT)
             {
-                event.readValue(configuration);
+                event.readValue(configurationEvent);
 
-                final Iterator<RaftConfigurationMember> configurationMembers = configuration.members().iterator();
+                final Iterator<RaftConfigurationEventMember> configurationMembers = configurationEvent.members().iterator();
 
                 final Set<SocketAddress> found = new HashSet<>();
 
                 while (configurationMembers.hasNext())
                 {
-                    final RaftConfigurationMember configurationMember = configurationMembers.next();
+                    final RaftConfigurationEventMember configurationMember = configurationMembers.next();
                     found.add(configurationMember.getSocketAddress());
                 }
 

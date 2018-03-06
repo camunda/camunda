@@ -19,19 +19,18 @@ import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.ArrayProperty;
 import io.zeebe.msgpack.value.ValueArray;
 
-public class RaftConfiguration extends UnpackedObject
+public class RaftConfigurationEvent extends UnpackedObject
 {
-    protected RaftConfigurationMember raftConfigurationMember = new RaftConfigurationMember();
-    protected ArrayProperty<RaftConfigurationMember> membersProp = new ArrayProperty<>(
-        "members",
-        raftConfigurationMember);
+    protected RaftConfigurationEventMember raftConfigurationEventMember = new RaftConfigurationEventMember();
+    protected ArrayProperty<RaftConfigurationEventMember> membersProp = new ArrayProperty<>(
+        "members", raftConfigurationEventMember);
 
-    public RaftConfiguration()
+    public RaftConfigurationEvent()
     {
         declareProperty(membersProp);
     }
 
-    public ValueArray<RaftConfigurationMember> members()
+    public ValueArray<RaftConfigurationEventMember> members()
     {
         return membersProp;
     }

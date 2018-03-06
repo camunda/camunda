@@ -28,7 +28,7 @@ public class RaftEvent
 
     public final LogStreamWriter logStreamWriter = new LogStreamWriterImpl();
     public final BrokerEventMetadata metadata = new BrokerEventMetadata();
-    public final RaftConfiguration configuration = new RaftConfiguration();
+    public final RaftConfigurationEvent configuration = new RaftConfigurationEvent();
 
     public RaftEvent reset()
     {
@@ -48,7 +48,7 @@ public class RaftEvent
 
         configuration.reset();
 
-        final ValueArray<RaftConfigurationMember> configurationMembers = configuration.members();
+        final ValueArray<RaftConfigurationEventMember> configurationMembers = configuration.members();
 
         // add self also to configuration
         configurationMembers.add().setSocketAddress(raft.getSocketAddress());

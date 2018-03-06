@@ -23,7 +23,7 @@ import io.zeebe.logstreams.impl.LogStreamController;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.msgpack.value.ValueArray;
 import io.zeebe.raft.controller.*;
-import io.zeebe.raft.event.RaftConfigurationMember;
+import io.zeebe.raft.event.RaftConfigurationEventMember;
 import io.zeebe.raft.protocol.*;
 import io.zeebe.raft.state.*;
 import io.zeebe.transport.*;
@@ -49,11 +49,8 @@ import org.slf4j.Logger;
 public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
 {
 
-    public static final int HEARTBEAT_INTERVAL_MS = 250;
-    public static final int ELECTION_INTERVAL_MS = 1000;
-    public static final int FLUSH_INTERVAL_MS = 10;
-
     // environment
+    private final RaftConfiguration configuration;
     private final SocketAddress socketAddress;
     private final ClientTransport clientTransport;
     private final Logger logger;
@@ -98,8 +95,9 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
     private final AppendRequest appendRequest = new AppendRequest();
     private final AppendResponse appendResponse = new AppendResponse();
 
-    public Raft(final SocketAddress socketAddress, final LogStream logStream, final BufferingServerTransport serverTransport, final ClientTransport clientTransport, final RaftPersistentStorage persistentStorage)
+    public Raft(final RaftConfiguration configuration, final SocketAddress socketAddress, final LogStream logStream, final BufferingServerTransport serverTransport, final ClientTransport clientTransport, final RaftPersistentStorage persistentStorage)
     {
+        this.configuration = configuration;
         this.socketAddress = socketAddress;
         this.logStream = logStream;
         this.clientTransport = clientTransport;
@@ -133,6 +131,8 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
 
         // immediately try to join cluster
         joinController.open();
+
+        logger.info("Created raft with configuration: " + this.configuration);
     }
 
 
@@ -347,6 +347,11 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
 
     // environment
 
+    public RaftConfiguration getConfiguration()
+    {
+        return configuration;
+    }
+
     public SocketAddress getSocketAddress()
     {
         return socketAddress;
@@ -496,14 +501,14 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
     /**
      * Replace existing members know by this node with new list of members
      */
-    public void setMembers(final ValueArray<RaftConfigurationMember> members)
+    public void setMembers(final ValueArray<RaftConfigurationEventMember> members)
     {
         this.members.forEach(RaftMember::close);
         this.members.clear();
         this.memberLookup.clear();
         persistentStorage.clearMembers();
 
-        final Iterator<RaftConfigurationMember> iterator = members.iterator();
+        final Iterator<RaftConfigurationEventMember> iterator = members.iterator();
         while (iterator.hasNext())
         {
             addMember(iterator.next().getSocketAddress());
@@ -654,7 +659,8 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
      */
     public long nextElectionTimeout()
     {
-        return ClockUtil.getCurrentTimeInMillis() + ELECTION_INTERVAL_MS + (Math.abs(random.nextInt()) % ELECTION_INTERVAL_MS);
+        final int electionIntervalMs = configuration.getElectionIntervalMs();
+        return ClockUtil.getCurrentTimeInMillis() + electionIntervalMs + (Math.abs(random.nextInt()) % electionIntervalMs);
     }
 
     /**
@@ -662,7 +668,7 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
      */
     public long nextHeartbeat()
     {
-        return ClockUtil.getCurrentTimeInMillis() + HEARTBEAT_INTERVAL_MS;
+        return ClockUtil.getCurrentTimeInMillis() + configuration.getHeartbeatIntervalMs();
     }
 
     /**
@@ -694,7 +700,7 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
      */
     public long nextFlushTimeout()
     {
-        return ClockUtil.getCurrentTimeInMillis() + FLUSH_INTERVAL_MS;
+        return ClockUtil.getCurrentTimeInMillis() + configuration.getFlushIntervalMs();
     }
 
     /**
@@ -776,4 +782,5 @@ public class Raft implements Actor, ServerMessageHandler, ServerRequestHandler
     {
         return "raft-" + logStream.getLogName() + "-" + socketAddress.host() + ":" + socketAddress.port();
     }
+
 }
