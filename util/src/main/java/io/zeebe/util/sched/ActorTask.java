@@ -193,6 +193,7 @@ public class ActorTask
                     final ActorJob terminatedJob = currentJob;
                     currentJob = terminatedJob.getNext();
 
+
                     if (terminatedJob.isTriggeredBySubscription())
                     {
                         final ActorSubscription subscription = terminatedJob.getSubscription();
@@ -344,10 +345,14 @@ public class ActorTask
             this.lifecyclePhase = ActorLifecyclePhase.CLOSE_REQUESTED;
 
             // discard next jobs
-            ActorJob next = currentJob;
-            while ((next = next.next) != null)
+            ActorJob current = currentJob;
+            ActorJob next;
+            while ((next = current.next) != null)
             {
                 next.failFuture("Actor is closed");
+
+                current.next = null;
+                current = next;
             }
 
             currentJob.next = null;

@@ -21,16 +21,18 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
 
 import io.zeebe.util.collection.Tuple;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
 
 public class ActorFutureTest
 {
@@ -481,5 +483,65 @@ public class ActorFutureTest
         // then
         assertThatThrownBy(() -> CompletableActorFuture.completedExceptionally(result))
             .hasMessageContaining("Throwable must not be null.");
+    }
+
+    @Test
+    public void shouldInvokeCallbacksAfterCloseIsCalled()
+    {
+        // given
+        final CompletableActorFuture<Object> f1 = new CompletableActorFuture<>();
+        final CompletableActorFuture<Object> f2 = new CompletableActorFuture<>();
+
+        final Object result1 = new Object();
+        final Object result2 = new Object();
+
+        final TestActor actor = new TestActor();
+
+        schedulerRule.submitActor(actor);
+
+        actor.awaitFuture(f1);
+        actor.awaitFuture(f2);
+        schedulerRule.workUntilDone();
+
+        // when
+        /*
+         * Explanation:
+         *   - #close submits the close job
+         *   - #workUntilDone picks up the close job and before execution polls the future subscriptions,
+         *     therefore appends the subscription callback jobs (callback1, callback2) to the close job
+         *     => job queue: close => callback1 => callback2
+         *   - the close job detaches the jobs again, but leaves the other jobs connected
+         *     => job queue: close; detached: callback1 => callback2
+         *   - after the close job finishes, the subscriptions are polled again, so the callback jobs are submitted again
+         *     => job queue: callback1 => callback2 => callback2
+         *   - callback2 is now connected to itself and is therefore executed twice in succession
+         */
+        f1.complete(result1);
+        f2.complete(result2);
+        actor.close();
+        schedulerRule.workUntilDone();
+
+        // then
+        assertThat(actor.receivedObjects).containsExactly(result1, result2);
+    }
+
+    class TestActor extends ZbActor
+    {
+        List<Object> receivedObjects = new ArrayList<>();
+
+        @Override
+        protected void onActorStarted()
+        {
+        }
+
+        public void awaitFuture(ActorFuture<Object> f)
+        {
+            actor.call(() -> actor.runOnCompletion(f, (o, t) -> receivedObjects.add(o)));
+        }
+
+        public void close()
+        {
+            actor.close();
+        }
     }
 }
