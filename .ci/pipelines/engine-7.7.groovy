@@ -30,10 +30,6 @@ pipeline {
     NODE_ENV = "ci"
   }
 
-  triggers {
-    upstream('camunda-optimize/master', hudson.model.Result.fromString('SUCCESS'))
-  }
-
   options {
     // General Jenkins job properties
     buildDiscarder(logRotator(numToKeepStr:'10'))
