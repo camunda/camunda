@@ -31,9 +31,9 @@ pipeline {
   }
 
   triggers {
-    scm('@daily')
+    upstream('camunda-optimize/master', 'SUCCESS')
   }
-
+  
   options {
     // General Jenkins job properties
     buildDiscarder(logRotator(numToKeepStr:'10'))
