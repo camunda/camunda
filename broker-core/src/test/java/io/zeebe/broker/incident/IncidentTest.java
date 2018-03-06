@@ -802,7 +802,19 @@ public class IncidentTest
         // then
         final SubscribedEvent taskEvent = testClient.receiveSingleEvent(taskEvents("FAILED"));
         final SubscribedEvent activityEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_ACTIVATED"));
-        final SubscribedEvent incidentEvent = testClient.receiveSingleEvent(incidentEvents("DELETED"));
+        SubscribedEvent incidentEvent = testClient.receiveSingleEvent(incidentEvents("DELETE"));
+
+        assertThat(incidentEvent.key()).isGreaterThan(0);
+        assertThat(incidentEvent.event())
+            .containsEntry("errorType", ErrorType.TASK_NO_RETRIES.name())
+            .containsEntry("errorMessage", "No more retries left.")
+            .containsEntry("bpmnProcessId", "process")
+            .containsEntry("workflowInstanceKey", workflowInstanceKey)
+            .containsEntry("activityId", "failingTask")
+            .containsEntry("activityInstanceKey", activityEvent.key())
+            .containsEntry("taskKey", taskEvent.key());
+
+        incidentEvent = testClient.receiveSingleEvent(incidentEvents("DELETED"));
 
         assertThat(incidentEvent.key()).isGreaterThan(0);
         assertThat(incidentEvent.event())
@@ -832,7 +844,19 @@ public class IncidentTest
 
         // then
         final SubscribedEvent taskEvent = testClient.receiveSingleEvent(taskEvents("FAILED"));
-        final SubscribedEvent incidentEvent = testClient.receiveSingleEvent(incidentEvents("DELETED"));
+        SubscribedEvent incidentEvent = testClient.receiveSingleEvent(incidentEvents("DELETE"));
+
+        assertThat(incidentEvent.key()).isEqualTo(incidentCreatedEvent.key());
+        assertThat(incidentEvent.event())
+            .containsEntry("errorType", ErrorType.TASK_NO_RETRIES.name())
+            .containsEntry("errorMessage", "No more retries left.")
+            .containsEntry("bpmnProcessId", "process")
+            .containsEntry("workflowInstanceKey", workflowInstanceKey)
+            .containsEntry("activityId", "failingTask")
+            .containsEntry("activityInstanceKey", incidentEvent.event().get("activityInstanceKey"))
+            .containsEntry("taskKey", taskEvent.key());
+
+        incidentEvent = testClient.receiveSingleEvent(incidentEvents("DELETED"));
 
         assertThat(incidentEvent.key()).isEqualTo(incidentCreatedEvent.key());
         assertThat(incidentEvent.event())

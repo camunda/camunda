@@ -656,6 +656,11 @@ public class IncidentStreamProcessor implements StreamProcessor
 
                 if (incidentMap.getState() == STATE_CREATED)
                 {
+                    final LoggedEvent incidentCreatedEvent = findEvent(incidentMap.getIncidentEventPosition());
+
+                    incidentEvent.reset();
+                    incidentCreatedEvent.readValue(incidentEvent);
+
                     incidentEvent.setState(IncidentState.DELETE);
 
                     isResolved = true;
