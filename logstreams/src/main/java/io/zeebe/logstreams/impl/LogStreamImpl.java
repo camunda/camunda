@@ -104,13 +104,6 @@ public final class LogStreamImpl extends ZbActor implements LogStream
     }
 
     @Override
-    protected void onActorStarted()
-    {
-        actor.onCondition("keep-alive", () ->
-        { });
-    }
-
-    @Override
     public LogBlockIndexController getLogBlockIndexController()
     {
         return logBlockIndexController;
