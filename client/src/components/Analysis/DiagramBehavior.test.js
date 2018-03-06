@@ -29,10 +29,10 @@ const viewer = {
 const props = {
   viewer,
   data: {
-    flowNodes: {
+    result: {
       endEvent: 3
     },
-    piCount: 5
+    processInstanceCount: 5
   }
 };
 

@@ -104,7 +104,7 @@ export default class DiagramBehavior extends React.Component {
   }
 
   addEndEventOverlay(element) {
-    const {viewer, data: {flowNodes, piCount}} = this.props;
+    const {viewer, data: {result: flowNodes, processInstanceCount: piCount}} = this.props;
 
     const overlays = viewer.get('overlays');
     const value = flowNodes[element.id] || 0;
