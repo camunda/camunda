@@ -31,7 +31,7 @@ pipeline {
   }
 
   triggers {
-    upstream('camunda-optimize/master', 'SUCCESS')
+    upstream('camunda-optimize/master', hudson.model.Result.fromString('SUCCESS'))
   }
 
   options {

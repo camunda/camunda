@@ -12,10 +12,6 @@ pipelineJob('Engine 7.7') {
 
   jdk '(Default)'
 
-  triggers {
-    upstream('camunda-optimize/master', 'SUCCESS')
-  }
-
   publishers {
     extendedEmail {
       triggers {
