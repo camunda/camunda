@@ -20,10 +20,11 @@ jest.mock('components', () => {
 jest.mock('services', () => {return {
   reportLabelMap: {
     objectToLabel: () => 'foo',
-    objectToKey: () => 'foo',
+    objectToKey: (obj) => obj.operation || 'foo',
     keyToLabel: () => 'foo',
-    getOptions: () => [{key: 'foo',label: 'foo',allowedNext:['not_foo']}],
+    getOptions: () => [{key: 'foo',label: 'foo'}],
     keyToObject: (key) => key,
+    getAllowedOptions: () => {return {foo: {group: ['viz']}}}
   }
 }});
 
@@ -56,14 +57,14 @@ it('should toggle target value view mode off when a setting changes', () => {
   expect(spy.mock.calls[0][0].configuration.targetValue.active).toBe(false);
 });
 
-it('should disable the groupBy and visualizeAs Selects if view is not selected', () => {
+it('should disable the groupBy and visualization Selects if view is not selected', () => {
   const node = mount(<ControlPanel {...data} view=''/>);
 
   expect(node.find('.ControlPanel__select').at(2)).toBeDisabled();
   expect(node.find('.ControlPanel__select').at(3)).toBeDisabled();
 });
 
-it('should not disable the groupBy and visualizeAs Selects if view is selected', () => {
+it('should not disable the groupBy and visualization Selects if view is selected', () => {
   const node = mount(<ControlPanel {...data}/>);
 
   expect(node.find('.ControlPanel__select').at(2)).not.toBeDisabled();

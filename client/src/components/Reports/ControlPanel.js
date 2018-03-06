@@ -33,38 +33,38 @@ export default class ControlPanel extends React.Component {
   }
 
   componentDidUpdate(prevProps) {
-    if (this.props.groupBy !== prevProps.groupBy) {
-      this.checkCombination('groupBy');
-    } else if(this.props.view !== prevProps.view) {
-      this.checkCombination('view')
+    if (reportLabelMap.objectToKey(this.props.view, 'view') !== reportLabelMap.objectToKey(prevProps.view, 'view')
+    ||  reportLabelMap.objectToKey(this.props.groupBy, 'groupBy') !== reportLabelMap.objectToKey(prevProps.groupBy, 'groupBy')) {
+      this.checkCombination();
     }
   }
 
-  checkCombination = type => {
-    const option = reportLabelMap.getOptions(type).find((v) => {
-      return v.key === reportLabelMap.objectToKey(this.props[type], type);
-    });
-    const nextFieldObject = this.props[this.getNextField(type)];
-    const nextFieldType = this.getNextField(type);
-    const nextFieldKey = reportLabelMap.objectToKey(nextFieldObject, nextFieldType);
-
-    if (option && !option.allowedNext.includes(nextFieldKey)) {
-      if(this.getNextField(nextFieldType)) {
-        this.props.onChange({
-          [nextFieldType]: reportLabelMap.keyToObject('', nextFieldType),
-          [this.getNextField(nextFieldType)]: reportLabelMap.keyToObject('', this.getNextField(nextFieldType))
-        });
-      } else {
-        this.props.onChange({[nextFieldType]: ''});
-      }
+  checkCombination = () => {
+    const allowedOptionsMatrix = reportLabelMap.getAllowedOptions();
+    const view = reportLabelMap.objectToKey(this.props.view, 'view');
+    const groupBy = reportLabelMap.objectToKey(this.props.groupBy, 'groupBy')
+    const visualization = reportLabelMap.objectToKey(this.props.visualization, 'visualization')
+    if(!allowedOptionsMatrix[view]) {
+      this.props.onChange({
+        view: reportLabelMap.keyToObject('', 'view'),
+        groupBy: reportLabelMap.keyToObject('', 'groupBy'),
+        visualization: reportLabelMap.keyToObject('', 'visualization')
+      });
+      return;
     }
-  }
 
-  getNextField = (type) => {
-    switch (type) {
-      case 'groupBy': return 'visualization';
-      case 'view':  return 'groupBy';
-      default: return null;
+    if(!allowedOptionsMatrix[view][groupBy]) {
+      this.props.onChange({
+        groupBy: reportLabelMap.keyToObject('', 'groupBy'),
+        visualization: reportLabelMap.keyToObject('', 'visualization')
+      });
+      return;
+    }
+
+    if(!allowedOptionsMatrix[view][groupBy].includes(visualization)) {
+      this.props.onChange({
+        visualization: reportLabelMap.keyToObject('', 'visualization')
+      });
     }
   }
 
@@ -98,7 +98,7 @@ export default class ControlPanel extends React.Component {
       return prop === '';
     }
   }
-  
+
   isViewSelected = () => {
     return !this.isEmpty(this.props.view);
   }
@@ -113,7 +113,7 @@ export default class ControlPanel extends React.Component {
         <li className='ControlPanel__item ControlPanel__item--select'>
           <label htmlFor='ControlPanel__process-definition' className='ControlPanel__label'>Process definition</label>
           <Popover className='ControlPanel__popover' title={ this.createTitle()}>
-            <ProcessDefinitionSelection {...this.definitionConfig()} xml={this.props.configuration.xml} 
+            <ProcessDefinitionSelection {...this.definitionConfig()} xml={this.props.configuration.xml}
               onChange={this.props.onChange} renderDiagram={true} enableAllVersionSelection={true}/>
           </Popover>
         </li>
@@ -135,7 +135,7 @@ export default class ControlPanel extends React.Component {
           <label htmlFor='ControlPanel__visualize-as' className='ControlPanel__label'>Visualize as</label>
           <Select disabled={!this.isGroupBySelected() || !this.isViewSelected()} className='ControlPanel__select' name='ControlPanel__visualize-as' value={this.props.visualization} onChange={this.changeVisualization}>
             {addSelectionOption()}
-            {this.isGroupBySelected() && this.isViewSelected() && renderOptions('visualizeAs')}
+            {this.isGroupBySelected() && this.isViewSelected() && renderOptions('visualization')}
           </Select>
         </li>
         <li className='ControlPanel__item ControlPanel__item--filter'>
