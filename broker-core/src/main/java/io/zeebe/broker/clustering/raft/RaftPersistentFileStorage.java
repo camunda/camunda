@@ -35,7 +35,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 public class RaftPersistentFileStorage implements RaftPersistentStorage
 {
 
-    private final RaftConfiguration configuration = new RaftConfiguration();
+    private final RaftConfigurationMetadata configuration = new RaftConfigurationMetadata();
 
 
     private final File file;
@@ -108,10 +108,10 @@ public class RaftPersistentFileStorage implements RaftPersistentStorage
     {
         final List<SocketAddress> members = new ArrayList<>();
 
-        final Iterator<RaftConfigurationMember> iterator = configuration.membersProp.iterator();
+        final Iterator<RaftConfigurationMetadataMember> iterator = configuration.membersProp.iterator();
         while (iterator.hasNext())
         {
-            final RaftConfigurationMember member = iterator.next();
+            final RaftConfigurationMetadataMember member = iterator.next();
             final DirectBuffer hostBuffer = member.getHost();
 
             final SocketAddress socketAddress = new SocketAddress();

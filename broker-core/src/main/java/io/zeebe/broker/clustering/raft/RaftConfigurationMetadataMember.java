@@ -22,12 +22,12 @@ import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import org.agrona.DirectBuffer;
 
-public class RaftConfigurationMember extends UnpackedObject
+public class RaftConfigurationMetadataMember extends UnpackedObject
 {
     protected StringProperty hostProp = new StringProperty("host");
     protected IntegerProperty portProp = new IntegerProperty("port");
 
-    public RaftConfigurationMember()
+    public RaftConfigurationMetadataMember()
     {
         this
             .declareProperty(hostProp)
@@ -39,7 +39,7 @@ public class RaftConfigurationMember extends UnpackedObject
         return hostProp.getValue();
     }
 
-    public RaftConfigurationMember setHost(final DirectBuffer host, final int offset, final int length)
+    public RaftConfigurationMetadataMember setHost(final DirectBuffer host, final int offset, final int length)
     {
         this.hostProp.setValue(host, offset, length);
         return this;
@@ -50,7 +50,7 @@ public class RaftConfigurationMember extends UnpackedObject
         return portProp.getValue();
     }
 
-    public RaftConfigurationMember setPort(final int port)
+    public RaftConfigurationMetadataMember setPort(final int port)
     {
         portProp.setValue(port);
         return this;

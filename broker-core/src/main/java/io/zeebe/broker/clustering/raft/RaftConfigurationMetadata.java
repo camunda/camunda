@@ -34,7 +34,7 @@ import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.transport.SocketAddress;
 
-public class RaftConfiguration extends UnpackedObject
+public class RaftConfigurationMetadata extends UnpackedObject
 {
     private static final DirectBuffer EMPTY_STRING = new UnsafeBuffer(0, 0);
 
@@ -45,11 +45,11 @@ public class RaftConfiguration extends UnpackedObject
     protected StringProperty votedForHostProp = new StringProperty("votedForHost", "");
     protected IntegerProperty votedForPortProp = new IntegerProperty("votedForPort", 0);
 
-    protected ArrayProperty<RaftConfigurationMember> membersProp = new ArrayProperty<>(
+    protected ArrayProperty<RaftConfigurationMetadataMember> membersProp = new ArrayProperty<>(
         "members",
-        new RaftConfigurationMember());
+        new RaftConfigurationMetadataMember());
 
-    public RaftConfiguration()
+    public RaftConfigurationMetadata()
     {
         declareProperty(partitionIdProp);
         declareProperty(topicNameProp);
@@ -134,10 +134,10 @@ public class RaftConfiguration extends UnpackedObject
     {
         final List<SocketAddress> members = new ArrayList<>();
 
-        final Iterator<RaftConfigurationMember> iterator = membersProp.iterator();
+        final Iterator<RaftConfigurationMetadataMember> iterator = membersProp.iterator();
         while (iterator.hasNext())
         {
-            final RaftConfigurationMember configurationMember = iterator.next();
+            final RaftConfigurationMetadataMember configurationMember = iterator.next();
             final DirectBuffer hostBuffer = configurationMember.getHost();
 
 

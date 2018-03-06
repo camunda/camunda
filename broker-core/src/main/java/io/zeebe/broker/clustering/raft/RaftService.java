@@ -22,6 +22,7 @@ import java.util.concurrent.CompletableFuture;
 
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.raft.Raft;
+import io.zeebe.raft.RaftConfiguration;
 import io.zeebe.raft.RaftPersistentStorage;
 import io.zeebe.raft.RaftStateListener;
 import io.zeebe.servicecontainer.Injector;
@@ -37,6 +38,7 @@ import io.zeebe.util.actor.ActorScheduler;
 public class RaftService implements Service<Raft>
 {
 
+    private final RaftConfiguration configuration;
     private final SocketAddress socketAddress;
     private final LogStream logStream;
     private final List<SocketAddress> members;
@@ -49,8 +51,9 @@ public class RaftService implements Service<Raft>
     private Raft raft;
     private ActorReference actorReference;
 
-    public RaftService(final SocketAddress socketAddress, final LogStream logStream, final List<SocketAddress> members, final RaftPersistentStorage persistentStorage, RaftStateListener raftStateListener)
+    public RaftService(final RaftConfiguration configuration, final SocketAddress socketAddress, final LogStream logStream, final List<SocketAddress> members, final RaftPersistentStorage persistentStorage, final RaftStateListener raftStateListener)
     {
+        this.configuration = configuration;
         this.socketAddress = socketAddress;
         this.logStream = logStream;
         this.members = members;
@@ -67,7 +70,7 @@ public class RaftService implements Service<Raft>
             {
                 final BufferingServerTransport serverTransport = serverTransportInjector.getValue();
                 final ClientTransport clientTransport = clientTransportInjector.getValue();
-                raft = new Raft(socketAddress, logStream, serverTransport, clientTransport, persistentStorage);
+                raft = new Raft(configuration, socketAddress, logStream, serverTransport, clientTransport, persistentStorage);
                 raft.registerRaftStateListener(raftStateListener);
 
                 raft.addMembers(members);

@@ -286,7 +286,7 @@ public class ClusterManager implements Actor
     public void createRaft(final SocketAddress socketAddress, final LogStream logStream, final List<SocketAddress> members,
                            final RaftPersistentStorage persistentStorage)
     {
-        final RaftService raftService = new RaftService(socketAddress, logStream, members, persistentStorage, clusterMemberListManager);
+        final RaftService raftService = new RaftService(transportComponentCfg.raft, socketAddress, logStream, members, persistentStorage, clusterMemberListManager);
 
         final ServiceName<Raft> raftServiceName = raftServiceName(logStream.getLogName());
 

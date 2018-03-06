@@ -21,6 +21,7 @@ import io.zeebe.broker.clustering.gossip.service.ZbGossipConfig;
 import io.zeebe.broker.clustering.management.config.ClusterManagementConfig;
 import io.zeebe.broker.system.ComponentConfiguration;
 import io.zeebe.broker.system.GlobalConfiguration;
+import io.zeebe.raft.RaftConfiguration;
 
 public class TransportComponentCfg extends ComponentConfiguration
 {
@@ -34,6 +35,7 @@ public class TransportComponentCfg extends ComponentConfiguration
 
     public ZbGossipConfig gossip = new ZbGossipConfig();
     public ClusterManagementConfig management = new ClusterManagementConfig();
+    public RaftConfiguration raft = new RaftConfiguration();
 
     @Override
     public void applyGlobalConfiguration(GlobalConfiguration globalConfig)
