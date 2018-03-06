@@ -38,6 +38,7 @@ public abstract class ImportJobExecutor {
   public void startExecutingImportJobs() {
     if (importExecutor == null || importExecutor.isShutdown()) {
       BlockingQueue<Runnable> importJobsQueue = new ArrayBlockingQueue<>(getMaxQueueSize());
+      String poolName = this.getClass().getSimpleName() + "-pool";
       importExecutor =
         new ThreadPoolExecutor(
           getExecutorThreadCount(),
@@ -45,6 +46,7 @@ public abstract class ImportJobExecutor {
           Long.MAX_VALUE,
           TimeUnit.DAYS,
           importJobsQueue,
+          new NamedThreadFactory(poolName),
           new BlockCallerUntilExecutorHasCapacity()
         );
     }

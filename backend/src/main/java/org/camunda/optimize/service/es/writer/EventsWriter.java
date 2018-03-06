@@ -63,11 +63,11 @@ public class EventsWriter {
 
   private void addEventRequest(BulkRequestBuilder eventBulkRequest, FlowNodeEventDto e) {
     eventBulkRequest.add(
-        esclient.prepareIndex(
-            configurationService.getOptimizeIndex(configurationService.getEventType()),
-            configurationService.getEventType(),
-            e.getId()
-        )
+      esclient.prepareIndex(
+        configurationService.getOptimizeIndex(configurationService.getEventType()),
+        configurationService.getEventType(),
+        e.getId()
+      )
         .setSource(Collections.emptyMap())
     );
   }
@@ -86,10 +86,10 @@ public class EventsWriter {
     params.put("events", jsonMap);
 
     Script updateScript = new Script(
-        ScriptType.INLINE,
-        Script.DEFAULT_SCRIPT_LANG,
-        "ctx._source.events.addAll(params.events)",
-        params
+      ScriptType.INLINE,
+      Script.DEFAULT_SCRIPT_LANG,
+      "ctx._source.events.addAll(params.events)",
+      params
     );
 
     FlowNodeEventDto e = getFirst(processEvents);
@@ -102,14 +102,14 @@ public class EventsWriter {
     String newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
 
     addEventToProcessInstanceBulkRequest.add(esclient
-        .prepareUpdate(
-            configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()),
-            configurationService.getProcessInstanceType(),
-            processInstanceId
-        )
-        .setScript(updateScript)
-        .setUpsert(newEntryIfAbsent, XContentType.JSON)
-        .setRetryOnConflict(configurationService.getNumberOfRetriesOnConflict())
+      .prepareUpdate(
+        configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()),
+        configurationService.getProcessInstanceType(),
+        processInstanceId
+      )
+      .setScript(updateScript)
+      .setUpsert(newEntryIfAbsent, XContentType.JSON)
+      .setRetryOnConflict(configurationService.getNumberOfRetriesOnConflict())
     );
   }
 
