@@ -17,33 +17,29 @@
  */
 package io.zeebe.broker.clustering.raft;
 
+import static io.zeebe.broker.clustering.ClusterServiceNames.CLUSTER_MANAGER_SERVICE;
+import static io.zeebe.broker.logstreams.LogStreamServiceNames.logStreamServiceName;
+import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
+
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.management.OnOpenLogStreamListener;
 import io.zeebe.broker.logstreams.LogStreamService;
 import io.zeebe.broker.logstreams.LogStreamServiceNames;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.raft.Raft;
-import io.zeebe.raft.RaftConfiguration;
-import io.zeebe.raft.RaftPersistentStorage;
-import io.zeebe.raft.RaftStateListener;
+import io.zeebe.raft.*;
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.servicecontainer.*;
-import io.zeebe.transport.BufferingServerTransport;
-import io.zeebe.transport.ClientTransport;
-import io.zeebe.transport.SocketAddress;
+import io.zeebe.transport.*;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.ZbActor;
 import io.zeebe.util.sched.ZbActorScheduler;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
 
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-
-import static io.zeebe.broker.clustering.ClusterServiceNames.CLUSTER_MANAGER_SERVICE;
-import static io.zeebe.broker.logstreams.LogStreamServiceNames.logStreamServiceName;
-import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
 
 public class RaftService extends ZbActor implements Service<Raft>, RaftStateListener
 {
@@ -94,9 +90,16 @@ public class RaftService extends ZbActor implements Service<Raft>, RaftStateList
                 final BufferingServerTransport serverTransport = serverTransportInjector.getValue();
                 final ClientTransport clientTransport = clientTransportInjector.getValue();
 
-                raft = new Raft(configuration, socketAddress, logStream, serverTransport, clientTransport, persistentStorage);
-                raft.registerRaftStateListener(raftStateListener);
-                raft.registerRaftStateListener(RaftService.this);
+                final RaftStateListener[] stateListeners = Arrays.array(raftStateListener, RaftService.this);
+
+                raft = new Raft(
+                                configuration,
+                                socketAddress,
+                                logStream,
+                                serverTransport,
+                                clientTransport,
+                                persistentStorage,
+                                stateListeners);
 
                 raft.addMembers(members);
                 final ZbActorScheduler actorScheduler = actorSchedulerInjector.getValue();
