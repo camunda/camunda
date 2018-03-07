@@ -59,6 +59,8 @@ freeStyleJob(jobName)
 
     label 'dind'
 
+    disabled()
+
     triggers {
         cron('@midnight')
     }
