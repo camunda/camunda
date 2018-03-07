@@ -48,6 +48,7 @@ public class UnfinishedProcessInstanceWriter {
       addProcessInstanceIdTrackingRequest(processInstanceIdTrackerBulkRequest, procInst);
       addImportProcessInstanceRequest(processInstanceBulkRequest, procInst);
     }
+    logger.debug("writing to [{}]", configurationService.getOptimizeIndex(configurationService.getUnfinishedProcessInstanceIdTrackingType()));
     BulkResponse response = processInstanceBulkRequest.get();
     if (response.hasFailures()) {
       logger.warn("There were failures while writing process instances with message: {}",
@@ -66,7 +67,6 @@ public class UnfinishedProcessInstanceWriter {
         )
         .setSource(Collections.emptyMap())
     );
-    logger.debug("writing to [{}]", configurationService.getOptimizeIndex(configurationService.getUnfinishedProcessInstanceIdTrackingType()));
   }
 
   private void addImportProcessInstanceRequest(BulkRequestBuilder bulkRequest, ProcessInstanceDto procInst) throws JsonProcessingException {
