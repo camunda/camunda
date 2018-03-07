@@ -75,6 +75,11 @@ export default class ControlPanel extends React.Component {
     return this.props.processDefinitionVersion? this.props.processDefinitionVersion: '';
   }
 
+  getNameForKey = (key) => {
+    const definition = this.getLatestDefinition(key);
+    return definition.name? definition.name : key;
+  }
+
   render() {
     const {loaded} = this.state;
     const key = this.props.processDefinitionKey;
@@ -88,12 +93,12 @@ export default class ControlPanel extends React.Component {
       <div className={'ProcessDefinitionSelection' + (this.props.renderDiagram? ' ProcessDefinitionSelection--large' : '')} >
         <ul className='ProcessDefinitionSelection__list'>
           <li className='ProcessDefinitionSelection__list-item'>
-            <label htmlFor='ProcessDefinitionSelection__process-definition' className='ProcessDefinitionSelection__label'>Key</label>        
+            <label htmlFor='ProcessDefinitionSelection__process-definition' className='ProcessDefinitionSelection__label'>Name</label>        
             <Select className='ProcessDefinitionSelection__select' name='ProcessDefinitionSelection__key' value={this.getKey()} onChange={this.changeKey}>
                 {<Select.Option defaultValue value=''>Please select...</Select.Option>}
                 {this.state.availableDefinitions.map(
                   ({key}) => {
-                    return <Select.Option value={key} key={key} >{key}</Select.Option>;
+                    return <Select.Option value={key} key={key} >{this.getNameForKey(key)}</Select.Option>;
                   })
                 }
             </Select>
@@ -124,5 +129,5 @@ export default class ControlPanel extends React.Component {
           .versions.map(({version}) => <Select.Option value={version} key={version} >{version}</Select.Option>)
       );
   }
-
+  
 }

@@ -2,13 +2,32 @@ import React from 'react';
 import {Select, Popover, ProcessDefinitionSelection} from 'components';
 
 import {Filter} from './filter';
-import {reportLabelMap} from 'services';
+import {reportLabelMap, extractProcessDefinitionName} from 'services';
 
 import {TargetValueComparison} from './targetValue';
 
 import './ControlPanel.css';
 
 export default class ControlPanel extends React.Component {
+
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      processDefinitionName: this.props.processDefinitionKey
+    }
+
+    this.loadProcessDefinitionName(this.props.configuration.xml);
+  }
+
+  loadProcessDefinitionName = async (xml) => {
+    if(xml) {
+      const {processDefinitionName} = await extractProcessDefinitionName(xml);
+      this.setState({
+        processDefinitionName
+      })
+    }
+  }
 
   changeView = evt => {
     const viewKey = evt.target.value;
@@ -75,10 +94,17 @@ export default class ControlPanel extends React.Component {
     };
   }
 
+  componentWillReceiveProps(nextProps) {
+    if(this.props.processDefinitionKey !== nextProps.processDefinitionKey) {
+      this.loadProcessDefinitionName(nextProps.configuration.xml);
+    }
+  }
+
   createTitle = () => {
     const {processDefinitionKey, processDefinitionVersion} = this.props;
-    if(processDefinitionKey && processDefinitionVersion) {
-      return `${processDefinitionKey} : ${processDefinitionVersion}`;
+    const processDefintionName = this.state.processDefinitionName? this.state.processDefinitionName : processDefinitionKey;
+    if(processDefintionName && processDefinitionVersion) {
+      return `${processDefintionName} : ${processDefinitionVersion}`;
     } else {
       return 'Select Process Definition';
     }

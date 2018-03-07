@@ -1,6 +1,8 @@
 import React from 'react';
 import {mount} from 'enzyme';
 
+import {extractProcessDefinitionName} from 'services';
+
 import ControlPanel from './ControlPanel';
 
 jest.mock('../Reports', () => {return {
@@ -10,17 +12,25 @@ jest.mock('../Reports', () => {return {
 jest.mock('components', () => {
   return {
     ActionItem: props => <button {...props}>{props.children}</button>,
-    Popover: ({children}) => children,
+    Popover: ({title, children}) => <div>{title} {children}</div> ,
     ProcessDefinitionSelection: (props) => <div>ProcessDefinitionSelection</div>
   };
 });
 
+jest.mock('services', () => {
+  return {
+    extractProcessDefinitionName: jest.fn()
+  }
+});
+
 const data = {
-  processDefinitionKey: '',
-  processDefinitionVersion: '',
-  filter: null
+  processDefinitionKey: 'aKey',
+  processDefinitionVersion: 'aVersion',
+  filter: null,
+  xml: 'aFooXml'
 };
 
+extractProcessDefinitionName.mockReturnValue({processDefinitionName: 'foo'});
 const spy = jest.fn();
 
 it('should contain a gateway and end Event field', () => {
@@ -56,3 +66,12 @@ it('should show the element id if an element has no name', () => {
   expect(node).toIncludeText('gatewayId');
 
 })
+
+it('should change process definition name if process definition xml is updated', async () => {
+  const node = await mount(<ControlPanel {...data}/>);
+
+  extractProcessDefinitionName.mockReturnValue({processDefinitionName: 'aName'});
+  await node.setProps({xml: 'barXml'});
+
+  expect(node.find('.ControlPanel__popover')).toIncludeText('aName')
+});

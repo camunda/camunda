@@ -1,6 +1,8 @@
 import React from 'react';
 import {mount} from 'enzyme';
 
+import {extractProcessDefinitionName} from 'services';
+
 import ControlPanel from './ControlPanel';
 
 jest.mock('./filter', () => {return {
@@ -12,7 +14,7 @@ jest.mock('components', () => {
   Select.Option = props => <option {...props}>{props.children}</option>;
 
   return {Select,
-    Popover: ({children}) => children,
+    Popover: ({title, children}) => <div>{title} {children}</div> ,
     ProcessDefinitionSelection: (props) => <div>ProcessDefinitionSelection</div>
   };
 });
@@ -25,12 +27,15 @@ jest.mock('services', () => {return {
     getOptions: () => [{key: 'foo',label: 'foo'}],
     keyToObject: (key) => key,
     getAllowedOptions: () => {return {foo: {group: ['viz']}}}
-  }
+  },
+  extractProcessDefinitionName: jest.fn()
 }});
 
 jest.mock('./targetValue', () => {return {TargetValueComparison: () => <div>TargetValueComparison</div>}});
 
 const data = {
+  processDefinitionKey: 'aKey',
+  processDefinitionVersion: 'aVersion',
   view: {operation: 'count', entity: 'processInstance'},
   groupBy: {type: 'none', unit: null},
   visualization: 'json',
@@ -38,6 +43,7 @@ const data = {
   configuration: {xml: 'fooXml'}
 };
 
+extractProcessDefinitionName.mockReturnValue({processDefinitionName: 'foo'});
 const spy = jest.fn();
 
 it('should call the provided onChange property function when a setting changes', () => {
@@ -76,4 +82,21 @@ it('should reset the next Selects if in conflict with previous one', () => {
   node.setProps({view: 'foo'});
 
   expect(spy).toHaveBeenCalledWith({'groupBy': '', 'visualization': ''});
+});
+
+it('should show process definition name', async () => {
+  extractProcessDefinitionName.mockReturnValue({processDefinitionName: 'aName'});
+
+  const node = await mount(<ControlPanel {...data}/>);
+
+  expect(node.find('.ControlPanel__popover')).toIncludeText('aName')
+});
+
+it('should change process definition name if process definition is updated', async () => {
+  const node = await mount(<ControlPanel {...data}/>);
+
+  extractProcessDefinitionName.mockReturnValue({processDefinitionName: 'aName'});
+  node.setProps({processDefinitionKey: 'bar'});
+
+  expect(node.find('.ControlPanel__popover')).toIncludeText('aName')
 });
