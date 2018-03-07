@@ -20,6 +20,7 @@
     "string.prototype.includes": "^1.0.0"
   },
   "scripts": {
+    "precommit": "lint-staged",
     "build-css": "node-sass-chokidar --include-path ./src/shared-styles src/ -o src/",
     "watch-css": "npm run build-css && node-sass-chokidar --include-path ./src/shared-styles src/ -o src/ --watch --recursive",
     "start-js": "react-scripts start",
@@ -32,16 +33,26 @@
     "start-backend": "node scripts/start-backend",
     "dependencies": "node scripts/dependencies.js"
   },
+  "lint-staged": {
+    "src/**/*.{js,scss}": [
+      "prettier --write",
+      "git add"
+    ]
+  },
   "devDependencies": {
     "camunda-bpm-sdk-js": "camunda/camunda-bpm-sdk-js",
     "chalk": "^2.1.0",
     "enzyme": "^3.1.0",
     "enzyme-adapter-react-16": "^1.0.2",
+    "eslint-plugin-prettier": "^2.6.0",
+    "husky": "^0.14.3",
     "jest-enzyme": "^4.0.1",
     "js-yaml": "^3.10.0",
     "license-checker": "^14.0.0",
+    "lint-staged": "^7.0.0",
     "node-sass-chokidar": "^0.0.3",
     "npm-run-all": "^4.1.2",
+    "prettier": "1.11.1",
     "react-scripts": "1.0.14",
     "request": "^2.83.0",
     "shelljs": "^0.7.8",
