@@ -128,7 +128,7 @@ public class CompletableActorFuture<V> implements ActorFuture<V>
     {
         try
         {
-            return get(1000, TimeUnit.MILLISECONDS);
+            return get(Integer.MAX_VALUE, TimeUnit.MILLISECONDS);
         }
         catch (TimeoutException e)
         {

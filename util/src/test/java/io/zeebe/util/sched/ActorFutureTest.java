@@ -15,22 +15,24 @@
  */
 package io.zeebe.util.sched;
 
-import io.zeebe.util.collection.Tuple;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
-import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+
+import io.zeebe.util.collection.Tuple;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
+import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 
 public class ActorFutureTest
 {
@@ -488,8 +490,10 @@ public class ActorFutureTest
 
         schedulerRule.submitActor(actor);
 
-        actor.awaitFuture(f1);
-        actor.awaitFuture(f2);
+        final List<Object> receivedObjects = new ArrayList<>();
+
+        actor.awaitFuture(f1, (o, t) -> receivedObjects.add(o));
+        actor.awaitFuture(f2, (o, t) -> receivedObjects.add(o));
         schedulerRule.workUntilDone();
 
         // when
@@ -511,21 +515,15 @@ public class ActorFutureTest
         schedulerRule.workUntilDone();
 
         // then
-        assertThat(actor.receivedObjects).containsExactly(result1, result2);
+        assertThat(receivedObjects).containsExactly(result1, result2);
     }
 
     class TestActor extends ZbActor
     {
-        List<Object> receivedObjects = new ArrayList<>();
 
-        @Override
-        protected void onActorStarted()
+        public <T> void awaitFuture(ActorFuture<T> f, BiConsumer<T, Throwable> onCompletion)
         {
-        }
-
-        public void awaitFuture(ActorFuture<Object> f)
-        {
-            actor.call(() -> actor.runOnCompletion(f, (o, t) -> receivedObjects.add(o)));
+            actor.call(() -> actor.runOnCompletion(f, onCompletion));
         }
 
         public void close()
@@ -533,4 +531,6 @@ public class ActorFutureTest
             actor.close();
         }
     }
+
+
 }

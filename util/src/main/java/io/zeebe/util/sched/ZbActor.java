@@ -47,6 +47,11 @@ public abstract class ZbActor
         // what ever
     }
 
+    protected void onActorCloseRequested()
+    {
+        // notification that timers, conditions, etc. will no longer trigger from now on
+    }
+
     public static ZbActor wrap(Consumer<ActorControl> r)
     {
         return new ZbActor()

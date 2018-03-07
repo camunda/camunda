@@ -42,7 +42,7 @@ public class FutureContinuationRunnable<T> implements Runnable
             }
             catch (Throwable e)
             {
-                Loggers.ACTOR_LOGGER.debug("Not calling continuation future.");
+                Loggers.ACTOR_LOGGER.debug("Continuing on future completion failed", e);
             }
         }
         else

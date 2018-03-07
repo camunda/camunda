@@ -356,6 +356,8 @@ public class ActorTask
             }
 
             currentJob.next = null;
+
+            actor.onActorCloseRequested();
         }
     }
 

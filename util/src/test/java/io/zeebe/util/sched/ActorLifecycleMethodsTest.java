@@ -100,6 +100,44 @@ public class ActorLifecycleMethodsTest
         assertThat(startingFuture).isDone();
     }
 
+
+    @Test
+    public void shouldCallOnActorCloseRequested() throws Exception
+    {
+        // given
+        final CountDownLatch latch = new CountDownLatch(1);
+        final ZbActor zbActor = new ZbActor()
+        {
+            @Override
+            protected void onActorCloseRequested()
+            {
+                latch.countDown();
+            }
+
+            @Override
+            protected void onActorStarted()
+            {
+                actor.runOnCompletion(new CompletableActorFuture<>(), (r, t) ->
+                {
+                    // ensure that we remain in STARTED/CLOSE_REQUESTED
+                });
+            }
+        };
+
+        final ActorFuture<Void> startingFuture = schedulerRule.submitActor(zbActor);
+        startingFuture.get(5, TimeUnit.SECONDS);
+
+        // when
+        zbActor.actor.close();
+
+        // then
+        if (!latch.await(5, TimeUnit.MINUTES))
+        {
+            fail("onActorCloseRequested() was never called");
+        }
+        assertThat(startingFuture).isDone();
+    }
+
     @Test
     public void shouldCallOnActorStarting() throws InterruptedException
     {
@@ -823,5 +861,6 @@ public class ActorLifecycleMethodsTest
         future = actor.actor.close();
         future.get(5, TimeUnit.SECONDS);
     }
+
 
 }
