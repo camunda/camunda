@@ -17,7 +17,6 @@
  */
 package io.zeebe.broker.event.processor;
 
-import io.zeebe.broker.Loggers;
 import io.zeebe.logstreams.log.LogStreamWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.processor.EventProcessor;
@@ -25,9 +24,6 @@ import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
-
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.ExecutionException;
 
 public class SubscribeProcessor implements EventProcessor
 {
@@ -169,32 +165,22 @@ public class SubscribeProcessor implements EventProcessor
         {
             if (!processorFuture.isDone())
             {
-                return false;
+                // waiting
+            }
+            else if (processorFuture.isCompletedExceptionally())
+            {
+                final String errorMessage = processorFuture.getException().getMessage();
+
+                failedRequestState.wrapError(errorMessage);
+                state = failedRequestState;
             }
             else
             {
-                try
-                {
-                    final TopicSubscriptionPushProcessor processor = processorFuture.get();
-                    successState.wrap(processor);
-                    state = successState;
-
-                    return false;
-                }
-                catch (CancellationException | ExecutionException e)
-                {
-                    final String errorMessage = e.getMessage();
-
-                    failedRequestState.wrapError(errorMessage);
-                    state = failedRequestState;
-
-                    return false;
-                }
-                catch (InterruptedException e)
-                {
-                    throw new RuntimeException("Unexpected exception", e);
-                }
+                final TopicSubscriptionPushProcessor processor = processorFuture.join();
+                successState.wrap(processor);
+                state = successState;
             }
+            return false;
         }
     }
 
@@ -219,7 +205,6 @@ public class SubscribeProcessor implements EventProcessor
             // success response is written on SUBSCRIBED event, as only then it is guaranteed that
             //   the start position is persisted
 
-            Loggers.SERVICES_LOGGER.debug("Register topic push processor ");
             manager.registerPushProcessor(processor);
             return true;
         }

@@ -262,9 +262,16 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
             .dependency(ACTOR_SCHEDULER_SERVICE, streamProcessorService.getActorSchedulerInjector())
             .install();
 
-        installFuture.whenComplete((aVoid, throwable) ->
+        installFuture.whenComplete((aVoid, failure) ->
         {
-            future.complete(processor);
+            if (failure == null)
+            {
+                future.complete(processor);
+            }
+            else
+            {
+                future.completeExceptionally(failure);
+            }
         });
         return future;
     }
