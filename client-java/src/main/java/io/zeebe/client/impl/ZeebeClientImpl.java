@@ -23,13 +23,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.slf4j.Logger;
-
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.InjectableValues;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.zeebe.client.ClientProperties;
 import io.zeebe.client.WorkflowsClient;

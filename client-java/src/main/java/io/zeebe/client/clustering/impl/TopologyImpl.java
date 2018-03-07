@@ -25,7 +25,6 @@ import java.util.function.Function;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.collections.IntArrayList;
 import org.agrona.collections.IntHashSet;
-import org.agrona.collections.IntIterator;
 
 import io.zeebe.client.clustering.Topology;
 import io.zeebe.transport.RemoteAddress;
@@ -78,7 +77,7 @@ public class TopologyImpl implements Topology
         partitions.forEach((t, p) ->
         {
             final IntArrayList partitionsList = new IntArrayList();
-            final IntIterator iterator = p.iterator();
+            final IntHashSet.IntIterator iterator = p.iterator();
             while (iterator.hasNext())
             {
                 partitionsList.add(iterator.nextValue());
