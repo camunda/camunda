@@ -7,8 +7,8 @@ import './LogoutButton.css';
 
 export default function LogoutButton() {
   return (
-    <div className='LogoutButton'>
-      <Link to='/login' onClick={logout} title='Log out'>
+    <div className="LogoutButton">
+      <Link to="/login" onClick={logout} title="Log out">
         Logout
       </Link>
     </div>

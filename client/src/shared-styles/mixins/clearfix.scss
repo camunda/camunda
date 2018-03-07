@@ -1,11 +1,9 @@
 @mixin clearfix() {
-
   &:after {
     display: table;
     clear: both;
-    content: "";
+    content: '';
   }
-  
+
   *zoom: 1;
-  
 }

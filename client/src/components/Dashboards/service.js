@@ -11,7 +11,7 @@ export async function remove(id) {
 }
 
 export async function update(id, state) {
-    return await put(`/api/dashboard/${id}`, state);
+  return await put(`/api/dashboard/${id}`, state);
 }
 
 export async function loadReports() {
@@ -24,7 +24,7 @@ export async function loadReport(report) {
   try {
     const response = await get(`/api/report/${report.id}/evaluate`);
     return await response.json();
-  } catch(error) {
+  } catch (error) {
     return await error.json();
   }
 }
@@ -43,7 +43,7 @@ export async function shareDashboard(dashboardId) {
 export async function getSharedDashboard(reportId) {
   const response = await get(`/api/share/dashboard/${reportId}`);
 
-  if(response.status > 201) {
+  if (response.status > 201) {
     return '';
   } else {
     const json = await response.json();
@@ -59,8 +59,8 @@ export function getOccupiedTiles(reports) {
   const occupiedTiles = {};
 
   reports.forEach(({position, dimensions}) => {
-    for(let x = position.x; x < position.x + dimensions.width; x++) {
-      for(let y = position.y; y < position.y + dimensions.height; y++) {
+    for (let x = position.x; x < position.x + dimensions.width; x++) {
+      for (let y = position.y; y < position.y + dimensions.height; y++) {
         occupiedTiles[x] = occupiedTiles[x] || {};
         occupiedTiles[x][y] = true;
       }
@@ -80,7 +80,7 @@ export function snapInPosition({
     x: Math.round((changes.x || 0) / outerWidth),
     y: Math.round((changes.y || 0) / outerHeight),
     width: Math.round((changes.width || 0) / outerWidth),
-    height: Math.round((changes.height || 0) / outerHeight),
+    height: Math.round((changes.height || 0) / outerHeight)
   };
 
   // get the new final placement of the report in tile coordinates
@@ -97,11 +97,17 @@ export function snapInPosition({
 
   // do not allow placing a report outside of the grid boundaries
   newPlacement.position.x = Math.max(newPlacement.position.x, 0);
-  newPlacement.position.x = Math.min(newPlacement.position.x, columns - newPlacement.dimensions.width);
+  newPlacement.position.x = Math.min(
+    newPlacement.position.x,
+    columns - newPlacement.dimensions.width
+  );
   newPlacement.position.y = Math.max(newPlacement.position.y, 0);
 
   // do not allow making a report wider than the grid
-  newPlacement.dimensions.width = Math.min(newPlacement.dimensions.width, columns - newPlacement.position.x);
+  newPlacement.dimensions.width = Math.min(
+    newPlacement.dimensions.width,
+    columns - newPlacement.position.x
+  );
 
   // do not allow a non-positive dimensions
   newPlacement.dimensions.width = Math.max(newPlacement.dimensions.width, 1);
@@ -116,9 +122,9 @@ export function collidesWithReport({
 }) {
   const occupiedTiles = getOccupiedTiles(reports);
 
-  for(let x = left; x < left + width; x++) {
-    for(let y = top; y < top + height; y++) {
-      if(occupiedTiles[x] && occupiedTiles[x][y]) {
+  for (let x = left; x < left + width; x++) {
+    for (let y = top; y < top + height; y++) {
+      if (occupiedTiles[x] && occupiedTiles[x][y]) {
         return true;
       }
     }
@@ -134,8 +140,8 @@ export function applyPlacement({
 }) {
   const margin = outerWidth - innerWidth;
 
-  style.left = (x * outerWidth + margin / 2 - 1) + 'px';
-  style.top = (y * outerHeight + margin / 2 - 1) + 'px';
-  style.width = (width * outerWidth - margin + 1) + 'px';
-  style.height = (height * outerHeight - margin + 1) + 'px';
+  style.left = x * outerWidth + margin / 2 - 1 + 'px';
+  style.top = y * outerHeight + margin / 2 - 1 + 'px';
+  style.width = width * outerWidth - margin + 1 + 'px';
+  style.height = height * outerHeight - margin + 1 + 'px';
 }

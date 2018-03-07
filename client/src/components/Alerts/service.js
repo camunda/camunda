@@ -33,4 +33,3 @@ export async function emailNotificationIsEnabled() {
 
   return (await response.json()).enabled;
 }
-

@@ -6,36 +6,36 @@ export default class DiagramBehavior extends React.Component {
   render() {
     // clear previously highlighted nodes
     const {viewer, hoveredControl, hoveredNode, data, gateway, endEvent} = this.props;
-    if(viewer) {
+    if (viewer) {
       const elementRegistry = viewer.get('elementRegistry');
       const canvas = viewer.get('canvas');
 
       // remove existing selection markers and indicate selectable status for all flownodes
       elementRegistry.forEach(({businessObject}) => {
-        if(this.isValidNode(businessObject)) {
+        if (this.isValidNode(businessObject)) {
           canvas.removeMarker(businessObject.id, 'DiagramBehavior__highlight');
           canvas.removeMarker(businessObject.id, 'DiagramBehavior__selected');
 
-          if(hoveredControl === 'gateway' && businessObject.$instanceOf('bpmn:Gateway')) {
+          if (hoveredControl === 'gateway' && businessObject.$instanceOf('bpmn:Gateway')) {
             canvas.addMarker(businessObject.id, 'DiagramBehavior__highlight');
-          } else if(hoveredControl === 'endEvent' && businessObject.$instanceOf('bpmn:EndEvent')) {
+          } else if (hoveredControl === 'endEvent' && businessObject.$instanceOf('bpmn:EndEvent')) {
             canvas.addMarker(businessObject.id, 'DiagramBehavior__highlight');
           }
 
-          if(businessObject === hoveredNode) {
+          if (businessObject === hoveredNode) {
             canvas.addMarker(businessObject.id, 'DiagramBehavior__highlight');
           }
-          if(businessObject === gateway || businessObject === endEvent) {
+          if (businessObject === gateway || businessObject === endEvent) {
             canvas.addMarker(businessObject.id, 'DiagramBehavior__selected');
           }
         }
       });
 
       viewer.get('overlays').clear();
-      if(data && endEvent) {
+      if (data && endEvent) {
         this.addEndEventOverlay(endEvent);
       }
-      if(data && hoveredNode && hoveredNode.$instanceOf('bpmn:EndEvent')) {
+      if (data && hoveredNode && hoveredNode.$instanceOf('bpmn:EndEvent')) {
         this.addEndEventOverlay(hoveredNode);
       }
     }
@@ -50,7 +50,7 @@ export default class DiagramBehavior extends React.Component {
 
     // remove existing selection markers and indicate selectable status for all flownodes
     elementRegistry.forEach(({businessObject}) => {
-      if(this.isValidNode(businessObject)) {
+      if (this.isValidNode(businessObject)) {
         canvas.addMarker(businessObject.id, 'DiagramBehavior__clickable');
 
         const gfx = elementRegistry.getGraphics(businessObject.id).querySelector('.djs-outline');
@@ -74,24 +74,24 @@ export default class DiagramBehavior extends React.Component {
   }
 
   hoverHandler = ({element}) => {
-    if(element.businessObject && this.isValidNode(element.businessObject)) {
+    if (element.businessObject && this.isValidNode(element.businessObject)) {
       this.props.updateHover(element.businessObject);
     }
-  }
+  };
 
   outHandler = ({element}) => {
     this.props.updateHover(null);
-  }
+  };
 
   clickHandler = ({element: {businessObject}}) => {
-    if(businessObject.$instanceOf('bpmn:Gateway')) {
-      if(this.props.gateway === businessObject) {
+    if (businessObject.$instanceOf('bpmn:Gateway')) {
+      if (this.props.gateway === businessObject) {
         this.props.updateSelection('gateway', null);
       } else {
         this.props.updateSelection('gateway', businessObject);
       }
-    } else if(businessObject.$instanceOf('bpmn:EndEvent')) {
-      if(this.props.endEvent) {
+    } else if (businessObject.$instanceOf('bpmn:EndEvent')) {
+      if (this.props.endEvent) {
         this.props.updateSelection('endEvent', null);
       } else {
         this.props.updateSelection('endEvent', businessObject);
@@ -100,7 +100,7 @@ export default class DiagramBehavior extends React.Component {
   };
 
   isValidNode(node) {
-    return node.$instanceOf('bpmn:Gateway') || node.$instanceOf('bpmn:EndEvent')
+    return node.$instanceOf('bpmn:Gateway') || node.$instanceOf('bpmn:EndEvent');
   }
 
   addEndEventOverlay(element) {
@@ -113,8 +113,7 @@ export default class DiagramBehavior extends React.Component {
     const container = document.createElement('div');
     const percentageValue = Math.round(value / piCount * 1000) / 10;
 
-    container.innerHTML =
-    `<div class="DiagramBehavior__overlay" role="tooltip">
+    container.innerHTML = `<div class="DiagramBehavior__overlay" role="tooltip">
       <table class="DiagramBehavior__end-event-statistics">
         <tbody>
           <tr>
@@ -136,7 +135,7 @@ export default class DiagramBehavior extends React.Component {
 
     // stop propagation of mouse event so that click+drag does not move canvas
     // when user tries to select text
-    overlayHtml.addEventListener('mousedown', (evt) => {
+    overlayHtml.addEventListener('mousedown', evt => {
       evt.stopPropagation();
     });
 

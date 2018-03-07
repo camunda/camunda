@@ -5,7 +5,7 @@ export async function evaluateEntity(id, type) {
 
   try {
     response = await get(`/api/share/${type}/${id}/evaluate`);
-  } catch(e) {
+  } catch (e) {
     return null;
   }
 
@@ -15,10 +15,9 @@ export async function evaluateEntity(id, type) {
 export async function loadReport(report) {
   try {
     const response = await get(`/api/share/report/${report.shareId}/evaluate`);
-    const sharedReport =  await response.json();
+    const sharedReport = await response.json();
     return sharedReport.report;
-  } catch(error) {
+  } catch (error) {
     return await error.json();
   }
 }
-

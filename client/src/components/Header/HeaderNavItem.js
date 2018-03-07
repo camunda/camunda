@@ -13,4 +13,4 @@ export default withRouter(function HeaderNavItem({name, linksTo, active, locatio
       </Link>
     </li>
   );
-})
+});

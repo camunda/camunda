@@ -11,30 +11,38 @@ const tileMargin = 8;
 
 export default class DashboardView extends React.Component {
   render() {
-    return (<div className='DashboardView' ref={node => this.container = node}>
-      {this.state && this.props.reports.map((report, idx) =>
-        <DashboardObject
-          key={idx + '_' + report.id}
-          tileDimensions={this.state.tileDimensions}
-          {...report.position}
-          {...report.dimensions}
-        >
-        <DashboardReport loadReport={this.props.loadReport} report={report} tileDimensions={this.state.tileDimensions} addons={this.props.reportAddons || []} />
-      </DashboardObject>)}
-      {this.state &&
-        React.Children.map(this.props.children, child =>
-          React.cloneElement(child, {
-            container: this.container,
-            tileDimensions: this.state.tileDimensions,
-            reports: this.props.reports
-          })
-        )
-      }
-    </div>);
+    return (
+      <div className="DashboardView" ref={node => (this.container = node)}>
+        {this.state &&
+          this.props.reports.map((report, idx) => (
+            <DashboardObject
+              key={idx + '_' + report.id}
+              tileDimensions={this.state.tileDimensions}
+              {...report.position}
+              {...report.dimensions}
+            >
+              <DashboardReport
+                loadReport={this.props.loadReport}
+                report={report}
+                tileDimensions={this.state.tileDimensions}
+                addons={this.props.reportAddons || []}
+              />
+            </DashboardObject>
+          ))}
+        {this.state &&
+          React.Children.map(this.props.children, child =>
+            React.cloneElement(child, {
+              container: this.container,
+              tileDimensions: this.state.tileDimensions,
+              reports: this.props.reports
+            })
+          )}
+      </div>
+    );
   }
 
   updateDimensions = () => {
-    if(this.container) {
+    if (this.container) {
       this.container.style.width = '100%';
 
       const availableWidth = this.container.clientWidth;
@@ -50,14 +58,14 @@ export default class DashboardView extends React.Component {
         tileDimensions
       });
     }
-  }
+  };
 
   componentWillUnmount() {
-    window.removeEventListener("resize", this.updateDimensions);
+    window.removeEventListener('resize', this.updateDimensions);
   }
 
   componentDidMount() {
     this.updateDimensions();
-    window.addEventListener("resize", this.updateDimensions);
+    window.addEventListener('resize', this.updateDimensions);
   }
 }

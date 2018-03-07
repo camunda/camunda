@@ -1,17 +1,21 @@
 import React from 'react';
-import { mount } from 'enzyme';
+import {mount} from 'enzyme';
 
 import Button from './Button';
 
 jest.mock('react-router-dom', () => {
   return {
     Redirect: ({to}) => {
-      return <div>REDIRECT to {to}</div>
+      return <div>REDIRECT to {to}</div>;
     },
     Link: ({children, to, onClick, id}) => {
-      return <a id={id} href={to} onClick={onClick}>{children}</a>
+      return (
+        <a id={id} href={to} onClick={onClick}>
+          {children}
+        </a>
+      );
     }
-  }
+  };
 });
 
 it('should render without crashing', () => {
@@ -25,7 +29,7 @@ it('renders a <button> element by default', () => {
 });
 
 it('renders a <a> element when specified as a property', () => {
-  const tag = 'a'
+  const tag = 'a';
 
   const node = mount(<Button tag={tag} />);
   expect(node.find('.Button')).toHaveTagName('Link');
@@ -41,14 +45,14 @@ it('renders a label as provided as a property', () => {
 it('renders a modifier class name based on the type provided as a property', () => {
   const type = 'primary';
   const node = mount(<Button type={type} />);
-  
+
   expect(node.find('button')).toHaveClassName('Button--primary');
 });
 
 it('renders a modifier class name based on the color provided as a property', () => {
   const color = 'red';
   const node = mount(<Button color={color} />);
-  
+
   expect(node.find('button')).toHaveClassName('Button--red');
 });
 

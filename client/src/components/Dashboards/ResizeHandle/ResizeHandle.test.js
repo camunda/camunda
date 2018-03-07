@@ -5,14 +5,16 @@ import ResizeHandle from './ResizeHandle';
 
 import {snapInPosition} from '../service';
 
-jest.mock('../service', () => {return {
-  snapInPosition: jest.fn().mockReturnValue({
-    dimensions: {width: 3, height: 3},
-    position: {x: 0, y: 0}
-  }),
-  collidesWithReport: jest.fn().mockReturnValue(false),
-  applyPlacement: jest.fn()
-}});
+jest.mock('../service', () => {
+  return {
+    snapInPosition: jest.fn().mockReturnValue({
+      dimensions: {width: 3, height: 3},
+      position: {x: 0, y: 0}
+    }),
+    collidesWithReport: jest.fn().mockReturnValue(false),
+    applyPlacement: jest.fn()
+  };
+});
 
 const props = {
   onResizeStart: jest.fn(),
@@ -34,39 +36,72 @@ const props = {
 
 it('should call the resizeStart callback when starting to drag', () => {
   const spy = jest.fn();
-  const node = mount(<main><div className='DashboardObject'><ResizeHandle onResizeStart={spy} /></div></main>);
+  const node = mount(
+    <main>
+      <div className="DashboardObject">
+        <ResizeHandle onResizeStart={spy} />
+      </div>
+    </main>
+  );
 
-  node.find(ResizeHandle).instance().startDragging({preventDefault: jest.fn()});
+  node
+    .find(ResizeHandle)
+    .instance()
+    .startDragging({preventDefault: jest.fn()});
 
   expect(spy).toHaveBeenCalled();
 });
 
 it('should add dragging CSS class to surrounding dashboard object', () => {
   const spy = jest.fn();
-  const node = mount(<main><div className='DashboardObject'><ResizeHandle onResizeStart={spy} /></div></main>);
+  const node = mount(
+    <main>
+      <div className="DashboardObject">
+        <ResizeHandle onResizeStart={spy} />
+      </div>
+    </main>
+  );
 
-  node.find(ResizeHandle).instance().startDragging({preventDefault: jest.fn()});
+  node
+    .find(ResizeHandle)
+    .instance()
+    .startDragging({preventDefault: jest.fn()});
 
   expect(node.find('.DashboardObject').getDOMNode().className).toContain('ResizeHandle--dragging');
 });
 
 it('should update the width and height of the report when dragging', () => {
   const spy = jest.fn();
-  const node = mount(<main><div className='DashboardObject' style={{
-    width: '10px',
-    height: '10px'
-  }}><ResizeHandle {...props} onResizeStart={spy} /></div></main>);
+  const node = mount(
+    <main>
+      <div
+        className="DashboardObject"
+        style={{
+          width: '10px',
+          height: '10px'
+        }}
+      >
+        <ResizeHandle {...props} onResizeStart={spy} />
+      </div>
+    </main>
+  );
 
-  node.find(ResizeHandle).instance().startDragging({
-    preventDefault: jest.fn(),
-    screenX: 0,
-    screenY: 0
-  });
+  node
+    .find(ResizeHandle)
+    .instance()
+    .startDragging({
+      preventDefault: jest.fn(),
+      screenX: 0,
+      screenY: 0
+    });
 
-  node.find(ResizeHandle).instance().saveMouseAndUpdateCardSize({
-    screenX: 5,
-    screenY: 5
-  });
+  node
+    .find(ResizeHandle)
+    .instance()
+    .saveMouseAndUpdateCardSize({
+      screenX: 5,
+      screenY: 5
+    });
 
   expect(node.find('.DashboardObject').getDOMNode().style.width).toBe('15px');
   expect(node.find('.DashboardObject').getDOMNode().style.height).toBe('15px');
@@ -74,20 +109,35 @@ it('should update the width and height of the report when dragging', () => {
 
 it('should update the width and height of the report when scrolling', () => {
   const spy = jest.fn();
-  const node = mount(<main><div className='DashboardObject' style={{
-    width: '10px',
-    height: '10px'
-  }}><ResizeHandle {...props} onResizeStart={spy} /></div></main>);
+  const node = mount(
+    <main>
+      <div
+        className="DashboardObject"
+        style={{
+          width: '10px',
+          height: '10px'
+        }}
+      >
+        <ResizeHandle {...props} onResizeStart={spy} />
+      </div>
+    </main>
+  );
 
   node.getDOMNode().scrollTop = 0;
-  node.find(ResizeHandle).instance().startDragging({
-    preventDefault: jest.fn(),
-    screenX: 0,
-    screenY: 0
-  });
+  node
+    .find(ResizeHandle)
+    .instance()
+    .startDragging({
+      preventDefault: jest.fn(),
+      screenX: 0,
+      screenY: 0
+    });
 
   node.getDOMNode().scrollTop = 5;
-  node.find(ResizeHandle).instance().updateCardSize();
+  node
+    .find(ResizeHandle)
+    .instance()
+    .updateCardSize();
 
   expect(node.find('.DashboardObject').getDOMNode().style.width).toBe('10px');
   expect(node.find('.DashboardObject').getDOMNode().style.height).toBe('15px');
@@ -100,23 +150,41 @@ it('should call the update report callback on drop', () => {
   });
 
   const spy = jest.fn();
-  const node = mount(<main><div className='DashboardObject' style={{
-    width: '0px',
-    height: '0px'
-  }}><ResizeHandle {...props} updateReport={spy} /></div></main>);
+  const node = mount(
+    <main>
+      <div
+        className="DashboardObject"
+        style={{
+          width: '0px',
+          height: '0px'
+        }}
+      >
+        <ResizeHandle {...props} updateReport={spy} />
+      </div>
+    </main>
+  );
 
-  node.find(ResizeHandle).instance().startDragging({
-    preventDefault: jest.fn(),
-    screenX: 0,
-    screenY: 0
-  });
+  node
+    .find(ResizeHandle)
+    .instance()
+    .startDragging({
+      preventDefault: jest.fn(),
+      screenX: 0,
+      screenY: 0
+    });
 
-  node.find(ResizeHandle).instance().saveMouseAndUpdateCardSize({
-    screenX: 33,
-    screenY: 8
-  });
+  node
+    .find(ResizeHandle)
+    .instance()
+    .saveMouseAndUpdateCardSize({
+      screenX: 33,
+      screenY: 8
+    });
 
-  node.find(ResizeHandle).instance().stopDragging();
+  node
+    .find(ResizeHandle)
+    .instance()
+    .stopDragging();
 
   expect(spy).toHaveBeenCalledWith({
     report: props.report,
@@ -129,55 +197,94 @@ it('should call the update report callback on drop', () => {
 
 it('should call the dragEnd callback on drop', () => {
   const spy = jest.fn();
-  const node = mount(<main><div className='DashboardObject' style={{
-    width: '0px',
-    height: '0px'
-  }}><ResizeHandle {...props} onResizeEnd={spy} /></div></main>);
+  const node = mount(
+    <main>
+      <div
+        className="DashboardObject"
+        style={{
+          width: '0px',
+          height: '0px'
+        }}
+      >
+        <ResizeHandle {...props} onResizeEnd={spy} />
+      </div>
+    </main>
+  );
 
-  node.find(ResizeHandle).instance().startDragging({
-    preventDefault: jest.fn(),
-    screenX: 0,
-    screenY: 0
-  });
+  node
+    .find(ResizeHandle)
+    .instance()
+    .startDragging({
+      preventDefault: jest.fn(),
+      screenX: 0,
+      screenY: 0
+    });
 
-  node.find(ResizeHandle).instance().saveMouseAndUpdateCardSize({
-    screenX: 33,
-    screenY: 8
-  });
+  node
+    .find(ResizeHandle)
+    .instance()
+    .saveMouseAndUpdateCardSize({
+      screenX: 33,
+      screenY: 8
+    });
 
-  node.find(ResizeHandle).instance().stopDragging();
+  node
+    .find(ResizeHandle)
+    .instance()
+    .stopDragging();
 
   expect(spy).toHaveBeenCalled();
 });
 
 it('should not update the report when it is dropped somewhere where is no space', () => {
   const spy = jest.fn();
-  const node = mount(<main><div className='DashboardObject' style={{
-    width: '0px',
-    height: '0px'
-  }}><ResizeHandle {...props} reports={[
-    {
-      position: {x: 2, y: 0},
-      dimensions: {width: 1, height: 4}
-    },
-    {
-      position: {x: 3, y: 1},
-      dimensions: {width: 2, height: 2}
-    }
-  ]} /></div></main>);
+  const node = mount(
+    <main>
+      <div
+        className="DashboardObject"
+        style={{
+          width: '0px',
+          height: '0px'
+        }}
+      >
+        <ResizeHandle
+          {...props}
+          reports={[
+            {
+              position: {x: 2, y: 0},
+              dimensions: {width: 1, height: 4}
+            },
+            {
+              position: {x: 3, y: 1},
+              dimensions: {width: 2, height: 2}
+            }
+          ]}
+        />
+      </div>
+    </main>
+  );
 
-  node.find(ResizeHandle).instance().startDragging({
-    preventDefault: jest.fn(),
-    screenX: 0,
-    screenY: 0
-  });
+  node
+    .find(ResizeHandle)
+    .instance()
+    .startDragging({
+      preventDefault: jest.fn(),
+      screenX: 0,
+      screenY: 0
+    });
 
-  node.find(ResizeHandle).instance().saveMouseAndUpdateCardSize({
-    screenX: 30,
-    screenY: 10
-  });
+  node
+    .find(ResizeHandle)
+    .instance()
+    .saveMouseAndUpdateCardSize({
+      screenX: 30,
+      screenY: 10
+    });
 
-  node.find(ResizeHandle).instance().stopDragging();
+  node
+    .find(ResizeHandle)
+    .instance()
+    .stopDragging();
 
   expect(spy).not.toHaveBeenCalled();
 });

@@ -5,23 +5,35 @@ import Login from './Login';
 
 import {login} from './service';
 
-jest.mock('credentials', () => {return {
-  getToken: jest.fn()
-}});
-jest.mock('./service', () => {return {
-  login: jest.fn()
-}});
-jest.mock('react-router-dom', () => {return {
-  Redirect: ({to}) => {return <div>REDIRECT {to}</div>}
-}});
-jest.mock('components', () => {return {
-  Message: ({type}) => {return <div className={"Message Message--" + type}></div>},
-  Button: props => <button {...props}>{props.children}</button>,
-  Input: props => <input onChange={props.onChange} type={props.type} name={props.name} value={props.value}/>,
-  Logo: () => <div></div>
-  }
+jest.mock('credentials', () => {
+  return {
+    getToken: jest.fn()
+  };
 });
-
+jest.mock('./service', () => {
+  return {
+    login: jest.fn()
+  };
+});
+jest.mock('react-router-dom', () => {
+  return {
+    Redirect: ({to}) => {
+      return <div>REDIRECT {to}</div>;
+    }
+  };
+});
+jest.mock('components', () => {
+  return {
+    Message: ({type}) => {
+      return <div className={'Message Message--' + type} />;
+    },
+    Button: props => <button {...props}>{props.children}</button>,
+    Input: props => (
+      <input onChange={props.onChange} type={props.type} name={props.name} value={props.value} />
+    ),
+    Logo: () => <div />
+  };
+});
 
 it('renders without crashing', () => {
   mount(<Login />);
@@ -29,7 +41,7 @@ it('renders without crashing', () => {
 
 it('should reflect the state in the input fields', () => {
   const node = mount(<Login />);
-  const input = 'asdf'
+  const input = 'asdf';
 
   node.setState({username: input});
 
@@ -38,12 +50,12 @@ it('should reflect the state in the input fields', () => {
 
 it('should update the state from the input fields', () => {
   const node = mount(<Login />);
-  const input = 'asdf'
+  const input = 'asdf';
   const field = 'username';
 
   node.instance().passwordField = document.createElement('input');
 
-  node.find(`input[name="${field}"]`).simulate('change', {target: {value: input, name:field}});
+  node.find(`input[name="${field}"]`).simulate('change', {target: {value: input, name: field}});
 
   expect(node).toHaveState(field, input);
 });
@@ -54,7 +66,6 @@ it('should display the error message if there is an error', () => {
   node.instance().passwordField = document.createElement('input');
 
   node.setState({error: true});
-
 
   expect(node.find('.Message--error')).toBePresent();
 });
@@ -113,9 +124,9 @@ it('should clear the error state after user input', () => {
 
   node.setState({error: true});
 
-  const input = 'asdf'
+  const input = 'asdf';
   const field = 'username';
-  node.find(`input[name="${field}"]`).simulate('change', {target: {value: input, name:field}});
+  node.find(`input[name="${field}"]`).simulate('change', {target: {value: input, name: field}});
 
   expect(node).not.toHaveState('error', true);
 });

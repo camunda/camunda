@@ -8,20 +8,19 @@ function getAllFilesInDirectory(dir, filelist) {
   files.forEach(function(file) {
     if (fs.statSync(dir + file).isDirectory()) {
       filelist = getAllFilesInDirectory(dir + file + '/', filelist);
-    }
-    else {
+    } else {
       filelist.push(dir + file);
     }
   });
   return filelist;
-};
+}
 
 function getInternalModules(dir) {
   return new Set(fs.readdirSync(dir).map(entry => entry.split('.')[0]));
 }
 
 function isJavascriptFile(filename) {
-  return (/^(?!.*test\.js).*\.js$/g).test(filename);
+  return /^(?!.*test\.js).*\.js$/g.test(filename);
 }
 
 function isFileNotBlacklisted(filename) {
@@ -34,8 +33,8 @@ function getImportedModules(content) {
   const matches = [];
   let result = regex.exec(content);
 
-  while(result !== null) {
-    if(result[1] && !result[1].includes('!')) {
+  while (result !== null) {
+    if (result[1] && !result[1].includes('!')) {
       matches.push(result[1].split('/')[0]);
     }
     result = regex.exec(content);
@@ -51,9 +50,7 @@ function getDeclaredDependencies() {
 }
 
 const allFiles = getAllFilesInDirectory(__dirname + '/');
-const filesToCheck = allFiles
-  .filter(isJavascriptFile)
-  .filter(isFileNotBlacklisted);
+const filesToCheck = allFiles.filter(isJavascriptFile).filter(isFileNotBlacklisted);
 const usedModules = new Set();
 
 filesToCheck.forEach(filename => {
@@ -79,7 +76,7 @@ it('should use all declared dependencies in production code', () => {
 it('should declare all used dependencies', () => {
   const undeclaredDependencies = new Set();
   usedModules.forEach(entry => {
-    if(!declaredDependencies.includes(entry)) {
+    if (!declaredDependencies.includes(entry)) {
       undeclaredDependencies.add(entry);
     }
   });

@@ -11,16 +11,14 @@ export default function Icon(props) {
   delete filteredProps.type;
 
   if (props.renderedIn) {
-    return (
-      <Tag {...filteredProps} className={'Icon Icon--' + type} />
-    );
+    return <Tag {...filteredProps} className={'Icon Icon--' + type} />;
   } else {
     const SVG = icons[type];
 
     return (
-      <span className='Icon Icon--svg'>
+      <span className="Icon Icon--svg">
         <SVG />
       </span>
-    )
+    );
   }
 }

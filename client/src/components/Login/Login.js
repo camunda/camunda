@@ -25,7 +25,7 @@ export default class Login extends React.Component {
       [name]: value,
       error: false
     });
-  }
+  };
 
   submit = async evt => {
     evt.preventDefault();
@@ -34,47 +34,74 @@ export default class Login extends React.Component {
 
     const token = await login(username, password);
 
-    if(token) {
+    if (token) {
       this.setState({redirect: true});
     } else {
       this.setState({error: true});
     }
-  }
+  };
 
   render() {
     const {username, password, redirect, error} = this.state;
     const locationState = this.props.location && this.props.location.state;
 
-    if(redirect || getToken()) {
-      return (
-        <Redirect to={(locationState && locationState.from) || '/'} />
-      );
+    if (redirect || getToken()) {
+      return <Redirect to={(locationState && locationState.from) || '/'} />;
     }
 
     return (
-      <form  className='Login'>
-        <h1 className='Login__heading'>
-          <Logo className='Login__logo'/>
+      <form className="Login">
+        <h1 className="Login__heading">
+          <Logo className="Login__logo" />
           Camunda Optimize
         </h1>
-        {error ? (<Message type='error' message='Could not log you in. Please check your username and password.'/>) : ('')}
-        <div className='Login__controls'>
-          <div className='Login__row'>
-            <label className='Login__label' htmlFor='username'>Username</label>
-            <Input className='Login__input' type='text' placeholder='Username' value={username} onChange={this.handleInputChange} name='username' autoFocus={true} />
+        {error ? (
+          <Message
+            type="error"
+            message="Could not log you in. Please check your username and password."
+          />
+        ) : (
+          ''
+        )}
+        <div className="Login__controls">
+          <div className="Login__row">
+            <label className="Login__label" htmlFor="username">
+              Username
+            </label>
+            <Input
+              className="Login__input"
+              type="text"
+              placeholder="Username"
+              value={username}
+              onChange={this.handleInputChange}
+              name="username"
+              autoFocus={true}
+            />
           </div>
-          <div className='Login__row'>
-            <label className='Login__label' htmlFor='password'>Password</label>
-            <Input className='Login__input' placeholder='Password' value={password} onChange={this.handleInputChange} type='password' name='password' reference={input => this.passwordField = input} />
+          <div className="Login__row">
+            <label className="Login__label" htmlFor="password">
+              Password
+            </label>
+            <Input
+              className="Login__input"
+              placeholder="Password"
+              value={password}
+              onChange={this.handleInputChange}
+              type="password"
+              name="password"
+              reference={input => (this.passwordField = input)}
+            />
           </div>
         </div>
-        <Button onClick={this.submit} type='primary' color='blue' className='Login__button'>Login</Button>
+        <Button onClick={this.submit} type="primary" color="blue" className="Login__button">
+          Login
+        </Button>
       </form>
     );
   }
 
   componentDidUpdate() {
-    if(this.state.error) {
+    if (this.state.error) {
       this.passwordField.focus();
       this.passwordField.select();
     }

@@ -1,4 +1,4 @@
-@import "shared-styles.scss";
+@import 'shared-styles.scss';
 
 .Login {
   display: block;
@@ -14,7 +14,7 @@
 }
 
 .Login__logo {
-  margin-right: .3em;
+  margin-right: 0.3em;
   width: 21px;
   height: 21px;
   vertical-align: baseline;
@@ -48,6 +48,3 @@
   font-size: 1em;
   padding: 8px 14px 9px;
 }
-
-
-

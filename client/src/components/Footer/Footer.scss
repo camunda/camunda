@@ -1,6 +1,6 @@
 .Footer {
   line-height: 24px;
-  font-size: .875em;
+  font-size: 0.875em;
   background-color: #fff;
   border-top: 1px solid #eeeeee;
   color: #777777;
@@ -9,14 +9,11 @@
   flex-shrink: 0;
 }
 
-
 .Footer__content {
   display: flex;
   justify-content: space-between;
   padding: 0 20px;
 }
-
-
 
 .Footer__connect-status {
   list-style: none;
@@ -32,17 +29,16 @@
   &:before {
     content: '';
     display: inline-block;
-    width: .65em;
-    height: .65em;
+    width: 0.65em;
+    height: 0.65em;
     border-radius: 100%;
     margin-right: 4px;
-    background-color: #B5152B;
+    background-color: #b5152b;
   }
 
   &.is-connected:before {
     background-color: #00c364;
   }
-
 }
 
 .Footer__colophon {

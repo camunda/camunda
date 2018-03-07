@@ -5,20 +5,22 @@ import {mount} from 'enzyme';
 import DateInput from './DateInput';
 
 it('should create a text input field', () => {
-  const node = mount(<DateInput date={moment()} format='YYYY-MM-DD' />);
+  const node = mount(<DateInput date={moment()} format="YYYY-MM-DD" />);
 
   expect(node.find('input')).toBePresent();
 });
 
 it('should have field with value equal to formated date', () => {
-  const node = mount(<DateInput date={moment()} format='YYYY-MM-DD' />);
+  const node = mount(<DateInput date={moment()} format="YYYY-MM-DD" />);
 
   expect(node.find('input')).toHaveValue(moment().format('YYYY-MM-DD'));
 });
 
 it('should trigger onDateChange callback when input changes to valid date', () => {
   const spy = jest.fn();
-  const node = mount(<DateInput date={moment()} format='YYYY-MM-DD' onDateChange={spy} enableAddButton = {jest.fn()}/>);
+  const node = mount(
+    <DateInput date={moment()} format="YYYY-MM-DD" onDateChange={spy} enableAddButton={jest.fn()} />
+  );
 
   node.simulate('change', {
     target: {
@@ -32,7 +34,9 @@ it('should trigger onDateChange callback when input changes to valid date', () =
 
 it('should add error class to true when input changes to invalid date', () => {
   const spy = jest.fn();
-  const node = mount(<DateInput date={moment()} format='YYYY-MM-DD' onDateChange={spy} enableAddButton = {jest.fn()}/>);
+  const node = mount(
+    <DateInput date={moment()} format="YYYY-MM-DD" onDateChange={spy} enableAddButton={jest.fn()} />
+  );
 
   node.simulate('change', {
     target: {

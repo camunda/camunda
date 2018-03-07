@@ -2,9 +2,15 @@ import React from 'react';
 import {mount} from 'enzyme';
 
 import Report from './Report';
-import {getReportData, loadSingleReport, remove, saveReport, loadProcessDefinitionXml} from './service';
+import {
+  getReportData,
+  loadSingleReport,
+  remove,
+  saveReport,
+  loadProcessDefinitionXml
+} from './service';
 
-jest.mock('components', () =>{
+jest.mock('components', () => {
   const Modal = props => <div {...props}>{props.children}</div>;
   Modal.Header = props => <div>{props.children}</div>;
   Modal.Content = props => <div>{props.children}</div>;
@@ -13,10 +19,20 @@ jest.mock('components', () =>{
   return {
     Modal,
     Button: props => <button {...props}>{props.children}</button>,
-    Input: props => <input ref={props.reference} id={props.id} readOnly={props.readOnly} type={props.type} onChange={props.onChange} value={props.value} className={props.className}/>,
-    ShareEntity: () => <div></div>,
+    Input: props => (
+      <input
+        ref={props.reference}
+        id={props.id}
+        readOnly={props.readOnly}
+        type={props.type}
+        onChange={props.onChange}
+        value={props.value}
+        className={props.className}
+      />
+    ),
+    ShareEntity: () => <div />,
     ReportView: () => <div>ReportView</div>
-  }
+  };
 });
 
 jest.mock('./service', () => {
@@ -26,28 +42,32 @@ jest.mock('./service', () => {
     getReportData: jest.fn(),
     saveReport: jest.fn(),
     loadProcessDefinitionXml: jest.fn()
-  }
+  };
 });
 
 jest.mock('react-router-dom', () => {
   return {
     Redirect: ({to}) => {
-      return <div>REDIRECT to {to}</div>
+      return <div>REDIRECT to {to}</div>;
     },
     Link: ({children, to, onClick, id}) => {
-      return <a id={id} href={to} onClick={onClick}>{children}</a>
+      return (
+        <a id={id} href={to} onClick={onClick}>
+          {children}
+        </a>
+      );
     }
-  }
+  };
 });
 
 jest.mock('moment', () => () => {
   return {
     format: () => 'some date'
-  }
+  };
 });
 
 jest.mock('./ControlPanel', () => {
-  return () => <div>ControlPanel</div>
+  return () => <div>ControlPanel</div>;
 });
 
 const props = {
@@ -58,7 +78,7 @@ const props = {
 const sampleReport = {
   name: 'name',
   lastModifier: 'lastModifier',
-  lastModified: '2017-11-11T11:11:11.1111+0200',
+  lastModified: '2017-11-11T11:11:11.1111+0200'
 };
 
 loadSingleReport.mockReturnValue(sampleReport);
@@ -113,11 +133,13 @@ it('should open a deletion modal on delete button click', async () => {
     loaded: true
   });
 
-  await node.find('.Report__delete-button').first().simulate('click');
+  await node
+    .find('.Report__delete-button')
+    .first()
+    .simulate('click');
 
   expect(node).toHaveState('deleteModalVisible', true);
 });
-
 
 it('should remove a report when delete button is clicked', () => {
   const node = mount(<Report {...props} />);
@@ -126,7 +148,10 @@ it('should remove a report when delete button is clicked', () => {
     deleteModalVisible: true
   });
 
-  node.find('.Report__delete-report-modal-button').first().simulate('click');
+  node
+    .find('.Report__delete-report-modal-button')
+    .first()
+    .simulate('click');
 
   expect(remove).toHaveBeenCalledWith('1');
 });
@@ -138,7 +163,10 @@ it('should redirect to the report list on report deletion', async () => {
     deleteModalVisible: true
   });
 
-  await node.find('.Report__delete-report-modal-button').first().simulate('click');
+  await node
+    .find('.Report__delete-report-modal-button')
+    .first()
+    .simulate('click');
 
   expect(node).toIncludeText('REDIRECT to /reports');
 });
@@ -170,7 +198,7 @@ it('should update the report', async () => {
   const node = mount(<Report {...props} />);
 
   await node.instance().loadReport();
-  await node.instance().updateReport({'visualization': 'customTestVis'});
+  await node.instance().updateReport({visualization: 'customTestVis'});
 
   expect(node.state().data.visualization).toBe('customTestVis');
 });
@@ -178,21 +206,22 @@ it('should update the report', async () => {
 it('should evaluate the report after updating', async () => {
   const node = mount(<Report {...props} />);
 
-  node.setState({data: {
-    processDefinitionKey : 'test key',
-    processDefinitionVersion: 'test version',
-    view : {
-      operation: 'foo'
-    },
-    groupBy : {
-      type: 'bar'
-    },
-    visualization: 'number'
+  node.setState({
+    data: {
+      processDefinitionKey: 'test key',
+      processDefinitionVersion: 'test version',
+      view: {
+        operation: 'foo'
+      },
+      groupBy: {
+        type: 'bar'
+      },
+      visualization: 'number'
     }
   });
 
   getReportData.mockClear();
-  await node.instance().updateReport({'visualization':'customTestVis'});
+  await node.instance().updateReport({visualization: 'customTestVis'});
 
   expect(getReportData).toHaveBeenCalled();
 });
@@ -204,7 +233,7 @@ it('should reset the report data to its original state after canceling', async (
 
   const dataBefore = node.state().data;
 
-  await node.instance().updateReport({'visualization': 'customTestVis'});
+  await node.instance().updateReport({visualization: 'customTestVis'});
   await node.instance().cancel();
 
   expect(node.state().data).toEqual(dataBefore);
@@ -222,8 +251,10 @@ it('should show a modal on share button click', () => {
   const node = mount(<Report {...props} />);
   node.setState({loaded: true});
 
-
-  node.find('.Report__share-button').first().simulate('click');
+  node
+    .find('.Report__share-button')
+    .first()
+    .simulate('click');
 
   expect(node.find('.Report__share-modal').first()).toHaveProp('open', true);
 });
@@ -232,13 +263,15 @@ it('should hide the modal on close button click', () => {
   const node = mount(<Report {...props} />);
   node.setState({loaded: true, modalVisible: true});
 
-  node.find('.Report__close-share-modal-button').first().simulate('click');
+  node
+    .find('.Report__close-share-modal-button')
+    .first()
+    .simulate('click');
 
   expect(node.find('.Report__share-modal').first()).toHaveProp('open', false);
 });
 
 describe('edit mode', async () => {
-
   it('should remove flow node and variable filter after changing ProcDef', async () => {
     props.match.params.viewMode = 'edit';
     const node = await mount(<Report {...props} />);
@@ -253,7 +286,7 @@ describe('edit mode', async () => {
             type: 'bar'
           },
           {
-            data:'foo',
+            data: 'foo',
             type: 'executedFlowNodes'
           },
           {
@@ -263,9 +296,9 @@ describe('edit mode', async () => {
         ]
       }
     }));
-    
-    await node.instance().updateReport({'processDefinitionKey': 'foo'});
-    
+
+    await node.instance().updateReport({processDefinitionKey: 'foo'});
+
     expect(node.state().data.filter.length).toBe(1);
     expect(node.state().data.filter[0].data).toBe('foo');
     expect(node.state().data.filter[0].type).toBe('bar');
@@ -274,10 +307,12 @@ describe('edit mode', async () => {
   it('should store xml if process definition is changed', async () => {
     props.match.params.viewMode = 'edit';
     const node = await mount(<Report {...props} />);
-    
+
     await node.instance().loadReport();
-    await node.instance().updateReport({'processDefinitionKey': 'asd', 'processDefinitionVersion': '123'});
-    
+    await node
+      .instance()
+      .updateReport({processDefinitionKey: 'asd', processDefinitionVersion: '123'});
+
     expect(node.state().data.configuration.xml).toBe('some xml');
   });
 
@@ -353,14 +388,12 @@ describe('edit mode', async () => {
 
     await node.instance().loadReport();
 
-    node.setState(
-      {
-        loaded: true,
-        originalData: {
-          processDefinitionKey : "123"
-        }
+    node.setState({
+      loaded: true,
+      originalData: {
+        processDefinitionKey: '123'
       }
-    );
+    });
     getReportData.mockReturnValueOnce(null);
     await node.instance().cancel();
 
@@ -378,6 +411,11 @@ describe('edit mode', async () => {
       ...sampleReport
     });
 
-    expect(node.find('.Report__name-input').at(0).getDOMNode()).toBe(document.activeElement)
+    expect(
+      node
+        .find('.Report__name-input')
+        .at(0)
+        .getDOMNode()
+    ).toBe(document.activeElement);
   });
 });

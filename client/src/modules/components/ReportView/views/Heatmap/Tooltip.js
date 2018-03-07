@@ -3,7 +3,6 @@ import React from 'react';
 import {addDiagramTooltip} from './service';
 
 export default class Tooltip extends React.Component {
-
   render() {
     return null;
   }
@@ -26,7 +25,7 @@ export default class Tooltip extends React.Component {
     }
   };
 
-  removeOverlays = (viewer) => {
+  removeOverlays = viewer => {
     viewer.get('overlays').remove({type: 'TOOLTIP'});
-  }
+  };
 }

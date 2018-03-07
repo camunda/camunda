@@ -4,33 +4,40 @@ import {mount} from 'enzyme';
 import ReportView from './ReportView';
 import {Number, Table} from './views';
 
-jest.mock('./views', () => {return {
-  Number: props => <div>Number: {props.data}</div>,
-  Table: props => <div> Table: {JSON.stringify(props.data)}</div>,
-  Json: props => <div>JSON: {JSON.stringify(props.data)}</div>
-}});
+jest.mock('./views', () => {
+  return {
+    Number: props => <div>Number: {props.data}</div>,
+    Table: props => <div> Table: {JSON.stringify(props.data)}</div>,
+    Json: props => <div>JSON: {JSON.stringify(props.data)}</div>
+  };
+});
 
-jest.mock('components', () => {return {
-  ErrorBoundary: (props) => <div>{props.children}</div>
-}});
+jest.mock('components', () => {
+  return {
+    ErrorBoundary: props => <div>{props.children}</div>
+  };
+});
 
-jest.mock('services', () => {return {
-  reportLabelMap: {
-    objectToLabel: () => 'foo',
-    objectToKey: () => 'foo',
-    keyToLabel: () => 'foo',
-    getOptions: () => [],
-    keyToObject: () => 'foo',
-  },
-  getFlowNodeNames: jest.fn().mockReturnValue({
-    a: 'foo',
-    b: 'bar'
-  })
-}});
+jest.mock('services', () => {
+  return {
+    reportLabelMap: {
+      objectToLabel: () => 'foo',
+      objectToKey: () => 'foo',
+      keyToLabel: () => 'foo',
+      getOptions: () => [],
+      keyToObject: () => 'foo'
+    },
+    getFlowNodeNames: jest.fn().mockReturnValue({
+      a: 'foo',
+      b: 'bar'
+    })
+  };
+});
 
-jest.mock('./ReportBlankSlate', () => {return (props) => {
-    return <div className='message'>{props.message}</div>;
-  }
+jest.mock('./ReportBlankSlate', () => {
+  return props => {
+    return <div className="message">{props.message}</div>;
+  };
 });
 
 it('should display a number if visualization is number', () => {
@@ -38,16 +45,16 @@ it('should display a number if visualization is number', () => {
     data: {
       processDefinitionKey: 'aKey',
       processDefinitionVersion: '1',
-      view : {
+      view: {
         operation: 'foo'
       },
-      groupBy : {
+      groupBy: {
         type: 'bar'
       },
       visualization: 'number'
     },
     result: 1234
-  }
+  };
 
   const node = mount(<ReportView report={report} />);
   node.setState({
@@ -61,18 +68,18 @@ it('should display a json if visualization is json', () => {
     data: {
       processDefinitionKey: 'aKey',
       processDefinitionVersion: '1',
-      view : {
+      view: {
         operation: 'foo'
       },
-      groupBy : {
+      groupBy: {
         type: 'bar'
       },
       visualization: 'json'
     },
     result: 1234
-  }
+  };
 
-  const node = mount(<ReportView report={report}/>);
+  const node = mount(<ReportView report={report} />);
   node.setState({
     loaded: true
   });
@@ -84,18 +91,18 @@ it('should provide an errorMessage property to the component', () => {
     data: {
       processDefinitionKey: 'aKey',
       processDefinitionVersion: '1',
-      view : {
+      view: {
         operation: 'foo'
       },
-      groupBy : {
+      groupBy: {
         type: 'bar'
       },
       visualization: 'number'
     },
     result: 1234
-  }
+  };
 
-  const node = mount(<ReportView report={report}/>);
+  const node = mount(<ReportView report={report} />);
   node.setState({
     loaded: true
   });
@@ -107,18 +114,18 @@ it('should instruct to add a process definition key if not available', () => {
     data: {
       processDefinitionKey: '',
       processDefinitionVersion: '1',
-      view : {
+      view: {
         operation: 'foo'
       },
-      groupBy : {
+      groupBy: {
         type: 'bar'
       },
       visualization: 'number'
     },
     result: 1234
-  }
+  };
 
-  const node = mount(<ReportView report={report}/>);
+  const node = mount(<ReportView report={report} />);
   node.setState({
     loaded: true
   });
@@ -130,18 +137,18 @@ it('should instruct to add a process definition version if not available', () =>
     data: {
       processDefinitionKey: 'aKey',
       processDefinitionVersion: '',
-      view : {
+      view: {
         operation: 'foo'
       },
-      groupBy : {
+      groupBy: {
         type: 'bar'
       },
       visualization: 'number'
     },
     result: 1234
-  }
+  };
 
-  const node = mount(<ReportView report={report}/>);
+  const node = mount(<ReportView report={report} />);
   node.setState({
     loaded: true
   });
@@ -153,18 +160,18 @@ it('should instruct to add view option if not available', () => {
     data: {
       processDefinitionKey: 'aKey',
       processDefinitionVersion: '1',
-      view : {
+      view: {
         operation: ''
       },
-      groupBy : {
+      groupBy: {
         type: 'bar'
       },
       visualization: 'number'
     },
     result: 1234
-  }
+  };
 
-  const node = mount(<ReportView report={report}/>);
+  const node = mount(<ReportView report={report} />);
   node.setState({
     loaded: true
   });
@@ -176,18 +183,18 @@ it('should instruct to add group by option if not available', () => {
     data: {
       processDefinitionKey: 'aKey',
       processDefinitionVersion: '1',
-      view : {
+      view: {
         operation: 'foo'
       },
-      groupBy : {
+      groupBy: {
         type: ''
       },
       visualization: 'number'
     },
     result: 1234
-  }
+  };
 
-  const node = mount(<ReportView report={report}/>);
+  const node = mount(<ReportView report={report} />);
   node.setState({
     loaded: true
   });
@@ -199,18 +206,18 @@ it('should instruct to add visualization option if not available', () => {
     data: {
       processDefinitionKey: 'aKey',
       processDefinitionVersion: '1',
-      view : {
+      view: {
         operation: 'foo'
       },
-      groupBy : {
+      groupBy: {
         type: 'bar'
       },
       visualization: ''
     },
     result: 1234
-  }
+  };
 
-  const node = mount(<ReportView report={report}/>);
+  const node = mount(<ReportView report={report} />);
   node.setState({
     loaded: true
   });
@@ -222,18 +229,18 @@ it('should not add instruction for group by if operation is raw data', () => {
     data: {
       processDefinitionKey: 'aKey',
       processDefinitionVersion: '1',
-      view : {
+      view: {
         operation: 'rawData'
       },
-      groupBy : {
+      groupBy: {
         type: ''
       },
       visualization: 'number'
     },
     result: 1234
-  }
+  };
 
-  const node = mount(<ReportView report={report}/>);
+  const node = mount(<ReportView report={report} />);
   node.setState({
     loaded: true
   });
@@ -245,10 +252,10 @@ it('should adjust date shown in table to unit', () => {
     data: {
       processDefinitionKey: 'aKey',
       processDefinitionVersion: '1',
-      view : {
+      view: {
         operation: 'foo'
       },
-      groupBy : {
+      groupBy: {
         type: 'processInstance',
         unit: 'day'
       },
@@ -258,9 +265,9 @@ it('should adjust date shown in table to unit', () => {
       '2015-03-25T12:00:00Z': 2,
       '2015-03-26T12:00:00Z': 3
     }
-  }
+  };
 
-  const node = mount(<ReportView report={report}/>);
+  const node = mount(<ReportView report={report} />);
   node.setState({
     loaded: true
   });

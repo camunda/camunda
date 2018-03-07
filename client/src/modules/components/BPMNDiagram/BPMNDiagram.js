@@ -21,27 +21,29 @@ export default class BPMNDiagram extends React.Component {
 
   storeContainer = container => {
     this.container = container;
-  }
+  };
 
   render() {
-    return <div className='BPMNDiagram' style={this.props.style} ref={this.storeContainer}>
-      {this.state.loaded && this.props.children &&
-        React.Children.map(this.props.children, child =>
-          React.cloneElement(child, { viewer: this.viewer })
-        )
-      }
-    </div>;
+    return (
+      <div className="BPMNDiagram" style={this.props.style} ref={this.storeContainer}>
+        {this.state.loaded &&
+          this.props.children &&
+          React.Children.map(this.props.children, child =>
+            React.cloneElement(child, {viewer: this.viewer})
+          )}
+      </div>
+    );
   }
 
   componentDidUpdate(prevProps) {
-    if(prevProps.xml !== this.props.xml) {
+    if (prevProps.xml !== this.props.xml) {
       this.setState({loaded: false});
       this.importXML(this.props.xml);
     }
   }
 
   importXML(xml) {
-    this.viewer.importXML(xml, (err) => {
+    this.viewer.importXML(xml, err => {
       const canvas = this.viewer.get('canvas');
 
       canvas.resized();
@@ -57,7 +59,7 @@ export default class BPMNDiagram extends React.Component {
     this.importXML(this.props.xml);
 
     const dashboardObject = this.container.closest('.DashboardObject');
-    if(dashboardObject) {
+    if (dashboardObject) {
       // if the diagram is on a dashboard, react to changes of the dashboard objects size
       new MutationObserver(() => {
         this.viewer.get('canvas').zoom('fit-viewport');

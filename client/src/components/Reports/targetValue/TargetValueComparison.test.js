@@ -3,26 +3,32 @@ import {mount} from 'enzyme';
 
 import TargetValueComparison from './TargetValueComparison';
 
-jest.mock('bpmn-js/lib/NavigatedViewer', () => {return class Viewer {
-  constructor() {
-    this.elements = [
-      {id: 'a', name: 'Element A'},
-      {id: 'b', name: 'Element B'},
-      {id: 'c', name: 'Element C'}
-    ]
+jest.mock('bpmn-js/lib/NavigatedViewer', () => {
+  return class Viewer {
+    constructor() {
+      this.elements = [
+        {id: 'a', name: 'Element A'},
+        {id: 'b', name: 'Element B'},
+        {id: 'c', name: 'Element C'}
+      ];
 
-    this.elementRegistry = {
-      filter: () => {return {
-        map: () => this.elements
-      }}
+      this.elementRegistry = {
+        filter: () => {
+          return {
+            map: () => this.elements
+          };
+        }
+      };
     }
-  }
-  attachTo = jest.fn()
-  importXML = jest.fn((xml, cb) => cb())
-  get = () => {return this.elementRegistry}
-}});
+    attachTo = jest.fn();
+    importXML = jest.fn((xml, cb) => cb());
+    get = () => {
+      return this.elementRegistry;
+    };
+  };
+});
 
-jest.mock('components', () =>{
+jest.mock('components', () => {
   const Modal = props => <div {...props}>{props.children}</div>;
   Modal.Header = props => <div>{props.children}</div>;
   Modal.Content = props => <div>{props.children}</div>;
@@ -34,13 +40,27 @@ jest.mock('components', () =>{
   return {
     Modal,
     Select,
-    Button: props => <button {...props} active="true">{props.children}</button>,
+    Button: props => (
+      <button {...props} active="true">
+        {props.children}
+      </button>
+    ),
     ButtonGroup: props => <div {...props}>{props.children}</div>,
     BPMNDiagram: () => <div>BPMNDiagram</div>,
     TargetValueBadge: () => <div>TargetValueBadge</div>,
-    Input: props => <input ref={props.reference} id={props.id} readOnly={props.readOnly} type={props.type} onChange={props.onChange} value={props.value} className={props.className}/>,
+    Input: props => (
+      <input
+        ref={props.reference}
+        id={props.id}
+        readOnly={props.readOnly}
+        type={props.type}
+        onChange={props.onChange}
+        value={props.value}
+        className={props.className}
+      />
+    ),
     Table: ({body}) => <div>{JSON.stringify(body.map(row => [row[0], row[1]]))}</div>
-  }
+  };
 });
 
 jest.mock('services', () => {

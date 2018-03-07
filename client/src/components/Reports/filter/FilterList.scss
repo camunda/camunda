@@ -21,13 +21,12 @@
   &:last-child {
     margin-right: 20px;
   }
-
 }
 
 .FilterList__itemConnector {
   list-style-type: none;
   display: inline-block;
-  margin: 0 .5em;
+  margin: 0 0.5em;
 }
 
 .FilterList__parameter-name {
@@ -36,7 +35,7 @@
 }
 
 .FilterList__value {
-  background-color: #7FA8C5;
+  background-color: #7fa8c5;
   padding: 1px 8px 2px;
   border-radius: 10px;
   color: #fff;

@@ -4,17 +4,14 @@ import ReportBlankSlate from '../ReportBlankSlate';
 import {Table as TableRenderer} from 'components';
 
 export default function Table({data, formatter, labels, errorMessage}) {
-  if(!data || typeof data !== 'object') {
+  if (!data || typeof data !== 'object') {
     return <ReportBlankSlate message={errorMessage} />;
   }
 
-  return (
-    <TableRenderer {...formatData(data, formatter, labels)} />
-  );
+  return <TableRenderer {...formatData(data, formatter, labels)} />;
 }
 
 function formatData(data, formatter, labels) {
-
   if (data.length) {
     // raw data
     const processInstanceProps = Object.keys(data[0]).filter(entry => entry !== 'variables');
@@ -24,21 +21,18 @@ function formatData(data, formatter, labels) {
       let row = processInstanceProps.map(entry => instance[entry]);
       const variableValues = rawVariableNames.map(entry => instance.variables[entry]);
       row.push(...variableValues);
-      row = row.map(entry => entry === null ? '': entry.toString());
+      row = row.map(entry => (entry === null ? '' : entry.toString()));
       return row;
     });
 
     const variableNames = rawVariableNames.map(varName => `Variable: ${varName}`);
     const head = processInstanceProps;
-    head.push(...variableNames)
+    head.push(...variableNames);
 
     return {head, body};
   } else {
     // normal two-dimensional data
-    const body = Object.keys(data).map(key => [
-      key,
-      formatter(data[key])
-    ]);
+    const body = Object.keys(data).map(key => [key, formatter(data[key])]);
     return {head: labels, body};
   }
 }

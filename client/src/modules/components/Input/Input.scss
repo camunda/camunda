@@ -1,11 +1,11 @@
-.Input[type="text"],
-.Input[type="password"],
-.Input[type="email"],
+.Input[type='text'],
+.Input[type='password'],
+.Input[type='email'],
 textarea {
   color: #333;
   border: 1px solid lightgray;
-  font-size: .875em;
-  padding: 6px 12px;  
+  font-size: 0.875em;
+  padding: 6px 12px;
   border-radius: 3px;
 
   &:focus {
@@ -15,14 +15,13 @@ textarea {
   }
 
   &[disabled],
-  &[disabled="disabled"] {
+  &[disabled='disabled'] {
     cursor: not-allowed;
   }
-  
-  &.is-invalid {
-    border: 1px solid #B5152B;
-    background-color: lighten(#B5152B, 55);
-    color: #B5152B; 
-  }
 
+  &.is-invalid {
+    border: 1px solid #b5152b;
+    background-color: lighten(#b5152b, 55);
+    color: #b5152b;
+  }
 }

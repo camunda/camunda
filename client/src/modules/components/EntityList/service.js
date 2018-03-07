@@ -4,7 +4,7 @@ export async function load(api, numResults, sortBy) {
   let url = `/api/${api}`;
 
   let params = {};
-  if(numResults) {
+  if (numResults) {
     params['numResults'] = numResults;
   }
 
@@ -16,7 +16,6 @@ export async function load(api, numResults, sortBy) {
 
   return await response.json();
 }
-
 
 export async function create(api) {
   const response = await post(`/api/${api}`);

@@ -7,7 +7,8 @@ import ReportBlankSlate from './ReportBlankSlate';
 
 import {Number, Json, Table, Heatmap, Chart} from './views';
 
-const defaultErrorMessage = 'Cannot display data for the given report builder settings. Please choose another combination!';
+const defaultErrorMessage =
+  'Cannot display data for the given report builder settings. Please choose another combination!';
 
 export default class ReportView extends React.Component {
   constructor(props) {
@@ -17,97 +18,98 @@ export default class ReportView extends React.Component {
       flowNodeNames: null,
       loaded: false
     };
-    if ( this.getProcDefKey() && this.getProcDefVersion() ) {
+    if (this.getProcDefKey() && this.getProcDefVersion()) {
       this.loadFlowNodeNames(this.getProcDefKey(), this.getProcDefVersion());
     }
   }
 
   getProcDefKey = () => {
     return this.props.report.data.processDefinitionKey;
-  }
+  };
 
   getProcDefVersion = () => {
     return this.props.report.data.processDefinitionVersion;
-  }
+  };
 
   render() {
     if (this.props.report) {
       return this.checkProcDefAndRenderReport(this.props.report);
     } else {
-      return (
-        <div className='Message Message--error'>{defaultErrorMessage}</div>
-      );
+      return <div className="Message Message--error">{defaultErrorMessage}</div>;
     }
   }
 
-  checkProcDefAndRenderReport = (report) => {
+  checkProcDefAndRenderReport = report => {
     const {data} = report;
-    if(this.isEmpty(data.processDefinitionKey) || this.isEmpty(data.processDefinitionVersion)) {
+    if (this.isEmpty(data.processDefinitionKey) || this.isEmpty(data.processDefinitionVersion)) {
       return this.buildInstructionMessage('Process definition');
     } else {
       return this.checkViewAndRenderReport(report);
     }
-  }
+  };
 
   checkViewAndRenderReport = report => {
     const {data} = report;
-    if(this.isEmpty(data.view.operation)) {
+    if (this.isEmpty(data.view.operation)) {
       return this.buildInstructionMessage('View');
-    } else if(data.view.operation === 'rawData') {
+    } else if (data.view.operation === 'rawData') {
       return this.checkVisualizationAndRenderReport(report);
     } else {
       return this.checkGroupByAndRenderReport(report);
     }
-  }
+  };
 
   checkGroupByAndRenderReport = report => {
     const {data} = report;
-    if(this.isEmpty(data.groupBy.type)) {
+    if (this.isEmpty(data.groupBy.type)) {
       return this.buildInstructionMessage('Group by');
     } else {
       return this.checkVisualizationAndRenderReport(report);
     }
-  }
+  };
 
   checkVisualizationAndRenderReport = report => {
     const {data} = report;
-    if(this.isEmpty(data.visualization)) {
+    if (this.isEmpty(data.visualization)) {
       return this.buildInstructionMessage('Visualize as');
     } else {
       return this.renderReport(report);
     }
-  }
+  };
 
-  buildInstructionMessage = (field) => {
+  buildInstructionMessage = field => {
     return (
-      <ReportBlankSlate message={'To display a report, please select an option for ”' + field + '”.'} />
+      <ReportBlankSlate
+        message={'To display a report, please select an option for ”' + field + '”.'}
+      />
     );
-  }
+  };
 
-  isEmpty = (str) => {
-    return (!str || 0 === str.length);
-  }
+  isEmpty = str => {
+    return !str || 0 === str.length;
+  };
 
   loadFlowNodeNames = async (key, version) => {
     this.setState({
       flowNodeNames: await getFlowNodeNames(key, version),
       loaded: true
     });
-  }
+  };
 
   componentWillReceiveProps(nextProps) {
     const nextProcDefKey = nextProps.report.data.processDefinitionKey;
     const nextProcDefVersion = nextProps.report.data.processDefinitionVersion;
-    const procDefKeyChanged = nextProcDefKey && (nextProcDefKey !== this.getProcDefKey());
-    const procDefVersionChanged = nextProcDefVersion && (nextProcDefVersion !== this.getProcDefVersion());
-    if(procDefKeyChanged || procDefVersionChanged) {
-      this.setState({loaded: false})
+    const procDefKeyChanged = nextProcDefKey && nextProcDefKey !== this.getProcDefKey();
+    const procDefVersionChanged =
+      nextProcDefVersion && nextProcDefVersion !== this.getProcDefVersion();
+    if (procDefKeyChanged || procDefVersionChanged) {
+      this.setState({loaded: false});
       this.loadFlowNodeNames(nextProcDefKey, nextProcDefVersion);
     }
   }
 
   applyFlowNodeNames = data => {
-    if(this.state.flowNodeNames) {
+    if (this.state.flowNodeNames) {
       const chartData = {};
       Object.keys(data).forEach(key => {
         chartData[this.state.flowNodeNames[key]] = data[key];
@@ -115,27 +117,28 @@ export default class ReportView extends React.Component {
 
       return chartData;
     }
-  }
+  };
 
   renderReport = report => {
     let {data, result} = report;
     let config;
 
-    const visualizations = ['pie', 'line', 'bar', 'table']
-    if(data.view.entity === "flowNode" && visualizations.includes(data.visualization) && result) {
+    const visualizations = ['pie', 'line', 'bar', 'table'];
+    if (data.view.entity === 'flowNode' && visualizations.includes(data.visualization) && result) {
       result = this.applyFlowNodeNames(result) || result;
     }
 
-    if(!this.state.loaded) {
-      return <p>loading...</p>
+    if (!this.state.loaded) {
+      return <p>loading...</p>;
     }
 
-    switch(data.visualization) {
+    switch (data.visualization) {
       case 'number':
         config = {
           component: Number,
           props: {data: result}
-        }; break;
+        };
+        break;
       case 'table':
         const viewLabel = reportLabelMap.objectToLabel(data.view, reportLabelMap.view);
         const groupByLabel = reportLabelMap.objectToLabel(data.groupBy, reportLabelMap.groupBy);
@@ -143,43 +146,64 @@ export default class ReportView extends React.Component {
         config = {
           component: Table,
           props: {data: formattedResult, labels: [groupByLabel, viewLabel]}
-        }; break;
+        };
+        break;
       case 'heat':
         config = {
           component: Heatmap,
-          props: {data: result, xml: data.configuration.xml, targetValue: data.configuration.targetValue}
-        }; break;
+          props: {
+            data: result,
+            xml: data.configuration.xml,
+            targetValue: data.configuration.targetValue
+          }
+        };
+        break;
       case 'bar':
       case 'line':
       case 'pie':
         config = {
           component: Chart,
-          props: {data: result, type: data.visualization, timeUnit: data.groupBy.unit, property: data.view.property}
-        }; break;
+          props: {
+            data: result,
+            type: data.visualization,
+            timeUnit: data.groupBy.unit,
+            property: data.view.property
+          }
+        };
+        break;
       default:
         config = {
           component: Json,
-          props: {data : {
-            data,
-            result
+          props: {
+            data: {
+              data,
+              result
             }
           }
-        }; break;
+        };
+        break;
     }
 
-    switch(data.view.property) {
-      case 'frequency': config.props.formatter = formatters.frequency; break;
-      case 'duration': config.props.formatter = formatters.duration; break;
-      default: config.props.formatter = v => v;
+    switch (data.view.property) {
+      case 'frequency':
+        config.props.formatter = formatters.frequency;
+        break;
+      case 'duration':
+        config.props.formatter = formatters.duration;
+        break;
+      default:
+        config.props.formatter = v => v;
     }
 
     config.props.errorMessage = defaultErrorMessage;
     const Component = config.component;
 
-    return (<ErrorBoundary>
-      <Component {...config.props} />
-    </ErrorBoundary>);
-  }
+    return (
+      <ErrorBoundary>
+        <Component {...config.props} />
+      </ErrorBoundary>
+    );
+  };
 
   formatResult = (data, result) => {
     const groupBy = data.groupBy;
@@ -188,7 +212,7 @@ export default class ReportView extends React.Component {
       return result;
     }
     let dateFormat;
-    switch(groupBy.unit) {
+    switch (groupBy.unit) {
       case 'hour':
         dateFormat = 'YYYY-MM-DD HH:00:00';
         break;
@@ -206,10 +230,10 @@ export default class ReportView extends React.Component {
         dateFormat = 'YYYY-MM-DD HH:MM:SS';
     }
     const formattedResult = {};
-      Object.keys(result).forEach(key => {
-        const formattedDate = moment(key).format(dateFormat);
-        formattedResult[formattedDate] = result[key];
-      });
+    Object.keys(result).forEach(key => {
+      const formattedDate = moment(key).format(dateFormat);
+      formattedResult[formattedDate] = result[key];
+    });
     return formattedResult;
-  }
+  };
 }

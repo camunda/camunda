@@ -24,7 +24,7 @@ export default class ClickBehavior extends React.Component {
 
     // remove existing selection markers and indicate selectable status for all flownodes
     elementRegistry.forEach(element => {
-      if(element.businessObject.$instanceOf('bpmn:FlowNode')) {
+      if (element.businessObject.$instanceOf('bpmn:FlowNode')) {
         canvas.removeMarker(element.businessObject.id, 'ClickBehavior__node--selected');
         canvas.addMarker(element.businessObject.id, 'ClickBehavior__node');
       }
@@ -46,11 +46,11 @@ export default class ClickBehavior extends React.Component {
     const elementRegistry = viewer.get('elementRegistry');
     const nodes = selectedNodes.map(v => elementRegistry.get(v).businessObject);
     this.props.setSelectedNodes(nodes);
-  }
+  };
 
   setupEventListeners() {
     this.props.viewer.on('element.click', ({element}) => {
-      if(element.businessObject.$instanceOf('bpmn:FlowNode')) {
+      if (element.businessObject.$instanceOf('bpmn:FlowNode')) {
         this.props.onClick(element.businessObject);
       }
     });

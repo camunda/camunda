@@ -1,12 +1,10 @@
 import React from 'react';
-import { mount } from 'enzyme';
+import {mount} from 'enzyme';
 
 import Modal from './Modal';
 
 it('should not render anything if the modal is not opened', () => {
-  const node = mount(<Modal>
-    ModalContent
-  </Modal>);
+  const node = mount(<Modal>ModalContent</Modal>);
 
   expect(node.html()).toBe(null);
 });

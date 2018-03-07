@@ -17,7 +17,7 @@ jest.mock('./service', () => {
         b: {activitiesReached: 2, activityCount: 2}
       }
     })
-  }
+  };
 });
 
 jest.mock('services', () => {
@@ -26,10 +26,14 @@ jest.mock('services', () => {
       a: 'foo',
       b: 'bar'
     })
-  }
+  };
 });
 
-jest.mock('chart.js', () => jest.fn().mockImplementation(() =>{return {destroy: jest.fn()}}));
+jest.mock('chart.js', () =>
+  jest.fn().mockImplementation(() => {
+    return {destroy: jest.fn()};
+  })
+);
 
 const props = {
   config: {
@@ -66,13 +70,15 @@ it('should create two Charts', async () => {
 
   const node = mount(<Statistics {...props} />);
 
-  node.setState({data: {
-    total: 10,
-    followingNodes: {
-      a: {activitiesReached: 3, activityCount: 1},
-      b: {activitiesReached: 2, activityCount: 2}
+  node.setState({
+    data: {
+      total: 10,
+      followingNodes: {
+        a: {activitiesReached: 3, activityCount: 1},
+        b: {activitiesReached: 2, activityCount: 2}
+      }
     }
-  }});
+  });
 
   expect(ChartRenderer.mock.instances.length).toBe(2);
 });

@@ -4,7 +4,7 @@ it('store the login data in localstorage', () => {
   store('login');
 
   expect(localStorage.setItem.mock.calls[0][1]).toBe('"login"');
-})
+});
 
 it('should retrieve the whole data with get', () => {
   localStorage.getItem.mockReturnValueOnce('"someData"');

@@ -1,7 +1,6 @@
 .ControlGroup {
-
   margin-bottom: 24px;
-  
+
   &:last-child {
     margin-bottom: 0;
   }
@@ -10,24 +9,23 @@
   .Select {
     width: 100%;
   }
-  
+
   label {
-    font-size: .875em;
+    font-size: 0.875em;
     color: #626265;
     margin-bottom: 12px;
     display: block;
   }
-  
 }
 
 .ControlGroup--horizontal {
   display: flex;
-  
+
   .Input,
   .Select {
-    width: 60%
+    width: 60%;
   }
-  
+
   label {
     width: 30%;
     text-align: right;
@@ -36,21 +34,18 @@
     margin-bottom: 0;
     display: inline-block;
   }
-    
 }
-
 
 .ControlGroup--centered {
   text-align: center;
-  
+
   label {
     display: block;
     margin-bottom: 12px;
   }
-  
+
   .Input,
   .Select {
     width: auto;
   }
-  
 }

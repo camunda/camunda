@@ -1,5 +1,5 @@
 .Message {
-  font-size: .875em;
+  font-size: 0.875em;
   background-color: #f2f2f2;
   padding: 8px 16px;
   margin: 0;
@@ -16,10 +16,9 @@
 .Message--red,
 .Message--danger,
 .Message--error {
-  border: 1px solid #B5152B;
+  border: 1px solid #b5152b;
   background-color: #f9d0d5; /* Sass: lighten(#B5152B, 50) */
 }
-
 
 .Message--green,
 .Message--success {

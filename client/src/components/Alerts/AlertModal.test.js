@@ -2,29 +2,30 @@ import React from 'react';
 import {mount} from 'enzyme';
 
 import AlertModal from './AlertModal';
-import {emailNotificationIsEnabled} from './service'
+import {emailNotificationIsEnabled} from './service';
 
 jest.mock('./service', () => {
   return {
     emailNotificationIsEnabled: jest.fn()
-  }
+  };
 });
 
-jest.mock('components', () =>{
-  const Modal = props => <div id='modal'>{props.children}</div>;
-  Modal.Header = props => <div id='modal_header'>{props.children}</div>;
-  Modal.Content = props => <div id='modal_content'>{props.children}</div>;
-  Modal.Actions = props => <div id='modal_actions'>{props.children}</div>;
+jest.mock('components', () => {
+  const Modal = props => <div id="modal">{props.children}</div>;
+  Modal.Header = props => <div id="modal_header">{props.children}</div>;
+  Modal.Content = props => <div id="modal_content">{props.children}</div>;
+  Modal.Actions = props => <div id="modal_actions">{props.children}</div>;
 
   const Select = props => <select {...props}>{props.children}</select>;
   Select.Option = props => <option {...props}>{props.children}</option>;
 
   return {
-  Modal,
-  Button: props => <button {...props}>{props.children}</button>,
-  Input: props => <input {...props}/>,
-  Select
-}});
+    Modal,
+    Button: props => <button {...props}>{props.children}</button>,
+    Input: props => <input {...props} />,
+    Select
+  };
+});
 
 const alert = {
   id: '71395',
@@ -39,12 +40,9 @@ const alert = {
   },
   reminder: null,
   fixNotification: true
-}
+};
 
-const reports = [
-  {id: '5', name: 'Some Report'},
-  {id: '8', name: 'Nice report'},
-]
+const reports = [{id: '5', name: 'Some Report'}, {id: '8', name: 'Nice report'}];
 
 it('should apply the alert property to the state when changing props', () => {
   const node = mount(<AlertModal reports={reports} />);
@@ -97,7 +95,10 @@ it('should disable the submit button if the email is not valid', () => {
   const node = mount(<AlertModal reports={reports} />);
 
   node.setProps({alert});
-  node.setState({email: 'this is not a valid email'}, expect(node.find('button[type="primary"]')).toBeDisabled);
+  node.setState(
+    {email: 'this is not a valid email'},
+    expect(node.find('button[type="primary"]')).toBeDisabled
+  );
 });
 
 it('should disable the submit button if no report is selected', () => {
@@ -118,10 +119,15 @@ it('should disable the submit button if the check interval is negative', () => {
   const node = mount(<AlertModal reports={reports} />);
 
   node.setProps({alert});
-  node.setState({checkInterval: {
-    value: '-7',
-    unit: 'seconds'
-  }}, expect(node.find('button[type="primary"]')).toBeDisabled);
+  node.setState(
+    {
+      checkInterval: {
+        value: '-7',
+        unit: 'seconds'
+      }
+    },
+    expect(node.find('button[type="primary"]')).toBeDisabled
+  );
 });
 
 it('should show warning that email is not configured', async () => {
@@ -129,7 +135,9 @@ it('should show warning that email is not configured', async () => {
   const node = await mount(<AlertModal reports={reports} />);
   await node.update();
 
-  expect(node.find('.AlertModal__configuration-warning').hasClass('AlertModal__configuration-warning')).toBe(true);
+  expect(
+    node.find('.AlertModal__configuration-warning').hasClass('AlertModal__configuration-warning')
+  ).toBe(true);
 });
 
 it('should not display warning if email is configured', async () => {

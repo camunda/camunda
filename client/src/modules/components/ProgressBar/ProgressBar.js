@@ -13,8 +13,13 @@ export default function ProgressBar(props) {
   const title = props.title ? props.title + ' ' : '';
 
   return (
-    <div {...props} className={'ProgressBar ' + (props.className || '')} style={style} title={title + props.status + '%'} >
-      <div className='ProgressBar__indicator' style={indicatorStyle}></div>
+    <div
+      {...props}
+      className={'ProgressBar ' + (props.className || '')}
+      style={style}
+      title={title + props.status + '%'}
+    >
+      <div className="ProgressBar__indicator" style={indicatorStyle} />
     </div>
   );
 }

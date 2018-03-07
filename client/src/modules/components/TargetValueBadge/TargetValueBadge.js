@@ -13,15 +13,17 @@ export default class TargetValueBadge extends React.Component {
   render() {
     const {viewer, values} = this.props;
 
-    if(viewer) {
+    if (viewer) {
       const overlays = viewer.get('overlays');
 
       overlays.remove({type: badgeType});
 
       Object.keys(values).forEach(id => {
-        if(values[id] && values[id].value) {
+        if (values[id] && values[id].value) {
           const container = document.createElement('div');
-          container.innerHTML = `<span class="TargetValueBadge">${formatters.duration(values[id])}</span>`;
+          container.innerHTML = `<span class="TargetValueBadge">${formatters.duration(
+            values[id]
+          )}</span>`;
           const overlayHtml = container.firstChild;
 
           // calculate overlay width

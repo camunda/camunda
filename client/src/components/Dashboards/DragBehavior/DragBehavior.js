@@ -5,16 +5,19 @@ import {snapInPosition, collidesWithReport, applyPlacement} from '../service';
 
 export default class DragBehavior extends React.Component {
   render() {
-    return <div className='DragBehavior'
-      ref={this.storeNode}
-      onMouseDown={this.startDragging}
-      onMouseUp={this.stopDragging}
-    />;
+    return (
+      <div
+        className="DragBehavior"
+        ref={this.storeNode}
+        onMouseDown={this.startDragging}
+        onMouseUp={this.stopDragging}
+      />
+    );
   }
 
   storeNode = element => {
     this.dragBehaviorNode = element;
-  }
+  };
 
   startDragging = evt => {
     evt.preventDefault();
@@ -22,7 +25,7 @@ export default class DragBehavior extends React.Component {
     this.reportCard = this.dragBehaviorNode.closest('.DashboardObject');
     this.scrollContainer = this.dragBehaviorNode.closest('main');
 
-    if(this.dragging) {
+    if (this.dragging) {
       // do not reset previous drag values in case drag-end did not register
       return;
     }
@@ -54,22 +57,34 @@ export default class DragBehavior extends React.Component {
     this.reportCard.classList.add('DragBehavior--dragging');
 
     this.props.onDragStart();
-  }
+  };
 
   saveMouseAndUpdateCardPosition = evt => {
     this.lastMousePosition.x = evt.screenX;
     this.lastMousePosition.y = evt.screenY;
 
     this.updateCardPosition();
-  }
+  };
 
   updateCardPosition = () => {
-    this.reportCard.style.left = this.cardStartPosition.x + this.lastMousePosition.x - this.mouseStartPosition.x + this.scrollContainer.scrollLeft - this.startScrollPosition.x + 'px';
-    this.reportCard.style.top = this.cardStartPosition.y + this.lastMousePosition.y - this.mouseStartPosition.y + this.scrollContainer.scrollTop - this.startScrollPosition.y + 'px';
-  }
+    this.reportCard.style.left =
+      this.cardStartPosition.x +
+      this.lastMousePosition.x -
+      this.mouseStartPosition.x +
+      this.scrollContainer.scrollLeft -
+      this.startScrollPosition.x +
+      'px';
+    this.reportCard.style.top =
+      this.cardStartPosition.y +
+      this.lastMousePosition.y -
+      this.mouseStartPosition.y +
+      this.scrollContainer.scrollTop -
+      this.startScrollPosition.y +
+      'px';
+  };
 
   stopDragging = () => {
-    if(!this.dragging) {
+    if (!this.dragging) {
       return;
     }
 
@@ -83,14 +98,16 @@ export default class DragBehavior extends React.Component {
       report: this.props.report,
       changes: {
         x: parseInt(this.reportCard.style.left, 10) - this.cardStartPosition.x,
-        y: parseInt(this.reportCard.style.top, 10) - this.cardStartPosition.y,
+        y: parseInt(this.reportCard.style.top, 10) - this.cardStartPosition.y
       }
     });
 
-    if(!collidesWithReport({
-      placement: newPlacement,
-      reports: this.props.reports.filter(report => report !== this.props.report)
-    })) {
+    if (
+      !collidesWithReport({
+        placement: newPlacement,
+        reports: this.props.reports.filter(report => report !== this.props.report)
+      })
+    ) {
       applyPlacement({
         placement: newPlacement,
         tileDimensions: this.props.tileDimensions,
@@ -114,5 +131,5 @@ export default class DragBehavior extends React.Component {
 
     this.reportCard.classList.remove('DragBehavior--dragging');
     this.props.onDragEnd();
-  }
+  };
 }

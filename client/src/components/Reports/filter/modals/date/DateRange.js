@@ -35,29 +35,35 @@ export default class DateRange extends React.Component {
       endDate: this.props.endDate
     };
 
-    return <div>
-      <Calendar format="this.props.format"
-              link={this.state.startLink}
-              linkCB={this.changeStartMonth}
-              range={range}
-              theme={theme}
-              minDate={this.props.minDate}
-              maxDate={this.props.maxDate}
-              firstDayOfWeek={1}
-              onChange={this.props.onDateChange}
-              classNames={this.getClassesForCalendar(true)} />
+    return (
+      <div>
+        <Calendar
+          format="this.props.format"
+          link={this.state.startLink}
+          linkCB={this.changeStartMonth}
+          range={range}
+          theme={theme}
+          minDate={this.props.minDate}
+          maxDate={this.props.maxDate}
+          firstDayOfWeek={1}
+          onChange={this.props.onDateChange}
+          classNames={this.getClassesForCalendar(true)}
+        />
 
-      <Calendar format="this.props.format"
-              link={this.state.endLink}
-              linkCB={this.changeEndMonth}
-              theme={theme}
-              range={range}
-              minDate={this.props.minDate}
-              maxDate={this.props.maxDate}
-              firstDayOfWeek={1}
-              onChange={this.props.onDateChange}
-              classNames={this.getClassesForCalendar(false)} />
-    </div>;
+        <Calendar
+          format="this.props.format"
+          link={this.state.endLink}
+          linkCB={this.changeEndMonth}
+          theme={theme}
+          range={range}
+          minDate={this.props.minDate}
+          maxDate={this.props.maxDate}
+          firstDayOfWeek={1}
+          onChange={this.props.onDateChange}
+          classNames={this.getClassesForCalendar(false)}
+        />
+      </div>
+    );
   }
 
   getClassesForCalendar(first) {
@@ -100,9 +106,7 @@ export default class DateRange extends React.Component {
   changeEndMonth = direction => this.changeMonth('endLink', direction);
 
   changeMonth = (name, direction) => {
-    const newLink = this.state[name]
-      .clone()
-      .add(direction, 'months');
+    const newLink = this.state[name].clone().add(direction, 'months');
 
     this.setState(
       this.adjustRange({
@@ -110,15 +114,13 @@ export default class DateRange extends React.Component {
         [name]: newLink
       })
     );
-  }
+  };
 
   shouldDisableInnerArrows(startLink, endLink) {
     return startLink
       .clone()
       .add(1, 'months')
       .startOf('month')
-      .isSame(
-        endLink.startOf('month')
-      );
+      .isSame(endLink.startOf('month'));
   }
 }

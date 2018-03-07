@@ -13,13 +13,13 @@ export {CopyToClipboard} from './CopyToClipboard';
 export {ReportView} from './ReportView';
 export {ErrorBoundary} from './ErrorBoundary';
 export {Logo} from './Logo';
-export {EntityList} from './EntityList'
+export {EntityList} from './EntityList';
 export {Icon} from './Icon';
 export {ActionItem} from './ActionItem';
 export {ShareEntity} from './ShareEntity';
 export {Switch} from './Switch';
 export {Popover} from './Popover';
-export {DashboardView} from './DashboardView'
-export {DashboardObject} from './DashboardView'
-export {ProcessDefinitionSelection} from './ProcessDefinitionSelection'
+export {DashboardView} from './DashboardView';
+export {DashboardObject} from './DashboardView';
+export {ProcessDefinitionSelection} from './ProcessDefinitionSelection';
 export {TargetValueBadge} from './TargetValueBadge';

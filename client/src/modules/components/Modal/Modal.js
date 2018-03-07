@@ -1,7 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 
-
 import './Modal.css';
 
 export default class Modal extends React.Component {
@@ -23,62 +22,69 @@ export default class Modal extends React.Component {
 
   storeContainer = node => {
     this.container = node;
-  }
+  };
 
   fixPositioning = () => {
-    if(this.container) {
+    if (this.container) {
       this.container.style.marginTop = -this.container.clientHeight / 2 + 'px';
       this.container.style.marginLeft = -this.container.clientWidth / 2 + 'px';
     }
-  }
+  };
 
   setFocus = () => {
-    if(this.container && this.props.open) {
+    if (this.container && this.props.open) {
       this.container.focus();
     }
-  }
+  };
 
   onBackdropClick = evt => {
     evt.stopPropagation();
 
     const handler = this.props.onClose;
     handler && handler();
-  }
+  };
 
   catchClick = evt => {
-    if(!evt.nativeEvent.isCloseEvent) {
+    if (!evt.nativeEvent.isCloseEvent) {
       evt.stopPropagation();
     }
-  }
+  };
 
   handleKeyPress = evt => {
-    if(evt.key === 'Escape') {
+    if (evt.key === 'Escape') {
       const handler = this.props.onClose;
       handler && handler();
     }
-  }
+  };
 
   render() {
     const {open, children} = this.props;
 
-    if(open) {
+    if (open) {
       return ReactDOM.createPortal(
-        <div className='Modal' onClick={this.onBackdropClick}>
-          <div className={(`Modal__container ${this.props.className || ''}`) + (this.props.size ? ' Modal__container--' + this.props.size : '')}
-              tabIndex="-1"
-              ref={this.storeContainer}
-              onClick={this.catchClick} onKeyDown={this.handleKeyPress}>
+        <div className="Modal" onClick={this.onBackdropClick}>
+          <div
+            className={
+              `Modal__container ${this.props.className || ''}` +
+              (this.props.size ? ' Modal__container--' + this.props.size : '')
+            }
+            tabIndex="-1"
+            ref={this.storeContainer}
+            onClick={this.catchClick}
+            onKeyDown={this.handleKeyPress}
+          >
             {children}
           </div>
         </div>,
-      this.el);
+        this.el
+      );
     }
 
     return null;
   }
 
   componentDidUpdate(prevProps) {
-    if(!prevProps.open && this.props.open) {
+    if (!prevProps.open && this.props.open) {
       this.setFocus();
     }
 
@@ -87,20 +93,21 @@ export default class Modal extends React.Component {
 }
 
 Modal.Header = function({children}) {
-  return (<div className='Modal__header'>
-    <h1 className='Modal__heading'>{children}</h1>
-    <button className='Modal__close-button' onClick={evt => evt.nativeEvent.isCloseEvent = true}></button>
-  </div>);
-}
+  return (
+    <div className="Modal__header">
+      <h1 className="Modal__heading">{children}</h1>
+      <button
+        className="Modal__close-button"
+        onClick={evt => (evt.nativeEvent.isCloseEvent = true)}
+      />
+    </div>
+  );
+};
 
 Modal.Content = function({children}) {
-  return (<div className='Modal__content'>
-    {children}
-  </div>);
-}
+  return <div className="Modal__content">{children}</div>;
+};
 
 Modal.Actions = function({children}) {
-  return (<div className='Modal__actions'>
-    {children}
-  </div>);
-}
+  return <div className="Modal__actions">{children}</div>;
+};

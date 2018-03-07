@@ -1,10 +1,10 @@
 import React from 'react';
-import { mount } from 'enzyme';
+import {mount} from 'enzyme';
 
 import Switch from './Switch';
 
 jest.mock('components', () => {
-return {Input: props => <input {...props}>{props.children}</input>};
+  return {Input: props => <input {...props}>{props.children}</input>};
 });
 
 it('should render without crashing', () => {
@@ -18,7 +18,7 @@ it('renders an <input> element by default', () => {
 });
 
 it('should be checked/enabled if is set in the property', () => {
-  const node = mount(<Switch checked={true} onChange={jest.fn()}/>);
+  const node = mount(<Switch checked={true} onChange={jest.fn()} />);
 
   expect(node.find('Input[type="checkbox"][checked=true]')).toHaveLength(1);
 });
@@ -34,6 +34,6 @@ it('executes an on-change handler as provided as a property', () => {
   const handler = jest.fn();
   const node = mount(<Switch checked={true} onChange={handler} />);
 
-  node.find('input[type="checkbox"]').simulate('change',{ target: { checked: false } });
+  node.find('input[type="checkbox"]').simulate('change', {target: {checked: false}});
   expect(handler).toHaveBeenCalled();
 });

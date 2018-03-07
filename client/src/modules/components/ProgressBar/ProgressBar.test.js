@@ -1,21 +1,20 @@
 import React from 'react';
-import { mount } from 'enzyme';
+import {mount} from 'enzyme';
 
 import ProgressBar from './ProgressBar';
-
 
 it('should render without crashing', () => {
   mount(<ProgressBar />);
 });
 
 it('should render addiontal classNames as provided as a property', () => {
-  const node = mount(<ProgressBar className='Foo' />);
+  const node = mount(<ProgressBar className="Foo" />);
 
   expect(node.find('.ProgressBar')).toMatchSelector('.Foo');
 });
 
 it('should render a height as provided as a property', () => {
-  const node = mount(<ProgressBar height='12px' />);
+  const node = mount(<ProgressBar height="12px" />);
 
   expect(node.find('.ProgressBar').getDOMNode().style.height).toBe('12px');
 });

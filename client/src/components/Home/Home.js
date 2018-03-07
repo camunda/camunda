@@ -4,22 +4,22 @@ import {EntityList} from 'components';
 export default function Home() {
   return [
     <EntityList
-      key='dashboard'
-      api='dashboard'
-      label='Dashboard'
-      displayOnly='5'
+      key="dashboard"
+      api="dashboard"
+      label="Dashboard"
+      displayOnly="5"
       sortBy={'lastModified'}
       operations={['edit']}
-      includeViewAllLink = {true}>
-    </EntityList>,
+      includeViewAllLink={true}
+    />,
     <EntityList
-      key='report'
-      api='report'
-      label='Report'
-      displayOnly='5'
+      key="report"
+      api="report"
+      label="Report"
+      displayOnly="5"
       sortBy={'lastModified'}
       operations={['edit']}
-      includeViewAllLink = {true}>
-    </EntityList>
+      includeViewAllLink={true}
+    />
   ];
 }

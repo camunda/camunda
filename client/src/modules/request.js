@@ -38,7 +38,6 @@ export function del(url, query, options = {}) {
   });
 }
 
-
 export function addHandler(fct) {
   handlers.push(fct);
 }
@@ -65,7 +64,7 @@ export async function request({url, method, body, query, headers}) {
     response = await fct(response);
   });
 
-  if(response.status >= 200 && response.status < 300) {
+  if (response.status >= 200 && response.status < 300) {
     return response;
   } else {
     throw response;
@@ -75,26 +74,24 @@ export async function request({url, method, body, query, headers}) {
 function createAuthorizationHeader() {
   const token = getToken();
 
-  if(token) {
+  if (token) {
     return {
-      'X-Optimize-Authorization' : `Bearer ${token}`
+      'X-Optimize-Authorization': `Bearer ${token}`
     };
   }
   return {};
 }
 
 export function formatQuery(query) {
-  return Object
-    .keys(query)
-    .reduce((queryStr, key) => {
-      const value = query[key];
+  return Object.keys(query).reduce((queryStr, key) => {
+    const value = query[key];
 
-      if (queryStr === '') {
-        return `${key}=${encodeURIComponent(value)}`;
-      }
+    if (queryStr === '') {
+      return `${key}=${encodeURIComponent(value)}`;
+    }
 
-      return `${queryStr}&${key}=${encodeURIComponent(value)}`;
-    }, '');
+    return `${queryStr}&${key}=${encodeURIComponent(value)}`;
+  }, '');
 }
 
 function processBody(body) {

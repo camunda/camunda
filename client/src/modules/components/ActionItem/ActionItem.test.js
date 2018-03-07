@@ -6,11 +6,11 @@ import ActionItem from './ActionItem';
 jest.mock('components', () => {
   return {
     Button: props => <button {...props}>{props.children}</button>
-  }
+  };
 });
 
 it('should have an action button', () => {
-  const node = mount(<ActionItem/>);
+  const node = mount(<ActionItem />);
 
   expect(node.find('button')).toBePresent();
 });

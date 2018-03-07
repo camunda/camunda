@@ -9,22 +9,25 @@ const sampleEntity = {
   id: '1',
   name: 'Test Entity',
   lastModifier: 'Admin',
-  lastModified: '2017-11-11T11:11:11.1111+0200',
+  lastModified: '2017-11-11T11:11:11.1111+0200'
 };
-
 
 jest.mock('./service', () => {
   return {
     load: jest.fn(),
     remove: jest.fn(),
     create: jest.fn()
-  }
+  };
 });
 jest.mock('react-router-dom', () => {
   return {
-    Link: ({children, to}) => {return <a href={to}>{children}</a>},
-    Redirect: ({to}) => {return <div>REDIRECT to {to}</div>}
-  }
+    Link: ({children, to}) => {
+      return <a href={to}>{children}</a>;
+    },
+    Redirect: ({to}) => {
+      return <div>REDIRECT to {to}</div>;
+    }
+  };
 });
 
 jest.mock('moment', () => (...params) => {
@@ -32,55 +35,59 @@ jest.mock('moment', () => (...params) => {
   return {
     format: () => 'some date',
     getInitialData: () => {
-      return initialData
+      return initialData;
     },
-    isBefore: (date) => {
+    isBefore: date => {
       return new Date(initialData) < new Date(date.getInitialData());
     }
-  }
+  };
 });
 
 jest.mock('components', () => {
-  const Modal = props => <div id='Modal'>{props.open && props.children}</div>;
-  Modal.Header = props => <div id='modal_header'>{props.children}</div>;
-  Modal.Content = props => <div id='modal_content'>{props.children}</div>;
-  Modal.Actions = props => <div id='modal_actions'>{props.children}</div>;
+  const Modal = props => <div id="Modal">{props.open && props.children}</div>;
+  Modal.Header = props => <div id="modal_header">{props.children}</div>;
+  Modal.Content = props => <div id="modal_content">{props.children}</div>;
+  Modal.Actions = props => <div id="modal_actions">{props.children}</div>;
 
   return {
     Modal,
     Table: {
       renderCell: cell => {
-        return (cell.onClick) ?
-        <button onClick={cell.onClick} className={cell.className}>{cell.content}</button> :
-        <span>{JSON.stringify(cell)}</span>
+        return cell.onClick ? (
+          <button onClick={cell.onClick} className={cell.className}>
+            {cell.content}
+          </button>
+        ) : (
+          <span>{JSON.stringify(cell)}</span>
+        );
       }
     },
     Button: props => <button {...props}>{props.children}</button>
-  }
+  };
 });
 
 load.mockReturnValue([sampleEntity]);
 
 it('should display a loading indicator', () => {
-  const node = mount(<EntityList api='endpoint' label='Dashboard'/>);
+  const node = mount(<EntityList api="endpoint" label="Dashboard" />);
 
   expect(node).toIncludeText('loading');
 });
 
 it('should initially load data', () => {
-  mount(<EntityList api='endpoint' label='Dashboard'/>);
+  mount(<EntityList api="endpoint" label="Dashboard" />);
 
   expect(load).toHaveBeenCalled();
 });
 
 it('should only load the specified amount of results', () => {
-  mount(<EntityList api='endpoint' label='Dashboard' displayOnly='5'/>);
+  mount(<EntityList api="endpoint" label="Dashboard" displayOnly="5" />);
 
   expect(load).toHaveBeenCalledWith('endpoint', '5', undefined);
 });
 
 it('should display a list with the results', () => {
-  const node = mount(<EntityList api='endpoint' label='Dashboard'/>);
+  const node = mount(<EntityList api="endpoint" label="Dashboard" />);
 
   node.setState({
     loaded: true,
@@ -95,7 +102,7 @@ it('should display a list with the results', () => {
 });
 
 it('should display no-entities indicator if no entities', () => {
-  const node = mount(<EntityList api='endpoint' label='Dashboard'/>);
+  const node = mount(<EntityList api="endpoint" label="Dashboard" />);
 
   node.setState({
     loaded: true,
@@ -106,7 +113,7 @@ it('should display no-entities indicator if no entities', () => {
 });
 
 it('should display create entity link if no entities', () => {
-  const node = mount(<EntityList api='endpoint' label='Dashboard'/>);
+  const node = mount(<EntityList api="endpoint" label="Dashboard" />);
 
   node.setState({
     loaded: true,
@@ -116,7 +123,7 @@ it('should display create entity link if no entities', () => {
 });
 
 it('should not display create entity link if there are entities', () => {
-  const node = mount(<EntityList api='endpoint' label='Dashboard' operations={['edit']}/>);
+  const node = mount(<EntityList api="endpoint" label="Dashboard" operations={['edit']} />);
 
   node.setState({
     loaded: true,
@@ -125,8 +132,10 @@ it('should not display create entity link if there are entities', () => {
   expect(node.find('.EntityList__createLink')).not.toBePresent();
 });
 
-it('should not display create entity button on home page' , () => {
-  const node = mount(<EntityList includeViewAllLink={true} api='endpoint' label='Dashboard' operations={['edit']}/>);
+it('should not display create entity button on home page', () => {
+  const node = mount(
+    <EntityList includeViewAllLink={true} api="endpoint" label="Dashboard" operations={['edit']} />
+  );
 
   node.setState({
     loaded: true,
@@ -138,7 +147,7 @@ it('should not display create entity button on home page' , () => {
 
 it('should call new entity on click on the new entity button and redirect to the new entity', async () => {
   create.mockReturnValueOnce('2');
-  const node = mount(<EntityList api='endpoint' label='Dashboard'/>);
+  const node = mount(<EntityList api="endpoint" label="Dashboard" />);
 
   await node.find('button').simulate('click');
 
@@ -146,7 +155,7 @@ it('should call new entity on click on the new entity button and redirect to the
 });
 
 it('should display all operations per default', () => {
-  const node = mount(<EntityList api='endpoint' label='Dashboard'/>);
+  const node = mount(<EntityList api="endpoint" label="Dashboard" />);
   node.setState({
     loaded: true,
     data: [sampleEntity]
@@ -158,7 +167,7 @@ it('should display all operations per default', () => {
 });
 
 it('should not display any operations if none are specified', () => {
-  const node = mount(<EntityList api='endpoint' label='Dashboard' operations={[]}/>);
+  const node = mount(<EntityList api="endpoint" label="Dashboard" operations={[]} />);
   node.setState({
     loaded: true,
     data: [sampleEntity]
@@ -170,7 +179,7 @@ it('should not display any operations if none are specified', () => {
 });
 
 it('should display a create button if specified', () => {
-  const node = mount(<EntityList api='endpoint' label='Dashboard' operations={['create']}/>);
+  const node = mount(<EntityList api="endpoint" label="Dashboard" operations={['create']} />);
   node.setState({
     loaded: true,
     data: [sampleEntity]
@@ -180,7 +189,7 @@ it('should display a create button if specified', () => {
 });
 
 it('should display an edit link if specified', () => {
-  const node = mount(<EntityList api='endpoint' label='Dashboard' operations={['edit']}/>);
+  const node = mount(<EntityList api="endpoint" label="Dashboard" operations={['edit']} />);
   node.setState({
     loaded: true,
     data: [sampleEntity]
@@ -190,7 +199,7 @@ it('should display an edit link if specified', () => {
 });
 
 it('should display a delete button if specified', () => {
-  const node = mount(<EntityList api='endpoint' label='Dashboard' operations={['delete']}/>);
+  const node = mount(<EntityList api="endpoint" label="Dashboard" operations={['delete']} />);
   node.setState({
     loaded: true,
     data: [sampleEntity]
@@ -199,14 +208,15 @@ it('should display a delete button if specified', () => {
   expect(node.find('.EntityList__deleteButton')).toBePresent();
 });
 
-
 it('should be able to sort by date', async () => {
-  const node = mount(<EntityList api='endpoint' label='Dashboard' operations={['delete']} sortBy={'lastModified'}/>);
+  const node = mount(
+    <EntityList api="endpoint" label="Dashboard" operations={['delete']} sortBy={'lastModified'} />
+  );
   const sampleEntity2 = {
     id: '2',
     name: 'Test Entity 2',
     lastModifier: 'Admin 2',
-    lastModified: '2017-11-11T11:12:11.1111+0200',
+    lastModified: '2017-11-11T11:12:11.1111+0200'
   };
   load.mockReturnValue([sampleEntity2, sampleEntity]);
 
@@ -217,7 +227,7 @@ it('should be able to sort by date', async () => {
 });
 
 it('should open deletion modal on delete button click', () => {
-  const node = mount(<EntityList api='endpoint' label='Dashboard' operations={['delete']}/>);
+  const node = mount(<EntityList api="endpoint" label="Dashboard" operations={['delete']} />);
   node.setState({
     loaded: true,
     data: [sampleEntity]

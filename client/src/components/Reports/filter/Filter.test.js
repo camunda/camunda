@@ -6,16 +6,18 @@ import {mount} from 'enzyme';
 
 jest.mock('components', () => {
   const Dropdown = ({children}) => <p id="dropdown">Dropdown: {children}</p>;
-  Dropdown.Option = (props) => <button {...props}>{props.children}</button>;
+  Dropdown.Option = props => <button {...props}>{props.children}</button>;
 
   return {Dropdown};
 });
 
-jest.mock('./modals', () => {return {
-  DateFilter: () => 'DateFilter',
-  VariableFilter: () => 'VariableFilter',
-  NodeFilter: () => 'NodeFilter'
-}});
+jest.mock('./modals', () => {
+  return {
+    DateFilter: () => 'DateFilter',
+    VariableFilter: () => 'VariableFilter',
+    NodeFilter: () => 'NodeFilter'
+  };
+});
 
 jest.mock('./FilterList', () => () => 'FilterList');
 
@@ -48,23 +50,26 @@ it('should contain a filter modal when a newFilter should be created', () => {
 });
 
 it('should contain an edit filter modal when a filter should be edited', () => {
-  const node = mount(<Filter data={[{type:'rollingDate'}]} />);
+  const node = mount(<Filter data={[{type: 'rollingDate'}]} />);
 
-  node.instance().openEditFilterModal({
-        data: {
-          operator : "bar",
-          type : "baz",
-          value : "foo"
-        },
-        type : "date"
-    },{
-          data: {
-            operator : "foo1",
-            type : "bar1",
-            value : "baz1"
-          },
-          type : "date"
-      })();
+  node.instance().openEditFilterModal(
+    {
+      data: {
+        operator: 'bar',
+        type: 'baz',
+        value: 'foo'
+      },
+      type: 'date'
+    },
+    {
+      data: {
+        operator: 'foo1',
+        type: 'bar1',
+        value: 'baz1'
+      },
+      type: 'date'
+    }
+  )();
 
   expect(node).toIncludeText('DateFilter');
 });
@@ -82,13 +87,13 @@ it('should contain a EditFilterModal component based on the Filter selected for 
   const node = mount(<Filter data={[{type: 'variable'}]} />);
 
   node.instance().openEditFilterModal({
-        data: {
-          operator : "bar",
-          type : "baz",
-          value : "foo"
-        },
-        type : "variable"
-    })();
+    data: {
+      operator: 'bar',
+      type: 'baz',
+      value: 'foo'
+    },
+    type: 'variable'
+  })();
   expect(node).toIncludeText('VariableFilter');
   expect(node).not.toIncludeText('DateFilter');
 });
@@ -96,13 +101,13 @@ it('should contain a EditFilterModal component based on the Filter selected for 
 it('should add a filter to the list of filters', () => {
   const spy = jest.fn();
   const sampleFilter = {
-      data: {
-        operator : "bar",
-        type : "baz",
-        value : "foo"
-      },
-      type : "qux"
-  }
+    data: {
+      operator: 'bar',
+      type: 'baz',
+      value: 'foo'
+    },
+    type: 'qux'
+  };
   const previousFilters = [sampleFilter];
 
   const node = mount(<Filter data={previousFilters} onChange={spy} />);
@@ -115,20 +120,20 @@ it('should add a filter to the list of filters', () => {
 it('should edit the edited filter', () => {
   const spy = jest.fn();
   const sampleFilter = {
-      data: {
-        operator : "bar",
-        type : "baz",
-        value : "foo"
-      },
-      type : "qux"
-  }
+    data: {
+      operator: 'bar',
+      type: 'baz',
+      value: 'foo'
+    },
+    type: 'qux'
+  };
 
   const filters = [sampleFilter, 'foo'];
   const node = mount(<Filter data={filters} onChange={spy} />);
 
   node.instance().setState({
     editFilter: [sampleFilter]
-  })
+  });
 
   node.instance().editFilter('bar');
 
@@ -138,12 +143,12 @@ it('should edit the edited filter', () => {
 it('should add multiple filters to the list of filters', () => {
   const spy = jest.fn();
   const sampleFilter = {
-      data: {
-        operator : "bar",
-        type : "baz",
-        value : "foo"
-      },
-      type : "qux"
+    data: {
+      operator: 'bar',
+      type: 'baz',
+      value: 'foo'
+    },
+    type: 'qux'
   };
   const previousFilters = [sampleFilter];
 
@@ -152,7 +157,6 @@ it('should add multiple filters to the list of filters', () => {
   node.instance().addFilter('Filter 2', 'Filter 3');
 
   expect(spy.mock.calls[0][0].filter).toEqual([sampleFilter, 'Filter 2', 'Filter 3']);
-
 });
 
 it('should remove a filter from the list of filters', () => {
@@ -180,10 +184,10 @@ it('should remove multiple filters from the list of filters', () => {
 it('should disable variable and executed flow node filter if no process definition is available', () => {
   const node = mount(<Filter />);
 
-  const buttons = node.find("#dropdown button");
-  expect(buttons.find('[children="Start Date"]').prop("disabled")).toBeFalsy();
-  expect(buttons.find('[children="Variable"]').prop("disabled")).toBeTruthy();
-  expect(buttons.find('[children="Flow Node"]').prop("disabled")).toBeTruthy();
+  const buttons = node.find('#dropdown button');
+  expect(buttons.find('[children="Start Date"]').prop('disabled')).toBeFalsy();
+  expect(buttons.find('[children="Variable"]').prop('disabled')).toBeTruthy();
+  expect(buttons.find('[children="Flow Node"]').prop('disabled')).toBeTruthy();
 });
 
 it('should remove any previous date and rolling date filters when adding a new date filter', () => {
@@ -192,9 +196,9 @@ it('should remove any previous date and rolling date filters when adding a new d
 
   const node = mount(<Filter data={previousFilters} onChange={spy} />);
 
-  node.instance().addFilter({type:'date', value: 'new date'});
+  node.instance().addFilter({type: 'date', value: 'new date'});
 
-  expect(spy.mock.calls[0][0].filter).toEqual([{type:'date', value: 'new date'}]);
+  expect(spy.mock.calls[0][0].filter).toEqual([{type: 'date', value: 'new date'}]);
 });
 
 it('should remove any completed/running instances only filters when adding a new completed instances only filter', () => {
@@ -203,9 +207,9 @@ it('should remove any completed/running instances only filters when adding a new
 
   const node = mount(<Filter data={previousFilters} onChange={spy} />);
 
-  node.instance().addFilter({type:'completedInstancesOnly'});
+  node.instance().addFilter({type: 'completedInstancesOnly'});
 
-  expect(spy.mock.calls[0][0].filter).toEqual([{type:'completedInstancesOnly'}]);
+  expect(spy.mock.calls[0][0].filter).toEqual([{type: 'completedInstancesOnly'}]);
 });
 
 it('should remove any completed/running instances only filters when adding a new running instances only filter', () => {
@@ -214,7 +218,7 @@ it('should remove any completed/running instances only filters when adding a new
 
   const node = mount(<Filter data={previousFilters} onChange={spy} />);
 
-  node.instance().addFilter({type:'runningInstancesOnly'});
+  node.instance().addFilter({type: 'runningInstancesOnly'});
 
-  expect(spy.mock.calls[0][0].filter).toEqual([{type:'runningInstancesOnly'}]);
+  expect(spy.mock.calls[0][0].filter).toEqual([{type: 'runningInstancesOnly'}]);
 });

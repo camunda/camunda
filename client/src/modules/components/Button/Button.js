@@ -10,27 +10,35 @@ export default function Button(props) {
   delete filteredProps.type;
   delete filteredProps.reference;
   if (props.tag === 'a') {
-    return (<Link
-              {...filteredProps}
-                className={'Button '
-                  + (props.type ? ('Button--' + props.type + ' ') : '')
-                  + (props.color ? ('Button--' + props.color + ' ') : '')
-                  + (props.className ? props.className + ' ' : '')
-                  + (props.active ? 'is-active' : '')
-              }>
-              {props.children}
-            </Link>);
+    return (
+      <Link
+        {...filteredProps}
+        className={
+          'Button ' +
+          (props.type ? 'Button--' + props.type + ' ' : '') +
+          (props.color ? 'Button--' + props.color + ' ' : '') +
+          (props.className ? props.className + ' ' : '') +
+          (props.active ? 'is-active' : '')
+        }
+      >
+        {props.children}
+      </Link>
+    );
   } else {
-    return (<button
-              {...filteredProps}
-                className={'Button '
-                + (props.type ? ('Button--' + props.type + ' ') : '')
-                + (props.color ? ('Button--' + props.color + ' ') : '')
-                + (props.className ? props.className + ' ' : '')
-                + (props.active ? 'is-active' : '')
-              }
-              ref={props.reference}>
-              {props.children}
-            </button>);
+    return (
+      <button
+        {...filteredProps}
+        className={
+          'Button ' +
+          (props.type ? 'Button--' + props.type + ' ' : '') +
+          (props.color ? 'Button--' + props.color + ' ' : '') +
+          (props.className ? props.className + ' ' : '') +
+          (props.active ? 'is-active' : '')
+        }
+        ref={props.reference}
+      >
+        {props.children}
+      </button>
+    );
   }
 }

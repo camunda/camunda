@@ -5,15 +5,12 @@ import {snapInPosition, collidesWithReport, applyPlacement} from '../service';
 
 export default class ResizeHandle extends React.Component {
   render() {
-    return <div className='ResizeHandle'
-      ref={this.storeNode}
-      onMouseDown={this.startDragging}
-    />;
+    return <div className="ResizeHandle" ref={this.storeNode} onMouseDown={this.startDragging} />;
   }
 
   storeNode = element => {
     this.resizeHandle = element;
-  }
+  };
 
   startDragging = evt => {
     evt.preventDefault();
@@ -21,7 +18,7 @@ export default class ResizeHandle extends React.Component {
     this.reportCard = this.resizeHandle.closest('.DashboardObject');
     this.scrollContainer = this.resizeHandle.closest('main');
 
-    if(this.dragging) {
+    if (this.dragging) {
       // do not reset previous drag values in case drag-end did not register
       return;
     }
@@ -54,28 +51,38 @@ export default class ResizeHandle extends React.Component {
     this.reportCard.classList.add('ResizeHandle--dragging');
 
     this.props.onResizeStart();
-  }
+  };
 
   saveMouseAndUpdateCardSize = evt => {
     this.lastMousePosition.x = evt.screenX;
     this.lastMousePosition.y = evt.screenY;
 
     this.updateCardSize();
-  }
+  };
 
   updateCardSize = () => {
-    this.reportCard.style.width = Math.max(
-      this.cardStartSize.width + this.lastMousePosition.x - this.mouseStartPosition.x + this.scrollContainer.scrollLeft - this.startScrollPosition.x,
-      this.props.tileDimensions.innerWidth
-    ) + 'px';
-    this.reportCard.style.height = Math.max(
-      this.cardStartSize.height + this.lastMousePosition.y - this.mouseStartPosition.y + this.scrollContainer.scrollTop - this.startScrollPosition.y,
-      this.props.tileDimensions.innerHeight
-    ) + 'px';
-  }
+    this.reportCard.style.width =
+      Math.max(
+        this.cardStartSize.width +
+          this.lastMousePosition.x -
+          this.mouseStartPosition.x +
+          this.scrollContainer.scrollLeft -
+          this.startScrollPosition.x,
+        this.props.tileDimensions.innerWidth
+      ) + 'px';
+    this.reportCard.style.height =
+      Math.max(
+        this.cardStartSize.height +
+          this.lastMousePosition.y -
+          this.mouseStartPosition.y +
+          this.scrollContainer.scrollTop -
+          this.startScrollPosition.y,
+        this.props.tileDimensions.innerHeight
+      ) + 'px';
+  };
 
   stopDragging = () => {
-    if(!this.dragging) {
+    if (!this.dragging) {
       return;
     }
 
@@ -94,10 +101,12 @@ export default class ResizeHandle extends React.Component {
       }
     });
 
-    if(!collidesWithReport({
-      placement: newPlacement,
-      reports: this.props.reports.filter(report => report !== this.props.report)
-    })) {
+    if (
+      !collidesWithReport({
+        placement: newPlacement,
+        reports: this.props.reports.filter(report => report !== this.props.report)
+      })
+    ) {
       applyPlacement({
         placement: newPlacement,
         tileDimensions: this.props.tileDimensions,
@@ -121,5 +130,5 @@ export default class ResizeHandle extends React.Component {
 
     this.reportCard.classList.remove('ResizeHandle--dragging');
     this.props.onResizeEnd();
-  }
+  };
 }

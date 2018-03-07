@@ -25,7 +25,7 @@
   &:first-child {
     margin-left: 0;
   }
-  
+
   &:last-child {
     margin-right: 20px;
   }
@@ -33,13 +33,11 @@
   &:empty {
     border: 0px solid #ccc;
   }
-
 }
 
 .NodeFilter__preview-item {
   list-style-type: none;
   display: inline-block;
-
 }
 
 .NodeFilter__parameter-name {
@@ -48,13 +46,12 @@
 }
 
 .NodeFilter__preview-item-value {
-  background-color: #7FA8C5;
+  background-color: #7fa8c5;
   padding: 1px 8px 2px;
   border-radius: 10px;
   color: #fff;
 }
 
 .NodeFilter__preview-item-operator {
-  margin: 0 .5em;
+  margin: 0 0.5em;
 }
-

@@ -9,7 +9,7 @@ export async function login(username, password) {
     store({username, token});
 
     return token;
-  } catch(e) {
+  } catch (e) {
     return false;
   }
 }

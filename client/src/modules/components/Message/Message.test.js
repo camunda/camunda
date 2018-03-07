@@ -3,7 +3,6 @@ import {shallow, mount} from 'enzyme';
 
 import Message from './Message';
 
-
 it('renders without crashing', () => {
   shallow(<Message />);
 });
@@ -19,5 +18,5 @@ it('renders the class name as provided as a property', () => {
   const type = 'test';
 
   const node = mount(<Message type={type} />);
-  expect((node).find('.Message')).toHaveClassName('Message--test');
+  expect(node.find('.Message')).toHaveClassName('Message--test');
 });

@@ -46,10 +46,15 @@ it('should add an end event overlay if an endEvent is selected', () => {
 it('should add an overlay if an endEvent is hovered', () => {
   viewer.add.mockClear();
 
-  mount(<DiagramBehavior {...props} hoveredNode={{
-    id: 'otherEndEvent',
-    $instanceOf: jest.fn().mockReturnValue(true)
-  }} />);
+  mount(
+    <DiagramBehavior
+      {...props}
+      hoveredNode={{
+        id: 'otherEndEvent',
+        $instanceOf: jest.fn().mockReturnValue(true)
+      }}
+    />
+  );
 
   expect(viewer.add).toHaveBeenCalled();
   expect(viewer.add.mock.calls[0][0]).toBe('otherEndEvent');
@@ -106,7 +111,7 @@ it('should deselct a selected element when clicking on it', () => {
     }
   };
 
-  mount(<DiagramBehavior {...props} updateSelection={spy} gateway={gateway.businessObject}  />);
+  mount(<DiagramBehavior {...props} updateSelection={spy} gateway={gateway.businessObject} />);
 
   viewer.on.mock.calls.find(call => call[0] === 'element.click')[1]({element: gateway});
   expect(spy).toHaveBeenCalledWith('gateway', null);

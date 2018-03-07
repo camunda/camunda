@@ -5,9 +5,11 @@ import DateRange from './DateRange';
 
 import {mount} from 'enzyme';
 
-jest.mock('react-date-range', () => {return {
-  Calendar: props => <p className='Calendar'>{`Calendar: props: ${Object.keys(props)}`}</p>
-}});
+jest.mock('react-date-range', () => {
+  return {
+    Calendar: props => <p className="Calendar">{`Calendar: props: ${Object.keys(props)}`}</p>
+  };
+});
 
 const format = 'YYYY-MM-DD';
 const minDate = 'min-date';
@@ -31,7 +33,8 @@ describe('with different dates', () => {
         maxDate={maxDate}
         startDate={startDate}
         endDate={endDate}
-        onDateChange={onDateChange} />
+        onDateChange={onDateChange}
+      />
     );
   });
 
@@ -95,7 +98,9 @@ describe('with different dates', () => {
 
 describe('with same dates', () => {
   beforeEach(() => {
-    wrapper = mount(<DateRange startDate={startDate} endDate={startDate} onDateChange={onDateChange} />);
+    wrapper = mount(
+      <DateRange startDate={startDate} endDate={startDate} onDateChange={onDateChange} />
+    );
   });
 
   it('should disable inner arrows', () => {

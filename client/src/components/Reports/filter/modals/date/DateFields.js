@@ -35,88 +35,104 @@ export default class DateFields extends React.PureComponent {
   }
 
   handleKeyPress = evt => {
-    if (this.state.popupOpen && evt.key === 'Escape' ) {
+    if (this.state.popupOpen && evt.key === 'Escape') {
       evt.stopPropagation();
     }
-  }
+  };
 
   render() {
-    return <div className="DateFields" onKeyDown={this.handleKeyPress}>
-      <div className='DateFields__inputContainer'>
-        <DateInput
-            className={'DateInput__start' + (this.isFieldSelected('startDate') ? ' DateInput__start--highlight' : '')}
+    return (
+      <div className="DateFields" onKeyDown={this.handleKeyPress}>
+        <div className="DateFields__inputContainer">
+          <DateInput
+            className={
+              'DateInput__start' +
+              (this.isFieldSelected('startDate') ? ' DateInput__start--highlight' : '')
+            }
             format={this.props.format}
             onDateChange={this.setStartDate}
-            onFocus={() => {this.setState({currentlySelectedField: 'startDate'})}}
+            onFocus={() => {
+              this.setState({currentlySelectedField: 'startDate'});
+            }}
             onSubmit={this.submitStart}
             onClick={this.toggleDateRangeForStart}
             date={this.props.startDate}
-            enableAddButton = {this.props.enableAddButton} />
-        <span className='DateFields__divider'>to</span>
-        <DateInput
-            className={'DateInput__end' + (this.isFieldSelected('endDate') ? ' DateInput__start--highlight' : '')}
+            enableAddButton={this.props.enableAddButton}
+          />
+          <span className="DateFields__divider">to</span>
+          <DateInput
+            className={
+              'DateInput__end' +
+              (this.isFieldSelected('endDate') ? ' DateInput__start--highlight' : '')
+            }
             reference={this.saveEndDateField}
             format={this.props.format}
             onDateChange={this.setEndDate}
-            onFocus={() => {this.setState({currentlySelectedField: 'endDate'})}}
+            onFocus={() => {
+              this.setState({currentlySelectedField: 'endDate'});
+            }}
             onSubmit={this.submitEnd}
             onClick={this.toggleDateRangeForEnd}
             date={this.props.endDate}
-            enableAddButton = {this.props.enableAddButton} />
-      </div>
-      {
-        this.state.popupOpen && (
-          <div onClick={this.stopClosingPopup} className={
-            'DateFields__range' +
-            (this.isFieldSelected('startDate') ? ' DateFields__range--left' : '') +
-            (this.isFieldSelected('endDate') ? ' DateFields__range--right' : '')
-          }>
+            enableAddButton={this.props.enableAddButton}
+          />
+        </div>
+        {this.state.popupOpen && (
+          <div
+            onClick={this.stopClosingPopup}
+            className={
+              'DateFields__range' +
+              (this.isFieldSelected('startDate') ? ' DateFields__range--left' : '') +
+              (this.isFieldSelected('endDate') ? ' DateFields__range--right' : '')
+            }
+          >
             <DateRange
-                format={this.props.format}
-                onDateChange={this.onDateRangeChange}
-                startDate={this.props.startDate}
-                endDate={this.props.endDate} />
+              format={this.props.format}
+              onDateChange={this.onDateRangeChange}
+              startDate={this.props.startDate}
+              endDate={this.props.endDate}
+            />
           </div>
-        )
-      }
-    </div>;
+        )}
+      </div>
+    );
   }
 
   submitStart = () => {
     this.setState({currentlySelectedField: 'endDate'});
     document.querySelector('.DateInput__end').focus();
-  }
+  };
 
   submitEnd = () => {
     this.hidePopup();
     document.querySelector('.DateInput__end').blur();
-  }
+  };
 
   closeOnEscape = event => {
     if (event.key === 'Escape') {
       this.hidePopup();
     }
-  }
+  };
 
-  saveEndDateField = input => this.endDateField = input;
+  saveEndDateField = input => (this.endDateField = input);
 
   onDateRangeChange = date => {
     this.props.onDateChange(this.state.currentlySelectedField, date);
 
     if (this.isFieldSelected('startDate')) {
       this.setState({
-        currentlySelectedField: 'endDate',
+        currentlySelectedField: 'endDate'
       });
       this.endDateField.focus();
     } else {
       setTimeout(this.hidePopup, 350);
     }
-  }
+  };
 
-  stopClosingPopup = ({nativeEvent: event}) =>  {
+  stopClosingPopup = ({nativeEvent: event}) => {
     // https://stackoverflow.com/questions/24415631/reactjs-syntheticevent-stoppropagation-only-works-with-react-events
     event.stopImmediatePropagation();
-  }
+  };
 
   hidePopup = () => {
     this.setState({
@@ -125,7 +141,7 @@ export default class DateFields extends React.PureComponent {
       minDate: null,
       maxDate: null
     });
-  }
+  };
 
   isFieldSelected(field) {
     return this.state.currentlySelectedField === field;
@@ -150,5 +166,5 @@ export default class DateFields extends React.PureComponent {
       popupOpen: true,
       currentlySelectedField: field
     });
-  }
+  };
 }

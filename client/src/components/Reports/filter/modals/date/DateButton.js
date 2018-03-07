@@ -7,9 +7,11 @@ import {Button} from 'components';
 
 export default class DateButton extends React.Component {
   render() {
-    return <Button onClick={this.setDate} className='DateButton'>
-      {this.props.dateLabel}
-    </Button>;
+    return (
+      <Button onClick={this.setDate} className="DateButton">
+        {this.props.dateLabel}
+      </Button>
+    );
   }
 
   setDate = evt => {
@@ -21,7 +23,7 @@ export default class DateButton extends React.Component {
       startDate: moment(range.start),
       endDate: moment(range.end)
     });
-  }
+  };
 }
 
 const DAY = 86400000;
@@ -31,14 +33,18 @@ function getDateRange(type) {
   const today = new Date();
 
   switch (type) {
-    case DateButton.TODAY: return {start: today, end: today};
-    case DateButton.YESTERDAY: return {start: new Date(now - DAY), end: new Date(now - DAY)};
-    case DateButton.PAST7: return {start: new Date(now - 6 * DAY), end: today};
-    case DateButton.PAST30: return {start: new Date(now - 29 * DAY), end: today};
+    case DateButton.TODAY:
+      return {start: today, end: today};
+    case DateButton.YESTERDAY:
+      return {start: new Date(now - DAY), end: new Date(now - DAY)};
+    case DateButton.PAST7:
+      return {start: new Date(now - 6 * DAY), end: today};
+    case DateButton.PAST30:
+      return {start: new Date(now - 29 * DAY), end: today};
     case DateButton.LAST_WEEK: {
       return {
         start: new Date(now - 7 * DAY - (today.getDay() - 1) * DAY),
-        end: new Date(now - (today.getDay()) * DAY)
+        end: new Date(now - today.getDay() * DAY)
       };
     }
     case DateButton.LAST_MONTH: {
@@ -64,7 +70,7 @@ function getDateRange(type) {
     case DateButton.THIS_WEEK: {
       return {
         start: new Date(now - (today.getDay() - 1) * DAY),
-        end: new Date(now - (today.getDay()) * DAY + 7 * DAY)
+        end: new Date(now - today.getDay() * DAY + 7 * DAY)
       };
     }
     case DateButton.THIS_MONTH: {
@@ -88,7 +94,8 @@ function getDateRange(type) {
       end.setDate(0);
       return {start, end};
     }
-    default: return null;
+    default:
+      return null;
   }
 }
 

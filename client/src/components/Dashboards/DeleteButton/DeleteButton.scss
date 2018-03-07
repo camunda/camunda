@@ -10,14 +10,13 @@
   background-size: 24px;
   background-repeat: no-repeat;
   background-position: center;
-  opacity: .75;
-  
+  opacity: 0.75;
+
   &:hover,
   &:active {
     background-color: transparent;
     border: none;
     box-shadow: none;
     opacity: 1;
-  }  
-  
+  }
 }

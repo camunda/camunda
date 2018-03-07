@@ -10,19 +10,21 @@ import {getToken} from 'credentials';
 import './Header.css';
 
 export default function Header({name}) {
-  return ((getToken() ?
-  <header role='banner' className='Header'>
-    <Link to='/' className='Header__link' title={name}>
-      <Logo className='Header__logo'/>
-      <span>{name}</span>
-    </Link>
+  return getToken() ? (
+    <header role="banner" className="Header">
+      <Link to="/" className="Header__link" title={name}>
+        <Logo className="Header__logo" />
+        <span>{name}</span>
+      </Link>
       <HeaderNav>
-        <HeaderNav.Item name='Dashboards' linksTo='/dashboards' active='/dashboard' />
-        <HeaderNav.Item name='Reports' linksTo='/reports' active='/report' />
-        <HeaderNav.Item name='Analysis' linksTo='/analysis' active='/analysis' />
-        <HeaderNav.Item name='Alerts' linksTo='/alerts' active='/alerts' />
+        <HeaderNav.Item name="Dashboards" linksTo="/dashboards" active="/dashboard" />
+        <HeaderNav.Item name="Reports" linksTo="/reports" active="/report" />
+        <HeaderNav.Item name="Analysis" linksTo="/analysis" active="/analysis" />
+        <HeaderNav.Item name="Alerts" linksTo="/alerts" active="/alerts" />
       </HeaderNav>
       <LogoutButton />
-  </header> : '')
+    </header>
+  ) : (
+    ''
   );
 }

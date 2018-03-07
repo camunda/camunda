@@ -1,4 +1,4 @@
-@import "shared-styles.scss";
+@import 'shared-styles.scss';
 
 .Report-container {
   flex-grow: 1;
@@ -44,7 +44,6 @@
     font-weight: normal;
     color: #bdbdbd;
   }
-
 }
 
 .Report__tools {
@@ -71,5 +70,4 @@
   .Table {
     min-width: 25%;
   }
-
 }

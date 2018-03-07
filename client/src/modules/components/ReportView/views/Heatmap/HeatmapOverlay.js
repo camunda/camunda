@@ -4,12 +4,17 @@ import {getHeatmap} from './service';
 import Tooltip from './Tooltip';
 
 export default class HeatmapOverlay extends React.Component {
-
   heatmap = undefined;
 
   render() {
-    if(this.props.formatter) {
-      return <Tooltip viewer={this.props.viewer} data={this.props.data} formatter={this.props.formatter} />;
+    if (this.props.formatter) {
+      return (
+        <Tooltip
+          viewer={this.props.viewer}
+          data={this.props.data}
+          formatter={this.props.formatter}
+        />
+      );
     }
     return null;
   }
@@ -24,7 +29,7 @@ export default class HeatmapOverlay extends React.Component {
 
   componentWillUnmount() {
     const {viewer} = this.props;
-    if(this.heatmap) {
+    if (this.heatmap) {
       viewer.get('canvas')._viewport.removeChild(this.heatmap);
     }
   }
@@ -34,11 +39,10 @@ export default class HeatmapOverlay extends React.Component {
 
     const heatmap = getHeatmap(viewer, data);
 
-    if(this.heatmap) {
+    if (this.heatmap) {
       viewer.get('canvas')._viewport.removeChild(this.heatmap);
     }
     viewer.get('canvas')._viewport.appendChild(heatmap);
     this.heatmap = heatmap;
-  }
-
+  };
 }

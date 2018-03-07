@@ -15,7 +15,7 @@ const icons = {
   autorefresh,
   check,
   delete: deleteIcon,
-  "exit-fullscreen": exitFullscreen,
+  'exit-fullscreen': exitFullscreen,
   fullscreen,
   plus,
   share,

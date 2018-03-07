@@ -26,14 +26,20 @@ export default class DateInput extends React.PureComponent {
   }
 
   render() {
-    return <input type="text"
-                  ref={this.props.reference}
-                  className={'Input DateInput ' + this.props.className + (this.state.error ? ' DateInput--error' : '')}
-                  value={this.state.stringDate}
-                  onFocus={this.props.onFocus}
-                  onClick={this.onClick}
-                  onKeyDown={this.onKeyDown}
-                  onChange={this.onInputChange} />;
+    return (
+      <input
+        type="text"
+        ref={this.props.reference}
+        className={
+          'Input DateInput ' + this.props.className + (this.state.error ? ' DateInput--error' : '')
+        }
+        value={this.state.stringDate}
+        onFocus={this.props.onFocus}
+        onClick={this.onClick}
+        onKeyDown={this.onKeyDown}
+        onChange={this.onInputChange}
+      />
+    );
   }
 
   onClick = event => {
@@ -41,13 +47,13 @@ export default class DateInput extends React.PureComponent {
     if (typeof this.props.onClick === 'function') {
       this.props.onClick(event);
     }
-  }
+  };
 
   onKeyDown = ({key}) => {
-    if(key === 'Enter') {
+    if (key === 'Enter') {
       this.props.onSubmit();
     }
-  }
+  };
 
   onInputChange = event => {
     const value = event.target.value;
@@ -63,5 +69,5 @@ export default class DateInput extends React.PureComponent {
       this.props.onDateChange(date);
     }
     this.props.enableAddButton(isValid);
-  }
+  };
 }

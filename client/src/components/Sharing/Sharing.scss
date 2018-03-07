@@ -1,30 +1,29 @@
 .Sharing {
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .Sharing__header {
-    display: flex;
-    flex-shrink: 0;
-    margin-bottom: 32px;
+  display: flex;
+  flex-shrink: 0;
+  margin-bottom: 32px;
 }
 
 .Sharing__tile-container {
-    flex-grow: 1;
-    padding-right: 48px;
+  flex-grow: 1;
+  padding-right: 48px;
 }
 
 .Sharing__content {
-    margin-top: 24px;
-    margin-bottom: 24px;
-    display: flex;
-    justify-content: flex-start;
-    flex-direction: column;
-    flex-grow: 1;
+  margin-top: 24px;
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: flex-start;
+  flex-direction: column;
+  flex-grow: 1;
 
-    .Table {
-        min-width: 25%;
-    }
-
+  .Table {
+    min-width: 25%;
+  }
 }

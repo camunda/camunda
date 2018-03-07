@@ -3,21 +3,26 @@ import {mount} from 'enzyme';
 
 import DashboardReport from './DashboardReport';
 
-
 jest.mock('react-router-dom', () => {
   return {
     Redirect: ({to}) => {
-      return <div>REDIRECT to {to}</div>
+      return <div>REDIRECT to {to}</div>;
     },
     Link: ({children, to, onClick, id}) => {
-      return <a id={id} href={to} onClick={onClick}>{children}</a>
+      return (
+        <a id={id} href={to} onClick={onClick}>
+          {children}
+        </a>
+      );
     }
-  }
+  };
 });
 
-jest.mock('components', () => {return {
-  ReportView: () => <div>ReportView</div>
-}});
+jest.mock('components', () => {
+  return {
+    ReportView: () => <div>ReportView</div>
+  };
+});
 
 const loadReport = jest.fn();
 
@@ -26,7 +31,7 @@ const props = {
     id: 'a'
   },
   loadReport
-}
+};
 
 it('should load the report provided by id', () => {
   mount(<DashboardReport {...props} />);
@@ -68,9 +73,12 @@ it('should render optional addons', async () => {
 
   const TextRenderer = ({children}) => <p>{children}</p>;
 
-  const node = mount(<DashboardReport {...props} addons={[
-    <TextRenderer key='textAddon'>I am an addon!</TextRenderer>
-  ]} />);
+  const node = mount(
+    <DashboardReport
+      {...props}
+      addons={[<TextRenderer key="textAddon">I am an addon!</TextRenderer>]}
+    />
+  );
 
   await node.instance().loadReportData();
 
@@ -82,13 +90,13 @@ it('should pass properties to report addons', async () => {
 
   const PropsRenderer = props => <p>{JSON.stringify(Object.keys(props))}</p>;
 
-  const node = mount(<DashboardReport {...props} addons={[
-    <PropsRenderer key='propsRenderer' />
-  ]} />);
+  const node = mount(
+    <DashboardReport {...props} addons={[<PropsRenderer key="propsRenderer" />]} />
+  );
 
   await node.instance().loadReportData();
 
   expect(node).toIncludeText('report');
   expect(node).toIncludeText('loadReportData');
   expect(node).toIncludeText('tileDimensions');
-})
+});

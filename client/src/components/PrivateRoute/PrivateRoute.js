@@ -1,5 +1,5 @@
 import React from 'react';
-import {Route, Redirect} from 'react-router-dom'
+import {Route, Redirect} from 'react-router-dom';
 import {destroy, getToken} from 'credentials';
 import {addHandler, removeHandler} from 'request';
 
@@ -15,7 +15,7 @@ export default class PrivateRoute extends React.Component {
   }
 
   handleResponse = response => {
-    if(response.status === 401) {
+    if (response.status === 401) {
       destroy();
       this.setState({
         forceRedirect: true
@@ -23,24 +23,31 @@ export default class PrivateRoute extends React.Component {
     }
 
     return response;
-  }
+  };
 
   render() {
     const {component: Component, ...rest} = this.props;
-    return (<Route {...rest} render={props => {
-      return ((getToken() && !this.state.forceRedirect) ? (
-        <Component {...props} />
-      ) : (
-        <Redirect to={{
-          pathname: '/login',
-          state: { from: props.location }
-        }} />
-      )
-    )}} />);
+    return (
+      <Route
+        {...rest}
+        render={props => {
+          return getToken() && !this.state.forceRedirect ? (
+            <Component {...props} />
+          ) : (
+            <Redirect
+              to={{
+                pathname: '/login',
+                state: {from: props.location}
+              }}
+            />
+          );
+        }}
+      />
+    );
   }
 
   componentDidUpdate(prevProps, prevState) {
-    if(this.state.forceRedirect) {
+    if (this.state.forceRedirect) {
       this.setState({
         forceRedirect: false
       });

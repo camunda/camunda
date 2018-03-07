@@ -5,25 +5,32 @@ import Alerts from './Alerts';
 import {loadAlerts, loadReports} from './service';
 
 jest.mock('components', () => {
-  const Modal = props => <div id='modal'>{props.children}</div>;
-  Modal.Header = props => <div id='modal_header'>{props.children}</div>;
-  Modal.Content = props => <div id='modal_content'>{props.children}</div>;
-  Modal.Actions = props => <div id='modal_actions'>{props.children}</div>;
+  const Modal = props => <div id="modal">{props.children}</div>;
+  Modal.Header = props => <div id="modal_header">{props.children}</div>;
+  Modal.Content = props => <div id="modal_content">{props.children}</div>;
+  Modal.Actions = props => <div id="modal_actions">{props.children}</div>;
 
   return {
-  Modal,
-  Button: props => <button {...props}>{props.children}</button>,
-}});
+    Modal,
+    Button: props => <button {...props}>{props.children}</button>
+  };
+});
 
-jest.mock('./service', () => {return {
-  loadAlerts: jest.fn(),
-  loadReports: jest.fn(),
-  saveNewAlert: jest.fn(),
-  deleteAlert: jest.fn(),
-  updateAlert: jest.fn()
-}});
+jest.mock('./service', () => {
+  return {
+    loadAlerts: jest.fn(),
+    loadReports: jest.fn(),
+    saveNewAlert: jest.fn(),
+    deleteAlert: jest.fn(),
+    updateAlert: jest.fn()
+  };
+});
 
-jest.mock('./AlertModal', () => (props) => <span>EditModal: <span id="ModalProps">{JSON.stringify(props)}</span></span>);
+jest.mock('./AlertModal', () => props => (
+  <span>
+    EditModal: <span id="ModalProps">{JSON.stringify(props)}</span>
+  </span>
+));
 
 const reports = [
   {id: '1', data: {visualization: 'table'}, name: 'Report 1'},

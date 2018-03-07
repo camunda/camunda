@@ -6,13 +6,17 @@ import {loadProcessDefinitionXml, loadFrequencyData} from './service';
 import Analysis from './Analysis';
 
 jest.mock('./ControlPanel', () => () => <div>ControlPanel</div>);
-jest.mock('components', () => {return {
-  BPMNDiagram: () => <div>BPMNDiagram</div>
-}});
-jest.mock('./service', () => {return {
-  loadProcessDefinitionXml: jest.fn(),
-  loadFrequencyData: jest.fn()
-}});
+jest.mock('components', () => {
+  return {
+    BPMNDiagram: () => <div>BPMNDiagram</div>
+  };
+});
+jest.mock('./service', () => {
+  return {
+    loadProcessDefinitionXml: jest.fn(),
+    loadFrequencyData: jest.fn()
+  };
+});
 jest.mock('./DiagramBehavior', () => () => <div>DiagramBehavior</div>);
 jest.mock('./Statistics', () => () => <div>Statistics</div>);
 
@@ -26,7 +30,9 @@ it('should load the process definition xml when the process definition id is upd
   const node = mount(<Analysis />);
 
   loadProcessDefinitionXml.mockClear();
-  node.instance().updateConfig({'processDefinitionKey': 'someKey', 'processDefinitionVersion': 'someVersion'});
+  node
+    .instance()
+    .updateConfig({processDefinitionKey: 'someKey', processDefinitionVersion: 'someVersion'});
 
   expect(loadProcessDefinitionXml).toHaveBeenCalledWith('someKey', 'someVersion');
 });
@@ -34,9 +40,11 @@ it('should load the process definition xml when the process definition id is upd
 it('should load frequency data when the process definition key changes', async () => {
   const node = mount(<Analysis />);
 
-  node.instance().updateConfig({'processDefinitionKey': 'someKey', 'processDefinitionVersion': 'someVersion'});
+  node
+    .instance()
+    .updateConfig({processDefinitionKey: 'someKey', processDefinitionVersion: 'someVersion'});
   loadFrequencyData.mockClear();
-  await node.instance().updateConfig({'processDefinitionKey': 'anotherKey'});
+  await node.instance().updateConfig({processDefinitionKey: 'anotherKey'});
 
   expect(loadFrequencyData.mock.calls[0][0]).toBe('anotherKey');
 });
@@ -44,9 +52,11 @@ it('should load frequency data when the process definition key changes', async (
 it('should load frequency data when the process definition version changes', async () => {
   const node = mount(<Analysis />);
 
-  await node.instance().updateConfig({'processDefinitionKey': 'someKey', 'processDefinitionVersion': 'someVersion'});
+  await node
+    .instance()
+    .updateConfig({processDefinitionKey: 'someKey', processDefinitionVersion: 'someVersion'});
   loadFrequencyData.mockClear();
-  await node.instance().updateConfig({'processDefinitionVersion': 'anotherVersion'});
+  await node.instance().updateConfig({processDefinitionVersion: 'anotherVersion'});
 
   expect(loadFrequencyData.mock.calls[0][1]).toBe('anotherVersion');
 });
@@ -54,9 +64,11 @@ it('should load frequency data when the process definition version changes', asy
 it('should load updated frequency data when the filter changed', async () => {
   const node = mount(<Analysis />);
 
-  await node.instance().updateConfig({'processDefinitionKey': 'someKey', 'processDefinitionVersion': 'someVersion'});
+  await node
+    .instance()
+    .updateConfig({processDefinitionKey: 'someKey', processDefinitionVersion: 'someVersion'});
   loadFrequencyData.mockClear();
-  await node.instance().updateConfig({'filter': ['someFilter']});
+  await node.instance().updateConfig({filter: ['someFilter']});
 
   expect(loadFrequencyData.mock.calls[0][2]).toEqual(['someFilter']);
 });
@@ -65,7 +77,7 @@ it('should not try to load frequency data if no process definition is selected',
   const node = mount(<Analysis />);
 
   loadFrequencyData.mockClear();
-  node.instance().updateConfig({'filter': ['someFilter']});
+  node.instance().updateConfig({filter: ['someFilter']});
 
   expect(loadFrequencyData).not.toHaveBeenCalled();
 });
@@ -85,7 +97,7 @@ it('should clear the selection when another process definition is selected', asy
   const node = mount(<Analysis />);
 
   await node.instance().setState({gateway: 'g', endEvent: 'e'});
-  await node.instance().updateConfig({'processDefinitionKey':'newKey'});
+  await node.instance().updateConfig({processDefinitionKey: 'newKey'});
 
   expect(node).toHaveState('gateway', null);
   expect(node).toHaveState('endEvent', null);

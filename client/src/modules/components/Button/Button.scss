@@ -1,7 +1,7 @@
 .Button,
 a.Button {
   color: #333;
-  font-size: .875em; /* 14px/16px */
+  font-size: 0.875em; /* 14px/16px */
   user-select: none;
   padding: 6px 12px;
   background-color: #f8f8f8;
@@ -17,7 +17,7 @@ a.Button:hover {
   background-color: #e6e6e6;
   border: 1px solid #adadad;
   cursor: pointer;
-  transition: background-color .3s, border-color .3s;
+  transition: background-color 0.3s, border-color 0.3s;
 }
 
 .Button:focus,
@@ -28,14 +28,13 @@ a.Button:focus {
 }
 
 .Button[disabled]:hover,
-.Button[disabled="disabled"]:hover,
+.Button[disabled='disabled']:hover,
 a.Button[disabled]:hover,
-a.Button[disabled="disabled"]:hover {
+a.Button[disabled='disabled']:hover {
   color: #333;
   background-color: #f8f8f8;
   border: 1px solid #ccc;
 }
-
 
 .Button:active,
 a.Button:active,
@@ -48,19 +47,18 @@ a.Button.is-active {
 }
 
 .Button[disabled],
-.Button[disabled="disabled"],
+.Button[disabled='disabled'],
 a.Button[disabled],
-a.Button[disabled="disabled"] {
+a.Button[disabled='disabled'] {
   cursor: not-allowed;
-  opacity: .65;
+  opacity: 0.65;
 }
 
 .Button--small,
 a.Button--small {
-  font-size: .75em; /* 12px/16px */
+  font-size: 0.75em; /* 12px/16px */
   padding: 4px 8px;
 }
-
 
 .Button--primary,
 a.Button--primary {
@@ -82,41 +80,40 @@ a.Button--blue:focus {
 .Button--blue:hover,
 a.Button--blue:hover {
   color: white;
-  background-color: #008fe6;  /* #00a8ff -> darken 10% */
+  background-color: #008fe6; /* #00a8ff -> darken 10% */
   border: 1px solid #008fe6;
 }
 
 .Button--blue[disabled]:hover,
-.Button--blue[disabled="disabled"]:hover,
+.Button--blue[disabled='disabled']:hover,
 a.Button--blue[disabled]:hover,
-a.Button--blue[disabled="disabled"]:hover {
+a.Button--blue[disabled='disabled']:hover {
   color: white;
   background-color: #00a8ff;
   border: 1px solid #00a8ff;
-
 }
 
 .Button--red,
 a.Button--red {
   color: white;
-  background-color: #B5152B;
-  border: 1px solid #B5152B;
+  background-color: #b5152b;
+  border: 1px solid #b5152b;
 }
 
 .Button--red:hover,
 a.Button--red:hover {
   color: white;
-  background-color: #9C0012; /* #B5152B -> darken 10% */
-  border: 1px solid #9C0012;
+  background-color: #9c0012; /* #B5152B -> darken 10% */
+  border: 1px solid #9c0012;
 }
 
 .Button--red[disabled]:hover,
-.Button--red[disabled="disabled"]:hover,
+.Button--red[disabled='disabled']:hover,
 a.Button--red[disabled]:hover,
-a.Button--red[disabled="disabled"]:hover {
+a.Button--red[disabled='disabled']:hover {
   color: white;
-  background-color: #B5152B;
-  border: 1px solid #B5152B;
+  background-color: #b5152b;
+  border: 1px solid #b5152b;
 }
 
 .Button--green,
@@ -129,14 +126,14 @@ a.Button--green {
 .Button--green:hover,
 a.Button--green:hover {
   color: white;
-  background-color: #00AA4B; /* #00c364 -> darken 10% */
-  border: 1px solid #00AA4B;
+  background-color: #00aa4b; /* #00c364 -> darken 10% */
+  border: 1px solid #00aa4b;
 }
 
 .Button--green[disabled]:hover,
-.Button--green[disabled="disabled"]:hover,
+.Button--green[disabled='disabled']:hover,
 a.Button--green[disabled]:hover,
-a.Button--green[disabled="disabled"]:hover {
+a.Button--green[disabled='disabled']:hover {
   color: white;
   background-color: #00c364;
   border: 1px solid #00c364;
@@ -145,6 +142,6 @@ a.Button--green[disabled="disabled"]:hover {
 // Modify .Icon when used inside .Button to keep  distance to button label:
 .Button {
   .Icon {
-    margin-right: .65em;
+    margin-right: 0.65em;
   }
 }

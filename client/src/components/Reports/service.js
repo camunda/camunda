@@ -11,7 +11,10 @@ export async function remove(id) {
 }
 
 export async function loadProcessDefinitionXml(processDefinitionKey, processDefinitionVersion) {
-  const response = await get('/api/process-definition/xml', {processDefinitionKey, processDefinitionVersion});
+  const response = await get('/api/process-definition/xml', {
+    processDefinitionKey,
+    processDefinitionVersion
+  });
 
   return await response.text();
 }
@@ -20,14 +23,14 @@ export async function getReportData(query) {
   let response;
 
   try {
-    if(typeof query !== 'object') {
+    if (typeof query !== 'object') {
       // evaluate saved report
       response = await get(`/api/report/${query}/evaluate`);
     } else {
       // evaluate unsaved report
       response = await post('/api/report/evaluate', query);
     }
-  } catch(e) {
+  } catch (e) {
     return null;
   }
 
@@ -52,7 +55,7 @@ export async function shareReport(reportId) {
 export async function getSharedReport(reportId) {
   const response = await get(`/api/share/report/${reportId}`);
 
-  if(response.status > 201) {
+  if (response.status > 201) {
     return '';
   } else {
     const json = await response.json();

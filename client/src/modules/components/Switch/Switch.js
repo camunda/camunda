@@ -9,7 +9,7 @@ export default function Switch(props) {
       <Input type="checkbox" {...props}>
         {props.children}
       </Input>
-      <span className="Switch__Slider--round"></span>
+      <span className="Switch__Slider--round" />
     </label>
   );
 }

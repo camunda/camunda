@@ -5,7 +5,7 @@ import 'jest-enzyme';
 import {shim as objectValuesShim} from 'object.values';
 import 'element-closest';
 
-Enzyme.configure({ adapter: new Adapter() });
+Enzyme.configure({adapter: new Adapter()});
 
 const localStorageMock = {
   getItem: jest.fn(),
@@ -18,6 +18,6 @@ document.execCommand = jest.fn();
 
 global.MutationObserver = class MutationObserver {
   observe() {}
-}
+};
 
 objectValuesShim();

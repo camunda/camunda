@@ -4,17 +4,21 @@ import {mount} from 'enzyme';
 import BPMNDiagram from './BPMNDiagram';
 import Viewer from 'bpmn-js/lib/NavigatedViewer';
 
-jest.mock('bpmn-js/lib/NavigatedViewer', () => {return class Viewer {
-  constructor() {
-    this.canvas = {
-      resized: jest.fn(),
-      zoom: jest.fn()
+jest.mock('bpmn-js/lib/NavigatedViewer', () => {
+  return class Viewer {
+    constructor() {
+      this.canvas = {
+        resized: jest.fn(),
+        zoom: jest.fn()
+      };
     }
-  }
-  attachTo = jest.fn()
-  importXML = jest.fn((xml, cb) => cb())
-  get = () => {return this.canvas}
-}});
+    attachTo = jest.fn();
+    importXML = jest.fn((xml, cb) => cb());
+    get = () => {
+      return this.canvas;
+    };
+  };
+});
 
 const diagramXml = 'some diagram XML';
 
@@ -45,9 +49,11 @@ it('should resize the diagram to fit the container initially', () => {
 });
 
 it('should not render children when diagram is not loaded', () => {
-  const node = mount(<BPMNDiagram xml={diagramXml}>
-    <p>Additional Content</p>
-  </BPMNDiagram>);
+  const node = mount(
+    <BPMNDiagram xml={diagramXml}>
+      <p>Additional Content</p>
+    </BPMNDiagram>
+  );
 
   node.setState({loaded: false});
 
@@ -55,23 +61,31 @@ it('should not render children when diagram is not loaded', () => {
 });
 
 it('should render children when diagram is renderd', () => {
-  const node = mount(<BPMNDiagram xml={diagramXml}>
-    <p>Additional Content</p>
-  </BPMNDiagram>);
+  const node = mount(
+    <BPMNDiagram xml={diagramXml}>
+      <p>Additional Content</p>
+    </BPMNDiagram>
+  );
 
   expect(node).toIncludeText('Additional Content');
 });
 
 it('should pass viewer instance to children', () => {
-  const node = mount(<BPMNDiagram xml={diagramXml}>
-    <p>Additional Content</p>
-  </BPMNDiagram>);
+  const node = mount(
+    <BPMNDiagram xml={diagramXml}>
+      <p>Additional Content</p>
+    </BPMNDiagram>
+  );
 
   expect(node.find('p').prop('viewer')).toBe(node.instance().viewer);
 });
 
 it('should register an Mutation Observer if its on a Dashboard', () => {
-  mount(<div className="DashboardObject"><BPMNDiagram xml={diagramXml} /></div>);
+  mount(
+    <div className="DashboardObject">
+      <BPMNDiagram xml={diagramXml} />
+    </div>
+  );
 
   // we can maybe have some meaningful assertion here once jsdom supports MutationObservers:
   // https://github.com/tmpvar/jsdom/issues/639

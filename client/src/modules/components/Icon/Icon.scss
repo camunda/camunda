@@ -1,5 +1,5 @@
 .Icon {
-  display: inline-block;  
+  display: inline-block;
   width: 1em;
   height: 1em;
   min-width: 16px;
@@ -7,11 +7,10 @@
   background-repeat: no-repeat;
   background-size: cover;
   vertical-align: text-bottom;
-  
+
   &:not(:last-child) {
-    margin-right: .65em;
+    margin-right: 0.65em;
   }
-  
 }
 
 // Create classes for all known icons to be used as a background-image:
@@ -31,18 +30,14 @@ $icons: (
 @each $icon in $icons {
   .Icon--#{$icon} {
     background-image: url('./icons/#{$icon}.svg');
-  } 
+  }
 }
 
-
 .Icon--svg {
-  
   svg {
     min-height: 16px;
     min-width: 16px;
     max-height: 1em;
     max-width: 1em;
   }
-  
 }
-

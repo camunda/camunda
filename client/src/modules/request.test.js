@@ -1,9 +1,11 @@
 import {request, formatQuery, put, post, get, addHandler, removeHandler} from './request';
 import {getToken} from 'credentials';
 
-jest.mock('credentials', () => {return {
-  getToken: jest.fn()
-}});
+jest.mock('credentials', () => {
+  return {
+    getToken: jest.fn()
+  };
+});
 
 const successResponse = {
   status: 200,
@@ -27,7 +29,7 @@ describe('request', () => {
 
   beforeEach(() => {
     fetch.mockClear();
-  })
+  });
 
   it('should open http request with given method and url', async () => {
     await request({
@@ -117,7 +119,7 @@ describe('request', () => {
         url,
         method
       });
-    } catch(e) {
+    } catch (e) {
       expect(e).toBe(failedResponse);
     }
   });
@@ -143,9 +145,11 @@ describe('request', () => {
 
     const {headers} = fetch.mock.calls[0][1];
 
-    expect(headers).not.toBe(expect.objectContaining({
-      'X-Optimize-Authorization': expect.any(String)
-    }));
+    expect(headers).not.toBe(
+      expect.objectContaining({
+        'X-Optimize-Authorization': expect.any(String)
+      })
+    );
   });
 });
 
@@ -189,7 +193,7 @@ describe('methods shortcuts functions', () => {
 
   beforeEach(() => {
     fetch.mockClear();
-  })
+  });
 
   describe('put', () => {
     it('should call request with correct options', async () => {

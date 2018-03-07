@@ -1,19 +1,27 @@
 import React from 'react';
-import { shallow, mount } from 'enzyme';
+import {shallow, mount} from 'enzyme';
 
 import LogoutButton from './LogoutButton';
 import {getToken, destroy} from 'credentials';
 import {get} from 'request';
 
-jest.mock('credentials', () => {return {
-  destroy: jest.fn()
-}});
-jest.mock('request', () => {return {
-  get: jest.fn()
-}});
-jest.mock('react-router-dom', () => { return {
-  Link: ({children, onClick}) => {return <a onClick={onClick}>{children}</a>}
-}});
+jest.mock('credentials', () => {
+  return {
+    destroy: jest.fn()
+  };
+});
+jest.mock('request', () => {
+  return {
+    get: jest.fn()
+  };
+});
+jest.mock('react-router-dom', () => {
+  return {
+    Link: ({children, onClick}) => {
+      return <a onClick={onClick}>{children}</a>;
+    }
+  };
+});
 
 it('renders without crashing', () => {
   shallow(<LogoutButton />);

@@ -12,25 +12,25 @@ export default class TargetValueComparison extends React.Component {
     super(props);
 
     this.state = {
-      modalOpen: false,
+      modalOpen: false
     };
   }
 
   getConfig = () => {
-    return (this.props.configuration.targetValue) || {};
-  }
+    return this.props.configuration.targetValue || {};
+  };
 
   toggleMode = () => {
     const {active, values} = this.getConfig();
 
-    if(active) {
+    if (active) {
       this.setActive(false);
-    } else if(!values || Object.keys(values).length === 0) {
+    } else if (!values || Object.keys(values).length === 0) {
       this.openModal();
     } else {
       this.setActive(true);
     }
-  }
+  };
 
   setActive = active => {
     this.props.onChange({
@@ -42,21 +42,21 @@ export default class TargetValueComparison extends React.Component {
         }
       }
     });
-  }
+  };
 
   openModal = async () => {
     this.setState({
       modalOpen: true
     });
-  }
+  };
 
   closeModal = () => {
     this.setState({
       modalOpen: false
     });
-  }
+  };
 
-  confirmModal = (values) => {
+  confirmModal = values => {
     this.props.onChange({
       configuration: {
         ...this.props.configuration,
@@ -67,24 +67,56 @@ export default class TargetValueComparison extends React.Component {
       }
     });
     this.closeModal();
-  }
+  };
 
   isEnabled = () => {
-    const {processDefinitionKey, processDefinitionVersion, view, groupBy, visualization} = this.props.reportResult.data;
+    const {
+      processDefinitionKey,
+      processDefinitionVersion,
+      view,
+      groupBy,
+      visualization
+    } = this.props.reportResult.data;
 
-    return processDefinitionKey && processDefinitionVersion &&
-      view.entity === 'flowNode' && view.operation === 'avg' && view.property === 'duration' &&
+    return (
+      processDefinitionKey &&
+      processDefinitionVersion &&
+      view.entity === 'flowNode' &&
+      view.operation === 'avg' &&
+      view.property === 'duration' &&
       groupBy.type === 'flowNode' &&
-      visualization === 'heat';
-  }
+      visualization === 'heat'
+    );
+  };
 
   render() {
     const isEnabled = this.isEnabled();
 
-    return (<ButtonGroup>
-      <Button className='TargetValueComparison__toggleButton' disabled={!isEnabled} active={this.getConfig().active} onClick={this.toggleMode}>Target Value</Button>
-      <Button className='TargetValueComparison__editButton' disabled={!isEnabled} onClick={this.openModal}><img src={settingsIcon} alt="settings" className='TargetValueComparison__settingsIcon' /></Button>
-      <TargetValueModal open={this.state.modalOpen} onClose={this.closeModal} configuration={this.props.configuration} onConfirm={this.confirmModal} reportResult={this.props.reportResult} />
-    </ButtonGroup>);
+    return (
+      <ButtonGroup>
+        <Button
+          className="TargetValueComparison__toggleButton"
+          disabled={!isEnabled}
+          active={this.getConfig().active}
+          onClick={this.toggleMode}
+        >
+          Target Value
+        </Button>
+        <Button
+          className="TargetValueComparison__editButton"
+          disabled={!isEnabled}
+          onClick={this.openModal}
+        >
+          <img src={settingsIcon} alt="settings" className="TargetValueComparison__settingsIcon" />
+        </Button>
+        <TargetValueModal
+          open={this.state.modalOpen}
+          onClose={this.closeModal}
+          configuration={this.props.configuration}
+          onConfirm={this.confirmModal}
+          reportResult={this.props.reportResult}
+        />
+      </ButtonGroup>
+    );
   }
 }

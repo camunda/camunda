@@ -28,7 +28,7 @@
   position: relative;
   top: 50px;
   margin-right: 13px;
-  display:inline-block;
+  display: inline-block;
   background-repeat: no-repeat;
 }
 
@@ -40,19 +40,18 @@
   background-image: url(./link.svg);
 }
 
-
 .ShareEntity__icon-container {
   display: inline-flex;
   width: 100%;
 }
 
 .ShareEntity__link-area--disabled {
-  opacity: 0.50;
+  opacity: 0.5;
 }
 
 .ShareEntity__label {
   color: #626262;
-  font-size: .875em;
+  font-size: 0.875em;
   font-weight: bold;
   margin-bottom: 15px;
   display: block;
@@ -60,7 +59,7 @@
 
 .ShareEntity__label-description {
   color: #626262;
-  font-size: .800em;
+  font-size: 0.8em;
   padding-bottom: 5px;
   display: block;
 }

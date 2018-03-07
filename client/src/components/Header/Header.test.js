@@ -1,26 +1,34 @@
 import React from 'react';
-import { shallow, mount } from 'enzyme';
+import {shallow, mount} from 'enzyme';
 
 import Header from './Header';
 import {getToken} from 'credentials';
 
-jest.mock('credentials', () => {return {
-  getToken: jest.fn(),
-}});
-jest.mock('react-router-dom', () => { return {
-  Link: ({children}) => {return <a>{children}</a>}
-}});
-jest.mock('./LogoutButton', () => {return () => <div>logout</div>});
+jest.mock('credentials', () => {
+  return {
+    getToken: jest.fn()
+  };
+});
+jest.mock('react-router-dom', () => {
+  return {
+    Link: ({children}) => {
+      return <a>{children}</a>;
+    }
+  };
+});
+jest.mock('./LogoutButton', () => {
+  return () => <div>logout</div>;
+});
 jest.mock('./HeaderNav', () => {
   const HeaderNav = () => <div>HeaderNav</div>;
   HeaderNav.Item = () => <div>HeaderNavItem</div>;
   return HeaderNav;
 });
-jest.mock('components', () => {return {
-  Logo: () => <div></div>
-  }
+jest.mock('components', () => {
+  return {
+    Logo: () => <div />
+  };
 });
-
 
 it('renders without crashing', () => {
   getToken.mockReturnValue(true);
@@ -31,7 +39,6 @@ it('renders without crashing', () => {
 it('includes the name provided as property', () => {
   const name = 'Awesome App';
   getToken.mockReturnValue(true);
-
 
   const node = mount(<Header name={name} />);
   expect(node).toIncludeText(name);

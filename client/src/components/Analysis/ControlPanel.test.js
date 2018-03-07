@@ -5,22 +5,28 @@ import {extractProcessDefinitionName} from 'services';
 
 import ControlPanel from './ControlPanel';
 
-jest.mock('../Reports', () => {return {
-  Filter: () => 'Filter'
-}});
+jest.mock('../Reports', () => {
+  return {
+    Filter: () => 'Filter'
+  };
+});
 
 jest.mock('components', () => {
   return {
     ActionItem: props => <button {...props}>{props.children}</button>,
-    Popover: ({title, children}) => <div>{title} {children}</div> ,
-    ProcessDefinitionSelection: (props) => <div>ProcessDefinitionSelection</div>
+    Popover: ({title, children}) => (
+      <div>
+        {title} {children}
+      </div>
+    ),
+    ProcessDefinitionSelection: props => <div>ProcessDefinitionSelection</div>
   };
 });
 
 jest.mock('services', () => {
   return {
     extractProcessDefinitionName: jest.fn()
-  }
+  };
 });
 
 const data = {
@@ -48,30 +54,41 @@ it('should show a please select message if an entity is not selected', () => {
 });
 
 it('should show the element name if an element is selected', () => {
-  const node = mount(<ControlPanel {...data} onChange={spy} gateway={{
-    name: 'I am a Gateway',
-    id: 'gatewayId'
-  }} />);
+  const node = mount(
+    <ControlPanel
+      {...data}
+      onChange={spy}
+      gateway={{
+        name: 'I am a Gateway',
+        id: 'gatewayId'
+      }}
+    />
+  );
 
   expect(node).toIncludeText('I am a Gateway');
   expect(node).not.toIncludeText('gatewayId');
 });
 
 it('should show the element id if an element has no name', () => {
-  const node = mount(<ControlPanel {...data} onChange={spy} gateway={{
-    name: undefined,
-    id: 'gatewayId'
-  }} />);
+  const node = mount(
+    <ControlPanel
+      {...data}
+      onChange={spy}
+      gateway={{
+        name: undefined,
+        id: 'gatewayId'
+      }}
+    />
+  );
 
   expect(node).toIncludeText('gatewayId');
-
-})
+});
 
 it('should change process definition name if process definition xml is updated', async () => {
-  const node = await mount(<ControlPanel {...data}/>);
+  const node = await mount(<ControlPanel {...data} />);
 
   extractProcessDefinitionName.mockReturnValue({processDefinitionName: 'aName'});
   await node.setProps({xml: 'barXml'});
 
-  expect(node.find('.ControlPanel__popover')).toIncludeText('aName')
+  expect(node.find('.ControlPanel__popover')).toIncludeText('aName');
 });

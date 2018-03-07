@@ -1,5 +1,5 @@
 .Select {
-  font-size: .875em;
+  font-size: 0.875em;
   color: #333;
   height: 2.15em;
   background-color: #f8f8f8;
@@ -12,9 +12,8 @@
   }
 
   &[disabled],
-  &[disabled="disabled"] {
-    opacity: .65;
+  &[disabled='disabled'] {
+    opacity: 0.65;
     cursor: not-allowed;
   }
-
 }

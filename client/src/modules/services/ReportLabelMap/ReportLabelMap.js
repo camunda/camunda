@@ -5,7 +5,6 @@ const options = {
     {key: 'count_flowNode_frequency', label: 'Count Flow Node Frequency'},
     {key: 'avg_processInstance_duration', label: 'Average Process Instance Duration'},
     {key: 'avg_flowNode_duration', label: 'Average Flow Node Duration'}
-
   ],
   groupBy: [
     {key: 'none_null', label: 'None'},
@@ -29,29 +28,29 @@ const options = {
 
 const allowedOptionsMatrix = {
   rawData_ignored_ignored: {
-    none_null: [ 'table' ]
+    none_null: ['table']
   },
   count_processInstance_frequency: {
-    none_null: [ 'number' ],
-    startDate_year: [ 'table', 'pie', 'line', 'bar' ],
-    startDate_month: [ 'table', 'pie', 'line', 'bar' ],
-    startDate_week: [ 'table', 'pie', 'line', 'bar' ],
-    startDate_day: [ 'table', 'pie', 'line', 'bar' ],
-    startDate_hour: [ 'table', 'pie', 'line', 'bar' ]
+    none_null: ['number'],
+    startDate_year: ['table', 'pie', 'line', 'bar'],
+    startDate_month: ['table', 'pie', 'line', 'bar'],
+    startDate_week: ['table', 'pie', 'line', 'bar'],
+    startDate_day: ['table', 'pie', 'line', 'bar'],
+    startDate_hour: ['table', 'pie', 'line', 'bar']
   },
   count_flowNode_frequency: {
-    flowNode_null: [ 'heat', 'pie', 'line', 'bar', 'table' ]
+    flowNode_null: ['heat', 'pie', 'line', 'bar', 'table']
   },
   avg_processInstance_duration: {
-    none_null: [ 'number' ],
-    startDate_year: [ 'table', 'pie', 'line', 'bar' ],
-    startDate_month: [ 'table', 'pie', 'line', 'bar' ],
-    startDate_week: [ 'table', 'pie', 'line', 'bar' ],
-    startDate_day: [ 'table', 'pie', 'line', 'bar' ],
-    startDate_hour: [ 'table', 'pie', 'line', 'bar' ]
+    none_null: ['number'],
+    startDate_year: ['table', 'pie', 'line', 'bar'],
+    startDate_month: ['table', 'pie', 'line', 'bar'],
+    startDate_week: ['table', 'pie', 'line', 'bar'],
+    startDate_day: ['table', 'pie', 'line', 'bar'],
+    startDate_hour: ['table', 'pie', 'line', 'bar']
   },
   avg_flowNode_duration: {
-    flowNode_null: [ 'heat', 'pie', 'line', 'bar', 'table' ]
+    flowNode_null: ['heat', 'pie', 'line', 'bar', 'table']
   }
 };
 
@@ -66,20 +65,20 @@ const reportLabelMap = {
   objectToLabel: function(object, type) {
     const key = this.objectToKey(object, type);
     const foundObj = options[type].find(elem => elem.key === key);
-    return foundObj? foundObj.label: foundObj;
+    return foundObj ? foundObj.label : foundObj;
   },
 
   objectToKey: function(object, type) {
-    if(typeof(object) === 'string') {
+    if (typeof object === 'string') {
       return object;
     }
-    if(type === this.view) {
+    if (type === this.view) {
       const {operation, entity, property} = object;
-      if (operation === '') return ''
+      if (operation === '') return '';
       return `${operation}_${entity}_${property}`;
-    } else if(type === this.groupBy) {
+    } else if (type === this.groupBy) {
       const groupByType = object.type;
-      if(groupByType === '') return '';
+      if (groupByType === '') return '';
       const unit = object.unit;
       return `${groupByType}_${unit}`;
     }
@@ -91,11 +90,11 @@ const reportLabelMap = {
 
   keyToObject: function(key, type) {
     const data = key.split('_');
-    if(type === this.view) {
+    if (type === this.view) {
       if (key === '') return {operation: '', entity: '', property: ''};
 
       return {operation: data[0], entity: data[1], property: data[2]};
-    } else if(type === this.groupBy) {
+    } else if (type === this.groupBy) {
       if (key === '') return {type: '', unit: null};
 
       const type = data[0];

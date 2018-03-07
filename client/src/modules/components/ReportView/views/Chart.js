@@ -4,38 +4,34 @@ import ReportBlankSlate from '../ReportBlankSlate';
 
 import './Chart.css';
 
-const colors = [
-  '#b5152b',
-  '#5315b5',
-  '#15b5af',
-  '#59b515',
-  '#b59315'
-]
+const colors = ['#b5152b', '#5315b5', '#15b5af', '#59b515', '#b59315'];
 
 export default class Chart extends React.Component {
   storeContainer = container => {
     this.container = container;
-  }
+  };
 
   render() {
     const {data, errorMessage} = this.props;
 
     let errorMessageFragment = null;
-    if(!data || typeof data !== 'object') {
+    if (!data || typeof data !== 'object') {
       this.destroyChart();
       errorMessageFragment = <ReportBlankSlate message={errorMessage} />;
     }
 
-    return (<div className='Chart'>
-      {errorMessageFragment}
-      <canvas ref={this.storeContainer} />
-    </div>);
+    return (
+      <div className="Chart">
+        {errorMessageFragment}
+        <canvas ref={this.storeContainer} />
+      </div>
+    );
   }
 
   componentDidMount() {
     const {data, type, timeUnit} = this.props;
 
-    if(!data || typeof data !== 'object') {
+    if (!data || typeof data !== 'object') {
       return;
     }
     this.createNewChart(data, type, timeUnit);
@@ -46,17 +42,17 @@ export default class Chart extends React.Component {
     const data = nextProps.data;
     const timeUnit = nextProps.timeUnit;
 
-    if(!data || typeof data !== 'object') {
+    if (!data || typeof data !== 'object') {
       return;
     }
     this.createNewChart(data, newType, timeUnit);
   }
 
   destroyChart = () => {
-    if(this.chart) {
+    if (this.chart) {
       this.chart.destroy();
     }
-  }
+  };
 
   createNewChart = (data, type, timeUnit) => {
     this.destroyChart();
@@ -65,17 +61,19 @@ export default class Chart extends React.Component {
       type,
       data: {
         labels: Object.keys(data),
-        datasets: [{
-          data: Object.values(data),
-          ...this.createDatasetOptions(type)
-        }]
+        datasets: [
+          {
+            data: Object.values(data),
+            ...this.createDatasetOptions(type)
+          }
+        ]
       },
       options: this.createChartOptions(type, timeUnit)
     });
-  }
+  };
 
-  createDatasetOptions = (type) => {
-    switch(type) {
+  createDatasetOptions = type => {
+    switch (type) {
       case 'pie':
         return {
           borderColor: undefined,
@@ -96,11 +94,11 @@ export default class Chart extends React.Component {
           borderWidth: undefined
         };
     }
-  }
+  };
 
   createChartOptions = (type, timeUnit) => {
     let options;
-    switch(type) {
+    switch (type) {
       case 'pie':
         options = {
           legend: {
@@ -111,45 +109,51 @@ export default class Chart extends React.Component {
       case 'line':
       case 'bar':
         options = {
-          legend : {
+          legend: {
             display: false
           },
-          scales:  timeUnit && {
-            xAxes: [{
-                type : 'time',
+          scales: timeUnit && {
+            xAxes: [
+              {
+                type: 'time',
                 time: {
                   unit: timeUnit
                 }
-            }]
-          },
-        }
+              }
+            ]
+          }
+        };
         break;
       default:
         options = {};
     }
 
-    if(type === 'line' || type === 'bar') {
+    if (type === 'line' || type === 'bar') {
       options.scales = options.scales || {};
-      options.scales.yAxes = [{
-        ticks: {
-          beginAtZero: true
+      options.scales.yAxes = [
+        {
+          ticks: {
+            beginAtZero: true
+          }
         }
-      }];
+      ];
       if (this.props.property === 'duration') {
         options.scales.yAxes[0].ticks.callback = v => this.props.formatter(v);
       }
     }
 
-    options  = {
+    options = {
       ...options,
       responsive: true,
       maintainAspectRatio: false,
       animation: false,
-      tooltips: {callbacks: {
-        label: ({index, datasetIndex}, {datasets}) =>
-          this.props.formatter(datasets[datasetIndex].data[index])
-      }}
+      tooltips: {
+        callbacks: {
+          label: ({index, datasetIndex}, {datasets}) =>
+            this.props.formatter(datasets[datasetIndex].data[index])
+        }
+      }
     };
     return options;
-  }
+  };
 }

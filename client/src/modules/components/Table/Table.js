@@ -6,8 +6,8 @@ import './Table.css';
 
 export default function Table({className, head, body, foot}) {
   return (
-    <div className={className ? 'Table '+className : 'Table'}>
-      <table className='Table__content'>
+    <div className={className ? 'Table ' + className : 'Table'}>
+      <table className="Table__content">
         <thead>{Table.renderRow(head, 0)}</thead>
         <tbody>
           {body.map((row, idx) => {
@@ -16,33 +16,40 @@ export default function Table({className, head, body, foot}) {
         </tbody>
         <tfoot>{Table.renderRow(foot, 0)}</tfoot>
       </table>
-    </div>);
+    </div>
+  );
 }
 
 Table.renderRow = (row, idx) => {
   if (row) {
-    return (<tr key={idx}>
-      {row.map((cell, idx) => {
-        return (<td key={idx}>
-          {Table.renderCell(cell)}
-        </td>);
-      })}
-    </tr>);
+    return (
+      <tr key={idx}>
+        {row.map((cell, idx) => {
+          return <td key={idx}>{Table.renderCell(cell)}</td>;
+        })}
+      </tr>
+    );
   }
-}
+};
 
 Table.renderCell = cell => {
-  if(typeof cell !== 'object' || React.isValidElement(cell)) {
+  if (typeof cell !== 'object' || React.isValidElement(cell)) {
     return cell;
   }
 
-  if(cell.link) {
-    return (<Link to={cell.link} className={cell.className}>
-      {cell.content}
-    </Link>);
+  if (cell.link) {
+    return (
+      <Link to={cell.link} className={cell.className}>
+        {cell.content}
+      </Link>
+    );
   }
 
-  if(cell.onClick) {
-    return (<Button {...cell.props} onClick={cell.onClick} className={cell.className}>{cell.content}</Button>);
+  if (cell.onClick) {
+    return (
+      <Button {...cell.props} onClick={cell.onClick} className={cell.className}>
+        {cell.content}
+      </Button>
+    );
   }
-}
+};

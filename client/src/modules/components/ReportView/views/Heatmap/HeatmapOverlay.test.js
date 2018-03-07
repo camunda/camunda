@@ -5,9 +5,11 @@ import HeatmapOverlay from './HeatmapOverlay';
 import Tooltip from './Tooltip';
 import {getHeatmap} from './service';
 
-jest.mock('./service', () => {return {
-  getHeatmap: jest.fn()
-}});
+jest.mock('./service', () => {
+  return {
+    getHeatmap: jest.fn()
+  };
+});
 
 jest.mock('./Tooltip', () => 'foo');
 
@@ -15,9 +17,11 @@ const appendSpy = jest.fn();
 const removeSpy = jest.fn();
 
 const viewer = {
-  get: () => { return {
-    _viewport: {appendChild: appendSpy, removeChild: removeSpy}
-  }}
+  get: () => {
+    return {
+      _viewport: {appendChild: appendSpy, removeChild: removeSpy}
+    };
+  }
 };
 const data = 'some heatmap data';
 
@@ -40,13 +44,11 @@ it('should update heatmap if data changes', () => {
   appendSpy.mockReset();
 
   const heatmap = {};
-  const anotherHeatmap = { something: 'something'};
-  getHeatmap
-    .mockReturnValueOnce(heatmap)
-    .mockReturnValueOnce(anotherHeatmap);
+  const anotherHeatmap = {something: 'something'};
+  getHeatmap.mockReturnValueOnce(heatmap).mockReturnValueOnce(anotherHeatmap);
 
   const node = mount(<HeatmapOverlay viewer={viewer} data={data} />);
-  node.setState({data: "some other heatmap data"});
+  node.setState({data: 'some other heatmap data'});
 
   expect(removeSpy).toHaveBeenCalledWith(heatmap);
   expect(appendSpy).toHaveBeenCalledTimes(2);

@@ -1,10 +1,12 @@
 import {snapInPosition, collidesWithReport, applyPlacement} from './service';
 
-jest.mock('request', () => {return {
-  get: jest.fn(),
-  del: jest.fn(),
-  put: jest.fn()
-}});
+jest.mock('request', () => {
+  return {
+    get: jest.fn(),
+    del: jest.fn(),
+    put: jest.fn()
+  };
+});
 
 describe('snapInPosition', () => {
   const tileDimensions = {
@@ -72,7 +74,6 @@ describe('collidesWithReport', () => {
     expect(collidesWithReport({reports, placement})).toBe(false);
   });
 });
-
 
 describe('applyPlacement', () => {
   it('should style a node according to placement and tileDimensions', () => {

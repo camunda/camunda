@@ -11,7 +11,7 @@ jest.mock('services', () => {
       duration: durationSpy
     }
   };
-})
+});
 
 const viewer = {
   get: jest.fn().mockReturnThis(),

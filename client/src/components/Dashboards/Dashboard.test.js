@@ -12,11 +12,29 @@ jest.mock('components', () => {
 
   return {
     Modal,
-    Button: props => <button {...props} active={props.active ? 'true' : undefined}>{props.children}</button>,
-    Input: props => <input ref={props.reference} id={props.id} readOnly={props.readOnly} type={props.type} onChange={props.onChange} value={props.value} className={props.className}/>,
+    Button: props => (
+      <button {...props} active={props.active ? 'true' : undefined}>
+        {props.children}
+      </button>
+    ),
+    Input: props => (
+      <input
+        ref={props.reference}
+        id={props.id}
+        readOnly={props.readOnly}
+        type={props.type}
+        onChange={props.onChange}
+        value={props.value}
+        className={props.className}
+      />
+    ),
     ControlGroup: props => <div {...props}>{props.children}</div>,
-    ShareEntity: () => <div></div>,
-    DashboardView: ({children, reportAddons}) => <div className='DashboardView'>{children} Addons: {reportAddons}</div>,
+    ShareEntity: () => <div />,
+    DashboardView: ({children, reportAddons}) => (
+      <div className="DashboardView">
+        {children} Addons: {reportAddons}
+      </div>
+    ),
     Icon: ({type}) => <span>Icon: {type}</span>
   };
 });
@@ -26,35 +44,53 @@ jest.mock('./service', () => {
     loadDashboard: jest.fn(),
     remove: jest.fn(),
     update: jest.fn()
-  }
+  };
 });
 
 jest.mock('react-router-dom', () => {
   return {
     Redirect: ({to}) => {
-      return <div>REDIRECT to {to}</div>
+      return <div>REDIRECT to {to}</div>;
     },
     Link: ({children, to, onClick, id}) => {
-      return <a id={id} href={to} onClick={onClick}>{children}</a>
+      return (
+        <a id={id} href={to} onClick={onClick}>
+          {children}
+        </a>
+      );
     }
-  }
+  };
 });
 
 jest.mock('moment', () => () => {
   return {
     format: () => 'some date'
-  }
+  };
 });
 
 jest.mock('react-full-screen', () => ({children}) => <div>{children}</div>);
 
-jest.mock('./AddButton', () => {return {AddButton: ({visible}) => <div>AddButton visible: {''+visible}</div>}});
-jest.mock('./Grid', () => {return {Grid: () => <div>Grid</div>}});
-jest.mock('./DimensionSetter', () => {return {DimensionSetter: () => <div>DimensionSetter</div>}});
-jest.mock('./DeleteButton', () => {return {DeleteButton: () => <button>DeleteButton</button>}});
-jest.mock('./DragBehavior', () => {return {DragBehavior: () => <div>DragBehavior</div>}});
-jest.mock('./ResizeHandle', () => {return {ResizeHandle: () => <div>ResizeHandle</div>}});
-jest.mock('./AutoRefreshBehavior', () => {return {AutoRefreshBehavior: () => <div>AutoRefreshBehavior</div>}});
+jest.mock('./AddButton', () => {
+  return {AddButton: ({visible}) => <div>AddButton visible: {'' + visible}</div>};
+});
+jest.mock('./Grid', () => {
+  return {Grid: () => <div>Grid</div>};
+});
+jest.mock('./DimensionSetter', () => {
+  return {DimensionSetter: () => <div>DimensionSetter</div>};
+});
+jest.mock('./DeleteButton', () => {
+  return {DeleteButton: () => <button>DeleteButton</button>};
+});
+jest.mock('./DragBehavior', () => {
+  return {DragBehavior: () => <div>DragBehavior</div>};
+});
+jest.mock('./ResizeHandle', () => {
+  return {ResizeHandle: () => <div>ResizeHandle</div>};
+});
+jest.mock('./AutoRefreshBehavior', () => {
+  return {AutoRefreshBehavior: () => <div>AutoRefreshBehavior</div>};
+});
 
 const props = {
   match: {params: {id: '1'}},
@@ -68,7 +104,7 @@ const sampleDashboard = {
   reports: [
     {
       id: 1,
-      name : 'r1',
+      name: 'r1',
       position: {x: 0, y: 0},
       dimensions: {width: 1, height: 1}
     },
@@ -126,7 +162,10 @@ it('should remove a dashboard when delete button is clicked', () => {
     deleteModalVisible: true
   });
 
-  node.find('.Dashboard__delete-dashboard-modal-button').first().simulate('click');
+  node
+    .find('.Dashboard__delete-dashboard-modal-button')
+    .first()
+    .simulate('click');
 
   expect(remove).toHaveBeenCalledWith('1');
 });
@@ -138,7 +177,10 @@ it('should redirect to the dashboard list on dashboard deletion', async () => {
     deleteModalVisible: true
   });
 
-  await node.find('.Dashboard__delete-dashboard-modal-button').first().simulate('click');
+  await node
+    .find('.Dashboard__delete-dashboard-modal-button')
+    .first()
+    .simulate('click');
 
   expect(node).toIncludeText('REDIRECT to /dashboards');
 });
@@ -148,7 +190,10 @@ it('should show a modal on share button click', () => {
 
   node.setState({loaded: true});
 
-  node.find('.Dashboard__share-button').first().simulate('click');
+  node
+    .find('.Dashboard__share-button')
+    .first()
+    .simulate('click');
 
   expect(node.find('.Dashboard__share-modal')).toHaveProp('open', true);
 });
@@ -157,8 +202,14 @@ it('should hide the modal on close button click', () => {
   const node = mount(<Dashboard {...props} />);
   node.setState({loaded: true});
 
-  node.find('.Dashboard__share-button').first().simulate('click');
-  node.find('.Dashboard__close-share-modal-button').first().simulate('click');
+  node
+    .find('.Dashboard__share-button')
+    .first()
+    .simulate('click');
+  node
+    .find('.Dashboard__close-share-modal-button')
+    .first()
+    .simulate('click');
 
   expect(node.find('.Dashboard__share-modal')).toHaveProp('open', false);
 });
@@ -167,7 +218,10 @@ it('should enter fullscreen mode', () => {
   const node = mount(<Dashboard {...props} />);
   node.setState({loaded: true});
 
-  node.find('.Dashboard__fullscreen-button').first().simulate('click');
+  node
+    .find('.Dashboard__fullscreen-button')
+    .first()
+    .simulate('click');
 
   expect(node.state('fullScreenActive')).toBe(true);
 });
@@ -176,7 +230,10 @@ it('should leave fullscreen mode', () => {
   const node = mount(<Dashboard {...props} />);
   node.setState({loaded: true, fullScreenActive: true});
 
-  node.find('.Dashboard__fullscreen-button').first().simulate('click');
+  node
+    .find('.Dashboard__fullscreen-button')
+    .first()
+    .simulate('click');
 
   expect(node.state('fullScreenActive')).toBe(false);
 });
@@ -185,7 +242,10 @@ it('should activate auto refresh mode', () => {
   const node = mount(<Dashboard {...props} />);
   node.setState({loaded: true});
 
-  node.find('.Dashboard__autorefresh-button').first().simulate('click');
+  node
+    .find('.Dashboard__autorefresh-button')
+    .first()
+    .simulate('click');
 
   expect(node.state('autoRefreshActive')).toBe(true);
 });
@@ -194,7 +254,10 @@ it('should deactivate autorefresh mode', () => {
   const node = mount(<Dashboard {...props} />);
   node.setState({loaded: true, autoRefreshActive: true});
 
-  node.find('.Dashboard__autorefresh-button').first().simulate('click');
+  node
+    .find('.Dashboard__autorefresh-button')
+    .first()
+    .simulate('click');
 
   expect(node.state('autoRefreshActive')).toBe(false);
 });
@@ -207,7 +270,6 @@ it('should add an autorefresh addon when autorefresh mode is active', () => {
 });
 
 describe('edit mode', async () => {
-
   it('should provide a link to view mode', () => {
     props.match.params.viewMode = 'edit';
 
@@ -324,6 +386,11 @@ describe('edit mode', async () => {
       ...sampleDashboard
     });
 
-    expect(node.find('.Dashboard__name-input').at(0).getDOMNode()).toBe(document.activeElement)
-  })
+    expect(
+      node
+        .find('.Dashboard__name-input')
+        .at(0)
+        .getDOMNode()
+    ).toBe(document.activeElement);
+  });
 });
