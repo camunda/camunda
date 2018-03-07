@@ -60,6 +60,7 @@ import io.zeebe.transport.Transports;
 import io.zeebe.transport.impl.RequestResponseHeaderDescriptor;
 import io.zeebe.transport.impl.TransportHeaderDescriptor;
 import io.zeebe.util.buffer.BufferUtil;
+import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.ZbActor;
 import io.zeebe.util.sched.ZbActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -77,6 +78,7 @@ public class GossipRule extends ExternalResource
     private final String memberId;
 
     private Gossip gossip;
+    private ActorControl gossipActor;
 
     private ClientTransport clientTransport;
     private Dispatcher clientSendBuffer;
@@ -149,8 +151,15 @@ public class GossipRule extends ExternalResource
         final ClientTransport spyClientTransport = spy(clientTransport);
         when(spyClientTransport.getOutput()).thenReturn(spyClientOutput);
 
+
         gossip = new Gossip(socketAddress, serverTransport, spyClientTransport, configuration)
         {
+            @Override
+            protected void onActorStarting()
+            {
+                gossipActor = actor;
+            }
+
             @Override
             public String getName()
             {
@@ -158,7 +167,7 @@ public class GossipRule extends ExternalResource
                 return socketAddress.toString();
             }
         };
-        actorScheduler.submitActor(gossip);
+        actorScheduler.submitActor(gossip).join();
 
         localMembershipListener = new LocalMembershipListener();
         gossip.addMembershipListener(localMembershipListener);
@@ -204,28 +213,37 @@ public class GossipRule extends ExternalResource
 
     public void interruptConnectionTo(GossipRule other)
     {
-        final ClientRequest clientRequest = mock(ClientRequest.class);
+        // HINT we need to do this as actor.call since we need to sync with the gossip actor thread
+        gossipActor.call(() ->
+        {
+            final ClientRequest clientRequest = mock(ClientRequest.class);
 
-        final ArgumentMatcher<RemoteAddress> remoteAddressMatcher = r -> other.socketAddress.equals(r.getAddress());
-        doReturn(clientRequest)
-            .when(spyClientOutput)
-            .sendRequest(argThat(remoteAddressMatcher), any());
+            final ArgumentMatcher<RemoteAddress> remoteAddressMatcher = r -> other.socketAddress.equals(r.getAddress());
+            doReturn(clientRequest)
+                .when(spyClientOutput)
+                .sendRequest(argThat(remoteAddressMatcher), any());
 
-        doReturn(CompletableActorFuture.completedExceptionally(new RuntimeException("connection is interrupted")))
-            .when(spyClientOutput)
-            .sendRequestWithRetry(argThat(remoteAddressMatcher), any());
+            doReturn(CompletableActorFuture.completedExceptionally(new RuntimeException("connection is interrupted")))
+                .when(spyClientOutput)
+                .sendRequestWithRetry(argThat(remoteAddressMatcher), any());
 
-        doReturn(CompletableActorFuture.completedExceptionally(new TimeoutException("timeout")))
-            .when(spyClientOutput)
-            .sendRequestWithRetry(argThat(remoteAddressMatcher), any(), any());
+            doReturn(CompletableActorFuture.completedExceptionally(new TimeoutException("timeout")))
+                .when(spyClientOutput)
+                .sendRequestWithRetry(argThat(remoteAddressMatcher), any(), any());
+
+        });
     }
 
     public void reconnectTo(GossipRule other)
     {
-        final ArgumentMatcher<RemoteAddress> remoteAddressMatcher = r -> r.getAddress().equals(other.socketAddress);
-        doCallRealMethod().when(spyClientOutput).sendRequest(argThat(r -> r.getAddress().equals(other.socketAddress)), any());
-        doCallRealMethod().when(spyClientOutput).sendRequestWithRetry(argThat(remoteAddressMatcher), any());
-        doCallRealMethod().when(spyClientOutput).sendRequestWithRetry(argThat(remoteAddressMatcher), any(), any());
+        // HINT we need to do this as actor.call since we need to sync with the gossip actor thread
+        gossipActor.call(() ->
+        {
+            final ArgumentMatcher<RemoteAddress> remoteAddressMatcher = r -> r.getAddress().equals(other.socketAddress);
+            doCallRealMethod().when(spyClientOutput).sendRequest(argThat(r -> r.getAddress().equals(other.socketAddress)), any());
+            doCallRealMethod().when(spyClientOutput).sendRequestWithRetry(argThat(remoteAddressMatcher), any());
+            doCallRealMethod().when(spyClientOutput).sendRequestWithRetry(argThat(remoteAddressMatcher), any(), any());
+        });
     }
 
     public GossipController getController()
