@@ -31,15 +31,21 @@ export default class ControlPanel extends React.Component {
 
   changeView = evt => {
     const viewKey = evt.target.value;
+    const {groupBy, visualization} = this.getCurrentPropsAndOptionMatrix();
+    const newCombination = this.getTheRightCombination(viewKey, groupBy, visualization);
+
     this.props.onChange({
-      view: reportLabelMap.keyToObject(viewKey, reportLabelMap.view),
+      ...newCombination,
       configuration: {...this.props.configuration, targetValue: {...this.props.configuration.targetValue, active: false}}
     });
   }
   changeGroup = evt => {
     const groupByKey = evt.target.value;
+    const {view, visualization} = this.getCurrentPropsAndOptionMatrix();
+    const newCombination = this.getTheRightCombination(view, groupByKey, visualization);
+
     this.props.onChange({
-      groupBy: reportLabelMap.keyToObject(groupByKey, reportLabelMap.groupBy),
+      ...newCombination,
       configuration: {...this.props.configuration, targetValue: {...this.props.configuration.targetValue, active: false}}
     });
   }
@@ -51,39 +57,68 @@ export default class ControlPanel extends React.Component {
     });
   }
 
-  componentDidUpdate(prevProps) {
-    if (reportLabelMap.objectToKey(this.props.view, 'view') !== reportLabelMap.objectToKey(prevProps.view, 'view')
-    ||  reportLabelMap.objectToKey(this.props.groupBy, 'groupBy') !== reportLabelMap.objectToKey(prevProps.groupBy, 'groupBy')) {
-      this.checkCombination();
-    }
-  }
+  getTheRightCombination = (view, groupBy, visualization) => {
+    const {allowedOptionsMatrix} = this.getCurrentPropsAndOptionMatrix();
 
-  checkCombination = () => {
-    const allowedOptionsMatrix = reportLabelMap.getAllowedOptions();
-    const view = reportLabelMap.objectToKey(this.props.view, 'view');
-    const groupBy = reportLabelMap.objectToKey(this.props.groupBy, 'groupBy')
-    const visualization = reportLabelMap.objectToKey(this.props.visualization, 'visualization')
     if(!allowedOptionsMatrix[view]) {
-      this.props.onChange({
+      return {
         view: reportLabelMap.keyToObject('', 'view'),
         groupBy: reportLabelMap.keyToObject('', 'groupBy'),
         visualization: reportLabelMap.keyToObject('', 'visualization')
-      });
-      return;
+      }
     }
 
     if(!allowedOptionsMatrix[view][groupBy]) {
-      this.props.onChange({
-        groupBy: reportLabelMap.keyToObject('', 'groupBy'),
-        visualization: reportLabelMap.keyToObject('', 'visualization')
-      });
-      return;
+      const theOnlyGroupBy = reportLabelMap.keyToObject(this.getTheOnlyOption('groupBy', view, groupBy), 'groupBy');
+      const theOnlyVisualization = reportLabelMap.keyToObject(this.getTheOnlyOption('visualization', view, groupBy), 'visualization');
+
+      return {
+        view: reportLabelMap.keyToObject(view, 'view'),
+        groupBy: theOnlyGroupBy || reportLabelMap.keyToObject('', 'groupBy'),
+        visualization: theOnlyVisualization || reportLabelMap.keyToObject('', 'visualization')
+      }
     }
 
     if(!allowedOptionsMatrix[view][groupBy].includes(visualization)) {
-      this.props.onChange({
-        visualization: reportLabelMap.keyToObject('', 'visualization')
-      });
+      return {
+        view: reportLabelMap.keyToObject(view, 'view'),
+        groupBy: reportLabelMap.keyToObject(groupBy, 'groupBy'),
+        visualization: this.getTheOnlyOption('visualization', view, groupBy) || reportLabelMap.keyToObject('', 'visualization')
+      };
+    }
+
+    return {
+      view: reportLabelMap.keyToObject(view, 'view'),
+      groupBy: reportLabelMap.keyToObject(groupBy, 'groupBy'),
+      visualization: reportLabelMap.keyToObject(visualization, 'visualization')
+    }
+  }
+
+  getCurrentPropsAndOptionMatrix = () => {
+    return {
+      allowedOptionsMatrix : reportLabelMap.getAllowedOptions(),
+      view : reportLabelMap.objectToKey(this.props.view, 'view'),
+      groupBy : reportLabelMap.objectToKey(this.props.groupBy, 'groupBy'),
+      visualization : reportLabelMap.objectToKey(this.props.visualization, 'visualization')
+    }
+  }
+
+  getTheOnlyOption = (type, view, groupBy) => {
+    const {allowedOptionsMatrix} = this.getCurrentPropsAndOptionMatrix()
+
+    if(!allowedOptionsMatrix[view]) return '';
+
+    if(type === 'groupBy') {
+      if (Object.keys(allowedOptionsMatrix[view]).length === 1) {
+        return Object.keys(allowedOptionsMatrix[view])[0];
+      } else return '';
+    }
+
+    if(type === 'visualization') {
+      const newGroupBy = this.getTheOnlyOption('groupBy', view, groupBy) || groupBy;
+      if(allowedOptionsMatrix[view][newGroupBy] && allowedOptionsMatrix[view][newGroupBy].length === 1) {
+        return allowedOptionsMatrix[view][newGroupBy][0];
+      } else return '';
     }
   }
 
@@ -147,21 +182,21 @@ export default class ControlPanel extends React.Component {
           <label htmlFor='ControlPanel__view' className='ControlPanel__label'>View</label>
           <Select className='ControlPanel__select' name='ControlPanel__view' value={reportLabelMap.objectToKey(this.props.view, reportLabelMap.view)} onChange={this.changeView}>
             {addSelectionOption()}
-            {renderOptions('view')}
+            {this.renderOptions('view')}
           </Select>
         </li>
         <li className='ControlPanel__item ControlPanel__item--select'>
           <label htmlFor='ControlPanel__group-by' className='ControlPanel__label'>Group by</label>
           <Select disabled={!this.isViewSelected()} className='ControlPanel__select' name='ControlPanel__group-by' value={reportLabelMap.objectToKey(this.props.groupBy, reportLabelMap.groupBy)} onChange={this.changeGroup}>
             {addSelectionOption()}
-            {this.isViewSelected() && renderOptions('groupBy')}
+            {this.isViewSelected() && this.renderOptions('groupBy')}
           </Select>
         </li>
         <li className='ControlPanel__item ControlPanel__item--select'>
           <label htmlFor='ControlPanel__visualize-as' className='ControlPanel__label'>Visualize as</label>
           <Select disabled={!this.isGroupBySelected() || !this.isViewSelected()} className='ControlPanel__select' name='ControlPanel__visualize-as' value={this.props.visualization} onChange={this.changeVisualization}>
             {addSelectionOption()}
-            {this.isGroupBySelected() && this.isViewSelected() && renderOptions('visualization')}
+            {this.isGroupBySelected() && this.isViewSelected() && this.renderOptions('visualization')}
           </Select>
         </li>
         <li className='ControlPanel__item ControlPanel__item--filter'>
@@ -173,16 +208,27 @@ export default class ControlPanel extends React.Component {
       </ul>
     </div>
   }
+
+  renderOptions = (type) => {
+    const options = reportLabelMap.getOptions(type);
+    const {allowedOptionsMatrix, groupBy, view} = this.getCurrentPropsAndOptionMatrix()
+    let enabled = Object.keys(allowedOptionsMatrix);
+
+    if (type !== 'view' && !allowedOptionsMatrix[view]) return null;
+
+    if (type === 'groupBy') {
+      enabled = Object.keys(allowedOptionsMatrix[view]);
+    }
+    if(type === 'visualization') {
+      enabled = allowedOptionsMatrix[view][groupBy];
+    }
+
+    return options.map(({key, label}) => {
+      return <Select.Option disabled={enabled && !enabled.includes(key)} key={key} value={key}>{label}</Select.Option>;
+    });
+  }
 }
 
 function addSelectionOption() {
   return <Select.Option value=''>Please select...</Select.Option>;
-}
-
-function renderOptions(type) {
-  const options = reportLabelMap.getOptions(type);
-
-  return options.map(({key, label}) => {
-    return <Select.Option key={key} value={key}>{label}</Select.Option>;
-  });
 }
