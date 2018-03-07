@@ -251,7 +251,8 @@ public final class LogStreamImpl extends ZbActor implements LogStream
         }
         else if (isAppendControllerOpen.compareAndSet(true, false))
         {
-            closeAppendControllerFuture = new CompletableActorFuture<>();
+            final CompletableActorFuture<Void> closeAppendControllerFuture = new CompletableActorFuture<>();
+            this.closeAppendControllerFuture = closeAppendControllerFuture;
 
             actor.call(() ->
             {
