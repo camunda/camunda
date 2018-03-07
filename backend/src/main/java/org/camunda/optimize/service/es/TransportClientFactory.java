@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * @author Askar Akhmerov
  */
-public class TransportClientFactory implements FactoryBean <Client> {
+public class TransportClientFactory implements FactoryBean<Client> {
   private final Logger logger = LoggerFactory.getLogger(TransportClientFactory.class);
   private SchemaInitializingClient instance;
   private TransportClient internalClient;
@@ -39,9 +39,9 @@ public class TransportClientFactory implements FactoryBean <Client> {
               .put("client.transport.nodes_sampler_interval", configurationService.getSamplerInterval(), TimeUnit.MILLISECONDS)
               .build())
             .addTransportAddress(new TransportAddress(
-                InetAddress.getByName(configurationService.getElasticSearchHost()),
-                configurationService.getElasticSearchPort()
-                ));
+              InetAddress.getByName(configurationService.getElasticSearchHost()),
+              configurationService.getElasticSearchPort()
+            ));
         instance = new SchemaInitializingClient(internalClient);
         elasticSearchSchemaInitializer.useClient(internalClient, configurationService);
         instance.setElasticSearchSchemaInitializer(elasticSearchSchemaInitializer);

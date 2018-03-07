@@ -59,6 +59,7 @@ pipeline {
       }
       post {
         always {
+          sh 'curl localhost:9200/_cat/health?pretty'
           stopAllOptimizeComponents()
           archiveArtifacts artifacts:  backendModuleName + '/target/it-elasticsearch/**/logs/*.log', onlyIfSuccessful: false
         }
