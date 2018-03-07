@@ -58,7 +58,11 @@ public class BranchAnalysisDataGenerationStep extends DataGenerationStep {
     ProcessDefinitionXmlOptimizeDto dto = new ProcessDefinitionXmlOptimizeDto();
     dto.setBpmn20Xml(xml);
     String processDefinitionId = context.getParameter("processDefinitionId").toString();
+    String processDefinitionKey = context.getParameter("processDefinitionKey").toString();
+    String processDefinitionVersion = context.getParameter("processDefinitionVersion").toString();
     dto.setProcessDefinitionId( processDefinitionId);
+    dto.setProcessDefinitionKey(processDefinitionKey);
+    dto.setProcessDefinitionVersion(processDefinitionVersion);
     ObjectMapper mapper = new ObjectMapper();
     try {
 

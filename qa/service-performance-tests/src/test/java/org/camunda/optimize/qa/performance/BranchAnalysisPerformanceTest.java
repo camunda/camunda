@@ -19,7 +19,6 @@ import org.junit.Test;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 
 import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.IN;
