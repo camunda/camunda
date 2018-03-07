@@ -14,6 +14,7 @@ import {DimensionSetter} from './DimensionSetter';
 import {DeleteButton} from './DeleteButton';
 import {DragBehavior} from './DragBehavior';
 import {ResizeHandle} from './ResizeHandle';
+import {AutoRefreshBehavior} from './AutoRefreshBehavior';
 
 import './Dashboard.css';
 
@@ -36,6 +37,7 @@ export default class Dashboard extends React.Component {
       shareModalVisible: false,
       deleteModalVisible: false,
       addButtonVisible: true,
+      autoRefreshActive: false,
       fullScreenActive: false
     };
 
@@ -160,6 +162,14 @@ export default class Dashboard extends React.Component {
     });
   }
 
+  toggleAutoRefresh = () => {
+    this.setState(prevState => {
+      return {
+        autoRefreshActive: !prevState.autoRefreshActive
+      }
+    });
+  }
+
   renderEditMode = (state) => {
     const {name, lastModifier, lastModified} = state;
 
@@ -209,6 +219,9 @@ export default class Dashboard extends React.Component {
               <Button onClick={this.toggleFullscreen} className='Dashboard__tool-button Dashboard__fullscreen-button'>
                 <Icon type={this.state.fullScreenActive ? 'exit-fullscreen' : 'fullscreen'} />
                 {this.state.fullScreenActive ? ' Leave' : ' Enter'} Fullscreen</Button>
+              <Button onClick={this.toggleAutoRefresh} active={this.state.autoRefreshActive} className='Dashboard__tool-button Dashboard__autorefresh-button'>
+                <Icon type='autorefresh' />
+                Auto Refresh</Button>
             </div>
           </div>
           <Modal open={shareModalVisible} onClose={this.closeShareModal} className='Dashboard__share-modal'>
@@ -231,7 +244,9 @@ export default class Dashboard extends React.Component {
               <Button type="primary" color="red" className="Dashboard__delete-dashboard-modal-button" onClick={this.deleteDashboard}>Delete</Button>
             </Modal.Actions>
           </Modal>
-          <DashboardView loadReport={loadReport} reports={this.state.reports}>
+          <DashboardView loadReport={loadReport} reports={this.state.reports} reportAddons={this.state.autoRefreshActive && [
+            <AutoRefreshBehavior key='autorefresh' interval={60 * 1000} />
+          ]}>
             <DimensionSetter reports={this.state.reports} />
           </DashboardView>
         </div>

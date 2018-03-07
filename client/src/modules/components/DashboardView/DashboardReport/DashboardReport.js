@@ -27,7 +27,7 @@ export default class DashboardReport extends React.Component {
     if(!this.state.data) {
       return 'loading...'
     }
-    
+
     return <div className='DashboardReport__wrapper'>
       <div className='DashboardReport__header'>
         <Link to={`/report/${this.props.report.id}`} className='DashboardReport__heading'>{this.state.data.name}</Link>
@@ -41,6 +41,7 @@ export default class DashboardReport extends React.Component {
       {this.props.addons && this.props.addons.map(addon =>
         React.cloneElement(addon, {
           report: this.props.report,
+          loadReportData: this.loadReportData,
           tileDimensions: this.props.tileDimensions
         })
       )}

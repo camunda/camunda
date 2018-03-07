@@ -76,3 +76,19 @@ it('should render optional addons', async () => {
 
   expect(node).toIncludeText('I am an addon!');
 });
+
+it('should pass properties to report addons', async () => {
+  loadReport.mockReturnValue('data');
+
+  const PropsRenderer = props => <p>{JSON.stringify(Object.keys(props))}</p>;
+
+  const node = mount(<DashboardReport {...props} addons={[
+    <PropsRenderer key='propsRenderer' />
+  ]} />);
+
+  await node.instance().loadReportData();
+
+  expect(node).toIncludeText('report');
+  expect(node).toIncludeText('loadReportData');
+  expect(node).toIncludeText('tileDimensions');
+})

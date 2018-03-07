@@ -12,7 +12,7 @@ jest.mock('components', () => {
 
   return {
     Modal,
-    Button: props => <button {...props}>{props.children}</button>,
+    Button: props => <button {...props} active={props.active ? 'true' : undefined}>{props.children}</button>,
     Input: props => <input ref={props.reference} id={props.id} readOnly={props.readOnly} type={props.type} onChange={props.onChange} value={props.value} className={props.className}/>,
     ControlGroup: props => <div {...props}>{props.children}</div>,
     ShareEntity: () => <div></div>,
@@ -54,6 +54,7 @@ jest.mock('./DimensionSetter', () => {return {DimensionSetter: () => <div>Dimens
 jest.mock('./DeleteButton', () => {return {DeleteButton: () => <button>DeleteButton</button>}});
 jest.mock('./DragBehavior', () => {return {DragBehavior: () => <div>DragBehavior</div>}});
 jest.mock('./ResizeHandle', () => {return {ResizeHandle: () => <div>ResizeHandle</div>}});
+jest.mock('./AutoRefreshBehavior', () => {return {AutoRefreshBehavior: () => <div>AutoRefreshBehavior</div>}});
 
 const props = {
   match: {params: {id: '1'}},
@@ -180,6 +181,30 @@ it('should leave fullscreen mode', () => {
   expect(node.state('fullScreenActive')).toBe(false);
 });
 
+it('should activate auto refresh mode', () => {
+  const node = mount(<Dashboard {...props} />);
+  node.setState({loaded: true});
+
+  node.find('.Dashboard__autorefresh-button').first().simulate('click');
+
+  expect(node.state('autoRefreshActive')).toBe(true);
+});
+
+it('should deactivate autorefresh mode', () => {
+  const node = mount(<Dashboard {...props} />);
+  node.setState({loaded: true, autoRefreshActive: true});
+
+  node.find('.Dashboard__autorefresh-button').first().simulate('click');
+
+  expect(node.state('autoRefreshActive')).toBe(false);
+});
+
+it('should add an autorefresh addon when autorefresh mode is active', () => {
+  const node = mount(<Dashboard {...props} />);
+  node.setState({loaded: true, autoRefreshActive: true});
+
+  expect(node).toIncludeText('Addons: AutoRefreshBehavior');
+});
 
 describe('edit mode', async () => {
 
