@@ -65,7 +65,7 @@ public class LogRecoveryTest
     {
         public volatile long lastSnapshotPosition = -1;
 
-        public WrappedSnapshotStorage(FsSnapshotStorageConfiguration cfg)
+        WrappedSnapshotStorage(FsSnapshotStorageConfiguration cfg)
         {
             super(cfg);
         }
