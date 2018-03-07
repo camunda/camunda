@@ -5,10 +5,12 @@ export function get() {
 }
 
 export function destroy() {
+  document.cookie = 'X-Optimize-Authorization=';
   return localStorage.removeItem(key);
 }
 
 export function store(data) {
+  document.cookie = `X-Optimize-Authorization=Bearer ${data.token};path=/`;
   return localStorage.setItem(key, JSON.stringify(data));
 }
 

@@ -23,3 +23,16 @@ it('should remove the login information', () => {
 
   expect(localStorage.removeItem).toHaveBeenCalled();
 });
+
+it('should store login data in a cookie', () => {
+  store({token: 'foobar'});
+
+  expect(document.cookie).toContain('foobar');
+});
+
+it('should remove login data from cookie on logou', () => {
+  store({token: 'foobar'});
+  destroy();
+
+  expect(document.cookie).not.toContain('foobar');
+});
