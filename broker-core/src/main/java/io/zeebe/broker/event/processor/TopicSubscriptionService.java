@@ -149,13 +149,6 @@ public class TopicSubscriptionService extends ZbActor implements Service<TopicSu
         });
     }
 
-    @Override
-    protected void onActorStarted()
-    {
-        actor.onCondition("alive-topic-subscription", () ->
-        { });
-    }
-
     protected ActorFuture<Void> createStreamProcessorService(
             ServiceName<LogStream> logStreamName,
             ServiceName<StreamProcessorController> processorName,

@@ -403,11 +403,4 @@ public class TaskSubscriptionManager extends ZbActor implements TransportListene
     {
         onClientChannelCloseAsync(remoteAddress.getStreamId());
     }
-
-    @Override
-    protected void onActorStarted()
-    {
-        actor.onCondition("alive-task-subscription", () ->
-        { });
-    }
 }

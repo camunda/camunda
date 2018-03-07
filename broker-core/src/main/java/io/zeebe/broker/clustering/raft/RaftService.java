@@ -116,9 +116,6 @@ public class RaftService extends ZbActor implements Service<Raft>, RaftStateList
                 Loggers.CLUSTERING_LOGGER.debug("Failed to appendEvent log stream.");
             }
         }));
-
-        actor.onCondition("keep-alive", () ->
-        { });
     }
 
     @Override

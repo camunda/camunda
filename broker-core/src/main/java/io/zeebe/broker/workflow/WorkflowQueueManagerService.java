@@ -60,13 +60,6 @@ public class WorkflowQueueManagerService extends ZbActor implements Service<Work
     }
 
     @Override
-    protected void onActorStarted()
-    {
-        actor.onCondition("alive", () ->
-        { });
-    }
-
-    @Override
     public void startWorkflowQueue(final LogStream logStream)
     {
         EnsureUtil.ensureNotNull("logStream", logStream);

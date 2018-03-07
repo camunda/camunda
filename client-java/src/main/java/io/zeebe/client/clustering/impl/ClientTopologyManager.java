@@ -78,9 +78,6 @@ public class ClientTopologyManager extends ZbActor
     protected void onActorStarted()
     {
         actor.run(this::refreshTopology);
-        actor.onCondition("prevent-auto-close", () ->
-        {
-        });
     }
 
     public ActorFuture<Void> close()
