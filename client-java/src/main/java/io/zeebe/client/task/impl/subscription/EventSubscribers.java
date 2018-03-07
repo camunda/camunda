@@ -62,15 +62,8 @@ public class EventSubscribers
 
     public void closeAllGroups(String reason)
     {
-        for (final SubscriberGroup group : pollableSubscriberGroups)
-        {
-            group.initClose(reason, null);
-        }
-
-        for (final SubscriberGroup group : managedSubscriberGroups)
-        {
-            group.initClose(reason, null);
-        }
+        forAllDoConsume(pollableSubscriberGroups, group -> group.initClose(reason, null));
+        forAllDoConsume(managedSubscriberGroups, group -> group.initClose(reason, null));
     }
 
     public void add(Subscriber subscriber)

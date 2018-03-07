@@ -480,16 +480,6 @@ public class PartitionedTopicSubscriptionTest
         assertThat(broker2Request.getCommand()).containsEntry("startPosition", position2);
     }
 
-    @Test
-    public void shouldHandleConcurrentOpeningAndClosingOfSubscribers()
-    {
-        // TODO: requests (open, close, ack) are no longer blocking; identify error cases and test them
-        fail("Implement");
-        // TODO: vielleicht ist es doch am besten, wenn die Group eine Map von Partition-ID auf
-        // Subscriber-State hält, worüber immer klar ist, was für einen Partition gerade passiert (Subscriber offen, Subscribing
-        // in progress, Subscriber closing, etc.) => vielleicht wird der Code dann an einigen Stellen klarer
-    }
-
     protected List<ExecuteCommandRequest> getOpenSubscriptionRequests(StubBrokerRule broker)
     {
         return broker.getReceivedCommandRequests().stream()

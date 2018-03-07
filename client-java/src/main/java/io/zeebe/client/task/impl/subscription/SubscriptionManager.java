@@ -34,6 +34,7 @@ import io.zeebe.client.event.impl.TopicSubscriptionSpec;
 import io.zeebe.client.impl.Loggers;
 import io.zeebe.client.impl.ZeebeClientImpl;
 import io.zeebe.protocol.clientapi.SubscriptionType;
+import io.zeebe.transport.ClientInputMessageSubscription;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.TransportListener;
 import io.zeebe.util.sched.ZbActor;
@@ -54,22 +55,30 @@ public class SubscriptionManager extends ZbActor implements SubscribedEventHandl
 
     private final List<AgentRunner> agentRunners = new ArrayList<>();
 
+    private boolean isClosing = false;
+    private ClientInputMessageSubscription incomingEventSubscription;
+
     public SubscriptionManager(ZeebeClientImpl client)
     {
         this.client = client;
     }
 
     @Override
-    protected void onActorStarted()
+    protected void onActorStarting()
     {
         final SubscribedEventCollector taskCollector = new SubscribedEventCollector(
                 this,
                 client.getMsgPackConverter());
 
-        actor.await(
+        actor.runOnCompletion(
             client.getTransport().openSubscription("event-acquisition", taskCollector),
-            (s, t) -> actor.consume(s, s::poll));
+            (s, t) -> incomingEventSubscription = s);
+    }
 
+    @Override
+    protected void onActorStarted()
+    {
+        actor.consume(incomingEventSubscription, incomingEventSubscription::poll);
         startSubscriptionExecution(client.getNumExecutionThreads());
     }
 
@@ -101,12 +110,20 @@ public class SubscriptionManager extends ZbActor implements SubscribedEventHandl
     @Override
     protected void onActorClosing()
     {
-        // TODO: https://github.com/zeebe-io/zeebe/issues/677
-        // this does not ensure that all groups are closed before the actor is terminated,
-        // because there are some async callbacks
         closeAllSubscribers("Subscription manager shutdown");
 
         stopSubscriptionExecution();
+    }
+
+    @Override
+    protected void onActorCloseRequested()
+    {
+        this.isClosing = true;
+    }
+
+    public boolean isClosing()
+    {
+        return isClosing;
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })

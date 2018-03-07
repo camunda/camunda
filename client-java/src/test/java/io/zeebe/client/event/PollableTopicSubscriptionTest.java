@@ -225,6 +225,8 @@ public class PollableTopicSubscriptionTest
     @Test
     public void shouldPollEventsWhileModifyingSubscribers() throws InterruptedException
     {
+        fail("Succeeds, but takes 15 seconds indicating an outtiming request");
+
         // given
         final int subscriberKey = 456;
         broker.stubTopicSubscriptionApi(subscriberKey);

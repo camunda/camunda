@@ -309,18 +309,33 @@ public abstract class SubscriberGroup<T extends Subscriber>
 
     public ActorCondition buildReplenishmentTrigger(T subscriber)
     {
-        return actor.onCondition(topic, () ->
+        if (subscriptionManager.isClosing())
         {
-            final ActorFuture<?> replenishmentFuture = subscriber.replenishEventSource();
-
-            actor.runOnCompletion(replenishmentFuture, (v, t) ->
+            // we can no longer create conditions, so we return
+            // one that does nothing
+            return new ActorCondition()
             {
-                if (t != null)
+                @Override
+                public void signal()
                 {
-                    initClose("Could not replenish event source (submit ack or credits)", t);
                 }
+            };
+        }
+        else
+        {
+            return actor.onCondition(topic, () ->
+            {
+                final ActorFuture<?> replenishmentFuture = subscriber.replenishEventSource();
+
+                actor.runOnCompletion(replenishmentFuture, (v, t) ->
+                {
+                    if (t != null)
+                    {
+                        initClose("Could not replenish event source (submit ack or credits)", t);
+                    }
+                });
             });
-        });
+        }
     }
 
     private void onSubscriberOpened(EventSubscriptionCreationResult result)

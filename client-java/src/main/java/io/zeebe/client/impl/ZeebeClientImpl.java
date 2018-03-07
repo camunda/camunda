@@ -106,8 +106,8 @@ public class ZeebeClientImpl implements ZeebeClient
 
         final int numSchedulerThreads = Integer.parseInt(properties.getProperty(ClientProperties.CLIENT_MANAGEMENT_THREADS));
         this.scheduler = ZbActorScheduler.newActorScheduler()
-            .setIoBoundActorThreadCount(1)
-            .setCpuBoundActorThreadCount(Math.max(numSchedulerThreads - 1, 1))
+            .setCpuBoundActorThreadCount(numSchedulerThreads)
+            .setIoBoundActorThreadCount(0)
             .setActorClock(actorClock)
             .build();
         this.scheduler.start();

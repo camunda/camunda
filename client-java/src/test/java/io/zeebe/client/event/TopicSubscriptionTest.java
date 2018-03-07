@@ -17,7 +17,6 @@ package io.zeebe.client.event;
 
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.fail;
 
 import java.time.Duration;
 import java.util.List;
@@ -472,8 +471,6 @@ public class TopicSubscriptionTest
     @Test
     public void shouldCloseSubscriptionOnClientClose()
     {
-        fail("https://github.com/zeebe-io/zeebe/issues/677");
-
         // given
         broker.stubTopicSubscriptionApi(123L);
 
@@ -874,11 +871,6 @@ public class TopicSubscriptionTest
     @Test
     public void shouldCloseSubscriptionWhileOpeningSubscriber()
     {
-        fail("https://github.com/zeebe-io/zeebe/issues/677 - wenn der Client geschlossen wird, dann " +
-                "wird nicht darauf gewartet, dass die Subscriber zu sind; ein sauberer Actor-Lifecycle wäre hier eine Lösung." +
-                " Anforderung: wenn während des close-Aufrufs noch das Öffnen eines Subscribers läuft, dann darf dieses open-Future" +
-                " nicht verworfen werden, denn bei dessen Auflösung wird der Subscriber wieder geschlossen");
-
         // given
         final int subscriberKey = 123;
 
@@ -912,7 +904,7 @@ public class TopicSubscriptionTest
         // then
         waitUntil(() -> future.isDone());
 
-//        assertThat(future).isCompleted();
+        assertThat(future).isDone();
 
         final Optional<ControlMessageRequest> closeRequest = broker.getReceivedControlMessageRequests().stream()
             .filter(c -> c.messageType() == ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION)

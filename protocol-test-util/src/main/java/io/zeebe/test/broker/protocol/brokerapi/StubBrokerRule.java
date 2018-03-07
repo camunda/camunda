@@ -83,11 +83,12 @@ public class StubBrokerRule extends ExternalResource
     {
         msgPackHelper = new MsgPackHelper();
 
-        final int numThreads = Math.min(1, Runtime.getRuntime().availableProcessors() - 1);
+        final int numThreads = 2;
         scheduler = ZbActorScheduler.newActorScheduler()
-            .setCpuBoundActorThreadCount(numThreads)
-            .setActorClock(clock)
-            .build();
+                .setCpuBoundActorThreadCount(numThreads)
+                .setActorClock(clock)
+                .build();
+
         scheduler.start();
 
         sendBuffer = Dispatchers.create("send-buffer")

@@ -85,7 +85,6 @@ public class ZeebeClientTest
     @Test
     public void shouldCloseAllConnectionsOnClose() throws Exception
     {
-        fail("https://github.com/zeebe-io/zeebe/issues/677");
         // given
         final ServerTransport serverTransport = broker.getTransport();
 
