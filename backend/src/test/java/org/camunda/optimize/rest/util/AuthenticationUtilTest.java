@@ -30,7 +30,7 @@ public class AuthenticationUtilTest {
   public void getTokenInProxySetup() throws Exception {
     ContainerRequestContext requestMock = Mockito.mock(ContainerRequestContext.class);
     Mockito.when(requestMock.getHeaderString(HttpHeaders.AUTHORIZATION)).thenReturn("Basic blabla");
-    Mockito.when(requestMock.getHeaderString(AuthenticationUtil.OPTIMIZE_AUTHORIZATION_HEADER))
+    Mockito.when(requestMock.getHeaderString(AuthenticationUtil.OPTIMIZE_AUTHORIZATION))
       .thenReturn("Bearer test");
     assertThat(AuthenticationUtil.getToken(requestMock),is("test"));
   }

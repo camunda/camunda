@@ -26,6 +26,7 @@ import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.camunda.optimize.rest.util.AuthenticationUtil.OPTIMIZE_AUTHORIZATION;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNot.not;
@@ -95,6 +96,30 @@ public class ExportRestServiceIT {
         embeddedOptimizeRule.target(CSV_EXPORT + "/" + reportId + "/my_file.csv")
             .request()
             .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
+            .get();
+
+    // then
+    assertThat(response.getStatus(), is(200));
+    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+    IOUtils.copy(response.readEntity(InputStream.class), bos);
+    byte[] result = bos.toByteArray();
+    assertThat(result.length, is(not(0)));
+  }
+
+  @Test
+  public void exportExistingReportWithCookies() throws IOException {
+    //given
+    ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
+    String reportId = createAndStoreDefaultReportDefinition(
+        processInstance.getProcessDefinitionKey(),
+        processInstance.getProcessDefinitionVersion()
+    );
+
+    // when
+    Response response =
+        embeddedOptimizeRule.target(CSV_EXPORT + "/" + reportId + "/my_file.csv")
+            .request()
+            .cookie(OPTIMIZE_AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
             .get();
 
     // then

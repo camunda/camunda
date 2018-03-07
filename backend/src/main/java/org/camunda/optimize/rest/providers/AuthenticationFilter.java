@@ -1,7 +1,6 @@
 package org.camunda.optimize.rest.providers;
 
 import org.camunda.optimize.rest.util.AuthenticationUtil;
-import org.camunda.optimize.service.security.SharingService;
 import org.camunda.optimize.service.security.TokenService;
 import org.glassfish.jersey.server.ContainerRequest;
 import org.slf4j.Logger;
@@ -32,9 +31,6 @@ public class AuthenticationFilter implements ContainerRequestFilter {
 
   @Autowired
   private TokenService tokenService;
-
-  @Autowired
-  private SharingService sharingService;
 
   @Context
   private ResourceInfo resourceInfo;

@@ -11,9 +11,6 @@ import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
@@ -100,7 +97,7 @@ public class AuthenticationRestServiceIT {
     Response testResponse = embeddedOptimizeRule.target("authentication/test")
         .request()
         .header(HttpHeaders.AUTHORIZATION, "Basic ZGVtbzpkZW1v")
-        .header(AuthenticationUtil.OPTIMIZE_AUTHORIZATION_HEADER,"Bearer " + token)
+        .header(AuthenticationUtil.OPTIMIZE_AUTHORIZATION,"Bearer " + token)
         .get();
 
     //then
