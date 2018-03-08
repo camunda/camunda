@@ -29,7 +29,6 @@ receiveBufferSize = 16
 initialContactPoints = [
   "localhost:41016"
 ]
-probeInterval = 500
 
 # System Configuration --------------------------------
 
