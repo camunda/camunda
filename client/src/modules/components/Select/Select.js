@@ -3,8 +3,14 @@ import React from 'react';
 import './Select.css';
 
 export default function Select(props) {
+  const allowedProps = {...props};
+  delete allowedProps.isInvalid;
+
   return (
-    <select {...props} className={'Select ' + (props.className || '')}>
+    <select
+      {...allowedProps}
+      className={'Select ' + (props.className || '') + (props.isInvalid ? ' is-invalid' : '')}
+    >
       {props.children}
     </select>
   );

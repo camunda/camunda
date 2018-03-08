@@ -16,13 +16,21 @@ jest.mock('components', () => {
   Modal.Content = props => <div id="modal_content">{props.children}</div>;
   Modal.Actions = props => <div id="modal_actions">{props.children}</div>;
 
-  const Select = props => <select {...props}>{props.children}</select>;
+  const Select = props => {
+    const allowedProps = {...props};
+    delete allowedProps.isInvalid;
+    return <select {...allowedProps}>{props.children}</select>;
+  };
   Select.Option = props => <option {...props}>{props.children}</option>;
 
   return {
     Modal,
     Button: props => <button {...props}>{props.children}</button>,
-    Input: props => <input {...props} />,
+    Input: props => {
+      const allowedProps = {...props};
+      delete allowedProps.isInvalid;
+      return <input {...allowedProps} />;
+    },
     Select
   };
 });
@@ -146,4 +154,16 @@ it('should not display warning if email is configured', async () => {
   await node.update();
 
   expect(node.find('.AlertModal__configuration-warning').exists()).toBe(false);
+});
+
+it('should set isInvalid property for input if value is invalid', async () => {
+  const node = await mount(<AlertModal reports={reports} />);
+  node.setState({name: ''});
+
+  expect(
+    node
+      .find('.AlertModal__input')
+      .first()
+      .props()
+  ).toHaveProperty('isInvalid', true);
 });
