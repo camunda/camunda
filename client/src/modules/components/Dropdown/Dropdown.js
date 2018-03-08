@@ -73,7 +73,7 @@ export default class Dropdown extends React.Component {
   render() {
     return (
       <div
-        {...this.props}
+        id={this.props.id}
         className={
           'Dropdown ' +
           (this.state.open ? 'is-open' : '') +
@@ -87,6 +87,7 @@ export default class Dropdown extends React.Component {
           className="Dropdown__button"
           aria-haspopup="true"
           aria-expanded={this.state.open ? 'true' : 'false'}
+          active={this.props.active}
           id={this.props.id ? this.props.id + '-button' : ''}
         >
           {this.props.label}

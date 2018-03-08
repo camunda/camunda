@@ -4,7 +4,7 @@ import Fullscreen from 'react-full-screen';
 import {default as updateState} from 'immutability-helper';
 import {Link, Redirect} from 'react-router-dom';
 
-import {Button, Modal, Input, ShareEntity, DashboardView, Icon} from 'components';
+import {Button, Modal, Input, ShareEntity, DashboardView, Icon, Dropdown} from 'components';
 
 import {
   loadDashboard,
@@ -45,7 +45,7 @@ export default class Dashboard extends React.Component {
       shareModalVisible: false,
       deleteModalVisible: false,
       addButtonVisible: true,
-      autoRefreshActive: false,
+      autoRefreshInterval: null,
       fullScreenActive: false
     };
 
@@ -167,12 +167,22 @@ export default class Dashboard extends React.Component {
     });
   };
 
-  toggleAutoRefresh = () => {
-    this.setState(prevState => {
-      return {
-        autoRefreshActive: !prevState.autoRefreshActive
-      };
+  setAutorefresh = timeout => () => {
+    this.setState({
+      autoRefreshInterval: timeout
     });
+  };
+
+  autoRefreshOption = (interval, label) => {
+    return (
+      <Dropdown.Option
+        active={this.state.autoRefreshInterval === interval}
+        onClick={this.setAutorefresh(interval)}
+        className="Dashboard__autoRefreshOption"
+      >
+        {label}
+      </Dropdown.Option>
+    );
   };
 
   renderEditMode = state => {
@@ -263,6 +273,7 @@ export default class Dashboard extends React.Component {
                   <Link
                     className="Dashboard__tool-button Dashboard__edit-button"
                     to={`/dashboard/${this.id}/edit`}
+                    onClick={this.setAutorefresh(null)}
                   >
                     <Button>Edit</Button>
                   </Link>
@@ -287,14 +298,22 @@ export default class Dashboard extends React.Component {
                 <Icon type={this.state.fullScreenActive ? 'exit-fullscreen' : 'fullscreen'} />
                 {this.state.fullScreenActive ? ' Leave' : ' Enter'} Fullscreen
               </Button>
-              <Button
-                onClick={this.toggleAutoRefresh}
-                active={this.state.autoRefreshActive}
-                className="Dashboard__tool-button Dashboard__autorefresh-button"
+              <Dropdown
+                label={
+                  <React.Fragment>
+                    <Icon type="autorefresh" /> Auto Refresh
+                  </React.Fragment>
+                }
+                active={!!this.state.autoRefreshInterval}
               >
-                <Icon type="autorefresh" />
-                Auto Refresh
-              </Button>
+                {this.autoRefreshOption(null, 'Off')}
+                {this.autoRefreshOption(1 * 60 * 1000, '1 Minute')}
+                {this.autoRefreshOption(5 * 60 * 1000, '5 Minutes')}
+                {this.autoRefreshOption(10 * 60 * 1000, '10 Minutes')}
+                {this.autoRefreshOption(15 * 60 * 1000, '15 Minutes')}
+                {this.autoRefreshOption(30 * 60 * 1000, '30 Minutes')}
+                {this.autoRefreshOption(60 * 60 * 1000, '60 Minutes')}
+              </Dropdown>
             </div>
           </div>
           <Modal
@@ -351,8 +370,8 @@ export default class Dashboard extends React.Component {
             loadReport={loadReport}
             reports={this.state.reports}
             reportAddons={
-              this.state.autoRefreshActive && [
-                <AutoRefreshBehavior key="autorefresh" interval={60 * 1000} />
+              this.state.autoRefreshInterval && [
+                <AutoRefreshBehavior key="autorefresh" interval={this.state.autoRefreshInterval} />
               ]
             }
           >

@@ -20,3 +20,13 @@ it('should clear the interval when component is unmounted', () => {
 
   expect(clearInterval).toHaveBeenCalledTimes(1);
 });
+
+it('should update the interval when the interval property changes', () => {
+  const node = mount(<AutoRefreshBehavior loadReportData={fct} interval={interval} />);
+
+  clearInterval.mockClear();
+  node.setProps({interval: 1000});
+
+  expect(clearInterval).toHaveBeenCalledTimes(1);
+  expect(setInterval).toHaveBeenCalledWith(fct, 1000);
+});

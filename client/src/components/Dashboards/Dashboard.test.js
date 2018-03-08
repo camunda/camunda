@@ -10,13 +10,18 @@ jest.mock('components', () => {
   Modal.Content = props => <div>{props.children}</div>;
   Modal.Actions = props => <div>{props.children}</div>;
 
+  const Button = props => (
+    <button {...props} active={props.active ? 'true' : undefined}>
+      {props.children}
+    </button>
+  );
+
+  const Dropdown = props => <div>{props.children}</div>;
+  Dropdown.Option = props => <Button {...props}>{props.children}</Button>;
+
   return {
     Modal,
-    Button: props => (
-      <button {...props} active={props.active ? 'true' : undefined}>
-        {props.children}
-      </button>
-    ),
+    Button,
     Input: props => (
       <input
         ref={props.reference}
@@ -35,7 +40,8 @@ jest.mock('components', () => {
         {children} Addons: {reportAddons}
       </div>
     ),
-    Icon: ({type}) => <span>Icon: {type}</span>
+    Icon: ({type}) => <span>Icon: {type}</span>,
+    Dropdown
   };
 });
 
@@ -238,33 +244,33 @@ it('should leave fullscreen mode', () => {
   expect(node.state('fullScreenActive')).toBe(false);
 });
 
-it('should activate auto refresh mode', () => {
+it('should activate auto refresh mode and set it to numeric value', () => {
   const node = mount(<Dashboard {...props} />);
   node.setState({loaded: true});
 
   node
-    .find('.Dashboard__autorefresh-button')
-    .first()
+    .find('.Dashboard__autoRefreshOption')
+    .last()
     .simulate('click');
 
-  expect(node.state('autoRefreshActive')).toBe(true);
+  expect(typeof node.state('autoRefreshInterval')).toBe('number');
 });
 
 it('should deactivate autorefresh mode', () => {
   const node = mount(<Dashboard {...props} />);
-  node.setState({loaded: true, autoRefreshActive: true});
+  node.setState({loaded: true, autoRefreshInterval: 1000});
 
   node
-    .find('.Dashboard__autorefresh-button')
+    .find('.Dashboard__autoRefreshOption')
     .first()
     .simulate('click');
 
-  expect(node.state('autoRefreshActive')).toBe(false);
+  expect(node.state('autoRefreshInterval')).toBe(null);
 });
 
 it('should add an autorefresh addon when autorefresh mode is active', () => {
   const node = mount(<Dashboard {...props} />);
-  node.setState({loaded: true, autoRefreshActive: true});
+  node.setState({loaded: true, autoRefreshInterval: 1000});
 
   expect(node).toIncludeText('Addons: AutoRefreshBehavior');
 });

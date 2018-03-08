@@ -12,4 +12,14 @@ export default class AutoRefreshBehavior extends React.Component {
   componentWillUnmount() {
     clearInterval(this.timer);
   }
+
+  componentWillReceiveProps(nextProps) {
+    if (
+      nextProps.interval !== this.props.interval ||
+      nextProps.loadReportData !== this.props.loadReportData
+    ) {
+      clearInterval(this.timer);
+      this.timer = this.timer = setInterval(nextProps.loadReportData, nextProps.interval);
+    }
+  }
 }
