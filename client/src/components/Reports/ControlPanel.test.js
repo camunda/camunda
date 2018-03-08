@@ -69,7 +69,7 @@ const data = {
   configuration: {xml: 'fooXml'}
 };
 
-extractProcessDefinitionName.mockReturnValue({processDefinitionName: 'foo'});
+extractProcessDefinitionName.mockReturnValue('foo');
 const spy = jest.fn();
 
 it('should call the provided onChange property function when a setting changes', () => {
@@ -133,8 +133,9 @@ it('should disable options, which would create wrong combination', () => {
 
   expect(node.find('[value="groupBybar"]').first()).toBeDisabled();
 });
+
 it('should show process definition name', async () => {
-  extractProcessDefinitionName.mockReturnValue({processDefinitionName: 'aName'});
+  extractProcessDefinitionName.mockReturnValue('aName');
 
   const node = await mount(<ControlPanel {...data} />);
 
@@ -144,7 +145,7 @@ it('should show process definition name', async () => {
 it('should change process definition name if process definition is updated', async () => {
   const node = await mount(<ControlPanel {...data} />);
 
-  extractProcessDefinitionName.mockReturnValue({processDefinitionName: 'aName'});
+  extractProcessDefinitionName.mockReturnValue('aName');
   node.setProps({processDefinitionKey: 'bar'});
 
   expect(node.find('.ControlPanel__popover')).toIncludeText('aName');

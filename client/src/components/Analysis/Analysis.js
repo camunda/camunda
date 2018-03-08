@@ -111,7 +111,7 @@ export default class Analysis extends React.Component {
         gateway: null,
         endEvent: null
       });
-    } else if (!config.processDefinitionKey || !config.processDefinitionVersion){
+    } else if (!config.processDefinitionKey || !config.processDefinitionVersion) {
       this.setState({
         xml: null,
         gateway: null,

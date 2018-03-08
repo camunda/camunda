@@ -36,7 +36,7 @@ const data = {
   xml: 'aFooXml'
 };
 
-extractProcessDefinitionName.mockReturnValue({processDefinitionName: 'foo'});
+extractProcessDefinitionName.mockReturnValue('foo');
 const spy = jest.fn();
 
 it('should contain a gateway and end Event field', () => {
@@ -84,10 +84,18 @@ it('should show the element id if an element has no name', () => {
   expect(node).toIncludeText('gatewayId');
 });
 
+it('should show initially show process definition name if xml is available', async () => {
+  extractProcessDefinitionName.mockReturnValue('aName');
+
+  const node = await mount(<ControlPanel {...data} />);
+
+  expect(node.find('.ControlPanel__popover')).toIncludeText('aName');
+});
+
 it('should change process definition name if process definition xml is updated', async () => {
   const node = await mount(<ControlPanel {...data} />);
 
-  extractProcessDefinitionName.mockReturnValue({processDefinitionName: 'aName'});
+  extractProcessDefinitionName.mockReturnValue('aName');
   await node.setProps({xml: 'barXml'});
 
   expect(node.find('.ControlPanel__popover')).toIncludeText('aName');

@@ -14,13 +14,17 @@ export default class ControlPanel extends React.Component {
     this.state = {
       processDefinitionName: this.props.processDefinitionKey
     };
+
+    this.loadProcessDefinitionName(props.xml);
   }
 
   loadProcessDefinitionName = async xml => {
-    const {processDefinitionName} = await extractProcessDefinitionName(xml);
-    this.setState({
-      processDefinitionName
-    });
+    if (xml) {
+      const processDefinitionName = await extractProcessDefinitionName(xml);
+      this.setState({
+        processDefinitionName
+      });
+    }
   };
 
   componentWillReceiveProps(nextProps) {
