@@ -100,10 +100,8 @@ public class ElasticSearchSchemaManager {
 
   private Settings buildSettings() throws IOException {
     return Settings.builder()
-      .put("index.mapper.dynamic", false)
       .loadFromSource(jsonBuilder()
       .startObject()
-        .field("index.mapper.dynamic", false)
         .field("refresh_interval", configurationService.getEsRefreshInterval())
         .field("number_of_replicas", configurationService.getEsNumberOfReplicas())
         .field("number_of_shards", configurationService.getEsNumberOfShards())
