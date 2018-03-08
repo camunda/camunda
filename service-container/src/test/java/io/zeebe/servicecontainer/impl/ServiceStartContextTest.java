@@ -22,7 +22,7 @@ import static org.mockito.Mockito.*;
 import java.util.concurrent.CompletableFuture;
 
 import io.zeebe.servicecontainer.*;
-import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 import org.junit.Before;
 import org.junit.Rule;
@@ -139,7 +139,7 @@ public class ServiceStartContextTest
         actorSchedulerRule.workUntilDone();
 
         // then
-        final ZbActorScheduler providedScheduler = service.startContext.getScheduler();
+        final ActorScheduler providedScheduler = service.startContext.getScheduler();
         assertThat(providedScheduler).isSameAs(actorSchedulerRule.get());
     }
 

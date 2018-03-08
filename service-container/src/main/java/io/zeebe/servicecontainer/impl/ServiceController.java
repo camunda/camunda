@@ -40,13 +40,13 @@ import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.servicecontainer.impl.ServiceEvent.ServiceEventType;
 import io.zeebe.util.sched.FutureUtil;
-import io.zeebe.util.sched.ZbActor;
-import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.channel.ConcurrentQueueChannel;
 import io.zeebe.util.sched.future.ActorFuture;
 
 @SuppressWarnings("rawtypes")
-public class ServiceController extends ZbActor
+public class ServiceController extends Actor
 {
     public static final Logger LOG = Loggers.SERVICE_CONTAINER_LOGGER;
 
@@ -480,7 +480,7 @@ public class ServiceController extends ZbActor
         }
 
         @Override
-        public ZbActorScheduler getScheduler()
+        public ActorScheduler getScheduler()
         {
             validCheck();
             return container.getActorScheduler();

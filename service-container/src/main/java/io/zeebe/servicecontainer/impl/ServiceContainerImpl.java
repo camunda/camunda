@@ -20,13 +20,13 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.zeebe.servicecontainer.*;
-import io.zeebe.util.sched.ZbActor;
-import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.channel.ConcurrentQueueChannel;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.slf4j.Logger;
 
-public class ServiceContainerImpl extends ZbActor implements ServiceContainer
+public class ServiceContainerImpl extends Actor implements ServiceContainer
 {
     public static final Logger LOG = Loggers.SERVICE_CONTAINER_LOGGER;
 
@@ -44,7 +44,7 @@ public class ServiceContainerImpl extends ZbActor implements ServiceContainer
 
     protected final Map<ServiceName<?>, List<ServiceController>> serviceListeners = new HashMap<>();
 
-    protected final ZbActorScheduler actorScheduler;
+    protected final ActorScheduler actorScheduler;
 
     protected ContainerState state = ContainerState.NEW;
 
@@ -52,7 +52,7 @@ public class ServiceContainerImpl extends ZbActor implements ServiceContainer
 
     private final CompletableFuture<Void> containerCloseFuture = new CompletableFuture<>();
 
-    public ServiceContainerImpl(ZbActorScheduler scheduler)
+    public ServiceContainerImpl(ActorScheduler scheduler)
     {
         actorScheduler = scheduler;
     }
@@ -249,7 +249,7 @@ public class ServiceContainerImpl extends ZbActor implements ServiceContainer
         return channel;
     }
 
-    public ZbActorScheduler getActorScheduler()
+    public ActorScheduler getActorScheduler()
     {
         return actorScheduler;
     }
