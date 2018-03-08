@@ -201,6 +201,25 @@ public class ServiceContainerImpl extends Actor implements ServiceContainer
         {
             containerCloseFuture.get(awaitTime, timeUnit);
         }
+        catch (Exception ex)
+        {
+            Loggers.SERVICE_CONTAINER_LOGGER.debug("Service container closing failed. Print dependencies.");
+
+            final StringBuilder builder = new StringBuilder();
+            dependencyResolver.getControllers().forEach((c) ->
+            {
+                builder.append("\n").append(c).append("\n\t\\");
+                c.getDependencies()
+                    .forEach((d) -> {
+                        builder.append("\n \t-- ")
+                            .append(dependencyResolver.getService(d));
+                    });
+
+            });
+
+            Loggers.SERVICE_CONTAINER_LOGGER.debug(builder.toString());
+            throw ex;
+        }
         finally
         {
             onClosed();
@@ -217,7 +236,6 @@ public class ServiceContainerImpl extends Actor implements ServiceContainer
                 state = ContainerState.CLOSING;
 
                 final List<ActorFuture<Void>> serviceFutures = new ArrayList<>();
-
                 dependencyResolver.getControllers()
                     .forEach((c) ->
                     {

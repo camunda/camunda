@@ -560,7 +560,7 @@ public class ServiceController extends Actor
     @Override
     public String toString()
     {
-        return String.format("%s", name);
+        return String.format("%s in %s", name, state);
     }
 
     private void fireEvent(ServiceEventType evtType)
