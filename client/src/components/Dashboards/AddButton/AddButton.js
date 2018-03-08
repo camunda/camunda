@@ -82,11 +82,11 @@ export default class AddButton extends React.Component {
               <label htmlFor="AddButton__selectReports">Select a Report…</label>
               <Select
                 disabled={noReports}
-                value={this.state.selectedReportId}
                 onChange={this.selectReport}
                 name="AddButton__selectReports"
                 className="AddButton__selectReports"
               >
+                {this.renderPleaseSelectOption(!noReports)}
                 {this.state.availableReports.map(report => {
                   return (
                     <Select.Option key={report.id} value={report.id}>
@@ -100,7 +100,12 @@ export default class AddButton extends React.Component {
           </Modal.Content>
           <Modal.Actions>
             <Button onClick={this.closeModal}>Cancel</Button>
-            <Button type="primary" color="blue" onClick={this.addReport} disabled={noReports}>
+            <Button
+              type="primary"
+              color="blue"
+              onClick={this.addReport}
+              disabled={noReports || !this.state.selectedReportId}
+            >
               Add Report
             </Button>
           </Modal.Actions>
@@ -108,6 +113,18 @@ export default class AddButton extends React.Component {
       </DashboardObject>
     );
   }
+
+  renderPleaseSelectOption = hasReports => {
+    if (hasReports) {
+      return (
+        <Select.Option defaultValue value="">
+          Please select...
+        </Select.Option>
+      );
+    } else {
+      return '';
+    }
+  };
 
   getAddButtonPosition = () => {
     const occupiedTiles = getOccupiedTiles(this.props.reports);

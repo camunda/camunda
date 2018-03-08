@@ -70,6 +70,7 @@ it('should render a select element with the available reports as options', () =>
   });
 
   expect(node.find('select')).toBePresent();
+  expect(node.find('select')).toIncludeText('Please select...');
   expect(node.find('select')).toIncludeText('Report A');
   expect(node.find('select')).toIncludeText('Report B');
 });
@@ -142,4 +143,15 @@ it('should render nothing if visible is set to false', () => {
   const node = mount(<AddButton {...props} visible={false} />);
 
   expect(node.getDOMNode()).toBe(null);
+});
+
+it('should show only "No reports created yet" option if no reports are available', () => {
+  const node = mount(<AddButton {...props} />);
+
+  node.setState({
+    modalOpen: true
+  });
+
+  expect(node.find('select')).toIncludeText('No reports created yet');
+  expect(node.find('select')).not.toIncludeText('Please select...');
 });
