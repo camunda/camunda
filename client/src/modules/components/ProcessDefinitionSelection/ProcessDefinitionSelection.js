@@ -152,7 +152,7 @@ export default class ControlPanel extends React.Component {
           key &&
           version && (
             <div className={'ProcessDefinitionSelection__diagram'}>
-              <BPMNDiagram xml={this.props.xml} />
+              <BPMNDiagram xml={this.props.xml} disableNavigation />
             </div>
           )}
       </div>

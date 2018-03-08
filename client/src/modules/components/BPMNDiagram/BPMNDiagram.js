@@ -1,6 +1,7 @@
 import React from 'react';
 
-import Viewer from 'bpmn-js/lib/NavigatedViewer';
+import NavigatedViewer from 'bpmn-js/lib/NavigatedViewer';
+import Viewer from 'bpmn-js/lib/Viewer';
 
 import './BPMNDiagram.css';
 
@@ -8,7 +9,9 @@ export default class BPMNDiagram extends React.Component {
   constructor(props) {
     super(props);
 
-    this.viewer = new Viewer({
+    const BPMNViewer = props.disableNavigation ? Viewer : NavigatedViewer;
+
+    this.viewer = new BPMNViewer({
       canvas: {
         deferUpdate: false
       }

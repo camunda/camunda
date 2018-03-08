@@ -2,9 +2,26 @@ import React from 'react';
 import {mount} from 'enzyme';
 
 import BPMNDiagram from './BPMNDiagram';
-import Viewer from 'bpmn-js/lib/NavigatedViewer';
+import NavigatedViewer from 'bpmn-js/lib/NavigatedViewer';
+import Viewer from 'bpmn-js/lib/Viewer';
 
 jest.mock('bpmn-js/lib/NavigatedViewer', () => {
+  return class NavigatedViewer {
+    constructor() {
+      this.canvas = {
+        resized: jest.fn(),
+        zoom: jest.fn()
+      };
+    }
+    attachTo = jest.fn();
+    importXML = jest.fn((xml, cb) => cb());
+    get = () => {
+      return this.canvas;
+    };
+  };
+});
+
+jest.mock('bpmn-js/lib/Viewer', () => {
   return class Viewer {
     constructor() {
       this.canvas = {
@@ -24,6 +41,12 @@ const diagramXml = 'some diagram XML';
 
 it('should create a Viewer', () => {
   const node = mount(<BPMNDiagram />);
+
+  expect(node.instance().viewer).toBeInstanceOf(NavigatedViewer);
+});
+
+it('should create a Viewer without Navigation if Navigation is disabled', () => {
+  const node = mount(<BPMNDiagram disableNavigation />);
 
   expect(node.instance().viewer).toBeInstanceOf(Viewer);
 });
