@@ -56,6 +56,11 @@ public class Broker implements AutoCloseable
         this(new SystemContext(configFileLocation, clock));
     }
 
+    public Broker(InputStream configStream)
+    {
+        this(new SystemContext(configStream, null));
+    }
+
     public Broker(InputStream configStream, ActorClock clock)
     {
         this(new SystemContext(configStream, clock));
