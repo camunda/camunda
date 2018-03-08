@@ -166,7 +166,7 @@ export default class AlertModal extends React.Component {
               <label>
                 <span className="AlertModal__label">Name</span>
                 <Input
-                  className={'AlertModal__input' + (errorInput === 'name' ? '--error' : '')}
+                  className={'AlertModal__input' + (errorInput === 'name' ? ' is-invalid' : '')}
                   value={name}
                   onChange={({target: {value}}) => this.setState({name: value})}
                 />
@@ -179,7 +179,7 @@ export default class AlertModal extends React.Component {
               <label>
                 <span className="AlertModal__label">Send Email to</span>
                 <Input
-                  className={'AlertModal__input' + (errorInput === 'email' ? '--error' : '')}
+                  className={'AlertModal__input' + (errorInput === 'email' ? ' is-invalid' : '')}
                   value={email}
                   onChange={({target: {value}}) => this.setState({email: value})}
                 />
@@ -192,7 +192,7 @@ export default class AlertModal extends React.Component {
               <label>
                 <span className="AlertModal__label">when Report</span>
                 <Select
-                  className={'AlertModal__input' + (errorInput === 'report' ? '--error' : '')}
+                  className={'AlertModal__input' + (errorInput === 'report' ? ' is-invalid' : '')}
                   value={reportId}
                   onChange={({target: {value}}) => this.setState({reportId: value})}
                 >
@@ -207,9 +207,6 @@ export default class AlertModal extends React.Component {
                     );
                   })}
                 </Select>
-                {errorInput === 'report' && (
-                  <span className="AlertModal__warning">Please select a report</span>
-                )}
               </label>
             </div>
             <div className="AlertModal__inputGroup">
@@ -224,7 +221,9 @@ export default class AlertModal extends React.Component {
                     <Select.Option value="<">below</Select.Option>
                   </Select>
                   <Input
-                    className={'AlertModal__input' + (errorInput === 'threshold' ? '--error' : '')}
+                    className={
+                      'AlertModal__input' + (errorInput === 'threshold' ? ' is-invalid' : '')
+                    }
                     value={threshold}
                     onChange={({target: {value}}) => this.setState({threshold: value})}
                   />
@@ -241,7 +240,7 @@ export default class AlertModal extends React.Component {
               <div className="AlertModal__combinedInput">
                 <Input
                   className={
-                    'AlertModal__input' + (errorInput === 'checkInterval' ? '--error' : '')
+                    'AlertModal__input' + (errorInput === 'checkInterval' ? ' is-invalid' : '')
                   }
                   value={checkInterval.value}
                   onChange={({target: {value}}) =>
@@ -288,7 +287,9 @@ export default class AlertModal extends React.Component {
                   <span className="AlertModal__label">every</span>
                   <div className="AlertModal__combinedInput">
                     <Input
-                      className={'AlertModal__input' + (errorInput === 'reminder' ? '--error' : '')}
+                      className={
+                        'AlertModal__input' + (errorInput === 'reminder' ? ' is-invalid' : '')
+                      }
                       value={reminder.value}
                       onChange={({target: {value}}) =>
                         this.setState(update(this.state, {reminder: {value: {$set: value}}}))

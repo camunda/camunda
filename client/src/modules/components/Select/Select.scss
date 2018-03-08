@@ -16,4 +16,10 @@
     opacity: 0.65;
     cursor: not-allowed;
   }
+
+  &.is-invalid {
+    border: 1px solid #b5152b;
+    background-color: lighten(#b5152b, 55);
+    color: #b5152b;
+  }
 }
