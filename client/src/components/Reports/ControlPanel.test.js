@@ -36,19 +36,9 @@ jest.mock('services', () => {
         {key: type + 'bar', label: type + 'bar'}
       ],
       keyToObject: key => key,
-      getAllowedOptions: () => {
-        return {
-          foo: {
-            group1: ['viz', 'viz2'],
-            group2: ['viz2']
-          },
-          bar: {
-            onlyGroup: ['onlyViz']
-          },
-          baz: {
-            foo: ['bar']
-          }
-        };
+      getEnabledOptions: type => [type + 'foo'],
+      getTheRightCombination: () => {
+        return {view: 'foo', groupBy: 'theRightGroupBy', visualization: 'theRightViz'};
       }
     },
     extractProcessDefinitionName: jest.fn()
@@ -103,27 +93,15 @@ it('should not disable the groupBy and visualization Selects if view is selected
   expect(node.find('.ControlPanel__select').at(3)).not.toBeDisabled();
 });
 
-it('should reset the next Selects if in conflict with previous one', () => {
+it('should set or reset following selects according to getTheRightCombination function', () => {
   const node = mount(<ControlPanel {...data} onChange={spy} />);
   node.instance().changeView({target: {value: 'foo'}});
 
   expect(spy).toHaveBeenCalledWith({
     configuration: {targetValue: {active: false}, xml: 'fooXml'},
     view: 'foo',
-    groupBy: '',
-    visualization: ''
-  });
-});
-
-it('should select the only possible combination if only one allowed', () => {
-  const node = mount(<ControlPanel {...data} onChange={spy} />);
-  node.instance().changeView({target: {value: 'bar'}});
-
-  expect(spy).toHaveBeenCalledWith({
-    configuration: {targetValue: {active: false}, xml: 'fooXml'},
-    view: 'bar',
-    groupBy: 'onlyGroup',
-    visualization: 'onlyViz'
+    groupBy: 'theRightGroupBy',
+    visualization: 'theRightViz'
   });
 });
 

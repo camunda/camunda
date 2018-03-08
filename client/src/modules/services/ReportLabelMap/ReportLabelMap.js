@@ -55,8 +55,78 @@ const allowedOptionsMatrix = {
 };
 
 const reportLabelMap = {
-  getAllowedOptions: function() {
-    return allowedOptionsMatrix;
+  getTheRightCombination: function(view, groupBy, visualization) {
+    if (!allowedOptionsMatrix[view]) {
+      return {
+        view: this.keyToObject('', 'view'),
+        groupBy: this.keyToObject('', 'groupBy'),
+        visualization: this.keyToObject('', 'visualization')
+      };
+    }
+
+    if (!allowedOptionsMatrix[view][groupBy]) {
+      const theOnlyGroupBy = this.keyToObject(
+        this.getTheOnlyOption('groupBy', view, groupBy),
+        'groupBy'
+      );
+      const theOnlyVisualization = this.keyToObject(
+        this.getTheOnlyOption('visualization', view, groupBy),
+        'visualization'
+      );
+
+      return {
+        view: this.keyToObject(view, 'view'),
+        groupBy: theOnlyGroupBy || this.keyToObject('', 'groupBy'),
+        visualization: theOnlyVisualization || this.keyToObject('', 'visualization')
+      };
+    }
+
+    if (!allowedOptionsMatrix[view][groupBy].includes(visualization)) {
+      return {
+        view: this.keyToObject(view, 'view'),
+        groupBy: this.keyToObject(groupBy, 'groupBy'),
+        visualization:
+          this.getTheOnlyOption('visualization', view, groupBy) ||
+          this.keyToObject('', 'visualization')
+      };
+    }
+
+    return {
+      view: this.keyToObject(view, 'view'),
+      groupBy: this.keyToObject(groupBy, 'groupBy'),
+      visualization: this.keyToObject(visualization, 'visualization')
+    };
+  },
+
+  getTheOnlyOption: function(type, view, groupBy) {
+    if (!allowedOptionsMatrix[view]) return '';
+
+    if (type === 'groupBy') {
+      if (Object.keys(allowedOptionsMatrix[view]).length === 1) {
+        return Object.keys(allowedOptionsMatrix[view])[0];
+      } else return '';
+    }
+
+    if (type === 'visualization') {
+      const newGroupBy = this.getTheOnlyOption('groupBy', view, groupBy) || groupBy;
+      if (
+        allowedOptionsMatrix[view][newGroupBy] &&
+        allowedOptionsMatrix[view][newGroupBy].length === 1
+      ) {
+        return allowedOptionsMatrix[view][newGroupBy][0];
+      } else return '';
+    }
+  },
+
+  getEnabledOptions: function(type, view, groupBy) {
+    if (type !== 'view' && !allowedOptionsMatrix[view]) return null;
+
+    if (type === 'groupBy') {
+      return Object.keys(allowedOptionsMatrix[view]);
+    }
+    if (type === 'visualization') {
+      return allowedOptionsMatrix[view][groupBy];
+    }
   },
 
   view: 'view',
