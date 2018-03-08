@@ -25,7 +25,6 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import io.zeebe.transport.ClientRequest;
-import io.zeebe.transport.Loggers;
 import io.zeebe.transport.NotConnectedException;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.RequestTimeoutException;
@@ -88,7 +87,6 @@ public class ClientRequestRetryController extends Actor
     protected void onActorClosing()
     {
         conductor.onManagedRequestFinished(this);
-        Loggers.TRANSPORT_LOGGER.debug("Request Controller "  + System.identityHashCode(this) + " closed");
     }
 
     @Override
@@ -229,7 +227,6 @@ public class ClientRequestRetryController extends Actor
 
     public ActorFuture<Void> close()
     {
-        Loggers.TRANSPORT_LOGGER.debug("Request Controller " + System.identityHashCode(this) + " closing");
         return actor.close();
     }
 }
