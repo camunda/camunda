@@ -208,7 +208,8 @@ export default class Report extends React.Component {
     return data.visualization === 'table' && result && Object.keys(result).length > 0;
   };
 
-  constructCSVDownloadLink = () => `/api/export/csv/${this.id}/${this.state.name}.csv`;
+  constructCSVDownloadLink = () =>
+    `/api/export/csv/${this.id}/${encodeURIComponent(this.state.name.replace(/\s/g, '_'))}.csv`;
 
   renderEditMode = () => {
     const {name, lastModifier, lastModified, data, reportResult} = this.state;
