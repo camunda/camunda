@@ -32,8 +32,8 @@ import io.zeebe.logstreams.spi.SnapshotWriter;
 import io.zeebe.util.allocation.AllocatedBuffer;
 import io.zeebe.util.allocation.BufferAllocators;
 import io.zeebe.util.sched.ActorCondition;
-import io.zeebe.util.sched.ZbActor;
-import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.channel.ActorConditions;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
@@ -45,7 +45,7 @@ import org.slf4j.Logger;
  * Represents the log block index controller, which creates the log block index
  * for the given log storage.
  */
-public class LogBlockIndexController extends ZbActor
+public class LogBlockIndexController extends Actor
 {
     public static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
 
@@ -70,7 +70,7 @@ public class LogBlockIndexController extends ZbActor
     private final String name;
     private final LogStorage logStorage;
     private final LogBlockIndex blockIndex;
-    private final ZbActorScheduler actorScheduler;
+    private final ActorScheduler actorScheduler;
 
     /**
      * Defines the block size for which an index will be created.

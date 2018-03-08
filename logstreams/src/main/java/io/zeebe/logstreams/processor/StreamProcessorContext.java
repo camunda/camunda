@@ -20,7 +20,7 @@ import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LogStreamWriter;
 import io.zeebe.logstreams.spi.SnapshotStorage;
 import io.zeebe.util.sched.ActorControl;
-import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.ActorScheduler;
 
 import java.time.Duration;
 
@@ -40,7 +40,7 @@ public class StreamProcessorContext
     protected Duration snapshotPeriod;
     protected SnapshotStorage snapshotStorage;
 
-    protected ZbActorScheduler actorScheduler;
+    protected ActorScheduler actorScheduler;
     private ActorControl actorControl;
 
     protected EventFilter eventFilter;
@@ -89,12 +89,12 @@ public class StreamProcessorContext
         this.id = id;
     }
 
-    public ZbActorScheduler getActorScheduler()
+    public ActorScheduler getActorScheduler()
     {
         return actorScheduler;
     }
 
-    public void setActorScheduler(ZbActorScheduler actorScheduler)
+    public void setActorScheduler(ActorScheduler actorScheduler)
     {
         this.actorScheduler = actorScheduler;
     }

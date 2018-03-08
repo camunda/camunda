@@ -30,7 +30,7 @@ import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.MutableDirectBuffer;
 import org.slf4j.Logger;
 
-public class LogStreamController extends ZbActor
+public class LogStreamController extends Actor
 {
     public static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
 
@@ -48,7 +48,7 @@ public class LogStreamController extends ZbActor
     //  MANDATORY //////////////////////////////////////////////////
     private String name;
     private LogStorage logStorage;
-    private ZbActorScheduler actorScheduler;
+    private ActorScheduler actorScheduler;
 
     private final BlockPeek blockPeek = new BlockPeek();
     private int maxAppendBlockSize;

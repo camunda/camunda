@@ -30,7 +30,7 @@ import io.zeebe.logstreams.integration.util.LogIntegrationTestUtil;
 import io.zeebe.logstreams.log.*;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.util.sched.ActorCondition;
-import io.zeebe.util.sched.ZbActor;
+import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.agrona.DirectBuffer;
@@ -115,7 +115,7 @@ public class LogRecoveryTest
     {
         // update commit position when new event is appended
         // this triggers the stream processor controller to process available events
-        actorScheduler.get().submitActor(new ZbActor()
+        actorScheduler.get().submitActor(new Actor()
         {
             @Override
             protected void onActorStarted()

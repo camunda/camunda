@@ -24,8 +24,8 @@ import io.zeebe.logstreams.spi.ReadableSnapshot;
 import io.zeebe.logstreams.spi.SnapshotStorage;
 import io.zeebe.logstreams.spi.SnapshotWriter;
 import io.zeebe.util.sched.ActorCondition;
-import io.zeebe.util.sched.ZbActor;
-import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.slf4j.Logger;
@@ -33,7 +33,7 @@ import org.slf4j.Logger;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class StreamProcessorController extends ZbActor
+public class StreamProcessorController extends Actor
 {
     private static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
 
@@ -49,7 +49,7 @@ public class StreamProcessorController extends ZbActor
     private final SnapshotStorage snapshotStorage;
     private final Duration snapshotPeriod;
 
-    private final ZbActorScheduler actorScheduler;
+    private final ActorScheduler actorScheduler;
     private final AtomicBoolean isOpened = new AtomicBoolean(false);
     private final AtomicBoolean isFailed = new AtomicBoolean(false);
 

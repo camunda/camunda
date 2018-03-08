@@ -46,7 +46,7 @@ import org.agrona.concurrent.status.*;
 /**
  * Represents the implementation of the LogStream interface.
  */
-public final class LogStreamImpl extends ZbActor implements LogStream
+public final class LogStreamImpl extends Actor implements LogStream
 {
     public static final String EXCEPTION_MSG_TRUNCATE_FAILED = "Truncation failed! Position %d was not found.";
     public static final String EXCEPTION_MSG_TRUNCATE_AND_LOG_STREAM_CTRL_IN_PARALLEL = "Can't truncate the log storage and have a log stream controller active at the same time.";
@@ -63,7 +63,7 @@ public final class LogStreamImpl extends ZbActor implements LogStream
 
     private final LogStorage logStorage;
     private final LogBlockIndex blockIndex;
-    private final ZbActorScheduler actorScheduler;
+    private final ActorScheduler actorScheduler;
 
     private final LogBlockIndexController logBlockIndexController;
 
@@ -445,7 +445,7 @@ public final class LogStreamImpl extends ZbActor implements LogStream
         return blockIndex;
     }
 
-    private LogStreamBuilder createNewBuilder(ZbActorScheduler actorScheduler, int maxAppendBlockSize)
+    private LogStreamBuilder createNewBuilder(ActorScheduler actorScheduler, int maxAppendBlockSize)
     {
         if (!logStorage.isOpen())
         {
@@ -508,7 +508,7 @@ public final class LogStreamImpl extends ZbActor implements LogStream
         protected final DirectBuffer topicName;
         protected final int partitionId;
         protected final String logName;
-        protected ZbActorScheduler actorScheduler;
+        protected ActorScheduler actorScheduler;
         protected LogStorage logStorage;
         protected LogBlockIndex logBlockIndex;
 
@@ -587,7 +587,7 @@ public final class LogStreamImpl extends ZbActor implements LogStream
             return self();
         }
 
-        public T actorScheduler(ZbActorScheduler actorScheduler)
+        public T actorScheduler(ActorScheduler actorScheduler)
         {
             this.actorScheduler = actorScheduler;
             return self();
@@ -673,7 +673,7 @@ public final class LogStreamImpl extends ZbActor implements LogStream
             return logName;
         }
 
-        public ZbActorScheduler getActorScheduler()
+        public ActorScheduler getActorScheduler()
         {
             Objects.requireNonNull(actorScheduler, "No actor scheduler provided.");
             return actorScheduler;

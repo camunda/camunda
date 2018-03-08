@@ -18,7 +18,7 @@ package io.zeebe.logstreams.util;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.util.buffer.BufferUtil;
-import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
@@ -31,7 +31,7 @@ public class LogStreamRule extends ExternalResource
     private final String name;
     private final TemporaryFolder temporaryFolder;
 
-    private ZbActorScheduler actorScheduler;
+    private ActorScheduler actorScheduler;
     private LogStream logStream;
 
     public LogStreamRule(final TemporaryFolder temporaryFolder)

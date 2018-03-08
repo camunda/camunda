@@ -103,7 +103,7 @@ public class StreamProcessorIntegrationTest
     {
         // update commit position when new event is appended
         // this triggers the stream processor controller to process available events
-        actorScheduler.get().submitActor(new ZbActor()
+        actorScheduler.get().submitActor(new Actor()
         {
             @Override
             protected void onActorStarted()

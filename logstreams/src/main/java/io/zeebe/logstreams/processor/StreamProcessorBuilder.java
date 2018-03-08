@@ -17,7 +17,7 @@ package io.zeebe.logstreams.processor;
 
 import io.zeebe.logstreams.log.*;
 import io.zeebe.logstreams.spi.SnapshotStorage;
-import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.ActorScheduler;
 
 import java.time.Duration;
 import java.util.Objects;
@@ -31,7 +31,7 @@ public class StreamProcessorBuilder
 
     protected LogStream logStream;
 
-    protected ZbActorScheduler actorScheduler;
+    protected ActorScheduler actorScheduler;
 
     protected Duration snapshotPeriod;
     protected SnapshotStorage snapshotStorage;
@@ -57,7 +57,7 @@ public class StreamProcessorBuilder
         return this;
     }
 
-    public StreamProcessorBuilder actorScheduler(ZbActorScheduler actorScheduler)
+    public StreamProcessorBuilder actorScheduler(ActorScheduler actorScheduler)
     {
         this.actorScheduler = actorScheduler;
         return this;
