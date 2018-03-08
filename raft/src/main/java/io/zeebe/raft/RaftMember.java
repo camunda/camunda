@@ -236,4 +236,9 @@ public class RaftMember
         }
     }
 
+    public boolean hasNextEvent()
+    {
+        return bufferedEvent != null || reader.hasNext();
+    }
+
 }

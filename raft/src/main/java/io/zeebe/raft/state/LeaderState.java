@@ -15,17 +15,21 @@
  */
 package io.zeebe.raft.state;
 
-import java.util.Arrays;
-
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.raft.*;
+import io.zeebe.raft.BufferedLogStorageAppender;
 import io.zeebe.raft.Loggers;
+import io.zeebe.raft.Raft;
+import io.zeebe.raft.RaftMember;
 import io.zeebe.raft.protocol.AppendResponse;
 import io.zeebe.raft.protocol.JoinRequest;
-import io.zeebe.transport.*;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.ServerOutput;
+import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.ActorControl;
 import org.slf4j.Logger;
+
+import java.util.Arrays;
 
 public class LeaderState extends AbstractRaftState
 {

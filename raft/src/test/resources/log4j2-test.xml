@@ -23,7 +23,7 @@
     </Console>
 
     <RollingFile name="RollingFile-8001" fileName="target/logs/app_8001.log"
-                 filePattern="logs/app-%d{MM-dd-yyyy}_8001.log.gz">
+                 filePattern="target/logs/app-%d{MM-dd-yyyy}_8001.log.gz">
       <ContextMapFilter onMatch="ACCEPT">
         <KeyValuePair key="actor-name" value="localhost:8001"/>
       </ContextMapFilter>
@@ -34,7 +34,7 @@
     </RollingFile>
 
     <RollingFile name="RollingFile-8002" fileName="target/logs/app_8002.log"
-                 filePattern="logs/app-%d{MM-dd-yyyy}_8002.log.gz">
+                 filePattern="target/logs/app-%d{MM-dd-yyyy}_8002.log.gz">
 
       <ContextMapFilter onMatch="ACCEPT">
         <KeyValuePair key="actor-name" value="localhost:8002"/>
@@ -47,7 +47,7 @@
 
 
     <RollingFile name="RollingFile-8003" fileName="target/logs/app_8003.log"
-                 filePattern="logs/app-%d{MM-dd-yyyy}_8003.log.gz">
+                 filePattern="target/logs/app-%d{MM-dd-yyyy}_8003.log.gz">
 
       <ContextMapFilter onMatch="ACCEPT">
         <KeyValuePair key="actor-name" value="localhost:8003"/>

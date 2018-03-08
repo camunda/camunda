@@ -71,7 +71,7 @@ public class OpenLogStreamController
                 }
                 else
                 {
-                    LOG.warn("Failed to sendRequest log stream controller.r", throwable);
+                    LOG.warn("Failed to open log stream controller.", throwable);
                     decreaseRetries();
                     actor.submit(this::open);
                 }
@@ -88,6 +88,7 @@ public class OpenLogStreamController
         final long position = initialEvent.tryWrite(raft);
         if (position >= 0)
         {
+            LOG.debug("Initial event for term {} was appended on position {}", raft.getTerm(), position);
             this.position = position;
 
             raft.getLogStream().registerOnCommitPositionUpdatedCondition(actorCondition);

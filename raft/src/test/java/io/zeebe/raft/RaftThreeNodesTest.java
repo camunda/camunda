@@ -153,7 +153,7 @@ public class RaftThreeNodesTest
         // and a new leader writes more events
         final RaftRule newLeader = cluster.awaitLeader();
         cluster.awaitLogControllerOpen(newLeader);
-//        cluster.awaitRaftEventCommittedOnAll(newLeader.getTerm());
+        cluster.awaitInitialEventCommittedOnAll(newLeader.getTerm());
 
         position = newLeader.writeEvents("oh", "boy");
         cluster.awaitEventCommittedOnAll(position, newLeader.getTerm(), "boy");

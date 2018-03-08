@@ -15,11 +15,6 @@
  */
 package io.zeebe.raft;
 
-import static io.zeebe.util.EnsureUtil.ensureNotNull;
-
-import java.time.Duration;
-import java.util.*;
-
 import io.zeebe.logstreams.impl.LogStreamController;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.msgpack.value.ValueArray;
@@ -29,12 +24,16 @@ import io.zeebe.raft.protocol.*;
 import io.zeebe.raft.state.*;
 import io.zeebe.transport.*;
 import io.zeebe.util.buffer.BufferWriter;
-import io.zeebe.util.sched.ScheduledTimer;
 import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.ScheduledTimer;
 import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
+
+import java.time.Duration;
+import java.util.*;
+
+import static io.zeebe.util.EnsureUtil.ensureNotNull;
 
 /**
  * <p>
@@ -237,8 +236,8 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
         cancelElectionTimer();
         cancelFlushTimer();
 
-        openLogStreamController.open();
         replicateLogController.open();
+        openLogStreamController.open();
         pollController.close();
         voteController.close();
 
@@ -343,22 +342,20 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
         shouldElect = false;
     }
 
-    /**
-     * Resets all controllers and closes appendEvent requests
-     */
-    public ActorFuture<Void> close()
+    @Override
+    protected void onActorCloseRequested()
     {
-        final CompletableActorFuture<Void> closeFuture = new CompletableActorFuture<>();
-        actor.call(() ->
+        Loggers.RAFT_LOGGER.debug("close requested");
+        replicateLogController.close();
+    }
+
+    @Override
+    protected void onActorClosing()
+    {
+        actor.runOnCompletion(openLogStreamController.close(), (v, t) ->
         {
             LOG.debug("Shutdown raft.");
-            actor.runOnCompletion(openLogStreamController.close(), (v, t) ->
-            {
-                actor.close();
-                closeFuture.complete(null);
-            });
             replicateLogController.close();
-
             pollController.close();
             voteController.close();
 
@@ -370,8 +367,11 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
 
             getMembers().forEach(RaftMember::close);
         });
+    }
 
-        return closeFuture;
+    public ActorFuture<Void> close()
+    {
+        return actor.close();
     }
 
     // message handler

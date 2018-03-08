@@ -15,23 +15,15 @@
  */
 package io.zeebe.raft.util;
 
-import static io.zeebe.raft.state.RaftState.LEADER;
-import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.*;
-
-import java.lang.reflect.Field;
-import java.nio.file.Files;
-import java.util.*;
-import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
-
-import io.zeebe.dispatcher.*;
+import io.zeebe.dispatcher.Dispatcher;
+import io.zeebe.dispatcher.Dispatchers;
+import io.zeebe.dispatcher.FragmentHandler;
+import io.zeebe.dispatcher.Subscription;
 import io.zeebe.logstreams.LogStreams;
-import io.zeebe.logstreams.log.*;
+import io.zeebe.logstreams.log.BufferedLogStreamReader;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamWriterImpl;
+import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.raft.Raft;
@@ -42,13 +34,27 @@ import io.zeebe.raft.event.RaftConfigurationEventMember;
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.*;
+import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.agrona.DirectBuffer;
 import org.junit.rules.ExternalResource;
 import org.mockito.ArgumentMatcher;
-import org.mockito.Mockito;
+
+import java.lang.reflect.Field;
+import java.nio.file.Files;
+import java.util.*;
+import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
+
+import static io.zeebe.raft.state.RaftState.LEADER;
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.*;
 
 public class RaftRule extends ExternalResource implements RaftStateListener
 {
@@ -77,6 +83,7 @@ public class RaftRule extends ExternalResource implements RaftStateListener
 
     protected LogStream logStream;
     protected Raft raft;
+    private ActorControl raftActor;
     protected BufferedLogStreamReader uncommittedReader;
     protected BufferedLogStreamReader committedReader;
 
@@ -155,7 +162,20 @@ public class RaftRule extends ExternalResource implements RaftStateListener
         final ClientTransport spyClientTransport = spy(clientTransport);
         when(spyClientTransport.getOutput()).thenReturn(spyClientOutput);
 
-        raft = new Raft(configuration, socketAddress, logStream, serverTransport, spyClientTransport, persistentStorage, this);
+        raft = new Raft(configuration, socketAddress, logStream, serverTransport, spyClientTransport, persistentStorage, this)
+        {
+            @Override
+            protected void onActorStarting()
+            {
+                raftActor = actor;
+            }
+
+            @Override
+            public String getName()
+            {
+                return socketAddress.toString();
+            }
+        };
         raft.addMembers(members.stream().map(RaftRule::getSocketAddress).collect(Collectors.toList()));
 
         uncommittedReader = new BufferedLogStreamReader(logStream, true);
@@ -428,20 +448,23 @@ public class RaftRule extends ExternalResource implements RaftStateListener
 
     public void interruptConnectionTo(RaftRule other)
     {
-        final ArgumentMatcher<RemoteAddress> remoteAddressMatcher = r -> other.socketAddress.equals(r.getAddress());
+        raftActor.call(() ->
+        {
+            final ArgumentMatcher<RemoteAddress> remoteAddressMatcher = r -> other.socketAddress.equals(r.getAddress());
 
-        doReturn(CompletableActorFuture.completedExceptionally(new RuntimeException("connection is interrupted")))
-            .when(spyClientOutput)
-            .sendRequest(argThat(remoteAddressMatcher), any());
+            doReturn(CompletableActorFuture.completedExceptionally(new RuntimeException("connection is interrupted")))
+                .when(spyClientOutput)
+                .sendRequest(argThat(remoteAddressMatcher), any());
 
-        doReturn(CompletableActorFuture.completedExceptionally(new TimeoutException("timeout to " + other.socketAddress)))
-            .when(spyClientOutput)
-            .sendRequest(argThat(remoteAddressMatcher), any(), any());
+            doReturn(CompletableActorFuture.completedExceptionally(new TimeoutException("timeout to " + other.socketAddress)))
+                .when(spyClientOutput)
+                .sendRequest(argThat(remoteAddressMatcher), any(), any());
 
-        final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(other.getSocketAddress());
-        Mockito.doReturn(false)
-            .when(spyClientOutput)
-            .sendMessage(argThat(transportMessage -> readRemoteStreamId(transportMessage) == remoteAddress.getStreamId()));
+            final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(other.getSocketAddress());
+            doReturn(false)
+                .when(spyClientOutput)
+                .sendMessage(argThat(transportMessage -> readRemoteStreamId(transportMessage) == remoteAddress.getStreamId()));
+        });
     }
 
     private int readRemoteStreamId(TransportMessage transportMessage)
@@ -463,10 +486,14 @@ public class RaftRule extends ExternalResource implements RaftStateListener
 
     public void reconnectTo(RaftRule other)
     {
-        final ArgumentMatcher<RemoteAddress> remoteAddressMatcher = r -> r.getAddress().equals(other.socketAddress);
-        doCallRealMethod().when(spyClientOutput).sendRequest(argThat(r -> r.getAddress().equals(other.socketAddress)), any());
-        doCallRealMethod().when(spyClientOutput).sendRequest(argThat(remoteAddressMatcher), any());
-        doCallRealMethod().when(spyClientOutput).sendRequest(argThat(remoteAddressMatcher), any(), any());
-        doCallRealMethod().when(spyClientOutput).sendMessage(any());
+        raftActor.call(() ->
+        {
+            final ArgumentMatcher<RemoteAddress> remoteAddressMatcher = r -> r.getAddress().equals(other.socketAddress);
+            doCallRealMethod().when(spyClientOutput).sendRequest(argThat(remoteAddressMatcher), any());
+            doCallRealMethod().when(spyClientOutput).sendRequest(argThat(remoteAddressMatcher), any(), any());
+            final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(other.getSocketAddress());
+            doCallRealMethod().when(spyClientOutput)
+                .sendMessage(argThat(transportMessage -> readRemoteStreamId(transportMessage) == remoteAddress.getStreamId()));
+        });
     }
 }
