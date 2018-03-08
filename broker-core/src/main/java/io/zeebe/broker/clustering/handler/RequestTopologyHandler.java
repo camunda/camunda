@@ -27,6 +27,7 @@ import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
@@ -91,7 +92,7 @@ public class RequestTopologyHandler extends Actor implements ControlMessageHandl
     }
 
     @Override
-    public ActorFuture<Void> handle(int partitionId, final DirectBuffer buffer, final BrokerEventMetadata metadata)
+    public ActorFuture<Void> handle(ActorControl actor, int partitionId, final DirectBuffer buffer, final BrokerEventMetadata metadata)
     {
         // call cluster manager
         this.requestBuffer = buffer;

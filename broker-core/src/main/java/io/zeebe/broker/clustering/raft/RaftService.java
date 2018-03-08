@@ -35,11 +35,12 @@ import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorScheduler;
+import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
+import org.slf4j.Logger;
 
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 import static io.zeebe.broker.clustering.ClusterServiceNames.CLUSTER_MANAGER_SERVICE;
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.logStreamServiceName;
@@ -47,6 +48,8 @@ import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
 
 public class RaftService extends Actor implements Service<Raft>, RaftStateListener
 {
+    private static final Logger LOG = Loggers.SERVICES_LOGGER;
+
     private final RaftConfiguration configuration;
     private final SocketAddress socketAddress;
     private final LogStream logStream;
@@ -201,7 +204,7 @@ public class RaftService extends Actor implements Service<Raft>, RaftStateListen
                     LogStreamServiceNames.SYSTEM_STREAM_GROUP :
                     LogStreamServiceNames.WORKFLOW_STREAM_GROUP;
 
-                final CompletableFuture<Void> future =
+                final ActorFuture<Void> future =
                     startContext
                         .createService(logStreamServiceName, service)
                         .dependency(ACTOR_SCHEDULER_SERVICE)
@@ -210,12 +213,20 @@ public class RaftService extends Actor implements Service<Raft>, RaftStateListen
                         .group(streamGroup)
                         .install();
 
-                future.whenComplete((v, throwable) ->
+                actor.runOnCompletion(future, (v, throwable) ->
                 {
-                    actor.call(() ->
+                    if (throwable == null)
                     {
-                        onOpenLogStreamListener.onOpenLogStreamService(raft.getLogStream());
-                    });
+                        actor.submit(() ->
+                        {
+                            onOpenLogStreamListener.onOpenLogStreamService(raft.getLogStream());
+                        });
+                    }
+                    else
+                    {
+                        LOG.error("Failed to install log stream service '{}'", logStreamServiceName);
+                    }
+
                 });
             }
             else if (currentRaftState == RaftState.FOLLOWER &&

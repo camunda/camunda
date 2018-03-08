@@ -20,8 +20,6 @@ package io.zeebe.broker.task.processor;
 import static io.zeebe.protocol.clientapi.EventType.TASK_EVENT;
 import static io.zeebe.util.EnsureUtil.*;
 
-import java.util.concurrent.CompletableFuture;
-
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
 import io.zeebe.broker.logstreams.processor.NoopSnapshotSupport;
 import io.zeebe.broker.task.*;
@@ -37,6 +35,8 @@ import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.clock.ActorClock;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
 
 public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
@@ -105,7 +105,7 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
         context.suspendController();
     }
 
-    public CompletableFuture<Void> addSubscription(TaskSubscription subscription)
+    public ActorFuture<Void> addSubscription(TaskSubscription subscription)
     {
         ensureNotNull("subscription", subscription);
         ensureNotNull("lock task type", subscription.getLockTaskType());
@@ -121,21 +121,17 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
             throw new RuntimeException(errorMessage);
         }
 
-        final CompletableFuture<Void> completableFuture = new CompletableFuture<>();
-        actor.call(() ->
+        return actor.call(() ->
         {
             subscriptions.addSubscription(subscription);
 
             context.resumeController();
-
-            completableFuture.complete(null);
         });
-        return completableFuture;
     }
 
-    public CompletableFuture<Boolean> removeSubscription(long subscriberKey)
+    public ActorFuture<Boolean> removeSubscription(long subscriberKey)
     {
-        final CompletableFuture<Boolean> completableFuture = new CompletableFuture<>();
+        final CompletableActorFuture<Boolean> completableFuture = new CompletableActorFuture<>();
         actor.call(() ->
         {
             subscriptions.removeSubscription(subscriberKey);
@@ -150,9 +146,9 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
         return completableFuture;
     }
 
-    public CompletableFuture<Boolean> onClientChannelCloseAsync(int channelId)
+    public ActorFuture<Boolean> onClientChannelCloseAsync(int channelId)
     {
-        final CompletableFuture<Boolean> completableFuture = new CompletableFuture<>();
+        final CompletableActorFuture<Boolean> completableFuture = new CompletableActorFuture<>();
         actor.call(() ->
         {
             managementIterator.reset();

@@ -21,8 +21,8 @@ import static io.zeebe.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_
 import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
 
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
 
+import io.zeebe.broker.Loggers;
 import io.zeebe.broker.event.TopicSubscriptionServiceNames;
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
 import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
@@ -49,9 +49,12 @@ import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.collections.Int2ObjectHashMap;
+import org.slf4j.Logger;
 
 public class TopicSubscriptionService extends Actor implements Service<TopicSubscriptionService>, TransportListener
 {
+    private static final Logger LOG = Loggers.SERVICES_LOGGER;
+
     protected final Injector<ActorScheduler> actorSchedulerInjector = new Injector<>();
     protected final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
     protected final SubscriptionCfg config;
@@ -143,7 +146,7 @@ public class TopicSubscriptionService extends Actor implements Service<TopicSubs
                 }
                 else
                 {
-                    // TODO LOG
+                    LOG.error("Failed to create topic subscription stream processor service for log stream service '{}'", logStreamServiceName);
                 }
             });
         });
@@ -156,33 +159,17 @@ public class TopicSubscriptionService extends Actor implements Service<TopicSubs
             StreamProcessor streamProcessor,
             MetadataFilter eventFilter)
     {
-        final CompletableActorFuture<Void> completableActorFuture = new CompletableActorFuture<>();
-
         final StreamProcessorService streamProcessorService = new StreamProcessorService(
             processorName.getName(),
             processorId,
             streamProcessor)
             .eventFilter(eventFilter);
 
-        final CompletableFuture<Void> installFuture = serviceContext.createService(processorName, streamProcessorService)
-            .dependency(logStreamName, streamProcessorService.getLogStreamInjector())
-            .dependency(SNAPSHOT_STORAGE_SERVICE, streamProcessorService.getSnapshotStorageInjector())
-            .dependency(ACTOR_SCHEDULER_SERVICE, streamProcessorService.getActorSchedulerInjector())
-            .install();
-
-        installFuture.whenComplete((aVoid, throwable) ->
-        {
-            if (throwable == null)
-            {
-                completableActorFuture.complete(null);
-            }
-            else
-            {
-                // TODO LOG
-            }
-        });
-
-        return completableActorFuture;
+        return serviceContext.createService(processorName, streamProcessorService)
+                             .dependency(logStreamName, streamProcessorService.getLogStreamInjector())
+                             .dependency(SNAPSHOT_STORAGE_SERVICE, streamProcessorService.getSnapshotStorageInjector())
+                             .dependency(ACTOR_SCHEDULER_SERVICE, streamProcessorService.getActorSchedulerInjector())
+                             .install();
     }
 
     public void onStreamRemoved(LogStream logStream)
@@ -205,7 +192,7 @@ public class TopicSubscriptionService extends Actor implements Service<TopicSubs
         return "subscription-service";
     }
 
-    public CompletableFuture<Void> closeSubscriptionAsync(final int partitionId, final long subscriberKey)
+    public ActorFuture<Void> closeSubscriptionAsync(final int partitionId, final long subscriberKey)
     {
         final TopicSubscriptionManagementProcessor managementProcessor = getManager(partitionId);
 
@@ -215,7 +202,7 @@ public class TopicSubscriptionService extends Actor implements Service<TopicSubs
         }
         else
         {
-            final CompletableFuture<Void> future = new CompletableFuture<>();
+            final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
             future.completeExceptionally(
                 new RuntimeException(
                     String.format("No subscription management processor registered for partition '%d'", partitionId)

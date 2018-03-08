@@ -34,6 +34,7 @@ import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.util.ReflectUtil;
 import io.zeebe.util.sched.ActorControl;
+import io.zeebe.util.sched.future.ActorFuture;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -136,9 +137,9 @@ public class TypedStreamProcessor implements StreamProcessor
         return m -> eventProcessors.containsKey(m.getEventType());
     }
 
-    public void runAsync(Runnable runnable)
+    public ActorFuture<Void> runAsync(Runnable runnable)
     {
-        actor.call(runnable);
+        return actor.call(runnable);
     }
 
     // TODO: this goes away when we move the state into the event header => https://github.com/zeebe-io/zeebe/issues/367

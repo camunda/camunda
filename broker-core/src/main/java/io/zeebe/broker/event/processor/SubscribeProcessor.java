@@ -132,14 +132,18 @@ public class SubscribeProcessor implements EventProcessor
                     subscriberEvent.getStartPosition(),
                     subscriberEvent.getForceStart());
 
-            final ActorFuture<TopicSubscriptionPushProcessor> processorFuture = manager.openPushProcessorAsync(
-                    metadata.getRequestStreamId(),
-                    event.getKey(),
-                    resumePosition,
-                    subscriptionName,
-                    subscriberEvent.getPrefetchCapacity());
+            final TopicSubscriptionPushProcessor processor = new TopicSubscriptionPushProcessor(
+                metadata.getRequestStreamId(),
+                event.getKey(),
+                resumePosition,
+                subscriptionName,
+                subscriberEvent.getPrefetchCapacity(),
+                manager.getEventWriterFactory().get());
 
-            awaitProcessorState.wrap(processorFuture);
+            final ActorFuture<Void> future = manager.openPushProcessorAsync(processor);
+
+            awaitProcessorState.wrap(future);
+            successState.wrap(processor);
             state = awaitProcessorState;
 
             return false;
@@ -148,9 +152,9 @@ public class SubscribeProcessor implements EventProcessor
 
     protected class AwaitSubscriptionServiceProcessor implements EventProcessor
     {
-        protected ActorFuture<TopicSubscriptionPushProcessor> processorFuture;
+        protected ActorFuture<Void> processorFuture;
 
-        public void wrap(ActorFuture<TopicSubscriptionPushProcessor> processorFuture)
+        public void wrap(ActorFuture<Void> processorFuture)
         {
             this.processorFuture = processorFuture;
         }
@@ -176,8 +180,7 @@ public class SubscribeProcessor implements EventProcessor
             }
             else
             {
-                final TopicSubscriptionPushProcessor processor = processorFuture.join();
-                successState.wrap(processor);
+                processorFuture.join();
                 state = successState;
             }
             return false;

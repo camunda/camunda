@@ -179,7 +179,7 @@ public class ControlMessageHandlerManager extends Actor implements FragmentHandl
         final ControlMessageHandler handler = handlersByTypeId.get(messageType.value());
         if (handler != null)
         {
-            final ActorFuture<Void> handleFuture = handler.handle(partitionId, requestBuffer, eventMetada);
+            final ActorFuture<Void> handleFuture = handler.handle(actor, partitionId, requestBuffer, eventMetada);
             actor.runOnCompletion(handleFuture, ((aVoid, throwable) ->
             {
                 if (throwable != null)

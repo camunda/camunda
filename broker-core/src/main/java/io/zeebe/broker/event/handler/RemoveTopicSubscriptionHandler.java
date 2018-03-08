@@ -26,11 +26,10 @@ import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.transport.ServerOutput;
+import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
-
-import java.util.concurrent.CompletableFuture;
 
 public class RemoveTopicSubscriptionHandler implements ControlMessageHandler
 {
@@ -54,18 +53,18 @@ public class RemoveTopicSubscriptionHandler implements ControlMessageHandler
     }
 
     @Override
-    public ActorFuture<Void> handle(int partitionId, DirectBuffer buffer, BrokerEventMetadata metadata)
+    public ActorFuture<Void> handle(ActorControl actor, int partitionId, DirectBuffer buffer, BrokerEventMetadata metadata)
     {
         final CompletableActorFuture<Void> completableActorFuture = new CompletableActorFuture<>();
         request.reset();
         request.wrap(buffer);
 
-        final CompletableFuture<Void> future = subscriptionService.closeSubscriptionAsync(
+        final ActorFuture<Void> future = subscriptionService.closeSubscriptionAsync(
             partitionId,
             request.getSubscriberKey()
         );
 
-        future.handle((v, failure) ->
+        actor.runOnCompletion(future, (v, failure) ->
         {
             if (failure == null)
             {
@@ -85,8 +84,8 @@ public class RemoveTopicSubscriptionHandler implements ControlMessageHandler
                 // TODO: proper backpressure
                 completableActorFuture.completeExceptionally(failure);
             }
-            return null;
         });
+
         return completableActorFuture;
     }
 

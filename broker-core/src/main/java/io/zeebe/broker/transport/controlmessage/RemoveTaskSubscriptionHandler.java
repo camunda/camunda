@@ -17,8 +17,8 @@
  */
 package io.zeebe.broker.transport.controlmessage;
 
-import java.util.concurrent.CompletableFuture;
-
+import io.zeebe.protocol.clientapi.ErrorCode;
+import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
@@ -28,7 +28,6 @@ import io.zeebe.broker.task.TaskSubscriptionManager;
 import io.zeebe.broker.task.processor.TaskSubscriptionRequest;
 import io.zeebe.broker.transport.clientapi.ErrorResponseWriter;
 import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.transport.ServerOutput;
 
 public class RemoveTaskSubscriptionHandler implements ControlMessageHandler
@@ -54,16 +53,16 @@ public class RemoveTaskSubscriptionHandler implements ControlMessageHandler
     }
 
     @Override
-    public ActorFuture<Void> handle(int partitionId, DirectBuffer buffer, BrokerEventMetadata eventMetada)
+    public ActorFuture<Void> handle(ActorControl actor, int partitionId, DirectBuffer buffer, BrokerEventMetadata eventMetada)
     {
         subscription.reset();
 
         subscription.wrap(buffer);
 
         final CompletableActorFuture<Void> completableActorFuture = new CompletableActorFuture<>();
-        final CompletableFuture<Void> future = manager.removeSubscription(subscription.getSubscriberKey());
+        final ActorFuture<Void> future = manager.removeSubscription(subscription.getSubscriberKey());
 
-        future.handle((v, failure) ->
+        actor.runOnCompletion(future, (v, failure) ->
         {
             if (failure == null)
             {
@@ -83,8 +82,8 @@ public class RemoveTaskSubscriptionHandler implements ControlMessageHandler
                 completableActorFuture.completeExceptionally(failure);
                 // TODO: proper backpressure
             }
-            return null;
         });
+
         return completableActorFuture;
     }
 

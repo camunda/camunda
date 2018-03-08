@@ -19,6 +19,7 @@ package io.zeebe.broker.transport.controlmessage;
 
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
+import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
 
@@ -36,6 +37,8 @@ public interface ControlMessageHandler
      * Handle the given control message asynchronously. An implementation may
      * copy the buffer if the data is used beyond the invocation.
      *
+     *
+     * @param actor
      * @param partitionId
      *         < 0 if no specific partition is addressed
      * @param buffer
@@ -46,5 +49,5 @@ public interface ControlMessageHandler
      * @return a future which indicates when the control message is handled
      *         completely
      */
-    ActorFuture<Void> handle(int partitionId, DirectBuffer buffer, BrokerEventMetadata metadata);
+    ActorFuture<Void> handle(ActorControl actor, int partitionId, DirectBuffer buffer, BrokerEventMetadata metadata);
 }

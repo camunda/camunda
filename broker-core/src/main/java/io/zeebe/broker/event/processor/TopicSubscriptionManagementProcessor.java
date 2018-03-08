@@ -47,7 +47,6 @@ import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
 
 import java.util.Iterator;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE;
@@ -99,6 +98,10 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
         this.snapshotResource = new ZbMapSnapshotSupport<>(ackMap);
     }
 
+    public Supplier<SubscribedEventWriter> getEventWriterFactory()
+    {
+        return eventWriterFactory;
+    }
 
     @Override
     public void onOpen(StreamProcessorContext context)
@@ -190,17 +193,27 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
         ackMap.put(subscriptionName, 0, subscriptionName.capacity(), ackPosition);
     }
 
-    public CompletableFuture<Void> closePushProcessorAsync(long subscriberKey)
+    public ActorFuture<Void> closePushProcessorAsync(long subscriberKey)
     {
-        final CompletableFuture<Void> future = new CompletableFuture<>();
+        final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
         actor.call(() ->
         {
             final TopicSubscriptionPushProcessor processor = subscriptionRegistry.removeProcessorByKey(subscriberKey);
 
             if (processor != null)
             {
-                closePushProcessor(processor)
-                    .handle((r, t) -> t == null ? future.complete(null) : future.completeExceptionally(t));
+                final ActorFuture<Void> closeFuture = closePushProcessor(processor);
+                actor.runOnCompletion(closeFuture, (aVoid, throwable) ->
+                {
+                    if (throwable == null)
+                    {
+                        future.complete(null);
+                    }
+                    else
+                    {
+                        future.completeExceptionally(throwable);
+                    }
+                });
             }
             else
             {
@@ -210,7 +223,7 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
         return future;
     }
 
-    protected CompletableFuture<Void> closePushProcessor(TopicSubscriptionPushProcessor processor)
+    protected ActorFuture<Void> closePushProcessor(TopicSubscriptionPushProcessor processor)
     {
         final ServiceName<StreamProcessorController> subscriptionProcessorName =
                 TopicSubscriptionServiceNames.subscriptionPushServiceName(streamServiceName.getName(), processor.getNameAsString());
@@ -240,21 +253,8 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
         }
     }
 
-    public ActorFuture<TopicSubscriptionPushProcessor> openPushProcessorAsync(
-            int clientChannelId,
-            long subscriberKey,
-            long resumePosition,
-            DirectBuffer subscriptionName,
-            int prefetchCapacity)
+    public ActorFuture<Void> openPushProcessorAsync(final TopicSubscriptionPushProcessor processor)
     {
-        final CompletableActorFuture<TopicSubscriptionPushProcessor> future = new CompletableActorFuture<>();
-        final TopicSubscriptionPushProcessor processor = new TopicSubscriptionPushProcessor(
-            clientChannelId,
-            subscriberKey,
-            resumePosition,
-            subscriptionName,
-            prefetchCapacity,
-            eventWriterFactory.get());
 
         final ServiceName<StreamProcessorController> serviceName = TopicSubscriptionServiceNames.subscriptionPushServiceName(streamServiceName.getName(), processor.getNameAsString());
 
@@ -265,24 +265,11 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
             .eventFilter(TopicSubscriptionPushProcessor.eventFilter())
             .readOnly(true);
 
-        final CompletableFuture<Void> installFuture = serviceContext.createService(serviceName, streamProcessorService)
-            .dependency(streamServiceName, streamProcessorService.getLogStreamInjector())
-            .dependency(SNAPSHOT_STORAGE_SERVICE, streamProcessorService.getSnapshotStorageInjector())
-            .dependency(ACTOR_SCHEDULER_SERVICE, streamProcessorService.getActorSchedulerInjector())
-            .install();
-
-        installFuture.whenComplete((aVoid, failure) ->
-        {
-            if (failure == null)
-            {
-                future.complete(processor);
-            }
-            else
-            {
-                future.completeExceptionally(failure);
-            }
-        });
-        return future;
+        return serviceContext.createService(serviceName, streamProcessorService)
+                             .dependency(streamServiceName, streamProcessorService.getLogStreamInjector())
+                             .dependency(SNAPSHOT_STORAGE_SERVICE, streamProcessorService.getSnapshotStorageInjector())
+                             .dependency(ACTOR_SCHEDULER_SERVICE, streamProcessorService.getActorSchedulerInjector())
+                             .install();
     }
 
     public boolean writeRequestResponseError(BrokerEventMetadata metadata, LoggedEvent event, String error)
@@ -357,10 +344,10 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
             if (metadata.getRequestId() >= 0)
             {
                 return responseWriter
-                        .partitionId(logStreamPartitionId)
-                        .eventWriter(subscriptionEvent)
-                        .key(currentEvent.getKey())
-                        .tryWriteResponse(metadata.getRequestStreamId(), metadata.getRequestId());
+                    .partitionId(logStreamPartitionId)
+                    .eventWriter(subscriptionEvent)
+                    .key(currentEvent.getKey())
+                    .tryWriteResponse(metadata.getRequestStreamId(), metadata.getRequestId());
             }
             else
             {

@@ -25,6 +25,7 @@ import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.transport.ServerOutput;
+import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
@@ -56,7 +57,7 @@ public class IncreaseTaskSubscriptionCreditsHandler implements ControlMessageHan
     }
 
     @Override
-    public ActorFuture<Void> handle(int partitionId, DirectBuffer buffer, BrokerEventMetadata eventMetadata)
+    public ActorFuture<Void> handle(ActorControl actor, int partitionId, DirectBuffer buffer, BrokerEventMetadata eventMetadata)
     {
         subscription.reset();
 

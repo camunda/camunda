@@ -27,8 +27,6 @@ import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
 
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
 import io.zeebe.broker.logstreams.processor.StreamProcessorService;
@@ -44,6 +42,8 @@ import io.zeebe.util.allocation.HeapBufferAllocator;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.collection.CompactList;
 import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.collections.Long2ObjectHashMap;
@@ -107,9 +107,9 @@ public class TaskSubscriptionManager extends Actor implements TransportListener
         return NAME;
     }
 
-    public CompletableFuture<Void> addSubscription(final TaskSubscription subscription)
+    public ActorFuture<Void> addSubscription(final TaskSubscription subscription)
     {
-        final CompletableFuture<Void> future = new CompletableFuture<>();
+        final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
         actor.call(() ->
         {
             ensureNotNull("subscription", subscription);
@@ -135,41 +135,67 @@ public class TaskSubscriptionManager extends Actor implements TransportListener
             {
                 streamProcessorBySubscriptionId.put(subscriptionId, streamProcessor);
 
-                streamProcessor
-                    .addSubscription(subscription)
-                    .handle((r, t) -> t == null ? future.complete(null) : future.completeExceptionally(t));
+                final ActorFuture<Void> addFuture = streamProcessor.addSubscription(subscription);
+                actor.runOnCompletion(addFuture, (aVoid, throwable) ->
+                {
+                    if (throwable == null)
+                    {
+                        future.complete(null);
+                    }
+                    else
+                    {
+                        future.completeExceptionally(throwable);
+                    }
+
+                });
             }
             else
             {
-                createStreamProcessorService(logStreamBucket, taskType)
-                    .thenCompose(processor ->
+                // need to copy the type buffer because it is not durable
+                final DirectBuffer newTaskTypeBuffer = cloneBuffer(taskType);
+
+                final LockTaskStreamProcessor processor = streamProcessorSupplier.apply(newTaskTypeBuffer);
+                final ActorFuture<Void> processorFuture = createStreamProcessorService(processor, newTaskTypeBuffer, logStreamBucket, taskType);
+
+                actor.runOnCompletion(processorFuture, (v, t) ->
+                {
+                    if (t == null)
                     {
                         streamProcessorBySubscriptionId.put(subscriptionId, processor);
 
                         logStreamBucket.addStreamProcessor(processor);
-
-                        return processor.addSubscription(subscription);
-                    })
-                    .handle((r, t) -> t == null ? future.complete(null) : future.completeExceptionally(t));
+                        final ActorFuture<Void> addFuture = processor.addSubscription(subscription);
+                        actor.runOnCompletion(addFuture, ((aVoid, throwable) ->
+                        {
+                            if (throwable == null)
+                            {
+                                future.complete(null);
+                            }
+                            else
+                            {
+                                future.completeExceptionally(throwable);
+                            }
+                        }));
+                    }
+                    else
+                    {
+                        future.completeExceptionally(t);
+                    }
+                });
             }
         });
+
         return future;
     }
 
-    protected CompletableFuture<LockTaskStreamProcessor> createStreamProcessorService(final LogStreamBucket logStreamBucket, final DirectBuffer taskType)
+    protected ActorFuture<Void> createStreamProcessorService(final LockTaskStreamProcessor streamProcessor, DirectBuffer newTaskTypeBuffer, final LogStreamBucket logStreamBucket, final DirectBuffer taskType)
     {
-        final CompletableFuture<LockTaskStreamProcessor> future = new CompletableFuture<>();
-
         final ServiceName<LogStream> logStreamServiceName = logStreamBucket.getLogServiceName();
 
         final String logName = logStreamBucket.getLogStream().getLogName();
         final ServiceName<StreamProcessorController> streamProcessorServiceName = taskQueueLockStreamProcessorServiceName(logName, bufferAsString(taskType));
         final String streamProcessorName = streamProcessorServiceName.getName();
 
-        // need to copy the type buffer because it is not durable
-        final DirectBuffer newTaskTypeBuffer = cloneBuffer(taskType);
-
-        final LockTaskStreamProcessor streamProcessor = streamProcessorSupplier.apply(newTaskTypeBuffer);
         final StreamProcessorService streamProcessorService = new StreamProcessorService(
                 streamProcessorName,
                 TASK_LOCK_STREAM_PROCESSOR_ID,
@@ -177,28 +203,47 @@ public class TaskSubscriptionManager extends Actor implements TransportListener
             .eventFilter(LockTaskStreamProcessor.eventFilter())
             .reprocessingEventFilter(LockTaskStreamProcessor.reprocessingEventFilter(newTaskTypeBuffer));
 
-        serviceContext.createService(streamProcessorServiceName, streamProcessorService)
-            .dependency(logStreamServiceName, streamProcessorService.getLogStreamInjector())
-            .dependency(SNAPSHOT_STORAGE_SERVICE, streamProcessorService.getSnapshotStorageInjector())
-            .dependency(ACTOR_SCHEDULER_SERVICE, streamProcessorService.getActorSchedulerInjector())
-            .install()
-            .handle((r, t) -> t == null ? future.complete(streamProcessor) : future.completeExceptionally(t));
-
-        return future;
+        return serviceContext.createService(streamProcessorServiceName, streamProcessorService)
+                             .dependency(logStreamServiceName, streamProcessorService.getLogStreamInjector())
+                             .dependency(SNAPSHOT_STORAGE_SERVICE, streamProcessorService.getSnapshotStorageInjector())
+                             .dependency(ACTOR_SCHEDULER_SERVICE, streamProcessorService.getActorSchedulerInjector())
+                             .install();
     }
 
-    public CompletableFuture<Void> removeSubscription(long subscriptionId)
+    public ActorFuture<Void> removeSubscription(long subscriptionId)
     {
-        final CompletableFuture<Void> future = new CompletableFuture<>();
+        final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
         actor.call(() ->
         {
             final LockTaskStreamProcessor streamProcessor = streamProcessorBySubscriptionId.remove(subscriptionId);
             if (streamProcessor != null)
             {
-                streamProcessor
-                    .removeSubscription(subscriptionId)
-                    .thenCompose(hasSubscriptions -> !hasSubscriptions ? removeStreamProcessorService(streamProcessor) : CompletableFuture.completedFuture(null))
-                    .handle((r, t) -> t == null ? future.complete(null) : future.completeExceptionally(t));
+                final ActorFuture<Boolean> removeFuture = streamProcessor.removeSubscription(subscriptionId);
+                actor.runOnCompletion(removeFuture, (hasSubscriptions, throwable) ->
+                {
+                    if (throwable == null)
+                    {
+                        if (!hasSubscriptions)
+                        {
+                            final ActorFuture<Void> removeProcessorFuture = removeStreamProcessorService(streamProcessor);
+                            actor.runOnCompletion(removeProcessorFuture, (b, t) ->
+                            {
+                                if (t == null)
+                                {
+                                    future.complete(null);
+                                }
+                                else
+                                {
+                                    future.completeExceptionally(t);
+                                }
+                            });
+                        }
+                    }
+                    else
+                    {
+                        future.completeExceptionally(throwable);
+                    }
+                });
             }
             else
             {
@@ -208,7 +253,7 @@ public class TaskSubscriptionManager extends Actor implements TransportListener
         return future;
     }
 
-    protected CompletionStage<Void> removeStreamProcessorService(final LockTaskStreamProcessor streamProcessor)
+    protected ActorFuture<Void> removeStreamProcessorService(final LockTaskStreamProcessor streamProcessor)
     {
         final LogStreamBucket logStreamBucket = logStreamBuckets.get(streamProcessor.getLogStreamPartitionId());
 
@@ -325,9 +370,15 @@ public class TaskSubscriptionManager extends Actor implements TransportListener
             while (processorIt.hasNext())
             {
                 final LockTaskStreamProcessor processor = processorIt.next();
-                processor
-                    .onClientChannelCloseAsync(channelId)
-                    .thenCompose(hasSubscriptions -> !hasSubscriptions ? removeStreamProcessorService(processor) : CompletableFuture.completedFuture(null));
+                final ActorFuture<Boolean> closeFuture = processor.onClientChannelCloseAsync(channelId);
+
+                actor.runOnCompletion(closeFuture, (hasSubscriptions, throwable) ->
+                {
+                    if (!hasSubscriptions)
+                    {
+                        removeStreamProcessorService(processor);
+                    }
+                });
             }
         });
     }

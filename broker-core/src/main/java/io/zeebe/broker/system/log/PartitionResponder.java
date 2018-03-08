@@ -23,9 +23,9 @@ import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.transport.controlmessage.ControlMessageResponseWriter;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.util.IntObjectBiConsumer;
+import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class PartitionResponder implements IntObjectBiConsumer<DirectBuffer>, StreamProcessorLifecycleAware
@@ -40,13 +40,12 @@ public class PartitionResponder implements IntObjectBiConsumer<DirectBuffer>, St
         this.responseWriter = new ControlMessageResponseWriter(output);
     }
 
-    public CompletableFuture<Void> sendPartitions(int requestStreamId, long requestId)
+    public ActorFuture<Void> sendPartitions(int requestStreamId, long requestId)
     {
-        final CompletableFuture<Void> completableFuture = new CompletableFuture<>();
         final TypedStreamProcessor streamProcessor = streamProcessorRef.get();
         if (streamProcessor != null)
         {
-            streamProcessor.runAsync(() ->
+            return streamProcessor.runAsync(() ->
             {
                 // TODO: handle return value in case of backpressure
                 // a command handler should be able to postpone a command in this case
@@ -54,9 +53,7 @@ public class PartitionResponder implements IntObjectBiConsumer<DirectBuffer>, St
                 responseWriter
                     .dataWriter(responseContent)
                     .tryWriteResponse(requestStreamId, requestId);
-                completableFuture.complete(null);
             });
-            return completableFuture;
         }
         else
         {

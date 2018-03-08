@@ -24,11 +24,10 @@ import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.transport.ServerOutput;
+import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
-
-import java.util.concurrent.CompletableFuture;
 
 public class RequestPartitionsMessageHandler implements ControlMessageHandler
 {
@@ -48,9 +47,8 @@ public class RequestPartitionsMessageHandler implements ControlMessageHandler
     }
 
     @Override
-    public ActorFuture<Void> handle(int partitionId, DirectBuffer buffer, BrokerEventMetadata metadata)
+    public ActorFuture<Void> handle(ActorControl actor, int partitionId, DirectBuffer buffer, BrokerEventMetadata metadata)
     {
-        final CompletableActorFuture<Void> completableActorFuture = new CompletableActorFuture<>();
         final int requestStreamId = metadata.getRequestStreamId();
         final long requestId = metadata.getRequestId();
 
@@ -60,7 +58,7 @@ public class RequestPartitionsMessageHandler implements ControlMessageHandler
             return CompletableActorFuture.completed(null);
         }
 
-        final CompletableFuture<Void> handlerFuture = systemPartitionManager.sendPartitions(requestStreamId, requestId);
+        final ActorFuture<Void> handlerFuture = systemPartitionManager.sendPartitions(requestStreamId, requestId);
         if (handlerFuture == null)
         {
             // it is important that partition not found is returned here to signal a client that it may have addressed a broker
@@ -70,18 +68,7 @@ public class RequestPartitionsMessageHandler implements ControlMessageHandler
         }
         else
         {
-            handlerFuture.whenComplete(((aVoid, throwable) ->
-            {
-                if (throwable == null)
-                {
-                    completableActorFuture.complete(aVoid);
-                }
-                else
-                {
-                    completableActorFuture.completeExceptionally(throwable);
-                }
-            }));
-            return completableActorFuture;
+            return handlerFuture;
         }
     }
 

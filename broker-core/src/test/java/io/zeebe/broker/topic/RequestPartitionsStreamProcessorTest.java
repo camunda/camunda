@@ -23,7 +23,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
@@ -31,6 +30,7 @@ import io.zeebe.broker.system.log.*;
 import io.zeebe.broker.transport.clientapi.BufferingServerOutput;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.buffer.BufferUtil;
+import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.junit.*;
 import org.junit.rules.RuleChain;
@@ -84,11 +84,11 @@ public class RequestPartitionsStreamProcessorTest
         processorControl.unblock();
 
         // when
-        final CompletableFuture<Void> future = doRepeatedly(() -> partitionResponder.sendPartitions(1, 2)).until(f -> f != null);
+        final ActorFuture<Void> future = doRepeatedly(() -> partitionResponder.sendPartitions(1, 2)).until(f -> f != null);
 
         // then
-        waitUntil(() -> future.isDone());
-        assertThat(future).isCompleted();
+        waitUntil(future::isDone);
+        assertThat(future).isDone();
         assertThat(output.getSentResponses()).hasSize(1);
 
     }

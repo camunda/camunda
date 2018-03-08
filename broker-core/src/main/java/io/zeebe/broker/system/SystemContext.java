@@ -31,6 +31,7 @@ import io.zeebe.servicecontainer.impl.ServiceContainerImpl;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ActorClock;
+import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.ConcurrentCountersManager;
 import org.slf4j.Logger;
@@ -49,7 +50,7 @@ public class SystemContext implements AutoCloseable
 
     protected final ConfigurationManager configurationManager;
 
-    protected final List<CompletableFuture<?>> requiredStartActions = new ArrayList<>();
+    protected final List<ActorFuture<?>> requiredStartActions = new ArrayList<>();
 
     protected Map<String, String> diagnosticContext;
     protected final ActorScheduler scheduler;
@@ -157,8 +158,10 @@ public class SystemContext implements AutoCloseable
 
         try
         {
-            final CompletableFuture<?>[] startActions = requiredStartActions.toArray(new CompletableFuture[requiredStartActions.size()]);
-            CompletableFuture.allOf(startActions).get(500, TimeUnit.SECONDS);
+            for (ActorFuture<?> requiredStartAction : requiredStartActions)
+            {
+                requiredStartAction.get(20, TimeUnit.SECONDS);
+            }
         }
         catch (Exception e)
         {
@@ -226,7 +229,7 @@ public class SystemContext implements AutoCloseable
         return configurationManager;
     }
 
-    public void addRequiredStartAction(CompletableFuture<?> future)
+    public void addRequiredStartAction(ActorFuture<?> future)
     {
         requiredStartActions.add(future);
     }

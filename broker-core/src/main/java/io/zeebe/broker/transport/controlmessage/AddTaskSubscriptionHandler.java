@@ -25,11 +25,10 @@ import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.transport.ServerOutput;
+import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
-
-import java.util.concurrent.CompletableFuture;
 
 public class AddTaskSubscriptionHandler implements ControlMessageHandler
 {
@@ -54,7 +53,7 @@ public class AddTaskSubscriptionHandler implements ControlMessageHandler
     }
 
     @Override
-    public ActorFuture<Void> handle(int partitionId, DirectBuffer buffer, BrokerEventMetadata eventMetada)
+    public ActorFuture<Void> handle(ActorControl actor, int partitionId, DirectBuffer buffer, BrokerEventMetadata eventMetada)
     {
         final CompletableActorFuture<Void> completableActorFuture = new CompletableActorFuture<>();
         request.reset();
@@ -67,9 +66,9 @@ public class AddTaskSubscriptionHandler implements ControlMessageHandler
                 request.getLockDuration(), request.getLockOwner(), requestStreamId);
         taskSubscription.setCredits(request.getCredits());
 
-        final CompletableFuture<Void> future = manager.addSubscription(taskSubscription);
+        final ActorFuture<Void> future = manager.addSubscription(taskSubscription);
 
-        future.handle((v, failure) ->
+        actor.runOnCompletion(future, (v, failure) ->
         {
             if (failure == null)
             {
@@ -91,8 +90,8 @@ public class AddTaskSubscriptionHandler implements ControlMessageHandler
                 completableActorFuture.completeExceptionally(failure);
                 // TODO: proper back pressure
             }
-            return null;
         });
+
         return completableActorFuture;
     }
 

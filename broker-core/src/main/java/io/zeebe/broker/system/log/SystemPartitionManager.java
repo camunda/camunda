@@ -29,9 +29,9 @@ import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerTransport;
+import io.zeebe.util.sched.future.ActorFuture;
 
 import java.time.Duration;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class SystemPartitionManager implements Service<SystemPartitionManager>
@@ -207,7 +207,7 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
         return this;
     }
 
-    public CompletableFuture<Void> sendPartitions(int requestStream, long request)
+    public ActorFuture<Void> sendPartitions(int requestStream, long request)
     {
         final PartitionResponder responder = partitionResponderRef.get();
 
