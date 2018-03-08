@@ -6,7 +6,7 @@ def backendModuleName = "backend"
 def startElasticsearch() {
   stopAllOptimizeComponents()
   script {
-    sh 'sh ./.ci/scripts/start-es.sh'
+    sh 'sh ./.ci/scripts/start-es-performance.sh'
   }
 }
 
