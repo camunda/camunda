@@ -48,7 +48,6 @@ import io.zeebe.msgpack.mapping.*;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
-import io.zeebe.util.actor.Actor;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.LongArrayList;
@@ -147,12 +146,6 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             workflowDeploymentCache.getKeyPositionSnapshot(),
             payloadCache.getSnapshotSupport());
 
-    }
-
-    @Override
-    public int getPriority(long now)
-    {
-        return Actor.PRIORITY_HIGH;
     }
 
     @Override

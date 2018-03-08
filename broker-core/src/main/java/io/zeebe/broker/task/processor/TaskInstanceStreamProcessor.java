@@ -42,7 +42,6 @@ import io.zeebe.logstreams.processor.StreamProcessorContext;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.clientapi.SubscriptionType;
-import io.zeebe.util.actor.Actor;
 import io.zeebe.util.buffer.BufferUtil;
 
 public class TaskInstanceStreamProcessor implements StreamProcessor
@@ -87,12 +86,6 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         this.taskSubscriptionManager = taskSubscriptionManager;
 
         this.taskIndex = new TaskInstanceMap();
-    }
-
-    @Override
-    public int getPriority(long now)
-    {
-        return Actor.PRIORITY_HIGH;
     }
 
     @Override

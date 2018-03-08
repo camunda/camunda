@@ -359,11 +359,6 @@ public class TestStreams
             }
         }
 
-        @Override
-        public int getPriority(long now)
-        {
-            return wrappedProcessor.getPriority(now);
-        }
     }
 
     public static class FluentLogWriter

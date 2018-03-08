@@ -39,8 +39,6 @@ import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.ServerOutput;
-import io.zeebe.util.actor.ActorScheduler;
-import io.zeebe.util.actor.ActorSchedulerBuilder;
 import io.zeebe.util.buffer.BufferUtil;
 
 public class TypedStreamProcessorTest
@@ -66,9 +64,6 @@ public class TypedStreamProcessorTest
     public void setUp()
     {
         MockitoAnnotations.initMocks(this);
-
-        final ActorScheduler scheduler = ActorSchedulerBuilder.createDefaultScheduler("foo");
-        closeables.manage(scheduler);
 
         streams = new TestStreams(tempFolder.getRoot(), closeables, actorSchedulerRule.get());
 
