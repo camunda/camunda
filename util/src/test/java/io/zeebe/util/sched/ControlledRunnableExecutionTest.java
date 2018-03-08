@@ -61,6 +61,7 @@ public class ControlledRunnableExecutionTest
         final Runner runner = new Runner();
         final Actor invoker = new Actor()
         {
+            @Override
             protected void onActorStarted()
             {
                 runner.doRun();
@@ -86,6 +87,7 @@ public class ControlledRunnableExecutionTest
 
         final Actor invoker = new Actor()
         {
+            @Override
             protected void onActorStarted()
             {
                 runner.doRun();
@@ -100,18 +102,6 @@ public class ControlledRunnableExecutionTest
 
         // then
         assertThat(actorContext).containsExactly(runner);
-    }
-
-    @Test
-    public void shouldNotInvokeRunFromOutside()
-    {
-        // given
-        final Runner runner = new Runner();
-
-        // when/then
-        assertThatThrownBy(() -> runner.doRun())
-            .isInstanceOf(UnsupportedOperationException.class)
-            .hasMessage("Incorrect usage of actor. run(...): must be called from actor thread");
     }
 
     class Runner extends Actor
