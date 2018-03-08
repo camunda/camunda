@@ -43,12 +43,12 @@ import io.zeebe.transport.TransportListener;
 import io.zeebe.util.allocation.HeapBufferAllocator;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.collection.CompactList;
-import io.zeebe.util.sched.ZbActor;
+import io.zeebe.util.sched.Actor;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.collections.Long2ObjectHashMap;
 
-public class TaskSubscriptionManager extends ZbActor implements TransportListener
+public class TaskSubscriptionManager extends Actor implements TransportListener
 {
     protected static final String NAME = "taskqueue.subscription.manager";
     public static final int NUM_CONCURRENT_REQUESTS = 1_024;

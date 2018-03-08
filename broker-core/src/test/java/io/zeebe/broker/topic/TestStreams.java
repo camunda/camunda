@@ -61,14 +61,14 @@ public class TestStreams
 
     protected Map<String, LogStream> managedLogs = new HashMap<>();
 
-    protected ZbActorScheduler actorScheduler;
+    protected ActorScheduler actorScheduler;
 
     protected SnapshotStorage snapshotStorage;
 
     public TestStreams(
         File storageDirectory,
         AutoCloseableRule closeables,
-        ZbActorScheduler actorScheduler)
+        ActorScheduler actorScheduler)
     {
         this.storageDirectory = storageDirectory;
         this.closeables = closeables;
@@ -87,7 +87,7 @@ public class TestStreams
         logStream.open();
         logStream.openLogStreamController().join();
 
-        actorScheduler.submitActor(new ZbActor()
+        actorScheduler.submitActor(new Actor()
         {
             @Override
             protected void onActorStarted()

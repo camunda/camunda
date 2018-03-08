@@ -26,25 +26,25 @@ import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.transport.ServerOutput;
-import io.zeebe.util.sched.ZbActor;
-import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
 
-public class RequestTopologyHandler extends ZbActor implements ControlMessageHandler
+public class RequestTopologyHandler extends Actor implements ControlMessageHandler
 {
     protected final ClusterManager clusterManager;
     protected final ControlMessageResponseWriter responseWriter;
     protected final ErrorResponseWriter errorResponseWriter;
-    private final ZbActorScheduler actorScheduler;
+    private final ActorScheduler actorScheduler;
 
     private ActorFuture<Topology> topologyActorFuture;
     private CompletableActorFuture<Void> completableFuture;
     private DirectBuffer requestBuffer;
     private BrokerEventMetadata metadata;
 
-    public RequestTopologyHandler(ZbActorScheduler actorScheduler, final ServerOutput ouput, final ClusterManager clusterManager)
+    public RequestTopologyHandler(ActorScheduler actorScheduler, final ServerOutput ouput, final ClusterManager clusterManager)
     {
         this.clusterManager = clusterManager;
         this.responseWriter = new ControlMessageResponseWriter(ouput);

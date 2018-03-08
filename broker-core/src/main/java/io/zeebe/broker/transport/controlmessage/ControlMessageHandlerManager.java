@@ -32,8 +32,8 @@ import io.zeebe.protocol.clientapi.*;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerResponse;
-import io.zeebe.util.sched.ZbActor;
-import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
@@ -41,13 +41,13 @@ import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
-public class ControlMessageHandlerManager extends ZbActor implements FragmentHandler
+public class ControlMessageHandlerManager extends Actor implements FragmentHandler
 {
     public static final Logger LOG = Loggers.TRANSPORT_LOGGER;
 
     protected static final String NAME = "control.message.handler";
 
-    protected final ZbActorScheduler actorScheduler;
+    protected final ActorScheduler actorScheduler;
     private ControlMessageType lastRequestMessageType;
 
     protected final ControlMessageRequestHeaderDescriptor requestHeaderDescriptor = new ControlMessageRequestHeaderDescriptor();
@@ -70,7 +70,7 @@ public class ControlMessageHandlerManager extends ZbActor implements FragmentHan
             ServerOutput output,
             Dispatcher controlMessageDispatcher,
             long requestTimeoutInMillis,
-            ZbActorScheduler actorScheduler,
+            ActorScheduler actorScheduler,
             List<ControlMessageHandler> handlers)
     {
         this.actorScheduler = actorScheduler;

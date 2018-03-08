@@ -43,7 +43,7 @@ import io.zeebe.transport.ClientTransportBuilder;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.Transports;
-import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ActorClock;
 
 public class ZeebeClientImpl implements ZeebeClient
@@ -63,7 +63,7 @@ public class ZeebeClientImpl implements ZeebeClient
 
     protected Dispatcher dataFrameReceiveBuffer;
     protected Dispatcher sendBuffer;
-    protected ZbActorScheduler scheduler;
+    protected ActorScheduler scheduler;
 
     protected ClientTransport transport;
 
@@ -99,11 +99,11 @@ public class ZeebeClientImpl implements ZeebeClient
         final int sendBufferSize = Integer.parseInt(properties.getProperty(CLIENT_SENDBUFFER_SIZE));
 
         final int numSchedulerThreads = Integer.parseInt(properties.getProperty(ClientProperties.CLIENT_MANAGEMENT_THREADS));
-        this.scheduler = ZbActorScheduler.newActorScheduler()
-            .setCpuBoundActorThreadCount(numSchedulerThreads)
-            .setIoBoundActorThreadCount(0)
-            .setActorClock(actorClock)
-            .build();
+        this.scheduler = ActorScheduler.newActorScheduler()
+                                       .setCpuBoundActorThreadCount(numSchedulerThreads)
+                                       .setIoBoundActorThreadCount(0)
+                                       .setActorClock(actorClock)
+                                       .build();
         this.scheduler.start();
 
         dataFrameReceiveBuffer = Dispatchers.create("receive-buffer")
@@ -257,7 +257,7 @@ public class ZeebeClientImpl implements ZeebeClient
         return objectMapper.getMsgPackConverter();
     }
 
-    public ZbActorScheduler getScheduler()
+    public ActorScheduler getScheduler()
     {
         return scheduler;
     }

@@ -23,11 +23,11 @@ import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
-import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.ActorScheduler;
 
 public class DispatcherService implements Service<Dispatcher>
 {
-    protected final Injector<ZbActorScheduler> actorSchedulerInjector = new Injector<>();
+    protected final Injector<ActorScheduler> actorSchedulerInjector = new Injector<>();
     protected final Injector<Counters> countersInjector = new Injector<>();
 
     protected DispatcherBuilder dispatcherBuilder;
@@ -63,7 +63,7 @@ public class DispatcherService implements Service<Dispatcher>
         return dispatcher;
     }
 
-    public Injector<ZbActorScheduler> getActorSchedulerInjector()
+    public Injector<ActorScheduler> getActorSchedulerInjector()
     {
         return actorSchedulerInjector;
     }

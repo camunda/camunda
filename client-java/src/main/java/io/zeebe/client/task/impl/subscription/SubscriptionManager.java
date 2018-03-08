@@ -37,11 +37,11 @@ import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.transport.ClientInputMessageSubscription;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.TransportListener;
-import io.zeebe.util.sched.ZbActor;
+import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 
-public class SubscriptionManager extends ZbActor implements SubscribedEventHandler, TransportListener
+public class SubscriptionManager extends Actor implements SubscribedEventHandler, TransportListener
 {
     protected static final Logger LOGGER = Loggers.SUBSCRIPTION_LOGGER;
 

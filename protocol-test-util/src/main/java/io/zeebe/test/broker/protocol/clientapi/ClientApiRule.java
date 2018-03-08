@@ -37,7 +37,7 @@ import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.Transports;
-import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import org.agrona.DirectBuffer;
 import org.junit.rules.ExternalResource;
@@ -57,7 +57,7 @@ public class ClientApiRule extends ExternalResource
     protected RawMessageCollector incomingMessageCollector;
 
     private ControlledActorClock controlledActorClock = new ControlledActorClock();
-    private ZbActorScheduler scheduler;
+    private ActorScheduler scheduler;
 
     protected int defaultPartitionId = -1;
     protected boolean createDefaultTopic = true;
@@ -81,10 +81,10 @@ public class ClientApiRule extends ExternalResource
     @Override
     protected void before() throws Throwable
     {
-        scheduler = ZbActorScheduler.newActorScheduler()
-            .setCpuBoundActorThreadCount(1)
-            .setActorClock(controlledActorClock)
-            .build();
+        scheduler = ActorScheduler.newActorScheduler()
+                                  .setCpuBoundActorThreadCount(1)
+                                  .setActorClock(controlledActorClock)
+                                  .build();
         scheduler.start();
 
         sendBuffer = Dispatchers.create("clientSendBuffer")

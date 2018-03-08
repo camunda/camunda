@@ -29,7 +29,7 @@ import io.zeebe.broker.transport.cfg.TransportComponentCfg;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.impl.ServiceContainerImpl;
 import io.zeebe.util.FileUtil;
-import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ActorClock;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.ConcurrentCountersManager;
@@ -52,7 +52,7 @@ public class SystemContext implements AutoCloseable
     protected final List<CompletableFuture<?>> requiredStartActions = new ArrayList<>();
 
     protected Map<String, String> diagnosticContext;
-    protected final ZbActorScheduler scheduler;
+    protected final ActorScheduler scheduler;
 
 
     public SystemContext(String configFileLocation, ActorClock clock)
@@ -77,7 +77,7 @@ public class SystemContext implements AutoCloseable
         this.scheduler.start();
     }
 
-    private ZbActorScheduler initScheduler(ActorClock clock)
+    private ActorScheduler initScheduler(ActorClock clock)
     {
         final ThreadingCfg cfg = configurationManager.readEntry("threading", ThreadingCfg.class);
         int numberOfThreads = cfg.numberOfThreads;
@@ -102,12 +102,12 @@ public class SystemContext implements AutoCloseable
         final int ioBoundThreads = 1;
         final int cpuBoundThreads = Math.min(1, numberOfThreads - ioBoundThreads);
 
-        return ZbActorScheduler.newActorScheduler()
-            .setActorClock(clock)
-            .setCountersManager(countersManager)
-            .setCpuBoundActorThreadCount(cpuBoundThreads)
-            .setIoBoundActorThreadCount(ioBoundThreads)
-            .build();
+        return ActorScheduler.newActorScheduler()
+                             .setActorClock(clock)
+                             .setCountersManager(countersManager)
+                             .setCpuBoundActorThreadCount(cpuBoundThreads)
+                             .setIoBoundActorThreadCount(ioBoundThreads)
+                             .build();
     }
 
     protected static String readBrokerId(ConfigurationManager configurationManager)
@@ -118,7 +118,7 @@ public class SystemContext implements AutoCloseable
     }
 
 
-    public ZbActorScheduler getScheduler()
+    public ActorScheduler getScheduler()
     {
         return scheduler;
     }

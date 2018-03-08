@@ -24,12 +24,12 @@ import io.zeebe.broker.system.threads.cfg.ThreadingCfg.BrokerIdleStrategy;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
-import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.ActorScheduler;
 import org.slf4j.Logger;
 
 import java.util.Map;
 
-public class ActorSchedulerService implements Service<ZbActorScheduler>
+public class ActorSchedulerService implements Service<ActorScheduler>
 {
     public static final Logger LOG = Loggers.SYSTEM_LOGGER;
 
@@ -40,7 +40,7 @@ public class ActorSchedulerService implements Service<ZbActorScheduler>
     protected final BrokerIdleStrategy brokerIdleStrategy;
     protected final int maxIdleTimeMs;
 
-    protected ZbActorScheduler scheduler;
+    protected ActorScheduler scheduler;
     protected final Map<String, String> diagnosticContext;
 
     public ActorSchedulerService(Map<String, String> diagnosticContext, ConfigurationManager configurationManager)
@@ -91,7 +91,7 @@ public class ActorSchedulerService implements Service<ZbActorScheduler>
     }
 
     @Override
-    public ZbActorScheduler get()
+    public ActorScheduler get()
     {
         return scheduler;
     }

@@ -23,12 +23,12 @@ import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
-import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.ActorScheduler;
 
 public class LogStreamsManagerService implements Service<LogStreamsManager>
 {
 
-    protected final Injector<ZbActorScheduler> actorSchedulerInjector = new Injector<>();
+    protected final Injector<ActorScheduler> actorSchedulerInjector = new Injector<>();
 
     protected LogStreamsCfg logStreamsCfg;
 
@@ -57,7 +57,7 @@ public class LogStreamsManagerService implements Service<LogStreamsManager>
         return service;
     }
 
-    public Injector<ZbActorScheduler> getActorSchedulerInjector()
+    public Injector<ActorScheduler> getActorSchedulerInjector()
     {
         return actorSchedulerInjector;
     }

@@ -35,7 +35,7 @@ import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.RequestTimeoutException;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.ActorTask;
-import io.zeebe.util.sched.ZbActor;
+import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
@@ -49,7 +49,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public class RequestManager extends ZbActor
+public class RequestManager extends Actor
 {
     protected final ClientOutput output;
     protected final ClientTopologyManager topologyManager;

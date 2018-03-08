@@ -26,13 +26,13 @@ import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.ClientTransportBuilder;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.Transports;
-import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.ActorScheduler;
 
 import java.util.Collection;
 
 public class ClientTransportService implements Service<ClientTransport>
 {
-    protected final Injector<ZbActorScheduler> schedulerInjector = new Injector<>();
+    protected final Injector<ActorScheduler> schedulerInjector = new Injector<>();
     protected final Injector<Dispatcher> receiveBufferInjector = new Injector<>();
     protected final Injector<Dispatcher> sendBufferInjector = new Injector<>();
 
@@ -55,7 +55,7 @@ public class ClientTransportService implements Service<ClientTransport>
 
         final Dispatcher receiveBuffer = receiveBufferInjector.getValue();
         final Dispatcher sendBuffer = sendBufferInjector.getValue();
-        final ZbActorScheduler scheduler = schedulerInjector.getValue();
+        final ActorScheduler scheduler = schedulerInjector.getValue();
 
         final ClientTransportBuilder transportBuilder = Transports.newClientTransport();
 
@@ -95,7 +95,7 @@ public class ClientTransportService implements Service<ClientTransport>
         return receiveBufferInjector;
     }
 
-    public Injector<ZbActorScheduler> getSchedulerInjector()
+    public Injector<ActorScheduler> getSchedulerInjector()
     {
         return schedulerInjector;
     }

@@ -34,12 +34,12 @@ import io.zeebe.transport.ClientOutput;
 import io.zeebe.transport.ClientRequest;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.RemoteAddress;
-import io.zeebe.util.sched.ZbActor;
+import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 
-public class ClientTopologyManager extends ZbActor
+public class ClientTopologyManager extends Actor
 {
     /**
      * Interval in which the topology is refreshed even if the client is idle

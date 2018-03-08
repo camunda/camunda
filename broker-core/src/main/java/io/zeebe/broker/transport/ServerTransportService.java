@@ -23,7 +23,7 @@ import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.transport.*;
-import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.ActorScheduler;
 import org.slf4j.Logger;
 
 import java.net.InetSocketAddress;
@@ -32,7 +32,7 @@ public class ServerTransportService implements Service<ServerTransport>
 {
     public static final Logger LOG = Loggers.TRANSPORT_LOGGER;
 
-    protected final Injector<ZbActorScheduler> schedulerInjector = new Injector<>();
+    protected final Injector<ActorScheduler> schedulerInjector = new Injector<>();
     protected final Injector<Dispatcher> sendBufferInjector = new Injector<>();
     protected final Injector<ServerRequestHandler> requestHandlerInjector = new Injector<>();
     protected final Injector<ServerMessageHandler> messageHandlerInjector = new Injector<>();
@@ -51,7 +51,7 @@ public class ServerTransportService implements Service<ServerTransport>
     @Override
     public void start(ServiceStartContext serviceContext)
     {
-        final ZbActorScheduler scheduler = schedulerInjector.getValue();
+        final ActorScheduler scheduler = schedulerInjector.getValue();
         final Dispatcher sendBuffer = sendBufferInjector.getValue();
         final ServerRequestHandler requestHandler = requestHandlerInjector.getValue();
         final ServerMessageHandler messageHandler = messageHandlerInjector.getValue();
@@ -92,7 +92,7 @@ public class ServerTransportService implements Service<ServerTransport>
         return messageHandlerInjector;
     }
 
-    public Injector<ZbActorScheduler> getSchedulerInjector()
+    public Injector<ActorScheduler> getSchedulerInjector()
     {
         return schedulerInjector;
     }

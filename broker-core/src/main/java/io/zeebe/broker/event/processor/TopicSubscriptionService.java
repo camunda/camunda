@@ -44,19 +44,19 @@ import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerTransport;
 import io.zeebe.transport.TransportListener;
-import io.zeebe.util.sched.ZbActor;
-import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.collections.Int2ObjectHashMap;
 
-public class TopicSubscriptionService extends ZbActor implements Service<TopicSubscriptionService>, TransportListener
+public class TopicSubscriptionService extends Actor implements Service<TopicSubscriptionService>, TransportListener
 {
-    protected final Injector<ZbActorScheduler> actorSchedulerInjector = new Injector<>();
+    protected final Injector<ActorScheduler> actorSchedulerInjector = new Injector<>();
     protected final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
     protected final SubscriptionCfg config;
 
-    protected ZbActorScheduler actorScheduler;
+    protected ActorScheduler actorScheduler;
     protected ServiceStartContext serviceContext;
     protected Int2ObjectHashMap<TopicSubscriptionManagementProcessor> managersByLog = new Int2ObjectHashMap<>();
     protected ServerOutput serverOutput;
@@ -79,7 +79,7 @@ public class TopicSubscriptionService extends ZbActor implements Service<TopicSu
         return this;
     }
 
-    public Injector<ZbActorScheduler> getActorSchedulerInjector()
+    public Injector<ActorScheduler> getActorSchedulerInjector()
     {
         return actorSchedulerInjector;
     }

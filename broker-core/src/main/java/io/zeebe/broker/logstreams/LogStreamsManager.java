@@ -26,7 +26,7 @@ import io.zeebe.broker.logstreams.cfg.LogStreamsCfg;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.fs.FsLogStreamBuilder;
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.ActorScheduler;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 
@@ -34,10 +34,10 @@ import org.agrona.collections.Int2ObjectHashMap;
 public class LogStreamsManager
 {
     protected LogStreamsCfg logStreamsCfg;
-    protected ZbActorScheduler actorScheduler;
+    protected ActorScheduler actorScheduler;
     protected Int2ObjectHashMap<LogStream> logStreams;
 
-    public LogStreamsManager(final LogStreamsCfg logStreamsCfg, final ZbActorScheduler actorScheduler)
+    public LogStreamsManager(final LogStreamsCfg logStreamsCfg, final ActorScheduler actorScheduler)
     {
         this.logStreamsCfg = logStreamsCfg;
         this.actorScheduler = actorScheduler;

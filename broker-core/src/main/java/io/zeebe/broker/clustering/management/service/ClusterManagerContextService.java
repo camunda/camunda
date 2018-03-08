@@ -28,7 +28,7 @@ import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.transport.BufferingServerTransport;
 import io.zeebe.transport.ClientTransport;
-import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.ActorScheduler;
 
 public class ClusterManagerContextService implements Service<ClusterManagerContext>
 {
@@ -36,7 +36,7 @@ public class ClusterManagerContextService implements Service<ClusterManagerConte
     private final Injector<ClientTransport> replicationClientInjector = new Injector<>();
     private final Injector<BufferingServerTransport> managementApiTransportInjector = new Injector<>();
 
-    private final Injector<ZbActorScheduler> actorSchedulerInjector = new Injector<>();
+    private final Injector<ActorScheduler> actorSchedulerInjector = new Injector<>();
     private final Injector<LogStreamsManager> logStreamsManagerInjector = new Injector<>();
     private final Injector<WorkflowRequestMessageHandler> workflowRequestMessageHandlerInjector = new Injector<>();
     private final Injector<MemberListService> memberListServiceInjector = new Injector<>();
@@ -49,7 +49,7 @@ public class ClusterManagerContextService implements Service<ClusterManagerConte
     {
         final ClientTransport clientTransport = managementClientInjector.getValue();
         final BufferingServerTransport serverTransport = managementApiTransportInjector.getValue();
-        final ZbActorScheduler actorScheduler = actorSchedulerInjector.getValue();
+        final ActorScheduler actorScheduler = actorSchedulerInjector.getValue();
         final LogStreamsManager logStreamsManager = logStreamsManagerInjector.getValue();
         final WorkflowRequestMessageHandler workflowRequestMessageHandler = workflowRequestMessageHandlerInjector.getValue();
 
@@ -85,7 +85,7 @@ public class ClusterManagerContextService implements Service<ClusterManagerConte
         return gossipInjector;
     }
 
-    public Injector<ZbActorScheduler> getActorSchedulerInjector()
+    public Injector<ActorScheduler> getActorSchedulerInjector()
     {
         return actorSchedulerInjector;
     }

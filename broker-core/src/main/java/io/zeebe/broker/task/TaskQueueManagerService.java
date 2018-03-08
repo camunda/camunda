@@ -35,8 +35,8 @@ import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.processor.StreamProcessorController;
 import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.ServerTransport;
-import io.zeebe.util.sched.ZbActor;
-import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.ActorScheduler;
 
 public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQueueManager
 {
@@ -45,14 +45,14 @@ public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQ
 
     protected final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
     protected final Injector<TaskSubscriptionManager> taskSubscriptionManagerInjector = new Injector<>();
-    protected final Injector<ZbActorScheduler> actorSchedulerInjector = new Injector<>();
+    protected final Injector<ActorScheduler> actorSchedulerInjector = new Injector<>();
 
     protected final ServiceGroupReference<LogStream> logStreamsGroupReference = ServiceGroupReference.<LogStream>create()
             .onAdd((name, stream) -> addStream(stream))
             .build();
 
     private ServiceStartContext serviceContext;
-    private ZbActorScheduler actorScheduler;
+    private ActorScheduler actorScheduler;
 
     @Override
     public void startTaskQueue(final String logName)
@@ -142,14 +142,14 @@ public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQ
         return logStreamsGroupReference;
     }
 
-    public Injector<ZbActorScheduler> getActorSchedulerInjector()
+    public Injector<ActorScheduler> getActorSchedulerInjector()
     {
         return actorSchedulerInjector;
     }
 
     public void addStream(LogStream logStream)
     {
-        actorScheduler.submitActor(new ZbActor()
+        actorScheduler.submitActor(new Actor()
         {
             @Override
             protected void onActorStarted()

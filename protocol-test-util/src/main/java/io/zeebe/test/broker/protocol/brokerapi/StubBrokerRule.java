@@ -29,7 +29,7 @@ import io.zeebe.test.util.collection.MapFactoryBuilder;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.ServerTransport;
 import io.zeebe.transport.Transports;
-import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import org.junit.rules.ExternalResource;
 
@@ -53,7 +53,7 @@ public class StubBrokerRule extends ExternalResource
 
 
     private ControlledActorClock clock = new ControlledActorClock();
-    protected ZbActorScheduler scheduler;
+    protected ActorScheduler scheduler;
 
     protected final String host;
     protected final int port;
@@ -84,10 +84,10 @@ public class StubBrokerRule extends ExternalResource
         msgPackHelper = new MsgPackHelper();
 
         final int numThreads = 2;
-        scheduler = ZbActorScheduler.newActorScheduler()
-                .setCpuBoundActorThreadCount(numThreads)
-                .setActorClock(clock)
-                .build();
+        scheduler = ActorScheduler.newActorScheduler()
+                                  .setCpuBoundActorThreadCount(numThreads)
+                                  .setActorClock(clock)
+                                  .build();
 
         scheduler.start();
 

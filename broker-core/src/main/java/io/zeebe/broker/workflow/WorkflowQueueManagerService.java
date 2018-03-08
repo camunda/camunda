@@ -36,16 +36,16 @@ import io.zeebe.logstreams.processor.StreamProcessorController;
 import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.ServerTransport;
 import io.zeebe.util.EnsureUtil;
-import io.zeebe.util.sched.ZbActor;
-import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.ActorScheduler;
 
-public class WorkflowQueueManagerService extends ZbActor implements Service<WorkflowQueueManager>, WorkflowQueueManager
+public class WorkflowQueueManagerService extends Actor implements Service<WorkflowQueueManager>, WorkflowQueueManager
 {
     protected static final String NAME = "workflow.queue.manager";
 
     protected final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
     private final Injector<ServerTransport> managementServerInjector = new Injector<>();
-    protected final Injector<ZbActorScheduler> actorSchedulerInjector = new Injector<>();
+    protected final Injector<ActorScheduler> actorSchedulerInjector = new Injector<>();
 
     protected final ServiceGroupReference<LogStream> logStreamsGroupReference = ServiceGroupReference.<LogStream>create()
             .onAdd((name, stream) -> addStream(stream, name))
@@ -126,7 +126,7 @@ public class WorkflowQueueManagerService extends ZbActor implements Service<Work
     {
         this.serviceContext = serviceContext;
 
-        final ZbActorScheduler actorScheduler = actorSchedulerInjector.getValue();
+        final ActorScheduler actorScheduler = actorSchedulerInjector.getValue();
         actorScheduler.submitActor(this);
     }
 
@@ -152,7 +152,7 @@ public class WorkflowQueueManagerService extends ZbActor implements Service<Work
         return logStreamsGroupReference;
     }
 
-    public Injector<ZbActorScheduler> getActorSchedulerInjector()
+    public Injector<ActorScheduler> getActorSchedulerInjector()
     {
         return actorSchedulerInjector;
     }

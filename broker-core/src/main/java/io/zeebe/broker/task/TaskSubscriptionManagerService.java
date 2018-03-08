@@ -24,12 +24,12 @@ import io.zeebe.servicecontainer.ServiceGroupReference;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.transport.ServerTransport;
-import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
 
 public class TaskSubscriptionManagerService implements Service<TaskSubscriptionManager>
 {
-    protected final Injector<ZbActorScheduler> actorSchedulerInjector = new Injector<>();
+    protected final Injector<ActorScheduler> actorSchedulerInjector = new Injector<>();
     protected final Injector<ServerTransport> transportInjector = new Injector<>();
 
     protected TaskSubscriptionManager service;
@@ -42,7 +42,7 @@ public class TaskSubscriptionManagerService implements Service<TaskSubscriptionM
     @Override
     public void start(ServiceStartContext startContext)
     {
-        final ZbActorScheduler actorScheduler = actorSchedulerInjector.getValue();
+        final ActorScheduler actorScheduler = actorSchedulerInjector.getValue();
         service = new TaskSubscriptionManager(startContext);
         actorScheduler.submitActor(service);
 
@@ -62,7 +62,7 @@ public class TaskSubscriptionManagerService implements Service<TaskSubscriptionM
         return service;
     }
 
-    public Injector<ZbActorScheduler> getActorSchedulerInjector()
+    public Injector<ActorScheduler> getActorSchedulerInjector()
     {
         return actorSchedulerInjector;
     }

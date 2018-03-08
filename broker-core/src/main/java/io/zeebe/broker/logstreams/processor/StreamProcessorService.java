@@ -30,7 +30,7 @@ import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
-import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.ActorScheduler;
 
 import java.time.Duration;
 
@@ -38,7 +38,7 @@ public class StreamProcessorService implements Service<StreamProcessorController
 {
     private final Injector<LogStream> logStreamInjector = new Injector<>();
     private final Injector<SnapshotStorage> snapshotStorageInjector = new Injector<>();
-    private final Injector<ZbActorScheduler> actorSchedulerInjector = new Injector<>();
+    private final Injector<ActorScheduler> actorSchedulerInjector = new Injector<>();
 
     private final String name;
     private final int id;
@@ -94,7 +94,7 @@ public class StreamProcessorService implements Service<StreamProcessorController
 
         final SnapshotStorage snapshotStorage = snapshotStorageInjector.getValue();
 
-        final ZbActorScheduler actorScheduler = actorSchedulerInjector.getValue();
+        final ActorScheduler actorScheduler = actorSchedulerInjector.getValue();
 
         MetadataFilter metadataFilter = versionFilter;
         if (customEventFilter != null)
@@ -139,7 +139,7 @@ public class StreamProcessorService implements Service<StreamProcessorController
         return snapshotStorageInjector;
     }
 
-    public Injector<ZbActorScheduler> getActorSchedulerInjector()
+    public Injector<ActorScheduler> getActorSchedulerInjector()
     {
         return actorSchedulerInjector;
     }

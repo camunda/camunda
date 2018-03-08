@@ -33,8 +33,8 @@ import io.zeebe.transport.BufferingServerTransport;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.buffer.BufferUtil;
-import io.zeebe.util.sched.ZbActor;
-import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
 
@@ -45,7 +45,7 @@ import static io.zeebe.broker.clustering.ClusterServiceNames.CLUSTER_MANAGER_SER
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.logStreamServiceName;
 import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
 
-public class RaftService extends ZbActor implements Service<Raft>, RaftStateListener
+public class RaftService extends Actor implements Service<Raft>, RaftStateListener
 {
     private final RaftConfiguration configuration;
     private final SocketAddress socketAddress;
@@ -57,7 +57,7 @@ public class RaftService extends ZbActor implements Service<Raft>, RaftStateList
     private final OnOpenLogStreamListener onOpenLogStreamListener;
     private final ServiceName<Raft> raftServiceName;
 
-    private Injector<ZbActorScheduler> actorSchedulerInjector = new Injector<>();
+    private Injector<ActorScheduler> actorSchedulerInjector = new Injector<>();
     private Injector<BufferingServerTransport> serverTransportInjector = new Injector<>();
     private Injector<ClientTransport> clientTransportInjector = new Injector<>();
     private Raft raft;
@@ -105,7 +105,7 @@ public class RaftService extends ZbActor implements Service<Raft>, RaftStateList
                                 RaftService.this);
 
                 raft.addMembers(members);
-                final ZbActorScheduler actorScheduler = actorSchedulerInjector.getValue();
+                final ActorScheduler actorScheduler = actorSchedulerInjector.getValue();
                 actorScheduler.submitActor(raft);
 
                 raftServiceOpenFuture.complete(null);
@@ -169,7 +169,7 @@ public class RaftService extends ZbActor implements Service<Raft>, RaftStateList
         return raft;
     }
 
-    public Injector<ZbActorScheduler> getActorSchedulerInjector()
+    public Injector<ActorScheduler> getActorSchedulerInjector()
     {
         return actorSchedulerInjector;
     }

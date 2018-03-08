@@ -26,14 +26,14 @@ import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.transport.BufferingServerTransport;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.SocketAddress;
-import io.zeebe.util.sched.ZbActor;
-import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 
 public class GossipService implements Service<Gossip>
 {
-    private final Injector<ZbActorScheduler> actorSchedulerInjector = new Injector<>();
+    private final Injector<ActorScheduler> actorSchedulerInjector = new Injector<>();
     private final Injector<ClientTransport> clientTransportInjector = new Injector<>();
     private final Injector<BufferingServerTransport> bufferingServerTransportInjector = new Injector<>();
     private final GossipCloseActor closeActor;
@@ -51,7 +51,7 @@ public class GossipService implements Service<Gossip>
     @Override
     public void start(ServiceStartContext startContext)
     {
-        final ZbActorScheduler actorScheduler = actorSchedulerInjector.getValue();
+        final ActorScheduler actorScheduler = actorSchedulerInjector.getValue();
         final SocketAddress host = new SocketAddress(transportComponentCfg.managementApi.getHost(transportComponentCfg.host), transportComponentCfg.managementApi.port);
 
         this.gossip = new Gossip(host, bufferingServerTransportInjector.getValue(),
@@ -75,7 +75,7 @@ public class GossipService implements Service<Gossip>
         return gossip;
     }
 
-    public Injector<ZbActorScheduler> getActorSchedulerInjector()
+    public Injector<ActorScheduler> getActorSchedulerInjector()
     {
         return actorSchedulerInjector;
     }
@@ -91,7 +91,7 @@ public class GossipService implements Service<Gossip>
     }
 
 
-    private final class GossipCloseActor extends ZbActor
+    private final class GossipCloseActor extends Actor
     {
         @Override
         protected void onActorStarted()

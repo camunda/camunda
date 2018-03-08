@@ -49,13 +49,13 @@ import io.zeebe.raft.state.RaftState;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.transport.*;
-import io.zeebe.util.sched.ZbActor;
+import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
-public class ClusterManager extends ZbActor
+public class ClusterManager extends Actor
 {
     private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
     private static final DirectBuffer EMPTY_BUF = new UnsafeBuffer(0, 0);
