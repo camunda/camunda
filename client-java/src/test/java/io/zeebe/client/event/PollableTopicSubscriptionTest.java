@@ -225,8 +225,6 @@ public class PollableTopicSubscriptionTest
     @Test
     public void shouldPollEventsWhileModifyingSubscribers() throws InterruptedException
     {
-        fail("Succeeds, but takes 15 seconds indicating an outtiming request");
-
         // given
         final int subscriberKey = 456;
         broker.stubTopicSubscriptionApi(subscriberKey);
@@ -250,7 +248,7 @@ public class PollableTopicSubscriptionTest
 
         waitUntil(() -> handler.isWaiting());
 
-        // closing the subscriber
+        // closing the subscriber, triggering reopen request
         broker.closeTransport();
 
         waitUntil(() -> subscription.numActiveSubscribers() == 0);
@@ -262,6 +260,12 @@ public class PollableTopicSubscriptionTest
         // then the concurrent modification of subscribers did not affect the poller
         poller.join(Duration.ofSeconds(10).toMillis());
         assertThat(failure.get()).isNull();
+
+        // make the reopen request time out immediately so
+        // that the client can close without waiting for the timeout
+        clientRule.getClock().addTime(Duration.ofSeconds(60));
+
+
     }
 
     private Stream<ExecuteCommandRequest> receivedAckRequests()
