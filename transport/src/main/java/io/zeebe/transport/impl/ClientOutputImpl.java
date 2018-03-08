@@ -28,7 +28,7 @@ import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.TransportMessage;
 import io.zeebe.transport.impl.actor.ClientConductor;
 import io.zeebe.util.buffer.BufferWriter;
-import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 
@@ -38,11 +38,11 @@ public class ClientOutputImpl implements ClientOutput
     protected final Dispatcher sendBuffer;
     protected final ClientRequestPool requestPool;
     protected final Duration defaultRequestRetryTimeout;
-    protected final ZbActorScheduler scheduler;
+    protected final ActorScheduler scheduler;
 
     public ClientOutputImpl(
             ClientConductor conductor,
-            ZbActorScheduler scheduler,
+            ActorScheduler scheduler,
             Dispatcher sendBuffer,
             ClientRequestPool requestPool,
             Duration defaultRequestRetryTimeout)

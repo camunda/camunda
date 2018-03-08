@@ -32,11 +32,11 @@ import io.zeebe.transport.RequestTimeoutException;
 import io.zeebe.transport.impl.actor.ClientConductor;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.buffer.DirectBufferWriter;
-import io.zeebe.util.sched.ZbActor;
+import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 
-public class ClientRequestRetryController extends ZbActor
+public class ClientRequestRetryController extends Actor
 {
     private static final Duration RESUBMIT_TIMEOUT = Duration.ofMillis(1);
 

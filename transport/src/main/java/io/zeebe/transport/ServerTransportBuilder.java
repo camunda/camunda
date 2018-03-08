@@ -22,7 +22,7 @@ import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.transport.impl.*;
 import io.zeebe.transport.impl.actor.*;
-import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.ActorScheduler;
 
 public class ServerTransportBuilder
 {
@@ -30,7 +30,7 @@ public class ServerTransportBuilder
 
     private Dispatcher sendBuffer;
     private ServerOutput output;
-    private ZbActorScheduler scheduler;
+    private ActorScheduler scheduler;
     private InetSocketAddress bindAddress;
     protected FragmentHandler receiveHandler;
     protected RemoteAddressListImpl remoteAddressList;
@@ -42,7 +42,7 @@ public class ServerTransportBuilder
         return this;
     }
 
-    public ServerTransportBuilder scheduler(ZbActorScheduler scheduler)
+    public ServerTransportBuilder scheduler(ActorScheduler scheduler)
     {
         this.scheduler = scheduler;
         return this;

@@ -18,10 +18,10 @@ package io.zeebe.transport.impl.actor;
 import io.zeebe.transport.impl.TransportChannel;
 import io.zeebe.transport.impl.TransportContext;
 import io.zeebe.transport.impl.selector.ReadTransportPoller;
-import io.zeebe.util.sched.ZbActor;
+import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
 
-public class Receiver extends ZbActor
+public class Receiver extends Actor
 {
     protected final ReadTransportPoller transportPoller;
     private String name;

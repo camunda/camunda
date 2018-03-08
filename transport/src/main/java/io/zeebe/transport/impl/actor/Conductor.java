@@ -20,7 +20,7 @@ import io.zeebe.transport.TransportListener;
 import io.zeebe.transport.impl.*;
 import io.zeebe.transport.impl.TransportChannel.ChannelLifecycleListener;
 import io.zeebe.util.sched.ActorThread;
-import io.zeebe.util.sched.ZbActor;
+import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.slf4j.Logger;
@@ -30,7 +30,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public abstract class Conductor extends ZbActor implements ChannelLifecycleListener
+public abstract class Conductor extends Actor implements ChannelLifecycleListener
 {
     private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
 

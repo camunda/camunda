@@ -22,7 +22,7 @@ import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.transport.impl.*;
 import io.zeebe.transport.impl.actor.*;
-import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.ActorScheduler;
 
 public class ClientTransportBuilder
 {
@@ -38,13 +38,13 @@ public class ClientTransportBuilder
 
     protected Dispatcher receiveBuffer;
     private Dispatcher sendBuffer;
-    private ZbActorScheduler scheduler;
+    private ActorScheduler scheduler;
     protected List<ClientInputListener> listeners;
     protected TransportChannelFactory channelFactory;
 
     protected Duration defaultRequestRetryTimeout = Duration.ofSeconds(15);
 
-    public ClientTransportBuilder scheduler(ZbActorScheduler scheduler)
+    public ClientTransportBuilder scheduler(ActorScheduler scheduler)
     {
         this.scheduler = scheduler;
         return this;

@@ -22,12 +22,12 @@ import java.util.Iterator;
 import io.zeebe.dispatcher.*;
 import io.zeebe.transport.NotConnectedException;
 import io.zeebe.transport.impl.*;
-import io.zeebe.util.sched.ZbActor;
+import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 
-public class Sender extends ZbActor
+public class Sender extends Actor
 {
     private static final String SUBSCRIPTION_NAME = "sender";
     private static final String NOT_CONNECTED_ERROR = "No available channel for remote";

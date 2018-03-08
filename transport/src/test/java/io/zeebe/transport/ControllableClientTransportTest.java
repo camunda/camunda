@@ -36,7 +36,7 @@ import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.buffer.DirectBufferWriter;
-import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import io.zeebe.util.time.ClockUtil;
 
@@ -162,7 +162,7 @@ public class ControllableClientTransportTest
 
     protected ServerTransport buildServerTransport(Function<ServerTransportBuilder, ServerTransport> builderConsumer)
     {
-        final ZbActorScheduler serverScheduler = ZbActorScheduler.newDefaultActorScheduler();
+        final ActorScheduler serverScheduler = ActorScheduler.newDefaultActorScheduler();
         closeables.manage(() ->
         {
             serverScheduler.stop().get();
