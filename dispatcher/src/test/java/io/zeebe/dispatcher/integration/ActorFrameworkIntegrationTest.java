@@ -20,7 +20,7 @@ import java.util.Iterator;
 import java.util.concurrent.CountDownLatch;
 
 import io.zeebe.dispatcher.*;
-import io.zeebe.util.sched.ZbActor;
+import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -32,7 +32,7 @@ public class ActorFrameworkIntegrationTest
     @Rule
     public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3);
 
-    class Consumer extends ZbActor implements FragmentHandler
+    class Consumer extends Actor implements FragmentHandler
     {
         final Dispatcher dispatcher;
         Subscription subscription;
@@ -71,7 +71,7 @@ public class ActorFrameworkIntegrationTest
         }
     }
 
-    class PeekingConsumer extends ZbActor implements FragmentHandler
+    class PeekingConsumer extends Actor implements FragmentHandler
     {
         final Dispatcher dispatcher;
         Subscription subscription;
@@ -133,7 +133,7 @@ public class ActorFrameworkIntegrationTest
     }
 
 
-    class Producer extends ZbActor
+    class Producer extends Actor
     {
         final CountDownLatch latch = new CountDownLatch(1);
 
@@ -178,7 +178,7 @@ public class ActorFrameworkIntegrationTest
     }
 
 
-    class ClaimingProducer extends ZbActor
+    class ClaimingProducer extends Actor
     {
         final CountDownLatch latch = new CountDownLatch(1);
 

@@ -27,7 +27,7 @@ import io.zeebe.dispatcher.impl.log.LogBuffer;
 import io.zeebe.dispatcher.impl.log.LogBufferAppender;
 import io.zeebe.util.EnsureUtil;
 import io.zeebe.util.allocation.*;
-import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.ActorScheduler;
 import org.agrona.BitUtil;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -55,7 +55,7 @@ public class DispatcherBuilder
 
     protected AtomicBuffer countersBuffer;
 
-    protected ZbActorScheduler actorScheduler;
+    protected ActorScheduler actorScheduler;
 
     protected String[] subscriptionNames;
 
@@ -109,7 +109,7 @@ public class DispatcherBuilder
         return this;
     }
 
-    public DispatcherBuilder actorScheduler(ZbActorScheduler actorScheduler)
+    public DispatcherBuilder actorScheduler(ActorScheduler actorScheduler)
     {
         this.actorScheduler = actorScheduler;
         return this;

@@ -32,7 +32,7 @@ import org.agrona.concurrent.status.Position;
  * Component for sending and receiving messages between different threads.
  *
  */
-public class Dispatcher extends ZbActor implements AutoCloseable
+public class Dispatcher extends Actor implements AutoCloseable
 {
     public static final int MODE_PUB_SUB = 1;
     public static final int MODE_PIPELINE = 2;
