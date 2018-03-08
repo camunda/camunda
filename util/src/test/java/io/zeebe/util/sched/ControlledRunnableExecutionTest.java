@@ -16,15 +16,13 @@
 package io.zeebe.util.sched;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 import org.junit.Rule;
 import org.junit.Test;
-
-import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 
 public class ControlledRunnableExecutionTest
 {
