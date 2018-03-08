@@ -5,8 +5,6 @@ import './Footer.css';
 
 import {getImportProgress, getConnectionStatus} from './service';
 
-import {getToken} from 'credentials';
-
 export default class Footer extends React.Component {
   constructor(props) {
     super(props);
@@ -87,7 +85,7 @@ export default class Footer extends React.Component {
       );
     }
 
-    return getToken() ? (
+    return (
       <footer className="Footer">
         {statusFragment}
         <div className="Footer__content">
@@ -97,8 +95,6 @@ export default class Footer extends React.Component {
           </div>
         </div>
       </footer>
-    ) : (
-      ''
     );
   }
 }

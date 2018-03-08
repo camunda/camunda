@@ -5,12 +5,10 @@ import {Logo} from 'components';
 import HeaderNav from './HeaderNav';
 import LogoutButton from './LogoutButton';
 
-import {getToken} from 'credentials';
-
 import './Header.css';
 
 export default function Header({name}) {
-  return getToken() ? (
+  return (
     <header role="banner" className="Header">
       <Link to="/" className="Header__link" title={name}>
         <Logo className="Header__logo" />
@@ -24,7 +22,5 @@ export default function Header({name}) {
       </HeaderNav>
       <LogoutButton />
     </header>
-  ) : (
-    ''
   );
 }

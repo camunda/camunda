@@ -53,6 +53,7 @@
     "node-sass-chokidar": "^0.0.3",
     "npm-run-all": "^4.1.2",
     "prettier": "1.11.1",
+    "react-router": "^4.2.0",
     "react-scripts": "1.0.14",
     "request": "^2.83.0",
     "shelljs": "^0.7.8",
