@@ -81,8 +81,15 @@ const sampleReport = {
   lastModified: '2017-11-11T11:11:11.1111+0200'
 };
 
+const reportResult = {
+  data: {
+    visualization: 'table'
+  },
+  result: [1, 2, 3]
+};
+
 loadSingleReport.mockReturnValue(sampleReport);
-getReportData.mockReturnValue('some report data');
+getReportData.mockReturnValue(reportResult);
 loadProcessDefinitionXml.mockReturnValue('some xml');
 
 beforeEach(() => {
@@ -112,6 +119,7 @@ it('should display the key properties of a report', () => {
 
   node.setState({
     loaded: true,
+    reportResult,
     ...sampleReport
   });
 
@@ -122,7 +130,7 @@ it('should display the key properties of a report', () => {
 
 it('should provide a link to edit mode in view mode', () => {
   const node = mount(<Report {...props} />);
-  node.setState({loaded: true});
+  node.setState({loaded: true, reportResult});
 
   expect(node.find('.Report__edit-button')).toBePresent();
 });
@@ -130,7 +138,8 @@ it('should provide a link to edit mode in view mode', () => {
 it('should open a deletion modal on delete button click', async () => {
   const node = mount(<Report {...props} />);
   node.setState({
-    loaded: true
+    loaded: true,
+    reportResult
   });
 
   await node
@@ -145,6 +154,7 @@ it('should remove a report when delete button is clicked', () => {
   const node = mount(<Report {...props} />);
   node.setState({
     loaded: true,
+    reportResult,
     deleteModalVisible: true
   });
 
@@ -160,6 +170,7 @@ it('should redirect to the report list on report deletion', async () => {
   const node = mount(<Report {...props} />);
   node.setState({
     loaded: true,
+    reportResult,
     deleteModalVisible: true
   });
 
@@ -173,7 +184,7 @@ it('should redirect to the report list on report deletion', async () => {
 
 it('should contain a ReportView with the report evaluation result', () => {
   const node = mount(<Report {...props} />);
-  node.setState({loaded: true});
+  node.setState({loaded: true, reportResult});
 
   expect(node).toIncludeText('ReportView');
 });
@@ -182,14 +193,14 @@ it('should contain a Control Panel in edit mode', () => {
   props.match.params.viewMode = 'edit';
 
   const node = mount(<Report {...props} />);
-  node.setState({loaded: true});
+  node.setState({loaded: true, reportResult});
 
   expect(node).toIncludeText('ControlPanel');
 });
 
 it('should not contain a Control Panel in non-edit mode', () => {
   const node = mount(<Report {...props} />);
-  node.setState({loaded: true});
+  node.setState({loaded: true, reportResult});
 
   expect(node).not.toIncludeText('ControlPanel');
 });
@@ -249,7 +260,7 @@ it('should save a changed report', async () => {
 
 it('should show a modal on share button click', () => {
   const node = mount(<Report {...props} />);
-  node.setState({loaded: true});
+  node.setState({loaded: true, reportResult});
 
   node
     .find('.Report__share-button')
@@ -261,7 +272,7 @@ it('should show a modal on share button click', () => {
 
 it('should hide the modal on close button click', () => {
   const node = mount(<Report {...props} />);
-  node.setState({loaded: true, modalVisible: true});
+  node.setState({loaded: true, modalVisible: true, reportResult});
 
   node
     .find('.Report__close-share-modal-button')
@@ -269,6 +280,37 @@ it('should hide the modal on close button click', () => {
     .simulate('click');
 
   expect(node.find('.Report__share-modal').first()).toHaveProp('open', false);
+});
+
+it('should show a download csv button with the correct link when report is a table', () => {
+  const node = mount(<Report {...props} />);
+  node.setState({loaded: true, reportResult, ...sampleReport});
+
+  expect(node.find('.Report__csv-download-button')).toBePresent();
+
+  const href = node
+    .find('.Report__csv-download-button')
+    .getDOMNode()
+    .getAttribute('href');
+
+  expect(href).toContain(props.match.params.id);
+  expect(href).toContain(sampleReport.name);
+});
+
+it('should not show a csv download button when report is not a table', () => {
+  const node = mount(<Report {...props} />);
+  node.setState({
+    loaded: true,
+    reportResult: {
+      data: {
+        visualization: 'someOtherVis'
+      },
+      result: [1, 2, 3]
+    },
+    ...sampleReport
+  });
+
+  expect(node.find('.Report__csv-download-button')).not.toBePresent();
 });
 
 describe('edit mode', async () => {

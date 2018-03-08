@@ -202,6 +202,14 @@ export default class Report extends React.Component {
     });
   };
 
+  shouldShowCSVDownload = () => {
+    const {data, result} = this.state.reportResult;
+
+    return data.visualization === 'table' && result && Object.keys(result).length > 0;
+  };
+
+  constructCSVDownloadLink = () => `/api/export/csv/${this.id}/${this.state.name}.csv`;
+
   renderEditMode = () => {
     const {name, lastModifier, lastModified, data, reportResult} = this.state;
     return (
@@ -285,6 +293,14 @@ export default class Report extends React.Component {
             >
               Share
             </Button>
+            {this.shouldShowCSVDownload() && (
+              <a
+                className="Report__tool-button Report__csv-download-button"
+                href={this.constructCSVDownloadLink()}
+              >
+                <Button>Download CSV</Button>
+              </a>
+            )}
           </div>
         </div>
         <Modal
