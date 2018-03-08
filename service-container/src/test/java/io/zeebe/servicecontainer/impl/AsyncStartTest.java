@@ -15,12 +15,16 @@
  */
 package io.zeebe.servicecontainer.impl;
 
+import static io.zeebe.servicecontainer.impl.ActorFutureAssertions.assertCompleted;
+import static io.zeebe.servicecontainer.impl.ActorFutureAssertions.assertFailed;
+import static io.zeebe.servicecontainer.impl.ActorFutureAssertions.assertNotCompleted;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 import java.util.concurrent.CompletableFuture;
 
 import io.zeebe.servicecontainer.*;
+import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 import org.junit.*;
 
@@ -52,8 +56,8 @@ public class AsyncStartTest
         final AsyncStartService service = new AsyncStartService();
         service.future = new CompletableFuture<>();
 
-        final CompletableFuture<Void> startFuture = serviceContainer.createService(service1Name, service)
-            .install();
+        final ActorFuture<Void> startFuture = serviceContainer.createService(service1Name, service)
+                                                              .install();
         actorSchedulerRule.workUntilDone();
 
         // then
@@ -67,8 +71,8 @@ public class AsyncStartTest
         final AsyncStartService service = new AsyncStartService();
         service.future = new CompletableFuture<Void>();
 
-        final CompletableFuture<Void> startFuture = serviceContainer.createService(service1Name, service)
-            .install();
+        final ActorFuture<Void> startFuture = serviceContainer.createService(service1Name, service)
+                                                              .install();
         actorSchedulerRule.workUntilDone();
         assertNotCompleted(startFuture);
 
@@ -88,8 +92,8 @@ public class AsyncStartTest
         final AsyncStartService service = new AsyncStartService();
         service.future = new CompletableFuture<Void>();
 
-        final CompletableFuture<Void> startFuture = serviceContainer.createService(service1Name, service)
-            .install();
+        final ActorFuture<Void> startFuture = serviceContainer.createService(service1Name, service)
+                                                              .install();
         actorSchedulerRule.workUntilDone();
 
         // when
@@ -108,8 +112,8 @@ public class AsyncStartTest
         final AsyncStartService service = new AsyncStartService();
         service.future = new CompletableFuture<>();
 
-        final CompletableFuture<Void> startFuture = serviceContainer.createService(service1Name, service)
-            .install();
+        final ActorFuture<Void> startFuture = serviceContainer.createService(service1Name, service)
+                                                              .install();
         actorSchedulerRule.workUntilDone();
 
         // then
@@ -124,8 +128,8 @@ public class AsyncStartTest
         final Runnable mockAction = mock(Runnable.class);
         service.action = mockAction;
 
-        final CompletableFuture<Void> startFuture = serviceContainer.createService(service1Name, service)
-            .install();
+        final ActorFuture<Void> startFuture = serviceContainer.createService(service1Name, service)
+                                                              .install();
         actorSchedulerRule.workUntilDone();
 
         // then
@@ -140,8 +144,8 @@ public class AsyncStartTest
         final Runnable mockAction = mock(Runnable.class);
         service.action = mockAction;
 
-        final CompletableFuture<Void> startFuture = serviceContainer.createService(service1Name, service)
-            .install();
+        final ActorFuture<Void> startFuture = serviceContainer.createService(service1Name, service)
+                                                              .install();
         actorSchedulerRule.workUntilDone();
         actorSchedulerRule.awaitBlockingTasksCompleted(1);
 
@@ -165,8 +169,8 @@ public class AsyncStartTest
 
         service.action = mockAction;
 
-        final CompletableFuture<Void> startFuture = serviceContainer.createService(service1Name, service)
-            .install();
+        final ActorFuture<Void> startFuture = serviceContainer.createService(service1Name, service)
+                                                              .install();
 
         // when
         actorSchedulerRule.workUntilDone();
@@ -183,8 +187,8 @@ public class AsyncStartTest
         final AsyncStartService service = new AsyncStartService();
         service.future = new CompletableFuture<>();
 
-        final CompletableFuture<Void> startFuture = serviceContainer.createService(service1Name, service)
-            .install();
+        final ActorFuture<Void> startFuture = serviceContainer.createService(service1Name, service)
+                                                              .install();
         actorSchedulerRule.workUntilDone();
 
         // when
@@ -204,8 +208,8 @@ public class AsyncStartTest
         final AsyncStartService service = new AsyncStartService();
         service.future = new CompletableFuture<>();
 
-        final CompletableFuture<Void> startFuture = serviceContainer.createService(service1Name, service)
-            .install();
+        final ActorFuture<Void> startFuture = serviceContainer.createService(service1Name, service)
+                                                              .install();
         actorSchedulerRule.workUntilDone();
 
         // when
@@ -223,11 +227,11 @@ public class AsyncStartTest
         final AsyncStartService service = new AsyncStartService();
         service.future = new CompletableFuture<Void>();
 
-        final CompletableFuture<Void> service1StartFuture = serviceContainer.createService(service1Name, service)
-                .install();
-        final CompletableFuture<Void> service2StartFuture = serviceContainer.createService(service2Name, mock(Service.class))
-                .dependency(service1Name)
-                .install();
+        final ActorFuture<Void> service1StartFuture = serviceContainer.createService(service1Name, service)
+                                                                      .install();
+        final ActorFuture service2StartFuture = serviceContainer.createService(service2Name, mock(Service.class))
+                                                                .dependency(service1Name)
+                                                                .install();
         actorSchedulerRule.workUntilDone();
 
         // then
@@ -242,11 +246,11 @@ public class AsyncStartTest
         final AsyncStartService service = new AsyncStartService();
         service.future = new CompletableFuture<Void>();
 
-        final CompletableFuture<Void> service1StartFuture = serviceContainer.createService(service1Name, service)
-                .install();
-        final CompletableFuture<Void> service2StartFuture = serviceContainer.createService(service2Name, mock(Service.class))
-                .dependency(service1Name)
-                .install();
+        final ActorFuture<Void> service1StartFuture = serviceContainer.createService(service1Name, service)
+                                                                      .install();
+        final ActorFuture service2StartFuture = serviceContainer.createService(service2Name, mock(Service.class))
+                                                                .dependency(service1Name)
+                                                                .install();
         actorSchedulerRule.workUntilDone();
 
         // when
@@ -266,11 +270,11 @@ public class AsyncStartTest
         // given
         final AsyncStartService service = new AsyncStartService();
 
-        final CompletableFuture<Void> service1StartFuture = serviceContainer.createService(service1Name, service)
-                .install();
-        final CompletableFuture<Void> service2StartFuture = serviceContainer.createService(service2Name, mock(Service.class))
-                .dependency(service1Name)
-                .install();
+        final ActorFuture<Void> service1StartFuture = serviceContainer.createService(service1Name, service)
+                                                                      .install();
+        final ActorFuture service2StartFuture = serviceContainer.createService(service2Name, mock(Service.class))
+                                                                .dependency(service1Name)
+                                                                .install();
         actorSchedulerRule.workUntilDone();
 
         // when
@@ -289,12 +293,12 @@ public class AsyncStartTest
         final AsyncStartService service = new AsyncStartService();
         service.future = new CompletableFuture<>();
 
-        final CompletableFuture<Void> service1StartFuture = serviceContainer.createService(service1Name, service)
-                .install();
+        final ActorFuture<Void> service1StartFuture = serviceContainer.createService(service1Name, service)
+                                                                      .install();
         actorSchedulerRule.workUntilDone();
 
         // when
-        final CompletableFuture<Void> removeFuture = serviceContainer.removeService(service1Name);
+        final ActorFuture<Void> removeFuture = serviceContainer.removeService(service1Name);
         actorSchedulerRule.workUntilDone();
 
         // then
@@ -321,13 +325,13 @@ public class AsyncStartTest
         final AsyncStartService service = new AsyncStartService();
         service.future = new CompletableFuture<Void>();
 
-        final CompletableFuture<Void> service1StartFuture = serviceContainer.createService(service1Name, service)
-                .install();
+        final ActorFuture<Void> service1StartFuture = serviceContainer.createService(service1Name, service)
+                                                                      .install();
 
         actorSchedulerRule.workUntilDone();
 
         // when
-        final CompletableFuture<Void> removeFuture = serviceContainer.removeService(service1Name);
+        final ActorFuture<Void> removeFuture = serviceContainer.removeService(service1Name);
         actorSchedulerRule.workUntilDone();
 
         // then
@@ -381,19 +385,5 @@ public class AsyncStartTest
         }
     }
 
-    protected void assertCompleted(CompletableFuture<Void> serviceFuture)
-    {
-        assertThat(serviceFuture).isCompleted();
-    }
-
-    protected void assertNotCompleted(CompletableFuture<Void> serviceFuture)
-    {
-        assertThat(serviceFuture).isNotCompleted();
-    }
-
-    protected void assertFailed(CompletableFuture<Void> serviceFuture)
-    {
-        assertThat(serviceFuture).hasFailed();
-    }
 
 }

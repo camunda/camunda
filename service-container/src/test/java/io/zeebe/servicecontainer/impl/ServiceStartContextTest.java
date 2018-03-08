@@ -15,14 +15,14 @@
  */
 package io.zeebe.servicecontainer.impl;
 
+import static io.zeebe.servicecontainer.impl.ActorFutureAssertions.assertCompleted;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-import java.util.concurrent.CompletableFuture;
-
 import io.zeebe.servicecontainer.*;
 import io.zeebe.util.sched.ActorScheduler;
+import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 import org.junit.Before;
 import org.junit.Rule;
@@ -59,12 +59,12 @@ public class ServiceStartContextTest
         final MockService mockService1 = new MockService();
         final Service<Object> mockService2 = mock(Service.class);
 
-        final CompletableFuture<Void> service1Future = serviceContainer.createService(service1, mockService1).install();
+        final ActorFuture<Void> service1Future = serviceContainer.createService(service1, mockService1).install();
 
         actorSchedulerRule.workUntilDone();
         assertCompleted(service1Future);
 
-        final CompletableFuture<Void> service2Future = mockService1.startContext.createService(service2, mockService2).install();
+        final ActorFuture<Void> service2Future = mockService1.startContext.createService(service2, mockService2).install();
 
         actorSchedulerRule.workUntilDone();
         assertCompleted(service2Future);
@@ -84,7 +84,7 @@ public class ServiceStartContextTest
         mockService1.startContext.createService(service2, mockService2).install();
         actorSchedulerRule.workUntilDone();
 
-        final CompletableFuture<Void> service2Future = mockService1.startContext.removeService(service2);
+        final ActorFuture<Void> service2Future = mockService1.startContext.removeService(service2);
 
         actorSchedulerRule.workUntilDone();
         assertCompleted(service2Future);
@@ -141,11 +141,6 @@ public class ServiceStartContextTest
         // then
         final ActorScheduler providedScheduler = service.startContext.getScheduler();
         assertThat(providedScheduler).isSameAs(actorSchedulerRule.get());
-    }
-
-    protected void assertCompleted(CompletableFuture<Void> serviceFuture)
-    {
-        assertThat(serviceFuture).isCompleted();
     }
 
     class MockService implements Service<Object>

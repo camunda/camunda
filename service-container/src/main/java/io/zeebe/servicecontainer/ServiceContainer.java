@@ -17,6 +17,8 @@ package io.zeebe.servicecontainer;
 
 import java.util.concurrent.*;
 
+import io.zeebe.util.sched.future.ActorFuture;
+
 public interface ServiceContainer
 {
     void start();
@@ -25,9 +27,9 @@ public interface ServiceContainer
 
     <S> ServiceBuilder<S> createService(ServiceName<S> name, Service<S> service);
 
-    CompletableFuture<Void> removeService(ServiceName<?> serviceName);
+    ActorFuture<Void> removeService(ServiceName<?> serviceName);
 
     void close(long awaitTime, TimeUnit timeUnit) throws TimeoutException, ExecutionException, InterruptedException;
 
-    CompletableFuture<Void> closeAsync();
+    ActorFuture<Void> closeAsync();
 }

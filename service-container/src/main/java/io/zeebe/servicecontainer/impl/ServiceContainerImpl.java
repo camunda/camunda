@@ -23,6 +23,8 @@ import io.zeebe.servicecontainer.*;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.channel.ConcurrentQueueChannel;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.slf4j.Logger;
 
@@ -50,7 +52,7 @@ public class ServiceContainerImpl extends Actor implements ServiceContainer
 
     protected final AtomicBoolean isOpenend = new AtomicBoolean(false);
 
-    private final CompletableFuture<Void> containerCloseFuture = new CompletableFuture<>();
+    private final CompletableActorFuture<Void> containerCloseFuture = new CompletableActorFuture<>();
 
     public ServiceContainerImpl(ActorScheduler scheduler)
     {
@@ -109,9 +111,9 @@ public class ServiceContainerImpl extends Actor implements ServiceContainer
         return new ServiceBuilder<>(name, service, this);
     }
 
-    public CompletableFuture<Void> onServiceBuilt(ServiceBuilder<?> serviceBuilder)
+    public ActorFuture<Void> onServiceBuilt(ServiceBuilder<?> serviceBuilder)
     {
-        final CompletableFuture<Void> future = new CompletableFuture<>();
+        final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
 
         actor.call(() ->
         {
@@ -136,23 +138,24 @@ public class ServiceContainerImpl extends Actor implements ServiceContainer
                 final String errorMessage = String.format("Cannot install new service into the contianer, state is '%s'", state);
                 future.completeExceptionally(new IllegalStateException(errorMessage));
             }
+
+            actor.runOnCompletion(future, (r, t) ->
+            {
+                if (t != null)
+                {
+                    LOG.error("Failed to build service", t);
+                }
+            });
         });
 
-        future.whenComplete((r, t) ->
-        {
-            if (t != null)
-            {
-                LOG.error("Failed to build service", t);
-            }
-        });
 
         return future;
     }
 
     @Override
-    public CompletableFuture<Void> removeService(ServiceName<?> serviceName)
+    public ActorFuture<Void> removeService(ServiceName<?> serviceName)
     {
-        final CompletableFuture<Void> future = new CompletableFuture<>();
+        final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
 
         actor.call(() ->
         {
@@ -175,15 +178,16 @@ public class ServiceContainerImpl extends Actor implements ServiceContainer
                 final String errorMessage = String.format("Cannot remove service, container is '%s'.", state);
                 future.completeExceptionally(new IllegalStateException(errorMessage));
             }
+
+            actor.runOnCompletion(future, (r, t) ->
+            {
+                if (t != null)
+                {
+                    LOG.error("Failed to remove service {}: {}", serviceName, t);
+                }
+            });
         });
 
-        future.whenComplete((r, t) ->
-        {
-            if (t != null)
-            {
-                LOG.error("Failed to remove service {}: {}", serviceName, t);
-            }
-        });
 
         return future;
     }
@@ -204,7 +208,7 @@ public class ServiceContainerImpl extends Actor implements ServiceContainer
     }
 
     @Override
-    public CompletableFuture<Void> closeAsync()
+    public ActorFuture<Void> closeAsync()
     {
         actor.call(() ->
         {
@@ -212,22 +216,21 @@ public class ServiceContainerImpl extends Actor implements ServiceContainer
             {
                 state = ContainerState.CLOSING;
 
-                final List<CompletableFuture<Void>> serviceFutures = new ArrayList<>();
+                final List<ActorFuture<Void>> serviceFutures = new ArrayList<>();
 
-                dependencyResolver.getControllers().stream()
+                dependencyResolver.getControllers()
                     .forEach((c) ->
                     {
-                        final CompletableFuture<Void> closeFuture = new CompletableFuture<>();
+                        final CompletableActorFuture<Void> closeFuture = new CompletableActorFuture<>();
                         c.remove(closeFuture);
                         serviceFutures.add(closeFuture);
                     });
 
-                CompletableFuture.allOf(serviceFutures.toArray(new CompletableFuture[serviceFutures.size()]))
-                                 .whenComplete((r, t) ->
-                                 {
-                                     actor.close();
-                                     containerCloseFuture.complete(null);
-                                 });
+                actor.runOnCompletion(serviceFutures, (t) ->
+                {
+                    actor.close();
+                    containerCloseFuture.complete(null);
+                });
             }
             else
             {

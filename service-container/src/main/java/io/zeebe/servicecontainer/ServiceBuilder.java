@@ -15,15 +15,10 @@
  */
 package io.zeebe.servicecontainer;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
+import java.util.*;
 
 import io.zeebe.servicecontainer.impl.ServiceContainerImpl;
+import io.zeebe.util.sched.future.ActorFuture;
 
 public class ServiceBuilder<S>
 {
@@ -80,7 +75,7 @@ public class ServiceBuilder<S>
         return this;
     }
 
-    public CompletableFuture<Void> install()
+    public ActorFuture<Void> install()
     {
         return serviceContainer.onServiceBuilt(this);
     }

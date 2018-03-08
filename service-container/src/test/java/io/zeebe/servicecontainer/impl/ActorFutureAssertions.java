@@ -13,24 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.servicecontainer;
+package io.zeebe.servicecontainer.impl;
 
-import io.zeebe.util.sched.ActorScheduler;
+import static org.assertj.core.api.Java6Assertions.assertThat;
+
 import io.zeebe.util.sched.future.ActorFuture;
 
-public interface ServiceStartContext extends AsyncContext
+public class ActorFutureAssertions
 {
-    String getName();
+    protected static void assertCompleted(final ActorFuture<Void> serviceFuture)
+    {
+        assertThat(serviceFuture).isDone();
+    }
 
-    <S> S getService(ServiceName<S> name);
+    protected static void assertNotCompleted(final ActorFuture<Void> serviceFuture)
+    {
+        assertThat(serviceFuture).isNotDone();
+    }
 
-    <S> S getService(String name, Class<S> type);
+    protected static void assertFailed(final ActorFuture<Void> serviceFuture)
+    {
+        assertThat(serviceFuture.isCompletedExceptionally()).isTrue();
+    }
 
-    <S> ServiceBuilder<S> createService(ServiceName<S> name, Service<S> service);
-
-    <S> ActorFuture<Void> removeService(ServiceName<S> name);
-
-    <S> boolean hasService(ServiceName<S> name);
-
-    ActorScheduler getScheduler();
 }

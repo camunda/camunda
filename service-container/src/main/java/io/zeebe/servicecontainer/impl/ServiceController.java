@@ -23,11 +23,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.slf4j.Logger;
 
@@ -69,8 +69,8 @@ public class ServiceController extends Actor
     private final Map<ServiceName<?>, Collection<Injector<?>>> injectors;
     private final Map<ServiceName<?>, ServiceGroupReference<?>> injectedReferences;
 
-    private final List<CompletableFuture<Void>> stopFutures = new ArrayList<>();
-    private final CompletableFuture<Void> startFuture;
+    private final List<CompletableActorFuture<Void>> stopFutures = new ArrayList<>();
+    private final CompletableActorFuture<Void> startFuture;
 
     private List<ServiceController> resolvedDependencies;
 
@@ -80,7 +80,7 @@ public class ServiceController extends Actor
     private Consumer<ServiceEvent> state = awaitDependenciesStartedState;
 
 
-    public ServiceController(ServiceBuilder<?> builder, ServiceContainerImpl serviceContainer, CompletableFuture<Void> startFuture)
+    public ServiceController(ServiceBuilder<?> builder, ServiceContainerImpl serviceContainer, CompletableActorFuture<Void> startFuture)
     {
         this.container = serviceContainer;
         this.startFuture = startFuture;
@@ -389,7 +389,7 @@ public class ServiceController extends Actor
         }
 
         @Override
-        public <S> CompletableFuture<Void> removeService(ServiceName<S> name)
+        public <S> ActorFuture<Void> removeService(ServiceName<S> name)
         {
             validCheck();
 
@@ -586,7 +586,7 @@ public class ServiceController extends Actor
         return dependencies;
     }
 
-    public void remove(CompletableFuture<Void> future)
+    public void remove(CompletableActorFuture<Void> future)
     {
         actor.call(() ->
         {
