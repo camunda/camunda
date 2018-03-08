@@ -61,8 +61,8 @@ import io.zeebe.transport.impl.RequestResponseHeaderDescriptor;
 import io.zeebe.transport.impl.TransportHeaderDescriptor;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.ActorControl;
-import io.zeebe.util.sched.ZbActor;
-import io.zeebe.util.sched.ZbActorScheduler;
+import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
@@ -72,7 +72,7 @@ import org.mockito.ArgumentMatcher;
 public class GossipRule extends ExternalResource
 {
 
-    private final Supplier<ZbActorScheduler> actionSchedulerSupplier;
+    private final Supplier<ActorScheduler> actionSchedulerSupplier;
     private final GossipConfiguration configuration;
     private final SocketAddress socketAddress;
     private final String memberId;
@@ -92,7 +92,7 @@ public class GossipRule extends ExternalResource
     private LocalMembershipListener localMembershipListener;
     private ReceivedEventsCollector receivedEventsCollector = new ReceivedEventsCollector();
 
-    public GossipRule(final Supplier<ZbActorScheduler> actionSchedulerSupplier, final GossipConfiguration configuration, final String host, final int port)
+    public GossipRule(final Supplier<ActorScheduler> actionSchedulerSupplier, final GossipConfiguration configuration, final String host, final int port)
     {
         this.actionSchedulerSupplier = actionSchedulerSupplier;
         this.configuration = configuration;
@@ -107,7 +107,7 @@ public class GossipRule extends ExternalResource
 
         final String name = socketAddress.toString();
 
-        final ZbActorScheduler actorScheduler = actionSchedulerSupplier.get();
+        final ActorScheduler actorScheduler = actionSchedulerSupplier.get();
 
         serverSendBuffer = Dispatchers
                 .create("serverSendBuffer-" + name)
@@ -172,7 +172,7 @@ public class GossipRule extends ExternalResource
         localMembershipListener = new LocalMembershipListener();
         gossip.addMembershipListener(localMembershipListener);
 
-        actorScheduler.submitActor(new ZbActor()
+        actorScheduler.submitActor(new Actor()
         {
             @Override
             protected void onActorStarted()

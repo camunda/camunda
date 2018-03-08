@@ -28,7 +28,7 @@ import io.zeebe.gossip.membership.*;
 import io.zeebe.gossip.protocol.*;
 import io.zeebe.transport.*;
 import io.zeebe.util.buffer.BufferUtil;
-import io.zeebe.util.sched.ZbActor;
+import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
@@ -40,7 +40,7 @@ import org.slf4j.Logger;
  * Note that implementation is designed to run on a single thread as an actor.
  *
  */
-public class Gossip extends ZbActor implements GossipController, GossipEventPublisher
+public class Gossip extends Actor implements GossipController, GossipEventPublisher
 {
     private static final Logger LOG = Loggers.GOSSIP_LOGGER;
 
