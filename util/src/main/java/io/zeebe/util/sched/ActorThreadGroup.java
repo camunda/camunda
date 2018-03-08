@@ -18,7 +18,7 @@ package io.zeebe.util.sched;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
 
-import io.zeebe.util.sched.ZbActorScheduler.ActorSchedulerBuilder;
+import io.zeebe.util.sched.ActorScheduler.ActorSchedulerBuilder;
 import io.zeebe.util.sched.metrics.ActorThreadMetrics;
 
 /**

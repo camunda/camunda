@@ -37,7 +37,7 @@ public class ControlledConditionTest
         final AtomicInteger invocations = new AtomicInteger(0);
         final AtomicReference<ActorCondition> condition = new AtomicReference<>();
 
-        final ZbActor actor = new ZbActor()
+        final Actor actor = new Actor()
         {
             @Override
             protected void onActorStarted()

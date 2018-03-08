@@ -16,23 +16,23 @@
 package io.zeebe.util.sched.testing;
 
 import io.zeebe.util.sched.FutureUtil;
-import io.zeebe.util.sched.ZbActor;
-import io.zeebe.util.sched.ZbActorScheduler;
-import io.zeebe.util.sched.ZbActorScheduler.ActorSchedulerBuilder;
+import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.ActorScheduler;
+import io.zeebe.util.sched.ActorScheduler.ActorSchedulerBuilder;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import org.junit.rules.ExternalResource;
 
 public class ActorSchedulerRule extends ExternalResource
 {
-    private final ZbActorScheduler actorScheduler;
+    private final ActorScheduler actorScheduler;
     private ActorSchedulerBuilder builder;
 
     public ActorSchedulerRule(int numOfThreads, ActorClock clock)
     {
-        builder = ZbActorScheduler.newActorScheduler()
-            .setCpuBoundActorThreadCount(numOfThreads)
-            .setActorClock(clock);
+        builder = ActorScheduler.newActorScheduler()
+                                .setCpuBoundActorThreadCount(numOfThreads)
+                                .setActorClock(clock);
 
         actorScheduler = builder
             .build();
@@ -66,17 +66,17 @@ public class ActorSchedulerRule extends ExternalResource
         FutureUtil.join(actorScheduler.stop());
     }
 
-    public ActorFuture<Void> submitActor(ZbActor actor)
+    public ActorFuture<Void> submitActor(Actor actor)
     {
         return actorScheduler.submitActor(actor);
     }
 
-    public ActorFuture<Void> submitActor(ZbActor actor, boolean useCountersManager)
+    public ActorFuture<Void> submitActor(Actor actor, boolean useCountersManager)
     {
         return actorScheduler.submitActor(actor, useCountersManager);
     }
 
-    public ZbActorScheduler get()
+    public ActorScheduler get()
     {
         return actorScheduler;
     }

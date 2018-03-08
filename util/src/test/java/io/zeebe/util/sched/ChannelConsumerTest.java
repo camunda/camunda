@@ -32,7 +32,7 @@ public class ChannelConsumerTest
 
     final ConcurrentQueueChannel<Object> ch = new ConcurrentQueueChannel<>(new ManyToOneConcurrentArrayQueue<>(32));
 
-    class ProducerActor extends ZbActor
+    class ProducerActor extends Actor
     {
         Runnable sendData = this::sendData;
         Object payload = new Object();
@@ -54,7 +54,7 @@ public class ChannelConsumerTest
         }
     }
 
-    class ConsumerActor extends ZbActor
+    class ConsumerActor extends Actor
     {
         int count = 0;
 
@@ -87,7 +87,7 @@ public class ChannelConsumerTest
             Assert.fail();
         }
 
-        final ZbActorScheduler actorScheduler = schedulerRule.get();
+        final ActorScheduler actorScheduler = schedulerRule.get();
         actorScheduler.dumpMetrics(System.out);
     }
 

@@ -15,7 +15,7 @@
  */
 package io.zeebe.util.sched;
 
-import io.zeebe.util.sched.ZbActorScheduler.ActorSchedulerBuilder;
+import io.zeebe.util.sched.ActorScheduler.ActorSchedulerBuilder;
 
 /**
  * Thread group for tasks that are blocking-I/O bound.

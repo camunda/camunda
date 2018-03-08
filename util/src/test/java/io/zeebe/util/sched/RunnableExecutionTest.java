@@ -38,7 +38,7 @@ public class RunnableExecutionTest
     {
         final CountDownLatch latch = new CountDownLatch(1);
 
-        schedulerRule.submitActor(new ZbActor()
+        schedulerRule.submitActor(new Actor()
         {
             @Override
             protected void onActorStarted()
@@ -63,7 +63,7 @@ public class RunnableExecutionTest
     {
         final CountDownLatch latch = new CountDownLatch(100);
 
-        schedulerRule.submitActor(new ZbActor()
+        schedulerRule.submitActor(new Actor()
         {
             @Override
             protected void onActorStarted()
@@ -93,7 +93,7 @@ public class RunnableExecutionTest
     {
         final CountDownLatch latch = new CountDownLatch(1);
 
-        schedulerRule.submitActor(new ZbActor()
+        schedulerRule.submitActor(new Actor()
         {
             int innerIterationCount = 0;
 
@@ -133,7 +133,7 @@ public class RunnableExecutionTest
 
         for (int actorCount = 0; actorCount < 100_000; actorCount++)
         {
-            schedulerRule.submitActor(new ZbActor()
+            schedulerRule.submitActor(new Actor()
             {
                 final Runnable method = this::someMethod;
 
@@ -177,7 +177,7 @@ public class RunnableExecutionTest
 
         for (int actorCount = 0; actorCount < 100_000; actorCount++)
         {
-            schedulerRule.submitActor(new ZbActor()
+            schedulerRule.submitActor(new Actor()
             {
                 final Runnable method = this::someMethod;
 
@@ -212,7 +212,7 @@ public class RunnableExecutionTest
         final CountDownLatch latch = new CountDownLatch(1);
         final CountDownLatch called = new CountDownLatch(1);
 
-        final ZbActor actor = new ZbActor()
+        final Actor actor = new Actor()
         {
             @Override
             protected void onActorStarted()
@@ -253,7 +253,7 @@ public class RunnableExecutionTest
         }
     }
 
-    class ActorSubmittingActionsInEndlessLoop extends ZbActor
+    class ActorSubmittingActionsInEndlessLoop extends Actor
     {
         @Override
         protected void onActorStarted()

@@ -48,7 +48,7 @@ public class BlockingPollTest
             latch.countDown();
         };
 
-        schedulerRule.submitActor(ZbActor.wrap((a) ->
+        schedulerRule.submitActor(Actor.wrap((a) ->
         {
             a.pollBlocking(blockingTask, nonBlockingTask);
         }));
@@ -83,7 +83,7 @@ public class BlockingPollTest
 
         for (int i = 0; i < 100; i++)
         {
-            schedulerRule.submitActor(ZbActor.wrap((a) ->
+            schedulerRule.submitActor(Actor.wrap((a) ->
             {
                 a.pollBlocking(blockingTask, nonBlockingTask);
             }));

@@ -47,7 +47,7 @@ public class ActorFutureTest
         final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
         final AtomicInteger callbackInvocations = new AtomicInteger(0);
 
-        final ZbActor waitingActor = new ZbActor()
+        final Actor waitingActor = new Actor()
         {
             @Override
             protected void onActorStarted()
@@ -56,7 +56,7 @@ public class ActorFutureTest
             }
         };
 
-        final ZbActor completingActor = new ZbActor()
+        final Actor completingActor = new Actor()
         {
             @Override
             protected void onActorStarted()
@@ -85,7 +85,7 @@ public class ActorFutureTest
 
         final List<Tuple<String, Throwable>> invocations = new ArrayList<>();
 
-        final ZbActor waitingActor = new ZbActor()
+        final Actor waitingActor = new Actor()
         {
             @Override
             protected void onActorStarted()
@@ -94,7 +94,7 @@ public class ActorFutureTest
             }
         };
 
-        final ZbActor completingActor = new ZbActor()
+        final Actor completingActor = new Actor()
         {
             @Override
             protected void onActorStarted()
@@ -124,7 +124,7 @@ public class ActorFutureTest
 
         final List<Tuple<String, Throwable>> invocations = new ArrayList<>();
 
-        final ZbActor waitingActor = new ZbActor()
+        final Actor waitingActor = new Actor()
         {
             @Override
             protected void onActorStarted()
@@ -133,7 +133,7 @@ public class ActorFutureTest
             }
         };
 
-        final ZbActor completingActor = new ZbActor()
+        final Actor completingActor = new Actor()
         {
             @Override
             protected void onActorStarted()
@@ -163,7 +163,7 @@ public class ActorFutureTest
 
         final List<Tuple<String, Throwable>> invocations = new ArrayList<>();
 
-        final ZbActor waitingActor = new ZbActor()
+        final Actor waitingActor = new Actor()
         {
             @Override
             protected void onActorStarted()
@@ -172,7 +172,7 @@ public class ActorFutureTest
             }
         };
 
-        final ZbActor completingActor = new ZbActor()
+        final Actor completingActor = new Actor()
         {
             @Override
             protected void onActorStarted()
@@ -205,7 +205,7 @@ public class ActorFutureTest
 
         final List<String> invocations = new ArrayList<>();
 
-        final ZbActor waitingActor = new ZbActor()
+        final Actor waitingActor = new Actor()
         {
             @Override
             protected void onActorStarted()
@@ -215,7 +215,7 @@ public class ActorFutureTest
             }
         };
 
-        final ZbActor completingActor = new ZbActor()
+        final Actor completingActor = new Actor()
         {
             @Override
             protected void onActorStarted()
@@ -247,7 +247,7 @@ public class ActorFutureTest
         final List<Throwable> invocations = new ArrayList<>();
         final List<String> results = new ArrayList<>();
 
-        final ZbActor waitingActor = new ZbActor()
+        final Actor waitingActor = new Actor()
         {
             @Override
             protected void onActorStarted()
@@ -262,7 +262,7 @@ public class ActorFutureTest
             }
         };
 
-        final ZbActor completingActor = new ZbActor()
+        final Actor completingActor = new Actor()
         {
             @Override
             protected void onActorStarted()
@@ -293,7 +293,7 @@ public class ActorFutureTest
 
         final List<Throwable> invocations = new ArrayList<>();
 
-        final ZbActor waitingActor = new ZbActor()
+        final Actor waitingActor = new Actor()
         {
             @Override
             protected void onActorStarted()
@@ -302,7 +302,7 @@ public class ActorFutureTest
             }
         };
 
-        final ZbActor completingActor = new ZbActor()
+        final Actor completingActor = new Actor()
         {
             @Override
             protected void onActorStarted()
@@ -348,7 +348,7 @@ public class ActorFutureTest
         // given
         final AtomicReference<String> futureResult = new AtomicReference<>();
 
-        schedulerRule.submitActor(new ZbActor()
+        schedulerRule.submitActor(new Actor()
         {
             @Override
             protected void onActorStarted()
@@ -364,7 +364,7 @@ public class ActorFutureTest
         assertThat(futureResult.get()).isEqualTo("foo");
     }
 
-    class BlockedCallActor extends ZbActor
+    class BlockedCallActor extends Actor
     {
         public void waitOnFuture()
         {
@@ -390,7 +390,7 @@ public class ActorFutureTest
         final List<String> lifecycle = new ArrayList<>();
         final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
 
-        final ZbActor actor = new ZbActor()
+        final Actor actor = new Actor()
         {
             @Override
             protected void onActorStarted()
@@ -405,7 +405,7 @@ public class ActorFutureTest
 
         // when
         actor.actor.call(() -> lifecycle.add("call"));
-        schedulerRule.submitActor(new ZbActor()
+        schedulerRule.submitActor(new Actor()
         {
             @Override
             protected void onActorStarted()
@@ -518,7 +518,7 @@ public class ActorFutureTest
         assertThat(receivedObjects).containsExactly(result1, result2);
     }
 
-    class TestActor extends ZbActor
+    class TestActor extends Actor
     {
 
         public <T> void awaitFuture(ActorFuture<T> f, BiConsumer<T, Throwable> onCompletion)

@@ -33,7 +33,7 @@ public class TaskMetricsTest
     @Rule
     public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
 
-    class MyActor extends ZbActor
+    class MyActor extends Actor
     {
         @Override
         public String getName()

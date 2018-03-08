@@ -26,7 +26,7 @@ public class ActorJob
 {
     TaskSchedulingState schedulingState;
 
-    ZbActor actor;
+    Actor actor;
     ActorTask task;
 
     ActorJob next;
@@ -258,7 +258,7 @@ public class ActorJob
         return task;
     }
 
-    public ZbActor getActor()
+    public Actor getActor()
     {
         return actor;
     }

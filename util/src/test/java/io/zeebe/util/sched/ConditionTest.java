@@ -28,7 +28,7 @@ public class ConditionTest
 
     private CountDownLatch latch = new CountDownLatch(1);
 
-    class CounterActor extends ZbActor
+    class CounterActor extends Actor
     {
         private volatile int counter = 0;
 
@@ -55,7 +55,7 @@ public class ConditionTest
         }
     }
 
-    class Producer extends ZbActor
+    class Producer extends Actor
     {
         final CounterActor counterActor;
         final Runnable incrementCounter = this::incrementCounter;

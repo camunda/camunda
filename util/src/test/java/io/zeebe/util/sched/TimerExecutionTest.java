@@ -42,7 +42,7 @@ public class TimerExecutionTest
 
         for (int i = 0; i < 100_000; i++)
         {
-            schedulerRule.submitActor(new ZbActor()
+            schedulerRule.submitActor(new Actor()
             {
                 @Override
                 protected void onActorStarted()
@@ -65,7 +65,7 @@ public class TimerExecutionTest
         schedulerRule.get().dumpMetrics(System.out);
     }
 
-    public class Act extends ZbActor
+    public class Act extends Actor
     {
         private final CountDownLatch latch;
 
@@ -121,7 +121,7 @@ public class TimerExecutionTest
     {
         final CountDownLatch latch = new CountDownLatch(10);
 
-        schedulerRule.submitActor(new ZbActor()
+        schedulerRule.submitActor(new Actor()
         {
             @Override
             protected void onActorStarted()
@@ -148,7 +148,7 @@ public class TimerExecutionTest
 
         for (int i = 0; i < 100_000; i++)
         {
-            schedulerRule.submitActor(new ZbActor()
+            schedulerRule.submitActor(new Actor()
             {
                 @Override
                 protected void onActorStarted()
@@ -177,7 +177,7 @@ public class TimerExecutionTest
         final CountDownLatch latch = new CountDownLatch(1);
         final AtomicBoolean isInvoked = new AtomicBoolean();
 
-        schedulerRule.submitActor(new ZbActor()
+        schedulerRule.submitActor(new Actor()
         {
             @Override
             protected void onActorStarted()
@@ -208,7 +208,7 @@ public class TimerExecutionTest
         final CountDownLatch latch = new CountDownLatch(1);
         final AtomicInteger invocations = new AtomicInteger(0);
 
-        schedulerRule.submitActor(new ZbActor()
+        schedulerRule.submitActor(new Actor()
         {
             ScheduledTimer subscription;
 

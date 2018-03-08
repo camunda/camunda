@@ -28,13 +28,13 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class ZbActorScheduler
+public class ActorScheduler
 {
     private final AtomicReference<SchedulerState> state = new AtomicReference<>();
     private final ActorExecutor actorTaskExecutor;
     private final ConcurrentCountersManager countersManager;
 
-    public ZbActorScheduler(ActorSchedulerBuilder builder)
+    public ActorScheduler(ActorSchedulerBuilder builder)
     {
         state.set(SchedulerState.NEW);
         actorTaskExecutor = builder.getActorExecutor();
@@ -55,7 +55,7 @@ public class ZbActorScheduler
      *            make sense for long-lived tasks where a small overhead when
      *            initially submitting the actor is acceptable.
      */
-    public ActorFuture<Void> submitActor(ZbActor actor)
+    public ActorFuture<Void> submitActor(Actor actor)
     {
         return submitActor(actor, false);
     }
@@ -74,7 +74,7 @@ public class ZbActorScheduler
      *            make sense for long-lived tasks where a small overhead when
      *            initially submitting the actor is acceptable.
      */
-    public ActorFuture<Void> submitActor(ZbActor actor, boolean collectTaskMetrics)
+    public ActorFuture<Void> submitActor(Actor actor, boolean collectTaskMetrics)
     {
         return actorTaskExecutor.submitCpuBound(actor.actor.task, collectTaskMetrics);
     }
@@ -106,7 +106,7 @@ public class ZbActorScheduler
      * @param schedulingHints
      *            additional scheduling hint
      */
-    public ActorFuture<Void> submitActor(ZbActor actor, boolean collectTaskMetrics, int schedulingHints)
+    public ActorFuture<Void> submitActor(Actor actor, boolean collectTaskMetrics, int schedulingHints)
     {
         final ActorTask task = actor.actor.task;
 
@@ -163,7 +163,7 @@ public class ZbActorScheduler
         return new ActorSchedulerBuilder();
     }
 
-    public static ZbActorScheduler newDefaultActorScheduler()
+    public static ActorScheduler newDefaultActorScheduler()
     {
         return new ActorSchedulerBuilder().build();
     }
@@ -362,7 +362,7 @@ public class ZbActorScheduler
             }
         }
 
-        public ZbActorScheduler build()
+        public ActorScheduler build()
         {
             initCountersManager();
             initActorThreadFactory();
@@ -370,7 +370,7 @@ public class ZbActorScheduler
             initCpuBoundActorThreadGroup();
             initIoBoundActorThreadGroup();
             initActorExecutor();
-            return new ZbActorScheduler(this);
+            return new ActorScheduler(this);
         }
     }
 

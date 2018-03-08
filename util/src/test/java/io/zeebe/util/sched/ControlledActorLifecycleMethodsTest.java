@@ -37,7 +37,7 @@ public class ControlledActorLifecycleMethodsTest
         // given
         final List<String> lifecycle = new ArrayList<>();
 
-        final ZbActor actor = new ZbActor()
+        final Actor actor = new Actor()
         {
             @Override
             protected void onActorClosing()

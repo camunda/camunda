@@ -82,7 +82,7 @@ public class ActorTask
     private final CompletableActorFuture<Void> startingFuture = new CompletableActorFuture<>();
     private final CompletableActorFuture<Void> jobStartingTaskFuture = new CompletableActorFuture<>();
 
-    final ZbActor actor;
+    final Actor actor;
 
     private ActorExecutor actorExecutor;
     private ActorThreadGroup actorThreadGroup;
@@ -115,7 +115,7 @@ public class ActorTask
     /** the id of the io device used. Only set if this task is scheduled as a blocking io task*/
     private int deviceId;
 
-    public ActorTask(ZbActor actor)
+    public ActorTask(Actor actor)
     {
         this.actor = actor;
     }
@@ -582,7 +582,7 @@ public class ActorTask
         return actor.getName();
     }
 
-    public ZbActor getActor()
+    public Actor getActor()
     {
         return actor;
     }

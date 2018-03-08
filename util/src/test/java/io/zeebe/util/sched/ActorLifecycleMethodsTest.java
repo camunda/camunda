@@ -44,12 +44,12 @@ public class ActorLifecycleMethodsTest
         // given
         final CountDownLatch latch = new CountDownLatch(1);
         final CompletableActorFuture<Void> watingFuture = new CompletableActorFuture<>();
-        final ZbActor zbActor = new ZbActor()
+        final Actor actor = new Actor()
         {
             @Override
             protected void onActorStarting()
             {
-                actor.runOnCompletion(watingFuture, (v, t) ->
+                this.actor.runOnCompletion(watingFuture, (v, t) ->
                 {
                     latch.countDown();
                 });
@@ -57,7 +57,7 @@ public class ActorLifecycleMethodsTest
         };
 
         // when
-        final ActorFuture<Void> startingFuture = schedulerRule.submitActor(zbActor);
+        final ActorFuture<Void> startingFuture = schedulerRule.submitActor(actor);
 
         // then
         assertThat(startingFuture).isNotDone();
@@ -70,12 +70,12 @@ public class ActorLifecycleMethodsTest
         // given
         final CountDownLatch latch = new CountDownLatch(2);
         final CompletableActorFuture<Void> watingFuture = new CompletableActorFuture<>();
-        final ZbActor zbActor = new ZbActor()
+        final Actor actor = new Actor()
         {
             @Override
             protected void onActorStarting()
             {
-                actor.runOnCompletion(watingFuture, (v, t) ->
+                this.actor.runOnCompletion(watingFuture, (v, t) ->
                 {
                     latch.countDown();
                 });
@@ -89,7 +89,7 @@ public class ActorLifecycleMethodsTest
         };
 
         // when
-        final ActorFuture<Void> startingFuture = schedulerRule.submitActor(zbActor);
+        final ActorFuture<Void> startingFuture = schedulerRule.submitActor(actor);
         watingFuture.complete(null);
 
         // then
@@ -106,7 +106,7 @@ public class ActorLifecycleMethodsTest
     {
         // given
         final CountDownLatch latch = new CountDownLatch(1);
-        final ZbActor zbActor = new ZbActor()
+        final Actor actor = new Actor()
         {
             @Override
             protected void onActorCloseRequested()
@@ -117,18 +117,18 @@ public class ActorLifecycleMethodsTest
             @Override
             protected void onActorStarted()
             {
-                actor.runOnCompletion(new CompletableActorFuture<>(), (r, t) ->
+                this.actor.runOnCompletion(new CompletableActorFuture<>(), (r, t) ->
                 {
                     // ensure that we remain in STARTED/CLOSE_REQUESTED
                 });
             }
         };
 
-        final ActorFuture<Void> startingFuture = schedulerRule.submitActor(zbActor);
+        final ActorFuture<Void> startingFuture = schedulerRule.submitActor(actor);
         startingFuture.get(5, TimeUnit.SECONDS);
 
         // when
-        zbActor.actor.close();
+        actor.actor.close();
 
         // then
         if (!latch.await(5, TimeUnit.MINUTES))
@@ -145,7 +145,7 @@ public class ActorLifecycleMethodsTest
         final CountDownLatch latch = new CountDownLatch(1);
 
         // when
-        schedulerRule.submitActor(new ZbActor()
+        schedulerRule.submitActor(new Actor()
         {
             @Override
             protected void onActorStarting()
@@ -165,7 +165,7 @@ public class ActorLifecycleMethodsTest
     public void shouldNotCallConsumeOnStarting()
     {
         // given
-        final ZbActor actor = new ZbActor()
+        final Actor actor = new Actor()
         {
             @Override
             protected void onActorStarting()
@@ -187,7 +187,7 @@ public class ActorLifecycleMethodsTest
     public void shouldNotCallPollBlockingOnStarting()
     {
         // given
-        final ZbActor actor = new ZbActor()
+        final Actor actor = new Actor()
         {
             @Override
             protected void onActorStarting()
@@ -209,7 +209,7 @@ public class ActorLifecycleMethodsTest
     public void shouldNotCallOnConditionOnStarting()
     {
         // given
-        final ZbActor actor = new ZbActor()
+        final Actor actor = new Actor()
         {
             @Override
             protected void onActorStarting()
@@ -231,7 +231,7 @@ public class ActorLifecycleMethodsTest
     public void shouldNotCallRunDelayedOnStarting()
     {
         // given
-        final ZbActor actor = new ZbActor()
+        final Actor actor = new Actor()
         {
             @Override
             protected void onActorStarting()
@@ -254,7 +254,7 @@ public class ActorLifecycleMethodsTest
     public void shouldNotCallRunAtFixedRateOnStarting()
     {
         // given
-        final ZbActor actor = new ZbActor()
+        final Actor actor = new Actor()
         {
             @Override
             protected void onActorStarting()
@@ -279,7 +279,7 @@ public class ActorLifecycleMethodsTest
         final CountDownLatch latch = new CountDownLatch(2);
         final AtomicInteger called = new AtomicInteger(0);
 
-        final ZbActor actor = new ZbActor()
+        final Actor actor = new Actor()
         {
             @Override
             protected void onActorStarting()
@@ -325,7 +325,7 @@ public class ActorLifecycleMethodsTest
         final CountDownLatch latch = new CountDownLatch(1);
         final AtomicInteger called = new AtomicInteger(0);
 
-        final ZbActor actor = new ZbActor()
+        final Actor actor = new Actor()
         {
             @Override
             protected void onActorClosing()
@@ -355,7 +355,7 @@ public class ActorLifecycleMethodsTest
         final CountDownLatch latch = new CountDownLatch(1);
 
         // when
-        schedulerRule.submitActor(new ZbActor()
+        schedulerRule.submitActor(new Actor()
         {
             @Override
             protected void onActorStarted()
@@ -376,7 +376,7 @@ public class ActorLifecycleMethodsTest
     {
         // given
         final CountDownLatch latch = new CountDownLatch(2);
-        final ZbActor zbActor = new ZbActor()
+        final Actor actor = new Actor()
         {
             @Override
             protected void onActorStarted()
@@ -392,7 +392,7 @@ public class ActorLifecycleMethodsTest
         };
 
         //when
-        final ActorFuture<Void> startingFuture = schedulerRule.submitActor(zbActor);
+        final ActorFuture<Void> startingFuture = schedulerRule.submitActor(actor);
         TestUtil.waitUntil(() -> startingFuture.isDone());
 
         // then
@@ -411,7 +411,7 @@ public class ActorLifecycleMethodsTest
     {
         // given
         final CountDownLatch latch = new CountDownLatch(2);
-        final ZbActor zbActor = new ZbActor()
+        final Actor actor = new Actor()
         {
             @Override
             protected void onActorStarted()
@@ -425,11 +425,11 @@ public class ActorLifecycleMethodsTest
                 latch.countDown();
             }
         };
-        final ActorFuture<Void> startingFuture = schedulerRule.submitActor(zbActor);
+        final ActorFuture<Void> startingFuture = schedulerRule.submitActor(actor);
         TestUtil.waitUntil(() -> startingFuture.isDone() && latch.getCount() == 1);
 
         // when
-        zbActor.actor.close();
+        actor.actor.close();
 
         // then
         if (!latch.await(5, TimeUnit.SECONDS))
@@ -443,7 +443,7 @@ public class ActorLifecycleMethodsTest
     {
         // given
         final CountDownLatch latch = new CountDownLatch(2);
-        final ZbActor zbActor = new ZbActor()
+        final Actor actor = new Actor()
         {
             @Override
             protected void onActorClosing()
@@ -457,11 +457,11 @@ public class ActorLifecycleMethodsTest
                 latch.countDown();
             }
         };
-        final ActorFuture<Void> startingFuture = schedulerRule.submitActor(zbActor);
+        final ActorFuture<Void> startingFuture = schedulerRule.submitActor(actor);
         TestUtil.waitUntil(() -> startingFuture.isDone());
 
         // when
-        zbActor.actor.close();
+        actor.actor.close();
 
         // then
         if (!latch.await(5, TimeUnit.SECONDS))
@@ -476,13 +476,13 @@ public class ActorLifecycleMethodsTest
         // given
         final CountDownLatch latch = new CountDownLatch(2);
         final CompletableActorFuture<Void> waitingFuture = new CompletableActorFuture<>();
-        final ZbActor zbActor = new ZbActor()
+        final Actor actor = new Actor()
         {
             @Override
             protected void onActorClosing()
             {
                 latch.countDown();
-                actor.runOnCompletion(waitingFuture, (v, t) -> { });
+                this.actor.runOnCompletion(waitingFuture, (v, t) -> { });
             }
 
             @Override
@@ -491,11 +491,11 @@ public class ActorLifecycleMethodsTest
                 latch.countDown();
             }
         };
-        final ActorFuture<Void> startingFuture = schedulerRule.submitActor(zbActor);
+        final ActorFuture<Void> startingFuture = schedulerRule.submitActor(actor);
         TestUtil.waitUntil(() -> startingFuture.isDone());
 
         // when
-        zbActor.actor.close();
+        actor.actor.close();
 
         // then
         if (!latch.await(1, TimeUnit.SECONDS))
@@ -513,7 +513,7 @@ public class ActorLifecycleMethodsTest
     public void shouldNotCallConsumeOnClosing()
     {
         // given
-        final ZbActor actor = new ZbActor()
+        final Actor actor = new Actor()
         {
             @Override
             protected void onActorClosing()
@@ -536,7 +536,7 @@ public class ActorLifecycleMethodsTest
     public void shouldNotCallPollBlockingOnClosing()
     {
         // given
-        final ZbActor actor = new ZbActor()
+        final Actor actor = new Actor()
         {
             @Override
             protected void onActorClosing()
@@ -559,7 +559,7 @@ public class ActorLifecycleMethodsTest
     public void shouldNotCallOnConditionOnClosing()
     {
         // given
-        final ZbActor actor = new ZbActor()
+        final Actor actor = new Actor()
         {
             @Override
             protected void onActorClosing()
@@ -582,7 +582,7 @@ public class ActorLifecycleMethodsTest
     public void shouldNotCallRunDelayedOnClosing()
     {
         // given
-        final ZbActor actor = new ZbActor()
+        final Actor actor = new Actor()
         {
             @Override
             protected void onActorClosing()
@@ -606,7 +606,7 @@ public class ActorLifecycleMethodsTest
     public void shouldNotCallRunAtFixedRateOnClosing()
     {
         // given
-        final ZbActor actor = new ZbActor()
+        final Actor actor = new Actor()
         {
             @Override
             protected void onActorClosing()
@@ -631,13 +631,13 @@ public class ActorLifecycleMethodsTest
         // given
         final CountDownLatch latch = new CountDownLatch(2);
         final CompletableActorFuture<Void> waitingFuture = new CompletableActorFuture<>();
-        final ZbActor zbActor = new ZbActor()
+        final Actor actor = new Actor()
         {
             @Override
             protected void onActorClosing()
             {
                 latch.countDown();
-                actor.runOnCompletion(waitingFuture, (v, t) -> { });
+                this.actor.runOnCompletion(waitingFuture, (v, t) -> { });
             }
 
             @Override
@@ -646,11 +646,11 @@ public class ActorLifecycleMethodsTest
                 latch.countDown();
             }
         };
-        final ActorFuture<Void> startingFuture = schedulerRule.submitActor(zbActor);
+        final ActorFuture<Void> startingFuture = schedulerRule.submitActor(actor);
         TestUtil.waitUntil(() -> startingFuture.isDone());
 
         // when
-        zbActor.actor.close();
+        actor.actor.close();
         waitingFuture.complete(null);
 
         // then
@@ -666,13 +666,13 @@ public class ActorLifecycleMethodsTest
         // given
         final CountDownLatch latch = new CountDownLatch(2);
         final CompletableActorFuture<Void> waitingFuture = new CompletableActorFuture<>();
-        final ZbActor zbActor = new ZbActor()
+        final Actor actor = new Actor()
         {
             @Override
             protected void onActorClosing()
             {
                 latch.countDown();
-                actor.runOnCompletion(waitingFuture, (v, t) -> { });
+                this.actor.runOnCompletion(waitingFuture, (v, t) -> { });
             }
 
             @Override
@@ -681,11 +681,11 @@ public class ActorLifecycleMethodsTest
                 latch.countDown();
             }
         };
-        final ActorFuture<Void> startingFuture = schedulerRule.submitActor(zbActor);
+        final ActorFuture<Void> startingFuture = schedulerRule.submitActor(actor);
         TestUtil.waitUntil(() -> startingFuture.isDone());
 
         // when
-        final ActorFuture<Void> closeFuture = zbActor.actor.close();
+        final ActorFuture<Void> closeFuture = actor.actor.close();
 
         // then
         assertThat(closeFuture).isNotDone();
@@ -697,13 +697,13 @@ public class ActorLifecycleMethodsTest
         // given
         final CountDownLatch latch = new CountDownLatch(2);
         final CompletableActorFuture<Void> waitingFuture = new CompletableActorFuture<>();
-        final ZbActor zbActor = new ZbActor()
+        final Actor actor = new Actor()
         {
             @Override
             protected void onActorClosing()
             {
                 latch.countDown();
-                actor.runOnCompletion(waitingFuture, (v, t) -> { });
+                this.actor.runOnCompletion(waitingFuture, (v, t) -> { });
             }
 
             @Override
@@ -712,11 +712,11 @@ public class ActorLifecycleMethodsTest
                 latch.countDown();
             }
         };
-        final ActorFuture<Void> startingFuture = schedulerRule.submitActor(zbActor);
+        final ActorFuture<Void> startingFuture = schedulerRule.submitActor(actor);
         TestUtil.waitUntil(() -> startingFuture.isDone());
 
         // when
-        final ActorFuture<Void> closeFuture = zbActor.actor.close();
+        final ActorFuture<Void> closeFuture = actor.actor.close();
         waitingFuture.complete(null);
 
         // then
@@ -733,7 +733,7 @@ public class ActorLifecycleMethodsTest
     {
         // given
         final CountDownLatch latch = new CountDownLatch(1);
-        schedulerRule.submitActor(new ZbActor()
+        schedulerRule.submitActor(new Actor()
         {
             @Override
             protected void onActorStarted()
@@ -771,7 +771,7 @@ public class ActorLifecycleMethodsTest
         // given
         final CountDownLatch latch = new CountDownLatch(1);
         final CompletableActorFuture<Void> waitingFuture = new CompletableActorFuture<>();
-        final ZbActor actor = new ZbActor()
+        final Actor actor = new Actor()
         {
             @Override
             protected void onActorStarted()
@@ -804,7 +804,7 @@ public class ActorLifecycleMethodsTest
     public void shouldActorCloseExternally() throws InterruptedException, ExecutionException, TimeoutException
     {
         // given
-        final ZbActor actor = new ZbActor()
+        final Actor actor = new Actor()
         {
             @Override
             protected void onActorStarted()
@@ -833,7 +833,7 @@ public class ActorLifecycleMethodsTest
         // given
         final AtomicLong invocations = new AtomicLong(0);
 
-        final ZbActor actor = new ZbActor()
+        final Actor actor = new Actor()
         {
             @Override
             protected void onActorStarted()

@@ -18,7 +18,7 @@ package io.zeebe.util.sched;
 import java.time.Duration;
 import java.util.concurrent.*;
 
-import io.zeebe.util.sched.ZbActorScheduler.ActorSchedulerBuilder;
+import io.zeebe.util.sched.ActorScheduler.ActorSchedulerBuilder;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.metrics.TaskMetrics;
 import org.agrona.concurrent.status.ConcurrentCountersManager;
@@ -51,7 +51,7 @@ public class ActorExecutor
      *            the task to submit
      * @param collectTaskMetrics
      *            Controls whether metrics should be collected. (See
-     *            {@link ZbActorScheduler#submitActor(ZbActor, boolean)})
+     *            {@link ActorScheduler#submitActor(Actor, boolean)})
      */
     public ActorFuture<Void> submitCpuBound(ActorTask task, boolean collectTaskMetrics)
     {

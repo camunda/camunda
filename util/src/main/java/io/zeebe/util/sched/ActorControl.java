@@ -31,11 +31,11 @@ import java.util.function.Consumer;
 
 public class ActorControl
 {
-    private final ZbActor actor;
+    private final Actor actor;
 
     final ActorTask task;
 
-    public ActorControl(ZbActor actor)
+    public ActorControl(Actor actor)
     {
         this.actor = actor;
         this.task = new ActorTask(actor);

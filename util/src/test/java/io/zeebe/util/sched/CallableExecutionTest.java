@@ -38,7 +38,7 @@ public class CallableExecutionTest
     @Rule
     public final ActorSchedulerRule schedulerRule = new ActorSchedulerRule(3);
 
-    class PongActor extends ZbActor
+    class PongActor extends Actor
     {
         ActorFuture<Integer> onPing(int val)
         {
@@ -49,7 +49,7 @@ public class CallableExecutionTest
         }
     }
 
-    static class PingActor extends ZbActor
+    static class PingActor extends Actor
     {
 
         int count = 0;
@@ -89,7 +89,7 @@ public class CallableExecutionTest
         }
     }
 
-    class PingMultipleActor extends ZbActor
+    class PingMultipleActor extends Actor
     {
 
         int count = 0;
@@ -158,7 +158,7 @@ public class CallableExecutionTest
             Assert.fail();
         }
 
-        final ZbActorScheduler actorScheduler = schedulerRule.get();
+        final ActorScheduler actorScheduler = schedulerRule.get();
         actorScheduler.dumpMetrics(System.out);
     }
 
@@ -186,7 +186,7 @@ public class CallableExecutionTest
             Assert.fail();
         }
 
-        final ZbActorScheduler actorScheduler = schedulerRule.get();
+        final ActorScheduler actorScheduler = schedulerRule.get();
         actorScheduler.dumpMetrics(System.out);
     }
 
@@ -229,7 +229,7 @@ public class CallableExecutionTest
             .hasMessage("Actor is closed");
     }
 
-    class CloseableActor extends ZbActor
+    class CloseableActor extends Actor
     {
         ActorFuture<Void> doCall()
         {

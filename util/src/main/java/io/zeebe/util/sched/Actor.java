@@ -17,7 +17,7 @@ package io.zeebe.util.sched;
 
 import java.util.function.Consumer;
 
-public abstract class ZbActor
+public abstract class Actor
 {
     protected final ActorControl actor = new ActorControl(this);
 
@@ -52,9 +52,9 @@ public abstract class ZbActor
         // notification that timers, conditions, etc. will no longer trigger from now on
     }
 
-    public static ZbActor wrap(Consumer<ActorControl> r)
+    public static Actor wrap(Consumer<ActorControl> r)
     {
-        return new ZbActor()
+        return new Actor()
         {
             @Override
             protected void onActorStarted()

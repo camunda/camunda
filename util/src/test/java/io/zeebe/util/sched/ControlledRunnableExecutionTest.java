@@ -59,7 +59,7 @@ public class ControlledRunnableExecutionTest
     {
         // given
         final Runner runner = new Runner();
-        final ZbActor invoker = new ZbActor()
+        final Actor invoker = new Actor()
         {
             protected void onActorStarted()
             {
@@ -81,10 +81,10 @@ public class ControlledRunnableExecutionTest
     public void shouldSubmitRunnableToCorrectActorTask()
     {
         // given
-        final List<ZbActor> actorContext = new ArrayList<>();
+        final List<Actor> actorContext = new ArrayList<>();
         final Runner runner = new Runner(() -> actorContext.add(ActorThread.current().getCurrentTask().getActor()));
 
-        final ZbActor invoker = new ZbActor()
+        final Actor invoker = new Actor()
         {
             protected void onActorStarted()
             {
@@ -114,7 +114,7 @@ public class ControlledRunnableExecutionTest
             .hasMessage("Incorrect usage of actor. run(...): must be called from actor thread");
     }
 
-    class Runner extends ZbActor
+    class Runner extends Actor
     {
         int runs = 0;
         Runnable onExecution;

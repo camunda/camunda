@@ -95,7 +95,7 @@ public class CallableExecutionControlledTest
             .hasMessage("Actor is closed");
     }
 
-    protected static class ExceptionActor extends ZbActor
+    protected static class ExceptionActor extends Actor
     {
         protected AtomicInteger invocations = new AtomicInteger(0);
 
@@ -109,7 +109,7 @@ public class CallableExecutionControlledTest
         }
     }
 
-    class CloseableActor extends ZbActor
+    class CloseableActor extends Actor
     {
         ActorFuture<Void> doCall()
         {

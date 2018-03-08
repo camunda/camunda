@@ -19,8 +19,8 @@ import java.time.Duration;
 import java.util.concurrent.ThreadPoolExecutor;
 
 import io.zeebe.util.sched.*;
-import io.zeebe.util.sched.ZbActorScheduler.ActorSchedulerBuilder;
-import io.zeebe.util.sched.ZbActorScheduler.ActorThreadFactory;
+import io.zeebe.util.sched.ActorScheduler.ActorSchedulerBuilder;
+import io.zeebe.util.sched.ActorScheduler.ActorThreadFactory;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.metrics.ActorThreadMetrics;
@@ -29,18 +29,18 @@ import org.junit.rules.ExternalResource;
 
 public class ControlledActorSchedulerRule extends ExternalResource
 {
-    private final ZbActorScheduler actorScheduler;
+    private final ActorScheduler actorScheduler;
     private final ControlledActorThread controlledActorTaskRunner;
     private final ThreadPoolExecutor blockingTasksRunner;
 
     public ControlledActorSchedulerRule()
     {
         final ControlledActorThreadFactory actorTaskRunnerFactory = new ControlledActorThreadFactory();
-        final ActorSchedulerBuilder builder = ZbActorScheduler.newActorScheduler()
-            .setCpuBoundActorThreadCount(1)
-            .setIoBoundActorThreadCount(0)
-            .setActorThreadFactory(actorTaskRunnerFactory)
-            .setBlockingTasksShutdownTime(Duration.ofSeconds(0));
+        final ActorSchedulerBuilder builder = ActorScheduler.newActorScheduler()
+                                                            .setCpuBoundActorThreadCount(1)
+                                                            .setIoBoundActorThreadCount(0)
+                                                            .setActorThreadFactory(actorTaskRunnerFactory)
+                                                            .setBlockingTasksShutdownTime(Duration.ofSeconds(0));
 
         actorScheduler = builder.build();
 
@@ -60,12 +60,12 @@ public class ControlledActorSchedulerRule extends ExternalResource
         actorScheduler.stop();
     }
 
-    public ActorFuture<Void> submitActor(ZbActor actor)
+    public ActorFuture<Void> submitActor(Actor actor)
     {
         return actorScheduler.submitActor(actor);
     }
 
-    public ZbActorScheduler get()
+    public ActorScheduler get()
     {
         return actorScheduler;
     }
