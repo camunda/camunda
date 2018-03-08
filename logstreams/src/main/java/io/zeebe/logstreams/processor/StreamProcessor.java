@@ -17,7 +17,6 @@ package io.zeebe.logstreams.processor;
 
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.spi.SnapshotSupport;
-import io.zeebe.util.actor.Actor;
 
 /**
  * Process events from a log stream.
@@ -69,8 +68,4 @@ public interface StreamProcessor
         // no nothing
     }
 
-    default int getPriority(long now)
-    {
-        return Actor.PRIORITY_LOW;
-    }
 }
