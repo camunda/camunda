@@ -22,6 +22,7 @@ import io.zeebe.util.sched.*;
 import io.zeebe.util.sched.ActorScheduler.ActorSchedulerBuilder;
 import io.zeebe.util.sched.ActorScheduler.ActorThreadFactory;
 import io.zeebe.util.sched.clock.ActorClock;
+import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.metrics.ActorThreadMetrics;
 import org.junit.Assert;
@@ -32,15 +33,17 @@ public class ControlledActorSchedulerRule extends ExternalResource
     private final ActorScheduler actorScheduler;
     private final ControlledActorThread controlledActorTaskRunner;
     private final ThreadPoolExecutor blockingTasksRunner;
+    private final ControlledActorClock clock = new ControlledActorClock();
 
     public ControlledActorSchedulerRule()
     {
         final ControlledActorThreadFactory actorTaskRunnerFactory = new ControlledActorThreadFactory();
         final ActorSchedulerBuilder builder = ActorScheduler.newActorScheduler()
-                                                            .setCpuBoundActorThreadCount(1)
-                                                            .setIoBoundActorThreadCount(0)
-                                                            .setActorThreadFactory(actorTaskRunnerFactory)
-                                                            .setBlockingTasksShutdownTime(Duration.ofSeconds(0));
+            .setActorClock(clock)
+            .setCpuBoundActorThreadCount(1)
+            .setIoBoundActorThreadCount(0)
+            .setActorThreadFactory(actorTaskRunnerFactory)
+            .setBlockingTasksShutdownTime(Duration.ofSeconds(0));
 
         actorScheduler = builder.build();
 
@@ -91,7 +94,6 @@ public class ControlledActorSchedulerRule extends ExternalResource
         controlledActorTaskRunner.workUntilDone();
     }
 
-
     static class ControlledActorThreadFactory implements ActorThreadFactory
     {
         private ControlledActorThread controlledThread;
@@ -108,5 +110,10 @@ public class ControlledActorSchedulerRule extends ExternalResource
             controlledThread = new ControlledActorThread(name, id, threadGroup, taskScheduler, clock, metrics);
             return controlledThread;
         }
+    }
+
+    public ControlledActorClock getClock()
+    {
+        return clock;
     }
 }

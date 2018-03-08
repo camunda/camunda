@@ -157,15 +157,9 @@ public class ActorJob
         return next;
     }
 
-    public boolean setRunnable(Runnable runnable)
+    public void setRunnable(Runnable runnable)
     {
-        if (this.runnable == null && this.callable == null && !isTriggeredBySubscription())
-        {
-            this.runnable = runnable;
-            return true;
-        }
-        return false;
-
+        this.runnable = runnable;
     }
 
     public ActorFuture setCallable(Callable<?> callable)

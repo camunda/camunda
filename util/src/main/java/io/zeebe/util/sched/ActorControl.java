@@ -15,19 +15,17 @@
  */
 package io.zeebe.util.sched;
 
-import io.zeebe.util.sched.channel.ChannelConsumerCondition;
-import io.zeebe.util.sched.channel.ConsumableChannel;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.AllCompletedFutureConsumer;
-import io.zeebe.util.sched.future.FirstSuccessfullyCompletedFutureConsumer;
-import io.zeebe.util.sched.future.FutureContinuationRunnable;
-
 import java.time.Duration;
 import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+
+import io.zeebe.util.sched.ActorTask.ActorLifecyclePhase;
+import io.zeebe.util.sched.channel.ChannelConsumerCondition;
+import io.zeebe.util.sched.channel.ConsumableChannel;
+import io.zeebe.util.sched.future.*;
 
 public class ActorControl
 {
@@ -41,10 +39,17 @@ public class ActorControl
         this.task = new ActorTask(actor);
     }
 
+    /**
+     *
+     * Consumers are called while the actor is in the following actor lifecycle phases:
+     * {@link ActorLifecyclePhase#STARTED}
+     *
+     * @param channel
+     * @param consumer
+     */
     public void consume(ConsumableChannel channel, Runnable consumer)
     {
         ensureCalledFromWithinActor("consume(...)");
-        ensureCalledInStartedState("consume(...)");
 
         final ActorJob job = new ActorJob();
         job.setRunnable(consumer);
@@ -60,7 +65,6 @@ public class ActorControl
     public void pollBlocking(Runnable condition, Runnable action)
     {
         ensureCalledFromWithinActor("pollBlocking(...)");
-        ensureCalledInStartedState("pollBlocking(...)");
 
         final ActorJob job = new ActorJob();
         job.setRunnable(action);
@@ -72,10 +76,19 @@ public class ActorControl
         subscription.submit();
     }
 
+    /**
+     *
+     * Conditional actions are called while the actor is in the following actor lifecycle phases:
+     * {@link ActorLifecyclePhase#STARTED}
+     *
+     *
+     * @param conditionName
+     * @param conditionAction
+     * @return
+     */
     public ActorCondition onCondition(String conditionName, Runnable conditionAction)
     {
         ensureCalledFromWithinActor("onCondition(...)");
-        ensureCalledInStartedState("onCondition(...)");
 
         final ActorJob job = new ActorJob();
         job.setRunnable(conditionAction);
@@ -87,6 +100,14 @@ public class ActorControl
         return condition;
     }
 
+    /**
+     *
+     * Callables actions are called while the actor is in the following actor lifecycle phases:
+     * {@link ActorLifecyclePhase#STARTED}
+     *
+     * @param callable
+     * @return
+     */
     @SuppressWarnings("unchecked")
     public <T> ActorFuture<T> call(Callable<T> callable)
     {
@@ -105,23 +126,45 @@ public class ActorControl
         return future;
     }
 
-    public ActorFuture<Void> call(Runnable r)
+    /**
+     *
+     * Callables actions are called while the actor is in the following actor lifecycle phases:
+     * {@link ActorLifecyclePhase#STARTED}
+     *
+     * @param action
+     * @return
+     */
+    public ActorFuture<Void> call(Runnable action)
     {
         final Callable<Void> c = () ->
         {
-            r.run();
+            action.run();
             return null;
         };
 
         return call(c);
     }
 
-    public void run(Runnable runnable)
+    /**
+     *
+     * Runnables submitted by the actor itself are executed while the actor is in any of its lifecycle phases.
+     *<p>
+     * Runnables submitted externally are executed while the actor is in the following actor lifecycle phases:
+     * {@link ActorLifecyclePhase#STARTED}
+     *
+     * @param action
+     */
+    public void run(Runnable action)
     {
-        scheduleRunnable(runnable, true);
+        scheduleRunnable(action, true);
     }
 
-    /** run a blocking task */
+    /**
+     * run a blocking task
+     *
+     * The provided runnable is executed in any of the actor's lifecycle phases.
+     *
+     */
     public void runBlocking(Runnable runnable)
     {
         ensureCalledFromWithinActor("runBlocking(...)");
@@ -140,7 +183,16 @@ public class ActorControl
         subscription.submit();
     }
 
-    public void runBlocking(Runnable runnable, Consumer<Throwable> whenDone)
+    /**
+     *
+     * The provided runnable is executed in any of the actor's lifecycle phases.
+     * The provided completionConsumer is only executed while the actor is in one of the following
+     * lifecycle phases {@link ActorLifecyclePhase#STARTED}.
+     *
+     * @param runnable
+     * @param completionConsumer
+     */
+    public void runBlocking(Runnable runnable, Consumer<Throwable> completionConsumer)
     {
         final RunnableAdapter<Void> adapter = RunnableAdapter.wrapRunnable(runnable);
         ensureCalledFromWithinActor("runBlocking(...)");
@@ -148,7 +200,7 @@ public class ActorControl
         final ActorJob noop = new ActorJob();
         noop.onJobAddedToTask(task);
         noop.setAutoCompleting(true);
-        noop.setRunnable(adapter.wrapConsumer(whenDone));
+        noop.setRunnable(adapter.wrapConsumer(completionConsumer));
 
         final BlockingPollSubscription subscription = new BlockingPollSubscription(noop, adapter, task.getActorExecutor(), false);
         noop.setSubscription(subscription);
@@ -162,13 +214,22 @@ public class ActorControl
      */
     public void runUntilDone(Runnable runnable)
     {
+        ensureCalledFromWithinActor("runUntilDone(...)");
         scheduleRunnable(runnable, false);
     }
 
+    /**
+     *
+     * The runnable is is executed while the actor is in the following actor lifecycle phases:
+     * {@link ActorLifecyclePhase#STARTED}
+     *
+     * @param delay
+     * @param runnable
+     * @return
+     */
     public ScheduledTimer runDelayed(Duration delay, Runnable runnable)
     {
         ensureCalledFromWithinActor("runDelayed(...)");
-        ensureCalledInStartedState("runDelayed(...)");
         return scheduleTimer(delay, false, runnable);
     }
 
@@ -176,6 +237,9 @@ public class ActorControl
      * Like {@link #run(Runnable)} but submits the runnable to the end end of the actor's queue such that
      * other other actions may be executed before this. This method is useful in case
      * an actor is in a (potentially endless) loop and it should be able to interrupt it.
+     *
+     * The runnable is is executed while the actor is in the following actor lifecycle phases:
+     * {@link ActorLifecyclePhase#STARTED}
      *
      * @param action the action to run.
      */
@@ -191,10 +255,19 @@ public class ActorControl
         yield();
     }
 
+    /**
+     * Scheduled a repeating timer
+     *
+     * The runnable is is executed while the actor is in the following actor lifecycle phases:
+     * {@link ActorLifecyclePhase#STARTED}
+     *
+     * @param delay
+     * @param runnable
+     * @return
+     */
     public ScheduledTimer runAtFixedRate(Duration delay, Runnable runnable)
     {
         ensureCalledFromWithinActor("runAtFixedRate(...)");
-        ensureCalledInStartedState("runAtFixedRate(...)");
         return scheduleTimer(delay, true, runnable);
     }
 
@@ -215,6 +288,9 @@ public class ActorControl
     /**
      * Invoke the callback when the given future is completed (successfully or
      * exceptionally). This call does not block the actor.
+     *
+     * The callback is is executed while the actor is in the following actor lifecycle phases:
+     * {@link ActorLifecyclePhase#STARTED}
      *
      * @param future
      *            the future to wait on
@@ -241,6 +317,9 @@ public class ActorControl
      * Invoke the callback when the given futures are completed (successfully or
      * exceptionally). This call does not block the actor.
      *
+     * The callback is is executed while the actor is in the following actor lifecycle phases:
+     * {@link ActorLifecyclePhase#STARTED}
+     *
      * @param futures
      *            the futures to wait on
      * @param callback
@@ -262,6 +341,9 @@ public class ActorControl
      * Invoke the callback when the first future is completed successfully, or
      * when all futures are completed exceptionally. This call does not block
      * the actor.
+     *<p>
+     * The callback is is executed while the actor is in the following actor lifecycle phases:
+     * {@link ActorLifecyclePhase#STARTED}
      *
      * @param futures
      *            the futures to wait on
@@ -280,6 +362,9 @@ public class ActorControl
      * Invoke the callback when the first future is completed successfully, or
      * when all futures are completed exceptionally. This call does not block
      * the actor.
+     *<p>
+     * The callback is is executed while the actor is in the following actor lifecycle phases:
+     * {@link ActorLifecyclePhase#STARTED}
      *
      * @param futures
      *            the futures to wait on
@@ -345,35 +430,20 @@ public class ActorControl
 
     private void scheduleRunnable(Runnable runnable, boolean autocompleting)
     {
-        final ActorThread currentActorRunner = ensureCalledFromActorThread("run(...)");
-        final ActorJob currentJob = currentActorRunner.getCurrentJob();
+        final ActorThread currentActorThread = ActorThread.current();
 
-        if (currentActorRunner.getCurrentTask() == this.task)
+        if (currentActorThread != null && currentActorThread.getCurrentTask() == this.task)
         {
-            /*
-             attempt "hot" replace of runnable in the job.
-             this is an optimization which allows the job
-             to directly execute the next runnable after this runnable completes.
-             The optimization is only possible if the current runnable submits exactly one
-             additional runnable. If it submits more than one runnable, these runnables
-             need to be appended as new jobs to the current job.
-             */
-            if (currentJob.setRunnable(runnable))
-            {
-                currentJob.setAutoCompleting(autocompleting);
-            }
-            else
-            {
-                final ActorJob job = currentActorRunner.newJob();
-                job.setRunnable(runnable);
-                job.setAutoCompleting(autocompleting);
-                job.onJobAddedToTask(task);
-                currentJob.appendChild(job);
-            }
+            final ActorJob currentJob = currentActorThread.getCurrentJob();
+            final ActorJob newJob = currentActorThread.newJob();
+            newJob.setRunnable(runnable);
+            newJob.setAutoCompleting(autocompleting);
+            newJob.onJobAddedToTask(task);
+            currentJob.appendChild(newJob);
         }
         else
         {
-            final ActorJob job = currentActorRunner.newJob();
+            final ActorJob job = new ActorJob();
             job.setRunnable(runnable);
             job.setAutoCompleting(autocompleting);
             job.onJobAddedToTask(task);
@@ -399,15 +469,10 @@ public class ActorControl
         task.setPriority(priority.getPriorityClass());
     }
 
-    private void ensureCalledInStartedState(String methodName)
+    public ActorLifecyclePhase getLifecyclePhase()
     {
-        if (task.getLifecyclePhase() != ActorTask.ActorLifecyclePhase.STARTED)
-        {
-            throw new UnsupportedOperationException("Incorrect usage of actor." +
-                methodName + ": must only be called in " +
-                ActorTask.ActorLifecyclePhase.STARTED.name() + " phase, was called in " +
-                task.getLifecyclePhase() + " phase.");
-        }
+        ensureCalledFromWithinActor("getLifecyclePhase()");
+        return task.getLifecyclePhase();
     }
 
     private ActorJob ensureCalledFromWithinActor(String methodName)

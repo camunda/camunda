@@ -400,7 +400,7 @@ public class ActorTask
          * yet in state waiting. After transitioning to waiting we check if we need to wake
          * up right away.
          */
-        if (!submittedJobs.isEmpty() || pollSubscriptionsWithoutAddingJobs(subscriptionsCopy))
+        if ((lifecyclePhase == ActorLifecyclePhase.STARTED && !submittedJobs.isEmpty()) || pollSubscriptionsWithoutAddingJobs(subscriptionsCopy))
         {
             // could be that another thread already woke up this task
             if (casState(TaskSchedulingState.WAITING, TaskSchedulingState.WAKING_UP))

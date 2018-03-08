@@ -33,7 +33,7 @@ public class ActorFutureSubscription implements ActorSubscription
     public boolean triggersInPhase(ActorLifecyclePhase phase)
     {
         // triggers in all phases
-        return true;
+        return phase != ActorLifecyclePhase.CLOSED;
     }
 
     @Override
