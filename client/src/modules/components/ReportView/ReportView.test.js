@@ -7,8 +7,7 @@ import {Number, Table} from './views';
 jest.mock('./views', () => {
   return {
     Number: props => <div>Number: {props.data}</div>,
-    Table: props => <div> Table: {JSON.stringify(props.data)}</div>,
-    Json: props => <div>JSON: {JSON.stringify(props.data)}</div>
+    Table: props => <div> Table: {JSON.stringify(props.data)}</div>
   };
 });
 
@@ -61,29 +60,6 @@ it('should display a number if visualization is number', () => {
     loaded: true
   });
   expect(node).toIncludeText('Number: 1234');
-});
-
-it('should display a json if visualization is json', () => {
-  const report = {
-    data: {
-      processDefinitionKey: 'aKey',
-      processDefinitionVersion: '1',
-      view: {
-        operation: 'foo'
-      },
-      groupBy: {
-        type: 'bar'
-      },
-      visualization: 'json'
-    },
-    result: 1234
-  };
-
-  const node = mount(<ReportView report={report} />);
-  node.setState({
-    loaded: true
-  });
-  expect(node).toIncludeText('JSON');
 });
 
 it('should provide an errorMessage property to the component', () => {

@@ -34,8 +34,7 @@ jest.mock('./AlertModal', () => props => (
 
 const reports = [
   {id: '1', data: {visualization: 'table'}, name: 'Report 1'},
-  {id: '2', data: {visualization: 'number'}, name: 'Report 2'},
-  {id: '3', data: {visualization: 'json'}, name: 'Report 3'}
+  {id: '2', data: {visualization: 'number'}, name: 'Report 2'}
 ];
 loadReports.mockReturnValue(reports);
 

@@ -54,7 +54,7 @@ const data = {
   processDefinitionVersion: 'aVersion',
   view: {operation: 'count', entity: 'processInstance'},
   groupBy: {type: 'none', unit: null},
-  visualization: 'json',
+  visualization: 'number',
   filter: null,
   configuration: {xml: 'fooXml'}
 };

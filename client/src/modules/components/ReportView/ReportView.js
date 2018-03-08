@@ -5,7 +5,7 @@ import {reportLabelMap, getFlowNodeNames, formatters} from 'services';
 import moment from 'moment';
 import ReportBlankSlate from './ReportBlankSlate';
 
-import {Number, Json, Table, Heatmap, Chart} from './views';
+import {Number, Table, Heatmap, Chart} from './views';
 
 const defaultErrorMessage =
   'Cannot display data for the given report builder settings. Please choose another combination!';
@@ -173,12 +173,9 @@ export default class ReportView extends React.Component {
         break;
       default:
         config = {
-          component: Json,
+          component: ReportBlankSlate,
           props: {
-            data: {
-              data,
-              result
-            }
+            message: defaultErrorMessage
           }
         };
         break;
