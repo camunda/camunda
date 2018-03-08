@@ -30,7 +30,7 @@ import io.zeebe.raft.state.*;
 import io.zeebe.transport.*;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.sched.ScheduledTimer;
-import io.zeebe.util.sched.ZbActor;
+import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
@@ -49,7 +49,7 @@ import org.slf4j.Logger;
  * </ul>
  *
  */
-public class Raft extends ZbActor implements ServerMessageHandler, ServerRequestHandler
+public class Raft extends Actor implements ServerMessageHandler, ServerRequestHandler
 {
     private static final Logger LOG = Loggers.RAFT_LOGGER;
 
