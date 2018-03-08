@@ -12,13 +12,13 @@ export async function loadProcessDefinitionXml(processDefinitionKey, processDefi
 export async function loadFrequencyData(processDefinitionKey, processDefinitionVersion, filter) {
   const response = await post(
     '/api/report/evaluate',
-    createFLowNodeFrequencyReport(processDefinitionKey, processDefinitionVersion, filter)
+    createFlowNodeFrequencyReport(processDefinitionKey, processDefinitionVersion, filter)
   );
 
   return await response.json();
 }
 
-function createFLowNodeFrequencyReport(processDefinitionKey, processDefinitionVersion, filter) {
+function createFlowNodeFrequencyReport(processDefinitionKey, processDefinitionVersion, filter) {
   return {
     processDefinitionKey,
     processDefinitionVersion,
