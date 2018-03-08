@@ -15,7 +15,7 @@ export async function update(id, state) {
 }
 
 export async function loadReports() {
-  const response = await get('/api/report');
+  const response = await get('/api/report?orderBy=name&sortOrder=asc');
 
   return await response.json();
 }
