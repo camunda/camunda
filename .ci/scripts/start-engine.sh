@@ -8,4 +8,4 @@ cp ../../../qa/import-performance-tests/src/test/resources/tomcat/* server/apach
 cd server/apache-tomcat-8.0.47/lib
 wget http://central.maven.org/maven2/org/postgresql/postgresql/42.2.1/postgresql-42.2.1.jar
 cd ../../..
-./start-camunda.sh
+./server/apache-tomcat-8.0.47/bin/startup.sh
