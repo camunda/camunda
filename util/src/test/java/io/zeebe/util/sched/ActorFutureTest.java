@@ -353,7 +353,7 @@ public class ActorFutureTest
             @Override
             protected void onActorStarted()
             {
-                actor.await(CompletableActorFuture.completed("foo"), (r, t) -> futureResult.set(r));
+                actor.runOnCompletion(CompletableActorFuture.completed("foo"), (r, t) -> futureResult.set(r));
             }
         });
 
@@ -395,7 +395,7 @@ public class ActorFutureTest
             @Override
             protected void onActorStarted()
             {
-                actor.await(future, (r, t) -> lifecycle.add("futureDone"));
+                actor.runOnCompletion(future, (r, t) -> lifecycle.add("futureDone"));
             }
         };
 

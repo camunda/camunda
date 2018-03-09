@@ -387,27 +387,6 @@ public class ActorControl
         }
     }
 
-    @Deprecated
-    public <T> void await(ActorFuture<T> f, BiConsumer<T, Throwable> callback)
-    {
-        runOnCompletion(f, callback);
-    }
-
-    @Deprecated
-    public <T> void await(ActorFuture<T> f, Consumer<Throwable> callback)
-    {
-        runOnCompletion(f, (r, t) ->
-        {
-            callback.accept(t);
-        });
-    }
-
-    @Deprecated
-    public <T> void awaitAll(Collection<ActorFuture<T>> futures, Consumer<Throwable> callback)
-    {
-        runOnCompletion(futures, callback);
-    }
-
     /** can be called by the actor to yield the thread */
     public void yield()
     {
