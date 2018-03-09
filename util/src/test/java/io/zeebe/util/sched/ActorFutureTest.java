@@ -343,7 +343,7 @@ public class ActorFutureTest
     }
 
     @Test
-    public void awaitCompletedFuture()
+    public void shouldInvokeCallbackOnCompletedFuture()
     {
         // given
         final AtomicReference<String> futureResult = new AtomicReference<>();
@@ -381,44 +381,6 @@ public class ActorFutureTest
         {
             return actor.call(() -> returnValue);
         }
-    }
-
-    @Test
-    @Ignore("https://github.com/zeebe-io/zeebe/issues/669")
-    public void shouldNotExecuteOtherJobsBetweenAwaitAndContinuation()
-    {
-        final List<String> lifecycle = new ArrayList<>();
-        final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
-
-        final Actor actor = new Actor()
-        {
-            @Override
-            protected void onActorStarted()
-            {
-                actor.runOnCompletion(future, (r, t) -> lifecycle.add("futureDone"));
-            }
-        };
-
-        schedulerRule.submitActor(actor);
-
-        schedulerRule.workUntilDone();
-
-        // when
-        actor.actor.call(() -> lifecycle.add("call"));
-        schedulerRule.submitActor(new Actor()
-        {
-            @Override
-            protected void onActorStarted()
-            {
-                future.complete(null);
-            }
-        });
-        schedulerRule.workUntilDone();
-
-        // then
-        assertThat(lifecycle).containsExactly("futureDone", "call");
-
-
     }
 
     @Test
