@@ -34,7 +34,7 @@ export default class Statistics extends React.Component {
         <div className="Statistics">
           <div className="Statistics__diagram-container">
             Gateway: {this.props.gateway.name || this.props.gateway.id} / EndEvent:{' '}
-            {this.props.endEvent.name || this.props.endEvent.id} - Amount: {this.state.data.total}
+            {this.props.endEvent.name || this.props.endEvent.id}
             <canvas ref={node => (this.relativeChart = node)} />
           </div>
           <div className="Statistics__diagram-container">
