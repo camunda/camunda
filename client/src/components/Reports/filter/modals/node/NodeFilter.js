@@ -78,7 +78,7 @@ export default class NodeFilter extends React.Component {
 
   render() {
     return (
-      <Modal open={true} onClose={this.props.close} className="NodeFilter__modal">
+      <Modal open={true} onClose={this.props.close} className="NodeFilter__modal" size="max">
         <Modal.Header>Add Flow Node Filter</Modal.Header>
         <Modal.Content>
           {this.createPreviewList()}

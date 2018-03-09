@@ -14,10 +14,12 @@ export default class Modal extends React.Component {
     this.fixPositioning();
     this.setFocus();
     new MutationObserver(this.fixPositioning).observe(this.el, {childList: true, subtree: true});
+    window.addEventListener('resize', this.fixPositioning);
   }
 
   componentWillUnmount() {
     document.body.removeChild(this.el);
+    window.removeEventListener('resize', this.fixPositioning);
   }
 
   storeContainer = node => {
