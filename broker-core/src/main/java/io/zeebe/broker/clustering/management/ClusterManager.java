@@ -353,7 +353,6 @@ public class ClusterManager extends Actor
             .buffer(EMPTY_BUF);
 
         return output.sendResponse(response);
-//        return true;
     }
 
     public ActorFuture<Topology> requestTopology()

@@ -42,7 +42,7 @@ public class SystemContext implements AutoCloseable
 
     public static final Logger LOG = Loggers.SYSTEM_LOGGER;
     public static final String BROKER_ID_LOG_PROPERTY = "broker-id";
-    public static final int CLOSE_TIMEOUT = 2;
+    public static final int CLOSE_TIMEOUT = 100;
 
     protected final ServiceContainer serviceContainer;
 
@@ -193,11 +193,11 @@ public class SystemContext implements AutoCloseable
         {
             try
             {
-                scheduler.stop().get(2, TimeUnit.SECONDS);
+                scheduler.stop().get(CLOSE_TIMEOUT, TimeUnit.SECONDS);
             }
             catch (TimeoutException e)
             {
-                LOG.error("Failed to close scheduler within 2 seconds", e);
+                LOG.error("Failed to close scheduler within {} seconds", CLOSE_TIMEOUT, e);
             }
             catch (ExecutionException | InterruptedException e)
             {

@@ -26,7 +26,6 @@ import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
 
 public class RequestPartitionsMessageHandler implements ControlMessageHandler
@@ -47,38 +46,54 @@ public class RequestPartitionsMessageHandler implements ControlMessageHandler
     }
 
     @Override
-    public ActorFuture<Void> handle(ActorControl actor, int partitionId, DirectBuffer buffer, BrokerEventMetadata metadata)
+    public void handle(ActorControl actor, int partitionId, DirectBuffer buffer, BrokerEventMetadata metadata)
     {
         final int requestStreamId = metadata.getRequestStreamId();
         final long requestId = metadata.getRequestId();
 
         if (partitionId != Protocol.SYSTEM_PARTITION)
         {
-            sendErrorResponse(ErrorCode.REQUEST_PROCESSING_FAILURE, "Partitions request must address the system partition " + Protocol.SYSTEM_PARTITION, buffer, requestStreamId, requestId);
-            return CompletableActorFuture.completed(null);
+            sendErrorResponse(actor, ErrorCode.REQUEST_PROCESSING_FAILURE,
+                "Partitions request must address the system partition " + Protocol.SYSTEM_PARTITION,
+                requestStreamId, requestId);
         }
 
+        // stream processor actor sends the response on success
         final ActorFuture<Void> handlerFuture = systemPartitionManager.sendPartitions(requestStreamId, requestId);
-        if (handlerFuture == null)
+
+        actor.runOnCompletion(handlerFuture, ((aVoid, throwable) ->
         {
-            // it is important that partition not found is returned here to signal a client that it may have addressed a broker
-            // that appeared as the system partition leader but is not (yet) able to respond
-            sendErrorResponse(ErrorCode.PARTITION_NOT_FOUND, "System partition processor not available", buffer, requestStreamId, requestId);
-            return CompletableActorFuture.completed(null);
-        }
-        else
-        {
-            return handlerFuture;
-        }
+            if (throwable != null)
+            {
+                // it is important that partition not found is returned here to signal a client that it may have addressed a broker
+                // that appeared as the system partition leader but is not (yet) able to respond
+                sendErrorResponse(actor, ErrorCode.PARTITION_NOT_FOUND,
+                    throwable.getMessage(),
+                    requestStreamId, requestId);
+            }
+        }));
     }
 
-    protected void sendErrorResponse(ErrorCode errorCode, String message, DirectBuffer request, int requestStream, long requestId)
+    protected void sendErrorResponse(ActorControl actor, ErrorCode errorCode, String message, int requestStream, long requestId)
     {
-        errorWriter.errorCode(errorCode)
-            .errorMessage(message)
-            .failedRequest(request, 0, request.capacity())
-            .tryWriteResponse(requestStream, requestId);
-        // TODO: backpressure
+        // Backpressure:
+        // ControlMessageHandlerManager does not poll new messages, since
+        // he is blocked, with the runUntileDone call, until the response is send successfully
+        actor.runUntilDone(() ->
+        {
+            final boolean success = errorWriter.errorCode(errorCode)
+                .errorMessage(message)
+                .tryWriteResponse(requestStream, requestId);
+
+            if (success)
+            {
+                actor.done();
+            }
+            else
+            {
+                actor.yield();
+            }
+        });
     }
 
 }

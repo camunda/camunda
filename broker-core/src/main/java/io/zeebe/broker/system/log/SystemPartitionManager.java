@@ -30,6 +30,7 @@ import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerTransport;
 import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicReference;
@@ -217,7 +218,7 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
         }
         else
         {
-            return null;
+            return CompletableActorFuture.completedExceptionally(new IllegalStateException("No partition responder available."));
         }
     }
 

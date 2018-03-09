@@ -17,18 +17,18 @@
  */
 package io.zeebe.broker.transport.controlmessage;
 
-import io.zeebe.protocol.clientapi.ErrorCode;
-import io.zeebe.util.sched.ActorControl;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
-import org.agrona.DirectBuffer;
-
-import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.broker.task.TaskSubscriptionManager;
 import io.zeebe.broker.task.processor.TaskSubscriptionRequest;
 import io.zeebe.broker.transport.clientapi.ErrorResponseWriter;
 import io.zeebe.protocol.clientapi.ControlMessageType;
+import io.zeebe.protocol.clientapi.ErrorCode;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.transport.ServerOutput;
+import io.zeebe.util.sched.ActorControl;
+import io.zeebe.util.sched.future.ActorFuture;
+import org.agrona.DirectBuffer;
+
+import java.util.function.BooleanSupplier;
 
 public class RemoveTaskSubscriptionHandler implements ControlMessageHandler
 {
@@ -53,38 +53,54 @@ public class RemoveTaskSubscriptionHandler implements ControlMessageHandler
     }
 
     @Override
-    public ActorFuture<Void> handle(ActorControl actor, int partitionId, DirectBuffer buffer, BrokerEventMetadata eventMetada)
+    public void handle(ActorControl actor, int partitionId, DirectBuffer buffer, BrokerEventMetadata eventMetada)
     {
+        final int requestStreamId = eventMetada.getRequestStreamId();
+        final long requestId = eventMetada.getRequestId();
         subscription.reset();
-
         subscription.wrap(buffer);
 
-        final CompletableActorFuture<Void> completableActorFuture = new CompletableActorFuture<>();
-        final ActorFuture<Void> future = manager.removeSubscription(subscription.getSubscriberKey());
-
-        actor.runOnCompletion(future, (v, failure) ->
+        final long subscriberKey = subscription.getSubscriberKey();
+        final ActorFuture<Void> future = manager.removeSubscription(subscriberKey);
+        actor.runOnCompletion(future, (aVoid, throwable) ->
         {
-            if (failure == null)
+            if (throwable == null)
             {
-                responseWriter
-                    .dataWriter(subscription)
-                    .tryWriteResponse(eventMetada.getRequestStreamId(), eventMetada.getRequestId());
-                completableActorFuture.complete(null);
-                // TODO: proper backpressure
+                sendResponse(actor, () ->
+                {
+                    return responseWriter
+                            .dataWriter(subscription)
+                            .tryWriteResponse(requestStreamId, requestId);
+                });
             }
             else
             {
-                errorResponseWriter
-                    .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
-                    .errorMessage("Cannot remove task subscription. %s", failure.getMessage())
-                    .failedRequest(buffer, 0, buffer.capacity())
-                    .tryWriteResponseOrLogFailure(eventMetada.getRequestStreamId(), eventMetada.getRequestId());
-                completableActorFuture.completeExceptionally(failure);
-                // TODO: proper backpressure
+                sendResponse(actor, () ->
+                {
+                    return errorResponseWriter
+                        .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
+                        .errorMessage("Cannot remove task subscription. %s", throwable.getMessage())
+                        .tryWriteResponseOrLogFailure(requestStreamId, requestId);
+                });
             }
         });
+    }
 
-        return completableActorFuture;
+    private void sendResponse(ActorControl actor, BooleanSupplier supplier)
+    {
+        actor.runUntilDone(() ->
+        {
+            final boolean success = supplier.getAsBoolean();
+
+            if (success)
+            {
+                actor.done();
+            }
+            else
+            {
+                actor.yield();
+            }
+        });
     }
 
 }

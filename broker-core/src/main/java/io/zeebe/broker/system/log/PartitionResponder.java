@@ -24,6 +24,7 @@ import io.zeebe.broker.transport.controlmessage.ControlMessageResponseWriter;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.util.IntObjectBiConsumer;
 import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
 
 import java.util.concurrent.atomic.AtomicReference;
@@ -57,7 +58,7 @@ public class PartitionResponder implements IntObjectBiConsumer<DirectBuffer>, St
         }
         else
         {
-            return null;
+            return CompletableActorFuture.completedExceptionally(new IllegalStateException("No stream processor found."));
         }
     }
 

@@ -26,31 +26,23 @@ import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.transport.ServerOutput;
-import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorControl;
-import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
 
-public class RequestTopologyHandler extends Actor implements ControlMessageHandler
+import java.util.function.BooleanSupplier;
+
+public class RequestTopologyHandler implements ControlMessageHandler
 {
     protected final ClusterManager clusterManager;
     protected final ControlMessageResponseWriter responseWriter;
     protected final ErrorResponseWriter errorResponseWriter;
-    private final ActorScheduler actorScheduler;
 
-    private ActorFuture<Topology> topologyActorFuture;
-    private CompletableActorFuture<Void> completableFuture;
-    private DirectBuffer requestBuffer;
-    private BrokerEventMetadata metadata;
-
-    public RequestTopologyHandler(ActorScheduler actorScheduler, final ServerOutput ouput, final ClusterManager clusterManager)
+    public RequestTopologyHandler(final ServerOutput ouput, final ClusterManager clusterManager)
     {
         this.clusterManager = clusterManager;
         this.responseWriter = new ControlMessageResponseWriter(ouput);
         this.errorResponseWriter = new ErrorResponseWriter(ouput);
-        this.actorScheduler = actorScheduler;
     }
 
     @Override
@@ -60,48 +52,45 @@ public class RequestTopologyHandler extends Actor implements ControlMessageHandl
     }
 
     @Override
-    protected void onActorStarted()
+    public void handle(ActorControl actor, int partitionId, final DirectBuffer buffer, final BrokerEventMetadata metadata)
     {
+        final int requestStreamId = metadata.getRequestStreamId();
+        final long requestId = metadata.getRequestId();
+
+        final ActorFuture<Topology> topologyActorFuture = clusterManager.requestTopology();
         actor.runOnCompletion(topologyActorFuture, ((topology, throwable) ->
         {
             if (throwable == null)
             {
                 responseWriter.dataWriter(topology);
-
-                if (!responseWriter.tryWriteResponse(metadata.getRequestStreamId(), metadata.getRequestId()))
-                {
-                    errorResponseWriter.errorCode(ErrorCode.REQUEST_WRITE_FAILURE)
-                        .errorMessage("Cannot write topology response.")
-                        .failedRequest(requestBuffer, 0, requestBuffer.capacity())
-                        .tryWriteResponseOrLogFailure(metadata.getRequestStreamId(), metadata.getRequestId());
-                }
-                completableFuture.complete(null);
+                sendResponse(actor, () -> responseWriter.tryWriteResponse(requestStreamId, requestId));
             }
             else
             {
                 Loggers.CLUSTERING_LOGGER.debug("Problem on requesting topology. Exception {}", throwable);
-                errorResponseWriter.errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
-                    .errorMessage("Cannot request topology!")
-                    .failedRequest(requestBuffer, 0, requestBuffer.capacity())
-                    .tryWriteResponseOrLogFailure(metadata.getRequestStreamId(), metadata.getRequestId());
-
-                completableFuture.completeExceptionally(throwable);
-
+                sendResponse(actor, () -> {
+                    return errorResponseWriter.errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
+                        .errorMessage("Cannot request topology!")
+                        .tryWriteResponseOrLogFailure(requestStreamId, requestId);
+                });
             }
         }));
     }
 
-    @Override
-    public ActorFuture<Void> handle(ActorControl actor, int partitionId, final DirectBuffer buffer, final BrokerEventMetadata metadata)
+    private void sendResponse(ActorControl actor, BooleanSupplier supplier)
     {
-        // call cluster manager
-        this.requestBuffer = buffer;
-        this.metadata = metadata;
+        actor.runUntilDone(() ->
+        {
+            final boolean success = supplier.getAsBoolean();
 
-        this.completableFuture = new CompletableActorFuture<>();
-        this.topologyActorFuture = clusterManager.requestTopology();
-        actorScheduler.submitActor(this);
-
-        return completableFuture;
+            if (success)
+            {
+                actor.done();
+            }
+            else
+            {
+                actor.yield();
+            }
+        });
     }
 }

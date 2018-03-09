@@ -17,18 +17,6 @@
  */
 package io.zeebe.broker.task;
 
-import static io.zeebe.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE;
-import static io.zeebe.broker.logstreams.processor.StreamProcessorIds.TASK_LOCK_STREAM_PROCESSOR_ID;
-import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
-import static io.zeebe.broker.task.TaskQueueServiceNames.taskQueueLockStreamProcessorServiceName;
-import static io.zeebe.util.EnsureUtil.ensureNotNull;
-import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
-import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
-
-import java.util.*;
-import java.util.Map.Entry;
-import java.util.function.Function;
-
 import io.zeebe.broker.logstreams.processor.StreamProcessorService;
 import io.zeebe.broker.task.processor.LockTaskStreamProcessor;
 import io.zeebe.broker.task.processor.TaskSubscription;
@@ -47,6 +35,19 @@ import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.collections.Long2ObjectHashMap;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.function.Function;
+
+import static io.zeebe.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE;
+import static io.zeebe.broker.logstreams.processor.StreamProcessorIds.TASK_LOCK_STREAM_PROCESSOR_ID;
+import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
+import static io.zeebe.broker.task.TaskQueueServiceNames.taskQueueLockStreamProcessorServiceName;
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 public class TaskSubscriptionManager extends Actor implements TransportListener
 {
@@ -112,19 +113,14 @@ public class TaskSubscriptionManager extends Actor implements TransportListener
         final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
         actor.call(() ->
         {
-            ensureNotNull("subscription", subscription);
-
             final DirectBuffer taskType = subscription.getLockTaskType();
-
-            ensureNotNull("lock task type", taskType);
-
             final int partitionId = subscription.getPartitionId();
 
             final LogStreamBucket logStreamBucket = logStreamBuckets.get(partitionId);
             if (logStreamBucket == null)
             {
-                final String errorMessage = String.format("Partition with id '%d' not found.", partitionId);
-                throw new RuntimeException(errorMessage);
+                future.completeExceptionally(new RuntimeException(String.format("Partition with id '%d' not found.", partitionId)));
+                return;
             }
 
             final long subscriptionId = nextSubscriptionId++;
@@ -146,16 +142,12 @@ public class TaskSubscriptionManager extends Actor implements TransportListener
                     {
                         future.completeExceptionally(throwable);
                     }
-
                 });
             }
             else
             {
-                // need to copy the type buffer because it is not durable
-                final DirectBuffer newTaskTypeBuffer = cloneBuffer(taskType);
-
-                final LockTaskStreamProcessor processor = streamProcessorSupplier.apply(newTaskTypeBuffer);
-                final ActorFuture<Void> processorFuture = createStreamProcessorService(processor, newTaskTypeBuffer, logStreamBucket, taskType);
+                final LockTaskStreamProcessor processor = streamProcessorSupplier.apply(taskType);
+                final ActorFuture<Void> processorFuture = createStreamProcessorService(processor, taskType, logStreamBucket, taskType);
 
                 actor.runOnCompletion(processorFuture, (v, t) ->
                 {

@@ -17,11 +17,6 @@
  */
 package io.zeebe.broker.event.processor;
 
-import static io.zeebe.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE;
-import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
-
-import java.util.Objects;
-
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.event.TopicSubscriptionServiceNames;
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
@@ -34,12 +29,7 @@ import io.zeebe.broker.transport.clientapi.SubscribedEventWriter;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.processor.StreamProcessor;
 import io.zeebe.logstreams.processor.StreamProcessorController;
-import io.zeebe.servicecontainer.Injector;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceGroupReference;
-import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerTransport;
@@ -50,6 +40,11 @@ import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.slf4j.Logger;
+
+import java.util.Objects;
+
+import static io.zeebe.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE;
+import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
 
 public class TopicSubscriptionService extends Actor implements Service<TopicSubscriptionService>, TransportListener
 {
@@ -202,15 +197,10 @@ public class TopicSubscriptionService extends Actor implements Service<TopicSubs
         }
         else
         {
-            final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
-            future.completeExceptionally(
-                new RuntimeException(
-                    String.format("No subscription management processor registered for partition '%d'", partitionId)
-                )
-            );
-            return future;
+            return CompletableActorFuture.completedExceptionally(new RuntimeException(
+                String.format("No subscription management processor registered for partition '%d'", partitionId)
+            ));
         }
-
     }
 
     private TopicSubscriptionManagementProcessor getManager(final int partitionId)

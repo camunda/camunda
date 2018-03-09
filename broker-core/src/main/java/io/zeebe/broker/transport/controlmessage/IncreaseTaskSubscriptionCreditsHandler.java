@@ -26,9 +26,10 @@ import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.util.sched.ActorControl;
-import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
+
+import java.util.function.BooleanSupplier;
 
 public class IncreaseTaskSubscriptionCreditsHandler implements ControlMessageHandler
 {
@@ -57,47 +58,64 @@ public class IncreaseTaskSubscriptionCreditsHandler implements ControlMessageHan
     }
 
     @Override
-    public ActorFuture<Void> handle(ActorControl actor, int partitionId, DirectBuffer buffer, BrokerEventMetadata eventMetadata)
+    public void handle(ActorControl actor, int partitionId, DirectBuffer buffer, BrokerEventMetadata eventMetadata)
     {
+        final long requestId = eventMetadata.getRequestId();
+        final int requestStreamId = eventMetadata.getRequestStreamId();
         subscription.reset();
-
         subscription.wrap(buffer);
 
         if (subscription.getCredits() <= 0)
         {
-            sendError(eventMetadata, buffer, "Cannot increase task subscription credits. Credits must be positive.");
-            return COMPLETED_FUTURE;
+            sendResponse(actor,  () ->
+            {
+                return errorResponseWriter
+                    .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
+                    .errorMessage("Cannot increase task subscription credits. Credits must be positive.")
+                    .tryWriteResponseOrLogFailure(requestStreamId, requestId);
+            });
         }
 
         creditsRequest.setCredits(subscription.getCredits());
         creditsRequest.setSubscriberKey(subscription.getSubscriberKey());
 
         final boolean success = manager.increaseSubscriptionCreditsAsync(creditsRequest);
-
         if (success)
         {
-            responseWriter
-                .dataWriter(subscription)
-                .tryWriteResponse(eventMetadata.getRequestStreamId(), eventMetadata.getRequestId());
-            // TODO: proper backpressure
-
-            return COMPLETED_FUTURE;
+            sendResponse(actor, () ->
+            {
+                return responseWriter
+                    .dataWriter(subscription)
+                    .tryWriteResponse(requestStreamId, requestId);
+            });
         }
         else
         {
-            sendError(eventMetadata, buffer, "Cannot increase task subscription credits. Capacities exhausted.");
-            return COMPLETED_FUTURE;
+            sendResponse(actor, () ->
+            {
+                return errorResponseWriter
+                    .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
+                    .errorMessage("Cannot increase task subscription credits. Capacities exhausted.")
+                    .tryWriteResponseOrLogFailure(requestStreamId, requestId);
+            });
         }
     }
 
-    protected void sendError(BrokerEventMetadata metadata, DirectBuffer request, String errorMessage)
+    private void sendResponse(ActorControl actor, BooleanSupplier supplier)
     {
-        errorResponseWriter
-            .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
-            .errorMessage(errorMessage)
-            .failedRequest(request, 0, request.capacity())
-            .tryWriteResponseOrLogFailure(metadata.getRequestStreamId(), metadata.getRequestId());
-        // TODO: proper backpressure
+        actor.runUntilDone(() ->
+        {
+            final boolean success = supplier.getAsBoolean();
+
+            if (success)
+            {
+                actor.done();
+            }
+            else
+            {
+                actor.yield();
+            }
+        });
     }
 
 }

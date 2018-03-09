@@ -17,17 +17,21 @@
  */
 package io.zeebe.broker.task.processor;
 
-import static io.zeebe.protocol.clientapi.EventType.TASK_EVENT;
-import static io.zeebe.util.EnsureUtil.*;
-
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
 import io.zeebe.broker.logstreams.processor.NoopSnapshotSupport;
-import io.zeebe.broker.task.*;
+import io.zeebe.broker.task.CreditsRequest;
+import io.zeebe.broker.task.CreditsRequestBuffer;
+import io.zeebe.broker.task.TaskSubscriptionManager;
 import io.zeebe.broker.task.data.TaskEvent;
 import io.zeebe.broker.task.data.TaskState;
 import io.zeebe.broker.task.processor.TaskSubscriptions.SubscriptionIterator;
-import io.zeebe.logstreams.log.*;
-import io.zeebe.logstreams.processor.*;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamWriter;
+import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.logstreams.processor.EventFilter;
+import io.zeebe.logstreams.processor.EventProcessor;
+import io.zeebe.logstreams.processor.StreamProcessor;
+import io.zeebe.logstreams.processor.StreamProcessorContext;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.EventType;
@@ -36,8 +40,10 @@ import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
+
+import static io.zeebe.protocol.clientapi.EventType.TASK_EVENT;
+import static io.zeebe.util.EnsureUtil.*;
 
 public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
 {
@@ -131,8 +137,7 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
 
     public ActorFuture<Boolean> removeSubscription(long subscriberKey)
     {
-        final CompletableActorFuture<Boolean> completableFuture = new CompletableActorFuture<>();
-        actor.call(() ->
+        return actor.call(() ->
         {
             subscriptions.removeSubscription(subscriberKey);
             final boolean isSuspended = subscriptions.isEmpty();
@@ -141,15 +146,13 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
                 context.suspendController();
             }
 
-            completableFuture.complete(!isSuspended);
+            return !isSuspended;
         });
-        return completableFuture;
     }
 
     public ActorFuture<Boolean> onClientChannelCloseAsync(int channelId)
     {
-        final CompletableActorFuture<Boolean> completableFuture = new CompletableActorFuture<>();
-        actor.call(() ->
+        return actor.call(() ->
         {
             managementIterator.reset();
 
@@ -167,10 +170,8 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
             {
                 context.suspendController();
             }
-
-            completableFuture.complete(!isSuspended);
+            return !isSuspended;
         });
-        return completableFuture;
     }
 
     public boolean increaseSubscriptionCreditsAsync(CreditsRequest request)

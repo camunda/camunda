@@ -20,7 +20,6 @@ package io.zeebe.broker.transport.controlmessage;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.util.sched.ActorControl;
-import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
 
 /**
@@ -38,7 +37,13 @@ public interface ControlMessageHandler
      * copy the buffer if the data is used beyond the invocation.
      *
      *
+     * Backpressure should be implemented in the {@link #handle(ActorControl, int, DirectBuffer, BrokerEventMetadata)}
+     * methdod like follows:
+     * Sending response (success or error) should be done via actor.runUntilDone. This
+     * will block the calling actor, until the response is send successfully.
+     *
      * @param actor
+     *          the actor that can be used for waiting of async calls
      * @param partitionId
      *         < 0 if no specific partition is addressed
      * @param buffer
@@ -46,8 +51,6 @@ public interface ControlMessageHandler
      * @param metadata
      *            the metadata (channel partitionId, connection partitionId, request partitionId) of the
      *            request
-     * @return a future which indicates when the control message is handled
-     *         completely
      */
-    ActorFuture<Void> handle(ActorControl actor, int partitionId, DirectBuffer buffer, BrokerEventMetadata metadata);
+    void handle(ActorControl actor, int partitionId, DirectBuffer buffer, BrokerEventMetadata metadata);
 }

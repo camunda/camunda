@@ -17,22 +17,20 @@
  */
 package io.zeebe.broker.transport.controlmessage;
 
-import static io.zeebe.broker.services.DispatcherSubscriptionNames.TRANSPORT_CONTROL_MESSAGE_HANDLER_SUBSCRIPTION;
-
-import java.time.Duration;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.transport.clientapi.ErrorResponseWriter;
-import io.zeebe.dispatcher.*;
-import io.zeebe.protocol.clientapi.*;
+import io.zeebe.dispatcher.Dispatcher;
+import io.zeebe.dispatcher.FragmentHandler;
+import io.zeebe.dispatcher.Subscription;
+import io.zeebe.protocol.clientapi.ControlMessageRequestDecoder;
+import io.zeebe.protocol.clientapi.ControlMessageType;
+import io.zeebe.protocol.clientapi.ErrorCode;
+import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerResponse;
 import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
@@ -40,6 +38,13 @@ import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BooleanSupplier;
+
+import static io.zeebe.broker.services.DispatcherSubscriptionNames.TRANSPORT_CONTROL_MESSAGE_HANDLER_SUBSCRIPTION;
 
 public class ControlMessageHandlerManager extends Actor implements FragmentHandler
 {
@@ -138,6 +143,24 @@ public class ControlMessageHandlerManager extends Actor implements FragmentHandl
         return openFuture;
     }
 
+    @Override
+    protected void onActorClosed()
+    {
+        super.onActorClosed();
+    }
+
+    @Override
+    protected void onActorClosing()
+    {
+        super.onActorClosing();
+    }
+
+    @Override
+    protected void onActorCloseRequested()
+    {
+        super.onActorCloseRequested();
+    }
+
     public ActorFuture<Void> closeAsync()
     {
         if (isOpenend.compareAndSet(true, false))
@@ -179,43 +202,37 @@ public class ControlMessageHandlerManager extends Actor implements FragmentHandl
         final ControlMessageHandler handler = handlersByTypeId.get(messageType.value());
         if (handler != null)
         {
-            final ActorFuture<Void> handleFuture = handler.handle(actor, partitionId, requestBuffer, eventMetada);
-            actor.runOnCompletion(handleFuture, ((aVoid, throwable) ->
-            {
-                if (throwable != null)
-                {
-                    LOG.error("Could not process control message request successfully. A response may not be sent.", throwable);
-                }
-            }));
-
-            actor.runDelayed(Duration.ofMillis(requestTimeoutInMillis), () ->
-            {
-                if (!handleFuture.isDone())
-                {
-                    // timeout
-                    errorResponseWriter
-                        .errorCode(ErrorCode.REQUEST_TIMEOUT)
-                        .errorMessage("Timeout while handle control message.")
-                        .failedRequest(requestBuffer, 0, requestBuffer.capacity())
-                        .tryWriteResponseOrLogFailure(eventMetada.getRequestStreamId(), eventMetada.getRequestId());
-
-                    handleFuture.completeExceptionally(new TimeoutException());
-                }
-            });
+            handler.handle(actor, partitionId, requestBuffer, eventMetada);
         }
         else
         {
-            actor.call(() ->
+            sendResponse(actor, () ->
             {
-                errorResponseWriter
+                return errorResponseWriter
                     .errorCode(ErrorCode.MESSAGE_NOT_SUPPORTED)
                     .errorMessage("Cannot handle control message with type '%s'.", getLastRequestMessageType().name())
-                    .failedRequest(requestBuffer, 0, requestBuffer.capacity())
                     .tryWriteResponseOrLogFailure(eventMetada.getRequestStreamId(), eventMetada.getRequestId());
             });
         }
 
         return FragmentHandler.CONSUME_FRAGMENT_RESULT;
+    }
+
+    private void sendResponse(ActorControl actor, BooleanSupplier supplier)
+    {
+        actor.runUntilDone(() ->
+        {
+            final boolean success = supplier.getAsBoolean();
+
+            if (success)
+            {
+                actor.done();
+            }
+            else
+            {
+                actor.yield();
+            }
+        });
     }
 
     protected void ensureBufferCapacity(int length)

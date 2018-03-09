@@ -70,11 +70,11 @@ public class ControlMessageHandlerManagerService implements Service<ControlMessa
         final ServerOutput output = transport.getOutput();
 
         final List<ControlMessageHandler> controlMessageHandlers = Arrays.asList(
-            new AddTaskSubscriptionHandler(output, taskSubscriptionManager),
+            new OpenTaskSubscriptionHandler(output, taskSubscriptionManager),
             new IncreaseTaskSubscriptionCreditsHandler(output, taskSubscriptionManager),
             new RemoveTaskSubscriptionHandler(output, taskSubscriptionManager),
             new RemoveTopicSubscriptionHandler(output, topicSubscriptionService),
-            new RequestTopologyHandler(actorScheduler, output, clusterManagerInjector.getValue()),
+            new RequestTopologyHandler(output, clusterManagerInjector.getValue()),
             new RequestPartitionsMessageHandler(output, systemPartitionManager)
         );
 

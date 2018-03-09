@@ -27,19 +27,20 @@ import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
 
-public class AddTaskSubscriptionHandler implements ControlMessageHandler
-{
-    protected final TaskSubscriptionRequest request = new TaskSubscriptionRequest();
+import java.util.function.BooleanSupplier;
 
+import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
+
+public class OpenTaskSubscriptionHandler implements ControlMessageHandler
+{
     protected final TaskSubscriptionManager manager;
 
     protected final ControlMessageResponseWriter responseWriter;
     protected final ErrorResponseWriter errorResponseWriter;
 
-    public AddTaskSubscriptionHandler(ServerOutput output, TaskSubscriptionManager manager)
+    public OpenTaskSubscriptionHandler(ServerOutput output, TaskSubscriptionManager manager)
     {
         this.manager = manager;
         this.errorResponseWriter = new ErrorResponseWriter(output);
@@ -53,11 +54,10 @@ public class AddTaskSubscriptionHandler implements ControlMessageHandler
     }
 
     @Override
-    public ActorFuture<Void> handle(ActorControl actor, int partitionId, DirectBuffer buffer, BrokerEventMetadata eventMetada)
+    public void handle(ActorControl actor, int partitionId, DirectBuffer buffer, BrokerEventMetadata eventMetada)
     {
-        final CompletableActorFuture<Void> completableActorFuture = new CompletableActorFuture<>();
-        request.reset();
-        request.wrap(buffer);
+        final TaskSubscriptionRequest request = new TaskSubscriptionRequest();
+        request.wrap(cloneBuffer(buffer));
 
         final long requestId = eventMetada.getRequestId();
         final int requestStreamId = eventMetada.getRequestStreamId();
@@ -68,31 +68,48 @@ public class AddTaskSubscriptionHandler implements ControlMessageHandler
 
         final ActorFuture<Void> future = manager.addSubscription(taskSubscription);
 
-        actor.runOnCompletion(future, (v, failure) ->
+        actor.runOnCompletion(future, ((aVoid, throwable) ->
         {
-            if (failure == null)
+            if (throwable == null)
             {
-                request.setSubscriberKey(taskSubscription.getSubscriberKey());
+                final long subscriberKey = taskSubscription.getSubscriberKey();
+                request.setSubscriberKey(subscriberKey);
 
-                responseWriter
-                    .dataWriter(request)
-                    .tryWriteResponse(eventMetada.getRequestStreamId(), eventMetada.getRequestId());
-                completableActorFuture.complete(null);
-                // TODO: proper back pressure
+                sendResponse(actor, () ->
+                {
+                    return responseWriter
+                            .dataWriter(request)
+                            .tryWriteResponse(requestStreamId, requestId);
+                });
             }
             else
             {
-                errorResponseWriter
-                    .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
-                    .errorMessage("Cannot add task subscription. %s", failure.getMessage())
-                    .failedRequest(buffer, 0, buffer.capacity())
-                    .tryWriteResponseOrLogFailure(requestStreamId, requestId);
-                completableActorFuture.completeExceptionally(failure);
-                // TODO: proper back pressure
-            }
-        });
+                sendResponse(actor, () ->
+                {
+                    return errorResponseWriter
+                        .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
+                        .errorMessage("Cannot add task subscription. %s", throwable.getMessage())
+                        .tryWriteResponseOrLogFailure(requestStreamId, requestId);
 
-        return completableActorFuture;
+                });
+            }
+        }));
     }
 
+    private void sendResponse(ActorControl actor, BooleanSupplier supplier)
+    {
+        actor.runUntilDone(() ->
+        {
+            final boolean success = supplier.getAsBoolean();
+
+            if (success)
+            {
+                actor.done();
+            }
+            else
+            {
+                actor.yield();
+            }
+        });
+    }
 }

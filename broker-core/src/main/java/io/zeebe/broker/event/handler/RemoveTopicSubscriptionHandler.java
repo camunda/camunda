@@ -28,8 +28,11 @@ import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
+
+import java.util.function.BooleanSupplier;
+
+import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
 
 public class RemoveTopicSubscriptionHandler implements ControlMessageHandler
 {
@@ -53,41 +56,54 @@ public class RemoveTopicSubscriptionHandler implements ControlMessageHandler
     }
 
     @Override
-    public ActorFuture<Void> handle(ActorControl actor, int partitionId, DirectBuffer buffer, BrokerEventMetadata metadata)
+    public void handle(ActorControl actor, int partitionId, DirectBuffer buffer, BrokerEventMetadata metadata)
     {
-        final CompletableActorFuture<Void> completableActorFuture = new CompletableActorFuture<>();
-        request.reset();
-        request.wrap(buffer);
+        final int requestStreamId = metadata.getRequestStreamId();
+        final long requestId = metadata.getRequestId();
 
-        final ActorFuture<Void> future = subscriptionService.closeSubscriptionAsync(
-            partitionId,
-            request.getSubscriberKey()
-        );
+        final CloseSubscriptionRequest request = new CloseSubscriptionRequest();
+        request.wrap(cloneBuffer(buffer));
 
-        actor.runOnCompletion(future, (v, failure) ->
+        final ActorFuture<Void> future = subscriptionService.closeSubscriptionAsync(partitionId,
+            request.getSubscriberKey());
+        actor.runOnCompletion(future, ((aVoid, throwable) ->
         {
-            if (failure == null)
+            if (throwable == null)
             {
-                responseWriter
-                    .dataWriter(request)
-                    .tryWriteResponse(metadata.getRequestStreamId(), metadata.getRequestId());
-                // TODO: proper backpressure
-                completableActorFuture.complete(null);
+                sendResponse(actor, () ->
+                {
+                    return responseWriter
+                        .dataWriter(request)
+                        .tryWriteResponse(requestStreamId, requestId);
+                });
             }
             else
             {
-                errorResponseWriter
-                    .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
-                    .errorMessage("Cannot close topic subscription. %s", failure.getMessage())
-                    .failedRequest(buffer, 0, buffer.capacity())
-                    .tryWriteResponseOrLogFailure(metadata.getRequestStreamId(), metadata.getRequestId());
-                // TODO: proper backpressure
-                completableActorFuture.completeExceptionally(failure);
+                sendResponse(actor, () ->
+                {
+                    return errorResponseWriter
+                        .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
+                        .errorMessage("Cannot close topic subscription. %s", throwable.getMessage())
+                        .tryWriteResponseOrLogFailure(requestStreamId, requestId);
+                });
             }
-        });
-
-        return completableActorFuture;
+        }));
     }
 
+    private void sendResponse(ActorControl actor, BooleanSupplier supplier)
+    {
+        actor.runUntilDone(() ->
+        {
+            final boolean success = supplier.getAsBoolean();
 
+            if (success)
+            {
+                actor.done();
+            }
+            else
+            {
+                actor.yield();
+            }
+        });
+    }
 }
