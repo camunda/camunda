@@ -57,10 +57,10 @@ pipeline {
         startElasticsearch()
         startEngine()
         sh 'mvn -Ptest-only -f qa/import-performance-tests/pom.xml -s settings.xml clean install'
-        sh 'curl localhost:9200/optimize-process-instance/_count?pretty'
       }
       post {
         always {
+          sh 'curl localhost:9200/optimize-process-instance/_count?pretty'
           stopAllOptimizeComponents()
           archiveArtifacts artifacts:  backendModuleName + '/target/it-elasticsearch/**/logs/*.log', onlyIfSuccessful: false
         }
