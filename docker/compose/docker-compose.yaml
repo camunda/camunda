@@ -1,5 +1,10 @@
 version: '3'
 
+volumes:
+    broker_1: {}
+    broker_2: {}
+    broker_3: {}
+
 services:
 
     broker-1:
@@ -9,7 +14,7 @@ services:
         environment:
             - ZEEBE_LOG_LEVEL=${ZEEBE_LOG_LEVEL:-info}
         volumes:
-            - $PWD/volumes/broker-1:/usr/local/zeebe/bin/data
+            - broker_1:/usr/local/zeebe/bin/data
 
     broker-2:
         image: camunda/zeebe:${ZEEBE_VERSION:-latest}
@@ -19,7 +24,7 @@ services:
             - ZEEBE_LOG_LEVEL=${ZEEBE_LOG_LEVEL:-info}
             - INITIAL_CONTACT_POINT=broker-1:51016
         volumes:
-            - $PWD/volumes/broker-2:/usr/local/zeebe/bin/data
+            - broker_2:/usr/local/zeebe/bin/data
 
     broker-3:
         image: camunda/zeebe:${ZEEBE_VERSION:-latest}
@@ -29,4 +34,4 @@ services:
             - ZEEBE_LOG_LEVEL=${ZEEBE_LOG_LEVEL:-info}
             - INITIAL_CONTACT_POINT=broker-1:51016
         volumes:
-            - $PWD/volumes/broker-3:/usr/local/zeebe/bin/data
+            - broker_3:/usr/local/zeebe/bin/data
