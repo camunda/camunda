@@ -391,6 +391,19 @@ describe('edit mode', async () => {
     expect(saveReport).toHaveBeenCalled();
   });
 
+  it('should disable save button if report name is empty', async () => {
+    props.match.params.viewMode = 'edit';
+    const node = mount(<Report {...props} />);
+    node.setState({loaded: true, name: ''});
+
+    expect(
+      node
+        .find('.Report__save-button')
+        .first()
+        .props()
+    ).toHaveProperty('disabled', true);
+  });
+
   it('should update name on input change', async () => {
     props.match.params.viewMode = 'edit';
     const node = mount(<Report {...props} />);

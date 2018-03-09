@@ -83,3 +83,8 @@ section h1 {
 .visually-hidden {
   @include visually-hidden;
 }
+
+a[disabled] {
+  // support to disable links: https://github.com/ReactTraining/react-router/issues/1082
+  pointer-events: none;
+}

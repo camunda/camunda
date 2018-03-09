@@ -231,6 +231,7 @@ export default class Report extends React.Component {
             <Link
               className="Button Report__tool-button Report__save-button"
               to={`/report/${this.id}`}
+              disabled={!this.state.name}
               onClick={this.save}
             >
               Save
