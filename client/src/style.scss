@@ -17,6 +17,7 @@ html {
   flex-grow: 1;
   display: flex;
   flex-direction: column;
+  min-height: 0; // see https://stackoverflow.com/a/28639686
 }
 
 body {
