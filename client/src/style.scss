@@ -18,6 +18,7 @@ html {
   display: flex;
   flex-direction: column;
   min-height: 0; // see https://stackoverflow.com/a/28639686
+  flex-basis: 0%;
 }
 
 body {
