@@ -27,12 +27,14 @@ const mainWrapped = Component => props => (
 );
 
 const headered = Component => props => {
-  const WrappedComponent = mainWrapped(Component);
-
   return (
     <React.Fragment>
       <Header name="Camunda Optimize" />
-      <WrappedComponent {...props} />
+      <main>
+        <ErrorBoundary>
+          <Component {...props} />
+        </ErrorBoundary>
+      </main>
       <Footer version="2.0.0" />
     </React.Fragment>
   );

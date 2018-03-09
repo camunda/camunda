@@ -56,19 +56,16 @@ export default class Report extends React.Component {
     const reportResult = await getReportData(this.id);
     const stateData = data || this.initializeReport();
 
-    this.setState(
-      {
-        name,
-        lastModifier,
-        lastModified,
-        loaded: true,
-        data: stateData,
-        originalData: stateData,
-        reportResult: reportResult || {data: stateData},
-        originalName: name
-      },
-      this.save
-    );
+    this.setState({
+      name,
+      lastModifier,
+      lastModified,
+      loaded: true,
+      data: stateData,
+      originalData: {...stateData},
+      reportResult: reportResult || {data: stateData},
+      originalName: name
+    });
   };
 
   deleteReport = async evt => {
