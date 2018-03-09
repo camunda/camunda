@@ -417,7 +417,7 @@ public class ServiceController extends Actor
 
             if (future instanceof ActorFuture)
             {
-                actor.await((ActorFuture<?>) future, this);
+                actor.runOnCompletion((ActorFuture<?>) future, (v, t) -> accept(t));
             }
             else
             {
@@ -509,7 +509,7 @@ public class ServiceController extends Actor
 
             if (future instanceof ActorFuture)
             {
-                actor.await((ActorFuture<?>) future, this);
+                actor.runOnCompletion((ActorFuture<?>) future, (v, t) -> accept(t));
             }
             else
             {
