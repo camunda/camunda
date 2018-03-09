@@ -78,10 +78,17 @@ export default class ControlPanel extends React.Component {
     return definition.name ? definition.name : key;
   };
 
+  canRenderDiagram = () => {
+    return (
+      this.props.renderDiagram &&
+      this.props.processDefinitionKey &&
+      this.props.processDefinitionVersion
+    );
+  };
+
   render() {
     const {loaded} = this.state;
     const key = this.props.processDefinitionKey;
-    const version = this.props.processDefinitionVersion;
 
     if (!loaded) {
       return <div className="ProcessDefinitionSelection__loading-indicator">loading...</div>;
@@ -91,11 +98,11 @@ export default class ControlPanel extends React.Component {
       <div
         className={
           'ProcessDefinitionSelection' +
-          (this.props.renderDiagram ? ' ProcessDefinitionSelection--large' : '')
+          (this.canRenderDiagram() ? ' ProcessDefinitionSelection--large' : '')
         }
       >
-        <ul className="ProcessDefinitionSelection__list">
-          <li className="ProcessDefinitionSelection__list-item">
+        <div className="ProcessDefinitionSelection__selects">
+          <div className="ProcessDefinitionSelection__selects-item">
             <label
               htmlFor="ProcessDefinitionSelection__process-definition"
               className="ProcessDefinitionSelection__label"
@@ -103,7 +110,7 @@ export default class ControlPanel extends React.Component {
               Name
             </label>
             <Select
-              className="ProcessDefinitionSelection__select"
+              className="ProcessDefinitionSelection__name-select"
               name="ProcessDefinitionSelection__key"
               value={this.getKey()}
               onChange={this.changeKey}
@@ -121,8 +128,8 @@ export default class ControlPanel extends React.Component {
                 );
               })}
             </Select>
-          </li>
-          <li className="ProcessDefinitionSelection__list-item">
+          </div>
+          <div className="ProcessDefinitionSelection__selects-item">
             <label
               htmlFor="ProcessDefinitionSelection__process-definition"
               className="ProcessDefinitionSelection__label"
@@ -130,15 +137,13 @@ export default class ControlPanel extends React.Component {
               Version
             </label>
             <Select
-              className="ProcessDefinitionSelection__select"
+              className="ProcessDefinitionSelection__version-select"
               name="ProcessDefinitionSelection__version"
               value={this.getVersion()}
               onChange={this.changeVersion}
               disabled={!key}
             >
-              <Select.Option defaultValue value="">
-                Please select...
-              </Select.Option>
+              {!key && <Select.Option defaultValue value="" />}
               {this.props.enableAllVersionSelection && (
                 <Select.Option value="ALL" key="all">
                   all
@@ -146,15 +151,13 @@ export default class ControlPanel extends React.Component {
               )}
               {this.renderAllDefinitionVersions(key)}
             </Select>
-          </li>
-        </ul>
-        {this.props.renderDiagram &&
-          key &&
-          version && (
-            <div className={'ProcessDefinitionSelection__diagram'}>
-              <BPMNDiagram xml={this.props.xml} disableNavigation />
-            </div>
-          )}
+          </div>
+        </div>
+        {this.canRenderDiagram() && (
+          <div className={'ProcessDefinitionSelection__diagram'}>
+            <BPMNDiagram xml={this.props.xml} disableNavigation />
+          </div>
+        )}
       </div>
     );
   }
