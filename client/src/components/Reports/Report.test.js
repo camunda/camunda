@@ -130,7 +130,7 @@ it('should display the key properties of a report', () => {
 
 it('should provide a link to edit mode in view mode', () => {
   const node = mount(<Report {...props} />);
-  node.setState({loaded: true, reportResult});
+  node.setState({loaded: true, reportResult, ...sampleReport});
 
   expect(node.find('.Report__edit-button')).toBePresent();
 });
@@ -139,7 +139,8 @@ it('should open a deletion modal on delete button click', async () => {
   const node = mount(<Report {...props} />);
   node.setState({
     loaded: true,
-    reportResult
+    reportResult,
+    ...sampleReport
   });
 
   await node
@@ -155,6 +156,7 @@ it('should remove a report when delete button is clicked', () => {
   node.setState({
     loaded: true,
     reportResult,
+    ...sampleReport,
     deleteModalVisible: true
   });
 
@@ -171,6 +173,7 @@ it('should redirect to the report list on report deletion', async () => {
   node.setState({
     loaded: true,
     reportResult,
+    ...sampleReport,
     deleteModalVisible: true
   });
 
@@ -184,7 +187,7 @@ it('should redirect to the report list on report deletion', async () => {
 
 it('should contain a ReportView with the report evaluation result', () => {
   const node = mount(<Report {...props} />);
-  node.setState({loaded: true, reportResult});
+  node.setState({loaded: true, reportResult, ...sampleReport});
 
   expect(node).toIncludeText('ReportView');
 });
@@ -193,14 +196,14 @@ it('should contain a Control Panel in edit mode', () => {
   props.match.params.viewMode = 'edit';
 
   const node = mount(<Report {...props} />);
-  node.setState({loaded: true, reportResult});
+  node.setState({loaded: true, reportResult, ...sampleReport});
 
   expect(node).toIncludeText('ControlPanel');
 });
 
 it('should not contain a Control Panel in non-edit mode', () => {
   const node = mount(<Report {...props} />);
-  node.setState({loaded: true, reportResult});
+  node.setState({loaded: true, reportResult, ...sampleReport});
 
   expect(node).not.toIncludeText('ControlPanel');
 });
@@ -228,7 +231,8 @@ it('should evaluate the report after updating', async () => {
         type: 'bar'
       },
       visualization: 'number'
-    }
+    },
+    ...sampleReport
   });
 
   getReportData.mockClear();
@@ -260,7 +264,7 @@ it('should save a changed report', async () => {
 
 it('should show a modal on share button click', () => {
   const node = mount(<Report {...props} />);
-  node.setState({loaded: true, reportResult});
+  node.setState({loaded: true, reportResult, ...sampleReport});
 
   node
     .find('.Report__share-button')
@@ -272,7 +276,7 @@ it('should show a modal on share button click', () => {
 
 it('should hide the modal on close button click', () => {
   const node = mount(<Report {...props} />);
-  node.setState({loaded: true, modalVisible: true, reportResult});
+  node.setState({loaded: true, modalVisible: true, reportResult, ...sampleReport});
 
   node
     .find('.Report__close-share-modal-button')
