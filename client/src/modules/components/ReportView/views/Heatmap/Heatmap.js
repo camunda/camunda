@@ -39,21 +39,13 @@ const Heatmap = props => {
           node.innerHTML = `target duration: ${formatters.duration(target)}<br/>`;
 
           if (typeof real === 'number') {
-            node.innerHTML += `actual duration: ${formatters.duration(real)}<br/>`;
-          } else {
-            node.innerHTML += `No actual value available.<br/>`;
-          }
+            const relation = Math.round(real / target * 100);
 
-          if (heat[id]) {
-            // above target value
-            node.innerHTML += `${Math.round(heat[id] * 100)}% above target value`;
+            node.innerHTML += `actual duration: ${formatters.duration(real)}<br/>${
+              relation < 1 ? '< 1' : Math.round(real / target * 100)
+            }% of the target value`;
           } else {
-            // no heat set: below target value
-            if (typeof real === 'number') {
-              node.innerHTML += `${Math.round((1 - real / target) * 100)}% below target value`;
-            } else {
-              node.innerHTML += `Cannot compare target and actual value.`;
-            }
+            node.innerHTML += `No actual value available.<br/>Cannot compare target and actual value.`;
           }
 
           // tooltips don't work well with spaces

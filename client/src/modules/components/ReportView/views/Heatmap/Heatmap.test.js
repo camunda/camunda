@@ -105,7 +105,31 @@ it('should show a tooltip with information about actual and target value', () =>
 
   expect(tooltip.textContent).toContain('target duration: 1ms'.replace(/ /g, '\u00A0'));
   expect(tooltip.textContent).toContain('actual duration: 2ms'.replace(/ /g, '\u00A0'));
-  expect(tooltip.textContent).toContain('100% above target value'.replace(/ /g, '\u00A0'));
+  expect(tooltip.textContent).toContain('200% of the target value'.replace(/ /g, '\u00A0'));
+});
+
+it('should inform if the actual value is less than 1% of the target value', () => {
+  const targetValue = {
+    active: true,
+    values: {
+      b: {value: 10000, unit: 'millis'}
+    }
+  };
+
+  calculateTargetValueHeat.mockReturnValue({b: 10000});
+  formatters.duration.mockReturnValueOnce('10000ms').mockReturnValueOnce('1ms');
+  convertToMilliseconds.mockReturnValue(10000);
+
+  const node = mount(<Heatmap data={data} xml={diagramXml} targetValue={targetValue} />);
+
+  const tooltip = node
+    .find(HeatmapOverlay)
+    .props()
+    .formatter('', 'b');
+
+  expect(tooltip.textContent).toContain('target duration: 10000ms'.replace(/ /g, '\u00A0'));
+  expect(tooltip.textContent).toContain('actual duration: 1ms'.replace(/ /g, '\u00A0'));
+  expect(tooltip.textContent).toContain('< 1% of the target value'.replace(/ /g, '\u00A0'));
 });
 
 it('should show a tooltip with information if no actual value is available', () => {
