@@ -13,7 +13,6 @@
   display: flex;
   flex-direction: row;
 
-  border-bottom: 1px solid #dfdfdf;
   width: 100%;
 
   padding-left: 20px;
@@ -27,7 +26,6 @@
   position: relative;
   padding-top: 25px;
 
-  margin-right: 20px;
   margin-bottom: 25px;
 }
 
@@ -42,15 +40,18 @@
 .ProcessDefinitionSelection__name-select {
   width: 100%;
   flex-grow: 1;
+  margin-right: 20px;
 }
 
 .ProcessDefinitionSelection__version-select {
-  width: 80px;
+  width: 100%;
   flex-shrink: 0;
   flex-grow: 0;
 }
 
 .ProcessDefinitionSelection__diagram {
+  border-top: 1px solid #dfdfdf;
+
   padding: 10px;
   display: flex;
   flex-grow: 1;
