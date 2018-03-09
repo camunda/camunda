@@ -57,11 +57,12 @@ public class ControllableClientTransportTest
     public RuleChain ruleChain = RuleChain.outerRule(actorSchedulerRule).around(closeables);
 
     protected ClientTransport clientTransport;
+    private Dispatcher clientSendBuffer;
 
     @Before
     public void setUp()
     {
-        final Dispatcher clientSendBuffer = Dispatchers.create("clientSendBuffer")
+        clientSendBuffer = Dispatchers.create("clientSendBuffer")
             .bufferSize(SEND_BUFFER_SIZE)
             .actorScheduler(actorSchedulerRule.get())
             .build();
@@ -85,6 +86,9 @@ public class ControllableClientTransportTest
     public void shouldNotOpenRequestWhenSendBufferIsSaturated()
     {
         // given
+        // making sure the sender cannot make progress on the send buffer
+        clientSendBuffer.openSubscription("blocking");
+
         final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
         final ClientOutput clientOutput = clientTransport.getOutput();
 
@@ -104,6 +108,9 @@ public class ControllableClientTransportTest
     public void shouldRejectMessageWhenSendBufferIsSaturated()
     {
         // given
+        // making sure the sender cannot make progress on the send buffer
+        clientSendBuffer.openSubscription("blocking");
+
         final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
         final ClientOutput clientOutput = clientTransport.getOutput();
 
