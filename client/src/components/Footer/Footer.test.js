@@ -23,12 +23,6 @@ jest.mock('./service', () => {
   };
 });
 
-jest.mock('components', () => {
-  return {
-    ProgressBar: props => <div className="ProgressBar" {...props} />
-  };
-});
-
 it('renders without crashing', () => {
   shallow(<Footer />);
 });
@@ -40,24 +34,33 @@ it('includes the version number provided as property', () => {
   expect(node).toIncludeText(version);
 });
 
-it('displays the import status if it is less than 100', () => {
+it('displays the loading indicator if import progress is less than 100', () => {
   const node = mount(<Footer />);
 
   node.setState({
-    importProgress: 50
+    engineConnections: {
+      property1: true,
+      property2: false
+    },
+    connectedToElasticsearch: true
   });
 
-  expect(node.find('.Footer__import-status')).toBePresent();
+  expect(node.find('.is-in-progress')).toBePresent();
 });
 
-it('does not display the import status if it is 100', () => {
+it('does not display the loading indicator if import progress is 100', () => {
   const node = mount(<Footer />);
 
   node.setState({
-    importProgress: 100
+    importProgress: 100,
+    engineConnections: {
+      property1: true,
+      property2: false
+    },
+    connectedToElasticsearch: true
   });
 
-  expect(node.find('.Footer__import-status')).not.toBePresent();
+  expect(node.find('.is-in-progress')).not.toBePresent();
 });
 
 it('should load import progress', () => {

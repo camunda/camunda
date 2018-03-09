@@ -39,6 +39,14 @@
   &.is-connected:before {
     background-color: #00c364;
   }
+
+  &.is-in-progress:before {
+    width: 0.8em;
+    height: 0.8em;
+    background-size: cover;
+    background-color: white;
+    background-image: url(./loading.svg);
+  }
 }
 
 .Footer__colophon {

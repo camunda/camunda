@@ -1,5 +1,4 @@
 import React from 'react';
-import {ProgressBar} from 'components';
 
 import './Footer.css';
 
@@ -43,15 +42,7 @@ export default class Footer extends React.Component {
   render() {
     const {importProgress, engineConnections, connectedToElasticsearch} = this.state;
 
-    let statusFragment = '';
-
-    if (importProgress !== null && importProgress < 100) {
-      statusFragment = (
-        <div className="Footer__import-status">
-          <ProgressBar height="6px" status={importProgress} title="Import status" />
-        </div>
-      );
-    }
+    const importFinished = importProgress !== null && importProgress === 100;
 
     let connectionFragment = '';
 
@@ -63,9 +54,16 @@ export default class Footer extends React.Component {
               <li
                 key={key}
                 className={
-                  'Footer__connect-status-item' + (engineConnections[key] ? ' is-connected' : '')
+                  'Footer__connect-status-item' +
+                  (engineConnections[key]
+                    ? importFinished ? ' is-connected' : ' is-in-progress'
+                    : '')
                 }
-                title={key + (engineConnections[key] ? ' is connected' : ' is not connected')}
+                title={
+                  engineConnections[key]
+                    ? importFinished ? key + ' is connected' : 'Import progress: ' + importProgress
+                    : key + ' is not connected'
+                }
               >
                 {key}
               </li>
@@ -73,10 +71,17 @@ export default class Footer extends React.Component {
           })}
           <li
             className={
-              'Footer__connect-status-item' + (connectedToElasticsearch ? ' is-connected' : '')
+              'Footer__connect-status-item' +
+              (connectedToElasticsearch
+                ? importFinished ? ' is-connected' : ' is-in-progress'
+                : '')
             }
             title={
-              'Elasticsearch ' + (connectedToElasticsearch ? 'is connected' : 'is not connected')
+              connectedToElasticsearch
+                ? importFinished
+                  ? 'Elasticsearch is connected'
+                  : 'Import progress: ' + importProgress
+                : 'Elasticsearch is not connected'
             }
           >
             Elasticsearch
@@ -87,7 +92,6 @@ export default class Footer extends React.Component {
 
     return (
       <footer className="Footer">
-        {statusFragment}
         <div className="Footer__content">
           {connectionFragment}
           <div className="Footer__colophon">

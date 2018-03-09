@@ -6,7 +6,6 @@ export {Dropdown} from './Dropdown';
 export {Input} from './Input';
 export {Select} from './Select';
 export {ButtonGroup} from './ButtonGroup';
-export {ProgressBar} from './ProgressBar';
 export {BPMNDiagram} from './BPMNDiagram';
 export {ControlGroup} from './ControlGroup';
 export {CopyToClipboard} from './CopyToClipboard';
