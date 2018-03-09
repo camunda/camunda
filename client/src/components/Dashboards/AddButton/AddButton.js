@@ -25,14 +25,14 @@ export default class AddButton extends React.Component {
     const reports = await loadReports();
 
     this.setState({
-      availableReports: reports,
-      selectedReportId: (reports[0] && reports[0].id) || ''
+      availableReports: reports
     });
   };
 
   openModal = evt => {
     this.setState({
-      modalOpen: true
+      modalOpen: true,
+      selectedReportId: ''
     });
   };
 
@@ -82,6 +82,7 @@ export default class AddButton extends React.Component {
               <label htmlFor="AddButton__selectReports">Select a Report…</label>
               <Select
                 disabled={noReports}
+                value={this.state.selectedReportId}
                 onChange={this.selectReport}
                 name="AddButton__selectReports"
                 className="AddButton__selectReports"
