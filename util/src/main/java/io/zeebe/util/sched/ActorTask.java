@@ -649,6 +649,8 @@ public class ActorTask
             }
         }
 
+        assert index >= 0 : "Subscription not registered";
+
         final ActorSubscription[] newSubscriptions = new ActorSubscription[length - 1];
         System.arraycopy(subscriptions, 0, newSubscriptions, 0, index);
         if (index < length - 1)

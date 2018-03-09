@@ -35,6 +35,8 @@ public class TaskMetrics implements AutoCloseable
 
     public void reportExecutionTime(long executionTimeNs)
     {
+        assert executionTimeNs >= 0;
+
         final long max = maxExecutionTime.getWeak();
         if (executionTimeNs > max)
         {

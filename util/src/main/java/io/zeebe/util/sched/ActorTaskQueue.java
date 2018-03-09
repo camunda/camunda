@@ -47,11 +47,13 @@ class ActorTaskQueueNode
 
     void nextOrdered(ActorTaskQueueNode t)
     {
+        assert t != this;
         UNSAFE.putOrderedObject(this, NEXT_OFFSET, t);
     }
 
     void prevOrdered(ActorTaskQueueNode t)
     {
+        assert t != this;
         UNSAFE.putObjectVolatile(this, PREV_OFFSET, t);
     }
 

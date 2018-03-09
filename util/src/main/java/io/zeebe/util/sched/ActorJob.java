@@ -128,7 +128,7 @@ public class ActorJob
      * Append a child task to this task. The new child task is appended to the list of tasks
      * spawned by this task such that it is executed last.
      */
-    public void appendChild(ActorJob spawnedTask)
+    private void appendChild(ActorJob spawnedTask)
     {
         spawnedTask.next = this.next;
         this.next = spawnedTask;
@@ -137,10 +137,12 @@ public class ActorJob
     public void append(ActorJob newJob)
     {
         ActorJob job = this;
+        assert job != newJob : "Job cannot be twice in a job queue";
 
         while (job.next != null)
         {
             job = job.next;
+            assert job != newJob : "Job cannot be twice in a job queue";
         }
 
         job.appendChild(newJob);
@@ -165,7 +167,7 @@ public class ActorJob
     public ActorFuture setCallable(Callable<?> callable)
     {
         this.callable = callable;
-        this.resultFuture = new CompletableActorFuture<>();
+        setResultFuture(new CompletableActorFuture<>());
         return resultFuture;
     }
 
@@ -264,6 +266,7 @@ public class ActorJob
 
     public void setResultFuture(ActorFuture resultFuture)
     {
+        assert !resultFuture.isDone();
         this.resultFuture = resultFuture;
     }
 

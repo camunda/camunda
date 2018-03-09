@@ -141,7 +141,7 @@ public class PriorityScheduler implements TaskScheduler
     @Override
     public ActorTask getNextTask(ActorClock clock)
     {
-        final int priotiy = currentRun.getTimeSlicePriority(clock.getNanoTime());
+        final int priority = currentRun.getTimeSlicePriority(clock.getNanoTime());
 
         // if no task at the given priority level is available, try executing a
         // task at the next highest priority etc.
@@ -149,7 +149,7 @@ public class PriorityScheduler implements TaskScheduler
 
         ActorTask nextTask = null;
 
-        for (int p = priotiy; nextTask == null && p > priotiy - priorityCount; p--)
+        for (int p = priority; nextTask == null && p > priority - priorityCount; p--)
         {
             final int priorityClass = p >= 0 ? p : floorMod(p, priorityCount);
             nextTask = getTaskFn.apply(priorityClass);

@@ -439,7 +439,7 @@ public class ActorControl
             newJob.setRunnable(runnable);
             newJob.setAutoCompleting(autocompleting);
             newJob.onJobAddedToTask(task);
-            currentJob.appendChild(newJob);
+            currentJob.append(newJob);
         }
         else
         {
