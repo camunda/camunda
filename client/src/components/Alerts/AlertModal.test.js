@@ -159,6 +159,7 @@ it('should not display warning if email is configured', async () => {
 it('should set isInvalid property for input if value is invalid', async () => {
   const node = await mount(<AlertModal reports={reports} />);
   node.setState({name: ''});
+  await node.update();
 
   expect(
     node

@@ -31,3 +31,10 @@ it('should render child elements and their props', () => {
   expect(node.find('#test_option')).toBePresent();
   expect(node.find('option[value="1"]')).toBePresent();
 });
+
+it('should translate the isInvalid props to is-invalid className', () => {
+  const node = mount(<Select className="foo" />);
+  node.setProps({isInvalid: true});
+
+  expect(node.getDOMNode().className.includes('is-invalid')).toBe(true);
+});

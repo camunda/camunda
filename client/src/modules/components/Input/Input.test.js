@@ -30,3 +30,10 @@ it('should merge and render additonal classNames provided as a property', () => 
 
   expect(node.find('input')).toMatchSelector('.Input.foo');
 });
+
+it('should translate the isInvalid props to is-invalid className', () => {
+  const node = mount(<Input className="foo" />);
+  node.setProps({isInvalid: true});
+
+  expect(node.getDOMNode().className.includes('is-invalid')).toBe(true);
+});
