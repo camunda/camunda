@@ -39,10 +39,10 @@ const Heatmap = props => {
           node.innerHTML = `target duration: ${formatters.duration(target)}<br/>`;
 
           if (typeof real === 'number') {
-            const relation = Math.round(real / target * 100);
+            const relation = real / target * 100;
 
             node.innerHTML += `actual duration: ${formatters.duration(real)}<br/>${
-              relation < 1 ? '< 1' : Math.round(real / target * 100)
+              relation < 1 ? '< 1' : Math.round(relation)
             }% of the target value`;
           } else {
             node.innerHTML += `No actual value available.<br/>Cannot compare target and actual value.`;
