@@ -141,33 +141,37 @@ export default class TargetValueComparison extends React.Component {
         this.state.nodeNames[id],
         formatters.duration(this.props.reportResult.result[id] || 0),
         <React.Fragment>
-          <Input
-            value={settings.value}
-            reference={this.storeInputReferenceFor(id)}
-            onChange={this.setTarget('value', id)}
-            onFocus={() => {
-              this.updateFocus(id);
-            }}
-            onBlur={() => {
-              this.updateFocus(null);
-            }}
-          />
-          <Select
-            value={settings.unit}
-            onChange={evt => {
-              this.setTarget('unit', id)(evt);
-              this.updateFocus(id);
-            }}
-          >
-            <Select.Option value="millis">Milliseconds</Select.Option>
-            <Select.Option value="seconds">Seconds</Select.Option>
-            <Select.Option value="minutes">Minutes</Select.Option>
-            <Select.Option value="hours">Hours</Select.Option>
-            <Select.Option value="days">Days</Select.Option>
-            <Select.Option value="weeks">Weeks</Select.Option>
-            <Select.Option value="months">Months</Select.Option>
-            <Select.Option value="years">Years</Select.Option>
-          </Select>
+          <div className="TargetValueModal__selection">
+            <Input
+              value={settings.value}
+              reference={this.storeInputReferenceFor(id)}
+              onChange={this.setTarget('value', id)}
+              onFocus={() => {
+                this.updateFocus(id);
+              }}
+              onBlur={() => {
+                this.updateFocus(null);
+              }}
+              className="TargetValueModal__selection--input"
+            />
+            <Select
+              value={settings.unit}
+              onChange={evt => {
+                this.setTarget('unit', id)(evt);
+                this.updateFocus(id);
+              }}
+              className="TargetValueModal__selection--select"
+            >
+              <Select.Option value="millis">Milliseconds</Select.Option>
+              <Select.Option value="seconds">Seconds</Select.Option>
+              <Select.Option value="minutes">Minutes</Select.Option>
+              <Select.Option value="hours">Hours</Select.Option>
+              <Select.Option value="days">Days</Select.Option>
+              <Select.Option value="weeks">Weeks</Select.Option>
+              <Select.Option value="months">Months</Select.Option>
+              <Select.Option value="years">Years</Select.Option>
+            </Select>
+          </div>
         </React.Fragment>
       ];
     });

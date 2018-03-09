@@ -6,3 +6,16 @@
   height: 250px;
   display: flex;
 }
+
+.TargetValueModal__selection {
+  display: flex;
+  width: 100%;
+}
+
+.TargetValueModal__selection--select {
+  width: 200px;
+}
+
+.TargetValueModal__selection--input {
+  width: 100%;
+}
