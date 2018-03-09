@@ -39,6 +39,7 @@ import io.zeebe.clustering.gossip.MembershipEventType;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.dispatcher.FragmentHandler;
+import io.zeebe.dispatcher.Subscription;
 import io.zeebe.gossip.Gossip;
 import io.zeebe.gossip.GossipConfiguration;
 import io.zeebe.gossip.GossipController;
@@ -177,7 +178,8 @@ public class GossipRule extends ExternalResource
             @Override
             protected void onActorStarted()
             {
-                actor.await(serverReceiveBuffer.openSubscriptionAsync("received-events-collector"), (sub, t) ->
+                final ActorFuture<Subscription> future = serverReceiveBuffer.openSubscriptionAsync("received-events-collector");
+                actor.runOnCompletion(future, (sub, t) ->
                 {
                     actor.consume(sub, () -> sub.poll(receivedEventsCollector, Integer.MAX_VALUE));
                 });
