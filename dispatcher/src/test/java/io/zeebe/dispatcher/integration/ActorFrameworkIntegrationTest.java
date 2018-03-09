@@ -21,6 +21,7 @@ import java.util.concurrent.CountDownLatch;
 
 import io.zeebe.dispatcher.*;
 import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -46,7 +47,8 @@ public class ActorFrameworkIntegrationTest
         @Override
         protected void onActorStarted()
         {
-            actor.await(dispatcher.openSubscriptionAsync("consumerSubscription-" + hashCode()), (s, t) ->
+            final ActorFuture<Subscription> future = dispatcher.openSubscriptionAsync("consumerSubscription-" + hashCode());
+            actor.runOnCompletion(future, (s, t) ->
             {
                 this.subscription = s;
                 actor.consume(subscription, this::consume);
@@ -87,7 +89,8 @@ public class ActorFrameworkIntegrationTest
         @Override
         protected void onActorStarted()
         {
-            actor.await(dispatcher.openSubscriptionAsync("consumerSubscription-" + hashCode()), (s, t) ->
+            final ActorFuture<Subscription> future = dispatcher.openSubscriptionAsync("consumerSubscription-" + hashCode());
+            actor.runOnCompletion(future, (s, t) ->
             {
                 this.subscription = s;
                 actor.consume(subscription, this::consume);
