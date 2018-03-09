@@ -32,6 +32,15 @@ container:
   keystore:
     location: keystore.jks
     password: optimize
+  #configuration of status reporting web socket
+  status:
+    #interval at which stats is reported once connection is established
+    interval:
+      value: 30
+      unit: Seconds
+    #max number of threads\sessions that will be kept to report status
+    connections:
+      max: 10
 #Configuration for engines used to import data. Please note that you have to have atleast one
 #engine configured at all times.
 engines:

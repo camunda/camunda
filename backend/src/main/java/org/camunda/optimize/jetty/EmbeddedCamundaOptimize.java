@@ -8,6 +8,7 @@ import org.camunda.optimize.service.engine.importing.EngineImportJobSchedulerFac
 import org.camunda.optimize.service.engine.importing.EngineImportJobScheduler;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.websocket.StatusWebSocket;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -18,11 +19,15 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 import org.springframework.context.ApplicationContext;
 
+import javax.servlet.ServletException;
+import javax.websocket.DeploymentException;
+import javax.websocket.server.ServerContainer;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
@@ -78,7 +83,25 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
     ServletContextHandler context = jerseyCamundaOptimize.getServletContextHandler();
 
     jettyServer.setHandler(context);
+    initWebSockets(context);
+
+
     return jettyServer;
+  }
+
+  /**
+   * Add javax.websocket support
+   * @param context
+   */
+  private void initWebSockets(ServletContextHandler context) {
+    try {
+      ServerContainer container = WebSocketServerContainerInitializer.configureContext(context);
+      container.addEndpoint(StatusWebSocket.class);
+    } catch (ServletException e) {
+      logger.error("can't set up web sockets");
+    } catch (DeploymentException e) {
+      logger.error("can't set up web sockets");
+    }
   }
 
   private ConfigurationService constructConfigurationService() {
@@ -137,6 +160,7 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
     ServerConnector sslConnector = initHttpsConnector(configurationService, host, keystorePass, keystoreLocation, server);
 
     server.setConnectors(new Connector[] { connector, sslConnector });
+
 
     return server;
   }

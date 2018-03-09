@@ -91,7 +91,6 @@ public class ConfigurationService {
   private Integer engineJobExecutorQueueSize;
   private Integer engineJobExecutorThreadCount;
   private String hpiEndpoint;
-  private Integer importResetIntervalValue;
   private Integer elasticsearchScrollTimeout;
   private Integer elasticsearchConnectionTimeout;
   private Integer engineConnectTimeout;
@@ -118,12 +117,17 @@ public class ConfigurationService {
   private Long engineImportActivityInstanceMaxPageSize;
   private Boolean defaultUserCreationEnabled;
   private String groupsEndpoint;
+  private Integer importResetIntervalValue;
   private String importResetIntervalUnit;
   private String containerHost;
   private String containerKeystorePassword;
   private String containerKeystoreLocation;
   private Integer containerHttpsPort;
   private Integer containerHttpPort;
+
+  private Integer maxStatusConnections;
+  private Integer statusIntervalValue;
+  private String statusIntervalUnit;
 
   private Boolean emailsEnabled;
   private String alertEmailUsername;
@@ -768,6 +772,27 @@ public class ConfigurationService {
     return containerHttpPort;
   }
 
+  public int getMaxStatusConnections() {
+    if (maxStatusConnections == null) {
+      maxStatusConnections = jsonContext.read(ConfigurationServiceConstants.CONTAINER_STATUS_MAX_CONNECTIONS);
+    }
+    return maxStatusConnections;
+  }
+
+  public String getStatusIntervalUnit() {
+    if (statusIntervalUnit == null) {
+      statusIntervalUnit = jsonContext.read(ConfigurationServiceConstants.CONTAINER_STATUS_INTERVAL_UNIT);
+    }
+    return statusIntervalUnit;
+  }
+
+  public int getStatusIntervalValue() {
+    if (statusIntervalValue == null) {
+      statusIntervalValue = jsonContext.read(ConfigurationServiceConstants.CONTAINER_STATUS_INTERVAL_VALUE);
+    }
+    return statusIntervalValue;
+  }
+
   public String getHpiEndpoint() {
     if (hpiEndpoint == null) {
       hpiEndpoint = jsonContext.read(ConfigurationServiceConstants.HPI_ENDPOINT);
@@ -994,6 +1019,18 @@ public class ConfigurationService {
       exportCsvOffset = jsonContext.read(ConfigurationServiceConstants.EXPORT_CSV_OFFSET);
     }
     return exportCsvOffset;
+  }
+
+  public void setStatusIntervalValue(Integer statusIntervalValue) {
+    this.statusIntervalValue = statusIntervalValue;
+  }
+
+  public void setStatusIntervalUnit(String statusIntervalUnit) {
+    this.statusIntervalUnit = statusIntervalUnit;
+  }
+
+  public void setMaxStatusConnections(Integer maxStatusConnections) {
+    this.maxStatusConnections = maxStatusConnections;
   }
 
   public void setExportCsvLimit(Integer exportCsvLimit) {
