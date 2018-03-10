@@ -17,7 +17,7 @@ package io.zeebe.util.sched.lifecycle;
 
 import static io.zeebe.util.sched.ActorTask.ActorLifecyclePhase.STARTED;
 import static io.zeebe.util.sched.ActorTask.ActorLifecyclePhase.STARTING;
-import static io.zeebe.util.sched.lifecycle.RecordingActor.FULL_LIFECYCLE;
+import static io.zeebe.util.sched.lifecycle.LifecycleRecordingActor.FULL_LIFECYCLE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.util.Lists.newArrayList;
 
@@ -35,7 +35,7 @@ public class ActorLifecyclePhasesTest
     public void shouldStartActor()
     {
         // given
-        final RecordingActor actor = new RecordingActor();
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor();
 
         // when
         final ActorFuture<Void> startedFuture = schedulerRule.submitActor(actor);
@@ -50,7 +50,7 @@ public class ActorLifecyclePhasesTest
     public void shouldCloseActor()
     {
         // given
-        final RecordingActor actor = new RecordingActor();
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor();
         schedulerRule.submitActor(actor);
         schedulerRule.workUntilDone();
 
@@ -67,7 +67,7 @@ public class ActorLifecyclePhasesTest
     public void shouldDoFullLifecycleIfClosedConcurrently()
     {
         // given
-        final RecordingActor actor = new RecordingActor();
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor();
         schedulerRule.submitActor(actor);
 
         // when

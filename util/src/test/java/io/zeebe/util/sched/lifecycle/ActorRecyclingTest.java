@@ -15,7 +15,7 @@
  */
 package io.zeebe.util.sched.lifecycle;
 
-import static io.zeebe.util.sched.lifecycle.RecordingActor.FULL_LIFECYCLE;
+import static io.zeebe.util.sched.lifecycle.LifecycleRecordingActor.FULL_LIFECYCLE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyZeroInteractions;
@@ -34,7 +34,7 @@ public class ActorRecyclingTest
     public void shouldPerformFullLifecycleAfterRecycle()
     {
         // given
-        final RecordingActor actor = new RecordingActor();
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor();
         schedulerRule.submitActor(actor);
         actor.close();
         schedulerRule.workUntilDone();
@@ -53,7 +53,7 @@ public class ActorRecyclingTest
     public void shouldReturnNonCompletedFutureAfterRecycle()
     {
         // given
-        final RecordingActor actor = new RecordingActor();
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor();
         schedulerRule.submitActor(actor);
         actor.close();
         schedulerRule.workUntilDone();
@@ -69,7 +69,7 @@ public class ActorRecyclingTest
         // given
         final Runnable action = mock(Runnable.class);
         final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
-        final RecordingActor actor = new RecordingActor()
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
         {
             @Override
             public void onActorCloseRequested()
@@ -98,7 +98,7 @@ public class ActorRecyclingTest
     public void shouldNotRecycleIfNotClosed()
     {
         // given
-        final RecordingActor actor = new RecordingActor();
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor();
         schedulerRule.submitActor(actor);
         schedulerRule.submitActor(actor);
     }

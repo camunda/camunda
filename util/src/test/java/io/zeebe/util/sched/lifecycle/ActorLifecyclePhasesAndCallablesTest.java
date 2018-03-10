@@ -34,7 +34,7 @@ public class ActorLifecyclePhasesAndCallablesTest
     public void shouldNotExecuteCallablesInStartingPhase() throws Exception
     {
         // given
-        final RecordingActor actor = new RecordingActor()
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
         {
             @Override
             public void onActorStarting()
@@ -59,7 +59,7 @@ public class ActorLifecyclePhasesAndCallablesTest
     {
         // given
         final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
-        final RecordingActor actor = new RecordingActor()
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
         {
             @Override
             public void onActorStarting()
@@ -86,7 +86,7 @@ public class ActorLifecyclePhasesAndCallablesTest
     public void shouldExecuteCallablesInStartedPhase() throws Exception
     {
         // given
-        final RecordingActor actor = new RecordingActor();
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor();
         schedulerRule.submitActor(actor);
         schedulerRule.workUntilDone();
 
@@ -103,7 +103,7 @@ public class ActorLifecyclePhasesAndCallablesTest
     public void shouldNotExecuteCallablesInCloseRequestedPhase() throws Exception
     {
         // given
-        final RecordingActor actor = new RecordingActor()
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
         {
             @Override
             public void onActorCloseRequested()
@@ -128,7 +128,7 @@ public class ActorLifecyclePhasesAndCallablesTest
     public void shouldNotExecuteCallablesInClosingPhase() throws Exception
     {
         // given
-        final RecordingActor actor = new RecordingActor()
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
         {
             @Override
             public void onActorClosing()
@@ -154,7 +154,7 @@ public class ActorLifecyclePhasesAndCallablesTest
     public void shouldNotExecuteCallablesInClosedPhase() throws Exception
     {
         // given
-        final RecordingActor actor = new RecordingActor()
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
         {
             @Override
             public void onActorClosed()

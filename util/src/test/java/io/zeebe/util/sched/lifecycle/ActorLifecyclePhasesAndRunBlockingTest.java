@@ -36,7 +36,7 @@ public class ActorLifecyclePhasesAndRunBlockingTest
         // given
         final Runnable runnable = mock(Runnable.class);
         final Consumer<Throwable> completionConsumer = mock(Consumer.class);
-        final RecordingActor actor = new RecordingActor()
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
         {
             @Override
             public void onActorStarting()
@@ -65,7 +65,7 @@ public class ActorLifecyclePhasesAndRunBlockingTest
         final Runnable runnable = mock(Runnable.class);
         final Consumer<Throwable> completionConsumer = mock(Consumer.class);
         final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
-        final RecordingActor actor = new RecordingActor()
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
         {
             @Override
             public void onActorStarting()
@@ -96,7 +96,7 @@ public class ActorLifecyclePhasesAndRunBlockingTest
         final Runnable runnable = mock(Runnable.class);
         final Consumer<Throwable> completionConsumer = mock(Consumer.class);
 
-        final RecordingActor actor = new RecordingActor()
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
         {
             @Override
             public void onActorStarted()
@@ -123,7 +123,7 @@ public class ActorLifecyclePhasesAndRunBlockingTest
         final Runnable runnable = mock(Runnable.class);
         final Consumer<Throwable> completionConsumer = mock(Consumer.class);
 
-        final RecordingActor actor = new RecordingActor()
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
         {
             @Override
             public void onActorCloseRequested()
@@ -152,7 +152,7 @@ public class ActorLifecyclePhasesAndRunBlockingTest
         final Runnable runnable = mock(Runnable.class);
         final Consumer<Throwable> completionConsumer = mock(Consumer.class);
 
-        final RecordingActor actor = new RecordingActor()
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
         {
             @Override
             public void onActorClosing()
@@ -181,7 +181,7 @@ public class ActorLifecyclePhasesAndRunBlockingTest
         final Runnable runnable = mock(Runnable.class);
         final Consumer<Throwable> completionConsumer = mock(Consumer.class);
 
-        final RecordingActor actor = new RecordingActor()
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
         {
             @Override
             public void onActorClosed()

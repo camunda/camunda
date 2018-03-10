@@ -35,7 +35,7 @@ public class ActorLifecyclePhasesAndTimersTest
         // given
         schedulerRule.getClock().setCurrentTime(100);
         final Runnable action = mock(Runnable.class);
-        final RecordingActor actor = new RecordingActor()
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
         {
             @Override
             public void onActorStarting()
@@ -62,7 +62,7 @@ public class ActorLifecyclePhasesAndTimersTest
         schedulerRule.getClock().setCurrentTime(100);
         final Runnable action = mock(Runnable.class);
         final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
-        final RecordingActor actor = new RecordingActor()
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
         {
             @Override
             public void onActorStarting()
@@ -91,7 +91,7 @@ public class ActorLifecyclePhasesAndTimersTest
         // given
         schedulerRule.getClock().setCurrentTime(100);
         final Runnable action = mock(Runnable.class);
-        final RecordingActor actor = new RecordingActor()
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
         {
             @Override
             public void onActorStarted()
@@ -116,7 +116,7 @@ public class ActorLifecyclePhasesAndTimersTest
         // given
         schedulerRule.getClock().setCurrentTime(100);
         final Runnable action = mock(Runnable.class);
-        final RecordingActor actor = new RecordingActor()
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
         {
             @Override
             public void onActorCloseRequested()
@@ -143,7 +143,7 @@ public class ActorLifecyclePhasesAndTimersTest
         // given
         schedulerRule.getClock().setCurrentTime(100);
         final Runnable action = mock(Runnable.class);
-        final RecordingActor actor = new RecordingActor()
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
         {
             @Override
             public void onActorClosing()

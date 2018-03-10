@@ -128,7 +128,7 @@ public class ActorJob
      * Append a child task to this task. The new child task is appended to the list of tasks
      * spawned by this task such that it is executed last.
      */
-    private void appendChild(ActorJob spawnedTask)
+    public void appendChild(ActorJob spawnedTask)
     {
         spawnedTask.next = this.next;
         this.next = spawnedTask;

@@ -34,7 +34,7 @@ public class ActorLifecyclePhasesAndConditionsTest
         // given
         final Runnable runnable = mock(Runnable.class);
         final CompletableActorFuture<ActorCondition> conditionFuture = new CompletableActorFuture<>();
-        final RecordingActor actor = new RecordingActor()
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
         {
             @Override
             public void onActorStarting()
@@ -64,7 +64,7 @@ public class ActorLifecyclePhasesAndConditionsTest
         final Runnable runnable = mock(Runnable.class);
         final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
         final CompletableActorFuture<ActorCondition> conditionFuture = new CompletableActorFuture<>();
-        final RecordingActor actor = new RecordingActor()
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
         {
             @Override
             public void onActorStarting()
@@ -92,7 +92,7 @@ public class ActorLifecyclePhasesAndConditionsTest
         // given
         final Runnable runnable = mock(Runnable.class);
         final CompletableActorFuture<ActorCondition> conditionFuture = new CompletableActorFuture<>();
-        final RecordingActor actor = new RecordingActor()
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
         {
             @Override
             public void onActorStarted()
@@ -121,7 +121,7 @@ public class ActorLifecyclePhasesAndConditionsTest
         // given
         final Runnable runnable = mock(Runnable.class);
         final CompletableActorFuture<ActorCondition> conditionFuture = new CompletableActorFuture<>();
-        final RecordingActor actor = new RecordingActor()
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
         {
             @Override
             public void onActorCloseRequested()
@@ -150,7 +150,7 @@ public class ActorLifecyclePhasesAndConditionsTest
         // given
         final Runnable runnable = mock(Runnable.class);
         final CompletableActorFuture<ActorCondition> conditionFuture = new CompletableActorFuture<>();
-        final RecordingActor actor = new RecordingActor()
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
         {
             @Override
             public void onActorClosing()
@@ -179,7 +179,7 @@ public class ActorLifecyclePhasesAndConditionsTest
         // given
         final Runnable runnable = mock(Runnable.class);
         final CompletableActorFuture<ActorCondition> conditionFuture = new CompletableActorFuture<>();
-        final RecordingActor actor = new RecordingActor()
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
         {
             @Override
             public void onActorClosed()

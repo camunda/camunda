@@ -29,7 +29,7 @@ import io.zeebe.util.sched.ActorTask.ActorLifecyclePhase;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 
-class RecordingActor extends Actor
+class LifecycleRecordingActor extends Actor
 {
     public static final List<ActorLifecyclePhase> FULL_LIFECYCLE = newArrayList(STARTING, STARTED, CLOSE_REQUESTED, CLOSING, CLOSED);
 

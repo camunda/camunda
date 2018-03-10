@@ -39,7 +39,7 @@ public class ActorLifecyclePhasesAndConsumeTest
         queue.add(new Object());
 
         final Runnable runnable = mock(Runnable.class);
-        final RecordingActor actor = new RecordingActor()
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
         {
             @Override
             public void onActorStarting()
@@ -67,7 +67,7 @@ public class ActorLifecyclePhasesAndConsumeTest
 
         final Runnable runnable = mock(Runnable.class);
         final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
-        final RecordingActor actor = new RecordingActor()
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
         {
             @Override
             public void onActorStarting()
@@ -97,7 +97,7 @@ public class ActorLifecyclePhasesAndConsumeTest
         queue.add(new Object());
 
         final Runnable runnable = mock(Runnable.class);
-        final RecordingActor actor = new RecordingActor()
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
         {
             @Override
             public void onActorStarted()
@@ -122,7 +122,7 @@ public class ActorLifecyclePhasesAndConsumeTest
         queue.add(new Object());
 
         final Runnable runnable = mock(Runnable.class);
-        final RecordingActor actor = new RecordingActor()
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
         {
             @Override
             public void onActorCloseRequested()
@@ -149,7 +149,7 @@ public class ActorLifecyclePhasesAndConsumeTest
         queue.add(new Object());
 
         final Runnable runnable = mock(Runnable.class);
-        final RecordingActor actor = new RecordingActor()
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
         {
             @Override
             public void onActorClosing()
@@ -176,7 +176,7 @@ public class ActorLifecyclePhasesAndConsumeTest
         queue.add(new Object());
 
         final Runnable runnable = mock(Runnable.class);
-        final RecordingActor actor = new RecordingActor()
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
         {
             @Override
             public void onActorClosed()

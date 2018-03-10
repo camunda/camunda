@@ -32,7 +32,7 @@ public class ActorLifecyclePhasesAndRunTest
     {
         // given
         final Runnable runnable = mock(Runnable.class);
-        final RecordingActor actor = new RecordingActor()
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
         {
             @Override
             public void onActorStarting()
@@ -57,7 +57,7 @@ public class ActorLifecyclePhasesAndRunTest
         // given
         final Runnable runnable = mock(Runnable.class);
         final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
-        final RecordingActor actor = new RecordingActor()
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
         {
             @Override
             public void onActorStarting()
@@ -84,7 +84,7 @@ public class ActorLifecyclePhasesAndRunTest
     {
         // given
         final Runnable runnable = mock(Runnable.class);
-        final RecordingActor actor = new RecordingActor()
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
         {
             @Override
             public void onActorStarted()
@@ -106,7 +106,7 @@ public class ActorLifecyclePhasesAndRunTest
     {
         // given
         final Runnable runnable = mock(Runnable.class);
-        final RecordingActor actor = new RecordingActor()
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
         {
             @Override
             public void onActorCloseRequested()
@@ -130,7 +130,7 @@ public class ActorLifecyclePhasesAndRunTest
     {
         // given
         final Runnable runnable = mock(Runnable.class);
-        final RecordingActor actor = new RecordingActor()
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
         {
             @Override
             public void onActorClosing()
@@ -154,7 +154,7 @@ public class ActorLifecyclePhasesAndRunTest
     {
         // given
         final Runnable runnable = mock(Runnable.class);
-        final RecordingActor actor = new RecordingActor()
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
         {
             @Override
             public void onActorClosed()
@@ -183,7 +183,7 @@ public class ActorLifecyclePhasesAndRunTest
     public void shouldNotExecuteExternallySubmittedActionsInStartingPhase() throws Exception
     {
         // given
-        final RecordingActor actor = new RecordingActor()
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
         {
             @Override
             public void onActorStarting()
@@ -208,7 +208,7 @@ public class ActorLifecyclePhasesAndRunTest
     {
         // given
         final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
-        final RecordingActor actor = new RecordingActor()
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
         {
             @Override
             public void onActorStarting()
@@ -235,7 +235,7 @@ public class ActorLifecyclePhasesAndRunTest
     public void shouldExecuteExternallySubmittedActionsInStartedPhase() throws Exception
     {
         // given
-        final RecordingActor actor = new RecordingActor();
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor();
         schedulerRule.submitActor(actor);
         schedulerRule.workUntilDone();
 
@@ -252,7 +252,7 @@ public class ActorLifecyclePhasesAndRunTest
     public void shouldNotExecuteExternallySubmittedActionsInCloseRequestedPhase() throws Exception
     {
         // given
-        final RecordingActor actor = new RecordingActor()
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
         {
             @Override
             public void onActorCloseRequested()
@@ -277,7 +277,7 @@ public class ActorLifecyclePhasesAndRunTest
     public void shouldNotExecuteExternallySubmittedActionsInClosingPhase() throws Exception
     {
         // given
-        final RecordingActor actor = new RecordingActor()
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
         {
             @Override
             public void onActorClosing()
@@ -303,7 +303,7 @@ public class ActorLifecyclePhasesAndRunTest
     public void shouldNotExecuteExternallySubmittedActionsInClosedPhase() throws Exception
     {
         // given
-        final RecordingActor actor = new RecordingActor()
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
         {
             @Override
             public void onActorClosed()

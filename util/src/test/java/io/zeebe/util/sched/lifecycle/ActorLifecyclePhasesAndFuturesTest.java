@@ -16,7 +16,7 @@
 package io.zeebe.util.sched.lifecycle;
 
 import static io.zeebe.util.sched.ActorTask.ActorLifecyclePhase.*;
-import static io.zeebe.util.sched.lifecycle.RecordingActor.FULL_LIFECYCLE;
+import static io.zeebe.util.sched.lifecycle.LifecycleRecordingActor.FULL_LIFECYCLE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.util.Lists.newArrayList;
 import static org.mockito.Mockito.mock;
@@ -40,7 +40,7 @@ public class ActorLifecyclePhasesAndFuturesTest
     public void shouldWaitForFutureInStarting()
     {
         // given
-        final RecordingActor actor = new RecordingActor()
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
         {
             @Override
             public void onActorStarting()
@@ -65,7 +65,7 @@ public class ActorLifecyclePhasesAndFuturesTest
         // given
         final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
 
-        final RecordingActor actor = new RecordingActor()
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
         {
             @Override
             public void onActorStarting()
@@ -93,7 +93,7 @@ public class ActorLifecyclePhasesAndFuturesTest
         // given
         final BiConsumer<Void, Throwable> callback = mock(BiConsumer.class);
 
-        final RecordingActor actor = new RecordingActor()
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
         {
             @Override
             public void onActorStarted()
@@ -121,7 +121,7 @@ public class ActorLifecyclePhasesAndFuturesTest
         // given
         final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
 
-        final RecordingActor actor = new RecordingActor()
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
         {
             @Override
             public void onActorStarted()
@@ -148,7 +148,7 @@ public class ActorLifecyclePhasesAndFuturesTest
     public void shouldNotWaitOnFutureInClosed()
     {
         // given
-        final RecordingActor actor = new RecordingActor()
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
         {
             @Override
             public void onActorClosed()
@@ -176,7 +176,7 @@ public class ActorLifecyclePhasesAndFuturesTest
         final CompletableActorFuture<Void> future3 = new CompletableActorFuture<>();
 
         // given
-        final RecordingActor actor = new RecordingActor()
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
         {
             @Override
             public void onActorStarting()
