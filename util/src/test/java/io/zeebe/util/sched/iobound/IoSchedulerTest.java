@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.util.sched;
+package io.zeebe.util.sched.iobound;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -21,6 +21,8 @@ import static org.mockito.Mockito.*;
 
 import java.util.function.IntFunction;
 
+import io.zeebe.util.sched.ActorTask;
+import io.zeebe.util.sched.IoScheduler;
 import org.junit.Test;
 import org.mockito.InOrder;
 

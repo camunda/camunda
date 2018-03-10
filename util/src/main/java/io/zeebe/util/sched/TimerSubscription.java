@@ -84,7 +84,11 @@ public class TimerSubscription implements ActorSubscription, ScheduledTimer
         if (!isCanceled && (!isDone || isRecurring))
         {
             isCanceled = true;
-            ActorThread.current().removeTimer(this);
+            final ActorThread current = ActorThread.current();
+            if (current != null)
+            {
+                current.removeTimer(this);
+            }
         }
     }
 

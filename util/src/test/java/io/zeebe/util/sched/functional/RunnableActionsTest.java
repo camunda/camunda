@@ -13,20 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.util.sched;
+package io.zeebe.util.sched.functional;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
+import io.zeebe.util.sched.*;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.InOrder;
 
-public class ControlledRunnableExecutionTest
+public class RunnableActionsTest
 {
-
     @Rule
     public ControlledActorSchedulerRule scheduler = new ControlledActorSchedulerRule();
 
@@ -46,6 +49,21 @@ public class ControlledRunnableExecutionTest
         scheduler.submitActor(runner);
 
         // when
+        scheduler.workUntilDone();
+
+        // then
+        assertThat(runner.runs).isEqualTo(1);
+    }
+
+    @Test
+    public void shouldInvokeRunFromNonActorThread()
+    {
+        // given
+        final Runner runner = new Runner();
+        scheduler.submitActor(runner);
+
+        // when
+        runner.doRun();
         scheduler.workUntilDone();
 
         // then
@@ -102,6 +120,70 @@ public class ControlledRunnableExecutionTest
         assertThat(actorContext).containsExactly(runner);
     }
 
+    @Test
+    public void shouldRunUntilDoneCalled()
+    {
+        // given
+        final Runner actor = new Runner();
+        final Consumer<ActorControl> runnable = (ctr) ->
+        {
+            if (actor.runs == 5)
+            {
+                ctr.done();
+            }
+            else
+            {
+                ctr.yield();
+            }
+        };
+
+        // when
+        scheduler.submitActor(actor);
+        actor.doRunUntilDone(runnable);
+        scheduler.workUntilDone();
+
+        // then
+        assertThat(actor.runs == 5);
+    }
+
+    @Test
+    public void shouldNotInterruptRunUntilDone()
+    {
+        // given
+        final Runnable otherAction = mock(Runnable.class);
+        final Runner actor = new Runner();
+        final Consumer<ActorControl> runUntilDoneAction = spy(new Consumer<ActorControl>()
+        {
+            @Override
+            public void accept(ActorControl ctr)
+            {
+                ctr.run(otherAction); // does not interrupt this action
+
+                if (actor.runs == 5)
+                {
+                    ctr.done();
+                }
+                else
+                {
+                    ctr.yield();
+                }
+
+            }
+        });
+        doCallRealMethod().when(runUntilDoneAction).accept(any());
+
+        // when
+        scheduler.submitActor(actor);
+        actor.doRunUntilDone(runUntilDoneAction);
+        scheduler.workUntilDone();
+
+        // then
+        final InOrder inOrder = inOrder(runUntilDoneAction, otherAction);
+        inOrder.verify(runUntilDoneAction, times(5)).accept(any());
+        inOrder.verify(otherAction, times(5)).run();
+        inOrder.verifyNoMoreInteractions();
+    }
+
     class Runner extends Actor
     {
         int runs = 0;
@@ -128,6 +210,19 @@ public class ControlledRunnableExecutionTest
                 runs++;
             });
         }
+
+        public void doRunUntilDone(Consumer<ActorControl> runnable)
+        {
+            actor.run(() ->
+            {
+                actor.runUntilDone(() ->
+                {
+                    runs++;
+                    runnable.accept(actor);
+                });
+            });
+        }
     }
+
 }
 

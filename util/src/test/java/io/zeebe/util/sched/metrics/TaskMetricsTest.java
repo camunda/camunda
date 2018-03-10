@@ -13,8 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.util.sched;
+package io.zeebe.util.sched.metrics;
 
+import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.agrona.concurrent.status.ConcurrentCountersManager;
