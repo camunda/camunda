@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
-import org.assertj.core.util.Lists;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -51,33 +50,6 @@ public class ControlledRunnableExecutionTest
 
         // then
         assertThat(runner.runs).isEqualTo(1);
-    }
-
-    @Test
-    public void shouldExecuteRunnablesInOrder()
-    {
-        final List<String> invocations = new ArrayList<>();
-
-        // given
-        final Runner runner = new Runner()
-        {
-            @Override
-            protected void onActorStarted()
-            {
-                actor.run(() -> invocations.add("one"));
-                actor.run(() -> invocations.add("two"));
-                actor.run(() -> invocations.add("three"));
-                actor.run(() -> invocations.add("four"));
-            }
-        };
-
-        scheduler.submitActor(runner);
-
-        // when
-        scheduler.workUntilDone();
-
-        // then
-        assertThat(invocations).isEqualTo(Lists.newArrayList("four", "three", "two", "one"));
     }
 
     @Test

@@ -51,7 +51,6 @@ public class CallableExecutionControlledTest
             .hasCause(expected);
 
         assertThat(actor.invocations).hasValue(1); // should not resubmit actor job on failure
-
     }
 
     @Test
