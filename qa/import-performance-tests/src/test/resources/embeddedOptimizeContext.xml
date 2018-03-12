@@ -27,6 +27,7 @@
     <constructor-arg>
       <list>
         <value>service-config.yaml</value>
+        <value>performance-config.yaml</value>
       </list>
     </constructor-arg>
   </bean>

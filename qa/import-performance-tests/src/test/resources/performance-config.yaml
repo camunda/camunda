@@ -1,0 +1,6 @@
+import:
+  handler:
+    pages:
+      resetInterval:
+        unit: Hours
+        value: 5
