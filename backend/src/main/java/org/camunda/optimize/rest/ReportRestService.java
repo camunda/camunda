@@ -116,7 +116,7 @@ public class ReportRestService {
   @Path("/{id}/evaluate")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  public ReportResultDto evaluateReport(@PathParam("id") String reportId) throws IOException, OptimizeException {
+  public ReportResultDto evaluateReport(@PathParam("id") String reportId) throws OptimizeException {
     return reportService.evaluateSavedReport(reportId);
   }
 
@@ -130,7 +130,7 @@ public class ReportRestService {
   @Path("/evaluate")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public ReportResultDto evaluateReport(ReportDataDto reportData) throws IOException, OptimizeException {
+  public ReportResultDto evaluateReport(ReportDataDto reportData) throws OptimizeException {
     return reportService.evaluateReportInMemory(reportData);
   }
 

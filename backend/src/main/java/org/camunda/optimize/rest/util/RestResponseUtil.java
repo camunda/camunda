@@ -1,19 +1,63 @@
 package org.camunda.optimize.rest.util;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.camunda.optimize.service.exceptions.ReportEvaluationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.core.Response;
 
 public class RestResponseUtil {
+  public static final String REPORT_DEFINITION = "\"reportDefinition\" : ";
+  public static final String REPORT_DATA = "\"reportData\" : ";
+  private static ObjectMapper OBJECT_MAPPER;
+  private static final Logger logger = LoggerFactory.getLogger(RestResponseUtil.class);
 
-  public static Response buildServerErrorResponse(Throwable e) {
-    if (e.getClass().equals(NotAuthorizedException.class)) {
+  public static Response buildServerErrorResponse(Throwable e, ObjectMapper objectMapper) {
+    if (OBJECT_MAPPER == null) {
+      OBJECT_MAPPER = objectMapper;
+    }
+
+    if (NotAuthorizedException.class.equals(e.getClass())) {
       return buildServerAuthenticationErrorResponse(e.getMessage());
     }
-    if (e.getClass().equals(NotFoundException.class)) {
+    if (NotFoundException.class.equals(e.getClass())) {
       return buildServerNotFoundErrorResponse(e.getMessage());
     }
+    if (ReportEvaluationException.class.equals(e.getClass())) {
+      return buildReportEvaluationErrorResponse((ReportEvaluationException)e);
+    }
+
     return buildServerErrorResponse(e.getMessage());
+  }
+
+  private static Response buildReportEvaluationErrorResponse(ReportEvaluationException error) {
+    String reportDetail;
+    String reportDetailKeyValue = "";
+    try {
+      if (error.getReportDefinition() != null) {
+        reportDetail = OBJECT_MAPPER.writeValueAsString(error.getReportDefinition());
+        reportDetailKeyValue = REPORT_DEFINITION + reportDetail;
+      } else {
+        reportDetail = OBJECT_MAPPER.writeValueAsString(error.getReportDataDto());
+        reportDetailKeyValue = REPORT_DATA + reportDetail;
+      }
+    } catch (JsonProcessingException e) {
+      logger.error("can't serialize report definition", e);
+    }
+
+    return Response
+      .serverError()
+      .entity(
+        "{ " +
+          "\"errorMessage\" : \"" + error.getMessage() + "\", " +
+          reportDetailKeyValue +
+          "}"
+      )
+      .build();
   }
 
   private static Response buildServerNotFoundErrorResponse(String message) {

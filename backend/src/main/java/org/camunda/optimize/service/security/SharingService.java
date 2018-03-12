@@ -132,8 +132,6 @@ public class SharingService  {
     if (SharedResourceType.REPORT.equals(createSharingDto.getType())) {
       try {
         reportService.getReport(createSharingDto.getReportId());
-      } catch (IOException e) {
-        logger.error("can't fetch report [{}]", createSharingDto.getReportId(), e);
       } catch (OptimizeException e) {
         logger.error("can't fetch report [{}]", createSharingDto.getReportId(), e);
         throw new OptimizeValidationException(e.getMessage());
@@ -179,7 +177,7 @@ public class SharingService  {
       ReportResultDto reportResultDto = reportService.evaluateSavedReport(wrapped.getReportId());
       wrapped.setReport(reportResultDto);
       result = Optional.of(wrapped);
-    } catch (IOException | OptimizeException e) {
+    } catch (OptimizeException e) {
       logger.error("can't evaluate shared report []", wrapped.getReportId());
     }
 

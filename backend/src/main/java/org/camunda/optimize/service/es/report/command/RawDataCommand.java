@@ -26,7 +26,7 @@ public class RawDataCommand extends ReportCommand<RawDataReportResultDto> {
 
   private static final Long RAW_DATA_LIMIT = 1_000L;
 
-  public RawDataReportResultDto evaluate() throws IOException {
+  public RawDataReportResultDto evaluate() {
     logger.debug("Evaluating raw data report for process definition key [{}] and version [{}]",
       reportData.getProcessDefinitionKey(),
       reportData.getProcessDefinitionVersion());
@@ -52,7 +52,12 @@ public class RawDataCommand extends ReportCommand<RawDataReportResultDto> {
     do {
       for (SearchHit hit : scrollResp.getHits().getHits()) {
         ProcessInstanceDto processInstanceDto =
-          objectMapper.readValue(hit.getSourceAsString(), ProcessInstanceDto.class);
+          null;
+        try {
+          processInstanceDto = objectMapper.readValue(hit.getSourceAsString(), ProcessInstanceDto.class);
+        } catch (IOException e) {
+          logger.error("can't map process instance", e);
+        }
         Map<String, Object> variables = getVariables(processInstanceDto);
         allVariableNames.addAll(variables.keySet());
         RawDataProcessInstanceDto dataEntry = convertToRawDataEntry(processInstanceDto, variables);

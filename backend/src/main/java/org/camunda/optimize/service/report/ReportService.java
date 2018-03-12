@@ -11,6 +11,7 @@ import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.report.ReportEvaluator;
 import org.camunda.optimize.service.es.writer.ReportWriter;
 import org.camunda.optimize.service.exceptions.OptimizeException;
+import org.camunda.optimize.service.exceptions.ReportEvaluationException;
 import org.camunda.optimize.service.security.SharingService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.ValidationHelper;
@@ -67,17 +68,29 @@ public class ReportService {
     return reports;
   }
 
-  public ReportDefinitionDto getReport(String reportId) throws IOException, OptimizeException {
+  public ReportDefinitionDto getReport(String reportId) throws OptimizeException {
     return reportReader.getReport(reportId);
   }
 
-  public ReportResultDto evaluateSavedReport(String reportId) throws IOException, OptimizeException {
+  public ReportResultDto evaluateSavedReport(String reportId) throws OptimizeException {
     ReportDefinitionDto reportDefinition;
     reportDefinition = reportReader.getReport(reportId);
-    return reportEvaluator.evaluate(reportDefinition);
+    ReportResultDto result;
+    try {
+      result = reportEvaluator.evaluate(reportDefinition);
+    } catch (OptimizeException e) {
+      throw new ReportEvaluationException(reportDefinition, e);
+    }
+    return result;
   }
 
-  public ReportResultDto evaluateReportInMemory(ReportDataDto reportData) throws IOException, OptimizeException {
-    return reportEvaluator.evaluate(reportData);
+  public ReportResultDto evaluateReportInMemory(ReportDataDto reportData) throws OptimizeException {
+    ReportResultDto result;
+    try {
+      result = reportEvaluator.evaluate(reportData);
+    } catch (OptimizeException e) {
+      throw new ReportEvaluationException(reportData, e);
+    }
+    return result;
   }
 }

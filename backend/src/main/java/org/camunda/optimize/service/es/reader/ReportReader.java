@@ -33,7 +33,15 @@ public class ReportReader {
   @Autowired
   private ObjectMapper objectMapper;
 
-  public ReportDefinitionDto getReport(String reportId) throws IOException, OptimizeException {
+  /**
+   * Obtain report by it's ID from elasticsearch
+   *
+   * @param reportId - id of report, expected not null
+   * @return fully serialized ReportDefinitionDto
+   * @throws OptimizeException if report with specified ID does not
+   * exist.
+   */
+  public ReportDefinitionDto getReport(String reportId) throws OptimizeException {
     logger.debug("Fetching report with id [{}]", reportId);
     GetResponse getResponse = esclient
       .prepareGet(
@@ -47,7 +55,12 @@ public class ReportReader {
     if (getResponse.isExists()) {
       String responseAsString = getResponse.getSourceAsString();
       ReportDefinitionPersistenceDto persistenceDto =
-        objectMapper.readValue(responseAsString, ReportDefinitionPersistenceDto.class);
+        null;
+      try {
+        persistenceDto = objectMapper.readValue(responseAsString, ReportDefinitionPersistenceDto.class);
+      } catch (IOException e) {
+        logger.error("can't map report", e);
+      }
       return convertToOriginalForm(persistenceDto);
     } else {
       logger.error("Was not able to retrieve report with id [{}] from Elasticsearch.", reportId);
@@ -55,7 +68,7 @@ public class ReportReader {
     }
   }
 
-  private ReportDefinitionDto convertToOriginalForm(ReportDefinitionPersistenceDto persistenceDto) throws IOException {
+  private ReportDefinitionDto convertToOriginalForm(ReportDefinitionPersistenceDto persistenceDto) {
     ReportDefinitionDto original = new ReportDefinitionDto();
     original.setId(persistenceDto.getId());
     original.setName(persistenceDto.getName());
@@ -64,7 +77,12 @@ public class ReportReader {
     original.setLastModified(persistenceDto.getLastModified());
     original.setLastModifier(persistenceDto.getLastModifier());
     ReportDataDto reportData =
-      persistenceDto.getData() != null ? objectMapper.readValue(persistenceDto.getData(), ReportDataDto.class) : null;
+      null;
+    try {
+      reportData = persistenceDto.getData() != null ? objectMapper.readValue(persistenceDto.getData(), ReportDataDto.class) : null;
+    } catch (IOException e) {
+      logger.error("can't map report data", e);
+    }
     original.setData(reportData);
     return original;
   }

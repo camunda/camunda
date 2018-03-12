@@ -145,6 +145,30 @@ public class ReportDataHelper {
     return reportData;
   }
 
+  public static ReportDataDto createCountFlowNodeFrequencyGroupByFlowNoneNumber(
+    String processDefinitionKey,
+    String processDefinitionVersion
+  ) {
+
+    ViewDto view = new ViewDto();
+    view.setOperation(VIEW_COUNT_OPERATION);
+    view.setEntity(VIEW_FLOW_NODE_ENTITY);
+    view.setProperty(VIEW_FREQUENCY_PROPERTY);
+
+
+    GroupByDto groupByDto = createGroupByNone();
+
+    ReportDataDto reportData = createReportDataViewRaw(
+      processDefinitionKey,
+      processDefinitionVersion,
+      SINGLE_NUMBER_VISUALIZATION,
+      view,
+      groupByDto
+    );
+
+    return reportData;
+  }
+
   public static ReportDataDto createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(
       String processDefinitionKey,
       String processDefinitionVersion

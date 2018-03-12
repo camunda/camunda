@@ -88,8 +88,6 @@ public class ExportService {
     Optional<ReportResultDto> reportResultDto = Optional.empty();
     try {
       reportResultDto = Optional.ofNullable(reportService.evaluateSavedReport(reportId));
-    } catch (IOException e) {
-      logger.error("can't evaluate report",e);
     } catch (OptimizeException e) {
       logger.error("can't evaluate report",e);
     }

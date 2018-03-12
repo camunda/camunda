@@ -7,5 +7,5 @@ import java.io.IOException;
 
 public interface Command {
   
-  ReportResultDto evaluate(CommandContext commandContext) throws IOException, OptimizeException;
+  ReportResultDto evaluate(CommandContext commandContext) throws OptimizeException;
 }

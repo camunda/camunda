@@ -86,8 +86,6 @@ public class AlertJob implements Job {
       }
 
       jobExecutionContext.setResult(alertJobResult);
-    } catch (IOException e) {
-      logger.error("error while processing alert of report [{}]", alertId, e);
     } catch (OptimizeException e) {
       logger.error("error while processing alert ofr report [{}]", alertId, e);
     }

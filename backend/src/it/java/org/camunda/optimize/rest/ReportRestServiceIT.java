@@ -9,9 +9,6 @@ import org.camunda.optimize.test.util.ReportDataHelper;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.GenericType;
@@ -28,6 +25,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 public class ReportRestServiceIT {
 
   public static final String BEARER = "Bearer ";
+  public static final String RANDOM_KEY = "someRandomKey";
+  public static final String RANDOM_VERSION = "someRandomVersion";
+  public static final String RANDOM_STRING = "something";
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
   @Rule
@@ -226,7 +226,9 @@ public class ReportRestServiceIT {
   public void evaluateReportById() {
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
-    String id = createAndStoreDefaultReportDefinition("someRandomKey", "someRandomVersion");
+    String id = createAndStoreDefaultReportDefinition(
+      ReportDataHelper.createReportDataViewRawAsTable(RANDOM_KEY, RANDOM_VERSION)
+    );
 
     // then
     Response response = embeddedOptimizeRule.target("report/" + id + "/evaluate")
@@ -236,6 +238,26 @@ public class ReportRestServiceIT {
 
     // then the status code is okay
     assertThat(response.getStatus(), is(200));
+  }
+
+  @Test
+  public void evaluateInvalidReportById() {
+    //given
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+    String id = createAndStoreDefaultReportDefinition(
+      ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNoneNumber(RANDOM_KEY, RANDOM_VERSION)
+    );
+
+    // then
+    Response response = embeddedOptimizeRule.target("report/" + id + "/evaluate")
+      .request()
+      .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+      .get();
+
+    // then the status code is okay
+    assertThat(response.getStatus(), is(500));
+    String errorMessage = response.readEntity(String.class);
+    assertThat(errorMessage.contains("reportDefinition"), is(true));
   }
 
   @Test
@@ -254,7 +276,7 @@ public class ReportRestServiceIT {
   public void evaluateUnsavedReport() {
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
-    ReportDataDto reportDataDto = ReportDataHelper.createReportDataViewRawAsTable("someRandomKey", "someRandomVersion");
+    ReportDataDto reportDataDto = ReportDataHelper.createReportDataViewRawAsTable(RANDOM_KEY, RANDOM_VERSION);
 
     // then
     Response response = embeddedOptimizeRule.target("report/evaluate")
@@ -266,19 +288,18 @@ public class ReportRestServiceIT {
     assertThat(response.getStatus(), is(200));
   }
 
-  private String createAndStoreDefaultReportDefinition(String processDefinitionKey,
-                                                       String processDefinitionVersion) {
+  private String createAndStoreDefaultReportDefinition(ReportDataDto reportDataViewRawAsTable) {
     String id = createNewReportHelper();
-    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
+    ReportDataDto reportData = reportDataViewRawAsTable;
     ReportDefinitionDto report = new ReportDefinitionDto();
     report.setData(reportData);
-    report.setId("something");
-    report.setLastModifier("something");
-    report.setName("something");
+    report.setId(RANDOM_STRING);
+    report.setLastModifier(RANDOM_STRING);
+    report.setName(RANDOM_STRING);
     OffsetDateTime someDate = OffsetDateTime.now().plusHours(1);
     report.setCreated(someDate);
     report.setLastModified(someDate);
-    report.setOwner("something");
+    report.setOwner(RANDOM_STRING);
     updateReport(id, report);
     return id;
   }

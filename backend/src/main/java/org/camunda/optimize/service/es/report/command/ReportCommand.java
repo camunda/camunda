@@ -40,7 +40,7 @@ public abstract class ReportCommand <T extends ReportResultDto>  implements Comm
   protected QueryFilterEnhancer queryFilterEnhancer;
 
   @Override
-  public T evaluate(CommandContext commandContext) throws IOException, OptimizeException {
+  public T evaluate(CommandContext commandContext) throws OptimizeException {
     reportData = commandContext.getReportData();
     esclient = commandContext.getEsclient();
     configurationService = commandContext.getConfigurationService();
@@ -54,7 +54,7 @@ public abstract class ReportCommand <T extends ReportResultDto>  implements Comm
     return evaluationResult;
   }
 
-  protected abstract T evaluate() throws IOException, OptimizeException;
+  protected abstract T evaluate() throws OptimizeException;
 
   protected BoolQueryBuilder setupBaseQuery(String processDefinitionKey, String processDefinitionVersion) {
     BoolQueryBuilder query;

@@ -50,13 +50,13 @@ public class ReportEvaluator {
   @Autowired
   private Client esclient;
 
-  public ReportResultDto evaluate(ReportDefinitionDto reportDefinitionDto) throws IOException, OptimizeException {
+  public ReportResultDto evaluate(ReportDefinitionDto reportDefinitionDto) throws OptimizeException {
     ReportResultDto resultDto = evaluate(reportDefinitionDto.getData());
     ReportUtil.copyMetaData(reportDefinitionDto, resultDto);
     return resultDto;
   }
 
-  public ReportResultDto evaluate(ReportDataDto reportData) throws IOException, OptimizeException {
+  public ReportResultDto evaluate(ReportDataDto reportData) throws OptimizeException {
     CommandContext commandContext = createCommandContext(reportData);
     Command evaluationCommand = extractCommand(reportData);
     ReportResultDto result = evaluationCommand.evaluate(commandContext);
