@@ -17,16 +17,7 @@
  */
 package io.zeebe.broker.transport.clientapi;
 
-import static io.zeebe.util.StringUtil.getBytes;
-import static java.lang.String.format;
-
-import java.nio.charset.StandardCharsets;
-
 import io.zeebe.broker.Loggers;
-import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-
 import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.clientapi.ErrorResponseEncoder;
 import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
@@ -34,7 +25,13 @@ import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerResponse;
 import io.zeebe.util.EnsureUtil;
 import io.zeebe.util.buffer.BufferWriter;
+import org.agrona.MutableDirectBuffer;
 import org.slf4j.Logger;
+
+import java.nio.charset.StandardCharsets;
+
+import static io.zeebe.util.StringUtil.getBytes;
+import static java.lang.String.format;
 
 public class ErrorResponseWriter implements BufferWriter
 {
@@ -42,8 +39,6 @@ public class ErrorResponseWriter implements BufferWriter
 
     protected final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     protected final ErrorResponseEncoder errorResponseEncoder = new ErrorResponseEncoder();
-
-    protected final DirectBuffer failedRequestBuffer = new UnsafeBuffer(0, 0);
 
     protected ErrorCode errorCode;
     protected byte[] errorMessage;
@@ -79,13 +74,6 @@ public class ErrorResponseWriter implements BufferWriter
         return this;
     }
 
-    public ErrorResponseWriter failedRequest(DirectBuffer buffer, int offset, int length)
-    {
-        failedRequestBuffer.wrap(buffer, offset, length);
-        return this;
-    }
-
-
     @Override
     public void write(MutableDirectBuffer buffer, int offset)
     {
@@ -104,8 +92,7 @@ public class ErrorResponseWriter implements BufferWriter
 
         errorResponseEncoder
             .errorCode(errorCode)
-            .putErrorData(errorMessage, 0, errorMessage.length)
-            .putFailedRequest(failedRequestBuffer, 0, failedRequestBuffer.capacity());
+            .putErrorData(errorMessage, 0, errorMessage.length);
     }
 
     public boolean tryWriteResponseOrLogFailure(ServerOutput output, int streamId, long requestId)
@@ -160,17 +147,13 @@ public class ErrorResponseWriter implements BufferWriter
         return  MessageHeaderEncoder.ENCODED_LENGTH +
                 ErrorResponseEncoder.BLOCK_LENGTH +
                 ErrorResponseEncoder.errorDataHeaderLength() +
-                errorMessage.length +
-                ErrorResponseEncoder.failedRequestHeaderLength() +
-                failedRequestBuffer.capacity();
+                errorMessage.length;
     }
 
     protected void reset()
     {
         errorCode = null;
         errorMessage = null;
-
-        failedRequestBuffer.wrap(0, 0);
     }
 
 }

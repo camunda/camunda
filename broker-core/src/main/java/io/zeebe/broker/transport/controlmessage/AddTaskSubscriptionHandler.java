@@ -33,14 +33,14 @@ import java.util.function.BooleanSupplier;
 
 import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
 
-public class OpenTaskSubscriptionHandler implements ControlMessageHandler
+public class AddTaskSubscriptionHandler implements ControlMessageHandler
 {
     protected final TaskSubscriptionManager manager;
 
     protected final ControlMessageResponseWriter responseWriter;
     protected final ErrorResponseWriter errorResponseWriter;
 
-    public OpenTaskSubscriptionHandler(ServerOutput output, TaskSubscriptionManager manager)
+    public AddTaskSubscriptionHandler(ServerOutput output, TaskSubscriptionManager manager)
     {
         this.manager = manager;
         this.errorResponseWriter = new ErrorResponseWriter(output);

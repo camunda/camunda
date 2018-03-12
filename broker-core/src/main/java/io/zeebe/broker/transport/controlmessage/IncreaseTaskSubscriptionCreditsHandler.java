@@ -75,29 +75,31 @@ public class IncreaseTaskSubscriptionCreditsHandler implements ControlMessageHan
                     .tryWriteResponseOrLogFailure(requestStreamId, requestId);
             });
         }
-
-        creditsRequest.setCredits(subscription.getCredits());
-        creditsRequest.setSubscriberKey(subscription.getSubscriberKey());
-
-        final boolean success = manager.increaseSubscriptionCreditsAsync(creditsRequest);
-        if (success)
-        {
-            sendResponse(actor, () ->
-            {
-                return responseWriter
-                    .dataWriter(subscription)
-                    .tryWriteResponse(requestStreamId, requestId);
-            });
-        }
         else
         {
-            sendResponse(actor, () ->
+            creditsRequest.setCredits(subscription.getCredits());
+            creditsRequest.setSubscriberKey(subscription.getSubscriberKey());
+
+            final boolean success = manager.increaseSubscriptionCreditsAsync(creditsRequest);
+            if (success)
             {
-                return errorResponseWriter
-                    .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
-                    .errorMessage("Cannot increase task subscription credits. Capacities exhausted.")
-                    .tryWriteResponseOrLogFailure(requestStreamId, requestId);
-            });
+                sendResponse(actor, () ->
+                {
+                    return responseWriter
+                        .dataWriter(subscription)
+                        .tryWriteResponse(requestStreamId, requestId);
+                });
+            }
+            else
+            {
+                sendResponse(actor, () ->
+                {
+                    return errorResponseWriter
+                        .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
+                        .errorMessage("Cannot increase task subscription credits. Capacities exhausted.")
+                        .tryWriteResponseOrLogFailure(requestStreamId, requestId);
+                });
+            }
         }
     }
 

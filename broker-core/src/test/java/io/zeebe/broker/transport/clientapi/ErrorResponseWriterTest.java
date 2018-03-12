@@ -17,24 +17,17 @@
  */
 package io.zeebe.broker.transport.clientapi;
 
-import static io.zeebe.util.StringUtil.getBytes;
-import static io.zeebe.util.VarDataUtil.readBytes;
-import static org.assertj.core.api.Assertions.assertThat;
-
-import org.agrona.DirectBuffer;
+import io.zeebe.protocol.clientapi.ErrorCode;
+import io.zeebe.protocol.clientapi.ErrorResponseDecoder;
+import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.Test;
 
-import io.zeebe.protocol.clientapi.ErrorCode;
-import io.zeebe.protocol.clientapi.ErrorResponseDecoder;
-import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class ErrorResponseWriterTest
 {
-    private static final byte[] REQUEST = getBytes("request");
-    private static final DirectBuffer REQUEST_BUFFER = new UnsafeBuffer(REQUEST);
-
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final ErrorResponseDecoder responseDecoder = new ErrorResponseDecoder();
 
@@ -51,8 +44,7 @@ public class ErrorResponseWriterTest
     {
         responseWriter
             .errorCode(ErrorCode.PARTITION_NOT_FOUND)
-            .errorMessage("error message")
-            .failedRequest(REQUEST_BUFFER, 0, REQUEST_BUFFER.capacity());
+            .errorMessage("error message");
         final UnsafeBuffer buf = new UnsafeBuffer(new byte[responseWriter.getLength()]);
 
         // when
@@ -71,9 +63,5 @@ public class ErrorResponseWriterTest
         responseDecoder.wrap(buf, offset, responseDecoder.sbeBlockLength(), responseDecoder.sbeSchemaVersion());
         assertThat(responseDecoder.errorCode()).isEqualTo(ErrorCode.PARTITION_NOT_FOUND);
         assertThat(responseDecoder.errorData()).isEqualTo("error message");
-
-        final byte[] failureRequestBuffer = readBytes(responseDecoder::getFailedRequest, responseDecoder::failedRequestLength);
-
-        assertThat(failureRequestBuffer).isEqualTo(REQUEST);
     }
 }

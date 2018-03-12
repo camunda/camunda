@@ -70,7 +70,7 @@ public class ControlMessageHandlerManagerService implements Service<ControlMessa
         final ServerOutput output = transport.getOutput();
 
         final List<ControlMessageHandler> controlMessageHandlers = Arrays.asList(
-            new OpenTaskSubscriptionHandler(output, taskSubscriptionManager),
+            new AddTaskSubscriptionHandler(output, taskSubscriptionManager),
             new IncreaseTaskSubscriptionCreditsHandler(output, taskSubscriptionManager),
             new RemoveTaskSubscriptionHandler(output, taskSubscriptionManager),
             new RemoveTopicSubscriptionHandler(output, topicSubscriptionService),

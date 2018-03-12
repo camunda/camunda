@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.task;
 
+import io.zeebe.broker.Loggers;
 import io.zeebe.broker.logstreams.processor.StreamProcessorService;
 import io.zeebe.broker.task.processor.LockTaskStreamProcessor;
 import io.zeebe.broker.task.processor.TaskSubscription;
@@ -366,9 +367,17 @@ public class TaskSubscriptionManager extends Actor implements TransportListener
 
                 actor.runOnCompletion(closeFuture, (hasSubscriptions, throwable) ->
                 {
-                    if (!hasSubscriptions)
+                    if (throwable == null)
                     {
-                        removeStreamProcessorService(processor);
+
+                        if (!hasSubscriptions)
+                        {
+                            removeStreamProcessorService(processor);
+                        }
+                    }
+                    else
+                    {
+                        Loggers.SYSTEM_LOGGER.debug("Problem on closing LockTaskStreamProcessor.", throwable);
                     }
                 });
             }

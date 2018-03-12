@@ -102,7 +102,7 @@ public class SubscribeProcessor implements EventProcessor
         @Override
         public boolean executeSideEffects()
         {
-            return manager.writeRequestResponseError(metadata, event, error);
+            return manager.writeRequestResponseError(metadata, error);
         }
 
         @Override

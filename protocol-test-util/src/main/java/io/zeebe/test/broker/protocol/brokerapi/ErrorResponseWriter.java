@@ -31,7 +31,6 @@ public class ErrorResponseWriter<R> extends AbstractMessageBuilder<R>
 
     protected ErrorCode errorCode;
     protected byte[] errorData;
-    protected byte[] failedRequest;
 
     public ErrorResponseWriter(MsgPackHelper msgPackHelper)
     {
@@ -44,9 +43,7 @@ public class ErrorResponseWriter<R> extends AbstractMessageBuilder<R>
         return MessageHeaderEncoder.ENCODED_LENGTH +
                 ErrorResponseEncoder.BLOCK_LENGTH +
                 ErrorResponseEncoder.errorDataHeaderLength() +
-                errorData.length +
-                ErrorResponseEncoder.failedRequestHeaderLength() +
-                failedRequest.length;
+                errorData.length;
     }
 
     @Override
@@ -66,26 +63,13 @@ public class ErrorResponseWriter<R> extends AbstractMessageBuilder<R>
         bodyEncoder
             .wrap(buffer, offset)
             .errorCode(errorCode)
-            .putErrorData(errorData, 0, errorData.length)
-            .putFailedRequest(failedRequest, 0, failedRequest.length);
+            .putErrorData(errorData, 0, errorData.length);
 
     }
 
     @Override
     public void initializeFrom(R context)
     {
-        if (context instanceof ExecuteCommandRequest)
-        {
-            this.failedRequest = msgPackHelper.encodeAsMsgPack(((ExecuteCommandRequest) context).getCommand());
-        }
-        else if (context instanceof ControlMessageRequest)
-        {
-            this.failedRequest = msgPackHelper.encodeAsMsgPack(((ControlMessageRequest) context).getData());
-        }
-        else
-        {
-            throw new RuntimeException("Unexpected request type " + context.getClass().getName());
-        }
     }
 
     public void setErrorCode(ErrorCode errorCode)

@@ -104,7 +104,6 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
             return errorResponseWriter
                 .errorCode(ErrorCode.PARTITION_NOT_FOUND)
                 .errorMessage("Cannot execute command. Partition with id '%d' not found", partitionId)
-                .failedRequest(buffer, messageOffset, messageLength)
                 .tryWriteResponseOrLogFailure(output, requestAddress.getStreamId(), requestId);
         }
 
@@ -116,7 +115,6 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
             return errorResponseWriter
                     .errorCode(ErrorCode.MESSAGE_NOT_SUPPORTED)
                     .errorMessage("Cannot execute command. Invalid event type '%s'.", eventType.name())
-                    .failedRequest(buffer, messageOffset, messageLength)
                     .tryWriteResponseOrLogFailure(output, requestAddress.getStreamId(), requestId);
         }
 
@@ -135,7 +133,6 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
             return errorResponseWriter
                     .errorCode(ErrorCode.INVALID_MESSAGE)
                     .errorMessage("Cannot deserialize command: '%s'.", concatErrorMessages(t))
-                    .failedRequest(buffer, messageOffset, messageLength)
                     .tryWriteResponseOrLogFailure(output, requestAddress.getStreamId(), requestId);
         }
 
@@ -241,7 +238,6 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
             return errorResponseWriter
                 .errorCode(ErrorCode.INVALID_CLIENT_VERSION)
                 .errorMessage("Client has newer version than broker (%d > %d)", clientVersion, Protocol.PROTOCOL_VERSION)
-                .failedRequest(buffer, offset, length)
                 .tryWriteResponse(output, remoteAddress.getStreamId(), requestId);
         }
 
@@ -273,7 +269,6 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
                 isHandled = errorResponseWriter
                         .errorCode(ErrorCode.MESSAGE_NOT_SUPPORTED)
                         .errorMessage("Cannot handle message. Template id '%d' is not supported.", templateId)
-                        .failedRequest(buffer, offset, length)
                         .tryWriteResponse(output, remoteAddress.getStreamId(), requestId);
                 break;
         }

@@ -272,12 +272,11 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
                              .install();
     }
 
-    public boolean writeRequestResponseError(BrokerEventMetadata metadata, LoggedEvent event, String error)
+    public boolean writeRequestResponseError(BrokerEventMetadata metadata, String error)
     {
         return errorWriter
             .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
             .errorMessage(error)
-            .failedRequest(event.getValueBuffer(), event.getValueOffset(), event.getValueLength())
             .tryWriteResponse(metadata.getRequestStreamId(), metadata.getRequestId());
     }
 

@@ -17,15 +17,6 @@
  */
 package io.zeebe.broker.event;
 
-import static org.assertj.core.api.Assertions.*;
-import static io.zeebe.test.util.BufferAssert.*;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.ErrorCode;
@@ -33,18 +24,21 @@ import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.ControlMessageResponse;
-import io.zeebe.test.broker.protocol.clientapi.ErrorResponse;
-import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandRequest;
-import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
-import io.zeebe.test.broker.protocol.clientapi.RawMessage;
-import io.zeebe.test.broker.protocol.clientapi.SubscribedEvent;
+import io.zeebe.test.broker.protocol.clientapi.*;
 import io.zeebe.test.util.TestUtil;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.RuleChain;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 
 public class TopicSubscriptionTest
@@ -214,7 +208,6 @@ public class TopicSubscriptionTest
 
         assertThat(errorResponse.getErrorCode()).isEqualTo(ErrorCode.PARTITION_NOT_FOUND);
         assertThat(errorResponse.getErrorData()).isEqualTo(expectedMessage);
-        assertThatBuffer(errorResponse.getFailedRequestBuffer()).hasBytes(request);
     }
 
     @Test

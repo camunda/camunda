@@ -15,19 +15,12 @@
  */
 package io.zeebe.test.broker.protocol.clientapi;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Map;
-
-import org.agrona.DirectBuffer;
-import org.agrona.LangUtil;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.io.DirectBufferInputStream;
 import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.clientapi.ErrorResponseDecoder;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.util.buffer.BufferReader;
+import org.agrona.DirectBuffer;
 
 public class ErrorResponse implements BufferReader
 {
@@ -36,8 +29,6 @@ public class ErrorResponse implements BufferReader
 
     protected final MsgPackHelper msgPackHelper;
 
-    protected DirectBuffer failedRequestBuffer = new UnsafeBuffer(0, 0);
-    protected Map<String, Object> failedRequest;
     protected String errorData;
 
     public ErrorResponse(MsgPackHelper msgPackHelper)
@@ -53,29 +44,6 @@ public class ErrorResponse implements BufferReader
     public String getErrorData()
     {
         return errorData;
-    }
-
-    public Map<String, Object> getFailedRequest()
-    {
-        if (failedRequest == null)
-        {
-            try (InputStream is = new DirectBufferInputStream(failedRequestBuffer))
-            {
-                failedRequest = msgPackHelper.readMsgPack(is);
-            }
-            catch (final IOException e)
-            {
-                LangUtil.rethrowUnchecked(e);
-            }
-
-        }
-
-        return failedRequest;
-    }
-
-    public DirectBuffer getFailedRequestBuffer()
-    {
-        return failedRequestBuffer;
     }
 
     @Override
@@ -96,18 +64,6 @@ public class ErrorResponse implements BufferReader
         errorData = responseBuffer.getStringWithoutLengthUtf8(errorDataOffset, errorDataLength);
 
         bodyDecoder.limit(errorDataOffset + errorDataLength);
-
-        final int failedRequestLength = bodyDecoder.failedRequestLength();
-        final int failedRequestOffset = bodyDecoder.limit() + ErrorResponseDecoder.failedRequestHeaderLength();
-        if (failedRequestLength > 0)
-        {
-            failedRequestBuffer.wrap(responseBuffer, failedRequestOffset, failedRequestLength);
-        }
-        else
-        {
-            failedRequestBuffer.wrap(0, 0);
-        }
-        failedRequest = null;
     }
 
 }

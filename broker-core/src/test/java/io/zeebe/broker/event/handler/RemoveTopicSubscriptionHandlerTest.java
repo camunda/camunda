@@ -17,13 +17,16 @@
  */
 package io.zeebe.broker.event.handler;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.when;
-
-import java.util.function.Consumer;
-
+import io.zeebe.broker.event.processor.CloseSubscriptionRequest;
+import io.zeebe.broker.event.processor.TopicSubscriptionService;
+import io.zeebe.broker.transport.clientapi.BufferingServerOutput;
+import io.zeebe.broker.transport.clientapi.ErrorResponseWriter;
+import io.zeebe.broker.transport.controlmessage.ControlMessageResponseWriter;
+import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.protocol.clientapi.ErrorCode;
+import io.zeebe.protocol.clientapi.ErrorResponseDecoder;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
+import io.zeebe.test.util.FluentMock;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
@@ -36,17 +39,12 @@ import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import io.zeebe.broker.event.processor.CloseSubscriptionRequest;
-import io.zeebe.broker.event.processor.TopicSubscriptionService;
-import io.zeebe.broker.transport.clientapi.BufferingServerOutput;
-import io.zeebe.broker.transport.clientapi.ErrorResponseWriter;
-import io.zeebe.broker.transport.controlmessage.ControlMessageResponseWriter;
-import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.protocol.clientapi.ErrorCode;
-import io.zeebe.protocol.clientapi.ErrorResponseDecoder;
-import io.zeebe.protocol.impl.BrokerEventMetadata;
-import io.zeebe.test.util.BufferAssert;
-import io.zeebe.test.util.FluentMock;
+import java.util.function.Consumer;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.when;
 
 @Ignore
 public class RemoveTopicSubscriptionHandlerTest
@@ -106,10 +104,6 @@ public class RemoveTopicSubscriptionHandlerTest
 
         assertThat(errorDecoder.errorCode()).isEqualTo(ErrorCode.REQUEST_PROCESSING_FAILURE);
         assertThat(errorDecoder.errorData()).isEqualTo("Cannot close topic subscription. foo");
-
-        final UnsafeBuffer failedRequestBuf = new UnsafeBuffer(new byte[errorDecoder.failedRequestLength()]);
-        errorDecoder.getFailedRequest(failedRequestBuf, 0, failedRequestBuf.capacity());
-        BufferAssert.assertThatBuffer(failedRequestBuf).hasBytes(request);
     }
 
     protected static final DirectBuffer encode(UnpackedObject obj)

@@ -57,21 +57,23 @@ public class RequestPartitionsMessageHandler implements ControlMessageHandler
                 "Partitions request must address the system partition " + Protocol.SYSTEM_PARTITION,
                 requestStreamId, requestId);
         }
-
-        // stream processor actor sends the response on success
-        final ActorFuture<Void> handlerFuture = systemPartitionManager.sendPartitions(requestStreamId, requestId);
-
-        actor.runOnCompletion(handlerFuture, ((aVoid, throwable) ->
+        else
         {
-            if (throwable != null)
+            // stream processor actor sends the response on success
+            final ActorFuture<Void> handlerFuture = systemPartitionManager.sendPartitions(requestStreamId, requestId);
+
+            actor.runOnCompletion(handlerFuture, ((aVoid, throwable) ->
             {
-                // it is important that partition not found is returned here to signal a client that it may have addressed a broker
-                // that appeared as the system partition leader but is not (yet) able to respond
-                sendErrorResponse(actor, ErrorCode.PARTITION_NOT_FOUND,
-                    throwable.getMessage(),
-                    requestStreamId, requestId);
-            }
-        }));
+                if (throwable != null)
+                {
+                    // it is important that partition not found is returned here to signal a client that it may have addressed a broker
+                    // that appeared as the system partition leader but is not (yet) able to respond
+                    sendErrorResponse(actor, ErrorCode.PARTITION_NOT_FOUND,
+                        throwable.getMessage(),
+                        requestStreamId, requestId);
+                }
+            }));
+        }
     }
 
     protected void sendErrorResponse(ActorControl actor, ErrorCode errorCode, String message, int requestStream, long requestId)
