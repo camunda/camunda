@@ -1,10 +1,11 @@
 import React from 'react';
+import Async from 'Async';
 
 import './Footer.css';
 
 import {getImportProgress, getConnectionStatus} from './service';
 
-export default class Footer extends React.Component {
+export default class Footer extends Async.React.Component {
   constructor(props) {
     super(props);
 
@@ -18,14 +19,16 @@ export default class Footer extends React.Component {
   }
 
   loadImportProgress = async () => {
-    const response = await getImportProgress();
-    const importProgress = response.progress;
-    this.setState({importProgress});
+    this.await(getImportProgress(), response => {
+      const importProgress = response.progress;
+      this.setState({importProgress});
+    });
   };
 
-  loadConnectionStatus = async () => {
-    const {engineConnections, connectedToElasticsearch} = await getConnectionStatus();
-    this.setState({engineConnections, connectedToElasticsearch});
+  loadConnectionStatus = () => {
+    this.await(getConnectionStatus(), ({engineConnections, connectedToElasticsearch}) => {
+      this.setState({engineConnections, connectedToElasticsearch});
+    });
   };
 
   componentDidMount() {
@@ -37,6 +40,7 @@ export default class Footer extends React.Component {
 
   componentWillUnmount() {
     clearInterval(this.refreshIntervalHandle);
+    this.cancelAwait();
   }
 
   render() {
