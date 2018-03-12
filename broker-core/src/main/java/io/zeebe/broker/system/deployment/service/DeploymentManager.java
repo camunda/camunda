@@ -22,12 +22,11 @@ import io.zeebe.broker.logstreams.LogStreamServiceNames;
 import io.zeebe.broker.logstreams.processor.*;
 import io.zeebe.broker.system.SystemConfiguration;
 import io.zeebe.broker.system.SystemServiceNames;
-import io.zeebe.broker.system.deployment.PendingDeploymentCheck;
 import io.zeebe.broker.system.deployment.data.PendingDeployments;
 import io.zeebe.broker.system.deployment.data.PendingWorkflows;
 import io.zeebe.broker.system.deployment.data.TopicPartitions;
 import io.zeebe.broker.system.deployment.data.WorkflowVersions;
-import io.zeebe.broker.system.deployment.handler.WorkflowRequestMessageSender;
+import io.zeebe.broker.system.deployment.handler.RemoteWorkflowsManager;
 import io.zeebe.broker.system.deployment.processor.*;
 import io.zeebe.broker.workflow.data.DeploymentState;
 import io.zeebe.broker.workflow.data.WorkflowState;
@@ -52,7 +51,6 @@ public class DeploymentManager implements Service<DeploymentManager>
     private PartitionManager partitionManager;
     private ClientTransport managementClient;
     private ServerTransport clientApiTransport;
-    private PendingDeploymentCheck pendingDeploymentCheck;
 
     private final ServiceGroupReference<LogStream> systemStreamGroupReference = ServiceGroupReference.<LogStream>create()
             .onAdd((name, stream) -> installDeploymentStreamProcessor(stream, name))
@@ -73,6 +71,11 @@ public class DeploymentManager implements Service<DeploymentManager>
         clientApiTransport = clientApiTransportInjector.getValue();
     }
 
+    @Override
+    public void stop(ServiceStopContext stopContext)
+    {
+    }
+
     private void installDeploymentStreamProcessor(final LogStream logStream, ServiceName<LogStream> serviceName)
     {
 
@@ -80,7 +83,6 @@ public class DeploymentManager implements Service<DeploymentManager>
         final PendingDeployments pendingDeployments = new PendingDeployments();
         final PendingWorkflows pendingWorkflows = new PendingWorkflows();
 
-        final WorkflowRequestMessageSender workflowRequestMessageSender = new WorkflowRequestMessageSender(partitionManager, managementClient);
 
         final Duration deploymentRequestTimeout = Duration.ofSeconds(systemConfiguration.getDeploymentCreationTimeoutSeconds());
 
@@ -92,33 +94,26 @@ public class DeploymentManager implements Service<DeploymentManager>
         partitionCollector.registerWith(streamProcessorBuilder);
         final TopicPartitions partitions = partitionCollector.getPartitions();
 
-        pendingDeploymentCheck = new PendingDeploymentCheck(
-            workflowRequestMessageSender,
-            streamEnvironment.buildStreamReader(),
-            streamEnvironment.buildStreamWriter(),
-            pendingDeployments,
-            pendingWorkflows);
+        final RemoteWorkflowsManager remoteManager = new RemoteWorkflowsManager(
+                pendingDeployments,
+                pendingWorkflows,
+                partitionManager,
+                streamEnvironment.buildStreamWriter(),
+                streamEnvironment.buildStreamReader(),
+                managementClient);
 
         final TypedStreamProcessor streamProcessor = streamProcessorBuilder
             .onEvent(EventType.DEPLOYMENT_EVENT, DeploymentState.CREATE, new DeploymentCreateProcessor(partitions, workflowVersions, pendingDeployments, deploymentRequestTimeout))
             .onEvent(EventType.DEPLOYMENT_EVENT, DeploymentState.VALIDATED, new DeploymentValidatedProcessor(pendingDeployments))
-            .onEvent(EventType.WORKFLOW_EVENT, WorkflowState.CREATE, new WorkflowCreateProcessor(partitions, pendingDeployments, pendingWorkflows, workflowRequestMessageSender))
+            .onEvent(EventType.WORKFLOW_EVENT, WorkflowState.CREATE, new WorkflowCreateProcessor(partitions, pendingDeployments, pendingWorkflows, remoteManager))
             .onEvent(EventType.DEPLOYMENT_EVENT, DeploymentState.DISTRIBUTED, new DeploymentDistributedProcessor(pendingDeployments, pendingWorkflows))
             .onEvent(EventType.DEPLOYMENT_EVENT, DeploymentState.TIMED_OUT, new DeploymentTimedOutProcessor(pendingDeployments, pendingWorkflows, streamEnvironment.buildStreamReader()))
-            .onEvent(EventType.WORKFLOW_EVENT, WorkflowState.DELETE, new WorkflowDeleteProcessor(pendingDeployments, pendingWorkflows, workflowVersions, workflowRequestMessageSender))
+            .onEvent(EventType.WORKFLOW_EVENT, WorkflowState.DELETE, new WorkflowDeleteProcessor(pendingDeployments, pendingWorkflows, workflowVersions, remoteManager))
             .onEvent(EventType.DEPLOYMENT_EVENT, DeploymentState.REJECT, new DeploymentRejectProcessor(pendingDeployments))
             .withStateResource(workflowVersions.getRawMap())
             .withStateResource(pendingDeployments.getRawMap())
             .withStateResource(pendingWorkflows.getRawMap())
-            .withListener(new StreamProcessorLifecycleAware()
-            {
-                @Override
-                public void onOpen(TypedStreamProcessor streamProcessor)
-                {
-                    // TODO check needs to be re-implemented
-                    streamProcessor.getActor().runAtFixedRate(Duration.ofMillis(250), pendingDeploymentCheck);
-                }
-            })
+            .withListener(remoteManager)
             .build();
 
         final StreamProcessorService streamProcessorService = new StreamProcessorService(
@@ -132,15 +127,6 @@ public class DeploymentManager implements Service<DeploymentManager>
              .dependency(LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE, streamProcessorService.getSnapshotStorageInjector())
              .dependency(SystemServiceNames.ACTOR_SCHEDULER_SERVICE, streamProcessorService.getActorSchedulerInjector())
              .install();
-    }
-
-    @Override
-    public void stop(ServiceStopContext stopContext)
-    {
-        if (pendingDeploymentCheck != null)
-        {
-            pendingDeploymentCheck.close();
-        }
     }
 
     @Override
@@ -167,5 +153,6 @@ public class DeploymentManager implements Service<DeploymentManager>
     {
         return clientApiTransportInjector;
     }
+
 
 }

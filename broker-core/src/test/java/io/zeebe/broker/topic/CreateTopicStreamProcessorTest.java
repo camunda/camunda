@@ -21,6 +21,8 @@ import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -793,7 +795,18 @@ public class CreateTopicStreamProcessorTest
         public ActorFuture<ClientRequest> createPartitionRemote(SocketAddress remote, DirectBuffer topicName, int partitionId)
         {
             partitionRequests.add(new PartitionRequest(remote, partitionId));
-            return CompletableActorFuture.completed(null);
+            final ClientRequest request = mock(ClientRequest.class);
+            when(request.isDone()).thenReturn(true);
+            try
+            {
+                when(request.get()).thenReturn(BufferUtil.wrapString("responseContent"));
+            }
+            catch (Exception e)
+            {
+                // make compile
+            }
+
+            return CompletableActorFuture.completed(request);
         }
 
         public List<PartitionRequest> getPartitionRequests()

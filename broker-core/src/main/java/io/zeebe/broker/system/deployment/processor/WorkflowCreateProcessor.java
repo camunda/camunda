@@ -25,7 +25,7 @@ import io.zeebe.broker.system.deployment.data.*;
 import io.zeebe.broker.system.deployment.data.PendingDeployments.PendingDeployment;
 import io.zeebe.broker.system.deployment.data.TopicPartitions.TopicPartition;
 import io.zeebe.broker.system.deployment.data.TopicPartitions.TopicPartitionIterator;
-import io.zeebe.broker.system.deployment.handler.WorkflowRequestMessageSender;
+import io.zeebe.broker.system.deployment.handler.RemoteWorkflowsManager;
 import io.zeebe.broker.workflow.data.WorkflowEvent;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
@@ -37,7 +37,7 @@ public class WorkflowCreateProcessor implements TypedEventProcessor<WorkflowEven
     private final PendingDeployments pendingDeployments;
     private final PendingWorkflows pendingWorkflows;
 
-    private final WorkflowRequestMessageSender workflowRequestSender;
+    private final RemoteWorkflowsManager workflowRequestSender;
 
     private final IntArrayList partitionIds = new IntArrayList();
 
@@ -45,7 +45,7 @@ public class WorkflowCreateProcessor implements TypedEventProcessor<WorkflowEven
             TopicPartitions topicPartitions,
             PendingDeployments pendingDeployments,
             PendingWorkflows pendingWorkflows,
-            WorkflowRequestMessageSender workflowRequestSender)
+            RemoteWorkflowsManager workflowRequestSender)
     {
         this.topicPartitions = topicPartitions;
         this.pendingDeployments = pendingDeployments;
@@ -82,7 +82,7 @@ public class WorkflowCreateProcessor implements TypedEventProcessor<WorkflowEven
     @Override
     public boolean executeSideEffects(TypedEvent<WorkflowEvent> event, TypedResponseWriter responseWriter)
     {
-        return workflowRequestSender.sendCreateWorkflowRequest(
+        return workflowRequestSender.distributeWorkflow(
                    partitionIds,
                    event.getKey(),
                    event.getValue());

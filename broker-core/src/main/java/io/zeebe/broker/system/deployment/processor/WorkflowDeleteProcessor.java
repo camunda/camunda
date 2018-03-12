@@ -24,7 +24,7 @@ import io.zeebe.broker.system.deployment.data.*;
 import io.zeebe.broker.system.deployment.data.PendingDeployments.PendingDeployment;
 import io.zeebe.broker.system.deployment.data.PendingWorkflows.PendingWorkflow;
 import io.zeebe.broker.system.deployment.data.PendingWorkflows.PendingWorkflowIterator;
-import io.zeebe.broker.system.deployment.handler.WorkflowRequestMessageSender;
+import io.zeebe.broker.system.deployment.handler.RemoteWorkflowsManager;
 import io.zeebe.broker.workflow.data.WorkflowEvent;
 import io.zeebe.broker.workflow.data.WorkflowState;
 import org.agrona.collections.IntArrayList;
@@ -35,7 +35,7 @@ public class WorkflowDeleteProcessor implements TypedEventProcessor<WorkflowEven
     private final PendingWorkflows pendingWorkflows;
     private final WorkflowVersions workflowVersions;
 
-    private final WorkflowRequestMessageSender workflowMessageSender;
+    private final RemoteWorkflowsManager workflowMessageSender;
 
     private final IntArrayList partitionIds = new IntArrayList();
 
@@ -43,7 +43,7 @@ public class WorkflowDeleteProcessor implements TypedEventProcessor<WorkflowEven
             PendingDeployments pendingDeployments,
             PendingWorkflows pendingWorkflows,
             WorkflowVersions workflowVersions,
-            WorkflowRequestMessageSender workflowMessageSender)
+            RemoteWorkflowsManager workflowMessageSender)
     {
         this.pendingDeployments = pendingDeployments;
         this.pendingWorkflows = pendingWorkflows;
@@ -77,7 +77,7 @@ public class WorkflowDeleteProcessor implements TypedEventProcessor<WorkflowEven
     @Override
     public boolean executeSideEffects(TypedEvent<WorkflowEvent> event, TypedResponseWriter responseWriter)
     {
-        return workflowMessageSender.sendDeleteWorkflowMessage(
+        return workflowMessageSender.deleteWorkflow(
                    partitionIds,
                    event.getKey(),
                    event.getValue());
