@@ -151,6 +151,10 @@ mavenJob(jobName) {
 
     archiveJunit '**/target/surefire-reports/*.xml'
 
+    jmhReport {
+      resultPath 'util/target/jmh-result.json'
+    }
+
     extendedEmail {
       triggers {
         firstFailure {
