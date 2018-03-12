@@ -151,6 +151,10 @@
                     <classpath />
                     <argument>org.openjdk.jmh.Main</argument>
                     <argument>.*</argument>
+                    <argument>-rf</argument>
+                    <argument>json</argument>
+                    <argument>-rff</argument>
+                    <argument>target/jmh-result.json</argument>
                   </arguments>
                 </configuration>
               </execution>
