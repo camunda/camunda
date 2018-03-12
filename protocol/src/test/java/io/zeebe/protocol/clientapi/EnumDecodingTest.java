@@ -46,8 +46,7 @@ public class EnumDecodingTest
 
         bodyEncoder.wrap(buffer, headerEncoder.encodedLength())
             .errorCode(ErrorCode.INVALID_CLIENT_VERSION)
-            .errorData("foo")
-            .failedRequest("bar");
+            .errorData("foo");
 
 
         final byte unknownEnumValue = Byte.MAX_VALUE;

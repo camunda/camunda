@@ -62,7 +62,6 @@
   <sbe:message name="ErrorResponse" id="0" description="Standard error response">
     <field name="errorCode" id="1" type="errorCode" />
     <data name="errorData" id="2" type="varDataEncoding" />
-    <data name="failedRequest" id="3" type="varDataEncoding" />
   </sbe:message>
 
   <sbe:message name="ControlMessageRequest" id="10">
