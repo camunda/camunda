@@ -15,37 +15,14 @@
  */
 package io.zeebe.broker.it.startup;
 
-import static io.zeebe.broker.it.util.TopicEventRecorder.incidentEvent;
-import static io.zeebe.broker.it.util.TopicEventRecorder.taskEvent;
-import static io.zeebe.broker.it.util.TopicEventRecorder.wfInstanceEvent;
-import static io.zeebe.test.util.TestUtil.doRepeatedly;
-import static io.zeebe.test.util.TestUtil.waitUntil;
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.io.File;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.util.Collections;
-import java.util.List;
-import java.util.regex.Pattern;
-
-import io.zeebe.client.clustering.impl.BrokerPartitionState;
-import io.zeebe.client.clustering.impl.TopologyBroker;
-import org.assertj.core.util.Files;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TemporaryFolder;
-
 import io.zeebe.broker.clustering.ClusterServiceNames;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.RecordingTaskHandler;
 import io.zeebe.broker.it.util.TopicEventRecorder;
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.clustering.impl.BrokerPartitionState;
+import io.zeebe.client.clustering.impl.TopologyBroker;
 import io.zeebe.client.clustering.impl.TopologyResponse;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
 import io.zeebe.client.event.DeploymentEvent;
@@ -59,7 +36,26 @@ import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.test.util.TestFileUtil;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.SocketAddress;
-import io.zeebe.util.time.ClockUtil;
+import org.assertj.core.util.Files;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TemporaryFolder;
+
+import java.io.File;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.Collections;
+import java.util.List;
+import java.util.regex.Pattern;
+
+import static io.zeebe.broker.it.util.TopicEventRecorder.*;
+import static io.zeebe.test.util.TestUtil.doRepeatedly;
+import static io.zeebe.test.util.TestUtil.waitUntil;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class BrokerRecoveryTest
 {
@@ -109,12 +105,6 @@ public class BrokerRecoveryTest
                 BrokerRecoveryTest.class.getClassLoader().getResourceAsStream("recovery-broker.cfg.toml"),
                 StandardCharsets.UTF_8,
                 Collections.singletonMap("brokerFolder", canonicallySeparatedPath));
-    }
-
-    @After
-    public void cleanUp()
-    {
-        ClockUtil.reset();
     }
 
     @Test
@@ -318,6 +308,7 @@ public class BrokerRecoveryTest
     }
 
     @Test
+    @Ignore("https://github.com/zeebe-io/zeebe/issues/704, https://github.com/zeebe-io/zeebe/issues/750")
     public void shouldNotReceiveLockedTasksAfterRestart()
     {
         // given
@@ -353,6 +344,7 @@ public class BrokerRecoveryTest
     }
 
     @Test
+    @Ignore("https://github.com/zeebe-io/zeebe/issues/704, https://github.com/zeebe-io/zeebe/issues/750")
     public void shouldReceiveLockExpiredTasksAfterRestart()
     {
         // given
@@ -369,12 +361,12 @@ public class BrokerRecoveryTest
         waitUntil(() -> !recordingTaskHandler.getHandledTasks().isEmpty());
 
         // when
-        restartBroker(() -> ClockUtil.addTime(Duration.ofSeconds(60)));
+        restartBroker();
 
         // wait until stream processor and scheduler process the lock task event which is not re-processed on recovery
         doRepeatedly(() ->
         {
-            ClockUtil.addTime(Duration.ofSeconds(60)); // retriggers lock expiration check in broker
+            brokerRule.getClock().addTime(Duration.ofSeconds(60)); // retriggers lock expiration check in broker
             return null;
         }).until(t -> eventRecorder.hasTaskEvent(taskEvent("LOCK_EXPIRED")));
 
