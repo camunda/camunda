@@ -211,7 +211,7 @@ it('should not contain a Control Panel in non-edit mode', () => {
 it('should update the report', async () => {
   const node = mount(<Report {...props} />);
 
-  await node.instance().loadReport();
+  await node.instance().componentDidMount();
   await node.instance().updateReport({visualization: 'customTestVis'});
 
   expect(node.state().data.visualization).toBe('customTestVis');
@@ -244,7 +244,7 @@ it('should evaluate the report after updating', async () => {
 it('should reset the report data to its original state after canceling', async () => {
   const node = mount(<Report {...props} />);
 
-  await node.instance().loadReport();
+  await node.instance().componentDidMount();
 
   const dataBefore = node.state().data;
 
@@ -354,7 +354,7 @@ describe('edit mode', async () => {
     props.match.params.viewMode = 'edit';
     const node = await mount(<Report {...props} />);
 
-    await node.instance().loadReport();
+    await node.instance().componentDidMount();
     await node
       .instance()
       .updateReport({processDefinitionKey: 'asd', processDefinitionVersion: '123'});
@@ -440,7 +440,7 @@ describe('edit mode', async () => {
   it('should use original data as result data if report cant be evaluated on cancel', async () => {
     const node = mount(<Report {...props} />);
 
-    await node.instance().loadReport();
+    await node.instance().componentDidMount();
 
     node.setState({
       loaded: true,

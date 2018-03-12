@@ -34,8 +34,6 @@ export default class Report extends React.Component {
       shareModalVisible: false,
       deleteModalVisible: false
     };
-
-    this.loadReport();
   }
 
   initializeReport = () => {
@@ -50,22 +48,30 @@ export default class Report extends React.Component {
     };
   };
 
-  loadReport = async () => {
+  componentDidMount = async () => {
+    const isNew = this.isNew;
     const {name, lastModifier, lastModified, data} = await loadSingleReport(this.id);
 
     const reportResult = await getReportData(this.id);
     const stateData = data || this.initializeReport();
 
-    this.setState({
-      name,
-      lastModifier,
-      lastModified,
-      loaded: true,
-      data: stateData,
-      originalData: {...stateData},
-      reportResult: reportResult || {data: stateData},
-      originalName: name
-    });
+    this.setState(
+      {
+        name,
+        lastModifier,
+        lastModified,
+        loaded: true,
+        data: stateData,
+        originalData: {...stateData},
+        reportResult: reportResult || {data: stateData},
+        originalName: name
+      },
+      () => {
+        if (isNew) {
+          this.save();
+        }
+      }
+    );
   };
 
   deleteReport = async evt => {
