@@ -82,7 +82,7 @@ public class TaskQueueTest
         final ZeebeClient client = clientRule.getClient();
 
         thrown.expect(RuntimeException.class);
-        thrown.expectMessage("Cannot determine target partition for request (timeout 3 seconds). " +
+        thrown.expectMessage("Cannot determine target partition for request. " +
                 "Request was: [ topic = unknown-topic, partition = any, event type = TASK, state = CREATE ]");
 
         client.tasks().create("unknown-topic", "foo")
