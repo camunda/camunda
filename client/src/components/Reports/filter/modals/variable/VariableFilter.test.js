@@ -186,18 +186,35 @@ describe('number variables', () => {
     expect(node.find('.VariableFilter__addValueButton')).toBePresent();
   });
 
-  it('should not display the possibility to add another value if last field is empty', () => {
-    const node = mount(<VariableFilter processDefinitionKey="procDefKey" />);
+  it('should add another value when clicking add another value button', () => {
+    const node = mount(
+      <VariableFilter processDefinitionKey="procDefKey" processDefinitionVersion="1" />
+    );
     node.setState({
       variables: [{name: 'foo', type: 'Float'}],
       selectedVariableIdx: 0,
-      values: ['value0', 'value1', '']
+      values: ['value0']
     });
 
-    expect(node.find('.VariableFilter__addValueButton')).not.toBePresent();
+    node.find('.VariableFilter__valueFields button').simulate('click');
+
+    expect(node.state().values).toEqual(['value0', '']);
   });
 
-  it('should add another value when clicking add another value button', () => {
+  it('should not have the possibility to remove the value if there is only one value', () => {
+    const node = mount(
+      <VariableFilter processDefinitionKey="procDefKey" processDefinitionVersion="1" />
+    );
+    node.setState({
+      variables: [{name: 'foo', type: 'Float'}],
+      selectedVariableIdx: 0,
+      values: ['value0']
+    });
+
+    expect(node.find('.VariableFilter__removeItemButton').exists()).toBeFalsy();
+  });
+
+  it('should have the possibility to remove a value if there are multiple values', () => {
     const node = mount(
       <VariableFilter processDefinitionKey="procDefKey" processDefinitionVersion="1" />
     );
@@ -207,9 +224,7 @@ describe('number variables', () => {
       values: ['value0', 'value1']
     });
 
-    node.find('.VariableFilter__valueFields button').simulate('click');
-
-    expect(node.state().values).toEqual(['value0', 'value1', '']);
+    expect(node.find('.VariableFilter__removeItemButton button').length).toBe(2);
   });
 
   it('should disable add filter button if provided value is invalid', () => {

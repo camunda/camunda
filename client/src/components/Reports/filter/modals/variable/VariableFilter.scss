@@ -27,6 +27,12 @@
 
 .VariableFilter__valueListItem {
   margin-bottom: 8px;
+  display: flex;
+}
+
+.VariableFilter__removeItemButton {
+  border: 1px solid transparent;
+  border-radius: 1;
 }
 
 .VariableFilter__valueListButton {

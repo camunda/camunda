@@ -385,19 +385,39 @@ export default class VariableFilter extends React.Component {
                     onChange={this.changeValue}
                     placeholder="Enter value"
                   />
+                  {values.length > 1 && (
+                    <Button
+                      onClick={evt => {
+                        evt.preventDefault();
+                        this.removeValue(idx);
+                      }}
+                      className="VariableFilter__removeItemButton"
+                    >
+                      ×
+                    </Button>
+                  )}
                 </li>
               );
             })}
-            {values[values.length - 1] && (
+            {
               <li className="VariableFilter__valueListButton">
                 <Button onClick={this.addValue} className="VariableFilter__addValueButton">
                   Add Value
                 </Button>
               </li>
-            )}
+            }
           </ul>
         );
     }
+  };
+
+  removeValue = index => {
+    this.setState(prevState => {
+      prevState.values.splice(index, 1);
+      return {
+        values: prevState.values
+      };
+    });
   };
 
   addValue = evt => {
