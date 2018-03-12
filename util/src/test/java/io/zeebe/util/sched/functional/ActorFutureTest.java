@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -282,6 +283,33 @@ public class ActorFutureTest
         // then
         assertThat(invocations).hasSize(1).containsNull();
         assertThat(results).contains("foo", "bar");
+    }
+
+    @Test
+    public void shouldInvokeCallbackOnEmptyFutureList()
+    {
+        // given
+        final List<ActorFuture<Void>> futures = Collections.emptyList();
+
+        final List<Throwable> invocations = new ArrayList<>();
+
+        final Actor waitingActor = new Actor()
+        {
+            @Override
+            protected void onActorStarted()
+            {
+                actor.runOnCompletion(futures, t ->
+                {
+                    invocations.add(t);
+                });
+            }
+        };
+
+        schedulerRule.submitActor(waitingActor);
+        schedulerRule.workUntilDone();
+
+        // then
+        assertThat(invocations).hasSize(1).containsNull();
     }
 
     @Test

@@ -15,17 +15,20 @@
  */
 package io.zeebe.util.sched;
 
+import io.zeebe.util.sched.ActorTask.ActorLifecyclePhase;
+import io.zeebe.util.sched.channel.ChannelConsumerCondition;
+import io.zeebe.util.sched.channel.ConsumableChannel;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.AllCompletedFutureConsumer;
+import io.zeebe.util.sched.future.FirstSuccessfullyCompletedFutureConsumer;
+import io.zeebe.util.sched.future.FutureContinuationRunnable;
+
 import java.time.Duration;
 import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-
-import io.zeebe.util.sched.ActorTask.ActorLifecyclePhase;
-import io.zeebe.util.sched.channel.ChannelConsumerCondition;
-import io.zeebe.util.sched.channel.ConsumableChannel;
-import io.zeebe.util.sched.future.*;
 
 public class ActorControl
 {
@@ -329,11 +332,19 @@ public class ActorControl
      */
     public <T> void runOnCompletion(Collection<ActorFuture<T>> futures, Consumer<Throwable> callback)
     {
-        final BiConsumer<T, Throwable> futureConsumer = new AllCompletedFutureConsumer<>(futures.size(), callback);
-
-        for (ActorFuture<T> future : futures)
+        if (!futures.isEmpty())
         {
-            runOnCompletion(future, futureConsumer);
+            final BiConsumer<T, Throwable> futureConsumer = new AllCompletedFutureConsumer<>(futures.size(), callback);
+
+
+            for (ActorFuture<T> future : futures)
+            {
+                runOnCompletion(future, futureConsumer);
+            }
+        }
+        else
+        {
+            callback.accept(null);
         }
     }
 
