@@ -91,7 +91,7 @@ export default class AddButton extends React.Component {
                 {this.state.availableReports.map(report => {
                   return (
                     <Select.Option key={report.id} value={report.id}>
-                      {report.name}
+                      {this.truncate(report.name, 50)}
                     </Select.Option>
                   );
                 })}
@@ -114,6 +114,10 @@ export default class AddButton extends React.Component {
       </DashboardObject>
     );
   }
+
+  truncate = (str, index) => {
+    return str.length > index ? str.substr(0, index - 1) + '\u2026' : str;
+  };
 
   renderPleaseSelectOption = hasReports => {
     if (hasReports) {

@@ -39,4 +39,8 @@
 
 .AddButton__selectReports {
   min-width: 200px;
+  max-width: 500px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }

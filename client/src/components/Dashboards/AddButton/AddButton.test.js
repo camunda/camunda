@@ -155,3 +155,27 @@ it('should show only "No reports created yet" option if no reports are available
   expect(node.find('select')).toIncludeText('No reports created yet');
   expect(node.find('select')).not.toIncludeText('Please select...');
 });
+
+it("should truncate report name if it's longer than 50 signs", async () => {
+  loadReports.mockReturnValueOnce([
+    {
+      id: 'anId',
+      name: 'a super long name that should be definitely longer than 50 signs.'
+    }
+  ]);
+
+  const node = await mount(<AddButton {...props} />);
+  node.setState({
+    modalOpen: true
+  });
+
+  expect(
+    node
+      .find('select')
+      .find('option')
+      .at(1)
+      .text().length
+  ).toBeLessThanOrEqual(50);
+
+  loadReports.mockReturnValue([]);
+});
