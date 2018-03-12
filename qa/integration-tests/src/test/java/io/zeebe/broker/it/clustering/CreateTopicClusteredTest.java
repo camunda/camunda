@@ -24,6 +24,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -38,6 +39,7 @@ import io.zeebe.client.topic.Topics;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.SocketAddress;
 
+@Ignore("https://github.com/zeebe-io/zeebe/issues/747")
 public class CreateTopicClusteredTest
 {
     private static final int PARTITION_COUNT = 5;

@@ -24,11 +24,13 @@ import java.util.List;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.SocketAddress;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 
+@Ignore("https://github.com/zeebe-io/zeebe/issues/747")
 public class GossipDifferentNodeJoinTest
 {
     public static final String BROKER_4_TOML = "zeebe.cluster.4.cfg.toml";

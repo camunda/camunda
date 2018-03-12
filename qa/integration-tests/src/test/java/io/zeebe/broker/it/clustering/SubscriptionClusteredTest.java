@@ -28,6 +28,7 @@ import io.zeebe.client.task.impl.CreateTaskCommandImpl;
 import io.zeebe.client.topic.Topic;
 import io.zeebe.test.util.AutoCloseableRule;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -37,6 +38,7 @@ import org.junit.rules.Timeout;
 /**
  *
  */
+@Ignore("https://github.com/zeebe-io/zeebe/issues/747")
 public class SubscriptionClusteredTest
 {
     private static final int PARTITION_COUNT = 5;

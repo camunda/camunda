@@ -31,11 +31,13 @@ import io.zeebe.client.clustering.impl.TopologyResponse;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.SocketAddress;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 
+@Ignore("https://github.com/zeebe-io/zeebe/issues/747")
 public class TopologyRequestTest
 {
 

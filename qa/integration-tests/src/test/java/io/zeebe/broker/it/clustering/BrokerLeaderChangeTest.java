@@ -23,6 +23,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -38,6 +39,7 @@ import io.zeebe.client.task.TaskSubscription;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.SocketAddress;
 
+@Ignore("https://github.com/zeebe-io/zeebe/issues/747")
 public class BrokerLeaderChangeTest
 {
     public static final String TASK_TYPE = "testTask";

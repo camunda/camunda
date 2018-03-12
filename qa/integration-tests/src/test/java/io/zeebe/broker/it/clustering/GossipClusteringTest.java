@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -32,6 +33,7 @@ import io.zeebe.transport.SocketAddress;
 /**
  *
  */
+@Ignore("https://github.com/zeebe-io/zeebe/issues/747")
 public class GossipClusteringTest
 {
     private static final int PARTITION_COUNT = 5;

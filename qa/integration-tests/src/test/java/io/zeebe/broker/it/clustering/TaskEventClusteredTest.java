@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.broker.it.subscription;
+package io.zeebe.broker.it.clustering;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -30,6 +31,8 @@ import io.zeebe.client.topic.Topic;
 import io.zeebe.client.topic.Topics;
 import io.zeebe.test.util.AutoCloseableRule;
 
+
+@Ignore("https://github.com/zeebe-io/zeebe/issues/747")
 public class TaskEventClusteredTest
 {
     public ClientRule clientRule = new ClientRule(false);
