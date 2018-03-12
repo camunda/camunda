@@ -16,6 +16,8 @@ import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.Provider;
+import java.net.URI;
+import java.net.URISyntaxException;
 
 /**
  * @author Askar Akhmerov
@@ -26,6 +28,8 @@ import javax.ws.rs.ext.Provider;
 @Priority(Priorities.AUTHENTICATION)
 @Component
 public class AuthenticationFilter implements ContainerRequestFilter {
+  private static final String CSV_SUFFIX = ".csv";
+  private static final String LOG_IN = "/login";
   private final Logger logger = LoggerFactory.getLogger(getClass());
   private static final String STATUS = "status";
 
@@ -43,10 +47,8 @@ public class AuthenticationFilter implements ContainerRequestFilter {
       return;
     }
 
-    String token = AuthenticationUtil.getToken(requestContext);
-
     try {
-
+      String token = AuthenticationUtil.getToken(requestContext);
       // Validate the token
       tokenService.validateToken(token);
 
@@ -54,8 +56,20 @@ public class AuthenticationFilter implements ContainerRequestFilter {
       if (logger.isDebugEnabled()) {
         logger.debug("Handling authentication token error", e);
       }
-      requestContext.abortWith(
+      if (path.endsWith(CSV_SUFFIX)) {
+        URI loginUri = null;
+        try {
+          loginUri = new URI(LOG_IN);
+        } catch (URISyntaxException e1) {
+          logger.error("can't build URI to login");
+        }
+        requestContext.abortWith(
+          Response.temporaryRedirect(loginUri).build()
+        );
+      } else {
+        requestContext.abortWith(
           Response.status(Response.Status.UNAUTHORIZED).build());
+      }
     }
   }
 

@@ -12,6 +12,7 @@ import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.camunda.optimize.test.util.ReportDataHelper;
+import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -57,11 +58,12 @@ public class ExportRestServiceIT {
             .get();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(401));
+    assertThat(response.getStatus(), is(307));
+    Assert.assertThat(response.getLocation().getPath(), is("/login"));
   }
 
   @Test
-  public void exportExistingReportWithoutFilename() throws IOException {
+  public void exportExistingReportWithoutFilename() {
     //given
     String token = embeddedOptimizeRule.getAuthenticationToken();
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
