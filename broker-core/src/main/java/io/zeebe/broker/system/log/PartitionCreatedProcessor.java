@@ -55,7 +55,7 @@ public class PartitionCreatedProcessor implements TypedEventProcessor<PartitionE
         else
         {
             Loggers.SYSTEM_LOGGER.debug("Partition '{}' created. Topic '{}' has {} remaining partitions.",
-                                        BufferUtil.bufferAsString(topicName), topics.getRemainingPartitions());
+                value.getId(), BufferUtil.bufferAsString(topicName), topics.getRemainingPartitions());
 
             createRequest = null;
         }
