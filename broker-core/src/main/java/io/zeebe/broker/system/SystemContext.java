@@ -42,7 +42,7 @@ public class SystemContext implements AutoCloseable
 
     public static final Logger LOG = Loggers.SYSTEM_LOGGER;
     public static final String BROKER_ID_LOG_PROPERTY = "broker-id";
-    public static final int CLOSE_TIMEOUT = 100;
+    public static final int CLOSE_TIMEOUT = 10;
 
     protected final ServiceContainer serviceContainer;
 

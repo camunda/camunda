@@ -15,23 +15,6 @@
  */
 package io.zeebe.broker.it.task;
 
-import static io.zeebe.broker.it.util.TopicEventRecorder.taskEvent;
-import static io.zeebe.broker.it.util.TopicEventRecorder.taskRetries;
-import static io.zeebe.test.util.TestUtil.doRepeatedly;
-import static io.zeebe.test.util.TestUtil.waitUntil;
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.time.Duration;
-import java.time.Instant;
-import java.util.List;
-
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
-import org.junit.rules.Timeout;
-
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.RecordingTaskHandler;
@@ -44,7 +27,21 @@ import io.zeebe.client.task.impl.CreateTaskCommandImpl;
 import io.zeebe.client.topic.Topic;
 import io.zeebe.client.topic.Topics;
 import io.zeebe.test.util.TestUtil;
-import io.zeebe.util.time.ClockUtil;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
+import org.junit.rules.Timeout;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.List;
+
+import static io.zeebe.broker.it.util.TopicEventRecorder.taskEvent;
+import static io.zeebe.broker.it.util.TopicEventRecorder.taskRetries;
+import static io.zeebe.test.util.TestUtil.doRepeatedly;
+import static io.zeebe.test.util.TestUtil.waitUntil;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TaskSubscriptionTest
 {
@@ -65,12 +62,6 @@ public class TaskSubscriptionTest
 
     @Rule
     public Timeout timeout = Timeout.seconds(20);
-
-    @After
-    public void cleanUp()
-    {
-        ClockUtil.reset();
-    }
 
     @Test
     public void shouldOpenSubscription() throws InterruptedException
@@ -356,7 +347,7 @@ public class TaskSubscriptionTest
         waitUntil(() -> taskHandler.getHandledTasks().size() == 1);
 
         // when
-        ClockUtil.addTime(Duration.ofMinutes(5));
+        brokerRule.getClock().addTime(Duration.ofMinutes(5));
 
         // then
         waitUntil(() -> taskHandler.getHandledTasks().size() == 2);

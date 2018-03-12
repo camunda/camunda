@@ -493,7 +493,7 @@ public class TopicSubscriptionTest
 
         // then
         exception.expect(RuntimeException.class);
-        exception.expectMessage("Could not open subscription");
+        exception.expectMessage("Could not open subscriber group");
 
         // when
         clientRule.topics().newSubscription(clientRule.getDefaultTopic())

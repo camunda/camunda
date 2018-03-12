@@ -17,11 +17,17 @@ package io.zeebe.broker.it;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
+import io.zeebe.broker.system.SystemServiceNames;
+import io.zeebe.broker.system.log.SystemPartitionManager;
+import io.zeebe.test.util.TestFileUtil;
+import io.zeebe.util.sched.clock.ControlledActorClock;
 import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
 
@@ -37,17 +43,19 @@ import io.zeebe.util.allocation.DirectBufferAllocator;
 
 public class EmbeddedBrokerRule extends ExternalResource
 {
-
     static final ServiceName<Object> AWAIT_BROKER_SERVICE_NAME = ServiceName.newServiceName("testService", Object.class);
+
     protected static final Logger LOG = TestLoggers.TEST_LOGGER;
 
     protected Broker broker;
+
+    protected ControlledActorClock controlledActorClock = new ControlledActorClock();
 
     protected Supplier<InputStream> configSupplier;
 
     public EmbeddedBrokerRule()
     {
-        this(() -> null);
+        this("zeebe.unit-test.cfg.toml");
     }
 
     public EmbeddedBrokerRule(Supplier<InputStream> configSupplier)
@@ -55,24 +63,55 @@ public class EmbeddedBrokerRule extends ExternalResource
         this.configSupplier = configSupplier;
     }
 
-    @Override
-    protected void before() throws Throwable
+    public EmbeddedBrokerRule(String configFileClasspathLocation)
     {
+        this(() -> EmbeddedBrokerRule.class.getClassLoader().getResourceAsStream(configFileClasspathLocation));
+    }
+
+    public EmbeddedBrokerRule(String configFileClasspathLocation, Supplier<Map<String, String>> properties)
+    {
+        this(() ->
+        {
+            return TestFileUtil.readAsTextFileAndReplace(
+                EmbeddedBrokerRule.class.getClassLoader().getResourceAsStream(configFileClasspathLocation),
+                StandardCharsets.UTF_8,
+                properties.get());
+        });
+    }
+
+    protected long startTime;
+    @Override
+    protected void before()
+    {
+        startTime = System.currentTimeMillis();
         startBroker();
+        LOG.info("\n====\nBroker startup time: {}\n====\n", (System.currentTimeMillis() - startTime));
+        startTime = System.currentTimeMillis();
     }
 
     @Override
     protected void after()
     {
+        LOG.info("Test execution time: " + (System.currentTimeMillis() - startTime));
+        startTime = System.currentTimeMillis();
         stopBroker();
-        broker = null;
-        System.gc();
+        LOG.info("Broker closing time: " + (System.currentTimeMillis() - startTime));
 
         final long allocatedMemoryInKb = DirectBufferAllocator.getAllocatedMemoryInKb();
         if (allocatedMemoryInKb > 0)
         {
             LOG.warn("There are still allocated direct buffers of a total size of {}kB.", allocatedMemoryInKb);
         }
+    }
+
+    public Broker getBroker()
+    {
+        return this.broker;
+    }
+
+    public ControlledActorClock getClock()
+    {
+        return controlledActorClock;
     }
 
     public void restartBroker()
@@ -84,29 +123,33 @@ public class EmbeddedBrokerRule extends ExternalResource
     public void stopBroker()
     {
         broker.close();
+        broker = null;
+        System.gc();
     }
 
     public void startBroker()
     {
         try (InputStream configStream = configSupplier.get())
         {
-            broker = new Broker(configStream);
+            broker = new Broker(configStream, controlledActorClock);
         }
         catch (final IOException e)
         {
-            throw new RuntimeException("Unable to read configuration", e);
+            throw new RuntimeException("Unable to appendEvent configuration", e);
         }
 
         final ServiceContainer serviceContainer = broker.getBrokerContext().getServiceContainer();
 
         try
         {
-            // Hack: block until default task queue log has been installed
+            // Hack: block until the system stream processor is available
+            // this is required in the broker-test suite, because the client rule does not perform request retries
             // How to make it better: https://github.com/zeebe-io/zeebe/issues/196
             serviceContainer.createService(AWAIT_BROKER_SERVICE_NAME, new NoneService())
+                .dependency(SystemServiceNames.systemProcessorName(SystemPartitionManager.CREATE_TOPICS_PROCESSOR))
                 .dependency(TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME))
                 .install()
-                .get(10, TimeUnit.SECONDS);
+                .get(25, TimeUnit.SECONDS);
         }
         catch (InterruptedException | ExecutionException | TimeoutException e)
         {
@@ -159,5 +202,4 @@ public class EmbeddedBrokerRule extends ExternalResource
         }
 
     }
-
 }
