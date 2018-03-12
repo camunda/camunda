@@ -1,2 +1,2 @@
 "processDefinitionKey","processDefinitionId","processInstanceId","startDate","endDate","engineName","variable:1"
-"aProcess","${PD_ID}","${PI_ID}","2018-02-26T14:20:50.189+01:00","2018-02-26T14:20:50.189+01:00","1","test"
+"aProcess","${PD_ID}","${PI_ID}","2018-02-26T14:20+01:00","2018-02-26T14:20+01:00","1","test"

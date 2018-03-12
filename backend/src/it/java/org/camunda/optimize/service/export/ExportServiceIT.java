@@ -46,6 +46,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 @Category(Engine78.class)
 public class ExportServiceIT {
 
+  public static final String START = "aStart";
+  public static final String END = "anEnd";
+
   @Parameterized.Parameters(name = "{2}")
   public static Collection<Object[]> data() {
     return Arrays.asList(new Object[][]{
@@ -220,17 +223,19 @@ public class ExportServiceIT {
     variables.put("1", "test");
     ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartSimpleProcessWithVariables(variables);
 
-    OffsetDateTime shiftedStartDate = OffsetDateTime.parse("2018-02-26T14:20:50.189+01:00");
+    OffsetDateTime shiftedStartDate = OffsetDateTime.parse("2018-02-26T14:20:00.000+01:00");
     engineDatabaseRule.changeProcessInstanceStartDate(processInstanceEngineDto.getId(), shiftedStartDate);
     engineDatabaseRule.changeProcessInstanceEndDate(processInstanceEngineDto.getId(), shiftedStartDate);
+    engineDatabaseRule.changeActivityDuration(processInstanceEngineDto.getId(), START, 0L);
+    engineDatabaseRule.changeActivityDuration(processInstanceEngineDto.getId(), END, 0L);
     return processInstanceEngineDto;
   }
 
   private ProcessInstanceEngineDto deployAndStartSimpleProcessWithVariables(Map<String, Object> variables) {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
         .name("aProcessName")
-        .startEvent("aStart")
-        .endEvent("anEnd")
+        .startEvent(START)
+        .endEvent(END)
         .done();
     return engineRule.deployAndStartProcessWithVariables(processModel, variables);
   }
