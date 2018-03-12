@@ -396,12 +396,7 @@ describe('edit mode', async () => {
     const node = mount(<Report {...props} />);
     node.setState({loaded: true, name: ''});
 
-    expect(
-      node
-        .find('.Report__save-button')
-        .first()
-        .props()
-    ).toHaveProperty('disabled', true);
+    expect(node.find('.Report__save-button')).toBeDisabled();
   });
 
   it('should update name on input change', async () => {
