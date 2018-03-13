@@ -17,25 +17,20 @@
  */
 package io.zeebe.broker.clustering.management.memberList;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-
-import io.zeebe.broker.Loggers;
-import io.zeebe.gossip.membership.Member;
-import io.zeebe.raft.Raft;
-import io.zeebe.raft.state.RaftState;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.transport.SocketAddress;
-import org.agrona.DirectBuffer;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 public class MemberListService implements Service<MemberListService>
 {
     private final List<MemberRaftComposite> compositeList = new ArrayList<>();
 
-    public MemberRaftComposite add(Member member)
+    public MemberRaftComposite add(SocketAddress member)
     {
         final MemberRaftComposite memberRaftComposite = new MemberRaftComposite(member);
         compositeList.add(memberRaftComposite);
@@ -47,29 +42,11 @@ public class MemberListService implements Service<MemberListService>
         compositeList.add(member);
     }
 
-    public void addRaft(Raft raft)
-    {
-        for (MemberRaftComposite memberRaftComposite : compositeList)
-        {
-            if (memberRaftComposite.getReplicationApi() != null &&
-                memberRaftComposite.getReplicationApi().equals(raft.getSocketAddress()))
-            {
-                final int partitionId = raft.getLogStream()
-                                            .getPartitionId();
-                final DirectBuffer topicName = raft.getLogStream().getTopicName();
-                final RaftState raftState = raft.getState();
-                memberRaftComposite.updateRaft(partitionId, topicName, raftState);
-            }
-        }
-
-        Loggers.CLUSTERING_LOGGER.debug("Add raft - state: {}", this);
-    }
-
     public MemberRaftComposite getMember(SocketAddress socketAddress)
     {
         for (MemberRaftComposite memberRaftComposite : compositeList)
         {
-            if (memberRaftComposite.getMember().getAddress()
+            if (memberRaftComposite.getMember()
                                    .equals(socketAddress))
             {
                 return memberRaftComposite;
@@ -85,7 +62,7 @@ public class MemberListService implements Service<MemberListService>
         boolean success = false;
         for (MemberRaftComposite memberRaftComposite : compositeList)
         {
-            if (memberRaftComposite.getMember().getAddress().equals(managementApi))
+            if (memberRaftComposite.getMember().equals(managementApi))
             {
                 memberRaftComposite.setManagementApi(managementApi);
                 memberRaftComposite.setReplicationApi(replicationApi);
@@ -103,7 +80,7 @@ public class MemberListService implements Service<MemberListService>
         for (int i = 0; i < compositeList.size(); i++)
         {
             final MemberRaftComposite member = compositeList.get(i);
-            if (member.getMember().getAddress().equals(memberAddress))
+            if (member.getMember().equals(memberAddress))
             {
                 memberRaftComposite = member;
                 compositeList.remove(i);

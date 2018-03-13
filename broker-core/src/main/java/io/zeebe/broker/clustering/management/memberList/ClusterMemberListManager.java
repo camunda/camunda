@@ -77,7 +77,7 @@ public class ClusterMemberListManager implements RaftStateListener, OnOpenLogStr
 
         final MemberListService memberListService = context.getMemberListService();
         final String defaultHost = transportComponentCfg.host;
-        memberListService.add(new Member(transportComponentCfg.managementApi.toSocketAddress(defaultHost)));
+        memberListService.add(transportComponentCfg.managementApi.toSocketAddress(defaultHost));
         memberListService.setApis(transportComponentCfg.clientApi.toSocketAddress(defaultHost), transportComponentCfg.replicationApi.toSocketAddress(defaultHost),
                                   transportComponentCfg.managementApi.toSocketAddress(defaultHost));
 
@@ -122,7 +122,7 @@ public class ClusterMemberListManager implements RaftStateListener, OnOpenLogStr
         @Override
         public void onAdd(Member member)
         {
-            final MemberRaftComposite newMember = new MemberRaftComposite(member);
+            final MemberRaftComposite newMember = new MemberRaftComposite(member.getAddress());
             actor.call(() ->
             {
                 LOG.debug("Add member {} to member list.", newMember);
@@ -257,7 +257,7 @@ public class ClusterMemberListManager implements RaftStateListener, OnOpenLogStr
 
         // update raft state in member list
         member.updateRaft(partitionId, savedTopicName, raftState);
-        LOG.debug("On raft state change for {} - local member states: {}", member.getMember().getAddress(), context.getMemberListService());
+        LOG.debug("On raft state change for {} - local member states: {}", member.getMember(), context.getMemberListService());
 
         // send complete list of partition where I'm a follower or leader
         final List<RaftStateComposite> rafts = member.getRafts();

@@ -381,11 +381,10 @@ public class ClusterManager extends Actor
                 {
                     final MemberRaftComposite next = iterator.next();
                     if (!next.getMember()
-                             .getAddress()
                              .equals(transportComponentCfg.managementApi.toSocketAddress(transportComponentCfg.host)))
                     {
                         // TODO don't invite all members to raft
-                        inviteMemberToRaft(next.getMember().getAddress(), raft);
+                        inviteMemberToRaft(next.getMember(), raft);
                     }
                 }
             }

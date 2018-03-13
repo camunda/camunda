@@ -17,12 +17,6 @@
  */
 package io.zeebe.broker.clustering.management.memberList;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Objects;
-
-import io.zeebe.gossip.membership.Member;
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.collection.IntArrayListIterator;
@@ -30,22 +24,28 @@ import io.zeebe.util.collection.IntIterator;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.IntArrayList;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Objects;
+
 public class MemberRaftComposite
 {
-    private final Member member;
+    private final SocketAddress member;
+
     private SocketAddress clientApi;
     private SocketAddress replicationApi;
     private SocketAddress managementApi;
 
     private final List<RaftStateComposite> rafts;
 
-    public MemberRaftComposite(Member member)
+    public MemberRaftComposite(SocketAddress member)
     {
         this.member = member;
         this.rafts = new ArrayList<>();
     }
 
-    public Member getMember()
+    public SocketAddress getMember()
     {
         return member;
     }

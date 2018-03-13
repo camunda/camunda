@@ -50,12 +50,9 @@ public class ClusterManagerService implements Service<ClusterManager>
         startContext.run(() ->
         {
             final ClusterManagerContext context = clusterManagementContextInjector.getValue();
-
-
             clusterManager = new ClusterManager(context, serviceContainer, config);
 
             actorSchedulerInjector.getValue().submitActor(clusterManager);
-//            context.getActorScheduler().submitActor(clusterManager);
         });
 
     }
