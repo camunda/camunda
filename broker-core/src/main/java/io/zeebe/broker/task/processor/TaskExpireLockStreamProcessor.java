@@ -17,17 +17,17 @@
  */
 package io.zeebe.broker.task.processor;
 
-import static io.zeebe.protocol.clientapi.EventType.TASK_EVENT;
-import static org.agrona.BitUtil.SIZE_OF_LONG;
-
-import java.util.Iterator;
-
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
 import io.zeebe.broker.task.TaskQueueManagerService;
 import io.zeebe.broker.task.data.TaskEvent;
 import io.zeebe.broker.task.data.TaskState;
-import io.zeebe.logstreams.log.*;
-import io.zeebe.logstreams.processor.*;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamReader;
+import io.zeebe.logstreams.log.LogStreamWriter;
+import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.logstreams.processor.EventProcessor;
+import io.zeebe.logstreams.processor.StreamProcessor;
+import io.zeebe.logstreams.processor.StreamProcessorContext;
 import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.map.Long2BytesZbMap;
@@ -35,10 +35,15 @@ import io.zeebe.map.iterator.Long2BytesZbMapEntry;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
-import io.zeebe.util.time.ClockUtil;
+import io.zeebe.util.sched.clock.ActorClock;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+
+import java.util.Iterator;
+
+import static io.zeebe.protocol.clientapi.EventType.TASK_EVENT;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 public class TaskExpireLockStreamProcessor implements StreamProcessor
 {
@@ -241,7 +246,7 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
 
         protected boolean lockExpired(long lockExpirationTime)
         {
-            return lockExpirationTime <= ClockUtil.getCurrentTimeInMillis();
+            return lockExpirationTime <= ActorClock.currentTimeMillis();
         }
 
         protected LoggedEvent findEvent(long position)

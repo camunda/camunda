@@ -325,7 +325,7 @@ public class TaskSubscriptionTest
     }
 
     @Test
-    public void shouldExpireTaskLock() throws InterruptedException
+    public void shouldExpireTaskLock()
     {
         // given
         eventRecorder.startRecordingEvents();
@@ -346,11 +346,9 @@ public class TaskSubscriptionTest
 
         waitUntil(() -> taskHandler.getHandledTasks().size() == 1);
 
-        // when
-        brokerRule.getClock().addTime(Duration.ofMinutes(5));
-
         // then
-        waitUntil(() -> taskHandler.getHandledTasks().size() == 2);
+        doRepeatedly(() -> brokerRule.getClock().addTime(Duration.ofMinutes(5)))
+            .until((v) -> taskHandler.getHandledTasks().size() == 2);
 
         final long taskKey = task.getMetadata().getKey();
         assertThat(taskHandler.getHandledTasks())
