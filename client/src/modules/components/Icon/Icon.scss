@@ -9,7 +9,7 @@
   vertical-align: text-bottom;
 
   &:not(:last-child) {
-    margin-right: 0.65em;
+    margin-right: 0.5em;
   }
 }
 
@@ -41,5 +41,6 @@ $icons: (
     min-width: 16px;
     max-height: 1em;
     max-width: 1em;
+    fill: currentColor;
   }
 }
