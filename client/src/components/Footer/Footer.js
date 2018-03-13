@@ -43,10 +43,32 @@ export default class Footer extends Async.React.Component {
     this.cancelAwait();
   }
 
+  renderListElement = (key, connectionStatus, importProgress) => {
+    const importFinished = importProgress !== null && importProgress === 100;
+    let className = 'Footer__connect-status-item';
+    let title;
+
+    if (connectionStatus) {
+      if (importFinished) {
+        className += ' is-connected';
+        title = key + ' is connected';
+      } else {
+        title = 'Import progress is ' + importProgress + '%';
+        className += ' is-in-progress';
+      }
+    } else {
+      title = key + ' is not connected';
+    }
+
+    return (
+      <li key={key} className={className} title={title}>
+        {key}
+      </li>
+    );
+  };
+
   render() {
     const {importProgress, engineConnections, connectedToElasticsearch} = this.state;
-
-    const importFinished = importProgress !== null && importProgress === 100;
 
     let connectionFragment = '';
 
@@ -54,42 +76,9 @@ export default class Footer extends Async.React.Component {
       connectionFragment = (
         <ul className="Footer__connect-status">
           {Object.keys(engineConnections).map(key => {
-            return (
-              <li
-                key={key}
-                className={
-                  'Footer__connect-status-item' +
-                  (engineConnections[key]
-                    ? importFinished ? ' is-connected' : ' is-in-progress'
-                    : '')
-                }
-                title={
-                  engineConnections[key]
-                    ? importFinished ? key + ' is connected' : 'Import progress: ' + importProgress
-                    : key + ' is not connected'
-                }
-              >
-                {key}
-              </li>
-            );
+            return this.renderListElement(key, engineConnections[key], importProgress);
           })}
-          <li
-            className={
-              'Footer__connect-status-item' +
-              (connectedToElasticsearch
-                ? importFinished ? ' is-connected' : ' is-in-progress'
-                : '')
-            }
-            title={
-              connectedToElasticsearch
-                ? importFinished
-                  ? 'Elasticsearch is connected'
-                  : 'Import progress: ' + importProgress
-                : 'Elasticsearch is not connected'
-            }
-          >
-            Elasticsearch
-          </li>
+          {this.renderListElement('Elasticsearch', connectedToElasticsearch, importProgress)}
         </ul>
       );
     }
