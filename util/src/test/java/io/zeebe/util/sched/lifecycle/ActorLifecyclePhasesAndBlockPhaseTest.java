@@ -31,7 +31,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 @SuppressWarnings("unchecked")
-public class ActorLifecyclePhasesAndFuturesTest
+public class ActorLifecyclePhasesAndBlockPhaseTest
 {
     @Rule
     public final ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
@@ -99,7 +99,7 @@ public class ActorLifecyclePhasesAndFuturesTest
             public void onActorStarted()
             {
                 super.onActorStarted();
-                blockPhase();
+                blockPhase(callback);
             }
         };
         schedulerRule.submitActor(actor);

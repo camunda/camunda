@@ -70,13 +70,51 @@ class LifecycleRecordingActor extends Actor
         return actor.close();
     }
 
+    @SuppressWarnings("unchecked")
     protected void blockPhase()
     {
-        blockPhase(new CompletableActorFuture<>());
+        blockPhase(new CompletableActorFuture<>(), mock(BiConsumer.class));
     }
 
     @SuppressWarnings("unchecked")
+    protected void blockPhase(BiConsumer consumer)
+    {
+        blockPhase(new CompletableActorFuture<>(), consumer);
+    }
+
+
+    @SuppressWarnings("unchecked")
     protected void blockPhase(ActorFuture<Void> future)
+    {
+        blockPhase(future, mock(BiConsumer.class));
+    }
+
+    @SuppressWarnings("unchecked")
+    protected void blockPhase(ActorFuture<Void> future, BiConsumer consumer)
+    {
+        actor.blockPhaseUntilCompletion(future, consumer);
+    }
+
+    @SuppressWarnings("unchecked")
+    protected void runOnCompletion()
+    {
+        actor.runOnCompletion(new CompletableActorFuture<>(), mock(BiConsumer.class));
+    }
+
+    @SuppressWarnings("unchecked")
+    protected void runOnCompletion(ActorFuture<Void> future, BiConsumer consumer)
+    {
+        actor.runOnCompletion(future, consumer);
+    }
+
+    @SuppressWarnings("unchecked")
+    protected void runOnCompletion(BiConsumer consumer)
+    {
+        actor.runOnCompletion(new CompletableActorFuture<>(), consumer);
+    }
+
+    @SuppressWarnings("unchecked")
+    protected void runOnCompletion(ActorFuture<Void> future)
     {
         actor.runOnCompletion(future, mock(BiConsumer.class));
     }

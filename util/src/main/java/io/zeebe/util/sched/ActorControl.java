@@ -27,8 +27,7 @@ import java.time.Duration;
 import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
+import java.util.function.*;
 
 public class ActorControl
 {
@@ -290,7 +289,8 @@ public class ActorControl
 
     /**
      * Invoke the callback when the given future is completed (successfully or
-     * exceptionally). This call does not block the actor.
+     * exceptionally). This call does not block the actor. If close is requested the actor will not wait
+     * on this future, in this case the callback is never called.
      *
      * The callback is is executed while the actor is in the following actor lifecycle phases:
      * {@link ActorLifecyclePhase#STARTED}
@@ -304,13 +304,38 @@ public class ActorControl
     public <T> void runOnCompletion(ActorFuture<T> future, BiConsumer<T, Throwable> callback)
     {
         ensureCalledFromWithinActor("runOnCompletion(...)");
+        this.submitContinuationJob(future, callback, (job) -> new ActorFutureSubscription(future, job, task.getLifecyclePhase()));
+    }
 
+    /**
+     * Invoke the callback when the given future is completed (successfully or
+     * exceptionally). This call does not block the actor. If close is requested the actor will wait
+     * on this future and not change the phase, in this case the callback will eventually called.
+     *
+     * The callback is is executed while the actor is in the following actor lifecycle phases:
+     * {@link ActorLifecyclePhase#STARTED}
+     *
+     * @param future
+     *            the future to wait on
+     * @param callback
+     *            the callback that handle the future's result. The throwable is
+     *            <code>null</code> when the future is completed successfully.
+     */
+    public <T> void blockPhaseUntilCompletion(ActorFuture<T> future, BiConsumer<T, Throwable> callback)
+    {
+        ensureCalledFromWithinActor("blockPhaseUntilCompletion(...)");
+        this.submitContinuationJob(future, callback, (job) -> new ActorFutureSubscription(future, job));
+    }
+
+    private <T> void submitContinuationJob(ActorFuture<T> future, BiConsumer<T, Throwable> callback,
+                                           Function<ActorJob, ActorFutureSubscription> futureSubscriptionSupplier)
+    {
         final ActorJob continuationJob = new ActorJob();
         continuationJob.setRunnable(new FutureContinuationRunnable<>(future, callback));
         continuationJob.setAutoCompleting(true);
         continuationJob.onJobAddedToTask(task);
 
-        final ActorFutureSubscription subscription = new ActorFutureSubscription(future, continuationJob);
+        final ActorFutureSubscription subscription = futureSubscriptionSupplier.apply(continuationJob);
         continuationJob.setSubscription(subscription);
 
         future.block(task);

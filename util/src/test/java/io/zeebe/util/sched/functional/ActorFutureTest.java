@@ -78,6 +78,42 @@ public class ActorFutureTest
     }
 
     @Test
+    public void shouldInvokeCallbackOnBlockPhaseForFutureCompletion()
+    {
+        // given
+        final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+        final AtomicInteger callbackInvocations = new AtomicInteger(0);
+
+        final Actor waitingActor = new Actor()
+        {
+            @Override
+            protected void onActorStarted()
+            {
+                actor.blockPhaseUntilCompletion(future, (r, t) -> callbackInvocations.incrementAndGet());
+            }
+        };
+
+        final Actor completingActor = new Actor()
+        {
+            @Override
+            protected void onActorStarted()
+            {
+                future.complete(null);
+            }
+        };
+
+        schedulerRule.submitActor(waitingActor);
+        schedulerRule.workUntilDone();
+
+        // when
+        schedulerRule.submitActor(completingActor);
+        schedulerRule.workUntilDone();
+
+        // then
+        assertThat(callbackInvocations).hasValue(1);
+    }
+
+    @Test
     public void shouldInvokeCallbackOnFirstFutureCompletion()
     {
         // given
@@ -371,6 +407,24 @@ public class ActorFutureTest
     }
 
     @Test
+    public void shouldNotBlockExecutionOnRunOnCompletion()
+    {
+        // given
+        final BlockedCallActorWithRunOnCompletion actor = new BlockedCallActorWithRunOnCompletion();
+        schedulerRule.submitActor(actor);
+        actor.waitOnFuture(); // actor is waiting on future
+        schedulerRule.workUntilDone();
+
+        // when
+        final ActorFuture<Integer> future = actor.call(42);
+        schedulerRule.workUntilDone();
+        final Integer result = future.join();
+
+        // then
+        assertThat(result).isEqualTo(42);
+    }
+
+    @Test
     public void shouldInvokeCallbackOnCompletedFuture()
     {
         // given
@@ -392,7 +446,48 @@ public class ActorFutureTest
         assertThat(futureResult.get()).isEqualTo("foo");
     }
 
+    @Test
+    public void shouldInvokeCallbackOnBlockPhaseForCompletedFuture()
+    {
+        // given
+        final AtomicReference<String> futureResult = new AtomicReference<>();
+
+        schedulerRule.submitActor(new Actor()
+        {
+            @Override
+            protected void onActorStarted()
+            {
+                actor.blockPhaseUntilCompletion(CompletableActorFuture.completed("foo"), (r, t) -> futureResult.set(r));
+            }
+        });
+
+        // when
+        schedulerRule.workUntilDone();
+
+        // then
+        assertThat(futureResult.get()).isEqualTo("foo");
+    }
+
     class BlockedCallActor extends Actor
+    {
+        public void waitOnFuture()
+        {
+            actor.call(() ->
+            {
+                actor.blockPhaseUntilCompletion(new CompletableActorFuture<>(), (r, t) ->
+                {
+                    // never called since future is never completed
+                });
+            });
+        }
+
+        public ActorFuture<Integer> call(int returnValue)
+        {
+            return actor.call(() -> returnValue);
+        }
+    }
+
+    class BlockedCallActorWithRunOnCompletion extends Actor
     {
         public void waitOnFuture()
         {
@@ -513,7 +608,7 @@ public class ActorFutureTest
 
         public <T> void awaitFuture(ActorFuture<T> f, BiConsumer<T, Throwable> onCompletion)
         {
-            actor.call(() -> actor.runOnCompletion(f, onCompletion));
+            actor.call(() -> actor.blockPhaseUntilCompletion(f, onCompletion));
         }
 
         public void close()

@@ -22,18 +22,28 @@ public class ActorFutureSubscription implements ActorSubscription
 {
     private final ActorJob callbackJob;
     private ActorFuture<?> future;
+    private final ActorLifecyclePhase phaseOnCreation;
 
     public ActorFutureSubscription(ActorFuture<?> future, ActorJob callbackJob)
     {
         this.future = future;
         this.callbackJob = callbackJob;
+        this.phaseOnCreation = null;
+    }
+
+    public ActorFutureSubscription(ActorFuture<?> future, ActorJob callbackJob, ActorLifecyclePhase phase)
+    {
+        this.future = future;
+        this.callbackJob = callbackJob;
+        this.phaseOnCreation = phase;
     }
 
     @Override
     public boolean triggersInPhase(ActorLifecyclePhase phase)
     {
         // triggers in all phases
-        return phase != ActorLifecyclePhase.CLOSED;
+        return phase != ActorLifecyclePhase.CLOSED &&
+            (phaseOnCreation == null || phase == phaseOnCreation);
     }
 
     @Override

@@ -125,7 +125,7 @@ public class RunnableOrderingTests
     }
 
     @Test
-    public void futureTest()
+    public void runOnCompletionFutureTest()
     {
         // given
         final CompletableActorFuture<Void> future = CompletableActorFuture.completed(null);
@@ -142,6 +142,40 @@ public class RunnableOrderingTests
 
                 actor.run(runnable(THREE));
                 actor.runOnCompletion(future, futureConsumer(FOUR));
+            }
+        };
+
+        // when
+        schedulerRule.submitActor(actor);
+        schedulerRule.workUntilDone();
+
+        // then
+        // no guarantee of ordering between (ONE, THREE) and (TWO, FOUR), but the following constraints must hold:
+        assertThat(actor.actions).containsSubsequence(newArrayList(ONE, TWO));
+        assertThat(actor.actions).containsSubsequence(newArrayList(THREE, TWO));
+        assertThat(actor.actions).containsSubsequence(newArrayList(ONE, FOUR));
+        assertThat(actor.actions).containsSubsequence(newArrayList(THREE, FOUR));
+    }
+
+
+    @Test
+    public void blockPhaseUntilCompletionFutureTest()
+    {
+        // given
+        final CompletableActorFuture<Void> future = CompletableActorFuture.completed(null);
+        final ActionRecordingActor actor = new ActionRecordingActor()
+        {
+            @Override
+            protected void onActorStarted()
+            {
+                actor.run(() ->
+                {
+                    actor.blockPhaseUntilCompletion(future, futureConsumer(TWO));
+                    actions.add(ONE);
+                });
+
+                actor.run(runnable(THREE));
+                actor.blockPhaseUntilCompletion(future, futureConsumer(FOUR));
             }
         };
 
@@ -179,6 +213,48 @@ public class RunnableOrderingTests
                     else
                     {
                         actor.runOnCompletion(future, futureConsumer(FOUR));
+                    }
+
+                    actions.add(ONE);
+                });
+                actor.run(runnable(THREE));
+            }
+        };
+
+        // when
+        schedulerRule.submitActor(actor);
+        schedulerRule.workUntilDone();
+
+        // then
+        assertThat(actor.actions).containsSequence(newArrayList(ONE, ONE, ONE));
+        assertThat(actor.actions).containsSequence(newArrayList(FOUR, FOUR));
+        assertThat(actor.actions).containsSubsequence(newArrayList(ONE, FOUR)); // futures are executed after runUntilDone finishes
+        assertThat(actor.actions).containsSubsequence(newArrayList(TWO, FOUR));
+        assertThat(actor.actions).containsSubsequence(newArrayList(THREE, FOUR));
+    }
+
+    @Test
+    public void runUntilDoneWithBlockingPhaseTest()
+    {
+        // given
+        final CompletableActorFuture<Void> future = CompletableActorFuture.completed(null);
+        final ActionRecordingActor actor = new ActionRecordingActor()
+        {
+            @Override
+            protected void onActorStarted()
+            {
+                actor.run(runnable(TWO));
+                final AtomicInteger count = new AtomicInteger();
+                actor.runUntilDone(() ->
+                {
+                    final int couter = count.incrementAndGet();
+                    if (couter > 2)
+                    {
+                        actor.done();
+                    }
+                    else
+                    {
+                        actor.blockPhaseUntilCompletion(future, futureConsumer(FOUR));
                     }
 
                     actions.add(ONE);
@@ -325,6 +401,49 @@ public class RunnableOrderingTests
                 actor.run(() ->
                 {
                     actor.runOnCompletion(future, (v, t) ->
+                    {
+                        actions.add(THREE);
+                        actor.run(runnable(FOUR));
+                    });
+                    actions.add(ONE);
+                });
+                actor.run(runnable(TWO));
+            }
+        };
+
+        // when
+        schedulerRule.submitActor(actor);
+
+        actor.actorControl().call(() ->
+        {
+            actor.actions.add(FIVE);
+        });
+
+        future.complete(null);
+
+        schedulerRule.workUntilDone();
+
+        // then
+        assertThat(actor.actions).containsSequence(newArrayList(THREE, FOUR));
+        assertThat(actor.actions).containsSubsequence(newArrayList(ONE, THREE));
+        assertThat(actor.actions).containsSubsequence(newArrayList(TWO, THREE));
+        assertThat(actor.actions).containsSubsequence(newArrayList(ONE, FIVE));
+        assertThat(actor.actions).containsSubsequence(newArrayList(TWO, FIVE));
+    }
+
+    @Test
+    public void callWithBlockingPhaseTest()
+    {
+        // given
+        final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+        final ActionRecordingActor actor = new ActionRecordingActor()
+        {
+            @Override
+            protected void onActorStarted()
+            {
+                actor.run(() ->
+                {
+                    actor.blockPhaseUntilCompletion(future, (v, t) ->
                     {
                         actions.add(THREE);
                         actor.run(runnable(FOUR));

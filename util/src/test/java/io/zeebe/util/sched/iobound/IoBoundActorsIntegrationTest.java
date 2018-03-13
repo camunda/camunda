@@ -87,6 +87,40 @@ public class IoBoundActorsIntegrationTest
         assertThat(isOnWrongThreadGroup).isFalse();
     }
 
+    @Test
+    public void shouldStayOnIoBoundThreadGroupWhenInteractingWithCpuBoundOnBlockingPhase()
+    {
+        // given
+        final AtomicBoolean isOnWrongThreadGroup = new AtomicBoolean();
+        final CallableActor callableActor = new CallableActor(isOnWrongThreadGroup);
+        final Actor ioBoundActor = new Actor()
+        {
+            @Override
+            protected void onActorStarting()
+            {
+                for (int i = 0; i < 1_000; i++)
+                {
+                    actor.blockPhaseUntilCompletion(callableActor.doCall(), this::callback);
+                }
+            }
+
+            protected void callback(Void res, Throwable t)
+            {
+                if (!(ActorThread.current().getActorThreadGroup() instanceof IoBoundThreadGroup))
+                {
+                    isOnWrongThreadGroup.set(true);
+                }
+            }
+        };
+
+        // when
+        schedulerRule.submitActor(callableActor).join();
+        schedulerRule.get().submitActor(ioBoundActor, false, ioBound((short) 0)).join();
+
+        // then
+        assertThat(isOnWrongThreadGroup).isFalse();
+    }
+
     class CallableActor extends Actor
     {
         private AtomicBoolean isOnWrongThreadGroup;
