@@ -18,52 +18,24 @@ package io.zeebe.gossip.util;
 import static java.util.stream.Collectors.toList;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.doCallRealMethod;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeoutException;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import io.zeebe.clustering.gossip.GossipEventType;
 import io.zeebe.clustering.gossip.MembershipEventType;
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.dispatcher.Dispatchers;
-import io.zeebe.dispatcher.FragmentHandler;
-import io.zeebe.dispatcher.Subscription;
-import io.zeebe.gossip.Gossip;
-import io.zeebe.gossip.GossipConfiguration;
-import io.zeebe.gossip.GossipController;
-import io.zeebe.gossip.GossipCustomEventListener;
-import io.zeebe.gossip.GossipEventPublisher;
-import io.zeebe.gossip.GossipMembershipListener;
+import io.zeebe.dispatcher.*;
+import io.zeebe.gossip.*;
 import io.zeebe.gossip.membership.Member;
-import io.zeebe.gossip.protocol.CustomEvent;
-import io.zeebe.gossip.protocol.GossipEvent;
-import io.zeebe.gossip.protocol.MembershipEvent;
-import io.zeebe.transport.BufferingServerTransport;
-import io.zeebe.transport.ClientInputListener;
-import io.zeebe.transport.ClientOutput;
-import io.zeebe.transport.ClientRequest;
-import io.zeebe.transport.ClientTransport;
-import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.SocketAddress;
-import io.zeebe.transport.Transports;
+import io.zeebe.gossip.protocol.*;
+import io.zeebe.transport.*;
 import io.zeebe.transport.impl.RequestResponseHeaderDescriptor;
 import io.zeebe.transport.impl.TransportHeaderDescriptor;
 import io.zeebe.util.buffer.BufferUtil;
-import io.zeebe.util.sched.ActorControl;
-import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.ActorScheduler;
+import io.zeebe.util.sched.*;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
@@ -179,7 +151,6 @@ public class GossipRule extends ExternalResource
                 // we need to use runOnCompletion because #join is not allowed inside an actor - will block which is forbiddem
                 actor.runOnCompletion(actorScheduler.submitActor(gossip), (v, t) ->
                 {
-
                     localMembershipListener = new LocalMembershipListener();
                     gossip.addMembershipListener(localMembershipListener);
                 });
@@ -197,7 +168,7 @@ public class GossipRule extends ExternalResource
                     actor.consume(sub, () -> sub.poll(receivedEventsCollector, Integer.MAX_VALUE));
                 });
             }
-        });
+        }).join();
     }
 
     @Override
@@ -231,22 +202,17 @@ public class GossipRule extends ExternalResource
         // HINT we need to do this as actor.call since we need to sync with the gossip actor thread
         gossipActor.call(() ->
         {
-            final ClientRequest clientRequest = mock(ClientRequest.class);
-
             final ArgumentMatcher<RemoteAddress> remoteAddressMatcher = r -> other.socketAddress.equals(r.getAddress());
-            doReturn(clientRequest)
-                .when(spyClientOutput)
-                .sendRequest(argThat(remoteAddressMatcher), any());
 
             doReturn(CompletableActorFuture.completedExceptionally(new RuntimeException("connection is interrupted")))
                 .when(spyClientOutput)
-                .sendRequestWithRetry(argThat(remoteAddressMatcher), any());
+                .sendRequest(argThat(remoteAddressMatcher), any());
 
             doReturn(CompletableActorFuture.completedExceptionally(new TimeoutException("timeout")))
                 .when(spyClientOutput)
-                .sendRequestWithRetry(argThat(remoteAddressMatcher), any(), any());
+                .sendRequest(argThat(remoteAddressMatcher), any(), any());
 
-        });
+        }).join();
     }
 
     public void reconnectTo(GossipRule other)
@@ -255,10 +221,10 @@ public class GossipRule extends ExternalResource
         gossipActor.call(() ->
         {
             final ArgumentMatcher<RemoteAddress> remoteAddressMatcher = r -> r.getAddress().equals(other.socketAddress);
-            doCallRealMethod().when(spyClientOutput).sendRequest(argThat(r -> r.getAddress().equals(other.socketAddress)), any());
-            doCallRealMethod().when(spyClientOutput).sendRequestWithRetry(argThat(remoteAddressMatcher), any());
-            doCallRealMethod().when(spyClientOutput).sendRequestWithRetry(argThat(remoteAddressMatcher), any(), any());
-        });
+            doCallRealMethod().when(spyClientOutput).sendRequest(argThat(remoteAddressMatcher), any());
+            doCallRealMethod().when(spyClientOutput).sendRequest(argThat(remoteAddressMatcher), any(), any());
+
+        }).join();
     }
 
     public GossipController getController()
@@ -411,7 +377,7 @@ public class GossipRule extends ExternalResource
 
     private static class LocalMembershipListener implements GossipMembershipListener
     {
-        private final Map<String, Member> members = new HashMap<>();
+        private final Map<String, Member> members = new ConcurrentHashMap<>();
 
         @Override
         public void onAdd(Member member)
@@ -460,7 +426,7 @@ public class GossipRule extends ExternalResource
 
     public static final class RecordingCustomEventListener implements GossipCustomEventListener
     {
-        private final List<ReceivedCustomEvent> receivedEvents = new ArrayList<>();
+        private final List<ReceivedCustomEvent> receivedEvents = new CopyOnWriteArrayList<>();
 
         @Override
         public void onEvent(SocketAddress sender, DirectBuffer payload)

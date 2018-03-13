@@ -20,12 +20,7 @@ import java.time.Duration;
 import io.zeebe.clustering.gossip.GossipEventType;
 import io.zeebe.gossip.Loggers;
 import io.zeebe.gossip.membership.MembershipList;
-import io.zeebe.transport.ClientRequest;
-import io.zeebe.transport.ClientTransport;
-import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.ServerResponse;
-import io.zeebe.transport.ServerTransport;
-import io.zeebe.transport.SocketAddress;
+import io.zeebe.transport.*;
 import io.zeebe.util.sched.future.ActorFuture;
 
 public class GossipEventSender
@@ -56,7 +51,7 @@ public class GossipEventSender
         this.gossipSyncResponseEvent = gossipEventFactory.createSyncResponseEvent();
     }
 
-    public ActorFuture<ClientRequest> sendPing(SocketAddress receiver, Duration timeout)
+    public ActorFuture<ClientResponse> sendPing(SocketAddress receiver, Duration timeout)
     {
         gossipFailureDetectionEvent
                 .reset()
@@ -66,7 +61,7 @@ public class GossipEventSender
         return sendEventTo(gossipFailureDetectionEvent, receiver, timeout);
     }
 
-    public ActorFuture<ClientRequest> sendPingReq(SocketAddress receiver, SocketAddress probeMember, Duration timeout)
+    public ActorFuture<ClientResponse> sendPingReq(SocketAddress receiver, SocketAddress probeMember, Duration timeout)
     {
         gossipFailureDetectionEvent
             .reset()
@@ -77,7 +72,7 @@ public class GossipEventSender
         return sendEventTo(gossipFailureDetectionEvent, receiver, timeout);
     }
 
-    public ActorFuture<ClientRequest> sendSyncRequest(SocketAddress receiver, Duration timeout)
+    public ActorFuture<ClientResponse> sendSyncRequest(SocketAddress receiver, Duration timeout)
     {
         gossipSyncRequestEvent
             .reset()
@@ -107,10 +102,10 @@ public class GossipEventSender
         responseTo(gossipSyncResponseEvent, requestId, streamId);
     }
 
-    private ActorFuture<ClientRequest> sendEventTo(GossipEvent event, SocketAddress receiver, Duration timeout)
+    private ActorFuture<ClientResponse> sendEventTo(GossipEvent event, SocketAddress receiver, Duration timeout)
     {
         final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(receiver);
-        return clientTransport.getOutput().sendRequestWithRetry(remoteAddress, event, timeout);
+        return clientTransport.getOutput().sendRequest(remoteAddress, event, timeout);
     }
 
     private void responseTo(GossipEvent event, long requestId, int streamId)

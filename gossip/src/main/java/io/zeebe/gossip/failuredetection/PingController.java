@@ -19,18 +19,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import io.zeebe.clustering.gossip.MembershipEventType;
-import io.zeebe.gossip.GossipConfiguration;
-import io.zeebe.gossip.GossipContext;
-import io.zeebe.gossip.Loggers;
+import io.zeebe.gossip.*;
 import io.zeebe.gossip.dissemination.DisseminationComponent;
-import io.zeebe.gossip.membership.Member;
-import io.zeebe.gossip.membership.MembershipList;
-import io.zeebe.gossip.membership.MembershipStatus;
-import io.zeebe.gossip.membership.RoundRobinMemberIterator;
-import io.zeebe.gossip.protocol.GossipEvent;
-import io.zeebe.gossip.protocol.GossipEventFactory;
-import io.zeebe.gossip.protocol.GossipEventSender;
-import io.zeebe.transport.ClientRequest;
+import io.zeebe.gossip.membership.*;
+import io.zeebe.gossip.protocol.*;
+import io.zeebe.transport.ClientResponse;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
@@ -52,7 +45,7 @@ public class PingController
     private final GossipEventFactory gossipEventFactory;
     private final GossipEvent ackResponse;
 
-    private final List<ActorFuture<ClientRequest>> indirectRequestFutures;
+    private final List<ActorFuture<ClientResponse>> indirectResponseFutures;
 
     private Member probeMember;
 
@@ -70,7 +63,7 @@ public class PingController
         this.gossipEventSender = context.getGossipEventSender();
         this.ackResponse = gossipEventFactory.createAckResponse();
 
-        this.indirectRequestFutures = new ArrayList<>(configuration.getProbeIndirectNodes());
+        this.indirectResponseFutures = new ArrayList<>(configuration.getProbeIndirectNodes());
     }
 
     public void sendPing()
@@ -81,20 +74,19 @@ public class PingController
 
             LOG.trace("Send PING to '{}'", probeMember.getId());
 
-            final ActorFuture<ClientRequest> requestFuture =
-                    gossipEventSender.sendPing(probeMember.getAddress(), configuration.getProbeTimeout());
+            final ActorFuture<ClientResponse> responseFuture = gossipEventSender.sendPing(probeMember.getAddress(), configuration.getProbeTimeout());
 
-            actor.runOnCompletion(requestFuture, (request, failure) ->
+            actor.runOnCompletion(responseFuture, (response, failure) ->
             {
                 if (failure == null)
                 {
                     LOG.trace("Received ACK from '{}'", probeMember.getId());
 
                     // process response
-                    final DirectBuffer response = request.join();
-                    ackResponse.wrap(response, 0, response.capacity());
+                    final DirectBuffer responseBuffer = response.getResponseBuffer();
+                    ackResponse.wrap(responseBuffer, 0, responseBuffer.capacity());
 
-                    request.close();
+                    response.close();
 
                     actor.runDelayed(configuration.getProbeInterval(), this::sendPing);
                 }
@@ -114,7 +106,7 @@ public class PingController
 
     private void sendPingReq()
     {
-        indirectRequestFutures.clear();
+        indirectResponseFutures.clear();
 
         final int probeNodes = Math.min(configuration.getProbeIndirectNodes(), membershipList.size() - 1);
 
@@ -126,25 +118,24 @@ public class PingController
             {
                 LOG.trace("Send PING-REQ to '{}' to probe '{}'", member.getId(), probeMember.getId());
 
-                final ActorFuture<ClientRequest> requestFuture =
-                    gossipEventSender.sendPingReq(member.getAddress(), probeMember.getAddress(), configuration.getProbeIndirectTimeout());
-                indirectRequestFutures.add(requestFuture);
+                final ActorFuture<ClientResponse> responseFuture = gossipEventSender.sendPingReq(member.getAddress(), probeMember.getAddress(), configuration.getProbeIndirectTimeout());
+                indirectResponseFutures.add(responseFuture);
 
                 n += 1;
             }
         }
 
-        actor.runOnFirstCompletion(indirectRequestFutures, (request, failure) ->
+        actor.runOnFirstCompletion(indirectResponseFutures, (response, failure) ->
         {
             if (failure == null)
             {
                 LOG.trace("Received ACK of PING-REQ from '{}'", probeMember.getId());
 
                 // process response
-                final DirectBuffer response = request.join();
-                ackResponse.wrap(response, 0, response.capacity());
+                final DirectBuffer responseBuffer = response.getResponseBuffer();
+                ackResponse.wrap(responseBuffer, 0, responseBuffer.capacity());
 
-                request.close();
+                response.close();
 
                 actor.runDelayed(configuration.getProbeInterval(), this::sendPing);
             }
@@ -154,7 +145,7 @@ public class PingController
 
                 actor.submit(this::sendSuspect);
             }
-        }, ClientRequest::close);
+        }, ClientResponse::close);
     }
 
     private void sendSuspect()

@@ -15,15 +15,11 @@
  */
 package io.zeebe.gossip.failuredetection;
 
-import io.zeebe.gossip.GossipConfiguration;
-import io.zeebe.gossip.GossipContext;
-import io.zeebe.gossip.Loggers;
+import io.zeebe.gossip.*;
 import io.zeebe.gossip.membership.Member;
 import io.zeebe.gossip.membership.MembershipList;
-import io.zeebe.gossip.protocol.GossipEvent;
-import io.zeebe.gossip.protocol.GossipEventConsumer;
-import io.zeebe.gossip.protocol.GossipEventSender;
-import io.zeebe.transport.ClientRequest;
+import io.zeebe.gossip.protocol.*;
+import io.zeebe.transport.ClientResponse;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
@@ -61,20 +57,19 @@ public class PingReqEventHandler implements GossipEventConsumer
         {
             LOG.trace("Forward PING to '{}'", probeMember.getId());
 
-            final ActorFuture<ClientRequest> requestFuture =
-                gossipEventSender.sendPing(probeMember.getAddress(), configuration.getProbeTimeout());
+            final ActorFuture<ClientResponse> respFuture = gossipEventSender.sendPing(probeMember.getAddress(), configuration.getProbeTimeout());
 
-            actor.runOnCompletion(requestFuture, (request, failure) ->
+            actor.runOnCompletion(respFuture, (resp, failure) ->
             {
                 if (failure == null)
                 {
                     LOG.trace("Received ACK from probe member '{}'", probeMember.getId());
 
                     // process response
-                    final DirectBuffer response = request.join();
-                    ackResponse.wrap(response, 0, response.capacity());
+                    final DirectBuffer responseBuffer = resp.getResponseBuffer();
+                    ackResponse.wrap(responseBuffer, 0, responseBuffer.capacity());
 
-                    request.close();
+                    resp.close();
 
                     LOG.trace("Forward ACK to '{}'", sender.getId());
 
