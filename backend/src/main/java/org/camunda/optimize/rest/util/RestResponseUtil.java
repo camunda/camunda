@@ -12,7 +12,6 @@ import javax.ws.rs.core.Response;
 
 public class RestResponseUtil {
   public static final String REPORT_DEFINITION = "\"reportDefinition\" : ";
-  public static final String REPORT_DATA = "\"reportData\" : ";
   private static ObjectMapper OBJECT_MAPPER;
   private static final Logger logger = LoggerFactory.getLogger(RestResponseUtil.class);
 
@@ -38,13 +37,8 @@ public class RestResponseUtil {
     String reportDetail;
     String reportDetailKeyValue = "";
     try {
-      if (error.getReportDefinition() != null) {
-        reportDetail = OBJECT_MAPPER.writeValueAsString(error.getReportDefinition());
-        reportDetailKeyValue = REPORT_DEFINITION + reportDetail;
-      } else {
-        reportDetail = OBJECT_MAPPER.writeValueAsString(error.getReportDataDto());
-        reportDetailKeyValue = REPORT_DATA + reportDetail;
-      }
+      reportDetail = OBJECT_MAPPER.writeValueAsString(error.getReportDefinition());
+      reportDetailKeyValue = REPORT_DEFINITION + reportDetail;
     } catch (JsonProcessingException e) {
       logger.error("can't serialize report definition", e);
     }

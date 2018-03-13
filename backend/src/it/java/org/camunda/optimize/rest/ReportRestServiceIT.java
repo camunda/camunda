@@ -258,6 +258,9 @@ public class ReportRestServiceIT {
     assertThat(response.getStatus(), is(500));
     String errorMessage = response.readEntity(String.class);
     assertThat(errorMessage.contains("reportDefinition"), is(true));
+    assertThat(errorMessage.contains("name"), is(true));
+    assertThat(errorMessage.contains("id"), is(true));
+    assertThat(errorMessage.contains("data"), is(true));
   }
 
   @Test

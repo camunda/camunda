@@ -89,7 +89,9 @@ public class ReportService {
     try {
       result = reportEvaluator.evaluate(reportData);
     } catch (OptimizeException e) {
-      throw new ReportEvaluationException(reportData, e);
+      ReportDefinitionDto definitionWrapper = new ReportDefinitionDto();
+      definitionWrapper.setData(reportData);
+      throw new ReportEvaluationException(definitionWrapper, e);
     }
     return result;
   }
