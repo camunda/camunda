@@ -89,6 +89,7 @@ export default class ControlPanel extends React.Component {
   render() {
     const {loaded} = this.state;
     const key = this.props.processDefinitionKey;
+    const version = this.props.processDefinitionVersion;
 
     if (!loaded) {
       return <div className="ProcessDefinitionSelection__loading-indicator">loading...</div>;
@@ -152,6 +153,14 @@ export default class ControlPanel extends React.Component {
               {this.renderAllDefinitionVersions(key)}
             </Select>
           </div>
+          {version === 'ALL' ? (
+            <div className="ProcessDefinitionSelection__version-select__warning">
+              Note: data from the older process versions can deviate, therefore the report data can
+              be inconsistent
+            </div>
+          ) : (
+            ''
+          )}
         </div>
         {this.canRenderDiagram() && (
           <div className={'ProcessDefinitionSelection__diagram'}>
