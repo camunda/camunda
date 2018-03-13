@@ -27,7 +27,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
  */
 @ClientEndpoint
 public class StatusClientSocket {
-  private int messagesCount;
+  private CountDownLatch latch = new CountDownLatch(2);
 
   @OnMessage
   public void onText(String message, Session session) throws Exception {
@@ -35,12 +35,10 @@ public class StatusClientSocket {
     ObjectMapper objectMapper = new ObjectMapper();
     StatusWithProgressDto dto = objectMapper.readValue(message, StatusWithProgressDto.class);
     assertThat(dto.getProgress(), is(not(0L)));
-
-    messagesCount = messagesCount + 1;
-
-    if (messagesCount > 2) {
-      session.close();
-    }
+    latch.countDown();
   }
 
+  public CountDownLatch getLatch() {
+    return latch;
+  }
 }

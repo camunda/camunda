@@ -10,10 +10,10 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import javax.websocket.ContainerProvider;
-import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 import java.net.URI;
 import java.time.temporal.ChronoUnit;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Askar Akhmerov
@@ -46,12 +46,10 @@ public class StatusWebSocketIT {
     WebSocketContainer container = ContainerProvider.getWebSocketContainer();
 
     //when
-    Session session = container.connectToServer(socket, new URI(dest));
+    container.connectToServer(socket, new URI(dest));
 
-    //then - assertion will happen in client
-    while(session.isOpen()) {
-      Thread.sleep(1000l);
-    }
+    //then
+    socket.getLatch().await(3, TimeUnit.SECONDS);
   }
 
 }
