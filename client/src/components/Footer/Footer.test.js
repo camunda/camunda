@@ -30,12 +30,12 @@ it('renders without crashing', () => {
 it('includes the version number provided as property', () => {
   const version = 'alpha';
 
-  const node = shallow(<Footer version={version} />);
+  const node = mount(<Footer version={version} />);
   expect(node).toIncludeText(version);
 });
 
 it('displays the loading indicator if import progress is less than 100', () => {
-  const node = mount(<Footer />);
+  const node = mount(shallow(<Footer />).get(0));
 
   node.setState({
     engineConnections: {
@@ -49,7 +49,7 @@ it('displays the loading indicator if import progress is less than 100', () => {
 });
 
 it('does not display the loading indicator if import progress is 100', () => {
-  const node = mount(<Footer />);
+  const node = mount(shallow(<Footer />).get(0));
 
   node.setState({
     importProgress: 100,
@@ -69,7 +69,7 @@ it('should load import progress', () => {
 });
 
 it('displays the connection status', () => {
-  const node = mount(<Footer version="2.0.0" />);
+  const node = mount(shallow(<Footer version="2.0.0" />).get(0));
 
   node.setState({
     engineConnections: {
