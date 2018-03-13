@@ -15,14 +15,12 @@
  */
 package io.zeebe.client.util;
 
-import org.assertj.core.util.Maps;
-
 import io.zeebe.client.event.impl.TaskEventImpl;
 import io.zeebe.client.impl.data.MsgPackConverter;
 import io.zeebe.client.workflow.impl.WorkflowInstanceEventImpl;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.util.time.ClockUtil;
+import org.assertj.core.util.Maps;
 
 public class Events
 {
@@ -34,7 +32,7 @@ public class Events
         baseEvent.setCustomHeaders(Maps.newHashMap("customHeaderKey", "customHeaderVal"));
         baseEvent.setKey(79);
         baseEvent.setLockOwner("foo");
-        baseEvent.setLockTime(ClockUtil.getCurrentTimeInMillis());
+        baseEvent.setLockTime(System.currentTimeMillis());
         baseEvent.setPartitionId(StubBrokerRule.TEST_PARTITION_ID);
         baseEvent.setPayload("{\"key\":\"val\"}");
         baseEvent.setRetries(123);
