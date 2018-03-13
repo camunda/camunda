@@ -24,7 +24,9 @@ $icons: (
   'fullscreen',
   'plus',
   'share',
-  'stop'
+  'stop',
+  'link',
+  'embed'
 );
 
 @each $icon in $icons {
