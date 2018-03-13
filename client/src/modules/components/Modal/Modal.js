@@ -28,7 +28,11 @@ export default class Modal extends React.Component {
 
   fixPositioning = () => {
     if (this.container) {
-      this.container.style.marginTop = -this.container.clientHeight / 2 + 'px';
+      const windowHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
+      const margin = 30; // already set top  (15 px) + bottom  (15 px) margin
+      let height = (windowHeight - this.container.clientHeight) / 2 - margin;
+      height = Math.max(height, 0);
+      this.container.style.marginTop = height + 'px';
       this.container.style.marginLeft = -this.container.clientWidth / 2 + 'px';
     }
   };
@@ -65,17 +69,19 @@ export default class Modal extends React.Component {
     if (open) {
       return ReactDOM.createPortal(
         <div className="Modal" onClick={this.onBackdropClick}>
-          <div
-            className={
-              `Modal__container ${this.props.className || ''}` +
-              (this.props.size ? ' Modal__container--' + this.props.size : '')
-            }
-            tabIndex="-1"
-            ref={this.storeContainer}
-            onClick={this.catchClick}
-            onKeyDown={this.handleKeyPress}
-          >
-            {children}
+          <div className="Modal__scroll-container">
+            <div
+              className={
+                `Modal__content-container ${this.props.className || ''}` +
+                (this.props.size ? ' Modal__content-container--' + this.props.size : '')
+              }
+              tabIndex="-1"
+              ref={this.storeContainer}
+              onClick={this.catchClick}
+              onKeyDown={this.handleKeyPress}
+            >
+              {children}
+            </div>
           </div>
         </div>,
         this.el
