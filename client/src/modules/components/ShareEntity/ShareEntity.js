@@ -1,5 +1,5 @@
 import React from 'react';
-import {CopyToClipboard, Switch} from 'components';
+import {CopyToClipboard, Switch, Icon} from 'components';
 
 import './ShareEntity.css';
 
@@ -75,8 +75,8 @@ export default class ShareEntity extends React.Component {
           </div>
           <div className={'ShareEntity__link-area' + (this.disabled() ? '--disabled' : '')}>
             <div className="ShareEntity__icon-container">
-              <div className="ShareEntity__icon Link" />
               <div className="ShareEntity__clipboard">
+                <Icon type="link" renderedIn="span" />
                 <span className="ShareEntity__label">Link</span>
                 <span className="ShareEntity__label-description">{`Use the following URL to share the ${
                   this.props.type
@@ -90,8 +90,8 @@ export default class ShareEntity extends React.Component {
               </div>
             </div>
             <div className="ShareEntity__icon-container">
-              <div className="ShareEntity__icon Embed" />
               <div className="ShareEntity__clipboard">
+                <Icon type="embed" renderedIn="span" />
                 <span className="ShareEntity__label">Embed</span>
                 <span className="ShareEntity__label-description">{`Use the following URL to embed the ${
                   this.props.type

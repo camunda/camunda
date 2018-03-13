@@ -32,14 +32,6 @@
   background-repeat: no-repeat;
 }
 
-.ShareEntity__icon.Embed {
-  background-image: url(./embed.svg);
-}
-
-.ShareEntity__icon.Link {
-  background-image: url(./link.svg);
-}
-
 .ShareEntity__icon-container {
   display: inline-flex;
   width: 100%;
@@ -51,10 +43,9 @@
 
 .ShareEntity__label {
   color: #626262;
-  font-size: 0.875em;
   font-weight: bold;
   margin-bottom: 15px;
-  display: block;
+  display: inline-block;
 }
 
 .ShareEntity__label-description {
