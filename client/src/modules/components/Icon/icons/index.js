@@ -10,6 +10,8 @@ import share from '-!svg-react-loader!./share.svg';
 import edit from '-!svg-react-loader!./edit.svg';
 import close from '-!svg-react-loader!./close.svg';
 import stop from '-!svg-react-loader!./stop.svg';
+import link from '-!svg-react-loader!./link.svg';
+import embed from '-!svg-react-loader!./embed.svg';
 
 const icons = {
   autorefresh,
@@ -21,7 +23,9 @@ const icons = {
   share,
   edit,
   close,
-  stop
+  stop,
+  link,
+  embed
 };
 
 export default icons;
