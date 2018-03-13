@@ -32,8 +32,7 @@ it('should merge and render additonal classNames provided as a property', () => 
 });
 
 it('should translate the isInvalid props to is-invalid className', () => {
-  const node = mount(<Input className="foo" />);
-  node.setProps({isInvalid: true});
+  const node = mount(<Input className="foo" isInvalid />);
 
-  expect(node.getDOMNode().className.includes('is-invalid')).toBe(true);
+  expect(node.find('input')).toHaveClassName('is-invalid');
 });

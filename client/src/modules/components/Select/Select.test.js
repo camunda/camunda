@@ -33,8 +33,7 @@ it('should render child elements and their props', () => {
 });
 
 it('should translate the isInvalid props to is-invalid className', () => {
-  const node = mount(<Select className="foo" />);
-  node.setProps({isInvalid: true});
+  const node = mount(<Select className="foo" isInvalid />);
 
-  expect(node.getDOMNode().className.includes('is-invalid')).toBe(true);
+  expect(node.find('select')).toHaveClassName('is-invalid');
 });
