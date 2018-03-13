@@ -15,8 +15,6 @@
  */
 package io.zeebe.gossip.dissemination;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import io.zeebe.clustering.gossip.MembershipEventType;
 import io.zeebe.gossip.GossipConfiguration;
 import io.zeebe.gossip.membership.GossipTerm;
@@ -24,7 +22,13 @@ import io.zeebe.gossip.membership.MembershipList;
 import io.zeebe.gossip.membership.MembershipStatus;
 import io.zeebe.gossip.protocol.MembershipEvent;
 import io.zeebe.transport.SocketAddress;
+import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  *
@@ -33,29 +37,59 @@ public class MembershipEventUpdaterTest
 {
     private static final GossipConfiguration CONFIGURATION = new GossipConfiguration();
 
-    private MembershipList membershipList = new MembershipList(new SocketAddress(), (member) ->
-    { });
+    private MembershipList membershipList;
+    private DisseminationComponent disseminationComponent;
+    private MembershipEventUpdater membershipEventUpdater;
+    private final SocketAddress memberAddress = new SocketAddress("localhost", 8181);
 
-    private DisseminationComponent disseminationComponent = new DisseminationComponent(CONFIGURATION, membershipList);
-    private MembershipEventUpdater membershipEventUpdater = new MembershipEventUpdater(membershipList, disseminationComponent);
+    @Rule
+    public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
+
+    @Before
+    public void setUp()
+    {
+        // Needs to be done inside an actor, because we need access to the ActorClock in GossipTerm
+        actorSchedulerRule.submitActor(new Actor()
+        {
+            @Override
+            protected void onActorStarting()
+            {
+                membershipList = new MembershipList(new SocketAddress(), (member) ->
+                {
+                });
+
+                disseminationComponent = new DisseminationComponent(CONFIGURATION, membershipList);
+                membershipEventUpdater = new MembershipEventUpdater(membershipList, disseminationComponent);
+            }
+        }).join();
+    }
+
+    private boolean consumed = false;
 
     @Test
     public void shouldNotConsumeOldRemoveEvent()
     {
         // given
-        final SocketAddress memberAddress = new SocketAddress("localhost", 8181);
-        final GossipTerm oldTerm = new GossipTerm();
-        oldTerm.epoch(System.currentTimeMillis() - 1000);
-        final GossipTerm newTerm = new GossipTerm();
-        membershipList.newMember(memberAddress, newTerm);
+        actorSchedulerRule.submitActor(new Actor()
+        {
+            @Override
+            protected void onActorStarting()
+            {
+                final long now = System.currentTimeMillis();
+                final GossipTerm oldTerm = new GossipTerm();
+                oldTerm.epoch(now - 1000);
+                final GossipTerm newTerm = new GossipTerm();
+                membershipList.newMember(memberAddress, newTerm);
 
-        // when
-        final MembershipEvent membershipEvent = new MembershipEvent();
-        membershipEvent.address(memberAddress);
-        membershipEvent.type(MembershipEventType.LEAVE);
-        membershipEvent.gossipTerm(oldTerm);
+                // when
+                final MembershipEvent membershipEvent = new MembershipEvent();
+                membershipEvent.address(memberAddress);
+                membershipEvent.type(MembershipEventType.LEAVE);
+                membershipEvent.gossipTerm(oldTerm);
 
-        final boolean consumed = membershipEventUpdater.consumeMembershipEvent(membershipEvent);
+                consumed = membershipEventUpdater.consumeMembershipEvent(membershipEvent);
+            }
+        }).join();
 
         // then
         assertThat(consumed).isFalse();

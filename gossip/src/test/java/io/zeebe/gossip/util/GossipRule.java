@@ -153,25 +153,38 @@ public class GossipRule extends ExternalResource
         when(spyClientTransport.getOutput()).thenReturn(spyClientOutput);
 
 
-        gossip = new Gossip(socketAddress, serverTransport, spyClientTransport, configuration)
+        // We need to create and submit gossip in an actor because ActorClock is only
+        // accessible inside an actor.
+        actorScheduler.submitActor(new Actor()
         {
             @Override
             protected void onActorStarting()
             {
-                gossipActor = actor;
-            }
+                gossip = new Gossip(socketAddress, serverTransport, spyClientTransport, configuration)
+                {
+                    @Override
+                    protected void onActorStarting()
+                    {
+                        gossipActor = actor;
+                    }
 
-            @Override
-            public String getName()
-            {
-                // make it easier to distinguish different gossip runners
-                return socketAddress.toString();
-            }
-        };
-        actorScheduler.submitActor(gossip).join();
+                    @Override
+                    public String getName()
+                    {
+                        // make it easier to distinguish different gossip runners
+                        return socketAddress.toString();
+                    }
+                };
 
-        localMembershipListener = new LocalMembershipListener();
-        gossip.addMembershipListener(localMembershipListener);
+                // we need to use runOnCompletion because #join is not allowed inside an actor - will block which is forbiddem
+                actor.runOnCompletion(actorScheduler.submitActor(gossip), (v, t) ->
+                {
+
+                    localMembershipListener = new LocalMembershipListener();
+                    gossip.addMembershipListener(localMembershipListener);
+                });
+            }
+        }).join();
 
         actorScheduler.submitActor(new Actor()
         {
