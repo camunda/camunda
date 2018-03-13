@@ -15,6 +15,7 @@
  */
 package io.zeebe.broker.it.task;
 
+import io.zeebe.broker.Loggers;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.RecordingTaskHandler;
@@ -27,6 +28,7 @@ import io.zeebe.client.task.impl.CreateTaskCommandImpl;
 import io.zeebe.client.topic.Topic;
 import io.zeebe.client.topic.Topics;
 import io.zeebe.test.util.TestUtil;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -197,6 +199,7 @@ public class TaskSubscriptionTest
     }
 
     @Test
+    @Ignore("https://github.com/zeebe-io/zeebe/issues/752")
     public void shouldFetchAndHandleTasks()
     {
         // given
@@ -206,7 +209,10 @@ public class TaskSubscriptionTest
             clientRule.tasks().create(clientRule.getDefaultTopic(), "foo").execute();
         }
 
-        final RecordingTaskHandler handler = new RecordingTaskHandler((c, t) -> c.complete(t).withoutPayload().execute());
+        final RecordingTaskHandler handler = new RecordingTaskHandler((c, t) -> {
+            Loggers.SYSTEM_LOGGER.debug("Fetch and complete {}", t);
+            c.complete(t).withoutPayload().execute();
+        });
 
         clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopic())
             .handler(handler)
@@ -359,6 +365,7 @@ public class TaskSubscriptionTest
     }
 
     @Test
+    @Ignore("https://github.com/zeebe-io/zeebe/issues/750")
     public void shouldGiveTaskToSingleSubscription()
     {
         // given
