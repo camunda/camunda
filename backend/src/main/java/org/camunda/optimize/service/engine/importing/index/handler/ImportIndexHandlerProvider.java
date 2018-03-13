@@ -116,6 +116,15 @@ public class ImportIndexHandlerProvider {
     return result;
   }
 
+  public List<ImportIndexHandler> getAllHandlers(String engine) {
+    List<ImportIndexHandler> result = new ArrayList<>();
+    EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(engine);
+    if (engineImportIndexHandlerProvider != null) {
+      result = engineImportIndexHandlerProvider.getAllHandlers();
+    }
+    return result;
+  }
+
   public ProcessDefinitionXmlImportIndexHandler getProcessDefinitionXmlImportIndexHandler(String engineAlias) {
     ProcessDefinitionXmlImportIndexHandler result = null;
     EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(engineAlias);

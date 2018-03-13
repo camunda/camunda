@@ -54,7 +54,7 @@ public class StatusRestService {
   @Secured
   public String getImportProgress() throws OptimizeException, JsonProcessingException {
     ProgressDto progressDto = new ProgressDto();
-    progressDto.setProgress(importProgressReporter.computeImportProgress());
+    progressDto.setProgress(importProgressReporter.computeTotalImportProgress());
     return objectMapper.writeValueAsString(progressDto);
   }
 

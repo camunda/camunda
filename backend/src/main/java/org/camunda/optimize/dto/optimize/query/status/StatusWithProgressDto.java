@@ -1,9 +1,11 @@
 package org.camunda.optimize.dto.optimize.query.status;
 
+import java.util.Map;
+
 public class StatusWithProgressDto {
 
   protected ConnectionStatusDto connectionStatus;
-  protected long progress;
+  protected Map<String, Long> progress;
 
   public ConnectionStatusDto getConnectionStatus() {
     return connectionStatus;
@@ -13,11 +15,11 @@ public class StatusWithProgressDto {
     this.connectionStatus = connectionStatus;
   }
 
-  public long getProgress() {
+  public Map<String, Long> getProgress() {
     return progress;
   }
 
-  public void setProgress(long progress) {
+  public void setProgress(Map<String, Long> progress) {
     this.progress = progress;
   }
 }

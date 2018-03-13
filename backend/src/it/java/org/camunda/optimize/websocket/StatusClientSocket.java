@@ -14,6 +14,7 @@ import java.util.concurrent.CountDownLatch;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
@@ -34,7 +35,8 @@ public class StatusClientSocket {
     System.out.println("Message received from server:" + message);
     ObjectMapper objectMapper = new ObjectMapper();
     StatusWithProgressDto dto = objectMapper.readValue(message, StatusWithProgressDto.class);
-    assertThat(dto.getProgress(), is(not(0L)));
+    assertThat(dto.getProgress(), is(notNullValue()));
+    assertThat(dto.getProgress().entrySet().iterator().next().getValue(), is(not(0L)));
     latch.countDown();
   }
 

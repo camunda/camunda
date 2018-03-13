@@ -12,6 +12,7 @@ import javax.websocket.Session;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Map;
 
 /**
  * @author Askar Akhmerov
@@ -44,7 +45,7 @@ public class StatusReportJob extends Thread {
     while (session.isOpen()) {
       StatusWithProgressDto result = new StatusWithProgressDto();
       result.setConnectionStatus(statusCheckingService.getConnectionStatus());
-      long progress = importProgressReporter.computeImportProgress();
+      Map<String, Long> progress = importProgressReporter.computeImportProgressPerEngine();
       result.setProgress(progress);
 
       try {
