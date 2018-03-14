@@ -34,7 +34,7 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
   private final static String DEFAULT_CONTEXT_LOCATION = "classpath:embeddedOptimizeContext.xml";
   private final static String propertiesLocation = "integration-rules.properties";
   public static final String DEFAULT_USERNAME = "admin";
-  public static final String DEFAULT_PASSWORT = "admin";
+  public static final String DEFAULT_PASSWORD = "admin";
 
   private static String authenticationToken;
   private Properties properties;
@@ -84,7 +84,6 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
   public void start() throws Exception {
     if (!testOptimizeInstance.isOptimizeStarted()) {
       testOptimizeInstance.startOptimize();
-      storeAuthenticationToken();
       if (isThisTheFirstTimeOptimizeWasStarted()) {
         // store the default configuration to restore it later
         defaultConfiguration = new ConfigurationService();
@@ -94,6 +93,7 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
       }
       BeanUtils.copyProperties(perTestConfiguration, testOptimizeInstance.getConfigurationService());
       reloadConfiguration();
+      storeAuthenticationToken();
     }
   }
 
@@ -173,7 +173,7 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
   private Response authenticateAdminRequest() {
     CredentialsDto entity = new CredentialsDto();
     entity.setUsername(DEFAULT_USERNAME);
-    entity.setPassword(DEFAULT_PASSWORT);
+    entity.setPassword(DEFAULT_PASSWORD);
 
     return target()
       .path("authentication")

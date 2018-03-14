@@ -90,7 +90,7 @@ public class ImportPerformanceTest {
       () -> {
         logger.info("Progress of engine import: {}%",
           embeddedOptimizeRule.getProgressValue());
-      }, 0, 5, TimeUnit.SECONDS
+      }, 0, 5, TimeUnit.MILLISECONDS
     );
     return exec;
   }
