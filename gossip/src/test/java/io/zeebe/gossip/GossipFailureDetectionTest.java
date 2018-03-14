@@ -134,7 +134,7 @@ public class GossipFailureDetectionTest
         {
             clock.addTime(CONFIGURATION.getProbeInterval());
 
-        }).until(v -> gossip1.receivedMembershipEvent(MembershipEventType.CONFIRM, gossip3)
+        })   .until(v -> gossip1.receivedMembershipEvent(MembershipEventType.CONFIRM, gossip3)
                 && gossip2.receivedMembershipEvent(MembershipEventType.CONFIRM, gossip3));
 
         // then
