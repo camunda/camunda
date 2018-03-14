@@ -147,3 +147,12 @@ it('should not display all option in version selection if disabled', async () =>
 
   expect(node.find('option[value="ALL"]').exists()).toBe(false);
 });
+
+it('should show a note if the selected ProcDef version is ALL', async () => {
+  const node = await mount(
+    <ProcessDefinitionSelection enableAllVersionSelection={true} processDefinitionVersion="ALL" />
+  );
+  await node.update();
+
+  expect(node.find('.ProcessDefinitionSelection__version-select__warning')).toBePresent();
+});
