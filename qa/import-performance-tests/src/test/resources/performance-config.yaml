@@ -1,5 +1,17 @@
 import:
   handler:
+    backoff:
+      #Interval which is used for the backoff time calculation.
+      interval: 10000
+      #If all jobs are backing off at the moment, this interval is used
+      #to trigger general backoff
+      value: 60000
+      #Once all pages are consumed, the import scheduler component will
+      #start scheduling fetching tasks in increasing periods of time,
+      #controlled by "backoff" counter.
+      max: 15
+      #Tells if the backoff is enabled of not.
+      isEnabled: true
     pages:
       resetInterval:
         unit: Hours

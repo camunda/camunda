@@ -101,7 +101,6 @@
                   <goal>test</goal>
                 </goals>
                 <configuration>
-                  <threadCount>10</threadCount>
                   <includes>
                     <include>**/*PerformanceTest*</include>
                   </includes>
