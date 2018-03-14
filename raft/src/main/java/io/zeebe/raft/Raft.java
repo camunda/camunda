@@ -97,11 +97,13 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
     private final AppendResponse appendResponse = new AppendResponse();
     private ScheduledTimer electionTimer;
     private ScheduledTimer flushTimer;
+    private String name;
 
     public Raft(final RaftConfiguration configuration, final SocketAddress socketAddress, final LogStream logStream,
                 final BufferingServerTransport serverTransport, final ClientTransport clientTransport,
                 final RaftPersistentStorage persistentStorage, final RaftStateListener... listeners)
     {
+        name = String.format("%s - %s:%d", logStream.getLogName(), socketAddress.host(), socketAddress.port());
         this.configuration = configuration;
         this.socketAddress = socketAddress;
         this.logStream = logStream;
@@ -121,6 +123,12 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
         state = followerState;
 
         LOG.info("Created raft with configuration: " + this.configuration);
+    }
+
+    @Override
+    public String getName()
+    {
+        return name;
     }
 
     public void registerRaftStateListener(final RaftStateListener listener)
