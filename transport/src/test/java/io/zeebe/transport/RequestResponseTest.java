@@ -17,14 +17,14 @@ package io.zeebe.transport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.ArrayDeque;
-import java.util.Queue;
+import java.util.*;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.util.EchoRequestResponseHandler;
 import io.zeebe.util.buffer.DirectBufferWriter;
+import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -34,14 +34,14 @@ import org.junit.rules.RuleChain;
 
 public class RequestResponseTest
 {
-    public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3);
+    public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3, 0, null);
     public AutoCloseableRule closeables = new AutoCloseableRule();
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule(actorSchedulerRule).around(closeables);
 
     protected ServerResponse response = new ServerResponse();
-    protected Queue<ClientRequest> pendingRequests = new ArrayDeque<>();
+    protected Queue<ActorFuture<ClientResponse>> pendingRequests = new ArrayDeque<>();
     protected UnsafeBuffer messageBuffer = new UnsafeBuffer(new byte[1024]);
     protected DirectBufferWriter bufferWriter = new DirectBufferWriter();
 
@@ -83,22 +83,92 @@ public class RequestResponseTest
 
         while (numResponsesReceived < numRequests)
         {
-            while (numRequestsSent < numRequests && sendRequest(clientTransport, remote, numRequestsSent))
+            final int openRequests = numRequestsSent - numResponsesReceived;
+            if (openRequests < 128)
             {
+                sendRequest(clientTransport, remote, numRequestsSent);
                 numRequestsSent++;
             }
 
-            final ClientRequest nextPendingRequest = pendingRequests.peek();
+            final ActorFuture<ClientResponse> nextPendingRequest = pendingRequests.peek();
 
             if (nextPendingRequest != null && nextPendingRequest.isDone())
             {
-                final DirectBuffer response = nextPendingRequest.get();
-                assertThat(response.getInt(0)).isEqualTo(numResponsesReceived);
-                numResponsesReceived++;
-                nextPendingRequest.close();
                 pendingRequests.remove();
+                numResponsesReceived++;
+
+                try (ClientResponse response = nextPendingRequest.join())
+                {
+                    final DirectBuffer responseBuffer = response.getResponseBuffer();
+                    assertThat(responseBuffer.getInt(0)).isGreaterThanOrEqualTo(0);
+                }
             }
         }
+
+        actorSchedulerRule.get().dumpMetrics(System.out);
+    }
+
+    @Test
+    public void shouldSendMoreThanAvailableRequests() throws Exception
+    {
+        final SocketAddress addr = new SocketAddress("localhost", 51115);
+
+        final Dispatcher clientSendBuffer = Dispatchers.create("clientSendBuffer")
+            .bufferSize(32 * 1024 * 1024)
+            .actorScheduler(actorSchedulerRule.get())
+            .build();
+        closeables.manage(clientSendBuffer);
+
+        final Dispatcher serverSendBuffer = Dispatchers.create("serverSendBuffer")
+            .bufferSize(32 * 1024 * 1024)
+            .actorScheduler(actorSchedulerRule.get())
+            .build();
+        closeables.manage(serverSendBuffer);
+
+        final ClientTransport clientTransport = Transports.newClientTransport()
+            .sendBuffer(clientSendBuffer)
+            .requestPoolSize(1024)
+            .scheduler(actorSchedulerRule.get())
+            .build();
+        closeables.manage(clientTransport);
+
+        final ServerTransport serverTransport = Transports.newServerTransport()
+            .sendBuffer(serverSendBuffer)
+            .bindAddress(addr.toInetSocketAddress())
+            .scheduler(actorSchedulerRule.get())
+            .build(null, new EchoRequestResponseHandler());
+        closeables.manage(serverTransport);
+
+        final int numRequests = 10_000;
+        int numResponsesReceived = 0;
+        final RemoteAddress remote = clientTransport.registerRemoteAndAwaitChannel(addr);
+
+        for (int i = 0; i < numRequests; i++)
+        {
+            sendRequest(clientTransport, remote, numRequests);
+        }
+
+        do
+        {
+            final Iterator<ActorFuture<ClientResponse>> iterator = pendingRequests.iterator();
+            while (iterator.hasNext())
+            {
+                final ActorFuture<ClientResponse> actorFuture = iterator.next();
+                if (actorFuture.isDone())
+                {
+                    numResponsesReceived++;
+
+                    try (ClientResponse response = actorFuture.join())
+                    {
+                        final DirectBuffer responseBuffer = response.getResponseBuffer();
+                        assertThat(responseBuffer.getInt(0)).isGreaterThanOrEqualTo(0);
+                    }
+
+                    iterator.remove();
+                }
+            }
+        }
+        while (numResponsesReceived < numRequests);
 
         actorSchedulerRule.get().dumpMetrics(System.out);
     }
@@ -107,12 +177,12 @@ public class RequestResponseTest
     {
         messageBuffer.putInt(0, payload);
         bufferWriter.wrap(messageBuffer, 0, messageBuffer.capacity());
-        final ClientRequest request = client.getOutput().sendRequest(remote, bufferWriter);
-        if (request != null)
+        final ActorFuture<ClientResponse> responseFuture = client.getOutput().sendRequest(remote, bufferWriter);
+        if (responseFuture != null)
         {
-            pendingRequests.add(request);
+            pendingRequests.add(responseFuture);
         }
 
-        return request != null;
+        return responseFuture != null;
     }
 }

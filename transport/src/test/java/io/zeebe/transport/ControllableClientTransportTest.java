@@ -21,6 +21,7 @@ import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.buffer.DirectBufferWriter;
 import io.zeebe.util.sched.ActorScheduler;
+import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -74,7 +75,7 @@ public class ControllableClientTransportTest
     }
 
     @Test
-    public void shouldNotOpenRequestWhenSendBufferIsSaturated()
+    public void shouldOpenRequestWhenSendBufferIsSaturated()
     {
         // given
         // making sure the sender cannot make progress on the send buffer
@@ -89,10 +90,10 @@ public class ControllableClientTransportTest
         }
 
         // when
-        final ClientRequest request = clientOutput.sendRequest(remoteAddress, new DirectBufferWriter().wrap(BUF1));
+        final ActorFuture<ClientResponse> response = clientOutput.sendRequest(remoteAddress, new DirectBufferWriter().wrap(BUF1));
 
         // then
-        assertThat(request).isNull();
+        assertThat(response).isNotNull();
     }
 
     @Test
@@ -140,7 +141,7 @@ public class ControllableClientTransportTest
         final BufferWriter writer = mock(BufferWriter.class);
         when(writer.getLength()).thenReturn(16);
 
-        clientTransport.getOutput().sendRequestWithRetry(remote, writer);
+        clientTransport.getOutput().sendRequest(remote, writer);
 
         final Thread closerThread = new Thread(() ->
         {

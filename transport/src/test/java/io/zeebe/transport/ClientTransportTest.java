@@ -20,50 +20,32 @@ import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.fail;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import java.time.Duration;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.mockito.ArgumentMatchers;
-
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.dispatcher.Dispatchers;
-import io.zeebe.dispatcher.FragmentHandler;
-import io.zeebe.dispatcher.Subscription;
+import io.zeebe.dispatcher.*;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.test.util.io.FailingBufferWriter;
 import io.zeebe.test.util.io.FailingBufferWriter.FailingBufferWriterException;
 import io.zeebe.transport.impl.TransportChannel;
 import io.zeebe.transport.impl.TransportHeaderDescriptor;
-import io.zeebe.transport.util.ControllableServerTransport;
-import io.zeebe.transport.util.EchoRequestResponseHandler;
-import io.zeebe.transport.util.RecordingChannelListener;
-import io.zeebe.transport.util.RecordingMessageHandler;
-import io.zeebe.transport.util.TransportTestUtil;
-import io.zeebe.util.buffer.BufferUtil;
-import io.zeebe.util.buffer.BufferWriter;
-import io.zeebe.util.buffer.DirectBufferWriter;
+import io.zeebe.transport.util.*;
+import io.zeebe.util.buffer.*;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.*;
+import org.junit.rules.RuleChain;
+import org.mockito.ArgumentMatchers;
 
 public class ClientTransportTest
 {
@@ -168,8 +150,8 @@ public class ClientTransportTest
         serverTransport.listenOn(SERVER_ADDRESS1);
 
         final RemoteAddress remote = clientTransport.registerRemoteAndAwaitChannel(SERVER_ADDRESS1);
-        final ClientOutput output = clientTransport.getOutput();
 
+        final ClientOutput output = clientTransport.getOutput();
         output.sendRequest(remote, new DirectBufferWriter().wrap(BUF1));
         output.sendRequest(remote, new DirectBufferWriter().wrap(BUF1));
 
@@ -263,7 +245,7 @@ public class ClientTransportTest
     }
 
     @Test
-    public void shouldFailRequestWhenChannelNotAvailable()
+    public void shouldTimeoutRequestWhenChannelNotAvailable()
     {
         // given
         final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
@@ -271,27 +253,14 @@ public class ClientTransportTest
         final ClientOutput output = clientTransport.getOutput();
 
         // when
-        final ClientRequest request = output.sendRequest(remote, new DirectBufferWriter().wrap(BUF1));
+        final ActorFuture<ClientResponse> responseFuture = output.sendRequest(remote, new DirectBufferWriter().wrap(BUF1), Duration.ofMillis(500));
 
         // then
-        TestUtil.waitUntil(() -> request.isFailed());
-
-        assertThat(request.isFailed()).isTrue();
-
-        try
-        {
-            request.get();
-            fail("Should not resolve");
-        }
-        catch (Exception e)
-        {
-            assertThat(e).isInstanceOf(ExecutionException.class);
-            assertThat(e).hasMessageContaining("No available channel for remote");
-        }
+        assertThatThrownBy(() -> responseFuture.join()).hasMessageContaining("Request timed out after PT0.5S");
     }
 
     @Test
-    public void shouldNotOpenRequestWhenClienRequestPoolCapacityIsExceeded()
+    public void shouldOpenRequestWhenClientRequestPoolCapacityIsExceeded()
     {
         // given
         final ClientOutput clientOutput = clientTransport.getOutput();
@@ -303,71 +272,10 @@ public class ClientTransportTest
         }
 
         // when
-        final ClientRequest request = clientOutput.sendRequest(remoteAddress, new DirectBufferWriter().wrap(BUF1));
+        final ActorFuture<ClientResponse> responseFuture = clientOutput.sendRequest(remoteAddress, new DirectBufferWriter().wrap(BUF1));
 
         // then
-        assertThat(request).isNull();
-
-    }
-
-    @Test
-    public void shouldReuseRequestOnceClosed()
-    {
-        // given
-        buildServerTransport(b -> b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress())
-                .build(null, new EchoRequestResponseHandler()));
-
-        final ClientOutput clientOutput = clientTransport.getOutput();
-        final RemoteAddress remoteAddress = clientTransport.registerRemoteAndAwaitChannel(SERVER_ADDRESS1);
-
-        for (int i = 0; i < REQUEST_POOL_SIZE - 1; i++)
-        {
-            clientOutput.sendRequest(remoteAddress, new DirectBufferWriter().wrap(BUF1));
-        }
-
-        final ClientRequest request = clientOutput.sendRequest(remoteAddress, new DirectBufferWriter().wrap(BUF1));
-        TestUtil.waitUntil(() -> request.isDone());
-        request.close();
-
-        // when
-        final ClientRequest newRequest = clientOutput.sendRequest(remoteAddress, new DirectBufferWriter().wrap(BUF1));
-
-        // then
-        assertThat(newRequest).isNotNull();
-        assertThat(newRequest).isSameAs(request); // testing object identity may be too strict from an API perspective but is good to identify technical issues
-
-        // and the request state should be reset
-        assertThat(newRequest.isDone()).isFalse();
-        assertThat(newRequest.isFailed()).isFalse();
-    }
-
-    @Test
-    public void shouldReturnRequestToPoolWhenBufferWriterFails()
-    {
-        // given
-        final FailingBufferWriter failingWriter = new FailingBufferWriter();
-        final DirectBufferWriter successfulWriter = new DirectBufferWriter().wrap(BUF1);
-
-        final ClientOutput clientOutput = clientTransport.getOutput();
-        final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
-
-        for (int i = 0; i < REQUEST_POOL_SIZE; i++)
-        {
-            try
-            {
-                clientOutput.sendRequest(remoteAddress, failingWriter);
-            }
-            catch (FailingBufferWriterException e)
-            {
-                // expected
-            }
-        }
-
-        // when
-        final ClientRequest request = clientOutput.sendRequest(remoteAddress, successfulWriter);
-
-        // then
-        assertThat(request).isNotNull();
+        assertThat(responseFuture).isNotNull();
     }
 
     @Test
@@ -543,18 +451,19 @@ public class ClientTransportTest
         buildServerTransport(b -> b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress())
                 .build(null, new EchoRequestResponseHandler()));
 
-
         final RemoteAddress remote1 = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
 
         // when
-        final ActorFuture<ClientRequest> request = clientTransport.getOutput().sendRequestWithRetry(
+        final ActorFuture<ClientResponse> request = clientTransport.getOutput().sendRequest(
                 remote1,
                 new DirectBufferWriter().wrap(BUF1),
                 Duration.ofSeconds(10));
 
         // then
-        final DirectBuffer response = request.join().join();
-        assertThatBuffer(response).hasBytes(BUF1);
+        try (ClientResponse response = request.join())
+        {
+            assertThatBuffer(response.getResponseBuffer()).hasBytes(BUF1);
+        }
     }
 
     @Test
@@ -570,7 +479,7 @@ public class ClientTransportTest
         // when/then
         assertThatThrownBy(() -> clientTransport
                 .getOutput()
-                .sendRequestWithRetry(remote1, new FailingBufferWriter()))
+                .sendRequest(remote1, new FailingBufferWriter()))
             .isInstanceOf(FailingBufferWriterException.class);
     }
 
@@ -586,7 +495,7 @@ public class ClientTransportTest
         when(writer.getLength()).thenReturn(16);
 
         final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
-        final ActorFuture<ClientRequest> request = clientTransport.getOutput().sendRequestWithRetry(remote, writer);
+        final ActorFuture<ClientResponse> response = clientTransport.getOutput().sendRequest(remote, writer);
 
         // when
         Thread.sleep(1000L); // should make a couple of send attempts in this second
@@ -594,7 +503,7 @@ public class ClientTransportTest
                 .build(null, new EchoRequestResponseHandler()));
 
         // then the request was not serialized more than once
-        waitUntil(() -> request.isDone());
+        response.join().close();
         verify(writer, times(1)).write(ArgumentMatchers.any(), ArgumentMatchers.anyInt());
     }
 
@@ -618,7 +527,7 @@ public class ClientTransportTest
         final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
 
         // when
-        clientTransport.getOutput().sendRequestWithRetry(remote, writer);
+        clientTransport.getOutput().sendRequest(remote, writer);
 
         // then
         // should not resubmit the request because no time has elapsed
@@ -647,8 +556,8 @@ public class ClientTransportTest
         final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
 
         // when
-        final ActorFuture<ClientRequest> clientRequestActorFuture =
-            clientTransport.getOutput().sendRequestWithRetry(remote, writer, Duration.ofSeconds(10));
+        final ActorFuture<ClientResponse> clientRequestActorFuture =
+            clientTransport.getOutput().sendRequest(remote, writer, Duration.ofSeconds(10));
 
         // then
         doRepeatedly(() -> clock.addTime(Duration.ofSeconds(10))).until((v) -> clientRequestActorFuture.isDone());
@@ -671,15 +580,17 @@ public class ClientTransportTest
                     CompletableActorFuture.completed((RemoteAddress) null) : CompletableActorFuture.completed(remote);
 
         // when
-        final ActorFuture<ClientRequest> request =
+        final ActorFuture<ClientResponse> responseFuture =
                 clientTransport.getOutput().sendRequestWithRetry(
                     addressSupplier,
                     b -> false,
                     new DirectBufferWriter().wrap(BUF1),
                     Duration.ofSeconds(2));
 
-        final DirectBuffer response = request.join().join();
-        assertThatBuffer(response).hasBytes(BUF1);
+        try (ClientResponse response = responseFuture.join())
+        {
+            assertThatBuffer(response.getResponseBuffer()).hasBytes(BUF1);
+        }
     }
 
     protected class CountFragmentsHandler implements FragmentHandler

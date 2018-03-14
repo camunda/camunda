@@ -15,26 +15,33 @@
  */
 package io.zeebe.transport;
 
-import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
 
-public interface ClientRequest extends AutoCloseable, ActorFuture<DirectBuffer>
+/**
+ * Response obtained to a client request. See
+ * {@link ClientOutput#sendRequest(RemoteAddress, io.zeebe.util.buffer.BufferWriter)} and others.
+ */
+public interface ClientResponse extends AutoCloseable
 {
+    /**
+     * @return the remote address from which the response was obtained
+     */
+    RemoteAddress getRemoteAddress();
+
+    /**
+     * @return the id of the request
+     */
     long getRequestId();
 
     /**
-     * Same as {@link #get()}, but throws runtime exceptions
+     * @return the response data
      */
-    DirectBuffer join();
-
-    @Override
-    void close();
-
-    boolean isFailed();
+    DirectBuffer getResponseBuffer();
 
     /**
-     * @return the remote to which this request was supposed to be sent
-     * (does not incidicate that the request was actually sent)
+     * Closes the response and frees the underlying buffers.
+     * Must be called by the users of this api.
      */
-    RemoteAddress getRemoteAddress();
+    @Override
+    void close();
 }

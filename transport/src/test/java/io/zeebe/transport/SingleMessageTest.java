@@ -29,7 +29,7 @@ import org.junit.rules.RuleChain;
 
 public class SingleMessageTest
 {
-    public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3);
+    public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3, 0, null);
     public AutoCloseableRule closeables = new AutoCloseableRule();
 
     @Rule
@@ -43,7 +43,7 @@ public class SingleMessageTest
     public void shouldEchoMessages() throws Exception
     {
         final SocketAddress addr = new SocketAddress("localhost", 51115);
-        final int numRequests = 1_000_000;
+        final int numRequests = 100_000;
 
         final CountingListener responseCounter = new CountingListener();
 

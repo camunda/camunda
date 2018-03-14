@@ -26,7 +26,6 @@ import io.zeebe.util.sched.future.ActorFuture;
 
 public interface ClientOutput
 {
-
     /**
      * <p>Sends a message according to the single message protocol.
      *
@@ -36,25 +35,10 @@ public interface ClientOutput
     boolean sendMessage(TransportMessage transportMessage);
 
     /**
-     * <p>Sends a request according to the request response protocol to a given remote
-     *
-     * <p>Returns null if request cannot be currently written to the send buffer due to exhausted capacity.
-     *
-     * <p>Throws an exception if the request is not sendable at all (e.g. buffer writer throws exception).
-     *
-     * <p>Returns a future to the response content else.
-     *
-     * <p>The future throws fails with {@link NotConnectedException} if the addressed remote is currently
-     * not connected.
-     *
-     * <p>The returned request object MUST be closed when it is not needed anymore.
-     *
-     * <p>Guarantees:
-     * <ul>
-     * <li>Garbage-free
-     * <li>One intermediary copy of the request (on the send buffer)
+     * Same as {@link #sendRequest(RemoteAddress, BufferWriter, long)} where the timeout is set to the configured default timeout.
+     * @return the response future
      */
-    ClientRequest sendRequest(RemoteAddress addr, BufferWriter writer);
+    ActorFuture<ClientResponse> sendRequest(RemoteAddress addr, BufferWriter writer);
 
     /**
      * <p>Like {@link #sendRequest(RemoteAddress, BufferWriter)} but retries the request if there is no current connection.
@@ -66,15 +50,9 @@ public interface ClientOutput
      * <li>n intermediary copies of the request (one local copy for making retries, one copy on the send buffer per try)
      *
      * @param timeout Timeout in milliseconds until the returned future fails if no response is received.
-     * @return the last request which eventually succeeded.
+     * @return the response future
      */
-    ActorFuture<ClientRequest> sendRequestWithRetry(RemoteAddress addr, BufferWriter writer, Duration timeout);
-
-    /**
-     * Same as {@link #sendRequestWithRetry(RemoteAddress, BufferWriter, long)} where the timeout is set to the configured default timeout.
-     * @return the last request which eventually succeeded.
-     */
-    ActorFuture<ClientRequest> sendRequestWithRetry(RemoteAddress addr, BufferWriter writer);
+    ActorFuture<ClientResponse> sendRequest(RemoteAddress addr, BufferWriter writer, Duration timeout);
 
     /**
      * <p>Like {@link #sendRequest(RemoteAddress, BufferWriter)} but retries the request if there is no current connection.
@@ -98,5 +76,5 @@ public interface ClientOutput
      * @param timeout The timeout until the returned future fails if no response is received.
      * @return the last request which eventually succeeded.
      */
-    ActorFuture<ClientRequest> sendRequestWithRetry(Supplier<ActorFuture<RemoteAddress>> remoteAddressSupplier, Predicate<DirectBuffer> responseInspector, BufferWriter writer, Duration timeout);
+    ActorFuture<ClientResponse> sendRequestWithRetry(Supplier<ActorFuture<RemoteAddress>> remoteAddressSupplier, Predicate<DirectBuffer> responseInspector, BufferWriter writer, Duration timeout);
 }

@@ -15,83 +15,83 @@
  */
 package io.zeebe.transport.impl;
 
-import io.zeebe.transport.Loggers;
-import org.agrona.BitUtil;
-import org.agrona.concurrent.ManyToManyConcurrentArrayQueue;
+import java.time.Duration;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.*;
 import io.zeebe.util.buffer.BufferWriter;
+import io.zeebe.util.buffer.DirectBufferWriter;
+import io.zeebe.util.sched.*;
+import io.zeebe.util.sched.clock.ActorClock;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
+import org.agrona.*;
+import org.agrona.concurrent.ManyToManyConcurrentArrayQueue;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
 public class ClientRequestPool implements AutoCloseable
 {
     private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
 
+    private final ActorScheduler scheduler;
     private final int capacity;
-    private final ManyToManyConcurrentArrayQueue<ClientRequestImpl> availableRequests;
-    private ClientRequestImpl[] requests;
+    private final ManyToManyConcurrentArrayQueue<ClientRequestController> availableRequests;
+    private ClientRequestController[] requests;
+    private volatile boolean isClosed = false;
 
-    public ClientRequestPool(int requestedCapacity, Dispatcher sendBuffer)
+    public ClientRequestPool(ActorScheduler scheduler, int requestedCapacity, Dispatcher sendBuffer)
     {
         capacity = BitUtil.findNextPositivePowerOfTwo(requestedCapacity);
 
         availableRequests = new ManyToManyConcurrentArrayQueue<>(capacity);
-        requests = new ClientRequestImpl[capacity];
+        requests = new ClientRequestController[capacity];
 
         for (int i = 0; i < capacity; i++)
         {
-            final ClientRequestImpl request = new ClientRequestImpl(new RequestIdGenerator(i, capacity), sendBuffer, this::returnRequest);
+            final ClientRequestController request = new ClientRequestController(new PooledRequestIdGenerator(i, capacity), sendBuffer, this::onRequestClosed);
             requests[i] = request;
             availableRequests.add(request);
+            scheduler.submitActor(request);
         }
+
+        this.scheduler = scheduler;
     }
 
-    public ClientRequestImpl openRequest(RemoteAddress remote, BufferWriter writer)
+    public ActorFuture<ClientResponse> openRequest(Supplier<ActorFuture<RemoteAddress>> remoteAddressSupplier,
+            Predicate<DirectBuffer> responseInspector,
+            BufferWriter writer,
+            Duration timeout)
     {
-        ClientRequestImpl request = poll(remote);
+        final CompletableActorFuture<ClientResponse> responseFuture = new CompletableActorFuture<>();
+
+        // attempt to use pooled request
+        final ClientRequestController request = availableRequests.poll();
 
         if (request != null)
         {
-            boolean requestSubmitted = false;
-
-            try
-            {
-                requestSubmitted = request.submit(writer);
-            }
-            finally
-            {
-                if (!requestSubmitted)
-                {
-                    request.close();
-                    request = null;
-                }
-            }
+            request.init(responseFuture, remoteAddressSupplier, responseInspector, writer, timeout);
         }
-
-        return request;
-    }
-
-    public ClientRequestImpl poll(RemoteAddress remote)
-    {
-        final ClientRequestImpl request = availableRequests.poll();
-
-        if (request != null)
+        else
         {
-            request.init(remote);
+            LOG.debug("No pooled request available.");
+            // submit actor re-attempting to send the request
+            scheduler.submitActor(new DeferredRequestAllocator(responseFuture, remoteAddressSupplier, responseInspector, writer, timeout));
         }
 
-        return request;
+        return responseFuture;
     }
 
-    public ClientRequestImpl getOpenRequestById(long id)
+    public ClientRequestController getOpenRequestById(long id)
     {
-        ClientRequestImpl result = null;
+        ClientRequestController result = null;
 
         final int offset = (int) (id & (capacity - 1));
-        final ClientRequestImpl request = requests[offset];
+        final ClientRequestController request = requests[offset];
 
-        if (request.getRequestId() == id)
+        if (request.getCurrentRequestId() == id)
         {
             result = request;
         }
@@ -103,54 +103,121 @@ public class ClientRequestPool implements AutoCloseable
     {
         for (int i = 0; i < requests.length; i++)
         {
-            final ClientRequestImpl request = requests[i];
-            if (remote.equals(request.getRemoteAddress()))
-            {
-                if (request.isAwaitingResponse())
-                {
-                    request.fail(reason, null);
-                }
-            }
+            requests[i].failPendingRequestToRemote(remote, reason);
         }
     }
 
     @Override
     public void close()
     {
+        this.isClosed = true;
+
         for (int i = 0; i < requests.length; i++)
         {
-            final ClientRequestImpl clientRequestImpl = requests[i];
-            try
-            {
-                clientRequestImpl.close();
-            }
-            catch (Exception e)
-            {
-                LOG.debug("Failed to close client request {}", clientRequestImpl, e);
-            }
+            // TODO: wait until closed
+            requests[i].closeActor();
+        }
+
+        this.availableRequests.clear();
+    }
+
+    public void onRequestClosed(ClientRequestController request)
+    {
+        if (!isClosed)
+        {
+            availableRequests.add(request);
         }
     }
 
-    public void returnRequest(ClientRequestImpl requestImpl)
+    public interface RequestIdGenerator
     {
-        availableRequests.add(requestImpl);
+        long getNextRequestId();
     }
 
-    public static class RequestIdGenerator
+    private static class PooledRequestIdGenerator implements RequestIdGenerator
     {
         private final int poolCapacity;
         private long lastId;
 
-        RequestIdGenerator(int offset, int poolCapacity)
+        PooledRequestIdGenerator(int offset, int poolCapacity)
         {
             this.poolCapacity = poolCapacity;
             this.lastId = offset;
         }
 
+        @Override
         public long getNextRequestId()
         {
             lastId += poolCapacity;
             return lastId;
+        }
+    }
+
+    /**
+     * Used when no pooled request is immediately available when the user submits a request.
+     * Attempts re-attempts to allocate the request until the request timeout is reached.
+     */
+    class DeferredRequestAllocator extends Actor
+    {
+        private long submitMs;
+
+        private final CompletableActorFuture<ClientResponse> responseFuture;
+        private final Supplier<ActorFuture<RemoteAddress>> remoteAddressSupplier;
+        private final Predicate<DirectBuffer> responseInspector;
+        private final Duration timeout;
+        private final BufferWriter requestWriter;
+
+        DeferredRequestAllocator(
+                CompletableActorFuture<ClientResponse> responseFuture,
+                Supplier<ActorFuture<RemoteAddress>> remoteAddressSupplier,
+                Predicate<DirectBuffer> responseInspector,
+                BufferWriter writer,
+                Duration timeout)
+        {
+            this.responseFuture = responseFuture;
+            this.remoteAddressSupplier = remoteAddressSupplier;
+            this.responseInspector = responseInspector;
+            this.timeout = timeout;
+
+            // make additional copy of request buffer
+            final UnsafeBuffer resquetBuffer = new UnsafeBuffer(new byte[writer.getLength()]);
+            writer.write(resquetBuffer, 0);
+            this.requestWriter = new DirectBufferWriter().wrap(resquetBuffer);
+        }
+
+        @Override
+        protected void onActorStarted()
+        {
+            // record time when actor is submitted
+            submitMs = ActorClock.currentTimeMillis();
+            actor.runDelayed(timeout, this::onTimeout);
+
+            attemptInit();
+        }
+
+        protected void attemptInit()
+        {
+            final ClientRequestController request = availableRequests.poll();
+
+            if (request != null)
+            {
+                // subtract time spent in this actor from request timeout
+                final Duration remainingTimeout = timeout.minusMillis(ActorClock.currentTimeMillis() - submitMs);
+                request.init(responseFuture, remoteAddressSupplier, responseInspector, requestWriter, remainingTimeout);
+                actor.close();
+            }
+            else
+            {
+                // re-attempt submit (do not use run until done so that the timeout can fire)
+                actor.submit(this::attemptInit);
+                actor.yield();
+            }
+        }
+
+        private void onTimeout()
+        {
+            responseFuture.completeExceptionally(new RequestTimeoutException("Request timed out due to backpressure"));
+            actor.close();
         }
     }
 }

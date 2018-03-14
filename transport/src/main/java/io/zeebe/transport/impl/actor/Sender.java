@@ -20,15 +20,20 @@ import java.time.Duration;
 import java.util.Iterator;
 
 import io.zeebe.dispatcher.*;
+import io.zeebe.transport.Loggers;
 import io.zeebe.transport.NotConnectedException;
 import io.zeebe.transport.impl.*;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
+import org.slf4j.Logger;
 
 public class Sender extends Actor
 {
+    private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
+    private static final boolean IS_TRACE_ENABLED = LOG.isTraceEnabled();
+
     private static final String SUBSCRIPTION_NAME = "sender";
     private static final String NOT_CONNECTED_ERROR = "No available channel for remote";
     private static final String COULD_NOT_WRITE_TO_CHANNEL = "Could not write to channel";
@@ -70,22 +75,12 @@ public class Sender extends Actor
     }
 
     @Override
-    protected void onActorStarted()
+    protected void onActorStarting()
     {
         actor.runOnCompletion(sendBuffer.openSubscriptionAsync(SUBSCRIPTION_NAME), (subscription, t) ->
         {
             senderSubscription = subscription;
-
-            if (t == null)
-            {
-                actor.consume(subscription, peekNextBlock);
-
-                if (keepAlivePeriod != null)
-                {
-                    actor.runAtFixedRate(keepAlivePeriod, this::sendKeepalives);
-                }
-            }
-            else
+            if (t != null)
             {
                 t.printStackTrace();
                 actor.close();
@@ -94,13 +89,22 @@ public class Sender extends Actor
     }
 
     @Override
+    protected void onActorStarted()
+    {
+        if (senderSubscription != null)
+        {
+            actor.consume(senderSubscription, peekNextBlock);
+
+            if (keepAlivePeriod != null)
+            {
+                actor.runAtFixedRate(keepAlivePeriod, this::sendKeepalives);
+            }
+        }
+    }
+
+    @Override
     protected void onActorClosing()
     {
-        /*
-         * TODO: Workaround: It can happen that the #close job is executed before
-         *   the continuation of #await in onActorStarted (i.e. we don't have a subscription yet
-         *   at this point, although the subscription exists)
-         */
         if (senderSubscription != null)
         {
             actor.runOnCompletion(sendBuffer.closeSubscriptionAsync(senderSubscription), (r, t) ->
@@ -118,6 +122,11 @@ public class Sender extends Actor
 
             if (writeChannel != null && !writeChannel.isClosed())
             {
+                if (IS_TRACE_ENABLED)
+                {
+                    LOG.trace("Starting send of {} bytes to {}", blockPeek.getBlockLength(), writeChannel.getRemoteAddress());
+                }
+
                 actor.runUntilDone(sendData);
             }
             else
@@ -125,10 +134,6 @@ public class Sender extends Actor
                 discard(NOT_CONNECTED_ERROR, new NotConnectedException(NOT_CONNECTED_ERROR));
                 blockPeek.markCompleted();
             }
-        }
-        else
-        {
-            actor.yield();
         }
     }
 
@@ -148,6 +153,11 @@ public class Sender extends Actor
             {
                 blockPeek.markCompleted();
                 actor.done();
+
+                if (IS_TRACE_ENABLED)
+                {
+                    LOG.trace("Finished send to {}", writeChannel.getRemoteAddress());
+                }
             }
             else
             {
@@ -173,6 +183,11 @@ public class Sender extends Actor
                             blockPeek.getStreamId(),
                             failure,
                             failureCause);
+
+                    if (IS_TRACE_ENABLED)
+                    {
+                        LOG.trace("Discarding message of {}bytes on stream {}", nextMessage.capacity(), blockPeek.getStreamId());
+                    }
                 }
                 catch (Exception e)
                 {
@@ -184,6 +199,11 @@ public class Sender extends Actor
 
     private void sendKeepalives()
     {
+        if (IS_TRACE_ENABLED)
+        {
+            LOG.trace("Sending keepalives");
+        }
+
         channelMap.values()
             .forEach((ch) -> actor.runUntilDone(this.sendKeepaliveOnChannel(ch)));
     }
@@ -192,10 +212,20 @@ public class Sender extends Actor
     {
         return () ->
         {
+            if (IS_TRACE_ENABLED)
+            {
+                LOG.trace("Sending keepalive on channel {}", ch);
+            }
+
             final int result = ch.write(keepAliveBuffer);
 
             if (result == -1)
             {
+                if (IS_TRACE_ENABLED)
+                {
+                    LOG.trace("Could not send keepalive on channel {}, channel closed", ch);
+                }
+
                 actor.done();
                 keepAliveBuffer.clear();
             }

@@ -41,6 +41,8 @@ import org.slf4j.Logger;
 public class TransportChannel
 {
     private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
+    private static final boolean IS_TRACE_ENABLED =  LOG.isTraceEnabled();
+
     private static final AtomicIntegerFieldUpdater<TransportChannel> STATE_FIELD = AtomicIntegerFieldUpdater.newUpdater(TransportChannel.class, "state");
 
     private static final int CLOSED = 1;
@@ -94,13 +96,25 @@ public class TransportChannel
     {
         int workCount = 0;
 
-        if (mediaReceive(media, channelReadBuffer) < 0)
+        final int received = mediaReceive(media, channelReadBuffer);
+
+        if (IS_TRACE_ENABLED)
+        {
+            LOG.trace("Received {} bytes on channel {}", received, this);
+        }
+
+        if (received < 0)
         {
             doClose();
             return workCount;
         }
 
         final int available = channelReadBuffer.position();
+
+        if (IS_TRACE_ENABLED)
+        {
+            LOG.trace("Channel read buffer has {} bytes available", available);
+        }
 
         int remaining = available;
         int offset = 0;
@@ -124,6 +138,11 @@ public class TransportChannel
 
                 if (handled)
                 {
+                    if (IS_TRACE_ENABLED)
+                    {
+                        LOG.trace("Handler has handled message of {} bytes", framedLength);
+                    }
+
                     remaining -= frameLength;
                     offset += frameLength;
                 }
@@ -354,5 +373,11 @@ public class TransportChannel
     public int getOpenAttempt()
     {
         return connectAttempt;
+    }
+
+    @Override
+    public String toString()
+    {
+        return media != null ? media.toString() : "unconnected channel to remote " + remoteAddress;
     }
 }

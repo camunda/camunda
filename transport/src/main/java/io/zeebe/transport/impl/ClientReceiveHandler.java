@@ -61,7 +61,7 @@ public class ClientReceiveHandler implements FragmentHandler
 
                 final long requestId = requestResponseHeaderDescriptor.requestId();
 
-                final ClientRequestImpl request = requestPool.getOpenRequestById(requestId);
+                final ClientRequestController request = requestPool.getOpenRequestById(requestId);
 
                 if (request != null)
                 {

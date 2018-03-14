@@ -122,7 +122,7 @@ public class ClientTransportBuilder
     public ClientTransport build()
     {
         validate();
-        final ClientRequestPool clientRequestPool = new ClientRequestPool(requestPoolSize, sendBuffer);
+        final ClientRequestPool clientRequestPool = new ClientRequestPool(scheduler, requestPoolSize, sendBuffer);
 
         final RemoteAddressListImpl remoteAddressList = new RemoteAddressListImpl();
 
@@ -170,8 +170,6 @@ public class ClientTransportBuilder
         final Receiver receiver = new Receiver(actorContext, context);
 
         final ClientOutput output = new ClientOutputImpl(
-                conductor,
-                scheduler,
                 sendBuffer,
                 context.getClientRequestPool(),
                 defaultRequestRetryTimeout);

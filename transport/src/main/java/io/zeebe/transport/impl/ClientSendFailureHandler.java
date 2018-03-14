@@ -38,7 +38,7 @@ public class ClientSendFailureHandler implements SendFailureHandler
             requestResponseHeaderDescriptor.wrap(buffer, offset + TransportHeaderDescriptor.HEADER_LENGTH);
             final long requestId = requestResponseHeaderDescriptor.requestId();
 
-            final ClientRequestImpl pendingRequest = requestPool.getOpenRequestById(requestId);
+            final ClientRequestController pendingRequest = requestPool.getOpenRequestById(requestId);
             if (pendingRequest != null)
             {
                 pendingRequest.fail(failure, cause);

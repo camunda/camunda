@@ -99,31 +99,31 @@ public class ClientTransport implements AutoCloseable
         {
             final Object monitor = new Object();
 
-            final TransportListener listener = new TransportListener()
-            {
-                @Override
-                public void onConnectionEstablished(RemoteAddress remoteAddress)
-                {
-                    synchronized (monitor)
-                    {
-                        if (remoteAddress.getAddress().equals(addr))
-                        {
-                            monitor.notifyAll();
-                            removeChannelListener(this);
-                        }
-                    }
-                }
-
-                @Override
-                public void onConnectionClosed(RemoteAddress remoteAddress)
-                {
-                }
-            };
-
-            transportActorContext.registerListener(listener).join();
-
             synchronized (monitor)
             {
+                final TransportListener listener = new TransportListener()
+                {
+                    @Override
+                    public void onConnectionEstablished(RemoteAddress remoteAddress)
+                    {
+                        synchronized (monitor)
+                        {
+                            if (remoteAddress.getAddress().equals(addr))
+                            {
+                                monitor.notifyAll();
+                                removeChannelListener(this);
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onConnectionClosed(RemoteAddress remoteAddress)
+                    {
+                    }
+                };
+
+                transportActorContext.registerListener(listener).join();
+
                 final RemoteAddress registeredAddress = registerRemoteAddress(addr);
                 try
                 {
@@ -136,7 +136,6 @@ public class ClientTransport implements AutoCloseable
 
                 return registeredAddress;
             }
-
         }
     }
 

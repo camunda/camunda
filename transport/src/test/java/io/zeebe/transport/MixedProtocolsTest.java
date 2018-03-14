@@ -29,6 +29,7 @@ import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.buffer.DirectBufferWriter;
+import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 
 public class MixedProtocolsTest
@@ -86,7 +87,7 @@ public class MixedProtocolsTest
         {
             requestBuffer.putInt(0, i);
             bufferWriter.wrap(requestBuffer, 0, requestBuffer.capacity());
-            final ClientRequest request = clientTransport.getOutput().sendRequest(remoteAddress, bufferWriter);
+            final ActorFuture<ClientResponse> responseFuture = clientTransport.getOutput().sendRequest(remoteAddress, bufferWriter);
 
             requestBuffer.putInt(0, numRequests - i);
             message
@@ -100,9 +101,10 @@ public class MixedProtocolsTest
                 throw new RuntimeException("Could not send message");
             }
 
-            final DirectBuffer response = request.get();
-            assertThat(response.getInt(0)).isEqualTo(i);
-            request.close();
+            try (ClientResponse response = responseFuture.join())
+            {
+                assertThat(response.getResponseBuffer().getInt(0)).isEqualTo(i);
+            }
         }
 
     }
@@ -135,7 +137,7 @@ public class MixedProtocolsTest
                 .requestId(requestId)
                 .remoteAddress(remoteAddress)
                 .buffer(requestResponseMessageBuffer, 0, length);
-            return true;
+            return output.sendResponse(response);
         }
 
         @Override
@@ -146,14 +148,7 @@ public class MixedProtocolsTest
                 .buffer(buffer, offset, length)
                 .remoteAddress(remoteAddress);
 
-            final boolean success = output.sendMessage(message);
-
-            if (success)
-            {
-                output.sendResponse(response);
-            }
-
-            return success;
+            return output.sendMessage(message);
         }
     }
 
