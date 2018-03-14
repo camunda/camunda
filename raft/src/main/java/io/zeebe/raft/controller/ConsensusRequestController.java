@@ -15,23 +15,21 @@
  */
 package io.zeebe.raft.controller;
 
+import static io.zeebe.raft.PollRequestEncoder.lastEventPositionNullValue;
+import static io.zeebe.raft.PollRequestEncoder.lastEventTermNullValue;
+
+import java.time.Duration;
+
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.raft.Loggers;
-import io.zeebe.raft.Raft;
-import io.zeebe.raft.RaftMember;
-import io.zeebe.transport.ClientRequest;
+import io.zeebe.raft.*;
+import io.zeebe.transport.ClientResponse;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
-
-import java.time.Duration;
-
-import static io.zeebe.raft.PollRequestEncoder.lastEventPositionNullValue;
-import static io.zeebe.raft.PollRequestEncoder.lastEventTermNullValue;
 
 public class ConsensusRequestController
 {
@@ -124,7 +122,7 @@ public class ConsensusRequestController
         {
             final RaftMember member = raft.getMember(i);
 
-            final ActorFuture<ClientRequest> clientRequestActorFuture =
+            final ActorFuture<ClientResponse> clientRequestActorFuture =
                 raft.sendRequest(member.getRemoteAddress(), pollRequest, REQUEST_TIMEOUT);
 
             actor.runOnCompletion(clientRequestActorFuture, (clientRequest, throwable) ->
@@ -132,17 +130,23 @@ public class ConsensusRequestController
                 pendingRequests--;
                 if (throwable == null)
                 {
-                    final DirectBuffer responseBuffer = clientRequest.join();
-
-                    if (consensusRequestHandler.isResponseGranted(raft, responseBuffer))
+                    try
                     {
-                        granted++;
-                        if (isGranted() && !grantedFuture.isDone())
+                        final DirectBuffer responseBuffer = clientRequest.getResponseBuffer();
+
+                        if (consensusRequestHandler.isResponseGranted(raft, responseBuffer))
                         {
-                            grantedFuture.complete(null);
+                            granted++;
+                            if (isGranted() && !grantedFuture.isDone())
+                            {
+                                grantedFuture.complete(null);
+                            }
                         }
                     }
-                    clientRequest.close();
+                    finally
+                    {
+                        clientRequest.close();
+                    }
                 }
                 else
                 {

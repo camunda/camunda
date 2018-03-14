@@ -735,9 +735,9 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
      *
      * @return the client request to poll for a response, or null if the request could not be written at the moment
      */
-    public ActorFuture<ClientRequest> sendRequest(final RemoteAddress remoteAddress, final BufferWriter writer, Duration timeout)
+    public ActorFuture<ClientResponse> sendRequest(final RemoteAddress remoteAddress, final BufferWriter writer, Duration timeout)
     {
-        return clientTransport.getOutput().sendRequestWithRetry(remoteAddress, writer, timeout);
+        return clientTransport.getOutput().sendRequest(remoteAddress, writer, timeout);
     }
 
     /**

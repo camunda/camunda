@@ -435,20 +435,15 @@ public class RaftRule extends ExternalResource implements RaftStateListener
 
     public void interruptConnectionTo(RaftRule other)
     {
-        final ClientRequest clientRequest = mock(ClientRequest.class);
-
         final ArgumentMatcher<RemoteAddress> remoteAddressMatcher = r -> other.socketAddress.equals(r.getAddress());
-        doReturn(clientRequest)
-            .when(spyClientOutput)
-            .sendRequest(argThat(remoteAddressMatcher), any());
 
         doReturn(CompletableActorFuture.completedExceptionally(new RuntimeException("connection is interrupted")))
             .when(spyClientOutput)
-            .sendRequestWithRetry(argThat(remoteAddressMatcher), any());
+            .sendRequest(argThat(remoteAddressMatcher), any());
 
         doReturn(CompletableActorFuture.completedExceptionally(new TimeoutException("timeout to " + other.socketAddress)))
             .when(spyClientOutput)
-            .sendRequestWithRetry(argThat(remoteAddressMatcher), any(), any());
+            .sendRequest(argThat(remoteAddressMatcher), any(), any());
 
         final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(other.getSocketAddress());
         Mockito.doReturn(false)
@@ -477,8 +472,8 @@ public class RaftRule extends ExternalResource implements RaftStateListener
     {
         final ArgumentMatcher<RemoteAddress> remoteAddressMatcher = r -> r.getAddress().equals(other.socketAddress);
         doCallRealMethod().when(spyClientOutput).sendRequest(argThat(r -> r.getAddress().equals(other.socketAddress)), any());
-        doCallRealMethod().when(spyClientOutput).sendRequestWithRetry(argThat(remoteAddressMatcher), any());
-        doCallRealMethod().when(spyClientOutput).sendRequestWithRetry(argThat(remoteAddressMatcher), any(), any());
+        doCallRealMethod().when(spyClientOutput).sendRequest(argThat(remoteAddressMatcher), any());
+        doCallRealMethod().when(spyClientOutput).sendRequest(argThat(remoteAddressMatcher), any(), any());
         doCallRealMethod().when(spyClientOutput).sendMessage(any());
     }
 }

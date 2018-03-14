@@ -19,8 +19,7 @@ import io.zeebe.raft.Loggers;
 import io.zeebe.raft.Raft;
 import io.zeebe.raft.protocol.JoinRequest;
 import io.zeebe.raft.protocol.JoinResponse;
-import io.zeebe.transport.ClientRequest;
-import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.*;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
@@ -59,16 +58,21 @@ public class JoinController
             joinRequest.reset().setRaft(raft);
 
             LOG.debug("Send join request to {}", nextMember);
-            final ActorFuture<ClientRequest> requestFuture = raft.sendRequest(nextMember, joinRequest, DEFAULT_JOIN_TIMEOUT);
+            final ActorFuture<ClientResponse> responseFuture = raft.sendRequest(nextMember, joinRequest, DEFAULT_JOIN_TIMEOUT);
 
-            actor.runOnCompletion(requestFuture, ((clientRequest, throwable) ->
+            actor.runOnCompletion(responseFuture, ((response, throwable) ->
             {
                 if (throwable == null)
                 {
-                    //
-                    final DirectBuffer responseBuffer = clientRequest.join();
-                    joinResponse.wrap(responseBuffer, 0, responseBuffer.capacity());
-                    clientRequest.close();
+                    try
+                    {
+                        final DirectBuffer responseBuffer = response.getResponseBuffer();
+                        joinResponse.wrap(responseBuffer, 0, responseBuffer.capacity());
+                    }
+                    finally
+                    {
+                        response.close();
+                    }
 
                     if (!raft.mayStepDown(joinResponse) && raft.isTermCurrent(joinResponse))
                     {
