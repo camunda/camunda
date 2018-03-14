@@ -67,7 +67,6 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     } catch (Exception e) {
       //nothing to do
     }
-
     for (EngineImportJobScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
       if (scheduler.isEnabled()) {
         logger.debug("scheduling first import round");

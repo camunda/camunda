@@ -87,8 +87,8 @@ public abstract class ImportJobExecutor {
       // this will block if the queue is full
       if (!executor.isShutdown()) {
         try {
-          logger.debug("{}: Max queue capacity is reach and, thus, can't schedule any new jobs." +
-            "Caller needs to wait until there is new free spot.", super.getClass().getSimpleName());
+          logger.debug("{}: Max queue capacity is reached and, thus, can't schedule any new jobs." +
+            "Caller needs to wait until there is new free spot. Job class [{}].", super.getClass().getSimpleName(), r.getClass().getSimpleName());
           executor.getQueue().put(r);
           logger.debug("{}: Added job to queue. Caller can continue working on his tasks.",
             super.getClass().getSimpleName());

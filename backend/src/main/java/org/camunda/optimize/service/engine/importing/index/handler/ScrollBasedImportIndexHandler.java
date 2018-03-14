@@ -83,6 +83,7 @@ public abstract class ScrollBasedImportIndexHandler
     Set<String> ids = fetchNextPageOfProcessInstanceIds();
     if (ids.isEmpty()) {
       resetScroll();
+      //it might be the case that new PI's have been imported
       ids = fetchNextPageOfProcessInstanceIds();
       if (ids.isEmpty()) {
         return Optional.empty();
@@ -98,15 +99,11 @@ public abstract class ScrollBasedImportIndexHandler
   private void storeIdsForTracking(Set<String> ids) {
     BulkRequestBuilder bulkRequest = esclient.prepareBulk();
     List<String> idsAsList = Arrays.asList(ids.toArray(new String[]{}));
-    try {
-      bulkRequest.add(buildIdStoringRequest(idsAsList));
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
+    bulkRequest.add(buildIdStoringRequest(idsAsList));
     bulkRequest.get();
   }
 
-  private UpdateRequestBuilder buildIdStoringRequest(List<String> ids) throws IOException {
+  private UpdateRequestBuilder buildIdStoringRequest(List<String> ids) {
 
     Map<String, Object> params = new HashMap<>();
     params.put("processInstanceIds", ids);

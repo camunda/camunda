@@ -69,7 +69,7 @@ public class UnfinishedProcessInstanceImportIndexHandler extends ScrollBasedImpo
         .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
         .get();
 
-    logger.debug("Scroll search query got [{}] results", scrollResp.getHits().getTotalHits());
+    logger.debug("Scroll search query got [{}] results", scrollResp.getHits().getHits().length);
 
     for (SearchHit hit : scrollResp.getHits().getHits()) {
       result.add(hit.getId());

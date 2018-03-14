@@ -194,7 +194,7 @@ public class ProcessDefinitionBaseImportIT {
   }
 
   @Test
-  public void testDataForLatestProcessVersionsImportedFirst() throws Exception {
+  public void testDataForLatestProcessVersionsImportedFirst() {
     //given
     int oldPageSize = configurationService.getEngineImportProcessInstanceMaxPageSize();
     configurationService.setEngineImportProcessInstanceMaxPageSize(1);

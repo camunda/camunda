@@ -77,7 +77,7 @@ public class VariableInstanceImportIndexHandler extends ScrollBasedImportIndexHa
         .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
         .get();
 
-    logger.debug("Scroll search query got [{}] results", scrollResp.getHits().getTotalHits());
+    logger.debug("Scroll search query got [{}] results", scrollResp.getHits().getHits().length);
 
     for (SearchHit hit : scrollResp.getHits().getHits()) {
       result.add(hit.getId());
@@ -137,8 +137,7 @@ public class VariableInstanceImportIndexHandler extends ScrollBasedImportIndexHa
       .mustNot(existsQuery(LONG_VARIABLES))
       .mustNot(existsQuery(DATE_VARIABLES))
       .mustNot(existsQuery(INTEGER_VARIABLES));
-    if (configurationService.getProcessDefinitionIdsToImport() != null &&
-      !configurationService.getProcessDefinitionIdsToImport().isEmpty()) {
+    if (configurationService.areProcessDefinitionsToImportDefined()) {
       for (String processDefinitionId : configurationService.getProcessDefinitionIdsToImport()) {
         query
           .should(termQuery("processDefinitionId", processDefinitionId));

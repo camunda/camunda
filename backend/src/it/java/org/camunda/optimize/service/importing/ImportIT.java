@@ -43,7 +43,6 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 
 
-
 public class ImportIT  {
 
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
@@ -209,10 +208,10 @@ public class ImportIT  {
   public void unfinishedActivitiesAreNotSkippedDuringImport() throws Exception {
     // given
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-        .startEvent()
-        .userTask()
-        .endEvent()
-        .done();
+      .startEvent()
+      .userTask()
+      .endEvent()
+      .done();
     engineRule.deployAndStartProcess(processModel);
     deployAndStartSimpleServiceTask();
 
