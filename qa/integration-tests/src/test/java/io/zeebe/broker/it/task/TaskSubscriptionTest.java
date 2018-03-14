@@ -15,6 +15,16 @@
  */
 package io.zeebe.broker.it.task;
 
+import static io.zeebe.broker.it.util.TopicEventRecorder.taskEvent;
+import static io.zeebe.broker.it.util.TopicEventRecorder.taskRetries;
+import static io.zeebe.test.util.TestUtil.doRepeatedly;
+import static io.zeebe.test.util.TestUtil.waitUntil;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.List;
+
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
@@ -34,16 +44,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
-
-import java.time.Duration;
-import java.time.Instant;
-import java.util.List;
-
-import static io.zeebe.broker.it.util.TopicEventRecorder.taskEvent;
-import static io.zeebe.broker.it.util.TopicEventRecorder.taskRetries;
-import static io.zeebe.test.util.TestUtil.doRepeatedly;
-import static io.zeebe.test.util.TestUtil.waitUntil;
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class TaskSubscriptionTest
 {
@@ -365,7 +365,6 @@ public class TaskSubscriptionTest
     }
 
     @Test
-    @Ignore("https://github.com/zeebe-io/zeebe/issues/750")
     public void shouldGiveTaskToSingleSubscription()
     {
         // given

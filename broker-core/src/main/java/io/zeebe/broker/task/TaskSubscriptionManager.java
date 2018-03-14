@@ -231,6 +231,10 @@ public class TaskSubscriptionManager extends Actor implements TransportListener
                                 }
                             });
                         }
+                        else
+                        {
+                            future.complete(null);
+                        }
                     }
                     else
                     {
