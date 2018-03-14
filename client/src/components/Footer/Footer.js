@@ -2,100 +2,72 @@ import React from 'react';
 
 import './Footer.css';
 
-import {getImportProgress, getConnectionStatus} from './service';
-import {withErrorHandling} from 'HOC';
+export default class Footer extends React.Component {
+  constructor(props) {
+    super(props);
 
-export default withErrorHandling(
-  class Footer extends React.Component {
-    constructor(props) {
-      super(props);
-
-      this.state = {
-        engineConnections: null,
-        importProgress: null,
-        connectedToElasticsearch: null
-      };
-      this.loadConnectionStatus();
-      this.loadImportProgress();
-    }
-
-    loadImportProgress = () => {
-      this.props.mightFail(getImportProgress(), response => {
-        const importProgress = response.progress;
-        this.setState({importProgress});
-      });
+    this.state = {
+      connectionStatus: {
+        engineConnections: {},
+        connectedToElasticsearch: true // initial status before we get first data
+      },
+      progress: {}
     };
+  }
 
-    loadConnectionStatus = () => {
-      this.props.mightFail(
-        getConnectionStatus(),
-        ({engineConnections, connectedToElasticsearch}) => {
-          this.setState({engineConnections, connectedToElasticsearch});
-        }
-      );
-    };
+  componentDidMount() {
+    this.connection = new WebSocket('ws://localhost:8090/ws/status');
 
-    componentDidMount() {
-      this.refreshIntervalHandle = setInterval(() => {
-        this.loadImportProgress();
-        this.loadConnectionStatus();
-      }, 5000);
-    }
+    this.connection.addEventListener('message', ({data}) => {
+      this.setState(JSON.parse(data));
+    });
+  }
 
-    componentWillUnmount() {
-      clearInterval(this.refreshIntervalHandle);
-    }
+  componentWillUnmount() {
+    this.connection.close();
+  }
 
-    renderListElement = (key, connectionStatus, importProgress) => {
-      const importFinished = importProgress !== null && importProgress === 100;
-      let className = 'Footer__connect-status-item';
-      let title;
+  renderListElement = (key, connectionStatus, importProgress) => {
+    const importFinished = importProgress !== null && importProgress === 100;
+    let className = 'Footer__connect-status-item';
+    let title;
 
-      if (connectionStatus) {
-        if (importFinished) {
-          className += ' is-connected';
-          title = key + ' is connected';
-        } else {
-          title = 'Import progress is ' + importProgress + '%';
-          className += ' is-in-progress';
-        }
+    if (connectionStatus) {
+      if (importFinished) {
+        className += ' is-connected';
+        title = key + ' is connected';
       } else {
-        title = key + ' is not connected';
+        title = 'Import progress is ' + importProgress + '%';
+        className += ' is-in-progress';
       }
+    } else {
+      title = key + ' is not connected';
+    }
 
-      return (
-        <li key={key} className={className} title={title}>
-          {key}
-        </li>
-      );
-    };
+    return (
+      <li key={key} className={className} title={title}>
+        {key}
+      </li>
+    );
+  };
 
-    render() {
-      const {importProgress, engineConnections, connectedToElasticsearch} = this.state;
+  render() {
+    const {progress, connectionStatus: {engineConnections, connectedToElasticsearch}} = this.state;
 
-      let connectionFragment = '';
-
-      if (engineConnections !== null) {
-        connectionFragment = (
+    return (
+      <footer className="Footer">
+        <div className="Footer__content">
           <ul className="Footer__connect-status">
             {Object.keys(engineConnections).map(key => {
-              return this.renderListElement(key, engineConnections[key], importProgress);
+              return this.renderListElement(key, engineConnections[key], progress[key]);
             })}
-            {this.renderListElement('Elasticsearch', connectedToElasticsearch, importProgress)}
+            {this.renderListElement('Elasticsearch', connectedToElasticsearch, 100)}
           </ul>
-        );
-      }
-
-      return (
-        <footer className="Footer">
-          <div className="Footer__content">
-            {connectionFragment}
-            <div className="Footer__colophon">
-              © Camunda Services GmbH 2017, All Rights Reserved. | {this.props.version}
-            </div>
+          <div className="Footer__colophon">
+            © Camunda Services GmbH 2017, All Rights Reserved. | {this.props.version}
           </div>
-        </footer>
-      );
-    }
+        </div>
+      </footer>
+    );
   }
-);
+}

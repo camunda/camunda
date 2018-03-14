@@ -6181,6 +6181,10 @@ mkdirp@^0.3.5:
   version "0.3.5"
   resolved "https://registry.yarnpkg.com/mkdirp/-/mkdirp-0.3.5.tgz#de3e5f8961c88c787ee1368df849ac4413eca8d7"
 
+mock-socket@^7.1.0:
+  version "7.1.0"
+  resolved "https://registry.yarnpkg.com/mock-socket/-/mock-socket-7.1.0.tgz#482ecccafb0f0e86b8905ba2aa57c1fe73ba262d"
+
 moddle-xml@^1.1.1:
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/moddle-xml/-/moddle-xml-1.1.1.tgz#e866d5114ab7a075d455ae40effd94ee6d231baf"
