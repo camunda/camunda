@@ -22,6 +22,12 @@ export default class DashboardReport extends React.Component {
     });
   };
 
+  getName = () => {
+    const {name, reportDefinition} = this.state.data;
+
+    return name || (reportDefinition && reportDefinition.name);
+  };
+
   render() {
     if (!this.state.data) {
       return 'loading...';
@@ -31,10 +37,10 @@ export default class DashboardReport extends React.Component {
       <div className="DashboardReport__wrapper">
         <div className="DashboardReport__header">
           {this.props.disableNameLink ? (
-            <span className="DashboardReport__heading">{this.state.data.name}</span>
+            <span className="DashboardReport__heading">{this.getName()}</span>
           ) : (
             <Link to={`/report/${this.props.report.id}`} className="DashboardReport__heading">
-              {this.state.data.name}
+              {this.getName()}
             </Link>
           )}
         </div>

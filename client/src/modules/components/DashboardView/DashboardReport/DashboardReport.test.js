@@ -122,3 +122,15 @@ it('should not provide a link to the report when link is disabled', async () => 
   expect(node.find('a')).not.toBePresent();
   expect(node).toIncludeText('Report Name');
 });
+
+it('should display the name of a failing report', async () => {
+  loadReport.mockReturnValue({
+    errorMessage: 'Is failing',
+    reportDefinition: {name: 'Failing Name'}
+  });
+  const node = mount(<DashboardReport {...props} disableNameLink />);
+
+  await node.instance().loadReportData();
+
+  expect(node).toIncludeText('Failing Name');
+});
