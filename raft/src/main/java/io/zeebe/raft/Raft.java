@@ -317,8 +317,8 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
                         becomeCandidate();
                         break;
                 }
+                LOG.debug("Election in state: {}", getState().name());
             }
-            LOG.debug("Election in state: {}", getState().name());
             electionTimer = actor.runDelayed(nextElectionTimeout(), this::electionTimeoutCallback);
         }
 

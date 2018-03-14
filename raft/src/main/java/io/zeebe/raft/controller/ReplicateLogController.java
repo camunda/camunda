@@ -16,7 +16,6 @@
 package io.zeebe.raft.controller;
 
 import io.zeebe.logstreams.impl.LoggedEventImpl;
-import io.zeebe.raft.Loggers;
 import io.zeebe.raft.Raft;
 import io.zeebe.raft.RaftMember;
 import io.zeebe.raft.protocol.AppendRequest;
@@ -73,7 +72,6 @@ public class ReplicateLogController
 
             final boolean sent = raft.sendMessage(member.getRemoteAddress(), appendRequest);
 
-            Loggers.RAFT_LOGGER.debug("Send append request to {}, sent {}", member.getRemoteAddress().getAddress(), sent);
             if (event != null)
             {
                 if (sent)
