@@ -22,10 +22,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 
+import org.assertj.core.api.AbstractThrowableAssert;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -601,6 +603,22 @@ public class ActorFutureTest
 
         // then
         assertThat(receivedObjects).containsExactly(result1, result2);
+    }
+
+    @Test
+    public void joinShouldThrowExecutionException()
+    {
+        // given
+        final CompletableActorFuture<Object> future = new CompletableActorFuture<>();
+        final RuntimeException throwable = new RuntimeException();
+
+        // when
+        future.completeExceptionally(throwable);
+
+        // then
+        final AbstractThrowableAssert<?, ? extends Throwable> thrownBy = assertThatThrownBy(() -> future.join());
+        thrownBy.isInstanceOf(ExecutionException.class);
+        thrownBy.hasCause(throwable);
     }
 
     class TestActor extends Actor

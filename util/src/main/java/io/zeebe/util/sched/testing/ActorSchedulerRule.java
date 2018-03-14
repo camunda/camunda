@@ -30,8 +30,14 @@ public class ActorSchedulerRule extends ExternalResource
 
     public ActorSchedulerRule(int numOfThreads, ActorClock clock)
     {
+        this(numOfThreads, 2, clock);
+    }
+
+    public ActorSchedulerRule(int numOfThreads, int numOfIoThreads, ActorClock clock)
+    {
         builder = ActorScheduler.newActorScheduler()
                                 .setCpuBoundActorThreadCount(numOfThreads)
+                                .setIoBoundActorThreadCount(numOfIoThreads)
                                 .setActorClock(clock);
 
         actorScheduler = builder

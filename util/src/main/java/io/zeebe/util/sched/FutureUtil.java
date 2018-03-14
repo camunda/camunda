@@ -15,7 +15,6 @@
  */
 package io.zeebe.util.sched;
 
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import io.zeebe.util.LangUtil;
@@ -32,14 +31,13 @@ public class FutureUtil
         {
             return f.get();
         }
-        catch (InterruptedException e)
+        catch (Exception e)
         {
-            throw new RuntimeException(e);
+            // NOTE: here we actually want to use rethrowUnchecked
+            LangUtil.rethrowUnchecked(e);
         }
-        catch (ExecutionException e)
-        {
-            throw new RuntimeException(e);
-        }
+
+        return null;
     }
 
     public static Runnable wrap(Future<?> future)
