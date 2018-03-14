@@ -1,5 +1,6 @@
 package org.camunda.optimize.test.performance;
 
+import org.camunda.optimize.service.util.NamedThreadFactory;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.performance.data.generation.DataGenerator;
@@ -84,10 +85,12 @@ public class ImportPerformanceTest {
   }
 
   private ScheduledExecutorService reportImportProgress() {
-    ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
+    ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory(this.getClass().getSimpleName()));
     exec.scheduleAtFixedRate(
-      () -> logger.info("Progress of engine import: {}%",
-        embeddedOptimizeRule.getProgressValue()), 0, 5, TimeUnit.SECONDS
+      () -> {
+        logger.info("Progress of engine import: {}%",
+          embeddedOptimizeRule.getProgressValue());
+      }, 0, 5, TimeUnit.SECONDS
     );
     return exec;
   }
