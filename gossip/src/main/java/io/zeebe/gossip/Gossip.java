@@ -56,6 +56,7 @@ public class Gossip extends Actor implements GossipController, GossipEventPublis
     private final CustomEventListenerConsumer customEventListenerConsumer;
     private final BufferingServerTransport serverTransport;
     private final GossipRequestHandler requestHandler;
+    private final String gossipName;
 
     public Gossip(
             final SocketAddress socketAddress,
@@ -63,6 +64,7 @@ public class Gossip extends Actor implements GossipController, GossipEventPublis
             final ClientTransport clientTransport,
             final GossipConfiguration configuration)
     {
+        gossipName = socketAddress.toString();
         this.serverTransport = serverTransport;
         this.configuration = configuration;
 
@@ -162,6 +164,12 @@ public class Gossip extends Actor implements GossipController, GossipEventPublis
                     .type(MembershipEventType.CONFIRM);
             }
         });
+    }
+
+    @Override
+    public String getName()
+    {
+        return gossipName;
     }
 
     @Override
