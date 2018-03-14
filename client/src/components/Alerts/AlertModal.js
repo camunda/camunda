@@ -210,6 +210,9 @@ export default class AlertModal extends React.Component {
                     );
                   })}
                 </Select>
+                <div className="AlertModal__report-selection-note">
+                  Note: you can only create an alert for a report visualized as Number
+                </div>
               </label>
             </div>
             <div className="AlertModal__inputGroup">
