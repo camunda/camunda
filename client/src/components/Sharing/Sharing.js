@@ -41,6 +41,7 @@ export default class Sharing extends React.Component {
         <DashboardView
           loadReport={loadReport}
           reports={this.state.evaluationResult.dashboard.reportShares}
+          disableNameLink
         />
       );
     }

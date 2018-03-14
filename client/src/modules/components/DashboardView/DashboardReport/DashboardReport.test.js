@@ -100,3 +100,25 @@ it('should pass properties to report addons', async () => {
   expect(node).toIncludeText('loadReportData');
   expect(node).toIncludeText('tileDimensions');
 });
+
+it('should provide a link to the report', async () => {
+  loadReport.mockReturnValue({name: 'Report Name'});
+  const node = mount(<DashboardReport {...props} />);
+
+  await node.instance().loadReportData();
+  node.update();
+
+  expect(node.find('a')).toIncludeText('Report Name');
+  expect(node.find('a')).toHaveProp('href', '/report/a');
+});
+
+it('should not provide a link to the report when link is disabled', async () => {
+  loadReport.mockReturnValue({name: 'Report Name'});
+  const node = mount(<DashboardReport {...props} disableNameLink />);
+
+  await node.instance().loadReportData();
+  node.update();
+
+  expect(node.find('a')).not.toBePresent();
+  expect(node).toIncludeText('Report Name');
+});

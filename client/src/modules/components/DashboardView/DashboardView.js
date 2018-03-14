@@ -26,6 +26,7 @@ export default class DashboardView extends React.Component {
                 report={report}
                 tileDimensions={this.state.tileDimensions}
                 addons={this.props.reportAddons || []}
+                disableNameLink={this.props.disableNameLink}
               />
             </DashboardObject>
           ))}
