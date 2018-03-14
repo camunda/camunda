@@ -17,6 +17,16 @@
  */
 package io.zeebe.broker.task;
 
+import static io.zeebe.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE;
+import static io.zeebe.broker.logstreams.processor.StreamProcessorIds.TASK_LOCK_STREAM_PROCESSOR_ID;
+import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
+import static io.zeebe.broker.task.TaskQueueServiceNames.taskQueueLockStreamProcessorServiceName;
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
+
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.function.Function;
+
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.logstreams.processor.StreamProcessorService;
 import io.zeebe.broker.task.processor.LockTaskStreamProcessor;
@@ -36,19 +46,6 @@ import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.collections.Long2ObjectHashMap;
-
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.function.Function;
-
-import static io.zeebe.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE;
-import static io.zeebe.broker.logstreams.processor.StreamProcessorIds.TASK_LOCK_STREAM_PROCESSOR_ID;
-import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
-import static io.zeebe.broker.task.TaskQueueServiceNames.taskQueueLockStreamProcessorServiceName;
-import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 public class TaskSubscriptionManager extends Actor implements TransportListener
 {
@@ -137,6 +134,8 @@ public class TaskSubscriptionManager extends Actor implements TransportListener
                 {
                     if (throwable == null)
                     {
+                        actor.submit(this::handleCreditRequests);
+
                         future.complete(null);
                     }
                     else
@@ -162,6 +161,8 @@ public class TaskSubscriptionManager extends Actor implements TransportListener
                         {
                             if (throwable == null)
                             {
+                                actor.submit(this::handleCreditRequests);
+
                                 future.complete(null);
                             }
                             else
@@ -265,7 +266,14 @@ public class TaskSubscriptionManager extends Actor implements TransportListener
 
     public boolean increaseSubscriptionCreditsAsync(CreditsRequest request)
     {
-        return creditRequestBuffer.offerRequest(request);
+        final boolean success = creditRequestBuffer.offerRequest(request);
+
+        if (success)
+        {
+            actor.call(this::handleCreditRequests);
+        }
+
+        return success;
     }
 
     /**
@@ -290,17 +298,17 @@ public class TaskSubscriptionManager extends Actor implements TransportListener
     protected void backpressureRequest(CreditsRequest request)
     {
         request.appendTo(backPressuredCreditsRequests);
-        actor.call(() ->
+    }
+
+    private void handleCreditRequests()
+    {
+        dispatchBackpressuredSubscriptionCredits();
+        if (backPressuredCreditsRequests.size() == 0)
         {
-            dispatchBackpressuredSubscriptionCredits();
-            if (backPressuredCreditsRequests.size() == 0)
-            {
-                // TODO check comment below
-                // only accept new requests when backpressured ones have been processed
-                // this is required to guarantee that backPressuredCreditsRequests won't overflow
-                creditRequestBuffer.handleRequests();
-            }
-        });
+            // only accept new requests when backpressured ones have been processed
+            // this is required to guarantee that backPressuredCreditsRequests won't overflow
+            creditRequestBuffer.handleRequests();
+        }
     }
 
     protected int dispatchBackpressuredSubscriptionCredits()

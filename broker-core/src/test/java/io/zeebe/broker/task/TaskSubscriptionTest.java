@@ -28,20 +28,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.protocol.clientapi.*;
+import io.zeebe.test.broker.protocol.clientapi.*;
+import io.zeebe.transport.SocketAddress;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-
-import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.clientapi.ErrorCode;
-import io.zeebe.protocol.clientapi.SubscriptionType;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.ControlMessageResponse;
-import io.zeebe.test.broker.protocol.clientapi.ErrorResponse;
-import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
-import io.zeebe.test.broker.protocol.clientapi.SubscribedEvent;
-import io.zeebe.transport.SocketAddress;
 
 
 public class TaskSubscriptionTest
@@ -80,8 +73,6 @@ public class TaskSubscriptionTest
             .containsEntry("retries", 3)
             .containsEntry("lockOwner", "bar");
     }
-
-
 
     @Test
     public void shouldCloseSubscriptionOnTransportChannelClose() throws InterruptedException
@@ -240,6 +231,81 @@ public class TaskSubscriptionTest
             .containsEntry("type", "bar")
             .containsEntry("lockOwner", "owner2");
     }
+
+    @Test
+    public void shouldLockTasksUntilCreditsAreExhausted() throws InterruptedException
+    {
+        // given
+        apiRule
+            .createControlMessageRequest()
+            .messageType(ControlMessageType.ADD_TASK_SUBSCRIPTION)
+            .partitionId(apiRule.getDefaultPartitionId())
+            .data()
+                .put("taskType", "foo")
+                .put("lockDuration", 1000L)
+                .put("lockOwner", "bar")
+                .put("credits", 2)
+                .done()
+            .send();
+
+        // when
+        createTask("foo");
+        createTask("foo");
+
+        // then
+        waitUntil(() -> apiRule.numSubscribedEventsAvailable() == 2);
+
+        final List<SubscribedEvent> taskEvents = apiRule.topic().receiveEvents(taskEvents("LOCKED"))
+                .limit(2)
+                .collect(Collectors.toList());
+
+        assertThat(taskEvents)
+            .extracting(s -> s.event().get("lockOwner"))
+            .contains("bar");
+    }
+
+    @Test
+    public void shouldIncreaseSubscriptionCredits() throws InterruptedException
+    {
+        // given
+        final ControlMessageResponse response = apiRule
+            .createControlMessageRequest()
+            .messageType(ControlMessageType.ADD_TASK_SUBSCRIPTION)
+            .partitionId(apiRule.getDefaultPartitionId())
+            .data()
+                .put("taskType", "foo")
+                .put("lockDuration", 1000L)
+                .put("lockOwner", "bar")
+                .put("credits", 2)
+                .done()
+            .sendAndAwait();
+
+        assertThat(response.getData().get("subscriberKey")).isEqualTo(0);
+
+        createTask("foo");
+        createTask("foo");
+
+        waitUntil(() -> apiRule.numSubscribedEventsAvailable() == 2);
+
+        createTask("foo");
+        createTask("foo");
+
+        // when
+        apiRule
+            .createControlMessageRequest()
+            .messageType(ControlMessageType.INCREASE_TASK_SUBSCRIPTION_CREDITS)
+            .partitionId(apiRule.getDefaultPartitionId())
+            .data()
+                .put("subscriberKey", 0)
+                .put("credits", 2)
+                .put("partitionId", apiRule.getDefaultPartitionId())
+                .done()
+            .send();
+
+        // then
+        waitUntil(() -> apiRule.numSubscribedEventsAvailable() == 4);
+    }
+
 
     private ExecuteCommandResponse createTask(String type)
     {
