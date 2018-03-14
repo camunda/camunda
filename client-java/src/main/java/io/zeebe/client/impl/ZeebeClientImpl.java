@@ -169,16 +169,25 @@ public class ZeebeClientImpl implements ZeebeClient
 
         isClosed = true;
 
+        LOG.debug("Closing client ...");
+
         doAndLogException(() -> subscriptionManager.close().join());
+        LOG.debug("subscriber group manager closed");
         doAndLogException(() -> apiCommandManager.close().join());
+        LOG.debug("api command manager closed");
         doAndLogException(() -> topologyManager.close().join());
+        LOG.debug("topology manager closed");
         doAndLogException(() -> transport.close());
+        LOG.debug("data frame receive buffer closed");
         doAndLogException(() -> dataFrameReceiveBuffer.close());
+        LOG.debug("sendbuffer closed");
         doAndLogException(() -> sendBuffer.close());
 
         try
         {
             scheduler.stop().get(15, TimeUnit.SECONDS);
+
+            LOG.debug("Client closed.");
         }
         catch (InterruptedException | ExecutionException | TimeoutException e)
         {

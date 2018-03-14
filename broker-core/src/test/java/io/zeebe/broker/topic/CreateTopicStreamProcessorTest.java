@@ -41,8 +41,7 @@ import io.zeebe.broker.transport.clientapi.BufferingServerOutput;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.test.util.AutoCloseableRule;
-import io.zeebe.transport.ClientRequest;
-import io.zeebe.transport.SocketAddress;
+import io.zeebe.transport.*;
 import io.zeebe.transport.impl.RequestResponseHeaderDescriptor;
 import io.zeebe.transport.impl.TransportHeaderDescriptor;
 import io.zeebe.util.buffer.BufferUtil;
@@ -792,14 +791,13 @@ public class CreateTopicStreamProcessorTest
         }
 
         @Override
-        public ActorFuture<ClientRequest> createPartitionRemote(SocketAddress remote, DirectBuffer topicName, int partitionId)
+        public ActorFuture<ClientResponse> createPartitionRemote(SocketAddress remote, DirectBuffer topicName, int partitionId)
         {
             partitionRequests.add(new PartitionRequest(remote, partitionId));
-            final ClientRequest request = mock(ClientRequest.class);
-            when(request.isDone()).thenReturn(true);
+            final ClientResponse request = mock(ClientResponse.class);
             try
             {
-                when(request.get()).thenReturn(BufferUtil.wrapString("responseContent"));
+                when(request.getResponseBuffer()).thenReturn(BufferUtil.wrapString("responseContent"));
             }
             catch (Exception e)
             {

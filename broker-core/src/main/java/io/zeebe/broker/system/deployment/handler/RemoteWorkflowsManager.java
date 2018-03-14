@@ -19,47 +19,31 @@ package io.zeebe.broker.system.deployment.handler;
 
 import java.time.Duration;
 import java.util.Iterator;
-import java.util.function.Consumer;
-import java.util.function.IntConsumer;
-import java.util.function.Predicate;
-
-import org.agrona.DirectBuffer;
-import org.agrona.collections.IntArrayList;
-import org.slf4j.Logger;
+import java.util.function.*;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.management.PartitionManager;
 import io.zeebe.broker.clustering.member.Member;
-import io.zeebe.broker.logstreams.processor.StreamProcessorLifecycleAware;
-import io.zeebe.broker.logstreams.processor.TypedEvent;
-import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
-import io.zeebe.broker.logstreams.processor.TypedStreamReader;
-import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
+import io.zeebe.broker.logstreams.processor.*;
 import io.zeebe.broker.system.deployment.data.PendingDeployments;
 import io.zeebe.broker.system.deployment.data.PendingDeployments.PendingDeployment;
 import io.zeebe.broker.system.deployment.data.PendingDeployments.PendingDeploymentIterator;
 import io.zeebe.broker.system.deployment.data.PendingWorkflows;
 import io.zeebe.broker.system.deployment.data.PendingWorkflows.PendingWorkflow;
 import io.zeebe.broker.system.deployment.data.PendingWorkflows.PendingWorkflowIterator;
-import io.zeebe.broker.system.deployment.message.CreateWorkflowRequest;
-import io.zeebe.broker.system.deployment.message.CreateWorkflowResponse;
-import io.zeebe.broker.system.deployment.message.DeleteWorkflowMessage;
-import io.zeebe.broker.workflow.data.DeploymentEvent;
-import io.zeebe.broker.workflow.data.DeploymentState;
-import io.zeebe.broker.workflow.data.WorkflowEvent;
+import io.zeebe.broker.system.deployment.message.*;
+import io.zeebe.broker.workflow.data.*;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
-import io.zeebe.transport.ClientOutput;
-import io.zeebe.transport.ClientRequest;
-import io.zeebe.transport.ClientTransport;
-import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.SocketAddress;
-import io.zeebe.transport.TransportMessage;
+import io.zeebe.transport.*;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.collection.IntIterator;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.ScheduledTimer;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
+import org.agrona.DirectBuffer;
+import org.agrona.collections.IntArrayList;
+import org.slf4j.Logger;
 
 public class RemoteWorkflowsManager implements StreamProcessorLifecycleAware
 {
@@ -136,7 +120,7 @@ public class RemoteWorkflowsManager implements StreamProcessorLifecycleAware
             LOG.debug("Send create workflow request to '{}'. Deployment-Key: {}, Workflow-Key: {}",
                 addr, event.getDeploymentKey(), workflowKey);
 
-            final ActorFuture<ClientRequest> requestFuture = sendRequest(createRequest, addr);
+            final ActorFuture<ClientResponse> requestFuture = sendRequest(createRequest, addr);
             actor.runOnCompletion(requestFuture, this::onRequestResolved);
 
             return true;
@@ -209,13 +193,13 @@ public class RemoteWorkflowsManager implements StreamProcessorLifecycleAware
         }
     }
 
-    private ActorFuture<ClientRequest> sendRequest(final BufferWriter request, final SocketAddress addr)
+    private ActorFuture<ClientResponse> sendRequest(final BufferWriter request, final SocketAddress addr)
     {
         final RemoteAddress remoteAddress = managementClient.registerRemoteAddress(addr);
-        return output.sendRequestWithRetry(remoteAddress, request);
+        return output.sendRequest(remoteAddress, request);
     }
 
-    private void onRequestResolved(ClientRequest successfulRequest, Throwable throwable)
+    private void onRequestResolved(ClientResponse successfulRequest, Throwable throwable)
     {
         if (throwable != null)
         {
@@ -232,11 +216,11 @@ public class RemoteWorkflowsManager implements StreamProcessorLifecycleAware
         LOG.info("Create workflow request failed.");
     }
 
-    private void onRequestSuccessful(ClientRequest request)
+    private void onRequestSuccessful(ClientResponse request)
     {
         try
         {
-            final DirectBuffer responseBuffer = request.join();
+            final DirectBuffer responseBuffer = request.getResponseBuffer();
             createResponse.wrap(responseBuffer, 0, responseBuffer.capacity());
 
             final long workflowKey = createResponse.getWorkflowKey();

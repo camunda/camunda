@@ -234,12 +234,13 @@ public class ClusterManager extends Actor
         LOG.debug("Send invitation request to {} for partition {} in term {}", member, logStream.getPartitionId(), raft.getTerm());
 
         final RemoteAddress remoteAddress = context.getManagementClient().registerRemoteAddress(member);
-        final ClientRequest clientRequest = context.getManagementClient().getOutput().sendRequest(remoteAddress, invitationRequest);
+        final ActorFuture<ClientResponse> clientResponse = context.getManagementClient().getOutput().sendRequest(remoteAddress, invitationRequest);
 
-        actor.runOnCompletion(clientRequest, (request, throwable) ->
+        actor.runOnCompletion(clientResponse, (request, throwable) ->
         {
             if (throwable == null)
             {
+                request.close();
                 LOG.debug("Got invitation response from {} for partition id {}.", member, logStream.getPartitionId());
             }
             else

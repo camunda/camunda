@@ -29,10 +29,7 @@ import io.zeebe.client.task.impl.ControlMessageRequest;
 import io.zeebe.client.task.impl.ErrorResponseHandler;
 import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
-import io.zeebe.transport.ClientOutput;
-import io.zeebe.transport.ClientRequest;
-import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.RequestTimeoutException;
+import io.zeebe.transport.*;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.ActorTask;
 import io.zeebe.util.sched.Actor;
@@ -88,7 +85,7 @@ public class RequestManager extends Actor
     private <E> ActorFuture<E> executeAsync(final RequestResponseHandler requestHandler)
     {
         final Supplier<ActorFuture<RemoteAddress>> remoteProvider = determineRemoteProvider(requestHandler);
-        final ActorFuture<ClientRequest> responseFuture =
+        final ActorFuture<ClientResponse> responseFuture =
                 output.sendRequestWithRetry(remoteProvider, RequestManager::shouldRetryRequest, requestHandler, requestTimeout);
 
         return new ResponseFuture<>(responseFuture, requestHandler, requestTimeout);
@@ -284,7 +281,7 @@ public class RequestManager extends Actor
 
     protected static class ResponseFuture<E> implements ActorFuture<E>
     {
-        protected final ActorFuture<ClientRequest> transportFuture;
+        protected final ActorFuture<ClientResponse> transportFuture;
         protected final RequestResponseHandler responseHandler;
         protected final ErrorResponseHandler errorHandler = new ErrorResponseHandler();
         protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
@@ -293,7 +290,7 @@ public class RequestManager extends Actor
         protected E result = null;
         protected ExecutionException failure = null;
 
-        ResponseFuture(ActorFuture<ClientRequest> transportFuture,
+        ResponseFuture(ActorFuture<ClientResponse> transportFuture,
                 RequestResponseHandler responseHandler,
                 Duration requestTimeout)
         {
@@ -320,7 +317,6 @@ public class RequestManager extends Actor
             return transportFuture.isDone();
         }
 
-
         protected void ensureResponseAvailable(long timeout, TimeUnit unit)
         {
             if (result != null || failure != null)
@@ -328,44 +324,20 @@ public class RequestManager extends Actor
                 return;
             }
 
-            ClientRequest resolvedRequest = null;
-            final DirectBuffer responseContent;
-
-            try
+            try (ClientResponse response = transportFuture.get(timeout, unit))
             {
-                try
-                {
-                    resolvedRequest = transportFuture.get(timeout, unit);
-                    responseContent = resolvedRequest.get();
-                }
-                catch (ExecutionException e)
-                {
-                    if (e.getCause() != null && e.getCause() instanceof RequestTimeoutException)
-                    {
-                        failWith("Request timed out (" + requestTimeout + ")", e);
-                    }
-                    else
-                    {
-                        failWith("Could not complete request", e);
-                    }
-                    return;
-                }
-                catch (InterruptedException | TimeoutException e)
-                {
-                    failWith("Could not complete request", e);
-                    return;
-                }
+                final DirectBuffer responsBuffer = response.getResponseBuffer();
 
-                headerDecoder.wrap(responseContent, 0);
+                headerDecoder.wrap(responsBuffer, 0);
 
                 if (responseHandler.handlesResponse(headerDecoder))
                 {
-                    handleExpectedResponse(resolvedRequest, responseContent);
+                    handleExpectedResponse(response, responsBuffer);
                     return;
                 }
                 else if (errorHandler.handlesResponse(headerDecoder))
                 {
-                    handleErrorResponse(responseContent);
+                    handleErrorResponse(responsBuffer);
                     return;
                 }
                 else
@@ -374,12 +346,22 @@ public class RequestManager extends Actor
                     return;
                 }
             }
-            finally
+            catch (ExecutionException e)
             {
-                if (resolvedRequest != null)
+                if (e.getCause() != null && e.getCause() instanceof RequestTimeoutException)
                 {
-                    resolvedRequest.close();
+                    failWith("Request timed out (" + requestTimeout + ")", e);
                 }
+                else
+                {
+                    failWith("Could not complete request", e);
+                }
+                return;
+            }
+            catch (InterruptedException | TimeoutException e)
+            {
+                failWith("Could not complete request", e);
+                return;
             }
         }
 
@@ -414,18 +396,18 @@ public class RequestManager extends Actor
         }
 
         @SuppressWarnings("unchecked")
-        private void handleExpectedResponse(final ClientRequest resolvedRequest, final DirectBuffer responseContent)
+        private void handleExpectedResponse(final ClientResponse response, final DirectBuffer responseBuffer)
         {
             try
             {
-                this.result = (E) responseHandler.getResult(responseContent,
+                this.result = (E) responseHandler.getResult(responseBuffer,
                         headerDecoder.encodedLength(),
                         headerDecoder.blockLength(),
                         headerDecoder.version());
 
                 if (this.result instanceof ReceiverAwareResponseResult)
                 {
-                    ((ReceiverAwareResponseResult) this.result).setReceiver(resolvedRequest.getRemoteAddress());
+                    ((ReceiverAwareResponseResult) this.result).setReceiver(response.getRemoteAddress());
                 }
 
                 return;

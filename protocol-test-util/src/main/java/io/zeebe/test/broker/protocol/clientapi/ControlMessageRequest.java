@@ -24,10 +24,9 @@ import io.zeebe.protocol.clientapi.ControlMessageRequestEncoder;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
-import io.zeebe.transport.ClientOutput;
-import io.zeebe.transport.ClientRequest;
-import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.*;
 import io.zeebe.util.buffer.BufferWriter;
+import io.zeebe.util.sched.future.ActorFuture;
 
 public class ControlMessageRequest implements BufferWriter
 {
@@ -41,7 +40,7 @@ public class ControlMessageRequest implements BufferWriter
     protected int partitionId = ControlMessageRequestEncoder.partitionIdNullValue();
     protected byte[] encodedData = new byte[0];
 
-    protected ClientRequest request;
+    protected ActorFuture<ClientResponse> responseFuture;
 
     public ControlMessageRequest(ClientOutput output, RemoteAddress target, MsgPackHelper msgPackHelper)
     {
@@ -70,26 +69,31 @@ public class ControlMessageRequest implements BufferWriter
 
     public ControlMessageRequest send()
     {
-        request = output.sendRequest(target, this);
+        responseFuture = output.sendRequest(target, this);
         return this;
     }
 
     public ControlMessageResponse await()
     {
-        final DirectBuffer responseBuffer = request.join();
+        try (ClientResponse response = responseFuture.join())
+        {
+            final DirectBuffer responseBuffer = response.getResponseBuffer();
 
-        final ControlMessageResponse response = new ControlMessageResponse(msgPackHelper);
-        response.wrap(responseBuffer, 0, responseBuffer.capacity());
-        return response;
+            final ControlMessageResponse result = new ControlMessageResponse(msgPackHelper);
+            result.wrap(responseBuffer, 0, responseBuffer.capacity());
+            return result;
+        }
     }
 
     public ErrorResponse awaitError()
     {
-        final DirectBuffer responseBuffer = request.join();
-
-        final ErrorResponse errorResponse = new ErrorResponse(msgPackHelper);
-        errorResponse.wrap(responseBuffer, 0, responseBuffer.capacity());
-        return errorResponse;
+        try (ClientResponse response = responseFuture.join())
+        {
+            final ErrorResponse errorResponse = new ErrorResponse(msgPackHelper);
+            final DirectBuffer responseBuffer = response.getResponseBuffer();
+            errorResponse.wrap(responseBuffer, 0, responseBuffer.capacity());
+            return errorResponse;
+        }
     }
 
     @Override

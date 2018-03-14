@@ -18,26 +18,20 @@ package io.zeebe.client.clustering.impl;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.agrona.DirectBuffer;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.zeebe.client.clustering.Topology;
 import io.zeebe.client.cmd.BrokerErrorException;
 import io.zeebe.client.impl.ControlMessageRequestHandler;
 import io.zeebe.protocol.clientapi.ErrorResponseDecoder;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
-import io.zeebe.transport.ClientOutput;
-import io.zeebe.transport.ClientRequest;
-import io.zeebe.transport.ClientTransport;
-import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.*;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
+import org.agrona.DirectBuffer;
 
 public class ClientTopologyManager extends Actor
 {
@@ -137,20 +131,12 @@ public class ClientTopologyManager extends Actor
     private void refreshTopology()
     {
         final RemoteAddress endpoint = topology.get().getRandomBroker();
-        final ActorFuture<ClientRequest> request = output.sendRequestWithRetry(endpoint, requestWriter, Duration.ofSeconds(1));
+        final ActorFuture<ClientResponse> responseFuture = output.sendRequest(endpoint, requestWriter, Duration.ofSeconds(1));
 
-        if (request != null)
-        {
-            refreshAttempt++;
-            lastRefreshTime = ActorClock.currentTimeMillis();
-            actor.runOnCompletion(request, this::handleResponse);
-            actor.runDelayed(MAX_REFRESH_INTERVAL_MILLIS, scheduleIdleRefresh());
-        }
-        else
-        {
-            actor.run(this::refreshTopology);
-            actor.yield();
-        }
+        refreshAttempt++;
+        lastRefreshTime = ActorClock.currentTimeMillis();
+        actor.runOnCompletion(responseFuture, this::handleResponse);
+        actor.runDelayed(MAX_REFRESH_INTERVAL_MILLIS, scheduleIdleRefresh());
     }
 
     /**
@@ -170,22 +156,18 @@ public class ClientTopologyManager extends Actor
         };
     }
 
-    private void handleResponse(ClientRequest result, Throwable t)
+    private void handleResponse(ClientResponse response, Throwable t)
     {
         if (t == null)
         {
             try
             {
-                final TopologyResponse topologyResponse = decodeTopology(result.get());
+                final TopologyResponse topologyResponse = decodeTopology(response.getResponseBuffer());
                 onNewTopology(topologyResponse);
-            }
-            catch (InterruptedException | ExecutionException e)
-            {
-                failRefreshFutures(e);
             }
             finally
             {
-                result.close();
+                response.close();
             }
         }
         else

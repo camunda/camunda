@@ -65,9 +65,7 @@ public class ZeebeObjectMapperTest
     @Test
     public void writeValueAsStringFails()
     {
-        assertThatThrownBy(() -> {
-            objectMapper.writeValueAsString("some data");
-        }).isInstanceOf(UnsupportedOperationException.class)
-                  .hasMessageContaining("does not support 'writeValueAsString'. Use 'writeValueAsBytes'");
+        assertThatThrownBy(() -> objectMapper.writeValueAsString("some data")).isInstanceOf(UnsupportedOperationException.class)
+            .hasMessageContaining("does not support 'writeValueAsString'. Use 'writeValueAsBytes'");
     }
 }

@@ -22,10 +22,7 @@ import io.zeebe.broker.clustering.management.memberList.MemberListService;
 import io.zeebe.broker.clustering.management.memberList.MemberRaftComposite;
 import io.zeebe.broker.clustering.management.message.CreatePartitionRequest;
 import io.zeebe.broker.clustering.member.Member;
-import io.zeebe.transport.ClientRequest;
-import io.zeebe.transport.ClientTransport;
-import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.SocketAddress;
+import io.zeebe.transport.*;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.collection.IntIterator;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -36,7 +33,6 @@ import java.util.Iterator;
 
 public class PartitionManagerImpl implements PartitionManager
 {
-
     private final MemberListService memberListService;
     private final CreatePartitionRequest messageWriter = new CreatePartitionRequest();
     protected final ClientTransport transport;
@@ -50,7 +46,7 @@ public class PartitionManagerImpl implements PartitionManager
     }
 
     @Override
-    public ActorFuture<ClientRequest> createPartitionRemote(SocketAddress remote, DirectBuffer topicName, int partitionId)
+    public ActorFuture<ClientResponse> createPartitionRemote(SocketAddress remote, DirectBuffer topicName, int partitionId)
     {
         final DirectBuffer nameBuffer = BufferUtil.cloneBuffer(topicName);
 
@@ -62,7 +58,7 @@ public class PartitionManagerImpl implements PartitionManager
 
         Loggers.SYSTEM_LOGGER.info("Creating partition {}/{} at {}", BufferUtil.bufferAsString(topicName), partitionId, remote);
 
-        return transport.getOutput().sendRequestWithRetry(remoteAddress, messageWriter, Duration.ofSeconds(5));
+        return transport.getOutput().sendRequest(remoteAddress, messageWriter, Duration.ofSeconds(5));
     }
 
     /*

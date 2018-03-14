@@ -20,17 +20,13 @@ import static io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder.partition
 
 import java.util.Map;
 
+import io.zeebe.protocol.clientapi.*;
+import io.zeebe.test.broker.protocol.MsgPackHelper;
+import io.zeebe.transport.*;
+import io.zeebe.util.buffer.BufferWriter;
+import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-
-import io.zeebe.protocol.clientapi.EventType;
-import io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder;
-import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
-import io.zeebe.test.broker.protocol.MsgPackHelper;
-import io.zeebe.transport.ClientOutput;
-import io.zeebe.transport.ClientRequest;
-import io.zeebe.transport.RemoteAddress;
-import io.zeebe.util.buffer.BufferWriter;
 
 public class ExecuteCommandRequest implements BufferWriter
 {
@@ -46,8 +42,7 @@ public class ExecuteCommandRequest implements BufferWriter
     protected EventType eventType = EventType.NULL_VAL;
     protected byte[] encodedCmd;
 
-    protected ClientRequest request;
-
+    protected ActorFuture<ClientResponse> responseFuture;
 
     public ExecuteCommandRequest(ClientOutput output, RemoteAddress target, final MsgPackHelper msgPackHelper)
     {
@@ -82,28 +77,30 @@ public class ExecuteCommandRequest implements BufferWriter
 
     public ExecuteCommandRequest send()
     {
-        request = output.sendRequest(target, this);
+        responseFuture = output.sendRequest(target, this);
         return this;
     }
 
     public ExecuteCommandResponse await()
     {
-        final DirectBuffer responseBuffer = request.join();
-        request.close();
-
-        final ExecuteCommandResponse response = new ExecuteCommandResponse(msgPackHelper);
-        response.wrap(responseBuffer, 0, responseBuffer.capacity());
-        return response;
+        try (ClientResponse response = responseFuture.join())
+        {
+            final DirectBuffer responseBuffer = response.getResponseBuffer();
+            final ExecuteCommandResponse result = new ExecuteCommandResponse(msgPackHelper);
+            result.wrap(responseBuffer, 0, responseBuffer.capacity());
+            return result;
+        }
     }
 
     public ErrorResponse awaitError()
     {
-        final DirectBuffer responseBuffer = request.join();
-        request.close();
-
-        final ErrorResponse errorResponse = new ErrorResponse(msgPackHelper);
-        errorResponse.wrap(responseBuffer, 0, responseBuffer.capacity());
-        return errorResponse;
+        try (ClientResponse response = responseFuture.join())
+        {
+            final DirectBuffer responseBuffer = response.getResponseBuffer();
+            final ErrorResponse result = new ErrorResponse(msgPackHelper);
+            result.wrap(responseBuffer, 0, responseBuffer.capacity());
+            return result;
+        }
     }
 
     @Override

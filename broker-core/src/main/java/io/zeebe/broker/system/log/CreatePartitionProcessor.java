@@ -23,8 +23,7 @@ import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.handler.TopologyBroker;
 import io.zeebe.broker.clustering.management.PartitionManager;
 import io.zeebe.broker.logstreams.processor.*;
-import io.zeebe.transport.ClientRequest;
-import io.zeebe.transport.SocketAddress;
+import io.zeebe.transport.*;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -76,7 +75,7 @@ public class CreatePartitionProcessor implements TypedEventProcessor<PartitionEv
         creatorAddress.host(creatorHost, 0, creatorHost.capacity());
         creatorAddress.port(creator.getPort());
 
-        final ActorFuture<ClientRequest> partitionRemote =
+        final ActorFuture<ClientResponse> partitionRemote =
             partitionManager.createPartitionRemote(creatorAddress, value.getTopicName(), value.getId());
 
 
