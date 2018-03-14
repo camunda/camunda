@@ -14,6 +14,11 @@ public class ReportEvaluationException extends OptimizeException {
     this.reportDefinition = reportDefinition;
   }
 
+  public ReportEvaluationException(ReportDefinitionDto reportDefinition, OptimizeValidationException e) {
+    super(e.getMessage(), e);
+    this.reportDefinition = reportDefinition;
+  }
+
   public ReportDefinitionDto getReportDefinition() {
     return reportDefinition;
   }

@@ -264,6 +264,31 @@ public class ReportRestServiceIT {
   }
 
   @Test
+  public void evaluateReportWithoutViewById() {
+    //given
+    String token = embeddedOptimizeRule.getAuthenticationToken();
+    ReportDataDto countFlowNodeFrequencyGroupByFlowNoneNumber = ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNoneNumber(RANDOM_KEY, RANDOM_VERSION);
+    countFlowNodeFrequencyGroupByFlowNoneNumber.setView(null);
+    String id = createAndStoreDefaultReportDefinition(
+      countFlowNodeFrequencyGroupByFlowNoneNumber
+    );
+
+    // then
+    Response response = embeddedOptimizeRule.target("report/" + id + "/evaluate")
+      .request()
+      .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+      .get();
+
+    // then the status code is okay
+    assertThat(response.getStatus(), is(500));
+    String errorMessage = response.readEntity(String.class);
+    assertThat(errorMessage.contains("reportDefinition"), is(true));
+    assertThat(errorMessage.contains("name"), is(true));
+    assertThat(errorMessage.contains("id"), is(true));
+    assertThat(errorMessage.contains("data"), is(true));
+  }
+
+  @Test
   public void evaluateUnsavedReportWithoutAuthorization() {
     // when
     Response response =

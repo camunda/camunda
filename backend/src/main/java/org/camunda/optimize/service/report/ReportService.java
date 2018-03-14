@@ -11,6 +11,7 @@ import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.report.ReportEvaluator;
 import org.camunda.optimize.service.es.writer.ReportWriter;
 import org.camunda.optimize.service.exceptions.OptimizeException;
+import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.exceptions.ReportEvaluationException;
 import org.camunda.optimize.service.security.SharingService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
@@ -79,6 +80,8 @@ public class ReportService {
     try {
       result = reportEvaluator.evaluate(reportDefinition);
     } catch (OptimizeException e) {
+      throw new ReportEvaluationException(reportDefinition, e);
+    } catch (OptimizeValidationException e) {
       throw new ReportEvaluationException(reportDefinition, e);
     }
     return result;
