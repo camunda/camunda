@@ -37,7 +37,6 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 
-@Ignore("https://github.com/zeebe-io/zeebe/issues/747")
 public class TopologyRequestTest
 {
 

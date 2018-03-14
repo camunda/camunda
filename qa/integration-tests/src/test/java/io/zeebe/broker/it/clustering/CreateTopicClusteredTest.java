@@ -39,7 +39,6 @@ import io.zeebe.client.topic.Topics;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.SocketAddress;
 
-@Ignore("https://github.com/zeebe-io/zeebe/issues/747")
 public class CreateTopicClusteredTest
 {
     private static final int PARTITION_COUNT = 5;

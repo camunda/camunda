@@ -30,7 +30,6 @@ import org.junit.rules.RuleChain;
 import static org.assertj.core.api.Assertions.assertThat;
 
 
-@Ignore("https://github.com/zeebe-io/zeebe/issues/747")
 public class TaskEventClusteredTest
 {
     public ClientRule clientRule = new ClientRule(false);

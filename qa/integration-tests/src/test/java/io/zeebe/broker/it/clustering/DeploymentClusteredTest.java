@@ -34,7 +34,6 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.test.util.AutoCloseableRule;
 
-@Ignore("https://github.com/zeebe-io/zeebe/issues/747")
 public class DeploymentClusteredTest
 {
     private static final int PARTITION_COUNT = 5;
