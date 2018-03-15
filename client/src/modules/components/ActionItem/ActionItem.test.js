@@ -29,3 +29,9 @@ it('should call the onClick handler', () => {
 
   expect(spy).toHaveBeenCalled();
 });
+
+it('should pass the disabled prop to the child-button', () => {
+  const node = mount(<ActionItem disabled />);
+
+  expect(node.find('button')).toBeDisabled();
+});

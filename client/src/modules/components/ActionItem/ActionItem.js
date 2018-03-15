@@ -7,7 +7,7 @@ import './ActionItem.css';
 export default function ActionItem(props) {
   return (
     <React.Fragment>
-      <Button onClick={props.onClick} className="ActionItem__button">
+      <Button disabled={props.disabled} onClick={props.onClick} className="ActionItem__button">
         ×
       </Button>
       <span className="ActionItem__content">{props.children}</span>

@@ -13,7 +13,11 @@ jest.mock('../Reports', () => {
 
 jest.mock('components', () => {
   return {
-    ActionItem: props => <button {...props}>{props.children}</button>,
+    ActionItem: props => (
+      <button id="actionItem" {...props}>
+        {props.children}
+      </button>
+    ),
     Popover: ({title, children}) => (
       <div>
         {title} {children}
@@ -34,6 +38,13 @@ const data = {
   processDefinitionVersion: 'aVersion',
   filter: null,
   xml: 'aFooXml'
+};
+
+const emptyData = {
+  processDefinitionKey: '',
+  processDefinitionVersion: '',
+  filter: null,
+  xml: null
 };
 
 extractProcessDefinitionName.mockReturnValue('foo');
@@ -99,4 +110,15 @@ it('should change process definition name if process definition xml is updated',
   await node.setProps({xml: 'barXml'});
 
   expect(node.find('.ControlPanel__popover')).toIncludeText('aName');
+});
+
+it('should disable gateway and EndEvent elements if no ProcDef selected', async () => {
+  const node = await mount(<ControlPanel hoveredControl="gateway" {...emptyData} />);
+
+  expect(node.find('#actionItem').first()).toBeDisabled();
+  expect(node.find('#actionItem').at(1)).toBeDisabled();
+
+  expect(node.find('.ControlPanel__config').at(1)).not.toHaveClassName(
+    'ControlPanel__config--hover'
+  );
 });

@@ -56,8 +56,13 @@ export default class ControlPanel extends React.Component {
     }
   };
 
+  procDefIsNotSelected = () => {
+    return !this.props.xml;
+  };
+
   render() {
     const {hoveredControl, hoveredNode} = this.props;
+    const disabled = this.procDefIsNotSelected();
 
     return (
       <div className="ControlPanel">
@@ -85,7 +90,8 @@ export default class ControlPanel extends React.Component {
               <div
                 className={
                   'ControlPanel__config' +
-                  (hoveredControl === type || (hoveredNode && hoveredNode.$instanceOf(bpmnKey))
+                  (!disabled &&
+                  (hoveredControl === type || (hoveredNode && hoveredNode.$instanceOf(bpmnKey)))
                     ? ' ControlPanel__config--hover'
                     : '')
                 }
@@ -93,7 +99,10 @@ export default class ControlPanel extends React.Component {
                 onMouseOver={this.hover(type)}
                 onMouseOut={this.hover(null)}
               >
-                <ActionItem onClick={() => this.props.updateSelection(type, null)}>
+                <ActionItem
+                  disabled={disabled}
+                  onClick={() => this.props.updateSelection(type, null)}
+                >
                   {this.props[type]
                     ? this.props[type].name || this.props[type].id
                     : 'Please Select ' + label}
