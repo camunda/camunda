@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionUpdateDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.IdGenerator;
@@ -73,13 +74,13 @@ public class DashboardWriter {
     return idDto;
   }
 
-  public void updateDashboard(DashboardDefinitionDto dashboard) throws OptimizeException, JsonProcessingException {
-    logger.debug("Updating dashboard with id [{}] in Elasticsearch", dashboard.getId());
+  public void updateDashboard(DashboardDefinitionUpdateDto dashboard, String id) throws OptimizeException, JsonProcessingException {
+    logger.debug("Updating dashboard with id [{}] in Elasticsearch", id);
     UpdateResponse updateResponse = esclient
       .prepareUpdate(
         configurationService.getOptimizeIndex(configurationService.getDashboardType()),
         configurationService.getDashboardType(),
-        dashboard.getId()
+        id
       )
       .setDoc(objectMapper.writeValueAsString(dashboard), XContentType.JSON)
       .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
@@ -87,7 +88,7 @@ public class DashboardWriter {
 
     if (updateResponse.getShardInfo().getFailed() > 0) {
       logger.error("Was not able to store dashboard with id [{}] and name [{}]. Exception: {} \n Stacktrace: {}",
-        dashboard.getId(),
+        id,
         dashboard.getName());
       throw new OptimizeException("Was not able to store dashboard!");
     }

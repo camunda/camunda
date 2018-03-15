@@ -35,16 +35,15 @@ public class DashboardService {
   }
 
   public void updateDashboard(DashboardDefinitionDto updatedDashboard, String userId) throws OptimizeException, JsonProcessingException {
-    DashboardDefinitionDto updateDto = new DashboardDefinitionDto();
-    updateDto.setId(updatedDashboard.getId());
+    DashboardDefinitionUpdateDto updateDto = new DashboardDefinitionUpdateDto();
     updateDto.setLastModified(LocalDateUtil.getCurrentDateTime());
     updateDto.setOwner(updatedDashboard.getOwner());
     updateDto.setName(updatedDashboard.getName());
     updateDto.setReports(updatedDashboard.getReports());
     updateDto.setLastModifier(userId);
     updateDto.setLastModified(LocalDateUtil.getCurrentDateTime());
-    dashboardWriter.updateDashboard(updateDto);
-    sharingService.adjustDashboardShares(updateDto);
+    dashboardWriter.updateDashboard(updateDto, updatedDashboard.getId());
+    sharingService.adjustDashboardShares(updatedDashboard);
   }
 
   public List<DashboardDefinitionDto> getDashboardDefinitions() throws IOException {
