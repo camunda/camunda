@@ -15,20 +15,16 @@
  */
 package io.zeebe.gossip.dissemination;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.zeebe.clustering.gossip.MembershipEventType;
 import io.zeebe.gossip.GossipConfiguration;
-import io.zeebe.gossip.membership.GossipTerm;
-import io.zeebe.gossip.membership.MembershipList;
-import io.zeebe.gossip.membership.MembershipStatus;
+import io.zeebe.gossip.membership.*;
 import io.zeebe.gossip.protocol.MembershipEvent;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.*;
 
 /**
  *
@@ -75,10 +71,9 @@ public class MembershipEventUpdaterTest
             @Override
             protected void onActorStarting()
             {
-                final long now = System.currentTimeMillis();
-                final GossipTerm oldTerm = new GossipTerm();
-                oldTerm.epoch(now - 1000);
-                final GossipTerm newTerm = new GossipTerm();
+                final GossipTerm oldTerm = new GossipTerm().epoch(1);
+                final GossipTerm newTerm = new GossipTerm().epoch(2);
+
                 membershipList.newMember(memberAddress, newTerm);
 
                 // when

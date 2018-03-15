@@ -138,6 +138,7 @@ public class GossipRule extends ExternalResource
                     protected void onActorStarting()
                     {
                         gossipActor = actor;
+                        super.onActorStarting();
                     }
 
                     @Override

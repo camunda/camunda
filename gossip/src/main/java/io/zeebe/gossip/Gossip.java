@@ -90,7 +90,7 @@ public class Gossip extends Actor implements GossipController, GossipEventPublis
     }
 
     @Override
-    protected void onActorStarted()
+    protected void onActorStarting()
     {
         final ActorFuture<ServerInputSubscription> openSubscriptionFuture =
             serverTransport.openSubscription("gossip", null, requestHandler);

@@ -15,8 +15,6 @@
  */
 package io.zeebe.gossip.membership;
 
-import io.zeebe.util.sched.clock.ActorClock;
-
 public class GossipTerm
 {
     private long epoch;
@@ -24,7 +22,7 @@ public class GossipTerm
 
     public GossipTerm()
     {
-        epoch = ActorClock.currentTimeMillis();
+        epoch = 0;
         heartbeat = 0;
     }
 

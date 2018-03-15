@@ -21,14 +21,15 @@ import java.util.List;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.collection.Tuple;
+import io.zeebe.util.sched.clock.ActorClock;
 import org.agrona.DirectBuffer;
 
 public class Member
 {
     private final String id;
     private final SocketAddress address;
+    private final GossipTerm term;
 
-    private final GossipTerm term = new GossipTerm();
     private MembershipStatus status = MembershipStatus.ALIVE;
 
     private final List<Tuple<DirectBuffer, GossipTerm>> gossipTermByEventType = new ArrayList<>();
@@ -37,6 +38,10 @@ public class Member
     {
         this.address = new SocketAddress(address);
         this.id = address.toString();
+
+        this.term = new GossipTerm()
+                .epoch(ActorClock.currentTimeMillis())
+                .heartbeat(0);
     }
 
     public SocketAddress getAddress()
