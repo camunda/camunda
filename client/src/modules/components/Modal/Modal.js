@@ -30,9 +30,9 @@ export default class Modal extends React.Component {
     if (this.container) {
       const windowHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
       const margin = 30; // already set top  (15 px) + bottom  (15 px) margin
-      let height = (windowHeight - this.container.clientHeight) / 2 - margin;
-      height = Math.max(height, 0);
-      this.container.style.marginTop = height + 'px';
+      let topMargin = (windowHeight - this.container.clientHeight) / 2 - margin;
+      topMargin = Math.max(topMargin, 0);
+      this.container.style.marginTop = topMargin + 'px';
       this.container.style.marginLeft = -this.container.clientWidth / 2 + 'px';
     }
   };
