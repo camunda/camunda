@@ -69,7 +69,7 @@ public class ReportService {
     return reports;
   }
 
-  public ReportDefinitionDto getReport(String reportId) throws OptimizeException {
+  public ReportDefinitionDto getReport(String reportId) {
     return reportReader.getReport(reportId);
   }
 

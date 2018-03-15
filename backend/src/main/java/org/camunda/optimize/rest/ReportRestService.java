@@ -92,7 +92,7 @@ public class ReportRestService {
   @GET
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
-  public ReportDefinitionDto getReport(@PathParam("id") String reportId) throws IOException, OptimizeException {
+  public ReportDefinitionDto getReport(@PathParam("id") String reportId) {
     return reportService.getReport(reportId);
   }
 

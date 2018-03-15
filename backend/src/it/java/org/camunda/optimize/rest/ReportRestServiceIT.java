@@ -24,10 +24,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 public class ReportRestServiceIT {
 
-  public static final String BEARER = "Bearer ";
-  public static final String RANDOM_KEY = "someRandomKey";
-  public static final String RANDOM_VERSION = "someRandomVersion";
-  public static final String RANDOM_STRING = "something";
+  private static final String BEARER = "Bearer ";
+  private static final String RANDOM_KEY = "someRandomKey";
+  private static final String RANDOM_VERSION = "someRandomVersion";
+  private static final String RANDOM_STRING = "something";
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
   @Rule
@@ -178,7 +178,7 @@ public class ReportRestServiceIT {
 
     // then the status code is okay
     assertThat(response.getStatus(), is(500));
-    assertThat(response.readEntity(String.class).contains("Report does not exist!"), is(true));
+    assertThat(response.readEntity(String.class).contains("Report does not exist."), is(true));
   }
 
   @Test

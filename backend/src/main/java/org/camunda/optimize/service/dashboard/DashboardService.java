@@ -42,7 +42,7 @@ public class DashboardService {
     return dashboardReader.getAllDashboards();
   }
 
-  public DashboardDefinitionDto getDashboardDefinition(String dashboardId) throws IOException, OptimizeException {
+  public DashboardDefinitionDto getDashboardDefinition(String dashboardId) {
     return dashboardReader.getDashboard(dashboardId);
   }
 

@@ -3,22 +3,14 @@ package org.camunda.optimize.service.sharing;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
-import org.camunda.optimize.dto.optimize.query.sharing.EvaluatedDashboardShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
-import org.camunda.optimize.dto.optimize.query.sharing.ReportShareLocationDto;
-import org.camunda.optimize.dto.optimize.query.sharing.SharedResourceType;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
-
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -43,10 +35,8 @@ public class SharingServiceIT extends AbstractSharingIT {
   @Test
   public void dashboardWithoutReportsShare() {
     //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-
-    String dashboardId = addEmptyDashboardToOptimize(token);
-    String dashboardShareId = addShareForDashboard(token, dashboardId);
+    String dashboardId = addEmptyDashboardToOptimize();
+    String dashboardShareId = addShareForDashboard(dashboardId);
 
     // when
     Response response =
@@ -56,21 +46,19 @@ public class SharingServiceIT extends AbstractSharingIT {
 
     //then
     assertThat(response.getStatus(), is(200));
-    EvaluatedDashboardShareDto dashboardShareDto = response.readEntity(EvaluatedDashboardShareDto.class);
-    List<ReportShareLocationDto> reportShares = dashboardShareDto.getDashboard().getReportShares();
-    assertThat(reportShares.size(), is(0));
+    DashboardDefinitionDto dashboardShareDto = response.readEntity(DashboardDefinitionDto.class);
+    List<ReportLocationDto> reportLocations = dashboardShareDto.getReports();
+    assertThat(reportLocations.size(), is(0));
   }
 
   @Test
   public void dashboardsWithDuplicateReportsAreShared() throws Exception {
     //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-
     String reportId = createReport();
-    String dashboardId = addEmptyDashboardToOptimize(token);
+    String dashboardId = addEmptyDashboardToOptimize();
     addReportToDashboard(dashboardId, reportId, reportId);
 
-    String dashboardShareId = addShareForDashboard(token, dashboardId);
+    String dashboardShareId = addShareForDashboard(dashboardId);
 
     // when
     Response response =
@@ -79,31 +67,28 @@ public class SharingServiceIT extends AbstractSharingIT {
         .get();
 
     //then
-    EvaluatedDashboardShareDto dashboardShareDto = response.readEntity(EvaluatedDashboardShareDto.class);
-    List<ReportShareLocationDto> reportShares = dashboardShareDto.getDashboard().getReportShares();
-    assertThat(reportShares.size(), is(2));
-    assertThat(reportShares.get(0).getShareId(), is(not(reportShares.get(1).getShareId())));
-    assertThat(reportShares.get(0).getPosition().getX(), is(not(reportShares.get(1).getPosition().getX())));
+    DashboardDefinitionDto dashboardShareDto = response.readEntity(DashboardDefinitionDto.class);
+    List<ReportLocationDto> reportLocation = dashboardShareDto.getReports();
+    assertThat(reportLocation.size(), is(2));
+    assertThat(reportLocation.get(0).getPosition().getX(), is(not(reportLocation.get(1).getPosition().getX())));
   }
 
   @Test
   public void individualReportShareIsNotAffectedByDashboard() throws Exception {
     //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-
     String reportId = createReport();
     String reportId2 = createReport();
-    String dashboardId = addEmptyDashboardToOptimize(token);
+    String dashboardId = addEmptyDashboardToOptimize();
     addReportToDashboard(dashboardId, reportId, reportId2);
-    String dashboardShareId = addShareForDashboard(token, dashboardId);
+    String dashboardShareId = addShareForDashboard(dashboardId);
 
-    String reportShareId = addShareForReport(token, reportId2);
+    String reportShareId = addShareForReport(reportId2);
 
     // when
     Response response =
       embeddedOptimizeRule.target(SHARE + "/" + DASHBOARD + "/" + dashboardShareId)
         .request()
-        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .delete();
     assertThat(response.getStatus(), is(204));
 
@@ -113,37 +98,126 @@ public class SharingServiceIT extends AbstractSharingIT {
         .get();
     HashMap evaluatedReportAsMap = response.readEntity(HashMap.class);
 
-    assertReportData(reportId2, reportShareId, evaluatedReportAsMap);
+    // then
+    assertReportData(reportId2, evaluatedReportAsMap);
+  }
+
+  @Test
+  public void canEvaluateEveryReportOfSharedDashboard() throws Exception {
+    //given
+    String reportId = createReport();
+    String reportId2 = createReport();
+    String dashboardId = addEmptyDashboardToOptimize();
+    addReportToDashboard(dashboardId, reportId, reportId2);
+    String dashboardShareId = addShareForDashboard(dashboardId);
+
+    // when
+    Response response =
+      embeddedOptimizeRule.target(SHARE + "/" + DASHBOARD + "/" + dashboardShareId)
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
+        .get();
+    assertThat(response.getStatus(), is(204));
+
+    // then
+    response =
+      embeddedOptimizeRule.target(getSharedDashboardReportEvaluationPath(dashboardShareId, reportId))
+        .request()
+        .get();
+    assertThat(response.getStatus(), is(200));
+    HashMap evaluatedReportAsMap = response.readEntity(HashMap.class);
+    assertReportData(reportId, evaluatedReportAsMap);
+
+    response =
+      embeddedOptimizeRule.target(getSharedDashboardReportEvaluationPath(dashboardShareId, reportId2))
+        .request()
+        .get();
+
+    assertThat(response.getStatus(), is(200));
+    evaluatedReportAsMap = response.readEntity(HashMap.class);
+    assertReportData(reportId2, evaluatedReportAsMap);
+  }
+
+  @Test
+  public void sharedDashboardReportsCannotBeEvaluateViaSharedReport() throws Exception {
+    //given
+    String reportId = createReport();
+    String dashboardId = addEmptyDashboardToOptimize();
+    addReportToDashboard(dashboardId, reportId);
+
+    // when
+    addShareForDashboard(dashboardId);
+
+    // then
+    Response response =
+      embeddedOptimizeRule.target(getSharedReportEvaluationPath(reportId))
+        .request()
+        .get();
+    assertThat(response.getStatus(), is(500));
+  }
+
+  @Test
+  public void evaluateUnknownReportOfSharedDashboardThrowsError() throws Exception {
+    //given
+    String reportId = createReport();
+    String dashboardId = addEmptyDashboardToOptimize();
+    addReportToDashboard(dashboardId, reportId);
+
+    // when
+    String dashboardShareId = addShareForDashboard(dashboardId);
+
+    // then
+    Response response =
+      embeddedOptimizeRule.target(getSharedDashboardReportEvaluationPath(dashboardShareId, FAKE_REPORT_ID))
+        .request()
+        .get();
+    assertThat(response.getStatus(), is(500));
+  }
+
+  @Test
+  public void evaluateUnknownSharedDashboardThrowsError() throws Exception {
+    //given
+    String reportId = createReport();
+    String dashboardId = addEmptyDashboardToOptimize();
+    addReportToDashboard(dashboardId, reportId);
+
+    // when
+    addShareForDashboard(dashboardId);
+
+    // then
+    Response response =
+      embeddedOptimizeRule.target(getSharedDashboardReportEvaluationPath("fakeDashboardShareId", reportId))
+        .request()
+        .get();
+    assertThat(response.getStatus(), is(500));
   }
 
   @Test
   public void reportSharesOfDashboardsAreIndependent() throws Exception {
     //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-
     String reportId = createReport();
     String reportId2 = createReport();
-    String dashboardId = addEmptyDashboardToOptimize(token);
+    String dashboardId = addEmptyDashboardToOptimize();
     addReportToDashboard(dashboardId, reportId, reportId2);
-    String dashboardShareId = addShareForDashboard(token, dashboardId);
+    String dashboardShareId = addShareForDashboard(dashboardId);
 
-    String dashboardId2 = addEmptyDashboardToOptimize(token);
+    String dashboardId2 = addEmptyDashboardToOptimize();
     assertThat(dashboardId, is(not(dashboardId2)));
     addReportToDashboard(dashboardId2, reportId, reportId2);
-    String dashboardShareId2 = addShareForDashboard(token, dashboardId2);
+    String dashboardShareId2 = addShareForDashboard(dashboardId2);
 
     // when
     Response response =
       embeddedOptimizeRule.target(getSharedDashboardEvaluationPath(dashboardShareId2))
         .request()
         .get();
-    EvaluatedDashboardShareDto dashboardShareDto = response.readEntity(EvaluatedDashboardShareDto.class);
-    assertThat(dashboardShareDto.getDashboard().getReportShares().size(), is(2));
+    DashboardDefinitionDto dashboardShareDto = response.readEntity(DashboardDefinitionDto.class);
+    assertThat(dashboardShareDto.getReports().size(), is(2));
 
     response =
       embeddedOptimizeRule.target(SHARE + "/" + DASHBOARD + "/" + dashboardShareId)
         .request()
-        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .delete();
     assertThat(response.getStatus(), is(204));
 
@@ -159,19 +233,16 @@ public class SharingServiceIT extends AbstractSharingIT {
         embeddedOptimizeRule.target(getSharedDashboardEvaluationPath(dashboardShareId2))
             .request()
             .get();
-    dashboardShareDto = response.readEntity(EvaluatedDashboardShareDto.class);
-    assertThat(dashboardShareDto.getDashboard().getReportShares().size(), is(2));
+    dashboardShareDto = response.readEntity(DashboardDefinitionDto.class);
+    assertThat(dashboardShareDto.getReports().size(), is(2));
   }
-
 
   @Test
   public void removingReportFromDashboardRemovesRespectiveShare() throws Exception {
     //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-
     String reportId = createReport();
-    String dashboardWithReport = createDashboardWithReport(token, reportId);
-    String dashboardShareId = addShareForDashboard(token, dashboardWithReport);
+    String dashboardWithReport = createDashboardWithReport(reportId);
+    String dashboardShareId = addShareForDashboard(dashboardWithReport);
 
     //when
     DashboardDefinitionDto fullBoard = new DashboardDefinitionDto();
@@ -183,17 +254,15 @@ public class SharingServiceIT extends AbstractSharingIT {
       embeddedOptimizeRule.target(getSharedDashboardEvaluationPath(dashboardShareId))
         .request()
         .get();
-    EvaluatedDashboardShareDto dashboardShareDto = response.readEntity(EvaluatedDashboardShareDto.class);
-    assertThat(dashboardShareDto.getDashboard().getReportShares().size(), is(0));
+    DashboardDefinitionDto dashboardShareDto = response.readEntity(DashboardDefinitionDto.class);
+    assertThat(dashboardShareDto.getReports().size(), is(0));
   }
 
   @Test
   public void addingReportToDashboardAddsRespectiveShare() throws Exception {
     //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-
-    String dashboardId = addEmptyDashboardToOptimize(token);
-    String dashboardShareId = addShareForDashboard(token, dashboardId);
+    String dashboardId = addEmptyDashboardToOptimize();
+    String dashboardShareId = addShareForDashboard(dashboardId);
 
     //when
     String reportId = createReport();
@@ -204,32 +273,30 @@ public class SharingServiceIT extends AbstractSharingIT {
       embeddedOptimizeRule.target(getSharedDashboardEvaluationPath(dashboardShareId))
         .request()
         .get();
-    EvaluatedDashboardShareDto dashboardShareDto = response.readEntity(EvaluatedDashboardShareDto.class);
-    assertThat(dashboardShareDto.getDashboard().getReportShares().size(), is(1));
+    DashboardDefinitionDto dashboardShareDto = response.readEntity(DashboardDefinitionDto.class);
+    assertThat(dashboardShareDto.getReports().size(), is(1));
   }
 
   @Test
   public void unsharedDashboardRemovesNotStandaloneReportShares() throws Exception {
     //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-
     String reportId = createReport();
-    String dashboardWithReport = createDashboardWithReport(token, reportId);
-    String dashboardShareId = addShareForDashboard(token, dashboardWithReport);
-    String reportShareId = addShareForReport(token, reportId);
+    String dashboardWithReport = createDashboardWithReport(reportId);
+    String dashboardShareId = addShareForDashboard(dashboardWithReport);
+    String reportShareId = addShareForReport(reportId);
 
     Response response =
       embeddedOptimizeRule.target(getSharedDashboardEvaluationPath(dashboardShareId))
         .request()
         .get();
-    EvaluatedDashboardShareDto dashboardShareDto = response.readEntity(EvaluatedDashboardShareDto.class);
-    String dashboardReportShareId = dashboardShareDto.getDashboard().getReportShares().get(0).getShareId();
+    DashboardDefinitionDto dashboardShareDto = response.readEntity(DashboardDefinitionDto.class);
+    String dashboardReportShareId = dashboardShareDto.getReports().get(0).getId();
 
     // when
     response =
       embeddedOptimizeRule.target(SHARE + "/" + DASHBOARD + "/" + dashboardShareId)
         .request()
-        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .delete();
     assertThat(response.getStatus(), is(204));
 
@@ -246,17 +313,15 @@ public class SharingServiceIT extends AbstractSharingIT {
         .get();
     HashMap evaluatedReportAsMap = response.readEntity(HashMap.class);
 
-    assertReportData(reportId, reportShareId, evaluatedReportAsMap);
+    assertReportData(reportId, evaluatedReportAsMap);
   }
 
   @Test
-  public void cantEvaluateDashboardOverReportsEndpoint() throws Exception {
+  public void cannotEvaluateDashboardOverReportsEndpoint() throws Exception {
     //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-
     String reportId = createReport();
-    String dashboardWithReport = createDashboardWithReport(token, reportId);
-    String dashboardShareId = addShareForDashboard(token, dashboardWithReport);
+    String dashboardWithReport = createDashboardWithReport(reportId);
+    String dashboardShareId = addShareForDashboard(dashboardWithReport);
 
     //when
     Response response =
@@ -270,11 +335,9 @@ public class SharingServiceIT extends AbstractSharingIT {
 
   @Test
   public void createNewFakeReportShareThrowsError() {
-    //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
 
     // when
-    Response response = createReportShareResponse(token, createReportShare());
+    Response response = createReportShareResponse(createReportShare());
 
     // then
     assertThat(response.getStatus(), is(500));
@@ -283,14 +346,11 @@ public class SharingServiceIT extends AbstractSharingIT {
   @Test
   public void cantCreateDashboardReportShare() {
     //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-
     ReportShareDto sharingDto = new ReportShareDto();
     sharingDto.setReportId(FAKE_REPORT_ID);
-    sharingDto.setType(SharedResourceType.DASHBOARD_REPORT);
 
     // when
-    Response response = createReportShareResponse(token, sharingDto);
+    Response response = createReportShareResponse(sharingDto);
 
     // then
     assertThat(response.getStatus(), is(500));
@@ -299,14 +359,11 @@ public class SharingServiceIT extends AbstractSharingIT {
   @Test
   public void createNewFakeDashboardShareThrowsError() {
     //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-
-    // when
     DashboardShareDto dashboardShare = new DashboardShareDto();
     dashboardShare.setDashboardId(FAKE_REPORT_ID);
-    dashboardShare.setType(SharedResourceType.DASHBOARD);
 
-    Response response = createDashboardShareResponse(token, dashboardShare);
+    // when
+    Response response = createDashboardShareResponse(dashboardShare);
 
     // then the status code is okay
     assertThat(response.getStatus(), is(500));
@@ -315,12 +372,11 @@ public class SharingServiceIT extends AbstractSharingIT {
   @Test
   public void shareIsNotCreatedForSameResourceTwice() throws Exception {
     //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
     String reportId = createReport();
     ReportShareDto share = createReportShare(reportId);
 
     // when
-    Response response = createReportShareResponse(token, share);
+    Response response = createReportShareResponse(share);
 
     // then the status code is okay
     assertThat(response.getStatus(), is(200));
@@ -331,7 +387,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     response =
       embeddedOptimizeRule.target(SHARE + "/" + REPORT)
         .request()
-        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .post(Entity.json(share));
 
     assertThat(id, is(response.readEntity(String.class)));
@@ -363,9 +419,8 @@ public class SharingServiceIT extends AbstractSharingIT {
   @Test
   public void cantEvaluateUnsharedReport() throws Exception {
     //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
     String reportId = createReport();
-    String shareId = this.addShareForReport(token, reportId);
+    String shareId = this.addShareForReport(reportId);
 
     Response response =
       embeddedOptimizeRule.target(getSharedReportEvaluationPath(shareId))
@@ -377,7 +432,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     response =
       embeddedOptimizeRule.target(SHARE + "/" + REPORT + "/" + shareId)
         .request()
-        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .delete();
     assertThat(response.getStatus(),is(204));
 
@@ -391,47 +446,44 @@ public class SharingServiceIT extends AbstractSharingIT {
 
   @Test
   public void newIdGeneratedAfterDeletion() throws Exception {
-    String token = embeddedOptimizeRule.getAuthenticationToken();
     String reportId = createReport();
-    String reportShareId = this.addShareForReport(token, reportId);
+    String reportShareId = this.addShareForReport(reportId);
 
     //when
     Response response =
       embeddedOptimizeRule.target(SHARE + "/" + REPORT + "/" + reportShareId)
         .request()
-        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .delete();
     assertThat(response.getStatus(),is(204));
 
-    String newShareId = this.addShareForReport(token, reportId);
+    String newShareId = this.addShareForReport(reportId);
     assertThat(reportShareId,is(not(newShareId)));
   }
 
   @Test
   public void sharesRemovedOnReportDeletion() throws Exception {
     //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
     String reportId = createReport();
-    this.addShareForReport(token, reportId);
+    this.addShareForReport(reportId);
 
     // when
     embeddedOptimizeRule.target("report/" + reportId)
       .request()
-      .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+      .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
       .delete();
 
     //then
-    ReportShareDto share = getShareForReport(token, reportId);
+    ReportShareDto share = getShareForReport(reportId);
     assertThat(share, is(nullValue()));
   }
 
   @Test
   public void canEvaluateSharedReportWithoutAuthentication() throws Exception {
     // given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
     String reportId = createReport();
 
-    String shareId = addShareForReport(token, reportId);
+    String shareId = addShareForReport(reportId);
 
     //when
     Response response =
@@ -442,37 +494,23 @@ public class SharingServiceIT extends AbstractSharingIT {
 
     //then
     assertThat(response.getStatus(), is(200));
-    assertReportData(reportId, shareId, evaluatedReportAsMap);
+    assertReportData(reportId, evaluatedReportAsMap);
   }
 
   @Test
   public void canCreateReportShareIfDashboardIsShared() throws Exception {
     //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-
     String reportId = createReport();
-    String dashboardWithReport = createDashboardWithReport(token, reportId);
-    String dashboardShareId = addShareForDashboard(token, dashboardWithReport);
+    String dashboardWithReport = createDashboardWithReport(reportId);
+    String dashboardShareId = addShareForDashboard(dashboardWithReport);
 
     //when
-    String reportShareId = addShareForReport(token, reportId);
+    String reportShareId = addShareForReport(reportId);
+
     //then
     assertThat(reportShareId, is(notNullValue()));
 
-    assertThatReportShareIdIsNotEqualToDashboard(dashboardShareId, reportShareId);
-
-    ReportShareDto findApiReport = getShareForReport(token, reportId);
+    ReportShareDto findApiReport = getShareForReport(reportId);
     assertThat(dashboardShareId, is(not(findApiReport.getId())));
-  }
-
-  private void assertThatReportShareIdIsNotEqualToDashboard(String dashboardShareId, String reportShareId) {
-    Response response =
-      embeddedOptimizeRule.target(getSharedDashboardEvaluationPath(dashboardShareId))
-        .request()
-        .get();
-    EvaluatedDashboardShareDto dashboardShareDto = response.readEntity(EvaluatedDashboardShareDto.class);
-    String dashboardReportShareId = dashboardShareDto.getDashboard().getReportShares().get(0).getShareId();
-
-    assertThat(reportShareId, is(not(dashboardReportShareId)));
   }
 }

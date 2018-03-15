@@ -2,9 +2,9 @@ package org.camunda.optimize.rest;
 
 
 import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.result.ReportResultDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
-import org.camunda.optimize.dto.optimize.query.sharing.EvaluatedDashboardShareDto;
-import org.camunda.optimize.dto.optimize.query.sharing.EvaluatedReportShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.security.SharingService;
@@ -37,7 +37,7 @@ public class SharingRestService {
   @Path("/report")
   public IdDto createNewReportShare(ReportShareDto createSharingDto) {
     sharingService.validateReportShare(createSharingDto);
-    return sharingService.crateNewReportShareIfAbsent(createSharingDto);
+    return sharingService.createNewReportShareIfAbsent(createSharingDto);
   }
 
   @POST
@@ -52,46 +52,54 @@ public class SharingRestService {
 
   @DELETE
   @Secured
-  @Path("/report/{id}")
-  public void deleteReportShare(@PathParam("id") String shareId) {
-    sharingService.deleteReportShare(shareId);
+  @Path("/report/{shareId}")
+  public void deleteReportShare(@PathParam("shareId") String reportShareId) {
+    sharingService.deleteReportShare(reportShareId);
   }
 
   @DELETE
   @Secured
-  @Path("/dashboard/{id}")
-  public void deleteDashboardShare(@PathParam("id") String shareId) {
-    sharingService.deleteDashboardShare(shareId);
+  @Path("/dashboard/{shareId}")
+  public void deleteDashboardShare(@PathParam("shareId") String dashboardShareId) {
+    sharingService.deleteDashboardShare(dashboardShareId);
   }
 
   @GET
   @Secured
-  @Path("/report/{id}")
+  @Path("/report/{reportId}")
   @Produces(MediaType.APPLICATION_JSON)
-  public ReportShareDto findShareForReport(@PathParam("id") String resourceId) {
-    return sharingService.findShareForReport(resourceId);
+  public ReportShareDto findShareForReport(@PathParam("reportId") String reportId) {
+    return sharingService.findShareForReport(reportId).orElse(null);
   }
 
   @GET
   @Secured
-  @Path("/dashboard/{id}")
+  @Path("/dashboard/{dashboardId}")
   @Produces(MediaType.APPLICATION_JSON)
-  public DashboardShareDto findShareForDashboard(@PathParam("id") String resourceId) {
-    return sharingService.findShareForDashboard(resourceId);
+  public DashboardShareDto findShareForDashboard(@PathParam("dashboardId") String dashboardId) {
+    return sharingService.findShareForDashboard(dashboardId).orElse(null);
   }
 
   @GET
-  @Path("/report/{id}/evaluate")
+  @Path("/report/{shareId}/evaluate")
   @Produces(MediaType.APPLICATION_JSON)
-  public EvaluatedReportShareDto evaluateReport(@PathParam("id") String shareId) {
-    return sharingService.evaluateReport(shareId).orElse(null);
+  public ReportResultDto evaluateReport(@PathParam("shareId") String reportShareId) {
+    return sharingService.evaluateReport(reportShareId);
   }
 
   @GET
-  @Path("/dashboard/{id}/evaluate")
+  @Path("/dashboard/{shareId}/report/{reportId}/evaluate")
   @Produces(MediaType.APPLICATION_JSON)
-  public EvaluatedDashboardShareDto evaluateDashboard(@PathParam("id") String shareId) {
-    return sharingService.evaluateDashboard(shareId).orElse(null);
+  public ReportResultDto evaluateReport(@PathParam("shareId") String dashboardShareId,
+                                        @PathParam("reportId") String reportId) {
+    return sharingService.evaluateReportForSharedDashboard(dashboardShareId, reportId);
+  }
+
+  @GET
+  @Path("/dashboard/{shareId}/evaluate")
+  @Produces(MediaType.APPLICATION_JSON)
+  public DashboardDefinitionDto evaluateDashboard(@PathParam("shareId") String dashboardShareId) {
+    return sharingService.evaluateDashboard(dashboardShareId).orElse(null);
   }
 
 }

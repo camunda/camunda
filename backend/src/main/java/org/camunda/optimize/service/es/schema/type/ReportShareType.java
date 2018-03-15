@@ -13,7 +13,6 @@ import java.io.IOException;
 public class ReportShareType extends StrictTypeMappingCreator {
 
   public static final String ID = "id";
-  public static final String TYPE = "type";
   public static final String REPORT_ID = "reportId";
   public static final String POSITION = "position";
   public static final String X_POSITION = "x";
@@ -28,9 +27,6 @@ public class ReportShareType extends StrictTypeMappingCreator {
   protected XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
     XContentBuilder newBuilder = xContentBuilder
       .startObject(ID)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(TYPE)
         .field("type", "keyword")
       .endObject()
       .startObject(POSITION)

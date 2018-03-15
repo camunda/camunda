@@ -1,5 +1,7 @@
 package org.camunda.optimize.dto.optimize.query.sharing;
 
+import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
+
 import java.util.List;
 
 /**
@@ -8,9 +10,8 @@ import java.util.List;
 public class DashboardShareDto {
 
   private String id;
-  private SharedResourceType type;
   private String dashboardId;
-  private List<String> reportShares;
+  private List<ReportLocationDto> reportShares;
 
   public String getId() {
     return id;
@@ -18,14 +19,6 @@ public class DashboardShareDto {
 
   public void setId(String id) {
     this.id = id;
-  }
-
-  public SharedResourceType getType() {
-    return type;
-  }
-
-  public void setType(SharedResourceType type) {
-    this.type = type;
   }
 
   public String getDashboardId() {
@@ -36,11 +29,11 @@ public class DashboardShareDto {
     this.dashboardId = dashboardId;
   }
 
-  public List<String> getReportShares() {
+  public List<ReportLocationDto> getReportShares() {
     return reportShares;
   }
 
-  public void setReportShares(List<String> reportShares) {
+  public void setReportShares(List<ReportLocationDto> reportShares) {
     this.reportShares = reportShares;
   }
 }

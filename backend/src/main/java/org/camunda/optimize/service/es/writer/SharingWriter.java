@@ -83,7 +83,7 @@ public class SharingWriter {
       .setSource(objectMapper.convertValue(updatedShare, Map.class))
       .get();
 
-    logger.debug("dashboard share with id [{}] for resource [{}] has been created", id, updatedShare.getDashboardId());
+    logger.debug("dashboard share with id [{}] for resource [{}] has been updated", id, updatedShare.getDashboardId());
     return updatedShare;
   }
 

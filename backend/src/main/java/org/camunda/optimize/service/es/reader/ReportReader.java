@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionPersistenceDto;
-import org.camunda.optimize.service.exceptions.OptimizeException;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchResponse;
@@ -38,10 +38,10 @@ public class ReportReader {
    *
    * @param reportId - id of report, expected not null
    * @return fully serialized ReportDefinitionDto
-   * @throws OptimizeException if report with specified ID does not
-   * exist.
+   * @throws OptimizeRuntimeException if report with specified ID does not
+   * exist or deserialization was not successful.
    */
-  public ReportDefinitionDto getReport(String reportId) throws OptimizeException {
+  public ReportDefinitionDto getReport(String reportId) {
     logger.debug("Fetching report with id [{}]", reportId);
     GetResponse getResponse = esclient
       .prepareGet(
@@ -54,17 +54,21 @@ public class ReportReader {
 
     if (getResponse.isExists()) {
       String responseAsString = getResponse.getSourceAsString();
-      ReportDefinitionPersistenceDto persistenceDto =
-        null;
+      ReportDefinitionPersistenceDto persistenceDto;
       try {
         persistenceDto = objectMapper.readValue(responseAsString, ReportDefinitionPersistenceDto.class);
       } catch (IOException e) {
-        logger.error("can't map report", e);
+        String reason = "While retrieving report with id [" + reportId +
+          "] could not deserialize report from Elasticsearch!";
+        logger.error(reason, e);
+        throw new OptimizeRuntimeException(reason);
       }
       return convertToOriginalForm(persistenceDto);
     } else {
-      logger.error("Was not able to retrieve report with id [{}] from Elasticsearch.", reportId);
-      throw new OptimizeException("Report does not exist!");
+      String reason = "Was not able to retrieve report with id [" + reportId +
+        "] from Elasticsearch. Report does not exist.";
+      logger.error(reason);
+      throw new OptimizeRuntimeException(reason);
     }
   }
 

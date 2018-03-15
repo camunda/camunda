@@ -10,7 +10,6 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
-import org.camunda.optimize.dto.optimize.query.sharing.SharedResourceType;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -33,12 +32,11 @@ import static org.hamcrest.MatcherAssert.assertThat;
  * @author Askar Akhmerov
  */
 public abstract class AbstractSharingIT {
-  public static final String BEARER = "Bearer ";
-  public static final String SHARE = "share";
-  public static final String FAKE_REPORT_ID = "fake";
-  public static final String EVALUATE = "evaluate";
-  public static final String REPORT = "report";
-  public static final String DASHBOARD = "dashboard";
+  protected static final String SHARE = "share";
+  protected static final String FAKE_REPORT_ID = "fake";
+  private static final String EVALUATE = "evaluate";
+  protected static final String REPORT = "report";
+  protected static final String DASHBOARD = "dashboard";
 
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
@@ -65,7 +63,7 @@ public abstract class AbstractSharingIT {
     return deployAndStartSimpleProcessWithVariables(new HashMap<>());
   }
 
-  protected ProcessInstanceEngineDto deployAndStartSimpleProcessWithVariables(Map<String, Object> variables) {
+  private ProcessInstanceEngineDto deployAndStartSimpleProcessWithVariables(Map<String, Object> variables) {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
         .name("aProcessName")
           .startEvent()
@@ -84,7 +82,7 @@ public abstract class AbstractSharingIT {
     assertThat(response.getStatus(), is(204));
   }
 
-  protected String createNewReport() {
+  private String createNewReport() {
     String token = embeddedOptimizeRule.getAuthenticationToken();
     Response response =
         embeddedOptimizeRule.target("report")
@@ -96,13 +94,13 @@ public abstract class AbstractSharingIT {
     return response.readEntity(IdDto.class).getId();
   }
 
-  protected String createDashboardWithReport(String token, String reportId) {
-    String dashboardId = addEmptyDashboardToOptimize(token);
+  protected String createDashboardWithReport(String reportId) {
+    String dashboardId = addEmptyDashboardToOptimize();
     addReportToDashboard(dashboardId, reportId);
     return dashboardId;
   }
 
-  protected void addReportToDashboard(String dashboardId, String... reportIds) {
+  void addReportToDashboard(String dashboardId, String... reportIds) {
     DashboardDefinitionDto fullBoard = new DashboardDefinitionDto();
     fullBoard.setId(dashboardId);
 
@@ -127,17 +125,17 @@ public abstract class AbstractSharingIT {
     updateDashboard(dashboardId, fullBoard);
   }
 
-  protected String addEmptyDashboardToOptimize(String token) {
+  protected String addEmptyDashboardToOptimize() {
     Response response =
         embeddedOptimizeRule.target("dashboard")
             .request()
-            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
             .post(Entity.json(""));
 
     return response.readEntity(IdDto.class).getId();
   }
 
-  protected void updateDashboard(String id, DashboardDefinitionDto updatedDashboard) {
+  void updateDashboard(String id, DashboardDefinitionDto updatedDashboard) {
     String token = embeddedOptimizeRule.getAuthenticationToken();
     Response response =
         embeddedOptimizeRule.target("dashboard/" + id)
@@ -147,48 +145,46 @@ public abstract class AbstractSharingIT {
     assertThat(response.getStatus(), is(204));
   }
 
-  protected String addShareForDashboard(String token, String dashboardId) {
+  protected String addShareForDashboard(String dashboardId) {
     DashboardShareDto share = createDashboardShareDto(dashboardId);
-    Response response = createDashboardShareResponse(token, share);
+    Response response = createDashboardShareResponse(share);
 
     return response.readEntity(IdDto.class).getId();
   }
 
-  protected Response createReportShareResponse(String token, ReportShareDto share) {
+  protected Response createReportShareResponse(ReportShareDto share) {
     return embeddedOptimizeRule.target(SHARE + "/" + REPORT)
         .request()
-        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .post(Entity.json(share));
   }
 
-  protected Response createDashboardShareResponse(String token, DashboardShareDto share) {
+  protected Response createDashboardShareResponse(DashboardShareDto share) {
     return embeddedOptimizeRule.target(SHARE + "/" + DASHBOARD)
         .request()
-        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .post(Entity.json(share));
   }
 
-  protected ReportShareDto createReportShare() {
+  ReportShareDto createReportShare() {
     return createReportShare(FAKE_REPORT_ID);
   }
 
   protected ReportShareDto createReportShare(String reportId) {
     ReportShareDto sharingDto = new ReportShareDto();
     sharingDto.setReportId(reportId);
-    sharingDto.setType(SharedResourceType.REPORT);
     return sharingDto;
   }
 
-  protected DashboardShareDto createDashboardShareDto(String dashboardId) {
+  private DashboardShareDto createDashboardShareDto(String dashboardId) {
     DashboardShareDto sharingDto = new DashboardShareDto();
     sharingDto.setDashboardId(dashboardId);
-    sharingDto.setType(SharedResourceType.DASHBOARD);
     return sharingDto;
   }
 
-  protected String addShareForReport(String token, String reportId) {
+  protected String addShareForReport(String reportId) {
     ReportShareDto share = createReportShare(reportId);
-    Response response = createReportShareResponse(token, share);
+    Response response = createReportShareResponse(share);
 
     return response.readEntity(IdDto.class).getId();
   }
@@ -197,28 +193,30 @@ public abstract class AbstractSharingIT {
     return SHARE + "/"+ REPORT + "/" + shareId + "/" + EVALUATE;
   }
 
+  protected String getSharedDashboardReportEvaluationPath(String dashboardShareId, String reportId) {
+    return SHARE + "/"+ DASHBOARD + "/" + dashboardShareId + "/"  + REPORT + "/" + reportId  + "/" + EVALUATE;
+  }
+
   protected String getSharedDashboardEvaluationPath(String shareId) {
     return SHARE + "/"+ DASHBOARD + "/" + shareId + "/" + EVALUATE;
   }
 
-  protected Response findShareForReport(String token, String reportId) {
+  private Response findShareForReport(String reportId) {
     return embeddedOptimizeRule.target(SHARE + "/report/" + reportId)
         .request()
-        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .get();
   }
 
-  protected ReportShareDto getShareForReport(String token, String reportId) {
-    Response response = findShareForReport(token, reportId);
+  protected ReportShareDto getShareForReport(String reportId) {
+    Response response = findShareForReport(reportId);
     return response.readEntity(ReportShareDto.class);
   }
 
-  protected void assertReportData(String reportId, String shareId, HashMap evaluatedReportAsMap) {
+  protected void assertReportData(String reportId, HashMap evaluatedReportAsMap) {
     assertThat(evaluatedReportAsMap, is(notNullValue()));
-    assertThat(evaluatedReportAsMap.get("id"), is(shareId));
-    Map reportMap = (Map) evaluatedReportAsMap.get("report");
-    assertThat(reportMap.get("id"), is(reportId));
-    assertThat(reportMap.get("data"), is(notNullValue()));
+    assertThat(evaluatedReportAsMap.get("id"), is(reportId));
+    assertThat(evaluatedReportAsMap.get("data"), is(notNullValue()));
   }
 
 }

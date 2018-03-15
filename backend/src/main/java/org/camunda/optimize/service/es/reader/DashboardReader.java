@@ -2,7 +2,7 @@ package org.camunda.optimize.service.es.reader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
-import org.camunda.optimize.service.exceptions.OptimizeException;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchResponse;
@@ -31,7 +31,7 @@ public class DashboardReader {
   @Autowired
   private ObjectMapper objectMapper;
 
-  public DashboardDefinitionDto getDashboard(String dashboardId) throws IOException, OptimizeException {
+  public DashboardDefinitionDto getDashboard(String dashboardId) {
     logger.debug("Fetching dashboard with id [{}]", dashboardId);
     GetResponse getResponse = esclient
       .prepareGet(
@@ -44,10 +44,16 @@ public class DashboardReader {
 
     if (getResponse.isExists()) {
       String responseAsString = getResponse.getSourceAsString();
-      return objectMapper.readValue(responseAsString, DashboardDefinitionDto.class);
+      try {
+        return objectMapper.readValue(responseAsString, DashboardDefinitionDto.class);
+      } catch (IOException e) {
+        String reason = "Could not deserialize dashboard information for dashboard " + dashboardId;
+        logger.error("Was not able to retrieve dashboard with id [{}] from Elasticsearch. Reason: reason");
+        throw new OptimizeRuntimeException(reason, e);
+      }
     } else {
       logger.error("Was not able to retrieve dashboard with id [{}] from Elasticsearch.", dashboardId);
-      throw new OptimizeException("Dashboard does not exist!");
+      throw new OptimizeRuntimeException("Dashboard does not exist! Tried to retried dashboard with id " + dashboardId);
     }
   }
 

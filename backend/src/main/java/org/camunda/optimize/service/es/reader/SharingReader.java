@@ -3,9 +3,9 @@ package org.camunda.optimize.service.es.reader;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
-import org.camunda.optimize.dto.optimize.query.sharing.SharedResourceType;
 import org.camunda.optimize.service.es.schema.type.DashboardShareType;
 import org.camunda.optimize.service.es.schema.type.ReportShareType;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchResponse;
@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 /**
  * @author Askar Akhmerov
@@ -83,7 +82,9 @@ public class SharingReader {
       try {
         result = Optional.of(objectMapper.readValue(getResponse.getSourceAsString(), ReportShareDto.class));
       } catch (IOException e) {
-        logger.error("cant't map sharing hit", e);
+        String reason = "Could deserialize report share with id [" + shareId + "] from Elasticsearch.";
+        logger.error(reason, e);
+        throw new OptimizeRuntimeException(reason, e);
       }
     }
     return result;
@@ -105,38 +106,35 @@ public class SharingReader {
       try {
         result = Optional.of(objectMapper.readValue(getResponse.getSourceAsString(), DashboardShareDto.class));
       } catch (IOException e) {
-        logger.error("cant't map sharing hit", e);
+        String reason = "Could deserialize dashboard share with id [" + shareId + "] from Elasticsearch.";
+        logger.error(reason, e);
+        throw new OptimizeRuntimeException(reason, e);
       }
     }
     return result;
   }
 
-  public Optional<ReportShareDto> findShareForReport(String reportId, SharedResourceType type) {
+  public Optional<ReportShareDto> findShareForReport(String reportId) {
     logger.debug("Fetching share for resource [{}]", reportId);
     BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
     boolQueryBuilder = boolQueryBuilder
-        .must(QueryBuilders.termQuery(ReportShareType.REPORT_ID, reportId))
-        .must(QueryBuilders.termQuery(ReportShareType.TYPE, type.toString()));
+        .must(QueryBuilders.termQuery(ReportShareType.REPORT_ID, reportId));
     return findReportShareByQuery(boolQueryBuilder);
   }
 
-  public Optional<DashboardShareDto> findShareForDashboard(String dashboardId, SharedResourceType type) {
+  public Optional<DashboardShareDto> findShareForDashboard(String dashboardId) {
     logger.debug("Fetching share for resource [{}]", dashboardId);
     BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
     boolQueryBuilder = boolQueryBuilder
-        .must(QueryBuilders.termQuery(DashboardShareType.DASHBOARD_ID, dashboardId))
-        .must(QueryBuilders.termQuery(DashboardShareType.TYPE, type.toString()));
-    return findDashboardShareByQuery(boolQueryBuilder);
-  }
+        .must(QueryBuilders.termQuery(DashboardShareType.DASHBOARD_ID, dashboardId));
 
-  private Optional<DashboardShareDto> findDashboardShareByQuery(BoolQueryBuilder query) {
     Optional<DashboardShareDto> result = Optional.empty();
 
     SearchResponse scrollResp = esclient
         .prepareSearch(configurationService.getOptimizeIndex(configurationService.getDashboardShareType()))
         .setTypes(configurationService.getDashboardShareType())
         .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
-        .setQuery(query)
+        .setQuery(boolQueryBuilder)
         .setSize(20)
         .get();
 
@@ -147,7 +145,9 @@ public class SharingReader {
             objectMapper.readValue(firstHitSource, DashboardShareDto.class)
         );
       } catch (IOException e) {
-        logger.error("cant't map sharing hit", e);
+        String reason = "Could deserialize dashboard share with id [" + dashboardId + "] from Elasticsearch.";
+        logger.error(reason, e);
+        throw new OptimizeRuntimeException(reason, e);
       }
     }
     return result;
@@ -177,13 +177,5 @@ public class SharingReader {
           .get();
     } while (scrollResp.getHits().getHits().length != 0);
     return result;
-  }
-
-  public List<ReportShareDto> findReportShares(List<String> shareIds) {
-    BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
-    boolQueryBuilder
-        .must(QueryBuilders.termsQuery(ReportShareType.ID, shareIds));
-    QueryBuilder query = boolQueryBuilder;
-    return findReportSharesByQuery(query);
   }
 }
