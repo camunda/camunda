@@ -15,6 +15,11 @@
  */
 package io.zeebe.raft;
 
+import static io.zeebe.util.EnsureUtil.ensureNotNull;
+
+import java.time.Duration;
+import java.util.*;
+
 import io.zeebe.logstreams.impl.LogStreamController;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.msgpack.value.ValueArray;
@@ -29,11 +34,6 @@ import io.zeebe.util.sched.ScheduledTimer;
 import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
-
-import java.time.Duration;
-import java.util.*;
-
-import static io.zeebe.util.EnsureUtil.ensureNotNull;
 
 /**
  * <p>
@@ -255,9 +255,8 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
         }
     }
 
-    // actor
     @Override
-    protected void onActorStarted()
+    protected void onActorStarting()
     {
         joinController = new JoinController(this, actor);
         appendRaftEventController = new AppendRaftEventController(this, actor);
@@ -288,7 +287,11 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
                 LOG.error("Failed to appendEvent subscription", failure);
             }
         });
+    }
 
+    @Override
+    protected void onActorStarted()
+    {
         // start as follower
         becomeFollower();
 
@@ -340,13 +343,6 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
     public void skipNextElection()
     {
         shouldElect = false;
-    }
-
-    @Override
-    protected void onActorCloseRequested()
-    {
-        Loggers.RAFT_LOGGER.debug("close requested");
-        replicateLogController.close();
     }
 
     @Override

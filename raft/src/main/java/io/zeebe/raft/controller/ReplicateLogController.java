@@ -15,13 +15,13 @@
  */
 package io.zeebe.raft.controller;
 
+import java.time.Duration;
+
 import io.zeebe.logstreams.impl.LoggedEventImpl;
 import io.zeebe.raft.Raft;
 import io.zeebe.raft.RaftMember;
 import io.zeebe.raft.protocol.AppendRequest;
-import io.zeebe.util.sched.ActorCondition;
-import io.zeebe.util.sched.ActorControl;
-import io.zeebe.util.sched.ScheduledTimer;
+import io.zeebe.util.sched.*;
 
 public class ReplicateLogController
 {
@@ -47,22 +47,14 @@ public class ReplicateLogController
             raft.getMember(i).reset();
         }
 
-        heartBeatTimer = actor.runDelayed(raft.getConfiguration().getHeartbeatInterval(), this::heartBeat);
         raft.getLogStream().registerOnAppendCondition(actorCondition);
+
+        final Duration heartbeatInterval = raft.getConfiguration().getHeartbeatInterval();
+        heartBeatTimer = actor.runAtFixedRate(heartbeatInterval, this::sendAppendRequest);
     }
 
     /**
-     * Sends append request. Is scheduled via runDelayed.
-     * This method reschedule them self on method begin.
-     */
-    private void heartBeat()
-    {
-        heartBeatTimer = actor.runDelayed(raft.getConfiguration().getHeartbeatInterval(), this::heartBeat);
-        sendAppendRequest();
-    }
-
-    /**
-     * Method is called if event is appended to the log stream or a new member joins the cluster.
+     * Method is called if event is appended to the log stream.
      *
      * Method reschedule itself, if there are more events to send and the last event was
      * successfully written to the send buffer.

@@ -15,20 +15,26 @@
  */
 package io.zeebe.raft.util;
 
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.dispatcher.Dispatchers;
-import io.zeebe.dispatcher.FragmentHandler;
-import io.zeebe.dispatcher.Subscription;
+import static io.zeebe.raft.state.RaftState.LEADER;
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.*;
+
+import java.lang.reflect.Field;
+import java.nio.file.Files;
+import java.util.*;
+import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
+
+import io.zeebe.dispatcher.*;
 import io.zeebe.logstreams.LogStreams;
-import io.zeebe.logstreams.log.BufferedLogStreamReader;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamWriterImpl;
-import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.logstreams.log.*;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
-import io.zeebe.raft.Raft;
-import io.zeebe.raft.RaftConfiguration;
-import io.zeebe.raft.RaftStateListener;
+import io.zeebe.raft.*;
 import io.zeebe.raft.event.RaftConfigurationEvent;
 import io.zeebe.raft.event.RaftConfigurationEventMember;
 import io.zeebe.raft.state.RaftState;
@@ -41,20 +47,6 @@ import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.agrona.DirectBuffer;
 import org.junit.rules.ExternalResource;
 import org.mockito.ArgumentMatcher;
-
-import java.lang.reflect.Field;
-import java.nio.file.Files;
-import java.util.*;
-import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
-
-import static io.zeebe.raft.state.RaftState.LEADER;
-import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.*;
 
 public class RaftRule extends ExternalResource implements RaftStateListener
 {
@@ -168,6 +160,7 @@ public class RaftRule extends ExternalResource implements RaftStateListener
             protected void onActorStarting()
             {
                 raftActor = actor;
+                super.onActorStarting();
             }
 
             @Override
