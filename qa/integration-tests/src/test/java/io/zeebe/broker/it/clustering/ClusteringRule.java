@@ -15,16 +15,6 @@
  */
 package io.zeebe.broker.it.clustering;
 
-import static io.zeebe.test.util.TestUtil.doRepeatedly;
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.io.InputStream;
-import java.util.*;
-import java.util.stream.Collectors;
-
-import io.zeebe.client.topic.Topics;
-import org.junit.rules.ExternalResource;
-
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.client.ZeebeClient;
@@ -32,8 +22,21 @@ import io.zeebe.client.clustering.impl.BrokerPartitionState;
 import io.zeebe.client.clustering.impl.TopologyBroker;
 import io.zeebe.client.event.Event;
 import io.zeebe.client.topic.Topic;
+import io.zeebe.client.topic.Topics;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.SocketAddress;
+import org.junit.rules.ExternalResource;
+
+import java.io.InputStream;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.Callable;
+import java.util.stream.Collectors;
+
+import static io.zeebe.test.util.TestUtil.doRepeatedly;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class ClusteringRule extends ExternalResource
 {
@@ -83,12 +86,12 @@ public class ClusteringRule extends ExternalResource
             brokers.put(brokerAddresses[i], startBroker(brokerConfigs[i]));
         }
 
-        waitForTopicAndReplicationFactor("internal-system", 3);
+        waitForInternalSystemAndReplicationFactor(3);
     }
 
-    private List<TopologyBroker> waitForTopicAndReplicationFactor(String topicName, int replicationFactor)
+    private void waitForInternalSystemAndReplicationFactor(int replicationFactor)
     {
-        return waitForTopicPartitionReplicationFactor(topicName, 1, replicationFactor);
+        waitForTopicPartitionReplicationFactor("internal-system", 1, replicationFactor);
     }
 
     /**
@@ -140,7 +143,8 @@ public class ClusteringRule extends ExternalResource
         assertThat(topicEvent.getState()).isEqualTo("CREATED");
 
         waitForTopicPartitionReplicationFactor(topicName, partitionCount, replicationFactor);
-        return waitForTopicAvailability(topicName);
+
+        return waitForSpreading(() -> waitForTopicAvailability(topicName));
     }
 
     private boolean hasPartitionsWithReplicationFactor(List<TopologyBroker> brokers, String topicName, int partitionCount, int replicationFactor)
@@ -163,10 +167,12 @@ public class ClusteringRule extends ExternalResource
         }
     }
 
-    private List<TopologyBroker> waitForTopicPartitionReplicationFactor(String topicName, int partitionCount, int replicationFactor)
+    private void waitForTopicPartitionReplicationFactor(String topicName, int partitionCount, int replicationFactor)
     {
-        return doRepeatedly(() -> zeebeClient.requestTopology().execute().getBrokers())
-            .until(topologyBrokers -> hasPartitionsWithReplicationFactor(topologyBrokers, topicName, partitionCount, replicationFactor));
+        waitForSpreading(() -> {
+            doRepeatedly(() -> zeebeClient.requestTopology().execute().getBrokers())
+                .until(topologyBrokers -> hasPartitionsWithReplicationFactor(topologyBrokers, topicName, partitionCount, replicationFactor));
+        });
     }
 
     private Topic waitForTopicAvailability(String topicName)
@@ -208,7 +214,8 @@ public class ClusteringRule extends ExternalResource
             if (brokerAddresses[i].equals(socketAddress))
             {
                 brokers.put(socketAddress, startBroker(brokerConfigs[i]));
-                waitForTopicAndReplicationFactor("internal-system", replicationFactor);
+
+                waitForInternalSystemAndReplicationFactor(replicationFactor);
                 break;
             }
         }
@@ -282,20 +289,62 @@ public class ClusteringRule extends ExternalResource
         brokers.remove(socketAddress).close();
 
         waitForNewLeaderOfPartitions(brokersLeadingPartitions, socketAddress);
+        waitUntilBrokerIsRemovedFromTopology(socketAddress);
+    }
+
+    private void waitUntilBrokerIsRemovedFromTopology(SocketAddress socketAddress)
+    {
+        waitForSpreading(() -> {
+            doRepeatedly(() -> zeebeClient.requestTopology().execute().getBrokers())
+                .until(topologyBrokers -> topologyBrokers.stream()
+                    .filter(topologyBroker -> topologyBroker.getSocketAddress().equals(socketAddress))
+                    .count() == 0);
+        });
     }
 
     private void waitForNewLeaderOfPartitions(List<Integer> partitions, SocketAddress oldLeader)
     {
-        doRepeatedly(() -> zeebeClient.requestTopology().execute().getBrokers())
-            .until(topologyBrokers ->
-                topologyBrokers != null && topologyBrokers.stream()
-                               .filter(broker -> !broker.getSocketAddress().equals(oldLeader))
-                               .flatMap(broker -> broker.getPartitions().stream())
-                               .filter(BrokerPartitionState::isLeader)
-                               .map(BrokerPartitionState::getPartitionId)
-                               .collect(Collectors.toSet())
-                               .containsAll(partitions)
-            );
+        waitForSpreading(() -> {
+            doRepeatedly(() -> zeebeClient.requestTopology().execute().getBrokers())
+                .until(topologyBrokers ->
+                    topologyBrokers != null && topologyBrokers.stream()
+                        .filter(broker -> !broker.getSocketAddress().equals(oldLeader))
+                        .flatMap(broker -> broker.getPartitions().stream())
+                        .filter(BrokerPartitionState::isLeader)
+                        .map(BrokerPartitionState::getPartitionId)
+                        .collect(Collectors.toSet())
+                        .containsAll(partitions));
+        });
+    }
+
+
+    private void waitForSpreading(Runnable r)
+    {
+        for (int i = 0; i < brokerAddresses.length; i++)
+        {
+            r.run();
+
+            // retry to make sure
+        }
+    }
+
+    private <V> V waitForSpreading(Callable<V> callable)
+    {
+        V value = null;
+        for (int i = 0; i < brokerAddresses.length; i++)
+        {
+            try
+            {
+                value = callable.call();
+            }
+            catch (Exception e)
+            {
+                throw new RuntimeException(e);
+            }
+
+            // retry to make sure
+        }
+        return value;
     }
 
     public void setReplicationFactor(int replicationFactor)

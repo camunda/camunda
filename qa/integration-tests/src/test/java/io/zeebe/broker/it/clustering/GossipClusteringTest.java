@@ -15,25 +15,22 @@
  */
 package io.zeebe.broker.it.clustering;
 
-import static io.zeebe.test.util.TestUtil.doRepeatedly;
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.util.List;
-
-import org.junit.Ignore;
+import io.zeebe.broker.it.ClientRule;
+import io.zeebe.test.util.AutoCloseableRule;
+import io.zeebe.transport.SocketAddress;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 
-import io.zeebe.broker.it.ClientRule;
-import io.zeebe.test.util.AutoCloseableRule;
-import io.zeebe.transport.SocketAddress;
+import java.util.List;
+
+import static io.zeebe.test.util.TestUtil.doRepeatedly;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  *
  */
-@Ignore("https://github.com/zeebe-io/zeebe/issues/747")
 public class GossipClusteringTest
 {
     private static final int PARTITION_COUNT = 5;
