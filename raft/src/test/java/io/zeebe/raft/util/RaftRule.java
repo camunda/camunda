@@ -162,12 +162,6 @@ public class RaftRule extends ExternalResource implements RaftStateListener
                 raftActor = actor;
                 super.onActorStarting();
             }
-
-            @Override
-            public String getName()
-            {
-                return socketAddress.toString();
-            }
         };
         raft.addMembers(members.stream().map(RaftRule::getSocketAddress).collect(Collectors.toList()));
 

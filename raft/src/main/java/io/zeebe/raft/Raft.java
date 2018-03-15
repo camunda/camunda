@@ -96,19 +96,19 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
     private final AppendResponse appendResponse = new AppendResponse();
     private ScheduledTimer electionTimer;
     private ScheduledTimer flushTimer;
-    private String name;
+    private String actorName;
 
     public Raft(final RaftConfiguration configuration, final SocketAddress socketAddress, final LogStream logStream,
                 final BufferingServerTransport serverTransport, final ClientTransport clientTransport,
                 final RaftPersistentStorage persistentStorage, final RaftStateListener... listeners)
     {
-        name = String.format("%s - %s:%d", logStream.getLogName(), socketAddress.host(), socketAddress.port());
         this.configuration = configuration;
         this.socketAddress = socketAddress;
         this.logStream = logStream;
         this.clientTransport = clientTransport;
         this.persistentStorage = persistentStorage;
         appender = new BufferedLogStorageAppender(this);
+        actorName = String.format("raft.%s.%s", logStream.getLogName(), socketAddress.toString());
 
         this.serverTransport = serverTransport;
 
@@ -127,7 +127,7 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
     @Override
     public String getName()
     {
-        return name;
+        return actorName;
     }
 
     public void registerRaftStateListener(final RaftStateListener listener)
