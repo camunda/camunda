@@ -14,7 +14,9 @@ jest.mock('./service', () => {
 jest.mock('components', () => {
   return {
     ReportView: () => <div id="report">ReportView</div>,
-    DashboardView: () => <div id="dashboard">DashboardView</div>
+    DashboardView: () => <div id="dashboard">DashboardView</div>,
+    Button: () => <div>Button</div>,
+    Icon: () => <span>Icon</span>
   };
 });
 
@@ -126,4 +128,16 @@ it('should display the dashboard name', () => {
   });
 
   expect(node).toIncludeText('My dashboard name');
+});
+
+it('should render a button linking to view mode', () => {
+  props.match.params.type = 'dashboard';
+  const node = mount(<Sharing {...props} />);
+
+  node.setState({
+    loading: false,
+    evaluationResult: {name: 'My dashboard name'}
+  });
+
+  expect(node).toIncludeText('Button');
 });
