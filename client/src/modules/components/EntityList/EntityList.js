@@ -2,7 +2,7 @@ import React from 'react';
 import moment from 'moment';
 import {Redirect, Link} from 'react-router-dom';
 
-import {Table, Button, Modal} from 'components';
+import {Button, Modal} from 'components';
 
 import {load, create, remove} from './service';
 
@@ -115,6 +115,28 @@ export default class EntityList extends React.Component {
     );
   };
 
+  renderCell = cell => {
+    if (typeof cell !== 'object' || React.isValidElement(cell)) {
+      return cell;
+    }
+
+    if (cell.link) {
+      return (
+        <Link to={cell.link} className={cell.className}>
+          {cell.content}
+        </Link>
+      );
+    }
+
+    if (cell.onClick) {
+      return (
+        <Button {...cell.props} onClick={cell.onClick} className={cell.className}>
+          {cell.content}
+        </Button>
+      );
+    }
+  };
+
   render() {
     const {redirectToEntity, loaded} = this.state;
     const {includeViewAllLink} = this.props;
@@ -163,7 +185,7 @@ export default class EntityList extends React.Component {
                         (idx === 1 ? ' EntityList__data--metadata' : '')
                       }
                     >
-                      {Table.renderCell(cell)}
+                      {this.renderCell(cell)}
                     </span>
                   );
                 })}

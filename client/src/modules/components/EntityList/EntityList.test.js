@@ -51,17 +51,6 @@ jest.mock('components', () => {
 
   return {
     Modal,
-    Table: {
-      renderCell: cell => {
-        return cell.onClick ? (
-          <button onClick={cell.onClick} className={cell.className}>
-            {cell.content}
-          </button>
-        ) : (
-          <span>{JSON.stringify(cell)}</span>
-        );
-      }
-    },
     Button: props => <button {...props}>{props.children}</button>
   };
 });
@@ -161,9 +150,10 @@ it('should display all operations per default', () => {
     data: [sampleEntity]
   });
 
+  console.log(node.debug());
   expect(node.find('.EntityList__createButton')).toBePresent();
   expect(node.find('.EntityList__deleteButton')).toBePresent();
-  expect(node).toIncludeText('EntityList__editLink');
+  expect(node.find('.EntityList__editLink')).toBePresent();
 });
 
 it('should not display any operations if none are specified', () => {
@@ -195,7 +185,7 @@ it('should display an edit link if specified', () => {
     data: [sampleEntity]
   });
 
-  expect(node).toIncludeText('EntityList__editLink');
+  expect(node.find('.EntityList__editLink')).toBePresent();
 });
 
 it('should display a delete button if specified', () => {
@@ -233,7 +223,7 @@ it('should open deletion modal on delete button click', () => {
     data: [sampleEntity]
   });
 
-  node.find('.EntityList__deleteButton').simulate('click');
+  node.find('.EntityList__deleteButton button').simulate('click');
 
   expect(node.find('.EntityList__delete-modal')).toBePresent();
 });

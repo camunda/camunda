@@ -3,19 +3,24 @@
 }
 
 .TargetValueModal__DiagramContainer {
-  height: 250px;
+  height: 350px;
   display: flex;
 }
 
 .TargetValueModal__selection {
   display: flex;
-  width: 100%;
+
+  min-width: 0;
+  flex-grow: 1;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-direction: row;
 }
 
 .TargetValueModal__selection--select {
-  width: 200px;
+  min-width: 0;
 }
 
 .TargetValueModal__selection--input {
-  width: 100%;
+  min-width: 0;
 }

@@ -17,6 +17,7 @@
     "react-dom": "16.2.0",
     "react-full-screen": "^0.2.2",
     "react-router-dom": "^4.2.2",
+    "react-table": "^6.8.0",
     "string.prototype.includes": "^1.0.0"
   },
   "scripts": {

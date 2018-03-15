@@ -1,55 +1,51 @@
 import React from 'react';
-import {Link} from 'react-router-dom';
-import {Button} from 'components';
+
+import ReactTable from 'react-table';
+import 'react-table/react-table.css';
 
 import './Table.css';
 
 export default function Table({className, head, body, foot}) {
+  const columns = Table.formatColumns(head);
+  const data = Table.formatData(head, body);
   return (
-    <div className={className ? 'Table ' + className : 'Table'}>
-      <table className="Table__content">
-        <thead>{Table.renderRow(head, 0)}</thead>
-        <tbody>
-          {body.map((row, idx) => {
-            return Table.renderRow(row, idx);
-          })}
-        </tbody>
-        <tfoot>{Table.renderRow(foot, 0)}</tfoot>
-      </table>
-    </div>
+    <ReactTable
+      data={data}
+      columns={columns}
+      defaultPageSize={20}
+      showPagination={false}
+      showPaginationTop={false}
+      showPaginationBottom={false}
+      minRows={0}
+      sortable={false}
+      multiSort={false}
+      className={'-striped -highlight ' + className}
+    />
   );
 }
 
-Table.renderRow = (row, idx) => {
-  if (row) {
-    return (
-      <tr key={idx}>
-        {row.map((cell, idx) => {
-          return <td key={idx}>{Table.renderCell(cell)}</td>;
-        })}
-      </tr>
-    );
-  }
+Table.formatColumns = head => {
+  return head.map(elem => {
+    return {
+      Header: elem,
+      accessor: convertHeaderNameToAccessor(elem)
+    };
+  });
 };
 
-Table.renderCell = cell => {
-  if (typeof cell !== 'object' || React.isValidElement(cell)) {
-    return cell;
-  }
-
-  if (cell.link) {
-    return (
-      <Link to={cell.link} className={cell.className}>
-        {cell.content}
-      </Link>
-    );
-  }
-
-  if (cell.onClick) {
-    return (
-      <Button {...cell.props} onClick={cell.onClick} className={cell.className}>
-        {cell.content}
-      </Button>
-    );
-  }
+Table.formatData = (head, body) => {
+  return body.map((row, rowIdx) => {
+    const newRow = {};
+    row.forEach((cell, columnIdx) => {
+      newRow[convertHeaderNameToAccessor(head[columnIdx])] = cell;
+    });
+    return newRow;
+  });
 };
+
+function convertHeaderNameToAccessor(name) {
+  return name
+    .split(' ')
+    .join('_')
+    .toLowerCase();
+}
