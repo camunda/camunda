@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionUpdateDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.IdGenerator;
@@ -76,19 +75,13 @@ public class DashboardWriter {
 
   public void updateDashboard(DashboardDefinitionDto dashboard) throws OptimizeException, JsonProcessingException {
     logger.debug("Updating dashboard with id [{}] in Elasticsearch", dashboard.getId());
-    DashboardDefinitionUpdateDto updateDto = new DashboardDefinitionUpdateDto();
-    updateDto.setLastModified(LocalDateUtil.getCurrentDateTime());
-    updateDto.setLastModifier(dashboard.getLastModifier());
-    updateDto.setOwner(dashboard.getOwner());
-    updateDto.setName(dashboard.getName());
-    updateDto.setReports(dashboard.getReports());
     UpdateResponse updateResponse = esclient
       .prepareUpdate(
         configurationService.getOptimizeIndex(configurationService.getDashboardType()),
         configurationService.getDashboardType(),
         dashboard.getId()
       )
-      .setDoc(objectMapper.writeValueAsString(updateDto), XContentType.JSON)
+      .setDoc(objectMapper.writeValueAsString(dashboard), XContentType.JSON)
       .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
       .get();
 

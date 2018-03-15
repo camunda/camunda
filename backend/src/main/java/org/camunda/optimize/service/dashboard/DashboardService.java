@@ -3,10 +3,12 @@ package org.camunda.optimize.service.dashboard;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionUpdateDto;
 import org.camunda.optimize.service.es.reader.DashboardReader;
 import org.camunda.optimize.service.es.writer.DashboardWriter;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.security.SharingService;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -34,6 +36,7 @@ public class DashboardService {
 
   public void updateDashboard(DashboardDefinitionDto updatedDashboard, String userId) throws OptimizeException, JsonProcessingException {
     updatedDashboard.setLastModifier(userId);
+    updatedDashboard.setLastModified(LocalDateUtil.getCurrentDateTime());
     dashboardWriter.updateDashboard(updatedDashboard);
     sharingService.adjustDashboardShares(updatedDashboard);
   }
