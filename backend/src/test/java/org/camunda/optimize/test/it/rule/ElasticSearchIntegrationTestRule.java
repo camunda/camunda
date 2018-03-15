@@ -47,6 +47,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   private Properties properties;
   private static ObjectMapper objectMapper;
   private static Client esclient;
+  private boolean haveToClean = true;
 
   // maps types to a list of document entry ids added to that type
   private Map<String, List<String>> documentEntriesTracker = new HashMap<>();
@@ -126,9 +127,11 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
 
   @Override
   protected void finished(Description description) {
-    logger.info("cleaning up elasticsearch on finish");
-    this.cleanUpElasticSearch();
-    this.refreshOptimizeIndexInElasticsearch();
+    if (haveToClean) {
+      logger.info("cleaning up elasticsearch on finish");
+      this.cleanUpElasticSearch();
+      this.refreshOptimizeIndexInElasticsearch();
+    }
   }
 
 
@@ -323,5 +326,9 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
 
   public String getDurationHeatmapTargetValueType() {
     return properties.getProperty("camunda.optimize.es.heatmap.duration.target.value.type");
+  }
+
+  public void disableCleanup() {
+    this.haveToClean = false;
   }
 }

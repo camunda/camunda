@@ -58,6 +58,7 @@ public class ImportPerformanceTest {
     NUMBER_OF_INSTANCES = Integer.parseInt(properties.getProperty("import.test.number.of.processes"));
     shouldGenerateData = Boolean.parseBoolean(properties.getProperty("import.test.generate.data"));
     maxImportDurationInMin = Long.parseLong(properties.getProperty("import.test.max.duration.in.max"));
+    elasticSearchRule.disableCleanup();
   }
 
   @Test
