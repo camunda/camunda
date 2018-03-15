@@ -13,14 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.transport.util;
+package io.zeebe.transport.test;
 
 import io.zeebe.transport.*;
 import org.agrona.DirectBuffer;
 
 public class EchoRequestResponseHandler implements ServerRequestHandler
 {
-
     protected ServerResponse response = new ServerResponse();
 
     @Override
@@ -34,5 +33,4 @@ public class EchoRequestResponseHandler implements ServerRequestHandler
             .remoteStreamId(remoteAddress.getStreamId());
         return output.sendResponse(response);
     }
-
 }
