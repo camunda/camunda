@@ -2,12 +2,12 @@ import React from 'react';
 import {mount} from 'enzyme';
 
 import Sharing from './Sharing';
-import {evaluateEntity, loadReport} from './service';
+import {evaluateEntity} from './service';
 
 jest.mock('./service', () => {
   return {
     evaluateEntity: jest.fn(),
-    loadReport: jest.fn()
+    createLoadReportCallback: jest.fn()
   };
 });
 
@@ -60,7 +60,7 @@ it('should display an error message if type is invalid', () => {
 
   node.setState({
     loading: false,
-    evaluationResult: {report: {name: 'foo'}}
+    evaluationResult: {name: 'foo'}
   });
 
   expect(node.find('.Sharing__error-message')).toBePresent();
@@ -72,7 +72,7 @@ it('should have report if everything is fine', () => {
 
   node.setState({
     loading: false,
-    evaluationResult: {report: {name: 'foo'}}
+    evaluationResult: {name: 'foo'}
   });
 
   expect(node.find('#report')).toIncludeText('ReportView');
@@ -91,7 +91,7 @@ it('should display the report name', () => {
 
   node.setState({
     loading: false,
-    evaluationResult: {report: {name: 'My report name'}}
+    evaluationResult: {name: 'My report name'}
   });
 
   expect(node).toIncludeText('My report name');
@@ -103,7 +103,7 @@ it('should have dashboard if everything is fine', () => {
 
   node.setState({
     loading: false,
-    evaluationResult: {dashboard: {reportShares: 'foo'}}
+    evaluationResult: {reportShares: 'foo'}
   });
 
   expect(node.find('#dashboard')).toIncludeText('DashboardView');
@@ -111,7 +111,7 @@ it('should have dashboard if everything is fine', () => {
 
 it('should retrieve dashboard for the given id', () => {
   props.match.params.type = 'dashboard';
-  const node = mount(<Sharing {...props} />);
+  mount(<Sharing {...props} />);
 
   expect(evaluateEntity).toHaveBeenCalledWith(123, 'dashboard');
 });
@@ -122,7 +122,7 @@ it('should display the dashboard name', () => {
 
   node.setState({
     loading: false,
-    evaluationResult: {dashboard: {name: 'My dashboard name'}}
+    evaluationResult: {name: 'My dashboard name'}
   });
 
   expect(node).toIncludeText('My dashboard name');

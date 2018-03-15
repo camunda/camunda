@@ -2,7 +2,7 @@ import React from 'react';
 
 import './Sharing.css';
 import {ReportView, DashboardView} from 'components';
-import {evaluateEntity, loadReport} from './service';
+import {evaluateEntity, createLoadReportCallback} from './service';
 
 export default class Sharing extends React.Component {
   constructor(props) {
@@ -35,13 +35,13 @@ export default class Sharing extends React.Component {
 
   getSharingView = () => {
     if (this.getType() === 'report') {
-      return <ReportView report={this.state.evaluationResult.report} />;
+      return <ReportView report={this.state.evaluationResult} />;
     } else {
       return (
         <DashboardView
-          loadReport={loadReport}
-          reports={this.state.evaluationResult.dashboard.reportShares}
-          disableNameLink
+          loadReport={createLoadReportCallback(this.getId())}
+          reports={this.state.evaluationResult.reports}
+	  disableNameLink
         />
       );
     }
@@ -70,7 +70,7 @@ export default class Sharing extends React.Component {
       <div className="Sharing">
         <div className="Sharing__header">
           <div className="Sharing__title-container">
-            <h1 className="Sharing__tilte">{evaluationResult[this.getType()].name}</h1>
+            <h1 className="Sharing__tilte">{evaluationResult.name}</h1>
           </div>
         </div>
         <div className="Sharing__content">{SharingView}</div>

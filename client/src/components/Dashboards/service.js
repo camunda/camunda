@@ -31,8 +31,7 @@ export async function loadReport(report) {
 
 export async function shareDashboard(dashboardId) {
   const body = {
-    dashboardId,
-    type: 'DASHBOARD'
+    dashboardId
   };
   const response = await post(`/api/share/dashboard`, body);
 

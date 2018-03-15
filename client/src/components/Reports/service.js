@@ -43,8 +43,7 @@ export async function saveReport(id, data) {
 
 export async function shareReport(reportId) {
   const body = {
-    reportId,
-    type: 'REPORT'
+    reportId
   };
   const response = await post(`/api/share/report`, body);
 

@@ -12,12 +12,15 @@ export async function evaluateEntity(id, type) {
   return await response.json();
 }
 
-export async function loadReport(report) {
-  try {
-    const response = await get(`/api/share/report/${report.shareId}/evaluate`);
-    const sharedReport = await response.json();
-    return sharedReport.report;
-  } catch (error) {
-    return await error.json();
-  }
+export function createLoadReportCallback(dashboardShareId) {
+  return async report => {
+    try {
+      const response = await get(
+        `/api/share/dashboard/${dashboardShareId}/report/${report.id}/evaluate`
+      );
+      return await response.json();
+    } catch (error) {
+      return await error.json();
+    }
+  };
 }
