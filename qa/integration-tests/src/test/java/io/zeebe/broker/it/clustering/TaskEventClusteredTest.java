@@ -22,7 +22,6 @@ import io.zeebe.client.event.TaskEvent;
 import io.zeebe.client.topic.Topic;
 import io.zeebe.client.topic.Topics;
 import io.zeebe.test.util.AutoCloseableRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;

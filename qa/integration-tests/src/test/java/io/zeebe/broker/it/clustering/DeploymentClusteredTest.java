@@ -15,10 +15,14 @@
  */
 package io.zeebe.broker.it.clustering;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
+import io.zeebe.broker.it.ClientRule;
+import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
+import io.zeebe.client.event.DeploymentEvent;
 import io.zeebe.client.event.WorkflowInstanceEvent;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.test.util.AutoCloseableRule;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -27,12 +31,7 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 
-import io.zeebe.broker.it.ClientRule;
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.event.DeploymentEvent;
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.instance.WorkflowDefinition;
-import io.zeebe.test.util.AutoCloseableRule;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class DeploymentClusteredTest
 {
