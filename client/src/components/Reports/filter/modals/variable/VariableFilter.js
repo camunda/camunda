@@ -413,9 +413,10 @@ export default class VariableFilter extends React.Component {
 
   removeValue = index => {
     this.setState(prevState => {
-      prevState.values.splice(index, 1);
+      const values = prevState.values.slice(); // copy previous values
+      values.splice(index, 1);
       return {
-        values: prevState.values
+        values
       };
     });
   };
