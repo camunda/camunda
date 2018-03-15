@@ -68,7 +68,7 @@ export default class Chart extends React.Component {
           }
         ]
       },
-      options: this.createChartOptions(type, timeUnit)
+      options: this.createChartOptions(type, timeUnit, data)
     });
   };
 
@@ -96,7 +96,7 @@ export default class Chart extends React.Component {
     }
   };
 
-  createChartOptions = (type, timeUnit) => {
+  createChartOptions = (type, timeUnit, data) => {
     let options;
     switch (type) {
       case 'pie':
@@ -138,7 +138,31 @@ export default class Chart extends React.Component {
         }
       ];
       if (this.props.property === 'duration') {
-        options.scales.yAxes[0].ticks.callback = v => this.props.formatter(v);
+        // since the duration is given in milliseconds, chart.js cannot create nice y axis
+        // ticks. So we define our own set of possible stepSizes and find one that the maximum
+        // value of the dataset fits into.
+        const niceStepSize = [
+          {value: 1, unit: 'ms', base: 1},
+          {value: 10, unit: 'ms', base: 1},
+          {value: 100, unit: 'ms', base: 1},
+          {value: 1000, unit: 's', base: 1000},
+          {value: 1000 * 10, unit: 's', base: 1000},
+          {value: 1000 * 60, unit: 'min', base: 1000 * 60},
+          {value: 1000 * 60 * 10, unit: 'min', base: 1000 * 60},
+          {value: 1000 * 60 * 60, unit: 'h', base: 1000 * 60 * 60},
+          {value: 1000 * 60 * 60 * 6, unit: 'h', base: 1000 * 60 * 60},
+          {value: 1000 * 60 * 60 * 24, unit: 'd', base: 1000 * 60 * 60 * 24},
+          {value: 1000 * 60 * 60 * 24 * 7, unit: 'wk', base: 1000 * 60 * 60 * 24 * 7},
+          {value: 1000 * 60 * 60 * 24 * 30, unit: 'm', base: 1000 * 60 * 60 * 24 * 30},
+          {value: 1000 * 60 * 60 * 24 * 30 * 6, unit: 'm', base: 1000 * 60 * 60 * 24 * 30},
+          {value: 1000 * 60 * 60 * 24 * 30 * 12, unit: 'y', base: 1000 * 60 * 60 * 24 * 30 * 12}
+        ].find(({value}) => value > Math.max(...Object.values(data)) / 10);
+
+        options.scales.yAxes[0].ticks = {
+          beginAtZero: true,
+          callback: v => v / niceStepSize.base + niceStepSize.unit,
+          stepSize: niceStepSize.value
+        };
       }
     }
 
