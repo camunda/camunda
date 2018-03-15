@@ -1,7 +1,7 @@
 import React from 'react';
 
 import './Sharing.css';
-import {ReportView, DashboardView} from 'components';
+import {ReportView, DashboardView, Icon, Button} from 'components';
 import {evaluateEntity, createLoadReportCallback} from './service';
 
 export default class Sharing extends React.Component {
@@ -41,7 +41,7 @@ export default class Sharing extends React.Component {
         <DashboardView
           loadReport={createLoadReportCallback(this.getId())}
           reports={this.state.evaluationResult.reports}
-	  disableNameLink
+          disableNameLink
         />
       );
     }
@@ -50,6 +50,10 @@ export default class Sharing extends React.Component {
   hasValidType(type) {
     return type === 'report' || type === 'dashboard';
   }
+
+  openViewMode = () => {
+    window.open(`/${this.getType()}/${this.state.evaluationResult.id}`, '_blank');
+  };
 
   render() {
     const {loading, evaluationResult} = this.state;
@@ -71,6 +75,10 @@ export default class Sharing extends React.Component {
         <div className="Sharing__header">
           <div className="Sharing__title-container">
             <h1 className="Sharing__tilte">{evaluationResult.name}</h1>
+            <Button onClick={this.openViewMode} className="Sharing__title-button">
+              <Icon type="share" renderedIn="span" />
+              <span>Open in Optimize</span>
+            </Button>
           </div>
         </div>
         <div className="Sharing__content">{SharingView}</div>

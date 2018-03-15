@@ -10,7 +10,11 @@
   margin-bottom: 32px;
 }
 
-.Sharing__tile-container {
+.Sharing__title-container {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: baseline;
   flex-grow: 1;
   padding-right: 48px;
 }
