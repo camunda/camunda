@@ -29,7 +29,7 @@ public class DefaultActorClock implements ActorClock
     long nanosSinceLastMilli;
 
     @Override
-    public void update()
+    public boolean update()
     {
         updateNanos();
 
@@ -37,7 +37,10 @@ public class DefaultActorClock implements ActorClock
         {
             timeMillis = System.currentTimeMillis();
             nanoTimeOfLastMilli = nanoTime;
+            return true;
         }
+
+        return false;
     }
 
     private void updateNanos()

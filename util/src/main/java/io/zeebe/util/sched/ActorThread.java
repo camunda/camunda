@@ -36,17 +36,18 @@ import static io.zeebe.util.sched.metrics.SchedulerMetrics.TASK_MAX_EXECUTION_TI
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
+import java.util.function.Consumer;
 
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.clock.DefaultActorClock;
 import io.zeebe.util.sched.metrics.ActorThreadMetrics;
 import org.agrona.UnsafeAccess;
-import org.agrona.concurrent.BackoffIdleStrategy;
+import org.agrona.concurrent.*;
 import org.slf4j.MDC;
 import sun.misc.Unsafe;
 
 @SuppressWarnings("restriction")
-public class ActorThread extends Thread
+public class ActorThread extends Thread implements Consumer<Runnable>
 {
     static final Unsafe UNSAFE = UnsafeAccess.UNSAFE;
 
@@ -57,6 +58,8 @@ public class ActorThread extends Thread
     private static final long STATE_OFFSET;
 
     private final CompletableFuture<Void> terminationFuture = new CompletableFuture<>();
+
+    public final ManyToManyConcurrentArrayQueue<Runnable> submittedCallbacks = new ManyToManyConcurrentArrayQueue<>(1024 * 24);
 
     private final ActorClock clock;
 
@@ -128,9 +131,12 @@ public class ActorThread extends Thread
 
     private void doWork()
     {
-        clock.update();
+        submittedCallbacks.drain(this);
 
-        timerJobQueue.processExpiredTimers(clock);
+        if (clock.update())
+        {
+            timerJobQueue.processExpiredTimers(clock);
+        }
 
         currentTask = taskScheduler.getNextTask(clock);
 
@@ -371,5 +377,11 @@ public class ActorThread extends Thread
     public ActorThreadGroup getActorThreadGroup()
     {
         return actorThreadGroup;
+    }
+
+    @Override
+    public void accept(Runnable t)
+    {
+        t.run();
     }
 }

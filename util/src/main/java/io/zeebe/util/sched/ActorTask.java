@@ -660,4 +660,9 @@ public class ActorTask
 
         this.subscriptions = newSubscriptions;
     }
+
+    public void onSubscriptionCancelled(ActorSubscription subscription)
+    {
+        removeSubscription(subscription);
+    }
 }

@@ -99,9 +99,9 @@ public class ControlledActorClock implements ActorClock
     }
 
     @Override
-    public void update()
+    public boolean update()
     {
-        // no-op
+        return true;
     }
 
     @Override

@@ -19,7 +19,7 @@ import io.zeebe.util.sched.ActorThread;
 
 public interface ActorClock
 {
-    void update();
+    boolean update();
 
     long getTimeMillis();
 
