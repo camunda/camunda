@@ -1,3 +1,21 @@
 .ReactTable {
   min-height: 0;
+  font-size: 14px;
+  border: none;
+
+  .rt-thead.-header {
+    box-shadow: none;
+    font-weight: bold;
+    border-bottom: 1px solid #e3e3e3;
+  }
+
+  .rt-thead .rt-tr {
+    text-align: left;
+  }
+
+  .rt-th.rt-resizable-header {
+    &:focus {
+      outline: none;
+    }
+  }
 }
