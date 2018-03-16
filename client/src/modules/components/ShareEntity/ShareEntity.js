@@ -65,7 +65,7 @@ export default class ShareEntity extends React.Component {
     }
 
     return (
-      <div className="ShareEntity">
+      <div className={'ShareEntity ' + (this.props.className || '')}>
         <form>
           <div className="ShareEntity__enable">
             <div className="ShareEntity__enable-text">Enable sharing </div>

@@ -1,7 +1,7 @@
 import React from 'react';
 import moment from 'moment';
 import {Link, Redirect} from 'react-router-dom';
-import {Button, Modal, Input, ShareEntity, ReportView} from 'components';
+import {Button, Modal, Input, ShareEntity, ReportView, Popover} from 'components';
 
 import {
   loadSingleReport,
@@ -31,7 +31,6 @@ export default class Report extends React.Component {
       loaded: false,
       redirect: false,
       originalName: null,
-      shareModalVisible: false,
       deleteModalVisible: false
     };
   }
@@ -181,18 +180,6 @@ export default class Report extends React.Component {
     });
   };
 
-  showShareModal = () => {
-    this.setState({
-      shareModalVisible: true
-    });
-  };
-
-  closeShareModal = () => {
-    this.setState({
-      shareModalVisible: false
-    });
-  };
-
   showDeleteModal = () => {
     this.setState({
       deleteModalVisible: true
@@ -261,14 +248,7 @@ export default class Report extends React.Component {
   };
 
   renderViewMode = () => {
-    const {
-      name,
-      lastModifier,
-      lastModified,
-      reportResult,
-      shareModalVisible,
-      deleteModalVisible
-    } = this.state;
+    const {name, lastModifier, lastModified, reportResult, deleteModalVisible} = this.state;
 
     return (
       <div className="Report">
@@ -292,12 +272,16 @@ export default class Report extends React.Component {
             >
               Delete
             </Button>
-            <Button
-              onClick={this.showShareModal}
-              className="Report__tool-button Report__share-button"
-            >
-              Share
-            </Button>
+            <Popover className="Report__tool-button Report__share-button" title="Share">
+              <ShareEntity
+                className="Report__share-popover"
+                type="report"
+                resourceId={this.id}
+                shareEntity={shareReport}
+                revokeEntitySharing={revokeReportSharing}
+                getSharedEntity={getSharedReport}
+              />
+            </Popover>
             {this.shouldShowCSVDownload() && (
               <a
                 className="Report__tool-button Report__csv-download-button"
@@ -308,27 +292,6 @@ export default class Report extends React.Component {
             )}
           </div>
         </div>
-        <Modal
-          open={shareModalVisible}
-          onClose={this.closeShareModal}
-          className="Report__share-modal"
-        >
-          <Modal.Header>Share {this.state.name}</Modal.Header>
-          <Modal.Content>
-            <ShareEntity
-              type="report"
-              resourceId={this.id}
-              shareEntity={shareReport}
-              revokeEntitySharing={revokeReportSharing}
-              getSharedEntity={getSharedReport}
-            />
-          </Modal.Content>
-          <Modal.Actions>
-            <Button className="Report__close-share-modal-button" onClick={this.closeShareModal}>
-              Close
-            </Button>
-          </Modal.Actions>
-        </Modal>
         <Modal
           open={deleteModalVisible}
           onClose={this.closeDeleteModal}

@@ -18,6 +18,11 @@ jest.mock('components', () => {
 
   return {
     Modal,
+    Popover: ({title, children}) => (
+      <div>
+        {title} {children}
+      </div>
+    ),
     Button: props => <button {...props}>{props.children}</button>,
     Input: props => (
       <input
@@ -262,28 +267,11 @@ it('should save a changed report', async () => {
   expect(saveReport).toHaveBeenCalled();
 });
 
-it('should show a modal on share button click', () => {
+it('should render a sharing popover', () => {
   const node = mount(<Report {...props} />);
   node.setState({loaded: true, reportResult, ...sampleReport});
 
-  node
-    .find('.Report__share-button')
-    .first()
-    .simulate('click');
-
-  expect(node.find('.Report__share-modal').first()).toHaveProp('open', true);
-});
-
-it('should hide the modal on close button click', () => {
-  const node = mount(<Report {...props} />);
-  node.setState({loaded: true, modalVisible: true, reportResult, ...sampleReport});
-
-  node
-    .find('.Report__close-share-modal-button')
-    .first()
-    .simulate('click');
-
-  expect(node.find('.Report__share-modal').first()).toHaveProp('open', false);
+  expect(node.find('.Report__share-button').first()).toIncludeText('Share');
 });
 
 it('should show a download csv button with the correct link when report is a table', () => {

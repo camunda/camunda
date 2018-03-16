@@ -3,7 +3,7 @@
   position: relative;
   display: inline-block;
   width: 60px;
-  height: 34px;
+  height: 28px;
 }
 
 /* Hide default HTML checkbox */
@@ -27,9 +27,9 @@
 .Switch__Slider--round:before {
   position: absolute;
   content: '';
-  height: 26px;
-  width: 26px;
-  left: 4px;
+  height: 20px;
+  width: 20px;
+  left: 7px;
   bottom: 4px;
   background-color: white;
   -webkit-transition: 0.4s;
@@ -37,7 +37,7 @@
 }
 
 input:checked + .Switch__Slider--round {
-  background-color: #b5152b;
+  background-color: #00c364;
 }
 
 input:focus + .Switch__Slider--round {

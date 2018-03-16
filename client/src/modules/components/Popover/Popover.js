@@ -9,13 +9,18 @@ export default class Popover extends React.Component {
     super(props);
 
     this.state = {
-      open: false
+      open: false,
+      calcStyles: {}
     };
   }
 
   componentDidMount() {
     this.mounted = true;
     document.body.addEventListener('click', this.close);
+    new MutationObserver(this.getDialogStyle).observe(this.popoverRoot, {
+      childList: true,
+      subtree: true
+    });
   }
 
   componentWillUnmount() {
@@ -44,31 +49,40 @@ export default class Popover extends React.Component {
     });
   };
 
-  getButtonWidth = () => {
-    return this.buttonRef && this.buttonRef.offsetWidth;
+  getDialogStyle = () => {
+    let style = {};
+    if (this.buttonRef && this.popoverDialogRef) {
+      const overlayWidth = this.popoverDialogRef.clientWidth;
+      const buttonPosition = this.buttonRef.getBoundingClientRect().x;
+
+      const bodyWidth = document.body.clientWidth;
+
+      if (buttonPosition + overlayWidth > bodyWidth) {
+        style.right = 0;
+      } else {
+        style.left = 0;
+      }
+    }
+
+    this.setState({
+      calcStyles: style
+    });
   };
 
   createOverlay = () => {
-    const arrowOffset = this.getButtonWidth() / 2;
     return (
-      <div className="Popover__dialog">
-        <span
-          className="Popover__dialog-arrow-border"
-          style={{
-            left: arrowOffset + 'px'
+      <div>
+        <span className="Popover__dialog-arrow-border"> </span>
+        <span className="Popover__dialog-arrow" />
+        <div
+          ref={node => {
+            this.popoverDialogRef = node;
           }}
+          style={this.state.calcStyles}
+          className="Popover__dialog"
         >
-          {' '}
-        </span>
-        {this.props.children}
-        <span
-          className="Popover__dialog-arrow"
-          style={{
-            left: arrowOffset + 'px'
-          }}
-        >
-          {' '}
-        </span>
+          {this.props.children}{' '}
+        </div>
       </div>
     );
   };
@@ -83,11 +97,17 @@ export default class Popover extends React.Component {
 
   render() {
     return (
-      <div className={'Popover ' + (this.props.className || '')} onClick={this.catchClick}>
+      <div
+        ref={node => {
+          this.popoverRoot = node;
+        }}
+        className={'Popover ' + (this.props.className || '')}
+        onClick={this.catchClick}
+      >
         <Button
           onClick={this.toggleOpen}
           reference={this.storeButtonRef}
-          className="Popover__button"
+          className={'Popover__button' + (this.state.open ? '--open' : '')}
         >
           {this.props.title}
         </Button>

@@ -2,11 +2,17 @@
   position: relative;
 }
 
+.Popover__button--open,
 .Popover__button {
   width: 100%;
   text-overflow: ellipsis;
   white-space: nowrap;
   overflow: hidden;
+}
+
+.Popover__button--open {
+  background-color: #e6e6e6;
+  border: 1px solid #adadad;
 }
 
 .Popover__dialog {
@@ -15,11 +21,12 @@
   border: 1px solid lightgray;
   border-radius: 8px;
   margin-top: 10px;
-  z-index: 99999;
+  z-index: 9998;
 }
 .Popover__dialog-arrow,
 .Popover__dialog-arrow-border {
-  bottom: 100%;
+  bottom: -11px;
+  z-index: 9999;
   left: 50%;
   border: solid transparent;
   height: 0;

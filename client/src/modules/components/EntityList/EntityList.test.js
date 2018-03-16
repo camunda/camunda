@@ -150,7 +150,6 @@ it('should display all operations per default', () => {
     data: [sampleEntity]
   });
 
-  console.log(node.debug());
   expect(node.find('.EntityList__createButton')).toBePresent();
   expect(node.find('.EntityList__deleteButton')).toBePresent();
   expect(node.find('.EntityList__editLink')).toBePresent();
