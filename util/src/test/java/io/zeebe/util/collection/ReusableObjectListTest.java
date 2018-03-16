@@ -264,6 +264,7 @@ public class ReusableObjectListTest
         final Iterator<MutableInt> resetedIterator = reusableObjectList.iterator();
 
         final MutableInt firstValue = resetedIterator.next();
+        assertThat(firstValue == reusedObject).isTrue();
         assertThat(firstValue.getValue()).isEqualTo(3);
 
         final MutableInt secondValue = resetedIterator.next();
