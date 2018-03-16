@@ -135,6 +135,10 @@ public class Sender extends Actor
                 blockPeek.markCompleted();
             }
         }
+        else
+        {
+            actor.yield();
+        }
     }
 
     private void sendData()
