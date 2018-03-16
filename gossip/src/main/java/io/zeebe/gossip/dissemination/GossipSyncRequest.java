@@ -33,6 +33,13 @@ public class GossipSyncRequest implements Reusable
         this.parts.clear();
     }
 
+    public GossipSyncRequest addPayload(SocketAddress sender, DirectBuffer payload, int offset, int length)
+    {
+        parts.add().wrap(sender, payload, offset, length);
+
+        return this;
+    }
+
     public GossipSyncRequest addPayload(SocketAddress sender, DirectBuffer payload)
     {
         parts.add().wrap(sender, payload);

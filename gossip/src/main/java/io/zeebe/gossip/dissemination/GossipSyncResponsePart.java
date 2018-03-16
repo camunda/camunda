@@ -28,6 +28,14 @@ public class GossipSyncResponsePart implements Reusable
     private final DirectBuffer payloadView = new UnsafeBuffer(payloadBuffer);
     private int payloadLength = 0;
 
+    public void wrap(SocketAddress address, DirectBuffer payload, int offset, int length)
+    {
+        this.address.wrap(address);
+
+        this.payloadLength = length;
+        this.payloadBuffer.putBytes(0, payload, offset, length);
+    }
+
     public void wrap(SocketAddress address, DirectBuffer payload)
     {
         this.address.wrap(address);
