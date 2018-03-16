@@ -87,6 +87,16 @@ public class ClusteringRule extends ExternalResource
         }
 
         waitForInternalSystemAndReplicationFactor(3);
+
+        waitUntilBrokersInTopology(3);
+    }
+
+    private void waitUntilBrokersInTopology(int size)
+    {
+        waitForSpreading(() -> {
+            doRepeatedly(() -> zeebeClient.requestTopology().execute().getBrokers())
+                .until(topologyBrokers -> topologyBrokers.size() == size);
+        });
     }
 
     private void waitForInternalSystemAndReplicationFactor(int replicationFactor)
@@ -190,6 +200,7 @@ public class ClusteringRule extends ExternalResource
         final InputStream config = this.getClass().getClassLoader().getResourceAsStream(configFile);
         final Broker broker = new Broker(config);
         autoCloseableRule.manage(broker);
+
         return broker;
     }
 
@@ -201,7 +212,7 @@ public class ClusteringRule extends ExternalResource
      * @param socketAddress
      * @return
      */
-    public Broker restartBroker(SocketAddress socketAddress)
+    public void restartBroker(SocketAddress socketAddress)
     {
         final Broker broker = brokers.get(socketAddress);
         if (broker != null)
@@ -219,7 +230,18 @@ public class ClusteringRule extends ExternalResource
                 break;
             }
         }
-        return brokers.get(socketAddress);
+
+        waitUntilBrokerIsAddedToTopology(socketAddress);
+    }
+
+    private void waitUntilBrokerIsAddedToTopology(SocketAddress socketAddress)
+    {
+        waitForSpreading(() -> {
+            doRepeatedly(() -> zeebeClient.requestTopology().execute().getBrokers())
+                .until(topologyBrokers -> topologyBrokers.stream()
+                    .filter(topologyBroker -> topologyBroker.getSocketAddress().equals(socketAddress))
+                    .count() == 1);
+        });
     }
 
     /**
