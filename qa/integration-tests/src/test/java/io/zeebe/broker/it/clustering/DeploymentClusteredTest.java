@@ -20,6 +20,10 @@ import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
 import io.zeebe.client.event.DeploymentEvent;
 import io.zeebe.client.event.WorkflowInstanceEvent;
+import io.zeebe.client.task.impl.CreateTaskCommandImpl;
+import io.zeebe.client.topic.Topic;
+import io.zeebe.client.workflow.cmd.CreateWorkflowInstanceCommand;
+import io.zeebe.client.workflow.impl.CreateWorkflowInstanceCommandImpl;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.test.util.AutoCloseableRule;
@@ -186,8 +190,8 @@ public class DeploymentClusteredTest
     public void shouldCreateInstancesOnRestartedBroker()
     {
         // given
-        final int workCount = 10 * PARTITION_COUNT;
-        clusteringRule.createTopic("test", PARTITION_COUNT);
+        final int workCount = PARTITION_COUNT;
+        final Topic topic = clusteringRule.createTopic("test", PARTITION_COUNT);
         clusteringRule.stopBroker(ClusteringRule.BROKER_3_CLIENT_ADDRESS);
         client.workflows()
               .deploy("test")
@@ -197,16 +201,27 @@ public class DeploymentClusteredTest
         // when
         clusteringRule.restartBroker(ClusteringRule.BROKER_3_CLIENT_ADDRESS);
 
-        // then
-        for (int p = 0; p < workCount; p++)
+        // then create wf instance on each partition
+        final Integer[] partitionIds = topic.getPartitions().stream()
+            .mapToInt(p -> p.getId())
+            .boxed()
+            .toArray(Integer[]::new);
+
+        for (int partition : partitionIds)
         {
-            final WorkflowInstanceEvent workflowInstanceEvent = client.workflows()
-                                                                      .create("test")
-                                                                      .bpmnProcessId("process")
-                                                                      .execute();
+            final WorkflowInstanceEvent workflowInstanceEvent =
+                createWorkflowInstanceOnPartition("test", partition, "process");
 
             assertThat(workflowInstanceEvent.getState()).isEqualTo("WORKFLOW_INSTANCE_CREATED");
         }
+    }
+
+    protected WorkflowInstanceEvent createWorkflowInstanceOnPartition(String topic, int partition, String processId)
+    {
+        final CreateWorkflowInstanceCommandImpl createTaskCommand =
+            (CreateWorkflowInstanceCommandImpl) client.workflows().create(topic).bpmnProcessId(processId);
+        createTaskCommand.getEvent().setPartitionId(partition);
+        return createTaskCommand.execute();
     }
 
     @Test
