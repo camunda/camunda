@@ -75,7 +75,7 @@ public final class GossipEventCreationHelper
         return offset;
     }
 
-    public static DirectBuffer writeRaftsIntoBuffer(List<RaftStateComposite> rafts, MutableDirectBuffer directBuffer)
+    public static int writeRaftsIntoBuffer(List<RaftStateComposite> rafts, MutableDirectBuffer directBuffer)
     {
         final int raftCount = rafts.size();
 
@@ -101,7 +101,7 @@ public final class GossipEventCreationHelper
             offset += SIZE_OF_BYTE;
         }
 
-        return directBuffer;
+        return offset;
     }
 
     public static void updateMemberWithNewRaftState(MemberRaftComposite memberRaftComposite, DirectBuffer memberRaftStatesBuffer)

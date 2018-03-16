@@ -261,11 +261,11 @@ public class ClusterMemberListManager implements RaftStateListener, OnOpenLogStr
 
         // send complete list of partition where I'm a follower or leader
         final List<RaftStateComposite> rafts = member.getRafts();
-        final DirectBuffer payload = writeRaftsIntoBuffer(rafts, memberRaftStatesBuffer);
+        final int length = writeRaftsIntoBuffer(rafts, memberRaftStatesBuffer);
 
         LOG.trace("Publish event for partition {} state change {}", partitionId, raftState);
 
         context.getGossip()
-               .publishEvent(MEMBER_RAFT_STATES_EVENT_TYPE, payload);
+               .publishEvent(MEMBER_RAFT_STATES_EVENT_TYPE, memberRaftStatesBuffer, 0, length);
     }
 }

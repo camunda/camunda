@@ -62,9 +62,9 @@ public final class MemberRaftStatesSyncHandler implements GossipSyncRequestHandl
                 final List<RaftStateComposite> rafts = next.getRafts();
                 if (!rafts.isEmpty())
                 {
-                    final DirectBuffer payload = writeRaftsIntoBuffer(rafts, memberRaftStatesBuffer);
+                    final int length = writeRaftsIntoBuffer(rafts, memberRaftStatesBuffer);
 
-                    request.addPayload(next.getMember(), payload);
+                    request.addPayload(next.getMember(), memberRaftStatesBuffer, 0, length);
                 }
             }
             LOG.debug("Send RAFT state sync response.");
