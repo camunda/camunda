@@ -104,7 +104,8 @@ export default class Statistics extends React.Component {
     const flowNodeNames = this.state.flowNodeNames;
     const chartData = {};
     Object.keys(nodes).forEach(v => {
-      chartData[flowNodeNames[v]] = nodes[v];
+      const sequenceFlow = this.props.gateway.outgoing.find(({targetRef: {id}}) => id === v);
+      chartData[sequenceFlow.name || flowNodeNames[v] || v] = nodes[v];
     });
 
     this.setState({
