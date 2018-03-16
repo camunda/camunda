@@ -22,9 +22,11 @@ import io.zeebe.util.sched.ActorScheduler.ActorSchedulerBuilder;
  */
 public class CpuBoundThreadGroup extends ActorThreadGroup
 {
+
     public CpuBoundThreadGroup(ActorSchedulerBuilder builder)
     {
-        super("zb-actors", builder.getCpuBoundActorThreadCount(), builder.getPriorityQuotas().length, builder);
+        super(String.format("%s-%s", builder.getSchedulerName(), "zb-actors"),
+              builder.getCpuBoundActorThreadCount(), builder.getPriorityQuotas().length, builder);
     }
 
     @Override

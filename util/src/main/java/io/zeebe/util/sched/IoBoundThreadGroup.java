@@ -26,7 +26,8 @@ public class IoBoundThreadGroup extends ActorThreadGroup
 
     public IoBoundThreadGroup(ActorSchedulerBuilder builder)
     {
-        super("zb-io-actors", builder.getIoBoundActorThreadCount(), builder.getIoDeviceConcurrency().length, builder);
+        super(String.format("%s-%s", builder.getSchedulerName(), "zb-io-actors"),
+            builder.getIoBoundActorThreadCount(), builder.getIoDeviceConcurrency().length, builder);
     }
 
     @Override

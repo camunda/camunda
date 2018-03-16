@@ -170,6 +170,7 @@ public class ActorScheduler
 
     public static class ActorSchedulerBuilder
     {
+        private String schedulerName = "";
         private ActorClock actorClock;
         private ConcurrentCountersManager countersManager;
 
@@ -244,6 +245,17 @@ public class ActorScheduler
         {
             this.ioDeviceConcurrency = ioDeviceConcurrency;
             return this;
+        }
+
+        public ActorSchedulerBuilder setSchedulerName(String schedulerName)
+        {
+            this.schedulerName = schedulerName;
+            return this;
+        }
+
+        public String getSchedulerName()
+        {
+            return schedulerName;
         }
 
         public ActorClock getActorClock()
