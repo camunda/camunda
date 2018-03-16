@@ -5,7 +5,7 @@ def repository = 'zb-transport'
 def gitBranch = 'master'
 
 def pom = 'pom.xml'
-def mvnGoals = 'clean license:check source:jar javadoc:jar deploy -B -Pstress-tests'
+def mvnGoals = 'clean license:check source:jar javadoc:jar deploy -B -P jmh'
 
 def mavenVersion = 'maven-3.3-latest'
 def mavenSettingsId = 'camunda-maven-settings'
