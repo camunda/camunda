@@ -210,19 +210,19 @@ public class ClusterMemberListManager implements RaftStateListener, OnOpenLogStr
             final SocketAddress savedSocketAddress = new SocketAddress(socketAddress);
             actor.call(() ->
             {
-                LOG.debug("Received raft state change event for member {}", savedSocketAddress);
+                LOG.trace("Received raft state change event for member {}", savedSocketAddress);
                 final MemberRaftComposite member = context.getMemberListService()
                                                           .getMember(savedSocketAddress);
 
                 if (member == null)
                 {
-                    LOG.debug("Member {} does not exist. Maybe dead? List of dead members: {}", savedSocketAddress, deadMembers);
+                    LOG.trace("Member {} does not exist. Maybe dead? List of dead members: {}", savedSocketAddress, deadMembers);
                 }
                 else
                 {
                     updateMemberWithNewRaftState(member, savedBuffer);
 
-                    LOG.debug("Handled raft state change event for member {} - local member state: {}", savedSocketAddress, context.getMemberListService());
+                    LOG.trace("Handled raft state change event for member {} - local member state: {}", savedSocketAddress, context.getMemberListService());
                 }
             });
         }

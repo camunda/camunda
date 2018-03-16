@@ -382,7 +382,7 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
 
             if (responseWritten)
             {
-                Loggers.SERVICES_LOGGER.debug("Get processor by name");
+                Loggers.SERVICES_LOGGER.debug("Topic push processor for partition {} successfully opened. Send response for request {}", logStreamPartitionId, metadata.getRequestId());
                 final TopicSubscriptionPushProcessor pushProcessor = subscriptionRegistry.getProcessorByName(subscriberEvent.getName());
                 pushProcessor.enable();
             }

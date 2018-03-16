@@ -73,12 +73,12 @@ public class SystemContext implements AutoCloseable
 
         this.configurationManager = configurationManager;
         // TODO: submit diagnosticContext to actor scheduler once supported
-        this.scheduler = initScheduler(clock);
+        this.scheduler = initScheduler(clock, brokerId);
         this.serviceContainer = new ServiceContainerImpl(this.scheduler);
         this.scheduler.start();
     }
 
-    private ActorScheduler initScheduler(ActorClock clock)
+    private ActorScheduler initScheduler(ActorClock clock, String brokerId)
     {
         final ThreadingCfg cfg = configurationManager.readEntry("threading", ThreadingCfg.class);
         int numberOfThreads = cfg.numberOfThreads;
@@ -108,6 +108,7 @@ public class SystemContext implements AutoCloseable
                              .setCountersManager(countersManager)
                              .setCpuBoundActorThreadCount(cpuBoundThreads)
                              .setIoBoundActorThreadCount(ioBoundThreads)
+                             .setSchedulerName(brokerId)
                              .build();
     }
 

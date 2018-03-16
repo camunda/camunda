@@ -103,6 +103,7 @@ public class ZeebeClientImpl implements ZeebeClient
                                        .setCpuBoundActorThreadCount(numSchedulerThreads)
                                        .setIoBoundActorThreadCount(0)
                                        .setActorClock(actorClock)
+                                       .setSchedulerName("client")
                                        .build();
         this.scheduler.start();
 
