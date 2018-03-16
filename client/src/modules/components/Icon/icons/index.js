@@ -12,6 +12,7 @@ import close from '-!svg-react-loader!./close.svg';
 import stop from '-!svg-react-loader!./stop.svg';
 import link from '-!svg-react-loader!./link.svg';
 import embed from '-!svg-react-loader!./embed.svg';
+import save from '-!svg-react-loader!./save.svg';
 
 const icons = {
   autorefresh,
@@ -25,7 +26,8 @@ const icons = {
   close,
   stop,
   link,
-  embed
+  embed,
+  save
 };
 
 export default icons;
