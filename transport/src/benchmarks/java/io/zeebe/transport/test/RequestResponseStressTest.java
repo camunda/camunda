@@ -57,7 +57,7 @@ public class RequestResponseStressTest
             try (ClientResponse response = responseFuture.join())
             {
                 final DirectBuffer responseBuffer = response.getResponseBuffer();
-                // do assert
+                // do assert?
             }
         }
     }
@@ -76,7 +76,7 @@ public class RequestResponseStressTest
             try (ClientResponse response = responseFuture.join())
             {
                 final DirectBuffer responseBuffer = response.getResponseBuffer();
-                // do assert
+                // do assert?
             }
         }
     }
@@ -115,7 +115,7 @@ public class RequestResponseStressTest
                     try (ClientResponse response = responseFuture.join())
                     {
                         final DirectBuffer responseBuffer = response.getResponseBuffer();
-                        // do assert
+                        // do assert?
                     }
                 }
             }
