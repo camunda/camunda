@@ -34,7 +34,7 @@ import org.openjdk.jmh.annotations.*;
 public class SingleMessageStressTest
 {
     static final AtomicInteger THREAD_ID = new AtomicInteger(0);
-    private static final int BURST_SIZE = 1_000_000;
+    private static final int BURST_SIZE = 1_000;
 
     private static final int MAX_CONCURRENT_REQUESTS = 128;
     private static final MutableDirectBuffer MSG = new UnsafeBuffer(new byte[576]);
