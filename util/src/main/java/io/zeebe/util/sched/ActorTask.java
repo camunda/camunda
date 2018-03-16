@@ -15,17 +15,17 @@
  */
 package io.zeebe.util.sched;
 
-import static org.agrona.UnsafeAccess.UNSAFE;
+import io.zeebe.util.Loggers;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
+import io.zeebe.util.sched.metrics.TaskMetrics;
+import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 
 import java.util.Arrays;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 
-import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
-
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
-import io.zeebe.util.sched.metrics.TaskMetrics;
+import static org.agrona.UnsafeAccess.UNSAFE;
 
 /**
  * A task executed by the scheduler. For each actor (instance), exactly one task is created.
@@ -174,11 +174,24 @@ public class ActorTask
 
         boolean resubmit = false;
 
+        final short maxIterationCount = 10_000;
+        short iterationCount = 0;
+        long sumIteration = 0;
+
         while (!resubmit && (currentJob != null || poll()))
         {
+            if (iterationCount == maxIterationCount)
+            {
+                sumIteration += iterationCount;
+                iterationCount = 0;
+
+                Loggers.ACTOR_LOGGER.debug("Task {} blocks thread sum of iterations {}, triggered by subscription {}.", actor.getName(), sumIteration, currentJob.isTriggeredBySubscription());
+            }
+
             try
             {
                 currentJob.execute(runner);
+                iterationCount++;
             }
             catch (Exception e)
             {
@@ -527,7 +540,7 @@ public class ActorTask
     @Override
     public String toString()
     {
-        return actor.getName() + " " + schedulingState;
+        return actor.getName() + " " + schedulingState + " phase: " + lifecyclePhase;
     }
 
     public void yield()
