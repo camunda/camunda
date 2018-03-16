@@ -16,6 +16,7 @@
 package io.zeebe.broker.it.clustering;
 
 import io.zeebe.broker.it.ClientRule;
+import io.zeebe.client.clustering.impl.TopologyBroker;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.SocketAddress;
 import org.junit.Rule;
@@ -23,7 +24,9 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -78,30 +81,32 @@ public class GossipClusteringTest
     public void shouldRemoveMemberFromTopology()
     {
         // given
+        final SocketAddress brokerAddress = ClusteringRule.BROKER_3_CLIENT_ADDRESS;
+        final SocketAddress[] otherBrokers = clusteringRule.getOtherBrokers(brokerAddress);
 
         // when
-        clusteringRule.stopBroker(ClusteringRule.BROKER_3_CLIENT_ADDRESS);
+        clusteringRule.stopBroker(brokerAddress);
 
         // then
         final List<SocketAddress> topologyBrokers = clusteringRule.getBrokersInCluster();
 
-        assertThat(topologyBrokers).containsExactlyInAnyOrder(ClusteringRule.BROKER_1_CLIENT_ADDRESS,
-                                                              ClusteringRule.BROKER_2_CLIENT_ADDRESS);
+        assertThat(topologyBrokers).containsExactlyInAnyOrder(otherBrokers);
     }
 
     @Test
     public void shouldRemoveLeaderFromCluster()
     {
         // given
+        final TopologyBroker leaderForPartition = clusteringRule.getLeaderForPartition(0);
+        final SocketAddress[] otherBrokers = clusteringRule.getOtherBrokers(leaderForPartition.getSocketAddress());
 
         // when
-        clusteringRule.stopBroker(ClusteringRule.BROKER_1_CLIENT_ADDRESS);
+        clusteringRule.stopBroker(leaderForPartition.getSocketAddress());
 
         // then
         final List<SocketAddress> topologyBrokers = clusteringRule.getBrokersInCluster();
 
-        assertThat(topologyBrokers).containsExactlyInAnyOrder(ClusteringRule.BROKER_3_CLIENT_ADDRESS,
-                                                              ClusteringRule.BROKER_2_CLIENT_ADDRESS);
+        assertThat(topologyBrokers).containsExactlyInAnyOrder(otherBrokers);
     }
 
     @Test

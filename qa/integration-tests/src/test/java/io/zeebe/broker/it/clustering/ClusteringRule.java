@@ -28,10 +28,7 @@ import io.zeebe.transport.SocketAddress;
 import org.junit.rules.ExternalResource;
 
 import java.io.InputStream;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
@@ -276,6 +273,15 @@ public class ClusteringRule extends ExternalResource
                           .map(TopologyBroker::getSocketAddress)
                           .collect(Collectors.toList());
 
+    }
+
+    public SocketAddress[] getOtherBrokers(SocketAddress address)
+    {
+        final List<SocketAddress> collect = brokers.keySet()
+            .stream()
+            .filter((s) -> !s.equals(address))
+            .collect(Collectors.toList());
+        return collect.toArray(new SocketAddress[collect.size()]);
     }
 
     /**
