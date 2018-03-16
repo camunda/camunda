@@ -33,6 +33,8 @@ import static io.zeebe.broker.clustering.management.memberList.GossipEventCreati
 
 public final class APISyncHandler implements GossipSyncRequestHandler
 {
+    private static final boolean IS_TRACE_ON = Loggers.CLUSTERING_LOGGER.isTraceEnabled();
+
     public static final Logger LOG = Loggers.CLUSTERING_LOGGER;
 
     private final ClusterManagerContext clusterManagerContext;
@@ -51,7 +53,11 @@ public final class APISyncHandler implements GossipSyncRequestHandler
     {
         return actor.call(() ->
         {
-            LOG.debug("Got API sync request.");
+            if (IS_TRACE_ON)
+            {
+                LOG.trace("Got API sync request.");
+            }
+
             final Iterator<MemberRaftComposite> iterator = clusterManagerContext.getMemberListService()
                                                                                 .iterator();
 
@@ -68,7 +74,11 @@ public final class APISyncHandler implements GossipSyncRequestHandler
                     request.addPayload(next.getMember(), payload);
                 }
             }
-            LOG.debug("Send API sync response.");
+
+            if (IS_TRACE_ON)
+            {
+                LOG.trace("Send API sync response.");
+            }
         });
     }
 }
