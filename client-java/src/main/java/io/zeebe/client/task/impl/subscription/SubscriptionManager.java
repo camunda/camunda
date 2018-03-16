@@ -78,7 +78,13 @@ public class SubscriptionManager extends Actor implements SubscribedEventHandler
     @Override
     protected void onActorStarted()
     {
-        actor.consume(incomingEventSubscription, incomingEventSubscription::poll);
+        actor.consume(incomingEventSubscription, () ->
+        {
+            if (incomingEventSubscription.poll() == 0)
+            {
+                actor.yield();
+            }
+        });
         startSubscriptionExecution(client.getNumExecutionThreads());
     }
 
