@@ -20,13 +20,10 @@ package io.zeebe.broker.event.handler;
 import io.zeebe.broker.event.processor.CloseSubscriptionRequest;
 import io.zeebe.broker.event.processor.TopicSubscriptionService;
 import io.zeebe.broker.transport.clientapi.BufferingServerOutput;
-import io.zeebe.broker.transport.clientapi.ErrorResponseWriter;
-import io.zeebe.broker.transport.controlmessage.ControlMessageResponseWriter;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.clientapi.ErrorResponseDecoder;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
-import io.zeebe.test.util.FluentMock;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
@@ -54,15 +51,6 @@ public class RemoveTopicSubscriptionHandlerTest
 
     @Mock
     protected TopicSubscriptionService subscriptionService;
-
-    @FluentMock
-    protected ControlMessageResponseWriter responseWriter;
-
-    @FluentMock
-    protected ErrorResponseWriter errorWriter;
-
-    @FluentMock
-    protected ActorControl actor;
 
     @Rule
     public ControlledActorSchedulerRule actorSchedulerRule = new ControlledActorSchedulerRule();
