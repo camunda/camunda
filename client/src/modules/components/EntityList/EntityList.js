@@ -100,7 +100,7 @@ export default class EntityList extends React.Component {
         </Modal.Content>
         <Modal.Actions>
           <Button className="EntityList__close-delete-modal-button" onClick={this.closeDeleteModal}>
-            Close
+            Cancel
           </Button>
           <Button
             type="primary"

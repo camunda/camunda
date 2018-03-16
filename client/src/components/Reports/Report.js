@@ -303,7 +303,7 @@ export default class Report extends React.Component {
           </Modal.Content>
           <Modal.Actions>
             <Button className="Report__close-delete-modal-button" onClick={this.closeDeleteModal}>
-              Close
+              Cancel
             </Button>
             <Button
               type="primary"
