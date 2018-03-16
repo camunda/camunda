@@ -13,46 +13,54 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.util.actor.stress;
+package io.zeebe.util.actor;
 
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorScheduler;
+import io.zeebe.util.sched.future.ActorFuture;
 import org.openjdk.jmh.annotations.*;
 
 @BenchmarkMode(Mode.Throughput)
 @Fork(1)
 @Warmup(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
-public class BasicActorStressTest
+public class FuturesStressTest
 {
     static final AtomicInteger THREAD_ID = new AtomicInteger(0);
     private static final int BURST_SIZE = 1_000;
 
     @Benchmark
     @Threads(1)
-    public void shouldRunActors1Thread(BenchmarkContext ctx) throws InterruptedException
+    @SuppressWarnings("rawtypes")
+    public void ping(BenchmarkContext ctx) throws InterruptedException
     {
-        sendBurst(ctx);
+        final PingActor pingActor = ctx.pingActor;
+        final ActorFuture[] futures = new ActorFuture[BURST_SIZE];
+
+        for (int i = 0; i < BURST_SIZE; i++)
+        {
+            futures[i] = pingActor.ping();
+        }
+
+        for (int i = 0; i < BURST_SIZE; i++)
+        {
+            futures[i].join();
+        }
     }
 
     @Benchmark
-    @Threads(2)
-    public void shouldRunActors2Threads(BenchmarkContext ctx) throws InterruptedException
-    {
-        sendBurst(ctx);
-    }
-
-    private void sendBurst(BenchmarkContext ctx) throws InterruptedException
+    @Threads(1)
+    public void pingPong(BenchmarkContext ctx) throws InterruptedException
     {
         final ActorScheduler scheduler = ctx.scheduler;
         final CountDownLatch latch = new CountDownLatch(BURST_SIZE);
 
         for (int i = 0; i < BURST_SIZE; i++)
         {
-            scheduler.submitActor(new ClosableActor(latch));
+            scheduler.submitActor(new PongActor(ctx.pingActor, latch));
         }
 
         latch.await();
@@ -66,33 +74,71 @@ public class BasicActorStressTest
             .setCpuBoundActorThreadCount(2)
             .build();
 
+        PingActor pingActor = new PingActor();
+
+
         @Setup
         public void setUp()
         {
             scheduler.start();
+            scheduler.submitActor(pingActor).join();
         }
 
         @TearDown
         public void tearDown() throws InterruptedException, ExecutionException, TimeoutException
         {
+            pingActor.close().join();
             scheduler.stop().get(2, TimeUnit.SECONDS);
         }
     }
 
-
-    static class ClosableActor extends Actor
+    static class PingActor extends Actor
     {
+        public ActorFuture<Void> ping(PongActor pongActor)
+        {
+            return actor.call(() ->
+            {
+                pongActor.pong();
+            });
+        }
+
+        public ActorFuture<Void> ping()
+        {
+            return actor.call(() ->
+            {
+
+            });
+        }
+
+        public ActorFuture<Void> close()
+        {
+            return actor.close();
+        }
+    }
+
+    static class PongActor extends Actor
+    {
+        private PingActor pingActor;
         private CountDownLatch latch;
 
-        ClosableActor(CountDownLatch latch)
+        PongActor(PingActor pingActor, CountDownLatch latch)
         {
+            this.pingActor = pingActor;
             this.latch = latch;
         }
 
         @Override
-        protected void onActorStarted()
+        protected void onActorStarting()
         {
-            actor.close();
+            pingActor.ping(this);
+        }
+
+        public void pong()
+        {
+            actor.call(() ->
+            {
+                actor.close();
+            });
         }
 
         @Override

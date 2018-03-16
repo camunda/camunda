@@ -57,6 +57,12 @@
 
     <dependency>
       <groupId>org.openjdk.jmh</groupId>
+      <artifactId>jmh-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.openjdk.jmh</groupId>
       <artifactId>jmh-generator-annprocess</artifactId>
       <scope>test</scope>
     </dependency>
@@ -65,27 +71,23 @@
 
   <profiles>
     <profile>
-      <id>stress-tests</id>
-      <properties>
-        <uberjar.name>benchmarks</uberjar.name>
-      </properties>
+      <id>jmh</id>
 
       <build>
         <plugins>
-
           <plugin>
             <groupId>org.codehaus.mojo</groupId>
             <artifactId>build-helper-maven-plugin</artifactId>
             <executions>
               <execution>
-                <id>add-source</id>
+                <id>add-jmh-tests</id>
                 <phase>generate-test-sources</phase>
                 <goals>
                   <goal>add-test-source</goal>
                 </goals>
                 <configuration>
                   <sources>
-                    <source>src/test/benchmarks</source>
+                    <source>src/test/jmh</source>
                   </sources>
                 </configuration>
               </execution>
@@ -97,7 +99,7 @@
             <artifactId>maven-assembly-plugin</artifactId>
             <executions>
               <execution>
-                <id>package-benchmark-jar</id>
+                <id>package-jmh-jar</id>
                 <phase>package</phase>
                 <goals>
                   <goal>single</goal>
@@ -109,7 +111,7 @@
                       <mainClass>org.openjdk.jmh.Main</mainClass>
                     </manifest>
                   </archive>
-                  <descriptor>src/test/benchmarks/assembly.xml</descriptor>
+                  <descriptor>src/test/jmh/assembly.xml</descriptor>
                 </configuration>
               </execution>
             </executions>
@@ -120,7 +122,7 @@
             <artifactId>exec-maven-plugin</artifactId>
             <executions>
               <execution>
-                <id>run-benchmarks</id>
+                <id>run-jmh-test</id>
                 <phase>integration-test</phase>
                 <goals>
                   <goal>exec</goal>

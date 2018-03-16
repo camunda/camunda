@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.util.actor.stress;
+package io.zeebe.util.actor;
 
 import java.util.Arrays;
 import java.util.concurrent.*;
