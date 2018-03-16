@@ -100,7 +100,7 @@ public class BufferingServerTransportTest
 
         final int messagesToExhaustReceiveBuffer = (BUFFER_SIZE / largeBuf.capacity()) + 1;
 
-        final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(SERVER_ADDRESS);
+        final RemoteAddress remoteAddress = clientTransport.registerRemoteAndAwaitChannel(SERVER_ADDRESS);
 
         final ServerInputSubscription serverSubscription = serverTransport.openSubscription("foo", serverHandler, null).join();
 
