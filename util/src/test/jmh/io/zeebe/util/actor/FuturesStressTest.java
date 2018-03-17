@@ -66,6 +66,27 @@ public class FuturesStressTest
         latch.await();
     }
 
+    @Benchmark
+    @Threads(1)
+    public void getScalability1Threads(BenchmarkContext ctx) throws InterruptedException
+    {
+        ctx.pingActor.ping().join();
+    }
+
+    @Benchmark
+    @Threads(4)
+    public void getScalability4Threads(BenchmarkContext ctx) throws InterruptedException
+    {
+        ctx.pingActor.ping().join();
+    }
+
+    @Benchmark
+    @Threads(8)
+    public void getScalability8Threads(BenchmarkContext ctx) throws InterruptedException
+    {
+        ctx.pingActor.ping().join();
+    }
+
     @State(Scope.Benchmark)
     public static class BenchmarkContext
     {

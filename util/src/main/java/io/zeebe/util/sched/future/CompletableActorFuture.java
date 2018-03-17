@@ -29,6 +29,7 @@ import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 public class CompletableActorFuture<V> implements ActorFuture<V>
 {
     private static final long STATE_OFFSET;
+    private static final long NON_ACTOR_THREADS_BLOCKED_OFFSET;
 
     private static final int AWAITING_RESULT = 1;
     private static final int COMPLETING = 2;
@@ -42,6 +43,8 @@ public class CompletableActorFuture<V> implements ActorFuture<V>
     private final ManyToOneConcurrentLinkedQueue<ActorTask> blockedTasksOverflow = new ManyToOneConcurrentLinkedQueue<>();
 
     private volatile int state = CLOSED;
+
+    private volatile int nonActorThreadsBlocked = 0;
 
     protected V value;
     protected String failure;
@@ -124,7 +127,7 @@ public class CompletableActorFuture<V> implements ActorFuture<V>
     }
 
     @Override
-    public V get() throws ExecutionException
+    public V get() throws ExecutionException, InterruptedException
     {
         try
         {
@@ -137,29 +140,34 @@ public class CompletableActorFuture<V> implements ActorFuture<V>
     }
 
     @Override
-    public V get(long timeout, TimeUnit unit) throws ExecutionException, TimeoutException
+    public V get(long timeout, TimeUnit unit) throws ExecutionException, TimeoutException, InterruptedException
     {
-        if (!isDone())
+        if (ActorThread.current() != null)
         {
-            if (ActorThread.current() != null)
+            if (!isDone())
             {
                 throw new IllegalStateException(
-                        "Actor call get() on future which has not completed. " + "Actors must be non-blocking. Use actor.awaitFuture().");
+                        "Actor call get() on future which has not completed. " + "Actors must be non-blocking. Use actor.runOnCompletion().");
             }
-            else
+        }
+        else
+        {
+
+            if (!isDone())
             {
                 final long waitTime = System.currentTimeMillis() + unit.toMillis(timeout) + 1;
-                // TODO: better implementation of blocking for non-actor threads
-                while (!isDone())
-                {
-                    if (System.currentTimeMillis() > waitTime)
-                    {
-                        throw new TimeoutException();
-                    }
 
-                    Thread.yield();
+                UNSAFE.getAndAddInt(this, NON_ACTOR_THREADS_BLOCKED_OFFSET, 1);
+                synchronized (this)
+                {
+                    if (!isDone())
+                    {
+                        this.wait(waitTime);
+                    }
                 }
+                UNSAFE.getAndAddInt(this, NON_ACTOR_THREADS_BLOCKED_OFFSET, -1);
             }
+
         }
 
         if (isCompletedExceptionally())
@@ -221,6 +229,15 @@ public class CompletableActorFuture<V> implements ActorFuture<V>
     {
         notifyAllInQueue(blockedTasks);
         notifyAllInQueue(blockedTasksOverflow);
+
+        if (nonActorThreadsBlocked > 0)
+        {
+            synchronized (this)
+            {
+                this.notifyAll();
+            }
+            nonActorThreadsBlocked = 0;
+        }
     }
 
     private void notifyAllInQueue(Queue<ActorTask> tasks)
@@ -280,6 +297,7 @@ public class CompletableActorFuture<V> implements ActorFuture<V>
         try
         {
             STATE_OFFSET = UNSAFE.objectFieldOffset(CompletableActorFuture.class.getDeclaredField("state"));
+            NON_ACTOR_THREADS_BLOCKED_OFFSET = UNSAFE.objectFieldOffset(CompletableActorFuture.class.getDeclaredField("nonActorThreadsBlocked"));
         }
         catch (final Exception ex)
         {
