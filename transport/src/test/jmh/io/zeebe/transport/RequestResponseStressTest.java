@@ -44,7 +44,7 @@ public class RequestResponseStressTest
 
     @Benchmark
     @Threads(1)
-    public void sendBurstSync(BenchmarkContext ctx) throws InterruptedException
+    public void sendBurstSync1(BenchmarkContext ctx) throws InterruptedException
     {
         final ClientOutput output = ctx.output;
         final RemoteAddress remote = ctx.remote;
@@ -63,7 +63,64 @@ public class RequestResponseStressTest
 
     @Benchmark
     @Threads(2)
-    public void sendBurstSync2Threads(BenchmarkContext ctx) throws InterruptedException
+    public void sendBurstSync2(BenchmarkContext ctx) throws InterruptedException
+    {
+        final ClientOutput output = ctx.output;
+        final RemoteAddress remote = ctx.remote;
+
+        for (int i = 0; i < BURST_SIZE; i++)
+        {
+            final ActorFuture<ClientResponse> responseFuture = output.sendRequest(remote, WRITER);
+
+            try (ClientResponse response = responseFuture.join())
+            {
+                final DirectBuffer responseBuffer = response.getResponseBuffer();
+                // do assert?
+            }
+        }
+    }
+
+    @Benchmark
+    @Threads(8)
+    public void sendBurstSync8(BenchmarkContext ctx) throws InterruptedException
+    {
+        final ClientOutput output = ctx.output;
+        final RemoteAddress remote = ctx.remote;
+
+        for (int i = 0; i < BURST_SIZE; i++)
+        {
+            final ActorFuture<ClientResponse> responseFuture = output.sendRequest(remote, WRITER);
+
+            try (ClientResponse response = responseFuture.join())
+            {
+                final DirectBuffer responseBuffer = response.getResponseBuffer();
+                // do assert?
+            }
+        }
+    }
+
+    @Benchmark
+    @Threads(16)
+    public void sendBurstSync16(BenchmarkContext ctx) throws InterruptedException
+    {
+        final ClientOutput output = ctx.output;
+        final RemoteAddress remote = ctx.remote;
+
+        for (int i = 0; i < BURST_SIZE; i++)
+        {
+            final ActorFuture<ClientResponse> responseFuture = output.sendRequest(remote, WRITER);
+
+            try (ClientResponse response = responseFuture.join())
+            {
+                final DirectBuffer responseBuffer = response.getResponseBuffer();
+                // do assert?
+            }
+        }
+    }
+
+    @Benchmark
+    @Threads(32)
+    public void sendBurstSync32(BenchmarkContext ctx) throws InterruptedException
     {
         final ClientOutput output = ctx.output;
         final RemoteAddress remote = ctx.remote;
