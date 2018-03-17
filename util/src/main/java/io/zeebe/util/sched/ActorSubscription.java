@@ -50,4 +50,9 @@ public interface ActorSubscription
     {
         // default is ignore, can be implemented by cyclic / recurring subscriptions
     }
+
+    default void cancel()
+    {
+        // nothing to do
+    }
 }

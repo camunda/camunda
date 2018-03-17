@@ -332,7 +332,14 @@ public class ActorTask
     private void onClosed()
     {
         schedulingState = TaskSchedulingState.NOT_SCHEDULED;
+
+        for (int i = 0; i < subscriptions.length; i++)
+        {
+            subscriptions[i].cancel();
+        }
+
         subscriptions = new ActorSubscription[0];
+
 
         final Queue<ActorJob> activeJobsQueue = submittedJobs;
         submittedJobs = new ClosedQueue();
@@ -676,6 +683,9 @@ public class ActorTask
 
     public void onSubscriptionCancelled(ActorSubscription subscription)
     {
-        removeSubscription(subscription);
+        if (lifecyclePhase != ActorLifecyclePhase.CLOSED)
+        {
+            removeSubscription(subscription);
+        }
     }
 }
