@@ -117,7 +117,7 @@ public class GossipClusteringTest
         clusteringRule.restartBroker(ClusteringRule.BROKER_3_CLIENT_ADDRESS);
 
         // then
-        final List<SocketAddress> topologyBrokers = doRepeatedly(() -> clusteringRule.getBrokersInCluster()).until(l -> l.size() == 3);
+        final List<SocketAddress> topologyBrokers = clusteringRule.getBrokersInCluster();
 
         assertThat(topologyBrokers).containsExactlyInAnyOrder(ClusteringRule.BROKER_1_CLIENT_ADDRESS,
                                                               ClusteringRule.BROKER_3_CLIENT_ADDRESS,
