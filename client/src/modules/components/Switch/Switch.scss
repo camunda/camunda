@@ -2,7 +2,7 @@
 .Switch {
   position: relative;
   display: inline-block;
-  width: 60px;
+  width: 50px;
   height: 28px;
 }
 
@@ -45,9 +45,9 @@ input:focus + .Switch__Slider--round {
 }
 
 input:checked + .Switch__Slider--round:before {
-  -webkit-transform: translateX(26px);
-  -ms-transform: translateX(26px);
-  transform: translateX(26px);
+  -webkit-transform: translateX(17px);
+  -ms-transform: translateX(17px);
+  transform: translateX(17px);
 }
 
 /* Rounded sliders */
