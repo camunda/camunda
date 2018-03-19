@@ -15,27 +15,28 @@
  */
 package io.zeebe.util.sched.functional;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import io.zeebe.util.collection.Tuple;
+import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
+import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
+import org.assertj.core.api.AbstractThrowableAssert;
+import org.junit.Rule;
+import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 
-import org.assertj.core.api.AbstractThrowableAssert;
-import org.junit.Rule;
-import org.junit.Test;
-
-import io.zeebe.util.collection.Tuple;
-import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
-import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class ActorFutureTest
 {
@@ -619,6 +620,103 @@ public class ActorFutureTest
         final AbstractThrowableAssert<?, ? extends Throwable> thrownBy = assertThatThrownBy(() -> future.join());
         thrownBy.isInstanceOf(ExecutionException.class);
         thrownBy.hasCause(throwable);
+    }
+
+    @Test
+    public void shouldCompleteFutureAndWaitOnNonActorThread() throws Exception
+    {
+        // given
+        final CompletableActorFuture<Integer> future = new CompletableActorFuture<>();
+
+        // when
+        schedulerRule.submitActor(new Actor()
+        {
+            @Override
+            protected void onActorStarted()
+            {
+                future.complete(0xFA);
+            }
+        });
+
+        new Thread() {
+            @Override
+            public void run()
+            {
+                schedulerRule.workUntilDone();
+            }
+        }.start();
+
+        final Integer value = future.get();
+
+        // then
+        assertThat(value).isEqualTo(0xFA);
+    }
+
+    @Test
+    public void shouldCompleteFutureExceptionallyAndWaitOnNonActorThread()
+    {
+        // given
+        final CompletableActorFuture<Integer> future = new CompletableActorFuture<>();
+
+        // when
+        schedulerRule.submitActor(new Actor()
+        {
+            @Override
+            protected void onActorStarted()
+            {
+                future.completeExceptionally(new IllegalArgumentException("moep"));
+            }
+        });
+
+        new Thread() {
+            @Override
+            public void run()
+            {
+                schedulerRule.workUntilDone();
+            }
+        }.start();
+
+        // expect
+        assertThatThrownBy(() -> future.get())
+            .isInstanceOf(ExecutionException.class)
+            .hasMessage("moep");
+    }
+
+    @Test
+    public void shouldReturnValueOnNonActorThread() throws Exception
+    {
+        // given
+        final CompletableActorFuture<String> future = CompletableActorFuture.completed("value");
+
+        // when
+        final String value = future.get(5, TimeUnit.MILLISECONDS);
+
+        // then
+        assertThat(value).isEqualTo("value");
+    }
+
+    @Test
+    public void shouldThrowExceptionOnNonActorThread()
+    {
+        // given
+        final CompletableActorFuture<String> future = CompletableActorFuture.completedExceptionally(new IllegalArgumentException("moep"));
+
+        // expect
+        assertThatThrownBy(() -> future.get(5, TimeUnit.MILLISECONDS))
+            .isInstanceOf(ExecutionException.class)
+            .hasMessage("moep");
+    }
+
+    @Test
+    public void shouldThrowTimeoutOnNonActorThread()
+    {
+        // given
+        final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+
+        // expect
+        assertThatThrownBy(() -> future.get(5, TimeUnit.MILLISECONDS))
+            .isInstanceOf(TimeoutException.class)
+            .hasMessage("Timeout after: 5 MILLISECONDS");
     }
 
     class TestActor extends Actor

@@ -15,21 +15,24 @@
  */
 package io.zeebe.util.sched.future;
 
-import static org.agrona.UnsafeAccess.UNSAFE;
-
-import java.util.Queue;
-import java.util.concurrent.*;
-
-import io.zeebe.util.sched.*;
+import io.zeebe.util.sched.ActorTask;
+import io.zeebe.util.sched.ActorThread;
+import io.zeebe.util.sched.FutureUtil;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
+
+import java.util.Queue;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import static org.agrona.UnsafeAccess.UNSAFE;
 
 /** Completable future implementation that is garbage free and reusable */
 @SuppressWarnings("restriction")
 public class CompletableActorFuture<V> implements ActorFuture<V>
 {
     private static final long STATE_OFFSET;
-    private static final long NON_ACTOR_THREADS_BLOCKED_OFFSET;
 
     private static final int AWAITING_RESULT = 1;
     private static final int COMPLETING = 2;
@@ -43,8 +46,6 @@ public class CompletableActorFuture<V> implements ActorFuture<V>
     private final ManyToOneConcurrentLinkedQueue<ActorTask> blockedTasksOverflow = new ManyToOneConcurrentLinkedQueue<>();
 
     private volatile int state = CLOSED;
-
-    private volatile int nonActorThreadsBlocked = 0;
 
     protected V value;
     protected String failure;
@@ -152,23 +153,25 @@ public class CompletableActorFuture<V> implements ActorFuture<V>
         }
         else
         {
-
             if (!isDone())
             {
-                final long waitTime = System.currentTimeMillis() + unit.toMillis(timeout) + 1;
+                final long waitTime = unit.toMillis(timeout) + 1;
 
-                UNSAFE.getAndAddInt(this, NON_ACTOR_THREADS_BLOCKED_OFFSET, 1);
                 synchronized (this)
                 {
                     if (!isDone())
                     {
                         this.wait(waitTime);
+
+                        if (!isDone())
+                        {
+                            throw new TimeoutException("Timeout after: " + timeout + " " + unit);
+                        }
                     }
                 }
-                UNSAFE.getAndAddInt(this, NON_ACTOR_THREADS_BLOCKED_OFFSET, -1);
             }
-
         }
+
 
         if (isCompletedExceptionally())
         {
@@ -230,13 +233,9 @@ public class CompletableActorFuture<V> implements ActorFuture<V>
         notifyAllInQueue(blockedTasks);
         notifyAllInQueue(blockedTasksOverflow);
 
-        if (nonActorThreadsBlocked > 0)
+        synchronized (this)
         {
-            synchronized (this)
-            {
-                this.notifyAll();
-            }
-            nonActorThreadsBlocked = 0;
+            this.notifyAll();
         }
     }
 
@@ -297,7 +296,6 @@ public class CompletableActorFuture<V> implements ActorFuture<V>
         try
         {
             STATE_OFFSET = UNSAFE.objectFieldOffset(CompletableActorFuture.class.getDeclaredField("state"));
-            NON_ACTOR_THREADS_BLOCKED_OFFSET = UNSAFE.objectFieldOffset(CompletableActorFuture.class.getDeclaredField("nonActorThreadsBlocked"));
         }
         catch (final Exception ex)
         {
