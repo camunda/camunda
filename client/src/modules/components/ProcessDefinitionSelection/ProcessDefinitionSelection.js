@@ -6,7 +6,7 @@ import {loadProcessDefinitions} from './service';
 
 import './ProcessDefinitionSelection.css';
 
-export default class ControlPanel extends React.Component {
+export default class ProcessDefinitionSelection extends React.Component {
   constructor(props) {
     super(props);
 
