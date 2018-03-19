@@ -15,10 +15,10 @@
  */
 package io.zeebe.map;
 
+import io.zeebe.util.ZbLogger;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class Loggers
 {
-    public static final Logger ZB_MAP_LOGGER = LoggerFactory.getLogger("io.zeebe.map");
+    public static final Logger ZB_MAP_LOGGER = new ZbLogger("io.zeebe.map");
 }
