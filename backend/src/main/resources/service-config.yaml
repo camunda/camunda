@@ -166,10 +166,10 @@ import:
   handler:
     backoff:
       #Interval which is used for the backoff time calculation.
-      interval: 1000
+      interval: 10000
       #If all jobs are backing off at the moment, this interval is used
       #to trigger general backoff
-      value: 6000
+      value: 60000
       #Once all pages are consumed, the import scheduler component will
       #start scheduling fetching tasks in increasing periods of time,
       #controlled by "backoff" counter.
@@ -185,11 +185,11 @@ import:
         #
         #in case not supported value is provided 'Minutes' will be used
         #for interval calculation.
-        unit: Minutes
+        unit: Hours
         #Interval the import is started all over again, meaning only missing 
         #entities are fetched during the import restart. The data already    
         #imported is kept.                                                   
-        value: 30
+        value: 12
   #The name of the import index type.
   indexType: import-index
   #The name of the id set based import index type

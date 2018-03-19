@@ -13,7 +13,7 @@ pipelineJob('Performance Large Dataset') {
   jdk '(Default)'
 
   triggers {
-    cron('0 3 * * *')
+    cron('H 3 * * *')
   }
 
   publishers {
