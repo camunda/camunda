@@ -5,9 +5,12 @@ import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.alert.EmailAlertEnabledDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.service.es.reader.AlertReader;
 import org.camunda.optimize.service.es.writer.AlertWriter;
+import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.TokenService;
+import org.camunda.optimize.service.util.ValidationHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.quartz.JobDetail;
 import org.quartz.JobKey;
@@ -61,6 +64,9 @@ public class  AlertService {
 
   @Autowired
   private AlertCheckJobFactory alertCheckJobFactory;
+
+  @Autowired
+  private ReportService reportService;
 
   private SchedulerFactoryBean schedulerFactoryBean;
 
@@ -175,11 +181,23 @@ public class  AlertService {
   }
 
   public IdDto createAlert(AlertCreationDto toCreate, String token) {
+    validateAlert(toCreate);
     String userId = tokenService.getTokenIssuer(token);
     String alertId = this.createAlertForUser(toCreate, userId).getId();
     IdDto result = new IdDto();
     result.setId(alertId);
     return result;
+  }
+
+  private void validateAlert(AlertCreationDto toCreate) {
+    ReportDefinitionDto report = reportService.getReport(toCreate.getReportId());
+    ValidationHelper.ensureNotEmpty("report", report);
+
+    ValidationHelper.ensureNotEmpty("operator", toCreate.getThresholdOperator());
+    ValidationHelper.ensureNotNull("check interval", toCreate.getCheckInterval());
+    ValidationHelper.ensureNotEmpty("check interval unit", toCreate.getCheckInterval().getUnit());
+
+    ValidationHelper.ensureNotEmpty("email", toCreate.getEmail());
   }
 
   protected AlertDefinitionDto createAlertForUser(AlertCreationDto toCreate, String userId) {
@@ -210,6 +228,7 @@ public class  AlertService {
   }
 
   public void updateAlert(String alertId, AlertCreationDto toCreate, String token) {
+    validateAlert(toCreate);
     String userId = tokenService.getTokenIssuer(token);
     this.updateAlertForUser(alertId, toCreate, userId);
   }

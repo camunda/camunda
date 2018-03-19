@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.alert;
 
 import com.icegreen.greenmail.util.GreenMail;
+import org.camunda.optimize.AbstractAlertIT;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
@@ -39,7 +40,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 /**
  * @author Askar Akhmerov
  */
-public class AlertCheckSchedulerIT extends AbstractAlertSchedulerIT {
+public class AlertCheckSchedulerIT extends AbstractAlertIT {
 
   @Rule
   public RuleChain chain = RuleChain

@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.alert;
 
+import org.camunda.optimize.AbstractAlertIT;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
@@ -24,7 +25,7 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 /**
  * @author Askar Akhmerov
  */
-public class AlertReminderSchedulerIT extends AbstractAlertSchedulerIT {
+public class AlertReminderSchedulerIT extends AbstractAlertIT {
 
   @Rule
   public RuleChain chain = RuleChain

@@ -1,4 +1,4 @@
-package org.camunda.optimize.service.alert;
+package org.camunda.optimize;
 
 import com.icegreen.greenmail.util.GreenMail;
 import com.icegreen.greenmail.util.ServerSetup;
@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.alert.SyncListener;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
@@ -36,7 +37,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 /**
  * @author Askar Akhmerov
  */
-public abstract class AbstractAlertSchedulerIT {
+public abstract class AbstractAlertIT {
 
   protected static final String ALERT = "alert";
 
