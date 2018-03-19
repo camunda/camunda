@@ -180,7 +180,6 @@ public class SubscribeProcessor implements EventProcessor
             }
             else
             {
-                processorFuture.join();
                 state = successState;
             }
             return false;
