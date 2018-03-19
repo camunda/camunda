@@ -55,7 +55,7 @@ public class EmbeddedBrokerRule extends ExternalResource
 
     public EmbeddedBrokerRule()
     {
-        this("zeebe.unit-test.cfg.toml");
+        this(() -> null);
     }
 
     public EmbeddedBrokerRule(Supplier<InputStream> configSupplier)

@@ -235,9 +235,7 @@ public class ClusteringRule extends ExternalResource
     {
         waitForSpreading(() -> {
             doRepeatedly(() -> zeebeClient.requestTopology().execute().getBrokers())
-                .until(topologyBrokers -> topologyBrokers.stream()
-                    .filter(topologyBroker -> topologyBroker.getSocketAddress().equals(socketAddress))
-                    .count() == 1);
+                .until(topologyBrokers -> topologyBrokers.stream().anyMatch(topologyBroker -> topologyBroker.getSocketAddress().equals(socketAddress)));
         });
     }
 
@@ -324,9 +322,7 @@ public class ClusteringRule extends ExternalResource
     {
         waitForSpreading(() -> {
             doRepeatedly(() -> zeebeClient.requestTopology().execute().getBrokers())
-                .until(topologyBrokers -> topologyBrokers.stream()
-                    .filter(topologyBroker -> topologyBroker.getSocketAddress().equals(socketAddress))
-                    .count() == 0);
+                .until(topologyBrokers -> topologyBrokers.stream().noneMatch(topologyBroker -> topologyBroker.getSocketAddress().equals(socketAddress)));
         });
     }
 
