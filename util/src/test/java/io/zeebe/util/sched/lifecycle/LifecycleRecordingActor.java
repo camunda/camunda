@@ -92,7 +92,7 @@ class LifecycleRecordingActor extends Actor
     @SuppressWarnings("unchecked")
     protected void blockPhase(ActorFuture<Void> future, BiConsumer consumer)
     {
-        actor.blockPhaseUntilCompletion(future, consumer);
+        actor.runOnCompletionBlockingCurrentPhase(future, consumer);
     }
 
     @SuppressWarnings("unchecked")

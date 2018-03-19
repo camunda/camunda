@@ -170,12 +170,12 @@ public class RunnableOrderingTests
             {
                 actor.run(() ->
                 {
-                    actor.blockPhaseUntilCompletion(future, futureConsumer(TWO));
+                    actor.runOnCompletionBlockingCurrentPhase(future, futureConsumer(TWO));
                     actions.add(ONE);
                 });
 
                 actor.run(runnable(THREE));
-                actor.blockPhaseUntilCompletion(future, futureConsumer(FOUR));
+                actor.runOnCompletionBlockingCurrentPhase(future, futureConsumer(FOUR));
             }
         };
 
@@ -254,7 +254,7 @@ public class RunnableOrderingTests
                     }
                     else
                     {
-                        actor.blockPhaseUntilCompletion(future, futureConsumer(FOUR));
+                        actor.runOnCompletionBlockingCurrentPhase(future, futureConsumer(FOUR));
                     }
 
                     actions.add(ONE);
@@ -443,7 +443,7 @@ public class RunnableOrderingTests
             {
                 actor.run(() ->
                 {
-                    actor.blockPhaseUntilCompletion(future, (v, t) ->
+                    actor.runOnCompletionBlockingCurrentPhase(future, (v, t) ->
                     {
                         actions.add(THREE);
                         actor.run(runnable(FOUR));

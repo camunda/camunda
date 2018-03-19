@@ -321,9 +321,9 @@ public class ActorControl
      *            the callback that handle the future's result. The throwable is
      *            <code>null</code> when the future is completed successfully.
      */
-    public <T> void blockPhaseUntilCompletion(ActorFuture<T> future, BiConsumer<T, Throwable> callback)
+    public <T> void runOnCompletionBlockingCurrentPhase(ActorFuture<T> future, BiConsumer<T, Throwable> callback)
     {
-        ensureCalledFromWithinActor("blockPhaseUntilCompletion(...)");
+        ensureCalledFromWithinActor("runOnCompletionBlockingCurrentPhase(...)");
         this.submitContinuationJob(future, callback, (job) -> new ActorFutureSubscription(future, job));
     }
 

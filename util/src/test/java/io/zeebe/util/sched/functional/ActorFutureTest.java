@@ -92,7 +92,7 @@ public class ActorFutureTest
             @Override
             protected void onActorStarted()
             {
-                actor.blockPhaseUntilCompletion(future, (r, t) -> callbackInvocations.incrementAndGet());
+                actor.runOnCompletionBlockingCurrentPhase(future, (r, t) -> callbackInvocations.incrementAndGet());
             }
         };
 
@@ -460,7 +460,7 @@ public class ActorFutureTest
             @Override
             protected void onActorStarted()
             {
-                actor.blockPhaseUntilCompletion(CompletableActorFuture.completed("foo"), (r, t) -> futureResult.set(r));
+                actor.runOnCompletionBlockingCurrentPhase(CompletableActorFuture.completed("foo"), (r, t) -> futureResult.set(r));
             }
         });
 
@@ -477,7 +477,7 @@ public class ActorFutureTest
         {
             actor.call(() ->
             {
-                actor.blockPhaseUntilCompletion(new CompletableActorFuture<>(), (r, t) ->
+                actor.runOnCompletionBlockingCurrentPhase(new CompletableActorFuture<>(), (r, t) ->
                 {
                     // never called since future is never completed
                 });
@@ -724,7 +724,7 @@ public class ActorFutureTest
 
         public <T> void awaitFuture(ActorFuture<T> f, BiConsumer<T, Throwable> onCompletion)
         {
-            actor.call(() -> actor.blockPhaseUntilCompletion(f, onCompletion));
+            actor.call(() -> actor.runOnCompletionBlockingCurrentPhase(f, onCompletion));
         }
 
         public void close()

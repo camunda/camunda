@@ -100,7 +100,7 @@ public class IoBoundActorsIntegrationTest
             {
                 for (int i = 0; i < 1_000; i++)
                 {
-                    actor.blockPhaseUntilCompletion(callableActor.doCall(), this::callback);
+                    actor.runOnCompletionBlockingCurrentPhase(callableActor.doCall(), this::callback);
                 }
             }
 
