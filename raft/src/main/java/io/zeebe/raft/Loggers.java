@@ -15,10 +15,10 @@
  */
 package io.zeebe.raft;
 
+import io.zeebe.util.ZbLogger;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class Loggers
 {
-    public static final Logger RAFT_LOGGER = LoggerFactory.getLogger("io.zeebe.raft");
+    public static final Logger RAFT_LOGGER = new ZbLogger("io.zeebe.raft");
 }
