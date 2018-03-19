@@ -43,6 +43,7 @@ public class RaftThreeNodesTest
     public void shouldJoinCluster()
     {
         // given
+        cluster.awaitClusterSize(3);
         final RaftRule leader = cluster.awaitLeader();
 
         // then
@@ -57,6 +58,7 @@ public class RaftThreeNodesTest
     public void shouldReplicateLogEvents()
     {
         // given
+        cluster.awaitClusterSize(3);
         final RaftRule leader = cluster.awaitLeader();
         cluster.awaitLogControllerOpen(leader);
 
@@ -71,6 +73,7 @@ public class RaftThreeNodesTest
     public void shouldElectNewLeader()
     {
         // given
+        cluster.awaitClusterSize(3);
         final RaftRule oldLeader = cluster.awaitLeader();
         cluster.awaitRaftEventCommittedOnAll(oldLeader.getTerm());
 

@@ -213,6 +213,12 @@ public class RaftClusterRule implements TestRule
             "Failed to wait for a node to become leader in the cluster");
     }
 
+    public void awaitClusterSize(int members)
+    {
+        awaitCondition(() -> rafts.stream().filter(r -> r.getMemberSize() >= members - 1).count() == members, ALL_COMMITTED_RETRIES,
+                "timeout while awaiting clustersize");
+    }
+
     public void printLogEntries(final boolean readUncommitted)
     {
         rafts.forEach(r -> printLogEntries(r, readUncommitted));

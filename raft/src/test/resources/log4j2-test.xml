@@ -7,6 +7,12 @@
       <AppenderRef ref="Console"/>
     </Root>
 
+    <!--
+      <Logger name="io.zeebe.raft" level="trace" additivity="false">
+        <AppenderRef ref="Console"/>
+      </Logger>
+    -->
+        
     <Logger name="io.zeebe" level="debug" additivity="false">
       <AppenderRef ref="Console"/>
 

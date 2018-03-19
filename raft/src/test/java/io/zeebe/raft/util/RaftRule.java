@@ -26,7 +26,6 @@ import static org.mockito.Mockito.*;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.util.*;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import io.zeebe.dispatcher.*;
@@ -35,16 +34,20 @@ import io.zeebe.logstreams.log.*;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.raft.*;
+import io.zeebe.raft.controller.MemberReplicateLogController;
 import io.zeebe.raft.event.RaftConfigurationEvent;
 import io.zeebe.raft.event.RaftConfigurationEventMember;
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.*;
 import io.zeebe.util.sched.ActorControl;
+import io.zeebe.util.sched.channel.OneToOneRingBufferChannel;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 import org.junit.rules.ExternalResource;
 import org.mockito.ArgumentMatcher;
 
@@ -69,9 +72,7 @@ public class RaftRule extends ExternalResource implements RaftStateListener
     protected Dispatcher clientSendBuffer;
 
     protected Dispatcher serverSendBuffer;
-    protected BufferingServerTransport serverTransport;
-
-    protected Dispatcher serverReceiveBuffer;
+    protected ServerTransport serverTransport;
 
     protected LogStream logStream;
     protected Raft raft;
@@ -104,15 +105,10 @@ public class RaftRule extends ExternalResource implements RaftStateListener
     {
         final String name = socketAddress.toString();
 
+        final RaftApiMessageHandler raftApiMessageHandler = new RaftApiMessageHandler();
+
         serverSendBuffer =
             Dispatchers.create("serverSendBuffer-" + name)
-                       .bufferSize(32 * 1024 * 1024)
-                       .subscriptions("sender-" + name)
-                       .actorScheduler(actorSchedulerRule.get())
-                       .build();
-
-        serverReceiveBuffer =
-            Dispatchers.create("serverReceiveBuffer-" + name)
                        .bufferSize(32 * 1024 * 1024)
                        .subscriptions("sender-" + name)
                        .actorScheduler(actorSchedulerRule.get())
@@ -123,7 +119,7 @@ public class RaftRule extends ExternalResource implements RaftStateListener
                       .sendBuffer(serverSendBuffer)
                       .bindAddress(socketAddress.toInetSocketAddress())
                       .scheduler(actorSchedulerRule.get())
-                      .buildBuffering(serverReceiveBuffer);
+                      .build(raftApiMessageHandler, raftApiMessageHandler);
 
         clientSendBuffer =
             Dispatchers.create("clientSendBuffer-" + name)
@@ -149,12 +145,13 @@ public class RaftRule extends ExternalResource implements RaftStateListener
         logStream.open();
 
         persistentStorage = new InMemoryRaftPersistentStorage(logStream);
+        final OneToOneRingBufferChannel messageBuffer = new OneToOneRingBufferChannel(new UnsafeBuffer(new byte[(MemberReplicateLogController.REMOTE_BUFFER_SIZE) + RingBufferDescriptor.TRAILER_LENGTH]));
 
         spyClientOutput = spy(clientTransport.getOutput());
         final ClientTransport spyClientTransport = spy(clientTransport);
         when(spyClientTransport.getOutput()).thenReturn(spyClientOutput);
 
-        raft = new Raft(configuration, socketAddress, logStream, serverTransport, spyClientTransport, persistentStorage, this)
+        raft = new Raft(actorSchedulerRule.get(), configuration, socketAddress, logStream, spyClientTransport, persistentStorage, messageBuffer, this)
         {
             @Override
             protected void onActorStarting()
@@ -163,6 +160,7 @@ public class RaftRule extends ExternalResource implements RaftStateListener
                 super.onActorStarting();
             }
         };
+        raftApiMessageHandler.registerRaft(raft);
         raft.addMembers(members.stream().map(RaftRule::getSocketAddress).collect(Collectors.toList()));
 
         uncommittedReader = new BufferedLogStreamReader(logStream, true);
@@ -184,7 +182,6 @@ public class RaftRule extends ExternalResource implements RaftStateListener
 
         serverTransport.close();
         serverSendBuffer.close();
-        serverReceiveBuffer.close();
 
         clientTransport.close();
         clientSendBuffer.close();
@@ -218,6 +215,11 @@ public class RaftRule extends ExternalResource implements RaftStateListener
         return raft;
     }
 
+    public int getMemberSize()
+    {
+        return raft.getMemberSize();
+    }
+
     public RaftConfiguration getConfiguration()
     {
         return raft.getConfiguration();
@@ -249,9 +251,7 @@ public class RaftRule extends ExternalResource implements RaftStateListener
 
     public void clearSubscription()
     {
-        final String subscriptionName = raft.getSubscriptionName();
-        final Subscription subscription = serverReceiveBuffer.getSubscription(subscriptionName);
-        subscription.poll(NOOP_FRAGMENT_HANDLER, Integer.MAX_VALUE);
+        raft.clearReceiveBuffer().join();
     }
 
     public boolean isLeader()
@@ -439,16 +439,16 @@ public class RaftRule extends ExternalResource implements RaftStateListener
         {
             final ArgumentMatcher<RemoteAddress> remoteAddressMatcher = r -> other.socketAddress.equals(r.getAddress());
 
-            doReturn(CompletableActorFuture.completedExceptionally(new RuntimeException("connection is interrupted")))
+            doReturn(CompletableActorFuture.completedExceptionally(new RequestTimeoutException("connection is interrupted")))
                 .when(spyClientOutput)
                 .sendRequest(argThat(remoteAddressMatcher), any());
 
-            doReturn(CompletableActorFuture.completedExceptionally(new TimeoutException("timeout to " + other.socketAddress)))
+            doReturn(CompletableActorFuture.completedExceptionally(new RequestTimeoutException("timeout to " + other.socketAddress)))
                 .when(spyClientOutput)
                 .sendRequest(argThat(remoteAddressMatcher), any(), any());
 
             final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(other.getSocketAddress());
-            doReturn(false)
+            doReturn(true)
                 .when(spyClientOutput)
                 .sendMessage(argThat(transportMessage -> readRemoteStreamId(transportMessage) == remoteAddress.getStreamId()));
         });

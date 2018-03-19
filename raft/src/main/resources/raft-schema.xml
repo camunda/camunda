@@ -36,6 +36,10 @@
   </types>
 
   <!-- RAFT MESSAGES -->
+  
+  <sbe:message name="RequestWithPartitionId" id="100">
+    <field name="partitionId" id="0" type="uint16"/>
+  </sbe:message>
 
   <sbe:message name="JoinRequest" id="0">
     <field name="partitionId" id="0" type="uint16"/>

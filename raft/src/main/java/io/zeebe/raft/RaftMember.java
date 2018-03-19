@@ -15,40 +15,22 @@
  */
 package io.zeebe.raft;
 
-import io.zeebe.logstreams.impl.LoggedEventImpl;
-import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
-import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.raft.controller.MemberReplicateLogController;
+import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.RemoteAddress;
-
-import static io.zeebe.raft.AppendRequestEncoder.previousEventPositionNullValue;
-import static io.zeebe.raft.AppendRequestEncoder.previousEventTermNullValue;
+import io.zeebe.util.sched.ActorScheduler;
 
 public class RaftMember
 {
     private final RemoteAddress remoteAddress;
-    private final LogStream logStream;
-    private final BufferedLogStreamReader reader;
-
-    private boolean failures;
+    private MemberReplicateLogController replicationController;
 
     private long matchPosition;
-
-    private LoggedEventImpl bufferedEvent;
-    private long previousPosition;
-    private int previousTerm;
 
     public RaftMember(final RemoteAddress remoteAddress, final LogStream logStream)
     {
         this.remoteAddress = remoteAddress;
-        this.logStream = logStream;
-        this.reader = new BufferedLogStreamReader(logStream, true);
-    }
-
-    public void close()
-    {
-        reader.close();
     }
 
     public RemoteAddress getRemoteAddress()
@@ -56,189 +38,34 @@ public class RaftMember
         return remoteAddress;
     }
 
+    public void onFollowerHasAcknowledgedPosition(long position)
+    {
+        matchPosition = position;
+        replicationController.onFollowerHasAcknowledgedPosition(position);
+    }
+
+    public void onFollowerHasFailedPosition(long position)
+    {
+        replicationController.onFollowerHasFailedPosition(position);
+    }
+
     public long getMatchPosition()
     {
         return matchPosition;
     }
 
-    public void setMatchPosition(long matchPosition)
+    public void stopReplicationController()
     {
-        this.matchPosition = matchPosition;
-    }
-
-    public long getPreviousPosition()
-    {
-        return previousPosition;
-    }
-
-    public int getPreviousTerm()
-    {
-        return previousTerm;
-    }
-
-    public void failure()
-    {
-        failures = true;
-    }
-
-    public void resetFailures()
-    {
-        failures = false;
-    }
-
-    public boolean hasFailures()
-    {
-        return failures;
-    }
-
-    public void setBufferedEvent(final LoggedEventImpl bufferedEvent)
-    {
-        this.bufferedEvent = bufferedEvent;
-    }
-
-    public LoggedEventImpl discardBufferedEvent()
-    {
-        final LoggedEventImpl event = bufferedEvent;
-        bufferedEvent = null;
-        return event;
-    }
-
-    public void reset()
-    {
-        resetFailures();
-        setPreviousEventToEndOfLog();
-    }
-
-    public LoggedEventImpl getNextEvent()
-    {
-        if (bufferedEvent != null)
+        if (replicationController != null)
         {
-            return discardBufferedEvent();
+            replicationController.close();
         }
-        else if (reader.hasNext())
-        {
-            return (LoggedEventImpl) reader.next();
-        }
-        else
-        {
-            return null;
-        }
+        replicationController = null;
     }
 
-    public void resetToPosition(final long eventPosition)
+    public void startReplicationController(ActorScheduler actorScheduler, Raft raft, ClientTransport transport)
     {
-        if (eventPosition >= 0)
-        {
-            final LoggedEvent previousEvent = getEventAtPosition(eventPosition);
-            if (previousEvent != null)
-            {
-                setPreviousEvent(previousEvent);
-            }
-            else
-            {
-                final LogBlockIndex logBlockIndex = logStream.getLogBlockIndex();
-                final long blockPosition = logBlockIndex.lookupBlockPosition(eventPosition);
-
-                if (blockPosition > 0)
-                {
-                    reader.seek(blockPosition);
-                }
-                else
-                {
-                    reader.seekToFirstEvent();
-                }
-
-                long previousPosition = -1;
-
-                while (reader.hasNext())
-                {
-                    final LoggedEvent next = reader.next();
-
-                    if (next.getPosition() < eventPosition)
-                    {
-                        previousPosition = next.getPosition();
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-
-                if (previousPosition >= 0)
-                {
-                    setPreviousEvent(previousPosition);
-                }
-                else
-                {
-                    setPreviousEventToStartOfLog();
-                }
-            }
-        }
-        else
-        {
-            setPreviousEventToStartOfLog();
-        }
+        replicationController = new MemberReplicateLogController(raft, this, transport);
+        actorScheduler.submitActor(replicationController, true);
     }
-
-    private LoggedEvent getEventAtPosition(final long position)
-    {
-        if (reader.seek(position) && reader.hasNext())
-        {
-            return reader.next();
-        }
-        else
-        {
-            return null;
-        }
-    }
-
-    public void setPreviousEventToEndOfLog()
-    {
-        discardBufferedEvent();
-
-        reader.seekToLastEvent();
-
-        final LoggedEventImpl lastEvent = getNextEvent();
-        setPreviousEvent(lastEvent);
-    }
-
-    public void setPreviousEventToStartOfLog()
-    {
-        discardBufferedEvent();
-
-        reader.seekToFirstEvent();
-
-        setPreviousEvent(null);
-    }
-
-    public void setPreviousEvent(final long previousPosition)
-    {
-        discardBufferedEvent();
-
-        final LoggedEvent previousEvent = getEventAtPosition(previousPosition);
-
-        setPreviousEvent(previousEvent);
-    }
-
-    public void setPreviousEvent(final LoggedEvent previousEvent)
-    {
-        discardBufferedEvent();
-
-        if (previousEvent != null)
-        {
-            previousPosition = previousEvent.getPosition();
-            previousTerm = previousEvent.getRaftTerm();
-        }
-        else
-        {
-            previousPosition = previousEventPositionNullValue();
-            previousTerm = previousEventTermNullValue();
-        }
-    }
-
-    public boolean hasNextEvent()
-    {
-        return bufferedEvent != null || reader.hasNext();
-    }
-
 }

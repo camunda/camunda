@@ -19,6 +19,7 @@ import static io.zeebe.util.EnsureUtil.ensureNotNull;
 
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 import io.zeebe.logstreams.impl.LogStorageAppender;
 import io.zeebe.logstreams.log.LogStream;
@@ -28,11 +29,16 @@ import io.zeebe.raft.event.RaftConfigurationEventMember;
 import io.zeebe.raft.protocol.*;
 import io.zeebe.raft.state.*;
 import io.zeebe.transport.*;
+import io.zeebe.transport.impl.actor.Receiver;
 import io.zeebe.util.buffer.BufferWriter;
-import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.ScheduledTimer;
+import io.zeebe.util.sched.*;
+import io.zeebe.util.sched.channel.OneToOneRingBufferChannel;
+import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.MessageHandler;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
 /**
@@ -48,11 +54,14 @@ import org.slf4j.Logger;
  * </ul>
  *
  */
-public class Raft extends Actor implements ServerMessageHandler, ServerRequestHandler
+public class Raft extends Actor implements ServerMessageHandler, ServerRequestHandler, MessageHandler
 {
     private static final Logger LOG = Loggers.RAFT_LOGGER;
+    private static final boolean IS_TRACE_ENABLED = LOG.isTraceEnabled();
 
     // environment
+    private final ActorScheduler actorScheduler;
+    private final OneToOneRingBufferChannel messageReceiveBuffer;
     private final RaftConfiguration configuration;
     private final SocketAddress socketAddress;
     private final ClientTransport clientTransport;
@@ -64,19 +73,18 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
 
     // volatile state
     private final BufferedLogStorageAppender appender;
-    private final BufferingServerTransport serverTransport;
     private AbstractRaftState state;
     private final Map<SocketAddress, RaftMember> memberLookup = new HashMap<>();
     private final List<RaftMember> members = new ArrayList<>();
     private final List<RaftStateListener> raftStateListeners = new ArrayList<>();
     private boolean shouldElect = true;
+    private final AtomicLong lastHeartbeatTimestamp = new AtomicLong();
 
     // controller
     private JoinController joinController;
     private AppendRaftEventController appendRaftEventController;
 
     private OpenLogStreamController openLogStreamController;
-    private ReplicateLogController replicateLogController;
     private ConsensusRequestController pollController;
     private ConsensusRequestController voteController;
 
@@ -93,24 +101,30 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
     private final PollRequest pollRequest = new PollRequest();
     private final VoteRequest voteRequest = new VoteRequest();
     private final AppendRequest appendRequest = new AppendRequest();
+    private final AppendRequest incomingAppendRequest = new AppendRequest();
     private final AppendResponse appendResponse = new AppendResponse();
     private ScheduledTimer electionTimer;
     private ScheduledTimer flushTimer;
     private String actorName;
 
-    public Raft(final RaftConfiguration configuration, final SocketAddress socketAddress, final LogStream logStream,
-                final BufferingServerTransport serverTransport, final ClientTransport clientTransport,
-                final RaftPersistentStorage persistentStorage, final RaftStateListener... listeners)
+    public Raft(final ActorScheduler actorScheduler,
+            final RaftConfiguration configuration,
+            final SocketAddress socketAddress,
+            final LogStream logStream,
+            final ClientTransport clientTransport,
+            final RaftPersistentStorage persistentStorage,
+            final OneToOneRingBufferChannel messageReceiveBuffer,
+            final RaftStateListener... listeners)
     {
+        this.actorScheduler = actorScheduler;
         this.configuration = configuration;
         this.socketAddress = socketAddress;
         this.logStream = logStream;
         this.clientTransport = clientTransport;
         this.persistentStorage = persistentStorage;
+        this.messageReceiveBuffer = messageReceiveBuffer;
         appender = new BufferedLogStorageAppender(this);
         actorName = String.format("raft.%s.%s", logStream.getLogName(), socketAddress.toString());
-
-        this.serverTransport = serverTransport;
 
         followerState = new FollowerState(this, appender);
         candidateState = new CandidateState(this, appender);
@@ -155,20 +169,17 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
         }
     }
 
-    public String getSubscriptionName()
-    {
-        return "raft-" + logStream.getLogName();
-    }
-
     // state transitions
 
     public void becomeFollower()
     {
+        actor.setSchedulingHints(SchedulingHints.ioBound((short) 0));
+
         followerState.reset();
         state = followerState;
 
         openLogStreamController.close();
-        replicateLogController.close();
+        members.forEach((m) -> m.stopReplicationController());
         pollController.close();
         voteController.close();
 
@@ -200,11 +211,13 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
 
     public void becomeCandidate()
     {
+        actor.setSchedulingHints(SchedulingHints.cpuBound(ActorPriority.REGULAR));
+
         candidateState.reset();
         state = candidateState;
 
         openLogStreamController.close();
-        replicateLogController.close();
+        getMembers().forEach(RaftMember::stopReplicationController);
         pollController.close();
         voteController.sendRequest();
 
@@ -230,13 +243,15 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
 
     public void becomeLeader()
     {
+        actor.setSchedulingHints(SchedulingHints.cpuBound(ActorPriority.REGULAR));
+
         leaderState.reset();
         state = leaderState;
 
         cancelElectionTimer();
         cancelFlushTimer();
 
-        replicateLogController.open();
+        members.forEach(m -> m.startReplicationController(actorScheduler, this, clientTransport));
         openLogStreamController.open();
         pollController.close();
         voteController.close();
@@ -262,30 +277,13 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
         appendRaftEventController = new AppendRaftEventController(this, actor);
 
         openLogStreamController = new OpenLogStreamController(this, actor);
-        replicateLogController = new ReplicateLogController(this, actor);
 
         pollController = new ConsensusRequestController(this, actor, new PollRequestHandler());
         voteController = new ConsensusRequestController(this, actor, new VoteRequestHandler());
 
-        final ActorFuture<ServerInputSubscription> openSubscriptionFuture =
-            serverTransport.openSubscription(getSubscriptionName(), this, this);
-
-        actor.runOnCompletion(openSubscriptionFuture, (subscription, failure) ->
+        actor.consume(messageReceiveBuffer, () ->
         {
-            if (failure == null)
-            {
-                actor.consume(subscription, () ->
-                {
-                    if (subscription.poll() == 0)
-                    {
-                        actor.yield();
-                    }
-                });
-            }
-            else
-            {
-                LOG.error("Failed to appendEvent subscription", failure);
-            }
+            messageReceiveBuffer.read(this, 1);
         });
     }
 
@@ -310,7 +308,11 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
     {
         if (getState() != RaftState.LEADER)
         {
-            if (shouldElect && joinController.isJoined())
+            final ActorClock clock = ActorClock.current();
+            clock.update();
+            final long timeSinceLastHeartbeat = clock.getTimeMillis() - lastHeartbeatTimestamp.get();
+
+            if (shouldElect && joinController.isJoined() && timeSinceLastHeartbeat > configuration.getElectionIntervalMs())
             {
                 switch (getState())
                 {
@@ -351,7 +353,6 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
         actor.runOnCompletion(openLogStreamController.close(), (v, t) ->
         {
             LOG.debug("Shutdown raft.");
-            replicateLogController.close();
             pollController.close();
             voteController.close();
 
@@ -361,7 +362,7 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
 
             appender.close();
 
-            getMembers().forEach(RaftMember::close);
+            getMembers().forEach(RaftMember::stopReplicationController);
         });
     }
 
@@ -372,36 +373,80 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
 
     // message handler
 
+    /**
+     * called by the transport {@link Receiver}
+     */
     @Override
     public boolean onMessage(final ServerOutput output, final RemoteAddress remoteAddress, final DirectBuffer buffer, final int offset, final int length)
     {
-        if (appendRequest.tryWrap(buffer, offset, length) && matchesLog(appendRequest))
+        if (IS_TRACE_ENABLED)
         {
-            state.appendRequest(appendRequest);
+            LOG.trace("Received message from {}", remoteAddress);
         }
-        else if (appendResponse.tryWrap(buffer, offset, length) && matchesLog(appendResponse))
+
+        if (incomingAppendRequest.tryWrap(buffer, offset, length))
         {
-            state.appendResponse(appendResponse);
+            final ActorClock clock = ActorClock.current();
+            clock.update();
+            lastHeartbeatTimestamp.set(clock.getTimeMillis());
+        }
+
+        if (!messageReceiveBuffer.write(1, buffer, offset, length))
+        {
+            LOG.warn("Dropping");
         }
 
         return true;
     }
 
+    /**
+     * called in raft actor upon consumption of the message from the {@link #messageReceiveBuffer}
+     */
+    @Override
+    public void onMessage(int msgTypeId, MutableDirectBuffer buffer, int offset, int length)
+    {
+        if (IS_TRACE_ENABLED)
+        {
+            LOG.trace("Processing message");
+        }
+
+        if (appendRequest.tryWrap(buffer, offset, length))
+        {
+            state.appendRequest(appendRequest);
+        }
+        else if (appendResponse.tryWrap(buffer, offset, length))
+        {
+            state.appendResponse(appendResponse);
+        }
+    }
+
+    /**
+     * called by the transport {@link Receiver}
+     */
     @Override
     public boolean onRequest(final ServerOutput output, final RemoteAddress remoteAddress, final DirectBuffer buffer, final int offset, final int length, final long requestId)
     {
-        if (joinRequest.tryWrap(buffer, offset, length) && matchesLog(joinRequest))
+        // make copy of request so that we can process async
+        // TODO: if we want we can pool these buffers but it is probably
+        // not even necessary since this is not data path
+        final MutableDirectBuffer requestData = new UnsafeBuffer(new byte[length]);
+        requestData.putBytes(0, buffer, offset, length);
+
+        actor.run(() ->
         {
-            state.joinRequest(output, remoteAddress, requestId, joinRequest);
-        }
-        else if (pollRequest.tryWrap(buffer, offset, length) && matchesLog(pollRequest))
-        {
-            state.pollRequest(output, remoteAddress, requestId, pollRequest);
-        }
-        else if (voteRequest.tryWrap(buffer, offset, length) && matchesLog(voteRequest))
-        {
-            state.voteRequest(output, remoteAddress, requestId, voteRequest);
-        }
+            if (joinRequest.tryWrap(requestData, 0, length))
+            {
+                state.joinRequest(output, remoteAddress, requestId, joinRequest);
+            }
+            else if (pollRequest.tryWrap(requestData, 0, length))
+            {
+                state.pollRequest(output, remoteAddress, requestId, pollRequest);
+            }
+            else if (voteRequest.tryWrap(requestData, 0, length))
+            {
+                state.voteRequest(output, remoteAddress, requestId, voteRequest);
+            }
+        });
 
         return true;
     }
@@ -559,7 +604,7 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
      */
     public void setMembers(final ValueArray<RaftConfigurationEventMember> members)
     {
-        this.members.forEach(RaftMember::close);
+        this.members.forEach(RaftMember::stopReplicationController);
         this.members.clear();
         this.memberLookup.clear();
         persistentStorage.clearMembers();
@@ -615,12 +660,16 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
             final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(socketAddress);
 
             member = new RaftMember(remoteAddress, logStream);
-            member.reset();
 
             members.add(member);
             memberLookup.put(socketAddress, member);
 
             persistentStorage.addMember(socketAddress);
+
+            if (getState() == RaftState.LEADER)
+            {
+                member.startReplicationController(actorScheduler, this, clientTransport);
+            }
         }
 
     }
@@ -764,6 +813,20 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
     public String toString()
     {
         return "raft-" + logStream.getLogName() + "-" + socketAddress.host() + ":" + socketAddress.port();
+    }
+
+    /**
+     * TODO: needed for testing(?)
+     */
+    public ActorFuture<Void> clearReceiveBuffer()
+    {
+        return actor.call(() ->
+        {
+            messageReceiveBuffer.read((msgTypeId, buffer, index, length) ->
+            {
+                // discard
+            });
+        });
     }
 
 }

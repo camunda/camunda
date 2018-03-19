@@ -15,25 +15,18 @@
  */
 package io.zeebe.raft.state;
 
+import java.util.Arrays;
+
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.raft.BufferedLogStorageAppender;
-import io.zeebe.raft.Loggers;
-import io.zeebe.raft.Raft;
-import io.zeebe.raft.RaftMember;
+import io.zeebe.raft.*;
 import io.zeebe.raft.protocol.AppendResponse;
 import io.zeebe.raft.protocol.JoinRequest;
-import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.ServerOutput;
-import io.zeebe.transport.SocketAddress;
+import io.zeebe.transport.*;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.ActorControl;
-import org.slf4j.Logger;
-
-import java.util.Arrays;
 
 public class LeaderState extends AbstractRaftState
 {
-    private static final Logger LOG = Loggers.RAFT_LOGGER;
     private final ActorControl actor;
 
     private ActorCondition appendCondition;
@@ -52,7 +45,6 @@ public class LeaderState extends AbstractRaftState
         super.reset();
         if (raft.getMembers().isEmpty())
         {
-            LOG.debug("In single node cluster, we will commit on each append.");
             appendCondition = actor.onCondition("append-condition", this::commitPositionOnSingleNode);
             logStream.registerOnAppendCondition(appendCondition);
         }
@@ -80,11 +72,8 @@ public class LeaderState extends AbstractRaftState
                 {
                     // create new socket address object as it is stored in a map
                     raft.joinMember(serverOutput, remoteAddress, requestId, new SocketAddress(socketAddress));
-
                     // remove condition
-                    LOG.debug("No more single node cluster, we will NOT commit on each append.");
                     logStream.removeOnAppendCondition(appendCondition);
-
                 }
             }
             else
@@ -109,14 +98,12 @@ public class LeaderState extends AbstractRaftState
             {
                 if (succeeded)
                 {
-                    member.setMatchPosition(eventPosition);
-                    member.resetFailures();
-                    actor.submit(this::commit);
+                    member.onFollowerHasAcknowledgedPosition(eventPosition);
+                    commit();
                 }
                 else
                 {
-                    member.failure();
-                    member.resetToPosition(eventPosition);
+                    member.onFollowerHasFailedPosition(eventPosition);
                 }
             }
         }
