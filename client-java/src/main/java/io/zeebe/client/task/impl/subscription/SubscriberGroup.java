@@ -232,7 +232,7 @@ public abstract class SubscriberGroup<T extends Subscriber>
         this.subscriberState.put(partitionId, SubscriberState.SUBSCRIBING);
         final ActorFuture<? extends EventSubscriptionCreationResult> future = requestNewSubscriber(partitionId);
 
-        actor.runOnCompletion(future, (result, throwable) ->
+        actor.runOnCompletionBlockingCurrentPhase(future, (result, throwable) ->
         {
             if (throwable == null)
             {
@@ -256,7 +256,7 @@ public abstract class SubscriberGroup<T extends Subscriber>
             if (!subscriber.hasEventsInProcessing())
             {
                 final ActorFuture<Void> closeSubscriberFuture = doCloseSubscriber(subscriber);
-                actor.runOnCompletion(closeSubscriberFuture, (v, t) ->
+                actor.runOnCompletionBlockingCurrentPhase(closeSubscriberFuture, (v, t) ->
                 {
                     if (t != null)
                     {

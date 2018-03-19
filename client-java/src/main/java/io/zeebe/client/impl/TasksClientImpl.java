@@ -73,7 +73,7 @@ public class TasksClientImpl implements TasksClient
         return new TaskSubscriptionBuilderImpl(
                 client,
                 topic,
-                client.getEventAcquisition());
+                client.getSubscriptionManager());
     }
 
     @Override
@@ -82,7 +82,7 @@ public class TasksClientImpl implements TasksClient
         return new PollableTaskSubscriptionBuilderImpl(
                 client,
                 topic,
-                client.getEventAcquisition());
+                client.getSubscriptionManager());
     }
 
     public CreateTaskSubscriptionCommandImpl createTaskSubscription(int partitionId)

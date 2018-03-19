@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import io.zeebe.client.task.impl.subscription.SubscriptionManager;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -898,6 +899,9 @@ public class TopicSubscriptionTest
         final Thread closingThread = new Thread(client::close);
         closingThread.start();
 
+
+        final SubscriptionManager subscriptionManager = ((ZeebeClientImpl) client).getSubscriptionManager();
+        waitUntil(() -> subscriptionManager.isClosing());
         // when
         responseController.unblockNextResponse();
 
@@ -913,6 +917,44 @@ public class TopicSubscriptionTest
         assertThat(closeRequest).isPresent();
         final ControlMessageRequest request = closeRequest.get();
         assertThat(request.getData()).containsEntry("subscriberKey", subscriberKey);
+    }
+
+    @Test
+    public void shouldCloseClientAfterSubscriptionCloseIsCalled() throws Exception
+    {
+        // given
+        broker.stubTopicSubscriptionApi(0L);
+
+        final ResponseController responseController = broker.onControlMessageRequest((r) -> r.messageType() == ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION)
+            .respondWith()
+            .data()
+            .allOf((r) -> r.getData())
+            .done()
+            .registerControlled();
+
+        final TopicSubscription foo = client.topics().newSubscription(clientRule.getDefaultTopicName())
+            .handler(DO_NOTHING)
+            .name("foo")
+            .open();
+
+        final ActorFuture<Void> future = ((TopicSubscriberGroup) foo).closeAsync();
+
+        waitUntil(() ->
+            broker.getReceivedControlMessageRequests().stream()
+                .filter(r -> r.messageType() == ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION)
+                .count() == 1);
+
+        final Thread closingThread = new Thread(client::close);
+        closingThread.start();
+
+        // when
+        responseController.unblockNextResponse();
+
+        // then
+        closingThread.join();
+        waitUntil(() -> future.isDone());
+
+        assertThat(future).isDone();
     }
 
     @Test

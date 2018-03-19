@@ -272,7 +272,7 @@ public class ZeebeClientImpl implements ZeebeClient
         return scheduler;
     }
 
-    public SubscriptionManager getEventAcquisition()
+    public SubscriptionManager getSubscriptionManager()
     {
         return subscriptionManager;
     }

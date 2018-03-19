@@ -41,7 +41,7 @@ public class TopicClientImpl implements TopicsClient
     {
         return new TopicSubscriptionBuilderImpl(
                 topicName,
-                client.getEventAcquisition(),
+                client.getSubscriptionManager(),
                 client.getMsgPackMapper(),
                 client.getSubscriptionPrefetchCapacity());
     }
@@ -51,7 +51,7 @@ public class TopicClientImpl implements TopicsClient
     {
         return new PollableTopicSubscriptionBuilderImpl(
                 topicName,
-                client.getEventAcquisition(),
+                client.getSubscriptionManager(),
                 client.getSubscriptionPrefetchCapacity());
     }
 

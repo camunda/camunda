@@ -56,4 +56,12 @@ public class ControlMessageResponseBuilder
     {
         registrationFunction.accept(responseWriter);
     }
+
+    public ResponseController registerControlled()
+    {
+        final ResponseController controller = new ResponseController();
+        responseWriter.beforeResponse(controller::waitForNextJoin);
+        register();
+        return controller;
+    }
 }
