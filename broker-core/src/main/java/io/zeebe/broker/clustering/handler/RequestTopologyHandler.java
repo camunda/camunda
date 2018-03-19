@@ -17,32 +17,24 @@
  */
 package io.zeebe.broker.clustering.handler;
 
-import java.util.function.BooleanSupplier;
-
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.management.ClusterManager;
-import io.zeebe.broker.transport.clientapi.ErrorResponseWriter;
-import io.zeebe.broker.transport.controlmessage.ControlMessageHandler;
-import io.zeebe.broker.transport.controlmessage.ControlMessageResponseWriter;
+import io.zeebe.broker.transport.controlmessage.AbstractControlMessageHandler;
 import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
 
-public class RequestTopologyHandler implements ControlMessageHandler
+public class RequestTopologyHandler extends AbstractControlMessageHandler
 {
     protected final ClusterManager clusterManager;
-    protected final ControlMessageResponseWriter responseWriter;
-    protected final ErrorResponseWriter errorResponseWriter;
 
     public RequestTopologyHandler(final ServerOutput output, final ClusterManager clusterManager)
     {
+        super(output);
         this.clusterManager = clusterManager;
-        this.responseWriter = new ControlMessageResponseWriter(output);
-        this.errorResponseWriter = new ErrorResponseWriter(output);
     }
 
     @Override
@@ -52,7 +44,7 @@ public class RequestTopologyHandler implements ControlMessageHandler
     }
 
     @Override
-    public void handle(ActorControl actor, int partitionId, final DirectBuffer buffer, final BrokerEventMetadata metadata)
+    public void handle(final ActorControl actor, final int partitionId, final DirectBuffer buffer, final BrokerEventMetadata metadata)
     {
         final int requestStreamId = metadata.getRequestStreamId();
         final long requestId = metadata.getRequestId();
@@ -62,36 +54,14 @@ public class RequestTopologyHandler implements ControlMessageHandler
         {
             if (throwable == null)
             {
-                responseWriter.dataWriter(topology);
-                sendResponse(actor, () -> responseWriter.tryWriteResponse(requestStreamId, requestId));
+                sendResponse(actor, requestStreamId, requestId, topology);
             }
             else
             {
                 Loggers.CLUSTERING_LOGGER.debug("Problem on requesting topology. Exception {}", throwable);
-                sendResponse(actor, () ->
-                {
-                    return errorResponseWriter.errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
-                        .errorMessage("Cannot request topology!")
-                        .tryWriteResponseOrLogFailure(requestStreamId, requestId);
-                });
+                sendErrorResponse(actor, requestStreamId, requestId, "Cannot request topology");
             }
         }));
     }
 
-    private void sendResponse(ActorControl actor, BooleanSupplier supplier)
-    {
-        actor.runUntilDone(() ->
-        {
-            final boolean success = supplier.getAsBoolean();
-
-            if (success)
-            {
-                actor.done();
-            }
-            else
-            {
-                actor.yield();
-            }
-        });
-    }
 }

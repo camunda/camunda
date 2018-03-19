@@ -17,35 +17,27 @@
  */
 package io.zeebe.broker.event.handler;
 
+import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
+
 import io.zeebe.broker.event.processor.CloseSubscriptionRequest;
 import io.zeebe.broker.event.processor.TopicSubscriptionService;
-import io.zeebe.broker.transport.clientapi.ErrorResponseWriter;
-import io.zeebe.broker.transport.controlmessage.ControlMessageHandler;
-import io.zeebe.broker.transport.controlmessage.ControlMessageResponseWriter;
+import io.zeebe.broker.transport.controlmessage.AbstractControlMessageHandler;
 import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
 
-import java.util.function.BooleanSupplier;
-
-import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
-
-public class RemoveTopicSubscriptionHandler implements ControlMessageHandler
+public class RemoveTopicSubscriptionHandler extends AbstractControlMessageHandler
 {
     protected final CloseSubscriptionRequest request = new CloseSubscriptionRequest();
 
     protected final TopicSubscriptionService subscriptionService;
-    protected final ControlMessageResponseWriter responseWriter;
-    protected final ErrorResponseWriter errorResponseWriter;
 
-    public RemoveTopicSubscriptionHandler(ServerOutput output, TopicSubscriptionService subscriptionService)
+    public RemoveTopicSubscriptionHandler(final ServerOutput output, final TopicSubscriptionService subscriptionService)
     {
-        this.errorResponseWriter = new ErrorResponseWriter(output);
-        this.responseWriter = new ControlMessageResponseWriter(output);
+        super(output);
         this.subscriptionService = subscriptionService;
     }
 
@@ -56,7 +48,7 @@ public class RemoveTopicSubscriptionHandler implements ControlMessageHandler
     }
 
     @Override
-    public void handle(ActorControl actor, int partitionId, DirectBuffer buffer, BrokerEventMetadata metadata)
+    public void handle(final ActorControl actor, final int partitionId, final DirectBuffer buffer, final BrokerEventMetadata metadata)
     {
         final int requestStreamId = metadata.getRequestStreamId();
         final long requestId = metadata.getRequestId();
@@ -70,40 +62,13 @@ public class RemoveTopicSubscriptionHandler implements ControlMessageHandler
         {
             if (throwable == null)
             {
-                sendResponse(actor, () ->
-                {
-                    return responseWriter
-                        .dataWriter(request)
-                        .tryWriteResponse(requestStreamId, requestId);
-                });
+                sendResponse(actor, requestStreamId, requestId, request);
             }
             else
             {
-                sendResponse(actor, () ->
-                {
-                    return errorResponseWriter
-                        .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
-                        .errorMessage("Cannot close topic subscription. %s", throwable.getMessage())
-                        .tryWriteResponseOrLogFailure(requestStreamId, requestId);
-                });
+                sendErrorResponse(actor, requestStreamId, requestId, "Cannot close topic subscription. %s", throwable.getMessage());
             }
         }));
     }
 
-    private void sendResponse(ActorControl actor, BooleanSupplier supplier)
-    {
-        actor.runUntilDone(() ->
-        {
-            final boolean success = supplier.getAsBoolean();
-
-            if (success)
-            {
-                actor.done();
-            }
-            else
-            {
-                actor.yield();
-            }
-        });
-    }
 }

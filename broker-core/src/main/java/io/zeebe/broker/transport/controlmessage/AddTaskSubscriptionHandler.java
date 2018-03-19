@@ -17,34 +17,26 @@
  */
 package io.zeebe.broker.transport.controlmessage;
 
+import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
+
 import io.zeebe.broker.task.TaskSubscriptionManager;
 import io.zeebe.broker.task.processor.TaskSubscription;
 import io.zeebe.broker.task.processor.TaskSubscriptionRequest;
-import io.zeebe.broker.transport.clientapi.ErrorResponseWriter;
 import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
 
-import java.util.function.BooleanSupplier;
-
-import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
-
-public class AddTaskSubscriptionHandler implements ControlMessageHandler
+public class AddTaskSubscriptionHandler extends AbstractControlMessageHandler
 {
     protected final TaskSubscriptionManager manager;
 
-    protected final ControlMessageResponseWriter responseWriter;
-    protected final ErrorResponseWriter errorResponseWriter;
-
-    public AddTaskSubscriptionHandler(ServerOutput output, TaskSubscriptionManager manager)
+    public AddTaskSubscriptionHandler(final ServerOutput output, final TaskSubscriptionManager manager)
     {
+        super(output);
         this.manager = manager;
-        this.errorResponseWriter = new ErrorResponseWriter(output);
-        this.responseWriter = new ControlMessageResponseWriter(output);
     }
 
     @Override
@@ -54,7 +46,7 @@ public class AddTaskSubscriptionHandler implements ControlMessageHandler
     }
 
     @Override
-    public void handle(ActorControl actor, int partitionId, DirectBuffer buffer, BrokerEventMetadata eventMetada)
+    public void handle(final ActorControl actor, final int partitionId, final DirectBuffer buffer, final BrokerEventMetadata eventMetada)
     {
         final TaskSubscriptionRequest request = new TaskSubscriptionRequest();
         request.wrap(cloneBuffer(buffer));
@@ -75,41 +67,13 @@ public class AddTaskSubscriptionHandler implements ControlMessageHandler
                 final long subscriberKey = taskSubscription.getSubscriberKey();
                 request.setSubscriberKey(subscriberKey);
 
-                sendResponse(actor, () ->
-                {
-                    return responseWriter
-                            .dataWriter(request)
-                            .tryWriteResponse(requestStreamId, requestId);
-                });
+                sendResponse(actor, requestStreamId, requestId, request);
             }
             else
             {
-                sendResponse(actor, () ->
-                {
-                    return errorResponseWriter
-                        .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
-                        .errorMessage("Cannot add task subscription. %s", throwable.getMessage())
-                        .tryWriteResponseOrLogFailure(requestStreamId, requestId);
-
-                });
+                sendErrorResponse(actor, requestStreamId, requestId, "Cannot add task subscription. %s", throwable.getMessage());
             }
         }));
     }
 
-    private void sendResponse(ActorControl actor, BooleanSupplier supplier)
-    {
-        actor.runUntilDone(() ->
-        {
-            final boolean success = supplier.getAsBoolean();
-
-            if (success)
-            {
-                actor.done();
-            }
-            else
-            {
-                actor.yield();
-            }
-        });
-    }
 }

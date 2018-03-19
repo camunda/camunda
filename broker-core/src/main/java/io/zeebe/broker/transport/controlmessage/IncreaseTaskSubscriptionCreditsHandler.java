@@ -20,34 +20,23 @@ package io.zeebe.broker.transport.controlmessage;
 import io.zeebe.broker.task.CreditsRequest;
 import io.zeebe.broker.task.TaskSubscriptionManager;
 import io.zeebe.broker.task.processor.TaskSubscriptionRequest;
-import io.zeebe.broker.transport.clientapi.ErrorResponseWriter;
 import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.util.sched.ActorControl;
-import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
 
-import java.util.function.BooleanSupplier;
-
-public class IncreaseTaskSubscriptionCreditsHandler implements ControlMessageHandler
+public class IncreaseTaskSubscriptionCreditsHandler extends AbstractControlMessageHandler
 {
-    protected static final CompletableActorFuture<Void> COMPLETED_FUTURE = CompletableActorFuture.completed(null);
 
     protected final TaskSubscriptionRequest subscription = new TaskSubscriptionRequest();
     protected final CreditsRequest creditsRequest = new CreditsRequest();
 
     protected final TaskSubscriptionManager manager;
 
-    protected final ControlMessageResponseWriter responseWriter;
-    protected final ErrorResponseWriter errorResponseWriter;
-
-
-    public IncreaseTaskSubscriptionCreditsHandler(ServerOutput output, TaskSubscriptionManager manager)
+    public IncreaseTaskSubscriptionCreditsHandler(final ServerOutput output, final TaskSubscriptionManager manager)
     {
-        this.errorResponseWriter = new ErrorResponseWriter(output);
-        this.responseWriter = new ControlMessageResponseWriter(output);
+        super(output);
         this.manager = manager;
     }
 
@@ -58,7 +47,7 @@ public class IncreaseTaskSubscriptionCreditsHandler implements ControlMessageHan
     }
 
     @Override
-    public void handle(ActorControl actor, int partitionId, DirectBuffer buffer, BrokerEventMetadata eventMetadata)
+    public void handle(final ActorControl actor, final int partitionId, final DirectBuffer buffer, final BrokerEventMetadata eventMetadata)
     {
         final long requestId = eventMetadata.getRequestId();
         final int requestStreamId = eventMetadata.getRequestStreamId();
@@ -67,13 +56,7 @@ public class IncreaseTaskSubscriptionCreditsHandler implements ControlMessageHan
 
         if (subscription.getCredits() <= 0)
         {
-            sendResponse(actor,  () ->
-            {
-                return errorResponseWriter
-                    .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
-                    .errorMessage("Cannot increase task subscription credits. Credits must be positive.")
-                    .tryWriteResponseOrLogFailure(requestStreamId, requestId);
-            });
+            sendErrorResponse(actor, requestStreamId, requestId, "Cannot increase task subscription credits. Credits must be positive.");
         }
         else
         {
@@ -83,41 +66,13 @@ public class IncreaseTaskSubscriptionCreditsHandler implements ControlMessageHan
             final boolean success = manager.increaseSubscriptionCreditsAsync(creditsRequest);
             if (success)
             {
-                sendResponse(actor, () ->
-                {
-                    return responseWriter
-                        .dataWriter(subscription)
-                        .tryWriteResponse(requestStreamId, requestId);
-                });
+                sendResponse(actor, requestStreamId, requestId, subscription);
             }
             else
             {
-                sendResponse(actor, () ->
-                {
-                    return errorResponseWriter
-                        .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
-                        .errorMessage("Cannot increase task subscription credits. Capacities exhausted.")
-                        .tryWriteResponseOrLogFailure(requestStreamId, requestId);
-                });
+                sendErrorResponse(actor, requestStreamId, requestId, "Cannot increase task subscription credits. Capacities exhausted.");
             }
         }
-    }
-
-    private void sendResponse(ActorControl actor, BooleanSupplier supplier)
-    {
-        actor.runUntilDone(() ->
-        {
-            final boolean success = supplier.getAsBoolean();
-
-            if (success)
-            {
-                actor.done();
-            }
-            else
-            {
-                actor.yield();
-            }
-        });
     }
 
 }

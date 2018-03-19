@@ -17,8 +17,7 @@
  */
 package io.zeebe.broker.system.log;
 
-import io.zeebe.broker.transport.clientapi.ErrorResponseWriter;
-import io.zeebe.broker.transport.controlmessage.ControlMessageHandler;
+import io.zeebe.broker.transport.controlmessage.AbstractControlMessageHandler;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.ErrorCode;
@@ -28,15 +27,14 @@ import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
 
-public class RequestPartitionsMessageHandler implements ControlMessageHandler
+public class RequestPartitionsMessageHandler extends AbstractControlMessageHandler
 {
     protected final SystemPartitionManager systemPartitionManager;
-    protected final ErrorResponseWriter errorWriter;
 
     public RequestPartitionsMessageHandler(ServerOutput output, SystemPartitionManager systemPartitionManager)
     {
+        super(output);
         this.systemPartitionManager = systemPartitionManager;
-        this.errorWriter = new ErrorResponseWriter(output);
     }
 
     @Override
@@ -53,9 +51,7 @@ public class RequestPartitionsMessageHandler implements ControlMessageHandler
 
         if (partitionId != Protocol.SYSTEM_PARTITION)
         {
-            sendErrorResponse(actor, ErrorCode.REQUEST_PROCESSING_FAILURE,
-                "Partitions request must address the system partition " + Protocol.SYSTEM_PARTITION,
-                requestStreamId, requestId);
+            sendErrorResponse(actor, requestStreamId, requestId, "Partitions request must address the system partition %d", Protocol.SYSTEM_PARTITION);
         }
         else
         {
@@ -68,34 +64,10 @@ public class RequestPartitionsMessageHandler implements ControlMessageHandler
                 {
                     // it is important that partition not found is returned here to signal a client that it may have addressed a broker
                     // that appeared as the system partition leader but is not (yet) able to respond
-                    sendErrorResponse(actor, ErrorCode.PARTITION_NOT_FOUND,
-                        throwable.getMessage(),
-                        requestStreamId, requestId);
+                    sendErrorResponse(actor, requestStreamId, requestId, ErrorCode.PARTITION_NOT_FOUND, throwable.getMessage());
                 }
             }));
         }
-    }
-
-    protected void sendErrorResponse(ActorControl actor, ErrorCode errorCode, String message, int requestStream, long requestId)
-    {
-        // Backpressure:
-        // ControlMessageHandlerManager does not poll new messages, since
-        // he is blocked, with the runUntileDone call, until the response is send successfully
-        actor.runUntilDone(() ->
-        {
-            final boolean success = errorWriter.errorCode(errorCode)
-                .errorMessage(message)
-                .tryWriteResponse(requestStream, requestId);
-
-            if (success)
-            {
-                actor.done();
-            }
-            else
-            {
-                actor.yield();
-            }
-        });
     }
 
 }

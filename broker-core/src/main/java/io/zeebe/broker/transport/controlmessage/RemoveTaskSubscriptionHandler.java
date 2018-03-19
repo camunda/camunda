@@ -19,30 +19,22 @@ package io.zeebe.broker.transport.controlmessage;
 
 import io.zeebe.broker.task.TaskSubscriptionManager;
 import io.zeebe.broker.task.processor.TaskSubscriptionRequest;
-import io.zeebe.broker.transport.clientapi.ErrorResponseWriter;
 import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
 
-import java.util.function.BooleanSupplier;
-
-public class RemoveTaskSubscriptionHandler implements ControlMessageHandler
+public class RemoveTaskSubscriptionHandler extends AbstractControlMessageHandler
 {
     protected final TaskSubscriptionRequest subscription = new TaskSubscriptionRequest();
 
     protected final TaskSubscriptionManager manager;
 
-    protected final ControlMessageResponseWriter responseWriter;
-    protected final ErrorResponseWriter errorResponseWriter;
-
-    public RemoveTaskSubscriptionHandler(ServerOutput output, TaskSubscriptionManager manager)
+    public RemoveTaskSubscriptionHandler(final ServerOutput output, final TaskSubscriptionManager manager)
     {
-        this.errorResponseWriter = new ErrorResponseWriter(output);
-        this.responseWriter = new ControlMessageResponseWriter(output);
+        super(output);
         this.manager = manager;
     }
 
@@ -53,10 +45,11 @@ public class RemoveTaskSubscriptionHandler implements ControlMessageHandler
     }
 
     @Override
-    public void handle(ActorControl actor, int partitionId, DirectBuffer buffer, BrokerEventMetadata eventMetada)
+    public void handle(final ActorControl actor, final int partitionId, final DirectBuffer buffer, final BrokerEventMetadata eventMetadata)
     {
-        final int requestStreamId = eventMetada.getRequestStreamId();
-        final long requestId = eventMetada.getRequestId();
+        final int requestStreamId = eventMetadata.getRequestStreamId();
+        final long requestId = eventMetadata.getRequestId();
+
         subscription.reset();
         subscription.wrap(buffer);
 
@@ -66,39 +59,11 @@ public class RemoveTaskSubscriptionHandler implements ControlMessageHandler
         {
             if (throwable == null)
             {
-                sendResponse(actor, () ->
-                {
-                    return responseWriter
-                            .dataWriter(subscription)
-                            .tryWriteResponse(requestStreamId, requestId);
-                });
+                sendResponse(actor, requestStreamId, requestId, subscription);
             }
             else
             {
-                sendResponse(actor, () ->
-                {
-                    return errorResponseWriter
-                        .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
-                        .errorMessage("Cannot remove task subscription. %s", throwable.getMessage())
-                        .tryWriteResponseOrLogFailure(requestStreamId, requestId);
-                });
-            }
-        });
-    }
-
-    private void sendResponse(ActorControl actor, BooleanSupplier supplier)
-    {
-        actor.runUntilDone(() ->
-        {
-            final boolean success = supplier.getAsBoolean();
-
-            if (success)
-            {
-                actor.done();
-            }
-            else
-            {
-                actor.yield();
+                sendErrorResponse(actor, requestStreamId, requestId, "Cannot remove task subscription. %s", throwable.getMessage());
             }
         });
     }
