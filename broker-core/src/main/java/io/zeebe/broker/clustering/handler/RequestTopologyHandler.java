@@ -38,11 +38,11 @@ public class RequestTopologyHandler implements ControlMessageHandler
     protected final ControlMessageResponseWriter responseWriter;
     protected final ErrorResponseWriter errorResponseWriter;
 
-    public RequestTopologyHandler(final ServerOutput ouput, final ClusterManager clusterManager)
+    public RequestTopologyHandler(final ServerOutput output, final ClusterManager clusterManager)
     {
         this.clusterManager = clusterManager;
-        this.responseWriter = new ControlMessageResponseWriter(ouput);
-        this.errorResponseWriter = new ErrorResponseWriter(ouput);
+        this.responseWriter = new ControlMessageResponseWriter(output);
+        this.errorResponseWriter = new ErrorResponseWriter(output);
     }
 
     @Override
