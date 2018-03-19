@@ -31,7 +31,6 @@ import java.util.Iterator;
 
 public class TopologyCreator
 {
-    private static final boolean IS_TRACE_ON = Loggers.CLUSTERING_LOGGER.isTraceEnabled();
     public static final Logger LOG = Loggers.CLUSTERING_LOGGER;
 
     private final ClusterManagerContext clusterManagerContext;
@@ -43,10 +42,7 @@ public class TopologyCreator
 
     public Topology createTopology()
     {
-        if (IS_TRACE_ON)
-        {
-            LOG.trace("Received topology request.");
-        }
+        LOG.trace("Received topology request.");
 
         final Iterator<MemberRaftComposite> iterator = clusterManagerContext.getMemberListService()
                                                                             .iterator();

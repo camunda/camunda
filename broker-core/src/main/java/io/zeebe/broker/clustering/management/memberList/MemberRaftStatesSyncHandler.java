@@ -33,8 +33,6 @@ import static io.zeebe.broker.clustering.management.memberList.GossipEventCreati
 
 public final class MemberRaftStatesSyncHandler implements GossipSyncRequestHandler
 {
-    private static final boolean IS_TRACE_ON = Loggers.CLUSTERING_LOGGER.isTraceEnabled();
-
     public static final Logger LOG = Loggers.CLUSTERING_LOGGER;
 
     private final ClusterManagerContext clusterManagerContext;
@@ -53,10 +51,7 @@ public final class MemberRaftStatesSyncHandler implements GossipSyncRequestHandl
     {
         return actor.call(() ->
         {
-            if (IS_TRACE_ON)
-            {
-                LOG.trace("Got RAFT state sync request.");
-            }
+            LOG.trace("Got RAFT state sync request.");
             final Iterator<MemberRaftComposite> iterator = clusterManagerContext.getMemberListService()
                                                                                 .iterator();
             while (iterator.hasNext())
@@ -72,10 +67,7 @@ public final class MemberRaftStatesSyncHandler implements GossipSyncRequestHandl
                 }
             }
 
-            if (IS_TRACE_ON)
-            {
-                LOG.trace("Send RAFT state sync response.");
-            }
+            LOG.trace("Send RAFT state sync response.");
         });
     }
 }

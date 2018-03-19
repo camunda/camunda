@@ -48,8 +48,6 @@ import static io.zeebe.raft.state.RaftState.LEADER;
 
 public class ClusterMemberListManager implements RaftStateListener, OnOpenLogStreamListener
 {
-    private static final boolean IS_TRACE_ON = Loggers.CLUSTERING_LOGGER.isTraceEnabled();
-
     public static final Logger LOG = Loggers.CLUSTERING_LOGGER;
     public static final DirectBuffer API_EVENT_TYPE = BufferUtil.wrapString("apis");
     public static final DirectBuffer MEMBER_RAFT_STATES_EVENT_TYPE = BufferUtil.wrapString("memberRaftStates");
@@ -127,20 +125,14 @@ public class ClusterMemberListManager implements RaftStateListener, OnOpenLogStr
             final MemberRaftComposite newMember = new MemberRaftComposite(member.getAddress());
             actor.call(() ->
             {
-                if (IS_TRACE_ON)
-                {
-                    LOG.trace("Add member {} to member list.", newMember);
-                }
+                LOG.trace("Add member {} to member list.", newMember);
                 MemberRaftComposite memberRaftComposite = newMember;
                 final int indexOfDeadMember = deadMembers.indexOf(newMember);
 
                 if (indexOfDeadMember > -1)
                 {
                     memberRaftComposite = deadMembers.remove(indexOfDeadMember);
-                    if (IS_TRACE_ON)
-                    {
-                        LOG.trace("Re-add dead member {} to member list", memberRaftComposite);
-                    }
+                    LOG.trace("Re-add dead member {} to member list", memberRaftComposite);
                 }
                 context.getMemberListService()
                        .add(memberRaftComposite);
@@ -157,10 +149,7 @@ public class ClusterMemberListManager implements RaftStateListener, OnOpenLogStr
                                                                  .remove(memberAddress);
 
 
-                if (IS_TRACE_ON)
-                {
-                    LOG.trace("Remove member {} from member list.", removedMember);
-                }
+                LOG.trace("Remove member {} from member list.", removedMember);
                 deadMembers.add(removedMember);
 
                 deactivateRemote(context.getManagementClient(), removedMember.getManagementApi());
@@ -187,10 +176,7 @@ public class ClusterMemberListManager implements RaftStateListener, OnOpenLogStr
             final SocketAddress savedSocketAddress = new SocketAddress(socketAddress);
             actor.call(() ->
             {
-                if (IS_TRACE_ON)
-                {
-                    LOG.trace("Received API event from member {}.", savedSocketAddress);
-                }
+                LOG.trace("Received API event from member {}.", savedSocketAddress);
 
                 final SocketAddress managementApi = new SocketAddress();
                 final SocketAddress clientApi = new SocketAddress();
@@ -207,10 +193,7 @@ public class ClusterMemberListManager implements RaftStateListener, OnOpenLogStr
                 final boolean success = context.getMemberListService()
                                                .setApis(clientApi, replicationApi, managementApi);
 
-                if (IS_TRACE_ON)
-                {
-                    LOG.trace("Setting API's for member {} was {}successful.", savedSocketAddress, success ? "" : "not ");
-                }
+                LOG.trace("Setting API's for member {} was {}successful.", savedSocketAddress, success ? "" : "not ");
 
                 updatedMemberConsumer.accept(savedSocketAddress);
 
@@ -229,28 +212,19 @@ public class ClusterMemberListManager implements RaftStateListener, OnOpenLogStr
             final SocketAddress savedSocketAddress = new SocketAddress(socketAddress);
             actor.call(() ->
             {
-                if (IS_TRACE_ON)
-                {
-                    LOG.trace("Received raft state change event for member {}", savedSocketAddress);
-                }
+                LOG.trace("Received raft state change event for member {}", savedSocketAddress);
                 final MemberRaftComposite member = context.getMemberListService()
                                                           .getMember(savedSocketAddress);
 
                 if (member == null)
                 {
-                    if (IS_TRACE_ON)
-                    {
-                        LOG.trace("Member {} does not exist. Maybe dead? List of dead members: {}", savedSocketAddress, deadMembers);
-                    }
+                    LOG.trace("Member {} does not exist. Maybe dead? List of dead members: {}", savedSocketAddress, deadMembers);
                 }
                 else
                 {
                     updateMemberWithNewRaftState(member, savedBuffer);
 
-                    if (IS_TRACE_ON)
-                    {
-                        LOG.trace("Handled raft state change event for member {} - local member state: {}", savedSocketAddress, context.getMemberListService());
-                    }
+                    LOG.trace("Handled raft state change event for member {} - local member state: {}", savedSocketAddress, context.getMemberListService());
                 }
             });
         }
@@ -286,19 +260,13 @@ public class ClusterMemberListManager implements RaftStateListener, OnOpenLogStr
         // update raft state in member list
         member.updateRaft(partitionId, savedTopicName, raftState);
 
-        if (IS_TRACE_ON)
-        {
-            LOG.trace("On raft state change for {} - local member states: {}", member.getMember(), context.getMemberListService());
-        }
+        LOG.trace("On raft state change for {} - local member states: {}", member.getMember(), context.getMemberListService());
 
         // send complete list of partition where I'm a follower or leader
         final List<RaftStateComposite> rafts = member.getRafts();
         final int length = writeRaftsIntoBuffer(rafts, memberRaftStatesBuffer);
 
-        if (IS_TRACE_ON)
-        {
-            LOG.trace("Publish event for partition {} state change {}", partitionId, raftState);
-        }
+        LOG.trace("Publish event for partition {} state change {}", partitionId, raftState);
 
         context.getGossip()
                .publishEvent(MEMBER_RAFT_STATES_EVENT_TYPE, memberRaftStatesBuffer, 0, length);

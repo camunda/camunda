@@ -17,6 +17,10 @@
  */
 package io.zeebe.broker.clustering.management.memberList;
 
+import static io.zeebe.broker.clustering.management.memberList.GossipEventCreationHelper.writeAPIAddressesIntoBuffer;
+
+import java.util.Iterator;
+
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.management.ClusterManagerContext;
 import io.zeebe.gossip.GossipSyncRequestHandler;
@@ -27,14 +31,8 @@ import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.slf4j.Logger;
 
-import java.util.Iterator;
-
-import static io.zeebe.broker.clustering.management.memberList.GossipEventCreationHelper.writeAPIAddressesIntoBuffer;
-
 public final class APISyncHandler implements GossipSyncRequestHandler
 {
-    private static final boolean IS_TRACE_ON = Loggers.CLUSTERING_LOGGER.isTraceEnabled();
-
     public static final Logger LOG = Loggers.CLUSTERING_LOGGER;
 
     private final ClusterManagerContext clusterManagerContext;
@@ -53,10 +51,7 @@ public final class APISyncHandler implements GossipSyncRequestHandler
     {
         return actor.call(() ->
         {
-            if (IS_TRACE_ON)
-            {
-                LOG.trace("Got API sync request.");
-            }
+            LOG.trace("Got API sync request.");
 
             final Iterator<MemberRaftComposite> iterator = clusterManagerContext.getMemberListService()
                                                                                 .iterator();
@@ -75,10 +70,7 @@ public final class APISyncHandler implements GossipSyncRequestHandler
                 }
             }
 
-            if (IS_TRACE_ON)
-            {
-                LOG.trace("Send API sync response.");
-            }
+            LOG.trace("Send API sync response.");
         });
     }
 }
