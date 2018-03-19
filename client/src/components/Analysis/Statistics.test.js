@@ -2,7 +2,6 @@ import React from 'react';
 import {mount} from 'enzyme';
 
 import {loadCorrelationData} from './service';
-import {getFlowNodeNames} from 'services';
 
 import ChartRenderer from 'chart.js';
 
@@ -39,7 +38,7 @@ const props = {
   config: {
     filter: []
   },
-  gateway: {id: 'g'},
+  gateway: {id: 'g', outgoing: [{targetRef: {id: 'a'}}, {targetRef: {id: 'b'}}]},
   endEvent: {id: 'e'}
 };
 
@@ -53,13 +52,13 @@ it('should load updated correlation when selection or configuration changes', ()
   const node = mount(<Statistics {...props} />);
 
   loadCorrelationData.mockClear();
-  node.setProps({gateway: {id: 'g2'}});
+  node.setProps({gateway: {id: 'g2', outgoing: props.gateway.outgoing}});
 
   expect(loadCorrelationData).toHaveBeenCalled();
   expect(loadCorrelationData.mock.calls[0][3]).toBe('g2');
 
   loadCorrelationData.mockClear();
-  node.setProps({config: {filter: ['aFilter']}});
+  node.setProps({...props, config: {filter: ['aFilter']}});
 
   expect(loadCorrelationData).toHaveBeenCalled();
   expect(loadCorrelationData.mock.calls[0][2]).toEqual(['aFilter']);

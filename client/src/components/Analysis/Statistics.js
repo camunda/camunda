@@ -66,9 +66,13 @@ export default class Statistics extends React.Component {
       if (this.chart1) {
         this.chart1.destroy();
       }
-      this.chart1 = this.createChart(this.relativeChart, ({activitiesReached, activityCount}) => {
-        return activitiesReached / activityCount || 0;
-      });
+      this.chart1 = this.createChart(
+        this.relativeChart,
+        ({activitiesReached, activityCount}) => {
+          return Math.round(activitiesReached / activityCount * 1000) / 10 || 0;
+        },
+        '%'
+      );
 
       // absolute chart
       if (this.chart2) {
@@ -115,7 +119,7 @@ export default class Statistics extends React.Component {
     });
   };
 
-  createChart = (node, dataFct) =>
+  createChart = (node, dataFct, labelSuffix = '') =>
     new ChartRenderer(node, {
       type: 'bar',
       data: {
@@ -136,11 +140,18 @@ export default class Statistics extends React.Component {
         legend: {
           display: false
         },
+        tooltips: {
+          callbacks: {
+            label: ({index, datasetIndex}, {datasets}) =>
+              datasets[datasetIndex].data[index] + labelSuffix
+          }
+        },
         scales: {
           yAxes: [
             {
               ticks: {
-                beginAtZero: true
+                beginAtZero: true,
+                callback: (...args) => ChartRenderer.Ticks.formatters.linear(...args) + labelSuffix
               }
             }
           ]
