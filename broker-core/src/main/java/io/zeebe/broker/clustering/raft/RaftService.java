@@ -17,21 +17,21 @@
  */
 package io.zeebe.broker.clustering.raft;
 
+import static io.zeebe.broker.clustering.ClusterServiceNames.CLUSTER_MANAGER_SERVICE;
+import static io.zeebe.broker.logstreams.LogStreamServiceNames.logStreamServiceName;
+
+import java.util.List;
+
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.management.OnOpenLogStreamListener;
 import io.zeebe.broker.logstreams.LogStreamService;
 import io.zeebe.broker.logstreams.LogStreamServiceNames;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.raft.Raft;
-import io.zeebe.raft.RaftConfiguration;
-import io.zeebe.raft.RaftPersistentStorage;
-import io.zeebe.raft.RaftStateListener;
+import io.zeebe.raft.*;
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.servicecontainer.*;
-import io.zeebe.transport.BufferingServerTransport;
-import io.zeebe.transport.ClientTransport;
-import io.zeebe.transport.SocketAddress;
+import io.zeebe.transport.*;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorScheduler;
@@ -39,12 +39,6 @@ import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
-
-import java.util.List;
-
-import static io.zeebe.broker.clustering.ClusterServiceNames.CLUSTER_MANAGER_SERVICE;
-import static io.zeebe.broker.logstreams.LogStreamServiceNames.logStreamServiceName;
-import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
 
 public class RaftService extends Actor implements Service<Raft>, RaftStateListener
 {
@@ -60,9 +54,9 @@ public class RaftService extends Actor implements Service<Raft>, RaftStateListen
     private final OnOpenLogStreamListener onOpenLogStreamListener;
     private final ServiceName<Raft> raftServiceName;
 
-    private Injector<ActorScheduler> actorSchedulerInjector = new Injector<>();
     private Injector<BufferingServerTransport> serverTransportInjector = new Injector<>();
     private Injector<ClientTransport> clientTransportInjector = new Injector<>();
+    private ActorScheduler actorScheduler;
     private Raft raft;
 
     private CompletableActorFuture<Void> raftServiceCloseFuture;
@@ -84,7 +78,6 @@ public class RaftService extends Actor implements Service<Raft>, RaftStateListen
         this.logStreamServiceName = logStreamServiceName(logStream.getLogName());
         this.onOpenLogStreamListener = onOpenLogStreamListener;
         this.raftServiceName = raftServiceName;
-
     }
 
     @Override
@@ -108,7 +101,6 @@ public class RaftService extends Actor implements Service<Raft>, RaftStateListen
                                 RaftService.this);
 
                 raft.addMembers(members);
-                final ActorScheduler actorScheduler = actorSchedulerInjector.getValue();
                 actorScheduler.submitActor(raft);
 
                 raftServiceOpenFuture.complete(null);
@@ -124,8 +116,10 @@ public class RaftService extends Actor implements Service<Raft>, RaftStateListen
     @Override
     public void start(final ServiceStartContext startContext)
     {
+        this.actorScheduler = startContext.getScheduler();
+
         raftServiceOpenFuture = new CompletableActorFuture<>();
-        actorSchedulerInjector.getValue().submitActor(this);
+        actorScheduler.submitActor(this);
 
         this.startContext = startContext;
         this.startContext.async(raftServiceOpenFuture);
@@ -172,11 +166,6 @@ public class RaftService extends Actor implements Service<Raft>, RaftStateListen
         return raft;
     }
 
-    public Injector<ActorScheduler> getActorSchedulerInjector()
-    {
-        return actorSchedulerInjector;
-    }
-
     public Injector<BufferingServerTransport> getServerTransportInjector()
     {
         return serverTransportInjector;
@@ -207,7 +196,6 @@ public class RaftService extends Actor implements Service<Raft>, RaftStateListen
                 final ActorFuture<Void> future =
                     startContext
                         .createService(logStreamServiceName, service)
-                        .dependency(ACTOR_SCHEDULER_SERVICE)
                         .dependency(CLUSTER_MANAGER_SERVICE)
                         .dependency(raftServiceName)
                         .group(streamGroup)

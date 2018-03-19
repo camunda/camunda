@@ -19,7 +19,6 @@ package io.zeebe.broker.task;
 
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE;
 import static io.zeebe.broker.logstreams.processor.StreamProcessorIds.TASK_LOCK_STREAM_PROCESSOR_ID;
-import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
 import static io.zeebe.broker.task.TaskQueueServiceNames.taskQueueLockStreamProcessorServiceName;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
@@ -200,7 +199,6 @@ public class TaskSubscriptionManager extends Actor implements TransportListener
         return serviceContext.createService(streamProcessorServiceName, streamProcessorService)
                              .dependency(logStreamServiceName, streamProcessorService.getLogStreamInjector())
                              .dependency(SNAPSHOT_STORAGE_SERVICE, streamProcessorService.getSnapshotStorageInjector())
-                             .dependency(ACTOR_SCHEDULER_SERVICE, streamProcessorService.getActorSchedulerInjector())
                              .install();
     }
 

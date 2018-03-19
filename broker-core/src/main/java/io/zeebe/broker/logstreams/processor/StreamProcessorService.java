@@ -17,28 +17,22 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
+import java.time.Duration;
+
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.processor.EventFilter;
-import io.zeebe.logstreams.processor.StreamProcessor;
-import io.zeebe.logstreams.processor.StreamProcessorController;
+import io.zeebe.logstreams.processor.*;
 import io.zeebe.logstreams.spi.SnapshotStorage;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
-import io.zeebe.servicecontainer.Injector;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.servicecontainer.*;
 import io.zeebe.util.sched.ActorScheduler;
-
-import java.time.Duration;
 
 public class StreamProcessorService implements Service<StreamProcessorController>
 {
     private final Injector<LogStream> logStreamInjector = new Injector<>();
     private final Injector<SnapshotStorage> snapshotStorageInjector = new Injector<>();
-    private final Injector<ActorScheduler> actorSchedulerInjector = new Injector<>();
 
     private final String name;
     private final int id;
@@ -94,7 +88,7 @@ public class StreamProcessorService implements Service<StreamProcessorController
 
         final SnapshotStorage snapshotStorage = snapshotStorageInjector.getValue();
 
-        final ActorScheduler actorScheduler = actorSchedulerInjector.getValue();
+        final ActorScheduler actorScheduler = ctx.getScheduler();
 
         MetadataFilter metadataFilter = versionFilter;
         if (customEventFilter != null)
@@ -137,11 +131,6 @@ public class StreamProcessorService implements Service<StreamProcessorController
     public Injector<SnapshotStorage> getSnapshotStorageInjector()
     {
         return snapshotStorageInjector;
-    }
-
-    public Injector<ActorScheduler> getActorSchedulerInjector()
-    {
-        return actorSchedulerInjector;
     }
 
     public Injector<LogStream> getLogStreamInjector()

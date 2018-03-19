@@ -19,7 +19,6 @@ package io.zeebe.broker.clustering.management;
 
 import static io.zeebe.broker.clustering.ClusterServiceNames.RAFT_SERVICE_GROUP;
 import static io.zeebe.broker.clustering.ClusterServiceNames.raftServiceName;
-import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
 
 import java.io.File;
 import java.io.IOException;
@@ -273,7 +272,6 @@ public class ClusterManager extends Actor
 
         serviceContainer.createService(raftServiceName, raftService)
                         .group(RAFT_SERVICE_GROUP)
-                        .dependency(ACTOR_SCHEDULER_SERVICE, raftService.getActorSchedulerInjector())
                         .dependency(TransportServiceNames.bufferingServerTransport(TransportServiceNames.REPLICATION_API_SERVER_NAME),
                                     raftService.getServerTransportInjector())
                         .dependency(TransportServiceNames.clientTransport(TransportServiceNames.REPLICATION_API_CLIENT_NAME),

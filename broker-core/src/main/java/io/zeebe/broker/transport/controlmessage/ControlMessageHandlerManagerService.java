@@ -17,6 +17,9 @@
  */
 package io.zeebe.broker.transport.controlmessage;
 
+import java.util.Arrays;
+import java.util.List;
+
 import io.zeebe.broker.clustering.handler.RequestTopologyHandler;
 import io.zeebe.broker.clustering.management.ClusterManager;
 import io.zeebe.broker.event.handler.RemoveTopicSubscriptionHandler;
@@ -25,22 +28,15 @@ import io.zeebe.broker.system.log.RequestPartitionsMessageHandler;
 import io.zeebe.broker.system.log.SystemPartitionManager;
 import io.zeebe.broker.task.TaskSubscriptionManager;
 import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.servicecontainer.Injector;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerTransport;
 import io.zeebe.util.sched.ActorScheduler;
-
-import java.util.Arrays;
-import java.util.List;
 
 public class ControlMessageHandlerManagerService implements Service<ControlMessageHandlerManager>
 {
     protected final Injector<ServerTransport> transportInjector = new Injector<>();
     protected final Injector<Dispatcher> controlMessageBufferInjector = new Injector<>();
-    protected final Injector<ActorScheduler> actorSchedulerInjector = new Injector<>();
     protected final Injector<TaskSubscriptionManager> taskSubscriptionManagerInjector = new Injector<>();
     protected final Injector<TopicSubscriptionService> topicSubscriptionServiceInjector = new Injector<>();
     protected final Injector<SystemPartitionManager> systemPartitionManagerInjector = new Injector<>();
@@ -61,7 +57,7 @@ public class ControlMessageHandlerManagerService implements Service<ControlMessa
         final Dispatcher controlMessageBuffer = controlMessageBufferInjector.getValue();
 
         final ServerTransport transport = transportInjector.getValue();
-        final ActorScheduler actorScheduler = actorSchedulerInjector.getValue();
+        final ActorScheduler actorScheduler = context.getScheduler();
 
         final TaskSubscriptionManager taskSubscriptionManager = taskSubscriptionManagerInjector.getValue();
         final TopicSubscriptionService topicSubscriptionService = topicSubscriptionServiceInjector.getValue();
@@ -108,11 +104,6 @@ public class ControlMessageHandlerManagerService implements Service<ControlMessa
     public Injector<Dispatcher> getControlMessageBufferInjector()
     {
         return controlMessageBufferInjector;
-    }
-
-    public Injector<ActorScheduler> getActorSchedulerInjector()
-    {
-        return actorSchedulerInjector;
     }
 
     public Injector<TaskSubscriptionManager> getTaskSubscriptionManagerInjector()

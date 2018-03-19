@@ -17,44 +17,33 @@
  */
 package io.zeebe.broker.event.processor;
 
+import static io.zeebe.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE;
+
+import java.util.Objects;
+
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.event.TopicSubscriptionServiceNames;
-import io.zeebe.broker.logstreams.processor.MetadataFilter;
-import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
-import io.zeebe.broker.logstreams.processor.StreamProcessorService;
+import io.zeebe.broker.logstreams.processor.*;
 import io.zeebe.broker.system.ConfigurationManager;
-import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
-import io.zeebe.broker.transport.clientapi.ErrorResponseWriter;
-import io.zeebe.broker.transport.clientapi.SubscribedEventWriter;
+import io.zeebe.broker.transport.clientapi.*;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.processor.StreamProcessor;
 import io.zeebe.logstreams.processor.StreamProcessorController;
 import io.zeebe.servicecontainer.*;
-import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.ServerOutput;
-import io.zeebe.transport.ServerTransport;
-import io.zeebe.transport.TransportListener;
+import io.zeebe.transport.*;
 import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.slf4j.Logger;
 
-import java.util.Objects;
-
-import static io.zeebe.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE;
-import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
-
 public class TopicSubscriptionService extends Actor implements Service<TopicSubscriptionService>, TransportListener
 {
     private static final Logger LOG = Loggers.SERVICES_LOGGER;
 
-    protected final Injector<ActorScheduler> actorSchedulerInjector = new Injector<>();
     protected final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
     protected final SubscriptionCfg config;
 
-    protected ActorScheduler actorScheduler;
     protected ServiceStartContext serviceContext;
     protected Int2ObjectHashMap<TopicSubscriptionManagementProcessor> managersByLog = new Int2ObjectHashMap<>();
     protected ServerOutput serverOutput;
@@ -77,11 +66,6 @@ public class TopicSubscriptionService extends Actor implements Service<TopicSubs
         return this;
     }
 
-    public Injector<ActorScheduler> getActorSchedulerInjector()
-    {
-        return actorSchedulerInjector;
-    }
-
     public Injector< ServerTransport> getClientApiTransportInjector()
     {
         return clientApiTransportInjector;
@@ -98,13 +82,12 @@ public class TopicSubscriptionService extends Actor implements Service<TopicSubs
         final ServerTransport transport = clientApiTransportInjector.getValue();
         this.serverOutput = transport.getOutput();
 
-        actorScheduler = actorSchedulerInjector.getValue();
         this.serviceContext = startContext;
 
         final ActorFuture<Void> registration = transport.registerChannelListener(this);
         startContext.async(registration);
 
-        actorScheduler.submitActor(this);
+        startContext.getScheduler().submitActor(this);
     }
 
     @Override
@@ -163,7 +146,6 @@ public class TopicSubscriptionService extends Actor implements Service<TopicSubs
         return serviceContext.createService(processorName, streamProcessorService)
                              .dependency(logStreamName, streamProcessorService.getLogStreamInjector())
                              .dependency(SNAPSHOT_STORAGE_SERVICE, streamProcessorService.getSnapshotStorageInjector())
-                             .dependency(ACTOR_SCHEDULER_SERVICE, streamProcessorService.getActorSchedulerInjector())
                              .install();
     }
 

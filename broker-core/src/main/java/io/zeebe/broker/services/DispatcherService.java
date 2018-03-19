@@ -19,15 +19,10 @@ package io.zeebe.broker.services;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.DispatcherBuilder;
-import io.zeebe.servicecontainer.Injector;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
-import io.zeebe.util.sched.ActorScheduler;
+import io.zeebe.servicecontainer.*;
 
 public class DispatcherService implements Service<Dispatcher>
 {
-    protected final Injector<ActorScheduler> actorSchedulerInjector = new Injector<>();
     protected final Injector<Counters> countersInjector = new Injector<>();
 
     protected DispatcherBuilder dispatcherBuilder;
@@ -47,7 +42,7 @@ public class DispatcherService implements Service<Dispatcher>
                 .name(ctx.getName())
                 .countersManager(counters.getCountersManager())
                 .countersBuffer(counters.getCountersBuffer())
-                .actorScheduler(actorSchedulerInjector.getValue())
+                .actorScheduler(ctx.getScheduler())
                 .build();
     }
 
@@ -61,11 +56,6 @@ public class DispatcherService implements Service<Dispatcher>
     public Dispatcher get()
     {
         return dispatcher;
-    }
-
-    public Injector<ActorScheduler> getActorSchedulerInjector()
-    {
-        return actorSchedulerInjector;
     }
 
     public Injector<Counters> getCountersManagerInjector()

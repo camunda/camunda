@@ -20,7 +20,6 @@ package io.zeebe.broker.workflow;
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE;
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.logStreamServiceName;
 import static io.zeebe.broker.logstreams.processor.StreamProcessorIds.INCIDENT_PROCESSOR_ID;
-import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
 import static io.zeebe.broker.workflow.WorkflowQueueServiceNames.incidentStreamProcessorServiceName;
 import static io.zeebe.broker.workflow.WorkflowQueueServiceNames.workflowInstanceStreamProcessorServiceName;
 
@@ -37,7 +36,6 @@ import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.ServerTransport;
 import io.zeebe.util.EnsureUtil;
 import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.ActorScheduler;
 
 public class WorkflowQueueManagerService extends Actor implements Service<WorkflowQueueManager>, WorkflowQueueManager
 {
@@ -45,7 +43,6 @@ public class WorkflowQueueManagerService extends Actor implements Service<Workfl
 
     protected final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
     private final Injector<ServerTransport> managementServerInjector = new Injector<>();
-    protected final Injector<ActorScheduler> actorSchedulerInjector = new Injector<>();
 
     protected final ServiceGroupReference<LogStream> logStreamsGroupReference = ServiceGroupReference.<LogStream>create()
             .onAdd((name, stream) -> addStream(stream, name))
@@ -95,7 +92,6 @@ public class WorkflowQueueManagerService extends Actor implements Service<Workfl
         serviceContext.createService(streamProcessorServiceName, workflowStreamProcessorService)
                 .dependency(logStreamServiceName, workflowStreamProcessorService.getLogStreamInjector())
                 .dependency(SNAPSHOT_STORAGE_SERVICE, workflowStreamProcessorService.getSnapshotStorageInjector())
-                .dependency(ACTOR_SCHEDULER_SERVICE, workflowStreamProcessorService.getActorSchedulerInjector())
                 .install();
     }
 
@@ -117,7 +113,6 @@ public class WorkflowQueueManagerService extends Actor implements Service<Workfl
         serviceContext.createService(streamProcessorServiceName, incidentStreamProcessorService)
                 .dependency(logStreamServiceName, incidentStreamProcessorService.getLogStreamInjector())
                 .dependency(SNAPSHOT_STORAGE_SERVICE, incidentStreamProcessorService.getSnapshotStorageInjector())
-                .dependency(ACTOR_SCHEDULER_SERVICE, incidentStreamProcessorService.getActorSchedulerInjector())
                 .install();
     }
 
@@ -126,8 +121,7 @@ public class WorkflowQueueManagerService extends Actor implements Service<Workfl
     {
         this.serviceContext = serviceContext;
 
-        final ActorScheduler actorScheduler = actorSchedulerInjector.getValue();
-        actorScheduler.submitActor(this);
+        serviceContext.getScheduler().submitActor(this);
     }
 
     @Override
@@ -150,11 +144,6 @@ public class WorkflowQueueManagerService extends Actor implements Service<Workfl
     public ServiceGroupReference<LogStream> getLogStreamsGroupReference()
     {
         return logStreamsGroupReference;
-    }
-
-    public Injector<ActorScheduler> getActorSchedulerInjector()
-    {
-        return actorSchedulerInjector;
     }
 
     public Injector<ServerTransport> getManagementServerInjector()

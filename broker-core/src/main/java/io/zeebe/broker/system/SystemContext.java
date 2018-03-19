@@ -99,9 +99,8 @@ public class SystemContext implements AutoCloseable
         final ConcurrentCountersManager countersManager = new ConcurrentCountersManager(labelBuffer, valueBuffer);
         Loggers.SYSTEM_LOGGER.debug("Start scheduler with {} threads.", numberOfThreads);
 
-        // TODO find a balance between CPU and IO bound threads
-        final int ioBoundThreads = 1;
-        final int cpuBoundThreads = Math.min(1, numberOfThreads - ioBoundThreads);
+        final int ioBoundThreads = 2;
+        final int cpuBoundThreads = Math.max(1, numberOfThreads - ioBoundThreads);
 
         return ActorScheduler.newActorScheduler()
                              .setActorClock(clock)

@@ -17,22 +17,15 @@
  */
 package io.zeebe.broker.transport;
 
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.servicecontainer.Injector;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
-import io.zeebe.transport.ClientTransport;
-import io.zeebe.transport.ClientTransportBuilder;
-import io.zeebe.transport.SocketAddress;
-import io.zeebe.transport.Transports;
-import io.zeebe.util.sched.ActorScheduler;
-
 import java.util.Collection;
+
+import io.zeebe.dispatcher.Dispatcher;
+import io.zeebe.servicecontainer.*;
+import io.zeebe.transport.*;
+import io.zeebe.util.sched.ActorScheduler;
 
 public class ClientTransportService implements Service<ClientTransport>
 {
-    protected final Injector<ActorScheduler> schedulerInjector = new Injector<>();
     protected final Injector<Dispatcher> receiveBufferInjector = new Injector<>();
     protected final Injector<Dispatcher> sendBufferInjector = new Injector<>();
 
@@ -55,7 +48,7 @@ public class ClientTransportService implements Service<ClientTransport>
 
         final Dispatcher receiveBuffer = receiveBufferInjector.getValue();
         final Dispatcher sendBuffer = sendBufferInjector.getValue();
-        final ActorScheduler scheduler = schedulerInjector.getValue();
+        final ActorScheduler scheduler = startContext.getScheduler();
 
         final ClientTransportBuilder transportBuilder = Transports.newClientTransport();
 
@@ -93,11 +86,6 @@ public class ClientTransportService implements Service<ClientTransport>
     public Injector<Dispatcher> getReceiveBufferInjector()
     {
         return receiveBufferInjector;
-    }
-
-    public Injector<ActorScheduler> getSchedulerInjector()
-    {
-        return schedulerInjector;
     }
 
 }

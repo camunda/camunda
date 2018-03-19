@@ -18,18 +18,13 @@
 package io.zeebe.broker.task;
 
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.servicecontainer.Injector;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceGroupReference;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.ServerTransport;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
 
 public class TaskSubscriptionManagerService implements Service<TaskSubscriptionManager>
 {
-    protected final Injector<ActorScheduler> actorSchedulerInjector = new Injector<>();
     protected final Injector<ServerTransport> transportInjector = new Injector<>();
 
     protected TaskSubscriptionManager service;
@@ -42,7 +37,7 @@ public class TaskSubscriptionManagerService implements Service<TaskSubscriptionM
     @Override
     public void start(ServiceStartContext startContext)
     {
-        final ActorScheduler actorScheduler = actorSchedulerInjector.getValue();
+        final ActorScheduler actorScheduler = startContext.getScheduler();
         service = new TaskSubscriptionManager(startContext);
         actorScheduler.submitActor(service);
 
@@ -60,11 +55,6 @@ public class TaskSubscriptionManagerService implements Service<TaskSubscriptionM
     public TaskSubscriptionManager get()
     {
         return service;
-    }
-
-    public Injector<ActorScheduler> getActorSchedulerInjector()
-    {
-        return actorSchedulerInjector;
     }
 
     public ServiceGroupReference<LogStream> getLogStreamsGroupReference()

@@ -19,7 +19,6 @@ package io.zeebe.broker.logstreams;
 
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.LOG_STREAMS_MANAGER_SERVICE;
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE;
-import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
 
 import io.zeebe.broker.event.TopicSubscriptionServiceNames;
 import io.zeebe.broker.event.processor.TopicSubscriptionService;
@@ -35,7 +34,6 @@ public class LogStreamsComponent implements Component
     {
         final LogStreamsManagerService streamsManager = new LogStreamsManagerService(context.getConfigurationManager());
         context.getServiceContainer().createService(LOG_STREAMS_MANAGER_SERVICE, streamsManager)
-            .dependency(ACTOR_SCHEDULER_SERVICE, streamsManager.getActorSchedulerInjector())
             .install();
 
         final SnapshotStorageService snapshotStorageService = new SnapshotStorageService(context.getConfigurationManager());
@@ -46,7 +44,6 @@ public class LogStreamsComponent implements Component
         context.getServiceContainer()
             .createService(TopicSubscriptionServiceNames.TOPIC_SUBSCRIPTION_SERVICE, topicSubscriptionService)
             .dependency(TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME), topicSubscriptionService.getClientApiTransportInjector())
-            .dependency(ACTOR_SCHEDULER_SERVICE, topicSubscriptionService.getActorSchedulerInjector())
             .groupReference(LogStreamServiceNames.WORKFLOW_STREAM_GROUP, topicSubscriptionService.getLogStreamsGroupReference())
             .install();
     }

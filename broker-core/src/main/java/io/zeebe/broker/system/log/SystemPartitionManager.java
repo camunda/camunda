@@ -17,6 +17,9 @@
  */
 package io.zeebe.broker.system.log;
 
+import java.time.Duration;
+import java.util.concurrent.atomic.AtomicReference;
+
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.management.PartitionManager;
 import io.zeebe.broker.logstreams.LogStreamServiceNames;
@@ -31,9 +34,6 @@ import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerTransport;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
-
-import java.time.Duration;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class SystemPartitionManager implements Service<SystemPartitionManager>
 {
@@ -92,7 +92,6 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
         serviceContext.createService(SystemServiceNames.systemProcessorName(streamProcessorService.getName()), streamProcessorService)
             .dependency(logStreamName, streamProcessorService.getLogStreamInjector())
             .dependency(LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE, streamProcessorService.getSnapshotStorageInjector())
-            .dependency(SystemServiceNames.ACTOR_SCHEDULER_SERVICE, streamProcessorService.getActorSchedulerInjector())
             .install();
 
 
@@ -129,7 +128,6 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
         serviceContext.createService(SystemServiceNames.systemProcessorName(streamProcessorService.getName()), streamProcessorService)
             .dependency(logStreamName, streamProcessorService.getLogStreamInjector())
             .dependency(LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE, streamProcessorService.getSnapshotStorageInjector())
-            .dependency(SystemServiceNames.ACTOR_SCHEDULER_SERVICE, streamProcessorService.getActorSchedulerInjector())
             .install();
     }
 

@@ -17,6 +17,8 @@
  */
 package io.zeebe.broker.clustering.handler;
 
+import java.util.function.BooleanSupplier;
+
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.management.ClusterManager;
 import io.zeebe.broker.transport.clientapi.ErrorResponseWriter;
@@ -29,8 +31,6 @@ import io.zeebe.transport.ServerOutput;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
-
-import java.util.function.BooleanSupplier;
 
 public class RequestTopologyHandler implements ControlMessageHandler
 {
@@ -68,7 +68,8 @@ public class RequestTopologyHandler implements ControlMessageHandler
             else
             {
                 Loggers.CLUSTERING_LOGGER.debug("Problem on requesting topology. Exception {}", throwable);
-                sendResponse(actor, () -> {
+                sendResponse(actor, () ->
+                {
                     return errorResponseWriter.errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
                         .errorMessage("Cannot request topology!")
                         .tryWriteResponseOrLogFailure(requestStreamId, requestId);

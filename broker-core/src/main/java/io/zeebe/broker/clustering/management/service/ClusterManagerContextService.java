@@ -22,10 +22,7 @@ import io.zeebe.broker.clustering.management.memberList.MemberListService;
 import io.zeebe.broker.logstreams.LogStreamsManager;
 import io.zeebe.broker.system.deployment.handler.WorkflowRequestMessageHandler;
 import io.zeebe.gossip.Gossip;
-import io.zeebe.servicecontainer.Injector;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.BufferingServerTransport;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.util.sched.ActorScheduler;
@@ -36,7 +33,6 @@ public class ClusterManagerContextService implements Service<ClusterManagerConte
     private final Injector<ClientTransport> replicationClientInjector = new Injector<>();
     private final Injector<BufferingServerTransport> managementApiTransportInjector = new Injector<>();
 
-    private final Injector<ActorScheduler> actorSchedulerInjector = new Injector<>();
     private final Injector<LogStreamsManager> logStreamsManagerInjector = new Injector<>();
     private final Injector<WorkflowRequestMessageHandler> workflowRequestMessageHandlerInjector = new Injector<>();
     private final Injector<MemberListService> memberListServiceInjector = new Injector<>();
@@ -49,7 +45,7 @@ public class ClusterManagerContextService implements Service<ClusterManagerConte
     {
         final ClientTransport clientTransport = managementClientInjector.getValue();
         final BufferingServerTransport serverTransport = managementApiTransportInjector.getValue();
-        final ActorScheduler actorScheduler = actorSchedulerInjector.getValue();
+        final ActorScheduler actorScheduler = startContext.getScheduler();
         final LogStreamsManager logStreamsManager = logStreamsManagerInjector.getValue();
         final WorkflowRequestMessageHandler workflowRequestMessageHandler = workflowRequestMessageHandlerInjector.getValue();
 
@@ -83,11 +79,6 @@ public class ClusterManagerContextService implements Service<ClusterManagerConte
     public Injector<Gossip> getGossipInjector()
     {
         return gossipInjector;
-    }
-
-    public Injector<ActorScheduler> getActorSchedulerInjector()
-    {
-        return actorSchedulerInjector;
     }
 
     public Injector<LogStreamsManager> getLogStreamsManagerInjector()

@@ -17,22 +17,19 @@
  */
 package io.zeebe.broker.clustering;
 
+import static io.zeebe.broker.clustering.ClusterServiceNames.*;
+import static io.zeebe.broker.logstreams.LogStreamServiceNames.LOG_STREAMS_MANAGER_SERVICE;
+import static io.zeebe.broker.system.SystemServiceNames.WORKFLOW_REQUEST_MESSAGE_HANDLER_SERVICE;
+import static io.zeebe.broker.transport.TransportServiceNames.*;
+
 import io.zeebe.broker.clustering.gossip.service.GossipService;
 import io.zeebe.broker.clustering.management.memberList.MemberListService;
 import io.zeebe.broker.clustering.management.service.ClusterManagerContextService;
 import io.zeebe.broker.clustering.management.service.ClusterManagerService;
-import io.zeebe.broker.system.Component;
-import io.zeebe.broker.system.ConfigurationManager;
-import io.zeebe.broker.system.SystemContext;
+import io.zeebe.broker.system.*;
 import io.zeebe.broker.transport.TransportServiceNames;
 import io.zeebe.broker.transport.cfg.TransportComponentCfg;
 import io.zeebe.servicecontainer.ServiceContainer;
-
-import static io.zeebe.broker.clustering.ClusterServiceNames.*;
-import static io.zeebe.broker.logstreams.LogStreamServiceNames.LOG_STREAMS_MANAGER_SERVICE;
-import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
-import static io.zeebe.broker.system.SystemServiceNames.WORKFLOW_REQUEST_MESSAGE_HANDLER_SERVICE;
-import static io.zeebe.broker.transport.TransportServiceNames.*;
 
 public class ClusterComponent implements Component
 {
@@ -61,7 +58,6 @@ public class ClusterComponent implements Component
     {
         final GossipService gossipService = new GossipService(config);
         serviceContainer.createService(GOSSIP_SERVICE, gossipService)
-            .dependency(ACTOR_SCHEDULER_SERVICE, gossipService.getActorSchedulerInjector())
             .dependency(TransportServiceNames.clientTransport(TransportServiceNames.MANAGEMENT_API_CLIENT_NAME), gossipService.getClientTransportInjector())
             .dependency(TransportServiceNames.bufferingServerTransport(TransportServiceNames.MANAGEMENT_API_SERVER_NAME), gossipService.getBufferingServerTransportInjector())
             .install();
@@ -75,7 +71,6 @@ public class ClusterComponent implements Component
             .dependency(TransportServiceNames.clientTransport(MANAGEMENT_API_CLIENT_NAME), clusterManagementContextService.getManagementClientInjector())
             .dependency(TransportServiceNames.clientTransport(REPLICATION_API_CLIENT_NAME), clusterManagementContextService.getReplicationClientInjector())
             .dependency(MEMBER_LIST_SERVICE, clusterManagementContextService.getMemberListServiceInjector())
-            .dependency(ACTOR_SCHEDULER_SERVICE, clusterManagementContextService.getActorSchedulerInjector())
             .dependency(LOG_STREAMS_MANAGER_SERVICE, clusterManagementContextService.getLogStreamsManagerInjector())
             .dependency(WORKFLOW_REQUEST_MESSAGE_HANDLER_SERVICE, clusterManagementContextService.getWorkflowRequestMessageHandlerInjector())
             .dependency(GOSSIP_SERVICE, clusterManagementContextService.getGossipInjector())
@@ -84,7 +79,6 @@ public class ClusterComponent implements Component
         final ClusterManagerService clusterManagerService = new ClusterManagerService(serviceContainer, config);
         serviceContainer.createService(CLUSTER_MANAGER_SERVICE, clusterManagerService)
             .dependency(CLUSTER_MANAGER_CONTEXT_SERVICE, clusterManagerService.getClusterManagementContextInjector())
-            .dependency(ACTOR_SCHEDULER_SERVICE, clusterManagerService.getActorSchedulerInjector())
             .groupReference(RAFT_SERVICE_GROUP, clusterManagerService.getRaftGroupReference())
             .install();
     }

@@ -22,12 +22,10 @@ import io.zeebe.broker.clustering.management.ClusterManagerContext;
 import io.zeebe.broker.transport.cfg.TransportComponentCfg;
 import io.zeebe.raft.Raft;
 import io.zeebe.servicecontainer.*;
-import io.zeebe.util.sched.ActorScheduler;
 
 public class ClusterManagerService implements Service<ClusterManager>
 {
     private final Injector<ClusterManagerContext> clusterManagementContextInjector = new Injector<>();
-    private Injector<ActorScheduler> actorSchedulerInjector = new Injector<>();
 
     private ClusterManager clusterManager;
     private TransportComponentCfg config;
@@ -52,7 +50,7 @@ public class ClusterManagerService implements Service<ClusterManager>
             final ClusterManagerContext context = clusterManagementContextInjector.getValue();
             clusterManager = new ClusterManager(context, serviceContainer, config);
 
-            actorSchedulerInjector.getValue().submitActor(clusterManager);
+            startContext.getScheduler().submitActor(clusterManager);
         });
 
     }
@@ -78,11 +76,6 @@ public class ClusterManagerService implements Service<ClusterManager>
     public ServiceGroupReference<Raft> getRaftGroupReference()
     {
         return raftGroupReference;
-    }
-
-    public Injector<ActorScheduler> getActorSchedulerInjector()
-    {
-        return actorSchedulerInjector;
     }
 
 }

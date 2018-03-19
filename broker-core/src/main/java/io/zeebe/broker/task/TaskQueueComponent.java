@@ -17,16 +17,15 @@
  */
 package io.zeebe.broker.task;
 
+import static io.zeebe.broker.logstreams.LogStreamServiceNames.WORKFLOW_STREAM_GROUP;
+import static io.zeebe.broker.task.TaskQueueServiceNames.TASK_QUEUE_MANAGER;
+import static io.zeebe.broker.task.TaskQueueServiceNames.TASK_QUEUE_SUBSCRIPTION_MANAGER;
+import static io.zeebe.broker.transport.TransportServiceNames.CLIENT_API_SERVER_NAME;
+
 import io.zeebe.broker.system.Component;
 import io.zeebe.broker.system.SystemContext;
 import io.zeebe.broker.transport.TransportServiceNames;
 import io.zeebe.servicecontainer.ServiceContainer;
-
-import static io.zeebe.broker.logstreams.LogStreamServiceNames.WORKFLOW_STREAM_GROUP;
-import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
-import static io.zeebe.broker.task.TaskQueueServiceNames.TASK_QUEUE_MANAGER;
-import static io.zeebe.broker.task.TaskQueueServiceNames.TASK_QUEUE_SUBSCRIPTION_MANAGER;
-import static io.zeebe.broker.transport.TransportServiceNames.CLIENT_API_SERVER_NAME;
 
 public class TaskQueueComponent implements Component
 {
@@ -38,7 +37,6 @@ public class TaskQueueComponent implements Component
 
         final TaskSubscriptionManagerService taskSubscriptionManagerService = new TaskSubscriptionManagerService();
         serviceContainer.createService(TASK_QUEUE_SUBSCRIPTION_MANAGER, taskSubscriptionManagerService)
-            .dependency(ACTOR_SCHEDULER_SERVICE, taskSubscriptionManagerService.getActorSchedulerInjector())
             .dependency(TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME), taskSubscriptionManagerService.getClientApiTransportInjector())
             .groupReference(WORKFLOW_STREAM_GROUP, taskSubscriptionManagerService.getLogStreamsGroupReference())
             .install();
@@ -47,7 +45,6 @@ public class TaskQueueComponent implements Component
         serviceContainer.createService(TASK_QUEUE_MANAGER, taskQueueManagerService)
             .dependency(TransportServiceNames.serverTransport(CLIENT_API_SERVER_NAME), taskQueueManagerService.getClientApiTransportInjector())
             .dependency(TASK_QUEUE_SUBSCRIPTION_MANAGER, taskQueueManagerService.getTaskSubscriptionManagerInjector())
-            .dependency(ACTOR_SCHEDULER_SERVICE, taskQueueManagerService.getActorSchedulerInjector())
             .groupReference(WORKFLOW_STREAM_GROUP, taskQueueManagerService.getLogStreamsGroupReference())
             .install();
 

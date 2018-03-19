@@ -17,21 +17,17 @@
  */
 package io.zeebe.broker.event.processor;
 
+import static io.zeebe.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE;
+
+import java.util.Iterator;
+import java.util.function.Supplier;
+
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.event.TopicSubscriptionServiceNames;
-import io.zeebe.broker.logstreams.processor.MetadataFilter;
-import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
-import io.zeebe.broker.logstreams.processor.StreamProcessorService;
-import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
-import io.zeebe.broker.transport.clientapi.ErrorResponseWriter;
-import io.zeebe.broker.transport.clientapi.SubscribedEventWriter;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamWriter;
-import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.processor.EventProcessor;
-import io.zeebe.logstreams.processor.StreamProcessor;
-import io.zeebe.logstreams.processor.StreamProcessorContext;
-import io.zeebe.logstreams.processor.StreamProcessorController;
+import io.zeebe.broker.logstreams.processor.*;
+import io.zeebe.broker.transport.clientapi.*;
+import io.zeebe.logstreams.log.*;
+import io.zeebe.logstreams.processor.*;
 import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.map.Bytes2LongZbMap;
@@ -45,12 +41,6 @@ import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
-
-import java.util.Iterator;
-import java.util.function.Supplier;
-
-import static io.zeebe.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE;
-import static io.zeebe.broker.system.SystemServiceNames.ACTOR_SCHEDULER_SERVICE;
 
 public class TopicSubscriptionManagementProcessor implements StreamProcessor
 {
@@ -268,7 +258,6 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
         return serviceContext.createService(serviceName, streamProcessorService)
                              .dependency(streamServiceName, streamProcessorService.getLogStreamInjector())
                              .dependency(SNAPSHOT_STORAGE_SERVICE, streamProcessorService.getSnapshotStorageInjector())
-                             .dependency(ACTOR_SCHEDULER_SERVICE, streamProcessorService.getActorSchedulerInjector())
                              .install();
     }
 

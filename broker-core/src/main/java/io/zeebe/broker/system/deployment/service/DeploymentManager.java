@@ -17,15 +17,14 @@
  */
 package io.zeebe.broker.system.deployment.service;
 
+import java.time.Duration;
+
 import io.zeebe.broker.clustering.management.PartitionManager;
 import io.zeebe.broker.logstreams.LogStreamServiceNames;
 import io.zeebe.broker.logstreams.processor.*;
 import io.zeebe.broker.system.SystemConfiguration;
 import io.zeebe.broker.system.SystemServiceNames;
-import io.zeebe.broker.system.deployment.data.PendingDeployments;
-import io.zeebe.broker.system.deployment.data.PendingWorkflows;
-import io.zeebe.broker.system.deployment.data.TopicPartitions;
-import io.zeebe.broker.system.deployment.data.WorkflowVersions;
+import io.zeebe.broker.system.deployment.data.*;
 import io.zeebe.broker.system.deployment.handler.RemoteWorkflowsManager;
 import io.zeebe.broker.system.deployment.processor.*;
 import io.zeebe.broker.workflow.data.DeploymentState;
@@ -35,8 +34,6 @@ import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.ServerTransport;
-
-import java.time.Duration;
 
 public class DeploymentManager implements Service<DeploymentManager>
 {
@@ -125,7 +122,6 @@ public class DeploymentManager implements Service<DeploymentManager>
         serviceContext.createService(SystemServiceNames.DEPLOYMENT_PROCESSOR, streamProcessorService)
              .dependency(serviceName, streamProcessorService.getLogStreamInjector())
              .dependency(LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE, streamProcessorService.getSnapshotStorageInjector())
-             .dependency(SystemServiceNames.ACTOR_SCHEDULER_SERVICE, streamProcessorService.getActorSchedulerInjector())
              .install();
     }
 

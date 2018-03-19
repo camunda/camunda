@@ -17,6 +17,8 @@
  */
 package io.zeebe.broker.system;
 
+import static io.zeebe.broker.system.SystemServiceNames.*;
+
 import io.zeebe.broker.clustering.ClusterServiceNames;
 import io.zeebe.broker.logstreams.LogStreamServiceNames;
 import io.zeebe.broker.services.CountersManagerService;
@@ -24,11 +26,8 @@ import io.zeebe.broker.system.deployment.service.DeploymentManager;
 import io.zeebe.broker.system.deployment.service.WorkflowRequestMessageHandlerService;
 import io.zeebe.broker.system.log.PartitionManagerService;
 import io.zeebe.broker.system.log.SystemPartitionManager;
-import io.zeebe.broker.system.threads.ActorSchedulerService;
 import io.zeebe.broker.transport.TransportServiceNames;
 import io.zeebe.servicecontainer.ServiceContainer;
-
-import static io.zeebe.broker.system.SystemServiceNames.*;
 
 public class SystemComponent implements Component
 {
@@ -40,10 +39,6 @@ public class SystemComponent implements Component
 
         final CountersManagerService countersManagerService = new CountersManagerService(context.getConfigurationManager());
         serviceContainer.createService(COUNTERS_MANAGER_SERVICE, countersManagerService)
-            .install();
-
-        final ActorSchedulerService agentRunnerService = new ActorSchedulerService(context.getDiagnosticContext(), context.getConfigurationManager());
-        serviceContainer.createService(ACTOR_SCHEDULER_SERVICE, agentRunnerService)
             .install();
 
         final SystemConfiguration systemConfiguration = context.getConfigurationManager().readEntry("system", SystemConfiguration.class);
