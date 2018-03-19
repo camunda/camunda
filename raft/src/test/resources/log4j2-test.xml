@@ -7,7 +7,7 @@
       <AppenderRef ref="Console"/>
     </Root>
 
-    <Logger name="io.zeebe" level="debug" additivity="fakse">
+    <Logger name="io.zeebe" level="debug" additivity="false">
       <AppenderRef ref="Console"/>
 
       <AppenderRef ref="RollingFile-8003"/>
