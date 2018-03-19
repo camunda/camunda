@@ -41,7 +41,6 @@ import org.slf4j.Logger;
 public class TransportChannel
 {
     private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
-    private static final boolean IS_TRACE_ENABLED =  LOG.isTraceEnabled();
 
     private static final AtomicIntegerFieldUpdater<TransportChannel> STATE_FIELD = AtomicIntegerFieldUpdater.newUpdater(TransportChannel.class, "state");
 
@@ -98,10 +97,7 @@ public class TransportChannel
 
         final int received = mediaReceive(media, channelReadBuffer);
 
-        if (IS_TRACE_ENABLED)
-        {
-            LOG.trace("Received {} bytes on channel {}", received, this);
-        }
+        LOG.trace("Received {} bytes on channel {}", received, this);
 
         if (received < 0)
         {
@@ -111,10 +107,7 @@ public class TransportChannel
 
         final int available = channelReadBuffer.position();
 
-        if (IS_TRACE_ENABLED)
-        {
-            LOG.trace("Channel read buffer has {} bytes available", available);
-        }
+        LOG.trace("Channel read buffer has {} bytes available", available);
 
         int remaining = available;
         int offset = 0;
@@ -138,10 +131,7 @@ public class TransportChannel
 
                 if (handled)
                 {
-                    if (IS_TRACE_ENABLED)
-                    {
-                        LOG.trace("Handler has handled message of {} bytes", framedLength);
-                    }
+                    LOG.trace("Handler has handled message of {} bytes", framedLength);
 
                     remaining -= frameLength;
                     offset += frameLength;

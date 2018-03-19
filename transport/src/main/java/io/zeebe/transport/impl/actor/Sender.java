@@ -32,7 +32,6 @@ import org.slf4j.Logger;
 public class Sender extends Actor
 {
     private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
-    private static final boolean IS_TRACE_ENABLED = LOG.isTraceEnabled();
 
     private static final String SUBSCRIPTION_NAME = "sender";
     private static final String NOT_CONNECTED_ERROR = "No available channel for remote";
@@ -122,10 +121,7 @@ public class Sender extends Actor
 
             if (writeChannel != null && !writeChannel.isClosed())
             {
-                if (IS_TRACE_ENABLED)
-                {
-                    LOG.trace("Starting send of {} bytes to {}", blockPeek.getBlockLength(), writeChannel.getRemoteAddress());
-                }
+                LOG.trace("Starting send of {} bytes to {}", blockPeek.getBlockLength(), writeChannel.getRemoteAddress());
 
                 actor.runUntilDone(sendData);
             }
@@ -158,10 +154,7 @@ public class Sender extends Actor
                 blockPeek.markCompleted();
                 actor.done();
 
-                if (IS_TRACE_ENABLED)
-                {
-                    LOG.trace("Finished send to {}", writeChannel.getRemoteAddress());
-                }
+                LOG.trace("Finished send to {}", writeChannel.getRemoteAddress());
             }
             else
             {
@@ -188,10 +181,7 @@ public class Sender extends Actor
                             failure,
                             failureCause);
 
-                    if (IS_TRACE_ENABLED)
-                    {
-                        LOG.trace("Discarding message of {}bytes on stream {}", nextMessage.capacity(), blockPeek.getStreamId());
-                    }
+                    LOG.trace("Discarding message of {}bytes on stream {}", nextMessage.capacity(), blockPeek.getStreamId());
                 }
                 catch (Exception e)
                 {
@@ -203,10 +193,7 @@ public class Sender extends Actor
 
     private void sendKeepalives()
     {
-        if (IS_TRACE_ENABLED)
-        {
-            LOG.trace("Sending keepalives");
-        }
+        LOG.trace("Sending keepalives");
 
         channelMap.values()
             .forEach((ch) -> actor.runUntilDone(this.sendKeepaliveOnChannel(ch)));
@@ -216,19 +203,13 @@ public class Sender extends Actor
     {
         return () ->
         {
-            if (IS_TRACE_ENABLED)
-            {
-                LOG.trace("Sending keepalive on channel {}", ch);
-            }
+            LOG.trace("Sending keepalive on channel {}", ch);
 
             final int result = ch.write(keepAliveBuffer);
 
             if (result == -1)
             {
-                if (IS_TRACE_ENABLED)
-                {
-                    LOG.trace("Could not send keepalive on channel {}, channel closed", ch);
-                }
+                LOG.trace("Could not send keepalive on channel {}, channel closed", ch);
 
                 actor.done();
                 keepAliveBuffer.clear();

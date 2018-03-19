@@ -37,7 +37,6 @@ import org.slf4j.Logger;
 public class ClientRequestController extends Actor
 {
     private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
-    private static final boolean IS_TRACE_ENABLED = LOG.isTraceEnabled();
 
     private static final Duration RESUBMIT_TIMEOUT = Duration.ofMillis(1);
 
@@ -118,10 +117,7 @@ public class ClientRequestController extends Actor
     {
         if (address != null)
         {
-            if (IS_TRACE_ENABLED)
-            {
-                LOG.trace("Next remote address obtained {}", address);
-            }
+            LOG.trace("Next remote address obtained {}", address);
 
             if (remotesTried.isEmpty() || !address.equals(remotesTried.peek()))
             {
@@ -132,10 +128,7 @@ public class ClientRequestController extends Actor
         }
         else
         {
-            if (IS_TRACE_ENABLED)
-            {
-                LOG.trace("Did not obtain next remote addres, retrying");
-            }
+            LOG.trace("Did not obtain next remote addres, retrying");
 
             retryRequest();
         }
@@ -178,10 +171,7 @@ public class ClientRequestController extends Actor
 
                 sendBufferClaim.commit();
 
-                if (IS_TRACE_ENABLED)
-                {
-                    LOG.trace("Request written to send buffer");
-                }
+                LOG.trace("Request written to send buffer");
             }
             catch (Throwable e)
             {
@@ -197,10 +187,7 @@ public class ClientRequestController extends Actor
 
     private void retryRequest()
     {
-        if (IS_TRACE_ENABLED)
-        {
-            LOG.trace("Retrying request.");
-        }
+        LOG.trace("Retrying request.");
 
         actor.runDelayed(RESUBMIT_TIMEOUT, this::getNextRemoteAddress);
     }
@@ -211,10 +198,7 @@ public class ClientRequestController extends Actor
         {
             try
             {
-                if (IS_TRACE_ENABLED)
-                {
-                    LOG.trace("Request timed out");
-                }
+                LOG.trace("Request timed out");
 
                 final StringBuilder errBuilder = new StringBuilder("Request timed out after ").append(timeout).append(".\nRemotes tried (in reverse order):\n");
 
@@ -235,10 +219,7 @@ public class ClientRequestController extends Actor
 
     protected void closeRequest()
     {
-        if (IS_TRACE_ENABLED)
-        {
-            LOG.trace("Request closed");
-        }
+        LOG.trace("Request closed");
 
         try
         {
@@ -262,19 +243,13 @@ public class ClientRequestController extends Actor
                 {
                     if (cause != null && cause instanceof NotConnectedException)
                     {
-                        if (IS_TRACE_ENABLED)
-                        {
-                            LOG.trace("Channel to remove {} not connected, retrying", remotesTried.peek());
-                        }
+                        LOG.trace("Channel to remove {} not connected, retrying", remotesTried.peek());
 
                         retryRequest();
                     }
                     else
                     {
-                        if (IS_TRACE_ENABLED)
-                        {
-                            LOG.trace("Completing request exceptionally. {}", failure);
-                        }
+                        LOG.trace("Completing request exceptionally. {}", failure);
 
                         try
                         {
@@ -326,19 +301,13 @@ public class ClientRequestController extends Actor
             {
                 if (responseHandler.test(responseBufferView))
                 {
-                    if (IS_TRACE_ENABLED)
-                    {
-                        LOG.trace("Response inspector decided to retry request.");
-                    }
+                    LOG.trace("Response inspector decided to retry request.");
 
                     retryRequest();
                 }
                 else
                 {
-                    if (IS_TRACE_ENABLED)
-                    {
-                        LOG.trace("Completing request successfully.");
-                    }
+                    LOG.trace("Completing request successfully.");
 
                     responseFuture.complete(new ClientResponseImpl(requestId,
                         remotesTried.peek(),
@@ -351,10 +320,7 @@ public class ClientRequestController extends Actor
         }
         else
         {
-            if (IS_TRACE_ENABLED)
-            {
-                LOG.trace("Dropping response, not awaiting response anymore.");
-            }
+            LOG.trace("Dropping response, not awaiting response anymore.");
         }
     }
 
