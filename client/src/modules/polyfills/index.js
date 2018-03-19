@@ -55,6 +55,7 @@ if (!Array.prototype.findIndex) {
 Number.isNaN =
   Number.isNaN ||
   function(value) {
+    // eslint-disable-next-line
     return value !== value;
   };
 
