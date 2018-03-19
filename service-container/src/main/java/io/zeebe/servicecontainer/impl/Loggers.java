@@ -15,12 +15,12 @@
  */
 package io.zeebe.servicecontainer.impl;
 
+import io.zeebe.util.ZbLogger;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class Loggers
 {
 
-    public static final Logger SERVICE_CONTAINER_LOGGER = LoggerFactory.getLogger("io.zeebe.servicecontainer");
+    public static final Logger SERVICE_CONTAINER_LOGGER = new ZbLogger("io.zeebe.servicecontainer");
 
 }
