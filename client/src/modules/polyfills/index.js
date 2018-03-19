@@ -7,7 +7,7 @@ import 'element-closest';
 // https://tc39.github.io/ecma262/#sec-array.prototype.findIndex
 if (!Array.prototype.findIndex) {
   // source: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/findIndex#Polyfill
-  /*eslint-disable */
+  /*eslint-disable no-extend-native */
   Object.defineProperty(Array.prototype, 'findIndex', {
     value: function(predicate) {
       // 1. Let O be ? ToObject(this value).
@@ -49,13 +49,14 @@ if (!Array.prototype.findIndex) {
       return -1;
     }
   });
-  /*eslint-enable */
+  /*eslint-enable no-extend-native */
 }
 
+// source: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/isNaN#Polyfill
 Number.isNaN =
   Number.isNaN ||
   function(value) {
-    // eslint-disable-next-line
+    // eslint-disable-next-line no-self-compare
     return value !== value;
   };
 

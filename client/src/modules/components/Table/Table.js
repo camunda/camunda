@@ -11,7 +11,7 @@ export default function Table({className, head, body, foot}) {
     <ReactTable
       data={data}
       columns={columns}
-      defaultPageSize={1000}
+      defaultPageSize={Number.MAX_SAFE_INTEGER}
       showPagination={false}
       showPaginationTop={false}
       showPaginationBottom={false}
