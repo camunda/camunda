@@ -6,6 +6,7 @@ import 'element-closest';
 
 // https://tc39.github.io/ecma262/#sec-array.prototype.findIndex
 if (!Array.prototype.findIndex) {
+  // source: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/findIndex#Polyfill
   /*eslint-disable */
   Object.defineProperty(Array.prototype, 'findIndex', {
     value: function(predicate) {
