@@ -25,6 +25,10 @@ def stopAllOptimizeComponents() {
 
 pipeline {
 
+  triggers {
+    cron('H 3 * * *')
+  }
+
   agent { label 'optimize-build' }
   // Environment
   environment {
