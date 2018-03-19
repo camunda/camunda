@@ -24,7 +24,12 @@ import io.zeebe.broker.logstreams.LogStreamServiceNames;
 import io.zeebe.broker.logstreams.processor.*;
 import io.zeebe.broker.system.SystemConfiguration;
 import io.zeebe.broker.system.SystemServiceNames;
-import io.zeebe.broker.system.deployment.data.*;
+import io.zeebe.broker.system.deployment.data.PendingDeployments;
+import io.zeebe.broker.system.deployment.data.PendingWorkflows;
+import io.zeebe.broker.system.deployment.data.TopicPartitions;
+import io.zeebe.broker.system.deployment.data.WorkflowVersions;
+import io.zeebe.broker.system.deployment.handler.DeploymentEventWriter;
+import io.zeebe.broker.system.deployment.handler.DeploymentTimer;
 import io.zeebe.broker.system.deployment.handler.RemoteWorkflowsManager;
 import io.zeebe.broker.system.deployment.processor.*;
 import io.zeebe.broker.workflow.data.DeploymentState;
@@ -85,33 +90,26 @@ public class DeploymentManager implements Service<DeploymentManager>
 
         final TypedStreamEnvironment streamEnvironment = new TypedStreamEnvironment(logStream, clientApiTransport.getOutput());
 
-        final TypedEventStreamProcessorBuilder streamProcessorBuilder = streamEnvironment.newStreamProcessor();
-
-        final PartitionCollector partitionCollector = new PartitionCollector();
-        partitionCollector.registerWith(streamProcessorBuilder);
-        final TopicPartitions partitions = partitionCollector.getPartitions();
+        final DeploymentEventWriter deploymentEventWriter = new DeploymentEventWriter(
+                streamEnvironment.buildStreamWriter(),
+                streamEnvironment.buildStreamReader());
 
         final RemoteWorkflowsManager remoteManager = new RemoteWorkflowsManager(
                 pendingDeployments,
                 pendingWorkflows,
                 partitionManager,
-                streamEnvironment.buildStreamWriter(),
-                streamEnvironment.buildStreamReader(),
+                deploymentEventWriter,
                 managementClient);
 
-        final TypedStreamProcessor streamProcessor = streamProcessorBuilder
-            .onEvent(EventType.DEPLOYMENT_EVENT, DeploymentState.CREATE, new DeploymentCreateProcessor(partitions, workflowVersions, pendingDeployments, deploymentRequestTimeout))
-            .onEvent(EventType.DEPLOYMENT_EVENT, DeploymentState.VALIDATED, new DeploymentValidatedProcessor(pendingDeployments))
-            .onEvent(EventType.WORKFLOW_EVENT, WorkflowState.CREATE, new WorkflowCreateProcessor(partitions, pendingDeployments, pendingWorkflows, remoteManager))
-            .onEvent(EventType.DEPLOYMENT_EVENT, DeploymentState.DISTRIBUTED, new DeploymentDistributedProcessor(pendingDeployments, pendingWorkflows))
-            .onEvent(EventType.DEPLOYMENT_EVENT, DeploymentState.TIMED_OUT, new DeploymentTimedOutProcessor(pendingDeployments, pendingWorkflows, streamEnvironment.buildStreamReader()))
-            .onEvent(EventType.WORKFLOW_EVENT, WorkflowState.DELETE, new WorkflowDeleteProcessor(pendingDeployments, pendingWorkflows, workflowVersions, remoteManager))
-            .onEvent(EventType.DEPLOYMENT_EVENT, DeploymentState.REJECT, new DeploymentRejectProcessor(pendingDeployments))
-            .withStateResource(workflowVersions.getRawMap())
-            .withStateResource(pendingDeployments.getRawMap())
-            .withStateResource(pendingWorkflows.getRawMap())
-            .withListener(remoteManager)
-            .build();
+        final TypedStreamProcessor streamProcessor =
+                createDeploymentStreamProcessor(
+                        workflowVersions,
+                        pendingDeployments,
+                        pendingWorkflows,
+                        deploymentRequestTimeout,
+                        streamEnvironment,
+                        deploymentEventWriter,
+                        remoteManager);
 
         final StreamProcessorService streamProcessorService = new StreamProcessorService(
              "deployment",
@@ -123,6 +121,42 @@ public class DeploymentManager implements Service<DeploymentManager>
              .dependency(serviceName, streamProcessorService.getLogStreamInjector())
              .dependency(LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE, streamProcessorService.getSnapshotStorageInjector())
              .install();
+    }
+
+    public static TypedStreamProcessor createDeploymentStreamProcessor(
+            final WorkflowVersions workflowVersions,
+            final PendingDeployments pendingDeployments,
+            final PendingWorkflows pendingWorkflows,
+            final Duration deploymentTimeout,
+            final TypedStreamEnvironment streamEnvironment,
+            final DeploymentEventWriter eventWriter,
+            final RemoteWorkflowsManager remoteManager)
+    {
+
+        final TypedEventStreamProcessorBuilder streamProcessorBuilder = streamEnvironment.newStreamProcessor();
+
+        final PartitionCollector partitionCollector = new PartitionCollector();
+        partitionCollector.registerWith(streamProcessorBuilder);
+        final TopicPartitions partitions = partitionCollector.getPartitions();
+
+        final DeploymentTimer timer = new DeploymentTimer(pendingDeployments, eventWriter, deploymentTimeout);
+
+        final TypedStreamProcessor streamProcessor = streamProcessorBuilder
+            .onEvent(EventType.DEPLOYMENT_EVENT, DeploymentState.CREATE, new DeploymentCreateProcessor(partitions, workflowVersions, pendingDeployments))
+            .onEvent(EventType.DEPLOYMENT_EVENT, DeploymentState.VALIDATED, new DeploymentValidatedProcessor(pendingDeployments, timer))
+            .onEvent(EventType.WORKFLOW_EVENT, WorkflowState.CREATE, new WorkflowCreateProcessor(partitions, pendingDeployments, pendingWorkflows, remoteManager))
+            .onEvent(EventType.DEPLOYMENT_EVENT, DeploymentState.DISTRIBUTED, new DeploymentDistributedProcessor(pendingDeployments, pendingWorkflows, timer))
+            .onEvent(EventType.DEPLOYMENT_EVENT, DeploymentState.TIMED_OUT, new DeploymentTimedOutProcessor(pendingDeployments, pendingWorkflows, timer, streamEnvironment.buildStreamReader()))
+            .onEvent(EventType.WORKFLOW_EVENT, WorkflowState.DELETE, new WorkflowDeleteProcessor(pendingDeployments, pendingWorkflows, workflowVersions, remoteManager))
+            .onEvent(EventType.DEPLOYMENT_EVENT, DeploymentState.REJECT, new DeploymentRejectProcessor(pendingDeployments))
+            .withStateResource(workflowVersions.getRawMap())
+            .withStateResource(pendingDeployments.getRawMap())
+            .withStateResource(pendingWorkflows.getRawMap())
+            .withListener(eventWriter)
+            .withListener(timer)
+            .withListener(remoteManager)
+            .build();
+        return streamProcessor;
     }
 
     @Override

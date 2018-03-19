@@ -21,6 +21,7 @@ import org.agrona.DirectBuffer;
 
 import io.zeebe.broker.system.log.PartitionEvent;
 import io.zeebe.broker.system.log.TopicEvent;
+import io.zeebe.broker.workflow.data.DeploymentEvent;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.EventType;
@@ -31,6 +32,10 @@ import io.zeebe.util.buffer.BufferUtil;
 public class Events
 {
 
+    public static DeploymentEvent asDeploymentEvent(LoggedEvent event)
+    {
+        return readValueAs(event, DeploymentEvent.class);
+    }
 
     public static PartitionEvent asPartitionEvent(LoggedEvent event)
     {
@@ -48,6 +53,11 @@ public class Events
         final T valuePojo = ReflectUtil.newInstance(valueClass);
         valuePojo.wrap(copy);
         return valuePojo;
+    }
+
+    public static boolean isDeploymentEvent(LoggedEvent event)
+    {
+        return isEventOfType(event, EventType.DEPLOYMENT_EVENT);
     }
 
     public static boolean isPartitionEvent(LoggedEvent event)

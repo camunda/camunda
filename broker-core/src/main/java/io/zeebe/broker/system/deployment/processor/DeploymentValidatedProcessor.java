@@ -17,26 +17,29 @@
  */
 package io.zeebe.broker.system.deployment.processor;
 
-import static io.zeebe.util.EnsureUtil.ensureNotNull;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
+
+import org.agrona.DirectBuffer;
+import org.slf4j.Logger;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.logstreams.processor.TypedEvent;
 import io.zeebe.broker.logstreams.processor.TypedEventProcessor;
 import io.zeebe.broker.system.deployment.data.PendingDeployments;
-import io.zeebe.broker.system.deployment.data.PendingDeployments.PendingDeployment;
+import io.zeebe.broker.system.deployment.handler.DeploymentTimer;
 import io.zeebe.broker.workflow.data.DeploymentEvent;
-import org.slf4j.Logger;
 
 public class DeploymentValidatedProcessor implements TypedEventProcessor<DeploymentEvent>
 {
     private static final Logger LOG = Loggers.SYSTEM_LOGGER;
 
     private final PendingDeployments pendingDeployments;
+    private final DeploymentTimer timer;
 
-    public DeploymentValidatedProcessor(PendingDeployments pendingDeployments)
+    public DeploymentValidatedProcessor(PendingDeployments pendingDeployments, DeploymentTimer timer)
     {
         this.pendingDeployments = pendingDeployments;
+        this.timer = timer;
     }
 
     @Override
@@ -51,11 +54,10 @@ public class DeploymentValidatedProcessor implements TypedEventProcessor<Deploym
     public void updateState(TypedEvent<DeploymentEvent> event)
     {
         final long deploymentKey = event.getKey();
+        final DirectBuffer topicName = event.getValue().getTopicName();
 
-        final PendingDeployment pendingDeployment = pendingDeployments.get(deploymentKey);
-        ensureNotNull("pending deployment", pendingDeployment);
-
-        pendingDeployments.put(deploymentKey, event.getPosition(), pendingDeployment.getTimeout(), pendingDeployment.getTopicName());
+        pendingDeployments.put(deploymentKey, event.getPosition(), topicName);
+        timer.onDeploymentValidated(deploymentKey);
     }
 
 }

@@ -21,40 +21,43 @@ import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.*;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TemporaryFolder;
+
 import io.zeebe.broker.clustering.handler.TopologyBroker;
-import io.zeebe.broker.clustering.management.PartitionManager;
-import io.zeebe.broker.clustering.member.Member;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
-import io.zeebe.broker.system.log.*;
+import io.zeebe.broker.system.log.PartitionEvent;
+import io.zeebe.broker.system.log.PartitionState;
+import io.zeebe.broker.system.log.PendingPartitionsIndex;
+import io.zeebe.broker.system.log.ResolvePendingPartitionsCommand;
+import io.zeebe.broker.system.log.SystemPartitionManager;
+import io.zeebe.broker.system.log.TopicEvent;
+import io.zeebe.broker.system.log.TopicState;
+import io.zeebe.broker.system.log.TopicsIndex;
+import io.zeebe.broker.topic.TestPartitionManager.PartitionRequest;
 import io.zeebe.broker.transport.clientapi.BufferingServerOutput;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.test.util.AutoCloseableRule;
-import io.zeebe.transport.*;
+import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.impl.RequestResponseHeaderDescriptor;
 import io.zeebe.transport.impl.TransportHeaderDescriptor;
 import io.zeebe.util.buffer.BufferUtil;
-import io.zeebe.util.collection.IntIterator;
-import io.zeebe.util.collection.IntListIterator;
 import io.zeebe.util.sched.clock.ControlledActorClock;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
-import org.agrona.DirectBuffer;
-import org.junit.*;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TemporaryFolder;
 
 public class CreateTopicStreamProcessorTest
 {
@@ -76,7 +79,7 @@ public class CreateTopicStreamProcessorTest
 
     public BufferingServerOutput output;
 
-    public PartitionManagerImpl partitionManager;
+    public TestPartitionManager partitionManager;
     protected TestStreams streams;
 
     private TypedStreamProcessor streamProcessor;
@@ -94,7 +97,7 @@ public class CreateTopicStreamProcessorTest
             .event(new UnpackedObject())
             .write();
 
-        this.partitionManager = new PartitionManagerImpl();
+        this.partitionManager = new TestPartitionManager();
         rebuildStreamProcessor();
     }
 
@@ -748,93 +751,4 @@ public class CreateTopicStreamProcessorTest
 
         return event;
     }
-
-    protected class PartitionManagerImpl implements PartitionManager
-    {
-
-        protected List<PartitionRequest> partitionRequests = new CopyOnWriteArrayList<>();
-        protected List<Member> currentMembers = new CopyOnWriteArrayList<>();
-        protected Map<SocketAddress, List<Integer>> partitionsByMember = new HashMap<>();
-
-
-        public void addMember(SocketAddress socketAddress)
-        {
-            this.currentMembers.add(new Member()
-            {
-                @Override
-                public SocketAddress getManagementAddress()
-                {
-                    return socketAddress;
-                }
-
-                @Override
-                public IntIterator getLeadingPartitions()
-                {
-                    return new IntListIterator(partitionsByMember.getOrDefault(socketAddress, Collections.emptyList()));
-                }
-            });
-        }
-
-        public void removeMember(SocketAddress socketAddress)
-        {
-            this.currentMembers.removeIf(m -> socketAddress.equals(m.getManagementAddress()));
-        }
-
-        public void declarePartitionLeader(SocketAddress memberAddress, int partitionId)
-        {
-            if (!this.partitionsByMember.containsKey(memberAddress))
-            {
-                this.partitionsByMember.put(memberAddress, new ArrayList<>());
-            }
-
-            this.partitionsByMember.get(memberAddress).add(partitionId);
-        }
-
-        @Override
-        public ActorFuture<ClientResponse> createPartitionRemote(SocketAddress remote, DirectBuffer topicName, int partitionId)
-        {
-            partitionRequests.add(new PartitionRequest(remote, partitionId));
-            final ClientResponse request = mock(ClientResponse.class);
-            try
-            {
-                when(request.getResponseBuffer()).thenReturn(BufferUtil.wrapString("responseContent"));
-            }
-            catch (Exception e)
-            {
-                // make compile
-            }
-
-            return CompletableActorFuture.completed(request);
-        }
-
-        public List<PartitionRequest> getPartitionRequests()
-        {
-            return partitionRequests;
-        }
-
-        @Override
-        public Iterator<Member> getKnownMembers()
-        {
-            return currentMembers.iterator();
-        }
-
-    }
-
-    protected class PartitionRequest
-    {
-        protected final SocketAddress endpoint = new SocketAddress();
-        protected final int partitionId;
-
-        public PartitionRequest(SocketAddress endpoint, int partitionId)
-        {
-            this.endpoint.wrap(endpoint);
-            this.partitionId = partitionId;
-        }
-
-        public int getPartitionId()
-        {
-            return partitionId;
-        }
-    }
-
 }

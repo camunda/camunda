@@ -95,7 +95,7 @@ public class WorkflowDeleteProcessor implements TypedEventProcessor<WorkflowEven
         final long workflowKey = event.getKey();
         final WorkflowEvent workflowEvent = event.getValue();
 
-        for (int partitionId: partitionIds)
+        for (int partitionId : partitionIds)
         {
             pendingWorkflows.remove(workflowKey, partitionId);
         }

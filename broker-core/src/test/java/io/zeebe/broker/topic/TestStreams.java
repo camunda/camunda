@@ -31,6 +31,8 @@ import java.util.stream.StreamSupport;
 
 import io.zeebe.broker.system.log.PartitionEvent;
 import io.zeebe.broker.system.log.TopicEvent;
+import io.zeebe.broker.workflow.data.DeploymentEvent;
+import io.zeebe.broker.workflow.data.WorkflowEvent;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.log.*;
 import io.zeebe.logstreams.processor.*;
@@ -52,6 +54,8 @@ public class TestStreams
     {
         EVENT_TYPES.put(PartitionEvent.class, EventType.PARTITION_EVENT);
         EVENT_TYPES.put(TopicEvent.class, EventType.TOPIC_EVENT);
+        EVENT_TYPES.put(DeploymentEvent.class, EventType.DEPLOYMENT_EVENT);
+        EVENT_TYPES.put(WorkflowEvent.class, EventType.WORKFLOW_EVENT);
 
         EVENT_TYPES.put(UnpackedObject.class, EventType.NOOP_EVENT);
     }
@@ -176,7 +180,11 @@ public class TestStreams
 
         final SuspendableStreamProcessor processor = new SuspendableStreamProcessor(streamProcessor);
 
-        final StreamProcessorController streamProcessorController = LogStreams.createStreamProcessor(streamProcessor.toString(), streamProcessorId, processor)
+        // stream processor names need to be unique for snapshots to work properly
+        // using the class name assumes that one stream processor class is not instantiated more than once in a test
+        final String name = streamProcessor.getClass().getSimpleName();
+
+        final StreamProcessorController streamProcessorController = LogStreams.createStreamProcessor(name, streamProcessorId, processor)
             .logStream(stream)
             .snapshotStorage(getSnapshotStorage())
             .actorScheduler(actorScheduler)

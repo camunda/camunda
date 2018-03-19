@@ -24,18 +24,33 @@ import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.time.Duration;
 import java.util.Iterator;
 import java.util.function.Consumer;
 
+import org.agrona.DirectBuffer;
+import org.agrona.collections.IntArrayList;
+import org.slf4j.Logger;
+
 import io.zeebe.broker.Loggers;
-import io.zeebe.broker.logstreams.processor.*;
-import io.zeebe.broker.system.deployment.data.*;
+import io.zeebe.broker.logstreams.processor.TypedBatchWriter;
+import io.zeebe.broker.logstreams.processor.TypedEvent;
+import io.zeebe.broker.logstreams.processor.TypedEventProcessor;
+import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
+import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
+import io.zeebe.broker.system.deployment.data.PendingDeployments;
 import io.zeebe.broker.system.deployment.data.PendingDeployments.PendingDeployment;
 import io.zeebe.broker.system.deployment.data.PendingDeployments.PendingDeploymentIterator;
+import io.zeebe.broker.system.deployment.data.TopicPartitions;
 import io.zeebe.broker.system.deployment.data.TopicPartitions.TopicPartition;
 import io.zeebe.broker.system.deployment.data.TopicPartitions.TopicPartitionIterator;
-import io.zeebe.broker.workflow.data.*;
+import io.zeebe.broker.system.deployment.data.WorkflowVersions;
+import io.zeebe.broker.workflow.data.DeployedWorkflow;
+import io.zeebe.broker.workflow.data.DeploymentEvent;
+import io.zeebe.broker.workflow.data.DeploymentResource;
+import io.zeebe.broker.workflow.data.DeploymentState;
+import io.zeebe.broker.workflow.data.ResourceType;
+import io.zeebe.broker.workflow.data.WorkflowEvent;
+import io.zeebe.broker.workflow.data.WorkflowState;
 import io.zeebe.model.bpmn.BpmnModelApi;
 import io.zeebe.model.bpmn.ValidationResult;
 import io.zeebe.model.bpmn.instance.Workflow;
@@ -44,10 +59,6 @@ import io.zeebe.msgpack.value.ValueArray;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.collection.IntArrayListIterator;
-import io.zeebe.util.sched.clock.ActorClock;
-import org.agrona.DirectBuffer;
-import org.agrona.collections.IntArrayList;
-import org.slf4j.Logger;
 
 public class DeploymentCreateProcessor implements TypedEventProcessor<DeploymentEvent>
 {
@@ -61,20 +72,16 @@ public class DeploymentCreateProcessor implements TypedEventProcessor<Deployment
     private final WorkflowVersions workflowVersions;
     private final PendingDeployments pendingDeployments;
 
-    private final long timeoutInMillis;
-
     private final DeploymentResourceIterator deploymentResourceIterator = new DeploymentResourceIterator();
 
     public DeploymentCreateProcessor(
             TopicPartitions topicPartitions,
             WorkflowVersions workflowVersions,
-            PendingDeployments pendingDeployments,
-            Duration deploymentTimeout)
+            PendingDeployments pendingDeployments)
     {
         this.topicPartitions = topicPartitions;
         this.workflowVersions = workflowVersions;
         this.pendingDeployments = pendingDeployments;
-        this.timeoutInMillis = deploymentTimeout.toMillis();
     }
 
     @Override
@@ -323,10 +330,6 @@ public class DeploymentCreateProcessor implements TypedEventProcessor<Deployment
         if (deploymentEvent.getState() == DeploymentState.VALIDATED)
         {
             updateWorkflowVersions(deploymentEvent.getTopicName(), deploymentEvent.deployedWorkflows());
-
-            final long timeout = ActorClock.currentTimeMillis() + timeoutInMillis;
-
-            pendingDeployments.put(event.getKey(), -1L, timeout, deploymentEvent.getTopicName());
         }
     }
 

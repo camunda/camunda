@@ -28,6 +28,7 @@ import io.zeebe.broker.system.deployment.data.PendingDeployments.PendingDeployme
 import io.zeebe.broker.system.deployment.data.PendingWorkflows;
 import io.zeebe.broker.system.deployment.data.PendingWorkflows.PendingWorkflow;
 import io.zeebe.broker.system.deployment.data.PendingWorkflows.PendingWorkflowIterator;
+import io.zeebe.broker.system.deployment.handler.DeploymentTimer;
 import io.zeebe.broker.workflow.data.*;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import org.agrona.collections.LongArrayList;
@@ -40,13 +41,19 @@ public class DeploymentTimedOutProcessor implements TypedEventProcessor<Deployme
     private final PendingDeployments pendingDeployments;
     private final PendingWorkflows pendingWorkflows;
     private final TypedStreamReader reader;
+    private final DeploymentTimer timer;
 
     private final LongArrayList workflowKeys = new LongArrayList();
 
-    public DeploymentTimedOutProcessor(PendingDeployments pendingDeployments, PendingWorkflows pendingWorkflows, TypedStreamReader reader)
+    public DeploymentTimedOutProcessor(
+            PendingDeployments pendingDeployments,
+            PendingWorkflows pendingWorkflows,
+            DeploymentTimer timer,
+            TypedStreamReader reader)
     {
         this.pendingDeployments = pendingDeployments;
         this.pendingWorkflows = pendingWorkflows;
+        this.timer = timer;
         this.reader = reader;
     }
 
@@ -55,7 +62,7 @@ public class DeploymentTimedOutProcessor implements TypedEventProcessor<Deployme
     {
         final PendingDeployment pendingDeployment = pendingDeployments.get(event.getKey());
 
-        if (pendingDeployment != null && pendingDeployment.getTimeout() > 0)
+        if (pendingDeployment != null && !pendingDeployment.isResolved())
         {
             event.getValue().setState(REJECT);
 
@@ -131,9 +138,12 @@ public class DeploymentTimedOutProcessor implements TypedEventProcessor<Deployme
 
         if (deploymentEvent.getState() == REJECT)
         {
-            // reset timeout to avoid another invocation
+            final long deploymentKey = event.getKey();
+
+            // mark resolved to avoid a second rejection
             // -- remove the pending deployment when all delete workflow messages are sent while process the reject event
-            pendingDeployments.put(event.getKey(), event.getPosition(), -1L, deploymentEvent.getTopicName());
+            pendingDeployments.markResolved(deploymentKey);
+            timer.onDeploymentResolved(deploymentKey);
         }
     }
 

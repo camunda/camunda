@@ -21,6 +21,8 @@ import static io.zeebe.broker.workflow.data.DeploymentState.CREATED;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
+import org.agrona.ExpandableArrayBuffer;
+
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.logstreams.processor.TypedEvent;
 import io.zeebe.broker.logstreams.processor.TypedEventProcessor;
@@ -31,9 +33,9 @@ import io.zeebe.broker.system.deployment.data.PendingDeployments.PendingDeployme
 import io.zeebe.broker.system.deployment.data.PendingWorkflows;
 import io.zeebe.broker.system.deployment.data.PendingWorkflows.PendingWorkflow;
 import io.zeebe.broker.system.deployment.data.PendingWorkflows.PendingWorkflowIterator;
+import io.zeebe.broker.system.deployment.handler.DeploymentTimer;
 import io.zeebe.broker.workflow.data.DeploymentEvent;
 import io.zeebe.util.buffer.BufferUtil;
-import org.agrona.ExpandableArrayBuffer;
 
 public class DeploymentDistributedProcessor implements TypedEventProcessor<DeploymentEvent>
 {
@@ -41,11 +43,13 @@ public class DeploymentDistributedProcessor implements TypedEventProcessor<Deplo
 
     private final PendingDeployments pendingDeployments;
     private final PendingWorkflows pendingWorkflows;
+    private final DeploymentTimer timer;
 
-    public DeploymentDistributedProcessor(PendingDeployments pendingDeployments, PendingWorkflows pendingWorkflows)
+    public DeploymentDistributedProcessor(PendingDeployments pendingDeployments, PendingWorkflows pendingWorkflows, DeploymentTimer timer)
     {
         this.pendingDeployments = pendingDeployments;
         this.pendingWorkflows = pendingWorkflows;
+        this.timer = timer;
     }
 
     @Override
@@ -53,7 +57,7 @@ public class DeploymentDistributedProcessor implements TypedEventProcessor<Deplo
     {
         final PendingDeployment pendingDeployment = pendingDeployments.get(event.getKey());
 
-        if (pendingDeployment != null)
+        if (pendingDeployment != null && !pendingDeployment.isResolved())
         {
             event.getValue().setState(CREATED);
 
@@ -103,6 +107,7 @@ public class DeploymentDistributedProcessor implements TypedEventProcessor<Deplo
         if (deploymentEvent.getState() == CREATED)
         {
             pendingDeployments.remove(deploymentKey);
+            timer.onDeploymentResolved(deploymentKey);
 
             removePendingWorkflowsOfDeployment(deploymentKey);
         }

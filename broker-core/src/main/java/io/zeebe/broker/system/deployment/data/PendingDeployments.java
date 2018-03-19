@@ -23,23 +23,28 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
 import java.nio.ByteOrder;
 import java.util.Iterator;
 
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+
+import io.zeebe.broker.system.deployment.data.PendingDeployments.PendingDeployment;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.map.Long2BytesZbMap;
 import io.zeebe.map.iterator.Long2BytesZbMapEntry;
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * deployment-key -> (deployment-event-position, timeout, topic-name)
  */
-public class PendingDeployments
+public class PendingDeployments implements Iterable<PendingDeployment>
 {
-    private static final int VALUE_LENGTH = 2 * SIZE_OF_LONG + SIZE_OF_INT + LogStream.MAX_TOPIC_NAME_LENGTH;
+    private static final int VALUE_LENGTH = SIZE_OF_LONG + (2 * SIZE_OF_INT) + LogStream.MAX_TOPIC_NAME_LENGTH;
 
     private static final int DEPLOYMENT_EVENT_POSITION_OFFSET = 0;
-    private static final int TIMEOUT_OFFSET = DEPLOYMENT_EVENT_POSITION_OFFSET + SIZE_OF_LONG;
-    private static final int TOPIC_NAME_LENGTH_OFFSET = TIMEOUT_OFFSET + SIZE_OF_LONG;
+    private static final int STATE_OFFSET = DEPLOYMENT_EVENT_POSITION_OFFSET + SIZE_OF_LONG;
+    private static final int TOPIC_NAME_LENGTH_OFFSET = STATE_OFFSET + SIZE_OF_INT;
     private static final int TOPIC_NAME_OFFSET = TOPIC_NAME_LENGTH_OFFSET + SIZE_OF_INT;
+
+    private static final int STATE_UNRESOLVED = 0;
+    private static final int STATE_RESOLVED = 1;
 
     private static final ByteOrder BYTE_ORDER = ByteOrder.LITTLE_ENDIAN;
 
@@ -71,14 +76,23 @@ public class PendingDeployments
         }
     }
 
-    public void put(long deploymentKey, long deploymentEventPosition, long timeout, DirectBuffer topicName)
+    public void put(long deploymentKey, long deploymentEventPosition, DirectBuffer topicName)
     {
         buffer.putLong(DEPLOYMENT_EVENT_POSITION_OFFSET, deploymentEventPosition, BYTE_ORDER);
-        buffer.putLong(TIMEOUT_OFFSET, timeout, BYTE_ORDER);
+        buffer.putInt(STATE_OFFSET, STATE_UNRESOLVED, BYTE_ORDER);
 
         final int topicNameLength = topicName.capacity();
         buffer.putInt(TOPIC_NAME_LENGTH_OFFSET, topicNameLength, BYTE_ORDER);
         buffer.putBytes(TOPIC_NAME_OFFSET, topicName, 0, topicNameLength);
+
+        map.put(deploymentKey, buffer);
+    }
+
+    public void markResolved(long deploymentKey)
+    {
+        final DirectBuffer currentValue = map.get(deploymentKey);
+        buffer.putBytes(0, currentValue, 0, VALUE_LENGTH);
+        buffer.putInt(STATE_OFFSET, STATE_RESOLVED, BYTE_ORDER);
 
         map.put(deploymentKey, buffer);
     }
@@ -146,17 +160,17 @@ public class PendingDeployments
             return currentValue.getLong(DEPLOYMENT_EVENT_POSITION_OFFSET, BYTE_ORDER);
         }
 
-        public long getTimeout()
-        {
-            return currentValue.getLong(TIMEOUT_OFFSET, BYTE_ORDER);
-        }
-
         public DirectBuffer getTopicName()
         {
             final int length = currentValue.getInt(TOPIC_NAME_LENGTH_OFFSET, BYTE_ORDER);
             topicNameBuffer.wrap(currentValue, TOPIC_NAME_OFFSET, length);
 
             return topicNameBuffer;
+        }
+
+        public boolean isResolved()
+        {
+            return currentValue.getInt(STATE_OFFSET, BYTE_ORDER) == STATE_RESOLVED;
         }
     }
 
