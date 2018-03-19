@@ -108,7 +108,7 @@ public class RaftService extends Actor implements Service<Raft>, RaftStateListen
             else
             {
                 raftServiceOpenFuture.completeExceptionally(throwable);
-                Loggers.CLUSTERING_LOGGER.debug("Failed to appendEvent log stream.");
+                Loggers.CLUSTERING_LOGGER.debug("Failed to open log stream.");
             }
         }));
     }

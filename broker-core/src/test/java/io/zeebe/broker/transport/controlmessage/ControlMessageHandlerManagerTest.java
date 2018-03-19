@@ -110,7 +110,7 @@ public class ControlMessageHandlerManagerTest
 //
 //        assertThat(manager.isOpen()).isTrue();
 //
-//        // when try to appendEvent again
+//        // when try to open again
 //        final CompletableFuture<Void> future = manager.openAsync();
 //        manager.doWork();
 //

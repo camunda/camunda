@@ -55,7 +55,7 @@ public class LogStreamsManager
     }
 
     /**
-     * Creates a new log stream but does not appendEvent it. The caller has to call {@link LogStream#openAsync()} or
+     * Creates a new log stream but does not open it. The caller has to call {@link LogStream#openAsync()} or
      * {@link LogStream#open()} before using it.
      *
      * @return the newly created log stream

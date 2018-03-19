@@ -192,7 +192,7 @@ public class ClusterManager extends Actor
             }
             else
             {
-                Loggers.CLUSTERING_LOGGER.error("Failed to appendEvent a subscription.");
+                Loggers.CLUSTERING_LOGGER.error("Failed to open a subscription.");
             }
         });
     }

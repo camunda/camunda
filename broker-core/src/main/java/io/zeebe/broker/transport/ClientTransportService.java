@@ -61,7 +61,7 @@ public class ClientTransportService implements Service<ClientTransport>
 
         if (defaultEndpoints != null)
         {
-            // make transport appendEvent and manage channels to the default endpoints
+            // make transport open and manage channels to the default endpoints
             defaultEndpoints.forEach(s -> transport.registerRemoteAddress(s));
         }
     }

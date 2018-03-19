@@ -131,7 +131,7 @@ public class EmbeddedBrokerRule extends ExternalResource
         }
         catch (final IOException e)
         {
-            throw new RuntimeException("Unable to appendEvent configuration", e);
+            throw new RuntimeException("Unable to open configuration", e);
         }
 
         final ServiceContainer serviceContainer = broker.getBrokerContext().getServiceContainer();
