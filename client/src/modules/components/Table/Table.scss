@@ -1,3 +1,5 @@
+@import '../../../../node_modules/react-table/react-table.css';
+
 .ReactTable {
   min-height: 0;
   font-size: 14px;
@@ -7,6 +9,19 @@
     box-shadow: none;
     font-weight: bold;
     border-bottom: 1px solid #e3e3e3;
+  }
+
+  .rt-th {
+    min-width: 40px;
+  }
+
+  .rt-td {
+    min-width: 40px;
+  }
+
+  .rt-noData {
+    background: rgba(255, 255, 255, 1);
+    font-weight: bold;
   }
 
   .rt-thead .rt-tr {

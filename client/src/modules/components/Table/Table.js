@@ -1,7 +1,6 @@
 import React from 'react';
 
 import ReactTable from 'react-table';
-import 'react-table/react-table.css';
 
 import './Table.css';
 
@@ -12,7 +11,7 @@ export default function Table({className, head, body, foot}) {
     <ReactTable
       data={data}
       columns={columns}
-      defaultPageSize={20}
+      defaultPageSize={1000}
       showPagination={false}
       showPaginationTop={false}
       showPaginationBottom={false}
@@ -20,6 +19,7 @@ export default function Table({className, head, body, foot}) {
       sortable={false}
       multiSort={false}
       className={'-striped -highlight ' + className}
+      noDataText="No data available"
     />
   );
 }
@@ -28,7 +28,8 @@ Table.formatColumns = head => {
   return head.map(elem => {
     return {
       Header: elem,
-      accessor: convertHeaderNameToAccessor(elem)
+      accessor: convertHeaderNameToAccessor(elem),
+      minWidth: 40
     };
   });
 };

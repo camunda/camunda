@@ -6,6 +6,7 @@ import 'element-closest';
 
 // https://tc39.github.io/ecma262/#sec-array.prototype.findIndex
 if (!Array.prototype.findIndex) {
+  /*eslint-disable */
   Object.defineProperty(Array.prototype, 'findIndex', {
     value: function(predicate) {
       // 1. Let O be ? ToObject(this value).
@@ -47,6 +48,7 @@ if (!Array.prototype.findIndex) {
       return -1;
     }
   });
+  /*eslint-enable */
 }
 
 Number.isNaN =
