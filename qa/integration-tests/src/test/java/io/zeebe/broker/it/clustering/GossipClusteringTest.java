@@ -26,7 +26,6 @@ import org.junit.rules.Timeout;
 
 import java.util.List;
 
-import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
