@@ -120,6 +120,4 @@ public class LongRingBuffer
         head++;
         return true;
     }
-
-
 }

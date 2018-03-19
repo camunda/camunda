@@ -205,7 +205,7 @@ public class ActorThread extends Thread implements Consumer<Runnable>
 
         if (resubmit)
         {
-            actorThreadGroup.submit(currentTask);
+            currentTask.resubmit();
         }
     }
 

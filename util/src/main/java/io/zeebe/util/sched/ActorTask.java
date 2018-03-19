@@ -15,17 +15,16 @@
  */
 package io.zeebe.util.sched;
 
-import io.zeebe.util.Loggers;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
-import io.zeebe.util.sched.metrics.TaskMetrics;
-import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
+import static org.agrona.UnsafeAccess.UNSAFE;
 
 import java.util.Arrays;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 
-import static org.agrona.UnsafeAccess.UNSAFE;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
+import io.zeebe.util.sched.metrics.TaskMetrics;
+import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 
 /**
  * A task executed by the scheduler. For each actor (instance), exactly one task is created.
@@ -135,7 +134,9 @@ public class ActorTask
     /**
      * called when the task is initially scheduled.
      */
-    public ActorFuture<Void> onTaskScheduled(ActorExecutor actorExecutor, ActorThreadGroup actorThreadGroup, TaskMetrics taskMetrics)
+    public ActorFuture<Void> onTaskScheduled(ActorExecutor actorExecutor,
+            ActorThreadGroup actorThreadGroup,
+            TaskMetrics taskMetrics)
     {
         this.actorExecutor = actorExecutor;
         this.actorThreadGroup = actorThreadGroup;
@@ -185,25 +186,11 @@ public class ActorTask
         schedulingState = TaskSchedulingState.ACTIVE;
 
         boolean resubmit = false;
-
-        final short maxIterationCount = 10_000;
-        short iterationCount = 0;
-        long sumIteration = 0;
-
         while (!resubmit && (currentJob != null || poll()))
         {
-            if (iterationCount == maxIterationCount)
-            {
-                sumIteration += iterationCount;
-                iterationCount = 0;
-
-                Loggers.ACTOR_LOGGER.debug("Task {} blocks thread sum of iterations {}, triggered by subscription {}.", actor.getName(), sumIteration, currentJob.isTriggeredBySubscription());
-            }
-
             try
             {
                 currentJob.execute(runner);
-                iterationCount++;
             }
             catch (Exception e)
             {
@@ -450,7 +437,7 @@ public class ActorTask
 
         if (casState(TaskSchedulingState.WAITING, TaskSchedulingState.WAKING_UP))
         {
-            actorThreadGroup.submit(this);
+            resubmit();
             didWakeup = true;
         }
 
@@ -700,5 +687,24 @@ public class ActorTask
         {
             removeSubscription(subscription);
         }
+    }
+
+    public void setUpdatedSchedulingHints(int hints)
+    {
+        if (SchedulingHints.isCpuBound(hints))
+        {
+            priority = SchedulingHints.getPriority(hints);
+            actorThreadGroup = actorExecutor.getCpuBoundThreads();
+        }
+        else
+        {
+            deviceId = SchedulingHints.getIoDevice(hints);
+            actorThreadGroup = actorExecutor.getIoBoundThreads();
+        }
+    }
+
+    public void resubmit()
+    {
+        actorThreadGroup.submit(this);
     }
 }

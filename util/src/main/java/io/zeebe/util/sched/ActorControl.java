@@ -44,6 +44,18 @@ public class ActorControl
     }
 
     /**
+     * changes the actor's scheduling hints. For example, this makes it
+     * possible to transform a cpu-bound actor into an io-bound actor and vice versa.
+     *
+     * @param hints the changed scheduling hints
+     */
+    public void setSchedulingHints(int hints)
+    {
+        ensureCalledFromWithinActor("resubmit(...)");
+        task.setUpdatedSchedulingHints(hints);
+    }
+
+    /**
      *
      * Consumers are called while the actor is in the following actor lifecycle phases:
      * {@link ActorLifecyclePhase#STARTED}

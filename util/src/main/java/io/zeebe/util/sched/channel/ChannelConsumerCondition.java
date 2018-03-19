@@ -83,4 +83,5 @@ public class ChannelConsumerCondition implements ActorCondition, ActorSubscripti
     {
         return true;
     }
+
 }

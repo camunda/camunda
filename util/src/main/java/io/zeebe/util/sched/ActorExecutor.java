@@ -118,4 +118,14 @@ public class ActorExecutor
     {
         return metricsManager;
     }
+
+    public ActorThreadGroup getCpuBoundThreads()
+    {
+        return cpuBoundThreads;
+    }
+
+    public ActorThreadGroup getIoBoundThreads()
+    {
+        return ioBoundThreads;
+    }
 }
