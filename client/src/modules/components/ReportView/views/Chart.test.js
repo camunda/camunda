@@ -75,3 +75,13 @@ it('should display an error message if there was data and the second time no dat
 
   expect(node).toIncludeText('Error');
 });
+
+it('should show nice ticks for duration formats on the y axis', () => {
+  const data = {foo: 7 * 24 * 60 * 60 * 1000};
+  const node = mount(<Chart data={data} />);
+
+  const config = node.instance().createDurationFormattingOptions(data);
+
+  expect(config.ticks.stepSize).toBe(1 * 24 * 60 * 60 * 1000);
+  expect(config.ticks.callback(3 * 24 * 60 * 60 * 1000)).toBe('3d');
+});

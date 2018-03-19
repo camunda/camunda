@@ -96,77 +96,79 @@ export default class Chart extends React.Component {
     }
   };
 
+  createPieOptions = (timeUnit, data) => {
+    return {
+      legend: {display: true}
+    };
+  };
+
+  createBarOptions = (timeUnit, data) => {
+    return {
+      legend: {display: false},
+      scales: {
+        ...(timeUnit && this.createTimeUnitScaleOptions(timeUnit)),
+        yAxes: [
+          {
+            ...(this.props.property === 'duration' && this.createDurationFormattingOptions(data)),
+            beginAtZero: true
+          }
+        ]
+      }
+    };
+  };
+
+  createTimeUnitScaleOptions = unit => {
+    return {
+      xAxes: [{type: 'time', time: {unit}}]
+    };
+  };
+
+  createDurationFormattingOptions = data => {
+    // since the duration is given in milliseconds, chart.js cannot create nice y axis
+    // ticks. So we define our own set of possible stepSizes and find one that the maximum
+    // value of the dataset fits into.
+    const minimumStepSize = Math.max(...Object.values(data)) / 10;
+
+    const niceStepSize = [
+      {value: 1, unit: 'ms', base: 1},
+      {value: 10, unit: 'ms', base: 1},
+      {value: 100, unit: 'ms', base: 1},
+      {value: 1000, unit: 's', base: 1000},
+      {value: 1000 * 10, unit: 's', base: 1000},
+      {value: 1000 * 60, unit: 'min', base: 1000 * 60},
+      {value: 1000 * 60 * 10, unit: 'min', base: 1000 * 60},
+      {value: 1000 * 60 * 60, unit: 'h', base: 1000 * 60 * 60},
+      {value: 1000 * 60 * 60 * 6, unit: 'h', base: 1000 * 60 * 60},
+      {value: 1000 * 60 * 60 * 24, unit: 'd', base: 1000 * 60 * 60 * 24},
+      {value: 1000 * 60 * 60 * 24 * 7, unit: 'wk', base: 1000 * 60 * 60 * 24 * 7},
+      {value: 1000 * 60 * 60 * 24 * 30, unit: 'm', base: 1000 * 60 * 60 * 24 * 30},
+      {value: 1000 * 60 * 60 * 24 * 30 * 6, unit: 'm', base: 1000 * 60 * 60 * 24 * 30},
+      {value: 1000 * 60 * 60 * 24 * 30 * 12, unit: 'y', base: 1000 * 60 * 60 * 24 * 30 * 12}
+    ].find(({value}) => value > minimumStepSize);
+
+    return {
+      ticks: {
+        callback: v => v / niceStepSize.base + niceStepSize.unit,
+        stepSize: niceStepSize.value
+      }
+    };
+  };
+
   createChartOptions = (type, timeUnit, data) => {
     let options;
     switch (type) {
       case 'pie':
-        options = {
-          legend: {
-            display: true
-          }
-        };
+        options = this.createPieOptions(timeUnit, data);
         break;
       case 'line':
       case 'bar':
-        options = {
-          legend: {
-            display: false
-          },
-          scales: timeUnit && {
-            xAxes: [
-              {
-                type: 'time',
-                time: {
-                  unit: timeUnit
-                }
-              }
-            ]
-          }
-        };
+        options = this.createBarOptions(timeUnit, data);
         break;
       default:
         options = {};
     }
 
-    if (type === 'line' || type === 'bar') {
-      options.scales = options.scales || {};
-      options.scales.yAxes = [
-        {
-          ticks: {
-            beginAtZero: true
-          }
-        }
-      ];
-      if (this.props.property === 'duration') {
-        // since the duration is given in milliseconds, chart.js cannot create nice y axis
-        // ticks. So we define our own set of possible stepSizes and find one that the maximum
-        // value of the dataset fits into.
-        const niceStepSize = [
-          {value: 1, unit: 'ms', base: 1},
-          {value: 10, unit: 'ms', base: 1},
-          {value: 100, unit: 'ms', base: 1},
-          {value: 1000, unit: 's', base: 1000},
-          {value: 1000 * 10, unit: 's', base: 1000},
-          {value: 1000 * 60, unit: 'min', base: 1000 * 60},
-          {value: 1000 * 60 * 10, unit: 'min', base: 1000 * 60},
-          {value: 1000 * 60 * 60, unit: 'h', base: 1000 * 60 * 60},
-          {value: 1000 * 60 * 60 * 6, unit: 'h', base: 1000 * 60 * 60},
-          {value: 1000 * 60 * 60 * 24, unit: 'd', base: 1000 * 60 * 60 * 24},
-          {value: 1000 * 60 * 60 * 24 * 7, unit: 'wk', base: 1000 * 60 * 60 * 24 * 7},
-          {value: 1000 * 60 * 60 * 24 * 30, unit: 'm', base: 1000 * 60 * 60 * 24 * 30},
-          {value: 1000 * 60 * 60 * 24 * 30 * 6, unit: 'm', base: 1000 * 60 * 60 * 24 * 30},
-          {value: 1000 * 60 * 60 * 24 * 30 * 12, unit: 'y', base: 1000 * 60 * 60 * 24 * 30 * 12}
-        ].find(({value}) => value > Math.max(...Object.values(data)) / 10);
-
-        options.scales.yAxes[0].ticks = {
-          beginAtZero: true,
-          callback: v => v / niceStepSize.base + niceStepSize.unit,
-          stepSize: niceStepSize.value
-        };
-      }
-    }
-
-    options = {
+    return {
       ...options,
       responsive: true,
       maintainAspectRatio: false,
@@ -178,6 +180,5 @@ export default class Chart extends React.Component {
         }
       }
     };
-    return options;
   };
 }
