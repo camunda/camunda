@@ -15,7 +15,6 @@
  */
 package io.zeebe.gossip;
 
-import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -26,26 +25,19 @@ import io.zeebe.clustering.gossip.MembershipEventType;
 import io.zeebe.gossip.protocol.MembershipEvent;
 import io.zeebe.gossip.util.GossipClusterRule;
 import io.zeebe.gossip.util.GossipRule;
-import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
 public class GossipJoinTest
 {
-    private static final GossipConfiguration CONFIGURATION = new GossipConfiguration();
-
-    private ControlledActorClock clock = new ControlledActorClock();
-    private ActorSchedulerRule actorScheduler = new ActorSchedulerRule(clock);
-
-    private GossipRule gossip1 = new GossipRule(() -> actorScheduler.get(), CONFIGURATION, "localhost", 8001);
-    private GossipRule gossip2 = new GossipRule(() -> actorScheduler.get(), CONFIGURATION, "localhost", 8002);
-    private GossipRule gossip3 = new GossipRule(() -> actorScheduler.get(), CONFIGURATION, "localhost", 8003);
+    private GossipRule gossip1 = new GossipRule("localhost:8001");
+    private GossipRule gossip2 = new GossipRule("localhost:8002");
+    private GossipRule gossip3 = new GossipRule("localhost:8003");
 
     @Rule
-    public GossipClusterRule cluster = new GossipClusterRule(actorScheduler, gossip1, gossip2, gossip3);
+    public GossipClusterRule cluster = new GossipClusterRule(gossip1, gossip2, gossip3);
 
     @Rule
     public Timeout timeout = Timeout.seconds(10);
@@ -97,32 +89,6 @@ public class GossipJoinTest
     }
 
     @Test
-    public void shouldRetryJoinIfContactPointIsNotAvailable()
-    {
-        // given
-        cluster.interruptConnectionBetween(gossip1, gossip2);
-
-        final ActorFuture<Void> joinFuture = gossip2.join(gossip1);
-
-        clock.addTime(CONFIGURATION.getJoinTimeout());
-
-        assertThat(joinFuture).isNotDone();
-        assertThat(gossip1.receivedMembershipEvent(MembershipEventType.JOIN, gossip2)).isFalse();
-
-        // when
-        cluster.reconnect(gossip1, gossip2);
-
-        doRepeatedly(() ->
-        {
-            clock.addTime(CONFIGURATION.getJoinInterval());
-        }).until(v -> joinFuture.isDone());
-
-        // then
-        joinFuture.join();
-        assertThat(gossip1.receivedMembershipEvent(MembershipEventType.JOIN, gossip2)).isTrue();
-    }
-
-    @Test
     public void shouldJoinIfOneContactPointIsAvailable()
     {
         // given
@@ -166,16 +132,13 @@ public class GossipJoinTest
         joinGossip3.join();
 
         // then
-        doRepeatedly(() ->
-        {
-            clock.addTime(CONFIGURATION.getProbeInterval());
-        }).until(v -> gossip3.hasMember(gossip1) && gossip3.hasMember(gossip2));
+        cluster.waitUntil(() -> gossip3.hasMember(gossip1));
+        cluster.waitUntil(() -> gossip1.hasMember(gossip3));
 
-        assertThat(gossip1.hasMember(gossip3)).isTrue();
         assertThat(gossip1.hasMember(gossip2)).isTrue();
-
         assertThat(gossip2.hasMember(gossip3)).isTrue();
         assertThat(gossip2.hasMember(gossip1)).isTrue();
+        assertThat(gossip3.hasMember(gossip2)).isTrue();
     }
 
     @Test

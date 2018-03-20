@@ -82,11 +82,7 @@ public class PingController
                 {
                     LOG.trace("Received ACK from '{}'", probeMember.getId());
 
-                    // process response
-                    final DirectBuffer responseBuffer = response.getResponseBuffer();
-                    ackResponse.wrap(responseBuffer, 0, responseBuffer.capacity());
-
-                    response.close();
+                    processAckResponse(response);
 
                     actor.runDelayed(configuration.getProbeInterval(), this::sendPing);
                 }
@@ -125,27 +121,38 @@ public class PingController
             }
         }
 
-        actor.runOnFirstCompletion(indirectResponseFutures, (response, failure) ->
+        if (indirectResponseFutures.isEmpty())
         {
-            if (failure == null)
+            actor.runDelayed(configuration.getProbeInterval(), this::sendPing);
+        }
+        else
+        {
+            actor.runOnFirstCompletion(indirectResponseFutures, (response, failure) ->
             {
-                LOG.trace("Received ACK of PING-REQ from '{}'", probeMember.getId());
+                if (failure == null)
+                {
+                    LOG.trace("Received ACK of PING-REQ from '{}'", probeMember.getId());
 
-                // process response
-                final DirectBuffer responseBuffer = response.getResponseBuffer();
-                ackResponse.wrap(responseBuffer, 0, responseBuffer.capacity());
+                    processAckResponse(response);
 
-                response.close();
+                    actor.runDelayed(configuration.getProbeInterval(), this::sendPing);
+                }
+                else
+                {
+                    LOG.trace("Doesn't receive any ACK of PING-REQ to probe '{}'", probeMember.getId());
 
-                actor.runDelayed(configuration.getProbeInterval(), this::sendPing);
-            }
-            else
-            {
-                LOG.trace("Doesn't receive any ACK of PING-REQ to probe '{}'", probeMember.getId());
+                    actor.submit(this::sendSuspect);
+                }
+            }, this::processAckResponse);
+        }
+    }
 
-                actor.submit(this::sendSuspect);
-            }
-        }, ClientResponse::close);
+    private void processAckResponse(ClientResponse response)
+    {
+        final DirectBuffer responseBuffer = response.getResponseBuffer();
+        ackResponse.wrap(responseBuffer, 0, responseBuffer.capacity());
+
+        response.close();
     }
 
     private void sendSuspect()

@@ -39,8 +39,6 @@ public class GossipConfiguration
     private int maxMembershipEventsPerMessage = 32;
     private int maxCustomEventsPerMessage = 8;
 
-    private int subscriptionPollLimit = 3;
-
     /**
      * The timeout of a join request.
      */
@@ -126,7 +124,7 @@ public class GossipConfiguration
     /**
      * The timeout of a probe request.
      */
-    public GossipConfiguration setProbeTimeout(final int probeTimeout)
+    public GossipConfiguration setProbeTimeout(final long probeTimeout)
     {
         this.probeTimeout = Duration.ofMillis(probeTimeout);
         return this;
@@ -160,7 +158,7 @@ public class GossipConfiguration
     /**
      * The timeout of an indirect probe request.
      */
-    public GossipConfiguration probeIndirectTimeout(int probeIndirectTimeout)
+    public GossipConfiguration probeIndirectTimeout(long probeIndirectTimeout)
     {
         this.probeIndirectTimeout = Duration.ofMillis(probeIndirectTimeout);
         return this;
@@ -177,7 +175,7 @@ public class GossipConfiguration
     /**
      * The timeout of a sync request.
      */
-    public GossipConfiguration syncTimeout(int syncTimeout)
+    public GossipConfiguration syncTimeout(long syncTimeout)
     {
         this.syncTimeout = Duration.ofMillis(syncTimeout);
         return this;
@@ -217,7 +215,7 @@ public class GossipConfiguration
     /**
      * The timeout of a leave request.
      */
-    public GossipConfiguration leaveTimeout(int leaveTimeout)
+    public GossipConfiguration leaveTimeout(long leaveTimeout)
     {
         this.leaveTimeout = Duration.ofMillis(leaveTimeout);
         return this;
@@ -257,25 +255,6 @@ public class GossipConfiguration
         return this;
     }
 
-    /**
-     * The maximum amount of messages which are polled from the transport
-     * subscription at once.
-     */
-    public int getSubscriptionPollLimit()
-    {
-        return subscriptionPollLimit;
-    }
-
-    /**
-     * The maximum amount of messages which are polled from the transport
-     * subscription at once.
-     */
-    public GossipConfiguration subscriptionPollLimit(int limit)
-    {
-        this.subscriptionPollLimit = limit;
-        return this;
-    }
-
     @Override
     public String toString()
     {
@@ -304,8 +283,6 @@ public class GossipConfiguration
         builder.append(maxMembershipEventsPerMessage);
         builder.append(", maxCustomEventsPerMessage=");
         builder.append(maxCustomEventsPerMessage);
-        builder.append(", subscriptionPollLimit=");
-        builder.append(subscriptionPollLimit);
         builder.append("]");
         return builder.toString();
     }

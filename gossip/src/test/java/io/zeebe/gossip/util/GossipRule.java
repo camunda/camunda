@@ -16,13 +16,13 @@
 package io.zeebe.gossip.util;
 
 import static java.util.stream.Collectors.toList;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import io.zeebe.clustering.gossip.GossipEventType;
@@ -44,12 +44,11 @@ import org.mockito.ArgumentMatcher;
 
 public class GossipRule extends ExternalResource
 {
-
-    private final Supplier<ActorScheduler> actionSchedulerSupplier;
-    private final GossipConfiguration configuration;
     private final SocketAddress socketAddress;
     private final String memberId;
 
+    private ActorScheduler actorScheduler;
+    private GossipConfiguration configuration;
     private Gossip gossip;
     private ActorControl gossipActor;
 
@@ -65,22 +64,24 @@ public class GossipRule extends ExternalResource
     private LocalMembershipListener localMembershipListener;
     private ReceivedEventsCollector receivedEventsCollector = new ReceivedEventsCollector();
 
-    public GossipRule(final Supplier<ActorScheduler> actionSchedulerSupplier, final GossipConfiguration configuration, final String host, final int port)
+    public GossipRule(final String address)
     {
-        this.actionSchedulerSupplier = actionSchedulerSupplier;
+        this.socketAddress = SocketAddress.from(address);
+        this.memberId = address;
+    }
+
+    public void init(ActorScheduler actorScheduler, GossipConfiguration configuration)
+    {
+        this.actorScheduler = actorScheduler;
         this.configuration = configuration;
-        this.socketAddress = new SocketAddress(host, port);
-        this.memberId = String.format("%s:%d", host, port);
     }
 
     @Override
     protected void before() throws Throwable
     {
-        receivedEventsCollector.clear();
+        assertThat(actorScheduler).isNotNull();
 
         final String name = socketAddress.toString();
-
-        final ActorScheduler actorScheduler = actionSchedulerSupplier.get();
 
         serverSendBuffer = Dispatchers
                 .create("serverSendBuffer-" + name)
@@ -161,7 +162,7 @@ public class GossipRule extends ExternalResource
         actorScheduler.submitActor(new Actor()
         {
             @Override
-            protected void onActorStarted()
+            protected void onActorStarting()
             {
                 final ActorFuture<Subscription> future = serverReceiveBuffer.openSubscriptionAsync("received-events-collector");
                 actor.runOnCompletion(future, (sub, t) ->
@@ -245,9 +246,9 @@ public class GossipRule extends ExternalResource
 
     public boolean receivedEvent(GossipEventType eventType, GossipRule sender)
     {
-        return receivedEventsCollector.gossipEvents()
-                .filter(e -> e.getEventType() == eventType)
-                .anyMatch(e -> e.getSender().equals(sender.socketAddress));
+        return getReceivedGossipEvents(eventType, sender)
+                .findFirst()
+                .isPresent();
     }
 
     public boolean receivedMembershipEvent(MembershipEventType eventType, GossipRule member)
@@ -262,6 +263,13 @@ public class GossipRule extends ExternalResource
         return getReceivedCustomEvents(eventType, sender)
                 .findFirst()
                 .isPresent();
+    }
+
+    public Stream<GossipEvent> getReceivedGossipEvents(GossipEventType eventType, GossipRule sender)
+    {
+        return receivedEventsCollector.gossipEvents()
+                .filter(e -> e.getEventType() == eventType)
+                .filter(e -> e.getSender().equals(sender.socketAddress));
     }
 
     public Stream<MembershipEvent> getReceivedMembershipEvents(MembershipEventType eventType, GossipRule member)

@@ -15,22 +15,42 @@
  */
 package io.zeebe.gossip.util;
 
-import java.util.*;
+import static org.assertj.core.api.Assertions.fail;
 
-import org.junit.rules.ExternalResource;
+import java.time.Duration;
+import java.util.*;
+import java.util.function.BooleanSupplier;
+
+import io.zeebe.gossip.GossipConfiguration;
+import io.zeebe.util.sched.clock.ControlledActorClock;
+import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 public class GossipClusterRule implements TestRule
 {
-    private final ExternalResource actorScheduler;
+    private static final int MAX_CONDITION_RETRIES = 100;
+
+    private final ActorSchedulerRule actorScheduler;
+    private final ControlledActorClock clock;
+    private final GossipConfiguration configuration;
     private final List<GossipRule> gossips;
 
-    public GossipClusterRule(final ExternalResource actorScheduler, final GossipRule... gossips)
+    public GossipClusterRule(final GossipRule... gossips)
     {
-        this.actorScheduler = actorScheduler;
+        this(new GossipConfiguration().setProbeTimeout(Duration.ofSeconds(2).toMillis()), gossips);
+    }
+
+    public GossipClusterRule(final GossipConfiguration configuration, final GossipRule... gossips)
+    {
+        this.clock = new ControlledActorClock();
+        this.actorScheduler = new ActorSchedulerRule(clock);
+        this.configuration = configuration;
+
         this.gossips = gossips != null ? new ArrayList<>(Arrays.asList(gossips)) : Collections.emptyList();
+
+        this.gossips.forEach(g -> g.init(actorScheduler.get(), configuration));
     }
 
     @Override
@@ -59,6 +79,31 @@ public class GossipClusterRule implements TestRule
     {
         thisMember.reconnectTo(thatMember);
         thatMember.reconnectTo(thisMember);
+    }
+
+    public void waitUntil(BooleanSupplier condition)
+    {
+        int i = 0;
+
+        while (!condition.getAsBoolean() && i < MAX_CONDITION_RETRIES)
+        {
+            clock.addTime(configuration.getProbeInterval());
+
+            try
+            {
+                Thread.sleep(10L);
+            }
+            catch (InterruptedException e)
+            {
+            }
+
+            i += 1;
+        }
+
+        if (i == MAX_CONDITION_RETRIES)
+        {
+            fail("condition is not satisfied");
+        }
     }
 
 }

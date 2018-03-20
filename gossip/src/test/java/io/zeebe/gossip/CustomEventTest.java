@@ -15,7 +15,6 @@
  */
 package io.zeebe.gossip;
 
-import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -30,13 +29,8 @@ import io.zeebe.gossip.util.GossipRule;
 import io.zeebe.gossip.util.GossipRule.ReceivedCustomEvent;
 import io.zeebe.gossip.util.GossipRule.RecordingCustomEventListener;
 import io.zeebe.test.util.BufferAssert;
-import io.zeebe.test.util.TestUtil;
-import io.zeebe.util.sched.clock.ControlledActorClock;
-import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.agrona.DirectBuffer;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.Timeout;
 
 public class CustomEventTest
@@ -49,15 +43,12 @@ public class CustomEventTest
 
     private static final GossipConfiguration CONFIGURATION = new GossipConfiguration();
 
-    private ControlledActorClock clock = new ControlledActorClock();
-    private ActorSchedulerRule actorScheduler = new ActorSchedulerRule(clock);
-
-    private GossipRule gossip1 = new GossipRule(() -> actorScheduler.get(), CONFIGURATION, "localhost", 8001);
-    private GossipRule gossip2 = new GossipRule(() -> actorScheduler.get(), CONFIGURATION, "localhost", 8002);
-    private GossipRule gossip3 = new GossipRule(() -> actorScheduler.get(), CONFIGURATION, "localhost", 8003);
+    private GossipRule gossip1 = new GossipRule("localhost:8001");
+    private GossipRule gossip2 = new GossipRule("localhost:8002");
+    private GossipRule gossip3 = new GossipRule("localhost:8003");
 
     @Rule
-    public GossipClusterRule cluster = new GossipClusterRule(actorScheduler, gossip1, gossip2, gossip3);
+    public GossipClusterRule cluster = new GossipClusterRule(CONFIGURATION, gossip1, gossip2, gossip3);
 
     @Rule
     public Timeout timeout = Timeout.seconds(10);
@@ -68,10 +59,8 @@ public class CustomEventTest
         gossip2.join(gossip1).join();
         gossip3.join(gossip1).join();
 
-        doRepeatedly(() ->
-        {
-            clock.addTime(CONFIGURATION.getProbeInterval());
-        }).until(v -> gossip2.hasMember(gossip3) && gossip3.hasMember(gossip2));
+        cluster.waitUntil(() -> gossip2.hasMember(gossip3));
+        cluster.waitUntil(() -> gossip3.hasMember(gossip2));
 
         gossip1.clearReceivedEvents();
         gossip2.clearReceivedEvents();
@@ -84,10 +73,7 @@ public class CustomEventTest
         // when
         gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
 
-        doRepeatedly(() ->
-        {
-            clock.addTime(CONFIGURATION.getProbeInterval());
-        }).until(v -> gossip2.receivedCustomEvent(TYPE_1, gossip1));
+        cluster.waitUntil(() -> gossip2.receivedCustomEvent(TYPE_1, gossip1));
 
         // then
         final CustomEvent customEvent = gossip2.getReceivedCustomEvents(TYPE_1, gossip1).findFirst().get();
@@ -102,10 +88,8 @@ public class CustomEventTest
         // when
         gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
 
-        doRepeatedly(() ->
-        {
-            clock.addTime(CONFIGURATION.getProbeInterval());
-        }).until(v -> gossip2.receivedCustomEvent(TYPE_1, gossip1) && gossip3.receivedCustomEvent(TYPE_1, gossip1));
+        cluster.waitUntil(() -> gossip2.receivedCustomEvent(TYPE_1, gossip1));
+        cluster.waitUntil(() -> gossip3.receivedCustomEvent(TYPE_1, gossip1));
 
         // then
         final CustomEvent customEvent = gossip2.getReceivedCustomEvents(TYPE_1, gossip1).findFirst().get();
@@ -129,14 +113,9 @@ public class CustomEventTest
         // when
         gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
 
-        doRepeatedly(() ->
-        {
-            clock.addTime(CONFIGURATION.getProbeInterval());
-        }).until(v -> gossip2.receivedCustomEvent(TYPE_1, gossip1));
+        cluster.waitUntil(() -> customEventListener.getInvocations().count() == 1);
 
         // then
-        assertThat(customEventListener.getInvocations().count()).isEqualTo(1);
-
         final ReceivedCustomEvent customEvent = customEventListener.getInvocations().findFirst().get();
         assertThat(customEvent.getSender()).isEqualTo(gossip1.getAddress());
         BufferAssert.assertThatBuffer(customEvent.getPayload())
@@ -157,10 +136,8 @@ public class CustomEventTest
         // when
         gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
 
-        doRepeatedly(() ->
-        {
-            clock.addTime(CONFIGURATION.getProbeInterval());
-        }).until(v -> gossip2.receivedCustomEvent(TYPE_1, gossip1) && gossip3.receivedCustomEvent(TYPE_1, gossip1));
+        cluster.waitUntil(() -> gossip2.receivedCustomEvent(TYPE_1, gossip1));
+        cluster.waitUntil(() -> gossip3.receivedCustomEvent(TYPE_1, gossip1));
 
         // then
         assertThat(customEventListener2.getInvocations().count()).isEqualTo(1);
@@ -194,10 +171,7 @@ public class CustomEventTest
             gossip1.getPushlisher().publishEvent(TYPE_1, payload);
         }
 
-        doRepeatedly(() ->
-        {
-            clock.addTime(CONFIGURATION.getProbeInterval());
-        }).until(v -> customEventListener.getInvocations().count() == customEventCount);
+        cluster.waitUntil(() -> customEventListener.getInvocations().count() == customEventCount);
 
         // then
         final List<ReceivedCustomEvent> customEvents = customEventListener.getInvocations().collect(toList());
@@ -228,10 +202,8 @@ public class CustomEventTest
         gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
         gossip1.getPushlisher().publishEvent(TYPE_2, PAYLOAD_2);
 
-        doRepeatedly(() ->
-        {
-            clock.addTime(CONFIGURATION.getProbeInterval());
-        }).until(v -> customEventListener1.getInvocations().count() == 1 && customEventListener2.getInvocations().count() == 1);
+        cluster.waitUntil(() -> customEventListener1.getInvocations().count() == 1);
+        cluster.waitUntil(() -> customEventListener2.getInvocations().count() == 1);
 
         // then
         final ReceivedCustomEvent customEvent1 = customEventListener1.getInvocations().findFirst().get();
@@ -251,10 +223,7 @@ public class CustomEventTest
         // when
         gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
 
-        TestUtil.doRepeatedly(() ->
-        {
-            clock.addTime(CONFIGURATION.getProbeInterval());
-        }).until(v -> gossip1.receivedCustomEvent(TYPE_1, gossip1));
+        cluster.waitUntil(() -> gossip1.receivedCustomEvent(TYPE_1, gossip1));
 
         // then
         assertThat(invoked.get()).isFalse();
@@ -268,10 +237,7 @@ public class CustomEventTest
         gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
         gossip1.getPushlisher().publishEvent(TYPE_2, PAYLOAD_1);
 
-        doRepeatedly(() ->
-        {
-            clock.addTime(CONFIGURATION.getProbeInterval());
-        }).until(v -> gossip2.receivedCustomEvent(TYPE_2, gossip1));
+        cluster.waitUntil(() -> gossip2.receivedCustomEvent(TYPE_2, gossip1));
 
         // then
         assertThat(gossip2.getReceivedCustomEvents(TYPE_1, gossip1).distinct())
@@ -297,10 +263,7 @@ public class CustomEventTest
         // when
         gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
 
-        doRepeatedly(() ->
-        {
-            clock.addTime(CONFIGURATION.getProbeInterval());
-        }).until(v -> gossip2.receivedCustomEvent(TYPE_1, gossip1));
+        cluster.waitUntil(() -> gossip2.receivedCustomEvent(TYPE_1, gossip1));
 
         // then
         assertThat(counter.get()).isEqualTo(3);
@@ -323,10 +286,7 @@ public class CustomEventTest
 
         gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
 
-        doRepeatedly(() ->
-        {
-            clock.addTime(CONFIGURATION.getProbeInterval());
-        }).until(v -> gossip2.receivedCustomEvent(TYPE_1, gossip1));
+        cluster.waitUntil(() -> gossip2.receivedCustomEvent(TYPE_1, gossip1));
 
         // then
         assertThat(counter.get()).isEqualTo(2);
@@ -350,10 +310,7 @@ public class CustomEventTest
         gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
 
         // then
-        doRepeatedly(() ->
-        {
-            clock.addTime(CONFIGURATION.getProbeInterval());
-        }).until(v -> counter.get() == 2);
+        cluster.waitUntil(() -> counter.get() == 2);
     }
 
 }

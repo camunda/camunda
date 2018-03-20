@@ -15,8 +15,6 @@
  */
 package io.zeebe.gossip;
 
-import static io.zeebe.test.util.TestUtil.doRepeatedly;
-import static io.zeebe.test.util.TestUtil.waitUntil;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -27,10 +25,8 @@ import io.zeebe.gossip.protocol.CustomEvent;
 import io.zeebe.gossip.util.GossipClusterRule;
 import io.zeebe.gossip.util.GossipRule;
 import io.zeebe.test.util.BufferAssert;
-import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
-import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.agrona.DirectBuffer;
 import org.junit.Rule;
 import org.junit.Test;
@@ -45,15 +41,12 @@ public class SyncRequestHandlerTest
 
     private static final GossipConfiguration CONFIGURATION = new GossipConfiguration();
 
-    private ControlledActorClock clock = new ControlledActorClock();
-    private ActorSchedulerRule actorScheduler = new ActorSchedulerRule(clock);
-
-    private GossipRule gossip1 = new GossipRule(() -> actorScheduler.get(), CONFIGURATION, "localhost", 8001);
-    private GossipRule gossip2 = new GossipRule(() -> actorScheduler.get(), CONFIGURATION, "localhost", 8002);
-    private GossipRule gossip3 = new GossipRule(() -> actorScheduler.get(), CONFIGURATION, "localhost", 8003);
+    private GossipRule gossip1 = new GossipRule("localhost:8001");
+    private GossipRule gossip2 = new GossipRule("localhost:8002");
+    private GossipRule gossip3 = new GossipRule("localhost:8003");
 
     @Rule
-    public GossipClusterRule cluster = new GossipClusterRule(actorScheduler, gossip1, gossip2, gossip3);
+    public GossipClusterRule cluster = new GossipClusterRule(CONFIGURATION, gossip1, gossip2, gossip3);
 
     @Test
     public void shouldInvokeSyncRequestHandler()
@@ -87,27 +80,22 @@ public class SyncRequestHandlerTest
     }
 
     @Test
-    public void shouldReceiveCustomEventFromOwner()
+    public void shouldReceiveCustomEvent()
     {
         // given
         gossip2.join(gossip1).join();
 
-        gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
-
         gossip1.getController().registerSyncRequestHandler(TYPE_1, request ->
         {
             request
-                .addPayload(gossip1.getAddress(), PAYLOAD_1);
+            .addPayload(gossip1.getAddress(), PAYLOAD_1);
 
             return CompletableActorFuture.completed(null);
         });
 
-        // wait until custom event is spread to ensure that it isn't send via ACK
-        final int spreadCount = GossipMath.gossipPeriodsToSpread(CONFIGURATION.getRetransmissionMultiplier(), 3);
-        doRepeatedly(() ->
-        {
-            clock.addTime(CONFIGURATION.getProbeInterval());
-        }).until(v -> gossip2.getReceivedCustomEvents(TYPE_1, gossip1).count() == spreadCount);
+        gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
+
+        waitUntilCustomEventIsSpread();
 
         // when
         gossip3.join(gossip1).join();
@@ -119,38 +107,6 @@ public class SyncRequestHandlerTest
             .hasBytes(PAYLOAD_1);
     }
 
-    @Test
-    public void shouldReceiveCustomEventFromSomeoneElse()
-    {
-        // given
-        gossip2.join(gossip1).join();
-
-        gossip2.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
-
-        gossip1.getController().registerSyncRequestHandler(TYPE_1, request ->
-        {
-            request
-            .addPayload(gossip2.getAddress(), PAYLOAD_1);
-
-            return CompletableActorFuture.completed(null);
-        });
-
-        // wait until custom event is spread to ensure that it isn't send via ACK
-        final int spreadCount = GossipMath.gossipPeriodsToSpread(CONFIGURATION.getRetransmissionMultiplier(), 3);
-        doRepeatedly(() ->
-        {
-            clock.addTime(CONFIGURATION.getProbeInterval());
-        }).until(v -> gossip2.getReceivedCustomEvents(TYPE_1, gossip2).count() == spreadCount);
-
-        // when
-        gossip3.join(gossip1).join();
-
-        // then
-        BufferAssert.assertThatBuffer(gossip3.getReceivedCustomEvents(TYPE_1, gossip2)
-            .findFirst().get().getPayload())
-            .hasCapacity(PAYLOAD_1.capacity())
-            .hasBytes(PAYLOAD_1);
-    }
 
     @Test
     public void shouldReceiveCustomEventsWithDifferentTypes()
@@ -158,13 +114,10 @@ public class SyncRequestHandlerTest
         // given
         gossip2.join(gossip1).join();
 
-        gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
-        gossip1.getPushlisher().publishEvent(TYPE_2, PAYLOAD_2);
-
         gossip1.getController().registerSyncRequestHandler(TYPE_1, request ->
         {
             request
-                .addPayload(gossip1.getAddress(), PAYLOAD_1);
+            .addPayload(gossip1.getAddress(), PAYLOAD_1);
 
             return CompletableActorFuture.completed(null);
         });
@@ -172,17 +125,16 @@ public class SyncRequestHandlerTest
         gossip1.getController().registerSyncRequestHandler(TYPE_2, request ->
         {
             request
-                .addPayload(gossip1.getAddress(), PAYLOAD_2);
+            .addPayload(gossip1.getAddress(), PAYLOAD_2);
 
             return CompletableActorFuture.completed(null);
         });
 
-        // wait until custom event is spread to ensure that it isn't send via ACK
-        final int spreadCount = GossipMath.gossipPeriodsToSpread(CONFIGURATION.getRetransmissionMultiplier(), 3);
-        doRepeatedly(() ->
-        {
-            clock.addTime(CONFIGURATION.getProbeInterval());
-        }).until(v -> gossip2.getReceivedCustomEvents(TYPE_1, gossip1).count() == spreadCount);
+        gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
+        gossip1.getPushlisher().publishEvent(TYPE_2, PAYLOAD_2);
+
+        waitUntilCustomEventIsSpread();
+        waitUntilCustomEventIsSpread();
 
         // when
         gossip3.join(gossip1).join();
@@ -205,9 +157,6 @@ public class SyncRequestHandlerTest
         // given
         gossip2.join(gossip1).join();
 
-        gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
-        gossip2.getPushlisher().publishEvent(TYPE_1, PAYLOAD_2);
-
         gossip1.getController().registerSyncRequestHandler(TYPE_1, request ->
         {
             request
@@ -217,12 +166,10 @@ public class SyncRequestHandlerTest
             return CompletableActorFuture.completed(null);
         });
 
-        // wait until custom event is spread to ensure that it isn't send via ACK
-        final int spreadCount = GossipMath.gossipPeriodsToSpread(CONFIGURATION.getRetransmissionMultiplier(), 3);
-        doRepeatedly(() ->
-        {
-            clock.addTime(CONFIGURATION.getProbeInterval());
-        }).until(v -> gossip2.getReceivedCustomEvents(TYPE_1, gossip1).count() == spreadCount);
+        gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
+        gossip2.getPushlisher().publishEvent(TYPE_1, PAYLOAD_2);
+
+        waitUntilCustomEventIsSpread();
 
         // when
         gossip3.join(gossip1).join();
@@ -259,8 +206,8 @@ public class SyncRequestHandlerTest
         final ActorFuture<Void> joinFuture1 = gossip2.join(gossip1);
         final ActorFuture<Void> joinFuture2 = gossip3.join(gossip1);
 
-        waitUntil(() -> gossip1.receivedEvent(GossipEventType.SYNC_REQUEST, gossip2) &&
-                  gossip1.receivedEvent(GossipEventType.SYNC_REQUEST, gossip3));
+        cluster.waitUntil(() -> gossip1.receivedEvent(GossipEventType.SYNC_REQUEST, gossip2));
+        cluster.waitUntil(() -> gossip1.receivedEvent(GossipEventType.SYNC_REQUEST, gossip3));
 
         syncRequestFuture.complete(null);
 
@@ -268,8 +215,8 @@ public class SyncRequestHandlerTest
         joinFuture2.join();
 
         // then
-        assertThat(gossip2.receivedEvent(GossipEventType.SYNC_RESPONSE, gossip1)).isTrue();
-        assertThat(gossip3.receivedEvent(GossipEventType.SYNC_RESPONSE, gossip1)).isTrue();
+        cluster.waitUntil(() -> (gossip2.receivedEvent(GossipEventType.SYNC_RESPONSE, gossip1)));
+        cluster.waitUntil(() -> (gossip3.receivedEvent(GossipEventType.SYNC_RESPONSE, gossip1)));
 
         final CustomEvent customEvent = gossip2.getReceivedCustomEvents(TYPE_1, gossip1).findFirst().get();
         BufferAssert.assertThatBuffer(customEvent.getPayload())
@@ -280,6 +227,24 @@ public class SyncRequestHandlerTest
         BufferAssert.assertThatBuffer(customEvent2.getPayload())
             .hasCapacity(PAYLOAD_1.capacity())
             .hasBytes(PAYLOAD_1);
+    }
+
+    private void waitUntilCustomEventIsSpread()
+    {
+        // wait until custom event is spread to ensure that it isn't send via ACK
+        final long spreadCount = GossipMath.gossipPeriodsToSpread(CONFIGURATION.getRetransmissionMultiplier(), 3) +
+                gossip2.getReceivedGossipEvents(GossipEventType.PING, gossip1).count() +
+                gossip3.getReceivedGossipEvents(GossipEventType.PING, gossip1).count();
+
+        cluster.waitUntil(() ->
+        {
+            // we don't count the received custom events because we can miss some
+            // - if a request times out (when we manipulate the clock)
+            final long eventsFrom2 = gossip2.getReceivedGossipEvents(GossipEventType.PING, gossip1).count();
+            final long eventsFrom3 = gossip3.getReceivedGossipEvents(GossipEventType.PING, gossip1).count();
+
+            return eventsFrom2 + eventsFrom3 >= spreadCount;
+        });
     }
 
 }

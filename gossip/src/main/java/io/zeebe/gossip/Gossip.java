@@ -22,7 +22,6 @@ import java.util.List;
 
 import io.zeebe.clustering.gossip.GossipEventType;
 import io.zeebe.clustering.gossip.MembershipEventType;
-import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.gossip.dissemination.*;
 import io.zeebe.gossip.failuredetection.*;
 import io.zeebe.gossip.membership.*;
@@ -101,7 +100,7 @@ public class Gossip extends Actor implements GossipController, GossipEventPublis
             {
                 actor.consume(subscription, () ->
                 {
-                    if (subscription.poll() == FragmentHandler.POSTPONE_FRAGMENT_RESULT)
+                    if (subscription.poll(1) <= 0)
                     {
                         actor.yield();
                     }

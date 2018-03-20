@@ -15,23 +15,15 @@
  */
 package io.zeebe.gossip.failuredetection;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import io.zeebe.clustering.gossip.MembershipEventType;
-import io.zeebe.gossip.GossipConfiguration;
-import io.zeebe.gossip.GossipContext;
-import io.zeebe.gossip.GossipMath;
-import io.zeebe.gossip.Loggers;
+import io.zeebe.gossip.*;
 import io.zeebe.gossip.dissemination.DisseminationComponent;
-import io.zeebe.gossip.membership.Member;
-import io.zeebe.gossip.membership.MembershipList;
-import io.zeebe.gossip.membership.MembershipStatus;
-import io.zeebe.gossip.protocol.GossipEvent;
-import io.zeebe.gossip.protocol.GossipEventFactory;
-import io.zeebe.gossip.protocol.GossipEventSender;
-import io.zeebe.transport.*;
+import io.zeebe.gossip.membership.*;
+import io.zeebe.gossip.protocol.*;
+import io.zeebe.transport.ClientResponse;
+import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
@@ -127,11 +119,7 @@ public class JoinController
         {
             if (failure == null)
             {
-                // process response
-                final DirectBuffer responseBuffer = response.getResponseBuffer();
-                ackResponse.wrap(responseBuffer, 0, responseBuffer.capacity());
-
-                response.close();
+                processAckResponse(response);
 
                 final SocketAddress contactPoint = ackResponse.getSender();
                 actor.submit(() -> sendSyncRequest(contactPoint));
@@ -142,7 +130,15 @@ public class JoinController
 
                 actor.runDelayed(configuration.getJoinInterval(), this::sendJoinEvent);
             }
-        }, ClientResponse::close);
+        }, this::processAckResponse);
+    }
+
+    private void processAckResponse(ClientResponse response)
+    {
+        final DirectBuffer responseBuffer = response.getResponseBuffer();
+        ackResponse.wrap(responseBuffer, 0, responseBuffer.capacity());
+
+        response.close();
     }
 
     private void sendSyncRequest(final SocketAddress contactPoint)
