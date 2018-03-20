@@ -15,20 +15,25 @@
  */
 package io.zeebe.util.sched.lifecycle;
 
-import static io.zeebe.util.sched.ActorTask.ActorLifecyclePhase.*;
+import static io.zeebe.util.sched.ActorTask.ActorLifecyclePhase.CLOSE_REQUESTED;
+import static io.zeebe.util.sched.ActorTask.ActorLifecyclePhase.STARTED;
+import static io.zeebe.util.sched.ActorTask.ActorLifecyclePhase.STARTING;
 import static io.zeebe.util.sched.lifecycle.LifecycleRecordingActor.FULL_LIFECYCLE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.util.Lists.newArrayList;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
+
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
 
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
-import org.junit.Rule;
-import org.junit.Test;
 
 @SuppressWarnings("unchecked")
 public class ActorLifecyclePhasesAndBlockPhaseTest
@@ -166,6 +171,39 @@ public class ActorLifecyclePhasesAndBlockPhaseTest
         // then
         assertThat(closeFuture).isDone();
         assertThat(actor.phases).isEqualTo(FULL_LIFECYCLE);
+    }
+
+    @Test
+    @Ignore
+    public void shouldNotWaitForNestedRunOnCompletion()
+    {
+        // given
+        final CompletableActorFuture<Void> trigger = new CompletableActorFuture<>();
+
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
+        {
+            @Override
+            public void onActorStarted()
+            {
+                super.onActorClosed();
+                actor.runOnCompletionBlockingCurrentPhase(trigger, (r1, e1) ->
+                {
+                    actor.runOnCompletion(new CompletableActorFuture<>(), (r2, e2) -> {});
+                });
+            }
+        };
+
+        schedulerRule.submitActor(actor);
+        schedulerRule.workUntilDone();
+
+        final ActorFuture<Void> closeFuture = actor.close();
+
+        // when
+        trigger.complete(null);
+        schedulerRule.workUntilDone();
+
+        // then
+        assertThat(closeFuture).isDone();
     }
 
     @Test
