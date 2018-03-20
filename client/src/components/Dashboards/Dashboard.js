@@ -4,7 +4,16 @@ import Fullscreen from 'react-full-screen';
 import {default as updateState} from 'immutability-helper';
 import {Link, Redirect} from 'react-router-dom';
 
-import {Button, Modal, Input, ShareEntity, DashboardView, Icon, Dropdown} from 'components';
+import {
+  Button,
+  Modal,
+  Input,
+  ShareEntity,
+  DashboardView,
+  Icon,
+  Dropdown,
+  Popover
+} from 'components';
 
 import {
   loadDashboard,
@@ -42,7 +51,6 @@ export default class Dashboard extends React.Component {
       originalName: null,
       reports: [],
       originalReports: [],
-      shareModalVisible: false,
       deleteModalVisible: false,
       addButtonVisible: true,
       autoRefreshInterval: null,
@@ -122,17 +130,6 @@ export default class Dashboard extends React.Component {
       reports: updateState(this.state.reports, {
         [reportIdx]: changes
       })
-    });
-  };
-
-  showShareModal = () => {
-    this.setState({
-      shareModalVisible: true
-    });
-  };
-  closeShareModal = () => {
-    this.setState({
-      shareModalVisible: false
     });
   };
 
@@ -252,7 +249,7 @@ export default class Dashboard extends React.Component {
   };
 
   renderViewMode = state => {
-    const {name, lastModifier, lastModified, shareModalVisible, deleteModalVisible} = state;
+    const {name, lastModifier, lastModified, deleteModalVisible} = state;
 
     return (
       <Fullscreen
@@ -283,12 +280,15 @@ export default class Dashboard extends React.Component {
                   >
                     Delete
                   </Button>
-                  <Button
-                    onClick={this.showShareModal}
-                    className="Dashboard__tool-button Dashboard__share-button"
-                  >
-                    Share
-                  </Button>
+                  <Popover className="Dashboard__tool-button Dashboard__share-button" title="Share">
+                    <ShareEntity
+                      type="dashboard"
+                      resourceId={this.id}
+                      shareEntity={shareDashboard}
+                      revokeEntitySharing={revokeDashboardSharing}
+                      getSharedEntity={getSharedDashboard}
+                    />
+                  </Popover>
                 </React.Fragment>
               )}
               <Button
@@ -316,30 +316,6 @@ export default class Dashboard extends React.Component {
               </Dropdown>
             </div>
           </div>
-          <Modal
-            open={shareModalVisible}
-            onClose={this.closeShareModal}
-            className="Dashboard__share-modal"
-          >
-            <Modal.Header>Share {this.state.name}</Modal.Header>
-            <Modal.Content>
-              <ShareEntity
-                type="dashboard"
-                resourceId={this.id}
-                shareEntity={shareDashboard}
-                revokeEntitySharing={revokeDashboardSharing}
-                getSharedEntity={getSharedDashboard}
-              />
-            </Modal.Content>
-            <Modal.Actions>
-              <Button
-                className="Dashboard__close-share-modal-button"
-                onClick={this.closeShareModal}
-              >
-                Close
-              </Button>
-            </Modal.Actions>
-          </Modal>
           <Modal
             open={deleteModalVisible}
             onClose={this.closeDeleteModal}

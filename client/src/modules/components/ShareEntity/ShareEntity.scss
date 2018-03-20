@@ -1,6 +1,7 @@
 .ShareEntity {
   width: 300px;
   flex-shrink: 0;
+  margin: 15px 15px 20px 15px;
 }
 
 .ShareEntity__enable {
@@ -58,6 +59,5 @@
 
 .ShareEntity__clipboard {
   width: 100%;
-  padding-top: 50px;
-  padding-bottom: 20px;
+  padding-top: 25px;
 }

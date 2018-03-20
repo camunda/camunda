@@ -48,6 +48,9 @@
 }
 
 .Dashboard__tools {
+  flex-wrap: nowrap;
+  align-items: baseline;
+  display: flex;
   flex-shrink: 0;
   margin-top: 8px;
 }

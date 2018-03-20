@@ -10,14 +10,14 @@ export default class Popover extends React.Component {
 
     this.state = {
       open: false,
-      calcStyles: {}
+      dialogStyles: {}
     };
   }
 
   componentDidMount() {
     this.mounted = true;
     document.body.addEventListener('click', this.close);
-    new MutationObserver(this.getDialogStyle).observe(this.popoverRoot, {
+    new MutationObserver(this.calculateDialogStyle).observe(this.popoverRootRef, {
       childList: true,
       subtree: true
     });
@@ -49,8 +49,8 @@ export default class Popover extends React.Component {
     });
   };
 
-  getDialogStyle = () => {
-    let style = {};
+  calculateDialogStyle = () => {
+    const style = {};
     if (this.buttonRef && this.popoverDialogRef) {
       const overlayWidth = this.popoverDialogRef.clientWidth;
       const buttonPosition = this.buttonRef.getBoundingClientRect().x;
@@ -65,7 +65,7 @@ export default class Popover extends React.Component {
     }
 
     this.setState({
-      calcStyles: style
+      dialogStyles: style
     });
   };
 
@@ -75,10 +75,8 @@ export default class Popover extends React.Component {
         <span className="Popover__dialog-arrow-border"> </span>
         <span className="Popover__dialog-arrow" />
         <div
-          ref={node => {
-            this.popoverDialogRef = node;
-          }}
-          style={this.state.calcStyles}
+          ref={this.storePopoverDialogRef}
+          style={this.state.dialogStyles}
           className="Popover__dialog"
         >
           {this.props.children}{' '}
@@ -87,8 +85,16 @@ export default class Popover extends React.Component {
     );
   };
 
-  storeButtonRef = ref => {
-    this.buttonRef = ref;
+  storeButtonRef = node => {
+    this.buttonRef = node;
+  };
+
+  storePopoverDialogRef = node => {
+    this.popoverDialogRef = node;
+  };
+
+  storePopoverRootRef = node => {
+    this.popoverRootRef = node;
   };
 
   catchClick = evt => {
@@ -98,16 +104,15 @@ export default class Popover extends React.Component {
   render() {
     return (
       <div
-        ref={node => {
-          this.popoverRoot = node;
-        }}
+        ref={this.storePopoverRootRef}
         className={'Popover ' + (this.props.className || '')}
         onClick={this.catchClick}
       >
         <Button
+          active={this.state.open}
           onClick={this.toggleOpen}
           reference={this.storeButtonRef}
-          className={'Popover__button' + (this.state.open ? '--open' : '')}
+          className="Popover__button"
         >
           {this.props.title}
         </Button>
