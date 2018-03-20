@@ -106,42 +106,6 @@ public class DeploymentClusteredTest
     }
 
     @Test
-    public void shouldDeployFileInCluster() throws Exception
-    {
-        // given
-        clusteringRule.createTopic("test", PARTITION_COUNT);
-
-        // when
-        final String filePath = getClass().getResource("/workflows/one-task-process.bpmn").toURI().getPath();
-        final DeploymentEvent deploymentEvent = client.workflows()
-                                                      .deploy("test")
-                                                      .addResourceFile(filePath)
-                                                      .execute();
-
-        // then
-        assertThat(deploymentEvent.getDeployedWorkflows().size()).isEqualTo(1);
-        assertThat(deploymentEvent.getErrorMessage()).isEmpty();
-    }
-
-    @Test
-    public void shouldDeployYamlInCluster() throws Exception
-    {
-        // given
-        clusteringRule.createTopic("test", PARTITION_COUNT);
-
-        // when
-        final String filePath = getClass().getResource("/workflows/simple-workflow.yaml").toURI().getPath();
-        final DeploymentEvent deploymentEvent = client.workflows()
-                                                      .deploy("test")
-                                                      .addResourceFile(filePath)
-                                                      .execute();
-
-        // then
-        assertThat(deploymentEvent.getDeployedWorkflows().size()).isEqualTo(1);
-        assertThat(deploymentEvent.getErrorMessage()).isEmpty();
-    }
-
-    @Test
     public void shouldDeployWorkflowAndCreateInstances()
     {
         // given
@@ -320,60 +284,6 @@ public class DeploymentClusteredTest
         client.workflows()
               .deploy("test")
               .addResourceStringUtf8("invalid", "invalid.bpmn")
-              .execute();
-    }
-
-    @Test
-    public void shouldNotDeployInvalidBpmnModel()
-    {
-        // given
-        clusteringRule.createTopic("test", PARTITION_COUNT);
-
-        // expect
-        expectedException.expect(ClientCommandRejectedException.class);
-        expectedException.expectMessage("Deployment was rejected");
-        expectedException.expectMessage("The process must contain at least one none start event.");
-
-        // when
-        client.workflows()
-              .deploy("test")
-              .addWorkflowModel(INVALID_WORKFLOW, "invalid.bpmn")
-              .execute();
-    }
-
-    @Test
-    public void shouldNotDeployNonExecutable() throws Exception
-    {
-        // given
-        clusteringRule.createTopic("test", PARTITION_COUNT);
-
-        // expect
-        expectedException.expect(ClientCommandRejectedException.class);
-        expectedException.expectMessage("Deployment was rejected");
-        expectedException.expectMessage("BPMN model must contain at least one executable process.");
-
-        // when
-        final String filePath = getClass().getResource("/workflows/nonExecutableProcess.bpmn").toURI().getPath();
-        client.workflows()
-              .deploy("test")
-              .addResourceFile(filePath)
-              .execute();
-    }
-
-    @Test
-    public void shouldNotDeployEmpty()
-    {
-        // given
-        clusteringRule.createTopic("test", PARTITION_COUNT);
-
-        // expect
-        expectedException.expect(ClientCommandRejectedException.class);
-        expectedException.expectMessage("Deployment was rejected");
-        expectedException.expectMessage("Deployment doesn't contain a resource to deploy.");
-
-        // when
-        client.workflows()
-              .deploy("test")
               .execute();
     }
 
