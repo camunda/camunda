@@ -274,7 +274,6 @@ export default class Report extends React.Component {
             </Button>
             <Popover className="Report__tool-button Report__share-button" title="Share">
               <ShareEntity
-                className="Report__share-popover"
                 type="report"
                 resourceId={this.id}
                 shareEntity={shareReport}
