@@ -27,7 +27,9 @@ import java.time.Duration;
 import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
-import java.util.function.*;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class ActorControl
 {
@@ -304,7 +306,12 @@ public class ActorControl
     public <T> void runOnCompletion(ActorFuture<T> future, BiConsumer<T, Throwable> callback)
     {
         ensureCalledFromWithinActor("runOnCompletion(...)");
-        this.submitContinuationJob(future, callback, (job) -> new ActorFutureSubscription(future, job, task.getLifecyclePhase()));
+
+        final ActorLifecyclePhase lifecyclePhase = task.getLifecyclePhase();
+        if (lifecyclePhase != ActorLifecyclePhase.CLOSE_REQUESTED && lifecyclePhase != ActorLifecyclePhase.CLOSED)
+        {
+            this.submitContinuationJob(future, callback, (job) -> new ActorFutureSubscription(future, job, lifecyclePhase.getValue()));
+        }
     }
 
     /**
@@ -324,7 +331,12 @@ public class ActorControl
     public <T> void runOnCompletionBlockingCurrentPhase(ActorFuture<T> future, BiConsumer<T, Throwable> callback)
     {
         ensureCalledFromWithinActor("runOnCompletionBlockingCurrentPhase(...)");
-        this.submitContinuationJob(future, callback, (job) -> new ActorFutureSubscription(future, job));
+
+        final ActorLifecyclePhase lifecyclePhase = task.getLifecyclePhase();
+        if (lifecyclePhase != ActorLifecyclePhase.CLOSED)
+        {
+            this.submitContinuationJob(future, callback, (job) -> new ActorFutureSubscription(future, job, (task.getLifecyclePhase().getValue() | ActorLifecyclePhase.CLOSE_REQUESTED.getValue())));
+        }
     }
 
     private <T> void submitContinuationJob(ActorFuture<T> future, BiConsumer<T, Throwable> callback,

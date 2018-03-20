@@ -53,11 +53,23 @@ public class ActorTask
      */
     public enum ActorLifecyclePhase
     {
-        STARTING,
-        STARTED,
-        CLOSE_REQUESTED,
-        CLOSING,
-        CLOSED
+        STARTING(1),
+        STARTED(2),
+        CLOSE_REQUESTED(4),
+        CLOSING(8),
+        CLOSED(16);
+
+        private final int value;
+
+        ActorLifecyclePhase(int value)
+        {
+            this.value = value;
+        }
+
+        public int getValue()
+        {
+            return value;
+        }
     }
 
     private static final long STATE_COUNT_OFFSET;
@@ -507,7 +519,8 @@ public class ActorTask
 
         for (int i = 0; i < subscriptions.length && allTriggered; i++)
         {
-            allTriggered &= !subscriptions[i].triggersInPhase(lifecyclePhase);
+            final ActorSubscription subscription = subscriptions[i];
+            allTriggered &= !subscription.triggersInPhase(lifecyclePhase);
         }
 
         return allTriggered;

@@ -15,24 +15,20 @@
  */
 package io.zeebe.util.sched.lifecycle;
 
-import static io.zeebe.util.sched.ActorTask.ActorLifecyclePhase.CLOSE_REQUESTED;
-import static io.zeebe.util.sched.ActorTask.ActorLifecyclePhase.STARTED;
-import static io.zeebe.util.sched.ActorTask.ActorLifecyclePhase.STARTING;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
+import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
+import org.junit.Rule;
+import org.junit.Test;
+
+import java.util.function.BiConsumer;
+
+import static io.zeebe.util.sched.ActorTask.ActorLifecyclePhase.*;
 import static io.zeebe.util.sched.lifecycle.LifecycleRecordingActor.FULL_LIFECYCLE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.util.Lists.newArrayList;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyZeroInteractions;
-
-import java.util.function.BiConsumer;
-
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
-import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 
 @SuppressWarnings("unchecked")
 public class ActorLifecyclePhasesAndBlockPhaseTest
@@ -173,7 +169,6 @@ public class ActorLifecyclePhasesAndBlockPhaseTest
     }
 
     @Test
-    @Ignore
     public void shouldNotWaitForNestedRunOnCompletion()
     {
         // given
@@ -222,9 +217,9 @@ public class ActorLifecyclePhasesAndBlockPhaseTest
             {
                 super.onActorStarting();
 
-                actor.runOnCompletion(future1, (r1, t1) ->
+                actor.runOnCompletionBlockingCurrentPhase(future1, (r1, t1) ->
                 {
-                    actor.runOnCompletion(future2, (r2, t2) ->
+                    actor.runOnCompletionBlockingCurrentPhase(future2, (r2, t2) ->
                     {
                         future3.complete(null);
                     });
