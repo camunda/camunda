@@ -272,8 +272,6 @@ public class ClusterManager extends Actor
 
         serviceContainer.createService(raftServiceName, raftService)
                         .group(RAFT_SERVICE_GROUP)
-                        .dependency(TransportServiceNames.bufferingServerTransport(TransportServiceNames.REPLICATION_API_SERVER_NAME),
-                                    raftService.getServerTransportInjector())
                         .dependency(TransportServiceNames.clientTransport(TransportServiceNames.REPLICATION_API_CLIENT_NAME),
                                     raftService.getClientTransportInjector())
                         .install();

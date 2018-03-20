@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Collections;
 
 import io.zeebe.broker.clustering.ClusterServiceNames;
+import io.zeebe.broker.clustering.raft.RaftApiMessageHandlerService;
 import io.zeebe.broker.event.TopicSubscriptionServiceNames;
 import io.zeebe.broker.logstreams.LogStreamServiceNames;
 import io.zeebe.broker.services.DispatcherService;
@@ -49,11 +50,13 @@ public class TransportComponent implements Component
         final TransportComponentCfg transportComponentCfg = context.getConfigurationManager().readEntry("network", TransportComponentCfg.class);
         final ServiceContainer serviceContainer = context.getServiceContainer();
 
-        final ActorFuture<Void> replactionApiFuture = bindBufferingProtocolEndpoint(
+        final ActorFuture<Void> replactionApiFuture = bindNonBufferingProtocolEndpoint(
                 serviceContainer,
                 REPLICATION_API_SERVER_NAME,
                 transportComponentCfg.replicationApi,
-                transportComponentCfg);
+                transportComponentCfg,
+                REPLICATION_API_MESSAGE_HANDLER,
+                REPLICATION_API_MESSAGE_HANDLER);
 
         final ActorFuture<Void> managementApiFuture = bindBufferingProtocolEndpoint(
                 serviceContainer,
@@ -96,6 +99,11 @@ public class TransportComponent implements Component
             .groupReference(LogStreamServiceNames.WORKFLOW_STREAM_GROUP, messageHandlerService.getLogStreamsGroupReference())
             .groupReference(LogStreamServiceNames.SYSTEM_STREAM_GROUP, messageHandlerService.getLogStreamsGroupReference())
             .install();
+
+        final RaftApiMessageHandlerService raftApiMessageHandlerService = new RaftApiMessageHandlerService();
+        serviceContainer.createService(REPLICATION_API_MESSAGE_HANDLER, raftApiMessageHandlerService)
+                        .groupReference(ClusterServiceNames.RAFT_SERVICE_GROUP, raftApiMessageHandlerService.getRaftGroupReference())
+                        .install();
 
         final long controlMessageRequestTimeoutInMillis = transportComponentCfg.clientApi.getControlMessageRequestTimeoutInMillis(Long.MAX_VALUE);
 
@@ -229,13 +237,11 @@ public class TransportComponent implements Component
             boolean enableManagedRequests,
             Collection<SocketAddress> defaultEndpoints)
     {
-        final ServiceName<Dispatcher> receiveBufferName = createReceiveBuffer(serviceContainer, name, receiveBufferSize);
         final ServiceName<Dispatcher> sendBufferName = createSendBuffer(serviceContainer, name, receiveBufferSize);
 
         final ClientTransportService service = new ClientTransportService(requestPoolSize, enableManagedRequests, defaultEndpoints);
 
         return serviceContainer.createService(TransportServiceNames.clientTransport(name), service)
-            .dependency(receiveBufferName, service.getReceiveBufferInjector())
             .dependency(sendBufferName, service.getSendBufferInjector())
             .install();
     }

@@ -26,7 +26,6 @@ import io.zeebe.util.sched.ActorScheduler;
 
 public class ClientTransportService implements Service<ClientTransport>
 {
-    protected final Injector<Dispatcher> receiveBufferInjector = new Injector<>();
     protected final Injector<Dispatcher> sendBufferInjector = new Injector<>();
 
     protected final int requestPoolSize;
@@ -46,14 +45,12 @@ public class ClientTransportService implements Service<ClientTransport>
     public void start(ServiceStartContext startContext)
     {
 
-        final Dispatcher receiveBuffer = receiveBufferInjector.getValue();
         final Dispatcher sendBuffer = sendBufferInjector.getValue();
         final ActorScheduler scheduler = startContext.getScheduler();
 
         final ClientTransportBuilder transportBuilder = Transports.newClientTransport();
 
         transport = transportBuilder
-            .messageReceiveBuffer(receiveBuffer)
             .sendBuffer(sendBuffer)
             .requestPoolSize(requestPoolSize)
             .scheduler(scheduler)
@@ -81,11 +78,6 @@ public class ClientTransportService implements Service<ClientTransport>
     public Injector<Dispatcher> getSendBufferInjector()
     {
         return sendBufferInjector;
-    }
-
-    public Injector<Dispatcher> getReceiveBufferInjector()
-    {
-        return receiveBufferInjector;
     }
 
 }

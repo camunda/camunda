@@ -35,9 +35,12 @@ import io.zeebe.transport.*;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorScheduler;
+import io.zeebe.util.sched.channel.OneToOneRingBufferChannel;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 import org.slf4j.Logger;
 
 public class RaftService extends Actor implements Service<Raft>, RaftStateListener
@@ -54,7 +57,6 @@ public class RaftService extends Actor implements Service<Raft>, RaftStateListen
     private final OnOpenLogStreamListener onOpenLogStreamListener;
     private final ServiceName<Raft> raftServiceName;
 
-    private Injector<BufferingServerTransport> serverTransportInjector = new Injector<>();
     private Injector<ClientTransport> clientTransportInjector = new Injector<>();
     private ActorScheduler actorScheduler;
     private Raft raft;
@@ -87,16 +89,18 @@ public class RaftService extends Actor implements Service<Raft>, RaftStateListen
         {
             if (throwable == null)
             {
-                final BufferingServerTransport serverTransport = serverTransportInjector.getValue();
                 final ClientTransport clientTransport = clientTransportInjector.getValue();
 
+                final OneToOneRingBufferChannel messageBuffer = new OneToOneRingBufferChannel(new UnsafeBuffer(new byte[(16 * 1024 * 1024) + RingBufferDescriptor.TRAILER_LENGTH]));
+
                 raft = new Raft(
+                                actorScheduler,
                                 configuration,
                                 socketAddress,
                                 logStream,
-                                serverTransport,
                                 clientTransport,
                                 persistentStorage,
+                                messageBuffer,
                                 raftStateListener,
                                 RaftService.this);
 
@@ -164,11 +168,6 @@ public class RaftService extends Actor implements Service<Raft>, RaftStateListen
     public Raft get()
     {
         return raft;
-    }
-
-    public Injector<BufferingServerTransport> getServerTransportInjector()
-    {
-        return serverTransportInjector;
     }
 
     public Injector<ClientTransport> getClientTransportInjector()
