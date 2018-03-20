@@ -57,7 +57,7 @@ export default class ControlPanel extends React.Component {
   };
 
   isProcDefSelected = () => {
-    return !(!this.props.processDefinitionKey || !this.props.processDefinitionVersion);
+    return this.props.processDefinitionKey && this.props.processDefinitionVersion;
   };
 
   render() {
