@@ -20,6 +20,14 @@ jest.mock('components', () => {
   };
 });
 
+jest.mock('react-router-dom', () => {
+  return {
+    Link: ({children}) => {
+      return <a>{children}</a>;
+    }
+  };
+});
+
 const props = {
   match: {
     params: {
