@@ -21,13 +21,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.service.util.VariableHelper.isVariableTypeSupported;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 
 public class VariableRetrievalIT {
-  
+
+  private static final String A_PROCESS = "aProcess";
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
@@ -54,6 +56,33 @@ public class VariableRetrievalIT {
 
     // when
     List<VariableRetrievalDto> variableResponse = getVariables(processDefinition);
+
+    // then
+    assertThat(variableResponse.size(), is(4));
+    assertThat(variableResponse.get(0).getName(), is("var1"));
+    assertThat(variableResponse.get(1).getName(), is("var2"));
+    assertThat(variableResponse.get(2).getName(), is("var3"));
+    assertThat(variableResponse.get(3).getName(), is("var4"));
+  }
+
+  @Test
+  public void getVariablesForAllVersions() throws Exception {
+    // given
+    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("var1", "value1");
+    variables.put("var2", "value2");
+    variables.put("var3", "value3");
+    engineRule.startProcessInstance(processDefinition.getId(), variables);
+    processDefinition = deploySimpleProcessDefinition();
+    variables.clear();
+    variables.put("var4", "value4");
+    engineRule.startProcessInstance(processDefinition.getId(), variables);
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    List<VariableRetrievalDto> variableResponse = getVariables(processDefinition.getKey(), ALL_VERSIONS);
 
     // then
     assertThat(variableResponse.size(), is(4));
@@ -178,7 +207,7 @@ public class VariableRetrievalIT {
   }
 
   private ProcessDefinitionEngineDto deploySimpleProcessDefinition() throws IOException {
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
+    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(A_PROCESS)
       .startEvent()
       .endEvent()
       .done();
@@ -186,10 +215,16 @@ public class VariableRetrievalIT {
   }
 
   private List<VariableRetrievalDto> getVariables(ProcessDefinitionEngineDto processDefinition) {
+    String key = processDefinition.getKey();
+    String version = String.valueOf(processDefinition.getVersion());
+    return getVariables(key, version);
+  }
+
+  private List<VariableRetrievalDto> getVariables(String key, String version) {
     Response response =
         embeddedOptimizeRule.target("variables/")
-            .queryParam("processDefinitionKey", processDefinition.getKey())
-            .queryParam("processDefinitionVersion", processDefinition.getVersion())
+            .queryParam("processDefinitionKey", key)
+            .queryParam("processDefinitionVersion", version)
             .request()
             .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
             .get();

@@ -1,11 +1,13 @@
 package org.camunda.optimize.service.es.reader;
 
 import org.camunda.optimize.dto.optimize.query.variable.VariableRetrievalDto;
+import org.camunda.optimize.service.es.report.command.util.ReportConstants;
 import org.camunda.optimize.service.util.VariableHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -52,11 +54,7 @@ public class VariableReader {
     logger.debug("Fetching variables for process definition with key [{}] and version [{}]",
       processDefinitionKey,
       processDefinitionVersion);
-    QueryBuilder query;
-    query =
-      QueryBuilders.boolQuery()
-        .must(QueryBuilders.termsQuery(PROCESS_DEFINITION_KEY, processDefinitionKey))
-        .must(QueryBuilders.termsQuery(PROCESS_DEFINITION_VERSION, processDefinitionVersion));
+    BoolQueryBuilder query = buildProcessDefinitionBaseQUery(processDefinitionKey, processDefinitionVersion);
 
     SearchRequestBuilder requestBuilder =
       esclient
@@ -69,6 +67,19 @@ public class VariableReader {
 
     Aggregations aggregations = response.getAggregations();
     return extractVariables(aggregations);
+  }
+
+  public BoolQueryBuilder buildProcessDefinitionBaseQUery(String processDefinitionKey, String processDefinitionVersion) {
+    BoolQueryBuilder query;
+    query =
+      QueryBuilders.boolQuery()
+        .must(QueryBuilders.termsQuery(PROCESS_DEFINITION_KEY, processDefinitionKey));
+
+    if (!ReportConstants.ALL_VERSIONS.equals(processDefinitionVersion)) {
+      query = query
+        .must(QueryBuilders.termsQuery(PROCESS_DEFINITION_VERSION, processDefinitionVersion));
+    }
+    return query;
   }
 
   private List<VariableRetrievalDto> extractVariables(Aggregations aggregations) {
@@ -110,11 +121,8 @@ public class VariableReader {
     logger.debug("Fetching variable values for process definition with key [{}] and version [{}]",
       processDefinitionKey,
       processDefinitionVersion);
-    QueryBuilder query;
-    query =
-      QueryBuilders.boolQuery()
-        .must(QueryBuilders.termsQuery(PROCESS_DEFINITION_KEY, processDefinitionKey))
-        .must(QueryBuilders.termsQuery(PROCESS_DEFINITION_VERSION, processDefinitionVersion));
+
+    BoolQueryBuilder query = buildProcessDefinitionBaseQUery(processDefinitionKey, processDefinitionVersion);
 
     String variableFieldLabel = VariableHelper.variableTypeToFieldLabel(type);
     SearchResponse response =
