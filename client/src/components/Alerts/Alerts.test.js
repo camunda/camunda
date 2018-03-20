@@ -22,7 +22,8 @@ jest.mock('./service', () => {
     loadReports: jest.fn(),
     saveNewAlert: jest.fn(),
     deleteAlert: jest.fn(),
-    updateAlert: jest.fn()
+    updateAlert: jest.fn(),
+    convertDurationToObject: jest.fn().mockReturnValue({value: '14', unit: 'seconds'})
   };
 });
 
@@ -33,8 +34,8 @@ jest.mock('./AlertModal', () => props => (
 ));
 
 const reports = [
-  {id: '1', data: {visualization: 'table'}, name: 'Report 1'},
-  {id: '2', data: {visualization: 'number'}, name: 'Report 2'}
+  {id: '1', data: {visualization: 'table', view: {property: 'frequency'}}, name: 'Report 1'},
+  {id: '2', data: {visualization: 'number', view: {property: 'duration'}}, name: 'Report 2'}
 ];
 loadReports.mockReturnValue(reports);
 
@@ -101,4 +102,12 @@ it('should pass an alert configuration to the alert edit modal', async () => {
   node.find('button.Alert__editButton').simulate('click');
 
   expect(node.find('#ModalProps')).toIncludeText('preconfigured alert');
+});
+
+it('should format durations with value and unit', async () => {
+  const node = mount(<Alerts />);
+
+  await node.instance().loadData();
+
+  expect(node).toIncludeText('14 seconds');
 });

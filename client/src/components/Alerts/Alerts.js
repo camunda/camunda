@@ -3,7 +3,14 @@ import update from 'immutability-helper';
 
 import {Button, Modal} from 'components';
 
-import {loadAlerts, loadReports, saveNewAlert, deleteAlert, updateAlert} from './service';
+import {
+  loadAlerts,
+  loadReports,
+  saveNewAlert,
+  deleteAlert,
+  updateAlert,
+  convertDurationToObject
+} from './service';
 import AlertModal from './AlertModal';
 
 import './Alerts.css';
@@ -83,6 +90,12 @@ export default class Alerts extends React.Component {
   showDeleteModal = alert => () => this.setState({alertToDelete: alert});
   cancelDeleting = () => this.setState({alertToDelete: null});
 
+  formatThreshold = valueInMs => {
+    const {value, unit} = convertDurationToObject(valueInMs);
+
+    return `${value} ${unit}`;
+  };
+
   render() {
     return (
       <div className="Alerts">
@@ -150,6 +163,7 @@ export default class Alerts extends React.Component {
       return (
         <ul className="Alert__list">
           {this.state.alerts.map((alert, idx) => {
+            const report = this.state.reports.find(({id}) => alert.reportId === id);
             return (
               <li key={idx} className="Alert__item">
                 <span className="Alert__data Alert__data--title" onClick={this.editAlert(alert)}>
@@ -157,12 +171,12 @@ export default class Alerts extends React.Component {
                 </span>
                 <span className="Alert__data Alert__data--metadata">
                   Alert <span className="Alert__data--highlight">{alert.email}</span> when Report{' '}
+                  <span className="Alert__data--highlight">{report.name}</span> has a value{' '}
                   <span className="Alert__data--highlight">
-                    {this.state.reports.find(({id}) => alert.reportId === id).name}
-                  </span>{' '}
-                  has a value{' '}
-                  <span className="Alert__data--highlight">
-                    {alert.thresholdOperator === '<' ? 'below' : 'above'} {alert.threshold}
+                    {alert.thresholdOperator === '<' ? 'below ' : 'above '}
+                    {report.data.view.property === 'duration'
+                      ? this.formatThreshold(alert.threshold)
+                      : alert.threshold}
                   </span>
                 </span>
                 <span className="Alert__data Alert__data--tool">

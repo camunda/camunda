@@ -33,3 +33,34 @@ export async function emailNotificationIsEnabled() {
 
   return (await response.json()).enabled;
 }
+
+const timeUnits = {
+  milliseconds: 1,
+  seconds: 1000,
+  minutes: 60 * 1000,
+  hours: 60 * 60 * 1000,
+  days: 24 * 60 * 60 * 1000,
+  weeks: 7 * 24 * 60 * 60 * 1000,
+  months: 30 * 24 * 60 * 60 * 1000
+};
+
+export const convertDurationToObject = value => {
+  // sort the time units in descending order, then find the first one
+  // that fits the provided value without any decimal places
+  const [divisor, unit] = Object.keys(timeUnits)
+    .map(key => [timeUnits[key], key])
+    .sort(([a], [b]) => b - a)
+    .find(([divisor]) => ~~(value / divisor) === value / divisor);
+
+  return {
+    value: (value / divisor).toString(),
+    unit
+  };
+};
+
+export const convertDurationToSingleNumber = threshold => {
+  if (typeof threshold.value === 'undefined') {
+    return threshold;
+  }
+  return threshold.value * timeUnits[threshold.unit];
+};

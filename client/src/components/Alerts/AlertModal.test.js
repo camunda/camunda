@@ -2,13 +2,17 @@ import React from 'react';
 import {mount} from 'enzyme';
 
 import AlertModal from './AlertModal';
-import {emailNotificationIsEnabled} from './service';
+import {emailNotificationIsEnabled, convertDurationToObject} from './service';
 
 jest.mock('./service', () => {
   return {
-    emailNotificationIsEnabled: jest.fn()
+    emailNotificationIsEnabled: jest.fn(),
+    convertDurationToSingleNumber: jest.fn().mockReturnValue(723),
+    convertDurationToObject: jest.fn().mockReturnValue({value: '14', unit: 'seconds'})
   };
 });
+
+jest.mock('./ThresholdInput', () => () => 'ThresholdInput');
 
 jest.mock('components', () => {
   const Modal = props => <div id="modal">{props.children}</div>;
@@ -50,7 +54,10 @@ const alert = {
   fixNotification: true
 };
 
-const reports = [{id: '5', name: 'Some Report'}, {id: '8', name: 'Nice report'}];
+const reports = [
+  {id: '5', name: 'Some Report', data: {view: {property: 'frequency'}}},
+  {id: '8', name: 'Nice report', data: {view: {property: 'frequency'}}}
+];
 
 it('should apply the alert property to the state when changing props', () => {
   const node = mount(<AlertModal reports={reports} />);
@@ -167,4 +174,55 @@ it('should set isInvalid property for input if value is invalid', async () => {
       .first()
       .props()
   ).toHaveProperty('isInvalid', true);
+});
+
+it('should convert a duration threshold when opening', async () => {
+  const node = await mount(
+    <AlertModal
+      reports={[
+        {
+          id: '8',
+          name: 'Nice report',
+          data: {view: {property: 'duration'}}
+        }
+      ]}
+    />
+  );
+
+  node.setProps({
+    alert: {
+      name: 'New Alert',
+      id: '1234',
+      email: '',
+      reportId: '8',
+      thresholdOperator: '>',
+      threshold: '14000',
+      checkInterval: {
+        value: '10',
+        unit: 'minutes'
+      },
+      reminder: null,
+      fixNotification: false
+    }
+  });
+
+  expect(node.state('threshold')).toEqual({value: '14', unit: 'seconds'});
+  expect(convertDurationToObject).toHaveBeenCalledWith('14000');
+});
+
+it('should convert a duration threshold when confirming', async () => {
+  const spy = jest.fn();
+  const node = await mount(<AlertModal reports={reports} onConfirm={spy} />);
+  node.setState({threshold: {value: '723', unit: 'milliseconds'}});
+
+  node.instance().confirm();
+
+  expect(spy).toHaveBeenCalled();
+  expect(spy.mock.calls[0][0].threshold).toBe(723);
+});
+
+it('should contain a threshold input', () => {
+  const node = mount(<AlertModal reports={reports} />);
+
+  expect(node).toIncludeText('ThresholdInput');
 });

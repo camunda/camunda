@@ -2,7 +2,13 @@ import React from 'react';
 import update from 'immutability-helper';
 
 import {Modal, Button, Input, Select} from 'components';
-import {emailNotificationIsEnabled} from './service';
+import {
+  emailNotificationIsEnabled,
+  convertDurationToObject,
+  convertDurationToSingleNumber
+} from './service';
+
+import ThresholdInput from './ThresholdInput';
 
 import './AlertModal.css';
 
@@ -44,7 +50,10 @@ export default class AlertModal extends React.Component {
         (alert &&
           alert.id && {
             ...alert,
-            threshold: alert.threshold.toString(),
+            threshold:
+              this.getReportType(alert.reportId) === 'duration'
+                ? convertDurationToObject(alert.threshold)
+                : alert.threshold.toString(),
             checkInterval: {
               value: alert.checkInterval.value.toString(),
               unit: alert.checkInterval.unit
@@ -85,11 +94,19 @@ export default class AlertModal extends React.Component {
   };
 
   confirm = () => {
-    this.props.onConfirm(this.state);
+    this.props.onConfirm({
+      ...this.state,
+      threshold: convertDurationToSingleNumber(this.state.threshold)
+    });
   };
 
   isInEditingMode = () => {
     return this.props.alert && this.props.alert.id;
+  };
+
+  isThresholdValid = () => {
+    const value = this.getThresholdValue();
+    return value.trim() && !isNaN(value);
   };
 
   componentDidUpdate() {
@@ -110,7 +127,7 @@ export default class AlertModal extends React.Component {
       this.setErrorField('report');
       return;
     }
-    if (!this.state.threshold.trim() || isNaN(this.state.threshold.trim())) {
+    if (!this.isThresholdValid()) {
       this.setErrorField('threshold');
       return;
     }
@@ -133,6 +150,27 @@ export default class AlertModal extends React.Component {
     }
     this.setErrorField(null);
   }
+
+  getReportType = reportId => {
+    const report = this.props.reports.find(({id}) => id === reportId);
+
+    return report && report.data.view.property;
+  };
+
+  getThresholdValue = () =>
+    typeof this.state.threshold.value !== 'undefined'
+      ? this.state.threshold.value
+      : this.state.threshold;
+
+  updateReport = id => {
+    const reportType = this.getReportType(id);
+    const currentValue = this.getThresholdValue();
+
+    this.setState({
+      reportId: id,
+      threshold: reportType === 'duration' ? {value: currentValue, unit: 'days'} : currentValue
+    });
+  };
 
   render() {
     const {
@@ -230,12 +268,12 @@ export default class AlertModal extends React.Component {
                   <Select.Option value=">">above</Select.Option>
                   <Select.Option value="<">below</Select.Option>
                 </Select>
-                <Input
+                <ThresholdInput
                   id="value-input"
-                  className="AlertModal__input"
-                  isInvalid={errorInput === 'threshold'}
                   value={threshold}
-                  onChange={({target: {value}}) => this.setState({threshold: value})}
+                  onChange={threshold => this.setState({threshold})}
+                  isInvalid={errorInput === 'threshold'}
+                  type={this.getReportType(this.state.reportId)}
                 />
               </div>
               {errorInput === 'threshold' && (
