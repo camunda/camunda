@@ -323,9 +323,9 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     alertService.getScheduler().scheduleJob(jobDetail, trigger);
     OffsetDateTime nextFireTime = getNextFireTime(trigger);
 
-    OffsetDateTime targetTime = now.plusDays(intervalValue).truncatedTo(ChronoUnit.DAYS);
+    OffsetDateTime targetTime = now.truncatedTo(ChronoUnit.DAYS).plusDays(intervalValue);
 
-    assertThat(nextFireTime.truncatedTo(ChronoUnit.DAYS), is(targetTime));
+    assertThat(nextFireTime.withOffsetSameInstant(OffsetDateTime.now().getOffset()).truncatedTo(ChronoUnit.DAYS), is(targetTime));
   }
 
   @Test
