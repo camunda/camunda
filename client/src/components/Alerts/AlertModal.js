@@ -163,158 +163,166 @@ export default class AlertModal extends React.Component {
                   }
                 </span>
               )}
-              <label>
+              <label htmlFor="name-input">
                 <span className="AlertModal__label">Name</span>
-                <Input
-                  className="AlertModal__input"
-                  isInvalid={errorInput === 'name'}
-                  value={name}
-                  onChange={({target: {value}}) => this.setState({name: value})}
-                />
-                {errorInput === 'name' && (
-                  <span className="AlertModal__warning">Please enter a name</span>
-                )}
               </label>
+              <Input
+                id="name-input"
+                className="AlertModal__input"
+                isInvalid={errorInput === 'name'}
+                value={name}
+                onChange={({target: {value}}) => this.setState({name: value})}
+              />
+              {errorInput === 'name' && (
+                <span className="AlertModal__warning">Please enter a name</span>
+              )}
             </div>
             <div className="AlertModal__inputGroup">
-              <label>
+              <label htmlFor="email-input">
                 <span className="AlertModal__label">Send Email to</span>
-                <Input
-                  className="AlertModal__input"
-                  isInvalid={errorInput === 'email'}
-                  value={email}
-                  onChange={({target: {value}}) => this.setState({email: value})}
-                />
-                {errorInput === 'email' && (
-                  <span className="AlertModal__warning">Please enter a valid Email address</span>
-                )}
               </label>
+              <Input
+                id="email-input"
+                className="AlertModal__input"
+                isInvalid={errorInput === 'email'}
+                value={email}
+                onChange={({target: {value}}) => this.setState({email: value})}
+              />
+              {errorInput === 'email' && (
+                <span className="AlertModal__warning">Please enter a valid Email address</span>
+              )}
             </div>
             <div className="AlertModal__inputGroup">
-              <label>
+              <label htmlFor="report-select">
                 <span className="AlertModal__label">when Report</span>
-                <Select
-                  className="AlertModal__input"
-                  isInvalid={errorInput === 'report'}
-                  value={reportId}
-                  onChange={({target: {value}}) => this.setState({reportId: value})}
-                >
-                  <Select.Option disabled value="">
-                    Please select Report
-                  </Select.Option>
-                  {this.props.reports.map(({id, name}) => {
-                    return (
-                      <Select.Option key={id} value={id}>
-                        {name}
-                      </Select.Option>
-                    );
-                  })}
-                </Select>
-                <div className="AlertModal__report-selection-note">
-                  Note: you can only create an alert for a report visualized as Number
-                </div>
               </label>
+              <Select
+                id="report-select"
+                className="AlertModal__input"
+                isInvalid={errorInput === 'report'}
+                value={reportId}
+                onChange={({target: {value}}) => this.setState({reportId: value})}
+              >
+                <Select.Option disabled value="">
+                  Please select Report
+                </Select.Option>
+                {this.props.reports.map(({id, name}) => {
+                  return (
+                    <Select.Option key={id} value={id}>
+                      {name}
+                    </Select.Option>
+                  );
+                })}
+              </Select>
+              <div className="AlertModal__report-selection-note">
+                Note: you can only create an alert for a report visualized as Number
+              </div>
             </div>
             <div className="AlertModal__inputGroup">
-              <label>
+              <label htmlFor="value-input">
                 <span className="AlertModal__label">has a value</span>
-                <div className="AlertModal__combinedInput">
-                  <Select
-                    value={thresholdOperator}
-                    onChange={({target: {value}}) => this.setState({thresholdOperator: value})}
-                  >
-                    <Select.Option value=">">above</Select.Option>
-                    <Select.Option value="<">below</Select.Option>
-                  </Select>
-                  <Input
-                    className="AlertModal__input"
-                    isInvalid={errorInput === 'threshold'}
-                    value={threshold}
-                    onChange={({target: {value}}) => this.setState({threshold: value})}
-                  />
-                </div>
-                {errorInput === 'threshold' && (
-                  <span className="AlertModal__warning">Please enter a numeric value</span>
-                )}
               </label>
-            </div>
-          </div>
-          <div className="AlertModal__inputGroup">
-            <label>
-              <span className="AlertModal__label">Check Report every</span>
               <div className="AlertModal__combinedInput">
-                <Input
-                  className="AlertModal__input"
-                  isInvalid={errorInput === 'checkInterval'}
-                  value={checkInterval.value}
-                  onChange={({target: {value}}) =>
-                    this.setState(update(this.state, {checkInterval: {value: {$set: value}}}))
-                  }
-                />
                 <Select
-                  value={checkInterval.unit}
-                  onChange={({target: {value}}) =>
-                    this.setState(update(this.state, {checkInterval: {unit: {$set: value}}}))
-                  }
+                  value={thresholdOperator}
+                  onChange={({target: {value}}) => this.setState({thresholdOperator: value})}
                 >
-                  <Select.Option value="seconds">Seconds</Select.Option>
-                  <Select.Option value="minutes">Minutes</Select.Option>
-                  <Select.Option value="hours">Hours</Select.Option>
-                  <Select.Option value="days">Days</Select.Option>
-                  <Select.Option value="weeks">Weeks</Select.Option>
-                  <Select.Option value="months">Months</Select.Option>
+                  <Select.Option value=">">above</Select.Option>
+                  <Select.Option value="<">below</Select.Option>
                 </Select>
+                <Input
+                  id="value-input"
+                  className="AlertModal__input"
+                  isInvalid={errorInput === 'threshold'}
+                  value={threshold}
+                  onChange={({target: {value}}) => this.setState({threshold: value})}
+                />
               </div>
-              {errorInput === 'checkInterval' && (
+              {errorInput === 'threshold' && (
                 <span className="AlertModal__warning">Please enter a numeric value</span>
               )}
-            </label>
+            </div>
           </div>
           <div className="AlertModal__inputGroup">
-            <label>
+            <label htmlFor="checkInterval-input">
+              <span className="AlertModal__label">Check Report every</span>
+            </label>
+            <div className="AlertModal__combinedInput">
               <Input
-                type="checkbox"
-                checked={fixNotification}
-                onChange={({target: {checked}}) => this.setState({fixNotification: checked})}
+                id="checkInterval-input"
+                className="AlertModal__input"
+                isInvalid={errorInput === 'checkInterval'}
+                value={checkInterval.value}
+                onChange={({target: {value}}) =>
+                  this.setState(update(this.state, {checkInterval: {value: {$set: value}}}))
+                }
               />
-              Send Fix Notification
-            </label>
+              <Select
+                value={checkInterval.unit}
+                onChange={({target: {value}}) =>
+                  this.setState(update(this.state, {checkInterval: {unit: {$set: value}}}))
+                }
+              >
+                <Select.Option value="seconds">Seconds</Select.Option>
+                <Select.Option value="minutes">Minutes</Select.Option>
+                <Select.Option value="hours">Hours</Select.Option>
+                <Select.Option value="days">Days</Select.Option>
+                <Select.Option value="weeks">Weeks</Select.Option>
+                <Select.Option value="months">Months</Select.Option>
+              </Select>
+            </div>
+            {errorInput === 'checkInterval' && (
+              <span className="AlertModal__warning">Please enter a numeric value</span>
+            )}
           </div>
           <div className="AlertModal__inputGroup">
-            <label>
-              <Input type="checkbox" checked={!!reminder} onChange={this.updateReminder} />
-              Send Reminder Mails
-            </label>
+            <Input
+              id="notification-checkbox"
+              type="checkbox"
+              checked={fixNotification}
+              onChange={({target: {checked}}) => this.setState({fixNotification: checked})}
+            />
+            <label htmlFor="notification-checkbox">Send Fix Notification</label>
+          </div>
+          <div className="AlertModal__inputGroup">
+            <Input
+              id="reminder-checkbox"
+              type="checkbox"
+              checked={!!reminder}
+              onChange={this.updateReminder}
+            />
+            <label htmlFor="reminder-checkbox">Send Reminder Mails</label>
             {reminder && (
               <div className="AlertModal__inputGroup">
-                <label>
+                <label htmlFor="reminder-input">
                   <span className="AlertModal__label">every</span>
-                  <div className="AlertModal__combinedInput">
-                    <Input
-                      className="AlertModal__input"
-                      isInvalid={errorInput === 'reminder'}
-                      value={reminder.value}
-                      onChange={({target: {value}}) =>
-                        this.setState(update(this.state, {reminder: {value: {$set: value}}}))
-                      }
-                    />
-                    <Select
-                      value={reminder.unit}
-                      onChange={({target: {value}}) =>
-                        this.setState(update(this.state, {reminder: {unit: {$set: value}}}))
-                      }
-                    >
-                      <Select.Option value="minutes">Minutes</Select.Option>
-                      <Select.Option value="hours">Hours</Select.Option>
-                      <Select.Option value="days">Days</Select.Option>
-                      <Select.Option value="weeks">Weeks</Select.Option>
-                      <Select.Option value="months">Months</Select.Option>
-                    </Select>
-                  </div>
-                  {errorInput === 'reminder' && (
-                    <span className="AlertModal__warning">Please enter a numeric value</span>
-                  )}
                 </label>
+                <div className="AlertModal__combinedInput">
+                  <Input
+                    id="reminder-input"
+                    className="AlertModal__input"
+                    isInvalid={errorInput === 'reminder'}
+                    value={reminder.value}
+                    onChange={({target: {value}}) =>
+                      this.setState(update(this.state, {reminder: {value: {$set: value}}}))
+                    }
+                  />
+                  <Select
+                    value={reminder.unit}
+                    onChange={({target: {value}}) =>
+                      this.setState(update(this.state, {reminder: {unit: {$set: value}}}))
+                    }
+                  >
+                    <Select.Option value="minutes">Minutes</Select.Option>
+                    <Select.Option value="hours">Hours</Select.Option>
+                    <Select.Option value="days">Days</Select.Option>
+                    <Select.Option value="weeks">Weeks</Select.Option>
+                    <Select.Option value="months">Months</Select.Option>
+                  </Select>
+                </div>
+                {errorInput === 'reminder' && (
+                  <span className="AlertModal__warning">Please enter a numeric value</span>
+                )}
               </div>
             )}
           </div>
