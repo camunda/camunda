@@ -24,7 +24,6 @@ import static org.assertj.core.util.Lists.newArrayList;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 
 import org.junit.Ignore;
@@ -188,7 +187,9 @@ public class ActorLifecyclePhasesAndBlockPhaseTest
                 super.onActorClosed();
                 actor.runOnCompletionBlockingCurrentPhase(trigger, (r1, e1) ->
                 {
-                    actor.runOnCompletion(new CompletableActorFuture<>(), (r2, e2) -> {});
+                    actor.runOnCompletion(new CompletableActorFuture<>(), (r2, e2) ->
+                    {
+                    });
                 });
             }
         };
