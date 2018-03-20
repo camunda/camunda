@@ -21,6 +21,11 @@ jest.mock('components', () => {
 
   return {
     Modal,
+    Popover: ({title, children}) => (
+      <div>
+        {title} {children}
+      </div>
+    ),
     Button,
     Input: props => (
       <input
@@ -191,33 +196,11 @@ it('should redirect to the dashboard list on dashboard deletion', async () => {
   expect(node).toIncludeText('REDIRECT to /dashboards');
 });
 
-it('should show a modal on share button click', () => {
-  const node = mount(<Dashboard {...props} />);
-
-  node.setState({loaded: true});
-
-  node
-    .find('.Dashboard__share-button')
-    .first()
-    .simulate('click');
-
-  expect(node.find('.Dashboard__share-modal')).toHaveProp('open', true);
-});
-
-it('should hide the modal on close button click', () => {
+it('should render a sharing popover', () => {
   const node = mount(<Dashboard {...props} />);
   node.setState({loaded: true});
 
-  node
-    .find('.Dashboard__share-button')
-    .first()
-    .simulate('click');
-  node
-    .find('.Dashboard__close-share-modal-button')
-    .first()
-    .simulate('click');
-
-  expect(node.find('.Dashboard__share-modal')).toHaveProp('open', false);
+  expect(node.find('.Dashboard__share-button').first()).toIncludeText('Share');
 });
 
 it('should enter fullscreen mode', () => {
