@@ -7,7 +7,7 @@ import './Table.css';
 export default function Table({className, head, body, foot}) {
   const columns = Table.formatColumns(head);
   const data = Table.formatData(head, body);
-  const classNameToSet = className ? className : 'OptimizeTable';
+  className = className ? className : '';
   return (
     <ReactTable
       data={data}
@@ -19,7 +19,7 @@ export default function Table({className, head, body, foot}) {
       minRows={0}
       sortable={false}
       multiSort={false}
-      className={'-striped -highlight ' + classNameToSet}
+      className={'-striped -highlight Table ' + className}
       noDataText="No data available"
     />
   );
