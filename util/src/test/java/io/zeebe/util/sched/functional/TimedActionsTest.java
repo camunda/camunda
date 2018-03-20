@@ -116,7 +116,7 @@ public class TimedActionsTest
     {
         // given
         final Runnable action = mock(Runnable.class);
-        final AtomicReference<ScheduledTimer> timer = new AtomicReference<ScheduledTimer>();
+        final AtomicReference<ScheduledTimer> timer = new AtomicReference<>();
         final Actor actor = new Actor()
         {
             @Override
@@ -139,11 +139,42 @@ public class TimedActionsTest
     }
 
     @Test
+    public void shouldCancelRunDelayedAfterExecution()
+    {
+        // given
+        final Runnable action = mock(Runnable.class);
+        final AtomicReference<ScheduledTimer> timer = new AtomicReference<>();
+        final Actor actor = new Actor()
+        {
+            @Override
+            protected void onActorStarted()
+            {
+                timer.set(actor.runDelayed(Duration.ofMillis(10), action));
+            }
+        };
+
+        // when
+        schedulerRule.getClock().setCurrentTime(100);
+        schedulerRule.submitActor(actor);
+        schedulerRule.workUntilDone();
+
+        // make timer run
+        schedulerRule.getClock().addTime(Duration.ofMillis(10));
+        schedulerRule.workUntilDone();
+
+        // when
+        timer.get().cancel();
+
+        // then
+        // no exception has been thrown
+    }
+
+    @Test
     public void shouldCancelRunAtFixedRate()
     {
         // given
         final Runnable action = mock(Runnable.class);
-        final AtomicReference<ScheduledTimer> timer = new AtomicReference<ScheduledTimer>();
+        final AtomicReference<ScheduledTimer> timer = new AtomicReference<>();
         final Actor actor = new Actor()
         {
             @Override

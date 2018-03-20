@@ -61,10 +61,10 @@ public class TimerSubscription implements ActorSubscription, ScheduledTimer, Run
     @Override
     public void onJobCompleted()
     {
-        isDone = false;
 
         if (isRecurring && !isCanceled)
         {
+            isDone = false;
             submit();
         }
     }
