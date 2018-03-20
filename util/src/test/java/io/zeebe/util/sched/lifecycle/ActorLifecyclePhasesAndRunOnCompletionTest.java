@@ -116,35 +116,6 @@ public class ActorLifecyclePhasesAndRunOnCompletionTest
     }
 
     @Test
-    public void shouldCompleteCloseRequestedWhenFutureCompleted()
-    {
-        // given
-        final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
-
-        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
-        {
-            @Override
-            public void onActorStarted()
-            {
-                super.onActorStarted();
-                runOnCompletion(future);
-            }
-        };
-        schedulerRule.submitActor(actor);
-        schedulerRule.workUntilDone();
-        final ActorFuture<Void> closeFuture = actor.close();
-        schedulerRule.workUntilDone();
-
-        // when
-        future.complete(null);
-        schedulerRule.workUntilDone();
-
-        // then
-        assertThat(closeFuture).isDone();
-        assertThat(actor.phases).isEqualTo(FULL_LIFECYCLE);
-    }
-
-    @Test
     public void shouldNotWaitOnFutureInClosed()
     {
         // given
