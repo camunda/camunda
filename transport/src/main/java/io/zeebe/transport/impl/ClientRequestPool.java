@@ -167,6 +167,8 @@ public class ClientRequestPool implements AutoCloseable
         private final Duration timeout;
         private final BufferWriter requestWriter;
 
+        private boolean isTimeout = false;
+
         DeferredRequestAllocator(
                 CompletableActorFuture<ClientResponse> responseFuture,
                 Supplier<ActorFuture<RemoteAddress>> remoteAddressSupplier,
@@ -197,25 +199,29 @@ public class ClientRequestPool implements AutoCloseable
 
         protected void attemptInit()
         {
-            final ClientRequestController request = availableRequests.poll();
+            if (!isTimeout)
+            {
+                final ClientRequestController request = availableRequests.poll();
 
-            if (request != null)
-            {
-                // subtract time spent in this actor from request timeout
-                final Duration remainingTimeout = timeout.minusMillis(ActorClock.currentTimeMillis() - submitMs);
-                request.init(responseFuture, remoteAddressSupplier, responseInspector, requestWriter, remainingTimeout);
-                actor.close();
-            }
-            else
-            {
-                // re-attempt submit (do not use run until done so that the timeout can fire)
-                actor.submit(this::attemptInit);
-                actor.yield();
+                if (request != null)
+                {
+                    // subtract time spent in this actor from request timeout
+                    final Duration remainingTimeout = timeout.minusMillis(ActorClock.currentTimeMillis() - submitMs);
+                    request.init(responseFuture, remoteAddressSupplier, responseInspector, requestWriter, remainingTimeout);
+                    actor.close();
+                }
+                else
+                {
+                    // re-attempt submit (do not use run until done so that the timeout can fire)
+                    actor.submit(this::attemptInit);
+                    actor.yield();
+                }
             }
         }
 
         private void onTimeout()
         {
+            isTimeout = true;
             responseFuture.completeExceptionally(new RequestTimeoutException("Request timed out due to backpressure"));
             actor.close();
         }
