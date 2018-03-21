@@ -117,7 +117,7 @@ public class GossipJoinTest
         final boolean hasJoined = gossip1.receivedMembershipEvent(MembershipEventType.JOIN, gossip3)
                 || gossip2.receivedMembershipEvent(MembershipEventType.JOIN, gossip3);
 
-        assertThat(hasJoined);
+        assertThat(hasJoined).isTrue();
     }
 
     @Test
