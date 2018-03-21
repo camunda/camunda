@@ -239,7 +239,7 @@ export default class AlertModal extends React.Component {
                 className="AlertModal__input"
                 isInvalid={errorInput === 'report'}
                 value={reportId}
-                onChange={({target: {value}}) => this.setState({reportId: value})}
+                onChange={({target: {value}}) => this.updateReport(value)}
               >
                 <Select.Option disabled value="">
                   Please select Report
