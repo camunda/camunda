@@ -39,10 +39,7 @@ import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
 
 import java.time.Duration;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -53,18 +50,24 @@ public class RequestManager extends Actor
     protected final ObjectMapper msgPackMapper;
     protected final Duration requestTimeout;
     protected final RequestDispatchStrategy dispatchStrategy;
+    protected final Semaphore concurrentRequestsSemaphore;
+    protected final int blockTimeMillis;
 
     public RequestManager(
             ClientOutput output,
             ClientTopologyManager topologyManager,
             ObjectMapper msgPackMapper,
-            Duration requestTimeout)
+            Duration requestTimeout,
+            int requestPoolSize,
+            int blockTimeMillis)
     {
         this.output = output;
         this.topologyManager = topologyManager;
         this.msgPackMapper = msgPackMapper;
         this.requestTimeout = requestTimeout;
+        this.blockTimeMillis = blockTimeMillis;
         this.dispatchStrategy = new RoundRobinDispatchStrategy(topologyManager);
+        this.concurrentRequestsSemaphore = new Semaphore(requestPoolSize);
     }
 
     public ActorFuture<Void> close()
@@ -84,11 +87,27 @@ public class RequestManager extends Actor
 
     private <E> ActorFuture<E> executeAsync(final RequestResponseHandler requestHandler)
     {
+        try
+        {
+            if (!concurrentRequestsSemaphore.tryAcquire(blockTimeMillis, TimeUnit.MILLISECONDS))
+            {
+                throw new RuntimeException("Could not send request in under " + Duration.ofMillis(blockTimeMillis) +
+                        ". This either means that requests cannot be sent fast enought or that you are " +
+                        "trying to send more concurrent requests than you have configured on the client " +
+                        "and are not calling .get() on the response future. You need to call .get() " +
+                        "on the response future before sending more requests.");
+            }
+        }
+        catch (InterruptedException e)
+        {
+            throw new RuntimeException(e);
+        }
+
         final Supplier<ActorFuture<RemoteAddress>> remoteProvider = determineRemoteProvider(requestHandler);
         final ActorFuture<ClientResponse> responseFuture =
                 output.sendRequestWithRetry(remoteProvider, RequestManager::shouldRetryRequest, requestHandler, requestTimeout);
 
-        return new ResponseFuture<>(responseFuture, requestHandler, requestTimeout);
+        return new ResponseFuture<>(responseFuture, requestHandler, requestTimeout, concurrentRequestsSemaphore);
     }
 
     private static boolean shouldRetryRequest(DirectBuffer responseContent)
@@ -286,17 +305,20 @@ public class RequestManager extends Actor
         protected final ErrorResponseHandler errorHandler = new ErrorResponseHandler();
         protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
         protected final Duration requestTimeout;
+        protected final Semaphore semaphore;
 
         protected E result = null;
         protected ExecutionException failure = null;
 
         ResponseFuture(ActorFuture<ClientResponse> transportFuture,
                 RequestResponseHandler responseHandler,
-                Duration requestTimeout)
+                Duration requestTimeout,
+                Semaphore semaphore)
         {
             this.transportFuture = transportFuture;
             this.responseHandler = responseHandler;
             this.requestTimeout = requestTimeout;
+            this.semaphore = semaphore;
         }
 
         @Override
@@ -362,6 +384,10 @@ public class RequestManager extends Actor
             {
                 failWith("Could not complete request", e);
                 return;
+            }
+            finally
+            {
+                semaphore.release();
             }
         }
 

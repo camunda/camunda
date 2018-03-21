@@ -96,6 +96,7 @@ public class ZeebeClientImpl implements ZeebeClient
         final SocketAddress contactPoint = SocketAddress.from(properties.getProperty(ClientProperties.BROKER_CONTACTPOINT));
 
         final int maxRequests = Integer.parseInt(properties.getProperty(CLIENT_MAXREQUESTS));
+        final int blockTimeMillis = Integer.parseInt(properties.getProperty(CLIENT_REQUEST_BLOCKTIME_MILLIS));
         final int sendBufferSize = Integer.parseInt(properties.getProperty(CLIENT_SENDBUFFER_SIZE));
 
         final int numSchedulerThreads = Integer.parseInt(properties.getProperty(ClientProperties.CLIENT_MANAGEMENT_THREADS));
@@ -152,7 +153,9 @@ public class ZeebeClientImpl implements ZeebeClient
                 transport.getOutput(),
                 topologyManager,
                 objectMapper,
-                requestTimeout);
+                requestTimeout,
+                maxRequests,
+                blockTimeMillis);
         this.scheduler.submitActor(apiCommandManager);
 
         this.subscriptionManager = new SubscriptionManager(this);

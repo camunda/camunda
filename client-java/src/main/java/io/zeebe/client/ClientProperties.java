@@ -30,6 +30,12 @@ public class ClientProperties
     public static final String CLIENT_MAXREQUESTS = "zeebe.client.maxRequests";
 
     /**
+     * The time in milliseconds to block when the user submits a request and the client
+     * has no buffer (pooling) capacity to send the request. After this time, an exception is thrown.
+     */
+    public static final String CLIENT_REQUEST_BLOCKTIME_MILLIS = "zeebe.client.requestBlockTime";
+
+    /**
      * the size of the client's send buffer in MB
      */
     public static final String CLIENT_SENDBUFFER_SIZE = "zeebe.client.sendbuffer.size";
@@ -80,5 +86,6 @@ public class ClientProperties
         properties.putIfAbsent(CLIENT_SUBSCRIPTION_EXECUTION_THREADS, "1");
         properties.putIfAbsent(CLIENT_TOPIC_SUBSCRIPTION_PREFETCH_CAPACITY, "32");
         properties.putIfAbsent(CLIENT_REQUEST_TIMEOUT_SEC, "15");
+        properties.putIfAbsent(CLIENT_REQUEST_BLOCKTIME_MILLIS, "15000");
     }
 }

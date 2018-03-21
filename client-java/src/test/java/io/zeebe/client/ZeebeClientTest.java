@@ -66,11 +66,17 @@ public class ZeebeClientTest
 
     protected ZeebeClientImpl client;
 
+    private int clientMaxRequests;
+
     @Before
     public void setUp()
     {
+        this.clientMaxRequests = 128;
         final Properties properties = new Properties();
         properties.setProperty(ClientProperties.CLIENT_REQUEST_TIMEOUT_SEC, "3");
+        properties.setProperty(ClientProperties.CLIENT_REQUEST_BLOCKTIME_MILLIS, "250");
+        properties.setProperty(ClientProperties.CLIENT_MAXREQUESTS, String.valueOf(clientMaxRequests));
+
 
         client = (ZeebeClientImpl) ZeebeClient.create(properties);
         broker.stubTopicSubscriptionApi(0);
@@ -140,6 +146,58 @@ public class ZeebeClientTest
 
         // then
         assertThat("this code has been reached, i.e. the second close does not block infinitely").isNotNull();
+    }
+
+    @Test
+    public void shouldSendAsyncRequestUpToPoolCapacity()
+    {
+        // given
+        final String topic = "foo";
+
+        broker.clearTopology();
+        broker.addSystemTopic();
+        broker.addTopic(topic, 0);
+        broker.addTopic(topic, 1);
+
+        stubTaskResponse();
+
+        // when then
+        for (int i = 0; i < clientMaxRequests; i++)
+        {
+            client.tasks().create(topic, "bar").executeAsync();
+        }
+
+    }
+
+    @Test
+    public void shouldBlockOnAsyncRequestsPastPoolCapacity()
+    {
+        // given
+        final String topic = "foo";
+
+        broker.clearTopology();
+        broker.addSystemTopic();
+        broker.addTopic(topic, 0);
+        broker.addTopic(topic, 1);
+
+        stubTaskResponse();
+
+        for (int i = 0; i < clientMaxRequests; i++)
+        {
+            client.tasks().create(topic, "bar").executeAsync();
+        }
+
+        try
+        {
+            client.tasks().create(topic, "bar").executeAsync();
+            fail("should throw exception");
+        }
+        catch (Exception e)
+        {
+            // expected
+            assertThat(e.getMessage()).startsWith("Could not send request");
+        }
+
     }
 
     @Test
