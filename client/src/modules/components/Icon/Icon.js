@@ -5,8 +5,8 @@ import icons from './icons';
 
 export default function Icon(props) {
   const filteredProps = {...props};
-  const type = props.type || 'plus';
-  const Tag = props.renderedIn || 'span';
+  const type = props.type;
+  const Tag = props.renderedIn;
   delete filteredProps.renderedIn;
   delete filteredProps.type;
 
@@ -15,10 +15,6 @@ export default function Icon(props) {
   } else {
     const SVG = icons[type];
 
-    return (
-      <span className="Icon Icon--svg">
-        <SVG />
-      </span>
-    );
+    return <span className="Icon Icon--svg">{SVG ? <SVG /> : props.children}</span>;
   }
 }

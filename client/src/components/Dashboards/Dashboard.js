@@ -31,7 +31,7 @@ import {DimensionSetter} from './DimensionSetter';
 import {DeleteButton} from './DeleteButton';
 import {DragBehavior} from './DragBehavior';
 import {ResizeHandle} from './ResizeHandle';
-import {AutoRefreshBehavior} from './AutoRefreshBehavior';
+import {AutoRefreshBehavior, AutoRefreshIcon} from './AutoRefresh';
 
 import './Dashboard.css';
 
@@ -301,7 +301,7 @@ export default class Dashboard extends React.Component {
               <Dropdown
                 label={
                   <React.Fragment>
-                    <Icon type="autorefresh" /> Auto Refresh
+                    <AutoRefreshIcon interval={this.state.autoRefreshInterval} /> Auto Refresh
                   </React.Fragment>
                 }
                 active={!!this.state.autoRefreshInterval}

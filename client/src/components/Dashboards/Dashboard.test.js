@@ -99,8 +99,11 @@ jest.mock('./DragBehavior', () => {
 jest.mock('./ResizeHandle', () => {
   return {ResizeHandle: () => <div>ResizeHandle</div>};
 });
-jest.mock('./AutoRefreshBehavior', () => {
-  return {AutoRefreshBehavior: () => <div>AutoRefreshBehavior</div>};
+jest.mock('./AutoRefresh', () => {
+  return {
+    AutoRefreshBehavior: () => <div>AutoRefreshBehavior</div>,
+    AutoRefreshIcon: () => <div>AutoRefreshIcon</div>
+  };
 });
 
 const props = {
