@@ -211,13 +211,13 @@ export default class TargetValueComparison extends React.Component {
   render() {
     return (
       <Modal
+        size="max"
         open={this.props.open}
         onClose={this.props.onClose}
         className="TargetValueModal__Modal"
-        size="large"
       >
         <Modal.Header>Target Value Comparison</Modal.Header>
-        <Modal.Content>
+        <Modal.Content className="TargetValueModal__modal-content-container">
           <div className="TargetValueModal__DiagramContainer">
             <BPMNDiagram xml={this.props.configuration.xml}>
               <TargetValueDiagramBehavior onClick={this.updateFocus} focus={this.state.focus} />

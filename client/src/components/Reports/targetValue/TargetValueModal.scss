@@ -1,9 +1,15 @@
 .TargetValueModal__Table {
-  max-height: 250px;
+  max-height: 30%;
+}
+
+.TargetValueModal__modal-content-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .TargetValueModal__DiagramContainer {
-  height: 350px;
+  height: 70%;
   display: flex;
 }
 
