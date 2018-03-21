@@ -757,24 +757,22 @@ public class BranchAnalysisQueryIT {
 
 
   private BranchAnalysisDto getBranchAnalysisDto(BranchAnalysisQueryDto dto) {
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-    Response response = getResponse(token, dto);
+    Response response = getRawResponse(dto);
 
     // then the status code is okay
     return response.readEntity(BranchAnalysisDto.class);
   }
 
-  private Response getResponse(String token, BranchAnalysisQueryDto dto) {
+  private Response getRawResponse(BranchAnalysisQueryDto dto) {
     Entity<BranchAnalysisQueryDto> entity = Entity.entity(dto, MediaType.APPLICATION_JSON);
     return embeddedOptimizeRule.target("process-definition/correlation")
       .request()
-      .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+      .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
       .post(entity);
   }
 
   private Response getResponse(BranchAnalysisQueryDto request) {
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-    return getResponse(token, request);
+    return getRawResponse(request);
   }
 
   private OffsetDateTime nowPlusTimeInMs(int timeInMs) {

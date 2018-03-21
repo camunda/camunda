@@ -24,7 +24,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 public class ReportRestServiceIT {
 
-  private static final String BEARER = "Bearer ";
   private static final String RANDOM_KEY = "someRandomKey";
   private static final String RANDOM_VERSION = "someRandomVersion";
   private static final String RANDOM_STRING = "something";
@@ -48,14 +47,11 @@ public class ReportRestServiceIT {
 
   @Test
   public void createNewReport() {
-    //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-
     // when
     Response response =
       embeddedOptimizeRule.target("report")
         .request()
-        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .post(Entity.json(""));
 
     // then the status code is okay
@@ -81,15 +77,14 @@ public class ReportRestServiceIT {
   public void updateReport() {
 
     //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-    String id = addEmptyReportToOptimize(token);
+    String id = addEmptyReportToOptimize();
 
     // when
     ReportDefinitionDto reportDefinitionDto = constructReportWithFakePD();
     Response response =
       embeddedOptimizeRule.target("report/" + id)
         .request()
-        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .put(Entity.json(reportDefinitionDto));
 
     // then the status code is okay
@@ -120,11 +115,10 @@ public class ReportRestServiceIT {
   @Test
   public void getStoredReports() {
     //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-    String id = addEmptyReportToOptimize(token);
+    String id = addEmptyReportToOptimize();
 
     // when
-    List<ReportDefinitionDto> reports = getAllReports(token);
+    List<ReportDefinitionDto> reports = getAllReports();
 
     // then
     assertThat(reports.size(), is(1));
@@ -146,14 +140,13 @@ public class ReportRestServiceIT {
   @Test
   public void getReport() {
     //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-    String id = addEmptyReportToOptimize(token);
+    String id = addEmptyReportToOptimize();
 
     // when
     Response response =
       embeddedOptimizeRule.target("report/" + id)
         .request()
-        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .get();
 
     // then the status code is okay
@@ -166,14 +159,11 @@ public class ReportRestServiceIT {
 
   @Test
   public void getReportForNonExistingIdThrowsError() {
-    //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-
     // when
     Response response =
       embeddedOptimizeRule.target("report/FooId")
         .request()
-        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .get();
 
     // then the status code is okay
@@ -196,19 +186,18 @@ public class ReportRestServiceIT {
   @Test
   public void deleteNewReport() {
     //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-    String id = addEmptyReportToOptimize(token);
+    String id = addEmptyReportToOptimize();
 
     // when
     Response response =
         embeddedOptimizeRule.target("report/" + id)
             .request()
-            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
             .delete();
 
     // then the status code is okay
     assertThat(response.getStatus(), is(204));
-    assertThat(getAllReports(token).size(), is(0));
+    assertThat(getAllReports().size(), is(0));
   }
   
   @Test
@@ -225,7 +214,6 @@ public class ReportRestServiceIT {
   @Test
   public void evaluateReportById() {
     //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
     String id = createAndStoreDefaultReportDefinition(
       ReportDataHelper.createReportDataViewRawAsTable(RANDOM_KEY, RANDOM_VERSION)
     );
@@ -233,7 +221,7 @@ public class ReportRestServiceIT {
     // then
     Response response = embeddedOptimizeRule.target("report/" + id + "/evaluate")
       .request()
-      .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+      .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
       .get();
 
     // then the status code is okay
@@ -243,7 +231,6 @@ public class ReportRestServiceIT {
   @Test
   public void evaluateInvalidReportById() {
     //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
     String id = createAndStoreDefaultReportDefinition(
       ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNoneNumber(RANDOM_KEY, RANDOM_VERSION)
     );
@@ -251,7 +238,7 @@ public class ReportRestServiceIT {
     // then
     Response response = embeddedOptimizeRule.target("report/" + id + "/evaluate")
       .request()
-      .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+      .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
       .get();
 
     // then the status code is okay
@@ -266,7 +253,6 @@ public class ReportRestServiceIT {
   @Test
   public void evaluateReportWithoutViewById() {
     //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
     ReportDataDto countFlowNodeFrequencyGroupByFlowNoneNumber = ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNoneNumber(RANDOM_KEY, RANDOM_VERSION);
     countFlowNodeFrequencyGroupByFlowNoneNumber.setView(null);
     String id = createAndStoreDefaultReportDefinition(
@@ -276,7 +262,7 @@ public class ReportRestServiceIT {
     // then
     Response response = embeddedOptimizeRule.target("report/" + id + "/evaluate")
       .request()
-      .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+      .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
       .get();
 
     // then the status code is okay
@@ -303,13 +289,12 @@ public class ReportRestServiceIT {
   @Test
   public void evaluateUnsavedReport() {
     //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
     ReportDataDto reportDataDto = ReportDataHelper.createReportDataViewRawAsTable(RANDOM_KEY, RANDOM_VERSION);
 
     // then
     Response response = embeddedOptimizeRule.target("report/evaluate")
       .request()
-      .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+      .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
       .post(Entity.json(reportDataDto));
 
     // then the status code is okay
@@ -333,11 +318,10 @@ public class ReportRestServiceIT {
   }
 
   private String createNewReportHelper() {
-    String token = embeddedOptimizeRule.getAuthenticationToken();
     Response response =
       embeddedOptimizeRule.target("report")
         .request()
-        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .post(Entity.json(""));
     assertThat(response.getStatus(), is(200));
 
@@ -345,30 +329,29 @@ public class ReportRestServiceIT {
   }
 
   private void updateReport(String id, ReportDefinitionDto updatedReport) {
-    String token = embeddedOptimizeRule.getAuthenticationToken();
     Response response =
       embeddedOptimizeRule.target("report/" + id)
         .request()
-        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .put(Entity.json(updatedReport));
     assertThat(response.getStatus(), is(204));
   }
 
-  private String addEmptyReportToOptimize(String token) {
+  private String addEmptyReportToOptimize() {
     Response response =
       embeddedOptimizeRule.target("report")
         .request()
-        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .post(Entity.json(""));
 
     return response.readEntity(IdDto.class).getId();
   }
 
-  private List<ReportDefinitionDto> getAllReports(String token) {
+  private List<ReportDefinitionDto> getAllReports() {
     Response response =
       embeddedOptimizeRule.target("report")
         .request()
-        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .get();
 
     assertThat(response.getStatus(), is(200));

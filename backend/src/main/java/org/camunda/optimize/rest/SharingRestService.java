@@ -7,6 +7,7 @@ import org.camunda.optimize.dto.optimize.query.report.result.ReportResultDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.rest.providers.Secured;
+import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.security.SharingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -90,8 +91,10 @@ public class SharingRestService {
   @GET
   @Path("/dashboard/{shareId}/report/{reportId}/evaluate")
   @Produces(MediaType.APPLICATION_JSON)
-  public ReportResultDto evaluateReport(@PathParam("shareId") String dashboardShareId,
-                                        @PathParam("reportId") String reportId) {
+  public ReportResultDto evaluateReport(
+    @PathParam("shareId") String dashboardShareId,
+    @PathParam("reportId") String reportId
+  ) throws OptimizeException {
     return sharingService.evaluateReportForSharedDashboard(dashboardShareId, reportId);
   }
 

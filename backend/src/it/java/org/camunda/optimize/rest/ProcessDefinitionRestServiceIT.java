@@ -52,7 +52,6 @@ public class ProcessDefinitionRestServiceIT {
   private static final String TASK = "task_1";
 
   private static final String ID = "123";
-  public static final String BEARER = "Bearer ";
   private static final String KEY = "testKey";
   private static final String BPMN_20_XML = "test";
   private static final String TEST_ENGINE = "1";
@@ -78,14 +77,13 @@ public class ProcessDefinitionRestServiceIT {
   @Test
   public void getProcessDefinitions() {
     //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
     createProcessDefinition(ID, KEY);
 
     // when
     Response response =
         embeddedOptimizeRule.target("process-definition")
             .request()
-            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
             .get();
 
     // then the status code is okay
@@ -100,7 +98,6 @@ public class ProcessDefinitionRestServiceIT {
   @Test
   public void getProcessDefinitionsWithXml() {
     //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
     String expectedProcessDefinitionId = ID;
 
     createProcessDefinition(expectedProcessDefinitionId, KEY);
@@ -111,7 +108,7 @@ public class ProcessDefinitionRestServiceIT {
         embeddedOptimizeRule.target("process-definition")
             .queryParam("includeXml", true)
             .request()
-            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
             .get();
 
     // then the status code is okay
@@ -254,7 +251,6 @@ public class ProcessDefinitionRestServiceIT {
   @Test
   public void getCorrelation() throws IOException {
     //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
     setupFullInstanceFlow();
 
     // when
@@ -268,7 +264,7 @@ public class ProcessDefinitionRestServiceIT {
     Response response =
         embeddedOptimizeRule.target("process-definition/correlation")
             .request()
-            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
             .post(entity);
 
     // then the status code is okay
@@ -282,7 +278,6 @@ public class ProcessDefinitionRestServiceIT {
   @Test
   public void testGetProcessDefinitionsGroupedByKey() {
     //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
     createProcessDefinitionsForKey("procDefKey1", 3);
     createProcessDefinitionsForKey("procDefKey2", 2);
 
@@ -290,7 +285,7 @@ public class ProcessDefinitionRestServiceIT {
     Response response =
         embeddedOptimizeRule.target("process-definition/groupedByKey")
             .request()
-            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
             .get();
 
     // then

@@ -48,12 +48,11 @@ public class ProcessEngineImportRestServiceIT {
     //when
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-    String token = embeddedOptimizeRule.getAuthenticationToken();
 
     //when
     Response response = embeddedOptimizeRule.target("process-definition")
         .request()
-        .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
+        .header(HttpHeaders.AUTHORIZATION,embeddedOptimizeRule.getAuthorizationHeader())
         .get();
 
     //then

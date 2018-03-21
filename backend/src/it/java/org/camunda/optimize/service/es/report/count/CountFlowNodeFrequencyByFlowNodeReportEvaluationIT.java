@@ -545,8 +545,6 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     return engineRule.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
-
-
   private MapReportResultDto evaluateReport(ReportDataDto reportData) {
     Response response = evaluateReportAndReturnResponse(reportData);
     assertThat(response.getStatus(), is(200));
@@ -555,10 +553,9 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
   }
 
   private Response evaluateReportAndReturnResponse(ReportDataDto reportData) {
-    String token = embeddedOptimizeRule.getAuthenticationToken();
     return embeddedOptimizeRule.target("report/evaluate")
       .request()
-      .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+      .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
       .post(Entity.json(reportData));
   }
 

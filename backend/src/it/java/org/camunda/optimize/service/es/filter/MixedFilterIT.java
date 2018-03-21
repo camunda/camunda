@@ -64,10 +64,9 @@ public class MixedFilterIT {
   }
 
   private Response evaluateReportAndReturnResponse(ReportDataDto reportData) {
-    String token = embeddedOptimizeRule.getAuthenticationToken();
     return embeddedOptimizeRule.target("report/evaluate")
         .request()
-        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .post(Entity.json(reportData));
   }
 

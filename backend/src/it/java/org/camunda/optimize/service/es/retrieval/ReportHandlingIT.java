@@ -489,11 +489,10 @@ public class ReportHandlingIT {
   }
 
   private String createNewReport() {
-    String token = embeddedOptimizeRule.getAuthenticationToken();
     Response response =
       embeddedOptimizeRule.target("report")
         .request()
-        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .post(Entity.json(""));
     assertThat(response.getStatus(), is(200));
 
@@ -506,18 +505,16 @@ public class ReportHandlingIT {
   }
 
   private Response getUpdateReportResponse(String id, ReportDefinitionDto updatedReport) {
-    String token = embeddedOptimizeRule.getAuthenticationToken();
     return embeddedOptimizeRule.target("report/" + id)
       .request()
-      .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+      .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
       .put(Entity.json(updatedReport));
   }
 
   private RawDataReportResultDto evaluateRawDataReportById(String reportId) {
-    String token = embeddedOptimizeRule.getAuthenticationToken();
     Response response = embeddedOptimizeRule.target("report/" + reportId + "/evaluate")
       .request()
-      .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+      .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
       .get();
     assertThat(response.getStatus(), is(200));
 
@@ -529,15 +526,15 @@ public class ReportHandlingIT {
   }
 
   private List<ReportDefinitionDto> getAllReportsWithQueryParam(Map<String, Object> queryParams) {
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-      WebTarget webTarget = embeddedOptimizeRule.target("report");
+    WebTarget webTarget = embeddedOptimizeRule.target("report");
     for (Map.Entry<String, Object> queryParam : queryParams.entrySet()) {
       webTarget = webTarget.queryParam(queryParam.getKey(), queryParam.getValue());
     }
+
     Response response =
       webTarget
         .request()
-        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .get();
 
     assertThat(response.getStatus(), is(200));

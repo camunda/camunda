@@ -73,21 +73,19 @@ public abstract class AbstractSharingIT {
   }
 
   protected void updateReport(String id, ReportDefinitionDto updatedReport) {
-    String token = embeddedOptimizeRule.getAuthenticationToken();
     Response response =
       embeddedOptimizeRule.target("report/" + id)
         .request()
-        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .put(Entity.json(updatedReport));
     assertThat(response.getStatus(), is(204));
   }
 
-  private String createNewReport() {
-    String token = embeddedOptimizeRule.getAuthenticationToken();
+  protected String createNewReport() {
     Response response =
         embeddedOptimizeRule.target("report")
             .request()
-            .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
             .post(Entity.json(""));
     assertThat(response.getStatus(), is(200));
 
@@ -136,11 +134,10 @@ public abstract class AbstractSharingIT {
   }
 
   void updateDashboard(String id, DashboardDefinitionDto updatedDashboard) {
-    String token = embeddedOptimizeRule.getAuthenticationToken();
     Response response =
         embeddedOptimizeRule.target("dashboard/" + id)
             .request()
-            .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
             .put(Entity.json(updatedDashboard));
     assertThat(response.getStatus(), is(204));
   }

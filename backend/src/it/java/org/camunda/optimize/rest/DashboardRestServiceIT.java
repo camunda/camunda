@@ -47,14 +47,12 @@ public class DashboardRestServiceIT {
 
   @Test
   public void createNewDashboard() {
-    //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
 
     // when
     Response response =
       embeddedOptimizeRule.target("dashboard")
         .request()
-        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .post(Entity.json(""));
 
     // then the status code is okay
@@ -80,15 +78,14 @@ public class DashboardRestServiceIT {
   public void updateDashboard() {
 
     //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-    String id = addEmptyDashboardToOptimize(token);
+    String id = addEmptyDashboardToOptimize();
 
     // when
     DashboardDefinitionDto dashboardDefinitionDto = new DashboardDefinitionDto();
     Response response =
       embeddedOptimizeRule.target("dashboard/" + id)
         .request()
-        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .put(Entity.json(dashboardDefinitionDto));
 
     // then the status code is okay
@@ -110,11 +107,10 @@ public class DashboardRestServiceIT {
   @Test
   public void getStoredDashboards() {
     //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-    String id = addEmptyDashboardToOptimize(token);
+    String id = addEmptyDashboardToOptimize();
 
     // when
-    List<DashboardDefinitionDto> dashboards = getAllDashboards(token);
+    List<DashboardDefinitionDto> dashboards = getAllDashboards();
 
     // then
     assertThat(dashboards.size(), is(1));
@@ -136,14 +132,13 @@ public class DashboardRestServiceIT {
   @Test
   public void getDashboard() {
     //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-    String id = addEmptyDashboardToOptimize(token);
+    String id = addEmptyDashboardToOptimize();
 
     // when
     Response response =
       embeddedOptimizeRule.target("dashboard/" + id)
         .request()
-        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .get();
 
     // then the status code is okay
@@ -156,14 +151,11 @@ public class DashboardRestServiceIT {
 
   @Test
   public void getDashboardForNonExistingIdThrowsError() {
-    //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-
     // when
     Response response =
       embeddedOptimizeRule.target("dashboard/FooId")
         .request()
-        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .get();
 
     // then the status code is okay
@@ -186,36 +178,35 @@ public class DashboardRestServiceIT {
   @Test
   public void deleteNewDashboard() {
     //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-    String id = addEmptyDashboardToOptimize(token);
+    String id = addEmptyDashboardToOptimize();
 
     // when
     Response response =
         embeddedOptimizeRule.target("dashboard/" + id)
             .request()
-            .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
             .delete();
 
     // then the status code is okay
     assertThat(response.getStatus(), is(204));
-    assertThat(getAllDashboards(token).size(), is(0));
+    assertThat(getAllDashboards().size(), is(0));
   }
 
-  private String addEmptyDashboardToOptimize(String token) {
+  private String addEmptyDashboardToOptimize() {
     Response response =
       embeddedOptimizeRule.target("dashboard")
         .request()
-        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .post(Entity.json(""));
 
     return response.readEntity(IdDto.class).getId();
   }
 
-  private List<DashboardDefinitionDto> getAllDashboards(String token) {
+  private List<DashboardDefinitionDto> getAllDashboards() {
     Response response =
       embeddedOptimizeRule.target("dashboard")
         .request()
-        .header(HttpHeaders.AUTHORIZATION, BEARER + token)
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .get();
 
     assertThat(response.getStatus(), is(200));

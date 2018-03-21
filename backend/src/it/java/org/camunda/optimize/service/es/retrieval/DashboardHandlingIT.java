@@ -168,7 +168,7 @@ public class DashboardHandlingIT {
   }
 
   @Test
-  public void resultListIsSortedByLastModified() throws IOException {
+  public void resultListIsSortedByLastModified() {
     // given
     String id1 = createNewDashboard();
     shiftTimeByOneSecond();
@@ -191,7 +191,7 @@ public class DashboardHandlingIT {
   }
 
   @Test
-  public void resultListIsReversed() throws Exception {
+  public void resultListIsReversed() {
     // given
     String id1 = createNewDashboard();
     shiftTimeByOneSecond();
@@ -215,7 +215,7 @@ public class DashboardHandlingIT {
   }
 
   @Test
-  public void resultListIsCutByAnOffset() throws Exception {
+  public void resultListIsCutByAnOffset() {
     // given
     String id1 = createNewDashboard();
     shiftTimeByOneSecond();
@@ -238,7 +238,7 @@ public class DashboardHandlingIT {
   }
 
   @Test
-  public void resultListIsCutByMaxResults() throws Exception {
+  public void resultListIsCutByMaxResults() {
     // given
     String id1 = createNewDashboard();
     shiftTimeByOneSecond();
@@ -261,7 +261,7 @@ public class DashboardHandlingIT {
   }
 
   @Test
-  public void combineAllResultListQueryParameterRestrictions() throws Exception {
+  public void combineAllResultListQueryParameterRestrictions() {
     // given
     String id1 = createNewDashboard();
     shiftTimeByOneSecond();
@@ -289,11 +289,10 @@ public class DashboardHandlingIT {
   }
 
   private String createNewDashboard() {
-    String token = embeddedOptimizeRule.getAuthenticationToken();
     Response response =
       embeddedOptimizeRule.target("dashboard")
         .request()
-        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .post(Entity.json(""));
     assertThat(response.getStatus(), is(200));
 
@@ -301,30 +300,29 @@ public class DashboardHandlingIT {
   }
 
   private void updateDashboard(String id, DashboardDefinitionDto updatedDashboard) {
-    String token = embeddedOptimizeRule.getAuthenticationToken();
     Response response =
       embeddedOptimizeRule.target("dashboard/" + id)
         .request()
-        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .put(Entity.json(updatedDashboard));
     assertThat(response.getStatus(), is(204));
   }
 
 
-  private List<DashboardDefinitionDto> getAllDashboards() throws IOException {
+  private List<DashboardDefinitionDto> getAllDashboards() {
     return getAllDashboardsWithQueryParam(new HashMap<>());
   }
 
-  private List<DashboardDefinitionDto> getAllDashboardsWithQueryParam(Map<String, Object> queryParams) throws IOException {
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-      WebTarget webTarget = embeddedOptimizeRule.target("dashboard");
+  private List<DashboardDefinitionDto> getAllDashboardsWithQueryParam(Map<String, Object> queryParams) {
+    WebTarget webTarget = embeddedOptimizeRule.target("dashboard");
+
     for (Map.Entry<String, Object> queryParam : queryParams.entrySet()) {
       webTarget = webTarget.queryParam(queryParam.getKey(), queryParam.getValue());
     }
     Response response =
       webTarget
         .request()
-        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .get();
 
     assertThat(response.getStatus(), is(200));

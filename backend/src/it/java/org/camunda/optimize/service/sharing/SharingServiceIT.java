@@ -2,8 +2,12 @@ package org.camunda.optimize.service.sharing;
 
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
+import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.test.util.ReportDataHelper;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -512,5 +516,52 @@ public class SharingServiceIT extends AbstractSharingIT {
 
     ReportShareDto findApiReport = getShareForReport(reportId);
     assertThat(dashboardShareId, is(not(findApiReport.getId())));
+  }
+
+  @Test
+  public void errorMessageIsWellStructured () throws Exception {
+    //given
+    ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    String reportId = this.createNewReport();
+    ReportDataDto reportData = ReportDataHelper
+      .createCountFlowNodeFrequencyGroupByFlowNoneNumber(
+        processInstance.getProcessDefinitionKey(),
+        processInstance.getProcessDefinitionVersion()
+      );
+    reportData.setView(null);
+    ReportDefinitionDto report = new ReportDefinitionDto();
+    report.setData(reportData);
+    updateReport(reportId, report);
+
+    String dashboardWithReport = createDashboardWithReport(reportId);
+    String dashboardShareId = addShareForDashboard(dashboardWithReport);
+
+    //when
+    Response response =
+      embeddedOptimizeRule.target(getSharedDashboardEvaluationPath(dashboardShareId))
+        .request()
+        .get();
+
+    DashboardDefinitionDto dashboardShareDto = response.readEntity(DashboardDefinitionDto.class);
+
+    response =
+      embeddedOptimizeRule.target(
+        getSharedDashboardReportEvaluationPath(
+          dashboardShareId,
+          dashboardShareDto.getReports().get(0).getId()
+        )
+      )
+        .request()
+        .get();
+    //then
+    assertThat(response.getStatus(), is(500));
+    String errorMessage = response.readEntity(String.class);
+    assertThat(errorMessage.contains("reportDefinition"), is(true));
+    assertThat(errorMessage.contains("name"), is(true));
+    assertThat(errorMessage.contains("id"), is(true));
+    assertThat(errorMessage.contains("data"), is(true));
   }
 }

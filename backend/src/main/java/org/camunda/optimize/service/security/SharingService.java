@@ -110,7 +110,7 @@ public class SharingService  {
         .orElseThrow(() -> new OptimizeRuntimeException("share [" + shareId + "] does not exist or is of unsupported type"));
   }
 
-  public ReportResultDto evaluateReportForSharedDashboard(String dashboardShareId, String reportId) {
+  public ReportResultDto evaluateReportForSharedDashboard(String dashboardShareId, String reportId) throws OptimizeException {
     Optional<DashboardShareDto> sharedDashboard = sharingReader.findDashboardShare(dashboardShareId);
     ReportResultDto result;
 
@@ -118,14 +118,7 @@ public class SharingService  {
       DashboardShareDto share = sharedDashboard.get();
       boolean hasGivenReport = share.getReportShares().stream().anyMatch(r -> r.getId().equals(reportId));
       if (hasGivenReport) {
-        try {
-          result = reportService.evaluateSavedReport(reportId);
-        } catch (OptimizeException e) {
-          String reason = "Cannot evaluate report [" + reportId +
-            "] for shared dashboard id [" + dashboardShareId + "]. Could not evaluate report.";
-          logger.error(reason, e);
-          throw new OptimizeRuntimeException(reason, e);
-        }
+        result = reportService.evaluateSavedReport(reportId);
       } else {
         String reason = "Cannot evaluate report [" + reportId +
             "] for shared dashboard id [" + dashboardShareId + "]. Given report is not contained in dashboard.";

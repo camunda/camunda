@@ -153,11 +153,10 @@ public abstract class AbstractAlertIT {
   }
 
   protected String createNewReportHelper() {
-    String token = embeddedOptimizeRule.getAuthenticationToken();
     Response response =
         embeddedOptimizeRule.target("report")
             .request()
-            .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
             .post(Entity.json(""));
     assertThat(response.getStatus(), is(200));
 
@@ -193,7 +192,6 @@ public abstract class AbstractAlertIT {
   }
 
   protected void updateReport(String id, ReportDefinitionDto updatedReport) {
-    String token = embeddedOptimizeRule.getAuthenticationToken();
     Response response =
         embeddedOptimizeRule.target("report/" + id)
             .request()

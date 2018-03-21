@@ -319,7 +319,6 @@ public class CountTotalProcessInstanceFrequencyReportEvaluationIT {
     return engineRule.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
-
   private NumberReportResultDto evaluateReport(ReportDataDto reportData) {
     Response response = evaluateReportAndReturnResponse(reportData);
     assertThat(response.getStatus(), is(200));
@@ -328,10 +327,9 @@ public class CountTotalProcessInstanceFrequencyReportEvaluationIT {
   }
 
   private Response evaluateReportAndReturnResponse(ReportDataDto reportData) {
-    String token = embeddedOptimizeRule.getAuthenticationToken();
     return embeddedOptimizeRule.target("report/evaluate")
       .request()
-      .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+      .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
       .post(Entity.json(reportData));
   }
 

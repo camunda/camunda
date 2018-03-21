@@ -97,7 +97,7 @@ public class AuthenticationRestServiceIT {
     Response testResponse = embeddedOptimizeRule.target("authentication/test")
         .request()
         .header(HttpHeaders.AUTHORIZATION, "Basic ZGVtbzpkZW1v")
-        .header(AuthenticationUtil.OPTIMIZE_AUTHORIZATION,"Bearer " + token)
+        .header(AuthenticationUtil.OPTIMIZE_AUTHORIZATION, "Bearer " + token)
         .get();
 
     //then

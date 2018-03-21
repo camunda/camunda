@@ -51,12 +51,11 @@ public class ProcessDefinitionRetrievalIT {
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
-    String token = embeddedOptimizeRule.getAuthenticationToken();
     // when
     Response response =
         embeddedOptimizeRule.target("process-definition")
             .request()
-            .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
             .get();
     List<ExtendedProcessDefinitionOptimizeDto> definitions =
         response.readEntity(new GenericType<List<ExtendedProcessDefinitionOptimizeDto>>() {
@@ -74,12 +73,11 @@ public class ProcessDefinitionRetrievalIT {
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
-    String token = embeddedOptimizeRule.getAuthenticationToken();
     // when
     Response response =
         embeddedOptimizeRule.target("process-definition")
             .request()
-            .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
             .get();
     List<ExtendedProcessDefinitionOptimizeDto> definitions =
         response.readEntity(new GenericType<List<ExtendedProcessDefinitionOptimizeDto>>() {
@@ -106,13 +104,12 @@ public class ProcessDefinitionRetrievalIT {
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
-    String token = embeddedOptimizeRule.getAuthenticationToken();
     // when
     Response response =
         embeddedOptimizeRule.target("process-definition")
             .queryParam("includeXml", true)
             .request()
-            .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
             .get();
     List<ExtendedProcessDefinitionOptimizeDto> definitions =
         response.readEntity(new GenericType<List<ExtendedProcessDefinitionOptimizeDto>>() {
@@ -135,12 +132,11 @@ public class ProcessDefinitionRetrievalIT {
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
-    String token = embeddedOptimizeRule.getAuthenticationToken();
     // when
     Response response =
         embeddedOptimizeRule.target("process-definition")
             .request()
-            .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
             .get();
     List<ExtendedProcessDefinitionOptimizeDto> definitions =
         response.readEntity(new GenericType<List<ExtendedProcessDefinitionOptimizeDto>>() {
@@ -168,13 +164,12 @@ public class ProcessDefinitionRetrievalIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    String token = embeddedOptimizeRule.getAuthenticationToken();
     Response response =
         embeddedOptimizeRule.target("process-definition/xml")
             .queryParam("processDefinitionKey", processDefinition.getKey())
             .queryParam("processDefinitionVersion", processDefinition.getVersion())
             .request()
-            .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
             .get();
 
     String actualXml =
@@ -208,13 +203,12 @@ public class ProcessDefinitionRetrievalIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    String token = embeddedOptimizeRule.getAuthenticationToken();
     Response response =
         embeddedOptimizeRule.target("process-definition/xml")
             .queryParam("processDefinitionKey", processDefinition.getKey())
             .queryParam("processDefinitionVersion", ALL_VERSIONS)
             .request()
-            .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
             .get();
 
     String actualXml =
@@ -237,12 +231,11 @@ public class ProcessDefinitionRetrievalIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    String token = embeddedOptimizeRule.getAuthenticationToken();
     Response response =
         embeddedOptimizeRule.target("process-definition/xmlsToIds")
             .queryParam("ids", ids.toArray())
             .request()
-            .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
             .get();
 
     Map<String, String> map = response.readEntity(new GenericType<Map<String, String>>() {});
