@@ -20,12 +20,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Properties;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.concurrent.*;
 
 import org.junit.After;
 import org.junit.Before;
@@ -165,6 +161,76 @@ public class ZeebeClientTest
         for (int i = 0; i < clientMaxRequests; i++)
         {
             client.tasks().create(topic, "bar").executeAsync();
+        }
+
+    }
+
+    @Test
+    public void shouldReleaseRequestsOnGet() throws InterruptedException, ExecutionException
+    {
+        // given
+        final String topic = "foo";
+
+        broker.clearTopology();
+        broker.addSystemTopic();
+        broker.addTopic(topic, 0);
+        broker.addTopic(topic, 1);
+
+        stubTaskResponse();
+
+        final List<Future<TaskEvent>> futures = new ArrayList<>();
+        for (int i = 0; i < clientMaxRequests; i++)
+        {
+            futures.add(client.tasks().create(topic, "bar").executeAsync());
+        }
+
+        // when
+        for (Future<TaskEvent> future : futures)
+        {
+            future.get();
+        }
+
+        // then
+        for (int i = 0; i < clientMaxRequests; i++)
+        {
+            futures.add(client.tasks().create(topic, "bar").executeAsync());
+        }
+    }
+
+    @Test
+    public void shouldReleaseRequestsOnTimeout()
+    {
+        // given
+        final TaskEventImpl baseEvent = Events.exampleTask();
+
+        broker.onExecuteCommandRequest(EventType.TASK_EVENT, "COMPLETE")
+            .doNotRespond();
+
+        // given
+        final List<Future<TaskEvent>> futures = new ArrayList<>();
+        for (int i = 0; i < clientMaxRequests; i++)
+        {
+            futures.add(client.tasks().complete(baseEvent).executeAsync());
+        }
+
+        // when
+        for (Future<TaskEvent> future : futures)
+        {
+            try
+            {
+                future.get();
+                fail("exception expected");
+            }
+            catch (Exception e)
+            {
+                // expected
+            }
+        }
+
+        // then
+        for (int i = 0; i < clientMaxRequests; i++)
+        {
+            futures.add(client.tasks().complete(baseEvent).executeAsync());
         }
 
     }
