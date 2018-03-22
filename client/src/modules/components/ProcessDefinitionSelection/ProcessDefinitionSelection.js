@@ -1,4 +1,5 @@
 import React from 'react';
+import classnames from 'classnames';
 
 import {Select, BPMNDiagram} from 'components';
 
@@ -97,10 +98,9 @@ export default class ProcessDefinitionSelection extends React.Component {
 
     return (
       <div
-        className={
-          'ProcessDefinitionSelection' +
-          (this.canRenderDiagram() ? ' ProcessDefinitionSelection--large' : '')
-        }
+        className={classnames('ProcessDefinitionSelection', {
+          'ProcessDefinitionSelection--large': this.canRenderDiagram()
+        })}
       >
         <div className="ProcessDefinitionSelection__selects">
           <div className="ProcessDefinitionSelection__selects-item">

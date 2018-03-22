@@ -1,4 +1,5 @@
 import React from 'react';
+import classnames from 'classnames';
 import DateRange from './DateRange';
 import DateInput from './DateInput';
 
@@ -45,10 +46,9 @@ export default class DateFields extends React.PureComponent {
       <div className="DateFields" onKeyDown={this.handleKeyPress}>
         <div className="DateFields__inputContainer">
           <DateInput
-            className={
-              'DateInput__start' +
-              (this.isFieldSelected('startDate') ? ' DateInput__start--highlight' : '')
-            }
+            className={classnames('DateInput__start', {
+              'DateInput__start--highlight': this.isFieldSelected('startDate')
+            })}
             format={this.props.format}
             onDateChange={this.setStartDate}
             onFocus={() => {
@@ -61,10 +61,9 @@ export default class DateFields extends React.PureComponent {
           />
           <span className="DateFields__divider">to</span>
           <DateInput
-            className={
-              'DateInput__end' +
-              (this.isFieldSelected('endDate') ? ' DateInput__start--highlight' : '')
-            }
+            className={classnames('DateInput__end', {
+              'DateInput__start--highlight': this.isFieldSelected('endDate')
+            })}
             reference={this.saveEndDateField}
             format={this.props.format}
             onDateChange={this.setEndDate}
@@ -80,11 +79,10 @@ export default class DateFields extends React.PureComponent {
         {this.state.popupOpen && (
           <div
             onClick={this.stopClosingPopup}
-            className={
-              'DateFields__range' +
-              (this.isFieldSelected('startDate') ? ' DateFields__range--left' : '') +
-              (this.isFieldSelected('endDate') ? ' DateFields__range--right' : '')
-            }
+            className={classnames('DateFields__range', {
+              'DateFields__range--left': this.isFieldSelected('startDate'),
+              'DateFields__range--right': this.isFieldSelected('endDate')
+            })}
           >
             <DateRange
               format={this.props.format}

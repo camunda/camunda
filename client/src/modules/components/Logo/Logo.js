@@ -1,4 +1,5 @@
 import React from 'react';
+import classnames from 'classnames';
 
 import './Logo.css';
 
@@ -8,7 +9,7 @@ export default function Logo(props) {
   const filteredProps = {...props};
   delete filteredProps.fill;
   return (
-    <span {...filteredProps} className={'Logo' + (props.className ? ' ' + props.className : '')}>
+    <span {...filteredProps} className={classnames('Logo', props.className)}>
       <svg
         xmlns="http://www.w3.org/2000/svg"
         height="100%"

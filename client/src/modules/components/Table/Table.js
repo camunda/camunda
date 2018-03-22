@@ -1,10 +1,10 @@
 import React from 'react';
-
+import classnames from 'classnames';
 import ReactTable from 'react-table';
 
 import './Table.css';
 
-export default function Table({className = '', head, body, foot}) {
+export default function Table({className, head, body, foot}) {
   const columns = Table.formatColumns(head);
   const data = Table.formatData(head, body);
   return (
@@ -18,7 +18,7 @@ export default function Table({className = '', head, body, foot}) {
       minRows={0}
       sortable={false}
       multiSort={false}
-      className={'-striped -highlight Table ' + className}
+      className={classnames('-striped', '-highlight', 'Table', className)}
       noDataText="No data available"
     />
   );

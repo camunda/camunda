@@ -1,4 +1,5 @@
 import React from 'react';
+import classnames from 'classnames';
 import {Link} from 'react-router-dom';
 
 import './Button.css';
@@ -13,13 +14,11 @@ export default function Button(props) {
     return (
       <Link
         {...filteredProps}
-        className={
-          'Button ' +
-          (props.type ? 'Button--' + props.type + ' ' : '') +
-          (props.color ? 'Button--' + props.color + ' ' : '') +
-          (props.className ? props.className + ' ' : '') +
-          (props.active ? 'is-active' : '')
-        }
+        className={classnames(props.className, 'Button', {
+          ['Button--' + props.type]: props.type,
+          ['Button--' + props.color]: props.color,
+          'is-active': props.active
+        })}
       >
         {props.children}
       </Link>
@@ -28,13 +27,11 @@ export default function Button(props) {
     return (
       <button
         {...filteredProps}
-        className={
-          'Button ' +
-          (props.type ? 'Button--' + props.type + ' ' : '') +
-          (props.color ? 'Button--' + props.color + ' ' : '') +
-          (props.className ? props.className + ' ' : '') +
-          (props.active ? 'is-active' : '')
-        }
+        className={classnames(props.className, 'Button', {
+          ['Button--' + props.type]: props.type,
+          ['Button--' + props.color]: props.color,
+          'is-active': props.active
+        })}
         ref={props.reference}
       >
         {props.children}

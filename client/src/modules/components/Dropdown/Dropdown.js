@@ -1,4 +1,5 @@
 import React from 'react';
+import classnames from 'classnames';
 
 import {Button} from 'components';
 import DropdownOption from './DropdownOption';
@@ -74,11 +75,9 @@ export default class Dropdown extends React.Component {
     return (
       <div
         id={this.props.id}
-        className={
-          'Dropdown ' +
-          (this.state.open ? 'is-open' : '') +
-          (this.props.className ? ' ' + this.props.className : '')
-        }
+        className={classnames(this.props.className, 'Dropdown', {
+          'is-open': this.state.open
+        })}
         ref={this.storeContainer}
         onClick={this.toggleOpen}
         onKeyDown={this.handleKeyPress}

@@ -1,4 +1,5 @@
 import React from 'react';
+import classnames from 'classnames';
 
 import './Input.css';
 
@@ -11,11 +12,9 @@ export default function Input(props) {
     <input
       type="text"
       {...allowedProps}
-      className={
-        'Input' +
-        (props.className ? ' ' + props.className : '') +
-        (props.isInvalid ? ' is-invalid' : '')
-      }
+      className={classnames('Input', props.className, {
+        'is-invalid': props.isInvalid
+      })}
       ref={props.reference}
     >
       {props.children}

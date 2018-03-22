@@ -1,4 +1,5 @@
 import React from 'react';
+import classnames from 'classnames';
 
 import {Button} from 'components';
 
@@ -105,7 +106,7 @@ export default class Popover extends React.Component {
     return (
       <div
         ref={this.storePopoverRootRef}
-        className={'Popover ' + (this.props.className || '')}
+        className={classnames('Popover', this.props.className)}
         onClick={this.catchClick}
       >
         <Button

@@ -1,3 +1,4 @@
+import classnames from 'classnames';
 import React from 'react';
 import {ActionItem, Popover, ProcessDefinitionSelection} from 'components';
 
@@ -88,13 +89,11 @@ export default class ControlPanel extends React.Component {
                 {label}
               </label>
               <div
-                className={
-                  'ControlPanel__config' +
-                  (!disableFlowNodeSelection &&
-                  (hoveredControl === type || (hoveredNode && hoveredNode.$instanceOf(bpmnKey)))
-                    ? ' ControlPanel__config--hover'
-                    : '')
-                }
+                className={classnames('ControlPanel__config', {
+                  'ControlPanel__config--hover':
+                    !disableFlowNodeSelection &&
+                    (hoveredControl === type || (hoveredNode && hoveredNode.$instanceOf(bpmnKey)))
+                })}
                 name={'ControlPanel__' + type}
                 onMouseOver={this.hover(type)}
                 onMouseOut={this.hover(null)}

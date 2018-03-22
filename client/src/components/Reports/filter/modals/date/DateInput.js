@@ -1,5 +1,6 @@
 import React from 'react';
 import moment from 'moment';
+import classnames from 'classnames';
 
 import './DateInput.css';
 
@@ -30,9 +31,9 @@ export default class DateInput extends React.PureComponent {
       <input
         type="text"
         ref={this.props.reference}
-        className={
-          'Input DateInput ' + this.props.className + (this.state.error ? ' DateInput--error' : '')
-        }
+        className={classnames(this.props.className, 'Input', 'DateInput', {
+          'DateInput--error': this.state.error
+        })}
         value={this.state.stringDate}
         onFocus={this.props.onFocus}
         onClick={this.onClick}

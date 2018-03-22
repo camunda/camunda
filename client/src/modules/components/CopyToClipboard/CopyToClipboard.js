@@ -1,4 +1,5 @@
 import React from 'react';
+import classnames from 'classnames';
 import {Input, Button} from 'components';
 
 import './CopyToClipboard.css';
@@ -16,7 +17,7 @@ export default class CopyToClipboard extends React.Component {
 
   render() {
     return (
-      <div className={'CopyToClipboard' + (this.props.className ? ' ' + this.props.className : '')}>
+      <div className={classnames('CopyToClipboard', this.props.className)}>
         <Input
           reference={this.storeInputElement}
           className="CopyToClipboard__input"

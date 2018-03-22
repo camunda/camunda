@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
+import classnames from 'classnames';
 
 import './Modal.css';
 
@@ -71,10 +72,9 @@ export default class Modal extends React.Component {
         <div className="Modal" onClick={this.onBackdropClick}>
           <div className="Modal__scroll-container">
             <div
-              className={
-                `Modal__content-container ${this.props.className || ''}` +
-                (this.props.size ? ' Modal__content-container--' + this.props.size : '')
-              }
+              className={classnames('Modal__content-container', this.props.className, {
+                ['Modal__content-container--' + this.props.size]: this.props.size
+              })}
               tabIndex="-1"
               ref={this.storeContainer}
               onClick={this.catchClick}
@@ -112,8 +112,8 @@ Modal.Header = function({children}) {
   );
 };
 
-Modal.Content = function({className = '', children}) {
-  return <div className={`Modal__content ${className}`}>{children}</div>;
+Modal.Content = function({className, children}) {
+  return <div className={classnames('Modal__content', className)}>{children}</div>;
 };
 
 Modal.Actions = function({children}) {

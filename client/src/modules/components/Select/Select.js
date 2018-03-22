@@ -1,4 +1,5 @@
 import React from 'react';
+import classnames from 'classnames';
 
 import './Select.css';
 
@@ -9,7 +10,9 @@ export default function Select(props) {
   return (
     <select
       {...allowedProps}
-      className={'Select ' + (props.className || '') + (props.isInvalid ? ' is-invalid' : '')}
+      className={classnames('Select', props.className, {
+        'is-invalid': props.isInvalid
+      })}
     >
       {props.children}
     </select>

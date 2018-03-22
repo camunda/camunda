@@ -1,5 +1,6 @@
 import React from 'react';
 import moment from 'moment';
+import classnames from 'classnames';
 import {Redirect, Link} from 'react-router-dom';
 
 import {Button, Modal} from 'components';
@@ -176,14 +177,12 @@ export default class EntityList extends React.Component {
                   return (
                     <span
                       key={idx}
-                      className={
-                        'EntityList__data' +
-                        (cell.content === 'Edit' || cell.content === 'Delete'
-                          ? ' EntityList__data--tool'
-                          : '') +
-                        (idx === 0 ? ' EntityList__data--title' : '') +
-                        (idx === 1 ? ' EntityList__data--metadata' : '')
-                      }
+                      className={classnames('EntityList__data', {
+                        'EntityList__data--tool':
+                          cell.content === 'Edit' || cell.content === 'Delete',
+                        'EntityList__data--title': idx === 0,
+                        'EntityList__data--metadata': idx === 1
+                      })}
                     >
                       {this.renderCell(cell)}
                     </span>

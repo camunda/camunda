@@ -1,5 +1,6 @@
 import React from 'react';
 import moment from 'moment';
+import classnames from 'classnames';
 import Fullscreen from 'react-full-screen';
 import {default as updateState} from 'immutability-helper';
 import {Link, Redirect} from 'react-router-dom';
@@ -256,7 +257,11 @@ export default class Dashboard extends React.Component {
         enabled={this.state.fullScreenActive}
         onChange={fullScreenActive => this.setState({fullScreenActive})}
       >
-        <div className={`Dashboard ${this.state.fullScreenActive ? 'Dashboard--fullscreen' : ''}`}>
+        <div
+          className={classnames('Dashboard', {
+            'Dashboard--fullscreen': this.state.fullScreenActive
+          })}
+        >
           <div className="Dashboard__header">
             <div className="Dashboard__name-container">
               <h1 className="Dashboard__heading">{name}</h1>

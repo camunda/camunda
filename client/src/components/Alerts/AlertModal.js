@@ -192,7 +192,7 @@ export default class AlertModal extends React.Component {
           <div className="AlertModal__topSection">
             <div className="AlertModal__inputGroup">
               {!emailNotificationIsEnabled && (
-                <span className={'AlertModal__configuration-warning'}>
+                <span className="AlertModal__configuration-warning">
                   Email notification service is not configured. Please check the{' '}
                   {
                     <a href="https://docs.camunda.org/optimize/latest/technical-guide/configuration/#alerting">

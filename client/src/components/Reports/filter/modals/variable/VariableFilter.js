@@ -1,4 +1,5 @@
 import React from 'react';
+import classnames from 'classnames';
 import {Modal, Button, Select, Input, ControlGroup, ButtonGroup} from 'components';
 
 import {loadVariables, loadValues} from './service';
@@ -266,7 +267,7 @@ export default class VariableFilter extends React.Component {
             key="="
             onClick={this.selectOperator}
             operator="in"
-            className={this.state.operator === 'in' ? 'is-active' : ''}
+            className={classnames({'is-active': this.state.operator === 'in'})}
           >
             is
           </Button>,
@@ -274,7 +275,7 @@ export default class VariableFilter extends React.Component {
             key="!="
             onClick={this.selectOperator}
             operator="not in"
-            className={this.state.operator === 'not in' ? 'is-active' : ''}
+            className={classnames({'is-active': this.state.operator === 'not in'})}
           >
             is not
           </Button>
@@ -285,7 +286,7 @@ export default class VariableFilter extends React.Component {
             key="true"
             onClick={this.selectOperator}
             operator="="
-            className={this.state.values[0] === true ? 'is-active' : ''}
+            className={classnames({'is-active': this.state.values[0] === true})}
             value={true}
           >
             is true
@@ -294,7 +295,7 @@ export default class VariableFilter extends React.Component {
             key="false"
             onClick={this.selectOperator}
             operator="="
-            className={this.state.values[0] === false ? 'is-active' : ''}
+            className={classnames({'is-active': this.state.values[0] === false})}
             value={false}
           >
             is false
@@ -305,7 +306,7 @@ export default class VariableFilter extends React.Component {
           <Button
             key="="
             onClick={this.selectOperator}
-            className={this.state.operator === 'in' ? 'is-active' : ''}
+            className={classnames({'is-active': this.state.operator === 'in'})}
             operator="in"
           >
             is
@@ -313,7 +314,7 @@ export default class VariableFilter extends React.Component {
           <Button
             key="!="
             onClick={this.selectOperator}
-            className={this.state.operator === 'not in' ? 'is-active' : ''}
+            className={classnames({'is-active': this.state.operator === 'not in'})}
             operator="not in"
           >
             is not
@@ -321,7 +322,7 @@ export default class VariableFilter extends React.Component {
           <Button
             key="<"
             onClick={this.selectOperator}
-            className={this.state.operator === '<' ? 'is-active' : ''}
+            className={classnames({'is-active': this.state.operator === '<'})}
             operator="<"
           >
             is less than
@@ -329,7 +330,7 @@ export default class VariableFilter extends React.Component {
           <Button
             key=">"
             onClick={this.selectOperator}
-            className={this.state.operator === '>' ? 'is-active' : ''}
+            className={classnames({'is-active': this.state.operator === '>'})}
             operator=">"
           >
             is greater than
