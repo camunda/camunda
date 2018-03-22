@@ -102,8 +102,10 @@ export default class Chart extends React.Component {
       scales: {
         yAxes: [
           {
-            ...(this.props.property === 'duration' && this.createDurationFormattingOptions(data)),
-            beginAtZero: true
+            ticks: {
+              ...(this.props.property === 'duration' && this.createDurationFormattingOptions(data)),
+              beginAtZero: true
+            }
           }
         ]
       }
@@ -134,10 +136,8 @@ export default class Chart extends React.Component {
     ].find(({value}) => value > minimumStepSize);
 
     return {
-      ticks: {
-        callback: v => v / niceStepSize.base + niceStepSize.unit,
-        stepSize: niceStepSize.value
-      }
+      callback: v => v / niceStepSize.base + niceStepSize.unit,
+      stepSize: niceStepSize.value
     };
   };
 
