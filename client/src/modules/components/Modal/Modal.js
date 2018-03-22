@@ -112,7 +112,7 @@ Modal.Header = function({children}) {
   );
 };
 
-Modal.Content = function({className, children}) {
+Modal.Content = function({className = '', children}) {
   return <div className={`Modal__content ${className}`}>{children}</div>;
 };
 
