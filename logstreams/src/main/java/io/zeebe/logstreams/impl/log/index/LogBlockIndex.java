@@ -241,9 +241,10 @@ public class LogBlockIndex implements SnapshotSupport
     }
 
     @Override
-    public void writeSnapshot(OutputStream outputStream) throws Exception
+    public long writeSnapshot(OutputStream outputStream) throws Exception
     {
         StreamUtil.write(indexBuffer, outputStream);
+        return indexBuffer.capacity();
     }
 
     @Override

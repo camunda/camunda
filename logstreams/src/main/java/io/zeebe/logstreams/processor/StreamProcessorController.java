@@ -15,23 +15,18 @@
  */
 package io.zeebe.logstreams.processor;
 
+import java.time.Duration;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import io.zeebe.logstreams.impl.Loggers;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamReader;
-import io.zeebe.logstreams.log.LogStreamWriter;
-import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.spi.ReadableSnapshot;
-import io.zeebe.logstreams.spi.SnapshotStorage;
-import io.zeebe.logstreams.spi.SnapshotWriter;
-import io.zeebe.util.sched.ActorCondition;
-import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.ActorScheduler;
+import io.zeebe.logstreams.log.*;
+import io.zeebe.logstreams.spi.*;
+import io.zeebe.util.metrics.Metric;
+import io.zeebe.util.metrics.MetricsManager;
+import io.zeebe.util.sched.*;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.slf4j.Logger;
-
-import java.time.Duration;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class StreamProcessorController extends Actor
 {
@@ -73,6 +68,12 @@ public class StreamProcessorController extends Actor
 
     private boolean suspended = false;
 
+    private Metric eventsProcessedCountMetric;
+    private Metric eventsWrittenCountMetric;
+    private Metric eventsSkippedCountMetric;
+    private Metric snapshotSizeMetric;
+    private Metric snapshotTimeMillisMetric;
+
     public StreamProcessorController(StreamProcessorContext context)
     {
         this.streamProcessorContext = context;
@@ -104,7 +105,7 @@ public class StreamProcessorController extends Actor
         {
             openFuture = new CompletableActorFuture<>();
 
-            actorScheduler.submitActor(this);
+            actorScheduler.submitActor(this, true);
 
             return openFuture;
         }
@@ -118,6 +119,49 @@ public class StreamProcessorController extends Actor
     protected void onActorStarted()
     {
         final LogStream logStream = streamProcessorContext.getLogStream();
+        final MetricsManager metricsManager = actorScheduler.getMetricsManager();
+
+        final String topicName = logStream.getTopicName().getStringWithoutLengthUtf8(0, logStream.getTopicName().capacity());
+        final String partitionId = String.valueOf(logStream.getPartitionId());
+        final String processorName = getName();
+
+        eventsProcessedCountMetric = metricsManager.newMetric("streamprocessor_events_count")
+            .type("counter")
+            .label("processor", processorName)
+            .label("action", "processed")
+            .label("topic", topicName)
+            .label("partition", partitionId)
+            .create();
+
+        eventsWrittenCountMetric = metricsManager.newMetric("streamprocessor_events_count")
+            .type("counter")
+            .label("processor", processorName)
+            .label("action", "written")
+            .label("topic", topicName)
+            .label("partition", partitionId)
+            .create();
+
+        eventsSkippedCountMetric = metricsManager.newMetric("streamprocessor_events_count")
+            .type("counter")
+            .label("processor", processorName)
+            .label("action", "skipped")
+            .label("topic", topicName)
+            .label("partition", partitionId)
+            .create();
+
+        snapshotSizeMetric = metricsManager.newMetric("streamprocessor_snapshot_last_size_bytes")
+            .type("gauge")
+            .label("processor", processorName)
+            .label("topic", topicName)
+            .label("partition", partitionId)
+            .create();
+
+        snapshotTimeMillisMetric = metricsManager.newMetric("streamprocessor_snapshot_last_duration_millis")
+            .type("gauge")
+            .label("processor", processorName)
+            .label("topic", topicName)
+            .label("partition", partitionId)
+            .create();
 
         logStreamReader.wrap(logStream);
         logStreamWriter.wrap(logStream);
@@ -339,8 +383,8 @@ public class StreamProcessorController extends Actor
         {
             try
             {
+                eventsProcessedCountMetric.incrementOrdered();
                 eventProcessor.processEvent();
-
                 actor.runUntilDone(this::executeSideEffects);
             }
             catch (Exception e)
@@ -353,6 +397,7 @@ public class StreamProcessorController extends Actor
         {
             // continue with the next event
             actor.submit(readNextEvent);
+            eventsSkippedCountMetric.incrementOrdered();
         }
     }
 
@@ -401,8 +446,8 @@ public class StreamProcessorController extends Actor
             if (eventPosition >= 0)
             {
                 actor.done();
-
                 updateState();
+                eventsWrittenCountMetric.incrementOrdered();
             }
             else if (isOpened())
             {
@@ -478,9 +523,12 @@ public class StreamProcessorController extends Actor
 
             snapshotWriter = snapshotStorage.createSnapshot(name, eventPosition);
 
-            snapshotWriter.writeSnapshot(streamProcessor.getStateResource());
+            final long snapshotSize = snapshotWriter.writeSnapshot(streamProcessor.getStateResource());
             snapshotWriter.commit();
-            LOG.info("Creation of snapshot {} took {} ms.", name, System.currentTimeMillis() - start);
+            snapshotSizeMetric.setOrdered(snapshotSize);
+            final long snapshotTime = System.currentTimeMillis() - start;
+            snapshotTimeMillisMetric.setOrdered(snapshotTime);
+            LOG.info("Creation of snapshot {} took {} ms.", name, snapshotTime);
 
             snapshotPosition = eventPosition;
         }
@@ -510,6 +558,12 @@ public class StreamProcessorController extends Actor
     @Override
     protected void onActorClosing()
     {
+        eventsProcessedCountMetric.close();
+        eventsSkippedCountMetric.close();
+        eventsWrittenCountMetric.close();
+        snapshotTimeMillisMetric.close();
+        snapshotSizeMetric.close();
+
         if (!isFailed())
         {
             createSnapshot();

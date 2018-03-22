@@ -15,30 +15,25 @@
  */
 package io.zeebe.logstreams.fs.log;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
 import static io.zeebe.dispatcher.impl.PositionUtil.partitionOffset;
 import static io.zeebe.util.StringUtil.getBytes;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
 import java.util.Arrays;
 import java.util.Random;
 
 import io.zeebe.dispatcher.impl.PositionUtil;
-import io.zeebe.logstreams.impl.log.fs.FsLogSegmentDescriptor;
-import io.zeebe.logstreams.impl.log.fs.FsLogStorage;
-import io.zeebe.logstreams.impl.log.fs.FsLogStorageConfiguration;
+import io.zeebe.logstreams.impl.log.fs.*;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.util.FileUtil;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import io.zeebe.util.metrics.MetricsManager;
+import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 
@@ -70,7 +65,7 @@ public class FsLogStorageTest
 
         fsStorageConfig = new FsLogStorageConfiguration(SEGMENT_SIZE, logPath, 0, false);
 
-        fsLogStorage = new FsLogStorage(fsStorageConfig);
+        fsLogStorage = new FsLogStorage(fsStorageConfig, new MetricsManager(), "topic", 0);
     }
     @Test
     public void shouldGetConfig()
@@ -150,7 +145,7 @@ public class FsLogStorageTest
     public void shouldDeleteLogOnCloseStorage()
     {
         fsStorageConfig = new FsLogStorageConfiguration(SEGMENT_SIZE, logPath, 0, true);
-        fsLogStorage = new FsLogStorage(fsStorageConfig);
+        fsLogStorage = new FsLogStorage(fsStorageConfig, new MetricsManager(), "topic", 0);
 
         fsLogStorage.open();
 

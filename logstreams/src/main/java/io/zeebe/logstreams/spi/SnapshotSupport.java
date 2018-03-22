@@ -27,8 +27,9 @@ public interface SnapshotSupport
     /**
      * write a snapshot to the provided output stream
      * @param outputStream the stream to write to
+     * @return the size of the snapshot in bytes
      */
-    void writeSnapshot(OutputStream outputStream) throws Exception;
+    long writeSnapshot(OutputStream outputStream) throws Exception;
 
     /**
      * read a snapshot from the provided input stream.

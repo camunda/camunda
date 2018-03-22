@@ -86,4 +86,9 @@ public class FsLogSegments
         this.segmentCount = 0;
     }
 
+    public int getSegmentCount()
+    {
+        return segmentCount;
+    }
+
 }

@@ -21,6 +21,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import io.zeebe.logstreams.impl.CompleteEventsInBlockProcessor;
 import io.zeebe.logstreams.impl.log.fs.FsLogStorage;
 import io.zeebe.logstreams.impl.log.fs.FsLogStorageConfiguration;
+import io.zeebe.util.metrics.MetricsManager;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -62,7 +63,7 @@ public class CompleteInBlockProcessorTest
         processor = new CompleteEventsInBlockProcessor();
         logPath = tempFolder.getRoot().getAbsolutePath();
         fsStorageConfig = new FsLogStorageConfiguration(SEGMENT_SIZE, logPath, 0, false);
-        fsLogStorage = new FsLogStorage(fsStorageConfig);
+        fsLogStorage = new FsLogStorage(fsStorageConfig, new MetricsManager(), "topic", 0);
 
         final ByteBuffer writeBuffer = ByteBuffer.allocate(192);
         final MutableDirectBuffer directBuffer = new UnsafeBuffer(0, 0);

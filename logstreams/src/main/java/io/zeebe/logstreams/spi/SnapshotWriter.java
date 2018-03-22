@@ -52,12 +52,13 @@ public interface SnapshotWriter
      *
      * @param snapshotSupport
      *            the snapshot object
+     * @return
      * @throws Exception
      *             if fails to write the snapshot
      */
-    default void writeSnapshot(SnapshotSupport snapshotSupport) throws Exception
+    default long writeSnapshot(SnapshotSupport snapshotSupport) throws Exception
     {
-        snapshotSupport.writeSnapshot(getOutputStream());
+        return snapshotSupport.writeSnapshot(getOutputStream());
     }
 
 }

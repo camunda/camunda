@@ -46,11 +46,12 @@ public class SerializableWrapper<T extends Serializable> implements SnapshotSupp
     }
 
     @Override
-    public void writeSnapshot(OutputStream outputStream) throws Exception
+    public long writeSnapshot(OutputStream outputStream) throws Exception
     {
         final ObjectOutputStream oos = new ObjectOutputStream(outputStream);
         oos.writeObject(object);
         oos.flush();
+        return -1;
     }
 
     @Override

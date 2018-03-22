@@ -48,12 +48,13 @@ public class UnpackedObjectSnapshotSupport implements ComposableSnapshotSupport
     }
 
     @Override
-    public void writeSnapshot(OutputStream outputStream) throws Exception
+    public long writeSnapshot(OutputStream outputStream) throws Exception
     {
         writer.wrap(ioBuffer, 0);
         final int length = object.getEncodedLength();
         object.write(writer);
         outputStream.write(ioBuffer.byteArray(), 0, length);
+        return length;
     }
 
     @Override

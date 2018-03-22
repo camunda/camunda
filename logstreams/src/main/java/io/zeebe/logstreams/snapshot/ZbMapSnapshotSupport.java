@@ -39,15 +39,17 @@ public class ZbMapSnapshotSupport<T extends ZbMap<?, ?>> implements ComposableSn
         return zbMap;
     }
 
+    @Override
     public long snapshotSize()
     {
         return indexSerializer.serializationSize();
     }
 
     @Override
-    public void writeSnapshot(OutputStream outputStream) throws Exception
+    public long writeSnapshot(OutputStream outputStream) throws Exception
     {
         indexSerializer.writeToStream(outputStream);
+        return snapshotSize();
     }
 
     @Override

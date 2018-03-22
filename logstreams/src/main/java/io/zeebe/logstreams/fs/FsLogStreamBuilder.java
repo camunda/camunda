@@ -46,7 +46,9 @@ public class FsLogStreamBuilder extends LogStreamImpl.LogStreamBuilder<FsLogStre
             initialLogSegmentId,
             deleteOnClose);
 
-        logStorage = new FsLogStorage(storageConfig);
+        final String topicNameString = topicName.getStringWithoutLengthUtf8(0, topicName.capacity());
+
+        logStorage = new FsLogStorage(storageConfig, actorScheduler.getMetricsManager(), topicNameString, partitionId);
         logStorage.open();
     }
 

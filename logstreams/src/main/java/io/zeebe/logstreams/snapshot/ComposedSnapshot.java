@@ -58,7 +58,7 @@ public class ComposedSnapshot implements SnapshotSupport
     }
 
     @Override
-    public void writeSnapshot(OutputStream outputStream) throws Exception
+    public long writeSnapshot(OutputStream outputStream) throws Exception
     {
         outputStream.write(count);
         long writtenBytes = SIZE_OF_BYTE;
@@ -73,6 +73,8 @@ public class ComposedSnapshot implements SnapshotSupport
             writtenBytes += mapSize;
         }
         processedBytes = writtenBytes;
+
+        return processedBytes;
     }
 
     @Override
@@ -119,6 +121,7 @@ public class ComposedSnapshot implements SnapshotSupport
             this.inputStream = inputStream;
         }
 
+        @Override
         public void reset()
         {
             byteCount = 0L;
