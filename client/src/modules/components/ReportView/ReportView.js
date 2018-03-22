@@ -226,10 +226,19 @@ export default class ReportView extends React.Component {
         dateFormat = 'YYYY-MM-DD HH:MM:SS';
     }
     const formattedResult = {};
-    Object.keys(result).forEach(key => {
-      const formattedDate = moment(key).format(dateFormat);
-      formattedResult[formattedDate] = result[key];
-    });
+    Object.keys(result)
+      .sort((a, b) => {
+        // sort descending for tables and ascending for all other visualizations
+        if (data.visualization === 'table') {
+          return a < b ? 1 : -1;
+        } else {
+          return a < b ? -1 : 1;
+        }
+      })
+      .forEach(key => {
+        const formattedDate = moment(key).format(dateFormat);
+        formattedResult[formattedDate] = result[key];
+      });
     return formattedResult;
   };
 }

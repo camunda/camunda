@@ -2,12 +2,13 @@ import React from 'react';
 import {mount} from 'enzyme';
 
 import ReportView from './ReportView';
-import {Number, Table} from './views';
+import {Number, Table, Chart} from './views';
 
 jest.mock('./views', () => {
   return {
     Number: props => <div>Number: {props.data}</div>,
-    Table: props => <div> Table: {JSON.stringify(props.data)}</div>
+    Table: props => <div> Table: {JSON.stringify(props.data)}</div>,
+    Chart: props => <div> Chart: {JSON.stringify(props.data)}</div>
   };
 });
 
@@ -223,30 +224,52 @@ it('should not add instruction for group by if operation is raw data', () => {
   expect(node).not.toIncludeText('Please choose an option for');
 });
 
-it('should adjust date shown in table to unit', () => {
-  const report = {
-    data: {
-      processDefinitionKey: 'aKey',
-      processDefinitionVersion: '1',
-      view: {
-        operation: 'foo'
-      },
-      groupBy: {
-        type: 'processInstance',
-        unit: 'day'
-      },
-      visualization: 'table'
+const exampleDurationReport = {
+  data: {
+    processDefinitionKey: 'aKey',
+    processDefinitionVersion: '1',
+    view: {
+      operation: 'foo'
     },
-    result: {
-      '2015-03-25T12:00:00Z': 2,
-      '2015-03-26T12:00:00Z': 3
-    }
-  };
+    groupBy: {
+      type: 'processInstance',
+      unit: 'day'
+    },
+    visualization: 'table'
+  },
+  result: {
+    '2015-03-25T12:00:00Z': 2,
+    '2015-03-26T12:00:00Z': 3
+  }
+};
 
-  const node = mount(<ReportView report={report} />);
+it('should adjust date shown in table to unit', () => {
+  const node = mount(<ReportView report={exampleDurationReport} />);
   node.setState({
     loaded: true
   });
   expect(node.find(Table)).not.toIncludeText('2015-03-25T12:00:00Z');
   expect(node.find(Table)).toIncludeText('2015-03-25');
+});
+
+it('should sort time data descending for tables', () => {
+  const node = mount(<ReportView report={exampleDurationReport} />);
+  node.setState({
+    loaded: true
+  });
+
+  expect(node.find(Table)).toIncludeText('{"2015-03-26":3,"2015-03-25":2}');
+});
+
+it('should sort time data ascending for charts', () => {
+  const report = {
+    ...exampleDurationReport,
+    data: {...exampleDurationReport.data, visualization: 'line'}
+  };
+  const node = mount(<ReportView report={report} />);
+  node.setState({
+    loaded: true
+  });
+
+  expect(node.find(Chart)).toIncludeText('{"2015-03-25":2,"2015-03-26":3}');
 });
