@@ -320,7 +320,7 @@ export default class AlertModal extends React.Component {
               checked={fixNotification}
               onChange={({target: {checked}}) => this.setState({fixNotification: checked})}
             />
-            <label htmlFor="notification-checkbox">Send Fix Notification</label>
+            <label htmlFor="notification-checkbox">Send notification when resolved</label>
           </div>
           <div className="AlertModal__inputGroup">
             <Input
@@ -329,7 +329,7 @@ export default class AlertModal extends React.Component {
               checked={!!reminder}
               onChange={this.updateReminder}
             />
-            <label htmlFor="reminder-checkbox">Send Reminder Mails</label>
+            <label htmlFor="reminder-checkbox">Send reminder notification</label>
             {reminder && (
               <div className="AlertModal__inputGroup">
                 <label htmlFor="reminder-input">
