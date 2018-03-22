@@ -26,9 +26,10 @@ public class NoopSnapshotSupport implements SnapshotSupport
 {
 
     @Override
-    public void writeSnapshot(OutputStream outputStream) throws Exception
+    public long writeSnapshot(OutputStream outputStream) throws Exception
     {
         // do nothing
+        return 0;
     }
 
     @Override

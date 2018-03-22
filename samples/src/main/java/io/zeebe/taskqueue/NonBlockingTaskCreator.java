@@ -56,7 +56,7 @@ public class NonBlockingTaskCreator
             try
             {
                 // try to create default topic if it not exists already
-                client.topics().create(topicName, 1).execute();
+                client.topics().create(topicName, 4).execute();
             }
             catch (final ClientCommandRejectedException e)
             {

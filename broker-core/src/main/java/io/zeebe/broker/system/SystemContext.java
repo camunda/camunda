@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.util.*;
 import java.util.concurrent.*;
 
+import io.zeebe.broker.Broker;
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.system.threads.cfg.ThreadingCfg;
 import io.zeebe.broker.transport.cfg.SocketBindingCfg;
@@ -29,11 +30,10 @@ import io.zeebe.broker.transport.cfg.TransportComponentCfg;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.impl.ServiceContainerImpl;
 import io.zeebe.util.FileUtil;
+import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.status.ConcurrentCountersManager;
 import org.slf4j.Logger;
 
 public class SystemContext implements AutoCloseable
@@ -55,6 +55,8 @@ public class SystemContext implements AutoCloseable
     protected Map<String, String> diagnosticContext;
     protected final ActorScheduler scheduler;
 
+    private MetricsManager metricsManager;
+
 
     public SystemContext(String configFileLocation, ActorClock clock)
     {
@@ -73,9 +75,29 @@ public class SystemContext implements AutoCloseable
 
         this.configurationManager = configurationManager;
         // TODO: submit diagnosticContext to actor scheduler once supported
+        this.metricsManager = initMetricsManager(brokerId);
         this.scheduler = initScheduler(clock, brokerId);
         this.serviceContainer = new ServiceContainerImpl(this.scheduler);
         this.scheduler.start();
+        initBrokerInfoMetric();
+    }
+
+    private MetricsManager initMetricsManager(String brokerId)
+    {
+        final Map<String, String> globalLabels = new HashMap<>();
+        globalLabels.put("cluster", "zeebe");
+        globalLabels.put("node", brokerId);
+        return new MetricsManager("zb_", globalLabels);
+    }
+
+    private void initBrokerInfoMetric()
+    {
+        // one-shot metric to submit metadata
+        metricsManager.newMetric("broker_info")
+                .type("counter")
+                .label("version", Broker.VERSION)
+                .create()
+                .incrementOrdered();
     }
 
     private ActorScheduler initScheduler(ActorClock clock, String brokerId)
@@ -94,17 +116,14 @@ public class SystemContext implements AutoCloseable
             numberOfThreads = MAX_THREAD_COUNT;
         }
 
-        final UnsafeBuffer valueBuffer = new UnsafeBuffer(new byte[32 * 1024]);
-        final UnsafeBuffer labelBuffer = new UnsafeBuffer(new byte[valueBuffer.capacity() * 2 + 1]);
-        final ConcurrentCountersManager countersManager = new ConcurrentCountersManager(labelBuffer, valueBuffer);
-        Loggers.SYSTEM_LOGGER.debug("Start scheduler with {} threads.", numberOfThreads);
-
         final int ioBoundThreads = 2;
         final int cpuBoundThreads = Math.max(1, numberOfThreads - ioBoundThreads);
 
+        Loggers.SYSTEM_LOGGER.info("Scheduler configuration: Threads{cpu-bound: {}, io-bound: {}}.", cpuBoundThreads, ioBoundThreads);
+
         return ActorScheduler.newActorScheduler()
                              .setActorClock(clock)
-                             .setCountersManager(countersManager)
+                             .setMetricsManager(metricsManager)
                              .setCpuBoundActorThreadCount(cpuBoundThreads)
                              .setIoBoundActorThreadCount(ioBoundThreads)
                              .setSchedulerName(brokerId)

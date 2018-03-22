@@ -34,6 +34,10 @@ numberOfThreads = 2
 maxIdleTimeMs = 100
 idleStrategy = "BACKOFF"
 
+[metrics]
+reportingInterval = 5
+metricsFile = "zeebe.prom"
+
 # Log Configuration -----------------------------------
 
 [logs]

@@ -26,6 +26,8 @@ import io.zeebe.broker.system.deployment.service.DeploymentManager;
 import io.zeebe.broker.system.deployment.service.WorkflowRequestMessageHandlerService;
 import io.zeebe.broker.system.log.PartitionManagerService;
 import io.zeebe.broker.system.log.SystemPartitionManager;
+import io.zeebe.broker.system.metrics.MetricsFileWriterService;
+import io.zeebe.broker.system.metrics.cfg.MetricsCfg;
 import io.zeebe.broker.transport.TransportServiceNames;
 import io.zeebe.servicecontainer.ServiceContainer;
 
@@ -39,6 +41,10 @@ public class SystemComponent implements Component
 
         final CountersManagerService countersManagerService = new CountersManagerService(context.getConfigurationManager());
         serviceContainer.createService(COUNTERS_MANAGER_SERVICE, countersManagerService)
+            .install();
+
+        final MetricsFileWriterService metricsFileWriterService = new MetricsFileWriterService(context.getConfigurationManager().readEntry("metrics", MetricsCfg.class));
+        serviceContainer.createService(METRICS_FILE_WRITER, metricsFileWriterService)
             .install();
 
         final SystemConfiguration systemConfiguration = context.getConfigurationManager().readEntry("system", SystemConfiguration.class);
@@ -68,8 +74,6 @@ public class SystemComponent implements Component
         serviceContainer.createService(WORKFLOW_REQUEST_MESSAGE_HANDLER_SERVICE, workflowRequestHandlerService)
             .groupReference(LogStreamServiceNames.WORKFLOW_STREAM_GROUP, workflowRequestHandlerService.getLogStreamsGroupReference())
             .install();
-
-
     }
 
 }

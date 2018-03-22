@@ -21,6 +21,9 @@ import io.zeebe.broker.system.DirectoryConfiguration;
 
 public class MetricsCfg extends DirectoryConfiguration
 {
+    public int reportingInterval = 5;
+    public String metricsFile = "zeebe.prom";
+
     @Override
     protected String componentDirectoryName()
     {
