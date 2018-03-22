@@ -80,11 +80,16 @@ export default class Chart extends React.Component {
           borderWidth: undefined
         };
       case 'line':
+        return {
+          borderColor: '#1991c8',
+          backgroundColor: '#e5f2f8',
+          borderWidth: 2
+        };
       case 'bar':
         return {
-          borderColor: '#00a8ff',
-          backgroundColor: '#e5f6ff',
-          borderWidth: 2
+          borderColor: '#1991c8',
+          backgroundColor: '#1991c8',
+          borderWidth: 1
         };
       default:
         return {
