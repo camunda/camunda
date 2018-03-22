@@ -29,23 +29,22 @@ export default class Chart extends React.Component {
   }
 
   componentDidMount() {
-    const {data, type, timeUnit} = this.props;
+    const {data, type} = this.props;
 
     if (!data || typeof data !== 'object') {
       return;
     }
-    this.createNewChart(data, type, timeUnit);
+    this.createNewChart(data, type);
   }
 
   componentWillReceiveProps(nextProps) {
     const newType = nextProps.type;
     const data = nextProps.data;
-    const timeUnit = nextProps.timeUnit;
 
     if (!data || typeof data !== 'object') {
       return;
     }
-    this.createNewChart(data, newType, timeUnit);
+    this.createNewChart(data, newType);
   }
 
   destroyChart = () => {
@@ -54,7 +53,7 @@ export default class Chart extends React.Component {
     }
   };
 
-  createNewChart = (data, type, timeUnit) => {
+  createNewChart = (data, type) => {
     this.destroyChart();
 
     this.chart = new ChartRenderer(this.container, {
@@ -68,7 +67,7 @@ export default class Chart extends React.Component {
           }
         ]
       },
-      options: this.createChartOptions(type, timeUnit, data)
+      options: this.createChartOptions(type, data)
     });
   };
 
@@ -96,17 +95,16 @@ export default class Chart extends React.Component {
     }
   };
 
-  createPieOptions = (timeUnit, data) => {
+  createPieOptions = () => {
     return {
       legend: {display: true}
     };
   };
 
-  createBarOptions = (timeUnit, data) => {
+  createBarOptions = data => {
     return {
       legend: {display: false},
       scales: {
-        ...(timeUnit && this.createTimeUnitScaleOptions(timeUnit)),
         yAxes: [
           {
             ...(this.props.property === 'duration' && this.createDurationFormattingOptions(data)),
@@ -114,12 +112,6 @@ export default class Chart extends React.Component {
           }
         ]
       }
-    };
-  };
-
-  createTimeUnitScaleOptions = unit => {
-    return {
-      xAxes: [{type: 'time', time: {unit}}]
     };
   };
 
@@ -154,15 +146,15 @@ export default class Chart extends React.Component {
     };
   };
 
-  createChartOptions = (type, timeUnit, data) => {
+  createChartOptions = (type, data) => {
     let options;
     switch (type) {
       case 'pie':
-        options = this.createPieOptions(timeUnit, data);
+        options = this.createPieOptions();
         break;
       case 'line':
       case 'bar':
-        options = this.createBarOptions(timeUnit, data);
+        options = this.createBarOptions(data);
         break;
       default:
         options = {};

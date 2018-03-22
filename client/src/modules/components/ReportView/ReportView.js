@@ -164,9 +164,8 @@ export default class ReportView extends React.Component {
         config = {
           component: Chart,
           props: {
-            data: result,
+            data: this.formatResult(data, result),
             type: data.visualization,
-            timeUnit: data.groupBy.unit,
             property: data.view.property
           }
         };
