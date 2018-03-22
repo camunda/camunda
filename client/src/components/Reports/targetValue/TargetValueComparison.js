@@ -93,7 +93,7 @@ export default class TargetValueComparison extends React.Component {
     const isEnabled = this.isEnabled();
 
     return (
-      <ButtonGroup>
+      <ButtonGroup className="TargetValueComparison">
         <Button
           className="TargetValueComparison__toggleButton"
           disabled={!isEnabled}
