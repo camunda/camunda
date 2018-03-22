@@ -75,12 +75,13 @@ export default class TargetValueComparison extends React.Component {
         const values = {};
         const nodeNames = {};
 
-        new Set(
-          viewer
-            .get('elementRegistry')
-            .filter(element => element.businessObject.$instanceOf('bpmn:FlowNode'))
-            .map(element => element.businessObject)
-        ).forEach(element => {
+        const set = new Set();
+        viewer
+          .get('elementRegistry')
+          .filter(element => element.businessObject.$instanceOf('bpmn:FlowNode'))
+          .map(element => element.businessObject)
+          .forEach(element => set.add(element));
+        set.forEach(element => {
           values[element.id] = this.copyObjectIfExistsAndStringifyValue(
             predefinedValues[element.id]
           );
