@@ -4,10 +4,9 @@ import ReactTable from 'react-table';
 
 import './Table.css';
 
-export default function Table({className, head, body, foot}) {
+export default function Table({className = '', head, body, foot}) {
   const columns = Table.formatColumns(head);
   const data = Table.formatData(head, body);
-  className = className ? className : '';
   return (
     <ReactTable
       data={data}
