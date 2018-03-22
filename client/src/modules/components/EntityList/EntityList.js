@@ -1,15 +1,17 @@
 import React from 'react';
 import moment from 'moment';
 import classnames from 'classnames';
+
+import {withErrorHandling} from 'HOC';
 import {Redirect, Link} from 'react-router-dom';
 
-import {Button, Modal} from 'components';
+import {Button, Modal, Message} from 'components';
 
 import {load, create, remove} from './service';
 
 import './EntityList.css';
 
-export default class EntityList extends React.Component {
+class EntityList extends React.Component {
   constructor(props) {
     super(props);
 
@@ -18,18 +20,26 @@ export default class EntityList extends React.Component {
       redirectToEntity: false,
       loaded: false,
       deleteModalVisible: false,
-      deleteModalEntity: {}
+      deleteModalEntity: {},
+      error: null
     };
 
     this.loadEntities();
   }
 
   loadEntities = async () => {
-    const response = await load(this.props.api, this.props.displayOnly, this.props.sortBy);
-    this.setState({
-      data: response,
-      loaded: true
-    });
+    this.props.mightFail(
+      load(this.props.api, this.props.displayOnly, this.props.sortBy),
+      response => {
+        this.setState({
+          data: response,
+          loaded: true
+        });
+      },
+      error => {
+        this.setState({error});
+      }
+    );
   };
 
   createEntity = async evt => {
@@ -139,11 +149,6 @@ export default class EntityList extends React.Component {
   };
 
   render() {
-    const {redirectToEntity, loaded} = this.state;
-    const {includeViewAllLink} = this.props;
-    const modal = this.renderModal();
-    const isListEmpty = this.state.data.length === 0;
-
     let createButton = null;
     if (this.props.operations.includes('create')) {
       createButton = (
@@ -153,12 +158,36 @@ export default class EntityList extends React.Component {
       );
     }
 
+    const header = (
+      <div className="EntityList__header">
+        <h1 className="EntityList__heading">{this.props.label}s</h1>
+        <div className="EntityList__tools">{createButton}</div>
+      </div>
+    );
+
+    if (this.state.error) {
+      const {error} = this.state;
+      let errorMessage = 'Data could not be loaded. ';
+      errorMessage += error.errorMessage || error.statusText || '';
+
+      return (
+        <section className="EntityList">
+          {header}
+          <Message type="error" message={errorMessage} />
+        </section>
+      );
+    }
+
+    const {redirectToEntity, loaded} = this.state;
+    const {includeViewAllLink} = this.props;
+    const modal = this.renderModal();
+    const isListEmpty = this.state.data.length === 0;
+
     const createLink = (
       <a className="EntityList__createLink" role="button" onClick={this.createEntity}>
         Create a new {this.props.label}…
       </a>
     );
-    const header = <h1 className="EntityList__heading">{this.props.label}s</h1>;
 
     let list;
     if (loaded) {
@@ -202,10 +231,7 @@ export default class EntityList extends React.Component {
     } else {
       return (
         <section className="EntityList">
-          <div className="EntityList__header">
-            {header}
-            <div className="EntityList__tools">{createButton}</div>
-          </div>
+          {header}
           {list}
           {modal}
           {this.props.children}
@@ -221,6 +247,8 @@ export default class EntityList extends React.Component {
     }
   }
 }
+
+export default withErrorHandling(EntityList);
 
 EntityList.defaultProps = {
   operations: ['create', 'edit', 'delete']

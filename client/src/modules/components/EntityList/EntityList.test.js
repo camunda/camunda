@@ -1,5 +1,5 @@
 import React from 'react';
-import {mount} from 'enzyme';
+import {mount, shallow} from 'enzyme';
 
 import EntityList from './EntityList';
 
@@ -76,7 +76,7 @@ it('should only load the specified amount of results', () => {
 });
 
 it('should display a list with the results', () => {
-  const node = mount(<EntityList api="endpoint" label="Dashboard" />);
+  const node = mount(shallow(<EntityList api="endpoint" label="Dashboard" />).get(0));
 
   node.setState({
     loaded: true,
@@ -91,7 +91,7 @@ it('should display a list with the results', () => {
 });
 
 it('should display no-entities indicator if no entities', () => {
-  const node = mount(<EntityList api="endpoint" label="Dashboard" />);
+  const node = mount(shallow(<EntityList api="endpoint" label="Dashboard" />).get(0));
 
   node.setState({
     loaded: true,
@@ -102,7 +102,7 @@ it('should display no-entities indicator if no entities', () => {
 });
 
 it('should display create entity link if no entities', () => {
-  const node = mount(<EntityList api="endpoint" label="Dashboard" />);
+  const node = mount(shallow(<EntityList api="endpoint" label="Dashboard" />).get(0));
 
   node.setState({
     loaded: true,
@@ -112,7 +112,7 @@ it('should display create entity link if no entities', () => {
 });
 
 it('should not display create entity link if there are entities', () => {
-  const node = mount(<EntityList api="endpoint" label="Dashboard" operations={['edit']} />);
+  const node = mount(shallow(<EntityList api="endpoint" label="Dashboard" />).get(0));
 
   node.setState({
     loaded: true,
@@ -123,7 +123,14 @@ it('should not display create entity link if there are entities', () => {
 
 it('should not display create entity button on home page', () => {
   const node = mount(
-    <EntityList includeViewAllLink={true} api="endpoint" label="Dashboard" operations={['edit']} />
+    shallow(
+      <EntityList
+        includeViewAllLink={true}
+        api="endpoint"
+        label="Dashboard"
+        operations={['edit']}
+      />
+    ).get(0)
   );
 
   node.setState({
@@ -136,7 +143,7 @@ it('should not display create entity button on home page', () => {
 
 it('should call new entity on click on the new entity button and redirect to the new entity', async () => {
   create.mockReturnValueOnce('2');
-  const node = mount(<EntityList api="endpoint" label="Dashboard" />);
+  const node = mount(shallow(<EntityList api="endpoint" label="Dashboard" />).get(0));
 
   await node.find('button').simulate('click');
 
@@ -144,7 +151,7 @@ it('should call new entity on click on the new entity button and redirect to the
 });
 
 it('should display all operations per default', () => {
-  const node = mount(<EntityList api="endpoint" label="Dashboard" />);
+  const node = mount(shallow(<EntityList api="endpoint" label="Dashboard" />).get(0));
   node.setState({
     loaded: true,
     data: [sampleEntity]
@@ -156,7 +163,9 @@ it('should display all operations per default', () => {
 });
 
 it('should not display any operations if none are specified', () => {
-  const node = mount(<EntityList api="endpoint" label="Dashboard" operations={[]} />);
+  const node = mount(
+    shallow(<EntityList api="endpoint" label="Dashboard" operations={[]} />).get(0)
+  );
   node.setState({
     loaded: true,
     data: [sampleEntity]
@@ -168,7 +177,10 @@ it('should not display any operations if none are specified', () => {
 });
 
 it('should display a create button if specified', () => {
-  const node = mount(<EntityList api="endpoint" label="Dashboard" operations={['create']} />);
+  const node = mount(
+    shallow(<EntityList api="endpoint" label="Dashboard" operations={['create']} />).get(0)
+  );
+
   node.setState({
     loaded: true,
     data: [sampleEntity]
@@ -178,7 +190,9 @@ it('should display a create button if specified', () => {
 });
 
 it('should display an edit link if specified', () => {
-  const node = mount(<EntityList api="endpoint" label="Dashboard" operations={['edit']} />);
+  const node = mount(
+    shallow(<EntityList api="endpoint" label="Dashboard" operations={['edit']} />).get(0)
+  );
   node.setState({
     loaded: true,
     data: [sampleEntity]
@@ -188,7 +202,9 @@ it('should display an edit link if specified', () => {
 });
 
 it('should display a delete button if specified', () => {
-  const node = mount(<EntityList api="endpoint" label="Dashboard" operations={['delete']} />);
+  const node = mount(
+    shallow(<EntityList api="endpoint" label="Dashboard" operations={['delete']} />).get(0)
+  );
   node.setState({
     loaded: true,
     data: [sampleEntity]
@@ -199,7 +215,14 @@ it('should display a delete button if specified', () => {
 
 it('should be able to sort by date', async () => {
   const node = mount(
-    <EntityList api="endpoint" label="Dashboard" operations={['delete']} sortBy={'lastModified'} />
+    shallow(
+      <EntityList
+        api="endpoint"
+        label="Dashboard"
+        operations={['create']}
+        sortBy={'lastModified'}
+      />
+    ).get(0)
   );
   const sampleEntity2 = {
     id: '2',
@@ -216,7 +239,9 @@ it('should be able to sort by date', async () => {
 });
 
 it('should open deletion modal on delete button click', () => {
-  const node = mount(<EntityList api="endpoint" label="Dashboard" operations={['delete']} />);
+  const node = mount(
+    shallow(<EntityList api="endpoint" label="Dashboard" operations={['delete']} />).get(0)
+  );
   node.setState({
     loaded: true,
     data: [sampleEntity]
