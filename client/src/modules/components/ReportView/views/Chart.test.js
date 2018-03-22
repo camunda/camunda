@@ -82,6 +82,6 @@ it('should show nice ticks for duration formats on the y axis', () => {
 
   const config = node.instance().createDurationFormattingOptions(data);
 
-  expect(config.ticks.stepSize).toBe(1 * 24 * 60 * 60 * 1000);
-  expect(config.ticks.callback(3 * 24 * 60 * 60 * 1000)).toBe('3d');
+  expect(config.stepSize).toBe(1 * 24 * 60 * 60 * 1000);
+  expect(config.callback(3 * 24 * 60 * 60 * 1000)).toBe('3d');
 });
