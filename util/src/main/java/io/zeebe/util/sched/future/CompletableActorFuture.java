@@ -15,18 +15,15 @@
  */
 package io.zeebe.util.sched.future;
 
-import io.zeebe.util.sched.ActorTask;
-import io.zeebe.util.sched.ActorThread;
-import io.zeebe.util.sched.FutureUtil;
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
-import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
+import static org.agrona.UnsafeAccess.UNSAFE;
 
 import java.util.Queue;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
-import static org.agrona.UnsafeAccess.UNSAFE;
+import io.zeebe.util.sched.*;
+import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 
 /** Completable future implementation that is garbage free and reusable */
 @SuppressWarnings("restriction")
@@ -40,12 +37,12 @@ public class CompletableActorFuture<V> implements ActorFuture<V>
     private static final int COMPLETED_EXCEPTIONALLY = 4;
     private static final int CLOSED = 5;
 
-    private final ManyToOneConcurrentArrayQueue<ActorTask> blockedTasks = new ManyToOneConcurrentArrayQueue<>(32);
-
-    /** used when blocked tasks has reached capacity (this queue has no capacity restriction but is not garbage free) */
-    private final ManyToOneConcurrentLinkedQueue<ActorTask> blockedTasksOverflow = new ManyToOneConcurrentLinkedQueue<>();
+    private final ManyToOneConcurrentLinkedQueue<ActorTask> blockedTasks = new ManyToOneConcurrentLinkedQueue<>();
 
     private volatile int state = CLOSED;
+
+    private final ReentrantLock completionLock = new ReentrantLock();
+    private Condition isDoneCondition;
 
     protected V value;
     protected String failure;
@@ -76,6 +73,7 @@ public class CompletableActorFuture<V> implements ActorFuture<V>
     public void setAwaitingResult()
     {
         state = AWAITING_RESULT;
+        isDoneCondition = completionLock.newCondition();
     }
 
     public static <V> CompletableActorFuture<V> completed(V result)
@@ -121,10 +119,7 @@ public class CompletableActorFuture<V> implements ActorFuture<V>
     @Override
     public void block(ActorTask onCompletion)
     {
-        if (!blockedTasks.offer(onCompletion))
-        {
-            blockedTasksOverflow.add(onCompletion);
-        }
+        blockedTasks.add(onCompletion);
     }
 
     @Override
@@ -153,22 +148,25 @@ public class CompletableActorFuture<V> implements ActorFuture<V>
         }
         else
         {
-            if (!isDone())
+            // blocking get for non-actor threads
+            completionLock.lock();
+            try
             {
-                final long waitTime = unit.toMillis(timeout) + 1;
-
-                synchronized (this)
+                final long deadline = System.nanoTime() + unit.toNanos(timeout);
+                while (!isDone())
                 {
-                    if (!isDone())
+                    final long remaining = deadline - System.nanoTime();
+                    if (remaining < 0)
                     {
-                        this.wait(waitTime);
-
-                        if (!isDone())
-                        {
-                            throw new TimeoutException("Timeout after: " + timeout + " " + unit);
-                        }
+                        throw new TimeoutException("Timeout after: " + timeout + " " + unit);
                     }
+
+                    isDoneCondition.await(remaining, TimeUnit.NANOSECONDS);
                 }
+            }
+            finally
+            {
+                completionLock.unlock();
             }
         }
 
@@ -231,11 +229,15 @@ public class CompletableActorFuture<V> implements ActorFuture<V>
     private void notifyBlockedTasks()
     {
         notifyAllInQueue(blockedTasks);
-        notifyAllInQueue(blockedTasksOverflow);
 
-        synchronized (this)
+        try
         {
-            this.notifyAll();
+            completionLock.lock();
+            isDoneCondition.signalAll();
+        }
+        finally
+        {
+            completionLock.unlock();
         }
     }
 
