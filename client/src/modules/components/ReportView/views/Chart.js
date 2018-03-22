@@ -28,32 +28,19 @@ export default class Chart extends React.Component {
     );
   }
 
-  componentDidMount() {
-    const {data, type} = this.props;
-
-    if (!data || typeof data !== 'object') {
-      return;
-    }
-    this.createNewChart(data, type);
-  }
-
-  componentWillReceiveProps(nextProps) {
-    const newType = nextProps.type;
-    const data = nextProps.data;
-
-    if (!data || typeof data !== 'object') {
-      return;
-    }
-    this.createNewChart(data, newType);
-  }
-
   destroyChart = () => {
     if (this.chart) {
       this.chart.destroy();
     }
   };
 
-  createNewChart = (data, type) => {
+  createNewChart = () => {
+    const {data, type} = this.props;
+
+    if (!data || typeof data !== 'object') {
+      return;
+    }
+
     this.destroyChart();
 
     this.chart = new ChartRenderer(this.container, {
@@ -70,6 +57,9 @@ export default class Chart extends React.Component {
       options: this.createChartOptions(type, data)
     });
   };
+
+  componentDidMount = this.createNewChart;
+  componentDidUpdate = this.createNewChart;
 
   createDatasetOptions = type => {
     switch (type) {
