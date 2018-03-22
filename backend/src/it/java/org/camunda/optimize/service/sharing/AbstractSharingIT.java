@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.exceptions.ReportEvaluationException;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
@@ -58,6 +59,12 @@ public abstract class AbstractSharingIT {
     return reportId;
   }
 
+  public static void assertErrorFields(ReportEvaluationException errorMessage) {
+    assertThat(errorMessage.getReportDefinition(), is(notNullValue()));
+    assertThat(errorMessage.getReportDefinition().getData(), is(notNullValue()));
+    assertThat(errorMessage.getReportDefinition().getName(), is(notNullValue()));
+    assertThat(errorMessage.getReportDefinition().getId(), is(notNullValue()));
+  }
 
   protected ProcessInstanceEngineDto deployAndStartSimpleProcess() {
     return deployAndStartSimpleProcessWithVariables(new HashMap<>());

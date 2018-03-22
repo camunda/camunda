@@ -7,6 +7,7 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.exceptions.ReportEvaluationException;
 import org.camunda.optimize.test.util.ReportDataHelper;
 import org.junit.Rule;
 import org.junit.Test;
@@ -558,10 +559,7 @@ public class SharingServiceIT extends AbstractSharingIT {
         .get();
     //then
     assertThat(response.getStatus(), is(500));
-    String errorMessage = response.readEntity(String.class);
-    assertThat(errorMessage.contains("reportDefinition"), is(true));
-    assertThat(errorMessage.contains("name"), is(true));
-    assertThat(errorMessage.contains("id"), is(true));
-    assertThat(errorMessage.contains("data"), is(true));
+    AbstractSharingIT.assertErrorFields(response.readEntity(ReportEvaluationException.class));
   }
+
 }

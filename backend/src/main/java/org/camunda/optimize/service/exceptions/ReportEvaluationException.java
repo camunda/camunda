@@ -9,6 +9,9 @@ public class ReportEvaluationException extends OptimizeException {
 
   protected ReportDefinitionDto reportDefinition;
 
+  public ReportEvaluationException() {
+  }
+
   public ReportEvaluationException(ReportDefinitionDto reportDefinition, OptimizeException e) {
     super(e.getMessage(), e);
     this.reportDefinition = reportDefinition;

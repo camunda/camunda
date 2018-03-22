@@ -3,6 +3,8 @@ package org.camunda.optimize.rest;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.service.exceptions.ReportEvaluationException;
+import org.camunda.optimize.service.sharing.AbstractSharingIT;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.util.ReportDataHelper;
@@ -243,12 +245,9 @@ public class ReportRestServiceIT {
 
     // then the status code is okay
     assertThat(response.getStatus(), is(500));
-    String errorMessage = response.readEntity(String.class);
-    assertThat(errorMessage.contains("reportDefinition"), is(true));
-    assertThat(errorMessage.contains("name"), is(true));
-    assertThat(errorMessage.contains("id"), is(true));
-    assertThat(errorMessage.contains("data"), is(true));
+    AbstractSharingIT.assertErrorFields(response.readEntity(ReportEvaluationException.class));
   }
+
 
   @Test
   public void evaluateReportWithoutViewById() {
@@ -267,11 +266,7 @@ public class ReportRestServiceIT {
 
     // then the status code is okay
     assertThat(response.getStatus(), is(500));
-    String errorMessage = response.readEntity(String.class);
-    assertThat(errorMessage.contains("reportDefinition"), is(true));
-    assertThat(errorMessage.contains("name"), is(true));
-    assertThat(errorMessage.contains("id"), is(true));
-    assertThat(errorMessage.contains("data"), is(true));
+    AbstractSharingIT.assertErrorFields(response.readEntity(ReportEvaluationException.class));
   }
 
   @Test
