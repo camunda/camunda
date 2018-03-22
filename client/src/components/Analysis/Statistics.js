@@ -127,8 +127,8 @@ export default class Statistics extends React.Component {
         datasets: [
           {
             data: Object.values(this.state.data.followingNodes).map(dataFct),
-            borderColor: '#00a8ff',
-            backgroundColor: '#e5f6ff',
+            borderColor: '#1991c8',
+            backgroundColor: '#1991c8',
             borderWidth: 2
           }
         ]
