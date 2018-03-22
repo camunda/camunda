@@ -125,6 +125,7 @@ public class ActorThread extends Thread implements Consumer<Runnable>
         }
 
         state = ActorThreadState.TERMINATED;
+        metrics.close();
 
         terminationFuture.complete(null);
     }

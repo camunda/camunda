@@ -15,30 +15,30 @@
  */
 package io.zeebe.util.sched;
 
-import io.zeebe.util.sched.clock.ActorClock;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.metrics.ActorThreadMetrics;
-import io.zeebe.util.sched.metrics.SchedulerMetrics;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.status.ConcurrentCountersManager;
-
+import java.io.IOException;
 import java.io.PrintStream;
 import java.time.Duration;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import io.zeebe.util.metrics.MetricsManager;
+import io.zeebe.util.sched.clock.ActorClock;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.metrics.ActorThreadMetrics;
+import org.agrona.ExpandableArrayBuffer;
+
 public class ActorScheduler
 {
     private final AtomicReference<SchedulerState> state = new AtomicReference<>();
     private final ActorExecutor actorTaskExecutor;
-    private final ConcurrentCountersManager countersManager;
+    private final MetricsManager metricsManager;
 
     public ActorScheduler(ActorSchedulerBuilder builder)
     {
         state.set(SchedulerState.NEW);
         actorTaskExecutor = builder.getActorExecutor();
-        countersManager = builder.getCountersManager();
+        metricsManager = builder.getMetricsManager();
     }
 
     /**
@@ -155,7 +155,17 @@ public class ActorScheduler
 
     public void dumpMetrics(PrintStream ps)
     {
-        SchedulerMetrics.printMetrics(countersManager, ps);
+        final ExpandableArrayBuffer buff = new ExpandableArrayBuffer();
+        metricsManager.dump(buff, 0, System.currentTimeMillis());
+
+        try
+        {
+            ps.write(buff.byteArray());
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
     }
 
     public static ActorSchedulerBuilder newActorScheduler()
@@ -172,7 +182,7 @@ public class ActorScheduler
     {
         private String schedulerName = "";
         private ActorClock actorClock;
-        private ConcurrentCountersManager countersManager;
+        private MetricsManager metricsManager;
 
         private int cpuBoundThreadsCount = Math.max(1, Runtime.getRuntime().availableProcessors() - 2);
         private ActorThreadGroup cpuBoundActorGroup;
@@ -193,9 +203,9 @@ public class ActorScheduler
             return this;
         }
 
-        public ActorSchedulerBuilder setCountersManager(ConcurrentCountersManager countersManager)
+        public ActorSchedulerBuilder setMetricsManager(MetricsManager metricsManager)
         {
-            this.countersManager = countersManager;
+            this.metricsManager = metricsManager;
             return this;
         }
 
@@ -263,9 +273,9 @@ public class ActorScheduler
             return actorClock;
         }
 
-        public ConcurrentCountersManager getCountersManager()
+        public MetricsManager getMetricsManager()
         {
-            return countersManager;
+            return metricsManager;
         }
 
         public int getCpuBoundActorThreadCount()
@@ -318,13 +328,11 @@ public class ActorScheduler
             return ioBoundActorGroup;
         }
 
-        private void initCountersManager()
+        private void initMetricsManager()
         {
-            if (countersManager == null)
+            if (metricsManager == null)
             {
-                final UnsafeBuffer valueBuffer = new UnsafeBuffer(new byte[64 * 1024]);
-                final UnsafeBuffer labelBuffer = new UnsafeBuffer(new byte[valueBuffer.capacity() * 2 + 1]);
-                countersManager = new ConcurrentCountersManager(labelBuffer, valueBuffer);
+                metricsManager = new MetricsManager();
             }
         }
 
@@ -376,7 +384,7 @@ public class ActorScheduler
 
         public ActorScheduler build()
         {
-            initCountersManager();
+            initMetricsManager();
             initActorThreadFactory();
             initBlockingTaskRunner();
             initCpuBoundActorThreadGroup();
@@ -431,5 +439,10 @@ public class ActorScheduler
         RUNNING,
         TERMINATING,
         TERMINATED // scheduler is not reusable
+    }
+
+    public MetricsManager getMetricsManager()
+    {
+        return metricsManager;
     }
 }

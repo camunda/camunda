@@ -50,7 +50,7 @@ public abstract class ActorThreadGroup
         for (int t = 0; t < numOfThreads; t++)
         {
             final String threadName = String.format("%s-%d", groupName, t);
-            final ActorThreadMetrics metrics = new ActorThreadMetrics(threadName, builder.getCountersManager());
+            final ActorThreadMetrics metrics = new ActorThreadMetrics(threadName, builder.getMetricsManager());
             final TaskScheduler taskScheduler = createTaskScheduler(tasks, builder);
 
             final ActorThread thread = builder.getActorThreadFactory().newThread(

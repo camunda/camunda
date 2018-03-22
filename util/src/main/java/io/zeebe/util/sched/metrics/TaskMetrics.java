@@ -15,22 +15,31 @@
  */
 package io.zeebe.util.sched.metrics;
 
-import static io.zeebe.util.sched.metrics.SchedulerMetrics.TYPE_TEMPORAL_VALUE;
-
-import org.agrona.concurrent.status.AtomicCounter;
-import org.agrona.concurrent.status.CountersManager;
+import io.zeebe.util.metrics.Metric;
+import io.zeebe.util.metrics.MetricsManager;
 
 public class TaskMetrics implements AutoCloseable
 {
-    private final AtomicCounter executionCount;
-    private final AtomicCounter totalExecutionTime;
-    private final AtomicCounter maxExecutionTime;
+    private final Metric executionCount;
+    private final Metric totalExecutionTime;
+    private final Metric maxExecutionTime;
 
-    public TaskMetrics(String taskName, CountersManager countersManager)
+    public TaskMetrics(String taskName, MetricsManager metricsManager)
     {
-        executionCount = countersManager.newCounter(String.format("%s.taskExecutionCount", taskName));
-        totalExecutionTime = countersManager.newCounter(String.format("%s.taskTotalExecutionTime", taskName), TYPE_TEMPORAL_VALUE);
-        maxExecutionTime = countersManager.newCounter(String.format("%s.taskMaxExecutionTime", taskName), TYPE_TEMPORAL_VALUE);
+        executionCount = metricsManager.newMetric("scheduler_task_execution_count")
+            .type("counter")
+            .label("task", taskName)
+            .create();
+
+        totalExecutionTime = metricsManager.newMetric("scheduler_task_execution_time_total")
+            .type("counter")
+            .label("task", taskName)
+            .create();
+
+        maxExecutionTime = metricsManager.newMetric("scheduler_task_execution_time_max")
+            .type("gauge")
+            .label("task", taskName)
+            .create();
     }
 
     public void reportExecutionTime(long executionTimeNs)

@@ -18,10 +18,10 @@ package io.zeebe.util.sched;
 import java.time.Duration;
 import java.util.concurrent.*;
 
+import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.sched.ActorScheduler.ActorSchedulerBuilder;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.metrics.TaskMetrics;
-import org.agrona.concurrent.status.ConcurrentCountersManager;
 
 /**
  * Used to submit {@link ActorTask ActorTasks} and Blocking Actions to
@@ -32,7 +32,7 @@ public class ActorExecutor
     private final ActorThreadGroup cpuBoundThreads;
     private final ActorThreadGroup ioBoundThreads;
     private final ThreadPoolExecutor blockingTasksRunner;
-    private final ConcurrentCountersManager countersManager;
+    private final MetricsManager metricsManager;
     private final Duration blockingTasksShutdownTime;
 
     public ActorExecutor(ActorSchedulerBuilder builder)
@@ -40,7 +40,7 @@ public class ActorExecutor
         this.ioBoundThreads = builder.getIoBoundActorThreads();
         this.cpuBoundThreads = builder.getCpuBoundActorThreads();
         this.blockingTasksRunner = builder.getBlockingTasksRunner();
-        this.countersManager = builder.getCountersManager();
+        this.metricsManager = builder.getMetricsManager();
         this.blockingTasksShutdownTime = builder.getBlockingTasksShutdownTime();
     }
 
@@ -69,7 +69,7 @@ public class ActorExecutor
 
         if (collectMetrics)
         {
-            taskMetrics = new TaskMetrics(task.getName(), countersManager);
+            taskMetrics = new TaskMetrics(task.getName(), metricsManager);
         }
 
         final ActorFuture<Void> startingFuture = task.onTaskScheduled(this, threadGroup, taskMetrics);
@@ -114,8 +114,8 @@ public class ActorExecutor
         return resultFuture;
     }
 
-    public ConcurrentCountersManager getCountersManager()
+    public MetricsManager getMetricsManager()
     {
-        return countersManager;
+        return metricsManager;
     }
 }

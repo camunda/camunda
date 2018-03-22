@@ -15,10 +15,8 @@
  */
 package io.zeebe.util.sched.metrics;
 
-import static io.zeebe.util.sched.metrics.SchedulerMetrics.TYPE_TEMPORAL_VALUE;
-
-import org.agrona.concurrent.status.AtomicCounter;
-import org.agrona.concurrent.status.CountersManager;
+import io.zeebe.util.metrics.Metric;
+import io.zeebe.util.metrics.MetricsManager;
 
 /**
  * Actor runner metrics
@@ -26,19 +24,42 @@ import org.agrona.concurrent.status.CountersManager;
  */
 public class ActorThreadMetrics implements AutoCloseable
 {
-    private final AtomicCounter runnerIdleTime;
-    private final AtomicCounter runnerBusyTime;
-    private final AtomicCounter jobExecutionCount;
-    private final AtomicCounter taskStealCount;
-    private final AtomicCounter taskExecutionCount;
+    private final Metric threadIdleTime;
+    private final Metric threadBusyTime;
+    private final Metric jobExecutionCount;
+    private final Metric taskStealCount;
+    private final Metric taskExecutionCount;
 
-    public ActorThreadMetrics(String runnerName, CountersManager countersManager)
+    public ActorThreadMetrics(String threadName, MetricsManager metricsManager)
     {
-        runnerIdleTime = countersManager.newCounter(String.format("%s.runnerIdleTime", runnerName), TYPE_TEMPORAL_VALUE);
-        runnerBusyTime = countersManager.newCounter(String.format("%s.runnerBusyTime", runnerName), TYPE_TEMPORAL_VALUE);
-        jobExecutionCount = countersManager.newCounter(String.format("%s.jobCount", runnerName));
-        taskStealCount = countersManager.newCounter(String.format("%s.taskStealCount", runnerName));
-        taskExecutionCount = countersManager.newCounter(String.format("%s.taskExecutionCount", runnerName));
+        threadIdleTime = metricsManager.newMetric("scheduler_thread_runtime_ns")
+            .type("counter")
+            .label("thread", threadName)
+            .label("mode", "idle")
+            .create();
+
+        threadBusyTime = metricsManager.newMetric("scheduler_thread_runtime_ns")
+            .type("counter")
+            .label("thread", threadName)
+            .label("mode", "busy")
+            .create();
+
+        jobExecutionCount = metricsManager.newMetric("scheduler_thread_job_count")
+            .type("counter")
+            .label("thread", threadName)
+            .create();
+
+        taskStealCount = metricsManager.newMetric("scheduler_thread_task_count")
+            .type("counter")
+            .label("thread", threadName)
+            .label("type", "steal")
+            .create();
+
+        taskExecutionCount = metricsManager.newMetric("scheduler_thread_task_count")
+            .type("counter")
+            .label("thread", threadName)
+            .label("type", "run")
+            .create();
     }
 
     public void incrementTaskStealCount()
@@ -58,12 +79,12 @@ public class ActorThreadMetrics implements AutoCloseable
 
     public void recordRunnerIdleTime(long time)
     {
-        runnerIdleTime.getAndAddOrdered(time);
+        threadIdleTime.getAndAddOrdered(time);
     }
 
     public void recordRunnerBusyTime(long time)
     {
-        runnerBusyTime.getAndAddOrdered(time);
+        threadBusyTime.getAndAddOrdered(time);
     }
 
     @Override
@@ -71,8 +92,8 @@ public class ActorThreadMetrics implements AutoCloseable
     {
         jobExecutionCount.close();
         taskStealCount.close();
-        runnerIdleTime.close();
-        runnerBusyTime.close();
+        threadIdleTime.close();
+        threadBusyTime.close();
         taskExecutionCount.close();
     }
 }
