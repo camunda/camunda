@@ -48,6 +48,8 @@ import io.zeebe.msgpack.mapping.*;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
+import io.zeebe.util.metrics.Metric;
+import io.zeebe.util.metrics.MetricsManager;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.LongArrayList;
@@ -76,6 +78,11 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
     protected final EventProcessor taskCreatedEventProcessor = new TaskCreatedProcessor();
 
     protected final Map<BpmnAspect, EventProcessor> aspectHandlers;
+
+    protected Metric workflowInstanceEventCreate;
+    protected Metric workflowInstanceEventCanceled;
+    protected Metric workflowInstanceEventCompleted;
+
     {
         aspectHandlers = new EnumMap<>(BpmnAspect.class);
 
@@ -166,6 +173,31 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         this.incidentEventWriter = new IncidentEventWriter(sourceEventMetadata, workflowInstanceEvent);
 
         this.logStream = logstream;
+
+        final MetricsManager metricsManager = context.getActorScheduler().getMetricsManager();
+        final String topicName = logstream.getTopicName().getStringWithoutLengthUtf8(0, logstream.getTopicName().capacity());
+        final String partitionId = Integer.toString(logstream.getPartitionId());
+
+        workflowInstanceEventCreate = metricsManager.newMetric("workflow_instance_events_count")
+            .type("counter")
+            .label("topic", topicName)
+            .label("partition", partitionId)
+            .label("type", "created")
+            .create();
+
+        workflowInstanceEventCanceled = metricsManager.newMetric("workflow_instance_events_canceled")
+            .type("counter")
+            .label("topic", topicName)
+            .label("partition", partitionId)
+            .label("type", "canceled")
+            .create();
+
+        workflowInstanceEventCompleted = metricsManager.newMetric("workflow_instance_events_completed")
+            .type("counter")
+            .label("topic", topicName)
+            .label("partition", partitionId)
+            .label("type", "completed")
+            .create();
     }
 
     @Override
@@ -176,6 +208,10 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         workflowDeploymentCache.close();
         payloadCache.close();
         logStreamReader.close();
+
+        workflowInstanceEventCreate.close();
+        workflowInstanceEventCanceled.close();
+        workflowInstanceEventCompleted.close();
     }
 
     public static MetadataFilter eventFilter()
@@ -237,10 +273,19 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
             case WORKFLOW_INSTANCE_CREATED:
                 eventProcessor = workflowInstanceCreatedEventProcessor;
+                workflowInstanceEventCreate.incrementOrdered();
                 break;
 
             case CANCEL_WORKFLOW_INSTANCE:
                 eventProcessor = cancelWorkflowInstanceProcessor;
+                break;
+
+            case WORKFLOW_INSTANCE_CANCELED:
+                workflowInstanceEventCanceled.incrementOrdered();
+                break;
+
+            case WORKFLOW_INSTANCE_COMPLETED:
+                workflowInstanceEventCompleted.incrementOrdered();
                 break;
 
             case SEQUENCE_FLOW_TAKEN:
