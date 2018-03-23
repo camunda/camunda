@@ -21,256 +21,146 @@ import static io.zeebe.broker.util.PayloadUtil.isNilPayload;
 import static io.zeebe.broker.util.PayloadUtil.isValidPayload;
 import static io.zeebe.protocol.clientapi.EventType.TASK_EVENT;
 
-import io.zeebe.protocol.Protocol;
 import org.agrona.DirectBuffer;
 
-import io.zeebe.protocol.impl.BrokerEventMetadata;
-import io.zeebe.broker.logstreams.processor.MetadataFilter;
+import io.zeebe.broker.logstreams.processor.TypedEvent;
+import io.zeebe.broker.logstreams.processor.TypedEventProcessor;
+import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
+import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
+import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
+import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.task.CreditsRequest;
 import io.zeebe.broker.task.TaskSubscriptionManager;
 import io.zeebe.broker.task.data.TaskEvent;
 import io.zeebe.broker.task.data.TaskState;
 import io.zeebe.broker.task.map.TaskInstanceMap;
-import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
 import io.zeebe.broker.transport.clientapi.SubscribedEventWriter;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamWriter;
-import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.processor.EventProcessor;
-import io.zeebe.logstreams.processor.StreamProcessor;
-import io.zeebe.logstreams.processor.StreamProcessorContext;
-import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.clientapi.SubscriptionType;
+import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.util.buffer.BufferUtil;
 
-public class TaskInstanceStreamProcessor implements StreamProcessor
+public class TaskInstanceStreamProcessor
 {
     protected static final short STATE_CREATED = 1;
     protected static final short STATE_LOCKED = 2;
     protected static final short STATE_FAILED = 3;
     protected static final short STATE_LOCK_EXPIRED = 4;
 
-    protected BrokerEventMetadata sourceEventMetadata = new BrokerEventMetadata();
-    protected final BrokerEventMetadata targetEventMetadata = new BrokerEventMetadata();
-
-    protected final CommandResponseWriter responseWriter;
-    protected final SubscribedEventWriter subscribedEventWriter;
+    protected SubscribedEventWriter subscribedEventWriter;
     protected final TaskSubscriptionManager taskSubscriptionManager;
-
-    protected final CreateTaskProcessor createTaskProcessor = new CreateTaskProcessor();
-    protected final LockTaskProcessor lockTaskProcessor = new LockTaskProcessor();
-    protected final CompleteTaskProcessor completeTaskProcessor = new CompleteTaskProcessor();
-    protected final FailTaskProcessor failTaskProcessor = new FailTaskProcessor();
-    protected final ExpireLockTaskProcessor expireLockTaskProcessor = new ExpireLockTaskProcessor();
-    protected final UpdateRetriesTaskProcessor updateRetriesTaskProcessor = new UpdateRetriesTaskProcessor();
-    protected final CancelTaskProcessor cancelTaskProcessor = new CancelTaskProcessor();
-
-    protected final TaskInstanceMap taskIndex;
-
-    protected final TaskEvent taskEvent = new TaskEvent();
     protected final CreditsRequest creditsRequest = new CreditsRequest();
 
-    protected DirectBuffer logStreamTopicName;
+    protected final TaskInstanceMap taskIndex;
     protected int logStreamPartitionId;
 
-    protected LogStream targetStream;
-
-    protected long eventKey = 0;
-    protected long eventPosition = 0;
-
-    public TaskInstanceStreamProcessor(CommandResponseWriter responseWriter, SubscribedEventWriter subscribedEventWriter, TaskSubscriptionManager taskSubscriptionManager)
+    public TaskInstanceStreamProcessor(TaskSubscriptionManager taskSubscriptionManager)
     {
-        this.responseWriter = responseWriter;
-        this.subscribedEventWriter = subscribedEventWriter;
         this.taskSubscriptionManager = taskSubscriptionManager;
 
         this.taskIndex = new TaskInstanceMap();
     }
 
-    @Override
-    public SnapshotSupport getStateResource()
+    public TypedStreamProcessor createStreamProcessor(TypedStreamEnvironment environment)
     {
-        return taskIndex.getSnapshotSupport();
+        this.logStreamPartitionId = environment.getStream().getPartitionId();
+        this.subscribedEventWriter = new SubscribedEventWriter(environment.getOutput());
+
+        return environment.newStreamProcessor()
+            .onEvent(EventType.TASK_EVENT, TaskState.CREATE, new CreateTaskProcessor())
+            .onEvent(EventType.TASK_EVENT, TaskState.LOCK, new LockTaskProcessor())
+            .onEvent(EventType.TASK_EVENT, TaskState.COMPLETE, new CompleteTaskProcessor())
+            .onEvent(EventType.TASK_EVENT, TaskState.FAIL, new FailTaskProcessor())
+            .onEvent(EventType.TASK_EVENT, TaskState.EXPIRE_LOCK, new ExpireLockTaskProcessor())
+            .onEvent(EventType.TASK_EVENT, TaskState.UPDATE_RETRIES, new UpdateRetriesTaskProcessor())
+            .onEvent(EventType.TASK_EVENT, TaskState.CANCEL, new CancelTaskProcessor())
+            .withStateResource(taskIndex.getMap())
+            .build();
     }
 
-    @Override
-    public void onOpen(StreamProcessorContext context)
-    {
-        final LogStream logStream = context.getLogStream();
-        logStreamTopicName = logStream.getTopicName();
-        logStreamPartitionId = logStream.getPartitionId();
-
-        targetStream = logStream;
-    }
-
-    @Override
-    public void onClose()
-    {
-        taskIndex.close();
-    }
-
-    public static MetadataFilter eventFilter()
-    {
-        return (m) -> m.getEventType() == EventType.TASK_EVENT;
-    }
-
-    @Override
-    public EventProcessor onEvent(LoggedEvent event)
-    {
-        taskIndex.reset();
-
-        eventKey = event.getKey();
-        eventPosition = event.getPosition();
-
-        event.readMetadata(sourceEventMetadata);
-
-        taskEvent.reset();
-        event.readValue(taskEvent);
-
-        EventProcessor eventProcessor = null;
-
-        switch (taskEvent.getState())
-        {
-            case CREATE:
-                eventProcessor = createTaskProcessor;
-                break;
-            case LOCK:
-                eventProcessor = lockTaskProcessor;
-                break;
-            case COMPLETE:
-                eventProcessor = completeTaskProcessor;
-                break;
-            case FAIL:
-                eventProcessor = failTaskProcessor;
-                break;
-            case EXPIRE_LOCK:
-                eventProcessor = expireLockTaskProcessor;
-                break;
-            case UPDATE_RETRIES:
-                eventProcessor = updateRetriesTaskProcessor;
-                break;
-            case CANCEL:
-                eventProcessor = cancelTaskProcessor;
-                break;
-
-            default:
-                break;
-        }
-
-        return eventProcessor;
-    }
-
-    @Override
-    public void afterEvent()
-    {
-        taskEvent.reset();
-    }
-
-    protected boolean writeResponse()
-    {
-        return responseWriter
-            .partitionId(logStreamPartitionId)
-            .position(eventPosition)
-            .key(eventKey)
-            .eventWriter(taskEvent)
-            .tryWriteResponse(sourceEventMetadata.getRequestStreamId(), sourceEventMetadata.getRequestId());
-    }
-
-    protected long writeEventToLogStream(LogStreamWriter writer)
-    {
-        targetEventMetadata.reset();
-        targetEventMetadata
-            .protocolVersion(Protocol.PROTOCOL_VERSION)
-            .eventType(TASK_EVENT);
-
-        return writer
-            .key(eventKey)
-            .metadataWriter(targetEventMetadata)
-            .valueWriter(taskEvent)
-            .tryWrite();
-    }
-
-    private class CreateTaskProcessor implements EventProcessor
+    private class CreateTaskProcessor implements TypedEventProcessor<TaskEvent>
     {
 
         @Override
-        public void processEvent()
+        public void processEvent(TypedEvent<TaskEvent> event)
         {
-            taskEvent.setState(TaskState.CREATED);
+            event.getValue().setState(TaskState.CREATED);
         }
 
         @Override
-        public boolean executeSideEffects()
+        public boolean executeSideEffects(TypedEvent<TaskEvent> event, TypedResponseWriter responseWriter)
         {
             boolean success = true;
 
-            if (sourceEventMetadata.hasRequestMetadata())
+            if (event.getMetadata().hasRequestMetadata())
             {
-                success = writeResponse();
+                success = responseWriter.write(event);
             }
+
             return success;
         }
 
         @Override
-        public long writeEvent(LogStreamWriter writer)
+        public long writeEvent(TypedEvent<TaskEvent> event, TypedStreamWriter writer)
         {
-            return writeEventToLogStream(writer);
+            return writer.writeFollowupEvent(event.getKey(), event.getValue());
         }
 
         @Override
-        public void updateState()
+        public void updateState(TypedEvent<TaskEvent> event)
         {
             taskIndex
-                .newTaskInstance(eventKey)
+                .newTaskInstance(event.getKey())
                 .setState(STATE_CREATED)
                 .write();
         }
     }
 
-    private class LockTaskProcessor implements EventProcessor
+    private class LockTaskProcessor implements TypedEventProcessor<TaskEvent>
     {
         protected boolean isLocked;
+        protected final CreditsRequest creditsRequest = new CreditsRequest();
 
         @Override
-        public void processEvent()
+        public void processEvent(TypedEvent<TaskEvent> event)
         {
             isLocked = false;
 
-            final short state = taskIndex.wrapTaskInstanceKey(eventKey).getState();
+            final short state = taskIndex.wrapTaskInstanceKey(event.getKey()).getState();
 
             if (state == STATE_CREATED || state == STATE_FAILED || state == STATE_LOCK_EXPIRED)
             {
-                taskEvent.setState(TaskState.LOCKED);
+                event.getValue().setState(TaskState.LOCKED);
                 isLocked = true;
             }
-
-            if (!isLocked)
+            else
             {
-                taskEvent.setState(TaskState.LOCK_REJECTED);
+                event.getValue().setState(TaskState.LOCK_REJECTED);
             }
         }
 
         @Override
-        public boolean executeSideEffects()
+        public boolean executeSideEffects(TypedEvent<TaskEvent> event, TypedResponseWriter responseWriter)
         {
             boolean success = true;
 
             if (isLocked)
             {
+                final BrokerEventMetadata metadata = event.getMetadata();
+
                 success = subscribedEventWriter
                         .partitionId(logStreamPartitionId)
-                        .position(eventPosition)
-                        .key(eventKey)
-                        .subscriberKey(sourceEventMetadata.getSubscriberKey())
+                        .position(event.getPosition())
+                        .key(event.getKey())
+                        .subscriberKey(metadata.getSubscriberKey())
                         .subscriptionType(SubscriptionType.TASK_SUBSCRIPTION)
                         .eventType(TASK_EVENT)
-                        .eventWriter(taskEvent)
-                        .tryWriteMessage(sourceEventMetadata.getRequestStreamId());
+                        .eventWriter(event.getValue())
+                        .tryWriteMessage(metadata.getRequestStreamId());
             }
             else
             {
-                final long subscriptionId = sourceEventMetadata.getSubscriberKey();
+                final long subscriptionId = event.getMetadata().getSubscriberKey();
 
                 creditsRequest.setSubscriberKey(subscriptionId);
                 creditsRequest.setCredits(1);
@@ -281,45 +171,47 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         }
 
         @Override
-        public long writeEvent(LogStreamWriter writer)
+        public long writeEvent(TypedEvent<TaskEvent> event, TypedStreamWriter writer)
         {
-            return writeEventToLogStream(writer);
+            return writer.writeFollowupEvent(event.getKey(), event.getValue());
         }
 
         @Override
-        public void updateState()
+        public void updateState(TypedEvent<TaskEvent> event)
         {
             if (isLocked)
             {
                 taskIndex
                     .setState(STATE_LOCKED)
-                    .setLockOwner(taskEvent.getLockOwner())
+                    .setLockOwner(event.getValue().getLockOwner())
                     .write();
             }
         }
     }
 
-    private class CompleteTaskProcessor implements EventProcessor
+    private class CompleteTaskProcessor implements TypedEventProcessor<TaskEvent>
     {
         protected boolean isCompleted;
 
         @Override
-        public void processEvent()
+        public void processEvent(TypedEvent<TaskEvent> event)
         {
             isCompleted = false;
 
-            taskIndex.wrapTaskInstanceKey(eventKey);
+            taskIndex.wrapTaskInstanceKey(event.getKey());
             final short state = taskIndex.getState();
 
             TaskState taskEventType = TaskState.COMPLETE_REJECTED;
 
+            final TaskEvent value = event.getValue();
+
             final boolean isCompletable = state == STATE_LOCKED || state == STATE_LOCK_EXPIRED;
             if (isCompletable)
             {
-                final DirectBuffer payload = taskEvent.getPayload();
+                final DirectBuffer payload = value.getPayload();
                 if (isNilPayload(payload) || isValidPayload(payload))
                 {
-                    if (BufferUtil.contentsEqual(taskIndex.getLockOwner(), taskEvent.getLockOwner()))
+                    if (BufferUtil.contentsEqual(taskIndex.getLockOwner(), value.getLockOwner()))
                     {
                         taskEventType = TaskState.COMPLETED;
                         isCompleted = true;
@@ -327,67 +219,69 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
                 }
             }
 
-            taskEvent.setState(taskEventType);
+            value.setState(taskEventType);
         }
 
         @Override
-        public boolean executeSideEffects()
+        public boolean executeSideEffects(TypedEvent<TaskEvent> event, TypedResponseWriter responseWriter)
         {
-            return writeResponse();
+            return responseWriter.write(event);
         }
 
         @Override
-        public long writeEvent(LogStreamWriter writer)
+        public long writeEvent(TypedEvent<TaskEvent> event, TypedStreamWriter writer)
         {
-            return writeEventToLogStream(writer);
+            return writer.writeFollowupEvent(event.getKey(), event.getValue());
         }
 
         @Override
-        public void updateState()
+        public void updateState(TypedEvent<TaskEvent> event)
         {
             if (isCompleted)
             {
-                taskIndex.remove(eventKey);
+                taskIndex.remove(event.getKey());
             }
         }
     }
 
-    private class FailTaskProcessor implements EventProcessor
+    private class FailTaskProcessor implements TypedEventProcessor<TaskEvent>
     {
         protected boolean isFailed;
 
         @Override
-        public void processEvent()
+        public void processEvent(TypedEvent<TaskEvent> event)
         {
             isFailed = false;
 
-            taskIndex.wrapTaskInstanceKey(eventKey);
-            if (taskIndex.getState() == STATE_LOCKED && BufferUtil.contentsEqual(taskIndex.getLockOwner(), taskEvent.getLockOwner()))
+            final TaskEvent value = event.getValue();
+
+            taskIndex.wrapTaskInstanceKey(event.getKey());
+            if (taskIndex.getState() == STATE_LOCKED && BufferUtil.contentsEqual(taskIndex.getLockOwner(), value.getLockOwner()))
             {
-                taskEvent.setState(TaskState.FAILED);
+                value.setState(TaskState.FAILED);
                 isFailed = true;
             }
 
             if (!isFailed)
             {
-                taskEvent.setState(TaskState.FAIL_REJECTED);
+                value.setState(TaskState.FAIL_REJECTED);
             }
         }
 
         @Override
-        public boolean executeSideEffects()
+        public boolean executeSideEffects(TypedEvent<TaskEvent> event, TypedResponseWriter responseWriter)
         {
-            return writeResponse();
+            return responseWriter.write(event);
         }
 
         @Override
-        public long writeEvent(LogStreamWriter writer)
+        public long writeEvent(TypedEvent<TaskEvent> event, TypedStreamWriter writer)
         {
-            return writeEventToLogStream(writer);
+            return writer.writeFollowupEvent(event.getKey(), event.getValue());
         }
 
         @Override
-        public void updateState()
+        public void updateState(TypedEvent<TaskEvent> event)
         {
             if (isFailed)
             {
@@ -398,36 +292,38 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         }
     }
 
-    private class ExpireLockTaskProcessor implements EventProcessor
+    private class ExpireLockTaskProcessor implements TypedEventProcessor<TaskEvent>
     {
         protected boolean isExpired;
 
         @Override
-        public void processEvent()
+        public void processEvent(TypedEvent<TaskEvent> event)
         {
             isExpired = false;
 
-            taskIndex.wrapTaskInstanceKey(eventKey);
+            taskIndex.wrapTaskInstanceKey(event.getKey());
+            final TaskEvent value = event.getValue();
+
             if (taskIndex.getState() == STATE_LOCKED)
             {
-                taskEvent.setState(TaskState.LOCK_EXPIRED);
+                value.setState(TaskState.LOCK_EXPIRED);
                 isExpired = true;
             }
 
             if (!isExpired)
             {
-                taskEvent.setState(TaskState.LOCK_EXPIRATION_REJECTED);
+                value.setState(TaskState.LOCK_EXPIRATION_REJECTED);
             }
         }
 
         @Override
-        public long writeEvent(LogStreamWriter writer)
+        public long writeEvent(TypedEvent<TaskEvent> event, TypedStreamWriter writer)
         {
-            return writeEventToLogStream(writer);
+            return writer.writeFollowupEvent(event.getKey(), event.getValue());
         }
 
         @Override
-        public void updateState()
+        public void updateState(TypedEvent<TaskEvent> event)
         {
             if (isExpired)
             {
@@ -438,70 +334,72 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         }
     }
 
-    private class UpdateRetriesTaskProcessor implements EventProcessor
+    private class UpdateRetriesTaskProcessor implements TypedEventProcessor<TaskEvent>
     {
         @Override
-        public void processEvent()
+        public void processEvent(TypedEvent<TaskEvent> event)
         {
-            final short state = taskIndex.wrapTaskInstanceKey(eventKey).getState();
+            final short state = taskIndex.wrapTaskInstanceKey(event.getKey()).getState();
+            final TaskEvent value = event.getValue();
 
-            if (state == STATE_FAILED && taskEvent.getRetries() > 0)
+            if (state == STATE_FAILED && value.getRetries() > 0)
             {
-                taskEvent.setState(TaskState.RETRIES_UPDATED);
+                value.setState(TaskState.RETRIES_UPDATED);
             }
             else
             {
-                taskEvent.setState(TaskState.UPDATE_RETRIES_REJECTED);
+                value.setState(TaskState.UPDATE_RETRIES_REJECTED);
             }
         }
 
         @Override
-        public boolean executeSideEffects()
+        public boolean executeSideEffects(TypedEvent<TaskEvent> event, TypedResponseWriter responseWriter)
         {
-            return writeResponse();
+            return responseWriter.write(event);
         }
 
         @Override
-        public long writeEvent(LogStreamWriter writer)
+        public long writeEvent(TypedEvent<TaskEvent> event, TypedStreamWriter writer)
         {
-            return writeEventToLogStream(writer);
+            return writer.writeFollowupEvent(event.getKey(), event.getValue());
         }
     }
 
-    private class CancelTaskProcessor implements EventProcessor
+    private class CancelTaskProcessor implements TypedEventProcessor<TaskEvent>
     {
         private boolean isCanceled;
 
         @Override
-        public void processEvent()
+        public void processEvent(TypedEvent<TaskEvent> event)
         {
             isCanceled = false;
 
-            final short state = taskIndex.wrapTaskInstanceKey(eventKey).getState();
+            final short state = taskIndex.wrapTaskInstanceKey(event.getKey()).getState();
+            final TaskEvent value = event.getValue();
 
             if (state > 0)
             {
-                taskEvent.setState(TaskState.CANCELED);
+                value.setState(TaskState.CANCELED);
                 isCanceled = true;
             }
             else
             {
-                taskEvent.setState(TaskState.CANCEL_REJECTED);
+                value.setState(TaskState.CANCEL_REJECTED);
             }
         }
 
         @Override
-        public long writeEvent(LogStreamWriter writer)
+        public long writeEvent(TypedEvent<TaskEvent> event, TypedStreamWriter writer)
         {
-            return writeEventToLogStream(writer);
+            return writer.writeFollowupEvent(event.getKey(), event.getValue());
         }
 
         @Override
-        public void updateState()
+        public void updateState(TypedEvent<TaskEvent> event)
         {
             if (isCanceled)
             {
-                taskIndex.remove(eventKey);
+                taskIndex.remove(event.getKey());
             }
         }
     }

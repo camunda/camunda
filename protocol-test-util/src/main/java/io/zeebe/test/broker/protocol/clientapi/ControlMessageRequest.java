@@ -69,6 +69,11 @@ public class ControlMessageRequest implements BufferWriter
 
     public ControlMessageRequest send()
     {
+        if (responseFuture != null)
+        {
+            throw new RuntimeException("Cannot send request more than once");
+        }
+
         responseFuture = output.sendRequest(target, this);
         return this;
     }

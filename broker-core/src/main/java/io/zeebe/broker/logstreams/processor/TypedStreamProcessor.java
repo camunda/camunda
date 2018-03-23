@@ -17,8 +17,13 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.List;
+
 import io.zeebe.broker.system.log.PartitionEvent;
 import io.zeebe.broker.system.log.TopicEvent;
+import io.zeebe.broker.task.data.TaskEvent;
 import io.zeebe.broker.workflow.data.DeploymentEvent;
 import io.zeebe.broker.workflow.data.WorkflowEvent;
 import io.zeebe.logstreams.log.LogStream;
@@ -36,10 +41,6 @@ import io.zeebe.util.ReflectUtil;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 
-import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.List;
-
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class TypedStreamProcessor implements StreamProcessor
 {
@@ -56,6 +57,7 @@ public class TypedStreamProcessor implements StreamProcessor
     protected final TypedEventImpl typedEvent = new TypedEventImpl();
     protected DelegatingEventProcessor eventProcessorWrapper;
     protected ActorControl actor;
+    private StreamProcessorContext streamProcessorContext;
 
     public TypedStreamProcessor(
             SnapshotSupport snapshotSupport,
@@ -86,6 +88,7 @@ public class TypedStreamProcessor implements StreamProcessor
                 eventRegistry);
 
         this.actor = context.getActorControl();
+        this.streamProcessorContext = context;
         lifecycleListeners.forEach(e -> e.onOpen(this));
     }
 
@@ -161,6 +164,10 @@ public class TypedStreamProcessor implements StreamProcessor
         {
             return ((WorkflowEvent) value).getState();
         }
+        else if (value instanceof TaskEvent)
+        {
+            return ((TaskEvent) value).getState();
+        }
         else
         {
             throw new RuntimeException("event type " + value.getClass() + " not supported");
@@ -226,5 +233,10 @@ public class TypedStreamProcessor implements StreamProcessor
     public ActorControl getActor()
     {
         return actor;
+    }
+
+    public StreamProcessorContext getStreamProcessorContext()
+    {
+        return streamProcessorContext;
     }
 }

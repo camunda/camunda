@@ -25,11 +25,8 @@ import static org.mockito.Mockito.when;
 
 import java.time.Duration;
 
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TemporaryFolder;
 
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
@@ -43,20 +40,14 @@ import io.zeebe.broker.system.log.PartitionEvent;
 import io.zeebe.broker.system.log.PartitionState;
 import io.zeebe.broker.system.log.TopicEvent;
 import io.zeebe.broker.system.log.TopicState;
-import io.zeebe.broker.topic.Events;
 import io.zeebe.broker.topic.StreamProcessorControl;
-import io.zeebe.broker.topic.TestStreams;
-import io.zeebe.broker.transport.clientapi.BufferingServerOutput;
+import io.zeebe.broker.util.StreamProcessorRule;
 import io.zeebe.broker.workflow.data.DeploymentEvent;
 import io.zeebe.broker.workflow.data.DeploymentState;
 import io.zeebe.broker.workflow.data.ResourceType;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
-import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.buffer.BufferUtil;
-import io.zeebe.util.sched.clock.ControlledActorClock;
-import io.zeebe.util.sched.testing.ActorSchedulerRule;
 
 public class CreateDeploymentStreamProcessorTest
 {
@@ -72,58 +63,30 @@ public class CreateDeploymentStreamProcessorTest
             .done();
     private static final Duration DEPLOYMENT_TIMEOUT = Duration.ofSeconds(50);
 
-    public TemporaryFolder tempFolder = new TemporaryFolder();
-    public AutoCloseableRule closeables = new AutoCloseableRule();
-
-    public ControlledActorClock clock = new ControlledActorClock();
-    public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(clock);
-
     @Rule
-    public RuleChain ruleChain = RuleChain.outerRule(tempFolder).around(actorSchedulerRule).around(closeables);
+    public StreamProcessorRule rule = new StreamProcessorRule();
 
-    public BufferingServerOutput output;
-
-    protected TestStreams streams;
-
-    private TypedStreamProcessor streamProcessor;
-
-    @Before
-    public void setUp()
-    {
-        output = new BufferingServerOutput();
-
-        streams = new TestStreams(tempFolder.getRoot(), closeables, actorSchedulerRule.get());
-        streams.createLogStream(STREAM_NAME);
-
-        streams.newEvent(STREAM_NAME) // TODO: workaround for https://github.com/zeebe-io/zeebe/issues/478
-            .event(new UnpackedObject())
-            .write();
-
-        rebuildStreamProcessor();
-    }
-
-    protected void rebuildStreamProcessor()
+    protected TypedStreamProcessor buildStreamProcessor(TypedStreamEnvironment env)
     {
         final WorkflowVersions versions = new WorkflowVersions();
         final PendingWorkflows pendingWorkflows = new PendingWorkflows();
         final PendingDeployments pendingDeployments = new PendingDeployments();
 
-        final TypedStreamEnvironment streamEnvironment = new TypedStreamEnvironment(streams.getLogStream(STREAM_NAME), output);
         final DeploymentEventWriter writer =
                 new DeploymentEventWriter(
-                        streamEnvironment.buildStreamWriter(),
-                        streamEnvironment.buildStreamReader());
+                        env.buildStreamWriter(),
+                        env.buildStreamReader());
 
         final RemoteWorkflowsManager remoteManager = mock(RemoteWorkflowsManager.class);
         when(remoteManager.distributeWorkflow(any(), anyLong(), any())).thenReturn(true);
         when(remoteManager.deleteWorkflow(any(), anyLong(), any())).thenReturn(true);
 
-        this.streamProcessor = DeploymentManager.createDeploymentStreamProcessor(
+        return DeploymentManager.createDeploymentStreamProcessor(
                 versions,
                 pendingDeployments,
                 pendingWorkflows,
                 DEPLOYMENT_TIMEOUT,
-                streamEnvironment,
+                env,
                 writer,
                 remoteManager
             );
@@ -133,49 +96,30 @@ public class CreateDeploymentStreamProcessorTest
     public void shouldTimeOutDeploymentAfterStreamProcessorRestart()
     {
         // given
-        clock.pinCurrentTime();
+        rule.getClock().pinCurrentTime();
 
-        final StreamProcessorControl control = streams.runStreamProcessor(STREAM_NAME, streamProcessor);
+        final StreamProcessorControl control = rule.runStreamProcessor(this::buildStreamProcessor);
 
-        control.blockAfterEvent(e ->
-            Events.isDeploymentEvent(e) &&
-            Events.asDeploymentEvent(e).getState() == DeploymentState.VALIDATED);
+        control.blockAfterDeploymentEvent(e -> e.getValue().getState() == DeploymentState.VALIDATED);
 
-        control.unblock();
-
-        writeEventToStream(partitionCreated(STREAM_NAME, 1));
-        writeEventToStream(topicCreated(STREAM_NAME, 1));
-        writeEventToStream(createDeployment(ONE_TASK_PROCESS));
+        rule.writeEvent(partitionCreated(STREAM_NAME, 1));
+        rule.writeEvent(topicCreated(STREAM_NAME, 1));
+        rule.writeEvent(createDeployment(ONE_TASK_PROCESS));
 
         waitUntil(() -> control.isBlocked());
 
-        // restarting the stream processor
-        control.close();
-
-        rebuildStreamProcessor();
-        final StreamProcessorControl restartedControl = streams.runStreamProcessor(STREAM_NAME, streamProcessor);
-
-        restartedControl.blockAfterEvent(e -> false);
-        restartedControl.unblock();
+        control.restart();
 
         // when
-        clock.addTime(DEPLOYMENT_TIMEOUT.plus(Duration.ofSeconds(1)));
+        rule.getClock().addTime(DEPLOYMENT_TIMEOUT.plus(Duration.ofSeconds(1)));
 
         // then
         waitUntil(() ->
-            streams.events(STREAM_NAME)
-                .filter(Events::isDeploymentEvent)
-                .map(Events::asDeploymentEvent)
-                .filter(e -> e.getState() == DeploymentState.TIMED_OUT)
+            rule.events()
+                .onlyDeploymentEvents()
+                .inState(DeploymentState.TIMED_OUT)
                 .count()
             > 0);
-    }
-
-    private long writeEventToStream(UnpackedObject object)
-    {
-        return streams.newEvent(STREAM_NAME)
-            .event(object)
-            .write();
     }
 
     protected DeploymentEvent createDeployment(WorkflowDefinition workflow)

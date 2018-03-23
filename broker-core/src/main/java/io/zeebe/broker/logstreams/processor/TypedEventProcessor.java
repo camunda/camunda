@@ -25,7 +25,9 @@ public interface TypedEventProcessor<T extends UnpackedObject> extends StreamPro
     /**
      * @see EventProcessor#processEvent()
      */
-    void processEvent(TypedEvent<T> event);
+    default void processEvent(TypedEvent<T> event)
+    {
+    }
 
     /**
      * @see EventProcessor#executeSideEffects()

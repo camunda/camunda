@@ -17,15 +17,17 @@
  */
 package io.zeebe.broker.task.map;
 
-import static org.agrona.BitUtil.*;
+import static org.agrona.BitUtil.SIZE_OF_CHAR;
+import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.BitUtil.SIZE_OF_SHORT;
 
 import java.nio.ByteOrder;
 
-import io.zeebe.broker.task.processor.TaskSubscription;
-import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
-import io.zeebe.map.Long2BytesZbMap;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+
+import io.zeebe.broker.task.processor.TaskSubscription;
+import io.zeebe.map.Long2BytesZbMap;
 
 /**
  * Maps <b>task instance key</b> to
@@ -48,7 +50,6 @@ public class TaskInstanceMap
     private final UnsafeBuffer lockOwnerBuffer = new UnsafeBuffer(0, 0);
 
     private final Long2BytesZbMap map;
-    private final ZbMapSnapshotSupport<Long2BytesZbMap> snapshotSupport;
 
     private long key;
     private boolean isRead = false;
@@ -56,12 +57,6 @@ public class TaskInstanceMap
     public TaskInstanceMap()
     {
         this.map = new Long2BytesZbMap(MAP_VALUE_SIZE);
-        this.snapshotSupport = new ZbMapSnapshotSupport<>(map);
-    }
-
-    public ZbMapSnapshotSupport<Long2BytesZbMap> getSnapshotSupport()
-    {
-        return snapshotSupport;
     }
 
     public void reset()
@@ -72,6 +67,11 @@ public class TaskInstanceMap
     public void remove(long workflowInstanceKey)
     {
         map.remove(workflowInstanceKey);
+    }
+
+    public Long2BytesZbMap getMap()
+    {
+        return map;
     }
 
     public TaskInstanceMap wrapTaskInstanceKey(long key)

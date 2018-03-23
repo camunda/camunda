@@ -37,11 +37,12 @@ public class TaskSubscriptionManagerService implements Service<TaskSubscriptionM
     @Override
     public void start(ServiceStartContext startContext)
     {
+        final ServerTransport clientApiTransport = transportInjector.getValue();
+
         final ActorScheduler actorScheduler = startContext.getScheduler();
-        service = new TaskSubscriptionManager(startContext);
+        service = new TaskSubscriptionManager(startContext, clientApiTransport);
         actorScheduler.submitActor(service);
 
-        final ServerTransport clientApiTransport = transportInjector.getValue();
         final ActorFuture<Void> transportRegistration = clientApiTransport.registerChannelListener(service);
         startContext.async(transportRegistration);
     }

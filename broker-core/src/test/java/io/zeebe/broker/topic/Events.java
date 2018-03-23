@@ -21,6 +21,7 @@ import org.agrona.DirectBuffer;
 
 import io.zeebe.broker.system.log.PartitionEvent;
 import io.zeebe.broker.system.log.TopicEvent;
+import io.zeebe.broker.task.data.TaskEvent;
 import io.zeebe.broker.workflow.data.DeploymentEvent;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.msgpack.UnpackedObject;
@@ -47,6 +48,11 @@ public class Events
         return readValueAs(event, TopicEvent.class);
     }
 
+    public static TaskEvent asTaskEvent(LoggedEvent event)
+    {
+        return readValueAs(event, TaskEvent.class);
+    }
+
     protected static <T extends UnpackedObject> T readValueAs(LoggedEvent event, Class<T> valueClass)
     {
         final DirectBuffer copy = BufferUtil.cloneBuffer(event.getValueBuffer(), event.getValueOffset(), event.getValueLength());
@@ -68,6 +74,11 @@ public class Events
     public static boolean isTopicEvent(LoggedEvent event)
     {
         return isEventOfType(event, EventType.TOPIC_EVENT);
+    }
+
+    public static boolean isTaskEvent(LoggedEvent event)
+    {
+        return isEventOfType(event, EventType.TASK_EVENT);
     }
 
     protected static boolean isEventOfType(LoggedEvent event, EventType type)

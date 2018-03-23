@@ -17,906 +17,495 @@
  */
 package io.zeebe.broker.task.processor;
 
+import static io.zeebe.test.util.TestUtil.waitUntil;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+
+import io.zeebe.broker.logstreams.processor.TypedEvent;
+import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
+import io.zeebe.broker.task.TaskSubscriptionManager;
+import io.zeebe.broker.task.data.TaskEvent;
+import io.zeebe.broker.task.data.TaskState;
+import io.zeebe.broker.topic.StreamProcessorControl;
+import io.zeebe.broker.util.StreamProcessorRule;
+import io.zeebe.logstreams.processor.StreamProcessor;
+import io.zeebe.util.buffer.BufferUtil;
+
 public class TaskInstanceStreamProcessorTest
 {
-//    public static final DirectBuffer TASK_TYPE = wrapString("foo");
-//
-//    private TaskInstanceStreamProcessor streamProcessor;
-//
-//    private final Instant now = Instant.now();
-//    private final long lockTime = now.plus(Duration.ofMinutes(5)).toEpochMilli();
-//
-//    @Mock
-//    private LogStream mockLogStream;
-//
-//    @FluentMock
-//    private CommandResponseWriter mockResponseWriter;
-//
-//    @FluentMock
-//    private SubscribedEventWriter mockSubscribedEventWriter;
-//
-//    @Mock
-//    private TaskSubscriptionManager mockTaskSubscriptionManager;
-//
-//    @Rule
-//    public MockStreamProcessorController<TaskEvent> mockController = new MockStreamProcessorController<>(
-//        TaskEvent.class,
-//        (t) -> t.setType(TASK_TYPE).setState(TaskState.CREATED),
-//        TASK_EVENT,
-//        0);
-//
-//    @Before
-//    public void setup() throws InterruptedException, ExecutionException
-//    {
-//        MockitoAnnotations.initMocks(this);
-//
-//        when(mockLogStream.getTopicName()).thenReturn(wrapString("test-topic"));
-//        when(mockLogStream.getPartitionId()).thenReturn(1);
-//
-//        streamProcessor = new TaskInstanceStreamProcessor(mockResponseWriter, mockSubscribedEventWriter, mockTaskSubscriptionManager);
-//
-//        final StreamProcessorContext context = new StreamProcessorContext();
-//        context.setLogStream(mockLogStream);
-//
-//        mockController.initStreamProcessor(streamProcessor, context);
-//
-//        ClockUtil.setCurrentTime(now);
-//    }
-//
-//    @After
-//    public void cleanUp()
-//    {
-//        ClockUtil.reset();
-//        streamProcessor.onClose();
-//    }
-//
-//    @Test
-//    public void shouldCreateTask()
-//    {
-//        // when
-//        mockController.processEvent(2L, event ->
-//            event.setState(TaskState.CREATE));
-//
-//        // then
-//        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.CREATED);
-//        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-//
-//        verify(mockResponseWriter).key(2L);
-//        verify(mockResponseWriter).tryWriteResponse(anyInt(), anyLong());
-//    }
-//
-//    @Test
-//    public void shouldLockTask() throws InterruptedException, ExecutionException
-//    {
-//        // given
-//        mockController.processEvent(2L, event ->
-//            event.setState(TaskState.CREATE));
-//
-//        // when
-//        mockController.processEvent(2L,
-//            event -> event
-//                .setState(TaskState.LOCK)
-//                .setLockTime(lockTime)
-//                .setLockOwner(wrapString("owner")),
-//            metadata -> metadata
-//                .requestStreamId(4)
-//                .subscriberKey(5L));
-//
-//        // then
-//        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.LOCKED);
-//        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-//
-//        verify(mockResponseWriter, times(1)).tryWriteResponse(anyInt(), anyLong());
-//
-//        verify(mockSubscribedEventWriter, times(1)).tryWriteMessage(4);
-//        verify(mockSubscribedEventWriter).subscriberKey(5L);
-//        verify(mockSubscribedEventWriter).subscriptionType(SubscriptionType.TASK_SUBSCRIPTION);
-//    }
-//
-//    @Test
-//    public void shouldLockFailedTask() throws InterruptedException, ExecutionException
-//    {
-//        // given
-//        mockController.processEvent(2L, event ->
-//            event.setState(TaskState.CREATE));
-//
-//        mockController.processEvent(2L,
-//            event -> event
-//                .setState(TaskState.LOCK)
-//                .setLockTime(lockTime)
-//                .setLockOwner(wrapString("owner")),
-//            metadata -> metadata
-//                .requestStreamId(4)
-//                .subscriberKey(5L));
-//
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.FAIL)
-//                .setLockOwner(wrapString("owner")));
-//
-//        // when
-//        mockController.processEvent(2L,
-//            event -> event
-//                .setState(TaskState.LOCK)
-//                .setLockTime(lockTime)
-//                .setLockOwner(wrapString("owner")),
-//            metadata -> metadata
-//                .requestStreamId(6)
-//                .subscriberKey(7L));
-//
-//        // then
-//        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.LOCKED);
-//        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-//
-//        verify(mockResponseWriter, times(2)).tryWriteResponse(anyInt(), anyLong());
-//
-//        verify(mockSubscribedEventWriter, times(1)).tryWriteMessage(4);
-//        verify(mockSubscribedEventWriter, times(1)).tryWriteMessage(6);
-//        verify(mockSubscribedEventWriter).subscriberKey(7L);
-//    }
-//
-//    @Test
-//    public void shouldLockExpiredTask()
-//    {
-//        // given
-//        mockController.processEvent(2L, event ->
-//            event.setState(TaskState.CREATE));
-//
-//        mockController.processEvent(2L,
-//            event -> event
-//                .setState(TaskState.LOCK)
-//                .setLockTime(lockTime)
-//                .setLockOwner(wrapString("owner")),
-//            metadata -> metadata
-//                .requestStreamId(4)
-//                .subscriberKey(5L));
-//
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.EXPIRE_LOCK)
-//                .setLockOwner(wrapString("owner")));
-//
-//        // when
-//        mockController.processEvent(2L,
-//            event -> event
-//                .setState(TaskState.LOCK)
-//                .setLockTime(lockTime)
-//                .setLockOwner(wrapString("owner")),
-//            metadata -> metadata
-//                .requestStreamId(6)
-//                .subscriberKey(7L));
-//
-//        // then
-//        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.LOCKED);
-//        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-//
-//        verify(mockResponseWriter, times(1)).tryWriteResponse(anyInt(), anyLong());
-//
-//        verify(mockSubscribedEventWriter, times(1)).tryWriteMessage(4);
-//        verify(mockSubscribedEventWriter, times(1)).tryWriteMessage(6);
-//        verify(mockSubscribedEventWriter).subscriberKey(7L);
-//    }
-//
-//    @Test
-//    public void shouldCompleteTask() throws InterruptedException, ExecutionException
-//    {
-//        // given
-//        mockController.processEvent(2L, event ->
-//            event.setState(TaskState.CREATE));
-//
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.LOCK)
-//                .setLockTime(lockTime)
-//                .setLockOwner(wrapString("owner")));
-//
-//        // when
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.COMPLETE)
-//                .setLockOwner(wrapString("owner")));
-//
-//        // then
-//        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.COMPLETED);
-//        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-//
-//        verify(mockResponseWriter, times(2)).tryWriteResponse(anyInt(), anyLong());
-//    }
-//
-//    @Test
-//    public void shouldCompleteExpiredTask() throws InterruptedException, ExecutionException
-//    {
-//        // given
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.CREATE));
-//
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.LOCK)
-//                .setLockTime(lockTime)
-//                .setLockOwner(wrapString("owner")));
-//
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.EXPIRE_LOCK)
-//                .setLockOwner(wrapString("owner")));
-//
-//        // when
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.COMPLETE)
-//                .setLockOwner(wrapString("owner")));
-//
-//        // then
-//        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.COMPLETED);
-//        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-//
-//        verify(mockResponseWriter, times(2)).tryWriteResponse(anyInt(), anyLong());
-//    }
-//
-//    @Test
-//    public void shouldMarkTaskAsFailed() throws InterruptedException, ExecutionException
-//    {
-//        // given
-//        mockController.processEvent(2L, event ->
-//            event.setState(TaskState.CREATE));
-//
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.LOCK)
-//                .setLockTime(lockTime)
-//                .setLockOwner(wrapString("owner")));
-//
-//        // when
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.FAIL)
-//                .setLockOwner(wrapString("owner")));
-//
-//        // then
-//        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.FAILED);
-//        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-//
-//        verify(mockResponseWriter, times(2)).tryWriteResponse(anyInt(), anyLong());
-//    }
-//
-//    @Test
-//    public void shouldExpireTaskLock()
-//    {
-//        // given
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.CREATE));
-//
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.LOCK)
-//                .setLockTime(lockTime)
-//                .setLockOwner(wrapString("owner")));
-//
-//        // when
-//        ClockUtil.setCurrentTime(lockTime);
-//
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.EXPIRE_LOCK));
-//
-//        // then
-//        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.LOCK_EXPIRED);
-//        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-//
-//        verify(mockResponseWriter, times(1)).tryWriteResponse(anyInt(), anyLong());
-//    }
-//
-//    @Test
-//    public void shouldUpdateRetries() throws InterruptedException, ExecutionException
-//    {
-//        // given
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.CREATE)
-//                .setRetries(1));
-//
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.LOCK)
-//                .setLockTime(lockTime)
-//                .setLockOwner(wrapString("owner")));
-//
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.FAIL)
-//                .setLockOwner(wrapString("owner"))
-//                .setRetries(0));
-//        // when
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.UPDATE_RETRIES)
-//                .setRetries(2));
-//
-//        // then
-//        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.RETRIES_UPDATED);
-//        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-//
-//        verify(mockResponseWriter, times(3)).tryWriteResponse(anyInt(), anyLong());
-//    }
-//
-//    @Test
-//    public void shouldCompensateLockRejection()
-//    {
-//        // given
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.CREATE)
-//                .setRetries(1));
-//
-//        mockController.processEvent(2L,
-//            event -> event
-//                .setState(TaskState.LOCK)
-//                .setLockTime(lockTime)
-//                .setLockOwner(wrapString("owner-1")),
-//            metadata -> metadata
-//                .subscriberKey(1L));
-//
-//        // when
-//        mockController.processEvent(2L,
-//            event -> event
-//                .setState(TaskState.LOCK)
-//                .setLockTime(lockTime)
-//                .setLockOwner(wrapString("owner-2")),
-//            metadata -> metadata
-//                .subscriberKey(2L));
-//
-//        // then
-//        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.LOCK_REJECTED);
-//
-//        verify(mockTaskSubscriptionManager, times(1)).increaseSubscriptionCreditsAsync(new CreditsRequest(2L, 1));
-//    }
-//
-//    @Test
-//    public void shouldCancelTaskIfCreated()
-//    {
-//        // given
-//        mockController.processEvent(2L, event ->
-//            event.setState(TaskState.CREATE));
-//
-//        // when
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.CANCEL));
-//
-//        // then
-//        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.CANCELED);
-//        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-//    }
-//
-//    @Test
-//    public void shouldCancelTaskIfLocked()
-//    {
-//        // given
-//        mockController.processEvent(2L, event ->
-//            event.setState(TaskState.CREATE));
-//
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.LOCK)
-//                .setLockTime(lockTime)
-//                .setLockOwner(wrapString("owner")));
-//
-//        // when
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.CANCEL));
-//
-//        // then
-//        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.CANCELED);
-//        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-//    }
-//
-//    @Test
-//    public void shouldCancelTaskIfFailed()
-//    {
-//        // given
-//        mockController.processEvent(2L, event ->
-//            event.setState(TaskState.CREATE));
-//
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.LOCK)
-//                .setLockTime(lockTime)
-//                .setLockOwner(wrapString("owner")));
-//
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.FAIL)
-//                .setLockOwner(wrapString("owner")));
-//
-//        // when
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.CANCEL));
-//
-//        // then
-//        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.CANCELED);
-//        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-//    }
-//
-//    @Test
-//    public void shouldRejectLockTaskIfNotExist()
-//    {
-//        // given
-//        mockController.processEvent(2L, event ->
-//            event.setState(TaskState.CREATE));
-//
-//        // when
-//        mockController.processEvent(4L, event -> event
-//                .setState(TaskState.LOCK)
-//                .setLockTime(lockTime));
-//
-//        // then
-//        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.LOCK_REJECTED);
-//
-//        verify(mockResponseWriter, times(1)).tryWriteResponse(anyInt(), anyLong());
-//        verify(mockSubscribedEventWriter, never()).tryWriteMessage(anyInt());
-//    }
-//
-//    @Test
-//    public void shouldRejectLockTaskIfAlreadyLocked()
-//    {
-//        // given
-//        mockController.processEvent(2L, event ->
-//            event.setState(TaskState.CREATE));
-//
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.LOCK)
-//                .setLockTime(lockTime));
-//
-//        // when
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.LOCK)
-//                .setLockTime(lockTime));
-//
-//        // then
-//        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.LOCK_REJECTED);
-//
-//        verify(mockResponseWriter, times(1)).tryWriteResponse(anyInt(), anyLong());
-//        verify(mockSubscribedEventWriter, times(1)).tryWriteMessage(anyInt());
-//    }
-//
-//    @Test
-//    public void shouldRejectCompleteTaskIfNotExists()
-//    {
-//        // when
-//        mockController.processEvent(4L, event -> event
-//                .setState(TaskState.COMPLETE)
-//                .setLockOwner(wrapString("owner")));
-//
-//        // then
-//        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.COMPLETE_REJECTED);
-//        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-//
-//        verify(mockResponseWriter, times(1)).tryWriteResponse(anyInt(), anyLong());
-//    }
-//
-//    @Test
-//    public void shouldRejectCompleteTaskIfPayloadIsInvalid() throws Exception
-//    {
-//        // given
-//        mockController.processEvent(2L, event ->
-//            event.setState(TaskState.CREATE));
-//
-//        mockController.processEvent(2L, event -> event
-//            .setState(TaskState.LOCK)
-//            .setLockTime(lockTime)
-//            .setLockOwner(wrapString("owner")));
-//
-//        // when
-//        final byte[] bytes = MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("'foo'"));
-//        final DirectBuffer buffer = new UnsafeBuffer(bytes);
-//        mockController.processEvent(2L, event -> event
-//            .setState(TaskState.COMPLETE)
-//            .setLockOwner(wrapString("owner"))
-//            .setPayload(buffer));
-//
-//        // then
-//        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.COMPLETE_REJECTED);
-//        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-//
-//        verify(mockResponseWriter, times(2)).tryWriteResponse(anyInt(), anyLong());
-//    }
-//
-//    @Test
-//    public void shouldRejectCompleteTaskIfAlreadyCompleted()
-//    {
-//        // given
-//        mockController.processEvent(2L, event ->
-//            event.setState(TaskState.CREATE));
-//
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.LOCK)
-//                .setLockTime(lockTime)
-//                .setLockOwner(wrapString("owner")));
-//
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.COMPLETE)
-//                .setLockOwner(wrapString("owner")));
-//
-//        // when
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.COMPLETE)
-//                .setLockOwner(wrapString("owner")));
-//
-//        // then
-//        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.COMPLETE_REJECTED);
-//        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-//
-//        verify(mockResponseWriter, times(3)).tryWriteResponse(anyInt(), anyLong());
-//    }
-//
-//    @Test
-//    public void shouldRejectCompleteTaskIfNotLocked()
-//    {
-//        // given
-//        mockController.processEvent(2L, event ->
-//            event.setState(TaskState.CREATE));
-//
-//        // when
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.COMPLETE)
-//                .setLockOwner(wrapString("owner")));
-//
-//        // then
-//        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.COMPLETE_REJECTED);
-//        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-//
-//        verify(mockResponseWriter, times(2)).tryWriteResponse(anyInt(), anyLong());
-//    }
-//
-//    @Test
-//    public void shouldRejectCompleteTaskIfLockedBySomeoneElse()
-//    {
-//        // given
-//        mockController.processEvent(2L, event ->
-//            event.setState(TaskState.CREATE));
-//
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.LOCK)
-//                .setLockTime(lockTime)
-//                .setLockOwner(wrapString("owner-1")));
-//
-//        // when
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.COMPLETE)
-//                .setLockOwner(wrapString("owner-2")));
-//
-//        // then
-//        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.COMPLETE_REJECTED);
-//        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-//
-//        verify(mockResponseWriter, times(2)).tryWriteResponse(anyInt(), anyLong());
-//    }
-//
-//    @Test
-//    public void shouldRejectMarkTaskAsFailedIfNotExists()
-//    {
-//        // when
-//        mockController.processEvent(4L, event -> event
-//                .setState(TaskState.FAIL)
-//                .setLockOwner(wrapString("owner")));
-//
-//        // then
-//        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.FAIL_REJECTED);
-//        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-//
-//        verify(mockResponseWriter, times(1)).tryWriteResponse(anyInt(), anyLong());
-//    }
-//
-//    @Test
-//    public void shouldRejectMarkTaskAsFailedIfAlreadyFailed()
-//    {
-//        // given
-//        mockController.processEvent(2L, event ->
-//            event.setState(TaskState.CREATE));
-//
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.LOCK)
-//                .setLockTime(lockTime)
-//                .setLockOwner(wrapString("owner")));
-//
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.FAIL)
-//                .setLockOwner(wrapString("owner")));
-//
-//        // when
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.FAIL)
-//                .setLockOwner(wrapString("owner")));
-//
-//        // then
-//        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.FAIL_REJECTED);
-//        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-//
-//        verify(mockResponseWriter, times(3)).tryWriteResponse(anyInt(), anyLong());
-//    }
-//
-//    @Test
-//    public void shouldRejectMarkTaskAsFailedIfNotLocked()
-//    {
-//        // given
-//        mockController.processEvent(2L, event ->
-//            event.setState(TaskState.CREATE));
-//
-//        // when
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.FAIL)
-//                .setLockOwner(wrapString("owner")));
-//
-//        // then
-//        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.FAIL_REJECTED);
-//        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-//
-//        verify(mockResponseWriter, times(2)).tryWriteResponse(anyInt(), anyLong());
-//    }
-//
-//    @Test
-//    public void shouldRejectMarkTaskAsFailedIfAlreadyCompleted()
-//    {
-//        // given
-//        mockController.processEvent(2L, event ->
-//            event.setState(TaskState.CREATE));
-//
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.LOCK)
-//                .setLockTime(lockTime)
-//                .setLockOwner(wrapString("owner")));
-//
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.COMPLETE)
-//                .setLockOwner(wrapString("owner")));
-//
-//        // when
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.FAIL)
-//                .setLockOwner(wrapString("owner")));
-//
-//        // then
-//        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.FAIL_REJECTED);
-//        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-//
-//        verify(mockResponseWriter, times(3)).tryWriteResponse(anyInt(), anyLong());
-//    }
-//
-//    @Test
-//    public void shouldRejectMarkTaskAsFailedIfLockedBySomeoneElse()
-//    {
-//        // given
-//        mockController.processEvent(2L, event ->
-//            event.setState(TaskState.CREATE));
-//
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.LOCK)
-//                .setLockTime(lockTime)
-//                .setLockOwner(wrapString("owner-1")));
-//
-//        // when
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.FAIL)
-//                .setLockOwner(wrapString("owner-2")));
-//
-//        // then
-//        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.FAIL_REJECTED);
-//        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-//
-//        verify(mockResponseWriter, times(2)).tryWriteResponse(anyInt(), anyLong());
-//    }
-//
-//    @Test
-//    public void shouldRejectExpireLockIfNotExists()
-//    {
-//        // when
-//        mockController.processEvent(4L, event -> event
-//                .setState(TaskState.EXPIRE_LOCK));
-//
-//        // then
-//        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.LOCK_EXPIRATION_REJECTED);
-//        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-//
-//        verify(mockResponseWriter, never()).tryWriteResponse(anyInt(), anyLong());
-//    }
-//
-//    @Test
-//    public void shouldRejectExpireLockIfAlreadyExpired()
-//    {
-//        // given
-//        mockController.processEvent(2L, event ->
-//            event.setState(TaskState.CREATE));
-//
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.LOCK)
-//                .setLockTime(lockTime)
-//                .setLockOwner(wrapString("owner")));
-//
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.EXPIRE_LOCK));
-//
-//        // when
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.EXPIRE_LOCK));
-//
-//        // then
-//        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.LOCK_EXPIRATION_REJECTED);
-//        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-//
-//        verify(mockResponseWriter, times(1)).tryWriteResponse(anyInt(), anyLong());
-//    }
-//
-//    @Test
-//    public void shouldRejectExpireLockIfNotLocked()
-//    {
-//        // given
-//        mockController.processEvent(2L, event ->
-//            event.setState(TaskState.CREATE));
-//
-//        // when
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.EXPIRE_LOCK)
-//                .setLockOwner(wrapString("owner")));
-//
-//        // then
-//        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.LOCK_EXPIRATION_REJECTED);
-//        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-//
-//        verify(mockResponseWriter, times(1)).tryWriteResponse(anyInt(), anyLong());
-//    }
-//
-//    @Test
-//    public void shouldRejectExpireLockIfAlreadyCompleted()
-//    {
-//        // given
-//        mockController.processEvent(2L, event ->
-//            event.setState(TaskState.CREATE));
-//
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.LOCK)
-//                .setLockTime(lockTime)
-//                .setLockOwner(wrapString("owner")));
-//
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.COMPLETE)
-//                .setLockOwner(wrapString("owner")));
-//
-//        // when
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.EXPIRE_LOCK));
-//
-//        // then
-//        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.LOCK_EXPIRATION_REJECTED);
-//        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-//
-//        verify(mockResponseWriter, times(2)).tryWriteResponse(anyInt(), anyLong());
-//    }
-//
-//    @Test
-//    public void shouldRejectExpireLockIfAlreadyFailed()
-//    {
-//        // given
-//        mockController.processEvent(2L, event ->
-//            event.setState(TaskState.CREATE));
-//
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.LOCK)
-//                .setLockTime(lockTime)
-//                .setLockOwner(wrapString("owner")));
-//
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.FAIL)
-//                .setLockOwner(wrapString("owner")));
-//
-//        // when
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.EXPIRE_LOCK));
-//
-//        // then
-//        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.LOCK_EXPIRATION_REJECTED);
-//        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-//
-//        verify(mockResponseWriter, times(2)).tryWriteResponse(anyInt(), anyLong());
-//    }
-//
-//    @Test
-//    public void shouldRejectUpdateRetriesIfNotExists()
-//    {
-//        // when
-//        mockController.processEvent(4L, event -> event
-//                .setState(TaskState.UPDATE_RETRIES)
-//                .setRetries(3));
-//
-//        // then
-//        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.UPDATE_RETRIES_REJECTED);
-//        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-//
-//        verify(mockResponseWriter, times(1)).tryWriteResponse(anyInt(), anyLong());
-//    }
-//
-//    @Test
-//    public void shouldRejectUpdateRetriesIfCompleted()
-//    {
-//        // given
-//        mockController.processEvent(2L, event ->
-//            event.setState(TaskState.CREATE));
-//
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.LOCK)
-//                .setLockTime(lockTime)
-//                .setLockOwner(wrapString("owner")));
-//
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.COMPLETE)
-//                .setLockOwner(wrapString("owner")));
-//
-//        // when
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.UPDATE_RETRIES));
-//
-//        // then
-//        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.UPDATE_RETRIES_REJECTED);
-//        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-//
-//        verify(mockResponseWriter, times(3)).tryWriteResponse(anyInt(), anyLong());
-//    }
-//
-//    @Test
-//    public void shouldRejectUpdateRetriesIfLocked()
-//    {
-//        // given
-//        mockController.processEvent(2L, event ->
-//            event.setState(TaskState.CREATE));
-//
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.LOCK)
-//                .setLockTime(lockTime)
-//                .setLockOwner(wrapString("owner")));
-//
-//        // when
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.UPDATE_RETRIES));
-//
-//        // then
-//        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.UPDATE_RETRIES_REJECTED);
-//        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-//
-//        verify(mockResponseWriter, times(2)).tryWriteResponse(anyInt(), anyLong());
-//    }
-//
-//    @Test
-//    public void shouldRejectUpdateRetriesIfRetriesLessThanOne() throws InterruptedException, ExecutionException
-//    {
-//        // given
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.CREATE)
-//                .setRetries(1));
-//
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.LOCK)
-//                .setLockTime(lockTime)
-//                .setLockOwner(wrapString("owner")));
-//
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.FAIL)
-//                .setLockOwner(wrapString("owner"))
-//                .setRetries(0));
-//        // when
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.UPDATE_RETRIES)
-//                .setLockOwner(wrapString("owner-2"))
-//                .setRetries(0));
-//
-//        // then
-//        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.UPDATE_RETRIES_REJECTED);
-//        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-//
-//        verify(mockResponseWriter, times(3)).tryWriteResponse(anyInt(), anyLong());
-//    }
-//
-//    @Test
-//    public void shouldRejectCancelTaskIfCompleted()
-//    {
-//        // given
-//        mockController.processEvent(2L, event ->
-//            event.setState(TaskState.CREATE));
-//
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.LOCK)
-//                .setLockTime(lockTime)
-//                .setLockOwner(wrapString("owner")));
-//
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.COMPLETE)
-//                .setLockOwner(wrapString("owner")));
-//
-//        // when
-//        mockController.processEvent(2L, event -> event
-//                .setState(TaskState.CANCEL));
-//
-//        // then
-//        assertThat(mockController.getLastWrittenEventValue().getState()).isEqualTo(TaskState.CANCEL_REJECTED);
-//        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Protocol.PROTOCOL_VERSION);
-//    }
+
+    @Rule
+    public StreamProcessorRule rule = new StreamProcessorRule();
+
+    @Mock
+    public TaskSubscriptionManager subscriptionManager;
+
+    @Before
+    public void setUp()
+    {
+        MockitoAnnotations.initMocks(this);
+        when(subscriptionManager.increaseSubscriptionCreditsAsync(any())).thenReturn(true);
+    }
+
+    @Test
+    public void shouldCompleteExpiredTask()
+    {
+        // given
+        rule.getClock().pinCurrentTime();
+
+        final long key = 1;
+        rule.runStreamProcessor(this::buildStreamProcessor);
+
+        rule.writeEvent(key, create());
+        waitForEventInState(TaskState.CREATED);
+
+        rule.writeEvent(key, lock(nowPlus(Duration.ofSeconds(30))));
+        waitForEventInState(TaskState.LOCKED);
+
+        rule.writeEvent(key, expireLock());
+        waitForEventInState(TaskState.LOCK_EXPIRED);
+
+        // when
+        rule.writeEvent(key, complete());
+
+        // then
+        waitForEventInState(TaskState.COMPLETED);
+
+        final List<TypedEvent<TaskEvent>> taskEvents = rule.events().onlyTaskEvents().collect(Collectors.toList());
+        assertThat(taskEvents).extracting("value.state")
+            .containsExactly(
+                    TaskState.CREATE,
+                    TaskState.CREATED,
+                    TaskState.LOCK,
+                    TaskState.LOCKED,
+                    TaskState.EXPIRE_LOCK,
+                    TaskState.LOCK_EXPIRED,
+                    TaskState.COMPLETE,
+                    TaskState.COMPLETED);
+    }
+
+    @Test
+    public void shouldLockOnlyOnce()
+    {
+        // given
+        rule.getClock().pinCurrentTime();
+
+        final long key = 1;
+        final StreamProcessorControl control = rule.runStreamProcessor(this::buildStreamProcessor);
+        control.blockAfterTaskEvent(e -> e.getValue().getState() == TaskState.CREATED);
+
+        rule.writeEvent(key, create());
+        waitForEventInState(TaskState.CREATED);
+
+        // when
+        rule.writeEvent(key, lock(nowPlus(Duration.ofSeconds(30))));
+        rule.writeEvent(key, lock(nowPlus(Duration.ofSeconds(30))));
+        control.unblock();
+
+        // then
+        waitForEventInState(TaskState.LOCK_REJECTED);
+
+        final List<TypedEvent<TaskEvent>> taskEvents = rule.events().onlyTaskEvents().collect(Collectors.toList());
+        assertThat(taskEvents).extracting("value.state")
+            .containsExactly(
+                    TaskState.CREATE,
+                    TaskState.CREATED,
+                    TaskState.LOCK,
+                    TaskState.LOCK,
+                    TaskState.LOCKED,
+                    TaskState.LOCK_REJECTED);
+    }
+
+    @Test
+    public void shouldRejectLockIfTaskNotFound()
+    {
+        // given
+        rule.getClock().pinCurrentTime();
+
+        final long key = 1;
+        rule.runStreamProcessor(this::buildStreamProcessor);
+
+        // when
+        rule.writeEvent(key, lock(nowPlus(Duration.ofSeconds(30))));
+
+        // then
+        waitForEventInState(TaskState.LOCK_REJECTED);
+
+        final List<TypedEvent<TaskEvent>> taskEvents = rule.events().onlyTaskEvents().collect(Collectors.toList());
+        assertThat(taskEvents).extracting("value.state")
+            .containsExactly(
+                    TaskState.LOCK,
+                    TaskState.LOCK_REJECTED);
+    }
+
+    @Test
+    public void shouldExpireLockOnlyOnce()
+    {
+        // given
+        final long key = 1;
+        final StreamProcessorControl control = rule.runStreamProcessor(this::buildStreamProcessor);
+
+        rule.writeEvent(key, create());
+        waitForEventInState(TaskState.CREATED);
+
+        control.blockAfterTaskEvent(e -> e.getValue().getState() == TaskState.LOCKED);
+        rule.writeEvent(key, lock(nowPlus(Duration.ofSeconds(30))));
+        waitForEventInState(TaskState.LOCKED);
+
+        // when
+        rule.writeEvent(key, expireLock());
+        rule.writeEvent(key, expireLock());
+        control.unblock();
+
+        // then
+        waitForEventInState(TaskState.LOCK_EXPIRATION_REJECTED);
+
+        final List<TypedEvent<TaskEvent>> taskEvents = rule.events().onlyTaskEvents().collect(Collectors.toList());
+        assertThat(taskEvents).extracting("value.state")
+            .containsExactly(
+                    TaskState.CREATE,
+                    TaskState.CREATED,
+                    TaskState.LOCK,
+                    TaskState.LOCKED,
+                    TaskState.EXPIRE_LOCK,
+                    TaskState.EXPIRE_LOCK,
+                    TaskState.LOCK_EXPIRED,
+                    TaskState.LOCK_EXPIRATION_REJECTED);
+    }
+
+    private Instant nowPlus(Duration duration)
+    {
+        return rule.getClock().getCurrentTime().plus(duration);
+    }
+
+    @Test
+    public void shouldRejectExpireCommandIfTaskCreated()
+    {
+        // given
+        final long key = 1;
+        rule.runStreamProcessor(this::buildStreamProcessor);
+
+        rule.writeEvent(key, create());
+        waitForEventInState(TaskState.CREATED);
+
+        // when
+        rule.writeEvent(key, expireLock());
+
+        // then
+        waitForEventInState(TaskState.LOCK_EXPIRATION_REJECTED);
+
+        final List<TypedEvent<TaskEvent>> taskEvents = rule.events().onlyTaskEvents().collect(Collectors.toList());
+        assertThat(taskEvents).extracting("value.state")
+            .containsExactly(
+                    TaskState.CREATE,
+                    TaskState.CREATED,
+                    TaskState.EXPIRE_LOCK,
+                    TaskState.LOCK_EXPIRATION_REJECTED);
+    }
+
+    @Test
+    public void shouldRejectExpireCommandIfTaskCompleted()
+    {
+        // given
+        final long key = 1;
+        final StreamProcessorControl control = rule.runStreamProcessor(this::buildStreamProcessor);
+
+        rule.writeEvent(key, create());
+        waitForEventInState(TaskState.CREATED);
+
+        control.blockAfterTaskEvent(e -> e.getValue().getState() == TaskState.LOCKED);
+        rule.writeEvent(key, lock(nowPlus(Duration.ofSeconds(30))));
+        waitForEventInState(TaskState.LOCKED);
+
+        // when
+        rule.writeEvent(key, complete());
+        rule.writeEvent(key, expireLock());
+        control.unblock();
+
+        // then
+        waitForEventInState(TaskState.LOCK_EXPIRATION_REJECTED);
+
+        final List<TypedEvent<TaskEvent>> taskEvents = rule.events().onlyTaskEvents().collect(Collectors.toList());
+        assertThat(taskEvents).extracting("value.state")
+            .containsExactly(
+                    TaskState.CREATE,
+                    TaskState.CREATED,
+                    TaskState.LOCK,
+                    TaskState.LOCKED,
+                    TaskState.COMPLETE,
+                    TaskState.EXPIRE_LOCK,
+                    TaskState.COMPLETED,
+                    TaskState.LOCK_EXPIRATION_REJECTED);
+    }
+
+
+    @Test
+    public void shouldRejectExpireCommandIfTaskFailed()
+    {
+        // given
+        final long key = 1;
+        final StreamProcessorControl control = rule.runStreamProcessor(this::buildStreamProcessor);
+
+        rule.writeEvent(key, create());
+        waitForEventInState(TaskState.CREATED);
+
+        control.blockAfterTaskEvent(e -> e.getValue().getState() == TaskState.LOCKED);
+        rule.writeEvent(key, lock(nowPlus(Duration.ofSeconds(30))));
+        waitForEventInState(TaskState.LOCKED);
+
+        // when
+        rule.writeEvent(key, failure());
+        rule.writeEvent(key, expireLock());
+        control.unblock();
+
+        // then
+        waitForEventInState(TaskState.LOCK_EXPIRATION_REJECTED);
+
+        final List<TypedEvent<TaskEvent>> taskEvents = rule.events().onlyTaskEvents().collect(Collectors.toList());
+        assertThat(taskEvents).extracting("value.state")
+            .containsExactly(
+                    TaskState.CREATE,
+                    TaskState.CREATED,
+                    TaskState.LOCK,
+                    TaskState.LOCKED,
+                    TaskState.FAIL,
+                    TaskState.EXPIRE_LOCK,
+                    TaskState.FAILED,
+                    TaskState.LOCK_EXPIRATION_REJECTED);
+    }
+
+    @Test
+    public void shouldRejectExpireCommandIfTaskNotFound()
+    {
+        // given
+        final long key = 1;
+        rule.runStreamProcessor(this::buildStreamProcessor);
+
+        // when
+        rule.writeEvent(key, expireLock());
+
+        // then
+        waitForEventInState(TaskState.LOCK_EXPIRATION_REJECTED);
+
+        final List<TypedEvent<TaskEvent>> taskEvents = rule.events().onlyTaskEvents().collect(Collectors.toList());
+        assertThat(taskEvents).extracting("value.state")
+            .containsExactly(
+                    TaskState.EXPIRE_LOCK,
+                    TaskState.LOCK_EXPIRATION_REJECTED);
+    }
+
+    @Test
+    public void shouldCancelCreatedTask()
+    {
+        // given
+        final long key = 1;
+        rule.runStreamProcessor(this::buildStreamProcessor);
+
+        rule.writeEvent(key, create());
+        waitForEventInState(TaskState.CREATED);
+
+        // when
+        rule.writeEvent(key, cancel());
+
+        // then
+        waitForEventInState(TaskState.CANCELED);
+
+        final List<TypedEvent<TaskEvent>> taskEvents = rule.events().onlyTaskEvents().collect(Collectors.toList());
+        assertThat(taskEvents).extracting("value.state")
+            .containsExactly(
+                TaskState.CREATE,
+                TaskState.CREATED,
+                TaskState.CANCEL,
+                TaskState.CANCELED);
+    }
+
+    @Test
+    public void shouldCancelLockedTask()
+    {
+        // given
+        final long key = 1;
+        rule.runStreamProcessor(this::buildStreamProcessor);
+
+        rule.writeEvent(key, create());
+        waitForEventInState(TaskState.CREATED);
+
+        rule.writeEvent(key, lock(Instant.now().plusSeconds(30)));
+        waitForEventInState(TaskState.LOCKED);
+
+        // when
+        rule.writeEvent(key, cancel());
+
+        // then
+        waitForEventInState(TaskState.CANCELED);
+
+        final List<TypedEvent<TaskEvent>> taskEvents = rule.events().onlyTaskEvents().collect(Collectors.toList());
+        assertThat(taskEvents).extracting("value.state")
+            .containsExactly(
+                TaskState.CREATE,
+                TaskState.CREATED,
+                TaskState.LOCK,
+                TaskState.LOCKED,
+                TaskState.CANCEL,
+                TaskState.CANCELED);
+    }
+
+    @Test
+    public void shouldCancelFailedTask()
+    {
+        // given
+        final long key = 1;
+        rule.runStreamProcessor(this::buildStreamProcessor);
+
+        rule.writeEvent(key, create());
+        waitForEventInState(TaskState.CREATED);
+
+        rule.writeEvent(key, lock(Instant.now().plusSeconds(30)));
+        waitForEventInState(TaskState.LOCKED);
+
+        rule.writeEvent(key, failure());
+        waitForEventInState(TaskState.FAILED);
+
+        // when
+        rule.writeEvent(key, cancel());
+
+        // then
+        waitForEventInState(TaskState.CANCELED);
+
+        final List<TypedEvent<TaskEvent>> taskEvents = rule.events().onlyTaskEvents().collect(Collectors.toList());
+        assertThat(taskEvents).extracting("value.state")
+            .containsExactly(
+                TaskState.CREATE,
+                TaskState.CREATED,
+                TaskState.LOCK,
+                TaskState.LOCKED,
+                TaskState.FAIL,
+                TaskState.FAILED,
+                TaskState.CANCEL,
+                TaskState.CANCELED);
+    }
+
+
+    @Test
+    public void shouldRejectCancelIfTaskCompleted()
+    {
+        // given
+        final long key = 1;
+        rule.runStreamProcessor(this::buildStreamProcessor);
+
+        rule.writeEvent(key, create());
+        waitForEventInState(TaskState.CREATED);
+
+        rule.writeEvent(key, lock(Instant.now().plusSeconds(30)));
+        waitForEventInState(TaskState.LOCKED);
+
+        rule.writeEvent(key, complete());
+        waitForEventInState(TaskState.COMPLETED);
+
+        // when
+        rule.writeEvent(key, cancel());
+
+        // then
+        waitForEventInState(TaskState.CANCEL_REJECTED);
+
+        final List<TypedEvent<TaskEvent>> taskEvents = rule.events().onlyTaskEvents().collect(Collectors.toList());
+        assertThat(taskEvents).extracting("value.state")
+            .containsExactly(
+                TaskState.CREATE,
+                TaskState.CREATED,
+                TaskState.LOCK,
+                TaskState.LOCKED,
+                TaskState.COMPLETE,
+                TaskState.COMPLETED,
+                TaskState.CANCEL,
+                TaskState.CANCEL_REJECTED);
+    }
+
+    private void waitForEventInState(TaskState state)
+    {
+        waitUntil(() -> rule.events().onlyTaskEvents().inState(state).findFirst().isPresent());
+    }
+
+    private TaskEvent create()
+    {
+        final TaskEvent event = new TaskEvent();
+
+        event.setState(TaskState.CREATE);
+        event.setType(BufferUtil.wrapString("foo"));
+
+        return event;
+    }
+
+    private TaskEvent lock(Instant lockTime)
+    {
+        final TaskEvent event = new TaskEvent();
+
+        event.setState(TaskState.LOCK);
+        event.setType(BufferUtil.wrapString("foo"));
+        event.setLockOwner(BufferUtil.wrapString("bar"));
+        event.setLockTime(lockTime.toEpochMilli());
+
+        return event;
+    }
+
+    private TaskEvent complete()
+    {
+        final TaskEvent event = new TaskEvent();
+
+        event.setState(TaskState.COMPLETE);
+        event.setType(BufferUtil.wrapString("foo"));
+        event.setLockOwner(BufferUtil.wrapString("bar"));
+
+        return event;
+    }
+
+    private TaskEvent failure()
+    {
+        final TaskEvent event = new TaskEvent();
+
+        event.setState(TaskState.FAIL);
+        event.setType(BufferUtil.wrapString("foo"));
+        event.setLockOwner(BufferUtil.wrapString("bar"));
+
+        return event;
+    }
+
+    private TaskEvent cancel()
+    {
+        final TaskEvent event = new TaskEvent();
+
+        event.setState(TaskState.CANCEL);
+        event.setType(BufferUtil.wrapString("foo"));
+
+        return event;
+    }
+
+    private TaskEvent expireLock()
+    {
+        final TaskEvent event = new TaskEvent();
+
+        event.setState(TaskState.EXPIRE_LOCK);
+        event.setType(BufferUtil.wrapString("foo"));
+        event.setLockOwner(BufferUtil.wrapString("bar"));
+
+        return event;
+    }
+
+    private StreamProcessor buildStreamProcessor(TypedStreamEnvironment env)
+    {
+        return new TaskInstanceStreamProcessor(subscriptionManager).createStreamProcessor(env);
+    }
+
+
 }

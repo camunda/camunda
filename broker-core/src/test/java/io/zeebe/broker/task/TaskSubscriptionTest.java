@@ -24,17 +24,31 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.IOException;
 import java.net.StandardSocketOptions;
 import java.nio.channels.SocketChannel;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.protocol.clientapi.*;
-import io.zeebe.test.broker.protocol.clientapi.*;
-import io.zeebe.transport.SocketAddress;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
+
+import io.zeebe.broker.task.processor.TaskSubscription;
+import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.protocol.clientapi.ControlMessageType;
+import io.zeebe.protocol.clientapi.ErrorCode;
+import io.zeebe.protocol.clientapi.SubscriptionType;
+import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
+import io.zeebe.test.broker.protocol.clientapi.ControlMessageRequestBuilder;
+import io.zeebe.test.broker.protocol.clientapi.ControlMessageResponse;
+import io.zeebe.test.broker.protocol.clientapi.ErrorResponse;
+import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
+import io.zeebe.test.broker.protocol.clientapi.SubscribedEvent;
+import io.zeebe.test.broker.protocol.clientapi.TestTopicClient;
+import io.zeebe.transport.SocketAddress;
+import io.zeebe.util.StringUtil;
 
 
 public class TaskSubscriptionTest
@@ -44,6 +58,14 @@ public class TaskSubscriptionTest
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
+
+    private TestTopicClient testClient;
+
+    @Before
+    public void setUp()
+    {
+        testClient = apiRule.topic();
+    }
 
     @Test
     public void shouldAddTaskSubscription() throws InterruptedException
@@ -55,23 +77,268 @@ public class TaskSubscriptionTest
             .partitionId(apiRule.getDefaultPartitionId())
             .data()
                 .put("taskType", "foo")
-                .put("lockDuration", 1000L)
+                .put("lockDuration", 10000L)
                 .put("lockOwner", "bar")
                 .put("credits", 5)
                 .done()
             .send();
 
         // when
-        final ExecuteCommandResponse response = createTask("foo");
+        final ExecuteCommandResponse response = testClient.createTask("foo");
 
         // then
-        final SubscribedEvent taskEvent = apiRule.topic().receiveSingleEvent(taskEvents("LOCKED"));
+        final SubscribedEvent taskEvent = testClient.receiveSingleEvent(taskEvents("LOCKED"));
         assertThat(taskEvent.key()).isEqualTo(response.key());
         assertThat(taskEvent.position()).isGreaterThan(response.position());
         assertThat(taskEvent.event())
             .containsEntry("type", "foo")
             .containsEntry("retries", 3)
             .containsEntry("lockOwner", "bar");
+
+        final List<Object> taskStates = testClient
+            .receiveEvents(taskEvents())
+            .limit(4)
+            .map(e -> e.event().get("state"))
+            .collect(Collectors.toList());
+
+        assertThat(taskStates).containsExactly("CREATE", "CREATED", "LOCK", "LOCKED");
+    }
+
+    @Test
+    public void shouldRemoveTaskSubscription()
+    {
+        // given
+        final ControlMessageResponse openResponse = apiRule.openTaskSubscription("foo").await();
+        final int subscriberKey = (int) openResponse.getData().get("subscriberKey");
+
+        // when
+        final ControlMessageResponse closeResponse = apiRule
+            .createControlMessageRequest()
+            .messageType(ControlMessageType.REMOVE_TASK_SUBSCRIPTION)
+            .partitionId(apiRule.getDefaultPartitionId())
+            .data()
+                .put("subscriberKey", subscriberKey)
+                .done()
+            .send()
+            .await();
+
+        assertThat(closeResponse.getData()).containsEntry("subscriberKey", subscriberKey);
+    }
+
+    @Test
+    public void shouldNoLongerLockTasksAfterRemoval() throws InterruptedException
+    {
+        // given
+        final String taskType = "foo";
+        final ControlMessageResponse openResponse = apiRule.openTaskSubscription(taskType).await();
+        final int subscriberKey = (int) openResponse.getData().get("subscriberKey");
+
+        apiRule.closeTaskSubscription(subscriberKey).await();
+
+        // when
+        testClient.createTask(taskType);
+
+        // then
+        apiRule.openTopicSubscription("test", 0).await();
+
+        Thread.sleep(500L);
+
+        final int eventsAvailable = apiRule.numSubscribedEventsAvailable();
+        final List<SubscribedEvent> receivedEvents = apiRule.subscribedEvents().limit(eventsAvailable).collect(Collectors.toList());
+
+        assertThat(receivedEvents).hasSize(2);
+        assertThat(receivedEvents).allMatch(e -> e.subscriptionType() == SubscriptionType.TOPIC_SUBSCRIPTION);
+        assertThat(receivedEvents).extracting("event").extracting("state")
+            .containsExactly("CREATE", "CREATED"); // no more LOCK etc.
+    }
+
+    @Test
+    public void shouldRejectSubscriptionWithZeroCredits()
+    {
+        // given
+        final ControlMessageRequestBuilder request = apiRule
+            .createControlMessageRequest()
+            .messageType(ControlMessageType.ADD_TASK_SUBSCRIPTION)
+            .partitionId(apiRule.getDefaultPartitionId())
+            .data()
+                .put("taskType", "foo")
+                .put("lockDuration", 10000L)
+                .put("lockOwner", "bar")
+                .put("credits", 0)
+                .done();
+        // when
+        final ErrorResponse errorResponse = request
+            .send()
+            .awaitError();
+
+        // then
+        assertThat(errorResponse).isNotNull();
+        assertThat(errorResponse.getErrorCode()).isEqualTo(ErrorCode.REQUEST_PROCESSING_FAILURE);
+        assertThat(errorResponse.getErrorData()).isEqualTo("Cannot add task subscription. subscription credits must be greater than 0");
+    }
+
+    @Test
+    public void shouldRejectSubscriptionWithNegativeCredits()
+    {
+        // given
+        final ControlMessageRequestBuilder request = apiRule
+            .createControlMessageRequest()
+            .messageType(ControlMessageType.ADD_TASK_SUBSCRIPTION)
+            .partitionId(apiRule.getDefaultPartitionId())
+            .data()
+                .put("taskType", "foo")
+                .put("lockDuration", 10000L)
+                .put("lockOwner", "bar")
+                .put("credits", -1)
+                .done();
+        // when
+        final ErrorResponse errorResponse = request
+            .send()
+            .awaitError();
+
+        // then
+        assertThat(errorResponse).isNotNull();
+        assertThat(errorResponse.getErrorCode()).isEqualTo(ErrorCode.REQUEST_PROCESSING_FAILURE);
+        assertThat(errorResponse.getErrorData()).isEqualTo("Cannot add task subscription. subscription credits must be greater than 0");
+    }
+
+    @Test
+    public void shouldRejectSubscriptionWithoutLockOwner()
+    {
+        // given
+        final ControlMessageRequestBuilder request = apiRule
+            .createControlMessageRequest()
+            .messageType(ControlMessageType.ADD_TASK_SUBSCRIPTION)
+            .partitionId(apiRule.getDefaultPartitionId())
+            .data()
+                .put("taskType", "foo")
+                .put("lockDuration", 10000L)
+                .put("credits", 5)
+                .done();
+        // when
+        final ErrorResponse errorResponse = request
+            .send()
+            .awaitError();
+
+        // then
+        assertThat(errorResponse).isNotNull();
+        assertThat(errorResponse.getErrorCode()).isEqualTo(ErrorCode.REQUEST_PROCESSING_FAILURE);
+        assertThat(errorResponse.getErrorData()).isEqualTo("Cannot add task subscription. lock owner must not be empty");
+    }
+
+    @Test
+    public void shouldRejectSubscriptionWithExcessiveLockOwnerName()
+    {
+        // given
+        final String lockOwner = StringUtil.stringOfLength(TaskSubscription.LOCK_OWNER_MAX_LENGTH + 1);
+
+        final ControlMessageRequestBuilder request = apiRule
+            .createControlMessageRequest()
+            .messageType(ControlMessageType.ADD_TASK_SUBSCRIPTION)
+            .partitionId(apiRule.getDefaultPartitionId())
+            .data()
+                .put("taskType", "foo")
+                .put("lockDuration", 10000L)
+                .put("lockOwner", lockOwner)
+                .put("credits", 5)
+                .done();
+        // when
+        final ErrorResponse errorResponse = request
+            .send()
+            .awaitError();
+
+        // then
+        assertThat(errorResponse).isNotNull();
+        assertThat(errorResponse.getErrorCode()).isEqualTo(ErrorCode.REQUEST_PROCESSING_FAILURE);
+        assertThat(errorResponse.getErrorData()).isEqualTo("Cannot add task subscription. length of lock owner must be less than or equal to 64");
+    }
+
+    @Test
+    public void shouldRejectSubscriptionWithZeroLockDuration()
+    {
+        // given
+        final ControlMessageRequestBuilder request = apiRule
+            .createControlMessageRequest()
+            .messageType(ControlMessageType.ADD_TASK_SUBSCRIPTION)
+            .partitionId(apiRule.getDefaultPartitionId())
+            .data()
+                .put("taskType", "foo")
+                .put("lockDuration", 0)
+                .put("lockOwner", "bar")
+                .put("credits", 5)
+                .done();
+        // when
+        final ErrorResponse errorResponse = request
+            .send()
+            .awaitError();
+
+        // then
+        assertThat(errorResponse).isNotNull();
+        assertThat(errorResponse.getErrorCode()).isEqualTo(ErrorCode.REQUEST_PROCESSING_FAILURE);
+        assertThat(errorResponse.getErrorData()).isEqualTo("Cannot add task subscription. lock duration must be greater than 0");
+    }
+
+    @Test
+    public void shouldRejectSubscriptionWithNegativeLockDuration()
+    {
+        // given
+        final ControlMessageRequestBuilder request = apiRule
+            .createControlMessageRequest()
+            .messageType(ControlMessageType.ADD_TASK_SUBSCRIPTION)
+            .partitionId(apiRule.getDefaultPartitionId())
+            .data()
+                .put("taskType", "foo")
+                .put("lockDuration", -1)
+                .put("lockOwner", "bar")
+                .put("credits", 5)
+                .done();
+        // when
+        final ErrorResponse errorResponse = request
+            .send()
+            .awaitError();
+
+        // then
+        assertThat(errorResponse).isNotNull();
+        assertThat(errorResponse.getErrorCode()).isEqualTo(ErrorCode.REQUEST_PROCESSING_FAILURE);
+        assertThat(errorResponse.getErrorData()).isEqualTo("Cannot add task subscription. lock duration must be greater than 0");
+    }
+
+    @Test
+    public void shouldDistributeTasksInRoundRobinFashion()
+    {
+        // given
+        final String taskType = "foo";
+        final int subscriber1 = (int) apiRule
+                .openTaskSubscription(taskType)
+                .await()
+                .getData()
+                .get("subscriberKey");
+        final int subscriber2 = (int) apiRule
+                .openTaskSubscription(taskType)
+                .await()
+                .getData()
+                .get("subscriberKey");
+
+        // when
+        testClient.createTask(taskType);
+        testClient.createTask(taskType);
+        testClient.createTask(taskType);
+        testClient.createTask(taskType);
+
+        // then
+        waitUntil(() -> apiRule.numSubscribedEventsAvailable() == 4);
+
+        final List<SubscribedEvent> receivedEvents = apiRule.subscribedEvents().limit(4)
+                .collect(Collectors.toList());
+
+        final long firstReceivingSubscriber = receivedEvents.get(0).subscriberKey();
+        final long secondReceivingSubscriber = firstReceivingSubscriber == subscriber1 ? subscriber2 : subscriber1;
+
+        assertThat(receivedEvents).extracting(e -> e.subscriberKey()).containsExactly(
+                firstReceivingSubscriber,
+                secondReceivingSubscriber,
+                firstReceivingSubscriber,
+                secondReceivingSubscriber);
     }
 
     @Test
@@ -88,7 +355,7 @@ public class TaskSubscriptionTest
         // then the subscription has been closed, so we can create a new task and lock it for a new subscription
         Thread.sleep(1000L); // closing subscriptions happens asynchronously
 
-        final ExecuteCommandResponse response = createTask("foo");
+        final ExecuteCommandResponse response = testClient.createTask("foo");
 
         final ControlMessageResponse subscriptionResponse = apiRule
             .openTaskSubscription("foo")
@@ -116,13 +383,13 @@ public class TaskSubscriptionTest
             .openTaskSubscription("foo")
             .await();
 
-        createTask("foo");
+        testClient.createTask("foo");
         waitUntil(() -> apiRule.numSubscribedEventsAvailable() == 1);
 
         openAndCloseConnectionTo(apiRule.getBrokerAddress());
 
         // when
-        createTask("foo");
+        testClient.createTask("foo");
         waitUntil(() -> apiRule.numSubscribedEventsAvailable() == 2);
 
         // then
@@ -213,8 +480,8 @@ public class TaskSubscriptionTest
             .send();
 
         // when
-        createTask("foo");
-        createTask("bar");
+        testClient.createTask("foo");
+        testClient.createTask("bar");
 
         // then
         final List<SubscribedEvent> taskEvents = apiRule.topic().receiveEvents(taskEvents("LOCKED"))
@@ -249,10 +516,12 @@ public class TaskSubscriptionTest
             .send();
 
         // when
-        createTask("foo");
-        createTask("foo");
+        testClient.createTask("foo");
+        testClient.createTask("foo");
+        testClient.createTask("foo");
 
         // then
+        Thread.sleep(500);
         waitUntil(() -> apiRule.numSubscribedEventsAvailable() == 2);
 
         final List<SubscribedEvent> taskEvents = apiRule.topic().receiveEvents(taskEvents("LOCKED"))
@@ -282,13 +551,13 @@ public class TaskSubscriptionTest
 
         assertThat(response.getData().get("subscriberKey")).isEqualTo(0);
 
-        createTask("foo");
-        createTask("foo");
+        testClient.createTask("foo");
+        testClient.createTask("foo");
 
         waitUntil(() -> apiRule.numSubscribedEventsAvailable() == 2);
 
-        createTask("foo");
-        createTask("foo");
+        testClient.createTask("foo");
+        testClient.createTask("foo");
 
         // when
         apiRule
@@ -306,17 +575,97 @@ public class TaskSubscriptionTest
         waitUntil(() -> apiRule.numSubscribedEventsAvailable() == 4);
     }
 
-
-    private ExecuteCommandResponse createTask(String type)
+    @Test
+    public void shouldIgnoreCreditsRequestIfSubscriptionDoesNotExist()
     {
-        return apiRule.createCmdRequest()
-                .eventTypeTask()
-                .command()
-                    .put("state", "CREATE")
-                    .put("type", type)
-                    .put("retries", 3)
-                .done()
-                .sendAndAwait();
+        // given
+        final int nonExistingSubscriberKey = 444;
+        final ControlMessageRequestBuilder request = apiRule
+            .createControlMessageRequest()
+            .messageType(ControlMessageType.INCREASE_TASK_SUBSCRIPTION_CREDITS)
+            .partitionId(apiRule.getDefaultPartitionId())
+            .data()
+                .put("subscriberKey", nonExistingSubscriberKey)
+                .put("credits", 2)
+                .put("partitionId", apiRule.getDefaultPartitionId())
+                .done();
+
+        // when
+        final ControlMessageResponse response = request.sendAndAwait();
+
+        // then
+        assertThat(response.getData()).containsEntry("subscriberKey", nonExistingSubscriberKey);
+    }
+
+    @Test
+    public void shouldNotPublishTaskWithoutRetries() throws InterruptedException
+    {
+        // given
+        final String taskType = "foo";
+        apiRule.openTaskSubscription(taskType).await();
+
+        testClient.createTask(taskType);
+
+        waitUntil(() -> apiRule.numSubscribedEventsAvailable() == 1);
+        final SubscribedEvent task = apiRule.subscribedEvents().findFirst().get();
+
+        // when
+        final Map<String, Object> event = new HashMap<>(task.event());
+        event.put("retries", 0);
+        testClient.failTask(task.key(), event);
+
+        // then
+        Thread.sleep(500);
+
+        assertThat(apiRule.numSubscribedEventsAvailable()).isEqualTo(0);
+    }
+
+    @Test
+    public void shouldNotPublishTaskOfDifferentType() throws InterruptedException
+    {
+        // given
+        final String taskType = "foo";
+        apiRule.openTaskSubscription(taskType).await();
+
+        // when
+        testClient.createTask("bar");
+
+        // then
+        Thread.sleep(500);
+        assertThat(apiRule.numSubscribedEventsAvailable()).isEqualTo(0);
+    }
+
+    @Test
+    public void shouldPublishTasksToSecondSubscription()
+    {
+        // given
+        final int credits = 2;
+        final String taskType = "foo";
+        apiRule.openTaskSubscription(apiRule.getDefaultPartitionId(), taskType, 10000, credits).await();
+
+        for (int i = 0; i < credits; i++)
+        {
+            testClient.createTask(taskType);
+        }
+
+        waitUntil(() -> apiRule.numSubscribedEventsAvailable() == credits);
+
+        apiRule.moveMessageStreamToTail();
+
+        final int secondSubscriber = (int) apiRule
+                .openTaskSubscription(apiRule.getDefaultPartitionId(), taskType, 10000, credits)
+                .await()
+                .getData()
+                .get("subscriberKey");
+
+        // when
+        testClient.createTask(taskType);
+
+        // then
+        waitUntil(() -> apiRule.numSubscribedEventsAvailable() == 1);
+
+        final SubscribedEvent subscribedEvent = apiRule.subscribedEvents().findFirst().get();
+        assertThat(subscribedEvent.subscriberKey()).isEqualTo(secondSubscriber);
     }
 
 }

@@ -19,17 +19,21 @@ import static io.zeebe.util.buffer.BufferUtil.bufferAsArray;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
+
+import org.agrona.DirectBuffer;
 
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.clientapi.SubscriptionType;
-import io.zeebe.test.util.collection.MapBuilder;
-import org.agrona.DirectBuffer;
 
 public class TestTopicClient
 {
@@ -142,6 +146,18 @@ public class TestTopicClient
         return response.key();
     }
 
+    public ExecuteCommandResponse createTask(String type)
+    {
+        return apiRule.createCmdRequest()
+                .eventTypeTask()
+                .command()
+                    .put("state", "CREATE")
+                    .put("type", type)
+                    .put("retries", 3)
+                .done()
+                .sendAndAwait();
+    }
+
     public void completeTaskOfType(String taskType)
     {
         completeTaskOfType(taskType, (byte[]) null);
@@ -173,24 +189,55 @@ public class TestTopicClient
             .findFirst()
             .orElseThrow(() -> new AssertionError("Expected task locked event but not found."));
 
-        final MapBuilder<ExecuteCommandRequestBuilder> mapBuilder = apiRule.createCmdRequest()
-                                                                           .partitionId(partitionId)
-                                                                           .key(taskEvent.key())
-                                                                           .eventTypeTask()
-                                                                           .command()
-                                                                           .put(PROP_STATE, "COMPLETE")
-                                                                           .put("type", taskType)
-                                                                           .put("lockOwner", taskEvent.event().get("lockOwner"))
-                                                                           .put("headers", taskEvent.event().get("headers"));
-
+        final Map<String, Object> event = new HashMap<>(taskEvent.event());
         if (payload != null)
         {
-            mapBuilder.put("payload", payload);
+            event.put("payload", payload);
+        }
+        else
+        {
+            event.remove("payload");
         }
 
-        final ExecuteCommandResponse response = mapBuilder.done().sendAndAwait();
+        final ExecuteCommandResponse response = completeTask(taskEvent.key(), event);
 
         assertThat(response.getEvent().get(PROP_STATE)).isEqualTo("COMPLETED");
+    }
+
+    public ExecuteCommandResponse completeTask(long key, Map<String, Object> event)
+    {
+        return apiRule.createCmdRequest()
+            .eventTypeTask()
+            .key(key)
+            .command()
+                .putAll(event)
+                .put("state", "COMPLETE")
+            .done()
+            .sendAndAwait();
+    }
+
+    public ExecuteCommandResponse failTask(long key, Map<String, Object> event)
+    {
+        return apiRule.createCmdRequest()
+            .eventTypeTask()
+            .key(key)
+            .command()
+                .putAll(event)
+                .put("state", "FAIL")
+            .done()
+            .sendAndAwait();
+    }
+
+    public ExecuteCommandResponse updateTaskRetries(long key, Map<String, Object> event)
+    {
+        return apiRule.createCmdRequest()
+            .eventTypeTask()
+            .key(key)
+            .command()
+                .putAll(event)
+                .put("state", "UPDATE_RETRIES")
+            .done()
+            .sendAndAwait();
     }
 
     /**

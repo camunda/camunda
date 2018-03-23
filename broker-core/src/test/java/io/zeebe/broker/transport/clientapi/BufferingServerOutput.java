@@ -49,7 +49,8 @@ public class BufferingServerOutput implements ServerOutput
     @Override
     public boolean sendMessage(TransportMessage transportMessage)
     {
-        throw new RuntimeException("not yet implemented");
+        // ignore; not yet implemented
+        return true;
     }
 
     @Override

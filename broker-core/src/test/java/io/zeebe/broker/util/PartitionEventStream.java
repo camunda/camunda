@@ -15,12 +15,25 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.task;
+package io.zeebe.broker.util;
 
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.servicecontainer.ServiceName;
+import java.util.stream.Stream;
 
-public interface TaskQueueManager
+import io.zeebe.broker.logstreams.processor.TypedEvent;
+import io.zeebe.broker.system.log.PartitionEvent;
+import io.zeebe.broker.system.log.PartitionState;
+import io.zeebe.test.util.stream.StreamWrapper;
+
+public class PartitionEventStream extends StreamWrapper<TypedEvent<PartitionEvent>>
 {
-    void startTaskQueue(ServiceName<LogStream> name, LogStream stream);
+
+    public PartitionEventStream(Stream<TypedEvent<PartitionEvent>> wrappedStream)
+    {
+        super(wrappedStream);
+    }
+
+    public PartitionEventStream inState(PartitionState state)
+    {
+        return new PartitionEventStream(filter(e -> e.getValue().getState() == state));
+    }
 }

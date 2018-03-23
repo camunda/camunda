@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.topic;
+package io.zeebe.broker.util;
 
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 
@@ -26,16 +26,29 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import io.zeebe.broker.logstreams.processor.TypedEvent;
 import io.zeebe.broker.system.log.PartitionEvent;
 import io.zeebe.broker.system.log.TopicEvent;
+import io.zeebe.broker.task.data.TaskEvent;
+import io.zeebe.broker.topic.Events;
+import io.zeebe.broker.topic.StreamProcessorControl;
 import io.zeebe.broker.workflow.data.DeploymentEvent;
 import io.zeebe.broker.workflow.data.WorkflowEvent;
 import io.zeebe.logstreams.LogStreams;
-import io.zeebe.logstreams.log.*;
-import io.zeebe.logstreams.processor.*;
+import io.zeebe.logstreams.log.BufferedLogStreamReader;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamReader;
+import io.zeebe.logstreams.log.LogStreamWriter;
+import io.zeebe.logstreams.log.LogStreamWriterImpl;
+import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.logstreams.processor.EventProcessor;
+import io.zeebe.logstreams.processor.StreamProcessor;
+import io.zeebe.logstreams.processor.StreamProcessorContext;
+import io.zeebe.logstreams.processor.StreamProcessorController;
 import io.zeebe.logstreams.spi.SnapshotStorage;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.msgpack.UnpackedObject;
@@ -44,7 +57,9 @@ import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.buffer.BufferUtil;
-import io.zeebe.util.sched.*;
+import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.ActorCondition;
+import io.zeebe.util.sched.ActorScheduler;
 
 public class TestStreams
 {
@@ -56,6 +71,7 @@ public class TestStreams
         EVENT_TYPES.put(TopicEvent.class, EventType.TOPIC_EVENT);
         EVENT_TYPES.put(DeploymentEvent.class, EventType.DEPLOYMENT_EVENT);
         EVENT_TYPES.put(WorkflowEvent.class, EventType.WORKFLOW_EVENT);
+        EVENT_TYPES.put(TaskEvent.class, EventType.TASK_EVENT);
 
         EVENT_TYPES.put(UnpackedObject.class, EventType.NOOP_EVENT);
     }
@@ -169,32 +185,21 @@ public class TestStreams
 
     }
 
-    public StreamProcessorControl runStreamProcessor(String log, StreamProcessor streamProcessor)
+    public StreamProcessorControl initStreamProcessor(String log, StreamProcessor streamProcessor)
     {
-        return runStreamProcessor(log, 0, streamProcessor);
+        return initStreamProcessor(log, 0, () -> streamProcessor);
     }
 
-    public StreamProcessorControl runStreamProcessor(String log, int streamProcessorId, StreamProcessor streamProcessor)
+    public StreamProcessorControl initStreamProcessor(String log, int streamProcessorId, Supplier<StreamProcessor> factory)
     {
         final LogStream stream = getLogStream(log);
 
-        final SuspendableStreamProcessor processor = new SuspendableStreamProcessor(streamProcessor);
-
-        // stream processor names need to be unique for snapshots to work properly
-        // using the class name assumes that one stream processor class is not instantiated more than once in a test
-        final String name = streamProcessor.getClass().getSimpleName();
-
-        final StreamProcessorController streamProcessorController = LogStreams.createStreamProcessor(name, streamProcessorId, processor)
-            .logStream(stream)
-            .snapshotStorage(getSnapshotStorage())
-            .actorScheduler(actorScheduler)
-            .build();
-
-        final StreamProcessorControlImpl control = new StreamProcessorControlImpl(processor, streamProcessorController);
+        final StreamProcessorControlImpl control = new StreamProcessorControlImpl(
+                stream,
+                factory,
+                streamProcessorId);
 
         closeables.manage(control);
-
-        control.start();
 
         return control;
     }
@@ -202,68 +207,140 @@ public class TestStreams
     protected class StreamProcessorControlImpl implements StreamProcessorControl, AutoCloseable
     {
 
-        protected final SuspendableStreamProcessor streamProcessor;
-        protected final StreamProcessorController controller;
+        private final Supplier<StreamProcessor> factory;
+        private final int streamProcessorId;
+        private final LogStream stream;
 
-        public StreamProcessorControlImpl(SuspendableStreamProcessor streamProcessor, StreamProcessorController controller)
+        protected SuspendableStreamProcessor currentStreamProcessor;
+        protected StreamProcessorController currentController;
+        private Consumer<SnapshotStorage> snapshotCleaner;
+
+        public StreamProcessorControlImpl(
+                LogStream stream,
+                Supplier<StreamProcessor> factory,
+                int streamProcessorId)
         {
-            this.streamProcessor = streamProcessor;
-            this.controller = controller;
+            this.stream = stream;
+            this.factory = factory;
+            this.streamProcessorId = streamProcessorId;
         }
 
         @Override
         public void purgeSnapshot()
         {
-            snapshotStorage.purgeSnapshot(controller.getName());
+            snapshotCleaner.accept(snapshotStorage);
         }
-
 
         @Override
         public void unblock()
         {
-            streamProcessor.resume();
+            currentStreamProcessor.resume();
         }
 
         @Override
         public boolean isBlocked()
         {
-            return controller.isSuspended();
+            return currentController.isSuspended();
         }
 
         @Override
         public void blockAfterEvent(Predicate<LoggedEvent> test)
         {
-            streamProcessor.blockAfterEvent(test);
+            ensureStreamProcessorBuilt();
+            currentStreamProcessor.blockAfterEvent(test);
+        }
+
+        @Override
+        public void blockAfterTaskEvent(Predicate<TypedEvent<TaskEvent>> test)
+        {
+            blockAfterEvent(e -> Events.isTaskEvent(e) && test.test(CopiedTypedEvent.toTypedEvent(e, TaskEvent.class)));
+        }
+
+        @Override
+        public void blockAfterDeploymentEvent(Predicate<TypedEvent<DeploymentEvent>> test)
+        {
+            blockAfterEvent(e -> Events.isDeploymentEvent(e) && test.test(CopiedTypedEvent.toTypedEvent(e, DeploymentEvent.class)));
+        }
+
+        @Override
+        public void blockAfterTopicEvent(Predicate<TypedEvent<TopicEvent>> test)
+        {
+            blockAfterEvent(e -> Events.isTopicEvent(e) && test.test(CopiedTypedEvent.toTypedEvent(e, TopicEvent.class)));
+        }
+
+        @Override
+        public void blockAfterPartitionEvent(Predicate<TypedEvent<PartitionEvent>> test)
+        {
+            blockAfterEvent(e -> Events.isPartitionEvent(e) && test.test(CopiedTypedEvent.toTypedEvent(e, PartitionEvent.class)));
         }
 
         @Override
         public void close()
         {
-            if (controller.isOpened())
+            if (currentController != null && currentController.isOpened())
             {
                 try
                 {
-                    controller.closeAsync().get();
+                    currentController.closeAsync().get();
                 }
                 catch (InterruptedException | ExecutionException e)
                 {
                     throw new RuntimeException(e);
                 }
             }
+
+            currentController = null;
+            currentStreamProcessor = null;
         }
 
         @Override
         public void start()
         {
+            currentController = buildStreamProcessorController();
+            final String controllerName = currentController.getName();
+            snapshotCleaner = storage -> storage.purgeSnapshot(controllerName);
+
             try
             {
-                controller.openAsync().get();
+                currentController.openAsync().get();
             }
             catch (InterruptedException | ExecutionException e)
             {
                 throw new RuntimeException(e);
             }
         }
+
+        @Override
+        public void restart()
+        {
+            close();
+            start();
+        }
+
+        private void ensureStreamProcessorBuilt()
+        {
+            if (currentStreamProcessor == null)
+            {
+                final StreamProcessor processor = factory.get();
+                currentStreamProcessor = new SuspendableStreamProcessor(processor);
+            }
+        }
+
+        private StreamProcessorController buildStreamProcessorController()
+        {
+            ensureStreamProcessorBuilt();
+
+            // stream processor names need to be unique for snapshots to work properly
+            // using the class name assumes that one stream processor class is not instantiated more than once in a test
+            final String name = currentStreamProcessor.wrappedProcessor.getClass().getSimpleName();
+
+            return LogStreams.createStreamProcessor(name, streamProcessorId, currentStreamProcessor)
+                .logStream(stream)
+                .snapshotStorage(getSnapshotStorage())
+                .actorScheduler(actorScheduler)
+                .build();
+        }
+
     }
 
     public static class SuspendableStreamProcessor implements StreamProcessor
@@ -347,8 +424,6 @@ public class TestStreams
         {
             this.context = context;
             wrappedProcessor.onOpen(this.context);
-
-            context.suspendController();
         }
 
         @Override

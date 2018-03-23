@@ -21,6 +21,7 @@ import java.util.EnumMap;
 
 import io.zeebe.broker.system.log.PartitionEvent;
 import io.zeebe.broker.system.log.TopicEvent;
+import io.zeebe.broker.task.data.TaskEvent;
 import io.zeebe.broker.workflow.data.DeploymentEvent;
 import io.zeebe.broker.workflow.data.WorkflowEvent;
 import io.zeebe.logstreams.log.LogStream;
@@ -39,6 +40,7 @@ public class TypedStreamEnvironment
         EVENT_REGISTRY.put(EventType.PARTITION_EVENT, PartitionEvent.class);
         EVENT_REGISTRY.put(EventType.DEPLOYMENT_EVENT, DeploymentEvent.class);
         EVENT_REGISTRY.put(EventType.WORKFLOW_EVENT, WorkflowEvent.class);
+        EVENT_REGISTRY.put(EventType.TASK_EVENT, TaskEvent.class);
     }
 
     public TypedStreamEnvironment(LogStream stream, ServerOutput output)
@@ -55,6 +57,11 @@ public class TypedStreamEnvironment
     public ServerOutput getOutput()
     {
         return output;
+    }
+
+    public LogStream getStream()
+    {
+        return stream;
     }
 
     public TypedEventStreamProcessorBuilder newStreamProcessor()

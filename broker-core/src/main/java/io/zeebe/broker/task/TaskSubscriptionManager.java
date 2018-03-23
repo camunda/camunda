@@ -22,12 +22,20 @@ import static io.zeebe.broker.logstreams.processor.StreamProcessorIds.TASK_LOCK_
 import static io.zeebe.broker.task.TaskQueueServiceNames.taskQueueLockStreamProcessorServiceName;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map.Entry;
-import java.util.function.Function;
+import java.util.Set;
+
+import org.agrona.DirectBuffer;
+import org.agrona.collections.Int2ObjectHashMap;
+import org.agrona.collections.Long2ObjectHashMap;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.logstreams.processor.StreamProcessorService;
+import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
+import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.task.processor.LockTaskStreamProcessor;
 import io.zeebe.broker.task.processor.TaskSubscription;
 import io.zeebe.logstreams.log.LogStream;
@@ -35,6 +43,7 @@ import io.zeebe.logstreams.processor.StreamProcessorController;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.ServerTransport;
 import io.zeebe.transport.TransportListener;
 import io.zeebe.util.allocation.HeapBufferAllocator;
 import io.zeebe.util.buffer.BufferUtil;
@@ -42,9 +51,6 @@ import io.zeebe.util.collection.CompactList;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
-import org.agrona.DirectBuffer;
-import org.agrona.collections.Int2ObjectHashMap;
-import org.agrona.collections.Long2ObjectHashMap;
 
 public class TaskSubscriptionManager extends Actor implements TransportListener
 {
@@ -52,7 +58,7 @@ public class TaskSubscriptionManager extends Actor implements TransportListener
     public static final int NUM_CONCURRENT_REQUESTS = 1_024;
 
     protected final ServiceStartContext serviceContext;
-    protected final Function<DirectBuffer, LockTaskStreamProcessor> streamProcessorSupplier;
+    private final ServerTransport transport;
 
     protected final Int2ObjectHashMap<LogStreamBucket> logStreamBuckets = new Int2ObjectHashMap<>();
     protected final Long2ObjectHashMap<LockTaskStreamProcessor> streamProcessorBySubscriptionId = new Long2ObjectHashMap<>();
@@ -74,18 +80,10 @@ public class TaskSubscriptionManager extends Actor implements TransportListener
 
     protected long nextSubscriptionId = 0;
 
-
-    public TaskSubscriptionManager(ServiceStartContext serviceContext)
+    public TaskSubscriptionManager(ServiceStartContext serviceContext, ServerTransport transport)
     {
-        this(serviceContext, taskType -> new LockTaskStreamProcessor(taskType));
-    }
-
-    public TaskSubscriptionManager(
-            ServiceStartContext serviceContext,
-            Function<DirectBuffer, LockTaskStreamProcessor> streamProcessorBuilder)
-    {
+        this.transport = transport;
         this.serviceContext = serviceContext;
-        this.streamProcessorSupplier = streamProcessorBuilder;
         this.creditRequestBuffer = new CreditsRequestBuffer(
             NUM_CONCURRENT_REQUESTS,
             (r) ->
@@ -145,7 +143,7 @@ public class TaskSubscriptionManager extends Actor implements TransportListener
             }
             else
             {
-                final LockTaskStreamProcessor processor = streamProcessorSupplier.apply(taskType);
+                final LockTaskStreamProcessor processor = new LockTaskStreamProcessor(taskType);
                 final ActorFuture<Void> processorFuture = createStreamProcessorService(processor, taskType, logStreamBucket, taskType);
 
                 actor.runOnCompletion(processorFuture, (v, t) ->
@@ -181,8 +179,16 @@ public class TaskSubscriptionManager extends Actor implements TransportListener
         return future;
     }
 
-    protected ActorFuture<Void> createStreamProcessorService(final LockTaskStreamProcessor streamProcessor, DirectBuffer newTaskTypeBuffer, final LogStreamBucket logStreamBucket, final DirectBuffer taskType)
+    protected ActorFuture<Void> createStreamProcessorService(
+            final LockTaskStreamProcessor factory,
+            DirectBuffer newTaskTypeBuffer,
+            final LogStreamBucket logStreamBucket,
+            final DirectBuffer taskType)
     {
+        final TypedStreamEnvironment env = new TypedStreamEnvironment(logStreamBucket.getLogStream(), transport.getOutput());
+
+        final TypedStreamProcessor streamProcessor = factory.createStreamProcessor(env);
+
         final ServiceName<LogStream> logStreamServiceName = logStreamBucket.getLogServiceName();
 
         final String logName = logStreamBucket.getLogStream().getLogName();
@@ -193,8 +199,7 @@ public class TaskSubscriptionManager extends Actor implements TransportListener
                 streamProcessorName,
                 TASK_LOCK_STREAM_PROCESSOR_ID,
                 streamProcessor)
-            .eventFilter(LockTaskStreamProcessor.eventFilter())
-            .reprocessingEventFilter(LockTaskStreamProcessor.reprocessingEventFilter(newTaskTypeBuffer));
+            .eventFilter(streamProcessor.buildTypeFilter());
 
         return serviceContext.createService(streamProcessorServiceName, streamProcessorService)
                              .dependency(logStreamServiceName, streamProcessorService.getLogStreamInjector())

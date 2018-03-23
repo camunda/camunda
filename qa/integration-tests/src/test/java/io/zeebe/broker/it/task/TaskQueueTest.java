@@ -73,7 +73,6 @@ public class TaskQueueTest
 
         final long taskKey = taskEvent.getMetadata().getKey();
         assertThat(taskKey).isGreaterThanOrEqualTo(0);
-        assertThat(taskKey).isEqualTo(taskEvent.getMetadata().getPosition());
     }
 
     @Test

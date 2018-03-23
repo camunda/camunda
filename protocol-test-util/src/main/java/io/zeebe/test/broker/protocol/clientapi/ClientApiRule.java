@@ -45,7 +45,7 @@ import org.junit.rules.ExternalResource;
 public class ClientApiRule extends ExternalResource
 {
     public static final String DEFAULT_TOPIC_NAME = "default-topic";
-    public static final long DEFAULT_LOCK_DURATION = 1000L;
+    public static final long DEFAULT_LOCK_DURATION = 10000L;
 
     protected ClientTransport transport;
     protected Dispatcher sendBuffer;
@@ -208,21 +208,40 @@ public class ClientApiRule extends ExternalResource
         return openTaskSubscription(defaultPartitionId, type, DEFAULT_LOCK_DURATION);
     }
 
+    public ControlMessageRequest closeTaskSubscription(long subscriberKey)
+    {
+        return createControlMessageRequest()
+                    .messageType(ControlMessageType.REMOVE_TASK_SUBSCRIPTION)
+                    .data()
+                        .put("subscriberKey", subscriberKey)
+                    .done()
+                .send();
+    }
+
+    public ControlMessageRequest openTaskSubscription(
+            final int partitionId,
+            final String type,
+            long lockDuration,
+            int credits)
+    {
+        return createControlMessageRequest()
+                .messageType(ControlMessageType.ADD_TASK_SUBSCRIPTION)
+                .partitionId(partitionId)
+                .data()
+                    .put("taskType", type)
+                    .put("lockDuration", lockDuration)
+                    .put("lockOwner", "test")
+                    .put("credits", credits)
+                    .done()
+                .send();
+    }
+
     public ControlMessageRequest openTaskSubscription(
             final int partitionId,
             final String type,
             long lockDuration)
     {
-        return createControlMessageRequest()
-            .messageType(ControlMessageType.ADD_TASK_SUBSCRIPTION)
-            .partitionId(partitionId)
-            .data()
-                .put("taskType", type)
-                .put("lockDuration", lockDuration)
-                .put("lockOwner", "test")
-                .put("credits", 10)
-                .done()
-            .send();
+        return openTaskSubscription(partitionId, type, lockDuration, 10);
     }
 
     public Stream<RawMessage> incomingMessages()

@@ -24,64 +24,43 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
-import io.zeebe.broker.system.log.*;
-import io.zeebe.broker.transport.clientapi.BufferingServerOutput;
-import io.zeebe.test.util.AutoCloseableRule;
+import io.zeebe.broker.system.log.PartitionEvent;
+import io.zeebe.broker.system.log.PartitionResponder;
+import io.zeebe.broker.system.log.PartitionState;
+import io.zeebe.broker.system.log.SystemPartitionManager;
+import io.zeebe.broker.system.log.TopicEvent;
+import io.zeebe.broker.system.log.TopicState;
+import io.zeebe.broker.util.StreamProcessorRule;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.testing.ActorSchedulerRule;
-import org.junit.*;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TemporaryFolder;
 
 @SuppressWarnings("unchecked")
 public class RequestPartitionsStreamProcessorTest
 {
     public static final String STREAM_NAME = "stream";
 
-    public TemporaryFolder tempFolder = new TemporaryFolder();
-    public AutoCloseableRule closeables = new AutoCloseableRule();
-
-    public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
-
     @Rule
-    public RuleChain ruleChain = RuleChain.outerRule(tempFolder).around(actorSchedulerRule).around(closeables);
-
-    public BufferingServerOutput output;
-
-    protected TestStreams streams;
-
-    private TypedStreamProcessor streamProcessor;
+    public StreamProcessorRule rule = new StreamProcessorRule();
 
     private PartitionResponder partitionResponder;
 
-    @Before
-    public void setUp()
+    protected TypedStreamProcessor buildStreamProcessor(TypedStreamEnvironment env)
     {
-        output = new BufferingServerOutput();
-
-        streams = new TestStreams(tempFolder.getRoot(), closeables, actorSchedulerRule.get());
-        streams.createLogStream(STREAM_NAME);
-
-        rebuildStreamProcessor();
-    }
-
-    protected void rebuildStreamProcessor()
-    {
-        final TypedStreamEnvironment streamEnvironment = new TypedStreamEnvironment(streams.getLogStream(STREAM_NAME), output);
-
-        partitionResponder = new PartitionResponder(output);
-        streamProcessor = SystemPartitionManager.buildPartitionResponseProcessor(streamEnvironment, partitionResponder);
+        partitionResponder = new PartitionResponder(env.getOutput());
+        return SystemPartitionManager.buildPartitionResponseProcessor(env, partitionResponder);
     }
 
     @Test
     public void shouldCompleteFutureWhenSendingPartitions()
     {
         // given
-        final StreamProcessorControl processorControl = streams.runStreamProcessor(STREAM_NAME, streamProcessor);
-        processorControl.unblock();
+        rule.runStreamProcessor(this::buildStreamProcessor);
 
         // when
         final ActorFuture<Void> future = doRepeatedly(() -> partitionResponder.sendPartitions(1, 2)).until(f -> f != null);
@@ -89,7 +68,7 @@ public class RequestPartitionsStreamProcessorTest
         // then
         waitUntil(future::isDone);
         assertThat(future).isDone();
-        assertThat(output.getSentResponses()).hasSize(1);
+        assertThat(rule.getOutput().getSentResponses()).hasSize(1);
 
     }
 
@@ -98,27 +77,23 @@ public class RequestPartitionsStreamProcessorTest
     {
         // given
         final String topicName = "foo";
-        streams.newEvent(STREAM_NAME)
-            .event(partitionCreated(topicName, 1))
-            .write();
+        rule.writeEvent(partitionCreated(topicName, 1));
+        final long partition2Created = rule.writeEvent(partitionCreated(topicName, 2));
 
-        final long partition2Created = streams.newEvent(STREAM_NAME)
-            .event(partitionCreated(topicName, 2))
-            .write();
-
-        final StreamProcessorControl processorControl = streams.runStreamProcessor(STREAM_NAME, streamProcessor);
+        final StreamProcessorControl processorControl = rule.initStreamProcessor(this::buildStreamProcessor);
         processorControl.blockAfterEvent(e -> e.getPosition() == partition2Created);
-        processorControl.unblock();
+        processorControl.start();
+
         waitUntil(() -> processorControl.isBlocked());
 
         // when
         partitionResponder.sendPartitions(1, 2);
 
         // then
-        waitUntil(() -> output.getSentResponses().size() == 1);
-        assertThat(output.getSentResponses()).hasSize(1);
+        waitUntil(() -> rule.getOutput().getSentResponses().size() == 1);
+        assertThat(rule.getOutput().getSentResponses()).hasSize(1);
 
-        final Map<String, Object> controlMessageResponse = output.getAsControlMessageData(0);
+        final Map<String, Object> controlMessageResponse = rule.getOutput().getAsControlMessageData(0);
         final List<Map<String, Object>> partitions = (List<Map<String, Object>>) controlMessageResponse.get("partitions");
         assertThat(partitions).isEmpty();
     }
@@ -137,30 +112,24 @@ public class RequestPartitionsStreamProcessorTest
         final int partition1 = 1;
         final int partition2 = 2;
 
-        streams.newEvent(STREAM_NAME)
-            .event(partitionCreated(topicName, partition1))
-            .write();
+        rule.writeEvent(partitionCreated(topicName, partition1));
+        rule.writeEvent(partitionCreated(topicName, 1));
 
-        streams.newEvent(STREAM_NAME)
-            .event(topicCreated(topicName, 1))
-            .write();
+        final long partition2Created = rule.writeEvent(partitionCreated(topicName, partition2));
 
-        final long partition2Created = streams.newEvent(STREAM_NAME)
-            .event(partitionCreated(topicName, partition2))
-            .write();
-
-        final StreamProcessorControl processorControl = streams.runStreamProcessor(STREAM_NAME, streamProcessor);
+        final StreamProcessorControl processorControl = rule.initStreamProcessor(this::buildStreamProcessor);
         processorControl.blockAfterEvent(e -> e.getPosition() == partition2Created);
-        processorControl.unblock();
+        processorControl.start();
+
         waitUntil(() -> processorControl.isBlocked());
 
         // when
         partitionResponder.sendPartitions(1, 2);
 
         // then
-        assertThat(output.getSentResponses()).hasSize(1);
+        assertThat(rule.getOutput().getSentResponses()).hasSize(1);
 
-        final Map<String, Object> controlMessageResponse = output.getAsControlMessageData(0);
+        final Map<String, Object> controlMessageResponse = rule.getOutput().getAsControlMessageData(0);
         final List<Map<String, Object>> partitions = (List<Map<String, Object>>) controlMessageResponse.get("partitions");
         assertThat(partitions).hasSize(2);
         assertThat(partitions).extracting("id").containsExactlyInAnyOrder(partition1, partition2);

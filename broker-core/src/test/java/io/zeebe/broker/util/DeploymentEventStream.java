@@ -15,12 +15,25 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.task;
+package io.zeebe.broker.util;
 
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.servicecontainer.ServiceName;
+import java.util.stream.Stream;
 
-public interface TaskQueueManager
+import io.zeebe.broker.logstreams.processor.TypedEvent;
+import io.zeebe.broker.workflow.data.DeploymentEvent;
+import io.zeebe.broker.workflow.data.DeploymentState;
+import io.zeebe.test.util.stream.StreamWrapper;
+
+public class DeploymentEventStream extends StreamWrapper<TypedEvent<DeploymentEvent>>
 {
-    void startTaskQueue(ServiceName<LogStream> name, LogStream stream);
+
+    public DeploymentEventStream(Stream<TypedEvent<DeploymentEvent>> wrappedStream)
+    {
+        super(wrappedStream);
+    }
+
+    public DeploymentEventStream inState(DeploymentState state)
+    {
+        return new DeploymentEventStream(filter(e -> e.getValue().getState() == state));
+    }
 }

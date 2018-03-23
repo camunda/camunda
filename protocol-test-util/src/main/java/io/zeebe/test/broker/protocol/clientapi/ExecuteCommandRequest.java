@@ -77,6 +77,11 @@ public class ExecuteCommandRequest implements BufferWriter
 
     public ExecuteCommandRequest send()
     {
+        if (responseFuture != null)
+        {
+            throw new RuntimeException("Cannot send request more than once");
+        }
+
         responseFuture = output.sendRequest(target, this);
         return this;
     }

@@ -28,7 +28,7 @@ public class TaskSubscriptionRequest extends UnpackedObject
     protected StringProperty taskTypeProp = new StringProperty("taskType", "");
 
     protected LongProperty lockDurationProp = new LongProperty("lockDuration", -1);
-    protected StringProperty lockOwnerProp = new StringProperty("lockOwner", "default");
+    protected StringProperty lockOwnerProp = new StringProperty("lockOwner", "");
 
     protected IntegerProperty creditsProp = new IntegerProperty("credits", -1);
 
