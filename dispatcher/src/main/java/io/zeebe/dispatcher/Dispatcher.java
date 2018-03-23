@@ -21,6 +21,8 @@ import static io.zeebe.dispatcher.impl.log.LogBufferAppender.RESULT_PADDING_AT_E
 import java.util.Arrays;
 
 import io.zeebe.dispatcher.impl.log.*;
+import io.zeebe.util.metrics.Metric;
+import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.sched.*;
 import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
@@ -40,6 +42,7 @@ public class Dispatcher extends Actor implements AutoCloseable
     protected final LogBuffer logBuffer;
     protected final LogBufferAppender logAppender;
 
+    protected final MetricsManager metricsManager;
     protected final Position publisherLimit;
     protected final Position publisherPosition;
     protected final String[] defaultSubscriptionNames;
@@ -59,6 +62,7 @@ public class Dispatcher extends Actor implements AutoCloseable
     private Runnable backgroundTask = this::runBackgroundTask;
 
     private final Runnable onClaimComplete = this::signalSubsciptions;
+    private Metric fragmentsWrittenMetric;
 
     public Dispatcher(
             LogBuffer logBuffer,
@@ -68,7 +72,8 @@ public class Dispatcher extends Actor implements AutoCloseable
             int logWindowLength,
             String[] subscriptionNames,
             int mode,
-            String name)
+            String name,
+            MetricsManager metricsManager)
     {
         this.logBuffer = logBuffer;
         this.logAppender = logAppender;
@@ -77,12 +82,18 @@ public class Dispatcher extends Actor implements AutoCloseable
         this.logWindowLength = logWindowLength;
         this.mode = mode;
         this.name = name;
+        this.metricsManager = metricsManager;
 
         this.partitionSize = logBuffer.getPartitionSize();
         this.maxFrameLength = partitionSize / 16;
 
         this.subscriptions = new Subscription[0];
         this.defaultSubscriptionNames = subscriptionNames;
+
+        this.fragmentsWrittenMetric = metricsManager.newMetric("buffer_fragments_written")
+            .type("counter")
+            .label("buffer", getName())
+            .create();
     }
 
     @Override
@@ -107,6 +118,7 @@ public class Dispatcher extends Actor implements AutoCloseable
     @Override
     protected void onActorClosing()
     {
+        fragmentsWrittenMetric.close();
         publisherLimit.close();
         publisherPosition.close();
 
@@ -202,6 +214,8 @@ public class Dispatcher extends Actor implements AutoCloseable
                                                         start,
                                                         length,
                                                         streamId);
+
+                    fragmentsWrittenMetric.getAndAddOrdered(length);
                 }
                 else
                 {
@@ -279,6 +293,8 @@ public class Dispatcher extends Actor implements AutoCloseable
                         length,
                         streamId,
                         onClaimComplete);
+
+                fragmentsWrittenMetric.getAndAddOrdered(length);
             }
             else
             {
@@ -482,7 +498,13 @@ public class Dispatcher extends Actor implements AutoCloseable
         position.setOrdered(position(logBuffer.getActivePartitionIdVolatile(), 0));
         final Position limit = determineLimit(subscriptionId);
 
-        return new Subscription(position, limit, subscriptionId, subscriptionName, onConsumption, logBuffer);
+        final Metric fragmentsRead = metricsManager.newMetric("buffer_fragments_read")
+            .type("counter")
+            .label("subscription", subscriptionName)
+            .label("buffer", getName())
+            .create();
+
+        return new Subscription(position, limit, subscriptionId, subscriptionName, onConsumption, logBuffer, fragmentsRead);
     }
 
     protected Position determineLimit(int subscriptionId)
@@ -544,6 +566,7 @@ public class Dispatcher extends Actor implements AutoCloseable
         // close subscription
         subscriptionToClose.isClosed = true;
         subscriptionToClose.position.close();
+        subscriptionToClose.fragmentsConsumedMetric.close();
 
         // remove from list
         final int len = subscriptions.length;

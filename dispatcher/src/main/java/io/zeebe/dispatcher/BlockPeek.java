@@ -25,6 +25,7 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.Position;
 import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
+import io.zeebe.util.metrics.Metric;
 import io.zeebe.util.sched.ActorCondition;
 
 /**
@@ -46,6 +47,8 @@ public class BlockPeek implements Iterable<DirectBuffer>
 
     protected DataFrameIterator iterator = new DataFrameIterator();
     private ActorCondition dataConsumed;
+    private int fragmentCount;
+    private Metric fragmentsConsumedMetric;
 
     public void setBlock(
             final ByteBuffer byteBuffer,
@@ -55,7 +58,9 @@ public class BlockPeek implements Iterable<DirectBuffer>
             final int bufferOffset,
             final int blockLength,
             final int newPartitionId,
-            final int newPartitionOffset)
+            final int newPartitionOffset,
+            int fragmentCount,
+            Metric fragmentsConsumedMetric)
     {
         this.byteBuffer = byteBuffer;
         this.subscriberPosition = position;
@@ -65,6 +70,8 @@ public class BlockPeek implements Iterable<DirectBuffer>
         this.blockLength = blockLength;
         this.newPartitionId = newPartitionId;
         this.newPartitionOffset = newPartitionOffset;
+        this.fragmentCount = fragmentCount;
+        this.fragmentsConsumedMetric = fragmentsConsumedMetric;
 
         byteBuffer.limit(bufferOffset + blockLength);
         byteBuffer.position(bufferOffset);
@@ -124,6 +131,7 @@ public class BlockPeek implements Iterable<DirectBuffer>
 
     protected void updatePosition()
     {
+        fragmentsConsumedMetric.getAndAddOrdered(fragmentCount);
         subscriberPosition.proposeMaxOrdered(position(newPartitionId, newPartitionOffset));
         dataConsumed.signal();
     }

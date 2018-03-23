@@ -45,6 +45,7 @@ import org.mockito.Mockito;
 import io.zeebe.dispatcher.impl.log.LogBuffer;
 import io.zeebe.dispatcher.impl.log.LogBufferAppender;
 import io.zeebe.dispatcher.impl.log.LogBufferPartition;
+import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.sched.ActorCondition;
 
 public class DispatcherTest
@@ -105,12 +106,13 @@ public class DispatcherTest
                 A_LOG_WINDOW_LENGTH,
                 new String[0],
                 Dispatcher.MODE_PUB_SUB,
-                "test")
+                "test",
+                new MetricsManager())
         {
             @Override
             protected Subscription newSubscription(int subscriberId, String subscriberName, ActorCondition onConsumption)
             {
-                subscriptionSpy = spy(new Subscription(subscriberPosition, determineLimit(subscriberId), subscriberId, subscriberName, onConsumption, logBuffer));
+                subscriptionSpy = spy(new Subscription(subscriberPosition, determineLimit(subscriberId), subscriberId, subscriberName, onConsumption, logBuffer, metricsManager.newMetric("metric").type("counter").create()));
                 return subscriptionSpy;
             }
         };

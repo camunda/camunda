@@ -21,8 +21,10 @@ import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.*;
 import java.nio.ByteBuffer;
 
 import io.zeebe.dispatcher.impl.log.*;
+import io.zeebe.util.metrics.Metric;
 import io.zeebe.util.sched.ActorCondition;
-import io.zeebe.util.sched.channel.*;
+import io.zeebe.util.sched.channel.ActorConditions;
+import io.zeebe.util.sched.channel.ConsumableChannel;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.Position;
 import org.slf4j.Logger;
@@ -40,11 +42,18 @@ public class Subscription implements ConsumableChannel
     protected final String name;
     protected final ActorCondition dataConsumed;
     protected final ByteBuffer rawDispatcherBufferView;
+    protected final Metric fragmentsConsumedMetric;
 
     protected volatile boolean isClosed = false;
 
 
-    public Subscription(Position position, Position limit, int id, String name, ActorCondition onConsumption, LogBuffer logBuffer)
+    public Subscription(Position position,
+            Position limit,
+            int id,
+            String name,
+            ActorCondition onConsumption,
+            LogBuffer logBuffer,
+            Metric fragmentsConsumedMetric)
     {
         this.position = position;
         this.id = id;
@@ -52,6 +61,7 @@ public class Subscription implements ConsumableChannel
         this.limit = limit;
         this.logBuffer = logBuffer;
         this.dataConsumed = onConsumption;
+        this.fragmentsConsumedMetric = fragmentsConsumedMetric;
 
         // required so that a subscription can freely modify position and limit of the raw buffer
         this.rawDispatcherBufferView = logBuffer.createRawBufferView();
@@ -192,6 +202,7 @@ public class Subscription implements ConsumableChannel
 
         position.setOrdered(position(partitionId, fragmentOffset));
         dataConsumed.signal();
+        this.fragmentsConsumedMetric.getAndAddOrdered(fragmentsConsumed);
 
         return fragmentsConsumed;
     }
@@ -299,6 +310,7 @@ public class Subscription implements ConsumableChannel
         int initialStreamId = -1;
         boolean isReadingBatch = false;
         int offset = partitionOffset;
+        int fragmentCount = 0;
 
         int offsetLimit = partitionOffset(limit);
         if (partitionId(limit) > partitionId)
@@ -336,6 +348,8 @@ public class Subscription implements ConsumableChannel
             }
             else
             {
+                fragmentCount++;
+
                 if (isStreamAware)
                 {
                     final int streamId = buffer.getInt(streamIdOffset(partitionOffset));
@@ -392,7 +406,9 @@ public class Subscription implements ConsumableChannel
                     absoluteOffset,
                     blockLength,
                     partitionId,
-                    offset);
+                    offset,
+                    fragmentCount,
+                    fragmentsConsumedMetric);
         }
         return blockLength;
     }

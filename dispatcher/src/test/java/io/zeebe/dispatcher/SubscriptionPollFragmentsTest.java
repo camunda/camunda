@@ -44,6 +44,7 @@ import org.agrona.concurrent.status.Position;
 import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
 import io.zeebe.dispatcher.impl.log.LogBuffer;
 import io.zeebe.dispatcher.impl.log.LogBufferPartition;
+import io.zeebe.util.metrics.Metric;
 import io.zeebe.util.sched.ActorCondition;
 
 import org.junit.Before;
@@ -79,7 +80,7 @@ public class SubscriptionPollFragmentsTest
         mockFragmentHandler = mock(FragmentHandler.class);
         final ActorCondition onConsumed = mock(ActorCondition.class);
 
-        subscription = new Subscription(mockSubscriberPosition, mock(Position.class), 0, "0", onConsumed, mock(LogBuffer.class));
+        subscription = new Subscription(mockSubscriberPosition, mock(Position.class), 0, "0", onConsumed, mock(LogBuffer.class), mock(Metric.class));
     }
 
     @Test

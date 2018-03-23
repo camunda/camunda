@@ -33,7 +33,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import java.nio.ByteBuffer;
 
@@ -46,6 +46,7 @@ import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
 import io.zeebe.dispatcher.impl.log.LogBuffer;
 import io.zeebe.dispatcher.impl.log.LogBufferPartition;
 import io.zeebe.util.allocation.AllocatedBuffer;
+import io.zeebe.util.metrics.Metric;
 import io.zeebe.util.sched.ActorCondition;
 
 public class SubscriptionPeekBlockTest
@@ -70,6 +71,7 @@ public class SubscriptionPeekBlockTest
 
     Subscription subscription;
     private ActorCondition dataConsumed;
+    private Metric metric;
 
     @Before
     public void setup()
@@ -92,7 +94,8 @@ public class SubscriptionPeekBlockTest
         when(logBuffer.createRawBufferView()).thenReturn(rawBufferView);
 
         dataConsumed = mock(ActorCondition.class);
-        subscription = new Subscription(subscriberPositionMock, mock(Position.class), 0, "0", dataConsumed, logBuffer);
+        metric = mock(Metric.class);
+        subscription = new Subscription(subscriberPositionMock, mock(Position.class), 0, "0", dataConsumed, logBuffer, metric);
     }
 
     @Test
@@ -111,7 +114,7 @@ public class SubscriptionPeekBlockTest
         // then
         assertThat(bytesAvailable).isEqualTo(A_FRAGMENT_LENGTH);
         // one fragment was peeked
-        verify(blockPeekSpy).setBlock(rawBufferView, subscriberPositionMock, dataConsumed, -1, fragOffset + A_PARTITION_DATA_SECTION_OFFSET, A_FRAGMENT_LENGTH, A_PARTITION_ID, nextFragmentOffset(fragOffset));
+        verify(blockPeekSpy).setBlock(rawBufferView, subscriberPositionMock, dataConsumed, -1, fragOffset + A_PARTITION_DATA_SECTION_OFFSET, A_FRAGMENT_LENGTH, A_PARTITION_ID, nextFragmentOffset(fragOffset), 1, metric);
         // and the position was not increased
         verifyNoMoreInteractions(subscriberPositionMock);
     }
@@ -188,7 +191,7 @@ public class SubscriptionPeekBlockTest
         // then
         assertThat(bytesAvailable).isEqualTo(2 * A_FRAGMENT_LENGTH);
         // two fragments were peeked
-        verify(blockPeekSpy).setBlock(rawBufferView, subscriberPositionMock, dataConsumed, -1, firstFragOffset + A_PARTITION_DATA_SECTION_OFFSET, 2 * A_FRAGMENT_LENGTH, A_PARTITION_ID, nextFragOffset);
+        verify(blockPeekSpy).setBlock(rawBufferView, subscriberPositionMock, dataConsumed, -1, firstFragOffset + A_PARTITION_DATA_SECTION_OFFSET, 2 * A_FRAGMENT_LENGTH, A_PARTITION_ID, nextFragOffset, 2, metric);
         // and the position was increased by the fragment length of the two fragments
         verify(subscriberPositionMock).proposeMaxOrdered(position(A_PARTITION_ID, nextFragOffset));
     }
@@ -216,7 +219,7 @@ public class SubscriptionPeekBlockTest
         // then
         assertThat(bytesAvailable).isEqualTo(A_FRAGMENT_LENGTH);
         // only one fragment was peeked
-        verify(blockPeekSpy).setBlock(rawBufferView, subscriberPositionMock, dataConsumed, -1, firstFragOffset + A_PARTITION_DATA_SECTION_OFFSET, A_FRAGMENT_LENGTH, A_PARTITION_ID, secondFragOffset);
+        verify(blockPeekSpy).setBlock(rawBufferView, subscriberPositionMock, dataConsumed, -1, firstFragOffset + A_PARTITION_DATA_SECTION_OFFSET, A_FRAGMENT_LENGTH, A_PARTITION_ID, secondFragOffset, 1, metric);
         // and the position was increased by the fragment length of the one fragment
         verify(subscriberPositionMock).proposeMaxOrdered(position(A_PARTITION_ID, secondFragOffset));
     }
@@ -241,7 +244,7 @@ public class SubscriptionPeekBlockTest
         // then
         assertThat(bytesAvailable).isEqualTo(A_FRAGMENT_LENGTH);
         // only one fragment was peeked
-        verify(blockPeekSpy).setBlock(rawBufferView, subscriberPositionMock, dataConsumed, A_STREAM_ID, firstFragOffset + A_PARTITION_DATA_SECTION_OFFSET, A_FRAGMENT_LENGTH, A_PARTITION_ID, secondFragOffset);
+        verify(blockPeekSpy).setBlock(rawBufferView, subscriberPositionMock, dataConsumed, A_STREAM_ID, firstFragOffset + A_PARTITION_DATA_SECTION_OFFSET, A_FRAGMENT_LENGTH, A_PARTITION_ID, secondFragOffset, 2, metric);
     }
 
     @Test
@@ -265,7 +268,7 @@ public class SubscriptionPeekBlockTest
         // then
         assertThat(bytesAvailable).isEqualTo(2 * A_FRAGMENT_LENGTH);
         // both fragments were peeked
-        verify(blockPeekSpy).setBlock(rawBufferView, subscriberPositionMock, dataConsumed, -1, firstFragOffset + A_PARTITION_DATA_SECTION_OFFSET, 2 * A_FRAGMENT_LENGTH, A_PARTITION_ID, nextFragOffset);
+        verify(blockPeekSpy).setBlock(rawBufferView, subscriberPositionMock, dataConsumed, -1, firstFragOffset + A_PARTITION_DATA_SECTION_OFFSET, 2 * A_FRAGMENT_LENGTH, A_PARTITION_ID, nextFragOffset, 2, metric);
     }
 
     @Test
@@ -311,7 +314,7 @@ public class SubscriptionPeekBlockTest
         // then
         assertThat(bytesAvailable).isEqualTo(A_FRAGMENT_LENGTH);
         // the fragment was peeked
-        verify(blockPeekSpy).setBlock(rawBufferView, subscriberPositionMock, dataConsumed, -1, firstFragOffset + A_PARTITION_DATA_SECTION_OFFSET, A_FRAGMENT_LENGTH, nextPartionId, nextFragOffset);
+        verify(blockPeekSpy).setBlock(rawBufferView, subscriberPositionMock, dataConsumed, -1, firstFragOffset + A_PARTITION_DATA_SECTION_OFFSET, A_FRAGMENT_LENGTH, nextPartionId, nextFragOffset, 1, metric);
         // and the position was rolled over to the next partition
         verify(subscriberPositionMock).proposeMaxOrdered(position(nextPartionId, nextFragOffset)); // is secondFragOffset somehow
     }
@@ -357,7 +360,7 @@ public class SubscriptionPeekBlockTest
         // then
         assertThat(bytesAvailable).isEqualTo(A_FRAGMENT_LENGTH);
         // the fragment was peeked
-        verify(blockPeekSpy).setBlock(rawBufferView, subscriberPositionMock, dataConsumed, -1, firstFragOffset + A_PARTITION_DATA_SECTION_OFFSET, A_FRAGMENT_LENGTH, A_PARTITION_ID, nextFragOffset);
+        verify(blockPeekSpy).setBlock(rawBufferView, subscriberPositionMock, dataConsumed, -1, firstFragOffset + A_PARTITION_DATA_SECTION_OFFSET, A_FRAGMENT_LENGTH, A_PARTITION_ID, nextFragOffset, 1, metric);
         // and the position was rolled over to the next fragement after the padding
         verify(subscriberPositionMock).proposeMaxOrdered(position(A_PARTITION_ID, nextFragOffset)); // is secondFragOffset somehow
     }
@@ -404,7 +407,7 @@ public class SubscriptionPeekBlockTest
         // then
         assertThat(bytesAvailable).isEqualTo(2 * A_FRAGMENT_LENGTH);
         // two fragments were peeked
-        verify(blockPeekSpy).setBlock(rawBufferView, subscriberPositionMock, dataConsumed, -1, firstFragOffset + A_PARTITION_DATA_SECTION_OFFSET, 2 * A_FRAGMENT_LENGTH, A_PARTITION_ID, nextFragOffset);
+        verify(blockPeekSpy).setBlock(rawBufferView, subscriberPositionMock, dataConsumed, -1, firstFragOffset + A_PARTITION_DATA_SECTION_OFFSET, 2 * A_FRAGMENT_LENGTH, A_PARTITION_ID, nextFragOffset, 2, metric);
         // and the position was increased by the fragment length of the two fragments
         verify(subscriberPositionMock).proposeMaxOrdered(position(A_PARTITION_ID, nextFragOffset));
     }
@@ -460,7 +463,7 @@ public class SubscriptionPeekBlockTest
         // then
         assertThat(bytesAvailable).isEqualTo(A_FRAGMENT_LENGTH);
         // one fragment was peeked
-        verify(blockPeekSpy).setBlock(rawBufferView, subscriberPositionMock, dataConsumed, -1, firstFragOffset + A_PARTITION_DATA_SECTION_OFFSET, A_FRAGMENT_LENGTH, A_PARTITION_ID, secondFragOffset);
+        verify(blockPeekSpy).setBlock(rawBufferView, subscriberPositionMock, dataConsumed, -1, firstFragOffset + A_PARTITION_DATA_SECTION_OFFSET, A_FRAGMENT_LENGTH, A_PARTITION_ID, secondFragOffset, 2, metric);
         // and the position was increased by the fragment length of the two fragments
         verify(subscriberPositionMock).proposeMaxOrdered(position(A_PARTITION_ID, secondFragOffset));
     }
