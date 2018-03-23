@@ -1,8 +1,13 @@
 ---
 container:
+  # NOTE: changing this property also requires adjustments in the startup script
+  # start-optimize.sh on Linux or start-optimize.bat on Windows.
   host: 0.0.0.0
+  # NOTE: changing this property also requires adjustments in the startup script
+  # start-optimize.sh on Linux or start-optimize.bat on Windows.
   ports:
     http: 8090
+
 engines:
   'camunda-bpm':
     name: default
@@ -13,7 +18,11 @@ engines:
       password: ''
       user: ''
     enabled: true
+
 es:
+  # NOTE: changing these properties also might need adjustments in the startup script
+  # start-optimize.sh on Linux or start-optimize.bat on Windows if you don't have
+  # configured your own elasticsearch instance.
   host: localhost
-  index: optimize
   port: 9300
+  index: optimize

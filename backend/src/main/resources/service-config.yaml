@@ -16,15 +16,21 @@ auth:
     #logged in. Define when a token is supposed to expire.
     lifeMin: 15
 container:
-  #A host name or IP address, to identify a specific network interface on
-  #which to listen.
+  # A host name or IP address, to identify a specific network interface on
+  # which to listen.
+  # NOTE: changing this property also requires adjustments in the startup script
+  # start-optimize.sh on Linux or start-optimize.bat on Windows.
   host: localhost
   ports:
     #A port number that will be used by the embedded jetty server to process
     #HTTP connections.
+    # NOTE: changing this property also requires adjustments in the startup script
+    # start-optimize.sh on Linux or start-optimize.bat on Windows.
     http: 8090
-    #A port number that will be used by the embedded jetty server to process
-    #secure HTTPS connections.
+    # A port number that will be used by the embedded jetty server to process
+    # secure HTTPS connections.
+    # NOTE: changing this property also requires adjustments in the startup script
+    # start-optimize.sh on Linux or start-optimize.bat on Windows.
     https: 8091
   #HTTPS requires an SSL Certificate. When you generate an SSL Certificate,
   #you are creating a keystore file and a keystore password for use when the
@@ -216,9 +222,15 @@ es:
     duration:
       #The name of the duration target value type.
       targetValueType: duration-target-value
-  #A hostname on which the Elasticsearch TCP listener is available.
+  # A hostname on which the Elasticsearch TCP listener is available.
+  # NOTE: changing these properties also might need adjustments in the startup script
+  # start-optimize.sh on Linux or start-optimize.bat on Windows if you don't have
+  # configured your own elasticsearch instance.
   host: localhost
-  #A port number used by Elasticsearch to accept TCP connections.
+  # A port number used by Elasticsearch to accept TCP connections.
+  # NOTE: changing these properties also might need adjustments in the startup script
+  # start-optimize.sh on Linux or start-optimize.bat on Windows if you don't have
+  # configured your own elasticsearch instance.
   port: 9300
   #An index name used to create all Camunda Optimize types, shards, etc.
   index: optimize
