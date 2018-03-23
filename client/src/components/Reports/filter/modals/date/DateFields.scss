@@ -60,6 +60,9 @@
   color: #626262;
   text-align: center;
   font-size: 0.875em;
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
   width: 40px;
   background-color: #fafafa;
   border-top: 1px solid lightgray;
