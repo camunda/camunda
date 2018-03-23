@@ -38,10 +38,12 @@ import io.zeebe.transport.impl.DefaultChannelFactory;
 import io.zeebe.transport.impl.RemoteAddressImpl;
 import io.zeebe.transport.impl.TransportChannel;
 import io.zeebe.transport.impl.TransportChannel.ChannelLifecycleListener;
+import io.zeebe.transport.impl.TransportChannel.TransportChannelMetrics;
 import io.zeebe.transport.impl.TransportChannelFactory;
 import io.zeebe.transport.util.RecordingChannelListener;
 import io.zeebe.transport.util.RecordingChannelListener.Event;
 import io.zeebe.util.buffer.DirectBufferWriter;
+import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 
 public class TransportChannelListenerTest
@@ -230,12 +232,13 @@ public class TransportChannelListenerTest
 
     protected static class ImmediatelyClosingChannelFactory implements TransportChannelFactory
     {
+        private final TransportChannelMetrics metrics = new TransportChannelMetrics(new MetricsManager(), "test");
 
         @Override
         public TransportChannel buildClientChannel(ChannelLifecycleListener listener, RemoteAddressImpl remoteAddress,
                 int maxMessageSize, FragmentHandler readHandler)
         {
-            return new TransportChannel(listener, remoteAddress, maxMessageSize, readHandler)
+            return new TransportChannel(listener, remoteAddress, maxMessageSize, readHandler, metrics)
             {
                 @Override
                 public void finishConnect()

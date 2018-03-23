@@ -42,7 +42,7 @@ public class TransportContext
 
     private ServerSocketBinding serverSocketBinding;
 
-    private TransportChannelFactory channelFactory = new DefaultChannelFactory();
+    private TransportChannelFactory channelFactory;
 
     public int getMessageMaxLength()
     {

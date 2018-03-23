@@ -83,6 +83,7 @@ public class ServerTransportBuilder
 
         final TransportContext context = buildTransportContext();
         final ServerActorContext actorContext = new ServerActorContext();
+        actorContext.setMetricsManager(scheduler.getMetricsManager());
 
         buildActors(context, actorContext);
 
@@ -100,6 +101,7 @@ public class ServerTransportBuilder
         final ServerActorContext actorContext = new ServerActorContext();
 
         context.setReceiveBuffer(receiveBuffer);
+        actorContext.setMetricsManager(scheduler.getMetricsManager());
 
         buildActors(context, actorContext);
 
@@ -120,6 +122,7 @@ public class ServerTransportBuilder
         context.setReceiveHandler(receiveHandler);
         context.setServerSocketBinding(serverSocketBinding);
         context.setSendBuffer(sendBuffer);
+        context.setChannelFactory(new DefaultChannelFactory(scheduler.getMetricsManager(), context.getName()));
 
         return context;
     }

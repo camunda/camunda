@@ -20,6 +20,8 @@ import io.zeebe.transport.TransportListener;
 import io.zeebe.transport.impl.*;
 import io.zeebe.transport.impl.TransportChannel.ChannelLifecycleListener;
 import io.zeebe.util.sched.ActorThread;
+import io.zeebe.util.metrics.Metric;
+import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.collections.Int2ObjectHashMap;
@@ -44,6 +46,8 @@ public abstract class Conductor extends Actor implements ChannelLifecycleListene
     protected final AtomicBoolean closing = new AtomicBoolean(false);
     protected final TransportChannelFactory channelFactory;
 
+    private final Metric activeConnectionsMetric;
+
     public Conductor(ActorContext actorContext, TransportContext context)
     {
         this.actorContext = actorContext;
@@ -52,6 +56,13 @@ public abstract class Conductor extends Actor implements ChannelLifecycleListene
         this.channelFactory = context.getChannelFactory();
 
         actorContext.setConductor(this);
+
+        final MetricsManager metricsManager = actorContext.getMetricsManager();
+
+        activeConnectionsMetric = metricsManager.newMetric("transport_active_connections")
+            .type("gauge")
+            .label("transport", transportContext.getName())
+            .create();
     }
 
     public ActorFuture<Void> registerListener(TransportListener channelListener)
@@ -87,6 +98,7 @@ public abstract class Conductor extends Actor implements ChannelLifecycleListene
     public void onChannelConnected(TransportChannel ch)
     {
         channels.put(ch.getRemoteAddress().getStreamId(), ch);
+        activeConnectionsMetric.incrementOrdered();
 
         final ActorFuture<Void> f1 = actorContext.getReceiver().registerChannel(ch);
         final ActorFuture<Void> f2 = actorContext.getSender().registerChannel(ch);
@@ -123,6 +135,7 @@ public abstract class Conductor extends Actor implements ChannelLifecycleListene
         {
             if (channels.remove(ch.getRemoteAddress().getStreamId()) != null)
             {
+                activeConnectionsMetric.getAndAddOrdered(-1);
                 if (wasConnected)
                 {
                     failRequestsOnChannel(ch, "Socket channel has been disconnected");
@@ -173,6 +186,7 @@ public abstract class Conductor extends Actor implements ChannelLifecycleListene
         actor.runOnCompletion(Arrays.asList(senderClose, receiverClose), (t) ->
         {
             onSenderAndReceiverClosed();
+            activeConnectionsMetric.close();
         });
     }
 

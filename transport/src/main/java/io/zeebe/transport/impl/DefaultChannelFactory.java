@@ -19,22 +19,36 @@ import java.nio.channels.SocketChannel;
 
 import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.transport.impl.TransportChannel.ChannelLifecycleListener;
+import io.zeebe.transport.impl.TransportChannel.TransportChannelMetrics;
+import io.zeebe.util.metrics.MetricsManager;
 
 public class DefaultChannelFactory implements TransportChannelFactory
 {
+    private final TransportChannelMetrics metrics;
+
+    public DefaultChannelFactory(MetricsManager metricsManager, String transportName)
+    {
+        this.metrics = new TransportChannel.TransportChannelMetrics(metricsManager, transportName);
+    }
+
+
+    public DefaultChannelFactory()
+    {
+        this(new MetricsManager(), "test");
+    }
 
     @Override
     public TransportChannel buildClientChannel(ChannelLifecycleListener listener, RemoteAddressImpl remoteAddress,
             int maxMessageSize, FragmentHandler readHandler)
     {
-        return new TransportChannel(listener, remoteAddress, maxMessageSize, readHandler);
+        return new TransportChannel(listener, remoteAddress, maxMessageSize, readHandler, metrics);
     }
 
     @Override
     public TransportChannel buildServerChannel(ChannelLifecycleListener listener, RemoteAddressImpl remoteAddress,
             int maxMessageSize, FragmentHandler readHandler, SocketChannel media)
     {
-        return new TransportChannel(listener, remoteAddress, maxMessageSize, readHandler, media);
+        return new TransportChannel(listener, remoteAddress, maxMessageSize, readHandler, media, metrics);
     }
 
 }

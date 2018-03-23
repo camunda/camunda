@@ -19,17 +19,14 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.transport.SocketAddress;
-import io.zeebe.transport.impl.RemoteAddressImpl;
-import io.zeebe.transport.impl.RemoteAddressListImpl;
-import io.zeebe.transport.impl.TransportChannel;
+import io.zeebe.transport.impl.*;
+import io.zeebe.transport.impl.TransportChannel.TransportChannelMetrics;
+import io.zeebe.util.metrics.MetricsManager;
 
 public class ControllableServerTransport implements AutoCloseable
 {
@@ -101,7 +98,8 @@ public class ControllableServerTransport implements AutoCloseable
                     messageCounter.incrementAndGet();
                     return FragmentHandler.CONSUME_FRAGMENT_RESULT;
                 },
-                clientChannel);
+                clientChannel,
+                new TransportChannelMetrics(new MetricsManager(), "test"));
 
             clientChannels.computeIfAbsent(localAddress, a -> new ArrayList<>());
             clientChannels.get(localAddress).add(c);
