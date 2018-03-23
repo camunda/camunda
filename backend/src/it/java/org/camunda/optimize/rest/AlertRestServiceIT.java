@@ -100,6 +100,26 @@ public class AlertRestServiceIT extends AbstractAlertIT{
   }
 
   @Test
+  public void createNewAlertAllowsMaxInt() throws Exception {
+    //given
+    AlertCreationDto creationDto = setupBasicAlert();
+    creationDto.setThreshold(Integer.MAX_VALUE);
+
+    // when
+    Response response =
+      embeddedOptimizeRule.target(ALERT)
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
+        .post(Entity.json(creationDto));
+
+    // then the status code is okay
+    assertThat(response.getStatus(), is(200));
+    String id =
+      response.readEntity(String.class);
+    assertThat(id, is(notNullValue()));
+  }
+
+  @Test
   public void updateAlertWithoutAuthentication() {
     // when
     Response response =

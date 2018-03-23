@@ -7,7 +7,7 @@ public class AlertCreationDto {
   protected String name;
   protected AlertInterval checkInterval;
   protected String reportId;
-  protected int threshold;
+  protected long threshold;
   protected String thresholdOperator;
   protected boolean fixNotification;
   protected AlertInterval reminder;
@@ -37,11 +37,11 @@ public class AlertCreationDto {
     this.reportId = reportId;
   }
 
-  public int getThreshold() {
+  public long getThreshold() {
     return threshold;
   }
 
-  public void setThreshold(int threshold) {
+  public void setThreshold(long threshold) {
     this.threshold = threshold;
   }
 

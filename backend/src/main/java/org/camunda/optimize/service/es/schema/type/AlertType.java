@@ -71,7 +71,7 @@ public class AlertType extends StrictTypeMappingCreator {
         .field("type", "boolean")
       .endObject()
       .startObject(THRESHOLD)
-        .field("type", "integer")
+        .field("type", "long")
       .endObject()
 
       .startObject(TRIGGERED)
