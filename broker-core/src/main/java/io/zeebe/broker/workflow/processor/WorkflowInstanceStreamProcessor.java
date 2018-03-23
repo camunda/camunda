@@ -185,14 +185,14 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             .label("type", "created")
             .create();
 
-        workflowInstanceEventCanceled = metricsManager.newMetric("workflow_instance_events_canceled")
+        workflowInstanceEventCanceled = metricsManager.newMetric("workflow_instance_events_count")
             .type("counter")
             .label("topic", topicName)
             .label("partition", partitionId)
             .label("type", "canceled")
             .create();
 
-        workflowInstanceEventCompleted = metricsManager.newMetric("workflow_instance_events_completed")
+        workflowInstanceEventCompleted = metricsManager.newMetric("workflow_instance_events_count")
             .type("counter")
             .label("topic", topicName)
             .label("partition", partitionId)
