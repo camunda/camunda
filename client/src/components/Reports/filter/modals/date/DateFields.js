@@ -59,7 +59,7 @@ export default class DateFields extends React.PureComponent {
             date={this.props.startDate}
             enableAddButton={this.props.enableAddButton}
           />
-          <span className="DateFields__divider">to</span>
+          <input className="DateFields__divider" type="text" value="to" />
           <DateInput
             className={classnames('DateInput__end', {
               'DateInput__start--highlight': this.isFieldSelected('endDate')

@@ -57,9 +57,12 @@
 
 .DateFields__divider {
   color: #626262;
-  padding: 8px 12px 0;
-  vertical-align: baseline;
+  text-align: center;
+  font-size: 0.875em;
+  width: 40px;
   background-color: #fafafa;
   border-top: 1px solid lightgray;
+  border-left: none;
+  border-right: none;
   border-bottom: 1px solid lightgray;
 }
