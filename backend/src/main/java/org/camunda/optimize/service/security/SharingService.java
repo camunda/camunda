@@ -5,6 +5,9 @@ import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.result.ReportResultDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
+import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchDto;
+import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchResultDto;
+import org.camunda.optimize.dto.optimize.query.sharing.ShareStatusDto;
 import org.camunda.optimize.service.dashboard.DashboardService;
 import org.camunda.optimize.service.es.reader.SharingReader;
 import org.camunda.optimize.service.es.writer.SharingWriter;
@@ -17,6 +20,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -183,4 +188,34 @@ public class SharingService  {
     });
   }
 
+  public ShareSearchResultDto checkShareStatus(ShareSearchDto searchRequest) {
+    ShareSearchResultDto result = new ShareSearchResultDto();
+    if (searchRequest != null && searchRequest.getReports() != null && !searchRequest.getReports().isEmpty()) {
+      Map<String, ReportShareDto> shareForReports = sharingReader.findShareForReports(searchRequest.getReports());
+
+      for (String reportId : searchRequest.getReports()) {
+        ShareStatusDto toAdd = new ShareStatusDto();
+        toAdd.setId(reportId);
+        if (shareForReports.containsKey(reportId)) {
+          toAdd.setShared(true);
+        }
+        result.getReports().add(toAdd);
+      }
+    }
+
+    if (searchRequest != null && searchRequest.getDashboards() != null && !searchRequest.getDashboards().isEmpty()) {
+      Map<String, DashboardShareDto> shareForReports = sharingReader.findShareForDashboards(searchRequest.getDashboards());
+
+      for (String dashboardId : searchRequest.getDashboards()) {
+        ShareStatusDto toAdd = new ShareStatusDto();
+        toAdd.setId(dashboardId);
+        if (shareForReports.containsKey(dashboardId)) {
+          toAdd.setShared(true);
+        }
+        result.getDashboards().add(toAdd);
+      }
+    }
+
+    return result;
+  }
 }

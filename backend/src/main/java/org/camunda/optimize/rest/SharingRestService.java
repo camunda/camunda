@@ -6,6 +6,8 @@ import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.result.ReportResultDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
+import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchDto;
+import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchResultDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.security.SharingService;
@@ -105,4 +107,12 @@ public class SharingRestService {
     return sharingService.evaluateDashboard(dashboardShareId).orElse(null);
   }
 
+  @POST
+  @Secured
+  @Path("/status")
+  @Produces(MediaType.APPLICATION_JSON)
+  @Consumes(MediaType.APPLICATION_JSON)
+  public ShareSearchResultDto checkShareStatus(ShareSearchDto searchRequest) {
+    return sharingService.checkShareStatus(searchRequest);
+  }
 }

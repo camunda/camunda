@@ -31,6 +31,18 @@ public class SharingRestServiceIT extends AbstractSharingIT {
       .around(embeddedOptimizeRule);
 
   @Test
+  public void checkShareStatusWithoutAuthentication() {
+    // when
+    Response response =
+      embeddedOptimizeRule.target(SHARE + "/status")
+        .request()
+        .post(Entity.json(""));
+
+    // then the status code is not authorized
+    assertThat(response.getStatus(), is(401));
+  }
+
+  @Test
   public void createNewReportShareWithoutAuthentication() {
     // when
     Response response =

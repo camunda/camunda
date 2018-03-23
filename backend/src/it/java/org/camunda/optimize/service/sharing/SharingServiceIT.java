@@ -6,6 +6,8 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
+import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchDto;
+import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.exceptions.ReportEvaluationException;
 import org.camunda.optimize.test.util.ReportDataHelper;
@@ -500,6 +502,64 @@ public class SharingServiceIT extends AbstractSharingIT {
     //then
     assertThat(response.getStatus(), is(200));
     assertReportData(reportId, evaluatedReportAsMap);
+  }
+
+  @Test
+  public void canCheckDashboardSharingStatus() throws Exception {
+    String reportId = createReport();
+    String dashboardWithReport = createDashboardWithReport(reportId);
+
+    String dashboardShareId = addShareForDashboard(dashboardWithReport);
+
+    ShareSearchDto statusRequest = new ShareSearchDto();
+    statusRequest.getDashboards().add(dashboardWithReport);
+    statusRequest.getReports().add(reportId);
+
+    dashboardWithReport = createDashboardWithReport(reportId);
+    statusRequest.getDashboards().add(dashboardWithReport);
+    //when
+
+    Response response =
+      embeddedOptimizeRule.target(SHARE + "/status")
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
+        .post(Entity.json(statusRequest));
+
+    //then
+    assertThat(response.getStatus(), is(200));
+    ShareSearchResultDto result = response.readEntity(ShareSearchResultDto.class);
+
+    assertThat(result.getDashboards().size(), is(2));
+    assertThat(result.getDashboards().get(0).isShared(), is(true));
+    assertThat(result.getDashboards().get(1).isShared(), is(false));
+
+    assertThat(result.getReports().size(), is(1));
+    assertThat(result.getReports().get(0).isShared(), is(false));
+  }
+
+  @Test
+  public void canCheckReportSharingStatus() throws Exception {
+    String reportId = createReport();
+    String reportShareId = addShareForReport(reportId);
+
+    ShareSearchDto statusRequest = new ShareSearchDto();
+    statusRequest.getReports().add(reportId);
+    reportId = createReport();
+    statusRequest.getReports().add(reportId);
+
+    //when
+    Response response =
+      embeddedOptimizeRule.target(SHARE + "/status")
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
+        .post(Entity.json(statusRequest));
+
+    //then
+    assertThat(response.getStatus(), is(200));
+    ShareSearchResultDto result = response.readEntity(ShareSearchResultDto.class);
+    assertThat(result.getReports().size(), is(2));
+    assertThat(result.getReports().get(0).isShared(), is(true));
+    assertThat(result.getReports().get(1).isShared(), is(false));
   }
 
   @Test

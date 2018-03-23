@@ -22,7 +22,9 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -153,8 +155,8 @@ public class SharingReader {
     return result;
   }
 
-  private List<ReportShareDto> findReportSharesByQuery(QueryBuilder query) {
-    List<ReportShareDto> result = new ArrayList<>();
+  private Map<String, ReportShareDto> findReportSharesByQuery(QueryBuilder query) {
+    Map<String, ReportShareDto> result = new HashMap<>();
     SearchResponse scrollResp = esclient
         .prepareSearch(configurationService.getOptimizeIndex(configurationService.getReportShareType()))
         .setTypes(configurationService.getReportShareType())
@@ -166,7 +168,8 @@ public class SharingReader {
     do {
       for (SearchHit hit : scrollResp.getHits().getHits()) {
         try {
-          result.add(objectMapper.readValue(hit.getSourceAsString(), ReportShareDto.class));
+          ReportShareDto reportShareDto = objectMapper.readValue(hit.getSourceAsString(), ReportShareDto.class);
+          result.put(reportShareDto.getReportId(), reportShareDto);
         } catch (IOException e) {
           logger.error("cant't map sharing hit", e);
         }
@@ -175,6 +178,48 @@ public class SharingReader {
           .prepareSearchScroll(scrollResp.getScrollId())
           .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
           .get();
+    } while (scrollResp.getHits().getHits().length != 0);
+    return result;
+  }
+
+  public Map<String, ReportShareDto> findShareForReports(List<String> reports) {
+    BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+    boolQueryBuilder = boolQueryBuilder
+      .must(QueryBuilders.termsQuery(ReportShareType.REPORT_ID, reports));
+    return findReportSharesByQuery(boolQueryBuilder);
+  }
+
+  public Map<String, DashboardShareDto> findShareForDashboards(List<String> dashboards) {
+    BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+    boolQueryBuilder = boolQueryBuilder
+      .must(QueryBuilders.termsQuery(DashboardShareType.DASHBOARD_ID, dashboards));
+    return findDashboardSharesByQuery(boolQueryBuilder);
+  }
+
+  private Map<String, DashboardShareDto> findDashboardSharesByQuery(BoolQueryBuilder query) {
+
+    Map<String, DashboardShareDto> result = new HashMap<>();
+    SearchResponse scrollResp = esclient
+      .prepareSearch(configurationService.getOptimizeIndex(configurationService.getDashboardShareType()))
+      .setTypes(configurationService.getDashboardShareType())
+      .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
+      .setQuery(query)
+      .setSize(20)
+      .get();
+
+    do {
+      for (SearchHit hit : scrollResp.getHits().getHits()) {
+        try {
+          DashboardShareDto dashboardShareDto = objectMapper.readValue(hit.getSourceAsString(), DashboardShareDto.class);
+          result.put(dashboardShareDto.getDashboardId(), dashboardShareDto);
+        } catch (IOException e) {
+          logger.error("cant't map sharing hit", e);
+        }
+      }
+      scrollResp = esclient
+        .prepareSearchScroll(scrollResp.getScrollId())
+        .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
+        .get();
     } while (scrollResp.getHits().getHits().length != 0);
     return result;
   }
