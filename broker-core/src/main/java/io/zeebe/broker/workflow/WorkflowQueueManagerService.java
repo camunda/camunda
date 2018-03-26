@@ -26,6 +26,8 @@ import static io.zeebe.broker.workflow.WorkflowQueueServiceNames.workflowInstanc
 import io.zeebe.broker.incident.processor.IncidentStreamProcessor;
 import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
 import io.zeebe.broker.logstreams.processor.StreamProcessorService;
+import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
+import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.system.ConfigurationManager;
 import io.zeebe.broker.system.deployment.handler.CreateWorkflowResponseSender;
 import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
@@ -100,15 +102,18 @@ public class WorkflowQueueManagerService extends Actor implements Service<Workfl
         final ServiceName<StreamProcessorController> streamProcessorServiceName = incidentStreamProcessorServiceName(logStream.getLogName());
         final String streamProcessorName = streamProcessorServiceName.getName();
 
+        final ServerTransport transport = clientApiTransportInjector.getValue();
         final ServiceName<LogStream> logStreamServiceName = logStreamServiceName(logStream.getLogName());
 
-        final IncidentStreamProcessor incidentStreamProcessor = new IncidentStreamProcessor();
+        final TypedStreamEnvironment env = new TypedStreamEnvironment(logStream, transport.getOutput());
+        final IncidentStreamProcessor incidentProcessorFactory = new IncidentStreamProcessor();
 
+        final TypedStreamProcessor streamProcessor = incidentProcessorFactory.createStreamProcessor(env);
         final StreamProcessorService incidentStreamProcessorService = new StreamProcessorService(
                 streamProcessorName,
                 INCIDENT_PROCESSOR_ID,
-                incidentStreamProcessor)
-                .eventFilter(IncidentStreamProcessor.eventFilter());
+                streamProcessor)
+                .eventFilter(streamProcessor.buildTypeFilter());
 
         serviceContext.createService(streamProcessorServiceName, incidentStreamProcessorService)
                 .dependency(logStreamServiceName, incidentStreamProcessorService.getLogStreamInjector())

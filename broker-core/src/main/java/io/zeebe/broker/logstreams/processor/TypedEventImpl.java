@@ -42,6 +42,12 @@ public class TypedEventImpl implements TypedEvent
     }
 
     @Override
+    public long getSourcePosition()
+    {
+        return rawEvent.getSourceEventPosition();
+    }
+
+    @Override
     public long getKey()
     {
         return rawEvent.getKey();

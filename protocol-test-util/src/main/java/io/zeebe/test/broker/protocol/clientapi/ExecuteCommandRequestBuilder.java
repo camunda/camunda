@@ -35,7 +35,8 @@ public class ExecuteCommandRequestBuilder
 
     public ExecuteCommandResponse sendAndAwait()
     {
-        return send().await();
+        return send()
+                .await();
     }
 
     public ExecuteCommandRequest send()

@@ -19,6 +19,7 @@ package io.zeebe.broker.topic;
 
 import java.util.function.Predicate;
 
+import io.zeebe.broker.incident.data.IncidentEvent;
 import io.zeebe.broker.logstreams.processor.TypedEvent;
 import io.zeebe.broker.system.log.PartitionEvent;
 import io.zeebe.broker.system.log.TopicEvent;
@@ -36,6 +37,8 @@ public interface StreamProcessorControl
     void blockAfterTaskEvent(Predicate<TypedEvent<TaskEvent>> test);
 
     void blockAfterDeploymentEvent(Predicate<TypedEvent<DeploymentEvent>> test);
+
+    void blockAfterIncidentEvent(Predicate<TypedEvent<IncidentEvent>> test);
 
     void blockAfterTopicEvent(Predicate<TypedEvent<TopicEvent>> test);
 

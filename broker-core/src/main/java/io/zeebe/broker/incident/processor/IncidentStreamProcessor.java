@@ -21,29 +21,26 @@ import io.zeebe.broker.incident.data.ErrorType;
 import io.zeebe.broker.incident.data.IncidentEvent;
 import io.zeebe.broker.incident.data.IncidentState;
 import io.zeebe.broker.incident.index.IncidentMap;
-import io.zeebe.broker.logstreams.processor.MetadataFilter;
+import io.zeebe.broker.logstreams.processor.TypedEvent;
+import io.zeebe.broker.logstreams.processor.TypedEventProcessor;
+import io.zeebe.broker.logstreams.processor.TypedEventStreamProcessorBuilder;
+import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
+import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
+import io.zeebe.broker.logstreams.processor.TypedStreamReader;
+import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.task.data.TaskEvent;
 import io.zeebe.broker.task.data.TaskHeaders;
+import io.zeebe.broker.task.data.TaskState;
 import io.zeebe.broker.workflow.data.WorkflowInstanceEvent;
-import io.zeebe.logstreams.log.BufferedLogStreamReader;
-import io.zeebe.logstreams.log.LogStreamReader;
-import io.zeebe.logstreams.log.LogStreamWriter;
-import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.processor.EventProcessor;
-import io.zeebe.logstreams.processor.StreamProcessor;
-import io.zeebe.logstreams.processor.StreamProcessorContext;
-import io.zeebe.logstreams.snapshot.ComposedSnapshot;
-import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
-import io.zeebe.logstreams.spi.SnapshotSupport;
+import io.zeebe.broker.workflow.data.WorkflowInstanceState;
 import io.zeebe.map.Long2LongZbMap;
-import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 
 /**
  * Is responsible for the incident lifecycle.
  */
-public class IncidentStreamProcessor implements StreamProcessor
+public class IncidentStreamProcessor
 {
     private static final short STATE_CREATED = 1;
     private static final short STATE_RESOLVING = 2;
@@ -51,217 +48,64 @@ public class IncidentStreamProcessor implements StreamProcessor
 
     private static final long NON_PERSISTENT_INCIDENT = -2L;
 
-    private final Long2LongZbMap activityInstanceMap;
-    private final Long2LongZbMap failedTaskMap;
+    private final Long2LongZbMap activityInstanceMap = new Long2LongZbMap();
+    private final Long2LongZbMap failedTaskMap = new Long2LongZbMap();
+    private final IncidentMap incidentMap = new IncidentMap();
+    private final Long2LongZbMap resolvingEvents = new Long2LongZbMap();
 
-    private final IncidentMap incidentMap;
-    private Long2LongZbMap resolvingEvents = new Long2LongZbMap();
-
-    private final SnapshotSupport indexSnapshot;
-
-    private final CreateIncidentProcessor createIncidentProcessor = new CreateIncidentProcessor();
-    private final ResolveIncidentProcessor resolveIncidentProcessor = new ResolveIncidentProcessor();
-    private final ResolveFailedProcessor resolveFailedProcessor = new ResolveFailedProcessor();
-    private final DeleteIncidentProcessor deleteIncidentProcessor = new DeleteIncidentProcessor();
-
-    private final PayloadUpdatedProcessor payloadUpdatedProcessor = new PayloadUpdatedProcessor();
-    private final ActivityIncidentResolvedProcessor activityIncidentResolvedProcessor = new ActivityIncidentResolvedProcessor();
-    private final ActivityRewrittenProcessor activityRewrittenProcessor = new ActivityRewrittenProcessor();
-    private final ActivityTerminatedProcessor activityTerminatedProcessor = new ActivityTerminatedProcessor();
-
-    private final TaskFailedProcessor taskFailedProcessor = new TaskFailedProcessor();
-    private final TaskIncidentResolvedProcessor taskIncidentResolvedProcessor = new TaskIncidentResolvedProcessor();
-
-    private final BrokerEventMetadata sourceEventMetadata = new BrokerEventMetadata();
-    private final BrokerEventMetadata targetEventMetadata = new BrokerEventMetadata();
-
-    private final IncidentEvent incidentEvent = new IncidentEvent();
-    private final WorkflowInstanceEvent workflowInstanceEvent = new WorkflowInstanceEvent();
-    private final TaskEvent taskEvent = new TaskEvent();
-
-    private long eventKey;
-    private long eventPosition;
-    private long sourceEventPosition;
-
-    private LogStreamReader logStreamReader;
-
-    public IncidentStreamProcessor()
+    public TypedStreamProcessor createStreamProcessor(TypedStreamEnvironment env)
     {
-        this.activityInstanceMap = new Long2LongZbMap();
-        this.failedTaskMap = new Long2LongZbMap();
-        this.incidentMap = new IncidentMap();
+        final TypedStreamReader reader = env.buildStreamReader();
 
-        this.indexSnapshot = new ComposedSnapshot(
-            new ZbMapSnapshotSupport<>(activityInstanceMap),
-            new ZbMapSnapshotSupport<>(failedTaskMap),
-            incidentMap.getSnapshotSupport());
+        TypedEventStreamProcessorBuilder builder = env.newStreamProcessor()
+            .withStateResource(activityInstanceMap)
+            .withStateResource(failedTaskMap)
+            .withStateResource(incidentMap.getMap())
+            .withStateResource(resolvingEvents);
+
+
+        // incident events
+        builder = builder
+            .onEvent(EventType.INCIDENT_EVENT, IncidentState.CREATE, new CreateIncidentProcessor())
+            .onEvent(EventType.INCIDENT_EVENT, IncidentState.RESOLVE, new ResolveIncidentProcessor(reader))
+            .onEvent(EventType.INCIDENT_EVENT, IncidentState.RESOLVE_FAILED, new ResolveFailedProcessor())
+            .onEvent(EventType.INCIDENT_EVENT, IncidentState.DELETE, new DeleteIncidentProcessor(reader));
+
+        // workflow instance events
+        final ActivityRewrittenProcessor activityRewrittenProcessor = new ActivityRewrittenProcessor();
+        final ActivityIncidentResolvedProcessor activityIncidentResolvedProcessor = new ActivityIncidentResolvedProcessor(reader);
+
+        builder = builder
+            .onEvent(EventType.WORKFLOW_INSTANCE_EVENT, WorkflowInstanceState.PAYLOAD_UPDATED, new PayloadUpdatedProcessor())
+            .onEvent(EventType.WORKFLOW_INSTANCE_EVENT, WorkflowInstanceState.ACTIVITY_TERMINATED, new ActivityTerminatedProcessor())
+            .onEvent(EventType.WORKFLOW_INSTANCE_EVENT, WorkflowInstanceState.ACTIVITY_READY, activityRewrittenProcessor)
+            .onEvent(EventType.WORKFLOW_INSTANCE_EVENT, WorkflowInstanceState.GATEWAY_ACTIVATED, activityRewrittenProcessor)
+            .onEvent(EventType.WORKFLOW_INSTANCE_EVENT, WorkflowInstanceState.ACTIVITY_COMPLETING, activityRewrittenProcessor)
+            .onEvent(EventType.WORKFLOW_INSTANCE_EVENT, WorkflowInstanceState.ACTIVITY_ACTIVATED, activityIncidentResolvedProcessor)
+            .onEvent(EventType.WORKFLOW_INSTANCE_EVENT, WorkflowInstanceState.SEQUENCE_FLOW_TAKEN, activityIncidentResolvedProcessor)
+            .onEvent(EventType.WORKFLOW_INSTANCE_EVENT, WorkflowInstanceState.ACTIVITY_COMPLETED, activityIncidentResolvedProcessor);
+
+        // task events
+        final TaskIncidentResolvedProcessor taskIncidentResolvedProcessor = new TaskIncidentResolvedProcessor(reader);
+
+        builder = builder
+            .onEvent(EventType.TASK_EVENT, TaskState.FAILED, new TaskFailedProcessor())
+            .onEvent(EventType.TASK_EVENT, TaskState.RETRIES_UPDATED, taskIncidentResolvedProcessor)
+            .onEvent(EventType.TASK_EVENT, TaskState.CANCELED, taskIncidentResolvedProcessor);
+
+        return builder.build();
     }
 
-    @Override
-    public SnapshotSupport getStateResource()
-    {
-        return indexSnapshot;
-    }
-
-    @Override
-    public void onOpen(StreamProcessorContext context)
-    {
-        logStreamReader = new BufferedLogStreamReader(context.getLogStream());
-    }
-
-    @Override
-    public void onClose()
-    {
-        activityInstanceMap.close();
-        failedTaskMap.close();
-        incidentMap.close();
-        resolvingEvents.close();
-
-        logStreamReader.close();
-    }
-
-    public static MetadataFilter eventFilter()
-    {
-        return event -> event.getEventType() == EventType.INCIDENT_EVENT
-                || event.getEventType() == EventType.WORKFLOW_INSTANCE_EVENT
-                || event.getEventType() == EventType.TASK_EVENT;
-    }
-
-    @Override
-    public EventProcessor onEvent(LoggedEvent event)
-    {
-        incidentMap.reset();
-
-        eventKey = event.getKey();
-        eventPosition = event.getPosition();
-        sourceEventPosition = event.getSourceEventPosition();
-
-        sourceEventMetadata.reset();
-        event.readMetadata(sourceEventMetadata);
-
-        EventProcessor eventProcessor = null;
-        switch (sourceEventMetadata.getEventType())
-        {
-            case INCIDENT_EVENT:
-                eventProcessor = onIncidentEvent(event);
-                break;
-
-            case WORKFLOW_INSTANCE_EVENT:
-                eventProcessor = onWorkflowInstanceEvent(event);
-                break;
-
-            case TASK_EVENT:
-                eventProcessor = onTaskEvent(event);
-                break;
-
-            default:
-                break;
-        }
-
-        return eventProcessor;
-    }
-
-    private EventProcessor onIncidentEvent(LoggedEvent event)
-    {
-
-        incidentEvent.reset();
-        event.readValue(incidentEvent);
-
-        switch (incidentEvent.getState())
-        {
-            case CREATE:
-                return createIncidentProcessor;
-
-            case RESOLVE:
-                return resolveIncidentProcessor;
-
-            case RESOLVE_FAILED:
-                return resolveFailedProcessor;
-
-            case DELETE:
-                return deleteIncidentProcessor;
-
-            default:
-                return null;
-        }
-    }
-
-    private EventProcessor onWorkflowInstanceEvent(LoggedEvent event)
-    {
-        workflowInstanceEvent.reset();
-        event.readValue(workflowInstanceEvent);
-
-        switch (workflowInstanceEvent.getState())
-        {
-            case PAYLOAD_UPDATED:
-                return payloadUpdatedProcessor;
-            case ACTIVITY_TERMINATED:
-                return activityTerminatedProcessor;
-            case ACTIVITY_READY:
-            case GATEWAY_ACTIVATED:
-            case ACTIVITY_COMPLETING:
-                return activityRewrittenProcessor;
-            case ACTIVITY_ACTIVATED:
-            case SEQUENCE_FLOW_TAKEN:
-            case ACTIVITY_COMPLETED:
-                return activityIncidentResolvedProcessor;
-            default:
-                return null;
-        }
-    }
-
-    private EventProcessor onTaskEvent(LoggedEvent event)
-    {
-        taskEvent.reset();
-        event.readValue(taskEvent);
-
-        switch (taskEvent.getState())
-        {
-            case FAILED:
-                return taskFailedProcessor;
-
-            case RETRIES_UPDATED:
-            case CANCELED:
-                return taskIncidentResolvedProcessor;
-
-            default:
-                return null;
-        }
-    }
-
-    private long writeIncidentEvent(LogStreamWriter writer)
-    {
-        targetEventMetadata.reset();
-        targetEventMetadata.eventType(EventType.INCIDENT_EVENT)
-            .protocolVersion(Protocol.PROTOCOL_VERSION);
-
-        return writer
-                .metadataWriter(targetEventMetadata)
-                .valueWriter(incidentEvent)
-                .tryWrite();
-    }
-
-    private LoggedEvent findEvent(long position)
-    {
-        final boolean found = logStreamReader.seek(position);
-        if (found && logStreamReader.hasNext())
-        {
-            return logStreamReader.next();
-        }
-        else
-        {
-            throw new RuntimeException("event not found");
-        }
-    }
-
-    private final class CreateIncidentProcessor implements EventProcessor
+    private final class CreateIncidentProcessor implements TypedEventProcessor<IncidentEvent>
     {
         private boolean isCreated;
         private boolean isTaskIncident;
 
         @Override
-        public void processEvent()
+        public void processEvent(TypedEvent<IncidentEvent> event)
         {
+            final IncidentEvent incidentEvent = event.getValue();
+
             isTaskIncident = incidentEvent.getTaskKey() > 0;
             // ensure that the task is not resolved yet
             isCreated = isTaskIncident ? failedTaskMap.get(incidentEvent.getTaskKey(), -1L) == NON_PERSISTENT_INCIDENT : true;
@@ -277,54 +121,58 @@ public class IncidentStreamProcessor implements StreamProcessor
         }
 
         @Override
-        public long writeEvent(LogStreamWriter writer)
+        public long writeEvent(TypedEvent<IncidentEvent> event, TypedStreamWriter writer)
         {
-            return writeIncidentEvent(writer.key(eventKey));
+            return writer.writeFollowupEvent(event.getKey(), event.getValue());
         }
 
         @Override
-        public void updateState()
+        public void updateState(TypedEvent<IncidentEvent> event)
         {
             if (isCreated)
             {
+                final IncidentEvent incidentEvent = event.getValue();
                 incidentMap
-                    .newIncident(eventKey)
+                    .newIncident(event.getKey())
                     .setState(STATE_CREATED)
-                    .setIncidentEventPosition(eventPosition)
+                    .setIncidentEventPosition(event.getPosition())
                     .setFailureEventPosition(incidentEvent.getFailureEventPosition())
                     .write();
 
                 if (isTaskIncident)
                 {
-                    failedTaskMap.put(incidentEvent.getTaskKey(), eventKey);
+                    failedTaskMap.put(incidentEvent.getTaskKey(), event.getKey());
                 }
                 else
                 {
-                    activityInstanceMap.put(incidentEvent.getActivityInstanceKey(), eventKey);
+                    activityInstanceMap.put(incidentEvent.getActivityInstanceKey(), event.getKey());
                 }
             }
         }
     }
 
-    private final class PayloadUpdatedProcessor implements EventProcessor
+    private final class PayloadUpdatedProcessor implements TypedEventProcessor<WorkflowInstanceEvent>
     {
         private boolean isResolving;
         private long incidentKey;
+        private final IncidentEvent incidentEvent = new IncidentEvent();
 
         @Override
-        public void processEvent()
+        public void processEvent(TypedEvent<WorkflowInstanceEvent> event)
         {
             isResolving = false;
 
-            incidentKey = activityInstanceMap.get(eventKey, -1L);
+            incidentKey = activityInstanceMap.get(event.getKey(), -1L);
 
             if (incidentKey > 0 && incidentMap.wrapIncidentKey(incidentKey).getState() == STATE_CREATED)
             {
+                final WorkflowInstanceEvent workflowInstanceEvent = event.getValue();
+
                 incidentEvent.reset();
                 incidentEvent
                     .setState(IncidentState.RESOLVE)
                     .setWorkflowInstanceKey(workflowInstanceEvent.getWorkflowInstanceKey())
-                    .setActivityInstanceKey(eventKey)
+                    .setActivityInstanceKey(event.getKey())
                     .setPayload(workflowInstanceEvent.getPayload());
 
                 isResolving = true;
@@ -332,71 +180,73 @@ public class IncidentStreamProcessor implements StreamProcessor
         }
 
         @Override
-        public long writeEvent(LogStreamWriter writer)
+        public long writeEvent(TypedEvent<WorkflowInstanceEvent> event, TypedStreamWriter writer)
         {
-            return isResolving ? writeIncidentEvent(writer.key(incidentKey)) : 0L;
+            return isResolving ? writer.writeFollowupEvent(incidentKey, incidentEvent) : 0L;
         }
     }
 
-    private final class ResolveIncidentProcessor implements EventProcessor
+    private final class ResolveIncidentProcessor implements TypedEventProcessor<IncidentEvent>
     {
+        private final TypedStreamReader reader;
+
         private boolean onResolving;
-        private LoggedEvent failureEvent;
+        private TypedEvent<WorkflowInstanceEvent> failureEvent;
+        private long incidentKey;
+
+        ResolveIncidentProcessor(TypedStreamReader reader)
+        {
+            this.reader = reader;
+        }
 
         @Override
-        public void processEvent()
+        public void processEvent(TypedEvent<IncidentEvent> event)
         {
             onResolving = false;
 
-            incidentMap.wrapIncidentKey(eventKey);
+            incidentKey = event.getKey();
+            incidentMap.wrapIncidentKey(incidentKey);
 
             if (incidentMap.getState() == STATE_CREATED)
             {
                 // re-write the failure event with new payload
-                failureEvent = findEvent(incidentMap.getFailureEventPosition());
-
-                workflowInstanceEvent.reset();
-                failureEvent.readValue(workflowInstanceEvent);
-
-                workflowInstanceEvent.setPayload(incidentEvent.getPayload());
+                failureEvent = reader.readValue(incidentMap.getFailureEventPosition(), WorkflowInstanceEvent.class);
+                failureEvent.getValue().setPayload(event.getValue().getPayload());
 
                 onResolving = true;
             }
             else
             {
-                incidentEvent.setState(IncidentState.RESOLVE_REJECTED);
+                event.getValue().setState(IncidentState.RESOLVE_REJECTED);
             }
         }
 
         @Override
-        public long writeEvent(LogStreamWriter writer)
+        public long writeEvent(TypedEvent<IncidentEvent> event, TypedStreamWriter writer)
         {
             final long position;
 
             if (onResolving)
             {
-                targetEventMetadata.reset();
-                failureEvent.readMetadata(targetEventMetadata);
-
-                targetEventMetadata
-                    .incidentKey(eventKey)
-                    .protocolVersion(Protocol.PROTOCOL_VERSION);
-
-                position = writer
-                        .key(failureEvent.getKey())
-                        .metadataWriter(targetEventMetadata)
-                        .valueWriter(workflowInstanceEvent)
-                        .tryWrite();
+                position = writer.writeFollowupEvent(
+                    failureEvent.getKey(),
+                    failureEvent.getValue(),
+                    this::setIncidentKey);
             }
             else
             {
-                position = writeIncidentEvent(writer.key(eventKey));
+                position = writer.writeFollowupEvent(event.getKey(), event.getValue());
             }
             return position;
         }
 
+        private void setIncidentKey(BrokerEventMetadata metadata)
+        {
+            metadata.incidentKey(incidentKey);
+        }
+
         @Override
-        public void updateState()
+        public void updateState(TypedEvent<IncidentEvent> event)
         {
             if (onResolving)
             {
@@ -407,20 +257,20 @@ public class IncidentStreamProcessor implements StreamProcessor
         }
     }
 
-    private final class ResolveFailedProcessor implements EventProcessor
+    private final class ResolveFailedProcessor implements TypedEventProcessor<IncidentEvent>
     {
         private boolean isFailed;
 
         @Override
-        public void processEvent()
+        public void processEvent(TypedEvent<IncidentEvent> event)
         {
-            incidentMap.wrapIncidentKey(eventKey);
+            incidentMap.wrapIncidentKey(event.getKey());
 
             isFailed = incidentMap.getState() == STATE_RESOLVING;
         }
 
         @Override
-        public void updateState()
+        public void updateState(TypedEvent<IncidentEvent> event)
         {
             if (isFailed)
             {
@@ -431,95 +281,102 @@ public class IncidentStreamProcessor implements StreamProcessor
         }
     }
 
-    private final class DeleteIncidentProcessor implements EventProcessor
+    private final class DeleteIncidentProcessor implements TypedEventProcessor<IncidentEvent>
     {
+        private final TypedStreamReader reader;
+
         private boolean isDeleted;
+        private TypedEvent<IncidentEvent> incidentToWrite;
+
+        DeleteIncidentProcessor(TypedStreamReader reader)
+        {
+            this.reader = reader;
+        }
 
         @Override
-        public void processEvent()
+        public void processEvent(TypedEvent<IncidentEvent> event)
         {
             isDeleted = false;
 
-            incidentMap.wrapIncidentKey(eventKey);
+            incidentMap.wrapIncidentKey(event.getKey());
 
             final long incidentEventPosition = incidentMap.getIncidentEventPosition();
 
             if (incidentEventPosition > 0)
             {
-                final LoggedEvent incidentCreateEvent = findEvent(incidentEventPosition);
+                final TypedEvent<IncidentEvent> priorIncidentEvent =
+                        reader.readValue(incidentEventPosition, IncidentEvent.class);
 
-                incidentEvent.reset();
-                incidentCreateEvent.readValue(incidentEvent);
-
-                incidentEvent.setState(IncidentState.DELETED);
+                priorIncidentEvent.getValue().setState(IncidentState.DELETED);
+                incidentToWrite = priorIncidentEvent;
                 isDeleted = true;
             }
             else
             {
-                incidentEvent.setState(IncidentState.DELETE_REJECTED);
+                event.getValue().setState(IncidentState.DELETE_REJECTED);
+                incidentToWrite = event;
             }
         }
 
         @Override
-        public long writeEvent(LogStreamWriter writer)
+        public long writeEvent(TypedEvent<IncidentEvent> event, TypedStreamWriter writer)
         {
-            return writeIncidentEvent(writer.key(eventKey));
+            return writer.writeFollowupEvent(incidentToWrite.getKey(), incidentToWrite.getValue());
         }
 
         @Override
-        public void updateState()
+        public void updateState(TypedEvent<IncidentEvent> event)
         {
             if (isDeleted)
             {
-                incidentMap.remove(eventKey);
+                incidentMap.remove(event.getKey());
             }
         }
     }
 
-    private final class ActivityRewrittenProcessor implements EventProcessor
+    private final class ActivityRewrittenProcessor implements TypedEventProcessor<WorkflowInstanceEvent>
     {
         @Override
-        public void processEvent()
+        public void updateState(TypedEvent<WorkflowInstanceEvent> event)
         {
-        }
-
-        @Override
-        public void updateState()
-        {
-            final long incidentKey = sourceEventMetadata.getIncidentKey();
+            final long incidentKey = event.getMetadata().getIncidentKey();
             if (incidentKey > 0)
             {
-                resolvingEvents.put(eventPosition, incidentKey);
+                resolvingEvents.put(event.getPosition(), incidentKey);
             }
         }
     }
 
-    private final class ActivityIncidentResolvedProcessor implements EventProcessor
+    private final class ActivityIncidentResolvedProcessor implements TypedEventProcessor<WorkflowInstanceEvent>
     {
+        private final TypedStreamReader reader;
+
         private boolean isResolved;
-        private long currentIncidentKey;
+        private TypedEvent<IncidentEvent> incidentEvent;
+
+        ActivityIncidentResolvedProcessor(TypedStreamReader reader)
+        {
+            this.reader = reader;
+        }
 
         @Override
-        public void processEvent()
+        public void processEvent(TypedEvent<WorkflowInstanceEvent> event)
         {
             isResolved = false;
+            incidentEvent = null;
 
-            final long value = resolvingEvents.get(sourceEventPosition, -1);
-            if (value > 0)
+            final long incidentKey = resolvingEvents.get(event.getSourcePosition(), -1);
+            if (incidentKey > 0)
             {
-                currentIncidentKey = value;
-
-                incidentMap.wrapIncidentKey(currentIncidentKey);
+                incidentMap.wrapIncidentKey(incidentKey);
 
                 if (incidentMap.getState() == STATE_RESOLVING)
                 {
                     // incident is resolved when read next activity lifecycle event
-                    final LoggedEvent incidentCreateEvent = findEvent(incidentMap.getIncidentEventPosition());
+                    final long incidentPosition = incidentMap.getIncidentEventPosition();
+                    incidentEvent = reader.readValue(incidentPosition, IncidentEvent.class);
 
-                    incidentEvent.reset();
-                    incidentCreateEvent.readValue(incidentEvent);
-
-                    incidentEvent.setState(IncidentState.RESOLVED);
+                    incidentEvent.getValue().setState(IncidentState.RESOLVED);
 
                     isResolved = true;
                 }
@@ -531,35 +388,39 @@ public class IncidentStreamProcessor implements StreamProcessor
         }
 
         @Override
-        public long writeEvent(LogStreamWriter writer)
+        public long writeEvent(TypedEvent<WorkflowInstanceEvent> event, TypedStreamWriter writer)
         {
-            return isResolved ? writeIncidentEvent(writer.key(currentIncidentKey)) : 0L;
+            return isResolved ?
+                    writer.writeFollowupEvent(incidentEvent.getKey(), incidentEvent.getValue())
+                    : 0L;
         }
 
         @Override
-        public void updateState()
+        public void updateState(TypedEvent<WorkflowInstanceEvent> event)
         {
             if (isResolved)
             {
-                incidentMap.remove(currentIncidentKey);
-                activityInstanceMap.remove(incidentEvent.getActivityInstanceKey(), -1L);
-                resolvingEvents.remove(sourceEventPosition, -1);
-                currentIncidentKey = -1;
+                incidentMap.remove(incidentEvent.getKey());
+                activityInstanceMap.remove(incidentEvent.getValue().getActivityInstanceKey(), -1L);
+                resolvingEvents.remove(event.getSourcePosition(), -1);
             }
         }
     }
 
-    private final class ActivityTerminatedProcessor implements EventProcessor
+    private final class ActivityTerminatedProcessor implements TypedEventProcessor<WorkflowInstanceEvent>
     {
+        private final IncidentEvent incidentEvent = new IncidentEvent();
+
         private boolean isTerminated;
         private long incidentKey;
 
+
         @Override
-        public void processEvent()
+        public void processEvent(TypedEvent<WorkflowInstanceEvent> event)
         {
             isTerminated = false;
 
-            incidentKey = activityInstanceMap.get(eventKey, -1L);
+            incidentKey = activityInstanceMap.get(event.getKey(), -1L);
 
             if (incidentKey > 0)
             {
@@ -579,76 +440,94 @@ public class IncidentStreamProcessor implements StreamProcessor
         }
 
         @Override
-        public long writeEvent(LogStreamWriter writer)
+        public long writeEvent(TypedEvent<WorkflowInstanceEvent> event, TypedStreamWriter writer)
         {
-            return isTerminated ? writeIncidentEvent(writer.key(incidentKey)) : 0L;
+
+            return isTerminated ?
+                    writer.writeFollowupEvent(incidentKey, incidentEvent)
+                    : 0L;
         }
 
         @Override
-        public void updateState()
+        public void updateState(TypedEvent<WorkflowInstanceEvent> event)
         {
             if (isTerminated)
             {
                 incidentMap.setState(STATE_DELETING).write();
-                activityInstanceMap.remove(eventKey, -1L);
+                activityInstanceMap.remove(event.getKey(), -1L);
             }
         }
     }
 
-    private final class TaskFailedProcessor implements EventProcessor
+    private final class TaskFailedProcessor implements TypedEventProcessor<TaskEvent>
     {
+        private final IncidentEvent incidentEvent = new IncidentEvent();
+
         private boolean hasRetries;
 
         @Override
-        public void processEvent()
+        public void processEvent(TypedEvent<TaskEvent> event)
         {
-            hasRetries = taskEvent.getRetries() > 0;
+            final TaskEvent value = event.getValue();
+            hasRetries = value.getRetries() > 0;
 
             if (!hasRetries)
             {
-                final TaskHeaders taskHeaders = taskEvent.headers();
+                final TaskHeaders taskHeaders = value.headers();
 
                 incidentEvent.reset();
                 incidentEvent
                     .setState(IncidentState.CREATE)
                     .setErrorType(ErrorType.TASK_NO_RETRIES)
                     .setErrorMessage("No more retries left.")
-                    .setFailureEventPosition(eventPosition)
+                    .setFailureEventPosition(event.getPosition())
                     .setBpmnProcessId(taskHeaders.getBpmnProcessId())
                     .setWorkflowInstanceKey(taskHeaders.getWorkflowInstanceKey())
                     .setActivityId(taskHeaders.getActivityId())
                     .setActivityInstanceKey(taskHeaders.getActivityInstanceKey())
-                    .setTaskKey(eventKey);
+                    .setTaskKey(event.getKey());
             }
         }
 
         @Override
-        public long writeEvent(LogStreamWriter writer)
+        public long writeEvent(TypedEvent<TaskEvent> event, TypedStreamWriter writer)
         {
-            return hasRetries ? 0L : writeIncidentEvent(writer.positionAsKey());
+            return hasRetries ?
+                0L :
+                writer.writeNewEvent(incidentEvent);
         }
 
         @Override
-        public void updateState()
+        public void updateState(TypedEvent<TaskEvent> event)
         {
             if (!hasRetries)
             {
-                failedTaskMap.put(eventKey, NON_PERSISTENT_INCIDENT);
+                failedTaskMap.put(event.getKey(), NON_PERSISTENT_INCIDENT);
             }
         }
     }
 
-    private final class TaskIncidentResolvedProcessor implements EventProcessor
+    private final class TaskIncidentResolvedProcessor implements TypedEventProcessor<TaskEvent>
     {
+        private final TypedStreamReader reader;
+
         private boolean isResolved;
-        private long incidentKey;
+        private TypedEvent<IncidentEvent> persistedIncident;
+        private boolean isTransientIncident;
+
+        TaskIncidentResolvedProcessor(TypedStreamReader reader)
+        {
+            this.reader = reader;
+        }
 
         @Override
-        public void processEvent()
+        public void processEvent(TypedEvent<TaskEvent> event)
         {
             isResolved = false;
+            isTransientIncident = false;
 
-            incidentKey = failedTaskMap.get(eventKey, -1L);
+            final long incidentKey = failedTaskMap.get(event.getKey(), -1L);
+            persistedIncident = null;
 
             if (incidentKey > 0)
             {
@@ -656,12 +535,9 @@ public class IncidentStreamProcessor implements StreamProcessor
 
                 if (incidentMap.getState() == STATE_CREATED)
                 {
-                    final LoggedEvent incidentCreatedEvent = findEvent(incidentMap.getIncidentEventPosition());
+                    persistedIncident = reader.readValue(incidentMap.getIncidentEventPosition(), IncidentEvent.class);
 
-                    incidentEvent.reset();
-                    incidentCreatedEvent.readValue(incidentEvent);
-
-                    incidentEvent.setState(IncidentState.DELETE);
+                    persistedIncident.getValue().setState(IncidentState.DELETE);
 
                     isResolved = true;
                 }
@@ -670,20 +546,26 @@ public class IncidentStreamProcessor implements StreamProcessor
                     throw new IllegalStateException("inconsistent incident map");
                 }
             }
-        }
-
-        @Override
-        public long writeEvent(LogStreamWriter writer)
-        {
-            return isResolved ? writeIncidentEvent(writer.key(incidentKey)) : 0L;
-        }
-
-        @Override
-        public void updateState()
-        {
-            if (isResolved || incidentKey == NON_PERSISTENT_INCIDENT)
+            else if (incidentKey == NON_PERSISTENT_INCIDENT)
             {
-                failedTaskMap.remove(eventKey, -1L);
+                isTransientIncident = true;
+            }
+        }
+
+        @Override
+        public long writeEvent(TypedEvent<TaskEvent> event, TypedStreamWriter writer)
+        {
+            return isResolved ?
+                    writer.writeFollowupEvent(persistedIncident.getKey(), persistedIncident.getValue()) :
+                    0L;
+        }
+
+        @Override
+        public void updateState(TypedEvent<TaskEvent> event)
+        {
+            if (isResolved || isTransientIncident)
+            {
+                failedTaskMap.remove(event.getKey(), -1L);
             }
         }
     }

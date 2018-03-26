@@ -15,20 +15,25 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.logstreams.processor;
+package io.zeebe.broker.util;
 
-import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.protocol.impl.BrokerEventMetadata;
+import java.util.stream.Stream;
 
-public interface TypedEvent<T extends UnpackedObject>
+import io.zeebe.broker.incident.data.IncidentEvent;
+import io.zeebe.broker.incident.data.IncidentState;
+import io.zeebe.broker.logstreams.processor.TypedEvent;
+import io.zeebe.test.util.stream.StreamWrapper;
+
+public class IncidentEventStream extends StreamWrapper<TypedEvent<IncidentEvent>>
 {
-    long getPosition();
 
-    long getSourcePosition();
+    public IncidentEventStream(Stream<TypedEvent<IncidentEvent>> wrappedStream)
+    {
+        super(wrappedStream);
+    }
 
-    long getKey();
-
-    BrokerEventMetadata getMetadata();
-
-    T getValue();
+    public IncidentEventStream inState(IncidentState state)
+    {
+        return new IncidentEventStream(filter(e -> e.getValue().getState() == state));
+    }
 }

@@ -81,6 +81,11 @@ public class Events
         return isEventOfType(event, EventType.TASK_EVENT);
     }
 
+    public static boolean isIncidentEvent(LoggedEvent event)
+    {
+        return isEventOfType(event, EventType.INCIDENT_EVENT);
+    }
+
     protected static boolean isEventOfType(LoggedEvent event, EventType type)
     {
         if (event == null)

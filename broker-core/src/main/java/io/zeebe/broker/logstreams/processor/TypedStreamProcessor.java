@@ -21,11 +21,13 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 
+import io.zeebe.broker.incident.data.IncidentEvent;
 import io.zeebe.broker.system.log.PartitionEvent;
 import io.zeebe.broker.system.log.TopicEvent;
 import io.zeebe.broker.task.data.TaskEvent;
 import io.zeebe.broker.workflow.data.DeploymentEvent;
 import io.zeebe.broker.workflow.data.WorkflowEvent;
+import io.zeebe.broker.workflow.data.WorkflowInstanceEvent;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
@@ -167,6 +169,14 @@ public class TypedStreamProcessor implements StreamProcessor
         else if (value instanceof TaskEvent)
         {
             return ((TaskEvent) value).getState();
+        }
+        else if (value instanceof WorkflowInstanceEvent)
+        {
+            return ((WorkflowInstanceEvent) value).getState();
+        }
+        else if (value instanceof IncidentEvent)
+        {
+            return ((IncidentEvent) value).getState();
         }
         else
         {

@@ -59,9 +59,9 @@ public class IncidentMap
         this.snapshotSupport = new ZbMapSnapshotSupport<>(map);
     }
 
-    public ZbMapSnapshotSupport getSnapshotSupport()
+    public Long2BytesZbMap getMap()
     {
-        return snapshotSupport;
+        return map;
     }
 
     public void reset()
