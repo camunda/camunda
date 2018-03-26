@@ -62,7 +62,6 @@ public class Dispatcher extends Actor implements AutoCloseable
     private Runnable backgroundTask = this::runBackgroundTask;
 
     private final Runnable onClaimComplete = this::signalSubsciptions;
-    private Metric fragmentsWrittenMetric;
 
     public Dispatcher(
             LogBuffer logBuffer,
@@ -89,11 +88,6 @@ public class Dispatcher extends Actor implements AutoCloseable
 
         this.subscriptions = new Subscription[0];
         this.defaultSubscriptionNames = subscriptionNames;
-
-        this.fragmentsWrittenMetric = metricsManager.newMetric("buffer_fragments_written")
-            .type("counter")
-            .label("buffer", getName())
-            .create();
     }
 
     @Override
@@ -118,7 +112,6 @@ public class Dispatcher extends Actor implements AutoCloseable
     @Override
     protected void onActorClosing()
     {
-        fragmentsWrittenMetric.close();
         publisherLimit.close();
         publisherPosition.close();
 
@@ -214,8 +207,6 @@ public class Dispatcher extends Actor implements AutoCloseable
                                                         start,
                                                         length,
                                                         streamId);
-
-                    fragmentsWrittenMetric.getAndAddOrdered(length);
                 }
                 else
                 {
@@ -293,8 +284,6 @@ public class Dispatcher extends Actor implements AutoCloseable
                         length,
                         streamId,
                         onClaimComplete);
-
-                fragmentsWrittenMetric.getAndAddOrdered(length);
             }
             else
             {
