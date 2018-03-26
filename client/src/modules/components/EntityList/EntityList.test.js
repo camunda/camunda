@@ -51,6 +51,7 @@ jest.mock('components', () => {
 
   return {
     Modal,
+    Message: props => <p>{props.message}</p>,
     Button: props => <button {...props}>{props.children}</button>
   };
 });
@@ -250,4 +251,15 @@ it('should open deletion modal on delete button click', () => {
   node.find('.EntityList__deleteButton button').simulate('click');
 
   expect(node.find('.EntityList__delete-modal')).toBePresent();
+});
+
+it('should display an error if error occurred', () => {
+  const error = {errorMessage: 'There was an error'};
+  const node = mount(
+    shallow(
+      <EntityList api="endpoint" label="Dashboard" error={error} operations={['delete']} />
+    ).get(0)
+  );
+
+  expect(node).toIncludeText('There was an error');
 });

@@ -20,8 +20,7 @@ class EntityList extends React.Component {
       redirectToEntity: false,
       loaded: false,
       deleteModalVisible: false,
-      deleteModalEntity: {},
-      error: null
+      deleteModalEntity: {}
     };
 
     this.loadEntities();
@@ -35,9 +34,6 @@ class EntityList extends React.Component {
           data: response,
           loaded: true
         });
-      },
-      error => {
-        this.setState({error});
       }
     );
   };
@@ -165,8 +161,8 @@ class EntityList extends React.Component {
       </div>
     );
 
-    if (this.state.error) {
-      const {error} = this.state;
+    if (this.props.error) {
+      const {error} = this.props;
       let errorMessage = 'Data could not be loaded. ';
       errorMessage += error.errorMessage || error.statusText || '';
 
