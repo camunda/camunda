@@ -115,16 +115,14 @@ public class FsLogStorage implements LogStorage
             if (appendResult >= 0)
             {
                 opresult = position(currentSegment.getSegmentId(), appendResult);
-                totalBytesMetric.getAndAddOrdered(opresult - size);
                 markSegmentAsDirty(currentSegment);
+                totalBytesMetric.getAndAddOrdered(requiredCapacity);
             }
             else
             {
                 opresult = appendResult;
             }
         }
-
-        segmentCountMetric.setOrdered(logSegments.getSegmentCount());
 
         return opresult;
     }
@@ -365,6 +363,7 @@ public class FsLogStorage implements LogStorage
 
         final FsLogSegments logSegments = new FsLogSegments();
         logSegments.init(config.initialSegmentId, segmentsArray);
+        segmentCountMetric.setOrdered(logSegments.getSegmentCount());
 
         this.logSegments = logSegments;
     }
