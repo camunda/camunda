@@ -26,6 +26,7 @@ import io.zeebe.transport.RemoteAddress;
 import io.zeebe.util.CheckedConsumer;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 
 public abstract class Subscriber
 {
@@ -94,17 +95,24 @@ public abstract class Subscriber
         final int eventsProcessed = eventsProcessedSinceLastReplenishment.get();
         final int remainingCapacity = capacity - eventsProcessed;
 
-        return remainingCapacity < capacity * REPLENISHMENT_THRESHOLD;
+        return remainingCapacity <= capacity * REPLENISHMENT_THRESHOLD;
     }
 
     protected ActorFuture<?> replenishEventSource()
     {
         final int eventsProcessed = eventsProcessedSinceLastReplenishment.get();
 
-        final ActorFuture<?> future = requestEventSourceReplenishment(eventsProcessed);
-        eventsProcessedSinceLastReplenishment.addAndGet(-eventsProcessed);
+        if (eventsProcessed > 0)
+        {
+            final ActorFuture<?> future = requestEventSourceReplenishment(eventsProcessed);
+            eventsProcessedSinceLastReplenishment.addAndGet(-eventsProcessed);
+            return future;
+        }
+        else
+        {
+            return CompletableActorFuture.completed(null);
+        }
 
-        return future;
     }
 
     public long getSubscriberKey()

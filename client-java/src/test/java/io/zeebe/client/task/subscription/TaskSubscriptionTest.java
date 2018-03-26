@@ -15,6 +15,7 @@
  */
 package io.zeebe.client.task.subscription;
 
+import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
@@ -52,6 +53,7 @@ import io.zeebe.client.impl.data.MsgPackConverter;
 import io.zeebe.client.task.PollableTaskSubscription;
 import io.zeebe.client.task.TaskHandler;
 import io.zeebe.client.task.TaskSubscription;
+import io.zeebe.client.task.impl.subscription.Subscriber;
 import io.zeebe.client.util.ClientRule;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.ErrorCode;
@@ -66,11 +68,17 @@ import io.zeebe.transport.RemoteAddress;
 
 public class TaskSubscriptionTest
 {
+    private static final int NUM_EXECUTION_THREADS = 2;
 
-    protected static final TaskHandler DO_NOTHING = (c, t) ->
+    private static final TaskHandler DO_NOTHING = (c, t) ->
     { };
 
-    public ClientRule clientRule = new ClientRule();
+    public ClientRule clientRule = new ClientRule(() ->
+    {
+        final Properties props = new Properties();
+        props.put(ClientProperties.CLIENT_SUBSCRIPTION_EXECUTION_THREADS, String.valueOf(NUM_EXECUTION_THREADS));
+        return props;
+    });
     public StubBrokerRule broker = new StubBrokerRule();
 
     protected final MsgPackConverter msgPackConverter = new MsgPackConverter();
@@ -784,14 +792,13 @@ public class TaskSubscriptionTest
         Thread.sleep(500L);
 
         // then
-        final List<ControlMessageRequest> creditRequests = broker.getReceivedControlMessageRequests().stream()
-            .filter((r) -> r.messageType() == ControlMessageType.INCREASE_TASK_SUBSCRIPTION_CREDITS)
-            .collect(Collectors.toList());
+        final List<ControlMessageRequest> creditRequests = getCreditRequests().collect(Collectors.toList());
 
         assertThat(creditRequests).isNotEmpty();
         final int numSubmittedCredits = creditRequests.stream().mapToInt((r) -> (int) r.getData().get("credits")).sum();
         assertThat(numSubmittedCredits).isGreaterThan(0);
     }
+
 
     @Test
     public void shouldReopenSubscriptionAfterChannelInterruption()
@@ -848,6 +855,64 @@ public class TaskSubscriptionTest
                     entry("subscriberKey", 456));
     }
 
+    @Test
+    public void shouldNotAttemptReplenishmentForZeroCredits() throws InterruptedException
+    {
+        // given
+        final int subscriptionCapacity = 16;
+        final int replenishmentThreshold = (int) (Math.ceil(subscriptionCapacity * Subscriber.REPLENISHMENT_THRESHOLD));
+        final int tasksToHandleBeforeReplenishment = subscriptionCapacity - replenishmentThreshold;
+
+        broker.stubTaskSubscriptionApi(123L);
+
+        final WaitingTaskHandler handler = new WaitingTaskHandler();
+        handler.shouldWait = false;
+
+        clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopicName())
+                .handler(handler)
+                .lockOwner("owner")
+                .lockTime(10000L)
+                .taskFetchSize(subscriptionCapacity)
+                .taskType("type")
+                .open();
+
+        final RemoteAddress clientAddress = getSubscribeRequests().findFirst().get().getSource();
+
+        // handling these tasks should not yet trigger replenishment; the next handled task would
+        for (int i = 0; i < tasksToHandleBeforeReplenishment; i++)
+        {
+            broker.pushLockedTask(clientAddress, 123L, 4L + i, 5L + i, "foo", "type");
+        }
+        waitUntil(() -> handler.numHandledEvents.get() == tasksToHandleBeforeReplenishment);
+
+        handler.shouldWait = true;
+        for (int i = 0; i < NUM_EXECUTION_THREADS; i++)
+        {
+            broker.pushLockedTask(clientAddress, 123L, 4L + i, 5L + i, "foo", "type");
+        }
+        waitUntil(() -> handler.numWaitingThreads.get() == NUM_EXECUTION_THREADS);
+
+        // when all task handling threads trigger credit replenishment
+        continueTaskHandlingThreads();
+
+        // then
+        waitUntil(() -> getCreditRequests().count() >= 1);
+
+        Thread.sleep(500L); // waiting for potentially more credit requests
+        final List<ControlMessageRequest> creditRequests = getCreditRequests().collect(Collectors.toList());
+        assertThat(creditRequests.size()).isGreaterThanOrEqualTo(1);
+
+        int totalReplenishedCredits = 0;
+        for (ControlMessageRequest request : creditRequests)
+        {
+            final int replenishedCredits = (int) request.getData().get("credits");
+            assertThat(replenishedCredits).isGreaterThan(0);
+            totalReplenishedCredits += replenishedCredits;
+        }
+
+        assertThat(totalReplenishedCredits).isGreaterThanOrEqualTo(tasksToHandleBeforeReplenishment + 1);
+    }
+
     protected void failTaskFailure()
     {
         broker.onExecuteCommandRequest(EventType.TASK_EVENT, "FAIL")
@@ -878,6 +943,12 @@ public class TaskSubscriptionTest
     {
         return broker.getReceivedControlMessageRequests().stream()
                 .filter((r) -> r.messageType() == ControlMessageType.REMOVE_TASK_SUBSCRIPTION);
+    }
+
+    private Stream<ControlMessageRequest> getCreditRequests()
+    {
+        return broker.getReceivedControlMessageRequests().stream()
+            .filter((r) -> r.messageType() == ControlMessageType.INCREASE_TASK_SUBSCRIPTION_CREDITS);
     }
 
     protected Predicate<ExecuteCommandRequest> isTaskCompleteCommand()
