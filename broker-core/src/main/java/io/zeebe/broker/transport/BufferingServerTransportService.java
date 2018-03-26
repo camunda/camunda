@@ -53,6 +53,7 @@ public class BufferingServerTransportService implements Service<BufferingServerT
         final Dispatcher sendBuffer = sendBufferInjector.getValue();
 
         serverTransport = Transports.newServerTransport()
+            .name(readableName)
             .bindAddress(bindAddress)
             .sendBuffer(sendBuffer)
             .scheduler(scheduler)

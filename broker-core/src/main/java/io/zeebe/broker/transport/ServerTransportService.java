@@ -53,6 +53,7 @@ public class ServerTransportService implements Service<ServerTransport>
         final ServerMessageHandler messageHandler = messageHandlerInjector.getValue();
 
         serverTransport = Transports.newServerTransport()
+            .name(readableName)
             .bindAddress(bindAddress)
             .sendBuffer(sendBuffer)
             .scheduler(scheduler)
