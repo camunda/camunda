@@ -56,25 +56,30 @@ public class RoundRobinSelectionStrategy implements PartitionCreatorSelectionStr
 
     private Member chooseNextBroker(Iterator<Member> knownMembers)
     {
-        final Member nextBroker;
-        if (knownMembers.hasNext())
+        Member nextBroker = findNextMemberWithManagementAddress(knownMembers);
+
+        if (nextBroker == null)
         {
-            nextBroker = knownMembers.next();
-        }
-        else
-        {
-            // pick first broker
+            // reset iterator and try again to find a broker
             knownMembers = partitionManager.getKnownMembers();
-            if (knownMembers.hasNext())
+            nextBroker = findNextMemberWithManagementAddress(knownMembers);
+        }
+
+        return nextBroker;
+    }
+
+    private Member findNextMemberWithManagementAddress(Iterator<Member> knownMembers)
+    {
+        while (knownMembers.hasNext())
+        {
+            final Member next = knownMembers.next();
+            if (next.getManagementAddress() != null)
             {
-                nextBroker = knownMembers.next();
-            }
-            else
-            {
-                nextBroker = null;
+                return next;
             }
         }
-        return nextBroker;
+
+        return null;
     }
 
     private void moveToLastSelectedBroker(Iterator<Member> knownMembers)

@@ -29,6 +29,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import io.zeebe.broker.clustering.member.Member;
+import io.zeebe.util.collection.IntIterator;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -440,7 +442,43 @@ public class CreateTopicStreamProcessorTest
         // then round-robin distribution continues
         final SocketAddress secondPartitionCreator = partitionManager.getPartitionRequests().get(1).endpoint;
         assertThat(secondPartitionCreator).isNotEqualTo(firstPartitionCreator);
+    }
 
+    @Test
+    public void shouldSkipMembersWithoutManagmenetApiWhenDistributePartitionsRoundRobin()
+    {
+        // given
+        partitionManager.addMember(SOCKET_ADDRESS1);
+        partitionManager.addMember(SOCKET_ADDRESS2);
+        // last member has no management endpoint set yet
+        partitionManager.currentMembers.add(new Member()
+        {
+            @Override
+            public SocketAddress getManagementAddress()
+            {
+                return null;
+            }
+
+            @Override
+            public IntIterator getLeadingPartitions()
+            {
+                return null;
+            }
+        });
+
+        final StreamProcessorControl processorControl = streams.runStreamProcessor(STREAM_NAME, streamProcessor);
+        processorControl.unblock();
+
+        // when
+        streams.newEvent(STREAM_NAME)
+               .event(createTopic("foo", 4))
+               .write();
+        waitUntil(() -> partitionEventsInState(PartitionState.CREATING).count() == 4);
+
+        // then
+        final List<PartitionRequest> requests = partitionManager.getPartitionRequests();
+        assertThat(requests).extracting(r -> r.endpoint).containsOnly(
+            SOCKET_ADDRESS1, SOCKET_ADDRESS2, SOCKET_ADDRESS1, SOCKET_ADDRESS2);
     }
 
     @Test
