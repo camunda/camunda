@@ -152,11 +152,14 @@ public class ClientTransportBuilder
         context.setSendFailureHandler(new ClientSendFailureHandler(clientRequestPool));
         context.setChannelKeepAlivePeriod(keepAlivePeriod);
         context.setSendBuffer(sendBuffer);
-        context.setChannelFactory(new DefaultChannelFactory(scheduler.getMetricsManager(), context.getName()));
 
         if (channelFactory != null)
         {
             context.setChannelFactory(channelFactory);
+        }
+        else
+        {
+            context.setChannelFactory(new DefaultChannelFactory(scheduler.getMetricsManager(), context.getName()));
         }
 
         return context;

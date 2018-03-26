@@ -28,6 +28,7 @@ public class ServerTransportBuilder
 {
     private int messageMaxLength = 1024 * 512;
 
+    private String name = "server";
     private Dispatcher sendBuffer;
     private ServerOutput output;
     private ActorScheduler scheduler;
@@ -35,6 +36,12 @@ public class ServerTransportBuilder
     protected FragmentHandler receiveHandler;
     protected RemoteAddressListImpl remoteAddressList;
     protected ServerControlMessageListener controlMessageListener;
+
+    public ServerTransportBuilder name(String name)
+    {
+        this.name = name;
+        return this;
+    }
 
     public ServerTransportBuilder bindAddress(InetSocketAddress address)
     {
@@ -115,7 +122,7 @@ public class ServerTransportBuilder
 
         final TransportContext context = new TransportContext();
 
-        context.setName("server");
+        context.setName(name);
         context.setServerOutput(output);
         context.setMessageMaxLength(messageMaxLength);
         context.setRemoteAddressList(remoteAddressList);
