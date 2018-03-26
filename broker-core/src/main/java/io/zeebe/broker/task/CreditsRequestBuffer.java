@@ -61,7 +61,12 @@ public class CreditsRequestBuffer
 
     public int handleRequests()
     {
-        return ringBuffer.read(requestHandler);
+        int read = 0;
+        while (ringBuffer.size() > 0)
+        {
+            read += ringBuffer.read(requestHandler);
+        }
+        return read;
     }
 
     public boolean offerRequest(CreditsRequest request)
