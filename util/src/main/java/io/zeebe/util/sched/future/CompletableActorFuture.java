@@ -329,6 +329,6 @@ public class CompletableActorFuture<V> implements ActorFuture<V>
         return "CompletableActorFuture{" +
             (isDone() ?
                 (state == COMPLETED ? "value= " + value : "failure= " + failureCause) :
-                " not completed");
+                " not completed (state " + state + ")") + "}";
     }
 }

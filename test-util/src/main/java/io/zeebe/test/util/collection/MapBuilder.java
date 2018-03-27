@@ -33,6 +33,12 @@ public class MapBuilder<T>
         this.map = new HashMap<>();
     }
 
+    public MapBuilder<T> putAll(Map<String, Object> map)
+    {
+        this.map.putAll(map);
+        return this;
+    }
+
     public MapBuilder<T> put(String key, Object value)
     {
         this.map.put(key, value);

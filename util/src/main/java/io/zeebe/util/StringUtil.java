@@ -17,6 +17,7 @@ package io.zeebe.util;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 
 public final class StringUtil
@@ -65,6 +66,13 @@ public final class StringUtil
             sb.append("\n");
         }
         return sb.toString();
+    }
+
+    public static String stringOfLength(int length)
+    {
+        final char[] chars = new char[length];
+        Arrays.fill(chars, 'a');
+        return new String(chars);
     }
 
 }
