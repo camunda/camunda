@@ -38,3 +38,4 @@
 * [Operations](operations/README.md)
     * [The zeebe.cfg.toml file](operations/the-zeebecfgtoml-file.md)
     * [Setting up a cluster](operations/setting-up-a-cluster.md)
+    * [Metrics](operations/metrics.md)
