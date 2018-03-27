@@ -103,7 +103,7 @@ public class AlertRestServiceIT extends AbstractAlertIT{
   public void createNewAlertAllowsMaxInt() throws Exception {
     //given
     AlertCreationDto creationDto = setupBasicAlert();
-    creationDto.setThreshold(Integer.MAX_VALUE);
+    creationDto.setThreshold(Integer.MAX_VALUE + 1);
 
     // when
     Response response =
