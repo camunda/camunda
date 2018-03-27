@@ -17,7 +17,6 @@
  */
 package io.zeebe.broker.transport;
 
-import static io.zeebe.broker.system.SystemServiceNames.COUNTERS_MANAGER_SERVICE;
 import static io.zeebe.broker.transport.TransportServiceNames.*;
 
 import java.net.InetSocketAddress;
@@ -200,7 +199,6 @@ public class TransportComponent implements Component
 
         final DispatcherService receiveBufferService = new DispatcherService(dispatcherBuilder);
         serviceContainer.createService(name, receiveBufferService)
-            .dependency(COUNTERS_MANAGER_SERVICE, receiveBufferService.getCountersManagerInjector())
             .install();
     }
 

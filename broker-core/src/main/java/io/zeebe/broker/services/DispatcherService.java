@@ -23,8 +23,6 @@ import io.zeebe.servicecontainer.*;
 
 public class DispatcherService implements Service<Dispatcher>
 {
-    protected final Injector<Counters> countersInjector = new Injector<>();
-
     protected DispatcherBuilder dispatcherBuilder;
     protected Dispatcher dispatcher;
 
@@ -36,12 +34,8 @@ public class DispatcherService implements Service<Dispatcher>
     @Override
     public void start(ServiceStartContext ctx)
     {
-        final Counters counters = countersInjector.getValue();
-
         dispatcher = dispatcherBuilder
                 .name(ctx.getName())
-                .countersManager(counters.getCountersManager())
-                .countersBuffer(counters.getCountersBuffer())
                 .actorScheduler(ctx.getScheduler())
                 .build();
     }
@@ -56,10 +50,5 @@ public class DispatcherService implements Service<Dispatcher>
     public Dispatcher get()
     {
         return dispatcher;
-    }
-
-    public Injector<Counters> getCountersManagerInjector()
-    {
-        return countersInjector;
     }
 }
