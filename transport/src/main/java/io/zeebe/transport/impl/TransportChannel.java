@@ -340,16 +340,9 @@ public class TransportChannel
         return remoteAddress;
     }
 
-    public void shutdownInput()
+    public void interrupt()
     {
-        try
-        {
-            media.shutdownInput();
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeException(e);
-        }
+        doClose();
     }
 
     public interface ChannelLifecycleListener

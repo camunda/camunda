@@ -124,7 +124,7 @@ public abstract class Conductor extends Actor implements ChannelLifecycleListene
         return actor.call(() ->
         {
             new ArrayList<>(channels.values())
-                .forEach(TransportChannel::shutdownInput);
+                .forEach(TransportChannel::interrupt);
         });
     }
 
