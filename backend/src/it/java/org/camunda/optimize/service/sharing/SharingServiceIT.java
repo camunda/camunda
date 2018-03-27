@@ -515,8 +515,8 @@ public class SharingServiceIT extends AbstractSharingIT {
     statusRequest.getDashboards().add(dashboardWithReport);
     statusRequest.getReports().add(reportId);
 
-    dashboardWithReport = createDashboardWithReport(reportId);
-    statusRequest.getDashboards().add(dashboardWithReport);
+    String dashboardWithReport2 = createDashboardWithReport(reportId);
+    statusRequest.getDashboards().add(dashboardWithReport2);
     //when
 
     Response response =
@@ -530,11 +530,11 @@ public class SharingServiceIT extends AbstractSharingIT {
     ShareSearchResultDto result = response.readEntity(ShareSearchResultDto.class);
 
     assertThat(result.getDashboards().size(), is(2));
-    assertThat(result.getDashboards().get(0).isShared(), is(true));
-    assertThat(result.getDashboards().get(1).isShared(), is(false));
+    assertThat(result.getDashboards().get(dashboardWithReport), is(true));
+    assertThat(result.getDashboards().get(dashboardWithReport2), is(false));
 
     assertThat(result.getReports().size(), is(1));
-    assertThat(result.getReports().get(0).isShared(), is(false));
+    assertThat(result.getReports().get(reportId), is(false));
   }
 
   @Test
@@ -544,8 +544,8 @@ public class SharingServiceIT extends AbstractSharingIT {
 
     ShareSearchDto statusRequest = new ShareSearchDto();
     statusRequest.getReports().add(reportId);
-    reportId = createReport();
-    statusRequest.getReports().add(reportId);
+    String reportId2 = createReport();
+    statusRequest.getReports().add(reportId2);
 
     //when
     Response response =
@@ -558,8 +558,8 @@ public class SharingServiceIT extends AbstractSharingIT {
     assertThat(response.getStatus(), is(200));
     ShareSearchResultDto result = response.readEntity(ShareSearchResultDto.class);
     assertThat(result.getReports().size(), is(2));
-    assertThat(result.getReports().get(0).isShared(), is(true));
-    assertThat(result.getReports().get(1).isShared(), is(false));
+    assertThat(result.getReports().get(reportId), is(true));
+    assertThat(result.getReports().get(reportId2), is(false));
   }
 
   @Test

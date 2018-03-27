@@ -1,28 +1,28 @@
 package org.camunda.optimize.dto.optimize.query.sharing;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author Askar Akhmerov
  */
 public class ShareSearchResultDto {
-  private List<ShareStatusDto> reports = new ArrayList<>();
-  private List<ShareStatusDto> dashboards = new ArrayList<>();
+  private Map<String, Boolean> reports = new HashMap<>();
+  private Map<String, Boolean> dashboards = new HashMap<>();
 
-  public List<ShareStatusDto> getReports() {
+  public Map<String, Boolean> getReports() {
     return reports;
   }
 
-  public void setReports(List<ShareStatusDto> reports) {
+  public void setReports(Map<String, Boolean> reports) {
     this.reports = reports;
   }
 
-  public List<ShareStatusDto> getDashboards() {
+  public Map<String, Boolean> getDashboards() {
     return dashboards;
   }
 
-  public void setDashboards(List<ShareStatusDto> dashboards) {
+  public void setDashboards(Map<String, Boolean> dashboards) {
     this.dashboards = dashboards;
   }
 }
