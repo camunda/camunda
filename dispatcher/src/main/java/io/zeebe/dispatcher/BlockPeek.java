@@ -20,13 +20,13 @@ import static io.zeebe.dispatcher.impl.PositionUtil.position;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 
+import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
+import io.zeebe.util.metrics.Metric;
+import io.zeebe.util.sched.ActorCondition;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.Position;
-import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
-import io.zeebe.util.metrics.Metric;
-import io.zeebe.util.sched.ActorCondition;
 
 /**
  * Represents a block of fragments to read from.
@@ -110,9 +110,9 @@ public class BlockPeek implements Iterable<DirectBuffer>
 
             final int frameLength = DataFrameDescriptor.alignedLength(framedFragmentLength);
             final int flagsOffset = DataFrameDescriptor.flagsOffset(fragmentOffset);
-            final byte flags = byteBuffer.get(flagsOffset);
+            final byte flags = bufferView.getByte(flagsOffset);
 
-            byteBuffer.put(flagsOffset, DataFrameDescriptor.enableFlagFailed(flags));
+            bufferView.putByte(flagsOffset, DataFrameDescriptor.enableFlagFailed(flags));
 
             fragmentOffset += frameLength;
         }
