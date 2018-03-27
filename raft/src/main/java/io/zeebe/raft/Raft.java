@@ -20,7 +20,7 @@ import static io.zeebe.util.EnsureUtil.ensureNotNull;
 import java.time.Duration;
 import java.util.*;
 
-import io.zeebe.logstreams.impl.LogStreamController;
+import io.zeebe.logstreams.impl.LogStorageAppender;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.msgpack.value.ValueArray;
 import io.zeebe.raft.controller.*;
@@ -646,12 +646,12 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
     }
 
     /**
-     * @return true if the log stream controller is currently appendEvent, false otherwise
+     * @return true if the log storage appender is currently appendEvent, false otherwise
      */
-    public boolean isLogStreamControllerOpen()
+    public boolean isLogStorageAppenderOpen()
     {
-        final LogStreamController logStreamController = logStream.getLogStreamController();
-        return logStreamController != null && !logStreamController.isClosed();
+        final LogStorageAppender logStorageAppender = logStream.getLogStreamController();
+        return logStorageAppender != null && !logStorageAppender.isClosed();
     }
 
     /**

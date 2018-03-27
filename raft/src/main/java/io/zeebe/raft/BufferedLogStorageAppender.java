@@ -21,9 +21,7 @@ import static io.zeebe.raft.AppendRequestEncoder.previousEventTermNullValue;
 import java.nio.ByteBuffer;
 
 import io.zeebe.logstreams.impl.LoggedEventImpl;
-import io.zeebe.logstreams.log.BufferedLogStreamReader;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.logstreams.log.*;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.raft.event.RaftConfigurationEvent;
@@ -170,7 +168,7 @@ public class BufferedLogStorageAppender
         final long previousEventPosition = appendRequest.getPreviousEventPosition();
         final int previousEventTerm = appendRequest.getPreviousEventTerm();
 
-        if (previousEventPosition >= lastBufferedPosition || raft.isLogStreamControllerOpen())
+        if (previousEventPosition >= lastBufferedPosition || raft.isLogStorageAppenderOpen())
         {
             // event is either after our last position or the log stream controller
             // is still appendEvent, which does not allow to truncate the log
