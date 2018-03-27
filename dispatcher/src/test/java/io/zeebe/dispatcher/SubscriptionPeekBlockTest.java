@@ -16,38 +16,21 @@
 package io.zeebe.dispatcher;
 
 import static io.zeebe.dispatcher.impl.PositionUtil.position;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.FRAME_ALIGNMENT;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.TYPE_MESSAGE;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.TYPE_PADDING;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.enableFlagBatchBegin;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.enableFlagBatchEnd;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.flagsOffset;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.framedLength;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.streamIdOffset;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.typeOffset;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.*;
 import static org.agrona.BitUtil.align;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.*;
 
 import java.nio.ByteBuffer;
 
+import io.zeebe.dispatcher.impl.log.*;
+import io.zeebe.util.allocation.AllocatedBuffer;
+import io.zeebe.util.metrics.Metric;
+import io.zeebe.util.sched.ActorCondition;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.Position;
 import org.junit.Before;
 import org.junit.Test;
-
-import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
-import io.zeebe.dispatcher.impl.log.LogBuffer;
-import io.zeebe.dispatcher.impl.log.LogBufferPartition;
-import io.zeebe.util.allocation.AllocatedBuffer;
-import io.zeebe.util.metrics.Metric;
-import io.zeebe.util.sched.ActorCondition;
 
 public class SubscriptionPeekBlockTest
 {
@@ -124,7 +107,6 @@ public class SubscriptionPeekBlockTest
     {
         final int fragOffset = 0;
         final int flagsOffset = DataFrameDescriptor.flagsOffset(fragOffset);
-        final byte flags = rawBuffer.get(flagsOffset);
 
         when(dataBufferMock.getIntVolatile(lengthOffset(fragOffset))).thenReturn(framedLength(A_MSG_PAYLOAD_LENGTH));
         when(dataBufferMock.getShort(typeOffset(fragOffset))).thenReturn(TYPE_MESSAGE);
@@ -140,6 +122,7 @@ public class SubscriptionPeekBlockTest
         // the position was increased by the fragment length
         verify(subscriberPositionMock).proposeMaxOrdered(position(A_PARTITION_ID, nextFragmentOffset(fragOffset)));
         // and the fragment was not marked as failed
+        final byte flags = rawBuffer.get(A_PARTITION_DATA_SECTION_OFFSET + flagsOffset);
         assertThat(DataFrameDescriptor.flagFailed(flags)).isFalse();
     }
 
@@ -164,7 +147,7 @@ public class SubscriptionPeekBlockTest
         // the position was increased by the fragment length
         verify(subscriberPositionMock).proposeMaxOrdered(position(A_PARTITION_ID, nextFragmentOffset(fragOffset)));
         // and the fragment was marked as failed
-        final byte flags = rawBuffer.get(flagsOffset);
+        final byte flags = rawBuffer.get(A_PARTITION_DATA_SECTION_OFFSET + flagsOffset);
         assertThat(DataFrameDescriptor.flagFailed(flags)).isTrue();
     }
 
