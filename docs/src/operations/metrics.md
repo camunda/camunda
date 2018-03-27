@@ -56,7 +56,7 @@ Then, add the following entry to your `prometheus.yml`:
 
 ```
 - job_name: zb
-  scrape_interval: 1s
+  scrape_interval: 15s
   metrics_path: /zeebe.prom
   scheme: http
   static_configs:
