@@ -50,6 +50,7 @@ public class ClusteringRule extends ExternalResource
 
     private SocketAddress[] brokerAddresses = new SocketAddress[]{BROKER_1_CLIENT_ADDRESS, BROKER_2_CLIENT_ADDRESS, BROKER_3_CLIENT_ADDRESS};
     private String[] brokerConfigs = new String[]{BROKER_1_TOML, BROKER_2_TOML, BROKER_3_TOML};
+    private final int spreadCount = brokerAddresses.length * 2;
 
     // rules
     private final AutoCloseableRule autoCloseableRule;
@@ -344,7 +345,7 @@ public class ClusteringRule extends ExternalResource
 
     private void waitForSpreading(Runnable r)
     {
-        for (int i = 0; i < brokerAddresses.length; i++)
+        for (int i = 0; i < spreadCount; i++)
         {
             r.run();
 
@@ -355,7 +356,7 @@ public class ClusteringRule extends ExternalResource
     private <V> V waitForSpreading(Callable<V> callable)
     {
         V value = null;
-        for (int i = 0; i < brokerAddresses.length; i++)
+        for (int i = 0; i < spreadCount; i++)
         {
             try
             {
