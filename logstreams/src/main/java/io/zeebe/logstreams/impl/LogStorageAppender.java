@@ -15,9 +15,6 @@
  */
 package io.zeebe.logstreams.impl;
 
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.positionOffset;
-
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -30,7 +27,7 @@ import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.MutableDirectBuffer;
 import org.slf4j.Logger;
 
-public class LogStreamController extends Actor
+public class LogStorageAppender extends Actor
 {
     public static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
 
@@ -40,8 +37,6 @@ public class LogStreamController extends Actor
     private final ActorConditions onLogStorageAppendedConditions;
 
     private Runnable peekedBlockHandler;
-
-    private long firstEventPosition;
 
     private CompletableActorFuture<Void> openFuture;
 
@@ -55,7 +50,7 @@ public class LogStreamController extends Actor
     private Dispatcher writeBuffer;
     private Subscription writeBufferSubscription;
 
-    public LogStreamController(LogStreamImpl.LogStreamBuilder logStreamBuilder, ActorConditions onLogStorageAppendedConditions)
+    public LogStorageAppender(LogStreamImpl.LogStreamBuilder logStreamBuilder, ActorConditions onLogStorageAppendedConditions)
     {
         wrap(logStreamBuilder);
 
@@ -145,11 +140,7 @@ public class LogStreamController extends Actor
         final ByteBuffer nioBuffer = blockPeek.getRawBuffer();
         final MutableDirectBuffer buffer = blockPeek.getBuffer();
 
-        final long position = buffer.getLong(positionOffset(messageOffset(0)));
-        firstEventPosition = position;
-
         final long address = logStorage.append(nioBuffer);
-
         if (address >= 0)
         {
             blockPeek.markCompleted();
@@ -160,8 +151,10 @@ public class LogStreamController extends Actor
         {
             isFailed.set(true);
 
-            LOG.debug("Failed to append log storage on position '{}'. Discard the following blocks.", firstEventPosition);
+            final long positionOfFirstEventInBlock = LogEntryDescriptor.getPosition(buffer, 0);
+            LOG.error("Failed to append log storage on position '{}'. Discard the following blocks.", positionOfFirstEventInBlock);
 
+            // recover log storage from failure - see zeebe-io/zeebe#500
             peekedBlockHandler = this::discardBlock;
 
             discardBlock();
@@ -224,10 +217,5 @@ public class LogStreamController extends Actor
         {
             return -1L;
         }
-    }
-
-    protected int getMaxAppendBlockSize()
-    {
-        return maxAppendBlockSize;
     }
 }

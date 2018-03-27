@@ -65,13 +65,13 @@ public final class LogStreamImpl extends Actor implements LogStream
     private final LogBlockIndex blockIndex;
     private final ActorScheduler actorScheduler;
 
-    private final LogBlockIndexController logBlockIndexController;
+    private final LogBlockIndexAppender logBlockIndexAppender;
 
     private final Position commitPosition = new AtomicLongPosition();
     private final ActorConditions onLogStorageAppendedConditions = new ActorConditions();
     private final ActorConditions onCommitPositionUpdatedConditions = new ActorConditions();
 
-    private LogStreamController logStreamController;
+    private LogStorageAppender logStreamController;
     private Dispatcher writeBuffer;
 
     private final AtomicBoolean isOpen = new AtomicBoolean();
@@ -98,19 +98,19 @@ public final class LogStreamImpl extends Actor implements LogStream
         this.actorScheduler = logStreamBuilder.getActorScheduler();
 
         commitPosition.setOrdered(INVALID_ADDRESS);
-        this.logBlockIndexController = new LogBlockIndexController(logStreamBuilder, commitPosition, onCommitPositionUpdatedConditions);
+        this.logBlockIndexAppender = new LogBlockIndexAppender(logStreamBuilder, commitPosition, onCommitPositionUpdatedConditions);
 
         actorScheduler.submitActor(this);
     }
 
     @Override
-    public LogBlockIndexController getLogBlockIndexController()
+    public LogBlockIndexAppender getLogBlockIndexController()
     {
-        return logBlockIndexController;
+        return logBlockIndexAppender;
     }
 
     @Override
-    public LogStreamController getLogStreamController()
+    public LogStorageAppender getLogStreamController()
     {
         return logStreamController;
     }
@@ -151,11 +151,11 @@ public final class LogStreamImpl extends Actor implements LogStream
             {
                 if (closeFuture == null)
                 {
-                    openBlockIndexController();
+                    openBlockIndexAppender();
                 }
                 else
                 {
-                    actor.runOnCompletion(closeFuture, (v, t) -> openBlockIndexController());
+                    actor.runOnCompletion(closeFuture, (v, t) -> openBlockIndexAppender());
                 }
             });
 
@@ -167,9 +167,9 @@ public final class LogStreamImpl extends Actor implements LogStream
         }
     }
 
-    private void openBlockIndexController()
+    private void openBlockIndexAppender()
     {
-        actor.runOnCompletion(logBlockIndexController.openAsync(), (v, t) ->
+        actor.runOnCompletion(logBlockIndexAppender.openAsync(), (v, t) ->
         {
             if (t == null)
             {
@@ -221,7 +221,7 @@ public final class LogStreamImpl extends Actor implements LogStream
 
         if (logStreamController == null)
         {
-            logStreamController = new LogStreamController(logStreamBuilder, onLogStorageAppendedConditions);
+            logStreamController = new LogStorageAppender(logStreamBuilder, onLogStorageAppendedConditions);
         }
         else
         {
@@ -361,7 +361,7 @@ public final class LogStreamImpl extends Actor implements LogStream
 
     private void doCloseLogBlockIndex()
     {
-        actor.runOnCompletion(logBlockIndexController.closeAsync(), (v, t) ->
+        actor.runOnCompletion(logBlockIndexAppender.closeAsync(), (v, t) ->
         {
             logStorage.close();
 
@@ -481,7 +481,6 @@ public final class LogStreamImpl extends Actor implements LogStream
         if (truncateAddress != INVALID_ADDRESS)
         {
             logStorage.truncate(truncateAddress);
-            logBlockIndexController.truncate();
         }
         else
         {
@@ -525,7 +524,7 @@ public final class LogStreamImpl extends Actor implements LogStream
         protected int writeBufferSize = 1024 * 1024 * 16;
         protected int logSegmentSize = 1024 * 1024 * 128;
         protected int indexBlockSize = DEFAULT_INDEX_BLOCK_SIZE;
-        protected float deviation = LogBlockIndexController.DEFAULT_DEVIATION;
+        protected float deviation = LogBlockIndexAppender.DEFAULT_DEVIATION;
         protected int readBlockSize = DEFAULT_READ_BLOCK_SIZE;
         protected Duration snapshotPeriod;
         protected SnapshotStorage snapshotStorage;

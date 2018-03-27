@@ -46,7 +46,8 @@ public class LogIntegrationTest
     {
         final String logPath = tempFolder.getRoot().getAbsolutePath();
 
-        logStream = LogStreams.createFsLogStream(TOPIC_NAME, 0)
+        logStream = LogStreams
+                .createFsLogStream(TOPIC_NAME, 0)
                 .logRootPath(logPath)
                 .deleteOnClose(true)
                 .logSegmentSize(1024 * 1024 * 16)
@@ -93,10 +94,7 @@ public class LogIntegrationTest
 
                 msg.putInt(0, key);
 
-                logStreamWriter.event()
-                    .key(key)
-                    .value(msg)
-                    .done();
+                logStreamWriter.event().key(key).value(msg).done();
             }
 
             while (logStreamWriter.tryWrite() < 0)
@@ -129,10 +127,7 @@ public class LogIntegrationTest
 
                 msg.putInt(0, key);
 
-                logStreamWriter.event()
-                    .key(key)
-                    .value(msg, 0, MSG_SIZE - (j % 8))
-                    .done();
+                logStreamWriter.event().key(key).value(msg, 0, MSG_SIZE - (j % 8)).done();
 
                 eventCount += 1;
             }

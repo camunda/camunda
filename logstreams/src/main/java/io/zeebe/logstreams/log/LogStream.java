@@ -16,8 +16,8 @@
 package io.zeebe.logstreams.log;
 
 import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.logstreams.impl.LogBlockIndexController;
-import io.zeebe.logstreams.impl.LogStreamController;
+import io.zeebe.logstreams.impl.LogBlockIndexAppender;
+import io.zeebe.logstreams.impl.LogStorageAppender;
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.util.sched.ActorCondition;
@@ -139,13 +139,13 @@ public interface LogStream extends AutoCloseable
      *
      * @return the log stream controller
      */
-    LogStreamController getLogStreamController();
+    LogStorageAppender getLogStreamController();
 
     /**
      * Returns the log block index controller, which creates periodically the block index for the log storage.
      * @return the log block index controller
      */
-    LogBlockIndexController getLogBlockIndexController();
+    LogBlockIndexAppender getLogBlockIndexController();
 
     /**
      * Stops the streaming to the log storage. New events are no longer append to the log storage.

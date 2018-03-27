@@ -30,7 +30,7 @@ import java.util.stream.StreamSupport;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.logstreams.fs.FsLogStreamBuilder;
-import io.zeebe.logstreams.impl.LogStreamController;
+import io.zeebe.logstreams.impl.LogStorageAppender;
 import io.zeebe.logstreams.impl.LogStreamImpl;
 import io.zeebe.logstreams.impl.log.fs.FsLogStorage;
 import io.zeebe.test.util.AutoCloseableRule;
@@ -196,13 +196,13 @@ public class LogStreamTest
         // given open log stream with stopped log stream controller
         logStream.open();
         logStream.openLogStreamController().join();
-        final LogStreamController controller1 = logStream.getLogStreamController();
+        final LogStorageAppender controller1 = logStream.getLogStreamController();
 
         logStream.closeLogStreamController().get();
 
         // when log streaming is started
         logStream.openLogStreamController().get();
-        final LogStreamController controller2 = logStream.getLogStreamController();
+        final LogStorageAppender controller2 = logStream.getLogStreamController();
 
         // then
         // log stream controller is reused
@@ -225,7 +225,7 @@ public class LogStreamTest
         // when log streaming is started
         logStream.open();
         logStream.openLogStreamController().join();
-        final LogStreamController logStreamController = logStream.getLogStreamController();
+        final LogStorageAppender logStreamController = logStream.getLogStreamController();
 
         // then
         // log stream controller has been set and is running

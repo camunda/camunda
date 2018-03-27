@@ -15,9 +15,7 @@
  */
 package io.zeebe.logstreams.util;
 
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamWriter;
-import io.zeebe.logstreams.log.LogStreamWriterImpl;
+import io.zeebe.logstreams.log.*;
 import io.zeebe.test.util.TestUtil;
 import org.agrona.DirectBuffer;
 import org.junit.rules.ExternalResource;
@@ -75,8 +73,20 @@ public class LogStreamWriterRule extends ExternalResource
 
     public long writeEvent(final DirectBuffer event)
     {
+        return writeEvent(event, false);
+    }
+
+    public long writeEvent(final DirectBuffer event, final boolean commit)
+    {
         final long position = writeEventInternal(event);
+
         waitForPositionToBeAppended(position);
+
+        if (commit)
+        {
+            logStream.setCommitPosition(position);
+        }
+
         return position;
     }
 

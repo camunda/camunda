@@ -15,10 +15,15 @@
  */
 package io.zeebe.logstreams.util;
 
+import java.util.function.Consumer;
+
 import io.zeebe.logstreams.LogStreams;
+import io.zeebe.logstreams.fs.FsLogStreamBuilder;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.spi.SnapshotStorage;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.ActorScheduler;
+import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
@@ -34,32 +39,55 @@ public class LogStreamRule extends ExternalResource
     private ActorScheduler actorScheduler;
     private LogStream logStream;
 
+    private ControlledActorClock clock = new ControlledActorClock();
+    private SnapshotStorage snapshotStorage;
+
+    private final Consumer<FsLogStreamBuilder> streamBuilder;
+
     public LogStreamRule(final TemporaryFolder temporaryFolder)
     {
-       this(DEFAULT_NAME, temporaryFolder);
+        this(DEFAULT_NAME, temporaryFolder);
+    }
+
+    public LogStreamRule(final TemporaryFolder temporaryFolder, final Consumer<FsLogStreamBuilder> streamBuilder)
+    {
+        this(DEFAULT_NAME, temporaryFolder, streamBuilder);
     }
 
     public LogStreamRule(final String name, final TemporaryFolder temporaryFolder)
     {
+        this(name, temporaryFolder, b ->
+        { });
+    }
+
+    public LogStreamRule(final String name, final TemporaryFolder temporaryFolder, final Consumer<FsLogStreamBuilder> streamBuilder)
+    {
         this.name = name;
         this.temporaryFolder = temporaryFolder;
+        this.streamBuilder = streamBuilder;
     }
 
     @Override
     protected void before()
     {
-        actorScheduler = new ActorSchedulerRule().get();
+        actorScheduler = new ActorSchedulerRule(clock).get();
         actorScheduler.start();
 
-        logStream = LogStreams.createFsLogStream(BufferUtil.wrapString(name), 0)
-                              .logDirectory(temporaryFolder.getRoot().getAbsolutePath())
-                              .actorScheduler(actorScheduler)
-                              .deleteOnClose(true)
-                              .build();
+        final FsLogStreamBuilder builder = LogStreams.createFsLogStream(BufferUtil.wrapString(name), 0)
+                .logDirectory(temporaryFolder.getRoot().getAbsolutePath())
+                .actorScheduler(actorScheduler)
+                .deleteOnClose(true);
+
+        // apply additional configs
+        streamBuilder.accept(builder);
+
+        snapshotStorage = builder.getSnapshotStorage();
+        logStream = builder.build();
 
         logStream.open();
         logStream.openLogStreamController().join();
     }
+
 
     @Override
     protected void after()
@@ -73,6 +101,11 @@ public class LogStreamRule extends ExternalResource
         return logStream;
     }
 
+    public SnapshotStorage getSnapshotStorage()
+    {
+        return snapshotStorage;
+    }
+
     public void setCommitPosition(final long position)
     {
         logStream.setCommitPosition(position);
@@ -82,4 +115,15 @@ public class LogStreamRule extends ExternalResource
     {
         return logStream.getCommitPosition();
     }
+
+    public ControlledActorClock getClock()
+    {
+        return clock;
+    }
+
+    public ActorScheduler getActorScheduler()
+    {
+        return actorScheduler;
+    }
+
 }
