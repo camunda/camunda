@@ -85,3 +85,12 @@ it('should show nice ticks for duration formats on the y axis', () => {
   expect(config.stepSize).toBe(1 * 24 * 60 * 60 * 1000);
   expect(config.callback(3 * 24 * 60 * 60 * 1000)).toBe('3d');
 });
+
+it('should generate colors', () => {
+  const node = mount(<Chart data={{foo: 123}} />);
+
+  const colors = node.instance().createColors(7);
+
+  expect(colors).toHaveLength(7);
+  expect(colors[5]).not.toEqual(colors[6]);
+});

@@ -4,8 +4,6 @@ import ReportBlankSlate from '../ReportBlankSlate';
 
 import './Chart.css';
 
-const colors = ['#b5152b', '#5315b5', '#15b5af', '#59b515', '#b59315'];
-
 export default class Chart extends React.Component {
   storeContainer = container => {
     this.container = container;
@@ -50,7 +48,7 @@ export default class Chart extends React.Component {
         datasets: [
           {
             data: Object.values(data),
-            ...this.createDatasetOptions(type)
+            ...this.createDatasetOptions(type, data)
           }
         ]
       },
@@ -61,12 +59,12 @@ export default class Chart extends React.Component {
   componentDidMount = this.createNewChart;
   componentDidUpdate = this.createNewChart;
 
-  createDatasetOptions = type => {
+  createDatasetOptions = (type, data) => {
     switch (type) {
       case 'pie':
         return {
           borderColor: undefined,
-          backgroundColor: colors,
+          backgroundColor: this.createColors(Object.keys(data).length),
           borderWidth: undefined
         };
       case 'line':
@@ -88,6 +86,16 @@ export default class Chart extends React.Component {
           borderWidth: undefined
         };
     }
+  };
+
+  createColors = amount => {
+    const colors = [];
+    const stepSize = ~~(360 / amount);
+
+    for (let i = 0; i < amount; i++) {
+      colors.push(`hsl(${i * stepSize}, 70%, 50%)`);
+    }
+    return colors;
   };
 
   createPieOptions = () => {
