@@ -130,7 +130,9 @@ public class  AlertService {
     List<Trigger> triggers = new ArrayList<>();
 
     for (Map.Entry <AlertDefinitionDto, JobDetail> e : reminderDetails.entrySet()) {
-      triggers.add(alertReminderJobFactory.createTrigger(e.getKey(), e.getValue()));
+      if (e.getKey().getReminder() != null) {
+        triggers.add(alertReminderJobFactory.createTrigger(e.getKey(), e.getValue()));
+      }
     }
 
     return triggers;
