@@ -19,19 +19,25 @@ import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.Iterator;
 
-import io.zeebe.dispatcher.*;
-import io.zeebe.transport.Loggers;
-import io.zeebe.transport.NotConnectedException;
-import io.zeebe.transport.impl.*;
-import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
-import org.slf4j.Logger;
+
+import io.zeebe.dispatcher.BlockPeek;
+import io.zeebe.dispatcher.Dispatcher;
+import io.zeebe.dispatcher.Subscription;
+import io.zeebe.transport.Loggers;
+import io.zeebe.transport.NotConnectedException;
+import io.zeebe.transport.impl.ControlMessages;
+import io.zeebe.transport.impl.SendFailureHandler;
+import io.zeebe.transport.impl.TransportChannel;
+import io.zeebe.transport.impl.TransportContext;
+import io.zeebe.util.ZbLogger;
+import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.future.ActorFuture;
 
 public class Sender extends Actor
 {
-    private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
+    private static final ZbLogger LOG = Loggers.TRANSPORT_LOGGER;
 
     private static final String SUBSCRIPTION_NAME = "sender";
     private static final String NOT_CONNECTED_ERROR = "No available channel for remote";

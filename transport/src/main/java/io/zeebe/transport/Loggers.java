@@ -16,11 +16,10 @@
 package io.zeebe.transport;
 
 import io.zeebe.util.ZbLogger;
-import org.slf4j.Logger;
 
 public class Loggers
 {
 
-    public static final Logger TRANSPORT_LOGGER = new ZbLogger("io.zeebe.transport");
+    public static final ZbLogger TRANSPORT_LOGGER = new ZbLogger("io.zeebe.transport");
 
 }

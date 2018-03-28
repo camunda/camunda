@@ -27,22 +27,22 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
-import io.zeebe.transport.Loggers;
 import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
+import io.zeebe.transport.Loggers;
+import io.zeebe.util.ZbLogger;
 import io.zeebe.util.allocation.AllocatedBuffer;
 import io.zeebe.util.allocation.BufferAllocators;
 import io.zeebe.util.metrics.Metric;
 import io.zeebe.util.metrics.MetricsManager;
-import org.slf4j.Logger;
 
 public class TransportChannel
 {
-    private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
+    private static final ZbLogger LOG = Loggers.TRANSPORT_LOGGER;
 
     private static final AtomicIntegerFieldUpdater<TransportChannel> STATE_FIELD = AtomicIntegerFieldUpdater.newUpdater(TransportChannel.class, "state");
 
