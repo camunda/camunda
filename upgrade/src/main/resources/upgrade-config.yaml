@@ -1,0 +1,4 @@
+client:
+  host: localhost
+  port: 9200
+dateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ

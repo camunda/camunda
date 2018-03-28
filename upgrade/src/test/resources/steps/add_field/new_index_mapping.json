@@ -1,0 +1,22 @@
+{
+  "mappings": {
+    "users": {
+      "properties": {
+        "new_password": {
+          "type": "nested",
+          "properties": {
+            "renamed_pw": {
+              "type": "keyword"
+            }
+          }
+        },
+        "username": {
+          "type": "keyword"
+        },
+        "added_field": {
+          "type": "keyword"
+        }
+      }
+    }
+  }
+}

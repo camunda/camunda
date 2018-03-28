@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.camunda.optimize</groupId>
+    <artifactId>parent</artifactId>
+    <version>2.1.0-SNAPSHOT</version>
+  </parent>
+
+  <groupId>org.camunda.optimize</groupId>
+  <artifactId>upgrade</artifactId>
+  <version>2.1.0-SNAPSHOT</version>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>com.fasterxml.jackson</groupId>
+        <artifactId>jackson-bom</artifactId>
+        <version>${jackson.version}</version>
+        <scope>import</scope>
+        <type>pom</type>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+
+    <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest-all</artifactId>
+      <version>${hamcrest.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>${junit.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.elasticsearch.client</groupId>
+      <artifactId>elasticsearch-rest-client</artifactId>
+      <version>${elasticsearch.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>jackson-datatype-jsr310</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>${logback.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>${slf4j.version}</version>
+    </dependency>
+
+    <!-- Jaxon -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.jaxrs</groupId>
+      <artifactId>jackson-jaxrs-json-provider</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.dataformat</groupId>
+      <artifactId>jackson-dataformat-yaml</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>jackson-datatype-jsr310</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.jayway.jsonpath</groupId>
+      <artifactId>json-path</artifactId>
+      <version>${jsonpath.version}</version>
+    </dependency>
+
+  </dependencies>
+
+  <build>
+    <plugins>
+
+      <plugin>
+        <groupId>com.github.alexcojocaru</groupId>
+        <artifactId>elasticsearch-maven-plugin</artifactId>
+        <!-- REPLACE THE FOLLOWING WITH THE PLUGIN VERSION YOU NEED -->
+        <version>${elasticsearch.plugin.version}</version>
+        <configuration>
+          <version>${elasticsearch.version}</version>
+          <clusterName>elasticsearch</clusterName>
+          <transportPort>9300</transportPort>
+          <timeout>60</timeout>
+          <httpPort>9200</httpPort>
+          <pathConf>${project.basedir}/src/test/es_conf</pathConf>
+          <skip>${skip.elasticsearch}</skip>
+          <logLevel>ERROR</logLevel>
+        </configuration>
+        <executions>
+          <!--
+              The elasticsearch maven plugin goals are by default bound to the
+              pre-integration-test and post-integration-test phases
+          -->
+          <execution>
+            <id>start-elasticsearch</id>
+            <phase>test-compile</phase>
+            <goals>
+              <goal>runforked</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>stop-elasticsearch</id>
+            <phase>package</phase>
+            <goals>
+              <goal>stop</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

@@ -1,0 +1,20 @@
+{
+  "settings": {
+    "index": {
+      "refresh_interval": "2s",
+      "number_of_shards": "1",
+      "analysis": {
+        "analyzer": {
+          "case_sensitive": {
+            "filter": [
+              "standard"
+            ],
+            "type": "custom",
+            "tokenizer": "whitespace"
+          }
+        }
+      },
+      "number_of_replicas": "0"
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "mappings": {
+    "users": {
+      "properties": {
+        "date_field": {
+          "type": "date"
+        },
+        "date_field2": {
+          "type": "date",
+          "format": "YYYY-MM-DD"
+        }
+      }
+    }
+  }
+}

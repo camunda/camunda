@@ -14,6 +14,7 @@
     <module>qa</module>
     <module>distro</module>
     <module>plugin</module>
+    <module>upgrade</module>
   </modules>
 
   <properties>
@@ -24,6 +25,7 @@
     <maven.compiler.source>1.8</maven.compiler.source>
 
     <jackson.version>2.9.0</jackson.version>
+    <jsonpath.version>2.3.0</jsonpath.version>
     <log4j.version>2.9.1</log4j.version>
     <elasticsearch.version>6.0.0</elasticsearch.version>
     <elasticsearch.plugin.version>5.7</elasticsearch.plugin.version>
@@ -34,6 +36,9 @@
     <junit.version>4.12</junit.version>
     <quartz.version>2.3.0</quartz.version>
     <failsafe.version>2.20</failsafe.version>
+
+    <logback.version>1.2.3</logback.version>
+    <slf4j.version>1.7.25</slf4j.version>
   </properties>
 
   <profiles>

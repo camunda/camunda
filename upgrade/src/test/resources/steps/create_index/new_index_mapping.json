@@ -1,0 +1,14 @@
+{
+  "mappings": {
+    "users": {
+      "properties": {
+        "password": {
+          "type": "keyword"
+        },
+        "username": {
+          "type": "keyword"
+        }
+      }
+    }
+  }
+}

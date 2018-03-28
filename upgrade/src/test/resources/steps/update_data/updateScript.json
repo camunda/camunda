@@ -1,0 +1,6 @@
+{
+  "script": {
+    "source": "ctx._source.password = ctx._source.password + \"1\"",
+    "lang": "painless"
+  }
+}

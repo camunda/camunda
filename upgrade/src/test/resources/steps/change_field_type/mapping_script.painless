@@ -1,0 +1,2 @@
+ctx._source.new_password = new HashMap();
+ctx._source.new_password.pw = ctx._source.remove("password");
