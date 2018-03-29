@@ -80,9 +80,9 @@
             </goals>
             <configuration>
               <tasks>
-                <copy file="${env.GOPATH}/src/github.com/zeebe-io/zbc-go/dist/linux_amd64/zbctl" tofile="${project.build.directory}/zeebe-broker/bin/zbctl" failonerror="false" />
-                <copy file="${env.GOPATH}/src/github.com/zeebe-io/zbc-go/dist/windows_amd64/zbctl.exe" tofile="${project.build.directory}/zeebe-broker/bin/zbctl.exe" failonerror="false" />
-                <copy file="${env.GOPATH}/src/github.com/zeebe-io/zbc-go/dist/darwin_amd64/zbctl" tofile="${project.build.directory}/zeebe-broker/bin/zbctl.darwin" failonerror="false" />
+                <copy file="${env.GOPATH}/src/github.com/zeebe-io/zbctl/dist/linux_amd64/zbctl" tofile="${project.build.directory}/zeebe-broker/bin/zbctl" failonerror="false" />
+                <copy file="${env.GOPATH}/src/github.com/zeebe-io/zbctl/dist/windows_amd64/zbctl.exe" tofile="${project.build.directory}/zeebe-broker/bin/zbctl.exe" failonerror="false" />
+                <copy file="${env.GOPATH}/src/github.com/zeebe-io/zbctl/dist/darwin_amd64/zbctl" tofile="${project.build.directory}/zeebe-broker/bin/zbctl.darwin" failonerror="false" />
                 <chmod dir="${project.build.directory}/zeebe-broker/bin" perm="ugo+rx" includes="zbctl*" />
               </tasks>
             </configuration>
