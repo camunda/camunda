@@ -33,6 +33,10 @@ receiveBufferSize = 16
 maxIdleTimeMs = 10
 idleStrategy = "BACKOFF"
 
+[metrics]
+reportingInterval = 5
+metricsFile = "zeebe.prom"
+
 # Log Configuration -----------------------------------
 
 [logs]
@@ -41,5 +45,5 @@ defaultLogSegmentSize = 512
 # Workflow Configuration ------------------------------------------
 
 [workflow]
-cacheSize = 1024
-maxPayloadSize = 4096
+deploymentCacheSize = 1024
+payloadCacheSize = 4096

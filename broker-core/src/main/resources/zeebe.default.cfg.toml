@@ -46,5 +46,5 @@ defaultLogSegmentSize = 512
 # Workflow Configuration ------------------------------------------
 
 [workflow]
-cacheSize = 1024
-maxPayloadSize = 4096
+deploymentCacheSize = 1024
+payloadCacheSize = 4096
