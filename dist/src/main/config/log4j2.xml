@@ -7,12 +7,12 @@
 
   <Appenders>
     <Console name="Console" target="SYSTEM_OUT">
-      <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+      <PatternLayout pattern="%d{HH:mm:ss.SSS} [%X{actor-name}] [%t] %-5level %logger{36} - %msg%n"/>
     </Console>
 
     <RollingFile name="RollingFile" fileName="${log.path}/zeebe.log" filePattern="${log.path}/zeebe-%d{yyyy-MM-dd}-%i.log.gz">
       <PatternLayout>
-        <Pattern>%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n</Pattern>
+        <Pattern>%d{HH:mm:ss.SSS} [%X{actor-name}] [%t] %-5level %logger{36} - %msg%n</Pattern>
       </PatternLayout>
       <Policies>
         <TimeBasedTriggeringPolicy />
