@@ -15,6 +15,10 @@ export default function Icon(props) {
   } else {
     const SVG = icons[type];
 
-    return <span className="Icon Icon--svg">{SVG ? <SVG /> : props.children}</span>;
+    return (
+      <span {...filteredProps} className="Icon Icon--svg">
+        {SVG ? <SVG /> : props.children}
+      </span>
+    );
   }
 }

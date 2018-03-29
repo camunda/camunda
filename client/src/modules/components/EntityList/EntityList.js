@@ -5,7 +5,7 @@ import classnames from 'classnames';
 import {withErrorHandling} from 'HOC';
 import {Redirect, Link} from 'react-router-dom';
 
-import {Button, Modal, Message} from 'components';
+import {Button, Modal, Message, Icon} from 'components';
 
 import {load, create, remove} from './service';
 
@@ -68,10 +68,11 @@ class EntityList extends React.Component {
   };
 
   formatData = data =>
-    data.map(({name, id, lastModified, lastModifier}) => {
+    data.map(({name, id, lastModified, lastModifier, shared}) => {
       const entry = [
         {content: name, link: `/${this.props.api}/${id}`},
-        `Last modified ${moment(lastModified).format('lll')} by ${lastModifier}`
+        `Last modified ${moment(lastModified).format('lll')} by ${lastModifier}`,
+        {shared}
       ];
 
       if (this.props.operations.includes('delete')) {
@@ -125,6 +126,10 @@ class EntityList extends React.Component {
   renderCell = cell => {
     if (typeof cell !== 'object' || React.isValidElement(cell)) {
       return cell;
+    }
+
+    if (cell.shared) {
+      return <Icon type="share" title={`This ${this.props.api} is shared`} />;
     }
 
     if (cell.link) {
@@ -206,7 +211,8 @@ class EntityList extends React.Component {
                         'EntityList__data--tool':
                           cell.content === 'Edit' || cell.content === 'Delete',
                         'EntityList__data--title': idx === 0,
-                        'EntityList__data--metadata': idx === 1
+                        'EntityList__data--metadata': idx === 1,
+                        'EntityList__data--icons': idx === 2
                       })}
                     >
                       {this.renderCell(cell)}

@@ -51,6 +51,7 @@ jest.mock('components', () => {
 
   return {
     Modal,
+    Icon: props => <span>{props.type}</span>,
     Message: props => <p>{props.message}</p>,
     Button: props => <button {...props}>{props.children}</button>
   };
@@ -262,4 +263,22 @@ it('should display an error if error occurred', () => {
   );
 
   expect(node).toIncludeText('There was an error');
+});
+
+it('should show a share icon only if entity is shared', () => {
+  const node = mount(
+    shallow(<EntityList api="endpoint" label="Dashboard" operations={['delete', 'edit']} />).get(0)
+  );
+  node.setState({
+    loaded: true,
+    data: [{...sampleEntity, shared: true}]
+  });
+
+  expect(node).toIncludeText('share');
+
+  node.setState({
+    data: [{...sampleEntity, shared: false}]
+  });
+
+  expect(node).not.toIncludeText('share');
 });
