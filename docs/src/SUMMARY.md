@@ -4,6 +4,7 @@
     * [Why Zeebe?](introduction/why-zeebe.md)
     * [Install](introduction/install.md)
     * [First Contact](introduction/first-contact.md)
+    * [Quickstart](introduction/quickstart.md)
 * [Basics](basics/README.md)
     * [Client / Server](basics/client-server.md)
     * [Workflows](basics/workflows.md)
