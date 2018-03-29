@@ -30,7 +30,7 @@ Create a [topic](../basics/topics-and-logs.html) named `default-topic`. If you h
 Create the topic with zbctl by executing the following command on the command line:
 
 ```
-zbctl create topic --name default-topic --partitions 1
+zbctl create topic default-topic --partitions 1
 ```
 
 You should see the output:
