@@ -19,7 +19,7 @@ You will be guided through the following steps:
 * Java 8
 * [Apache Maven](https://maven.apache.org/)
 * [Zeebe distribution](../introduction/install.html)
-* [Zeebe Command Line Client zbctl](https://github.com/zeebe-io/zbc-go#command-line-interface-zbctl)
+* [Zeebe Command Line Client zbctl](https://github.com/zeebe-io/zbctl)
 * [Zeebe Modeler](https://github.com/zeebe-io/zeebe-modeler/releases)
 * [Zeebe Monitor](https://github.com/zeebe-io/zeebe-simple-monitor/releases)
 
@@ -36,10 +36,16 @@ zbctl create topic default-topic --partitions 1
 You should see the output:
 
 ```
-CREATED
+{
+  "Name": "default-topic",
+  "State": "CREATED",
+  "Partitions": 1
+}
 ```
 
-Note: On Windows systems the executable is called `zbctl.exe`.
+**Note:** You can find the `zbctl` binary in the `bin/` folder of the Zeebe
+distribution. On Windows systems the executable is called `zbctl.exe` and on
+MacOS `zbctl.darwin`.
 
 ## Set up a project
 

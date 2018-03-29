@@ -43,7 +43,9 @@ You should see the output:
 }
 ```
 
-Note: On Windows systems the executable is called `zbctl.exe`.
+**Note:** You can find the `zbctl` binary in the `bin/` folder of the Zeebe
+distribution. On Windows systems the executable is called `zbctl.exe` and on
+MacOS `zbctl.darwin`.
 
 ## Set up a project
 
