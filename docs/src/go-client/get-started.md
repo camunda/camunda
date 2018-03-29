@@ -30,13 +30,17 @@ Create a [topic](../basics/topics-and-logs.html) named `default-topic`. If you h
 Create the topic with zbctl by executing the following command on the command line:
 
 ```
-zbctl create topic --name default-topic --partitions 1
+zbctl create topic default-topic --partitions 1
 ```
 
 You should see the output:
 
 ```
-CREATED
+{
+  "Name": "default-topic",
+  "State": "CREATED",
+  "Partitions": 1
+}
 ```
 
 Note: On Windows systems the executable is called `zbctl.exe`.
@@ -63,10 +67,10 @@ Create a main.go file inside the module and add the following lines to bootstrap
 package main
 
 import (
-	"github.com/zeebe-io/zbc-go/zbc"
-	"fmt"
-	"errors"
 	"encoding/json"
+	"errors"
+	"fmt"
+	"github.com/zeebe-io/zbc-go/zbc"
 )
 
 const BrokerAddr = "0.0.0.0:51015"
@@ -79,7 +83,7 @@ func main() {
 		panic(errClientStartFailed)
 	}
 
-	topology, err := zbClient.Topology()
+	topology, err := zbClient.RefreshTopology()
 	if err != nil {
 		panic(err)
 	}
@@ -98,22 +102,34 @@ You should see similar output:
 
 ```json
 {
-    "default-topic": [
+    "AddrByPartitionID": {
+        "0": "localhost:51015",
+        "1": "localhost:51015"
+    },
+    "PartitionIDByTopicName": {
+        "default-topic": [
+            1
+        ]
+    },
+    "Brokers": [
         {
-            "Host": "0.0.0.0",
+            "Host": "localhost",
             "Port": 51015,
-            "TopicName": "default-topic",
-            "PartitionID": 1
+            "Partitions": [
+                {
+                    "State": "LEADER",
+                    "TopicName": "internal-system",
+                    "PartitionID": 0
+                },
+                {
+                    "State": "LEADER",
+                    "TopicName": "default-topic",
+                    "PartitionID": 1
+                }
+            ]
         }
     ],
-    "internal-system": [
-        {
-            "Host": "0.0.0.0",
-            "Port": 51015,
-            "TopicName": "internal-system",
-            "PartitionID": 0
-        }
-    ]
+    "UpdatedAt": "2018-03-29T11:26:32.961365972+02:00"
 }
 ```
 
@@ -143,6 +159,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/zeebe-io/zbc-go/zbc"
+	"github.com/zeebe-io/zbc-go/zbc/common"
 )
 
 const topicName = "default-topic"
@@ -157,7 +174,7 @@ func main() {
 		panic(errClientStartFailed)
 	}
 
-	response, err := zbClient.CreateWorkflowFromFile(topicName, zbc.BpmnXml, "order-process.bpmn")
+	response, err := zbClient.CreateWorkflowFromFile(topicName, zbcommon.BpmnXml, "order-process.bpmn")
 	if err != nil {
 		panic(errWorkflowDeploymentFailed)
 	}
@@ -171,12 +188,16 @@ You should see similar the output:
 
 ```json
 {
-  "State": "DEPLOYMENT_CREATED",
-  "ResourceType": "BPMN_XML",
+  "State": "CREATED",
   "TopicName": "default-topic",
-  "Resource": "..."
+  "Resources": [
+    {
+      "Resource": "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPGJwbW46ZGVmaW5pdGlvbnMgeG1sbnM6YnBtbj0iaHR0cDovL3d3dy5vbWcub3JnL3NwZWMvQlBNTi8yMDEwMDUyNC9NT0RFTCIgeG1sbnM6YnBtbmRpPSJodHRwOi8vd3d3Lm9tZy5vcmcvc3BlYy9CUE1OLzIwMTAwNTI0L0RJIiB4bWxuczpkaT0iaHR0cDovL3d3dy5vbWcub3JnL3NwZWMvREQvMjAxMDA1MjQvREkiIHhtbG5zOmRjPSJodHRwOi8vd3d3Lm9tZy5vcmcvc3BlYy9ERC8yMDEwMDUyNC9EQyIgeG1sbnM6eHNpPSJodHRwOi8vd3d3LnczLm9yZy8yMDAxL1hNTFNjaGVtYS1pbnN0YW5jZSIgaWQ9IkRlZmluaXRpb25zXzEiIHRhcmdldE5hbWVzcGFjZT0iaHR0cDovL2JwbW4uaW8vc2NoZW1hL2JwbW4iIGV4cG9ydGVyPSJaZWViZSBNb2RlbGVyIiBleHBvcnRlclZlcnNpb249IjAuMS4wIj4KICAgIDxicG1uOnByb2Nlc3MgaWQ9Im9yZGVyLXByb2Nlc3MiIGlzRXhlY3V0YWJsZT0idHJ1ZSI+CiAgICAgICAgPGJwbW46c3RhcnRFdmVudCBpZD0ib3JkZXItcGxhY2VkIiBuYW1lPSJPcmRlciBQbGFjZWQiPgogICAgICAgICAgICA8YnBtbjpvdXRnb2luZz5TZXF1ZW5jZUZsb3dfMTh0cWthNTwvYnBtbjpvdXRnb2luZz4KICAgICAgICA8L2JwbW46c3RhcnRFdmVudD4KICAgICAgICA8YnBtbjplbmRFdmVudCBpZD0ib3JkZXItZGVsaXZlcmVkIiBuYW1lPSJPcmRlciBEZWxpdmVyZWQiPgogICAgICAgICAgICA8YnBtbjppbmNvbWluZz5TZXF1ZW5jZUZsb3dfMTh0cWthNTwvYnBtbjppbmNvbWluZz4KICAgICAgICA8L2JwbW46ZW5kRXZlbnQ+CiAgICAgICAgPGJwbW46c2VxdWVuY2VGbG93IGlkPSJTZXF1ZW5jZUZsb3dfMTh0cWthNSIgc291cmNlUmVmPSJvcmRlci1wbGFjZWQiIHRhcmdldFJlZj0ib3JkZXItZGVsaXZlcmVkIiAvPgogICAgPC9icG1uOnByb2Nlc3M+CiAgICA8YnBtbmRpOkJQTU5EaWFncmFtIGlkPSJCUE1ORGlhZ3JhbV8xIj4KICAgICAgICA8YnBtbmRpOkJQTU5QbGFuZSBpZD0iQlBNTlBsYW5lXzEiIGJwbW5FbGVtZW50PSJvcmRlci1wcm9jZXNzIj4KICAgICAgICAgICAgPGJwbW5kaTpCUE1OU2hhcGUgaWQ9Il9CUE1OU2hhcGVfU3RhcnRFdmVudF8yIiBicG1uRWxlbWVudD0ib3JkZXItcGxhY2VkIj4KICAgICAgICAgICAgICAgIDxkYzpCb3VuZHMgeD0iMTczIiB5PSIxMDIiIHdpZHRoPSIzNiIgaGVpZ2h0PSIzNiIgLz4KICAgICAgICAgICAgICAgIDxicG1uZGk6QlBNTkxhYmVsPgogICAgICAgICAgICAgICAgICAgIDxkYzpCb3VuZHMgeD0iMTU5IiB5PSIxMzgiIHdpZHRoPSI2NSIgaGVpZ2h0PSIxMiIgLz4KICAgICAgICAgICAgICAgIDwvYnBtbmRpOkJQTU5MYWJlbD4KICAgICAgICAgICAgPC9icG1uZGk6QlBNTlNoYXBlPgogICAgICAgICAgICA8YnBtbmRpOkJQTU5TaGFwZSBpZD0iRW5kRXZlbnRfMTI1M3N0cV9kaSIgYnBtbkVsZW1lbnQ9Im9yZGVyLWRlbGl2ZXJlZCI+CiAgICAgICAgICAgICAgICA8ZGM6Qm91bmRzIHg9IjM2MyIgeT0iMTAyIiB3aWR0aD0iMzYiIGhlaWdodD0iMzYiIC8+CiAgICAgICAgICAgICAgICA8YnBtbmRpOkJQTU5MYWJlbD4KICAgICAgICAgICAgICAgICAgICA8ZGM6Qm91bmRzIHg9IjM0MiIgeT0iMTQxIiB3aWR0aD0iNzgiIGhlaWdodD0iMTIiIC8+CiAgICAgICAgICAgICAgICA8L2JwbW5kaTpCUE1OTGFiZWw+CiAgICAgICAgICAgIDwvYnBtbmRpOkJQTU5TaGFwZT4KICAgICAgICAgICAgPGJwbW5kaTpCUE1ORWRnZSBpZD0iU2VxdWVuY2VGbG93XzE4dHFrYTVfZGkiIGJwbW5FbGVtZW50PSJTZXF1ZW5jZUZsb3dfMTh0cWthNSI+CiAgICAgICAgICAgICAgICA8ZGk6d2F5cG9pbnQgeHNpOnR5cGU9ImRjOlBvaW50IiB4PSIyMDkiIHk9IjEyMCIgLz4KICAgICAgICAgICAgICAgIDxkaTp3YXlwb2ludCB4c2k6dHlwZT0iZGM6UG9pbnQiIHg9IjM2MyIgeT0iMTIwIiAvPgogICAgICAgICAgICAgICAgPGJwbW5kaTpCUE1OTGFiZWw+CiAgICAgICAgICAgICAgICAgICAgPGRjOkJvdW5kcyB4PSIyODYiIHk9Ijk4IiB3aWR0aD0iMCIgaGVpZ2h0PSIxMyIgLz4KICAgICAgICAgICAgICAgIDwvYnBtbmRpOkJQTU5MYWJlbD4KICAgICAgICAgICAgPC9icG1uZGk6QlBNTkVkZ2U+CiAgICAgICAgPC9icG1uZGk6QlBNTlBsYW5lPgogICAgPC9icG1uZGk6QlBNTkRpYWdyYW0+CjwvYnBtbjpkZWZpbml0aW9ucz4=",
+      "ResourceType": "BPMN_XML",
+      "ResourceName": "order-process.bpmn"
+    }
+  ]
 }
-
 ```
 
 We can also deploy the workflow using command line utility:
@@ -226,7 +247,6 @@ func main() {
 
 	fmt.Println(msg.String())
 }
-
 ```
 
 Run the program and verify that the workflow instance is created. You should see the output:
@@ -235,9 +255,10 @@ Run the program and verify that the workflow instance is created. You should see
 {
   "State": "WORKFLOW_INSTANCE_CREATED",
   "BPMNProcessID": "order-process",
-  "Version": 1,
+  "Version": 2,
   "Payload": "gadvcmRlcklkpTMxMjQz",
-  "PayloadJSON": null
+  "PayloadJSON": null,
+  "WorkflowInstanceKey": 4294976896
 }
 ```
 
@@ -275,11 +296,14 @@ subscription for the first tasks type:
 package main
 
 import (
-    "errors"
-    "fmt"
-    "github.com/zeebe-io/zbc-go/zbc"
-    "os"
-    "os/signal"
+	"errors"
+	"fmt"
+	"github.com/zeebe-io/zbc-go/zbc"
+	"github.com/zeebe-io/zbc-go/zbc/common"
+	"github.com/zeebe-io/zbc-go/zbc/models/zbsubscriptions"
+	"github.com/zeebe-io/zbc-go/zbc/services/zbsubscribe"
+	"os"
+	"os/signal"
 )
 
 const topicName = "default-topic"
@@ -288,57 +312,58 @@ const brokerAddr = "0.0.0.0:51015"
 var errClientStartFailed = errors.New("cannot start client")
 
 func main() {
-    zbClient, err := zbc.NewClient(brokerAddr)
-    if err != nil {
-        panic(err)
-    }
+	zbClient, err := zbc.NewClient(brokerAddr)
+	if err != nil {
+		panic(err)
+	}
 
-    // deploy workflow
-    response, err := zbClient.CreateWorkflowFromFile(topicName, zbc.BpmnXml, "order-process.bpmn")
-    if err != nil {
-        panic(err)
-    }
+	// deploy workflow
+	response, err := zbClient.CreateWorkflowFromFile(topicName, zbcommon.BpmnXml, "order-process.bpmn")
+	if err != nil {
+		panic(err)
+	}
 
-    fmt.Println(response.String())
+	fmt.Println(response.String())
 
-    // create a new workflow instance
-    payload := make(map[string]interface{})
-    payload["orderId"] = "31243"
+	// create a new workflow instance
+	payload := make(map[string]interface{})
+	payload["orderId"] = "31243"
 
-    instance := zbc.NewWorkflowInstance("order-process", -1, payload)
-    msg, err := zbClient.CreateWorkflowInstance(topicName, instance)
+	instance := zbc.NewWorkflowInstance("order-process", -1, payload)
+	msg, err := zbClient.CreateWorkflowInstance(topicName, instance)
 
-    if err != nil {
-        panic(err)
-    }
+	if err != nil {
+		panic(err)
+	}
 
-    fmt.Println(msg.String())
+	fmt.Println(msg.String())
 
-    // open a task subscription for the payment-service task
-    subscriptionCh, subscription, err := zbClient.TaskConsumer(topicName, "sample-app", "payment-service")
+	subscription, err := zbClient.TaskSubscription(topicName, "sample-app", "payment-service", 32, func(client zbsubscribe.ZeebeAPI, event *zbsubscriptions.SubscriptionEvent) {
+		fmt.Println(event.String())
 
-    osCh := make(chan os.Signal, 1)
-    signal.Notify(osCh, os.Interrupt)
-    go func() {
-        <-osCh
-        fmt.Println("Closing subscription.")
-        _, err := zbClient.CloseTaskSubscription(subscription)
-        if err != nil {
-            fmt.Println("failed to close subscription: ", err)
-        } else {
-            fmt.Println("Subscription closed.")
-        }
-        os.Exit(0)
-    }()
+		// complete task after processing
+		response, _ := client.CompleteTask(event)
+		fmt.Println(response)
+	})
 
-    for {
-        message := <-subscriptionCh
-        fmt.Println(message.String())
+	if err != nil {
+		panic("Unable to open subscription")
+	}
 
-        // complete task after processing
-        response, _ := zbClient.CompleteTask(message)
-        fmt.Println(response)
-    }
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	go func() {
+		<-c
+		err := subscription.Close()
+		if err != nil {
+			panic("Failed to close subscription")
+		}
+
+		fmt.Println("Closed subscription")
+		os.Exit(0)
+	}()
+
+	subscription.Start()
 }
 ```
 
@@ -354,15 +379,15 @@ When you run the above example you should see similar output:
 {
   "Task": {
     "State": "LOCKED",
-    "LockTime": 1510048532345,
+    "LockTime": 1522316110702,
     "LockOwner": "sample-app",
     "Headers": {
       "activityId": "collect-money",
-      "activityInstanceKey": 4294979520,
+      "activityInstanceKey": 4294990088,
       "bpmnProcessId": "order-process",
-      "workflowDefinitionVersion": 1,
-      "workflowInstanceKey": 4294978536,
-      "workflowKey": 4294990160
+      "workflowDefinitionVersion": 3,
+      "workflowInstanceKey": 4294989104,
+      "workflowKey": 4295003848
     },
     "CustomHeader": {
       "method": "VISA"
@@ -373,25 +398,25 @@ When you run the above example you should see similar output:
   },
   "Event": {
     "PartitionId": 1,
-    "Position": 4294980824,
-    "Key": 4294980040,
+    "Position": 4294991392,
+    "Key": 4294990608,
     "SubscriberKey": 0,
     "SubscriptionType": 0,
     "EventType": 0,
-    "Event": "iKVzdGF0ZaZMT0NLRUSobG9ja1RpbWXPAAABX5XoB3mpbG9ja093bmVyqnNhbXBsZS1hcHCncmV0cmllcwOkdHlwZa9wYXltZW50LXNlcnZpY2WnaGVhZGVyc4atYnBtblByb2Nlc3NJZK1vcmRlci1wcm9jZXNzuXdvcmtmbG93RGVmaW5pdGlvblZlcnNpb24Bq3dvcmtmbG93S2V5zwAAAAEAAFlQs3dvcmtmbG93SW5zdGFuY2VLZXnPAAAAAQAAK+iqYWN0aXZpdHlJZK1jb2xsZWN0LW1vbmV5s2FjdGl2aXR5SW5zdGFuY2VLZXnPAAAAAQAAL8CtY3VzdG9tSGVhZGVyc4GmbWV0aG9kpFZJU0GncGF5bG9hZMQPgadvcmRlcklkpTMxMjQz"
+    "Event": "iKVzdGF0ZaZMT0NLRUSobG9ja1RpbWXPAAABYnEca26pbG9ja093bmVyqnNhbXBsZS1hcHCncmV0cmllcwOkdHlwZa9wYXltZW50LXNlcnZpY2WnaGVhZGVyc4atYnBtblByb2Nlc3NJZK1vcmRlci1wcm9jZXNzuXdvcmtmbG93RGVmaW5pdGlvblZlcnNpb24Dq3dvcmtmbG93S2V5zwAAAAEAAI7Is3dvcmtmbG93SW5zdGFuY2VLZXnPAAAAAQAAVTCqYWN0aXZpdHlJZK1jb2xsZWN0LW1vbmV5s2FjdGl2aXR5SW5zdGFuY2VLZXnPAAAAAQAAWQitY3VzdG9tSGVhZGVyc4GmbWV0aG9kpFZJU0GncGF5bG9hZMQPgadvcmRlcklkpTMxMjQz"
   }
 }
 {
   "State": "COMPLETED",
-  "LockTime": 1510048532345,
+  "LockTime": 1522316110702,
   "LockOwner": "sample-app",
   "Headers": {
     "activityId": "collect-money",
-    "activityInstanceKey": 4294979520,
+    "activityInstanceKey": 4294990088,
     "bpmnProcessId": "order-process",
-    "workflowDefinitionVersion": 1,
-    "workflowInstanceKey": 4294978536,
-    "workflowKey": 4294990160
+    "workflowDefinitionVersion": 3,
+    "workflowInstanceKey": 4294989104,
+    "workflowKey": 4295003848
   },
   "CustomHeader": {
     "method": "VISA"
@@ -423,6 +448,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/zeebe-io/zbc-go/zbc"
+	"github.com/zeebe-io/zbc-go/zbc/models/zbsubscriptions"
+	"github.com/zeebe-io/zbc-go/zbc/services/zbsubscribe"
 	"os"
 	"os/signal"
 )
@@ -432,218 +459,76 @@ const brokerAddr = "0.0.0.0:51015"
 
 var errClientStartFailed = errors.New("cannot start client")
 
+func handler(client zbsubscribe.ZeebeAPI, event *zbsubscriptions.SubscriptionEvent) error {
+	fmt.Printf("Event: %v\n", event)
+	return nil
+}
+
 func main() {
 	zbClient, err := zbc.NewClient(brokerAddr)
 	if err != nil {
 		panic(errClientStartFailed)
 	}
 
-	subscriptionCh, sub, err := zbClient.TopicConsumer(topicName, "subscription-name", 0)
+	subscription, err := zbClient.TopicSubscription(topicName, "subscrition-name", 128, 0, true, handler)
+
+	if err != nil {
+		panic("Failed to open subscription")
+	}
 
 	osCh := make(chan os.Signal, 1)
 	signal.Notify(osCh, os.Interrupt)
 	go func() {
 		<-osCh
-		fmt.Println("Closing subscription.")
-		_, err := zbClient.CloseTopicSubscription(sub)
+		err := subscription.Close()
 		if err != nil {
-			fmt.Println("failed to close subscription: ", err)
-		} else {
-			fmt.Println("Subscription closed.")
+			panic("Failed to close subscription")
 		}
+		fmt.Println("Subscription closed.")
 		os.Exit(0)
 	}()
 
-	for {
-		message := <-subscriptionCh
-		fmt.Println(message.String())
-	}
-
+	subscription.Start()
 }
-
 ```
 
 Run the program. You should see the similar output with more events which happened during the process.
 
 ```json
-{
-  "Task": {
-    "State": "CREATE",
-    "LockTime": 9223372036854775808,
-    "LockOwner": "",
-    "Headers": {
-      "activityId": "collect-money",
-      "activityInstanceKey": 4294979520,
-      "bpmnProcessId": "order-process",
-      "workflowDefinitionVersion": 1,
-      "workflowInstanceKey": 4294978536,
-      "workflowKey": 4294990160
-    },
-    "CustomHeader": {
-      "method": "VISA"
-    },
-    "Retries": 3,
-    "Type": "payment-service",
-    "Payload": "gadvcmRlcklkpTMxMjQz"
-  },
+Event: {
+  "Task": null,
   "Event": {
     "PartitionId": 1,
-    "Position": 4294980040,
-    "Key": 4294980040,
-    "SubscriberKey": 4294983400,
+    "Position": 4295008568,
+    "Key": 4295005656,
+    "SubscriberKey": 4295009536,
     "SubscriptionType": 1,
-    "EventType": 0,
-    "Event": "iKVzdGF0ZaZDUkVBVEWobG9ja1RpbWXTgAAAAAAAAACpbG9ja093bmVyoKdyZXRyaWVzA6R0eXBlr3BheW1lbnQtc2VydmljZadoZWFkZXJzhq1icG1uUHJvY2Vzc0lkrW9yZGVyLXByb2Nlc3O5d29ya2Zsb3dEZWZpbml0aW9uVmVyc2lvbgGrd29ya2Zsb3dLZXnPAAAAAQAAWVCzd29ya2Zsb3dJbnN0YW5jZUtlec8AAAABAAAr6KphY3Rpdml0eUlkrWNvbGxlY3QtbW9uZXmzYWN0aXZpdHlJbnN0YW5jZUtlec8AAAABAAAvwK1jdXN0b21IZWFkZXJzgaZtZXRob2SkVklTQadwYXlsb2FkxA+Bp29yZGVySWSlMzEyNDM="
+    "EventType": 5,
+    "Event": "h6VzdGF0ZbNBQ1RJVklUWV9DT01QTEVUSU5HrWJwbW5Qcm9jZXNzSWStb3JkZXItcHJvY2Vzc6d2ZXJzaW9uBKt3b3JrZmxvd0tlec8AAAABAAD4wLN3b3JrZmxvd0luc3RhbmNlS2V5zwAAAAEAAJIAqmFjdGl2aXR5SWStY29sbGVjdC1tb25leadwYXlsb2FkxA+Bp29yZGVySWSlMzEyNDM="
   }
 }
-{
-  "Task": {
-    "State": "CREATED",
-    "LockTime": 9223372036854775808,
-    "LockOwner": "",
-    "Headers": {
-      "activityId": "collect-money",
-      "activityInstanceKey": 4294979520,
-      "bpmnProcessId": "order-process",
-      "workflowDefinitionVersion": 1,
-      "workflowInstanceKey": 4294978536,
-      "workflowKey": 4294990160
-    },
-    "CustomHeader": {
-      "method": "VISA"
-    },
-    "Retries": 3,
-    "Type": "payment-service",
-    "Payload": "gadvcmRlcklkpTMxMjQz"
-  },
+Event: {
+  "Task": null,
   "Event": {
     "PartitionId": 1,
-    "Position": 4294980432,
-    "Key": 4294980040,
-    "SubscriberKey": 4294983400,
+    "Position": 4295008832,
+    "Key": 4295008832,
+    "SubscriberKey": 4295009536,
     "SubscriptionType": 1,
-    "EventType": 0,
-    "Event": "iKVzdGF0ZadDUkVBVEVEqGxvY2tUaW1l04AAAAAAAAAAqWxvY2tPd25lcqCncmV0cmllcwOkdHlwZa9wYXltZW50LXNlcnZpY2WnaGVhZGVyc4atYnBtblByb2Nlc3NJZK1vcmRlci1wcm9jZXNzuXdvcmtmbG93RGVmaW5pdGlvblZlcnNpb24Bq3dvcmtmbG93S2V5zwAAAAEAAFlQs3dvcmtmbG93SW5zdGFuY2VLZXnPAAAAAQAAK+iqYWN0aXZpdHlJZK1jb2xsZWN0LW1vbmV5s2FjdGl2aXR5SW5zdGFuY2VLZXnPAAAAAQAAL8CtY3VzdG9tSGVhZGVyc4GmbWV0aG9kpFZJU0GncGF5bG9hZMQPgadvcmRlcklkpTMxMjQz"
+    "EventType": 6,
+    "Event": "iqVzdGF0ZaZDUkVBVEWpZXJyb3JUeXBlsElPX01BUFBJTkdfRVJST1KsZXJyb3JNZXNzYWdl2SVObyBkYXRhIGZvdW5kIGZvciBxdWVyeSAkLnRvdGFsUHJpY2UutGZhaWx1cmVFdmVudFBvc2l0aW9uzwAAAAEAAKE4rWJwbW5Qcm9jZXNzSWStb3JkZXItcHJvY2Vzc7N3b3JrZmxvd0luc3RhbmNlS2V5zwAAAAEAAJIAqmFjdGl2aXR5SWStY29sbGVjdC1tb25lebNhY3Rpdml0eUluc3RhbmNlS2V5zwAAAAEAAJXYp3Rhc2tLZXn/p3BheWxvYWTEAYA="
   }
 }
-{
-  "Task": {
-    "State": "LOCK",
-    "LockTime": 1510048532345,
-    "LockOwner": "sample-app",
-    "Headers": {
-      "activityId": "collect-money",
-      "activityInstanceKey": 4294979520,
-      "bpmnProcessId": "order-process",
-      "workflowDefinitionVersion": 1,
-      "workflowInstanceKey": 4294978536,
-      "workflowKey": 4294990160
-    },
-    "CustomHeader": {
-      "method": "VISA"
-    },
-    "Retries": 3,
-    "Type": "payment-service",
-    "Payload": "gadvcmRlcklkpTMxMjQz"
-  },
+Event: {
+  "Task": null,
   "Event": {
     "PartitionId": 1,
-    "Position": 4294980824,
-    "Key": 4294980040,
-    "SubscriberKey": 4294983400,
+    "Position": 4295009184,
+    "Key": 4295008832,
+    "SubscriberKey": 4295009536,
     "SubscriptionType": 1,
-    "EventType": 0,
-    "Event": "iKVzdGF0ZaRMT0NLqGxvY2tUaW1lzwAAAV+V6Ad5qWxvY2tPd25lcqpzYW1wbGUtYXBwp3JldHJpZXMDpHR5cGWvcGF5bWVudC1zZXJ2aWNlp2hlYWRlcnOGrWJwbW5Qcm9jZXNzSWStb3JkZXItcHJvY2Vzc7l3b3JrZmxvd0RlZmluaXRpb25WZXJzaW9uAat3b3JrZmxvd0tlec8AAAABAABZULN3b3JrZmxvd0luc3RhbmNlS2V5zwAAAAEAACvoqmFjdGl2aXR5SWStY29sbGVjdC1tb25lebNhY3Rpdml0eUluc3RhbmNlS2V5zwAAAAEAAC/ArWN1c3RvbUhlYWRlcnOBpm1ldGhvZKRWSVNBp3BheWxvYWTED4Gnb3JkZXJJZKUzMTI0Mw=="
-  }
-}
-{
-  "Task": {
-    "State": "LOCKED",
-    "LockTime": 1510048532345,
-    "LockOwner": "sample-app",
-    "Headers": {
-      "activityId": "collect-money",
-      "activityInstanceKey": 4294979520,
-      "bpmnProcessId": "order-process",
-      "workflowDefinitionVersion": 1,
-      "workflowInstanceKey": 4294978536,
-      "workflowKey": 4294990160
-    },
-    "CustomHeader": {
-      "method": "VISA"
-    },
-    "Retries": 3,
-    "Type": "payment-service",
-    "Payload": "gadvcmRlcklkpTMxMjQz"
-  },
-  "Event": {
-    "PartitionId": 1,
-    "Position": 4294981224,
-    "Key": 4294980040,
-    "SubscriberKey": 4294983400,
-    "SubscriptionType": 1,
-    "EventType": 0,
-    "Event": "iKVzdGF0ZaZMT0NLRUSobG9ja1RpbWXPAAABX5XoB3mpbG9ja093bmVyqnNhbXBsZS1hcHCncmV0cmllcwOkdHlwZa9wYXltZW50LXNlcnZpY2WnaGVhZGVyc4atYnBtblByb2Nlc3NJZK1vcmRlci1wcm9jZXNzuXdvcmtmbG93RGVmaW5pdGlvblZlcnNpb24Bq3dvcmtmbG93S2V5zwAAAAEAAFlQs3dvcmtmbG93SW5zdGFuY2VLZXnPAAAAAQAAK+iqYWN0aXZpdHlJZK1jb2xsZWN0LW1vbmV5s2FjdGl2aXR5SW5zdGFuY2VLZXnPAAAAAQAAL8CtY3VzdG9tSGVhZGVyc4GmbWV0aG9kpFZJU0GncGF5bG9hZMQPgadvcmRlcklkpTMxMjQz"
-  }
-}
-{
-  "Task": {
-    "State": "COMPLETE",
-    "LockTime": 1510048532345,
-    "LockOwner": "sample-app",
-    "Headers": {
-      "activityId": "collect-money",
-      "activityInstanceKey": 4294979520,
-      "bpmnProcessId": "order-process",
-      "workflowDefinitionVersion": 1,
-      "workflowInstanceKey": 4294978536,
-      "workflowKey": 4294990160
-    },
-    "CustomHeader": {
-      "method": "VISA"
-    },
-    "Retries": 3,
-    "Type": "payment-service",
-    "Payload": "gadvcmRlcklkpTMxMjQz"
-  },
-  "Event": {
-    "PartitionId": 1,
-    "Position": 4294981624,
-    "Key": 4294980040,
-    "SubscriberKey": 4294983400,
-    "SubscriptionType": 1,
-    "EventType": 0,
-    "Event": "iKVzdGF0ZahDT01QTEVURahsb2NrVGltZc8AAAFflegHealsb2NrT3duZXKqc2FtcGxlLWFwcKdoZWFkZXJzhq1icG1uUHJvY2Vzc0lkrW9yZGVyLXByb2Nlc3O5d29ya2Zsb3dEZWZpbml0aW9uVmVyc2lvbgGrd29ya2Zsb3dLZXnPAAAAAQAAWVCzd29ya2Zsb3dJbnN0YW5jZUtlec8AAAABAAAr6KphY3Rpdml0eUlkrWNvbGxlY3QtbW9uZXmzYWN0aXZpdHlJbnN0YW5jZUtlec8AAAABAAAvwK1jdXN0b21IZWFkZXJzgaZtZXRob2SkVklTQadyZXRyaWVzA6R0eXBlr3BheW1lbnQtc2VydmljZadwYXlsb2FkxA+Bp29yZGVySWSlMzEyNDM="
-  }
-}
-{
-  "Task": {
-    "State": "COMPLETED",
-    "LockTime": 1510048532345,
-    "LockOwner": "sample-app",
-    "Headers": {
-      "activityId": "collect-money",
-      "activityInstanceKey": 4294979520,
-      "bpmnProcessId": "order-process",
-      "workflowDefinitionVersion": 1,
-      "workflowInstanceKey": 4294978536,
-      "workflowKey": 4294990160
-    },
-    "CustomHeader": {
-      "method": "VISA"
-    },
-    "Retries": 3,
-    "Type": "payment-service",
-    "Payload": "gadvcmRlcklkpTMxMjQz"
-  },
-  "Event": {
-    "PartitionId": 1,
-    "Position": 4294982024,
-    "Key": 4294980040,
-    "SubscriberKey": 4294983400,
-    "SubscriptionType": 1,
-    "EventType": 0,
-    "Event": "iKVzdGF0ZalDT01QTEVURUSobG9ja1RpbWXPAAABX5XoB3mpbG9ja093bmVyqnNhbXBsZS1hcHCncmV0cmllcwOkdHlwZa9wYXltZW50LXNlcnZpY2WnaGVhZGVyc4atYnBtblByb2Nlc3NJZK1vcmRlci1wcm9jZXNzuXdvcmtmbG93RGVmaW5pdGlvblZlcnNpb24Bq3dvcmtmbG93S2V5zwAAAAEAAFlQs3dvcmtmbG93SW5zdGFuY2VLZXnPAAAAAQAAK+iqYWN0aXZpdHlJZK1jb2xsZWN0LW1vbmV5s2FjdGl2aXR5SW5zdGFuY2VLZXnPAAAAAQAAL8CtY3VzdG9tSGVhZGVyc4GmbWV0aG9kpFZJU0GncGF5bG9hZMQPgadvcmRlcklkpTMxMjQz"
+    "EventType": 6,
+    "Event": "iqVzdGF0ZadDUkVBVEVEqWVycm9yVHlwZbBJT19NQVBQSU5HX0VSUk9SrGVycm9yTWVzc2FnZdklTm8gZGF0YSBmb3VuZCBmb3IgcXVlcnkgJC50b3RhbFByaWNlLrRmYWlsdXJlRXZlbnRQb3NpdGlvbs8AAAABAAChOK1icG1uUHJvY2Vzc0lkrW9yZGVyLXByb2Nlc3Ozd29ya2Zsb3dJbnN0YW5jZUtlec8AAAABAACSAKphY3Rpdml0eUlkrWNvbGxlY3QtbW9uZXmzYWN0aXZpdHlJbnN0YW5jZUtlec8AAAABAACV2Kd0YXNrS2V5/6dwYXlsb2FkxAGA"
   }
 }
 ```
