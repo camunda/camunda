@@ -308,19 +308,24 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
     {
         if (getState() != RaftState.LEADER)
         {
-            final ActorClock clock = ActorClock.current();
-            clock.update();
-            final long timeSinceLastHeartbeat = clock.getTimeMillis() - lastHeartbeatTimestamp.get();
-
-            if (shouldElect && joinController.isJoined() && timeSinceLastHeartbeat > configuration.getElectionIntervalMs())
+            if (shouldElect && joinController.isJoined())
             {
                 switch (getState())
                 {
                     case FOLLOWER:
-                        LOG.debug("Triggering poll after election timeout reached");
-                        becomeFollower();
-                        // trigger a new poll immediately
-                        pollController.sendRequest();
+
+                        final ActorClock clock = ActorClock.current();
+                        clock.update();
+                        final long timeSinceLastHeartbeat = clock.getTimeMillis() - lastHeartbeatTimestamp.get();
+
+                        if (timeSinceLastHeartbeat > configuration.getElectionIntervalMs())
+                        {
+                            LOG.debug("Triggering poll after election timeout reached");
+                            becomeFollower();
+                            // trigger a new poll immediately
+                            pollController.sendRequest();
+                        }
+
                         break;
                     case CANDIDATE:
                         LOG.debug("Triggering vote after election timeout reached");

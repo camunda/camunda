@@ -50,6 +50,8 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 import org.junit.rules.ExternalResource;
 import org.mockito.ArgumentMatcher;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 public class RaftRule extends ExternalResource implements RaftStateListener
 {
@@ -83,6 +85,7 @@ public class RaftRule extends ExternalResource implements RaftStateListener
     private InMemoryRaftPersistentStorage persistentStorage;
 
     protected final List<RaftState> raftStateChanges = new ArrayList<>();
+    protected Set<Integer> interrupedStreams = Collections.synchronizedSet(new HashSet<>());
 
     public RaftRule(final ActorSchedulerRule actorSchedulerRule, final String host, final int port, final String topicName, final int partition, final RaftRule... members)
     {
@@ -150,6 +153,25 @@ public class RaftRule extends ExternalResource implements RaftStateListener
         spyClientOutput = spy(clientTransport.getOutput());
         final ClientTransport spyClientTransport = spy(clientTransport);
         when(spyClientTransport.getOutput()).thenReturn(spyClientOutput);
+
+        doAnswer(new Answer<Boolean>()
+        {
+            @Override
+            public Boolean answer(InvocationOnMock invocation) throws Throwable
+            {
+                final TransportMessage msg = invocation.getArgument(0);
+                final int stream = readRemoteStreamId(msg);
+
+                if (interrupedStreams.contains(stream))
+                {
+                    return true;
+                }
+                else
+                {
+                    return (Boolean) invocation.callRealMethod();
+                }
+            }
+        }).when(spyClientOutput).sendMessage(any(TransportMessage.class));
 
         raft = new Raft(actorSchedulerRule.get(), configuration, socketAddress, logStream, spyClientTransport, persistentStorage, messageBuffer, this)
         {
@@ -448,10 +470,9 @@ public class RaftRule extends ExternalResource implements RaftStateListener
                 .sendRequest(argThat(remoteAddressMatcher), any(), any());
 
             final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(other.getSocketAddress());
-            doReturn(true)
-                .when(spyClientOutput)
-                .sendMessage(argThat(transportMessage -> readRemoteStreamId(transportMessage) == remoteAddress.getStreamId()));
+            interrupedStreams.add(remoteAddress.getStreamId());
         });
+
     }
 
     private int readRemoteStreamId(TransportMessage transportMessage)
@@ -479,8 +500,7 @@ public class RaftRule extends ExternalResource implements RaftStateListener
             doCallRealMethod().when(spyClientOutput).sendRequest(argThat(remoteAddressMatcher), any());
             doCallRealMethod().when(spyClientOutput).sendRequest(argThat(remoteAddressMatcher), any(), any());
             final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(other.getSocketAddress());
-            doCallRealMethod().when(spyClientOutput)
-                .sendMessage(argThat(transportMessage -> readRemoteStreamId(transportMessage) == remoteAddress.getStreamId()));
+            interrupedStreams.remove(remoteAddress.getStreamId());
         });
     }
 }
