@@ -57,6 +57,18 @@ public class FsLogSegment
 
     protected MappedByteBuffer mappedBuffer;
 
+    protected final Rater rater = new Rater(1024 * 1024 * 4, () ->
+    {
+        try
+        {
+            this.flush();
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
+    });
+
     public FsLogSegment(String fileName)
     {
         this.fileName = fileName;
@@ -225,6 +237,7 @@ public class FsLogSegment
         }
 
         setSizeOrdered(newSize);
+        rater.mark(blockLength);
 
         return currentSize;
     }
