@@ -19,7 +19,6 @@ import static io.zeebe.util.EnsureUtil.ensureNotNull;
 
 import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicLong;
 
 import io.zeebe.logstreams.impl.LogStorageAppender;
 import io.zeebe.logstreams.log.LogStream;
@@ -33,7 +32,6 @@ import io.zeebe.transport.impl.actor.Receiver;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.sched.*;
 import io.zeebe.util.sched.channel.OneToOneRingBufferChannel;
-import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
