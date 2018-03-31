@@ -29,6 +29,7 @@ import io.zeebe.broker.logstreams.LogStreamServiceNames;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.raft.*;
+import io.zeebe.raft.controller.MemberReplicateLogController;
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.*;
@@ -91,7 +92,7 @@ public class RaftService extends Actor implements Service<Raft>, RaftStateListen
             {
                 final ClientTransport clientTransport = clientTransportInjector.getValue();
 
-                final OneToOneRingBufferChannel messageBuffer = new OneToOneRingBufferChannel(new UnsafeBuffer(new byte[(16 * 1024 * 1024) + RingBufferDescriptor.TRAILER_LENGTH]));
+                final OneToOneRingBufferChannel messageBuffer = new OneToOneRingBufferChannel(new UnsafeBuffer(new byte[(MemberReplicateLogController.REMOTE_BUFFER_SIZE) + RingBufferDescriptor.TRAILER_LENGTH]));
 
                 raft = new Raft(
                                 actorScheduler,
