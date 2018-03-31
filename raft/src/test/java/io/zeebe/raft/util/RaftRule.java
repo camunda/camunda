@@ -471,7 +471,8 @@ public class RaftRule extends ExternalResource implements RaftStateListener
 
             final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(other.getSocketAddress());
             interrupedStreams.add(remoteAddress.getStreamId());
-        });
+
+        }).join();
 
     }
 
@@ -501,6 +502,7 @@ public class RaftRule extends ExternalResource implements RaftStateListener
             doCallRealMethod().when(spyClientOutput).sendRequest(argThat(remoteAddressMatcher), any(), any());
             final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(other.getSocketAddress());
             interrupedStreams.remove(remoteAddress.getStreamId());
-        });
+
+        }).join();
     }
 }

@@ -78,7 +78,6 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
     private final List<RaftMember> members = new ArrayList<>();
     private final List<RaftStateListener> raftStateListeners = new ArrayList<>();
     private boolean shouldElect = true;
-    private final AtomicLong lastHeartbeatTimestamp = new AtomicLong();
 
     // controller
     private JoinController joinController;
@@ -104,7 +103,6 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
     private final AppendRequest incomingAppendRequest = new AppendRequest();
     private final AppendResponse appendResponse = new AppendResponse();
     private ScheduledTimer electionTimer;
-    private ScheduledTimer flushTimer;
     private String actorName;
 
     public Raft(final ActorScheduler actorScheduler,
@@ -184,20 +182,10 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
         voteController.close();
 
         scheduleElectionTimer();
-        scheduleFlushTimer();
 
         notifyRaftStateListeners();
 
         LOG.debug("Transitioned to follower in term {}", getTerm());
-    }
-
-    private void scheduleFlushTimer()
-    {
-        if (flushTimer != null)
-        {
-            flushTimer.cancel();
-        }
-        flushTimer = actor.runAtFixedRate(configuration.getFlushInterval(), this::flushTimeoutCallback);
     }
 
     private void scheduleElectionTimer()
@@ -222,7 +210,6 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
         voteController.sendRequest();
 
         scheduleElectionTimer();
-        cancelFlushTimer();
 
         setTerm(getTerm() + 1);
         setVotedFor(socketAddress);
@@ -230,15 +217,6 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
         notifyRaftStateListeners();
 
         LOG.debug("Transitioned to candidate in term {}", getTerm());
-    }
-
-    private void cancelFlushTimer()
-    {
-        if (flushTimer != null)
-        {
-            flushTimer.cancel();
-            flushTimer = null;
-        }
     }
 
     public void becomeLeader()
@@ -249,7 +227,6 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
         state = leaderState;
 
         cancelElectionTimer();
-        cancelFlushTimer();
 
         members.forEach(m -> m.startReplicationController(actorScheduler, this, clientTransport));
         openLogStreamController.open();
@@ -284,6 +261,13 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
         actor.consume(messageReceiveBuffer, () ->
         {
             messageReceiveBuffer.read(this, 1);
+
+            // when there are no more append requests immediately available,
+            // flush now and send the ack immediately
+            if (!messageReceiveBuffer.hasAvailable())
+            {
+                appender.flushAndAck();
+            }
         });
     }
 
@@ -313,19 +297,10 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
                 switch (getState())
                 {
                     case FOLLOWER:
-
-                        final ActorClock clock = ActorClock.current();
-                        clock.update();
-                        final long timeSinceLastHeartbeat = clock.getTimeMillis() - lastHeartbeatTimestamp.get();
-
-                        if (timeSinceLastHeartbeat > configuration.getElectionIntervalMs())
-                        {
-                            LOG.debug("Triggering poll after election timeout reached");
-                            becomeFollower();
-                            // trigger a new poll immediately
-                            pollController.sendRequest();
-                        }
-
+                        LOG.debug("Triggering poll after election timeout reached");
+                        becomeFollower();
+                        // trigger a new poll immediately
+                        pollController.sendRequest();
                         break;
                     case CANDIDATE:
                         LOG.debug("Triggering vote after election timeout reached");
@@ -389,16 +364,11 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
             LOG.trace("Received message from {}", remoteAddress);
         }
 
-        if (incomingAppendRequest.tryWrap(buffer, offset, length))
-        {
-            final ActorClock clock = ActorClock.current();
-            clock.update();
-            lastHeartbeatTimestamp.set(clock.getTimeMillis());
-        }
+        final boolean isWritten = messageReceiveBuffer.write(1, buffer, offset, length);
 
-        if (!messageReceiveBuffer.write(1, buffer, offset, length))
+        if (!isWritten)
         {
-            LOG.warn("Dropping");
+            LOG.warn("dropping");
         }
 
         return true;

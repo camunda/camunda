@@ -71,7 +71,7 @@ public class ThroughputTest
     public static class BenchmarkContext
     {
         final ActorScheduler scheduler = ActorScheduler.newActorScheduler()
-            .setIoBoundActorThreadCount(2)
+            .setIoBoundActorThreadCount(1)
             .setCpuBoundActorThreadCount(1)
             .build();
 

@@ -30,7 +30,6 @@ import io.zeebe.raft.backpressure.BackpressureHelper;
 import io.zeebe.raft.protocol.AppendRequest;
 import io.zeebe.transport.*;
 import io.zeebe.util.sched.*;
-import io.zeebe.util.sched.ActorTask.ActorLifecyclePhase;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import org.slf4j.Logger;
@@ -51,7 +50,8 @@ public class MemberReplicateLogController extends Actor
     private final AppendRequest appendRequest = new AppendRequest();
     private final TransportMessage transportMessage = new TransportMessage();
 
-    private final BackpressureHelper backpressureHelper = new BackpressureHelper(REMOTE_BUFFER_SIZE / 2);
+    private final BackpressureHelper backpressureHelper = new BackpressureHelper(REMOTE_BUFFER_SIZE);
+
     private long lastRequestTimestamp;
 
     final Runnable sendNextEventsFn = this::sendNextEvents;
@@ -174,11 +174,6 @@ public class MemberReplicateLogController extends Actor
 
     private void sendNextEvents()
     {
-        if (actor.getLifecyclePhase() == ActorLifecyclePhase.CLOSE_REQUESTED)
-        {
-            actor.done();
-        }
-
         if (IS_TRACE_ENABLED)
         {
             LOG.trace("try send next event to {}", remoteAddress);
@@ -223,6 +218,10 @@ public class MemberReplicateLogController extends Actor
                 if (isHeartbeatTimeout)
                 {
                     actor.setPriority(ActorPriority.HIGH);
+                }
+                else
+                {
+                    actor.setPriority(ActorPriority.LOW);
                 }
 
                 actor.yield();

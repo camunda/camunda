@@ -34,23 +34,39 @@ public class BackpressureHelper
     private int currentInFlight = 0;
 
     /**
+     * First Event needs to be acknowledged before the next one can be sent
+     */
+    private boolean isFirstEventAcknowledged;
+
+    private boolean isFirstEventSent;
+
+    /**
      * Initializes the backpressure helper with a remote buffersize
      *
      * @param remoteBufferSize size of the remote buffer in bytes
      */
     public BackpressureHelper(int remoteBufferSize)
     {
-        this.remoteBufferSize = remoteBufferSize;
+        this.remoteBufferSize = remoteBufferSize - (int) (remoteBufferSize * 0.2);
     }
 
     public void onEventSent(long position, int eventSize)
     {
+        if (!isFirstEventSent && !isFirstEventAcknowledged)
+        {
+            isFirstEventSent = true;
+        }
+
         eventSizesByPosition.add(position, eventSize);
         currentInFlight += eventSize;
     }
 
     public void onEventAcknowledged(long position)
     {
+        if (isFirstEventSent && !isFirstEventAcknowledged)
+        {
+            isFirstEventAcknowledged = true;
+        }
         currentInFlight -= eventSizesByPosition.markConsumed(position);
     }
 
@@ -58,10 +74,19 @@ public class BackpressureHelper
     {
         eventSizesByPosition.reset();
         currentInFlight = 0;
+        isFirstEventSent = false;
+        isFirstEventAcknowledged = false;
     }
 
     public boolean canSend(int bytes)
     {
-        return remoteBufferSize > currentInFlight + bytes;
+        if (!isFirstEventSent)
+        {
+            return true;
+        }
+        else
+        {
+            return remoteBufferSize > currentInFlight + bytes;
+        }
     }
 }

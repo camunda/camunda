@@ -27,6 +27,7 @@ import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.raft.event.RaftConfigurationEvent;
 import io.zeebe.raft.protocol.AppendRequest;
 import io.zeebe.raft.protocol.AppendResponse;
+import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.allocation.AllocatedBuffer;
 import io.zeebe.util.allocation.BufferAllocators;
 import org.agrona.MutableDirectBuffer;
@@ -36,7 +37,7 @@ import org.slf4j.Logger;
 public class BufferedLogStorageAppender
 {
     private static final Logger LOG = Loggers.RAFT_LOGGER;
-    public static final int INITIAL_CAPACITY = 32 * 1024;
+    public static final int INITIAL_CAPACITY = 1024 * 32;
 
     private final BrokerEventMetadata metadata = new BrokerEventMetadata();
     private final RaftConfigurationEvent configuration = new RaftConfigurationEvent();
@@ -45,6 +46,8 @@ public class BufferedLogStorageAppender
     private final Raft raft;
     private final LogStream logStream;
     private final BufferedLogStreamReader reader;
+
+    private final DeferredAck deferredAck = new DeferredAck();
 
     // event buffer and offset
     private AllocatedBuffer allocatedBuffer;
@@ -107,8 +110,33 @@ public class BufferedLogStorageAppender
         return term > lastBufferedTerm || (term == lastBufferedTerm && position >= lastBufferedPosition);
     }
 
+    public void flushAndAck()
+    {
+        try
+        {
+            if (deferredAck.hasDeferredAck())
+            {
+                if (!flushBufferedEvents())
+                {
+                    // unable to flush events, abort and try again with last buffered position
+                    rejectAppendRequest(lastBufferedPosition, deferredAck.socketAddress);
+                }
+                else
+                {
+                    acceptAppendRequest(lastWrittenPosition, deferredAck.commitPosistion, deferredAck.socketAddress);
+                }
+            }
+        }
+        finally
+        {
+            deferredAck.reset();
+        }
+    }
+
     public void appendEvent(final AppendRequest appendRequest, final LoggedEventImpl event)
     {
+        deferredAck.reset();
+
         if (event != null)
         {
             final long previousPosition = appendRequest.getPreviousEventPosition();
@@ -127,7 +155,12 @@ public class BufferedLogStorageAppender
                     if (!flushBufferedEvents())
                     {
                         // unable to flush events, abort and try again with last buffered position
-                        rejectAppendRequest(appendRequest, lastBufferedPosition);
+                        rejectAppendRequest(lastBufferedPosition, appendRequest.getSocketAddress());
+                        return;
+                    }
+                    else
+                    {
+                        acceptAppendRequest(lastWrittenPosition, appendRequest.getCommitPosition(), appendRequest.getSocketAddress());
                     }
                 }
 
@@ -156,13 +189,22 @@ public class BufferedLogStorageAppender
                 LOG.warn("Event to append does not follow previous event {}/{} != {}/{}", lastBufferedPosition, lastBufferedTerm, previousPosition,
                     previousTerm);
             }
-        }
 
-        acceptAppendRequest(appendRequest, lastWrittenPosition);
+            if (lastWrittenPosition != lastBufferedPosition)
+            {
+                deferredAck.deferAck(appendRequest);
+            }
+        }
+        else
+        {
+            acceptAppendRequest(lastWrittenPosition, appendRequest.getCommitPosition(), appendRequest.getSocketAddress());
+        }
     }
 
     public void truncateLog(final AppendRequest appendRequest, final LoggedEventImpl event)
     {
+        deferredAck.reset();
+
         final long currentCommit = logStream.getCommitPosition();
 
         final long previousEventPosition = appendRequest.getPreviousEventPosition();
@@ -172,11 +214,11 @@ public class BufferedLogStorageAppender
         {
             // event is either after our last position or the log stream controller
             // is still appendEvent, which does not allow to truncate the log
-            rejectAppendRequest(appendRequest, lastBufferedPosition);
+            rejectAppendRequest(lastBufferedPosition, appendRequest.getSocketAddress());
         }
         else if (previousEventPosition < currentCommit)
         {
-            rejectAppendRequest(appendRequest, currentCommit);
+            rejectAppendRequest(currentCommit, appendRequest.getSocketAddress());
         }
         else if (reader.seek(previousEventPosition) && reader.hasNext())
         {
@@ -199,7 +241,7 @@ public class BufferedLogStorageAppender
                         if (nextEventPosition == eventPosition && nextEventTerm == eventTerm)
                         {
                             // not truncating the log as the event is already appended
-                            acceptAppendRequest(appendRequest, nextEventPosition);
+                            acceptAppendRequest(nextEventPosition, appendRequest.getCommitPosition(), appendRequest.getSocketAddress());
                         }
                         else
                         {
@@ -219,17 +261,17 @@ public class BufferedLogStorageAppender
                 }
                 else
                 {
-                    acceptAppendRequest(appendRequest, writtenEvent.getPosition());
+                    acceptAppendRequest(writtenEvent.getPosition(), appendRequest.getCommitPosition(), appendRequest.getSocketAddress());
                 }
             }
             else
             {
-                rejectAppendRequest(appendRequest, writtenEvent.getPosition() - 1);
+                rejectAppendRequest(writtenEvent.getPosition() - 1, appendRequest.getSocketAddress());
             }
         }
         else
         {
-            rejectAppendRequest(appendRequest, lastWrittenPosition);
+            rejectAppendRequest(lastWrittenPosition, appendRequest.getSocketAddress());
         }
     }
 
@@ -291,11 +333,10 @@ public class BufferedLogStorageAppender
         return true;
     }
 
-    protected void acceptAppendRequest(final AppendRequest appendRequest, final long position)
+    protected void acceptAppendRequest(long position, long commitPosition, SocketAddress remote)
     {
-
         final long currentCommitPosition = logStream.getCommitPosition();
-        final long nextCommitPosition = Math.min(position, appendRequest.getCommitPosition());
+        final long nextCommitPosition = Math.min(position, commitPosition);
 
         if (nextCommitPosition >= 0 && nextCommitPosition > currentCommitPosition)
         {
@@ -308,10 +349,10 @@ public class BufferedLogStorageAppender
             .setPreviousEventPosition(position)
             .setSucceeded(true);
 
-        raft.sendMessage(appendRequest.getSocketAddress(), appendResponse);
+        raft.sendMessage(remote, appendResponse);
     }
 
-    protected void rejectAppendRequest(final AppendRequest appendRequest, final long position)
+    protected void rejectAppendRequest(final long position, SocketAddress remote)
     {
         appendResponse
             .reset()
@@ -319,11 +360,39 @@ public class BufferedLogStorageAppender
             .setPreviousEventPosition(position)
             .setSucceeded(false);
 
-        raft.sendMessage(appendRequest.getSocketAddress(), appendResponse);
+        raft.sendMessage(remote, appendResponse);
     }
 
     public long getLastPosition()
     {
         return lastBufferedPosition;
+    }
+
+    class DeferredAck
+    {
+        long commitPosistion = -1;
+        SocketAddress socketAddress;
+
+        void deferAck(AppendRequest request)
+        {
+            socketAddress = request.getSocketAddress();
+            commitPosistion = request.getCommitPosition();
+        }
+
+        void onSend()
+        {
+            reset();
+        }
+
+        boolean hasDeferredAck()
+        {
+            return socketAddress != null;
+        }
+
+        void reset()
+        {
+            commitPosistion = -1;
+            socketAddress = null;
+        }
     }
 }
