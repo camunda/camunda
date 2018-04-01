@@ -24,8 +24,7 @@ import org.junit.rules.ExternalResource;
 
 public class LogStreamWriterRule extends ExternalResource
 {
-
-    private final LogStreamRule logStreamRule;
+    private LogStreamRule logStreamRule;
 
     private LogStream logStream;
     private LogStreamWriter logStreamWriter;
@@ -38,8 +37,8 @@ public class LogStreamWriterRule extends ExternalResource
     @Override
     protected void before()
     {
-        logStream = logStreamRule.getLogStream();
-        logStreamWriter = new LogStreamWriterImpl(logStream);
+        this.logStream = logStreamRule.getLogStream();
+        this.logStreamWriter = new LogStreamWriterImpl(logStream);
     }
 
     @Override
@@ -47,6 +46,12 @@ public class LogStreamWriterRule extends ExternalResource
     {
         logStreamWriter = null;
         logStream = null;
+    }
+
+    public void wrap(LogStreamRule rule)
+    {
+        this.logStream = rule.getLogStream();
+        this.logStreamWriter.wrap(logStream);
     }
 
     public long writeEvents(final int count, final DirectBuffer event)
@@ -129,7 +134,7 @@ public class LogStreamWriterRule extends ExternalResource
 
     public void waitForPositionToBeAppended(final long position)
     {
-        TestUtil.waitUntil(() -> logStream.getCurrentAppenderPosition() > position,
+        TestUtil.waitUntil(() -> logStream.getLogStorageAppender().getCurrentAppenderPosition() > position,
             "Failed to wait for position {} to be appended", position);
     }
 

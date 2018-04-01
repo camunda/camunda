@@ -30,10 +30,10 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.logstreams.fs.FsLogStreamBuilder;
 import io.zeebe.logstreams.impl.LogStorageAppender;
-import io.zeebe.logstreams.impl.LogStreamImpl;
+import io.zeebe.logstreams.impl.LogStreamBuilder;
 import io.zeebe.logstreams.impl.log.fs.FsLogStorage;
+import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
@@ -45,7 +45,6 @@ import org.junit.rules.*;
 
 public class LogStreamTest
 {
-
     public static final int PARTITION_ID = 0;
     public static final DirectBuffer TOPIC_NAME_BUFFER = BufferUtil.wrapString("default-topic");
 
@@ -55,22 +54,25 @@ public class LogStreamTest
     public TemporaryFolder tempFolder = new TemporaryFolder();
     public AutoCloseableRule closeables = new AutoCloseableRule();
     public ActorSchedulerRule actorScheduler = new ActorSchedulerRule();
+    public ServiceContainerRule serviceContainer = new ServiceContainerRule(actorScheduler);
 
     @Rule
     public RuleChain chain = RuleChain.outerRule(tempFolder)
-                                      .around(actorScheduler)
-                                      .around(closeables);
+        .around(actorScheduler)
+        .around(serviceContainer)
+        .around(closeables);
 
-    protected LogStream buildLogStream(Consumer<FsLogStreamBuilder> streamConfig)
+    protected LogStream buildLogStream(Consumer<LogStreamBuilder> streamConfig)
     {
-        final FsLogStreamBuilder builder = new FsLogStreamBuilder(TOPIC_NAME_BUFFER, PARTITION_ID);
-        builder.actorScheduler(actorScheduler.get())
+        final LogStreamBuilder builder = new LogStreamBuilder(TOPIC_NAME_BUFFER, PARTITION_ID);
+        builder.logName("test-log-name")
+            .serviceContainer(serviceContainer.get())
             .logRootPath(tempFolder.getRoot().getAbsolutePath())
             .snapshotPeriod(Duration.ofMinutes(5));
 
         streamConfig.accept(builder);
 
-        return builder.build();
+        return builder.build().join();
     }
 
     protected LogStream buildLogStream()
@@ -81,14 +83,15 @@ public class LogStreamTest
     }
 
     @Test
-    public void shouldFailWithToLongTopicName()
+    public void shouldFailWithTooLongTopicName()
     {
         // given
         final DirectBuffer topicName = wrapString(join("", Collections.nCopies(MAX_TOPIC_NAME_LENGTH + 1, "f")));
 
-        final FsLogStreamBuilder builder = new FsLogStreamBuilder(topicName, PARTITION_ID)
-                .logRootPath(tempFolder.getRoot().getAbsolutePath())
-                .actorScheduler(actorScheduler.get());
+        final LogStreamBuilder builder = new LogStreamBuilder(topicName, PARTITION_ID)
+            .logName("some-name")
+            .logRootPath(tempFolder.getRoot().getAbsolutePath())
+            .serviceContainer(serviceContainer.get());
 
         // expect exception
         thrown.expect(RuntimeException.class);
@@ -116,8 +119,8 @@ public class LogStreamTest
         assertNull(stream.getWriteBuffer());
 
         // only log block index controller is created
-        assertNotNull(stream.getLogBlockIndexController());
-        assertNull(stream.getLogStreamController());
+        assertNotNull(stream.getLogBlockIndexWriter());
+        assertNull(stream.getLogStorageAppender());
     }
 
     @Test
@@ -127,16 +130,16 @@ public class LogStreamTest
         final LogStream logStream = buildLogStream();
 
         // when log stream is open
-        logStream.open();
-        logStream.openLogStreamController().join();
+
+        logStream.openAppender().join();
         closeables.manage(logStream);
 
         // then
         // log block index is opened and runs now
-        assertTrue(logStream.getLogBlockIndexController().isOpened());
+        assertNotNull(logStream.getLogBlockIndexWriter());
 
         // log stream controller is opened and runs now
-        assertTrue(logStream.getLogStreamController().isOpened());
+        assertNotNull(logStream.getLogStorageAppender());
 
         // and logStorage is opened
         assertTrue(logStream.getLogStorage().isOpen());
@@ -149,15 +152,16 @@ public class LogStreamTest
         final LogStream logStream = buildLogStream();
 
         // when log stream is open
-        logStream.open();
+
         closeables.manage(logStream);
 
         // then
         // log block index is opened and runs now
-        assertTrue(logStream.getLogBlockIndexController().isOpened());
+        assertNotNull(logStream.getLogBlockIndexWriter());
+        assertNotNull(logStream.getLogBlockIndexWriter());
 
         // log stream controller is null
-        assertNull(logStream.getLogStreamController());
+        assertNull(logStream.getLogStorageAppender());
 
         // and logStorage is opened
         assertTrue(logStream.getLogStorage().isOpen());
@@ -169,52 +173,21 @@ public class LogStreamTest
         final LogStream logStream = buildLogStream();
 
         // given open log stream
-        logStream.open();
-        logStream.openLogStreamController().join();
+
+        logStream.openAppender().join();
 
         final Dispatcher writeBuffer = logStream.getWriteBuffer();
 
         // when log streaming is stopped
-        logStream.closeLogStreamController().get();
+        logStream.closeAppender().join();
 
         assertThat(writeBuffer.isClosed()).isTrue();
 
         // then
-        // log stream controller has stop running and reference is not null for reuse
-        assertNotNull(logStream.getLogStreamController());
-        assertFalse(logStream.getLogStreamController().isOpened());
+        assertNull(logStream.getLogStorageAppender());
 
         // dispatcher is null as well
         assertNull(logStream.getWriteBuffer());
-    }
-
-    @Test
-    public void shouldStopAndStartLogStreamController() throws Exception
-    {
-        // given
-        final LogStream logStream = buildLogStream();
-
-        // given open log stream with stopped log stream controller
-        logStream.open();
-        logStream.openLogStreamController().join();
-        final LogStorageAppender controller1 = logStream.getLogStreamController();
-
-        logStream.closeLogStreamController().get();
-
-        // when log streaming is started
-        logStream.openLogStreamController().get();
-        final LogStorageAppender controller2 = logStream.getLogStreamController();
-
-        // then
-        // log stream controller is reused
-        assertEquals(controller2, controller1);
-        assertNotNull(controller2);
-
-        // is running
-        assertTrue(controller2.isOpened());
-
-        // dispatcher is initialized
-        assertNotNull(logStream.getWriteBuffer());
     }
 
     @Test
@@ -224,14 +197,13 @@ public class LogStreamTest
         final LogStream logStream = buildLogStream();
 
         // when log streaming is started
-        logStream.open();
-        logStream.openLogStreamController().join();
-        final LogStorageAppender logStreamController = logStream.getLogStreamController();
+
+        logStream.openAppender().join();
+        final LogStorageAppender logStreamController = logStream.getLogStorageAppender();
 
         // then
         // log stream controller has been set and is running
         assertNotNull(logStreamController);
-        assertTrue(logStreamController.isOpened());
 
         // dispatcher is initialized
         final Dispatcher writeBuffer = logStream.getWriteBuffer();
@@ -239,100 +211,18 @@ public class LogStreamTest
     }
 
     @Test
-    public void shouldCloseBothControllers()
+    public void shouldLogStorageOnClose()
     {
         // given open log stream
         final LogStream logStream = buildLogStream();
 
-        logStream.open();
-        logStream.openLogStreamController().join();
+        logStream.openAppender().join();
 
         // when log stream is closed
         logStream.close();
 
-        // then controllers are not running
-        assertFalse(logStream.getLogBlockIndexController().isOpened());
-        assertFalse(logStream.getLogStreamController().isOpened());
-
-        // and log storage was closed
+        // log storage was closed
         assertThat(logStream.getLogStorage().isClosed()).isTrue();
-    }
-
-    @Test
-    public void shouldCloseLogStreamControllerAndAfterwardsStream() throws Exception
-    {
-        // given open log stream
-        final LogStream logStream = buildLogStream();
-        logStream.open();
-        logStream.openLogStreamController().join();
-
-        // when log stream controller is closed
-        logStream.closeLogStreamController().get();
-
-        // then the log stream is closed
-        assertThat(logStream.getWriteBuffer()).isNull();
-        assertThat(logStream.getLogStreamController().isOpened()).isFalse();
-
-        // when log stream is closed
-        logStream.closeAsync().get();
-
-        // then
-        assertThat(logStream.getLogBlockIndexController().isClosed()).isTrue();
-    }
-
-    @Test
-    public void shouldCloseLogBlockIndexController() throws Exception
-    {
-        // given open log stream without log stream controller
-        final LogStream logStream = buildLogStream();
-        logStream.open();
-
-        // when log stream is closed
-        logStream.closeAsync().get();
-
-        // then
-        // controllers are not running
-        assertFalse(logStream.getLogBlockIndexController().isOpened());
-
-        // and log storage was closed
-        assertThat(logStream.getLogStorage().isClosed()).isTrue();
-    }
-
-    @Test
-    public void shouldOpenBothClosedController()
-    {
-        // given open->close log stream
-        final LogStream logStream = buildLogStream();
-        closeables.manage(logStream);
-
-        logStream.open();
-        logStream.openLogStreamController().join();
-        logStream.close();
-
-        // when open log stream again
-        logStream.open();
-        logStream.openLogStreamController().join();
-
-        // then controllers run again
-        assertTrue(logStream.getLogBlockIndexController().isOpened());
-        assertTrue(logStream.getLogStreamController().isOpened());
-    }
-
-    @Test
-    public void shouldOpenClosedLogBlockIndexController()
-    {
-        // given open->close log stream without log stream controller
-        final LogStream logStream = buildLogStream();
-        logStream.open();
-        closeables.manage(logStream);
-
-        logStream.close();
-
-        // when
-        logStream.open();
-
-        // then
-        assertThat(logStream.getLogBlockIndexController().isOpened()).isTrue();
     }
 
     @Test
@@ -341,13 +231,11 @@ public class LogStreamTest
         // given open log stream
         final LogStream logStream = buildLogStream();
 
-        logStream.open();
-        logStream.openLogStreamController().join();
+        logStream.openAppender().join();
         closeables.manage(logStream);
 
         // expect exception
-        thrown.expect(IllegalStateException.class);
-        thrown.expectMessage(LogStreamImpl.EXCEPTION_MSG_TRUNCATE_AND_LOG_STREAM_CTRL_IN_PARALLEL);
+        thrown.expect(IllegalArgumentException.class);
 
         // when truncate is called
         logStream.truncate(0);
@@ -361,14 +249,13 @@ public class LogStreamTest
         final LogStream logStream = buildLogStream();
 
         // given open log stream and committed position
-        logStream.open();
+
         closeables.manage(logStream);
 
         logStream.setCommitPosition(truncatePosition);
 
         // expect exception
         thrown.expect(IllegalArgumentException.class);
-        thrown.expectMessage(LogStreamImpl.EXCEPTION_MSG_TRUNCATE_COMMITTED_POSITION);
 
         // when truncate is called
         logStream.truncate(truncatePosition);
@@ -381,8 +268,8 @@ public class LogStreamTest
         final LogStream logStream = buildLogStream();
 
         // given open log stream and open block index controller
-        logStream.open();
-        logStream.openLogStreamController().join();
+
+        logStream.openAppender().join();
         closeables.manage(logStream);
 
         final LogStreamWriter writer = new LogStreamWriterImpl(logStream);
@@ -390,22 +277,14 @@ public class LogStreamTest
         final long secondPosition = writer.key(123L).value(new UnsafeBuffer(new byte[4])).tryWrite();
 
         waitUntil(() -> events(logStream).count() == 2);
-        logStream.getLogStreamController().close();
+        logStream.getLogStorageAppender().close();
 
         // when
         logStream.truncate(secondPosition);
 
         // then
-        ensureLogStreamCanBeClosed(logStream);
         assertThat(events(logStream).count()).isEqualTo(1);
         assertThat(events(logStream).findFirst().get().getPosition()).isEqualTo(firstPosition);
-    }
-
-    protected void ensureLogStreamCanBeClosed(LogStream stream)
-    {
-        // closing the log stream successfully only works when the stream controller is open...
-        // TODO: fix this properly by making the log stream close method tolerate these cases
-        stream.getLogStreamController().open();
     }
 
     @Test
@@ -415,18 +294,18 @@ public class LogStreamTest
         final LogStream logStream = buildLogStream();
 
         // given open log stream and open block index controller
-        logStream.open();
-        logStream.openLogStreamController().join();
+
+        logStream.openAppender().join();
         closeables.manage(logStream);
 
         final LogStreamWriter writer = new LogStreamWriterImpl(logStream);
         final long firstPosition = writer.key(123L).value(new UnsafeBuffer(new byte[4])).tryWrite();
 
         waitUntil(() -> events(logStream).count() == 1);
-        logStream.getLogStreamController().close();
+        logStream.closeAppender().join();
 
         logStream.truncate(firstPosition);
-        logStream.getLogStreamController().open();
+        logStream.openAppender().join();
 
         // when
         final long secondPosition = writer.key(123L).value(new UnsafeBuffer(new byte[4])).tryWrite();
@@ -442,8 +321,8 @@ public class LogStreamTest
         // given
         final LogStream logStream = buildLogStream();
 
-        logStream.open();
-        logStream.openLogStreamController().join();
+
+        logStream.openAppender().join();
         closeables.manage(logStream);
 
         final LogStreamWriter writer = new LogStreamWriterImpl(logStream);
@@ -454,13 +333,12 @@ public class LogStreamTest
 
         logStream.setCommitPosition(firstPosition);
 
-        logStream.getLogStreamController().close();
+        logStream.getLogStorageAppender().close();
 
         // when
         logStream.truncate(secondPosition);
 
         // then
-        ensureLogStreamCanBeClosed(logStream);
         assertThat(events(logStream).count()).isEqualTo(1);
         assertThat(events(logStream).findFirst().get().getPosition()).isEqualTo(firstPosition);
     }
@@ -470,8 +348,8 @@ public class LogStreamTest
     {
         // given
         final LogStream logStream = buildLogStream(b -> b.indexBlockSize(20).readBlockSize(20));
-        logStream.open();
-        logStream.openLogStreamController().join();
+
+        logStream.openAppender().join();
         closeables.manage(logStream);
 
         final LogStreamWriter writer = new LogStreamWriterImpl(logStream);
@@ -483,13 +361,12 @@ public class LogStreamTest
         waitUntil(() -> events(logStream).count() == 2);
         waitUntil(() -> logStream.getLogBlockIndex().size() > 0);
 
-        logStream.getLogStreamController().close();
+        logStream.getLogStorageAppender().close();
 
         // when
         logStream.truncate(secondPosition);
 
         // then
-        ensureLogStreamCanBeClosed(logStream);
         assertThat(events(logStream).count()).isEqualTo(1);
     }
 
@@ -501,10 +378,10 @@ public class LogStreamTest
     {
         // given
         final LogStream logStream = buildLogStream();
-        logStream.open();
-        logStream.openLogStreamController().join();
+
+        logStream.openAppender().join();
         closeables.manage(logStream);
-        logStream.getLogStreamController().close();
+        logStream.getLogStorageAppender().close();
 
         final long nonExistingPosition = Long.MAX_VALUE;
 
@@ -513,14 +390,7 @@ public class LogStreamTest
         thrown.expectMessage("Truncation failed! Position " + nonExistingPosition + " was not found.");
 
         // when truncate is called
-        try
-        {
-            logStream.truncate(nonExistingPosition);
-        }
-        finally
-        {
-            ensureLogStreamCanBeClosed(logStream);
-        }
+        logStream.truncate(nonExistingPosition);
     }
 
     /**
@@ -533,8 +403,8 @@ public class LogStreamTest
         final LogStream logStream = buildLogStream();
 
         // given open log stream and open block index controller
-        logStream.open();
-        logStream.openLogStreamController().join();
+
+        logStream.openAppender().join();
         closeables.manage(logStream);
 
         final LogStreamWriter writer = new LogStreamWriterImpl(logStream);
@@ -542,13 +412,12 @@ public class LogStreamTest
         final long secondPosition = writer.key(123L).value(new UnsafeBuffer(new byte[4])).tryWrite();
 
         waitUntil(() -> events(logStream).count() == 2);
-        logStream.getLogStreamController().close();
+        logStream.getLogStorageAppender().close();
 
         // when
         logStream.truncate(secondPosition - 1);
 
         // then
-        ensureLogStreamCanBeClosed(logStream);
         assertThat(events(logStream).count()).isEqualTo(1);
         assertThat(events(logStream).findFirst().get().getPosition()).isEqualTo(firstPosition);
     }
@@ -558,8 +427,6 @@ public class LogStreamTest
     {
         final File logDir = tempFolder.getRoot();
         final LogStream logStream = buildLogStream(b -> b.logRootPath(logDir.getAbsolutePath()));
-
-        logStream.open();
 
         // when
         logStream.close();
@@ -575,8 +442,6 @@ public class LogStreamTest
     {
         final File logDir = tempFolder.getRoot();
         final LogStream logStream = buildLogStream(b -> b.logRootPath(logDir.getAbsolutePath()).deleteOnClose(true));
-
-        logStream.open();
 
         // when
         logStream.close();

@@ -290,6 +290,7 @@ public class FsLogStorage implements LogStorage
 
         final String path = config.getPath();
         final File logDir = new File(path);
+        logDir.mkdirs();
 
         deleteBackupFilesIfExist(logDir);
         applyTruncatedFileIfExists(logDir);

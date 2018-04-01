@@ -18,12 +18,12 @@ package io.zeebe.logstreams.impl;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import io.zeebe.dispatcher.*;
+import io.zeebe.dispatcher.BlockPeek;
+import io.zeebe.dispatcher.Subscription;
 import io.zeebe.logstreams.spi.LogStorage;
-import io.zeebe.util.sched.*;
+import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.channel.ActorConditions;
 import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.MutableDirectBuffer;
 import org.slf4j.Logger;
 
@@ -34,38 +34,30 @@ public class LogStorageAppender extends Actor
 {
     public static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
 
-    private final AtomicBoolean isOpenend = new AtomicBoolean(false);
     private final AtomicBoolean isFailed = new AtomicBoolean(false);
 
-    private final ActorConditions onLogStorageAppendedConditions;
-
-    private Runnable peekedBlockHandler;
-
-    //  MANDATORY //////////////////////////////////////////////////
-    private String name;
-    private LogStorage logStorage;
-    private ActorScheduler actorScheduler;
-
     private final BlockPeek blockPeek = new BlockPeek();
+
+    private final String name;
+    private final LogStorage logStorage;
+    private final Subscription writeBufferSubscription;
+    private final ActorConditions logStorageAppendConditions;
+
+    private Runnable peekedBlockHandler = this::appendBlock;
     private int maxAppendBlockSize;
-    private Dispatcher writeBuffer;
-    private Subscription writeBufferSubscription;
 
-    public LogStorageAppender(LogStreamImpl.LogStreamBuilder logStreamBuilder, ActorConditions onLogStorageAppendedConditions)
+
+    public LogStorageAppender(String name,
+        LogStorage logStorage,
+        Subscription writeBufferSubscription,
+        int maxBlockSize,
+        ActorConditions logStorageAppendConditions)
     {
-        wrap(logStreamBuilder);
-
-        this.onLogStorageAppendedConditions = onLogStorageAppendedConditions;
-    }
-
-    protected void wrap(LogStreamImpl.LogStreamBuilder logStreamBuilder)
-    {
-        this.name = logStreamBuilder.getLogName() + ".appender";
-        this.logStorage = logStreamBuilder.getLogStorage();
-        this.actorScheduler = logStreamBuilder.getActorScheduler();
-
-        this.maxAppendBlockSize = logStreamBuilder.getMaxAppendBlockSize();
-        this.writeBuffer = logStreamBuilder.getWriteBuffer();
+        this.name = name;
+        this.logStorage = logStorage;
+        this.writeBufferSubscription = writeBufferSubscription;
+        this.maxAppendBlockSize = maxBlockSize;
+        this.logStorageAppendConditions = logStorageAppendConditions;
     }
 
     @Override
@@ -74,45 +66,10 @@ public class LogStorageAppender extends Actor
         return name;
     }
 
-    public void open()
-    {
-        openAsync().join();
-    }
-
-    public ActorFuture<Void> openAsync()
-    {
-        if (isOpenend.compareAndSet(false, true))
-        {
-            return actorScheduler.submitActor(this, true, SchedulingHints.ioBound((short) 0));
-        }
-        else
-        {
-            return CompletableActorFuture.completed(null);
-        }
-    }
-
     @Override
     protected void onActorStarting()
     {
-        if (!logStorage.isOpen())
-        {
-            logStorage.open();
-        }
-
-        actor.runOnCompletion(writeBuffer.getSubscriptionAsync("log-appender"), (subscription, failure) ->
-        {
-            if (failure == null)
-            {
-                writeBufferSubscription = subscription;
-
-                actor.consume(writeBufferSubscription, this::peekBlock);
-                peekedBlockHandler = this::appendBlock;
-            }
-            else
-            {
-                throw new RuntimeException("Failed to open a subscription", failure);
-            }
-        });
+        actor.consume(writeBufferSubscription, this::peekBlock);
     }
 
     private void peekBlock()
@@ -136,15 +93,14 @@ public class LogStorageAppender extends Actor
         if (address >= 0)
         {
             blockPeek.markCompleted();
-
-            onLogStorageAppendedConditions.signalConsumers();
+            logStorageAppendConditions.signalConsumers();
         }
         else
         {
             isFailed.set(true);
 
             final long positionOfFirstEventInBlock = LogEntryDescriptor.getPosition(buffer, 0);
-            LOG.error("Failed to append log storage on position '{}'. Discard the following blocks.", positionOfFirstEventInBlock);
+            LOG.error("Failed to append log storage on position '{}'. Stop writing to log storage until recovered.", positionOfFirstEventInBlock);
 
             // recover log storage from failure - see zeebe-io/zeebe#500
             peekedBlockHandler = this::discardBlock;
@@ -160,37 +116,9 @@ public class LogStorageAppender extends Actor
         actor.yield();
     }
 
-    public void close()
+    public ActorFuture<Void> close()
     {
-        closeAsync().join();
-    }
-
-    public ActorFuture<Void> closeAsync()
-    {
-        if (isOpenend.compareAndSet(true, false))
-        {
-            return actor.close();
-        }
-        else
-        {
-            return CompletableActorFuture.completed(null);
-        }
-    }
-
-    @Override
-    protected void onActorClosing()
-    {
-        isFailed.set(false);
-    }
-
-    public boolean isOpened()
-    {
-        return isOpenend.get();
-    }
-
-    public boolean isClosed()
-    {
-        return !isOpenend.get();
+        return actor.close();
     }
 
     public boolean isFailed()
@@ -200,13 +128,6 @@ public class LogStorageAppender extends Actor
 
     public long getCurrentAppenderPosition()
     {
-        if (writeBufferSubscription != null)
-        {
-            return writeBufferSubscription.getPosition();
-        }
-        else
-        {
-            return -1L;
-        }
+        return writeBufferSubscription.getPositionVolatile();
     }
 }

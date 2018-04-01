@@ -16,7 +16,7 @@
 package io.zeebe.logstreams.log;
 
 import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.logstreams.impl.LogBlockIndexAppender;
+import io.zeebe.logstreams.impl.LogBlockIndexWriter;
 import io.zeebe.logstreams.impl.LogStorageAppender;
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
 import io.zeebe.logstreams.spi.LogStorage;
@@ -34,7 +34,7 @@ import org.agrona.DirectBuffer;
  *
  * The LogStream will append available events to the log storage with the help of an LogController.
  * The events are read from a given Dispatcher, if available. This can be stopped with the
- * {@link LogStream#closeLogStreamController()}  method and re-/started with {@link LogStream#openLogStreamController(AgentRunnerService)}
+ * {@link LogStream#closeAppender()}  method and re-/started with {@link LogStream#openLogStreamController(AgentRunnerService)}
  * or {@link LogStream#openLogStreamController(AgentRunnerService, int)}.
  *
  * To access the current LogStorage the {@link LogStream#getLogStorage()} can be used. The {@link #close()}
@@ -64,17 +64,6 @@ public interface LogStream extends AutoCloseable
     String getLogName();
 
     /**
-     * Opens the log stream synchronously. This blocks until the log stream is
-     * opened.
-     */
-    void open();
-
-    /**
-     * Opens the log stream asynchronously.
-     */
-    ActorFuture<Void> openAsync();
-
-    /**
      * Closes the log stream synchronously. This blocks until the log stream is
      * closed.
      */
@@ -85,12 +74,6 @@ public interface LogStream extends AutoCloseable
      * Closes the log stream asynchronous.
      */
     ActorFuture<Void> closeAsync();
-
-    /**
-     * @return the current position of the log appender, or a negative value if
-     *         the log stream is not open
-     */
-    long getCurrentAppenderPosition();
 
     /**
      * @return the current commit position, or a negative value if no entry
@@ -139,18 +122,18 @@ public interface LogStream extends AutoCloseable
      *
      * @return the log stream controller
      */
-    LogStorageAppender getLogStreamController();
+    LogStorageAppender getLogStorageAppender();
 
     /**
      * Returns the log block index controller, which creates periodically the block index for the log storage.
      * @return the log block index controller
      */
-    LogBlockIndexAppender getLogBlockIndexController();
+    LogBlockIndexWriter getLogBlockIndexWriter();
 
     /**
      * Stops the streaming to the log storage. New events are no longer append to the log storage.
      */
-    ActorFuture<Void> closeLogStreamController();
+    ActorFuture<Void> closeAppender();
 
     /**
      * This method delegates to {@link #openLogStreamController(AgentRunnerService, int)}.
@@ -161,7 +144,7 @@ public interface LogStream extends AutoCloseable
      * @see {@link #openLogStreamController(AgentRunnerService, int)}
      * @return returns the future for the log stream controller opening
      */
-    ActorFuture<Void> openLogStreamController();
+    ActorFuture<LogStorageAppender> openAppender();
 
     /**
      * Truncates the log stream from the given position to the end of the stream.
@@ -180,5 +163,4 @@ public interface LogStream extends AutoCloseable
     void registerOnAppendCondition(ActorCondition condition);
 
     void removeOnAppendCondition(ActorCondition condition);
-
 }

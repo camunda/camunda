@@ -35,6 +35,11 @@
       <groupId>io.zeebe</groupId>
       <artifactId>zb-dispatcher</artifactId>
     </dependency>
+    
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zb-service-container</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>io.zeebe</groupId>

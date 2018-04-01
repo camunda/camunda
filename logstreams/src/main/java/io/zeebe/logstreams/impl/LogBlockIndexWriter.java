@@ -22,16 +22,17 @@ import static io.zeebe.logstreams.spi.LogStorage.OP_RESULT_INVALID_ADDR;
 
 import java.nio.ByteBuffer;
 import java.time.Duration;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
 import io.zeebe.logstreams.spi.*;
 import io.zeebe.util.allocation.AllocatedBuffer;
 import io.zeebe.util.allocation.BufferAllocators;
-import io.zeebe.util.sched.*;
+import io.zeebe.util.metrics.Metric;
+import io.zeebe.util.metrics.MetricsManager;
+import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.channel.ActorConditions;
 import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.Position;
 import org.slf4j.Logger;
@@ -40,7 +41,7 @@ import org.slf4j.Logger;
  * Read committed events from the log storage and append them to the block
  * index.
  */
-public class LogBlockIndexAppender extends Actor
+public class LogBlockIndexWriter extends Actor
 {
     public static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
 
@@ -60,7 +61,7 @@ public class LogBlockIndexAppender extends Actor
     private final String name;
     private final LogStorage logStorage;
     private final LogBlockIndex blockIndex;
-    private final ActorScheduler actorScheduler;
+    private final MetricsManager metricsManager;
 
     /**
      * Defines the block size for which an index will be created.
@@ -75,8 +76,6 @@ public class LogBlockIndexAppender extends Actor
     private final float deviation;
 
     private final CompleteEventsInBlockProcessor readResultProcessor = new CompleteEventsInBlockProcessor();
-
-    private final AtomicBoolean isOpenend = new AtomicBoolean(false);
 
     private long nextAddress = INVALID_ADDRESS;
 
@@ -100,20 +99,31 @@ public class LogBlockIndexAppender extends Actor
     private final Duration snapshotInterval;
     private long snapshotEventPosition = -1;
 
-    public LogBlockIndexAppender(LogStreamImpl.LogStreamBuilder logStreamBuilder, Position commitPosition, ActorConditions onCommitPositionUpdatedConditions)
-    {
-        this.name = logStreamBuilder.getLogName() + ".index";
-        this.logStorage = logStreamBuilder.getLogStorage();
-        this.blockIndex = logStreamBuilder.getBlockIndex();
-        this.actorScheduler = logStreamBuilder.getActorScheduler();
-        this.commitPosition = commitPosition;
-        this.onCommitPositionUpdatedConditions = onCommitPositionUpdatedConditions;
+    private Metric snapshotsCreated;
 
-        this.deviation = logStreamBuilder.getDeviation();
-        this.indexBlockSize = (int) (logStreamBuilder.getIndexBlockSize() * (1f - deviation));
-        this.snapshotStorage = logStreamBuilder.getSnapshotStorage();
-        this.snapshotInterval = logStreamBuilder.getSnapshotPeriod();
-        this.bufferSize = logStreamBuilder.getReadBlockSize();
+
+    public LogBlockIndexWriter(String name,
+        LogStreamBuilder builder,
+        LogStorage logStorage,
+        LogBlockIndex blockIndex,
+        MetricsManager metricsManager)
+    {
+        this.name = name;
+        this.logStorage = logStorage;
+        this.blockIndex = blockIndex;
+        this.metricsManager = metricsManager;
+        this.commitPosition = builder.getCommitPosition();
+        this.snapshotStorage = builder.getSnapshotStorage();
+        this.onCommitPositionUpdatedConditions = builder.getOnCommitPositionUpdatedConditions();
+
+        this.deviation = builder.getDeviation();
+        this.indexBlockSize = (int) (builder.getIndexBlockSize() * (1f - deviation));
+        this.snapshotInterval = builder.getSnapshotPeriod();
+        this.bufferSize = builder.getReadBlockSize();
+
+        this.allocatedBuffer = BufferAllocators.allocateDirect(bufferSize);
+        this.ioBuffer = allocatedBuffer.getRawBuffer();
+        this.buffer.wrap(ioBuffer);
     }
 
     @Override
@@ -122,34 +132,13 @@ public class LogBlockIndexAppender extends Actor
         return name;
     }
 
-    public void open()
-    {
-        openAsync().join();
-    }
-
-    public ActorFuture<Void> openAsync()
-    {
-        if (isOpenend.compareAndSet(false, true))
-        {
-            return actorScheduler.submitActor(this, true);
-        }
-        else
-        {
-            return CompletableActorFuture.completed(null);
-        }
-    }
-
     @Override
     protected void onActorStarting()
     {
-        allocatedBuffer = BufferAllocators.allocateDirect(bufferSize);
-        ioBuffer = allocatedBuffer.getRawBuffer();
-        buffer.wrap(ioBuffer);
-
-        if (!logStorage.isOpen())
-        {
-            logStorage.open();
-        }
+        snapshotsCreated = metricsManager.newMetric("logstream_blockidx_snapshots")
+            .type("counter")
+            .label("logName", getName())
+            .create();
 
         recoverBlockIndex();
     }
@@ -171,6 +160,7 @@ public class LogBlockIndexAppender extends Actor
                     nextAddress = snapshotBlockAddress;
                     lastBlockAddress = snapshotBlockAddress;
                     lastBlockEventPosition = snapshotPosition;
+                    snapshotEventPosition = snapshotPosition;
                 }
                 else
                 {
@@ -188,10 +178,8 @@ public class LogBlockIndexAppender extends Actor
         }
         catch (Exception e)
         {
-            isOpenend.set(false);
-
             LOG.error("Failed to recover block index.", e);
-            throw new RuntimeException(e);
+            throw new RuntimeException("Failed to recover block index.", e);
         }
     }
 
@@ -237,10 +225,8 @@ public class LogBlockIndexAppender extends Actor
 
         if (result > currentAddress)
         {
-            addToCurrentBlock(currentAddress);
-
             nextAddress = result;
-            runCurrentWork();
+            addToCurrentBlock(currentAddress);
         }
         else if (result == OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY)
         {
@@ -275,6 +261,7 @@ public class LogBlockIndexAppender extends Actor
             // block is not filled enough
             // - read more events into buffer
             ioBuffer.clear();
+            runCurrentWork();
         }
     }
 
@@ -301,11 +288,13 @@ public class LogBlockIndexAppender extends Actor
             // try again when commit position is updated
             currentRunnable = addCurrentBlockToIndex;
         }
+
+        runCurrentWork();
     }
 
     private boolean isCurrentBlockCommitted()
     {
-        return commitPosition.get() >= readResultProcessor.getLastReadEventPosition();
+        return commitPosition.getVolatile() >= readResultProcessor.getLastReadEventPosition();
     }
 
     private void resetCurrentBlock()
@@ -346,6 +335,8 @@ public class LogBlockIndexAppender extends Actor
                 snapshotEventPosition = lastBlockEventPosition;
 
                 LOG.trace("Created snapshot of block index {}.", name);
+
+                snapshotsCreated.incrementOrdered();
             }
         }
         catch (Exception e)
@@ -359,11 +350,6 @@ public class LogBlockIndexAppender extends Actor
         }
     }
 
-    public void close()
-    {
-        closeAsync().join();
-    }
-
     public ActorFuture<Void> closeAsync()
     {
         return actor.close();
@@ -373,23 +359,13 @@ public class LogBlockIndexAppender extends Actor
     protected void onActorClosing()
     {
         resetCurrentBlock();
-
         allocatedBuffer.close();
-
         onCommitPositionUpdatedConditions.removeConsumer(onCommitCondition);
-        onCommitCondition = null;
-
-        isOpenend.set(false);
+        snapshotsCreated.close();
     }
 
-    public boolean isClosed()
+    public Metric getSnapshotsCreated()
     {
-        return !isOpenend.get();
+        return snapshotsCreated;
     }
-
-    public boolean isOpened()
-    {
-        return isOpenend.get();
-    }
-
 }

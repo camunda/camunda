@@ -70,6 +70,7 @@ public class FsSnapshotStorage implements SnapshotStorage
         return snapshot;
     }
 
+    @Override
     public boolean purgeSnapshot(String name)
     {
         final File rootFile = new File(cfg.getRootPath());
@@ -120,13 +121,13 @@ public class FsSnapshotStorage implements SnapshotStorage
 
         try
         {
-            snapshotFile.createNewFile();
             checksumFile.createNewFile();
+            snapshotFile.createNewFile();
         }
         catch (IOException e)
         {
-            snapshotFile.delete();
             checksumFile.delete();
+            snapshotFile.delete();
             LangUtil.rethrowUnchecked(e);
         }
 

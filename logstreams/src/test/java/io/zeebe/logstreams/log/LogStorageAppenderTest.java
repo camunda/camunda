@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.dispatcher.Subscription;
+import io.zeebe.logstreams.impl.LogStorageAppender;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.util.*;
 import io.zeebe.util.sched.Actor;
@@ -44,19 +45,17 @@ public class LogStorageAppenderTest
 
     private LogStreamRule logStreamRule = new LogStreamRule(temporaryFolder, b ->
     {
-        final LogStorage logStorage = b.getLogStorage();
-        b.logStorage(spy(logStorage));
+        b.logStorageStubber(logStorage -> spy(logStorage));
     });
 
     private LogStreamWriterRule writer = new LogStreamWriterRule(logStreamRule);
     private LogStreamReaderRule reader = new LogStreamReaderRule(logStreamRule);
 
     @Rule
-    public RuleChain ruleChain =
-        RuleChain.outerRule(temporaryFolder)
-                 .around(logStreamRule)
-                 .around(reader)
-                 .around(writer);
+    public RuleChain ruleChain = RuleChain.outerRule(temporaryFolder)
+        .around(logStreamRule)
+        .around(reader)
+        .around(writer);
 
     private LogStream logStream;
     private LogStorage logStorageSpy;
@@ -79,11 +78,12 @@ public class LogStorageAppenderTest
     @Test
     public void shouldUpdateAppenderPosition()
     {
-        final long positionBefore = logStream.getCurrentAppenderPosition();
+        final LogStorageAppender storageAppender = logStream.getLogStorageAppender();
+        final long positionBefore = storageAppender.getCurrentAppenderPosition();
 
         writer.writeEvent(EVENT);
 
-        waitUntil(() -> logStream.getCurrentAppenderPosition() > positionBefore);
+        waitUntil(() -> storageAppender.getCurrentAppenderPosition() > positionBefore);
     }
 
     @Test
@@ -112,7 +112,8 @@ public class LogStorageAppenderTest
     {
         final Subscription subscription = logStream.getWriteBuffer().openSubscription("test");
 
-        final long positionBefore = logStream.getCurrentAppenderPosition();
+        final LogStorageAppender logStorageAppender = logStream.getLogStorageAppender();
+        final long positionBefore = logStorageAppender.getCurrentAppenderPosition();
 
         doReturn(-1L).when(logStorageSpy).append(any());
 
@@ -120,9 +121,9 @@ public class LogStorageAppenderTest
         writer.writeEvent(EVENT);
 
         // then
-        waitUntil(() -> logStream.getCurrentAppenderPosition() > positionBefore);
+        waitUntil(() -> logStorageAppender.getCurrentAppenderPosition() > positionBefore);
 
-        assertThat(logStream.getLogStreamController().isFailed()).isTrue();
+        assertThat(logStorageAppender.isFailed()).isTrue();
 
         // verify that the segment is marked as failed
         final AtomicBoolean fragmentIsFailed = new AtomicBoolean();

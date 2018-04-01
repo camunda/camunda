@@ -22,10 +22,12 @@ import java.nio.ByteBuffer;
 
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.log.*;
+import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.*;
+import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
 public class LogIntegrationTest
@@ -36,8 +38,11 @@ public class LogIntegrationTest
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
 
-    @Rule
     public ActorSchedulerRule actorScheduler = new ActorSchedulerRule();
+    public ServiceContainerRule serviceContainerRule = new ServiceContainerRule(actorScheduler);
+
+    @Rule
+    public RuleChain ruleChain = RuleChain.outerRule(actorScheduler).around(serviceContainerRule);
 
     private LogStream logStream;
 
@@ -48,14 +53,14 @@ public class LogIntegrationTest
 
         logStream = LogStreams
                 .createFsLogStream(TOPIC_NAME, 0)
+                .serviceContainer(serviceContainerRule.get())
                 .logRootPath(logPath)
                 .deleteOnClose(true)
                 .logSegmentSize(1024 * 1024 * 16)
-                .actorScheduler(actorScheduler.get())
-                .build();
+                .build()
+                .join();
 
-        logStream.open();
-        logStream.openLogStreamController().join();
+        logStream.openAppender().join();
     }
 
     @After

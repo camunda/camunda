@@ -24,20 +24,20 @@ import java.nio.ByteBuffer;
 import java.time.Duration;
 
 import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
-import io.zeebe.logstreams.impl.LogBlockIndexAppender;
+import io.zeebe.logstreams.impl.LogBlockIndexWriter;
 import io.zeebe.logstreams.impl.LogEntryDescriptor;
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
-import io.zeebe.logstreams.spi.LogStorage;
-import io.zeebe.logstreams.spi.ReadableSnapshot;
+import io.zeebe.logstreams.spi.*;
 import io.zeebe.logstreams.util.LogStreamRule;
 import io.zeebe.logstreams.util.LogStreamWriterRule;
+import io.zeebe.util.metrics.Metric;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.*;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
-public class LogBlockIndexAppenderTest
+public class LogBlockIndexWriterTest
 {
     private static final DirectBuffer EVENT_1 = wrapString("FOO");
     private static final DirectBuffer EVENT_2 = wrapString("BAR");
@@ -51,9 +51,9 @@ public class LogBlockIndexAppenderTest
     private TemporaryFolder temporaryFolder = new TemporaryFolder();
 
     private LogStreamRule logStreamRule = new LogStreamRule(temporaryFolder, b -> b
-                                                            .indexBlockSize(INDEX_BLOCK_SIZE)
-                                                            .readBlockSize(FRAGMENT_SIZE)
-                                                            .snapshotPeriod(SNAPSHOT_INTERVAL));
+        .indexBlockSize(INDEX_BLOCK_SIZE)
+        .readBlockSize(FRAGMENT_SIZE)
+        .snapshotPeriod(SNAPSHOT_INTERVAL));
 
     private LogStreamWriterRule writer = new LogStreamWriterRule(logStreamRule);
 
@@ -63,9 +63,10 @@ public class LogBlockIndexAppenderTest
                  .around(logStreamRule)
                  .around(writer);
 
-    private LogBlockIndexAppender indexAppender;
     private LogBlockIndex blockIndex;
     private LogStorage logStorage;
+    private SnapshotStorage snapshotStorage;
+    private String snapshotName;
 
     @Before
     public void setup()
@@ -73,7 +74,8 @@ public class LogBlockIndexAppenderTest
         final LogStream logStream = logStreamRule.getLogStream();
         blockIndex = logStream.getLogBlockIndex();
         logStorage = logStream.getLogStorage();
-        indexAppender = logStream.getLogBlockIndexController();
+        snapshotStorage = logStreamRule.getSnapshotStorage();
+        snapshotName = logStream.getLogBlockIndexWriter().getName();
     }
 
     @Test
@@ -136,27 +138,68 @@ public class LogBlockIndexAppenderTest
         waitUntil(() -> blockIndex.size() == 2);
 
         logStreamRule.getClock().addTime(SNAPSHOT_INTERVAL);
-        waitUntil(() -> getLatestSnapshot() != null);
+        waitUntil(() -> getSnapshotCount() > 0);
 
         final long snapshotPosition = getLatestSnapshot().getPosition();
         assertThat(snapshotPosition).isEqualTo(eventPositionOfLastBlock);
     }
 
     @Test
-    public void shouldWriteSnapshotWithPositionOfLastBlock()
+    public void shouldWriteSnapshotWithPositionOfLastBlock() throws InterruptedException
     {
         final long eventPositionOfLastBlock = writer.writeEvent(EVENT_1, true);
         writer.writeEvent(EVENT_1, true);
-
         writer.writeEvent(EVENT_2, true);
 
         waitUntil(() -> blockIndex.size() == 1);
 
         logStreamRule.getClock().addTime(SNAPSHOT_INTERVAL);
-        waitUntil(() -> getLatestSnapshot() != null);
+        waitUntil(() -> getSnapshotCount() > 0);
 
         final long snapshotPosition = getLatestSnapshot().getPosition();
         assertThat(snapshotPosition).isEqualTo(eventPositionOfLastBlock);
+    }
+
+    @Test
+    public void shouldRecoverBlockIndex()
+    {
+        // given
+        writer.writeEvents(2, EVENT_1, true);
+        final long lastPosition = writer.writeEvents(2, EVENT_2, true);
+
+        logStreamRule.closeLogStream();
+        assertThat(getLatestSnapshot()).isNull();
+
+        // when
+        logStreamRule.openLogStream();
+        logStreamRule.getLogStream().setCommitPosition(lastPosition);
+
+        // then
+        waitUntil(() -> logStreamRule.getLogStream().getLogBlockIndex().size() == 2);
+    }
+
+    @Test
+    public void shouldAppendBlockAfterRecover()
+    {
+        // given
+        writer.writeEvent(EVENT_1, true);
+        final long lastPos = writer.writeEvent(EVENT_1, true);
+
+        logStreamRule.closeLogStream();
+        assertThat(getLatestSnapshot()).isNull();
+
+        // when
+        logStreamRule.openLogStream();
+        logStreamRule.getLogStream().setCommitPosition(lastPos);
+        final LogBlockIndex newIndex = logStreamRule.getLogStream().getLogBlockIndex();
+
+        waitUntil(() -> newIndex.size() == 1);
+
+        // when
+        writer.wrap(logStreamRule);
+        writer.writeEvents(2, EVENT_2, true);
+
+        waitUntil(() -> newIndex.size() == 2);
     }
 
     @Test
@@ -166,49 +209,45 @@ public class LogBlockIndexAppenderTest
         writer.writeEvents(2, EVENT_1, true);
         writer.writeEvents(2, EVENT_2, true);
 
-        waitUntil(() -> blockIndex.size() == 2);
-
         logStreamRule.getClock().addTime(SNAPSHOT_INTERVAL);
-        waitUntil(() -> getLatestSnapshot() != null);
+        waitUntil(() -> getSnapshotCount() > 0);
 
-        indexAppender.close();
-        blockIndex.reset();
-
-        assertThat(blockIndex.size()).isEqualTo(0);
+        logStreamRule.closeLogStream();
 
         // when
-        indexAppender.open();
+        logStreamRule.openLogStream();
 
         // then
-        assertThat(blockIndex.size()).isEqualTo(2);
+        assertThat(logStreamRule.getLogStream().getLogBlockIndex().size()).isEqualTo(2);
     }
 
     @Test
-    public void shouldAppendBlockAfterRecover()
+    public void shouldAppendBlockAfterRecoverFromSnapshot()
     {
         // given
-        writer.writeEvent(EVENT_1, true);
-        writer.writeEvent(EVENT_1, true);
-
-        waitUntil(() -> blockIndex.size() == 1);
+        writer.writeEvents(2, EVENT_1, true);
 
         logStreamRule.getClock().addTime(SNAPSHOT_INTERVAL);
-        waitUntil(() -> getLatestSnapshot() != null);
+        waitUntil(() -> getSnapshotCount() > 0);
 
-        indexAppender.close();
-        indexAppender.open();
-
-        assertThat(blockIndex.size()).isEqualTo(1);
+        final long commitPosition = logStreamRule.getCommitPosition();
+        logStreamRule.closeLogStream();
 
         // when
+        logStreamRule.openLogStream();
+        logStreamRule.setCommitPosition(commitPosition);
+
+        final LogBlockIndex newIndex = logStreamRule.getLogStream().getLogBlockIndex();
+
+        // when
+        writer.wrap(logStreamRule);
         writer.writeEvents(2, EVENT_2, true);
 
-        // then
-        waitUntil(() -> blockIndex.size() == 2);
+        waitUntil(() -> newIndex.size() == 2);
     }
 
     @Test
-    public void shouldIncreateReadBuffer()
+    public void shouldIncreaseReadBuffer()
     {
         final DirectBuffer event = new UnsafeBuffer(new byte[INDEX_BLOCK_SIZE]);
 
@@ -228,12 +267,18 @@ public class LogBlockIndexAppenderTest
         return new UnsafeBuffer(buffer, headerLength, EVENT_SIZE);
     }
 
+    private long getSnapshotCount()
+    {
+        final LogBlockIndexWriter indexWriter = logStreamRule.getLogStream().getLogBlockIndexWriter();
+        final Metric snapshotsCreated = indexWriter.getSnapshotsCreated();
+        return snapshotsCreated.get();
+    }
+
     private ReadableSnapshot getLatestSnapshot()
     {
         try
         {
-            final String snapshotName = logStreamRule.getLogStream().getLogBlockIndexController().getName();
-            return logStreamRule.getSnapshotStorage().getLastSnapshot(snapshotName);
+            return snapshotStorage.getLastSnapshot(snapshotName);
         }
         catch (Exception e)
         {

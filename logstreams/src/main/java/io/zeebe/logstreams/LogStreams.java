@@ -15,17 +15,18 @@
  */
 package io.zeebe.logstreams;
 
-import org.agrona.DirectBuffer;
-import io.zeebe.logstreams.fs.FsLogStreamBuilder;
 import io.zeebe.logstreams.fs.FsSnapshotStorageBuilder;
+import io.zeebe.logstreams.impl.LogStreamBuilder;
 import io.zeebe.logstreams.processor.StreamProcessor;
 import io.zeebe.logstreams.processor.StreamProcessorBuilder;
+import io.zeebe.util.buffer.BufferUtil;
+import org.agrona.DirectBuffer;
 
 public class LogStreams
 {
-    public static FsLogStreamBuilder createFsLogStream(final DirectBuffer topicName, final int partitionId)
+    public static LogStreamBuilder createFsLogStream(final DirectBuffer topicName, final int partitionId)
     {
-        return new FsLogStreamBuilder(topicName, partitionId);
+        return new LogStreamBuilder(topicName, partitionId).logName(BufferUtil.bufferAsString(topicName) + "-" + partitionId);
     }
 
     public static FsSnapshotStorageBuilder createFsSnapshotStore(String rootPath)
