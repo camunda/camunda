@@ -19,6 +19,7 @@ import io.zeebe.broker.it.ClientRule;
 import io.zeebe.client.clustering.impl.TopologyBroker;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.SocketAddress;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -31,6 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  *
  */
+@Ignore
 public class GossipClusteringTest
 {
     private static final int PARTITION_COUNT = 5;

@@ -24,6 +24,7 @@ import java.util.*;
 import java.util.Map.Entry;
 
 import io.zeebe.broker.Loggers;
+import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.broker.task.processor.LockTaskStreamProcessor;
@@ -53,7 +54,7 @@ public class TaskSubscriptionManager extends Actor implements TransportListener
     protected final ServiceContainer serviceContext;
     private final ServerTransport transport;
 
-    protected final Int2ObjectHashMap<LogStreamBucket> logStreamBuckets = new Int2ObjectHashMap<>();
+    protected final Int2ObjectHashMap<PartitionBucket> logStreamBuckets = new Int2ObjectHashMap<>();
     protected final Long2ObjectHashMap<LockTaskStreamProcessor> streamProcessorBySubscriptionId = new Long2ObjectHashMap<>();
 
     /*
@@ -106,8 +107,8 @@ public class TaskSubscriptionManager extends Actor implements TransportListener
             final DirectBuffer taskType = subscription.getLockTaskType();
             final int partitionId = subscription.getPartitionId();
 
-            final LogStreamBucket logStreamBucket = logStreamBuckets.get(partitionId);
-            if (logStreamBucket == null)
+            final PartitionBucket partitionBucket = logStreamBuckets.get(partitionId);
+            if (partitionBucket == null)
             {
                 future.completeExceptionally(new RuntimeException(String.format("Partition with id '%d' not found.", partitionId)));
                 return;
@@ -116,7 +117,7 @@ public class TaskSubscriptionManager extends Actor implements TransportListener
             final long subscriptionId = nextSubscriptionId++;
             subscription.setSubscriberKey(subscriptionId);
 
-            final LockTaskStreamProcessor streamProcessor = logStreamBucket.getStreamProcessorByTaskType(taskType);
+            final LockTaskStreamProcessor streamProcessor = partitionBucket.getStreamProcessorByTaskType(taskType);
             if (streamProcessor != null)
             {
                 streamProcessorBySubscriptionId.put(subscriptionId, streamProcessor);
@@ -139,7 +140,8 @@ public class TaskSubscriptionManager extends Actor implements TransportListener
             else
             {
                 final LockTaskStreamProcessor processor = new LockTaskStreamProcessor(taskType);
-                final ActorFuture<StreamProcessorService> processorFuture = createStreamProcessorService(processor, taskType, logStreamBucket, taskType);
+
+                final ActorFuture<StreamProcessorService> processorFuture = createStreamProcessorService(processor, partitionBucket, taskType);
 
                 actor.runOnCompletion(processorFuture, (service, t) ->
                 {
@@ -147,7 +149,7 @@ public class TaskSubscriptionManager extends Actor implements TransportListener
                     {
                         streamProcessorBySubscriptionId.put(subscriptionId, processor);
 
-                        logStreamBucket.addStreamProcessor(processor);
+                        partitionBucket.addStreamProcessor(processor);
                         final ActorFuture<Void> addFuture = processor.addSubscription(subscription);
                         actor.runOnCompletion(addFuture, ((aVoid, throwable) ->
                         {
@@ -176,19 +178,17 @@ public class TaskSubscriptionManager extends Actor implements TransportListener
 
     protected ActorFuture<StreamProcessorService> createStreamProcessorService(
             final LockTaskStreamProcessor factory,
-            DirectBuffer newTaskTypeBuffer,
-            final LogStreamBucket logStreamBucket,
+            final PartitionBucket partitionBucket,
             final DirectBuffer taskType)
     {
-        final TypedStreamEnvironment env = new TypedStreamEnvironment(logStreamBucket.getLogStream(), transport.getOutput());
+        final TypedStreamEnvironment env = new TypedStreamEnvironment(partitionBucket.getLogStream(), transport.getOutput());
 
-        return streamProcessorServiceFactory.createService(logStreamBucket.getLogStream())
+        return streamProcessorServiceFactory.createService(partitionBucket.getPartition(), partitionBucket.getPartitionServiceName())
             .processor(factory.createStreamProcessor(env))
             .processorId(TASK_LOCK_STREAM_PROCESSOR_ID)
             .processorName(streamProcessorName(taskType))
             .build();
     }
-
 
     public ActorFuture<Void> removeSubscription(long subscriptionId)
     {
@@ -239,11 +239,11 @@ public class TaskSubscriptionManager extends Actor implements TransportListener
 
     protected ActorFuture<Void> removeStreamProcessorService(final LockTaskStreamProcessor streamProcessor)
     {
-        final LogStreamBucket logStreamBucket = logStreamBuckets.get(streamProcessor.getLogStreamPartitionId());
+        final PartitionBucket partitionBucket = logStreamBuckets.get(streamProcessor.getLogStreamPartitionId());
 
-        logStreamBucket.removeStreamProcessor(streamProcessor);
+        partitionBucket.removeStreamProcessor(streamProcessor);
 
-        final String logName = logStreamBucket.getLogStream().getLogName();
+        final String logName = partitionBucket.getLogStreamName();
         final DirectBuffer taskType = streamProcessor.getSubscriptedTaskType();
 
         return serviceContext.removeService(LogStreamServiceNames.streamProcessorService(logName, streamProcessorName(taskType)));
@@ -296,10 +296,9 @@ public class TaskSubscriptionManager extends Actor implements TransportListener
         }
     }
 
-    protected int dispatchBackpressuredSubscriptionCredits()
+    protected void dispatchBackpressuredSubscriptionCredits()
     {
         int nextRequestToConsume = backPressuredCreditsRequests.size() - 1;
-        int numSuccessfulRequests = 0;
 
         while (nextRequestToConsume >= 0)
         {
@@ -309,7 +308,6 @@ public class TaskSubscriptionManager extends Actor implements TransportListener
             if (success)
             {
                 backPressuredCreditsRequests.remove(nextRequestToConsume);
-                numSuccessfulRequests++;
                 nextRequestToConsume--;
             }
             else
@@ -317,23 +315,21 @@ public class TaskSubscriptionManager extends Actor implements TransportListener
                 break;
             }
         }
-
-        return numSuccessfulRequests;
     }
 
-    public void addStream(LogStream logStream, ServiceName<LogStream> logStreamServiceName)
+    public void addPartition(ServiceName<Partition> partitionServiceName, Partition leaderPartition)
     {
         actor.call(() ->
         {
-            logStreamBuckets.put(logStream.getPartitionId(), new LogStreamBucket(logStream, logStreamServiceName));
+            logStreamBuckets.put(leaderPartition.getInfo().getPartitionId(), new PartitionBucket(leaderPartition, partitionServiceName));
         });
     }
 
-    public void removeStream(LogStream logStream)
+    public void removePartition(Partition leaderPartition)
     {
         actor.call(() ->
         {
-            final int partitionId = logStream.getPartitionId();
+            final int partitionId = leaderPartition.getInfo().getPartitionId();
             logStreamBuckets.remove(partitionId);
             removeSubscriptionsForLogStream(partitionId);
         });
@@ -381,37 +377,43 @@ public class TaskSubscriptionManager extends Actor implements TransportListener
         });
     }
 
-    public int getCreditRequestCapacityUpperBound()
-    {
-        return creditRequestBuffer.getCapacityUpperBound();
-    }
-
     private static String streamProcessorName(final DirectBuffer taskType)
     {
         return String.format("task-lock.%s", bufferAsString(taskType));
     }
 
-    static class LogStreamBucket
+
+    static class PartitionBucket
     {
-        protected final LogStream logStream;
-        protected final ServiceName<LogStream> logStreamServiceName;
+        protected final Partition partition;
+        protected final ServiceName<Partition> partitionServiceName;
 
         protected List<LockTaskStreamProcessor> streamProcessors = new ArrayList<>();
 
-        LogStreamBucket(LogStream logStream, ServiceName<LogStream> logStreamServiceName)
+        PartitionBucket(Partition partition, ServiceName<Partition> partitionServiceName)
         {
-            this.logStream = logStream;
-            this.logStreamServiceName = logStreamServiceName;
+            this.partition = partition;
+            this.partitionServiceName = partitionServiceName;
         }
 
         public LogStream getLogStream()
         {
-            return logStream;
+            return partition.getLogStream();
         }
 
-        public ServiceName<LogStream> getLogServiceName()
+        public Partition getPartition()
         {
-            return logStreamServiceName;
+            return partition;
+        }
+
+        public String getLogStreamName()
+        {
+            return partition.getLogStream().getLogName();
+        }
+
+        public ServiceName<Partition> getPartitionServiceName()
+        {
+            return partitionServiceName;
         }
 
         public LockTaskStreamProcessor getStreamProcessorByTaskType(DirectBuffer taskType)

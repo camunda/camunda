@@ -17,20 +17,19 @@
  */
 package io.zeebe.broker.task;
 
-import static io.zeebe.broker.logstreams.LogStreamServiceNames.WORKFLOW_STREAM_GROUP;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADER_PARTITION_GROUP_NAME;
+import static io.zeebe.broker.logstreams.LogStreamServiceNames.STREAM_PROCESSOR_SERVICE_FACTORY;
 import static io.zeebe.broker.task.TaskQueueServiceNames.TASK_QUEUE_MANAGER;
 import static io.zeebe.broker.task.TaskQueueServiceNames.TASK_QUEUE_SUBSCRIPTION_MANAGER;
 import static io.zeebe.broker.transport.TransportServiceNames.CLIENT_API_SERVER_NAME;
+import static io.zeebe.broker.transport.TransportServiceNames.serverTransport;
 
-import io.zeebe.broker.logstreams.LogStreamServiceNames;
 import io.zeebe.broker.system.Component;
 import io.zeebe.broker.system.SystemContext;
-import io.zeebe.broker.transport.TransportServiceNames;
 import io.zeebe.servicecontainer.ServiceContainer;
 
 public class TaskQueueComponent implements Component
 {
-
     @Override
     public void init(SystemContext context)
     {
@@ -38,19 +37,17 @@ public class TaskQueueComponent implements Component
 
         final TaskSubscriptionManagerService taskSubscriptionManagerService = new TaskSubscriptionManagerService(serviceContainer);
         serviceContainer.createService(TASK_QUEUE_SUBSCRIPTION_MANAGER, taskSubscriptionManagerService)
-            .dependency(TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME), taskSubscriptionManagerService.getClientApiTransportInjector())
-            .dependency(LogStreamServiceNames.STREAM_PROCESSOR_SERVICE_FACTORY, taskSubscriptionManagerService.getStreamProcessorServiceFactoryInjector())
-            .groupReference(WORKFLOW_STREAM_GROUP, taskSubscriptionManagerService.getLogStreamsGroupReference())
+            .dependency(serverTransport(CLIENT_API_SERVER_NAME), taskSubscriptionManagerService.getClientApiTransportInjector())
+            .dependency(STREAM_PROCESSOR_SERVICE_FACTORY, taskSubscriptionManagerService.getStreamProcessorServiceFactoryInjector())
+            .groupReference(LEADER_PARTITION_GROUP_NAME, taskSubscriptionManagerService.getLeaderPartitionsGroupReference())
             .install();
 
         final TaskQueueManagerService taskQueueManagerService = new TaskQueueManagerService();
         serviceContainer.createService(TASK_QUEUE_MANAGER, taskQueueManagerService)
-            .dependency(TransportServiceNames.serverTransport(CLIENT_API_SERVER_NAME), taskQueueManagerService.getClientApiTransportInjector())
+            .dependency(serverTransport(CLIENT_API_SERVER_NAME), taskQueueManagerService.getClientApiTransportInjector())
             .dependency(TASK_QUEUE_SUBSCRIPTION_MANAGER, taskQueueManagerService.getTaskSubscriptionManagerInjector())
-            .dependency(LogStreamServiceNames.STREAM_PROCESSOR_SERVICE_FACTORY, taskQueueManagerService.getStreamProcessorServiceFactoryInjector())
-            .groupReference(WORKFLOW_STREAM_GROUP, taskQueueManagerService.getLogStreamsGroupReference())
+            .dependency(STREAM_PROCESSOR_SERVICE_FACTORY, taskQueueManagerService.getStreamProcessorServiceFactoryInjector())
+            .groupReference(LEADER_PARTITION_GROUP_NAME, taskQueueManagerService.getPartitionsGroupReference())
             .install();
-
     }
-
 }

@@ -4,6 +4,7 @@
 
 [global]
 directory = "${brokerFolder}/persistent-broker/"
+standalone = true
 
 # Networking configuration ----------------------------
 

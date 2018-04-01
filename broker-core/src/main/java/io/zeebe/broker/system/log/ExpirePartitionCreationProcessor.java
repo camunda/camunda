@@ -27,7 +27,6 @@ import io.zeebe.transport.SocketAddress;
 
 public class ExpirePartitionCreationProcessor implements TypedEventProcessor<PartitionEvent>
 {
-
     protected final PendingPartitionsIndex partitions;
     protected final PartitionIdGenerator idGenerator;
     protected final PartitionCreatorSelectionStrategy creatorStrategy;
@@ -46,7 +45,7 @@ public class ExpirePartitionCreationProcessor implements TypedEventProcessor<Par
     {
         final PartitionEvent value = event.getValue();
 
-        final PendingPartition partition = partitions.get(value.getId());
+        final PendingPartition partition = partitions.get(value.getPartitionId());
 
         if (partition != null)
         {
@@ -56,7 +55,6 @@ public class ExpirePartitionCreationProcessor implements TypedEventProcessor<Par
         {
             value.setState(PartitionState.CREATE_EXPIRE_REJECTED);
         }
-
     }
 
     @Override
@@ -84,7 +82,8 @@ public class ExpirePartitionCreationProcessor implements TypedEventProcessor<Par
             newEvent.reset();
             newEvent.setState(PartitionState.CREATE);
             newEvent.setTopicName(value.getTopicName());
-            newEvent.setId(idGenerator.currentId());
+            newEvent.setParitionId(idGenerator.currentId());
+            newEvent.setReplicationFactor(value.getReplicationFactor());
             newEvent.setCreator(nextCreator.getHostBuffer(), nextCreator.port());
 
             batchWriter.addNewEvent(newEvent);
@@ -101,7 +100,7 @@ public class ExpirePartitionCreationProcessor implements TypedEventProcessor<Par
         // => should the partition become available after this point, then the system partition will
         //    not recognize this and will not write a partition CREATED event. If this is required in the future,
         //    we can include the partition state in the index.
-        partitions.removePartitionKey(value.getId());
+        partitions.removePartitionKey(value.getPartitionId());
 
         idGenerator.moveToNextId();
 

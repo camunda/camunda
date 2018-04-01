@@ -18,7 +18,10 @@
 package io.zeebe.broker.logstreams.processor;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 
+import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
 import io.zeebe.logstreams.log.LogStream;
@@ -68,9 +71,9 @@ public class StreamProcessorServiceFactory implements Service<StreamProcessorSer
         return snapshotStorageInjector;
     }
 
-    public Builder createService(LogStream logStream)
+    public Builder createService(Partition partition, ServiceName<Partition> serviceName)
     {
-        return new Builder(logStream);
+        return new Builder(partition, serviceName);
     }
 
     public class Builder
@@ -80,13 +83,15 @@ public class StreamProcessorServiceFactory implements Service<StreamProcessorSer
         private String processorName;
         private int processorId = -1;
         private StreamProcessor streamProcessor;
+        private final List<ServiceName<?>> additionalDependencies = new ArrayList<>();
 
         protected MetadataFilter customEventFilter;
         protected boolean readOnly = false;
 
-        public Builder(LogStream logStream)
+        public Builder(Partition partition, ServiceName<Partition> serviceName)
         {
-            this.logStream = logStream;
+            this.logStream = partition.getLogStream();
+            this.additionalDependencies.add(serviceName);
         }
 
         public Builder processorId(int processorId)
@@ -126,6 +131,15 @@ public class StreamProcessorServiceFactory implements Service<StreamProcessorSer
             return this;
         }
 
+        public Builder additionalDependencies(ServiceName<?>... additionalDependencies)
+        {
+            for (ServiceName<?> serviceName : additionalDependencies)
+            {
+                this.additionalDependencies.add(serviceName);
+            }
+            return this;
+        }
+
         public ActorFuture<StreamProcessorService> build()
         {
             EnsureUtil.ensureNotNull("stream processor", streamProcessor);
@@ -147,9 +161,9 @@ public class StreamProcessorServiceFactory implements Service<StreamProcessorSer
                 .logStream(logStream)
                 .eventFilter(eventFilter)
                 .readOnly(readOnly)
+                .additionalDependencies(additionalDependencies)
                 .build();
         }
-
     }
 
     private static class MetadataEventFilter implements EventFilter

@@ -31,13 +31,15 @@ public class TopicEvent extends UnpackedObject
 
     protected final StringProperty name = new StringProperty("name");
     protected final IntegerProperty partitions = new IntegerProperty("partitions");
+    protected final IntegerProperty replicationFactor = new IntegerProperty("replicationFactor", 1);
 
     public TopicEvent()
     {
         this
             .declareProperty(state)
             .declareProperty(name)
-            .declareProperty(partitions);
+            .declareProperty(partitions)
+            .declareProperty(replicationFactor);
     }
 
     public TopicState getState()
@@ -70,5 +72,13 @@ public class TopicEvent extends UnpackedObject
         this.partitions.setValue(partitions);
     }
 
+    public void setReplicationFactor(int replicationFactor)
+    {
+        this.replicationFactor.setValue(replicationFactor);
+    }
 
+    public int getReplicationFactor()
+    {
+        return replicationFactor.getValue();
+    }
 }

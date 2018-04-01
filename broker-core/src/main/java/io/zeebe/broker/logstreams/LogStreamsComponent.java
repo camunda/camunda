@@ -17,7 +17,9 @@
  */
 package io.zeebe.broker.logstreams;
 
-import static io.zeebe.broker.logstreams.LogStreamServiceNames.*;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADER_PARTITION_GROUP_NAME;
+import static io.zeebe.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE;
+import static io.zeebe.broker.logstreams.LogStreamServiceNames.STREAM_PROCESSOR_SERVICE_FACTORY;
 
 import io.zeebe.broker.event.TopicSubscriptionServiceNames;
 import io.zeebe.broker.event.processor.TopicSubscriptionService;
@@ -29,15 +31,10 @@ import io.zeebe.servicecontainer.ServiceContainer;
 
 public class LogStreamsComponent implements Component
 {
-
     @Override
     public void init(SystemContext context)
     {
         final ServiceContainer serviceContainer = context.getServiceContainer();
-
-        final LogStreamsManagerService streamsManager = new LogStreamsManagerService(context.getConfigurationManager(), serviceContainer);
-        serviceContainer.createService(LOG_STREAMS_MANAGER_SERVICE, streamsManager)
-            .install();
 
         final SnapshotStorageService snapshotStorageService = new SnapshotStorageService(context.getConfigurationManager());
         serviceContainer.createService(SNAPSHOT_STORAGE_SERVICE, snapshotStorageService)
@@ -48,7 +45,7 @@ public class LogStreamsComponent implements Component
             .createService(TopicSubscriptionServiceNames.TOPIC_SUBSCRIPTION_SERVICE, topicSubscriptionService)
             .dependency(TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME), topicSubscriptionService.getClientApiTransportInjector())
             .dependency(LogStreamServiceNames.STREAM_PROCESSOR_SERVICE_FACTORY, topicSubscriptionService.getStreamProcessorServiceFactoryInjector())
-            .groupReference(LogStreamServiceNames.WORKFLOW_STREAM_GROUP, topicSubscriptionService.getLogStreamsGroupReference())
+            .groupReference(LEADER_PARTITION_GROUP_NAME, topicSubscriptionService.getPartitionsGroupReference())
             .install();
 
         final StreamProcessorServiceFactory streamProcessorFactory = new StreamProcessorServiceFactory(serviceContainer);
@@ -56,7 +53,6 @@ public class LogStreamsComponent implements Component
             .createService(STREAM_PROCESSOR_SERVICE_FACTORY, streamProcessorFactory)
             .dependency(SNAPSHOT_STORAGE_SERVICE, streamProcessorFactory.getSnapshotStorageInjector())
             .install();
-
     }
 
 }

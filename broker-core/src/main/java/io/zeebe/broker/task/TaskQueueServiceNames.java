@@ -21,6 +21,6 @@ import io.zeebe.servicecontainer.ServiceName;
 
 public class TaskQueueServiceNames
 {
-    public static final ServiceName<TaskQueueManager> TASK_QUEUE_MANAGER = ServiceName.newServiceName("taskqueue.manager", TaskQueueManager.class);
+    public static final ServiceName<TaskQueueManagerService> TASK_QUEUE_MANAGER = ServiceName.newServiceName("taskqueue.manager", TaskQueueManagerService.class);
     public static final ServiceName<TaskSubscriptionManager> TASK_QUEUE_SUBSCRIPTION_MANAGER = ServiceName.newServiceName("taskqueue.subscription.manager", TaskSubscriptionManager.class);
 }

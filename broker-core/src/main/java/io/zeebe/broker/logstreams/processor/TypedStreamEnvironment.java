@@ -47,6 +47,9 @@ public class TypedStreamEnvironment
         EVENT_REGISTRY.put(EventType.INCIDENT_EVENT, IncidentEvent.class);
     }
 
+    private TypedStreamReader reader;
+    private TypedStreamWriter writer;
+
     public TypedStreamEnvironment(LogStream stream, ServerOutput output)
     {
         this.output = output;
@@ -81,5 +84,23 @@ public class TypedStreamEnvironment
     public TypedStreamReader buildStreamReader()
     {
         return new TypedStreamReaderImpl(stream, EVENT_REGISTRY);
+    }
+
+    public TypedStreamReader getStreamReader()
+    {
+        if (reader == null)
+        {
+            reader = buildStreamReader();
+        }
+        return reader;
+    }
+
+    public TypedStreamWriter getStreamWriter()
+    {
+        if (writer == null)
+        {
+            writer = buildStreamWriter();
+        }
+        return writer;
     }
 }

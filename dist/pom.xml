@@ -52,7 +52,7 @@
               <mainClass>io.zeebe.broker.StandaloneBroker</mainClass>
               <id>broker</id>
               <commandLineArguments>
-                <commandLineArgument>../conf/zeebe.cfg.toml</commandLineArgument>
+                <commandLineArgument>-config ../conf/zeebe.cfg.toml</commandLineArgument>
               </commandLineArguments>
             </program>
           </programs>

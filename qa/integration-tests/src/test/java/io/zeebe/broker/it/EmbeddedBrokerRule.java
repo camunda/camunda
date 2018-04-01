@@ -19,13 +19,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
 import io.zeebe.broker.Broker;
-import io.zeebe.broker.system.log.SystemPartitionManager;
+import io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames;
 import io.zeebe.broker.transport.TransportServiceNames;
-import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.servicecontainer.*;
 import io.zeebe.test.util.TestFileUtil;
@@ -141,7 +142,7 @@ public class EmbeddedBrokerRule extends ExternalResource
             final String systemTopicName = Protocol.SYSTEM_TOPIC + "-" + Protocol.SYSTEM_PARTITION;
 
             serviceContainer.createService(AWAIT_BROKER_SERVICE_NAME, new NoneService())
-                .dependency(LogStreamServiceNames.streamProcessorService(systemTopicName, SystemPartitionManager.CREATE_TOPICS_PROCESSOR))
+                .dependency(ClusterBaseLayerServiceNames.leaderPartitionServiceName(systemTopicName))
                 .dependency(TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME))
                 .install()
                 .get(25, TimeUnit.SECONDS);
@@ -149,7 +150,7 @@ public class EmbeddedBrokerRule extends ExternalResource
         catch (InterruptedException | ExecutionException | TimeoutException e)
         {
             stopBroker();
-            throw new RuntimeException("Default task queue log not installed into the container withing 5 seconds.");
+            throw new RuntimeException("System patition not installed into the container withing 25 seconds.");
         }
     }
 

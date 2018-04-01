@@ -46,9 +46,9 @@ public class Broker implements AutoCloseable
     protected final SystemContext brokerContext;
     protected boolean isClosed = false;
 
-    public Broker(String configFileLocation)
+    public Broker(String[] args)
     {
-        this(new SystemContext(configFileLocation, null));
+        this(new SystemContext(args, null));
     }
 
     public Broker(String configFileLocation, ActorClock clock)

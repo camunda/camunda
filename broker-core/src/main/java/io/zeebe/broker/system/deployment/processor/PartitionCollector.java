@@ -115,7 +115,7 @@ public class PartitionCollector
         {
             final PartitionEvent partitionEvent = event.getValue();
             final DirectBuffer topicName = partitionEvent.getTopicName();
-            final int partitionId = partitionEvent.getId();
+            final int partitionId = partitionEvent.getPartitionId();
 
             partitions.put(partitionId, topicName, TopicPartitions.STATE_CREATING);
         }

@@ -1,4 +1,6 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Broker Core</name>
@@ -147,6 +149,13 @@
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+      <groupId>net.sf.jopt-simple</groupId>
+      <artifactId>jopt-simple</artifactId>
+      <version>5.0.4</version>
+    </dependency>
+
+
   </dependencies>
 
   <build>
@@ -163,7 +172,8 @@
               <goal>add-source</goal>
             </goals>
             <configuration>
-              <sources combine.children="append"><!-- merging with parent config for benchmarks -->
+              <sources combine.children="append"><!-- merging with parent 
+                  config for benchmarks -->
                 <source>${project.build.directory}/generated-sources/sbe</source>
               </sources>
             </configuration>
@@ -188,7 +198,6 @@
           </executableDependency>
           <mainClass>uk.co.real_logic.sbe.SbeTool</mainClass>
           <arguments>
-            <argument>${project.build.resources[0].directory}/raft-schema.xml</argument>
             <argument>${project.build.resources[0].directory}/management-schema.xml</argument>
           </arguments>
           <workingDirectory>${project.build.directory}/generated-sources</workingDirectory>

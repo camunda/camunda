@@ -105,7 +105,6 @@ public class ClientApiRule extends ExternalResource
         streamAddress = transport.registerRemoteAddress(brokerAddress);
         doRepeatedly(() -> getPartitionIds(Protocol.SYSTEM_TOPIC)).until(l -> l != null, e -> e == null);
 
-
         if (createDefaultTopic)
         {
             createTopic(DEFAULT_TOPIC_NAME, 1);

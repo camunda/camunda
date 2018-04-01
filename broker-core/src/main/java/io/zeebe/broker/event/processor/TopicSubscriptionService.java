@@ -20,12 +20,12 @@ package io.zeebe.broker.event.processor;
 import java.util.Objects;
 
 import io.zeebe.broker.Loggers;
+import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
 import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
 import io.zeebe.broker.system.ConfigurationManager;
 import io.zeebe.broker.transport.clientapi.*;
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
-import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.*;
 import io.zeebe.util.sched.Actor;
@@ -44,13 +44,14 @@ public class TopicSubscriptionService extends Actor implements Service<TopicSubs
     protected final SubscriptionCfg config;
     protected final ServiceContainer serviceContainer;
 
-    protected Int2ObjectHashMap<TopicSubscriptionManagementProcessor> managersByLog = new Int2ObjectHashMap<>();
+    protected final Int2ObjectHashMap<TopicSubscriptionManagementProcessor> managersByPartition = new Int2ObjectHashMap<>();
+
     protected ServerOutput serverOutput;
     protected StreamProcessorServiceFactory streamProcessorServiceFactory;
 
-    protected final ServiceGroupReference<LogStream> logStreamsGroupReference = ServiceGroupReference.<LogStream>create()
-        .onAdd(this::onStreamAdded)
-        .onRemove((logStreamServiceName, logStream) -> onStreamRemoved(logStream))
+    protected final ServiceGroupReference<Partition> partitionsGroupReference = ServiceGroupReference.<Partition>create()
+        .onAdd(this::onPartitionAdded)
+        .onRemove(this::onPartitionRemoved)
         .build();
 
     public TopicSubscriptionService(ConfigurationManager configurationManager, ServiceContainer serviceContainer)
@@ -77,9 +78,9 @@ public class TopicSubscriptionService extends Actor implements Service<TopicSubs
         return streamProcessorServiceFactoryInjector;
     }
 
-    public ServiceGroupReference<LogStream> getLogStreamsGroupReference()
+    public ServiceGroupReference<Partition> getPartitionsGroupReference()
     {
-        return logStreamsGroupReference;
+        return partitionsGroupReference;
     }
 
     @Override
@@ -102,20 +103,20 @@ public class TopicSubscriptionService extends Actor implements Service<TopicSubs
         actor.close();
     }
 
-    public void onStreamAdded(ServiceName<LogStream> logStreamServiceName, LogStream logStream)
+    public void onPartitionAdded(ServiceName<Partition> partitionServiceName, Partition partition)
     {
         actor.call(() ->
         {
-            final TopicSubscriptionManagementProcessor streamProcessor = new TopicSubscriptionManagementProcessor(
+            final TopicSubscriptionManagementProcessor ackProcessor = new TopicSubscriptionManagementProcessor(partition,
+                partitionServiceName,
                 new CommandResponseWriter(serverOutput),
                 new ErrorResponseWriter(serverOutput),
                 () -> new SubscribedEventWriter(serverOutput),
                 streamProcessorServiceFactory,
-                serviceContainer
-                );
+                serviceContainer);
 
-            final ActorFuture<StreamProcessorService> openFuture = streamProcessorServiceFactory.createService(logStream)
-                .processor(streamProcessor)
+            final ActorFuture<StreamProcessorService> openFuture = streamProcessorServiceFactory.createService(partition, partitionServiceName)
+                .processor(ackProcessor)
                 .processorId(StreamProcessorIds.TOPIC_SUBSCRIPTION_MANAGEMENT_PROCESSOR_ID)
                 .processorName("topic-management")
                 .eventFilter(TopicSubscriptionManagementProcessor.filter())
@@ -125,27 +126,26 @@ public class TopicSubscriptionService extends Actor implements Service<TopicSubs
             {
                 if (throwable == null)
                 {
-                    managersByLog.put(logStream.getPartitionId(), streamProcessor);
+                    managersByPartition.put(partition.getInfo().getPartitionId(), ackProcessor);
                 }
                 else
                 {
-                    LOG.error("Failed to create topic subscription stream processor service for log stream service '{}'", logStreamServiceName);
+                    LOG.error("Failed to create topic subscription stream processor service for log stream service '{}'", partitionServiceName);
                 }
             });
         });
     }
 
-    public void onStreamRemoved(LogStream logStream)
+    public void onPartitionRemoved(ServiceName<Partition> partitionServiceName, Partition partition)
     {
-        actor.call(() -> managersByLog.remove(logStream.getPartitionId()));
+        actor.call(() -> managersByPartition.remove(partition.getInfo().getPartitionId()));
     }
 
     public void onClientChannelCloseAsync(int channelId)
     {
         actor.call(() ->
         {
-            // TODO(menski): probably not garbage free
-            managersByLog.forEach((partitionId, manager) -> manager.onClientChannelCloseAsync(channelId));
+            managersByPartition.forEach((partitionId, manager) -> manager.onClientChannelCloseAsync(channelId));
         });
     }
 
@@ -173,7 +173,7 @@ public class TopicSubscriptionService extends Actor implements Service<TopicSubs
 
     private TopicSubscriptionManagementProcessor getManager(final int partitionId)
     {
-        return managersByLog.get(partitionId);
+        return managersByPartition.get(partitionId);
     }
 
     @Override

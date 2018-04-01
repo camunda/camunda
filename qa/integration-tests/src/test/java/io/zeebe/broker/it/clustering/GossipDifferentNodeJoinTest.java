@@ -19,6 +19,7 @@ import io.zeebe.broker.it.ClientRule;
 import io.zeebe.client.clustering.impl.TopologyBroker;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.SocketAddress;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -29,6 +30,7 @@ import java.util.List;
 import static io.zeebe.broker.it.clustering.ClusteringRule.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Ignore
 public class GossipDifferentNodeJoinTest
 {
     public static final String BROKER_4_TOML = "zeebe.cluster.4.cfg.toml";

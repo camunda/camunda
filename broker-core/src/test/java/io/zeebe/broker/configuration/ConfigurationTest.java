@@ -38,7 +38,6 @@ public class ConfigurationTest
 
         assertThat(config.getHeartbeatIntervalMs()).isEqualTo(1234);
         assertThat(config.getElectionIntervalMs()).isEqualTo(2345);
-        assertThat(config.getFlushIntervalMs()).isEqualTo(3456);
     }
 
 }

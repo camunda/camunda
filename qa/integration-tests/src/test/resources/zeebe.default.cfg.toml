@@ -4,6 +4,7 @@
 
 [global]
 useTempDirectory = true
+standalone = true
 
 # Networking configuration ----------------------------
 

@@ -21,5 +21,5 @@ import io.zeebe.servicecontainer.ServiceName;
 
 public class WorkflowQueueServiceNames
 {
-    public static final ServiceName<WorkflowQueueManager> WORKFLOW_QUEUE_MANAGER = ServiceName.newServiceName("workflow.manager", WorkflowQueueManager.class);
+    public static final ServiceName<WorkflowQueueManagerService> WORKFLOW_QUEUE_MANAGER = ServiceName.newServiceName("workflow.manager", WorkflowQueueManagerService.class);
 }

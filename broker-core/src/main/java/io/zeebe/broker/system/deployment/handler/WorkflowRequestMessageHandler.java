@@ -17,11 +17,14 @@
  */
 package io.zeebe.broker.system.deployment.handler;
 
+import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.system.deployment.message.CreateWorkflowRequest;
 import io.zeebe.broker.system.deployment.message.DeleteWorkflowMessage;
 import io.zeebe.broker.workflow.data.WorkflowEvent;
 import io.zeebe.broker.workflow.data.WorkflowState;
-import io.zeebe.logstreams.log.*;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamWriter;
+import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
@@ -129,13 +132,13 @@ public class WorkflowRequestMessageHandler
         return eventPosition > 0;
     }
 
-    public void addStream(final LogStream logStream)
+    public void addPartition(final Partition partition)
     {
-        deferredContext.runAsync(() -> logStreams.put(logStream.getPartitionId(), logStream));
+        deferredContext.runAsync(() -> logStreams.put(partition.getInfo().getPartitionId(), partition.getLogStream()));
     }
 
-    public void removeStream(final LogStream logStream)
+    public void removeStream(final Partition partition)
     {
-        deferredContext.runAsync(() -> logStreams.remove(logStream.getPartitionId()));
+        deferredContext.runAsync(() -> logStreams.remove(partition.getInfo().getPartitionId()));
     }
 }

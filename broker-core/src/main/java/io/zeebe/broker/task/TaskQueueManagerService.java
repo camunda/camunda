@@ -22,56 +22,55 @@ import static io.zeebe.broker.logstreams.processor.StreamProcessorIds.TASK_QUEUE
 
 import java.time.Duration;
 
+import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.broker.task.processor.TaskExpireLockStreamProcessor;
 import io.zeebe.broker.task.processor.TaskInstanceStreamProcessor;
-import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.ServerTransport;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorScheduler;
 
-public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQueueManager
+public class TaskQueueManagerService implements Service<TaskQueueManagerService>
 {
     protected static final String NAME = "task.queue.manager";
     public static final Duration LOCK_EXPIRATION_INTERVAL = Duration.ofSeconds(30);
 
-    protected final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
-    protected final Injector<TaskSubscriptionManager> taskSubscriptionManagerInjector = new Injector<>();
+    private final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
+    private final Injector<TaskSubscriptionManager> taskSubscriptionManagerInjector = new Injector<>();
     private final Injector<StreamProcessorServiceFactory> streamProcessorServiceFactoryInjector = new Injector<>();
 
-    protected final ServiceGroupReference<LogStream> logStreamsGroupReference = ServiceGroupReference.<LogStream>create()
-            .onAdd(this::addStream)
+    private final ServiceGroupReference<Partition> partitionsReference = ServiceGroupReference.<Partition>create()
+            .onAdd(this::addPartition)
             .build();
 
     private ActorScheduler actorScheduler;
     private StreamProcessorServiceFactory streamProcessorServiceFactory;
 
-    @Override
-    public void startTaskQueue(ServiceName<LogStream> logStreamServiceName, final LogStream stream)
+    public void startTaskQueue(ServiceName<Partition> name, Partition partition)
     {
         final ServerTransport serverTransport = clientApiTransportInjector.getValue();
 
         final TaskSubscriptionManager taskSubscriptionManager = taskSubscriptionManagerInjector.getValue();
 
         final TaskInstanceStreamProcessor taskInstanceStreamProcessor = new TaskInstanceStreamProcessor(taskSubscriptionManager);
-        final TypedStreamEnvironment env = new TypedStreamEnvironment(stream, serverTransport.getOutput());
+        final TypedStreamEnvironment env = new TypedStreamEnvironment(partition.getLogStream(), serverTransport.getOutput());
 
-        streamProcessorServiceFactory.createService(stream)
+        streamProcessorServiceFactory.createService(partition, name)
             .processor(taskInstanceStreamProcessor.createStreamProcessor(env))
             .processorId(TASK_QUEUE_STREAM_PROCESSOR_ID)
             .processorName("task-instance")
             .build();
 
-        startExpireLockService(logStreamServiceName, stream, env);
+        startExpireLockService(name, partition, env);
     }
 
-    protected void startExpireLockService(ServiceName<LogStream> logStreamServiceName, LogStream stream, TypedStreamEnvironment env)
+    protected void startExpireLockService(ServiceName<Partition> partitionServiceName, Partition partition, TypedStreamEnvironment env)
     {
         final TaskExpireLockStreamProcessor expireLockStreamProcessor = new TaskExpireLockStreamProcessor(env.buildStreamReader(), env.buildStreamWriter());
 
-        streamProcessorServiceFactory.createService(stream)
+        streamProcessorServiceFactory.createService(partition, partitionServiceName)
             .processor(expireLockStreamProcessor.createStreamProcessor(env))
             .processorId(TASK_EXPIRE_LOCK_STREAM_PROCESSOR_ID)
             .processorName("task-expire-lock")
@@ -91,7 +90,7 @@ public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQ
     }
 
     @Override
-    public TaskQueueManager get()
+    public TaskQueueManagerService get()
     {
         return this;
     }
@@ -106,19 +105,19 @@ public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQ
         return taskSubscriptionManagerInjector;
     }
 
-    public ServiceGroupReference<LogStream> getLogStreamsGroupReference()
+    public ServiceGroupReference<Partition> getPartitionsGroupReference()
     {
-        return logStreamsGroupReference;
+        return partitionsReference;
     }
 
-    public void addStream(ServiceName<LogStream> name, LogStream logStream)
+    public void addPartition(ServiceName<Partition> name, Partition partition)
     {
         actorScheduler.submitActor(new Actor()
         {
             @Override
             protected void onActorStarted()
             {
-                startTaskQueue(name, logStream);
+                startTaskQueue(name, partition);
             }
         });
     }

@@ -33,8 +33,7 @@ import org.agrona.DirectBuffer;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-
-import io.zeebe.broker.clustering.management.message.CreatePartitionRequest;
+import io.zeebe.broker.clustering.api.CreatePartitionRequest;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ControlMessageType;
@@ -71,7 +70,27 @@ public class CreateTopicTest
             .containsExactly(
                 entry("state", "CREATED"),
                 entry("name", topicName),
-                entry("partitions", 2)
+                entry("partitions", 2),
+                entry("replicationFactor", 1)
+            );
+    }
+
+    @Test
+    public void shouldCreateTopicWith64Partitions()
+    {
+        // given
+        final String topicName = "newTopic";
+
+        // when
+        final ExecuteCommandResponse response = apiRule.createTopic(topicName, 64);
+
+        // then
+        assertThat(response.getEvent())
+            .containsExactly(
+                entry("state", "CREATED"),
+                entry("name", topicName),
+                entry("partitions", 64),
+                entry("replicationFactor", 1)
             );
     }
 
@@ -86,7 +105,8 @@ public class CreateTopicTest
             .containsExactly(
                 entry("state", "CREATE_REJECTED"),
                 entry("name", Protocol.SYSTEM_TOPIC),
-                entry("partitions", 2)
+                entry("partitions", 2),
+                entry("replicationFactor", 1)
             );
     }
 
@@ -105,7 +125,8 @@ public class CreateTopicTest
             .containsExactly(
                 entry("state", "CREATE_REJECTED"),
                 entry("name", topicName),
-                entry("partitions", 2)
+                entry("partitions", 2),
+                entry("replicationFactor", 1)
             );
     }
 
@@ -124,7 +145,8 @@ public class CreateTopicTest
             .containsExactly(
                 entry("state", "CREATE_REJECTED"),
                 entry("name", topicName),
-                entry("partitions", numberOfPartitions)
+                entry("partitions", numberOfPartitions),
+                entry("replicationFactor", 1)
             );
     }
 
@@ -143,7 +165,8 @@ public class CreateTopicTest
             .containsExactly(
                 entry("state", "CREATE_REJECTED"),
                 entry("name", topicName),
-                entry("partitions", numberOfPartitions)
+                entry("partitions", numberOfPartitions),
+                entry("replicationFactor", 1)
             );
     }
 
@@ -163,7 +186,8 @@ public class CreateTopicTest
             .containsExactly(
                 entry("state", "CREATED"),
                 entry("name", topicName),
-                entry("partitions", 1)
+                entry("partitions", 1),
+                entry("replicationFactor", 1)
             );
     }
 
@@ -183,6 +207,7 @@ public class CreateTopicTest
 
         partitionMessage.topicName(topicName);
         partitionMessage.partitionId(partition1);
+        partitionMessage.replicationFactor(1);
 
         doRepeatedly(() -> output.sendRequest(remoteAddress, partitionMessage)).until(r -> r != null); // => should create partition
         doRepeatedly(() -> output.sendRequest(remoteAddress, partitionMessage)).until(r -> r != null); // => should be rejected/ignored

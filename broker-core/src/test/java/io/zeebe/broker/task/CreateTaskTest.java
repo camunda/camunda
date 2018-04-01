@@ -29,7 +29,6 @@ import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 
-
 public class CreateTaskTest
 {
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();

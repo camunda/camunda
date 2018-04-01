@@ -17,32 +17,29 @@
  */
 package io.zeebe.broker.system.log;
 
-import io.zeebe.broker.clustering.handler.TopologyBroker;
-import org.agrona.DirectBuffer;
-
+import io.zeebe.broker.clustering.base.topology.TopologyDto.BrokerDto;
 import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.msgpack.property.EnumProperty;
-import io.zeebe.msgpack.property.IntegerProperty;
-import io.zeebe.msgpack.property.LongProperty;
-import io.zeebe.msgpack.property.ObjectProperty;
-import io.zeebe.msgpack.property.StringProperty;
+import io.zeebe.msgpack.property.*;
+import org.agrona.DirectBuffer;
 
 public class PartitionEvent extends UnpackedObject
 {
     protected final EnumProperty<PartitionState> state = new EnumProperty<>("state", PartitionState.class);
     protected final StringProperty topicName = new StringProperty("topicName");
-    protected final IntegerProperty id = new IntegerProperty("id");
+    protected final IntegerProperty partitionId = new IntegerProperty("partitionId");
+    protected final IntegerProperty replicationFactor = new IntegerProperty("replicationFactor");
 
     // TODO: this property can be removed when we have timestamps in log entries
     protected final LongProperty creationTimeout = new LongProperty("creationTimeout", -1L);
 
-    protected final ObjectProperty<TopologyBroker> creator = new ObjectProperty<>("creator", new TopologyBroker());
+    protected final ObjectProperty<BrokerDto> creator = new ObjectProperty<>("creator", new BrokerDto());
 
     public PartitionEvent()
     {
         this
             .declareProperty(state)
-            .declareProperty(id)
+            .declareProperty(partitionId)
+            .declareProperty(replicationFactor)
             .declareProperty(topicName)
             .declareProperty(creationTimeout)
             .declareProperty(creator);
@@ -68,14 +65,24 @@ public class PartitionEvent extends UnpackedObject
         return topicName.getValue();
     }
 
-    public void setId(int id)
+    public void setParitionId(int id)
     {
-        this.id.setValue(id);
+        this.partitionId.setValue(id);
     }
 
-    public int getId()
+    public int getPartitionId()
     {
-        return id.getValue();
+        return partitionId.getValue();
+    }
+
+    public int getReplicationFactor()
+    {
+        return replicationFactor.getValue();
+    }
+
+    public void setReplicationFactor(int replicationFactor)
+    {
+        this.replicationFactor.setValue(replicationFactor);
     }
 
     public void setCreationTimeout(long timeout)
@@ -90,12 +97,12 @@ public class PartitionEvent extends UnpackedObject
 
     public void setCreator(DirectBuffer host, int port)
     {
-        final TopologyBroker address = creator.getValue();
+        final BrokerDto address = creator.getValue();
         address.setHost(host, 0, host.capacity());
         address.setPort(port);
     }
 
-    public TopologyBroker getCreator()
+    public BrokerDto getCreator()
     {
         return creator.getValue();
     }

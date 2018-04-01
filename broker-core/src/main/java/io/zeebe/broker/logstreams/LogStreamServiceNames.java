@@ -18,26 +18,12 @@
 package io.zeebe.broker.logstreams;
 
 import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
-import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.spi.SnapshotStorage;
 import io.zeebe.servicecontainer.ServiceName;
 
 public class LogStreamServiceNames
 {
-
-    public static final ServiceName<LogStreamsManager> LOG_STREAMS_MANAGER_SERVICE = ServiceName.newServiceName("logstreams.manager", LogStreamsManager.class);
-
     public static final ServiceName<SnapshotStorage> SNAPSHOT_STORAGE_SERVICE = ServiceName.newServiceName("snapshot.storage", SnapshotStorage.class);
 
     public static final ServiceName<StreamProcessorServiceFactory> STREAM_PROCESSOR_SERVICE_FACTORY = ServiceName.newServiceName("logstreams.processor-factory", StreamProcessorServiceFactory.class);
-
-    public static final ServiceName<LogStream> WORKFLOW_STREAM_GROUP = ServiceName.newServiceName("logstreams.worfklow", LogStream.class);
-
-    public static final ServiceName<LogStream> SYSTEM_STREAM_GROUP = ServiceName.newServiceName("logstreams.system", LogStream.class);
-
-    public static final ServiceName<LogStream> logStreamServiceName(String logName)
-    {
-        return ServiceName.newServiceName(String.format("log.%s", logName), LogStream.class);
-    }
-
 }

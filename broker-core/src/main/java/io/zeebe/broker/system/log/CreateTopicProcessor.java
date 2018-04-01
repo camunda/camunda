@@ -30,7 +30,6 @@ import io.zeebe.transport.SocketAddress;
 
 public class CreateTopicProcessor implements TypedEventProcessor<TopicEvent>
 {
-
     protected final TopicsIndex topics;
     protected final PartitionIdGenerator idGenerator;
     protected final PartitionEvent partitionEvent = new PartitionEvent();
@@ -105,7 +104,8 @@ public class CreateTopicProcessor implements TypedEventProcessor<TopicEvent>
                 partitionEvent.reset();
                 partitionEvent.setState(PartitionState.CREATE);
                 partitionEvent.setTopicName(value.getName());
-                partitionEvent.setId(idGenerator.currentId(i));
+                partitionEvent.setParitionId(idGenerator.currentId(i));
+                partitionEvent.setReplicationFactor(value.getReplicationFactor());
                 partitionEvent.setCreator(nextCreator.getHostBuffer(), nextCreator.port());
 
                 batchWriter.addNewEvent(partitionEvent);

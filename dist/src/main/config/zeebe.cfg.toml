@@ -4,6 +4,7 @@
 
 [global]
 directory = "../data"
+standalone = true
 
 # Networking configuration ----------------------------
 

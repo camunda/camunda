@@ -23,16 +23,9 @@ import java.util.Scanner;
 
 public class StandaloneBroker
 {
-
     public static void main(String[] args)
     {
-        String configFile = null;
-        if (args.length == 1)
-        {
-            configFile = args[0];
-        }
-
-        final Broker broker = new Broker(configFile);
+        final Broker broker = new Broker(args);
 
         getRuntime().addShutdownHook(new Thread("Broker close Thread")
         {

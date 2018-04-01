@@ -23,8 +23,8 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.zeebe.broker.clustering.gossip.service.ZbGossipConfig;
-import io.zeebe.broker.clustering.management.config.ClusterManagementConfig;
+import io.zeebe.broker.clustering.ClusterComponentConfiguration;
+import io.zeebe.broker.clustering.base.gossip.BrokerGossipConfiguration;
 import io.zeebe.broker.event.processor.SubscriptionCfg;
 import io.zeebe.broker.logstreams.cfg.LogStreamsCfg;
 import io.zeebe.broker.logstreams.cfg.SnapshotStorageCfg;
@@ -53,13 +53,13 @@ public class ConfigurationScenario
 
     public ConfigurationScenario meta(String parent, String child)
     {
-        withConfiguration("network.management", ClusterManagementConfig.class, parent, child);
+        withConfiguration("network.management", ClusterComponentConfiguration.class, parent, child);
         return this;
     }
 
     public ConfigurationScenario gossip(String parent, String child)
     {
-        withConfiguration("network.gossip", ZbGossipConfig.class, parent, child);
+        withConfiguration("network.gossip", BrokerGossipConfiguration.class, parent, child);
         return this;
     }
 

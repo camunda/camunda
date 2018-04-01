@@ -17,47 +17,43 @@
  */
 package io.zeebe.broker.system.log;
 
+import java.time.Duration;
 import java.util.Iterator;
 
-import io.zeebe.broker.clustering.management.PartitionManager;
-import io.zeebe.broker.clustering.member.Member;
+import io.zeebe.broker.Loggers;
+import io.zeebe.broker.clustering.base.topology.*;
+import io.zeebe.broker.clustering.base.topology.Topology.NodeInfo;
+import io.zeebe.broker.clustering.base.topology.Topology.PartitionInfo;
 import io.zeebe.broker.logstreams.processor.*;
 import io.zeebe.broker.system.log.PendingPartitionsIndex.PendingPartition;
 import io.zeebe.util.CloseableSilently;
-import io.zeebe.util.collection.IntIterator;
+import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.clock.ActorClock;
+import org.slf4j.Logger;
 
-public class ResolvePendingPartitionsCommand implements Runnable, CloseableSilently
+public class ResolvePendingPartitionsCommand implements CloseableSilently, TopologyPartitionListener
 {
+    private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
+
     protected final PendingPartitionsIndex partitions;
-    protected final PartitionManager partitionManager;
+    private ActorControl actorControl;
 
     protected final TypedStreamWriter writer;
     protected final TypedStreamReader reader;
 
-    public ResolvePendingPartitionsCommand(
-            PendingPartitionsIndex partitions,
-            PartitionManager partitionManager,
+    public ResolvePendingPartitionsCommand(PendingPartitionsIndex partitions,
             TypedStreamReader reader,
             TypedStreamWriter writer)
     {
         this.partitions = partitions;
-        this.partitionManager = partitionManager;
         this.reader = reader;
         this.writer = writer;
     }
 
-    @Override
-    public void run()
+    public void init(ActorControl actorControl)
     {
-        if (partitions.isEmpty())
-        {
-            // no pending partitions
-            return;
-        }
-
-        checkCompletedCreation();
-        checkExpiredCreation();
+        this.actorControl = actorControl;
+        this.actorControl.runAtFixedRate(Duration.ofSeconds(1), this::checkExpiredCreation);
     }
 
     @Override
@@ -68,6 +64,11 @@ public class ResolvePendingPartitionsCommand implements Runnable, CloseableSilen
 
     private void checkExpiredCreation()
     {
+        if (partitions.isEmpty())
+        {
+            return;
+        }
+
         final Iterator<PendingPartition> partitionIt = partitions.iterator();
         final long now = ActorClock.currentTimeMillis();
 
@@ -76,8 +77,7 @@ public class ResolvePendingPartitionsCommand implements Runnable, CloseableSilen
             final PendingPartition partition = partitionIt.next();
             if (partition.getCreationTimeout() < now)
             {
-                final TypedEvent<PartitionEvent> event =
-                        reader.readValue(partition.getPosition(), PartitionEvent.class);
+                final TypedEvent<PartitionEvent> event = reader.readValue(partition.getPosition(), PartitionEvent.class);
 
                 event.getValue().setState(PartitionState.CREATE_EXPIRE);
 
@@ -88,37 +88,37 @@ public class ResolvePendingPartitionsCommand implements Runnable, CloseableSilen
         }
     }
 
-    private void checkCompletedCreation()
+    @Override
+    public void onPartitionUpdated(PartitionInfo partitionInfo, Topology topology)
     {
-        final Iterator<Member> currentMembers = partitionManager.getKnownMembers();
+        final int partitionId = partitionInfo.getPartitionId();
+        final NodeInfo leader = topology.getLeader(partitionId);
 
-        while (currentMembers.hasNext())
+        actorControl.run(() ->
         {
-            final Member currentMember = currentMembers.next();
-
-            final IntIterator partitionsLeadByMember = currentMember.getLeadingPartitions();
-
-
-
-            while (partitionsLeadByMember.hasNext())
+            actorControl.runUntilDone(() ->
             {
-
-                final int currentPartition = partitionsLeadByMember.nextInt();
-                final PendingPartition partition = partitions.get(currentPartition);
-
-                if (partition != null)
+                final PendingPartition pendingPartition = partitions.get(partitionId);
+                if (pendingPartition != null && leader != null)
                 {
-
-                    final TypedEvent<PartitionEvent> event =
-                            reader.readValue(partition.getPosition(), PartitionEvent.class);
+                    final TypedEvent<PartitionEvent> event = reader.readValue(pendingPartition.getPosition(), PartitionEvent.class);
 
                     event.getValue().setState(PartitionState.CREATE_COMPLETE);
 
-                    // it is ok if writing fails,
-                    // we will then try it again with the next command execution (there are no other side effects of completion)
-                    writer.writeFollowupEvent(event.getKey(), event.getValue());
+                    if (writer.writeFollowupEvent(event.getKey(), event.getValue()) >= 0)
+                    {
+                        actorControl.done();
+                    }
+                    else
+                    {
+                        actorControl.yield();
+                    }
                 }
-            }
-        }
+                else
+                {
+                    actorControl.done();
+                }
+            });
+        });
     }
 }

@@ -21,6 +21,7 @@ import java.util.Iterator;
 import java.util.function.Supplier;
 
 import io.zeebe.broker.Loggers;
+import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.logstreams.processor.*;
 import io.zeebe.broker.transport.clientapi.*;
 import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
@@ -51,6 +52,9 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
     protected LogStream logStream;
     protected int logStreamPartitionId;
 
+    protected final Partition partition;
+    protected final ServiceName<Partition> partitionServiceName;
+
     protected final SubscriptionRegistry subscriptionRegistry = new SubscriptionRegistry();
 
     protected final ErrorResponseWriter errorWriter;
@@ -71,13 +75,17 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
     protected final TopicSubscriberEvent subscriberEvent = new TopicSubscriberEvent();
     protected LoggedEvent currentEvent;
 
-    public TopicSubscriptionManagementProcessor(
+
+    public TopicSubscriptionManagementProcessor(Partition partition,
+            ServiceName<Partition> partitionServiceName,
             CommandResponseWriter responseWriter,
             ErrorResponseWriter errorWriter,
             Supplier<SubscribedEventWriter> eventWriterFactory,
             StreamProcessorServiceFactory streamProcessorServiceFactory,
             ServiceContainer serviceContainer)
     {
+        this.partition = partition;
+        this.partitionServiceName = partitionServiceName;
         this.responseWriter = responseWriter;
         this.errorWriter = errorWriter;
         this.eventWriterFactory = eventWriterFactory;
@@ -241,11 +249,12 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
 
     public ActorFuture<StreamProcessorService> openPushProcessorAsync(final TopicSubscriptionPushProcessor processor)
     {
-        return streamProcessorServiceFactory.createService(logStream)
+        return streamProcessorServiceFactory.createService(partition, partitionServiceName)
                 .processor(processor)
                 .processorId(StreamProcessorIds.TOPIC_SUBSCRIPTION_PUSH_PROCESSOR_ID)
                 .processorName(pushProcessorName(processor))
                 .eventFilter(TopicSubscriptionPushProcessor.eventFilter())
+                .additionalDependencies(partitionServiceName)
                 .readOnly(true)
                 .build();
     }

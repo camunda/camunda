@@ -23,6 +23,7 @@ import io.zeebe.client.clustering.impl.TopologyResponse;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.SocketAddress;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -36,6 +37,7 @@ import static io.zeebe.broker.it.clustering.ClusteringRule.BROKER_1_CLIENT_ADDRE
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 
+@Ignore
 public class TopologyRequestTest
 {
 

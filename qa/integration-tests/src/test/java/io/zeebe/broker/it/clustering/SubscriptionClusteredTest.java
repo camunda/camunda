@@ -22,6 +22,7 @@ import io.zeebe.client.task.impl.CreateTaskCommandImpl;
 import io.zeebe.client.topic.Topic;
 import io.zeebe.test.util.AutoCloseableRule;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -34,6 +35,7 @@ import java.util.List;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Ignore
 public class SubscriptionClusteredTest
 {
     private static final int PARTITION_COUNT = 5;

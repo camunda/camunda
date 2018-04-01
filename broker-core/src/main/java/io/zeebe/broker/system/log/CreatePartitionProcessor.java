@@ -20,10 +20,11 @@ package io.zeebe.broker.system.log;
 import java.time.Duration;
 
 import io.zeebe.broker.Loggers;
-import io.zeebe.broker.clustering.handler.TopologyBroker;
-import io.zeebe.broker.clustering.management.PartitionManager;
+import io.zeebe.broker.clustering.api.CreatePartitionRequest;
+import io.zeebe.broker.clustering.base.topology.TopologyDto.BrokerDto;
 import io.zeebe.broker.logstreams.processor.*;
 import io.zeebe.transport.*;
+import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -31,20 +32,18 @@ import org.agrona.DirectBuffer;
 
 public class CreatePartitionProcessor implements TypedEventProcessor<PartitionEvent>
 {
-
-
-    protected final PartitionManager partitionManager;
+    private final ClientTransport clientTransport;
     protected final PendingPartitionsIndex partitions;
     protected final long creationTimeoutMillis;
     protected final SocketAddress creatorAddress = new SocketAddress();
     private ActorControl actor;
 
     public CreatePartitionProcessor(
-            PartitionManager partitionManager,
+            ClientTransport clientTransport,
             PendingPartitionsIndex partitions,
             Duration creationTimeout)
     {
-        this.partitionManager = partitionManager;
+        this.clientTransport = clientTransport;
         this.partitions = partitions;
         this.creationTimeoutMillis = creationTimeout.toMillis();
     }
@@ -69,17 +68,28 @@ public class CreatePartitionProcessor implements TypedEventProcessor<PartitionEv
     public boolean executeSideEffects(TypedEvent<PartitionEvent> event, TypedResponseWriter responseWriter)
     {
         final PartitionEvent value = event.getValue();
-        final TopologyBroker creator = value.getCreator();
+        final BrokerDto creator = value.getCreator();
         final DirectBuffer creatorHost = creator.getHost();
 
         creatorAddress.host(creatorHost, 0, creatorHost.capacity());
         creatorAddress.port(creator.getPort());
 
-        final ActorFuture<ClientResponse> partitionRemote =
-            partitionManager.createPartitionRemote(creatorAddress, value.getTopicName(), value.getId());
+        final DirectBuffer topicNameBuffer = BufferUtil.cloneBuffer(value.getTopicName());
+        final int partitionId = value.getPartitionId();
+        final int replicationFactor = value.getReplicationFactor();
 
+        final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(creatorAddress);
 
-        actor.runOnCompletion(partitionRemote, ((clientRequest, throwable) ->
+        final CreatePartitionRequest messageWriter = new CreatePartitionRequest();
+
+        messageWriter
+            .partitionId(partitionId)
+            .replicationFactor(replicationFactor)
+            .topicName(topicNameBuffer);
+
+        final ActorFuture<ClientResponse> response = clientTransport.getOutput().sendRequest(remoteAddress, messageWriter, Duration.ofSeconds(5));
+
+        actor.runOnCompletion(response, ((clientRequest, throwable) ->
         {
             if (throwable == null)
             {
@@ -108,7 +118,7 @@ public class CreatePartitionProcessor implements TypedEventProcessor<PartitionEv
         // adds the position of the CREATE event to the index. This is not the latest event
         // (which is CREATING), but this should be ok since these events are the same apart from the state.
         partitions.putPartition(
-                value.getId(),
+                value.getPartitionId(),
                 event.getPosition(),
                 value.getCreationTimeout());
     }

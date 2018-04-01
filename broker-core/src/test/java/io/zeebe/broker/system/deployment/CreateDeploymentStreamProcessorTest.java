@@ -73,9 +73,7 @@ public class CreateDeploymentStreamProcessorTest
         final PendingDeployments pendingDeployments = new PendingDeployments();
 
         final DeploymentEventWriter writer =
-                new DeploymentEventWriter(
-                        env.buildStreamWriter(),
-                        env.buildStreamReader());
+                new DeploymentEventWriter(env);
 
         final RemoteWorkflowsManager remoteManager = mock(RemoteWorkflowsManager.class);
         when(remoteManager.distributeWorkflow(any(), anyLong(), any())).thenReturn(true);
@@ -151,8 +149,9 @@ public class CreateDeploymentStreamProcessorTest
         final PartitionEvent event = new PartitionEvent();
         event.setState(PartitionState.CREATED);
         event.setTopicName(BufferUtil.wrapString(topicName));
-        event.setId(partitionId);
+        event.setParitionId(partitionId);
         event.setCreator(BufferUtil.wrapString("host"), 1234);
+        event.setReplicationFactor(1);
 
         return event;
     }

@@ -17,22 +17,18 @@
  */
 package io.zeebe.broker.transport.clientapi;
 
+import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.servicecontainer.Injector;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceGroupReference;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.servicecontainer.*;
 
 public class ClientApiMessageHandlerService implements Service<ClientApiMessageHandler>
 {
     private final Injector<Dispatcher> controlMessageBufferInjector = new Injector<>();
     protected ClientApiMessageHandler service;
 
-    protected final ServiceGroupReference<LogStream> logStreamsGroupReference = ServiceGroupReference.<LogStream>create()
-        .onAdd((name, stream) -> service.addStream(stream))
-        .onRemove((name, stream) -> service.removeStream(stream))
+    protected final ServiceGroupReference<Partition> leaderPartitionsGroupReference = ServiceGroupReference.<Partition>create()
+        .onAdd((name, partition) -> service.addPartition(partition))
+        .onRemove((name, partition) -> service.removePartition(partition))
         .build();
 
     @Override
@@ -59,8 +55,8 @@ public class ClientApiMessageHandlerService implements Service<ClientApiMessageH
         return controlMessageBufferInjector;
     }
 
-    public ServiceGroupReference<LogStream> getLogStreamsGroupReference()
+    public ServiceGroupReference<Partition> getLeaderParitionsGroupReference()
     {
-        return logStreamsGroupReference;
+        return leaderPartitionsGroupReference;
     }
 }

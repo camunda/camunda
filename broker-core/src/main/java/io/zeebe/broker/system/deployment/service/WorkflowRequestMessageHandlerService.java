@@ -17,17 +17,20 @@
  */
 package io.zeebe.broker.system.deployment.service;
 
+import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.system.deployment.handler.WorkflowRequestMessageHandler;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceGroupReference;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
 
 public class WorkflowRequestMessageHandlerService implements Service<WorkflowRequestMessageHandler>
 {
     private WorkflowRequestMessageHandler handler;
 
-    private final ServiceGroupReference<LogStream> logStreamsGroupReference = ServiceGroupReference.<LogStream>create()
-            .onAdd((name, stream) -> handler.addStream(stream))
-            .onRemove((name, stream) -> handler.removeStream(stream))
+    private final ServiceGroupReference<Partition> partitionGroupReference = ServiceGroupReference.<Partition>create()
+            .onAdd((name, partition) -> handler.addPartition(partition))
+            .onRemove((name, partition) -> handler.removeStream(partition))
             .build();
 
 
@@ -49,9 +52,9 @@ public class WorkflowRequestMessageHandlerService implements Service<WorkflowReq
         return handler;
     }
 
-    public ServiceGroupReference<LogStream> getLogStreamsGroupReference()
+    public ServiceGroupReference<Partition> getPartitionGroupReference()
     {
-        return logStreamsGroupReference;
+        return partitionGroupReference;
     }
 
 }

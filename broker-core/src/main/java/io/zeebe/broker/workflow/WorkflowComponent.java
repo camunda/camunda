@@ -17,17 +17,16 @@
  */
 package io.zeebe.broker.workflow;
 
-import static io.zeebe.broker.logstreams.LogStreamServiceNames.WORKFLOW_STREAM_GROUP;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADER_PARTITION_GROUP_NAME;
+import static io.zeebe.broker.logstreams.LogStreamServiceNames.STREAM_PROCESSOR_SERVICE_FACTORY;
+import static io.zeebe.broker.transport.TransportServiceNames.*;
 import static io.zeebe.broker.workflow.WorkflowQueueServiceNames.WORKFLOW_QUEUE_MANAGER;
 
-import io.zeebe.broker.logstreams.LogStreamServiceNames;
 import io.zeebe.broker.system.*;
-import io.zeebe.broker.transport.TransportServiceNames;
 import io.zeebe.servicecontainer.ServiceContainer;
 
 public class WorkflowComponent implements Component
 {
-
     @Override
     public void init(SystemContext context)
     {
@@ -36,11 +35,10 @@ public class WorkflowComponent implements Component
 
         final WorkflowQueueManagerService workflowQueueManagerService = new WorkflowQueueManagerService(configurationManager);
         serviceContainer.createService(WORKFLOW_QUEUE_MANAGER, workflowQueueManagerService)
-            .dependency(TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME), workflowQueueManagerService.getClientApiTransportInjector())
-            .dependency(TransportServiceNames.bufferingServerTransport(TransportServiceNames.MANAGEMENT_API_SERVER_NAME), workflowQueueManagerService.getManagementServerInjector())
-            .dependency(LogStreamServiceNames.STREAM_PROCESSOR_SERVICE_FACTORY, workflowQueueManagerService.getStreamProcessorServiceFactoryInjector())
-            .groupReference(WORKFLOW_STREAM_GROUP, workflowQueueManagerService.getLogStreamsGroupReference())
+            .dependency(serverTransport(CLIENT_API_SERVER_NAME), workflowQueueManagerService.getClientApiTransportInjector())
+            .dependency(bufferingServerTransport(MANAGEMENT_API_SERVER_NAME), workflowQueueManagerService.getManagementServerInjector())
+            .dependency(STREAM_PROCESSOR_SERVICE_FACTORY, workflowQueueManagerService.getStreamProcessorServiceFactoryInjector())
+            .groupReference(LEADER_PARTITION_GROUP_NAME, workflowQueueManagerService.getPartitionsGroupReference())
             .install();
     }
-
 }

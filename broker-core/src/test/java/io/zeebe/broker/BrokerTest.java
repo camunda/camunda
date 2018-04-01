@@ -25,14 +25,11 @@ import java.io.InputStream;
 import io.zeebe.util.sched.future.ActorFuture;
 import org.junit.After;
 import org.junit.Test;
-
-import io.zeebe.broker.clustering.ClusterServiceNames;
+import io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames;
 import io.zeebe.broker.system.ConfigurationManager;
 import io.zeebe.broker.system.ConfigurationManagerImpl;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
 
 public class BrokerTest
 {
@@ -62,27 +59,18 @@ public class BrokerTest
         broker = new Broker(configurationManager);
 
         // then I can register a dependency to a broker service successfully
-        final ActorFuture<Object> future = broker.getBrokerContext().getServiceContainer()
-                                               .createService(ServiceName.newServiceName("foo", Object.class), new Service<Object>()
-                                               {
-                                                   @Override
-                                                   public void start(ServiceStartContext startContext)
-                                                   {
-                                                   }
-
-                                                   @Override
-                                                   public void stop(ServiceStopContext stopContext)
-                                                   {
-                                                   }
-
-                                                   @Override
-                                                   public Object get()
-                                                   {
-                                                       return null;
-                                                   }
-                                               })
-                                               .dependency(ClusterServiceNames.CLUSTER_MANAGER_SERVICE)
-                                               .install();
+        final ActorFuture<Object> future = broker.getBrokerContext()
+            .getServiceContainer()
+            .createService(ServiceName.newServiceName("foo", Object.class), new Service<Object>()
+            {
+                @Override
+                public Object get()
+                {
+                    return null;
+                }
+            })
+            .dependency(ClusterBaseLayerServiceNames.GOSSIP_SERVICE)
+            .install();
 
         waitUntil(future::isDone);
         assertThat(future).isDone();

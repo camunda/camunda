@@ -33,6 +33,7 @@ public class GlobalConfiguration extends DirectoryConfiguration
     public static final String GLOBAL_DIRECTORY_TEMP = "zeebe-data-";
 
     public boolean useTempDirectory;
+    public boolean standalone;
 
     public void init()
     {

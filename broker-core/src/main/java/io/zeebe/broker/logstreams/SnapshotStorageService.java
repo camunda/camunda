@@ -17,14 +17,11 @@
  */
 package io.zeebe.broker.logstreams;
 
-
 import io.zeebe.broker.logstreams.cfg.SnapshotStorageCfg;
 import io.zeebe.broker.system.ConfigurationManager;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.spi.SnapshotStorage;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.servicecontainer.*;
 
 public class SnapshotStorageService implements Service<SnapshotStorage>
 {

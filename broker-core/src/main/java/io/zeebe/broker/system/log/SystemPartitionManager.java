@@ -20,15 +20,14 @@ package io.zeebe.broker.system.log;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicReference;
 
-import io.zeebe.broker.clustering.management.PartitionManager;
+import io.zeebe.broker.clustering.base.partitions.Partition;
+import io.zeebe.broker.clustering.base.topology.TopologyManager;
 import io.zeebe.broker.logstreams.processor.*;
 import io.zeebe.broker.system.SystemConfiguration;
 import io.zeebe.broker.system.deployment.processor.PartitionCollector;
-import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.servicecontainer.*;
-import io.zeebe.transport.ServerOutput;
-import io.zeebe.transport.ServerTransport;
+import io.zeebe.transport.*;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 
@@ -37,22 +36,24 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
     public static final String CREATE_TOPICS_PROCESSOR = "create-topics";
     public static final String COLLECT_PARTITIONS_PROCESSOR = "collect-partitions";
 
+    private final ServiceGroupReference<Partition> partitionsGroupReference = ServiceGroupReference.<Partition>create()
+        .onAdd((name, partition) -> addSystemPartition(partition, name))
+        .onRemove((name, partition) -> removeSystemPartition())
+        .build();
+
     private final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
-    private final Injector<PartitionManager> partitionManagerInjector = new Injector<>();
     private final Injector<StreamProcessorServiceFactory> streamProcessorServiceFactoryInjector = new Injector<>();
+    private final Injector<TopologyManager> topologyManagerInjector = new Injector<>();
+    private final Injector<ClientTransport> clientTransportInjector = new Injector<>();
+
+    private final RoundRobinSelectionStrategy nodeSelectionStrategy = new RoundRobinSelectionStrategy();
 
     private final SystemConfiguration systemConfiguration;
 
-    private PartitionManager partitionManager;
     private ServerTransport clientApiTransport;
     private StreamProcessorServiceFactory streamProcessorServiceFactory;
-
-    private final ServiceGroupReference<LogStream> logStreamsGroupReference = ServiceGroupReference.<LogStream>create()
-        .onAdd((name, stream) -> addSystemPartition(stream, name))
-        .onRemove((name, stream) -> removeSystemPartition())
-        .build();
-
-    private ResolvePendingPartitionsCommand resolvePendingPartitionsCommand;
+    private ClientTransport clientTransport;
+    private TopologyManager topologyManager;
 
     private AtomicReference<PartitionResponder> partitionResponderRef = new AtomicReference<>();
 
@@ -61,25 +62,25 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
         this.systemConfiguration = systemConfiguration;
     }
 
-    public void addSystemPartition(LogStream logStream, ServiceName<LogStream> serviceName)
+    public void addSystemPartition(Partition partition, ServiceName<Partition> serviceName)
     {
         final ServerOutput serverOutput = clientApiTransport.getOutput();
 
-        final TypedStreamEnvironment streamEnvironment = new TypedStreamEnvironment(logStream, serverOutput);
+        final TypedStreamEnvironment streamEnvironment = new TypedStreamEnvironment(partition.getLogStream(), serverOutput);
 
-        installCreateTopicProcessor(logStream, streamEnvironment);
-        installPartitionCollectorProcessor(logStream, serverOutput, streamEnvironment);
+        installCreateTopicProcessor(partition, serviceName, streamEnvironment);
+        installPartitionCollectorProcessor(partition, serviceName, serverOutput, streamEnvironment);
     }
 
-    private void installPartitionCollectorProcessor(
-            LogStream logStream,
-            final ServerOutput serverOutput,
-            final TypedStreamEnvironment streamEnvironment)
+    private void installPartitionCollectorProcessor(Partition partition,
+        ServiceName<Partition> partitionServiceName,
+        final ServerOutput serverOutput,
+        final TypedStreamEnvironment streamEnvironment)
     {
         final PartitionResponder partitionResponder = new PartitionResponder(serverOutput);
         final TypedStreamProcessor streamProcessor = buildPartitionResponseProcessor(streamEnvironment, partitionResponder);
 
-        streamProcessorServiceFactory.createService(logStream)
+        streamProcessorServiceFactory.createService(partition, partitionServiceName)
             .processor(streamProcessor)
             .processorId(StreamProcessorIds.SYSTEM_COLLECT_PARTITION_PROCESSOR_ID)
             .processorName(COLLECT_PARTITIONS_PROCESSOR)
@@ -88,28 +89,22 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
         partitionResponderRef.set(partitionResponder);
     }
 
-    private void installCreateTopicProcessor(
-            LogStream logStream,
+    private void installCreateTopicProcessor(Partition partition,
+            ServiceName<Partition> partitionServiceName,
             final TypedStreamEnvironment streamEnvironment)
     {
         final PendingPartitionsIndex partitionsIndex = new PendingPartitionsIndex();
         final TopicsIndex topicsIndex = new TopicsIndex();
 
-        resolvePendingPartitionsCommand = new ResolvePendingPartitionsCommand(
-                partitionsIndex,
-                partitionManager,
-                streamEnvironment.buildStreamReader(),
-                streamEnvironment.buildStreamWriter());
+        final TypedStreamProcessor streamProcessor = buildTopicCreationProcessor(clientTransport,
+            topologyManager,
+            streamEnvironment,
+            nodeSelectionStrategy,
+            topicsIndex,
+            partitionsIndex,
+            Duration.ofSeconds(systemConfiguration.getPartitionCreationTimeoutSeconds()));
 
-        final TypedStreamProcessor streamProcessor =
-                buildTopicCreationProcessor(
-                        streamEnvironment,
-                        partitionManager,
-                        topicsIndex,
-                        partitionsIndex,
-                        Duration.ofSeconds(systemConfiguration.getPartitionCreationTimeoutSeconds()), resolvePendingPartitionsCommand);
-
-        streamProcessorServiceFactory.createService(logStream)
+        streamProcessorServiceFactory.createService(partition, partitionServiceName)
             .processor(streamProcessor)
             .processorId(StreamProcessorIds.SYSTEM_CREATE_TOPIC_PROCESSOR_ID)
             .processorName(CREATE_TOPICS_PROCESSOR)
@@ -121,23 +116,24 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
         partitionResponderRef.set(null);
     }
 
-    public static TypedStreamProcessor buildTopicCreationProcessor(
+    public static TypedStreamProcessor buildTopicCreationProcessor(ClientTransport clientTransport,
+            TopologyManager topologyManager,
             TypedStreamEnvironment streamEnvironment,
-            PartitionManager partitionManager,
+            PartitionCreatorSelectionStrategy nodeSelectionStrategy,
             TopicsIndex topicsIndex,
             PendingPartitionsIndex partitionsIndex,
-            Duration creationExpiration,
-            Runnable onOpen)
+            Duration creationExpiration)
     {
         final PartitionIdGenerator idGenerator = new PartitionIdGenerator();
-        final PartitionCreatorSelectionStrategy creationStrategy = new RoundRobinSelectionStrategy(partitionManager);
+
+        final ResolvePendingPartitionsCommand partitionsCommand = new ResolvePendingPartitionsCommand(partitionsIndex, streamEnvironment.buildStreamReader(), streamEnvironment.buildStreamWriter());
 
         return streamEnvironment.newStreamProcessor()
-            .onEvent(EventType.TOPIC_EVENT, TopicState.CREATE, new CreateTopicProcessor(topicsIndex, idGenerator, creationStrategy))
-            .onEvent(EventType.PARTITION_EVENT, PartitionState.CREATE, new CreatePartitionProcessor(partitionManager, partitionsIndex, creationExpiration))
+            .onEvent(EventType.TOPIC_EVENT, TopicState.CREATE, new CreateTopicProcessor(topicsIndex, idGenerator, nodeSelectionStrategy))
+            .onEvent(EventType.PARTITION_EVENT, PartitionState.CREATE, new CreatePartitionProcessor(clientTransport, partitionsIndex, creationExpiration))
             .onEvent(EventType.PARTITION_EVENT, PartitionState.CREATE_COMPLETE, new CompletePartitionProcessor(partitionsIndex))
             .onEvent(EventType.PARTITION_EVENT, PartitionState.CREATED, new PartitionCreatedProcessor(topicsIndex, streamEnvironment.buildStreamReader()))
-            .onEvent(EventType.PARTITION_EVENT, PartitionState.CREATE_EXPIRE, new ExpirePartitionCreationProcessor(partitionsIndex, idGenerator, creationStrategy))
+            .onEvent(EventType.PARTITION_EVENT, PartitionState.CREATE_EXPIRE, new ExpirePartitionCreationProcessor(partitionsIndex, idGenerator, nodeSelectionStrategy))
             .withStateResource(topicsIndex.getRawMap())
             .withStateResource(partitionsIndex.getRawMap())
             .withStateResource(idGenerator)
@@ -146,8 +142,15 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
                 @Override
                 public void onOpen(TypedStreamProcessor streamProcessor)
                 {
-                    // TODO check needs to be re-implemented
-                    streamProcessor.getActor().runAtFixedRate(Duration.ofMillis(100), onOpen);
+                    partitionsCommand.init(streamProcessor.getActor());
+                    topologyManager.addTopologyPartitionListener(partitionsCommand);
+                }
+
+                @Override
+                public void onClose()
+                {
+                    topologyManager.removeTopologyPartitionListener(partitionsCommand);
+                    partitionsCommand.close();
                 }
             })
             .build();
@@ -169,19 +172,20 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
     @Override
     public void start(ServiceStartContext startContext)
     {
+        this.clientTransport = clientTransportInjector.getValue();
+        this.topologyManager = topologyManagerInjector.getValue();
         this.clientApiTransport = clientApiTransportInjector.getValue();
-        this.partitionManager = getPartitionManagerInjector().getValue();
         this.streamProcessorServiceFactory = streamProcessorServiceFactoryInjector.getValue();
+
+        topologyManager.addTopologyMemberListener(nodeSelectionStrategy);
     }
 
     @Override
     public void stop(ServiceStopContext stopContext)
     {
-        if (resolvePendingPartitionsCommand != null)
-        {
-            resolvePendingPartitionsCommand.close();
-        }
         partitionResponderRef.set(null);
+
+        topologyManager.removeTopologyMemberListener(nodeSelectionStrategy);
     }
 
     @Override
@@ -205,9 +209,9 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
     }
 
 
-    public ServiceGroupReference<LogStream> getLogStreamsGroupReference()
+    public ServiceGroupReference<Partition> getPartitionsGroupReference()
     {
-        return logStreamsGroupReference;
+        return partitionsGroupReference;
     }
 
     public Injector<ServerTransport> getClientApiTransportInjector()
@@ -215,9 +219,9 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
         return clientApiTransportInjector;
     }
 
-    public Injector<PartitionManager> getPartitionManagerInjector()
+    public Injector<TopologyManager> getTopologyManagerInjector()
     {
-        return partitionManagerInjector;
+        return topologyManagerInjector;
     }
 
     public Injector<StreamProcessorServiceFactory> getStreamProcessorServiceFactoryInjector()
@@ -225,4 +229,8 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
         return streamProcessorServiceFactoryInjector;
     }
 
+    public Injector<ClientTransport> getClientTransportInjector()
+    {
+        return clientTransportInjector;
+    }
 }

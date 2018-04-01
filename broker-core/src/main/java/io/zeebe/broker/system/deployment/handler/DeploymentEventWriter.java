@@ -19,11 +19,7 @@ package io.zeebe.broker.system.deployment.handler;
 
 import java.util.function.Consumer;
 
-import io.zeebe.broker.logstreams.processor.StreamProcessorLifecycleAware;
-import io.zeebe.broker.logstreams.processor.TypedEvent;
-import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
-import io.zeebe.broker.logstreams.processor.TypedStreamReader;
-import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
+import io.zeebe.broker.logstreams.processor.*;
 import io.zeebe.broker.workflow.data.DeploymentEvent;
 import io.zeebe.broker.workflow.data.DeploymentState;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
@@ -31,24 +27,23 @@ import io.zeebe.util.sched.ActorControl;
 
 public class DeploymentEventWriter implements StreamProcessorLifecycleAware
 {
-
-    private final TypedStreamWriter writer;
-    private final TypedStreamReader reader;
+    private TypedStreamWriter writer;
+    private TypedStreamReader reader;
+    private final TypedStreamEnvironment environment;
 
     private ActorControl actor;
 
-    public DeploymentEventWriter(
-            TypedStreamWriter writer,
-            TypedStreamReader reader)
+    public DeploymentEventWriter(TypedStreamEnvironment environment)
     {
-        this.writer = writer;
-        this.reader = reader;
+        this.environment = environment;
     }
 
     @Override
     public void onOpen(TypedStreamProcessor streamProcessor)
     {
         this.actor = streamProcessor.getActor();
+        this.writer = environment.buildStreamWriter();
+        this.reader = environment.buildStreamReader();
     }
 
     @Override

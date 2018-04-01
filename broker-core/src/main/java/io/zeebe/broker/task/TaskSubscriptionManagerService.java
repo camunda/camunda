@@ -17,8 +17,8 @@
  */
 package io.zeebe.broker.task;
 
+import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
-import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.ServerTransport;
 import io.zeebe.util.sched.ActorScheduler;
@@ -33,9 +33,9 @@ public class TaskSubscriptionManagerService implements Service<TaskSubscriptionM
 
     protected TaskSubscriptionManager service;
 
-    protected final ServiceGroupReference<LogStream> logStreamsGroupReference = ServiceGroupReference.<LogStream>create()
-        .onAdd((name, stream) -> service.addStream(stream, name))
-        .onRemove((name, stream) -> service.removeStream(stream))
+    protected final ServiceGroupReference<Partition> leaderPartitionsGroupReference = ServiceGroupReference.<Partition>create()
+        .onAdd((name, partition) -> service.addPartition(name, partition))
+        .onRemove((name, partition) -> service.removePartition(partition))
         .build();
 
     public TaskSubscriptionManagerService(ServiceContainer serviceContainer)
@@ -68,9 +68,9 @@ public class TaskSubscriptionManagerService implements Service<TaskSubscriptionM
         return service;
     }
 
-    public ServiceGroupReference<LogStream> getLogStreamsGroupReference()
+    public ServiceGroupReference<Partition> getLeaderPartitionsGroupReference()
     {
-        return logStreamsGroupReference;
+        return leaderPartitionsGroupReference;
     }
 
     public Injector<ServerTransport> getClientApiTransportInjector()

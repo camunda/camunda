@@ -17,6 +17,8 @@
  */
 package io.zeebe.broker.transport.clientapi;
 
+import io.zeebe.broker.clustering.base.partitions.Partition;
+import io.zeebe.broker.clustering.base.topology.Topology.PartitionInfo;
 import io.zeebe.broker.task.data.TaskEvent;
 import io.zeebe.broker.task.data.TaskState;
 import io.zeebe.broker.transport.controlmessage.ControlMessageRequestHeaderDescriptor;
@@ -29,6 +31,7 @@ import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.*;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
+import io.zeebe.raft.state.RaftState;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.RemoteAddress;
@@ -130,7 +133,16 @@ public class ClientApiMessageHandlerTest
 
         messageHandler = new ClientApiMessageHandler(mockControlMessageDispatcher);
 
-        messageHandler.addStream(logStream);
+        final Partition partition = new Partition(new PartitionInfo(LOG_STREAM_TOPIC_NAME, LOG_STREAM_PARTITION_ID, 1), RaftState.LEADER)
+        {
+            @Override
+            public LogStream getLogStream()
+            {
+                return logStream;
+            }
+        };
+
+        messageHandler.addPartition(partition);
         logStream.setTerm(RAFT_TERM);
     }
 

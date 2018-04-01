@@ -34,7 +34,7 @@ public class CompletePartitionProcessor implements TypedEventProcessor<Partition
     public void processEvent(TypedEvent<PartitionEvent> event)
     {
         final PartitionEvent value = event.getValue();
-        final PendingPartition partition = partitions.get(value.getId());
+        final PendingPartition partition = partitions.get(value.getPartitionId());
 
         if (partition != null)
         {
@@ -65,7 +65,7 @@ public class CompletePartitionProcessor implements TypedEventProcessor<Partition
 
         if (value.getState() == PartitionState.CREATED)
         {
-            partitions.removePartitionKey(value.getId());
+            partitions.removePartitionKey(value.getPartitionId());
         }
     }
 

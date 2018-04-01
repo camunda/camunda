@@ -21,13 +21,7 @@ import io.zeebe.broker.incident.data.ErrorType;
 import io.zeebe.broker.incident.data.IncidentEvent;
 import io.zeebe.broker.incident.data.IncidentState;
 import io.zeebe.broker.incident.index.IncidentMap;
-import io.zeebe.broker.logstreams.processor.TypedEvent;
-import io.zeebe.broker.logstreams.processor.TypedEventProcessor;
-import io.zeebe.broker.logstreams.processor.TypedEventStreamProcessorBuilder;
-import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
-import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
-import io.zeebe.broker.logstreams.processor.TypedStreamReader;
-import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
+import io.zeebe.broker.logstreams.processor.*;
 import io.zeebe.broker.task.data.TaskEvent;
 import io.zeebe.broker.task.data.TaskHeaders;
 import io.zeebe.broker.task.data.TaskState;
@@ -55,8 +49,6 @@ public class IncidentStreamProcessor
 
     public TypedStreamProcessor createStreamProcessor(TypedStreamEnvironment env)
     {
-        final TypedStreamReader reader = env.buildStreamReader();
-
         TypedEventStreamProcessorBuilder builder = env.newStreamProcessor()
             .withStateResource(activityInstanceMap)
             .withStateResource(failedTaskMap)
@@ -67,13 +59,13 @@ public class IncidentStreamProcessor
         // incident events
         builder = builder
             .onEvent(EventType.INCIDENT_EVENT, IncidentState.CREATE, new CreateIncidentProcessor())
-            .onEvent(EventType.INCIDENT_EVENT, IncidentState.RESOLVE, new ResolveIncidentProcessor(reader))
+            .onEvent(EventType.INCIDENT_EVENT, IncidentState.RESOLVE, new ResolveIncidentProcessor(env))
             .onEvent(EventType.INCIDENT_EVENT, IncidentState.RESOLVE_FAILED, new ResolveFailedProcessor())
-            .onEvent(EventType.INCIDENT_EVENT, IncidentState.DELETE, new DeleteIncidentProcessor(reader));
+            .onEvent(EventType.INCIDENT_EVENT, IncidentState.DELETE, new DeleteIncidentProcessor(env));
 
         // workflow instance events
         final ActivityRewrittenProcessor activityRewrittenProcessor = new ActivityRewrittenProcessor();
-        final ActivityIncidentResolvedProcessor activityIncidentResolvedProcessor = new ActivityIncidentResolvedProcessor(reader);
+        final ActivityIncidentResolvedProcessor activityIncidentResolvedProcessor = new ActivityIncidentResolvedProcessor(env);
 
         builder = builder
             .onEvent(EventType.WORKFLOW_INSTANCE_EVENT, WorkflowInstanceState.PAYLOAD_UPDATED, new PayloadUpdatedProcessor())
@@ -86,7 +78,7 @@ public class IncidentStreamProcessor
             .onEvent(EventType.WORKFLOW_INSTANCE_EVENT, WorkflowInstanceState.ACTIVITY_COMPLETED, activityIncidentResolvedProcessor);
 
         // task events
-        final TaskIncidentResolvedProcessor taskIncidentResolvedProcessor = new TaskIncidentResolvedProcessor(reader);
+        final TaskIncidentResolvedProcessor taskIncidentResolvedProcessor = new TaskIncidentResolvedProcessor(env);
 
         builder = builder
             .onEvent(EventType.TASK_EVENT, TaskState.FAILED, new TaskFailedProcessor())
@@ -188,15 +180,22 @@ public class IncidentStreamProcessor
 
     private final class ResolveIncidentProcessor implements TypedEventProcessor<IncidentEvent>
     {
-        private final TypedStreamReader reader;
+        private final TypedStreamEnvironment environment;
+        private TypedStreamReader reader;
 
         private boolean onResolving;
         private TypedEvent<WorkflowInstanceEvent> failureEvent;
         private long incidentKey;
 
-        ResolveIncidentProcessor(TypedStreamReader reader)
+        ResolveIncidentProcessor(TypedStreamEnvironment environment)
         {
-            this.reader = reader;
+            this.environment = environment;
+        }
+
+        @Override
+        public void onOpen(TypedStreamProcessor streamProcessor)
+        {
+            reader = environment.getStreamReader();
         }
 
         @Override
@@ -283,14 +282,21 @@ public class IncidentStreamProcessor
 
     private final class DeleteIncidentProcessor implements TypedEventProcessor<IncidentEvent>
     {
-        private final TypedStreamReader reader;
+        private TypedStreamReader reader;
+        private final TypedStreamEnvironment environment;
 
         private boolean isDeleted;
         private TypedEvent<IncidentEvent> incidentToWrite;
 
-        DeleteIncidentProcessor(TypedStreamReader reader)
+        DeleteIncidentProcessor(TypedStreamEnvironment environment)
         {
-            this.reader = reader;
+            this.environment = environment;
+        }
+
+        @Override
+        public void onOpen(TypedStreamProcessor streamProcessor)
+        {
+            reader = environment.getStreamReader();
         }
 
         @Override
@@ -349,14 +355,21 @@ public class IncidentStreamProcessor
 
     private final class ActivityIncidentResolvedProcessor implements TypedEventProcessor<WorkflowInstanceEvent>
     {
-        private final TypedStreamReader reader;
+        private final TypedStreamEnvironment environment;
+        private TypedStreamReader reader;
 
         private boolean isResolved;
         private TypedEvent<IncidentEvent> incidentEvent;
 
-        ActivityIncidentResolvedProcessor(TypedStreamReader reader)
+        ActivityIncidentResolvedProcessor(TypedStreamEnvironment environment)
         {
-            this.reader = reader;
+            this.environment = environment;
+        }
+
+        @Override
+        public void onOpen(TypedStreamProcessor streamProcessor)
+        {
+            reader = environment.getStreamReader();
         }
 
         @Override
@@ -509,15 +522,28 @@ public class IncidentStreamProcessor
 
     private final class TaskIncidentResolvedProcessor implements TypedEventProcessor<TaskEvent>
     {
-        private final TypedStreamReader reader;
+        private final TypedStreamEnvironment environment;
 
+        private TypedStreamReader reader;
         private boolean isResolved;
         private TypedEvent<IncidentEvent> persistedIncident;
         private boolean isTransientIncident;
 
-        TaskIncidentResolvedProcessor(TypedStreamReader reader)
+        TaskIncidentResolvedProcessor(TypedStreamEnvironment environment)
         {
-            this.reader = reader;
+            this.environment = environment;
+        }
+
+        @Override
+        public void onOpen(TypedStreamProcessor streamProcessor)
+        {
+            reader = environment.getStreamReader();
+        }
+
+        @Override
+        public void onClose()
+        {
+            reader.close();
         }
 
         @Override

@@ -22,6 +22,8 @@ import static io.zeebe.util.buffer.BufferUtil.*;
 
 import java.util.Arrays;
 
+import io.zeebe.broker.clustering.api.InvitationRequest;
+import io.zeebe.broker.clustering.api.InvitationResponse;
 import io.zeebe.transport.SocketAddress;
 import org.agrona.DirectBuffer;
 import org.junit.Test;
@@ -47,6 +49,7 @@ public class ManagementMessageTest
         assertEqualFieldsAfterWriteAndRead(invitationRequest,
             "topicName",
             "partitionId",
+            "replicationFactor",
             "term",
             "members"
         );

@@ -20,6 +20,7 @@ package io.zeebe.broker.workflow;
 import static io.zeebe.broker.logstreams.processor.StreamProcessorIds.INCIDENT_PROCESSOR_ID;
 import static io.zeebe.broker.logstreams.processor.StreamProcessorIds.WORKFLOW_INSTANCE_PROCESSOR_ID;
 
+import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.incident.processor.IncidentStreamProcessor;
 import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
@@ -27,43 +28,39 @@ import io.zeebe.broker.system.ConfigurationManager;
 import io.zeebe.broker.system.deployment.handler.CreateWorkflowResponseSender;
 import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
 import io.zeebe.broker.workflow.processor.WorkflowInstanceStreamProcessor;
-import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.ServerTransport;
-import io.zeebe.util.EnsureUtil;
 import io.zeebe.util.sched.Actor;
 
-public class WorkflowQueueManagerService extends Actor implements Service<WorkflowQueueManager>, WorkflowQueueManager
+public class WorkflowQueueManagerService extends Actor implements Service<WorkflowQueueManagerService>
 {
     protected static final String NAME = "workflow.queue.manager";
 
-    protected final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
+    private final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
     private final Injector<ServerTransport> managementServerInjector = new Injector<>();
     private final Injector<StreamProcessorServiceFactory> streamProcessorServiceFactoryInjector = new Injector<>();
 
-    protected final ServiceGroupReference<LogStream> logStreamsGroupReference = ServiceGroupReference.<LogStream>create()
-            .onAdd((name, stream) -> addStream(stream, name))
+    private final ServiceGroupReference<Partition> partitionsGroupReference = ServiceGroupReference.<Partition>create()
+            .onAdd((name, stream) -> addPartition(stream, name))
             .build();
 
-    protected ServiceStartContext serviceContext;
-    protected WorkflowCfg workflowCfg;
+    private WorkflowCfg workflowCfg;
     private StreamProcessorServiceFactory streamProcessorServiceFactory;
+
+    private ServerTransport transport;
 
     public WorkflowQueueManagerService(final ConfigurationManager configurationManager)
     {
         workflowCfg = configurationManager.readEntry("workflow", WorkflowCfg.class);
     }
 
-    @Override
-    public void startWorkflowQueue(final LogStream logStream)
+    public void startWorkflowQueue(Partition partition, ServiceName<Partition> partitionServiceName)
     {
-        EnsureUtil.ensureNotNull("logStream", logStream);
-
-        installWorkflowStreamProcessor(logStream);
-        installIncidentStreamProcessor(logStream);
+        installWorkflowStreamProcessor(partition, partitionServiceName);
+        installIncidentStreamProcessor(partition, partitionServiceName);
     }
 
-    private void installWorkflowStreamProcessor(final LogStream logStream)
+    private void installWorkflowStreamProcessor(Partition partition, ServiceName<Partition> partitionServiceName)
     {
         final ServerTransport transport = clientApiTransportInjector.getValue();
         final CommandResponseWriter responseWriter = new CommandResponseWriter(transport.getOutput());
@@ -71,13 +68,12 @@ public class WorkflowQueueManagerService extends Actor implements Service<Workfl
         final ServerTransport managementServer = managementServerInjector.getValue();
         final CreateWorkflowResponseSender createWorkflowResponseSender = new CreateWorkflowResponseSender(managementServer);
 
-        final WorkflowInstanceStreamProcessor workflowInstanceStreamProcessor = new WorkflowInstanceStreamProcessor(
-                responseWriter,
-                createWorkflowResponseSender,
-                workflowCfg.deploymentCacheSize,
-                workflowCfg.payloadCacheSize);
+        final WorkflowInstanceStreamProcessor workflowInstanceStreamProcessor = new WorkflowInstanceStreamProcessor(responseWriter,
+             createWorkflowResponseSender,
+             workflowCfg.deploymentCacheSize,
+             workflowCfg.payloadCacheSize);
 
-        streamProcessorServiceFactory.createService(logStream)
+        streamProcessorServiceFactory.createService(partition, partitionServiceName)
             .processor(workflowInstanceStreamProcessor)
             .processorId(WORKFLOW_INSTANCE_PROCESSOR_ID)
             .processorName("workflow-instance")
@@ -85,13 +81,12 @@ public class WorkflowQueueManagerService extends Actor implements Service<Workfl
             .build();
     }
 
-    private void installIncidentStreamProcessor(final LogStream logStream)
+    private void installIncidentStreamProcessor(Partition partition, ServiceName<Partition> partitionServiceName)
     {
-        final ServerTransport transport = clientApiTransportInjector.getValue();
-        final TypedStreamEnvironment env = new TypedStreamEnvironment(logStream, transport.getOutput());
+        final TypedStreamEnvironment env = new TypedStreamEnvironment(partition.getLogStream(), transport.getOutput());
         final IncidentStreamProcessor incidentProcessorFactory = new IncidentStreamProcessor();
 
-        streamProcessorServiceFactory.createService(logStream)
+        streamProcessorServiceFactory.createService(partition, partitionServiceName)
             .processor(incidentProcessorFactory.createStreamProcessor(env))
             .processorId(INCIDENT_PROCESSOR_ID)
             .processorName("incident")
@@ -101,20 +96,20 @@ public class WorkflowQueueManagerService extends Actor implements Service<Workfl
     @Override
     public void start(ServiceStartContext serviceContext)
     {
-        this.serviceContext = serviceContext;
+        this.transport = clientApiTransportInjector.getValue();
         this.streamProcessorServiceFactory =  streamProcessorServiceFactoryInjector.getValue();
 
-        serviceContext.getScheduler().submitActor(this);
+        serviceContext.async(serviceContext.getScheduler().submitActor(this));
     }
 
     @Override
     public void stop(ServiceStopContext stopContext)
     {
-        actor.close();
+        stopContext.async(actor.close());
     }
 
     @Override
-    public WorkflowQueueManager get()
+    public WorkflowQueueManagerService get()
     {
         return this;
     }
@@ -124,9 +119,9 @@ public class WorkflowQueueManagerService extends Actor implements Service<Workfl
         return clientApiTransportInjector;
     }
 
-    public ServiceGroupReference<LogStream> getLogStreamsGroupReference()
+    public ServiceGroupReference<Partition> getPartitionsGroupReference()
     {
-        return logStreamsGroupReference;
+        return partitionsGroupReference;
     }
 
     public Injector<ServerTransport> getManagementServerInjector()
@@ -134,13 +129,15 @@ public class WorkflowQueueManagerService extends Actor implements Service<Workfl
         return managementServerInjector;
     }
 
-    public void addStream(LogStream logStream, ServiceName<LogStream> logStreamServiceName)
+    public void addPartition(Partition partition, ServiceName<Partition> partitionServiceName)
     {
-        actor.call(() ->
+        actor.run(() ->
         {
-            startWorkflowQueue(logStream);
+            startWorkflowQueue(partition, partitionServiceName);
         });
     }
+
+
 
     @Override
     public String getName()

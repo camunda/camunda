@@ -27,6 +27,7 @@ import io.zeebe.broker.Loggers;
 import io.zeebe.broker.system.threads.cfg.ThreadingCfg;
 import io.zeebe.broker.transport.cfg.SocketBindingCfg;
 import io.zeebe.broker.transport.cfg.TransportComponentCfg;
+import io.zeebe.broker.util.BrokerArguments;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.impl.ServiceContainerImpl;
 import io.zeebe.util.FileUtil;
@@ -44,7 +45,7 @@ public class SystemContext implements AutoCloseable
     public static final String BROKER_ID_LOG_PROPERTY = "broker-id";
     public static final int CLOSE_TIMEOUT = 10;
 
-    protected final ServiceContainer serviceContainer;
+    protected ServiceContainer serviceContainer;
 
     protected final List<Component> components = new ArrayList<>();
 
@@ -53,14 +54,23 @@ public class SystemContext implements AutoCloseable
     protected final List<ActorFuture<?>> requiredStartActions = new ArrayList<>();
 
     protected Map<String, String> diagnosticContext;
-    protected final ActorScheduler scheduler;
+    protected ActorScheduler scheduler;
 
     private MetricsManager metricsManager;
+    private BrokerArguments brokerArguments;
 
+    public SystemContext(String[] commandLineArgs, ActorClock clock)
+    {
+        this.brokerArguments = new BrokerArguments(commandLineArgs);
+        this.configurationManager =
+            new ConfigurationManagerImpl(brokerArguments.getConfigFile());
+
+        initSystemContext(clock);
+    }
 
     public SystemContext(String configFileLocation, ActorClock clock)
     {
-        this(new ConfigurationManagerImpl(configFileLocation), clock);
+        this(new String[]{"-config", configFileLocation}, clock);
     }
 
     public SystemContext(InputStream configStream, ActorClock clock)
@@ -70,10 +80,16 @@ public class SystemContext implements AutoCloseable
 
     public SystemContext(ConfigurationManager configurationManager, ActorClock clock)
     {
+        this.configurationManager = configurationManager;
+        this.brokerArguments = new BrokerArguments(new String[0]);
+        initSystemContext(clock);
+    }
+
+    private void initSystemContext(ActorClock clock)
+    {
         final String brokerId = readBrokerId(configurationManager);
         this.diagnosticContext = Collections.singletonMap(BROKER_ID_LOG_PROPERTY, brokerId);
 
-        this.configurationManager = configurationManager;
         // TODO: submit diagnosticContext to actor scheduler once supported
         this.metricsManager = initMetricsManager(brokerId);
         this.scheduler = initScheduler(clock, brokerId);
@@ -122,12 +138,12 @@ public class SystemContext implements AutoCloseable
         Loggers.SYSTEM_LOGGER.info("Scheduler configuration: Threads{cpu-bound: {}, io-bound: {}}.", cpuBoundThreads, ioBoundThreads);
 
         return ActorScheduler.newActorScheduler()
-                             .setActorClock(clock)
-                             .setMetricsManager(metricsManager)
-                             .setCpuBoundActorThreadCount(cpuBoundThreads)
-                             .setIoBoundActorThreadCount(ioBoundThreads)
-                             .setSchedulerName(brokerId)
-                             .build();
+            .setActorClock(clock)
+            .setMetricsManager(metricsManager)
+            .setCpuBoundActorThreadCount(cpuBoundThreads)
+            .setIoBoundActorThreadCount(ioBoundThreads)
+            .setSchedulerName(brokerId)
+            .build();
     }
 
     protected static String readBrokerId(ConfigurationManager configurationManager)
@@ -258,4 +274,8 @@ public class SystemContext implements AutoCloseable
         return diagnosticContext;
     }
 
+    public BrokerArguments getBrokerArguments()
+    {
+        return brokerArguments;
+    }
 }

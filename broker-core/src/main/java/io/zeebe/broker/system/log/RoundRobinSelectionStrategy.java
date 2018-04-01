@@ -17,80 +17,68 @@
  */
 package io.zeebe.broker.system.log;
 
-import java.util.Iterator;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.locks.ReentrantLock;
 
-import io.zeebe.broker.clustering.management.PartitionManager;
-import io.zeebe.broker.clustering.member.Member;
+import io.zeebe.broker.clustering.base.topology.Topology;
+import io.zeebe.broker.clustering.base.topology.TopologyMemberListener;
+import io.zeebe.broker.clustering.base.topology.Topology.NodeInfo;
 import io.zeebe.transport.SocketAddress;
 
-public class RoundRobinSelectionStrategy implements PartitionCreatorSelectionStrategy
+public class RoundRobinSelectionStrategy implements PartitionCreatorSelectionStrategy, TopologyMemberListener
 {
-
-    protected final PartitionManager partitionManager;
-    protected final SocketAddress lastSelectedBroker = new SocketAddress();
-
-    public RoundRobinSelectionStrategy(PartitionManager partitionManager)
-    {
-        this.partitionManager = partitionManager;
-    }
+    protected final ReentrantLock lock = new ReentrantLock();
+    protected final List<SocketAddress> availableNodes = new ArrayList<>();
+    protected long currentIndex = 0;
 
     @Override
     public SocketAddress selectBrokerForNewPartition()
     {
-        final Iterator<Member> knownMembers = partitionManager.getKnownMembers();
-
-        moveToLastSelectedBroker(knownMembers);
-        final Member nextBroker = chooseNextBroker(knownMembers);
-
-        if (nextBroker != null)
+        lock.lock();
+        try
         {
-            lastSelectedBroker.wrap(nextBroker.getManagementAddress());
-            return lastSelectedBroker;
-        }
-        else
-        {
-            lastSelectedBroker.reset();
+            if (!availableNodes.isEmpty())
+            {
+                final int nextNode = (int) (++currentIndex % availableNodes.size());
+                return availableNodes.get(nextNode);
+            }
             return null;
         }
-    }
-
-    private Member chooseNextBroker(Iterator<Member> knownMembers)
-    {
-        Member nextBroker = findNextMemberWithManagementAddress(knownMembers);
-
-        if (nextBroker == null)
+        finally
         {
-            // reset iterator and try again to find a broker
-            knownMembers = partitionManager.getKnownMembers();
-            nextBroker = findNextMemberWithManagementAddress(knownMembers);
+            lock.unlock();
         }
-
-        return nextBroker;
     }
 
-    private Member findNextMemberWithManagementAddress(Iterator<Member> knownMembers)
+    @Override
+    public void onMemberAdded(NodeInfo memberInfo, Topology topology)
     {
-        while (knownMembers.hasNext())
+        final SocketAddress managementPort = memberInfo.getManagementPort();
+
+        lock.lock();
+        try
         {
-            final Member next = knownMembers.next();
-            if (next.getManagementAddress() != null)
-            {
-                return next;
-            }
+            availableNodes.add(new SocketAddress(managementPort));
         }
-
-        return null;
+        finally
+        {
+            lock.unlock();
+        }
     }
 
-    private void moveToLastSelectedBroker(Iterator<Member> knownMembers)
+    @Override
+    public void onMemberRemoved(NodeInfo memberInfo, Topology topology)
     {
-        while (knownMembers.hasNext())
+        lock.lock();
+        try
         {
-            final Member candidate = knownMembers.next();
-            if (lastSelectedBroker.equals(candidate.getManagementAddress()))
-            {
-                break;
-            }
+            availableNodes.remove(memberInfo.getManagementPort());
+        }
+        finally
+        {
+            lock.unlock();
         }
     }
 }
+

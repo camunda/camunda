@@ -17,8 +17,8 @@
  */
 package io.zeebe.broker.transport.cfg;
 
-import io.zeebe.broker.clustering.gossip.service.ZbGossipConfig;
-import io.zeebe.broker.clustering.management.config.ClusterManagementConfig;
+import io.zeebe.broker.clustering.ClusterComponentConfiguration;
+import io.zeebe.broker.clustering.base.gossip.BrokerGossipConfiguration;
 import io.zeebe.broker.system.ComponentConfiguration;
 import io.zeebe.broker.system.GlobalConfiguration;
 import io.zeebe.raft.RaftConfiguration;
@@ -33,8 +33,8 @@ public class TransportComponentCfg extends ComponentConfiguration
     public SocketBindingCfg managementApi = new SocketBindingCfg();
     public SocketBindingCfg replicationApi = new SocketBindingCfg();
 
-    public ZbGossipConfig gossip = new ZbGossipConfig();
-    public ClusterManagementConfig management = new ClusterManagementConfig();
+    public BrokerGossipConfiguration gossip = new BrokerGossipConfiguration();
+    public ClusterComponentConfiguration management = new ClusterComponentConfiguration();
     public RaftConfiguration raft = new RaftConfiguration();
 
     @Override
