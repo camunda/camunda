@@ -142,7 +142,7 @@ finished. `zbctl` allows us to specify a simple script or another external
 application to handle a task. The handler will receive the payload of the task
 on standard input. And has to return the updated payload on standard output.
 The simplest task handler is `cat`, which is a unix command that just outputs
-it's input modifying it.
+its input without modifying it.
 
 ```
 $ ./bin/zbctl --topic quickstart subscribe task --taskType step4 cat
@@ -166,10 +166,10 @@ $ ./bin/zbctl --topic quickstart subscribe task --taskType step4 cat
 Completing Task
 ```
 
-This command creates a task subscription on the topic `quickstart` for the
-task type `step4`. So whenever a new task of this type is created the broker
-will push the task to this worker. You can try it out by opening another
-terminal an repeat the command from step 4 multiple times.
+This command creates a task subscription on the topic `quickstart` for the task
+type `step4`. So whenever a new task of this type is created the broker will
+push the task to this worker. You can try it out by opening another terminal
+and repeat the command from [step 4](#step-4-create-a-task) multiple times.
 
 ```
 $ ./bin/zbctl --topic quickstart create task step4 --payload '{"zeebe": 2018}'
@@ -217,7 +217,7 @@ To stop the topic subscription press CTRL-C.
 
 ## Step 7: Deploy a workflow
 
-A [workflow](basics/workflows.html) is used to orchestrate loosely couple task
+A [workflow](basics/workflows.html) is used to orchestrate loosely coupled task
 workers and the flow of data between them.
 
 In this guide we will use an example process [order-process.bpmn](introduction/order-process.bpmn).
@@ -332,8 +332,9 @@ Workflow Instance Event [state: WORKFLOW_INSTANCE_COMPLETED, workflowInstanceKey
 
 As you can see in the event log the last event was a workflow instance event
 with the state `WORKFLOW_INSTANCE_COMPLETED`, which indicates that the instance
-we started in Step 8 was now completed. We can now start new instances in
-another terminal with the command from Step 8.
+we started in [step 8](#step-8-create-a-workflow-instance) was now completed.
+We can now start new instances in another terminal with the command from [step
+8](#step-8-create-a-workflow-instance).
 
 ```
 $ ./bin/zbctl --topic quickstart create instance order-process --payload '{"orderId": 1234}'
