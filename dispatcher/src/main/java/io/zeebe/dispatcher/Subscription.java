@@ -72,6 +72,11 @@ public class Subscription implements ConsumableChannel
         return position.get();
     }
 
+    public long getPositionVolatile()
+    {
+        return position.getVolatile();
+    }
+
     @Override
     public boolean hasAvailable()
     {
