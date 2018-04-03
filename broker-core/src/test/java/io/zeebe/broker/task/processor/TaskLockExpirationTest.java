@@ -17,9 +17,15 @@
  */
 package io.zeebe.broker.task.processor;
 
-import static io.zeebe.test.util.TestUtil.doRepeatedly;
-import static io.zeebe.test.util.TestUtil.waitUntil;
-import static org.assertj.core.api.Assertions.assertThat;
+import io.zeebe.broker.task.TaskQueueManagerService;
+import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
+import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
+import io.zeebe.test.broker.protocol.clientapi.SubscribedEvent;
+import io.zeebe.test.broker.protocol.clientapi.TestTopicClient;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.time.Duration;
 import java.util.HashMap;
@@ -27,17 +33,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-
-import io.zeebe.broker.task.TaskQueueManagerService;
-import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.protocol.clientapi.SubscriptionType;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
-import io.zeebe.test.broker.protocol.clientapi.SubscribedEvent;
-import io.zeebe.test.broker.protocol.clientapi.TestTopicClient;
+import static io.zeebe.test.util.TestUtil.doRepeatedly;
+import static io.zeebe.test.util.TestUtil.waitUntil;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TaskLockExpirationTest
 {
@@ -46,58 +44,6 @@ public class TaskLockExpirationTest
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
-
-    @Test
-    public void shouldExpireLock() throws InterruptedException
-    {
-        // given
-        brokerRule.getClock().pinCurrentTime();
-        final Duration lockTime = Duration.ofSeconds(60);
-        final String taskType = "taskType";
-
-        final long taskKey = createTask(taskType);
-
-        apiRule.openTaskSubscription(apiRule.getDefaultPartitionId(), taskType, lockTime.toMillis()).await();
-        apiRule.subscribedEvents().findFirst().get(); // => task is locked
-
-        // when
-        brokerRule.getClock().addTime(lockTime.plus(Duration.ofSeconds(1)));
-
-        // then the task was locked and pushed again
-        final List<SubscribedEvent> events =
-            doRepeatedly(() ->
-                apiRule.moveMessageStreamToHead()
-                    .subscribedEvents()
-                    .limit(2)
-                    .collect(Collectors.toList()))
-                .until(tasks -> tasks.size() == 2);
-
-        assertThat(events.get(0).key()).isEqualTo(taskKey);
-        assertThat(events.get(1).key()).isEqualTo(taskKey);
-
-        apiRule.openTopicSubscription("foo", 0).await();
-
-        final int expectedTopicEvents = 8;
-
-        final List<SubscribedEvent> taskEvents = doRepeatedly(() -> apiRule
-                .moveMessageStreamToHead()
-                .subscribedEvents()
-                .filter(e -> e.subscriptionType() == SubscriptionType.TOPIC_SUBSCRIPTION)
-                .limit(expectedTopicEvents)
-                .collect(Collectors.toList()))
-            .until(e -> e.size() == expectedTopicEvents);
-
-        assertThat(taskEvents).extracting(e -> e.event().get("state"))
-            .containsExactly(
-                    "CREATE",
-                    "CREATED",
-                    "LOCK",
-                    "LOCKED",
-                    "EXPIRE_LOCK",
-                    "LOCK_EXPIRED",
-                    "LOCK",
-                    "LOCKED");
-    }
 
     @Test
     public void shouldNotExpireLockIfLockNotExceeded() throws InterruptedException
