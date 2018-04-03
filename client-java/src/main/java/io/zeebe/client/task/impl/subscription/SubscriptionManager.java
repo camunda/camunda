@@ -85,7 +85,7 @@ public class SubscriptionManager extends Actor implements SubscribedEventHandler
                 actor.yield();
             }
         });
-        startSubscriptionExecution(client.getNumExecutionThreads());
+        startSubscriptionExecution(client.getConfiguration().getNumSubscriptionExecutionThreads());
     }
 
     private void startSubscriptionExecution(int numThreads)

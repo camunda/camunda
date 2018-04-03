@@ -25,7 +25,6 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
@@ -43,12 +42,11 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.zeebe.client.ClientProperties;
 import io.zeebe.client.TasksClient;
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.ZeebeClientConfiguration;
 import io.zeebe.client.event.TaskEvent;
 import io.zeebe.client.impl.TasksClientImpl;
-import io.zeebe.client.impl.ZeebeClientImpl;
 import io.zeebe.client.impl.data.MsgPackConverter;
 import io.zeebe.client.task.PollableTaskSubscription;
 import io.zeebe.client.task.TaskHandler;
@@ -73,12 +71,7 @@ public class TaskSubscriptionTest
     private static final TaskHandler DO_NOTHING = (c, t) ->
     { };
 
-    public ClientRule clientRule = new ClientRule(() ->
-    {
-        final Properties props = new Properties();
-        props.put(ClientProperties.CLIENT_SUBSCRIPTION_EXECUTION_THREADS, String.valueOf(NUM_EXECUTION_THREADS));
-        return props;
-    });
+    public ClientRule clientRule = new ClientRule(b -> b.numSubscriptionExecutionThreads(NUM_EXECUTION_THREADS));
     public StubBrokerRule broker = new StubBrokerRule();
 
     protected final MsgPackConverter msgPackConverter = new MsgPackConverter();
@@ -716,8 +709,8 @@ public class TaskSubscriptionTest
             .register();
 
         final WaitingTaskHandler handler = new WaitingTaskHandler();
-        final Properties clientProperties = ((ZeebeClientImpl) client).getInitializationProperties();
-        final int numExecutionThreads = Integer.parseInt(clientProperties.getProperty(ClientProperties.CLIENT_SUBSCRIPTION_EXECUTION_THREADS));
+        final ZeebeClientConfiguration clientConfig = client.getConfiguration();
+        final int numExecutionThreads = clientConfig.getNumSubscriptionExecutionThreads();
         final int taskCapacity = 4;
 
         clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopicName())

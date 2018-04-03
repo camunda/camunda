@@ -15,14 +15,11 @@
  */
 package io.zeebe.topic;
 
-import java.util.Properties;
 import java.util.Scanner;
 
-import io.zeebe.client.ClientProperties;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.event.EventMetadata;
 import io.zeebe.client.event.TopicSubscription;
-import io.zeebe.client.impl.ZeebeClientImpl;
 
 public class EventLogger
 {
@@ -31,10 +28,9 @@ public class EventLogger
     {
         final String brokerContactPoint = "127.0.0.1:51015";
 
-        final Properties clientProperties = new Properties();
-        clientProperties.put(ClientProperties.BROKER_CONTACTPOINT, brokerContactPoint);
-
-        final ZeebeClient zeebeClient = new ZeebeClientImpl(clientProperties);
+        final ZeebeClient zeebeClient = ZeebeClient.newClient()
+                .brokerContactPoint(brokerContactPoint)
+                .create();
 
         System.out.println(String.format("> Connecting to %s", brokerContactPoint));
 

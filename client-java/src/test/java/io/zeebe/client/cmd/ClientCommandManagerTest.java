@@ -21,8 +21,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.CoreMatchers.containsString;
 
+import java.time.Duration;
 import java.util.List;
-import java.util.Properties;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -33,7 +33,6 @@ import org.junit.rules.RuleChain;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import io.zeebe.client.ClientProperties;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.event.TaskEvent;
 import io.zeebe.client.event.TopicEventType;
@@ -55,12 +54,7 @@ import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 public class ClientCommandManagerTest
 {
 
-    public ClientRule clientRule = new ClientRule(() ->
-    {
-        final Properties p = new Properties();
-        p.setProperty(ClientProperties.CLIENT_REQUEST_TIMEOUT_SEC, "3");
-        return p;
-    });
+    public ClientRule clientRule = new ClientRule(b -> b.requestTimeout(Duration.ofSeconds(3)));
     public StubBrokerRule broker = new StubBrokerRule();
 
     @Rule

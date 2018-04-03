@@ -51,7 +51,7 @@ public class RequestManager extends Actor
     protected final Duration requestTimeout;
     protected final RequestDispatchStrategy dispatchStrategy;
     protected final Semaphore concurrentRequestsSemaphore;
-    protected final int blockTimeMillis;
+    protected final long blockTimeMillis;
 
     public RequestManager(
             ClientOutput output,
@@ -59,7 +59,7 @@ public class RequestManager extends Actor
             ObjectMapper msgPackMapper,
             Duration requestTimeout,
             int requestPoolSize,
-            int blockTimeMillis)
+            long blockTimeMillis)
     {
         this.output = output;
         this.topologyManager = topologyManager;

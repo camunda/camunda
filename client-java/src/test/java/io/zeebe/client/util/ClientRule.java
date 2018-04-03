@@ -15,8 +15,7 @@
  */
 package io.zeebe.client.util;
 
-import java.util.Properties;
-import java.util.function.Supplier;
+import java.util.function.Consumer;
 
 import org.junit.rules.ExternalResource;
 
@@ -24,6 +23,8 @@ import io.zeebe.client.TasksClient;
 import io.zeebe.client.TopicsClient;
 import io.zeebe.client.WorkflowsClient;
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.ZeebeClientBuilder;
+import io.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.zeebe.client.impl.ZeebeClientImpl;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import io.zeebe.util.sched.clock.ControlledActorClock;
@@ -31,19 +32,21 @@ import io.zeebe.util.sched.clock.ControlledActorClock;
 public class ClientRule extends ExternalResource
 {
 
-    protected final Properties properties;
+    protected final Consumer<ZeebeClientBuilder> configurator;
 
     protected ZeebeClient client;
     protected ControlledActorClock clock;
 
     public ClientRule()
     {
-        this(() -> new Properties());
+        this(b ->
+        {
+        });
     }
 
-    public ClientRule(Supplier<Properties> propertiesProvider)
+    public ClientRule(Consumer<ZeebeClientBuilder> configurator)
     {
-        this.properties = propertiesProvider.get();
+        this.configurator = configurator;
 
     }
 
@@ -51,7 +54,10 @@ public class ClientRule extends ExternalResource
     protected void before() throws Throwable
     {
         clock = new ControlledActorClock();
-        client = new ZeebeClientImpl(properties, clock);
+        final ZeebeClientBuilderImpl builder = (ZeebeClientBuilderImpl) ZeebeClient.newClient();
+        configurator.accept(builder);
+
+        client = new ZeebeClientImpl(builder, clock);
     }
 
     public ControlledActorClock getClock()
@@ -94,14 +100,5 @@ public class ClientRule extends ExternalResource
     public int getDefaultPartitionId()
     {
         return StubBrokerRule.TEST_PARTITION_ID;
-    }
-
-    protected class ControllableZeebeClientImpl extends ZeebeClientImpl
-    {
-
-        public ControllableZeebeClientImpl(Properties properties)
-        {
-            super(properties);
-        }
     }
 }

@@ -15,14 +15,11 @@
  */
 package io.zeebe.workflow;
 
-import java.util.Properties;
 import java.util.stream.Collectors;
 
-import io.zeebe.client.ClientProperties;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
 import io.zeebe.client.event.DeploymentEvent;
-import io.zeebe.client.impl.ZeebeClientImpl;
 
 public class WorkflowInstanceStarter
 {
@@ -34,10 +31,9 @@ public class WorkflowInstanceStarter
         final String topicName = "default-topic";
         final int partitionId = 0;
 
-        final Properties clientProperties = new Properties();
-        clientProperties.put(ClientProperties.BROKER_CONTACTPOINT, brokerContactPoint);
-
-        final ZeebeClient zeebeClient = new ZeebeClientImpl(clientProperties);
+        final ZeebeClient zeebeClient = ZeebeClient.newClient()
+            .brokerContactPoint(brokerContactPoint)
+            .create();
 
         System.out.println(String.format("> Connecting to %s", brokerContactPoint));
 

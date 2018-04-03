@@ -15,19 +15,15 @@
  */
 package io.zeebe.client.impl;
 
-import static io.zeebe.client.ClientProperties.*;
-
-import java.time.Duration;
-import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.slf4j.Logger;
 
-import io.zeebe.client.ClientProperties;
 import io.zeebe.client.WorkflowsClient;
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.ZeebeClientConfiguration;
 import io.zeebe.client.clustering.impl.ClientTopologyManager;
 import io.zeebe.client.clustering.impl.RequestTopologyCmdImpl;
 import io.zeebe.client.clustering.impl.TopologyResponse;
@@ -59,7 +55,7 @@ public class ZeebeClientImpl implements ZeebeClient
         VERSION = version != null ? version : "development";
     }
 
-    protected final Properties initializationProperties;
+    protected final ZeebeClientConfiguration configuration;
 
     protected Dispatcher dataFrameReceiveBuffer;
     protected Dispatcher sendBuffer;
@@ -74,34 +70,25 @@ public class ZeebeClientImpl implements ZeebeClient
     protected final RequestManager apiCommandManager;
     protected SubscriptionManager subscriptionManager;
 
+    protected final int subscriptionPrefetchCapacity;
+
     protected boolean isClosed;
 
-    private final int subscriptionPrefetchCapacity;
-
-    private final int numExecutionThreads;
-
-
-    public ZeebeClientImpl(final Properties properties)
+    public ZeebeClientImpl(final ZeebeClientConfiguration configuration)
     {
-        this(properties, null);
+        this(configuration, null);
     }
 
-    public ZeebeClientImpl(final Properties properties, ActorClock actorClock)
+    public ZeebeClientImpl(final ZeebeClientConfiguration configuration, ActorClock actorClock)
     {
         LOG.info("Version: {}", VERSION);
 
-        ClientProperties.setDefaults(properties);
-        this.initializationProperties = properties;
+        this.configuration = configuration;
 
-        final SocketAddress contactPoint = SocketAddress.from(properties.getProperty(ClientProperties.BROKER_CONTACTPOINT));
+        final SocketAddress contactPoint = SocketAddress.from(configuration.getBrokerContactPoint());
 
-        final int maxRequests = Integer.parseInt(properties.getProperty(CLIENT_MAXREQUESTS));
-        final int blockTimeMillis = Integer.parseInt(properties.getProperty(CLIENT_REQUEST_BLOCKTIME_MILLIS));
-        final int sendBufferSize = Integer.parseInt(properties.getProperty(CLIENT_SENDBUFFER_SIZE));
-
-        final int numSchedulerThreads = Integer.parseInt(properties.getProperty(ClientProperties.CLIENT_MANAGEMENT_THREADS));
         this.scheduler = ActorScheduler.newActorScheduler()
-                                       .setCpuBoundActorThreadCount(numSchedulerThreads)
+                                       .setCpuBoundActorThreadCount(configuration.getNumManagementThreads())
                                        .setIoBoundActorThreadCount(0)
                                        .setActorClock(actorClock)
                                        .setSchedulerName("client")
@@ -109,7 +96,7 @@ public class ZeebeClientImpl implements ZeebeClient
         this.scheduler.start();
 
         dataFrameReceiveBuffer = Dispatchers.create("receive-buffer")
-            .bufferSize(1024 * 1024 * sendBufferSize)
+            .bufferSize(1024 * 1024 * configuration.getSendBufferSize())
             .modePubSub()
             .frameMaxLength(1024 * 1024)
             .actorScheduler(scheduler)
@@ -117,20 +104,19 @@ public class ZeebeClientImpl implements ZeebeClient
 
         sendBuffer = Dispatchers.create("send-buffer")
             .actorScheduler(scheduler)
-            .bufferSize(1024 * 1024 * sendBufferSize)
+            .bufferSize(1024 * 1024 * configuration.getSendBufferSize())
             .build();
 
         final ClientTransportBuilder transportBuilder = Transports.newClientTransport()
             .messageMaxLength(1024 * 1024)
             .messageReceiveBuffer(dataFrameReceiveBuffer)
-            .requestPoolSize(maxRequests + 16)
+            .requestPoolSize(configuration.getMaxRequests() + 16)
             .scheduler(scheduler)
             .sendBuffer(sendBuffer);
 
-        if (properties.containsKey(ClientProperties.CLIENT_TCP_CHANNEL_KEEP_ALIVE_PERIOD))
+        if (configuration.getTcpChannelKeepAlivePeriod() != null)
         {
-            final long keepAlivePeriod = Long.parseLong(properties.getProperty(ClientProperties.CLIENT_TCP_CHANNEL_KEEP_ALIVE_PERIOD));
-            transportBuilder.keepAlivePeriod(Duration.ofMillis(keepAlivePeriod));
+            transportBuilder.keepAlivePeriod(configuration.getTcpChannelKeepAlivePeriod());
         }
 
         transport = transportBuilder.build();
@@ -138,11 +124,7 @@ public class ZeebeClientImpl implements ZeebeClient
         this.objectMapper = new ZeebeObjectMapper();
         this.msgPackMapper = new MsgPackMapper(objectMapper);
 
-
-        numExecutionThreads = Integer.parseInt(properties.getProperty(ClientProperties.CLIENT_SUBSCRIPTION_EXECUTION_THREADS));
-        subscriptionPrefetchCapacity = Integer.parseInt(properties.getProperty(ClientProperties.CLIENT_TOPIC_SUBSCRIPTION_PREFETCH_CAPACITY));
-
-        final Duration requestTimeout = Duration.ofSeconds(Long.parseLong(properties.getProperty(CLIENT_REQUEST_TIMEOUT_SEC)));
+        subscriptionPrefetchCapacity = configuration.getTopicSubscriptionPrefetchCapacity();
 
         final RemoteAddress initialContactPoint = transport.registerRemoteAddress(contactPoint);
 
@@ -153,9 +135,9 @@ public class ZeebeClientImpl implements ZeebeClient
                 transport.getOutput(),
                 topologyManager,
                 objectMapper,
-                requestTimeout,
-                maxRequests,
-                blockTimeMillis);
+                configuration.getRequestTimeout(),
+                configuration.getMaxRequests(),
+                configuration.getRequestBlocktime().toMillis());
         this.scheduler.submitActor(apiCommandManager);
 
         this.subscriptionManager = new SubscriptionManager(this);
@@ -255,9 +237,10 @@ public class ZeebeClientImpl implements ZeebeClient
         return objectMapper;
     }
 
-    public Properties getInitializationProperties()
+    @Override
+    public ZeebeClientConfiguration getConfiguration()
     {
-        return initializationProperties;
+        return configuration;
     }
 
     public ClientTransport getTransport()
@@ -283,10 +266,5 @@ public class ZeebeClientImpl implements ZeebeClient
     public int getSubscriptionPrefetchCapacity()
     {
         return subscriptionPrefetchCapacity;
-    }
-
-    public int getNumExecutionThreads()
-    {
-        return numExecutionThreads;
     }
 }

@@ -19,11 +19,16 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
-import java.util.Properties;
+
+import org.junit.After;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import io.zeebe.client.cmd.ClientException;
 import io.zeebe.client.event.TaskEvent;
 import io.zeebe.client.event.impl.TaskEventImpl;
+import io.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.zeebe.client.impl.ZeebeClientImpl;
 import io.zeebe.client.util.Events;
 import io.zeebe.protocol.clientapi.ControlMessageType;
@@ -31,10 +36,6 @@ import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.sched.clock.ControlledActorClock;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 public class ZeebeClientTopologyTimeoutTest
 {
@@ -52,10 +53,10 @@ public class ZeebeClientTopologyTimeoutTest
 
     protected ZeebeClient buildClient()
     {
-        final Properties properties = new Properties();
-        properties.setProperty(ClientProperties.CLIENT_REQUEST_TIMEOUT_SEC, "1");
+        final ZeebeClientBuilderImpl config = new ZeebeClientBuilderImpl();
+        config.requestTimeout(Duration.ofSeconds(1));
 
-        final ZeebeClient client = new ZeebeClientImpl(properties, clientClock);
+        final ZeebeClient client = new ZeebeClientImpl(config, clientClock);
         closeables.manage(client);
         return client;
     }

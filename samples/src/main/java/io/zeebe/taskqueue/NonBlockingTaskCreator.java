@@ -15,12 +15,16 @@
  */
 package io.zeebe.taskqueue;
 
-import java.util.*;
+import java.util.Enumeration;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map.Entry;
+import java.util.Properties;
+import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import io.zeebe.client.ClientProperties;
 import io.zeebe.client.TasksClient;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
@@ -34,25 +38,17 @@ public class NonBlockingTaskCreator
 
     public static void main(String[] args)
     {
-        final int tasks = 1_000_000;
+        final Properties systemProperties = System.getProperties();
 
-        final Properties properties = System.getProperties();
-
-        ClientProperties.setDefaults(properties);
-
-        properties.putIfAbsent(SAMPLE_NUMBER_OF_REQUESTS, String.valueOf(tasks));
-        properties.putIfAbsent(SAMPLE_MAX_CONCURRENT_REQUESTS, "128");
-        properties.put(ClientProperties.CLIENT_MAXREQUESTS, "128");
-
-        printProperties(properties);
-
-        final int numOfRequests = Integer.parseInt(properties.getProperty(SAMPLE_NUMBER_OF_REQUESTS));
-        final int maxConcurrentRequests = Integer.parseInt(properties.getProperty(SAMPLE_MAX_CONCURRENT_REQUESTS));
+        final int tasks = Integer.parseInt(systemProperties.getProperty(SAMPLE_NUMBER_OF_REQUESTS, "1_000_000"));
 
         final String topicName = "default-topic";
 
-        try (ZeebeClient client = ZeebeClient.create(properties))
+        try (ZeebeClient client = ZeebeClient.create(System.getProperties()))
         {
+            System.out.println("Client configuration: " + client.getConfiguration());
+            final int maxConcurrentRequests = client.getConfiguration().getMaxRequests();
+
             try
             {
                 // try to create default topic if it not exists already
@@ -73,7 +69,7 @@ public class NonBlockingTaskCreator
 
             final List<Future<TaskEvent>> inFlightRequests = new LinkedList<>();
 
-            while (tasksCreated < numOfRequests)
+            while (tasksCreated < tasks)
             {
 
                 if (inFlightRequests.size() < maxConcurrentRequests)

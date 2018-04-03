@@ -16,12 +16,9 @@
 package io.zeebe.workflow;
 
 import java.time.Duration;
-import java.util.Properties;
 import java.util.Scanner;
 
-import io.zeebe.client.ClientProperties;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.impl.ZeebeClientImpl;
 import io.zeebe.client.task.TaskSubscription;
 
 public class WorkflowInstanceWorker
@@ -35,10 +32,9 @@ public class WorkflowInstanceWorker
         final String taskType = "foo";
         final String lockOwner = "worker-1";
 
-        final Properties clientProperties = new Properties();
-        clientProperties.put(ClientProperties.BROKER_CONTACTPOINT, brokerContactPoint);
-
-        final ZeebeClient zeebeClient = new ZeebeClientImpl(clientProperties);
+        final ZeebeClient zeebeClient = ZeebeClient.newClient()
+            .brokerContactPoint(brokerContactPoint)
+            .create();
 
         System.out.println(String.format("> Connecting to %s", brokerContactPoint));
 

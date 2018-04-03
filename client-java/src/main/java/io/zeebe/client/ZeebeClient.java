@@ -19,6 +19,7 @@ import java.util.Properties;
 
 import io.zeebe.client.clustering.impl.TopologyResponse;
 import io.zeebe.client.cmd.Request;
+import io.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.zeebe.client.impl.ZeebeClientImpl;
 
 public interface ZeebeClient extends AutoCloseable
@@ -44,12 +45,45 @@ public interface ZeebeClient extends AutoCloseable
      */
     Request<TopologyResponse> requestTopology();
 
+    /**
+     * @return the client's configuration
+     */
+    ZeebeClientConfiguration getConfiguration();
+
     @Override
     void close();
 
+    static ZeebeClient create()
+    {
+        return newClient().create();
+    }
+
+    /**
+     * See {@link ClientProperties} for configuration options.
+     */
     static ZeebeClient create(Properties properties)
     {
-        return new ZeebeClientImpl(properties);
+        return newClient(properties).create();
     }
+
+    static ZeebeClient create(ZeebeClientConfiguration configuration)
+    {
+        return new ZeebeClientImpl(configuration);
+    }
+
+    static ZeebeClientBuilder newClient()
+    {
+        return new ZeebeClientBuilderImpl();
+    }
+
+    /**
+     * Returns a new builder for a {@link ZeebeClient} initialized with the provided properties.
+     * See {@link ClientProperties} for configuration options.
+     */
+    static ZeebeClientBuilder newClient(Properties initProperties)
+    {
+        return ZeebeClientBuilderImpl.fromProperties(initProperties);
+    }
+
 
 }

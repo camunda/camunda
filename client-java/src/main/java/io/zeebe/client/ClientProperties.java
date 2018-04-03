@@ -15,8 +15,6 @@
  */
 package io.zeebe.client;
 
-import java.util.Properties;
-
 public class ClientProperties
 {
     /**
@@ -76,16 +74,4 @@ public class ClientProperties
      * The request timeout in seconds.
      */
     public static final String CLIENT_REQUEST_TIMEOUT_SEC = "zeebe.client.request.timeout";
-
-    public static void setDefaults(Properties properties)
-    {
-        properties.putIfAbsent(BROKER_CONTACTPOINT, "127.0.0.1:51015");
-        properties.putIfAbsent(CLIENT_MAXREQUESTS, "128");
-        properties.putIfAbsent(CLIENT_SENDBUFFER_SIZE, "16");
-        properties.putIfAbsent(CLIENT_MANAGEMENT_THREADS, "1");
-        properties.putIfAbsent(CLIENT_SUBSCRIPTION_EXECUTION_THREADS, "1");
-        properties.putIfAbsent(CLIENT_TOPIC_SUBSCRIPTION_PREFETCH_CAPACITY, "32");
-        properties.putIfAbsent(CLIENT_REQUEST_TIMEOUT_SEC, "15");
-        properties.putIfAbsent(CLIENT_REQUEST_BLOCKTIME_MILLIS, "15000");
-    }
 }

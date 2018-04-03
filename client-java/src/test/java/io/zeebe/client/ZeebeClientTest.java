@@ -20,8 +20,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 
-import java.util.*;
-import java.util.concurrent.*;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Properties;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 import org.junit.After;
 import org.junit.Before;
@@ -410,9 +416,8 @@ public class ZeebeClientTest
         });
 
         // +2 (one for the extra request when client is started)
-        final long requestTimeout = Long.parseLong(client.getInitializationProperties()
-                                            .getProperty(ClientProperties.CLIENT_REQUEST_TIMEOUT_SEC));
-        final long requestTimeoutMs = TimeUnit.SECONDS.toMillis(requestTimeout);
+        final Duration requestTimeout = client.getConfiguration().getRequestTimeout();
+        final long requestTimeoutMs = requestTimeout.toMillis();
         final long expectedMaximumTopologyRequests =
                 (requestTimeoutMs / ClientTopologyManager.MIN_REFRESH_INTERVAL_MILLIS.toMillis()) + 2;
         final long actualTopologyRequests = broker
@@ -439,9 +444,8 @@ public class ZeebeClientTest
         });
 
         // +2 (one for the extra request when client is started)
-        final long requestTimeout = Long.parseLong(client.getInitializationProperties()
-                                                         .getProperty(ClientProperties.CLIENT_REQUEST_TIMEOUT_SEC));
-        final long requestTimeoutMs = TimeUnit.SECONDS.toMillis(requestTimeout);
+        final Duration requestTimeout = client.getConfiguration().getRequestTimeout();
+        final long requestTimeoutMs = requestTimeout.toMillis();
         final long expectedMaximumTopologyRequests = (requestTimeoutMs / ClientTopologyManager.MIN_REFRESH_INTERVAL_MILLIS.toMillis()) + 2;
         final long actualTopologyRequests = broker
             .getReceivedControlMessageRequests()
@@ -450,6 +454,46 @@ public class ZeebeClientTest
             .count();
 
         assertThat(actualTopologyRequests).isLessThanOrEqualTo(expectedMaximumTopologyRequests);
+    }
+
+    @Test
+    public void shouldCreateClientWithFluentBuilder()
+    {
+        // given
+        final String contactPoint = "foo:123";
+        final int maxRequests = 1;
+        final int numManagementThreads = 2;
+        final int numSubscriptionThreads = 3;
+        final Duration requestBlockTime = Duration.ofSeconds(4);
+        final Duration requestTimeout = Duration.ofSeconds(5);
+        final int sendBufferSize = 6;
+        final Duration tcpChannelKeepAlivePeriod = Duration.ofSeconds(7);
+        final int topicSubscriptionPrefetchCapacity = 8;
+
+        // when
+        final ZeebeClient client = ZeebeClient.newClient()
+                .brokerContactPoint(contactPoint)
+                .maxRequests(maxRequests)
+                .numManagementThreads(numManagementThreads)
+                .numSubscriptionExecutionThreads(numSubscriptionThreads)
+                .requestBlocktime(requestBlockTime)
+                .requestTimeout(requestTimeout)
+                .sendBufferSize(sendBufferSize)
+                .tcpChannelKeepAlivePeriod(tcpChannelKeepAlivePeriod)
+                .topicSubscriptionPrefetchCapacity(topicSubscriptionPrefetchCapacity)
+                .create();
+
+        // then
+        final ZeebeClientConfiguration configuration = client.getConfiguration();
+        assertThat(configuration.getBrokerContactPoint()).isEqualTo(contactPoint);
+        assertThat(configuration.getMaxRequests()).isEqualTo(maxRequests);
+        assertThat(configuration.getNumManagementThreads()).isEqualTo(numManagementThreads);
+        assertThat(configuration.getNumSubscriptionExecutionThreads()).isEqualTo(numSubscriptionThreads);
+        assertThat(configuration.getRequestBlocktime()).isEqualTo(requestBlockTime);
+        assertThat(configuration.getRequestTimeout()).isEqualTo(requestTimeout);
+        assertThat(configuration.getSendBufferSize()).isEqualTo(sendBufferSize);
+        assertThat(configuration.getTcpChannelKeepAlivePeriod()).isEqualTo(tcpChannelKeepAlivePeriod);
+        assertThat(configuration.getTopicSubscriptionPrefetchCapacity()).isEqualTo(topicSubscriptionPrefetchCapacity);
     }
 
     protected TopicSubscription openSubscription()
