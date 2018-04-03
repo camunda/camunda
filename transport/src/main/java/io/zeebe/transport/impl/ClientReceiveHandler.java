@@ -65,7 +65,7 @@ public class ClientReceiveHandler implements FragmentHandler
 
                 if (request != null)
                 {
-                    request.processResponse(buffer, readOffset, length);
+                    request.processResponse(requestId, buffer, readOffset, length);
                     invokeResponseListeners(streamId, requestId, buffer, readOffset, length);
                     return CONSUME_FRAGMENT_RESULT;
                 }

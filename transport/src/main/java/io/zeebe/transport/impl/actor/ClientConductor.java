@@ -16,6 +16,7 @@
 package io.zeebe.transport.impl.actor;
 
 import java.time.Duration;
+import java.util.Collection;
 
 import io.zeebe.dispatcher.Subscription;
 import io.zeebe.transport.*;
@@ -54,7 +55,12 @@ public class ClientConductor extends Conductor
     @Override
     protected void onSenderAndReceiverClosed()
     {
-        clientRequestPool.close();
+        final Collection<ActorFuture<Void>> closeFutures = clientRequestPool.close();
+
+        closeFutures.forEach(f -> actor.runOnCompletionBlockingCurrentPhase(f, (r, t) ->
+        {
+            // Nothing, just making sure the request controllers are closed before we close
+        }));
     }
 
     public void openChannel(RemoteAddressImpl address, int connectAttempt)

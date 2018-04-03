@@ -26,6 +26,7 @@ import java.time.Duration;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import io.zeebe.dispatcher.*;
@@ -62,6 +63,7 @@ public class ClientTransportTest
 
     public static final int REQUEST_POOL_SIZE = 4;
     public static final int BUFFER_SIZE = 16 * 1024;
+    public static final int MESSAGES_REQUIRED_TO_SATURATE_SEND_BUFFER = BUFFER_SIZE / BUF1.capacity();
 
     protected Dispatcher clientReceiveBuffer;
 
@@ -90,12 +92,6 @@ public class ClientTransportTest
                 .messageReceiveBuffer(clientReceiveBuffer)
                 .build();
         closeables.manage(clientTransport);
-    }
-
-    @After
-    public void tearDown()
-    {
-        clientTransport.close();
     }
 
     protected ControllableServerTransport buildControllableServerTransport()
@@ -591,6 +587,160 @@ public class ClientTransportTest
         {
             assertThatBuffer(response.getResponseBuffer()).hasBytes(BUF1);
         }
+    }
+
+    @Test
+    public void shouldOpenRequestWhenSendBufferIsSaturated()
+    {
+        // given
+        // making sure the sender cannot make progress on the send buffer
+        final Subscription subscription = sendBuffer.openSubscription("blocking");
+        closeables.manage(() ->
+        {
+            sendBuffer.closeSubscription(subscription);
+
+        });
+
+        final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+        final ClientOutput clientOutput = clientTransport.getOutput();
+
+        for (int i = 0; i < MESSAGES_REQUIRED_TO_SATURATE_SEND_BUFFER; i++)
+        {
+            clientOutput.sendRequest(remoteAddress, new DirectBufferWriter().wrap(BUF1));
+        }
+
+        // when
+        final ActorFuture<ClientResponse> response = clientOutput.sendRequest(remoteAddress, new DirectBufferWriter().wrap(BUF1));
+
+        // then
+        assertThat(response).isNotNull();
+    }
+
+    @Test
+    public void shouldRejectMessageWhenSendBufferIsSaturated()
+    {
+        // given
+        // making sure the sender cannot make progress on the send buffer
+        sendBuffer.openSubscription("blocking");
+
+        final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+        final ClientOutput clientOutput = clientTransport.getOutput();
+
+        final TransportMessage message = new TransportMessage();
+        message.buffer(BUF1);
+        message.remoteAddress(remoteAddress);
+
+        for (int i = 0; i < MESSAGES_REQUIRED_TO_SATURATE_SEND_BUFFER; i++)
+        {
+            clientOutput.sendMessage(message);
+        }
+
+        // when
+        final boolean success = clientTransport.getOutput().sendMessage(message);
+
+        // then
+        assertThat(success).isFalse();
+    }
+
+    @Test
+    public void shouldCloseTransportWhileWaitingForResponse() throws Exception
+    {
+        // given
+        final AtomicBoolean requestReceived = new AtomicBoolean(false);
+        final AtomicBoolean transportClosed = new AtomicBoolean(false);
+
+        buildServerTransport(b -> b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress())
+                .build(null, (output, remoteAddress, buffer, offset, length, requestId) ->
+                {
+                    requestReceived.set(true);
+                    return false;
+                }));
+
+        final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+
+        final BufferWriter writer = mock(BufferWriter.class);
+        when(writer.getLength()).thenReturn(16);
+
+        clientTransport.getOutput().sendRequest(remote, writer);
+
+        final Thread closerThread = new Thread(() ->
+        {
+            clientTransport.close();
+            transportClosed.set(true);
+        });
+        waitUntil(() -> requestReceived.get());
+
+        // when
+        closerThread.start();
+
+        // then
+        closerThread.join(1000L);
+        assertThat(transportClosed).isTrue();
+    }
+
+    /**
+     * It is important that all the controller actors are closed before transports and its surrounding (send buffer)
+     * are closed. If this is not the case, the controller may write to the closed send buffer and provoke
+     * memory access violations.
+     */
+    @Test
+    public void shouldNotCloseTransportWhileRequestControllerIsActive() throws InterruptedException
+    {
+        // given
+        buildServerTransport(b ->
+            b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress())
+            .build(null, new EchoRequestResponseHandler()));
+
+        final Object monitor = new Object();
+        final AtomicBoolean isWaiting = new AtomicBoolean(false);
+
+        final Predicate<DirectBuffer> blockingInspector = buf ->
+        {
+            synchronized (monitor)
+            {
+                isWaiting.compareAndSet(false, true);
+                try
+                {
+                    monitor.wait();
+                }
+                catch (InterruptedException e)
+                {
+                    throw new RuntimeException(e);
+                }
+                return false;
+            }
+        };
+
+        final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+
+        final ActorFuture<ClientResponse> responseFuture = clientTransport.getOutput().sendRequestWithRetry(
+            () -> CompletableActorFuture.completed(remote),
+            blockingInspector,
+            new DirectBufferWriter().wrap(BUF1),
+            Duration.ofSeconds(30));
+
+        waitUntil(() -> isWaiting.get());
+
+        // when
+        final ActorFuture<Void> closeFuture = clientTransport.closeAsync();
+
+        // then
+        Thread.sleep(1000); // transport should not close in this time
+
+        assertThat(closeFuture).isNotDone();
+        assertThat(responseFuture).isNotDone();
+
+        // and when
+        synchronized (monitor)
+        {
+            monitor.notifyAll();
+        }
+
+        // then
+        waitUntil(() -> closeFuture.isDone());
+
+        assertThat(closeFuture).isDone();
+        assertThat(responseFuture).isDone();
     }
 
     protected class CountFragmentsHandler implements FragmentHandler

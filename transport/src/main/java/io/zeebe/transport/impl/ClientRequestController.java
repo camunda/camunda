@@ -79,7 +79,7 @@ public class ClientRequestController extends Actor
         // timeout will no longer trigger, so we must fail the request here
         if (responseFuture != null && !responseFuture.isDone())
         {
-            fail("Request closed", new RuntimeException());
+            fail(this.requestId, "Request closed", new RuntimeException());
         }
     }
 
@@ -233,41 +233,45 @@ public class ClientRequestController extends Actor
         }
     }
 
-    public void fail(String failure, Exception cause)
+    public void fail(long requestId, String failure, Exception cause)
     {
         actor.run(() ->
         {
-            if (responseFuture != null && responseFuture.isAwaitingResult())
+            // must check these conditions always in actor context to avoid race conditions with other external invocations
+            // (e.g. fail, processResponse, reuse)
+            if (!isStillActiveInRequest(requestId))
             {
-                try
+                return;
+            }
+
+            try
+            {
+                if (cause != null && cause instanceof NotConnectedException)
                 {
-                    if (cause != null && cause instanceof NotConnectedException)
-                    {
-                        LOG.trace("Channel to remove {} not connected, retrying", remotesTried.peek());
+                    LOG.trace("Channel to remove {} not connected, retrying", remotesTried.peek());
 
-                        retryRequest();
+                    retryRequest();
+                }
+                else
+                {
+                    LOG.trace("Completing request exceptionally. {}", failure);
+
+                    try
+                    {
+                        responseFuture.completeExceptionally(failure, cause);
+                        scheduledTimeout.cancel();
                     }
-                    else
+                    finally
                     {
-                        LOG.trace("Completing request exceptionally. {}", failure);
-
-                        try
-                        {
-                            responseFuture.completeExceptionally(failure, cause);
-                            scheduledTimeout.cancel();
-                        }
-                        finally
-                        {
-                            closeRequest();
-                        }
+                        closeRequest();
                     }
                 }
-                catch (IllegalStateException e)
-                {
-                    // ignore; this exception is expected when the request was resolved by the sender
-                    // in the meantime
-                    Loggers.TRANSPORT_LOGGER.debug("Could not fail request future", e);
-                }
+            }
+            catch (IllegalStateException e)
+            {
+                // ignore; this exception is expected when the request was resolved by the sender
+                // in the meantime
+                Loggers.TRANSPORT_LOGGER.debug("Could not fail request future", e);
             }
         });
     }
@@ -278,7 +282,7 @@ public class ClientRequestController extends Actor
         {
             if (remote.equals(remotesTried.peek()))
             {
-                fail(reason, new TransportException(reason));
+                fail(this.requestId, reason, new TransportException(reason));
             }
         });
     }
@@ -288,17 +292,24 @@ public class ClientRequestController extends Actor
         return actor.close();
     }
 
-    public void processResponse(DirectBuffer buff, int offset, int length)
+    public void processResponse(long requestId, DirectBuffer buff, int offset, int length)
     {
         final CompletableActorFuture<ClientResponse> responseFuture = this.responseFuture;
 
-        if (responseFuture.isAwaitingResult())
+        if (!isAlreadyCompleted())
         {
             responseBuffer.putBytes(0, buff, offset, length);
             responseBufferView.wrap(responseBuffer, 0, length);
 
             actor.run(() ->
             {
+                // we need to check these conditions a second time in actor context
+                // in order to avoid race conditions with other external callbacks (e.g. fail or timeout)
+                if (!isStillActiveInRequest(requestId))
+                {
+                    return;
+                }
+
                 if (responseHandler.test(responseBufferView))
                 {
                     LOG.trace("Response inspector decided to retry request.");
@@ -322,6 +333,18 @@ public class ClientRequestController extends Actor
         {
             LOG.trace("Dropping response, not awaiting response anymore.");
         }
+    }
+
+    private boolean isStillActiveInRequest(long requestId)
+    {
+        final boolean isAlreadyReused = this.requestId != requestId;
+
+        return !isAlreadyCompleted() && !isAlreadyReused;
+    }
+
+    private boolean isAlreadyCompleted()
+    {
+        return responseFuture == null || !responseFuture.isAwaitingResult();
     }
 
     public long getCurrentRequestId()

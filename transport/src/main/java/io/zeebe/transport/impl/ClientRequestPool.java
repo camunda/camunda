@@ -16,23 +16,32 @@
 package io.zeebe.transport.impl;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.transport.*;
-import io.zeebe.util.buffer.BufferWriter;
-import io.zeebe.util.buffer.DirectBufferWriter;
-import io.zeebe.util.sched.*;
-import io.zeebe.util.sched.clock.ActorClock;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
-import org.agrona.*;
+import org.agrona.BitUtil;
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.ManyToManyConcurrentArrayQueue;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
-public class ClientRequestPool implements AutoCloseable
+import io.zeebe.dispatcher.Dispatcher;
+import io.zeebe.transport.ClientResponse;
+import io.zeebe.transport.Loggers;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.RequestTimeoutException;
+import io.zeebe.util.buffer.BufferWriter;
+import io.zeebe.util.buffer.DirectBufferWriter;
+import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.ActorScheduler;
+import io.zeebe.util.sched.clock.ActorClock;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
+
+public class ClientRequestPool
 {
     private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
 
@@ -107,18 +116,19 @@ public class ClientRequestPool implements AutoCloseable
         }
     }
 
-    @Override
-    public void close()
+    public Collection<ActorFuture<Void>> close()
     {
         this.isClosed = true;
 
+        final List<ActorFuture<Void>> closeFutures = new ArrayList<>();
+
         for (int i = 0; i < requests.length; i++)
         {
-            // TODO: wait until closed
-            requests[i].closeActor();
+            closeFutures.add(requests[i].closeActor());
         }
 
         this.availableRequests.clear();
+        return closeFutures;
     }
 
     public void onRequestClosed(ClientRequestController request)

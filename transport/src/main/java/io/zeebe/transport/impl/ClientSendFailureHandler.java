@@ -41,7 +41,7 @@ public class ClientSendFailureHandler implements SendFailureHandler
             final ClientRequestController pendingRequest = requestPool.getOpenRequestById(requestId);
             if (pendingRequest != null)
             {
-                pendingRequest.fail(failure, cause);
+                pendingRequest.fail(requestId, failure, cause);
             }
         }
     }

@@ -41,15 +41,9 @@ public interface ClientOutput
     ActorFuture<ClientResponse> sendRequest(RemoteAddress addr, BufferWriter writer);
 
     /**
-     * <p>Like {@link #sendRequest(RemoteAddress, BufferWriter)} but retries the request if there is no current connection.
-     * Makes this method more robust in the presence of short intermittent disconnects.
+     * <p>Like {@link #sendRequestWithRetry(Supplier, Predicate, BufferWriter, Duration)}
+     * with a static remote and no respons inspection (i.e. first response is accepted).
      *
-     * <p>Guarantees:
-     * <ul>
-     * <li>Not garbage-free
-     * <li>n intermediary copies of the request (one local copy for making retries, one copy on the send buffer per try)
-     *
-     * @param timeout Timeout in milliseconds until the returned future fails if no response is received.
      * @return the response future
      */
     ActorFuture<ClientResponse> sendRequest(RemoteAddress addr, BufferWriter writer, Duration timeout);
@@ -74,7 +68,7 @@ public interface ClientOutput
      *            In this case we want to do a retry and send the request to a different node, based on the content
      *            of the response
      * @param timeout The timeout until the returned future fails if no response is received.
-     * @return the last request which eventually succeeded.
+     * @return a future carrying the response that was accepted. Can complete exceptionally in failure cases such as timeout.
      */
     ActorFuture<ClientResponse> sendRequestWithRetry(Supplier<ActorFuture<RemoteAddress>> remoteAddressSupplier, Predicate<DirectBuffer> responseInspector, BufferWriter writer, Duration timeout);
 }

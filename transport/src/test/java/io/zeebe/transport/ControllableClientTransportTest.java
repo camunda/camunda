@@ -15,14 +15,12 @@
  */
 package io.zeebe.transport;
 
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.dispatcher.Dispatchers;
-import io.zeebe.test.util.AutoCloseableRule;
-import io.zeebe.util.buffer.BufferWriter;
-import io.zeebe.util.buffer.DirectBufferWriter;
-import io.zeebe.util.sched.ActorScheduler;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import java.time.Duration;
+import java.util.function.Supplier;
+
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
@@ -30,17 +28,17 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
-
-import static io.zeebe.test.util.TestUtil.waitUntil;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import io.zeebe.dispatcher.Dispatcher;
+import io.zeebe.dispatcher.Dispatchers;
+import io.zeebe.test.util.AutoCloseableRule;
+import io.zeebe.util.buffer.DirectBufferWriter;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 
 public class ControllableClientTransportTest
 {
 
+    private static final int MAX_ITERATION = 1000;
     public static final DirectBuffer BUF1 = new UnsafeBuffer(new byte[32]);
     public static final SocketAddress SERVER_ADDRESS1 = new SocketAddress("localhost", 51115);
 
@@ -48,11 +46,11 @@ public class ControllableClientTransportTest
 
     public static final int MESSAGES_REQUIRED_TO_SATURATE_SEND_BUFFER = SEND_BUFFER_SIZE / BUF1.capacity();
 
-    public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
+    public ControlledActorSchedulerRule scheduler = new ControlledActorSchedulerRule();
     public AutoCloseableRule closeables = new AutoCloseableRule();
 
     @Rule
-    public RuleChain ruleChain = RuleChain.outerRule(actorSchedulerRule).around(closeables);
+    public RuleChain ruleChain = RuleChain.outerRule(scheduler).around(closeables);
 
     protected ClientTransport clientTransport;
     private Dispatcher clientSendBuffer;
@@ -62,125 +60,76 @@ public class ControllableClientTransportTest
     {
         clientSendBuffer = Dispatchers.create("clientSendBuffer")
             .bufferSize(SEND_BUFFER_SIZE)
-            .actorScheduler(actorSchedulerRule.get())
+            .actorScheduler(scheduler.get())
             .build();
+        managedCloseableControlled(() -> clientSendBuffer.closeAsync());
 
         clientTransport = Transports.newClientTransport()
             .sendBuffer(clientSendBuffer)
             .requestPoolSize(MESSAGES_REQUIRED_TO_SATURATE_SEND_BUFFER + 1)
-            .scheduler(actorSchedulerRule.get())
+            .scheduler(scheduler.get())
             .build();
-
-        closeables.manage(clientTransport);
+        managedCloseableControlled(() -> clientTransport.closeAsync());
     }
 
-    @Test
-    public void shouldOpenRequestWhenSendBufferIsSaturated()
+    private void managedCloseableControlled(Supplier<ActorFuture<Void>> closeable)
     {
-        // given
-        // making sure the sender cannot make progress on the send buffer
-        clientSendBuffer.openSubscription("blocking");
-
-        final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
-        final ClientOutput clientOutput = clientTransport.getOutput();
-
-        for (int i = 0; i < MESSAGES_REQUIRED_TO_SATURATE_SEND_BUFFER; i++)
-        {
-            clientOutput.sendRequest(remoteAddress, new DirectBufferWriter().wrap(BUF1));
-        }
-
-        // when
-        final ActorFuture<ClientResponse> response = clientOutput.sendRequest(remoteAddress, new DirectBufferWriter().wrap(BUF1));
-
-        // then
-        assertThat(response).isNotNull();
-    }
-
-    @Test
-    public void shouldRejectMessageWhenSendBufferIsSaturated()
-    {
-        // given
-        // making sure the sender cannot make progress on the send buffer
-        clientSendBuffer.openSubscription("blocking");
-
-        final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
-        final ClientOutput clientOutput = clientTransport.getOutput();
-
-        final TransportMessage message = new TransportMessage();
-        message.buffer(BUF1);
-        message.remoteAddress(remoteAddress);
-
-        for (int i = 0; i < MESSAGES_REQUIRED_TO_SATURATE_SEND_BUFFER; i++)
-        {
-            clientOutput.sendMessage(message);
-        }
-
-        // when
-        final boolean success = clientTransport.getOutput().sendMessage(message);
-
-        // then
-        assertThat(success).isFalse();
-    }
-
-    @Test
-    public void shouldCloseTransportWhileWaitingForResponse() throws Exception
-    {
-        // given
-        final AtomicBoolean requestReceived = new AtomicBoolean(false);
-        final AtomicBoolean transportClosed = new AtomicBoolean(false);
-
-        buildServerTransport(b -> b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress())
-                .build(null, (output, remoteAddress, buffer, offset, length, requestId) ->
-                {
-                    requestReceived.set(true);
-                    return false;
-                }));
-
-        final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
-
-        final BufferWriter writer = mock(BufferWriter.class);
-        when(writer.getLength()).thenReturn(16);
-
-        clientTransport.getOutput().sendRequest(remote, writer);
-
-        final Thread closerThread = new Thread(() ->
-        {
-            clientTransport.close();
-            transportClosed.set(true);
-        });
-        waitUntil(() -> requestReceived.get());
-
-        // when
-        closerThread.start();
-
-        // then
-        closerThread.join(1000L);
-        assertThat(transportClosed).isTrue();
-    }
-
-
-    protected ServerTransport buildServerTransport(Function<ServerTransportBuilder, ServerTransport> builderConsumer)
-    {
-        final ActorScheduler serverScheduler = ActorScheduler.newDefaultActorScheduler();
         closeables.manage(() ->
         {
-            serverScheduler.stop().get();
+            final ActorFuture<Void> closeFuture = closeable.get();
+            int iteration = 0;
+            do
+            {
+                scheduler.workUntilDone();
+                iteration++;
+            }
+            while (!closeFuture.isDone() && iteration < MAX_ITERATION);
+
+            if (!closeFuture.isDone())
+            {
+                throw new RuntimeException("Could not close closeable");
+            }
         });
-        serverScheduler.start();
-
-        final Dispatcher serverSendBuffer = Dispatchers.create("serverSendBuffer")
-            .bufferSize(SEND_BUFFER_SIZE)
-            .actorScheduler(actorSchedulerRule.get())
-            .build();
-        closeables.manage(serverSendBuffer);
-
-        final ServerTransportBuilder transportBuilder = Transports.newServerTransport()
-            .sendBuffer(serverSendBuffer)
-            .scheduler(actorSchedulerRule.get());
-
-        final ServerTransport serverTransport = builderConsumer.apply(transportBuilder);
-        closeables.manage(serverTransport);
-
-        return serverTransport;
     }
+
+    /**
+     * <p>The point of this test is that the request is submitted before any actor work is done in the client
+     *
+     * <p>Expected behavior: Request timeout applies as usual
+     *
+     * <p>Undesired behavior: Request timeout did not apply, because the request controller performed the request in
+     * the STARTING actor phase
+     */
+    @Test
+    public void shouldTimeOutRequestWhenSubmittedImmediately()
+    {
+        // given
+        scheduler.getClock().pinCurrentTime();
+
+        final ClientOutput output = clientTransport.getOutput();
+        final Duration timeout = Duration.ofSeconds(35);
+
+        final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+
+        final ActorFuture<ClientResponse> responseFuture =
+                output.sendRequest(remoteAddress, new DirectBufferWriter().wrap(BUF1), timeout);
+
+        scheduler.workUntilDone();
+
+        // when
+        scheduler.getClock().addTime(timeout.plusSeconds(1));
+
+        final int schedulerTimerWheelResolution = 32;
+        // => workaround for https://github.com/zeebe-io/zeebe/issues/767
+        for (int i = 0; i < schedulerTimerWheelResolution; i++)
+        {
+            scheduler.workUntilDone();
+        }
+
+        // then
+        assertThat(responseFuture).isDone();
+        assertThatThrownBy(() -> responseFuture.get()).hasMessageContaining("Request timed out");
+
+    }
+
 }
