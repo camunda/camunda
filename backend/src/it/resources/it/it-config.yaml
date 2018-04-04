@@ -15,7 +15,6 @@ import:
       pageSize:
         max: 30
   elasticsearchJobExecutorThreadCount: 1
-  engineJobExecutorThreadCount: 1
   handler:
     backoff:
       isEnabled: false

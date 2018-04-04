@@ -1,4 +1,4 @@
-package org.camunda.optimize.service.engine.importing.job.factory;
+package org.camunda.optimize.service.engine.importing.service.mediator;
 
 import org.camunda.optimize.dto.optimize.importing.index.AllEntitiesBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.importing.index.CombinedImportIndexesDto;
@@ -6,11 +6,8 @@ import org.camunda.optimize.dto.optimize.importing.index.DefinitionBasedImportIn
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.index.handler.AllEntitiesBasedImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.DefinitionBasedImportIndexHandler;
-import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandlerProvider;
-import org.camunda.optimize.service.engine.importing.job.StoreIndexesEngineImportJob;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
+import org.camunda.optimize.service.engine.importing.service.StoreIndexesEngineImportService;
 import org.camunda.optimize.service.es.writer.ImportIndexWriter;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,28 +20,30 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class StoreIndexesEngineImportJobFactory
-    extends EngineImportJobFactoryImpl {
+public class StoreIndexesEngineImportMediator
+    extends EngineImportMediatorImpl {
 
   private Logger logger = LoggerFactory.getLogger(getClass());
 
   @Autowired
   private ImportIndexWriter importIndexWriter;
 
+  private StoreIndexesEngineImportService importService;
+
   private OffsetDateTime dateUntilJobCreationIsBlocked;
   protected EngineContext engineContext;
 
-  public StoreIndexesEngineImportJobFactory(EngineContext engineContext) {
+  public StoreIndexesEngineImportMediator(EngineContext engineContext) {
     this.engineContext = engineContext;
   }
 
   @PostConstruct
   public void init() {
     dateUntilJobCreationIsBlocked = calculateDateUntilJobCreationIsBlocked();
+    importService = new StoreIndexesEngineImportService(importIndexWriter, elasticsearchImportJobExecutor);
   }
 
   @Override
@@ -54,31 +53,33 @@ public class StoreIndexesEngineImportJobFactory
     return backoffTime;
   }
 
-  public Optional<Runnable> getNextJob() {
-    if (OffsetDateTime.now().isAfter(dateUntilJobCreationIsBlocked)) {
+  @Override
+  public void importNextPage() {
+    if (canImport()) {
       dateUntilJobCreationIsBlocked = calculateDateUntilJobCreationIsBlocked();
       try {
-        return Optional.of(createStoreIndexJob());
+        CombinedImportIndexesDto importIndexes = createStoreIndexJob();
+        importService.executeImport(importIndexes);
       } catch (Exception e) {
-        logger.error("Could not create import job for storing index information!", e);
-        return Optional.empty();
+        logger.error("Could execute import for storing index information!", e);
       }
-    } else {
-      return Optional.empty();
     }
+  }
+
+  @Override
+  public boolean canImport() {
+    return OffsetDateTime.now().isAfter(dateUntilJobCreationIsBlocked);
   }
 
   private OffsetDateTime calculateDateUntilJobCreationIsBlocked() {
     return OffsetDateTime.now().plusSeconds(configurationService.getImportIndexAutoStorageIntervalInSec());
   }
 
-  private Runnable createStoreIndexJob() {
+  private CombinedImportIndexesDto createStoreIndexJob() {
     CombinedImportIndexesDto importIndexesToStore = new CombinedImportIndexesDto();
     importIndexesToStore.setAllEntitiesBasedImportIndexes(getAllEntitiesBasedImportIndexes());
     importIndexesToStore.setDefinitionBasedIndexes(getDefinitionBasedImportIndexes());
-    StoreIndexesEngineImportJob importJob =
-      new StoreIndexesEngineImportJob(importIndexesToStore, importIndexWriter, elasticsearchImportJobExecutor);
-    return importJob;
+    return importIndexesToStore;
   }
 
   private List<AllEntitiesBasedImportIndexDto> getAllEntitiesBasedImportIndexes() {

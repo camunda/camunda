@@ -5,22 +5,21 @@ import org.camunda.optimize.dto.optimize.query.status.ProgressDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.alert.AlertService;
-import org.camunda.optimize.service.engine.importing.EngineImportJobSchedulerFactory;
-import org.camunda.optimize.service.engine.importing.EngineImportJobExecutor;
-import org.camunda.optimize.service.engine.importing.EngineImportJobScheduler;
+import org.camunda.optimize.service.engine.importing.EngineImportScheduler;
+import org.camunda.optimize.service.engine.importing.EngineImportSchedulerFactory;
 import org.camunda.optimize.service.engine.importing.index.ProcessDefinitionManager;
 import org.camunda.optimize.service.engine.importing.index.handler.AllEntitiesBasedImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.DefinitionBasedImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandlerProvider;
-import org.camunda.optimize.service.engine.importing.job.factory.StoreIndexesEngineImportJobFactory;
+import org.camunda.optimize.service.engine.importing.service.mediator.StoreIndexesEngineImportMediator;
 import org.camunda.optimize.service.es.ElasticSearchSchemaInitializer;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.BeanHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.test.util.SynchronizationEngineImportJob;
+import org.camunda.optimize.test.util.SynchronizationElasticsearchImportJob;
 import org.elasticsearch.client.Client;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
@@ -55,11 +54,9 @@ public class EmbeddedOptimizeRule extends TestWatcher {
    *
    * NOTE: this will not store indexes in the ES.
    */
-  public void scheduleAllJobsAndImportEngineEntities() throws InterruptedException {
+  public void scheduleAllJobsAndImportEngineEntities() {
 
     ElasticsearchImportJobExecutor elasticsearchImportJobExecutor = getElasticsearchImportJobExecutor();
-    EngineImportJobExecutor engineImportJobExecutor = getEngineImportJobExecutor();
-    engineImportJobExecutor.startExecutingImportJobs();
     elasticsearchImportJobExecutor.startExecutingImportJobs();
 
     try {
@@ -67,38 +64,16 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     } catch (Exception e) {
       //nothing to do
     }
-    for (EngineImportJobScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
+    for (EngineImportScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
       if (scheduler.isEnabled()) {
         logger.debug("scheduling first import round");
         scheduleImportAndWaitUntilIsFinished(scheduler);
         // we need another round for the scroll based import index handler
         logger.debug("scheduling second import round");
-        this.waitForBackoff();
         scheduleImportAndWaitUntilIsFinished(scheduler);
       }
     }
     resetProcessDefinitionManager();
-  }
-
-  public void waitForBackoff() throws InterruptedException {
-    boolean needSleep = true;
-    while(needSleep) {
-
-      boolean noSleepingRound = true;
-      for (EngineImportJobScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
-        long millis = scheduler.maxTimeToSleep();
-        if (millis > 0 ) {
-          logger.debug("sleeping for [{}]ms", millis);
-          Thread.sleep(millis);
-          noSleepingRound = false;
-        }
-      }
-
-      if (noSleepingRound) {
-        needSleep = false;
-      }
-    }
-
   }
 
   /**
@@ -111,56 +86,42 @@ public class EmbeddedOptimizeRule extends TestWatcher {
    *
    * NOTE: you have to adjust backoff and reset times manually in your test before
    * invoking this method
-   *
-   * @throws InterruptedException
    */
-  public void importWithoutReset() throws InterruptedException {
+  public void importWithoutReset() {
     ElasticsearchImportJobExecutor elasticsearchImportJobExecutor = getElasticsearchImportJobExecutor();
-    EngineImportJobExecutor engineImportJobExecutor = getEngineImportJobExecutor();
-    engineImportJobExecutor.startExecutingImportJobs();
     elasticsearchImportJobExecutor.startExecutingImportJobs();
 
-    for (EngineImportJobScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
+    for (EngineImportScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
       if (scheduler.isEnabled()) {
         //reset should happen
-        this.waitForBackoff();
         scheduleImportAndWaitUntilIsFinished(scheduler);
 
         //first round is through, update indexes in ES
         logger.debug("scheduling second import round");
-        this.waitForBackoff();
         scheduleImportAndWaitUntilIsFinished(scheduler);
 
         //scroll based imports are through
         logger.debug("scheduling third import round");
-        this.waitForBackoff();
         scheduleImportAndWaitUntilIsFinished(scheduler);
       }
     }
   }
 
-  private void scheduleImportAndWaitUntilIsFinished(EngineImportJobScheduler scheduler) {
-    scheduler.scheduleUntilCantCreateNewJobs();
+  private void scheduleImportAndWaitUntilIsFinished(EngineImportScheduler scheduler) {
+    scheduler.scheduleUntilImportIsFinished();
     makeSureAllScheduledJobsAreFinished();
   }
 
   public void storeImportIndexesToElasticsearch() {
     for (EngineContext engineContext : getApplicationContext().getBean(EngineContextFactory.class).getConfiguredEngines()) {
-      StoreIndexesEngineImportJobFactory storeIndexesEngineImportJobFactory = (StoreIndexesEngineImportJobFactory)
+      StoreIndexesEngineImportMediator storeIndexesEngineImportJobFactory = (StoreIndexesEngineImportMediator)
           getApplicationContext().getBean(
-              BeanHelper.getBeanName(StoreIndexesEngineImportJobFactory.class),
+              BeanHelper.getBeanName(StoreIndexesEngineImportMediator.class),
               engineContext
           );
       storeIndexesEngineImportJobFactory.disableBlocking();
 
-      Runnable storeIndexesEngineImportJob =
-          storeIndexesEngineImportJobFactory.getNextJob().get();
-
-      try {
-        getEngineImportJobExecutor().executeImportJob(storeIndexesEngineImportJob);
-      } catch (InterruptedException e) {
-        logger.error("interrupted while persisting data", e);
-      }
+      storeIndexesEngineImportJobFactory.importNextPage();
 
       makeSureAllScheduledJobsAreFinished();
     }
@@ -168,15 +129,16 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   }
 
   private void makeSureAllScheduledJobsAreFinished() {
-    CountDownLatch synchronizationObject = new CountDownLatch(2);
-    SynchronizationEngineImportJob synchronizationEngineImportJob =
-      new SynchronizationEngineImportJob(getElasticsearchImportJobExecutor(), synchronizationObject);
 
+    CountDownLatch synchronizationObject = new CountDownLatch(2);
+    SynchronizationElasticsearchImportJob importJob =
+      new SynchronizationElasticsearchImportJob(synchronizationObject);
     try {
-      getEngineImportJobExecutor().executeImportJob(synchronizationEngineImportJob);
+      getElasticsearchImportJobExecutor().executeImportJob(importJob);
     } catch (InterruptedException e) {
       e.printStackTrace();
     }
+
     try {
       synchronizationObject.countDown();
       synchronizationObject.await();
@@ -186,30 +148,26 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   }
 
   public void scheduleImport() {
-    for (EngineImportJobScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
+    for (EngineImportScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
       scheduler.scheduleNextRound();
       makeSureAllScheduledJobsAreFinished();
     }
   }
 
-  private EngineImportJobSchedulerFactory getImportSchedulerFactory() {
-    return getOptimize().getApplicationContext().getBean(EngineImportJobSchedulerFactory.class);
+  private EngineImportSchedulerFactory getImportSchedulerFactory() {
+    return getOptimize().getApplicationContext().getBean(EngineImportSchedulerFactory.class);
   }
 
   private TestEmbeddedCamundaOptimize getOptimize() {
     return TestEmbeddedCamundaOptimize.getInstance();
   }
 
-  public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
+  private ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
     return getOptimize().getElasticsearchImportJobExecutor();
   }
 
   public void initializeSchema() {
     getOptimize().initializeSchema();
-  }
-
-  public EngineImportJobExecutor getEngineImportJobExecutor() {
-    return getOptimize().getEngineImportJobExecutor();
   }
 
   protected void starting(Description description) {
@@ -385,7 +343,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     }
   }
 
-  public ImportIndexHandlerProvider getIndexProvider() {
+  private ImportIndexHandlerProvider getIndexProvider() {
     return getApplicationContext().getBean(ImportIndexHandlerProvider.class);
   }
 

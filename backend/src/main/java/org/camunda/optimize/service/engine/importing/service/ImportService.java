@@ -1,4 +1,4 @@
-package org.camunda.optimize.service.engine.importing.job;
+package org.camunda.optimize.service.engine.importing.service;
 
 import org.camunda.optimize.dto.engine.EngineDto;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
@@ -14,35 +14,28 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public abstract class EngineImportJob<ENG extends EngineDto, OPT extends OptimizeDto, PAGE extends ImportPage> implements Runnable {
+public abstract class ImportService<ENG extends EngineDto, OPT extends OptimizeDto, PAGE extends ImportPage> {
 
   protected Logger logger = LoggerFactory.getLogger(getClass());
 
-  protected PAGE importPage;
   protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   protected MissingEntitiesFinder<ENG> missingActivityFinder;
   protected EngineEntityFetcher<ENG, PAGE> engineEntityFetcher;
   protected EngineContext engineContext;
 
-  public EngineImportJob(PAGE importPage,
-                         ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
-                         MissingEntitiesFinder<ENG> missingActivityFinder,
-                         EngineEntityFetcher<ENG, PAGE> engineEntityFetcher,
-                         EngineContext engineContext
+  public ImportService(
+                       ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
+                       MissingEntitiesFinder<ENG> missingActivityFinder,
+                       EngineEntityFetcher<ENG, PAGE> engineEntityFetcher,
+                       EngineContext engineContext
                          ) {
-    this.importPage = importPage;
     this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
     this.missingActivityFinder = missingActivityFinder;
     this.engineEntityFetcher = engineEntityFetcher;
     this.engineContext = engineContext;
   }
 
-  @Override
-  public void run() {
-    executeImport(importPage);
-  }
-
-  private void executeImport(PAGE engineImportPage) {
+  public void executeImport(PAGE engineImportPage) {
     logger.trace("Importing entities from engine...");
 
     List<ENG> pageOfEngineEntities = queryEngineRestPoint(engineImportPage);

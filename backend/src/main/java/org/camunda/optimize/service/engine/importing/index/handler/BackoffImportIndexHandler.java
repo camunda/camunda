@@ -40,6 +40,8 @@ public abstract class BackoffImportIndexHandler<PAGE extends ImportPage, INDEX>
       unit = ChronoUnit.valueOf(configurationService.getImportResetIntervalUnit());
     } catch (Exception e) {
       //nothing to do falling back to default
+      logger.error("Was not able to parse interval unit [{}] for import reset. Using minutes instead!",
+        configurationService.getImportResetIntervalUnit());
     }
     nextReset = OffsetDateTime.now().plus(
         configurationService.getImportResetIntervalValue(),
@@ -124,11 +126,18 @@ public abstract class BackoffImportIndexHandler<PAGE extends ImportPage, INDEX>
     );
   }
 
-  protected boolean isReadyToFetchNextPage() {
+  private boolean isReadyToFetchNextPage() {
     boolean isReady = dateUntilPaginationIsBlocked.isBefore(OffsetDateTime.now());
     logger.debug("is ready to fetch next page [{}]", isReady);
     return isReady;
   }
+
+  @Override
+  public boolean hasNewPage() {
+    return isReadyToFetchNextPage() && canCreateNewPage();
+  }
+
+  protected abstract boolean canCreateNewPage();
 
   /**
    * Method is invoked by scheduler once no more jobs are created by factories
@@ -137,13 +146,14 @@ public abstract class BackoffImportIndexHandler<PAGE extends ImportPage, INDEX>
    * @return time to sleep for import process of an engine in general
    */
   public long getBackoffTimeInMs() {
-    long backoffTime = configurationService.isBackoffEnabled() ? OffsetDateTime.now().until(dateUntilPaginationIsBlocked, ChronoUnit.MILLIS) : 0;
+    long backoffTime = configurationService.isBackoffEnabled() ? OffsetDateTime.now().until(dateUntilPaginationIsBlocked, ChronoUnit.MILLIS) : 0L;
     backoffTime = Math.max(0, backoffTime);
     return backoffTime;
   }
 
-  public void resetBackoff() {
+  private void resetBackoff() {
     this.backoffCounter = STARTING_BACKOFF;
+    dateUntilPaginationIsBlocked = OffsetDateTime.now().minusMinutes(1L);
   }
 
   @Override

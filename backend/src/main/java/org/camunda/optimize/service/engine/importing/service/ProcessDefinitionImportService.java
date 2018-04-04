@@ -1,4 +1,4 @@
-package org.camunda.optimize.service.engine.importing.job;
+package org.camunda.optimize.service.engine.importing.service;
 
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
@@ -13,20 +13,19 @@ import org.camunda.optimize.service.es.writer.ProcessDefinitionWriter;
 
 import java.util.List;
 
-public class ProcessDefinitionEngineImportJob extends
-    EngineImportJob<ProcessDefinitionEngineDto, ProcessDefinitionOptimizeDto, DefinitionBasedImportPage> {
+public class ProcessDefinitionImportService extends
+  ImportService<ProcessDefinitionEngineDto, ProcessDefinitionOptimizeDto, DefinitionBasedImportPage> {
 
   private ProcessDefinitionWriter processDefinitionWriter;
 
-  public ProcessDefinitionEngineImportJob(
+  public ProcessDefinitionImportService(
       ProcessDefinitionWriter processDefinitionWriter,
-      DefinitionBasedImportPage importIndex,
       ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
       MissingEntitiesFinder<ProcessDefinitionEngineDto> missingEntitiesFinder,
       EngineEntityFetcher<ProcessDefinitionEngineDto, DefinitionBasedImportPage> engineEntityFetcher,
       EngineContext engineContext
   ) {
-    super(importIndex, elasticsearchImportJobExecutor, missingEntitiesFinder, engineEntityFetcher, engineContext);
+    super(elasticsearchImportJobExecutor, missingEntitiesFinder, engineEntityFetcher, engineContext);
     this.processDefinitionWriter = processDefinitionWriter;
 
   }

@@ -1,4 +1,4 @@
-package org.camunda.optimize.service.engine.importing.job;
+package org.camunda.optimize.service.engine.importing.service;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
@@ -12,7 +12,6 @@ import org.camunda.optimize.service.engine.importing.index.page.DefinitionBasedI
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.ProcessDefinitionXmlElasticsearchImportJob;
-import org.camunda.optimize.service.es.writer.ProcessDefinitionWriter;
 import org.camunda.optimize.service.es.writer.ProcessDefinitionXmlWriter;
 
 import java.io.ByteArrayInputStream;
@@ -20,20 +19,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class ProcessDefinitionXmlEngineImportJob extends
-    EngineImportJob<ProcessDefinitionXmlEngineDto, ProcessDefinitionXmlOptimizeDto, DefinitionBasedImportPage> {
+public class ProcessDefinitionXmlImportService extends
+  ImportService<ProcessDefinitionXmlEngineDto, ProcessDefinitionXmlOptimizeDto, DefinitionBasedImportPage> {
 
   private ProcessDefinitionXmlWriter processDefinitionXmlWriter;
 
-  public ProcessDefinitionXmlEngineImportJob(
+  public ProcessDefinitionXmlImportService(
       ProcessDefinitionXmlWriter processDefinitionXmlWriter,
-      DefinitionBasedImportPage importIndex,
       ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
       MissingEntitiesFinder<ProcessDefinitionXmlEngineDto> missingEntitiesFinder,
       EngineEntityFetcher<ProcessDefinitionXmlEngineDto, DefinitionBasedImportPage> engineEntityFetcher,
       EngineContext engineContext
   ) {
-    super(importIndex, elasticsearchImportJobExecutor, missingEntitiesFinder, engineEntityFetcher, engineContext);
+    super(elasticsearchImportJobExecutor, missingEntitiesFinder, engineEntityFetcher, engineContext);
     this.processDefinitionXmlWriter = processDefinitionXmlWriter;
 
   }

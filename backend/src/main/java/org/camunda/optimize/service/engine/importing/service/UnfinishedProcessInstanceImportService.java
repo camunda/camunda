@@ -1,4 +1,4 @@
-package org.camunda.optimize.service.engine.importing.job;
+package org.camunda.optimize.service.engine.importing.service;
 
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
@@ -13,20 +13,19 @@ import org.camunda.optimize.service.es.writer.UnfinishedProcessInstanceWriter;
 
 import java.util.List;
 
-public class UnfinishedProcessInstanceEngineImportJob
-    extends EngineImportJob<HistoricProcessInstanceDto, ProcessInstanceDto, IdSetBasedImportPage> {
+public class UnfinishedProcessInstanceImportService
+    extends ImportService<HistoricProcessInstanceDto, ProcessInstanceDto, IdSetBasedImportPage> {
 
   private UnfinishedProcessInstanceWriter unfinishedProcessInstanceWriter;
 
-  public UnfinishedProcessInstanceEngineImportJob(
+  public UnfinishedProcessInstanceImportService(
       UnfinishedProcessInstanceWriter unfinishedProcessInstanceWriter,
-      IdSetBasedImportPage importIndex,
       ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
       MissingEntitiesFinder<HistoricProcessInstanceDto> missingEntitiesFinder,
       EngineEntityFetcher<HistoricProcessInstanceDto,IdSetBasedImportPage> engineEntityFetcher,
       EngineContext engineContext
   ) {
-    super(importIndex, elasticsearchImportJobExecutor, missingEntitiesFinder, engineEntityFetcher, engineContext);
+    super(elasticsearchImportJobExecutor, missingEntitiesFinder, engineEntityFetcher, engineContext);
     this.unfinishedProcessInstanceWriter = unfinishedProcessInstanceWriter;
   }
 

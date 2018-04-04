@@ -15,7 +15,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -150,6 +149,12 @@ public abstract class ScrollBasedImportIndexHandler
 
   private boolean hasNothingToImport(long importIndex, long maxEntityCount) {
     return importIndex == 0 && maxEntityCount == 0;
+  }
+
+  @Override
+  protected boolean canCreateNewPage() {
+    updateMaxEntityCount();
+    return this.importIndex < this.maxEntityCount;
   }
 
   private void updateMaxEntityCount() {

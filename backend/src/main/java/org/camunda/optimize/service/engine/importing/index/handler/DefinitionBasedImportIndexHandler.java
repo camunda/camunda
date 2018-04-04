@@ -98,7 +98,7 @@ public abstract class DefinitionBasedImportIndexHandler
     return nextPageSize;
   }
 
-  private boolean canCreateNewPage() {
+  protected boolean canCreateNewPage() {
     if (currentIndex.reachedMaxCount()) {
       updateMaxEntityCount();
       if (currentIndex.reachedMaxCount()) {

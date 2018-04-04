@@ -4,8 +4,8 @@ import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.joran.spi.JoranException;
 import org.camunda.optimize.CamundaOptimize;
-import org.camunda.optimize.service.engine.importing.EngineImportJobSchedulerFactory;
-import org.camunda.optimize.service.engine.importing.EngineImportJobScheduler;
+import org.camunda.optimize.service.engine.importing.EngineImportSchedulerFactory;
+import org.camunda.optimize.service.engine.importing.EngineImportScheduler;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.websocket.StatusWebSocket;
@@ -236,11 +236,11 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
     boolean oneStarted = false;
 
     while (!oneStarted) {
-      EngineImportJobSchedulerFactory importSchedulerFactory = getImportSchedulerFactory();
+      EngineImportSchedulerFactory importSchedulerFactory = getImportSchedulerFactory();
       if (importSchedulerFactory != null) {
-        List<EngineImportJobScheduler> importSchedulers = importSchedulerFactory.getImportSchedulers();
+        List<EngineImportScheduler> importSchedulers = importSchedulerFactory.getImportSchedulers();
         if (importSchedulers != null) {
-          for (EngineImportJobScheduler scheduler : importSchedulers) {
+          for (EngineImportScheduler scheduler : importSchedulers) {
             scheduler.start();
             oneStarted = true;
           }
@@ -249,20 +249,20 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
     }
   }
 
-  private EngineImportJobSchedulerFactory getImportSchedulerFactory() {
-    return getOptimizeApplicationContext().getBean(EngineImportJobSchedulerFactory.class);
+  private EngineImportSchedulerFactory getImportSchedulerFactory() {
+    return getOptimizeApplicationContext().getBean(EngineImportSchedulerFactory.class);
   }
 
   @Override
   public void disableImportSchedulers() {
-    for (EngineImportJobScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
+    for (EngineImportScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
       scheduler.disable();
     }
   }
 
   @Override
   public void enableImportSchedulers() {
-    for (EngineImportJobScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
+    for (EngineImportScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
       scheduler.enable();
     }
   }

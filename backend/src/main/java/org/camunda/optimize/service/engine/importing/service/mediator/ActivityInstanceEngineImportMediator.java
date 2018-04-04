@@ -1,18 +1,13 @@
-package org.camunda.optimize.service.engine.importing.job.factory;
+package org.camunda.optimize.service.engine.importing.service.mediator;
 
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.diff.MissingEntitiesFinder;
 import org.camunda.optimize.service.engine.importing.fetcher.instance.ActivityInstanceFetcher;
-import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandlerProvider;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.ActivityImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.page.DefinitionBasedImportPage;
-import org.camunda.optimize.service.engine.importing.job.ActivityInstanceEngineImportJob;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
+import org.camunda.optimize.service.engine.importing.service.ActivityInstanceImportService;
 import org.camunda.optimize.service.es.writer.EventsWriter;
-import org.camunda.optimize.service.util.BeanHelper;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.elasticsearch.client.Client;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -23,8 +18,8 @@ import java.util.Optional;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class ActivityInstanceEngineImportJobFactory
-    extends EngineImportJobFactoryImpl<ActivityImportIndexHandler> {
+public class ActivityInstanceEngineImportMediator
+    extends EngineImportMediatorImpl<ActivityImportIndexHandler> {
 
   private MissingEntitiesFinder<HistoricActivityInstanceEngineDto> missingActivityFinder;
   private ActivityInstanceFetcher engineEntityFetcher;
@@ -35,14 +30,21 @@ public class ActivityInstanceEngineImportJobFactory
 
   protected EngineContext engineContext;
 
+  private ActivityInstanceImportService activityInstanceImportService;
 
-  public ActivityInstanceEngineImportJobFactory (EngineContext engineContext) {
+
+  public ActivityInstanceEngineImportMediator(EngineContext engineContext) {
     this.engineContext = engineContext;
   }
 
   @Override
   public long getBackoffTimeInMs() {
     return importIndexHandler.getBackoffTimeInMs();
+  }
+
+  @Override
+  public boolean canImport() {
+    return importIndexHandler.hasNewPage();
   }
 
   @PostConstruct
@@ -54,19 +56,18 @@ public class ActivityInstanceEngineImportJobFactory
         esClient,
         configurationService.getEventType()
     );
-  }
-
-  public Optional<Runnable> getNextJob() {
-    Optional<DefinitionBasedImportPage> page = importIndexHandler.getNextPage();
-    return page.map(
-      definitionBasedImportPage -> new ActivityInstanceEngineImportJob(
+    activityInstanceImportService = new ActivityInstanceImportService(
         eventsWriter,
-        definitionBasedImportPage,
         elasticsearchImportJobExecutor,
         missingActivityFinder,
         engineEntityFetcher,
         engineContext
-      )
-    );
+      );
+  }
+
+  @Override
+  public void importNextPage() {
+    Optional<DefinitionBasedImportPage> page = importIndexHandler.getNextPage();
+    page.ifPresent(activityInstanceImportService::executeImport);
   }
 }

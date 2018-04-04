@@ -1,4 +1,4 @@
-package org.camunda.optimize.service.engine.importing.job;
+package org.camunda.optimize.service.engine.importing.service;
 
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
@@ -12,23 +12,21 @@ import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.FinishedProcessInstanceElasticsearchImportJob;
 
 import java.time.OffsetDateTime;
-import java.util.Date;
 import java.util.List;
 
-public class FinishedProcessInstanceEngineImportJob
-  extends EngineImportJob<HistoricProcessInstanceDto, ProcessInstanceDto, DefinitionBasedImportPage> {
+public class FinishedProcessInstanceImportService
+  extends ImportService<HistoricProcessInstanceDto, ProcessInstanceDto, DefinitionBasedImportPage> {
 
   private FinishedProcessInstanceWriter finishedProcessInstanceWriter;
 
-  public FinishedProcessInstanceEngineImportJob(FinishedProcessInstanceWriter finishedProcessInstanceWriter,
-                                                DefinitionBasedImportPage importIndex,
-                                                ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
-                                                MissingEntitiesFinder<HistoricProcessInstanceDto> missingEntitiesFinder,
-                                                EngineEntityFetcher<HistoricProcessInstanceDto,
+  public FinishedProcessInstanceImportService(FinishedProcessInstanceWriter finishedProcessInstanceWriter,
+                                              ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
+                                              MissingEntitiesFinder<HistoricProcessInstanceDto> missingEntitiesFinder,
+                                              EngineEntityFetcher<HistoricProcessInstanceDto,
                                                 DefinitionBasedImportPage> engineEntityFetcher,
-                                                EngineContext engineContext
+                                              EngineContext engineContext
                                                 ) {
-    super(importIndex, elasticsearchImportJobExecutor, missingEntitiesFinder, engineEntityFetcher, engineContext);
+    super(elasticsearchImportJobExecutor, missingEntitiesFinder, engineEntityFetcher, engineContext);
     this.finishedProcessInstanceWriter = finishedProcessInstanceWriter;
   }
 

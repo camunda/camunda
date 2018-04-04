@@ -33,6 +33,13 @@ public interface ImportIndexHandler<PAGE extends ImportPage, INDEX> {
    */
   void readIndexFromElasticsearch();
 
+
+  /**
+   * @return true if the import index handler is able to create another page and
+   * false if there is no new data or the handler is doing backoff.
+   */
+  boolean hasNewPage();
+
   /**
    * Resets the import index such that it can start the import
    * all over again. E.g., that can be helpful to import

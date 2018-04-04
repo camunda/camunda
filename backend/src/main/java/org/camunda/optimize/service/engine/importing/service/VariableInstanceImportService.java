@@ -1,4 +1,4 @@
-package org.camunda.optimize.service.engine.importing.job;
+package org.camunda.optimize.service.engine.importing.service;
 
 import org.camunda.optimize.dto.engine.HistoricVariableInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableDto;
@@ -19,22 +19,21 @@ import java.util.List;
 
 import static org.camunda.optimize.service.util.VariableHelper.isVariableTypeSupported;
 
-public class VariableInstanceEngineImportJob extends
-  EngineImportJob<HistoricVariableInstanceDto, VariableDto, IdSetBasedImportPage> {
+public class VariableInstanceImportService extends
+  ImportService<HistoricVariableInstanceDto, VariableDto, IdSetBasedImportPage> {
 
   private VariableWriter variableWriter;
   private ImportAdapterProvider importAdapterProvider;
 
-  public VariableInstanceEngineImportJob(VariableWriter variableWriter,
-                                         ImportAdapterProvider importAdapterProvider,
-                                         IdSetBasedImportPage pageToImport,
-                                         ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
-                                         MissingEntitiesFinder<HistoricVariableInstanceDto> missingEntitiesFinder,
-                                         EngineEntityFetcher<HistoricVariableInstanceDto,
+  public VariableInstanceImportService(VariableWriter variableWriter,
+                                       ImportAdapterProvider importAdapterProvider,
+                                       ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
+                                       MissingEntitiesFinder<HistoricVariableInstanceDto> missingEntitiesFinder,
+                                       EngineEntityFetcher<HistoricVariableInstanceDto,
                                          IdSetBasedImportPage> engineEntityFetcher,
-                                         EngineContext engineContext
+                                       EngineContext engineContext
   ) {
-    super(pageToImport, elasticsearchImportJobExecutor, missingEntitiesFinder, engineEntityFetcher, engineContext);
+    super(elasticsearchImportJobExecutor, missingEntitiesFinder, engineEntityFetcher, engineContext);
     this.variableWriter = variableWriter;
     this.importAdapterProvider = importAdapterProvider;
   }

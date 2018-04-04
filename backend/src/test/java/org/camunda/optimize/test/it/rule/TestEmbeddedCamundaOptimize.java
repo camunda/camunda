@@ -3,7 +3,6 @@ package org.camunda.optimize.test.it.rule;
 import org.camunda.optimize.dto.optimize.query.CredentialsDto;
 import org.camunda.optimize.jetty.EmbeddedCamundaOptimize;
 import org.camunda.optimize.rest.providers.OptimizeObjectMapperProvider;
-import org.camunda.optimize.service.engine.importing.EngineImportJobExecutor;
 import org.camunda.optimize.service.es.ElasticSearchSchemaInitializer;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
@@ -133,10 +132,6 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
 
   public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
     return getApplicationContext().getBean(ElasticsearchImportJobExecutor.class);
-  }
-
-  public EngineImportJobExecutor getEngineImportJobExecutor() {
-    return getApplicationContext().getBean(EngineImportJobExecutor.class);
   }
 
   public ConfigurationService getConfigurationService() {

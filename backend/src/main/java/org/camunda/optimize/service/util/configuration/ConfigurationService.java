@@ -88,8 +88,6 @@ public class ConfigurationService {
   private Boolean backoffEnabled;
   private Integer elasticsearchJobExecutorQueueSize;
   private Integer elasticsearchJobExecutorThreadCount;
-  private Integer engineJobExecutorQueueSize;
-  private Integer engineJobExecutorThreadCount;
   private String hpiEndpoint;
   private Integer elasticsearchScrollTimeout;
   private Integer elasticsearchConnectionTimeout;
@@ -448,25 +446,11 @@ public class ConfigurationService {
     return elasticsearchJobExecutorQueueSize;
   }
 
-  public int getEngineJobExecutorQueueSize() {
-    if (engineJobExecutorQueueSize == null) {
-      engineJobExecutorQueueSize = jsonContext.read(ConfigurationServiceConstants.ENGINE_MAX_JOB_QUEUE_SIZE, Integer.class);
-    }
-    return engineJobExecutorQueueSize;
-  }
-
   public int getElasticsearchJobExecutorThreadCount() {
     if (elasticsearchJobExecutorThreadCount == null) {
       elasticsearchJobExecutorThreadCount = jsonContext.read(ConfigurationServiceConstants.ELASTICSEARCH_IMPORT_EXECUTOR_THREAD_COUNT, Integer.class);
     }
     return elasticsearchJobExecutorThreadCount;
-  }
-
-  public int getEngineJobExecutorThreadCount() {
-    if (engineJobExecutorThreadCount == null) {
-      engineJobExecutorThreadCount = jsonContext.read(ConfigurationServiceConstants.ENGINE_IMPORT_EXECUTOR_THREAD_COUNT, Integer.class);
-    }
-    return engineJobExecutorThreadCount;
   }
 
   public String getHistoricProcessInstanceEndpoint() {
@@ -1197,16 +1181,8 @@ public class ConfigurationService {
     this.elasticsearchJobExecutorQueueSize = elasticsearchJobExecutorQueueSize;
   }
 
-  public void setEngineJobExecutorQueueSize(Integer engineJobExecutorQueueSize) {
-    this.engineJobExecutorQueueSize = engineJobExecutorQueueSize;
-  }
-
   public void setElasticsearchJobExecutorThreadCount(Integer elasticsearchJobExecutorThreadCount) {
     this.elasticsearchJobExecutorThreadCount = elasticsearchJobExecutorThreadCount;
-  }
-
-  public void setEngineJobExecutorThreadCount(Integer engineJobExecutorThreadCount) {
-    this.engineJobExecutorThreadCount = engineJobExecutorThreadCount;
   }
 
   public void setHpiEndpoint(String hpiEndpoint) {

@@ -1,4 +1,4 @@
-package org.camunda.optimize.service.engine.importing.job.factory;
+package org.camunda.optimize.service.engine.importing.service.mediator;
 
 import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandlerProvider;
@@ -8,7 +8,7 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.client.Client;
 import org.springframework.beans.factory.annotation.Autowired;
 
-public abstract class EngineImportJobFactoryImpl <T extends ImportIndexHandler> implements EngineImportJobFactory {
+public abstract class EngineImportMediatorImpl<T extends ImportIndexHandler> implements EngineImportMediator {
 
   protected T importIndexHandler;
   @Autowired

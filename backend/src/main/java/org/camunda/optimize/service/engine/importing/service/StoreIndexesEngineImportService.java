@@ -1,4 +1,4 @@
-package org.camunda.optimize.service.engine.importing.job;
+package org.camunda.optimize.service.engine.importing.service;
 
 import org.camunda.optimize.dto.optimize.importing.index.CombinedImportIndexesDto;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
@@ -11,24 +11,20 @@ import org.slf4j.LoggerFactory;
  * Write all information of the current import index to elasticsearch.
  * If optimized is restarted the import index can thus be restored again.
  */
-public class StoreIndexesEngineImportJob implements Runnable {
+public class StoreIndexesEngineImportService {
 
   private Logger logger = LoggerFactory.getLogger(getClass());
 
-  private CombinedImportIndexesDto importIndexesToStore;
   private ImportIndexWriter importIndexWriter;
   private ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
 
-  public StoreIndexesEngineImportJob(CombinedImportIndexesDto importIndexesToStore,
-                                     ImportIndexWriter importIndexWriter,
-                                     ElasticsearchImportJobExecutor elasticsearchImportJobExecutor) {
-    this.importIndexesToStore = importIndexesToStore;
+  public StoreIndexesEngineImportService(ImportIndexWriter importIndexWriter,
+                                         ElasticsearchImportJobExecutor elasticsearchImportJobExecutor) {
     this.importIndexWriter = importIndexWriter;
     this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
   }
 
-  @Override
-  public void run() {
+  public void executeImport(CombinedImportIndexesDto importIndexesToStore) {
     StoreIndexesElasticsearchImportJob storeIndexesImportJob =
       new StoreIndexesElasticsearchImportJob(importIndexWriter, importIndexesToStore);
     try {

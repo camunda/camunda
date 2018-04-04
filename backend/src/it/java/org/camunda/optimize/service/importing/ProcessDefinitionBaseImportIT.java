@@ -138,6 +138,7 @@ public class ProcessDefinitionBaseImportIT {
     // given
     createAndSetProcessDefinition(createSimpleUserTaskProcess());
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
     engineRule.finishAllUserTasks();

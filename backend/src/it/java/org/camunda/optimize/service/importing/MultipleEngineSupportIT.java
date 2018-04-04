@@ -40,11 +40,11 @@ import static org.hamcrest.core.IsNull.notNullValue;
 
 public class MultipleEngineSupportIT {
 
-  public static final String REST_ENDPOINT = "http://localhost:48080/engine-rest";
+  private static final String REST_ENDPOINT = "http://localhost:48080/engine-rest";
   private static final String SECURE_REST_ENDPOINT = "http://localhost:48080/engine-rest-secure";
   private final String SECOND_ENGINE_ALIAS = "secondTestEngine";
-  public EngineIntegrationRule defaultEngineRule = new EngineIntegrationRule();
-  public EngineIntegrationRule secondEngineRule =
+  private EngineIntegrationRule defaultEngineRule = new EngineIntegrationRule();
+  private EngineIntegrationRule secondEngineRule =
     new EngineIntegrationRule("multiple-engine/multiple-engine-integration-rules.properties");
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();

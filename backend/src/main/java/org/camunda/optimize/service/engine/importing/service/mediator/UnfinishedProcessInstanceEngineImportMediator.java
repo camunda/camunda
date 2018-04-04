@@ -1,18 +1,13 @@
-package org.camunda.optimize.service.engine.importing.job.factory;
+package org.camunda.optimize.service.engine.importing.service.mediator;
 
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.diff.MissingEntitiesFinder;
 import org.camunda.optimize.service.engine.importing.fetcher.instance.UnfinishedProcessInstanceFetcher;
-import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandlerProvider;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.UnfinishedProcessInstanceImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.page.IdSetBasedImportPage;
-import org.camunda.optimize.service.engine.importing.job.UnfinishedProcessInstanceEngineImportJob;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
+import org.camunda.optimize.service.engine.importing.service.UnfinishedProcessInstanceImportService;
 import org.camunda.optimize.service.es.writer.UnfinishedProcessInstanceWriter;
-import org.camunda.optimize.service.util.BeanHelper;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.elasticsearch.client.Client;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -23,11 +18,13 @@ import java.util.Optional;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class UnfinishedProcessInstanceEngineImportJobFactory
-    extends EngineImportJobFactoryImpl<UnfinishedProcessInstanceImportIndexHandler> {
+public class UnfinishedProcessInstanceEngineImportMediator
+    extends EngineImportMediatorImpl<UnfinishedProcessInstanceImportIndexHandler> {
 
   private MissingEntitiesFinder<HistoricProcessInstanceDto> missingEntitiesFinder;
   private UnfinishedProcessInstanceFetcher engineEntityFetcher;
+
+  private UnfinishedProcessInstanceImportService unfinishedProcessInstanceImportService;
 
   @Autowired
   private UnfinishedProcessInstanceWriter unfinishedProcessInstanceWriter;
@@ -35,7 +32,7 @@ public class UnfinishedProcessInstanceEngineImportJobFactory
 
   protected EngineContext engineContext;
 
-  public UnfinishedProcessInstanceEngineImportJobFactory(EngineContext engineContext) {
+  public UnfinishedProcessInstanceEngineImportMediator(EngineContext engineContext) {
     this.engineContext = engineContext;
   }
 
@@ -48,25 +45,29 @@ public class UnfinishedProcessInstanceEngineImportJobFactory
         esClient,
         configurationService.getUnfinishedProcessInstanceIdTrackingType()
     );
+    unfinishedProcessInstanceImportService = new UnfinishedProcessInstanceImportService(
+        unfinishedProcessInstanceWriter,
+        elasticsearchImportJobExecutor,
+        missingEntitiesFinder,
+        engineEntityFetcher,
+        engineContext
+      );
+  }
+
+  @Override
+  public void importNextPage() {
+    Optional<IdSetBasedImportPage> page = importIndexHandler.getNextPage();
+    page.ifPresent(unfinishedProcessInstanceImportService::executeImport);
+  }
+
+  @Override
+  public boolean canImport() {
+    return importIndexHandler.hasNewPage();
   }
 
   @Override
   public long getBackoffTimeInMs() {
     return importIndexHandler.getBackoffTimeInMs();
-  }
-
-  public Optional<Runnable> getNextJob() {
-    Optional<IdSetBasedImportPage> page = importIndexHandler.getNextPage();
-    return page.map(
-      idSetBasedImportPage -> new UnfinishedProcessInstanceEngineImportJob(
-        unfinishedProcessInstanceWriter,
-        idSetBasedImportPage,
-        elasticsearchImportJobExecutor,
-        missingEntitiesFinder,
-        engineEntityFetcher,
-        engineContext
-      )
-    );
   }
 
 }

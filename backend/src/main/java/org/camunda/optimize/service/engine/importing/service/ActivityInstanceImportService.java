@@ -1,4 +1,4 @@
-package org.camunda.optimize.service.engine.importing.job;
+package org.camunda.optimize.service.engine.importing.service;
 
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
@@ -13,20 +13,19 @@ import org.camunda.optimize.service.es.job.importing.EventElasticsearchImportJob
 
 import java.util.List;
 
-public class ActivityInstanceEngineImportJob extends
-  EngineImportJob<HistoricActivityInstanceEngineDto, FlowNodeEventDto, DefinitionBasedImportPage> {
+public class ActivityInstanceImportService extends
+  ImportService<HistoricActivityInstanceEngineDto, FlowNodeEventDto, DefinitionBasedImportPage> {
 
   private EventsWriter eventsWriter;
 
-  public ActivityInstanceEngineImportJob(EventsWriter eventsWriter,
-                                         DefinitionBasedImportPage importPage,
-                                         ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
-                                         MissingEntitiesFinder<HistoricActivityInstanceEngineDto> missingActivityFinder,
-                                         EngineEntityFetcher<HistoricActivityInstanceEngineDto,
+  public ActivityInstanceImportService(EventsWriter eventsWriter,
+                                       ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
+                                       MissingEntitiesFinder<HistoricActivityInstanceEngineDto> missingActivityFinder,
+                                       EngineEntityFetcher<HistoricActivityInstanceEngineDto,
                                          DefinitionBasedImportPage> engineEntityFetcher,
-                                         EngineContext engineContext
+                                       EngineContext engineContext
   ) {
-    super(importPage, elasticsearchImportJobExecutor, missingActivityFinder, engineEntityFetcher, engineContext);
+    super(elasticsearchImportJobExecutor, missingActivityFinder, engineEntityFetcher, engineContext);
     this.eventsWriter = eventsWriter;
   }
 
