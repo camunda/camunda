@@ -61,13 +61,18 @@ public class CompletableActorFuture<V> implements ActorFuture<V>
 
     private CompletableActorFuture(Throwable throwable)
     {
+        ensureValidThrowable(throwable);
+        this.failure = throwable.getMessage();
+        this.failureCause = throwable;
+        this.state = COMPLETED_EXCEPTIONALLY;
+    }
+
+    private void ensureValidThrowable(Throwable throwable)
+    {
         if (throwable == null)
         {
             throw new NullPointerException("Throwable must not be null.");
         }
-        this.failure = throwable.getMessage();
-        this.failureCause = throwable;
-        this.state = COMPLETED_EXCEPTIONALLY;
     }
 
     public void setAwaitingResult()
@@ -204,6 +209,9 @@ public class CompletableActorFuture<V> implements ActorFuture<V>
     @Override
     public void completeExceptionally(String failure, Throwable throwable)
     {
+        // important for other actors that consume this by #runOnCompletion
+        ensureValidThrowable(throwable);
+
         if (UNSAFE.compareAndSwapInt(this, STATE_OFFSET, AWAITING_RESULT, COMPLETING))
         {
             this.failure = failure;
@@ -223,6 +231,7 @@ public class CompletableActorFuture<V> implements ActorFuture<V>
     @Override
     public void completeExceptionally(Throwable throwable)
     {
+        ensureValidThrowable(throwable);
         completeExceptionally(throwable.getMessage(), throwable);
     }
 

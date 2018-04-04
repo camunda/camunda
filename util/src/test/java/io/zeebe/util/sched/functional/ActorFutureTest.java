@@ -554,17 +554,6 @@ public class ActorFutureTest
     }
 
     @Test
-    public void shouldFailToCompletedExceptionallyFutureWithNull()
-    {
-        // when
-        final RuntimeException result = null;
-
-        // then
-        assertThatThrownBy(() -> CompletableActorFuture.completedExceptionally(result))
-            .hasMessageContaining("Throwable must not be null.");
-    }
-
-    @Test
     public void shouldInvokeCallbacksAfterCloseIsCalled()
     {
         // given
@@ -717,6 +706,45 @@ public class ActorFutureTest
         assertThatThrownBy(() -> future.get(5, TimeUnit.MILLISECONDS))
             .isInstanceOf(TimeoutException.class)
             .hasMessage("Timeout after: 5 MILLISECONDS");
+    }
+
+    @Test
+    public void shouldFailToStaticallyCreateExceptionallyCompletedFutureWithNull()
+    {
+        // when
+        final RuntimeException result = null;
+
+        // then
+        assertThatThrownBy(() -> CompletableActorFuture.completedExceptionally(result))
+            .isInstanceOf(NullPointerException.class)
+            .hasMessageContaining("Throwable must not be null.");
+    }
+
+    @Test
+    public void shouldFailToExceptionallyCompleteFutureWithNull()
+    {
+        // given
+        final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+        final RuntimeException result = null;
+
+        // then/then
+        assertThatThrownBy(() -> future.completeExceptionally(result))
+            .isInstanceOf(NullPointerException.class)
+            .hasMessageContaining("Throwable must not be null.");
+    }
+
+    @Test
+    public void shouldFailToExceptionallyCompleteFutureWithNullAndMessage()
+    {
+        // given
+        final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+        final RuntimeException result = null;
+        final String message = "foo";
+
+        // then/then
+        assertThatThrownBy(() -> future.completeExceptionally(message, result))
+            .isInstanceOf(NullPointerException.class)
+            .hasMessageContaining("Throwable must not be null.");
     }
 
     class TestActor extends Actor
