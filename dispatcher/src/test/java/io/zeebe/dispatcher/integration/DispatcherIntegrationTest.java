@@ -48,6 +48,15 @@ public class DispatcherIntegrationTest
     @Rule
     public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(1);
 
+    public static final FragmentHandler CONSUME = new FragmentHandler()
+    {
+        @Override
+        public int onFragment(DirectBuffer buffer, int offset, int length, int streamId, boolean isMarkedFailed)
+        {
+            return FragmentHandler.CONSUME_FRAGMENT_RESULT;
+        }
+    };
+
     class Consumer implements FragmentHandler
     {
 
@@ -453,6 +462,45 @@ public class DispatcherIntegrationTest
 
         // then
         assertThat(position).isGreaterThanOrEqualTo(0);
+    }
+
+    @Test
+    public void shouldUpdatePublisherLimitOnSubscriptionRemoval()
+    {
+        // given
+        final Dispatcher dispatcher = Dispatchers.create("default")
+            .actorScheduler(actorSchedulerRule.get())
+            .bufferSize(1024 * 10)
+            .build();
+
+        final Subscription subscription1 = dispatcher.openSubscription("sub1");
+        final Subscription subscription2 = dispatcher.openSubscription("sub2");
+
+        final DirectBuffer msg = new UnsafeBuffer(new byte[32]);
+
+        // fill dispatcher until saturated
+        long claimedOffset;
+        do
+        {
+            claimedOffset = dispatcher.offer(msg);
+        }
+        while (claimedOffset != -1);
+
+        // advance subscription1 by one message
+        subscription1.poll(CONSUME, 1);
+
+        // when
+        dispatcher.closeSubscription(subscription2);
+
+        // then it is possible to publish one more fragment,
+        // because the publisher limit could now be updated
+        do
+        {
+            claimedOffset = dispatcher.offer(msg);
+        }
+        while (claimedOffset == -2);
+
+        assertThat(claimedOffset).isGreaterThanOrEqualTo(0);
     }
 
     protected static class LoggingFragmentHandler implements FragmentHandler

@@ -586,6 +586,9 @@ public class Dispatcher extends Actor implements AutoCloseable
         }
 
         this.subscriptions = newSubscriptions;
+
+        // ensuring that the publisher limit is updated
+        dataConsumed.signal();
     }
 
     /**
