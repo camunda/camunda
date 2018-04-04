@@ -15,6 +15,8 @@
  */
 package io.zeebe.logstreams.util;
 
+import java.util.function.Consumer;
+
 import io.zeebe.logstreams.log.*;
 import io.zeebe.test.util.TestUtil;
 import org.agrona.DirectBuffer;
@@ -57,7 +59,8 @@ public class LogStreamWriterRule extends ExternalResource
         long lastPosition = -1;
         for (int i = 1; i <= count; i++)
         {
-            lastPosition = writeEventInternal(i, event);
+            final long key = i;
+            lastPosition = writeEventInternal(w -> w.key(key).value(event));
         }
 
         waitForPositionToBeAppended(lastPosition);
@@ -78,7 +81,12 @@ public class LogStreamWriterRule extends ExternalResource
 
     public long writeEvent(final DirectBuffer event, final boolean commit)
     {
-        final long position = writeEventInternal(event);
+        return writeEvent(w -> w.positionAsKey().value(event), commit);
+    }
+
+    public long writeEvent(final Consumer<LogStreamWriter> writer, final boolean commit)
+    {
+        final long position = writeEventInternal(writer);
 
         waitForPositionToBeAppended(position);
 
@@ -90,24 +98,12 @@ public class LogStreamWriterRule extends ExternalResource
         return position;
     }
 
-    private long writeEventInternal(final DirectBuffer event)
+    private long writeEventInternal(final Consumer<LogStreamWriter> writer)
     {
         long position;
         do
         {
-            position = tryWrite(event);
-        }
-        while (position == -1);
-
-        return position;
-    }
-
-    private long writeEventInternal(final long key, final DirectBuffer event)
-    {
-        long position;
-        do
-        {
-            position = tryWrite(key, event);
+            position = tryWrite(writer);
         }
         while (position == -1);
 
@@ -116,12 +112,19 @@ public class LogStreamWriterRule extends ExternalResource
 
     public long tryWrite(final DirectBuffer value)
     {
-        return logStreamWriter.positionAsKey().value(value).tryWrite();
+        return tryWrite(w -> w.positionAsKey().value(value));
     }
 
     public long tryWrite(final long key, final DirectBuffer value)
     {
-        return logStreamWriter.key(key).value(value).tryWrite();
+        return tryWrite(w -> w.key(key).value(value));
+    }
+
+    public long tryWrite(final Consumer<LogStreamWriter> writer)
+    {
+        writer.accept(logStreamWriter);
+
+        return logStreamWriter.tryWrite();
     }
 
     public void waitForPositionToBeAppended(final long position)

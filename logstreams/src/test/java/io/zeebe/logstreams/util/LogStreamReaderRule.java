@@ -17,10 +17,7 @@ package io.zeebe.logstreams.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.logstreams.log.BufferedLogStreamReader;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamReader;
-import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.logstreams.log.*;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.rules.ExternalResource;
@@ -73,6 +70,19 @@ public class LogStreamReaderRule extends ExternalResource
     {
         assertThat(logStreamReader.hasNext()).isTrue();
         return logStreamReader.next();
+    }
+
+    public LoggedEvent readEventAtPosition(long position)
+    {
+        while (logStreamReader.hasNext())
+        {
+            final LoggedEvent event = logStreamReader.next();
+            if (event.getPosition() == position)
+            {
+                return event;
+            }
+        }
+        return null;
     }
 
     private DirectBuffer eventValue(final LoggedEvent event)

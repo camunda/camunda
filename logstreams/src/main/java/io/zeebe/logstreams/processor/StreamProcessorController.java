@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.*;
 import io.zeebe.logstreams.spi.*;
-import io.zeebe.util.metrics.Metric;
+import io.zeebe.util.LangUtil;
 import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.sched.*;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -32,7 +32,9 @@ public class StreamProcessorController extends Actor
 {
     private static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
 
-    private static final String ERROR_MESSAGE_REPROCESSING_FAILED = "Stream processor '%s' failed to reprocess. Cannot find source event position: %d";
+    private static final String ERROR_MESSAGE_RECOVER_FROM_SNAPSHOT_FAILED = "Stream processor '%s' failed to recover. Cannot find event with the snapshot position in target log stream.";
+    private static final String ERROR_MESSAGE_REPROCESSING_NO_SOURCE_EVENT = "Stream processor '%s' failed to reprocess. Cannot find source event position: %d";
+    private static final String ERROR_MESSAGE_REPROCESSING_FAILED = "Stream processor '%s' failed to reprocess event: %s";
     private static final String ERROR_MESSAGE_PROCESSING_FAILED = "Stream processor '{}' failed to process event. It stop processing further events.";
 
     private final StreamProcessor streamProcessor;
@@ -54,8 +56,6 @@ public class StreamProcessorController extends Actor
 
     private final Runnable readNextEvent = this::readNextEvent;
 
-    private CompletableActorFuture<Void> openFuture;
-
     private long snapshotPosition = -1L;
     private long lastSourceEventPosition = -1L;
     private long eventPosition = -1L;
@@ -68,11 +68,7 @@ public class StreamProcessorController extends Actor
 
     private boolean suspended = false;
 
-    private Metric eventsProcessedCountMetric;
-    private Metric eventsWrittenCountMetric;
-    private Metric eventsSkippedCountMetric;
-    private Metric snapshotSizeMetric;
-    private Metric snapshotTimeMillisMetric;
+    private StreamProcessorMetrics metrics;
 
     public StreamProcessorController(StreamProcessorContext context)
     {
@@ -103,11 +99,7 @@ public class StreamProcessorController extends Actor
     {
         if (isOpened.compareAndSet(false, true))
         {
-            openFuture = new CompletableActorFuture<>();
-
-            actorScheduler.submitActor(this, true);
-
-            return openFuture;
+            return actorScheduler.submitActor(this, true);
         }
         else
         {
@@ -116,147 +108,95 @@ public class StreamProcessorController extends Actor
     }
 
     @Override
-    protected void onActorStarted()
+    protected void onActorStarting()
     {
         final LogStream logStream = streamProcessorContext.getLogStream();
-        final MetricsManager metricsManager = actorScheduler.getMetricsManager();
 
+        final MetricsManager metricsManager = actorScheduler.getMetricsManager();
         final String topicName = logStream.getTopicName().getStringWithoutLengthUtf8(0, logStream.getTopicName().capacity());
         final String partitionId = String.valueOf(logStream.getPartitionId());
         final String processorName = getName();
 
-        eventsProcessedCountMetric = metricsManager.newMetric("streamprocessor_events_count")
-            .type("counter")
-            .label("processor", processorName)
-            .label("action", "processed")
-            .label("topic", topicName)
-            .label("partition", partitionId)
-            .create();
-
-        eventsWrittenCountMetric = metricsManager.newMetric("streamprocessor_events_count")
-            .type("counter")
-            .label("processor", processorName)
-            .label("action", "written")
-            .label("topic", topicName)
-            .label("partition", partitionId)
-            .create();
-
-        eventsSkippedCountMetric = metricsManager.newMetric("streamprocessor_events_count")
-            .type("counter")
-            .label("processor", processorName)
-            .label("action", "skipped")
-            .label("topic", topicName)
-            .label("partition", partitionId)
-            .create();
-
-        snapshotSizeMetric = metricsManager.newMetric("streamprocessor_snapshot_last_size_bytes")
-            .type("gauge")
-            .label("processor", processorName)
-            .label("topic", topicName)
-            .label("partition", partitionId)
-            .create();
-
-        snapshotTimeMillisMetric = metricsManager.newMetric("streamprocessor_snapshot_last_duration_millis")
-            .type("gauge")
-            .label("processor", processorName)
-            .label("topic", topicName)
-            .label("partition", partitionId)
-            .create();
+        metrics = new StreamProcessorMetrics(metricsManager, processorName, topicName, partitionId);
 
         logStreamReader.wrap(logStream);
         logStreamWriter.wrap(logStream);
 
-        recoverFromSnapshot();
-    }
-
-    private void recoverFromSnapshot()
-    {
-        streamProcessor.getStateResource().reset();
-
-        snapshotPosition = -1;
-
         try
         {
-            final ReadableSnapshot lastSnapshot = snapshotStorage.getLastSnapshot(streamProcessorContext.getName());
-            if (lastSnapshot != null)
-            {
-                // recover last snapshot
-                lastSnapshot.recoverFromSnapshot(streamProcessor.getStateResource());
-
-                // read the last event from snapshot
-                snapshotPosition = lastSnapshot.getPosition();
-                final boolean found = logStreamReader.seek(snapshotPosition);
-
-                if (found && logStreamReader.hasNext())
-                {
-                    // resume the next position on source log stream to continue from
-                    final long sourceEventPosition = snapshotPosition;
-                    logStreamReader.seek(sourceEventPosition + 1);
-                }
-                else
-                {
-                    throw new IllegalStateException(
-                                                    String.format("Stream processor '%s' failed to recover. Cannot find event with the snapshot position in target log stream.",
-                                                                  getName()));
-                }
-            }
+            snapshotPosition = recoverFromSnapshot();
 
             streamProcessor.onOpen(streamProcessorContext);
 
-            seekToLastSourceEvent();
-        }
-        catch (Exception e)
-        {
-            openFuture.completeExceptionally(e);
-
-            onFailure();
-        }
-    }
-
-    private void seekToLastSourceEvent()
-    {
-        if (!isReadOnlyProcessor && logStreamReader.hasNext())
-        {
-            final long lastSourceEventPosition = findLastSourceEvent();
-            logStreamReader.seek(snapshotPosition + 1);
+            lastSourceEventPosition = seekToLastSourceEvent();
 
             if (lastSourceEventPosition > snapshotPosition)
             {
-                this.lastSourceEventPosition = lastSourceEventPosition;
-
                 actor.runUntilDone(this::reprocessNextEvent);
             }
-            else
-            {
-                // nothing to reprocess
-                onOpened();
-            }
         }
-        else
+        catch (Exception e)
         {
-            // nothing to reprocess
-            onOpened();
+            onFailure();
+            LangUtil.rethrowUnchecked(e);
         }
     }
 
-    private long findLastSourceEvent()
+    private long recoverFromSnapshot() throws Exception
     {
-        long lastSourceEventPosition = snapshotPosition;
-        while (logStreamReader.hasNext())
+        streamProcessor.getStateResource().reset();
+
+        long snapshotPosition = -1L;
+
+        final ReadableSnapshot lastSnapshot = snapshotStorage.getLastSnapshot(streamProcessorContext.getName());
+        if (lastSnapshot != null)
         {
-            final LoggedEvent newEvent = logStreamReader.next();
+            // recover last snapshot
+            lastSnapshot.recoverFromSnapshot(streamProcessor.getStateResource());
 
-            // ignore events from other producers
-            if (newEvent.getProducerId() == streamProcessorContext.getId()
-                && ((reprocessingEventFilter == null || reprocessingEventFilter.applies(newEvent))))
+            // read the last event from snapshot
+            snapshotPosition = lastSnapshot.getPosition();
+            final boolean found = logStreamReader.seek(snapshotPosition);
+
+            if (found && logStreamReader.hasNext())
             {
-                final long sourceEventPosition = newEvent.getSourceEventPosition();
-                if (sourceEventPosition > 0 && sourceEventPosition > lastSourceEventPosition)
-                {
-                    lastSourceEventPosition = sourceEventPosition;
-                }
-
+                // resume the next position on source log stream to continue from
+                final long sourceEventPosition = snapshotPosition;
+                logStreamReader.seek(sourceEventPosition + 1);
             }
+            else
+            {
+                throw new IllegalStateException(String.format(ERROR_MESSAGE_RECOVER_FROM_SNAPSHOT_FAILED, getName()));
+            }
+        }
+        return snapshotPosition;
+    }
+
+    private long seekToLastSourceEvent()
+    {
+        long lastSourceEventPosition = -1L;
+
+        if (!isReadOnlyProcessor && logStreamReader.hasNext())
+        {
+            lastSourceEventPosition = snapshotPosition;
+            while (logStreamReader.hasNext())
+            {
+                final LoggedEvent newEvent = logStreamReader.next();
+
+                // ignore events from other producers
+                if (newEvent.getProducerId() == streamProcessorContext.getId()
+                    && ((reprocessingEventFilter == null || reprocessingEventFilter.applies(newEvent))))
+                {
+                    final long sourceEventPosition = newEvent.getSourceEventPosition();
+                    if (sourceEventPosition > 0 && sourceEventPosition > lastSourceEventPosition)
+                    {
+                        lastSourceEventPosition = sourceEventPosition;
+                    }
+                }
+            }
+
+            // reset reader
+            logStreamReader.seek(snapshotPosition + 1);
         }
         return lastSourceEventPosition;
     }
@@ -276,10 +216,7 @@ public class StreamProcessorController extends Actor
 
                     if (currentEventPosition == lastSourceEventPosition)
                     {
-                        // all events are re-processed
                         actor.done();
-
-                        onOpened();
                     }
                     else
                     {
@@ -289,27 +226,20 @@ public class StreamProcessorController extends Actor
                 }
                 else
                 {
-                    throw new IllegalStateException(
-                                                    String.format(ERROR_MESSAGE_REPROCESSING_FAILED,
-                                                                  streamProcessorContext.getName(),
-                                                                  lastSourceEventPosition));
+                    throw new IllegalStateException(String.format(ERROR_MESSAGE_REPROCESSING_NO_SOURCE_EVENT, getName(), lastSourceEventPosition));
                 }
             }
             else
             {
-                throw new IllegalStateException(
-                                                String.format(ERROR_MESSAGE_REPROCESSING_FAILED,
-                                                              streamProcessorContext.getName(),
-                                                              lastSourceEventPosition));
+                throw new IllegalStateException(String.format(ERROR_MESSAGE_REPROCESSING_NO_SOURCE_EVENT, getName(), lastSourceEventPosition));
             }
         }
         catch (Exception e)
         {
             actor.done();
 
-            openFuture.completeExceptionally(e);
-
             onFailure();
+            LangUtil.rethrowUnchecked(e);
         }
     }
 
@@ -323,43 +253,37 @@ public class StreamProcessorController extends Actor
 
                 if (eventProcessor != null)
                 {
+                    // don't execute side effects or write events
                     eventProcessor.processEvent();
                     eventProcessor.updateState();
-                    streamProcessor.afterEvent();
                 }
             }
             catch (Exception e)
             {
-                final String errorMessage = "Stream processor '%s' failed to reprocess event: %s";
-                throw new RuntimeException(String.format(errorMessage, streamProcessorContext.getName(), currentEvent, e));
+                throw new RuntimeException(String.format(ERROR_MESSAGE_REPROCESSING_FAILED, getName(), currentEvent), e);
             }
         }
     }
 
-    private void onOpened()
+    @Override
+    protected void onActorStarted()
     {
-        if (openFuture != null)
-        {
-            openFuture.complete(null);
-        }
-
         onCommitPositionUpdatedCondition = actor.onCondition(getName() + "-on-commit-position-updated", readNextEvent);
         streamProcessorContext.logStream.registerOnCommitPositionUpdatedCondition(onCommitPositionUpdatedCondition);
 
-        // start reading
-        actor.run(readNextEvent);
-
         actor.runAtFixedRate(snapshotPeriod, this::createSnapshot);
+
+        // start reading
+        actor.submit(readNextEvent);
     }
 
     private void readNextEvent()
     {
         if (isOpened() && !isSuspended() && logStreamReader.hasNext())
         {
-            final LoggedEvent event = logStreamReader.next();
-            currentEvent = event;
+            currentEvent = logStreamReader.next();
 
-            if (eventFilter == null || eventFilter.applies(event))
+            if (eventFilter == null || eventFilter.applies(currentEvent))
             {
                 processEvent(currentEvent);
             }
@@ -367,11 +291,9 @@ public class StreamProcessorController extends Actor
             {
                 // continue with the next event
                 actor.submit(readNextEvent);
+
+                metrics.incrementEventsSkippedCount();
             }
-        }
-        else
-        {
-            actor.yield();
         }
     }
 
@@ -383,8 +305,10 @@ public class StreamProcessorController extends Actor
         {
             try
             {
-                eventsProcessedCountMetric.incrementOrdered();
+                metrics.incrementEventsProcessedCount();
+
                 eventProcessor.processEvent();
+
                 actor.runUntilDone(this::executeSideEffects);
             }
             catch (Exception e)
@@ -397,7 +321,8 @@ public class StreamProcessorController extends Actor
         {
             // continue with the next event
             actor.submit(readNextEvent);
-            eventsSkippedCountMetric.incrementOrdered();
+
+            metrics.incrementEventsSkippedCount();
         }
     }
 
@@ -424,9 +349,9 @@ public class StreamProcessorController extends Actor
         }
         catch (Exception e)
         {
-            LOG.error(ERROR_MESSAGE_PROCESSING_FAILED, getName(), e);
-
             actor.done();
+
+            LOG.error(ERROR_MESSAGE_PROCESSING_FAILED, getName(), e);
             onFailure();
         }
     }
@@ -446,8 +371,10 @@ public class StreamProcessorController extends Actor
             if (eventPosition >= 0)
             {
                 actor.done();
+
+                metrics.incrementEventsWrittenCount();
+
                 updateState();
-                eventsWrittenCountMetric.incrementOrdered();
             }
             else if (isOpened())
             {
@@ -461,9 +388,9 @@ public class StreamProcessorController extends Actor
         }
         catch (Exception e)
         {
-            LOG.error(ERROR_MESSAGE_PROCESSING_FAILED, getName(), e);
-
             actor.done();
+
+            LOG.error(ERROR_MESSAGE_PROCESSING_FAILED, getName(), e);
             onFailure();
         }
     }
@@ -473,7 +400,6 @@ public class StreamProcessorController extends Actor
         try
         {
             eventProcessor.updateState();
-            streamProcessor.afterEvent();
 
             lastSuccessfulProcessedEventPosition = currentEvent.getPosition();
 
@@ -512,7 +438,7 @@ public class StreamProcessorController extends Actor
         }
     }
 
-    protected void writeSnapshot(final long eventPosition)
+    private void writeSnapshot(final long eventPosition)
     {
         SnapshotWriter snapshotWriter = null;
         try
@@ -525,10 +451,12 @@ public class StreamProcessorController extends Actor
 
             final long snapshotSize = snapshotWriter.writeSnapshot(streamProcessor.getStateResource());
             snapshotWriter.commit();
-            snapshotSizeMetric.setOrdered(snapshotSize);
-            final long snapshotTime = System.currentTimeMillis() - start;
-            snapshotTimeMillisMetric.setOrdered(snapshotTime);
-            LOG.info("Creation of snapshot {} took {} ms.", name, snapshotTime);
+
+            final long snapshotCreationTime = System.currentTimeMillis() - start;
+            LOG.info("Creation of snapshot {} took {} ms.", name, snapshotCreationTime);
+
+            metrics.recordSnapshotSize(snapshotSize);
+            metrics.recordSnapshotCreationTime(snapshotCreationTime);
 
             snapshotPosition = eventPosition;
         }
@@ -558,11 +486,7 @@ public class StreamProcessorController extends Actor
     @Override
     protected void onActorClosing()
     {
-        eventsProcessedCountMetric.close();
-        eventsSkippedCountMetric.close();
-        eventsWrittenCountMetric.close();
-        snapshotTimeMillisMetric.close();
-        snapshotSizeMetric.close();
+        metrics.close();
 
         if (!isFailed())
         {

@@ -42,15 +42,6 @@ public interface StreamProcessor
     EventProcessor onEvent(LoggedEvent event);
 
     /**
-     * Callback which is invoked by the controller when an event is processed.
-     * An implementation can provide any clean up logic here.
-     */
-    default void afterEvent()
-    {
-        // do nothing
-    }
-
-    /**
      * Callback which is invoked by the controller when it opens. An
      * implementation can provide any setup logic here.
      */

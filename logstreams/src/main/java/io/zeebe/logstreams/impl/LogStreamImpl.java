@@ -71,7 +71,7 @@ public final class LogStreamImpl extends Actor implements LogStream
     private final ActorConditions onLogStorageAppendedConditions = new ActorConditions();
     private final ActorConditions onCommitPositionUpdatedConditions = new ActorConditions();
 
-    private LogStorageAppender logStreamController;
+    private LogStorageAppender logStorageAppender;
     private Dispatcher writeBuffer;
 
     private final AtomicBoolean isOpen = new AtomicBoolean();
@@ -112,7 +112,7 @@ public final class LogStreamImpl extends Actor implements LogStream
     @Override
     public LogStorageAppender getLogStreamController()
     {
-        return logStreamController;
+        return logStorageAppender;
     }
 
     @Override
@@ -219,16 +219,16 @@ public final class LogStreamImpl extends Actor implements LogStream
         final LogStreamBuilder logStreamBuilder = createNewBuilder(actorScheduler, DEFAULT_MAX_APPEND_BLOCK_SIZE);
         writeBuffer = logStreamBuilder.getWriteBuffer();
 
-        if (logStreamController == null)
+        if (logStorageAppender == null)
         {
-            logStreamController = new LogStorageAppender(logStreamBuilder, onLogStorageAppendedConditions);
+            logStorageAppender = new LogStorageAppender(logStreamBuilder, onLogStorageAppendedConditions);
         }
         else
         {
-            logStreamController.wrap(logStreamBuilder);
+            logStorageAppender.wrap(logStreamBuilder);
         }
 
-        actor.runOnCompletion(logStreamController.openAsync(), (v, t) ->
+        actor.runOnCompletion(logStorageAppender.openAsync(), (v, t) ->
         {
             if (t == null)
             {
@@ -276,7 +276,7 @@ public final class LogStreamImpl extends Actor implements LogStream
 
     private void doCloseLogStreamController()
     {
-        actor.runOnCompletion(logStreamController.closeAsync(), (v1, t1) ->
+        actor.runOnCompletion(logStorageAppender.closeAsync(), (v1, t1) ->
         {
             actor.runOnCompletion(writeBuffer.closeAsync(), (v2, t2) ->
             {
@@ -380,7 +380,7 @@ public final class LogStreamImpl extends Actor implements LogStream
     @Override
     public long getCurrentAppenderPosition()
     {
-        return logStreamController == null ? -1L : logStreamController.getCurrentAppenderPosition();
+        return logStorageAppender == null ? -1L : logStorageAppender.getCurrentAppenderPosition();
     }
 
     @Override
@@ -467,7 +467,7 @@ public final class LogStreamImpl extends Actor implements LogStream
     @Override
     public void truncate(long position)
     {
-        if (logStreamController != null && !logStreamController.isClosed())
+        if (logStorageAppender != null && !logStorageAppender.isClosed())
         {
             throw new IllegalStateException(EXCEPTION_MSG_TRUNCATE_AND_LOG_STREAM_CTRL_IN_PARALLEL);
         }

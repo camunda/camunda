@@ -22,6 +22,7 @@ import static java.lang.String.join;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.*;
 
+import java.io.File;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.function.Consumer;
@@ -550,6 +551,40 @@ public class LogStreamTest
         ensureLogStreamCanBeClosed(logStream);
         assertThat(events(logStream).count()).isEqualTo(1);
         assertThat(events(logStream).findFirst().get().getPosition()).isEqualTo(firstPosition);
+    }
+
+    @Test
+    public void shouldNotDeleteOnCloseByDefault()
+    {
+        final File logDir = tempFolder.getRoot();
+        final LogStream logStream = buildLogStream(b -> b.logRootPath(logDir.getAbsolutePath()));
+
+        logStream.open();
+
+        // when
+        logStream.close();
+
+        // then
+        final File[] files = logDir.listFiles();
+        assertThat(files).isNotNull();
+        assertThat(files.length).isGreaterThan(0);
+    }
+
+    @Test
+    public void shouldDeleteOnClose()
+    {
+        final File logDir = tempFolder.getRoot();
+        final LogStream logStream = buildLogStream(b -> b.logRootPath(logDir.getAbsolutePath()).deleteOnClose(true));
+
+        logStream.open();
+
+        // when
+        logStream.close();
+
+        // then
+        final File[] files = logDir.listFiles();
+        assertThat(files).isNotNull();
+        assertThat(files.length).isEqualTo(0);
     }
 
     /**

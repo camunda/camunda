@@ -27,6 +27,9 @@ import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.MutableDirectBuffer;
 import org.slf4j.Logger;
 
+/**
+ * Consume the write buffer and append the blocks on the log storage.
+ */
 public class LogStorageAppender extends Actor
 {
     public static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
@@ -37,8 +40,6 @@ public class LogStorageAppender extends Actor
     private final ActorConditions onLogStorageAppendedConditions;
 
     private Runnable peekedBlockHandler;
-
-    private CompletableActorFuture<Void> openFuture;
 
     //  MANDATORY //////////////////////////////////////////////////
     private String name;
@@ -82,12 +83,7 @@ public class LogStorageAppender extends Actor
     {
         if (isOpenend.compareAndSet(false, true))
         {
-            final CompletableActorFuture<Void> openFuture = new CompletableActorFuture<>();
-            this.openFuture = openFuture;
-
-            actorScheduler.submitActor(this, true, SchedulingHints.ioBound((short) 0));
-
-            return openFuture;
+            return actorScheduler.submitActor(this, true, SchedulingHints.ioBound((short) 0));
         }
         else
         {
@@ -96,7 +92,7 @@ public class LogStorageAppender extends Actor
     }
 
     @Override
-    protected void onActorStarted()
+    protected void onActorStarting()
     {
         if (!logStorage.isOpen())
         {
@@ -109,21 +105,17 @@ public class LogStorageAppender extends Actor
             {
                 writeBufferSubscription = subscription;
 
+                actor.consume(writeBufferSubscription, this::peekBlock);
                 peekedBlockHandler = this::appendBlock;
-                actor.consume(writeBufferSubscription, this::peek);
-
-                openFuture.complete(null);
-                openFuture = null;
             }
             else
             {
-                openFuture.completeExceptionally(failure);
-                openFuture = null;
+                throw new RuntimeException("Failed to open a subscription", failure);
             }
         });
     }
 
-    private void peek()
+    private void peekBlock()
     {
         if (writeBufferSubscription.peekBlock(blockPeek, maxAppendBlockSize, true) > 0)
         {
@@ -137,10 +129,10 @@ public class LogStorageAppender extends Actor
 
     private void appendBlock()
     {
-        final ByteBuffer nioBuffer = blockPeek.getRawBuffer();
+        final ByteBuffer rawBuffer = blockPeek.getRawBuffer();
         final MutableDirectBuffer buffer = blockPeek.getBuffer();
 
-        final long address = logStorage.append(nioBuffer);
+        final long address = logStorage.append(rawBuffer);
         if (address >= 0)
         {
             blockPeek.markCompleted();
@@ -188,7 +180,6 @@ public class LogStorageAppender extends Actor
     @Override
     protected void onActorClosing()
     {
-        isOpenend.set(false);
         isFailed.set(false);
     }
 
