@@ -493,12 +493,9 @@ public class DispatcherIntegrationTest
         dispatcher.closeSubscription(subscription2);
 
         // then it is possible to publish one more fragment,
-        // because the publisher limit could now be updated
-        do
-        {
-            claimedOffset = dispatcher.offer(msg);
-        }
-        while (claimedOffset == -2);
+        // because the publisher limit could now be updated.
+        // must try this a couple of times as publisher limit update is asynchronous
+        claimedOffset = doRepeatedly(() -> dispatcher.offer(msg)).until(offset -> offset >= 0);
 
         assertThat(claimedOffset).isGreaterThanOrEqualTo(0);
     }
