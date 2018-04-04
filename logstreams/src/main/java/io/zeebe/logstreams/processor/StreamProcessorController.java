@@ -51,7 +51,6 @@ public class StreamProcessorController extends Actor
     private final AtomicBoolean isFailed = new AtomicBoolean(false);
 
     private final EventFilter eventFilter;
-    private final EventFilter reprocessingEventFilter;
     private final boolean isReadOnlyProcessor;
 
     private final Runnable readNextEvent = this::readNextEvent;
@@ -85,7 +84,6 @@ public class StreamProcessorController extends Actor
         this.snapshotStorage = context.getSnapshotStorage();
         this.snapshotPeriod = context.getSnapshotPeriod();
         this.eventFilter = context.getEventFilter();
-        this.reprocessingEventFilter = context.getReprocessingEventFilter();
         this.isReadOnlyProcessor = context.isReadOnlyProcessor();
     }
 
@@ -184,8 +182,7 @@ public class StreamProcessorController extends Actor
                 final LoggedEvent newEvent = logStreamReader.next();
 
                 // ignore events from other producers
-                if (newEvent.getProducerId() == streamProcessorContext.getId()
-                    && ((reprocessingEventFilter == null || reprocessingEventFilter.applies(newEvent))))
+                if (newEvent.getProducerId() == streamProcessorContext.getId())
                 {
                     final long sourceEventPosition = newEvent.getSourceEventPosition();
                     if (sourceEventPosition > 0 && sourceEventPosition > lastSourceEventPosition)
@@ -518,16 +515,6 @@ public class StreamProcessorController extends Actor
     public boolean isFailed()
     {
         return isFailed.get();
-    }
-
-    public EventFilter getEventFilter()
-    {
-        return eventFilter;
-    }
-
-    public EventFilter getReprocessingEventFilter()
-    {
-        return reprocessingEventFilter;
     }
 
     public boolean isSuspended()

@@ -15,12 +15,12 @@
  */
 package io.zeebe.logstreams.processor;
 
+import java.time.Duration;
+import java.util.Objects;
+
 import io.zeebe.logstreams.log.*;
 import io.zeebe.logstreams.spi.SnapshotStorage;
 import io.zeebe.util.sched.ActorScheduler;
-
-import java.time.Duration;
-import java.util.Objects;
 
 public class StreamProcessorBuilder
 {
@@ -40,7 +40,6 @@ public class StreamProcessorBuilder
     protected LogStreamWriter logStreamWriter;
 
     protected EventFilter eventFilter;
-    protected EventFilter reprocessingEventFilter;
 
     protected boolean readOnly;
 
@@ -90,15 +89,6 @@ public class StreamProcessorBuilder
         return this;
     }
 
-    /**
-     * @param reprocessingEventFilter may be null to re-process all events
-     */
-    public StreamProcessorBuilder reprocessingEventFilter(EventFilter reprocessingEventFilter)
-    {
-        this.reprocessingEventFilter = reprocessingEventFilter;
-        return this;
-    }
-
     protected void initContext()
     {
         Objects.requireNonNull(streamProcessor, "No stream processor provided.");
@@ -145,7 +135,6 @@ public class StreamProcessorBuilder
         ctx.setSnapshotStorage(snapshotStorage);
 
         ctx.setEventFilter(eventFilter);
-        ctx.setReprocessingEventFilter(reprocessingEventFilter);
         ctx.setReadOnly(readOnly);
 
         return new StreamProcessorController(ctx);

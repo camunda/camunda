@@ -15,14 +15,12 @@
  */
 package io.zeebe.logstreams.processor;
 
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamReader;
-import io.zeebe.logstreams.log.LogStreamWriter;
+import java.time.Duration;
+
+import io.zeebe.logstreams.log.*;
 import io.zeebe.logstreams.spi.SnapshotStorage;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.ActorScheduler;
-
-import java.time.Duration;
 
 public class StreamProcessorContext
 {
@@ -44,7 +42,6 @@ public class StreamProcessorContext
     private ActorControl actorControl;
 
     protected EventFilter eventFilter;
-    protected EventFilter reprocessingEventFilter;
 
     private Runnable suspendRunnable;
     private Runnable resumeRunnable;
@@ -147,16 +144,6 @@ public class StreamProcessorContext
     public EventFilter getEventFilter()
     {
         return eventFilter;
-    }
-
-    public void setReprocessingEventFilter(EventFilter reprocessingEventFilter)
-    {
-        this.reprocessingEventFilter = reprocessingEventFilter;
-    }
-
-    public EventFilter getReprocessingEventFilter()
-    {
-        return reprocessingEventFilter;
     }
 
     public void setReadOnly(boolean readOnly)
