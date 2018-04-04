@@ -39,7 +39,6 @@ public class StreamProcessorService implements Service<StreamProcessorController
     private final StreamProcessor streamProcessor;
 
     protected MetadataFilter customEventFilter;
-    protected EventFilter customReprocessingEventFilter;
     protected boolean readOnly;
 
     protected final MetadataFilter versionFilter = (m) ->
@@ -69,12 +68,6 @@ public class StreamProcessorService implements Service<StreamProcessorController
         return this;
     }
 
-    public StreamProcessorService reprocessingEventFilter(EventFilter reprocessingEventFilter)
-    {
-        this.customReprocessingEventFilter = reprocessingEventFilter;
-        return this;
-    }
-
     public StreamProcessorService readOnly(boolean readOnly)
     {
         this.readOnly = readOnly;
@@ -97,19 +90,12 @@ public class StreamProcessorService implements Service<StreamProcessorController
         }
         final EventFilter eventFilter = new MetadataEventFilter(metadataFilter);
 
-        EventFilter reprocessingEventFilter = new MetadataEventFilter(versionFilter);
-        if (customReprocessingEventFilter != null)
-        {
-            reprocessingEventFilter = reprocessingEventFilter.and(customReprocessingEventFilter);
-        }
-
         streamProcessorController = LogStreams.createStreamProcessor(name, id, streamProcessor)
             .logStream(logStream)
             .snapshotStorage(snapshotStorage)
             .snapshotPeriod(Duration.ofMinutes(15))
             .actorScheduler(actorScheduler)
             .eventFilter(eventFilter)
-            .reprocessingEventFilter(reprocessingEventFilter)
             .readOnly(readOnly)
             .build();
 
