@@ -154,6 +154,7 @@ export default class TargetValueComparison extends React.Component {
                 this.updateFocus(null);
               }}
               className="TargetValueModal__selection--input"
+              isInvalid={!this.isValidInput(settings.value)}
             />
             <Select
               value={settings.unit}
@@ -182,6 +183,10 @@ export default class TargetValueComparison extends React.Component {
     return this.hasSomethingChanged() && this.areAllFieldsNumbers();
   };
 
+  isValidInput = value => {
+    return value.trim() === '' || (!isNaN(value.trim()) && +value > 0);
+  };
+
   hasSomethingChanged = () => {
     const prev = this.getConfig().values || {};
     const now = this.cleanUpValues();
@@ -196,7 +201,7 @@ export default class TargetValueComparison extends React.Component {
         const entry = this.state.values[key];
         const value = entry && entry.value;
 
-        return value.trim() === '' || (!isNaN(value.trim()) && +value > 0);
+        return this.isValidInput(value);
       });
   };
 

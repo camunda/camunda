@@ -58,7 +58,9 @@ jest.mock('components', () => {
         className={props.className}
       />
     ),
-    Table: ({body}) => <div>{JSON.stringify(body.map(row => [row[0], row[1]]))}</div>
+    Table: ({body}) => (
+      <div>{body.map(row => row.map((col, idx) => <div key={idx}>{col}</div>))}</div>
+    )
   };
 });
 
@@ -145,4 +147,20 @@ it('should apply previously defined target values to input fields', async () => 
 
   expect(node.state('values').a.value).toBe('12');
   expect(node.state('values').a.unit).toBe('days');
+});
+
+it('should set isInvalid property for input if value is invalid', async () => {
+  const node = mount(<TargetValueModal {...validProps} />);
+  await node.setProps({open: true});
+
+  node.instance().setTarget('value', 'a')({target: {value: 'invalid'}});
+
+  await node.update();
+
+  expect(
+    node
+      .find('.TargetValueModal__selection--input')
+      .first()
+      .props()
+  ).toHaveProperty('isInvalid', true);
 });
