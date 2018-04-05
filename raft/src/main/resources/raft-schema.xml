@@ -36,19 +36,20 @@
   </types>
 
   <!-- RAFT MESSAGES -->
-  
+
   <sbe:message name="RequestWithPartitionId" id="100">
     <field name="partitionId" id="0" type="uint16"/>
   </sbe:message>
 
-  <sbe:message name="JoinRequest" id="0">
+  <sbe:message name="ConfigurationRequest" id="0">
     <field name="partitionId" id="0" type="uint16"/>
     <field name="term" id="1" type="uint16"/>
     <field name="port" id="2" type="uint16"/>
+    <field name="join" id="3" type="BooleanType" />
     <data name="host" id="4" type="varDataEncoding"/>
   </sbe:message>
 
-  <sbe:message name="JoinResponse" id="1">
+  <sbe:message name="ConfigurationResponse" id="1">
     <field name="term" id="1" type="uint16"/>
     <field name="succeeded" id="3" type="BooleanType" />
     <group name="members" id="6" dimensionType="groupSizeEncoding">

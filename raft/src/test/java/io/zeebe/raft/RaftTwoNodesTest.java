@@ -52,6 +52,48 @@ public class RaftTwoNodesTest
     }
 
     @Test
+    public void shouldLeaveCluster()
+    {
+        // given
+        final RaftRule leader = cluster.awaitLeader();
+        cluster.awaitInitialEventCommittedOnAll(leader.getTerm());
+        cluster.awaitRaftEventCommittedOnAll(leader.getTerm(), raft1, raft2);
+
+        // when
+        final RaftRule[] otherRafts = cluster.getOtherRafts(leader);
+        final Raft otherRaft = otherRafts[0].getRaft();
+        otherRaft.leave().join();
+
+        // then
+        cluster.awaitRaftEventCommittedOnAll(leader.getTerm());
+
+        assertThat(leader.getRaft().getMemberSize()).isEqualTo(cluster.getRafts().size() - 2);
+        assertThat(otherRaft.getMemberSize()).isEqualTo(cluster.getRafts().size() - 1);
+        assertThat(otherRaft.isJoined()).isFalse();
+    }
+
+    @Test
+    public void shouldReplicateAfterNodeLeavesCluster()
+    {
+        // given
+        final RaftRule leader = cluster.awaitLeader();
+        cluster.awaitInitialEventCommittedOnAll(leader.getTerm());
+        cluster.awaitRaftEventCommittedOnAll(leader.getTerm(), raft1, raft2);
+        final RaftRule[] otherRafts = cluster.getOtherRafts(leader);
+        final Raft otherRaft = otherRafts[0].getRaft();
+        otherRaft.leave().join();
+        cluster.awaitRaftEventCommittedOnAll(leader.getTerm());
+
+        // when
+        final long position = leader.writeEvents("foo", "bar", "end");
+
+        // then we have single node cluster
+        cluster.getRafts().remove(otherRafts[0]);
+        cluster.awaitEventCommittedOnAll(position, leader.getTerm(), "end");
+        cluster.awaitEventsCommittedOnAll("foo", "bar", "end");
+    }
+
+    @Test
     public void shouldReplicateLogEvents()
     {
         // given

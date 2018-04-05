@@ -18,7 +18,7 @@ package io.zeebe.raft.controller;
 import io.zeebe.raft.Loggers;
 import io.zeebe.raft.Raft;
 import io.zeebe.raft.event.RaftEvent;
-import io.zeebe.raft.protocol.JoinResponse;
+import io.zeebe.raft.protocol.ConfigurationResponse;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.util.sched.ActorCondition;
@@ -36,7 +36,7 @@ public class AppendRaftEventController
     private final ActorControl actor;
 
     private final RaftEvent raftEvent = new RaftEvent();
-    private final JoinResponse joinResponse = new JoinResponse();
+    private final ConfigurationResponse configurationResponse = new ConfigurationResponse();
     private final ActorCondition actorCondition;
 
     private long position;
@@ -57,7 +57,7 @@ public class AppendRaftEventController
 
     public void appendEvent(final ServerOutput serverOutput, final RemoteAddress remoteAddress, final long requestId)
     {
-        // this has to happen immediately so multiple join request are not accepted
+        // this has to happen immediately so multiple membership request are not accepted
         this.serverOutput = serverOutput;
         this.remoteAddress = remoteAddress;
         this.requestId = requestId;
@@ -89,7 +89,7 @@ public class AppendRaftEventController
             LOG.debug("Raft event for term {} was committed on position {}", raft.getTerm(), position);
 
             // send response
-            acceptJoinRequest();
+            acceptConfigurationRequest();
 
             isCommited = true;
             raft.getLogStream().removeOnCommitPositionUpdatedCondition(actorCondition);
@@ -101,14 +101,14 @@ public class AppendRaftEventController
         return position >= 0 && position <= raft.getLogStream().getCommitPosition();
     }
 
-    private void acceptJoinRequest()
+    private void acceptConfigurationRequest()
     {
-        joinResponse
+        configurationResponse
             .reset()
             .setSucceeded(true)
             .setRaft(raft);
 
-        raft.sendResponse(serverOutput, remoteAddress, requestId, joinResponse);
+        raft.sendResponse(serverOutput, remoteAddress, requestId, configurationResponse);
     }
     public long getPosition()
     {

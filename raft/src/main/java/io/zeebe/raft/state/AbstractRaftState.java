@@ -30,9 +30,10 @@ public abstract class AbstractRaftState
     protected final BufferedLogStorageAppender appender;
     protected final LogStream logStream;
 
-    protected final JoinResponse joinResponse = new JoinResponse();
+    protected final ConfigurationResponse configurationResponse = new ConfigurationResponse();
     protected final PollResponse pollResponse = new PollResponse();
     protected final VoteResponse voteResponse = new VoteResponse();
+
     protected final AppendResponse appendResponse = new AppendResponse();
 
     protected final BufferedLogStreamReader reader;
@@ -58,10 +59,10 @@ public abstract class AbstractRaftState
         reader.close();
     }
 
-    public void joinRequest(final ServerOutput serverOutput, final RemoteAddress remoteAddress, final long requestId, final JoinRequest joinRequest)
+    public void configurationRequest(final ServerOutput serverOutput, final RemoteAddress remoteAddress, final long requestId, final ConfigurationRequest configurationRequest)
     {
-        raft.mayStepDown(joinRequest);
-        rejectJoinRequest(serverOutput, remoteAddress, requestId);
+        raft.mayStepDown(configurationRequest);
+        rejectConfigurationRequest(serverOutput, remoteAddress, requestId);
     }
 
     public void pollRequest(final ServerOutput serverOutput, final RemoteAddress remoteAddress, final long requestId, final PollRequest pollRequest)
@@ -73,9 +74,16 @@ public abstract class AbstractRaftState
 
         if (granted)
         {
-            Loggers.RAFT_LOGGER.debug("accept poll request");
-            raft.skipNextElection();
-            acceptPollRequest(serverOutput, remoteAddress, requestId);
+            if (raft.shouldElect())
+            {
+                Loggers.RAFT_LOGGER.debug("accept poll request");
+                acceptPollRequest(serverOutput, remoteAddress, requestId);
+            }
+            else
+            {
+                Loggers.RAFT_LOGGER.debug("Reject poll, because have no heart beat timeout.");
+            }
+
         }
         else
         {
@@ -85,17 +93,24 @@ public abstract class AbstractRaftState
 
     public void voteRequest(final ServerOutput serverOutput, final RemoteAddress remoteAddress, final long requestId, final VoteRequest voteRequest)
     {
-        raft.skipNextElection();
         raft.mayStepDown(voteRequest);
 
         final boolean granted = raft.isTermCurrent(voteRequest) &&
             raft.canVoteFor(voteRequest) &&
-            appender.isAfterOrEqualsLastEvent(voteRequest.getLastEventPosition(), voteRequest.getLastEventTerm());
+            appender.isAfterOrEqualsLastEvent(voteRequest.getLastEventPosition(), voteRequest.getLastEventTerm()) &&
+            raft.shouldElect();
 
         if (granted)
         {
-            raft.setVotedFor(voteRequest.getSocketAddress());
-            acceptVoteRequest(serverOutput, remoteAddress, requestId);
+            if (raft.shouldElect())
+            {
+                raft.setVotedFor(voteRequest.getSocketAddress());
+                acceptVoteRequest(serverOutput, remoteAddress, requestId);
+            }
+            else
+            {
+                Loggers.RAFT_LOGGER.debug("Reject poll, because have no heart beat timeout.");
+            }
         }
         else
         {
@@ -115,24 +130,24 @@ public abstract class AbstractRaftState
         raft.mayStepDown(appendResponse);
     }
 
-    protected void acceptJoinRequest(final ServerOutput serverOutput, final RemoteAddress remoteAddress, final long requestId)
+    protected void acceptConfigurationRequest(final ServerOutput serverOutput, final RemoteAddress remoteAddress, final long requestId)
     {
-        joinResponse
+        configurationResponse
             .reset()
             .setSucceeded(true)
             .setRaft(raft);
 
-        raft.sendResponse(serverOutput, remoteAddress, requestId, joinResponse);
+        raft.sendResponse(serverOutput, remoteAddress, requestId, configurationResponse);
     }
 
-    protected void rejectJoinRequest(final ServerOutput serverOutput, final RemoteAddress remoteAddress, final long requestId)
+    protected void rejectConfigurationRequest(final ServerOutput serverOutput, final RemoteAddress remoteAddress, final long requestId)
     {
-        joinResponse
+        configurationResponse
             .reset()
             .setSucceeded(false)
             .setRaft(raft);
 
-        raft.sendResponse(serverOutput, remoteAddress, requestId, joinResponse);
+        raft.sendResponse(serverOutput, remoteAddress, requestId, configurationResponse);
     }
 
     protected void acceptPollRequest(final ServerOutput serverOutput, final RemoteAddress remoteAddress, final long requestId)

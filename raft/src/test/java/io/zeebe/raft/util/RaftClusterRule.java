@@ -82,9 +82,6 @@ public class RaftClusterRule implements TestRule
     {
         raft.clearSubscription();
 
-//        doCallRealMethod()
-//            .when(raft.spyClientOutput)
-//        .sendMessage(any());
         rafts.forEach(raftRule ->
         {
             raft.reconnectTo(raftRule);
@@ -110,10 +107,6 @@ public class RaftClusterRule implements TestRule
     {
         Loggers.RAFT_LOGGER.debug("Interrupt connections for {}", raft.getSocketAddress());
 
-//        doReturn(false)
-//            .when(raft.spyClientOutput)
-//            .sendMessage(any());
-
         final RaftRule[] otherRafts = getOtherRafts(raft);
         Arrays.stream(otherRafts)
             .forEach(raftRule ->
@@ -123,8 +116,6 @@ public class RaftClusterRule implements TestRule
             });
 
         this.rafts.remove(raft);
-
-//        raft.clientTransport.interruptAllChannels();
 
         return this;
     }

@@ -54,6 +54,12 @@ public interface RaftPersistentStorage
      */
     RaftPersistentStorage addMember(SocketAddress member);
 
+
+    /**
+     * Add a new member to the members list.
+     */
+    RaftPersistentStorage removeMember(SocketAddress member);
+
     /**
      * Clears the list of members.
      */

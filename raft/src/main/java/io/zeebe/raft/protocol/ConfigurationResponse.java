@@ -15,27 +15,25 @@
  */
 package io.zeebe.raft.protocol;
 
-import static io.zeebe.raft.JoinResponseEncoder.MembersEncoder.*;
-import static io.zeebe.raft.JoinResponseEncoder.termNullValue;
-
-import java.util.ArrayList;
-import java.util.List;
-
 import io.zeebe.raft.BooleanType;
-import io.zeebe.raft.JoinResponseDecoder;
-import io.zeebe.raft.JoinResponseDecoder.MembersDecoder;
-import io.zeebe.raft.JoinResponseEncoder;
-import io.zeebe.raft.JoinResponseEncoder.MembersEncoder;
+import io.zeebe.raft.ConfigurationResponseDecoder;
+import io.zeebe.raft.ConfigurationResponseEncoder;
 import io.zeebe.raft.Raft;
 import io.zeebe.transport.SocketAddress;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
-public class JoinResponse extends AbstractRaftMessage implements HasTerm
+import java.util.ArrayList;
+import java.util.List;
+
+import static io.zeebe.raft.ConfigurationResponseEncoder.MembersEncoder.*;
+import static io.zeebe.raft.ConfigurationResponseEncoder.termNullValue;
+
+public class ConfigurationResponse extends AbstractRaftMessage implements HasTerm
 {
 
-    protected final JoinResponseDecoder bodyDecoder = new JoinResponseDecoder();
-    protected final JoinResponseEncoder bodyEncoder = new JoinResponseEncoder();
+    protected final ConfigurationResponseDecoder bodyDecoder = new ConfigurationResponseDecoder();
+    protected final ConfigurationResponseEncoder bodyEncoder = new ConfigurationResponseEncoder();
 
     // read + write
     protected int term;
@@ -47,12 +45,12 @@ public class JoinResponse extends AbstractRaftMessage implements HasTerm
     // write
     protected List<SocketAddress> writeMembers = new ArrayList<>();
 
-    public JoinResponse()
+    public ConfigurationResponse()
     {
         reset();
     }
 
-    public JoinResponse reset()
+    public ConfigurationResponse reset()
     {
         term = termNullValue();
         succeeded = false;
@@ -93,7 +91,7 @@ public class JoinResponse extends AbstractRaftMessage implements HasTerm
         return succeeded;
     }
 
-    public JoinResponse setSucceeded(final boolean succeeded)
+    public ConfigurationResponse setSucceeded(final boolean succeeded)
     {
         this.succeeded = succeeded;
         return this;
@@ -104,7 +102,7 @@ public class JoinResponse extends AbstractRaftMessage implements HasTerm
         return readMembers;
     }
 
-    public JoinResponse setRaft(final Raft raft)
+    public ConfigurationResponse setRaft(final Raft raft)
     {
         term = raft.getTerm();
         writeMembers.add(raft.getSocketAddress());
@@ -148,7 +146,7 @@ public class JoinResponse extends AbstractRaftMessage implements HasTerm
         term = bodyDecoder.term();
         succeeded = bodyDecoder.succeeded() == BooleanType.TRUE;
 
-        for (final MembersDecoder decoder : bodyDecoder.members())
+        for (final ConfigurationResponseDecoder.MembersDecoder decoder : bodyDecoder.members())
         {
             final SocketAddress socketAddress = new SocketAddress();
             socketAddress.port(decoder.port());
@@ -182,7 +180,7 @@ public class JoinResponse extends AbstractRaftMessage implements HasTerm
 
         final int membersCount = writeMembers.size();
 
-        final MembersEncoder encoder = bodyEncoder.membersCount(membersCount);
+        final ConfigurationResponseEncoder.MembersEncoder encoder = bodyEncoder.membersCount(membersCount);
         for (int i = 0; i < membersCount; i++)
         {
             final SocketAddress socketAddress = writeMembers.get(i);

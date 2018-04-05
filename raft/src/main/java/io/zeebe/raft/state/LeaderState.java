@@ -15,15 +15,19 @@
  */
 package io.zeebe.raft.state;
 
-import java.util.Arrays;
-
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.raft.*;
+import io.zeebe.raft.BufferedLogStorageAppender;
+import io.zeebe.raft.Raft;
+import io.zeebe.raft.RaftMember;
 import io.zeebe.raft.protocol.AppendResponse;
-import io.zeebe.raft.protocol.JoinRequest;
-import io.zeebe.transport.*;
+import io.zeebe.raft.protocol.ConfigurationRequest;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.ServerOutput;
+import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.ActorControl;
+
+import java.util.Arrays;
 
 public class LeaderState extends AbstractRaftState
 {
@@ -57,30 +61,59 @@ public class LeaderState extends AbstractRaftState
     }
 
     @Override
-    public void joinRequest(final ServerOutput serverOutput, final RemoteAddress remoteAddress, final long requestId, final JoinRequest joinRequest)
+    public void configurationRequest(final ServerOutput serverOutput, final RemoteAddress remoteAddress, final long requestId, final ConfigurationRequest configurationRequest)
     {
-        if (!raft.mayStepDown(joinRequest))
+        if (!raft.mayStepDown(configurationRequest))
         {
             if (raft.isInitialEventCommitted() && raft.isConfigurationEventCommitted())
             {
-                final SocketAddress socketAddress = joinRequest.getSocketAddress();
-                if (raft.isMember(socketAddress))
+                final SocketAddress socketAddress = configurationRequest.getSocketAddress();
+                if (configurationRequest.isJoinRequest())
                 {
-                    acceptJoinRequest(serverOutput, remoteAddress, requestId);
+                    join(serverOutput, remoteAddress, requestId, socketAddress);
                 }
                 else
                 {
-                    // create new socket address object as it is stored in a map
-                    raft.joinMember(serverOutput, remoteAddress, requestId, new SocketAddress(socketAddress));
-                    // remove condition
-                    logStream.removeOnAppendCondition(appendCondition);
+                    leave(serverOutput, remoteAddress, requestId, socketAddress);
                 }
             }
             else
             {
-                rejectJoinRequest(serverOutput, remoteAddress, requestId);
+                rejectConfigurationRequest(serverOutput, remoteAddress, requestId);
             }
+        }
+    }
 
+    private void join(final ServerOutput serverOutput, final RemoteAddress remoteAddress, final long requestId, SocketAddress socketAddress)
+    {
+        if (raft.isMember(socketAddress))
+        {
+            acceptConfigurationRequest(serverOutput, remoteAddress, requestId);
+        }
+        else
+        {
+            // create new socket address object as it is stored in a map
+            raft.joinMember(serverOutput, remoteAddress, requestId, new SocketAddress(socketAddress));
+            // remove condition
+            logStream.removeOnAppendCondition(appendCondition);
+        }
+    }
+
+    private void leave(final ServerOutput serverOutput, final RemoteAddress remoteAddress, final long requestId, SocketAddress socketAddress)
+    {
+        if (!raft.isMember(socketAddress))
+        {
+            acceptConfigurationRequest(serverOutput, remoteAddress, requestId);
+        }
+        else
+        {
+            raft.removeMember(serverOutput, remoteAddress, requestId, socketAddress);
+
+            if (raft.getMembers().isEmpty())
+            {
+                // commit on single node again
+                logStream.registerOnAppendCondition(appendCondition);
+            }
         }
     }
 

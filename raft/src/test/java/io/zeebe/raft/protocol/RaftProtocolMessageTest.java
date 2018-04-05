@@ -52,7 +52,7 @@ public class RaftProtocolMessageTest
         raft = raft2.getRaft();
         logStream = raft2.getLogStream();
 
-        // wait for raft 2 to join raft group in term 1 as follower
+        // wait for raft 2 to joinRequest raft group in term 1 as follower
         waitUntil(() -> raft.getTerm() == 1);
 
         // freeze state by not calling doWork() on raft nodes anymore
@@ -63,30 +63,30 @@ public class RaftProtocolMessageTest
     public void shouldReadWriteJoinRequest()
     {
         // given
-        JoinRequest joinRequest = new JoinRequest().setRaft(raft);
+        ConfigurationRequest configurationRequest = new ConfigurationRequest().setRaft(raft);
 
         // when
-        joinRequest = writeAndRead(joinRequest);
+        configurationRequest = writeAndRead(configurationRequest);
 
         // then
-        assertPartition(joinRequest);
-        assertTerm(joinRequest);
+        assertPartition(configurationRequest);
+        assertTerm(configurationRequest);
     }
 
     @Test
     public void shouldReadWriteJoinResponse()
     {
         // given
-        JoinResponse joinResponse = new JoinResponse()
+        ConfigurationResponse configurationResponse = new ConfigurationResponse()
             .setRaft(raft)
             .setSucceeded(true);
 
         // when
-        joinResponse = writeAndRead(joinResponse);
+        configurationResponse = writeAndRead(configurationResponse);
 
         // then
-        assertTerm(joinResponse);
-        assertThat(joinResponse.getMembers())
+        assertTerm(configurationResponse);
+        assertThat(configurationResponse.getMembers())
             .containsOnly(
                 raft1.getSocketAddress(),
                 raft2.getSocketAddress()

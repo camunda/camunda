@@ -38,6 +38,7 @@ public class CandidateState extends AbstractRaftState
     {
         if (raft.isTermCurrent(appendRequest))
         {
+            raft.updateLastHeartBeatTime();
             // received append request from new leader
             raft.becomeFollower();
         }

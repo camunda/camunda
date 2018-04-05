@@ -25,6 +25,7 @@ import org.junit.Test;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class RaftSingleNodeTest
 {
@@ -46,6 +47,20 @@ public class RaftSingleNodeTest
 
         final List<RaftState> raftStateChanges = leader.getRaftStateChanges();
         assertThat(raftStateChanges).containsExactly(RaftState.FOLLOWER, RaftState.CANDIDATE, RaftState.LEADER);
+    }
+
+
+    @Test
+    public void shouldNotLeaveCluster()
+    {
+        // given
+        final RaftRule leader = cluster.awaitLeader();
+        cluster.awaitInitialEventCommittedOnAll(leader.getTerm());
+
+        // expect
+        assertThatThrownBy(() -> leader.getRaft().leave().join())
+            .hasMessage("Can't leave as leader.")
+            .hasCauseInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test

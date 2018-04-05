@@ -55,6 +55,97 @@ public class RaftThreeNodesTest
     }
 
     @Test
+    public void shouldLeaveCluster()
+    {
+        // given
+        final RaftRule leader = cluster.awaitLeader();
+        cluster.awaitInitialEventCommittedOnAll(leader.getTerm());
+        cluster.awaitRaftEventCommittedOnAll(leader.getTerm(), raft1, raft2, raft3);
+
+        // when
+        final RaftRule[] otherRafts = cluster.getOtherRafts(leader);
+        final Raft otherRaft = otherRafts[0].getRaft();
+        otherRaft.leave().join();
+
+        // then
+        cluster.awaitRaftEventCommittedOnAll(leader.getTerm());
+
+        assertThat(leader.getRaft().getMemberSize()).isEqualTo(cluster.getRafts().size() - 2);
+        assertThat(otherRaft.getMemberSize()).isEqualTo(cluster.getRafts().size() - 1);
+        assertThat(otherRaft.isJoined()).isFalse();
+    }
+
+    @Test
+    public void shouldReplicateAfterNodeLeavesCluster()
+    {
+        // given
+        final RaftRule leader = cluster.awaitLeader();
+        cluster.awaitInitialEventCommittedOnAll(leader.getTerm());
+        cluster.awaitRaftEventCommittedOnAll(leader.getTerm(), raft1, raft2, raft3);
+        final RaftRule[] otherRafts = cluster.getOtherRafts(leader);
+        final Raft otherRaft = otherRafts[0].getRaft();
+        otherRaft.leave().join();
+        cluster.awaitRaftEventCommittedOnAll(leader.getTerm());
+
+        // when
+        final long position = leader.writeEvents("foo", "bar", "end");
+
+        // then
+        cluster.getRafts().remove(otherRafts[0]);
+        cluster.awaitEventCommittedOnAll(position, leader.getTerm(), "end");
+        cluster.awaitEventsCommittedOnAll("foo", "bar", "end");
+    }
+
+    @Test
+    public void shouldAdjustQuourumOnLeavingCluster()
+    {
+        // given
+        final RaftRule leader = cluster.awaitLeader();
+        cluster.awaitInitialEventCommittedOnAll(leader.getTerm());
+        cluster.awaitRaftEventCommittedOnAll(leader.getTerm(), raft1, raft2, raft3);
+
+        // when
+        final RaftRule[] otherRafts = cluster.getOtherRafts(leader);
+
+        final int quorum = leader.getRaft().requiredQuorum();
+        for (int i = 0; i < quorum; i++)
+        {
+            final Raft otherRaft = otherRafts[i].getRaft();
+            otherRaft.leave().join();
+        }
+
+        // then we have a single node cluster
+        cluster.awaitRaftEventCommittedOnAll(leader.getTerm());
+        assertThat(leader.getRaft().getMemberSize()).isEqualTo(0);
+        assertThat(leader.getRaft().requiredQuorum()).isEqualTo(1);
+    }
+
+    @Test
+    public void shouldReplicateAfterOldQuorumLeavesClusterClean()
+    {
+        // given
+        final RaftRule leader = cluster.awaitLeader();
+        cluster.awaitInitialEventCommittedOnAll(leader.getTerm());
+        cluster.awaitRaftEventCommittedOnAll(leader.getTerm(), raft1, raft2, raft3);
+
+        final RaftRule[] otherRafts = cluster.getOtherRafts(leader);
+        final int quorum = leader.getRaft().requiredQuorum();
+        for (int i = 0; i < quorum; i++)
+        {
+            final Raft otherRaft = otherRafts[i].getRaft();
+            otherRaft.leave().join();
+            cluster.getRafts().remove(otherRafts[i]);
+        }
+
+        // when
+        final long position = leader.writeEvents("foo", "bar", "end");
+
+        // then
+        cluster.awaitEventCommittedOnAll(position, leader.getTerm(), "end");
+        cluster.awaitEventsCommittedOnAll("foo", "bar", "end");
+    }
+
+    @Test
     public void shouldReplicateLogEvents()
     {
         // given

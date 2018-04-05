@@ -37,7 +37,7 @@ public class FollowerState extends AbstractRaftState
     @Override
     public void appendRequest(final AppendRequest appendRequest)
     {
-        raft.skipNextElection();
+        raft.updateLastHeartBeatTime();
         raft.mayStepDown(appendRequest);
 
         final long previousEventPosition = appendRequest.getPreviousEventPosition();

@@ -82,6 +82,13 @@ public class InMemoryRaftPersistentStorage implements RaftPersistentStorage
         return this;
     }
 
+    @Override
+    public RaftPersistentStorage removeMember(SocketAddress member)
+    {
+        members.remove(member);
+        return this;
+    }
+
     public List<SocketAddress> getMembers()
     {
         return members;
