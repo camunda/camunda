@@ -3,12 +3,14 @@ import ReportBlankSlate from '../ReportBlankSlate';
 
 import {Table as TableRenderer} from 'components';
 
-export default function Table({data, formatter, labels, errorMessage}) {
+export default function Table({data, formatter, labels, errorMessage, scrollableReport}) {
   if (!data || typeof data !== 'object') {
     return <ReportBlankSlate message={errorMessage} />;
   }
 
-  return <TableRenderer {...formatData(data, formatter, labels)} />;
+  return (
+    <TableRenderer scrollableReport={scrollableReport} {...formatData(data, formatter, labels)} />
+  );
 }
 
 function formatData(data, formatter, labels) {

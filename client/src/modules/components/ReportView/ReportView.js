@@ -145,7 +145,11 @@ export default class ReportView extends React.Component {
         const formattedResult = this.formatResult(data, result);
         config = {
           component: Table,
-          props: {data: formattedResult, labels: [groupByLabel, viewLabel]}
+          props: {
+            data: formattedResult,
+            labels: [groupByLabel, viewLabel],
+            scrollableReport: this.props.scrollableReport
+          }
         };
         break;
       case 'heat':

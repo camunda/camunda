@@ -48,7 +48,7 @@ export default class DashboardReport extends React.Component {
           {this.state.data.errorMessage ? (
             this.state.data.errorMessage
           ) : (
-            <ReportView report={this.state.data} />
+            <ReportView scrollableReport={this.props.scrollableReport} report={this.state.data} />
           )}
         </div>
         {this.props.addons &&

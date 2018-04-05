@@ -1,5 +1,9 @@
 @import '~react-table/react-table.css';
 
+.Table__unscrollable-mode {
+  overflow: hidden;
+}
+
 .Table {
   min-height: 0;
   font-size: 14px;
@@ -9,6 +13,10 @@
     box-shadow: none;
     font-weight: bold;
     border-bottom: 1px solid #e3e3e3;
+  }
+
+  .rt-table {
+    overflow: inherit;
   }
 
   .rt-th {

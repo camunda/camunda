@@ -22,6 +22,7 @@ export default class DashboardView extends React.Component {
               {...report.dimensions}
             >
               <DashboardReport
+                scrollableReport={this.props.scrollableReport}
                 loadReport={this.props.loadReport}
                 report={report}
                 tileDimensions={this.state.tileDimensions}
