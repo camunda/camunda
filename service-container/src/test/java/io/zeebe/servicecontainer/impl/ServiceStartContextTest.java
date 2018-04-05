@@ -15,10 +15,12 @@
  */
 package io.zeebe.servicecontainer.impl;
 
-import static io.zeebe.servicecontainer.impl.ActorFutureAssertions.assertCompleted;
+import static io.zeebe.servicecontainer.impl.ActorFutureAssertions.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+
+import java.util.concurrent.ExecutionException;
 
 import io.zeebe.servicecontainer.*;
 import io.zeebe.util.sched.ActorScheduler;
@@ -93,6 +95,24 @@ public class ServiceStartContextTest
     }
 
     @Test
+    public void shouldReinstallService()
+    {
+        final MockService mockService1 = new MockService();
+        final Service<Object> mockService2 = mock(Service.class);
+
+        serviceContainer.createService(service1, mockService1).install();
+        actorSchedulerRule.workUntilDone();
+        mockService1.startContext.createService(service2, mockService2).install();
+        actorSchedulerRule.workUntilDone();
+        mockService1.startContext.removeService(service2);
+        actorSchedulerRule.workUntilDone();
+
+        mockService1.startContext.createService(service2, mockService2).install();
+        actorSchedulerRule.workUntilDone();
+    }
+
+
+    @Test
     public void shouldNotRemoveServiceIfNotCreatedFromContext()
     {
         final MockService mockService1 = new MockService();
@@ -104,10 +124,14 @@ public class ServiceStartContextTest
         serviceContainer.createService(service2, mockService2).install();
         actorSchedulerRule.workUntilDone();
 
-        thrown.expect(RuntimeException.class);
+
+        final ActorFuture<Void> future = mockService1.startContext.removeService(service2);
+        actorSchedulerRule.workUntilDone();
+
+        thrown.expect(ExecutionException.class);
         thrown.expectMessage("Cannot remove service 'service2' from context 'service1'. Can only remove dependencies and services started through this context.");
 
-        mockService1.startContext.removeService(service2);
+        future.join();
     }
 
     @Test
@@ -118,10 +142,13 @@ public class ServiceStartContextTest
         serviceContainer.createService(service1, mockService1).install();
         actorSchedulerRule.workUntilDone();
 
-        thrown.expect(RuntimeException.class);
+        final ActorFuture<Void> removeService = mockService1.startContext.removeService(service2);
+        actorSchedulerRule.workUntilDone();
+
+        thrown.expect(ExecutionException.class);
         thrown.expectMessage("Cannot remove service 'service2' from context 'service1'. Can only remove dependencies and services started through this context.");
 
-        mockService1.startContext.removeService(service2);
+        removeService.join();
     }
 
     /**

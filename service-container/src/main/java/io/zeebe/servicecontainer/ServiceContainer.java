@@ -27,6 +27,8 @@ public interface ServiceContainer
 
     <S> ServiceBuilder<S> createService(ServiceName<S> name, Service<S> service);
 
+    CompositeServiceBuilder createComposite(ServiceName<Void> name);
+
     ActorFuture<Void> removeService(ServiceName<?> serviceName);
 
     void close(long awaitTime, TimeUnit timeUnit) throws TimeoutException, ExecutionException, InterruptedException;

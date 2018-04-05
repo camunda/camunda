@@ -62,6 +62,24 @@ public class DependenciesTest
     }
 
     @Test
+    public void shouldReinstallService()
+    {
+        final Service<Object> mockService = mock(Service.class);
+
+        // given
+        serviceContainer.createService(service1, mockService).install();
+        actorSchedulerRule.workUntilDone();
+        serviceContainer.removeService(service1);
+        actorSchedulerRule.workUntilDone();
+
+        // when then
+        final ActorFuture<Void> installFuture = serviceContainer.createService(service1, mockService).install();
+        actorSchedulerRule.workUntilDone();
+
+        assertCompleted(installFuture);
+    }
+
+    @Test
     public void shouldNotInstallServiceWithMissingDependencies()
     {
         final Service<Object> mockService = mock(Service.class);

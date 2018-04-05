@@ -15,40 +15,25 @@
  */
 package io.zeebe.servicecontainer.impl;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.Future;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
+import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.impl.ServiceEvent.ServiceEventType;
+import io.zeebe.util.sched.*;
+import io.zeebe.util.sched.channel.ConcurrentQueueChannel;
+import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.slf4j.Logger;
-
-import io.zeebe.servicecontainer.Injector;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceBuilder;
-import io.zeebe.servicecontainer.ServiceGroupReference;
-import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
-import io.zeebe.servicecontainer.impl.ServiceEvent.ServiceEventType;
-import io.zeebe.util.sched.FutureUtil;
-import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.ActorScheduler;
-import io.zeebe.util.sched.channel.ConcurrentQueueChannel;
-import io.zeebe.util.sched.future.ActorFuture;
 
 @SuppressWarnings("rawtypes")
 public class ServiceController extends Actor
 {
     public static final Logger LOG = Loggers.SERVICE_CONTAINER_LOGGER;
+    public static final boolean IS_TRACE_ENABLED = LOG.isTraceEnabled();
 
     private final AwaitDependenciesStartedState awaitDependenciesStartedState = new AwaitDependenciesStartedState();
     private final AwaitStartState awaitStartState = new AwaitStartState();
@@ -69,7 +54,7 @@ public class ServiceController extends Actor
     private final Map<ServiceName<?>, Collection<Injector<?>>> injectors;
     private final Map<ServiceName<?>, ServiceGroupReference<?>> injectedReferences;
 
-    private final List<CompletableActorFuture<Void>> stopFutures = new ArrayList<>();
+    private final CompletableActorFuture<Void> stopFuture = new CompletableActorFuture<>();
     private final CompletableActorFuture<Void> startFuture;
 
     private List<ServiceController> resolvedDependencies;
@@ -78,7 +63,6 @@ public class ServiceController extends Actor
     private StopContextImpl stopContext;
 
     private Consumer<ServiceEvent> state = awaitDependenciesStartedState;
-
 
     public ServiceController(ServiceBuilder<?> builder, ServiceContainerImpl serviceContainer, CompletableActorFuture<Void> startFuture)
     {
@@ -101,11 +85,22 @@ public class ServiceController extends Actor
             .add(new ServiceEvent(ServiceEventType.SERVICE_INSTALLED, this));
     }
 
+    @Override
+    protected void onActorClosed()
+    {
+        stopFuture.complete(null);
+    }
+
     private void onServiceEvent()
     {
         final ServiceEvent event = channel.poll();
         if (event != null)
         {
+            if (IS_TRACE_ENABLED)
+            {
+                LOG.trace("Got {} in state {}", event, state.getClass().getSimpleName());
+            }
+
             state.accept(event);
         }
         else
@@ -126,6 +121,10 @@ public class ServiceController extends Actor
                     onDependenciesAvailable(evt);
                     break;
 
+                case DEPENDENCIES_UNAVAILABLE:
+                    onDependenciesUnAvailable(evt);
+                    break;
+
                 case SERVICE_STOPPING:
                     onStopping();
                     break;
@@ -133,6 +132,12 @@ public class ServiceController extends Actor
                 default:
                     break;
             }
+        }
+
+        private void onDependenciesUnAvailable(ServiceEvent evt)
+        {
+            state = removedState;
+            fireEvent(ServiceEventType.SERVICE_REMOVED);
         }
 
         private void onStopping()
@@ -286,8 +291,6 @@ public class ServiceController extends Actor
                     .flatMap(Collection::stream)
                     .forEach(i -> i.uninject());
 
-                stopFutures.forEach(f -> f.complete(null));
-
                 fireEvent(ServiceEventType.SERVICE_REMOVED);
 
                 state = removedState;
@@ -389,6 +392,16 @@ public class ServiceController extends Actor
         }
 
         @Override
+        public CompositeServiceBuilder createComposite(ServiceName<Void> name)
+        {
+            validCheck();
+
+            dependentServices.add(name);
+
+            return new CompositeServiceBuilder(name, container, ServiceController.this.name);
+        }
+
+        @Override
         public <S> ActorFuture<Void> removeService(ServiceName<S> name)
         {
             validCheck();
@@ -401,7 +414,7 @@ public class ServiceController extends Actor
                 {
                     final String errorMessage = String.format("Cannot remove service '%s' from context '%s'. Can only remove dependencies and services started through this context.", name,
                                                               ServiceController.this.name);
-                    throw new IllegalArgumentException(errorMessage);
+                    return CompletableActorFuture.completedExceptionally(new IllegalArgumentException(errorMessage));
                 }
             }
 
@@ -560,7 +573,7 @@ public class ServiceController extends Actor
     @Override
     public String toString()
     {
-        return String.format("%s in %s", name, state);
+        return String.format("%s in %s", name, state.getClass().getSimpleName());
     }
 
     private void fireEvent(ServiceEventType evtType)
@@ -586,13 +599,14 @@ public class ServiceController extends Actor
         return dependencies;
     }
 
-    public void remove(CompletableActorFuture<Void> future)
+    public ActorFuture<Void> remove()
     {
-        actor.call(() ->
+        actor.run(() ->
         {
-            stopFutures.add(future);
             fireEvent(ServiceEventType.SERVICE_STOPPING);
         });
+
+        return stopFuture;
     }
 
     public ServiceName<?> getGroupName()
@@ -634,6 +648,6 @@ public class ServiceController extends Actor
     @SuppressWarnings("unchecked")
     private static <S> void invoke(BiConsumer consumer, ServiceName name, Object value)
     {
-        consumer.accept(name, (S) value);
+        consumer.accept(name, value);
     }
 }

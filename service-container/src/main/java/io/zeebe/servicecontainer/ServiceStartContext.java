@@ -28,6 +28,8 @@ public interface ServiceStartContext extends AsyncContext
 
     <S> ServiceBuilder<S> createService(ServiceName<S> name, Service<S> service);
 
+    CompositeServiceBuilder createComposite(ServiceName<Void> name);
+
     <S> ActorFuture<Void> removeService(ServiceName<S> name);
 
     <S> boolean hasService(ServiceName<S> name);

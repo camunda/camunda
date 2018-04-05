@@ -80,6 +80,11 @@ public class ServiceBuilder<S>
         return serviceContainer.onServiceBuilt(this);
     }
 
+    public ActorFuture<S> installAndReturn()
+    {
+        return serviceContainer.onServiceBuiltAndReturn(this);
+    }
+
     public ServiceName<S> getName()
     {
         return name;

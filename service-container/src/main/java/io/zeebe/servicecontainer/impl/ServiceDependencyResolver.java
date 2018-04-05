@@ -15,13 +15,12 @@
  */
 package io.zeebe.servicecontainer.impl;
 
+import java.util.*;
+
 import io.zeebe.servicecontainer.ServiceGroupReference;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.impl.ServiceEvent.ServiceEventType;
 import org.slf4j.Logger;
-
-import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Stream processor tracking the dependencies of services.
@@ -117,33 +116,48 @@ public class ServiceDependencyResolver
             controller.getChannel()
                 .add(new ServiceEvent(ServiceEventType.DEPENDENTS_STOPPED, controller));
         }
-
     }
 
     private void onServiceStopped(ServiceEvent event)
     {
         final ServiceController controller = event.getController();
+
         startedServices.remove(controller);
         stoppingServices.remove(controller);
+    }
 
-        for (ServiceController dependentService : stoppingServices)
+    private void onServiceRemoved(ServiceEvent event)
+    {
+        final ServiceController controller = event.getController();
+
+        final List<ServiceController> dependencies = resolvedDependencies.remove(controller);
+        for (ServiceController dependency : dependencies)
         {
-            if (startedServices.contains(dependentService))
+            final List<ServiceController> deps = dependentServices.get(dependency);
+
+            if (deps != null)
             {
-                final List<ServiceController> deps = dependentServices.get(dependentService);
-                boolean allStopped = true;
-                for (int i = 0; i < deps.size() && allStopped; i++)
+                if (stoppingServices.contains(dependency))
                 {
-                    allStopped &= !startedServices.contains(deps.get(i));
+                    boolean allStopped = true;
+                    for (int i = 0; i < deps.size() && allStopped; i++)
+                    {
+                        allStopped &= !startedServices.contains(deps.get(i));
+                    }
+
+                    if (allStopped)
+                    {
+                        dependency.getChannel()
+                            .add(new ServiceEvent(ServiceEventType.DEPENDENTS_STOPPED, dependency));
+                    }
                 }
 
-                if (allStopped)
-                {
-                    dependentService.getChannel()
-                        .add(new ServiceEvent(ServiceEventType.DEPENDENTS_STOPPED, dependentService));
-                }
+                deps.remove(controller);
             }
         }
+
+        installedServices.remove(controller.getServiceName());
+        dependentServices.remove(controller);
     }
 
     private void onServiceStarted(ServiceEvent event)
@@ -189,31 +203,12 @@ public class ServiceDependencyResolver
         return serviceGroup;
     }
 
-    private void onServiceRemoved(ServiceEvent event)
-    {
-        final ServiceController controller = event.getController();
-
-        installedServices.remove(controller.getServiceName());
-        resolvedDependencies.remove(controller);
-
-        final List<ServiceController> dependents = dependentServices.remove(controller);
-        for (ServiceController serviceController : dependents)
-        {
-            final List<ServiceController> list = dependentServices.get(serviceController);
-            if (list != null)
-            {
-                list.remove(controller);
-            }
-        }
-        unresolvedDependencies.put(controller.getServiceName(), dependents);
-    }
-
     private void onServiceInstalled(ServiceEvent event)
     {
         final ServiceController controller = event.getController();
         installedServices.put(controller.getServiceName(), controller);
 
-        /** try to resolve this servie's dependencies */
+        /** try to resolve this service's dependencies */
         final Set<ServiceName<?>> dependencies = controller.getDependencies();
         final List<ServiceController> resolvedDependencies = new ArrayList<>();
         for (ServiceName<?> serviceName : dependencies)
@@ -295,13 +290,4 @@ public class ServiceDependencyResolver
     {
         return installedServices.values();
     }
-
-    public Collection<ServiceController> getControllerWithoutDependencies()
-    {
-        return getControllers()
-            .stream()
-            .filter((c) -> c.getDependencies().isEmpty())
-            .collect(Collectors.toList());
-    }
-
 }

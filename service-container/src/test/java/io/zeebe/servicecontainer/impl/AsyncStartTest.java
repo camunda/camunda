@@ -19,6 +19,7 @@ import static io.zeebe.servicecontainer.impl.ActorFutureAssertions.assertComplet
 import static io.zeebe.servicecontainer.impl.ActorFutureAssertions.assertFailed;
 import static io.zeebe.servicecontainer.impl.ActorFutureAssertions.assertNotCompleted;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.*;
 
 import java.util.concurrent.CompletableFuture;
@@ -65,6 +66,22 @@ public class AsyncStartTest
     }
 
     @Test
+    public void shouldWaitForAsyncStartandReturn()
+    {
+        // when
+        final AsyncStartService service = new AsyncStartService();
+        service.future = new CompletableFuture<>();
+
+        final ActorFuture<Object> startFuture = serviceContainer.createService(service1Name, service)
+            .installAndReturn();
+
+        actorSchedulerRule.workUntilDone();
+
+        // then
+        assertNotCompleted(startFuture);
+    }
+
+    @Test
     public void shouldContinueOnAsyncStartComplete()
     {
         // given
@@ -83,6 +100,29 @@ public class AsyncStartTest
 
         // then
         assertCompleted(startFuture);
+    }
+
+    @Test
+    public void shouldContinueOnAsyncStartCompleteAndReturn()
+    {
+        // given
+        final AsyncStartService service = new AsyncStartService();
+        service.future = new CompletableFuture<Void>();
+
+        final ActorFuture<Object> startFuture = serviceContainer.createService(service1Name, service)
+            .installAndReturn();
+
+        actorSchedulerRule.workUntilDone();
+        assertNotCompleted(startFuture);
+
+        // when
+        service.future.complete(null);
+        actorSchedulerRule.awaitBlockingTasksCompleted(1);
+        actorSchedulerRule.workUntilDone();
+
+        // then
+        assertCompleted(startFuture);
+        assertEquals(service.get(), startFuture.join());
     }
 
     @Test

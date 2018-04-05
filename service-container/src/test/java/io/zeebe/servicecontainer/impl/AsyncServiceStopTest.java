@@ -24,34 +24,29 @@ import static org.mockito.Mockito.verify;
 import java.util.concurrent.CompletableFuture;
 
 import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 import org.junit.*;
+import org.junit.rules.RuleChain;
 
 @SuppressWarnings("unchecked")
 public class AsyncServiceStopTest
 {
-    @Rule
     public ControlledActorSchedulerRule actorSchedulerRule = new ControlledActorSchedulerRule();
+    public ServiceContainerRule serviceContainerRule = new ServiceContainerRule(actorSchedulerRule);
 
-    ServiceContainer serviceContainer;
+    @Rule
+    public RuleChain ruleChain = RuleChain.outerRule(actorSchedulerRule).around(serviceContainerRule);
 
-    ServiceName<Object> service1Name;
-    ServiceName<Object> service2Name;
-
-    @Before
-    public void setup()
-    {
-        serviceContainer = new ServiceContainerImpl(actorSchedulerRule.get());
-        serviceContainer.start();
-
-        service1Name = ServiceName.newServiceName("service1", Object.class);
-        service2Name = ServiceName.newServiceName("service2", Object.class);
-    }
+    ServiceName<Object> service1Name = ServiceName.newServiceName("service1", Object.class);
+    ServiceName<Object> service2Name = ServiceName.newServiceName("service2", Object.class);
 
     @Test
     public void shouldWaitForAsyncStop()
     {
+        final ServiceContainer serviceContainer = serviceContainerRule.get();
+
         // given
         final AsyncStopService service = new AsyncStopService();
         service.future = new CompletableFuture<Void>();
@@ -71,6 +66,8 @@ public class AsyncServiceStopTest
     @Test
     public void shouldContinueOnAsyncStopComplete()
     {
+        final ServiceContainer serviceContainer = serviceContainerRule.get();
+
         // given
         final AsyncStopService service = new AsyncStopService();
         service.future = new CompletableFuture<Void>();
@@ -94,6 +91,8 @@ public class AsyncServiceStopTest
     @Test
     public void shouldContineOnSuppliedFutureCompletedExceptionally()
     {
+        final ServiceContainer serviceContainer = serviceContainerRule.get();
+
         // given
         final AsyncStopService service = new AsyncStopService();
         service.future = new CompletableFuture<>();
@@ -118,6 +117,8 @@ public class AsyncServiceStopTest
     @Test
     public void shouldWaitForAction()
     {
+        final ServiceContainer serviceContainer = serviceContainerRule.get();
+
         // given
         final AsyncStopService service = new AsyncStopService();
         final Runnable mockAction = mock(Runnable.class);
@@ -138,6 +139,8 @@ public class AsyncServiceStopTest
     @Test
     public void shouldContinueOnAction()
     {
+        final ServiceContainer serviceContainer = serviceContainerRule.get();
+
         // given
         final AsyncStopService service = new AsyncStopService();
         final Runnable mockAction = mock(Runnable.class);
@@ -163,6 +166,8 @@ public class AsyncServiceStopTest
     @Test
     public void shouldContinueOnExceptionFromAction()
     {
+        final ServiceContainer serviceContainer = serviceContainerRule.get();
+
         // given
         final AsyncStopService service = new AsyncStopService();
         final Runnable mockAction = mock(Runnable.class);
@@ -190,6 +195,8 @@ public class AsyncServiceStopTest
     @Test
     public void shouldWaitOnConcurrentStop()
     {
+        final ServiceContainer serviceContainer = serviceContainerRule.get();
+
         // given
         final AsyncStopService service = new AsyncStopService();
         service.future = new CompletableFuture<Void>();
@@ -214,6 +221,8 @@ public class AsyncServiceStopTest
     @Test
     public void shouldContinueConcurrentStop()
     {
+        final ServiceContainer serviceContainer = serviceContainerRule.get();
+
         // given
         final AsyncStopService service = new AsyncStopService();
         service.future = new CompletableFuture<Void>();
@@ -238,7 +247,6 @@ public class AsyncServiceStopTest
         assertCompleted(service1RemoveFuture);
         assertCompleted(service2RemoveFuture);
     }
-
 
     static class AsyncStopService implements Service<Object>
     {

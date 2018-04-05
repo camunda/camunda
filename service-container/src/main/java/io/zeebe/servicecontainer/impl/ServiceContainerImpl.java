@@ -111,11 +111,17 @@ public class ServiceContainerImpl extends Actor implements ServiceContainer
         return new ServiceBuilder<>(name, service, this);
     }
 
+    @Override
+    public CompositeServiceBuilder createComposite(ServiceName<Void> name)
+    {
+        return new CompositeServiceBuilder(name, this);
+    }
+
     public ActorFuture<Void> onServiceBuilt(ServiceBuilder<?> serviceBuilder)
     {
         final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
 
-        actor.call(() ->
+        actor.run(() ->
         {
             if (state == ContainerState.OPEN)
             {
@@ -152,6 +158,29 @@ public class ServiceContainerImpl extends Actor implements ServiceContainer
         return future;
     }
 
+
+    public <S> ActorFuture<S> onServiceBuiltAndReturn(ServiceBuilder<S> serviceBuilder)
+    {
+        final CompletableActorFuture<S> returnedFuture = new CompletableActorFuture<>();
+
+        actor.run(() ->
+        {
+            actor.runOnCompletion(onServiceBuilt(serviceBuilder), (r, t) ->
+            {
+                if (t != null)
+                {
+                    returnedFuture.completeExceptionally(t);
+                }
+                else
+                {
+                    returnedFuture.complete(serviceBuilder.getService().get());
+                }
+            });
+        });
+
+        return returnedFuture;
+    }
+
     @Override
     public ActorFuture<Void> removeService(ServiceName<?> serviceName)
     {
@@ -165,7 +194,17 @@ public class ServiceContainerImpl extends Actor implements ServiceContainer
 
                 if (ctrl != null)
                 {
-                    ctrl.remove(future);
+                    actor.runOnCompletion(ctrl.remove(), (v, t) ->
+                    {
+                        if (t != null)
+                        {
+                            future.completeExceptionally(t);
+                        }
+                        else
+                        {
+                            future.complete(null);
+                        }
+                    });
                 }
                 else
                 {
@@ -210,7 +249,8 @@ public class ServiceContainerImpl extends Actor implements ServiceContainer
             {
                 builder.append("\n").append(c).append("\n\t\\");
                 c.getDependencies()
-                    .forEach((d) -> {
+                    .forEach((d) ->
+                    {
                         builder.append("\n \t-- ")
                             .append(dependencyResolver.getService(d));
                     });
@@ -239,9 +279,7 @@ public class ServiceContainerImpl extends Actor implements ServiceContainer
                 dependencyResolver.getControllers()
                     .forEach((c) ->
                     {
-                        final CompletableActorFuture<Void> closeFuture = new CompletableActorFuture<>();
-                        c.remove(closeFuture);
-                        serviceFutures.add(closeFuture);
+                        serviceFutures.add(c.remove());
                     });
 
                 actor.runOnCompletion(serviceFutures, (t) ->
