@@ -5,11 +5,15 @@
   border-radius: 8px;
   padding: 24px;
   flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 360px;
 }
 
 .ReportBlankSlate__message {
   font-size: 18px;
-  margin-bottom: 56px;
 }
 
 .ReportBlankSlate__illustrationDropdown {
@@ -18,13 +22,12 @@
   height: 102px;
   background-repeat: no-repeat;
   background-size: contain;
-  margin: 0 auto 48px auto;
 }
 
 .ReportBlankSlate__diagramIllustrations {
   list-style: none;
   display: inline-block;
-  margin: 0 auto 36px auto;
+  margin: 0;
   padding: 0;
 }
 
