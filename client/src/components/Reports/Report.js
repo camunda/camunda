@@ -1,7 +1,7 @@
 import React from 'react';
 import moment from 'moment';
 import {Link, Redirect} from 'react-router-dom';
-import {Button, Modal, Input, ShareEntity, ReportView, Popover} from 'components';
+import {Button, Modal, Input, ShareEntity, ReportView, Popover, Icon} from 'components';
 
 import {
   loadSingleReport,
@@ -227,6 +227,7 @@ export default class Report extends React.Component {
               disabled={!this.state.name}
               onClick={this.save}
             >
+              <Icon type="check" />
               Save
             </Link>
             <Link
@@ -234,6 +235,7 @@ export default class Report extends React.Component {
               to={`/report/${this.id}`}
               onClick={this.cancel}
             >
+              <Icon type="stop" />
               Cancel
             </Link>
           </div>
@@ -264,15 +266,23 @@ export default class Report extends React.Component {
               className="Report__tool-button Report__edit-button"
               to={`/report/${this.id}/edit`}
             >
-              <Button>Edit</Button>
+              <Button>
+                <Icon type="edit" />
+                Edit
+              </Button>
             </Link>
             <Button
               className="Report__tool-button Report__delete-button"
               onClick={this.showDeleteModal}
             >
+              <Icon type="delete" />
               Delete
             </Button>
-            <Popover className="Report__tool-button Report__share-button" title="Share">
+            <Popover
+              className="Report__tool-button Report__share-button"
+              icon="share"
+              title="Share"
+            >
               <ShareEntity
                 type="report"
                 resourceId={this.id}
@@ -286,7 +296,10 @@ export default class Report extends React.Component {
                 className="Report__tool-button Report__csv-download-button"
                 href={this.constructCSVDownloadLink()}
               >
-                <Button>Download CSV</Button>
+                <Button>
+                  <Icon type="save" />
+                  Download CSV
+                </Button>
               </a>
             )}
           </div>

@@ -77,15 +77,15 @@ class EntityList extends React.Component {
 
       if (this.props.operations.includes('delete')) {
         entry.push({
-          content: 'Delete',
+          content: 'delete',
           onClick: this.showDeleteModal({id, name}),
           props: {type: 'small'},
-          className: 'EntityList__deleteButton'
+          className: 'EntityList__deleteIcon'
         });
       }
       if (this.props.operations.includes('edit')) {
         entry.push({
-          content: 'Edit',
+          content: 'edit',
           link: `/${this.props.api}/${id}/edit`,
           className: 'EntityList__editLink'
         });
@@ -135,16 +135,28 @@ class EntityList extends React.Component {
     if (cell.link) {
       return (
         <Link to={cell.link} className={cell.className}>
-          {cell.content}
+          {cell.content === 'edit' ? (
+            <Icon
+              {...cell.props}
+              onClick={cell.onClick}
+              className={cell.className}
+              type={cell.content}
+            />
+          ) : (
+            cell.content
+          )}
         </Link>
       );
     }
 
     if (cell.onClick) {
       return (
-        <Button {...cell.props} onClick={cell.onClick} className={cell.className}>
-          {cell.content}
-        </Button>
+        <Icon
+          {...cell.props}
+          onClick={cell.onClick}
+          className={cell.className}
+          type={cell.content}
+        />
       );
     }
   };
@@ -209,7 +221,7 @@ class EntityList extends React.Component {
                       key={idx}
                       className={classnames('EntityList__data', {
                         'EntityList__data--tool':
-                          cell.content === 'Edit' || cell.content === 'Delete',
+                          cell.content === 'edit' || cell.content === 'delete',
                         'EntityList__data--title': idx === 0,
                         'EntityList__data--metadata': idx === 1,
                         'EntityList__data--icons': idx === 2

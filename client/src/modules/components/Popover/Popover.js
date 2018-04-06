@@ -1,7 +1,7 @@
 import React from 'react';
 import classnames from 'classnames';
 
-import {Button} from 'components';
+import {Button, Icon} from 'components';
 
 import './Popover.css';
 
@@ -115,6 +115,7 @@ export default class Popover extends React.Component {
           reference={this.storeButtonRef}
           className="Popover__button"
         >
+          {this.props.icon ? <Icon type={this.props.icon} /> : ''}
           {this.props.title}
         </Button>
         {this.state.open && this.createOverlay()}

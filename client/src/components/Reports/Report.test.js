@@ -36,7 +36,8 @@ jest.mock('components', () => {
       />
     ),
     ShareEntity: () => <div />,
-    ReportView: () => <div>ReportView</div>
+    ReportView: () => <div>ReportView</div>,
+    Icon: ({type}) => <div>{type}</div>
   };
 });
 

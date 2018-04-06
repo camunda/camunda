@@ -160,7 +160,7 @@ it('should display all operations per default', () => {
   });
 
   expect(node.find('.EntityList__createButton')).toBePresent();
-  expect(node.find('.EntityList__deleteButton')).toBePresent();
+  expect(node.find('.EntityList__deleteIcon')).toBePresent();
   expect(node.find('.EntityList__editLink')).toBePresent();
 });
 
@@ -174,7 +174,7 @@ it('should not display any operations if none are specified', () => {
   });
 
   expect(node.find('.EntityList__createButton')).not.toBePresent();
-  expect(node).not.toIncludeText('EntityList__deleteButton');
+  expect(node).not.toIncludeText('EntityList__deleteIcon');
   expect(node).not.toIncludeText('EntityList__editLink');
 });
 
@@ -212,7 +212,7 @@ it('should display a delete button if specified', () => {
     data: [sampleEntity]
   });
 
-  expect(node.find('.EntityList__deleteButton')).toBePresent();
+  expect(node.find('.EntityList__deleteIcon')).toBePresent();
 });
 
 it('should be able to sort by date', async () => {
@@ -249,7 +249,7 @@ it('should open deletion modal on delete button click', () => {
     data: [sampleEntity]
   });
 
-  node.find('.EntityList__deleteButton button').simulate('click');
+  node.find('.EntityList__deleteIcon').simulate('click');
 
   expect(node.find('.EntityList__delete-modal')).toBePresent();
 });

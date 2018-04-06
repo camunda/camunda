@@ -209,6 +209,7 @@ export default class Dashboard extends React.Component {
               to={`/dashboard/${this.id}`}
               onClick={this.saveChanges.bind(this)}
             >
+              <Icon type="check" />
               Save
             </Link>
             <Link
@@ -216,6 +217,7 @@ export default class Dashboard extends React.Component {
               to={`/dashboard/${this.id}`}
               onClick={this.cancelChanges}
             >
+              <Icon type="stop" />
               Cancel
             </Link>
           </div>
@@ -278,15 +280,23 @@ export default class Dashboard extends React.Component {
                     to={`/dashboard/${this.id}/edit`}
                     onClick={this.setAutorefresh(null)}
                   >
-                    <Button>Edit</Button>
+                    <Button>
+                      <Icon type="edit" />
+                      Edit
+                    </Button>
                   </Link>
                   <Button
                     onClick={this.showDeleteModal}
                     className="Dashboard__tool-button Dashboard__delete-button"
                   >
+                    <Icon type="delete" />
                     Delete
                   </Button>
-                  <Popover className="Dashboard__tool-button Dashboard__share-button" title="Share">
+                  <Popover
+                    className="Dashboard__tool-button Dashboard__share-button"
+                    icon="share"
+                    title="Share"
+                  >
                     <ShareEntity
                       type="dashboard"
                       resourceId={this.id}
