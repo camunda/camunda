@@ -160,7 +160,7 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
     public void notifyRaftStateListeners()
     {
         // only propagate state changes if the member is joined
-        // otherwise members are already visible even if the joinRequest request was never accepted
+        // otherwise members are already visible even if the join request was never accepted
         if (configurationController.isJoined())
         {
             raftStateListeners.forEach(this::notifyRaftStateListener);
@@ -351,11 +351,6 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
         {
             if (state != leaderState)
             {
-                // we should not do any election, since we leaving the cluster anyway
-                // and we will get no heartbeats after the leader applies the new config
-                electionTimer.cancel();
-
-                // TODO I think it is not necessary to use submit here
                 configurationController.leave(leaveFuture);
             }
             else

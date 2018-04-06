@@ -56,7 +56,7 @@ public interface RaftPersistentStorage
 
 
     /**
-     * Add a new member to the members list.
+     * Remove a member from the members list.
      */
     RaftPersistentStorage removeMember(SocketAddress member);
 

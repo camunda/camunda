@@ -82,8 +82,8 @@ public abstract class AbstractRaftState
             else
             {
                 Loggers.RAFT_LOGGER.debug("Reject poll, because have no heart beat timeout.");
+                rejectVoteRequest(serverOutput, remoteAddress, requestId);
             }
-
         }
         else
         {
@@ -110,6 +110,7 @@ public abstract class AbstractRaftState
             else
             {
                 Loggers.RAFT_LOGGER.debug("Reject poll, because have no heart beat timeout.");
+                rejectVoteRequest(serverOutput, remoteAddress, requestId);
             }
         }
         else

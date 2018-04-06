@@ -52,7 +52,7 @@ public class RaftProtocolMessageTest
         raft = raft2.getRaft();
         logStream = raft2.getLogStream();
 
-        // wait for raft 2 to joinRequest raft group in term 1 as follower
+        // wait for raft 2 to join raft group in term 1 as follower
         waitUntil(() -> raft.getTerm() == 1);
 
         // freeze state by not calling doWork() on raft nodes anymore
