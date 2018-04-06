@@ -25,7 +25,7 @@ The record above descibes that the total size on bytes of partition `0` of topic
 
 ## Configuring Metrics
 
-Metrics can be configured in the [confiuration file](operations/the-zeebecfgtoml-file.html#Metrics).
+Metrics can be configured in the [configuration file](operations/the-zeebecfgtoml-file.html#Metrics).
 
 ## Connecting Prometheus
 
