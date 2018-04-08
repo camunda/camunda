@@ -16,16 +16,17 @@
 package io.zeebe.raft.state;
 
 import io.zeebe.logstreams.impl.LoggedEventImpl;
-import io.zeebe.raft.BufferedLogStorageAppender;
 import io.zeebe.raft.Raft;
 import io.zeebe.raft.protocol.AppendRequest;
+import io.zeebe.util.sched.ActorControl;
+import io.zeebe.util.sched.ActorPriority;
+import io.zeebe.util.sched.SchedulingHints;
 
 public class FollowerState extends AbstractRaftState
 {
-
-    public FollowerState(final Raft raft, final BufferedLogStorageAppender appender)
+    public FollowerState(Raft raft, ActorControl raftActor)
     {
-        super(raft, appender);
+        super(raft, raftActor);
     }
 
     @Override
@@ -35,9 +36,23 @@ public class FollowerState extends AbstractRaftState
     }
 
     @Override
+    protected void onEnterState()
+    {
+        super.onEnterState();
+        raftActor.setSchedulingHints(SchedulingHints.ioBound((short) 0));
+    }
+
+    @Override
+    protected void onLeaveState()
+    {
+        raftActor.setSchedulingHints(SchedulingHints.cpuBound(ActorPriority.REGULAR));
+        super.onLeaveState();
+    }
+
+    @Override
     public void appendRequest(final AppendRequest appendRequest)
     {
-        raft.updateLastHeartBeatTime();
+        heartbeat.updateLastHeartbeat();
         raft.mayStepDown(appendRequest);
 
         final long previousEventPosition = appendRequest.getPreviousEventPosition();
@@ -46,9 +61,14 @@ public class FollowerState extends AbstractRaftState
 
         if (raft.isTermCurrent(appendRequest))
         {
-            if (appender.isLastEvent(previousEventPosition, previousEventTerm))
+            final boolean lastEvent = appender.isLastEvent(previousEventPosition, previousEventTerm);
+            if (lastEvent)
             {
                 appender.appendEvent(appendRequest, event);
+
+                // if there are no more append requests immediately available,
+                // flush now and send the ack immediately
+                appender.flushAndAck();
             }
             else
             {

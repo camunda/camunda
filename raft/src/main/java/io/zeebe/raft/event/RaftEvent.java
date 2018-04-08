@@ -15,6 +15,8 @@
  */
 package io.zeebe.raft.event;
 
+import java.util.List;
+
 import io.zeebe.logstreams.log.LogStreamWriter;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.msgpack.value.ValueArray;
@@ -25,7 +27,6 @@ import io.zeebe.raft.RaftMember;
 
 public class RaftEvent
 {
-
     public final LogStreamWriter logStreamWriter = new LogStreamWriterImpl();
     public final BrokerEventMetadata metadata = new BrokerEventMetadata();
     public final RaftConfigurationEvent configuration = new RaftConfigurationEvent();
@@ -41,7 +42,6 @@ public class RaftEvent
 
     public long tryWrite(final Raft raft)
     {
-
         logStreamWriter.wrap(raft.getLogStream());
 
         metadata.reset().eventType(EventType.RAFT_EVENT);
@@ -53,17 +53,16 @@ public class RaftEvent
         // add self also to configuration
         configurationMembers.add().setSocketAddress(raft.getSocketAddress());
 
-        for (final RaftMember member : raft.getMembers())
+        final List<RaftMember> memberList = raft.getRaftMembers().getMemberList();
+        for (final RaftMember member : memberList)
         {
             configurationMembers.add().setSocketAddress(member.getRemoteAddress().getAddress());
         }
 
-        return
-            logStreamWriter
-                .positionAsKey()
-                .metadataWriter(metadata)
-                .valueWriter(configuration)
-                .tryWrite();
+        return logStreamWriter
+            .positionAsKey()
+            .metadataWriter(metadata)
+            .valueWriter(configuration)
+            .tryWrite();
     }
-
 }

@@ -15,6 +15,7 @@
  */
 package io.zeebe.raft.util;
 
+import static io.zeebe.raft.RaftServiceNames.raftServiceName;
 import static io.zeebe.raft.state.RaftState.LEADER;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
@@ -26,26 +27,31 @@ import static org.mockito.Mockito.*;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import io.zeebe.dispatcher.*;
 import io.zeebe.logstreams.LogStreams;
+import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
 import io.zeebe.logstreams.log.*;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.raft.*;
+import io.zeebe.raft.Loggers;
 import io.zeebe.raft.controller.MemberReplicateLogController;
 import io.zeebe.raft.event.RaftConfigurationEvent;
 import io.zeebe.raft.event.RaftConfigurationEventMember;
 import io.zeebe.raft.state.RaftState;
+import io.zeebe.servicecontainer.ServiceContainer;
+import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.*;
+import io.zeebe.util.LogUtil;
 import io.zeebe.util.sched.ActorControl;
+import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.channel.OneToOneRingBufferChannel;
-import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
-import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
@@ -56,11 +62,10 @@ import org.mockito.stubbing.Answer;
 
 public class RaftRule extends ExternalResource implements RaftStateListener
 {
-
     public static final FragmentHandler NOOP_FRAGMENT_HANDLER = (buffer, offset, length, streamId, isMarkedFailed) -> FragmentHandler.CONSUME_FRAGMENT_RESULT;
 
-    protected final ActorSchedulerRule actorSchedulerRule;
-    protected final ServiceContainerRule serviceContainerRule;
+    protected final ServiceContainer serviceContainer;
+    protected final ActorScheduler actorScheduler;
     protected final RaftConfiguration configuration;
     protected final SocketAddress socketAddress;
     protected final String topicName;
@@ -88,17 +93,17 @@ public class RaftRule extends ExternalResource implements RaftStateListener
 
     protected final List<RaftState> raftStateChanges = new ArrayList<>();
     protected Set<Integer> interrupedStreams = Collections.synchronizedSet(new HashSet<>());
+    private ServiceName<Raft> raftServiceName;
 
-
-    public RaftRule(final ActorSchedulerRule actorSchedulerRule, final ServiceContainerRule serviceContainerRule, final String host, final int port, final String topicName, final int partition, final RaftRule... members)
+    public RaftRule(final ServiceContainerRule serviceContainerRule, final String host, final int port, final String topicName, final int partition, final RaftRule... members)
     {
-        this(actorSchedulerRule, serviceContainerRule, new RaftConfiguration(), host, port, topicName, partition, members);
+        this(serviceContainerRule, new RaftConfiguration(), host, port, topicName, partition, members);
     }
 
-    public RaftRule(final ActorSchedulerRule actorSchedulerRule, final ServiceContainerRule serviceContainerRule, final RaftConfiguration configuration, final String host, final int port, final String topicName, final int partition, final RaftRule... members)
+    public RaftRule(final ServiceContainerRule serviceContainerRule, final RaftConfiguration configuration, final String host, final int port, final String topicName, final int partition, final RaftRule... members)
     {
-        this.actorSchedulerRule = actorSchedulerRule;
-        this.serviceContainerRule = serviceContainerRule;
+        this.actorScheduler = serviceContainerRule.getActorScheduler();
+        this.serviceContainer = serviceContainerRule.get();
         this.configuration = configuration;
         this.socketAddress = new SocketAddress(host, port);
 
@@ -111,6 +116,7 @@ public class RaftRule extends ExternalResource implements RaftStateListener
     protected void before() throws Throwable
     {
         final String name = socketAddress.toString();
+        final String logName = String.format("%s-%d-%d", topicName, partition, socketAddress.port());
 
         final RaftApiMessageHandler raftApiMessageHandler = new RaftApiMessageHandler();
 
@@ -118,36 +124,36 @@ public class RaftRule extends ExternalResource implements RaftStateListener
             Dispatchers.create("serverSendBuffer-" + name)
                        .bufferSize(32 * 1024 * 1024)
                        .subscriptions("sender-" + name)
-                       .actorScheduler(actorSchedulerRule.get())
+                       .actorScheduler(actorScheduler)
                        .build();
 
         serverTransport =
             Transports.newServerTransport()
                       .sendBuffer(serverSendBuffer)
                       .bindAddress(socketAddress.toInetSocketAddress())
-                      .scheduler(actorSchedulerRule.get())
+                      .scheduler(actorScheduler)
                       .build(raftApiMessageHandler, raftApiMessageHandler);
 
         clientSendBuffer =
             Dispatchers.create("clientSendBuffer-" + name)
                        .bufferSize(32 * 1024 * 1024)
                        .subscriptions("sender-" + name)
-                       .actorScheduler(actorSchedulerRule.get())
+                       .actorScheduler(actorScheduler)
                        .build();
 
         clientTransport =
             Transports.newClientTransport()
                       .sendBuffer(clientSendBuffer)
                       .requestPoolSize(128)
-                      .scheduler(actorSchedulerRule.get())
+                      .scheduler(actorScheduler)
                       .build();
 
         logStream =
             LogStreams.createFsLogStream(wrapString(topicName), partition)
-                      .logName(String.format("%s-%d-%s", topicName, partition, socketAddress))
+                      .logName(logName)
                       .deleteOnClose(true)
                       .logDirectory(Files.createTempDirectory("raft-test-" + socketAddress.port() + "-").toString())
-                      .serviceContainer(serviceContainerRule.get())
+                      .serviceContainer(serviceContainer)
                       .build()
                       .join();
 
@@ -177,7 +183,7 @@ public class RaftRule extends ExternalResource implements RaftStateListener
             }
         }).when(spyClientOutput).sendMessage(any(TransportMessage.class));
 
-        raft = new Raft(actorSchedulerRule.get(), configuration, socketAddress, logStream, spyClientTransport, persistentStorage, messageBuffer, this)
+        raft = new Raft(logName, configuration, socketAddress, spyClientTransport, persistentStorage, messageBuffer, this)
         {
             @Override
             protected void onActorStarting()
@@ -187,21 +193,24 @@ public class RaftRule extends ExternalResource implements RaftStateListener
             }
         };
         raftApiMessageHandler.registerRaft(raft);
-        raft.addMembers(members.stream().map(RaftRule::getSocketAddress).collect(Collectors.toList()));
+        raft.addMembersWhenJoined(members.stream().map(RaftRule::getSocketAddress).collect(Collectors.toList()));
 
         uncommittedReader = new BufferedLogStreamReader(logStream, true);
         committedReader = new BufferedLogStreamReader(logStream, false);
 
-        schedule();
+        raftServiceName = raftServiceName(name);
+        serviceContainer.createService(raftServiceName, raft)
+            .dependency(LogStreamServiceNames.logStreamServiceName(logName), raft.getLogStreamInjector())
+            .install()
+            .join();
     }
 
     @Override
     protected void after()
     {
-        final ActorFuture<Void> close = raft.close();
-
-        while (!close.isDone())
+        if (serviceContainer.hasService(raftServiceName))
         {
+            closeRaft();
         }
 
         logStream.close();
@@ -216,9 +225,9 @@ public class RaftRule extends ExternalResource implements RaftStateListener
         committedReader.close();
     }
 
-    public void schedule()
+    public void closeRaft()
     {
-        actorSchedulerRule.get().submitActor(raft);
+        LogUtil.catchAndLog(Loggers.RAFT_LOGGER, () -> serviceContainer.removeService(raftServiceName).get(5, TimeUnit.SECONDS));
     }
 
     public SocketAddress getSocketAddress()
@@ -257,11 +266,16 @@ public class RaftRule extends ExternalResource implements RaftStateListener
     }
 
     @Override
-    public void onStateChange(final int partitionId, DirectBuffer topicName, final SocketAddress socketAddress, final RaftState raftState)
+    public void onStateChange(Raft raft, RaftState raftState)
     {
+        final int partitionId = raft.getPartitionId();
+        final DirectBuffer topicName = raft.getTopicName();
+        final SocketAddress socketAddress = raft.getSocketAddress();
+
         assertThat(partitionId).isEqualTo(raft.getLogStream().getPartitionId());
         assertThat(topicName).isEqualByComparingTo(raft.getLogStream().getTopicName());
         assertThat(socketAddress).isEqualTo(raft.getSocketAddress());
+
         raftStateChanges.add(raftState);
     }
 
@@ -285,12 +299,16 @@ public class RaftRule extends ExternalResource implements RaftStateListener
         return getState() == LEADER;
     }
 
-    public long writeEvent(final String message)
+    public boolean isJoined()
     {
+        return raft.isJoined();
+    }
 
-        final long[] writtenPosition = new long[1];
-
+    public EventInfo writeEvent(final String message)
+    {
         writer.wrap(logStream);
+
+        final EventInfo[] eventInfo = new EventInfo[1];
 
         final DirectBuffer value = wrapString(message);
 
@@ -299,7 +317,7 @@ public class RaftRule extends ExternalResource implements RaftStateListener
                 {
                     if (position != null && position >= 0)
                     {
-                        writtenPosition[0] = position;
+                        eventInfo[0] = new EventInfo(position, raft.getTerm(), message);
                         return true;
                     }
                     else
@@ -308,41 +326,39 @@ public class RaftRule extends ExternalResource implements RaftStateListener
                     }
                 }, "Failed to write event with message {}", message);
 
-        return writtenPosition[0];
+        return eventInfo[0];
     }
 
-    public long writeEvents(final String... messages)
+    public EventInfo writeEvents(final String... messages)
     {
-        long position = 0;
+        EventInfo eventInfo = null;
 
         for (final String message : messages)
         {
-            position = writeEvent(message);
+            eventInfo = writeEvent(message);
         }
 
-        return position;
+        return eventInfo;
     }
 
-    public boolean eventAppended(final long position, final int term, final String message)
+    public boolean eventAppended(final EventInfo eventInfo)
     {
-        uncommittedReader.seek(position);
+        uncommittedReader.seek(eventInfo.getPosition());
 
         if (uncommittedReader.hasNext())
         {
-            final LoggedEvent event = uncommittedReader.next();
-            final String value = bufferAsString(event.getValueBuffer(), event.getValueOffset(), event.getValueLength());
-
-            return event.getPosition() == position && event.getRaftTerm() == term && message.equals(value);
+            final EventInfo event = new EventInfo(uncommittedReader.next());
+            return event.equals(eventInfo);
         }
 
         return false;
     }
 
-    public boolean eventCommitted(final long position, final int term, final String message)
+    public boolean eventCommitted(final EventInfo eventInfo)
     {
-        final boolean isCommitted = logStream.getCommitPosition() >= position;
+        final boolean isCommitted = logStream.getCommitPosition() >= eventInfo.getPosition();
 
-        return isCommitted && eventAppended(position, term, message);
+        return isCommitted && eventAppended(eventInfo);
     }
 
     public boolean eventsCommitted(final String... messages)

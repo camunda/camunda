@@ -15,7 +15,12 @@
  */
 package io.zeebe.raft;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.List;
+
 import io.zeebe.raft.state.RaftState;
+import io.zeebe.raft.util.EventInfo;
 import io.zeebe.raft.util.RaftClusterRule;
 import io.zeebe.raft.util.RaftRule;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
@@ -23,20 +28,16 @@ import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 public class RaftSingleNodeTest
 {
     public ActorSchedulerRule actorScheduler = new ActorSchedulerRule();
-    public ServiceContainerRule serviceContainerRule = new ServiceContainerRule(actorScheduler);
 
-    public RaftRule raft1 = new RaftRule(actorScheduler, serviceContainerRule, "localhost", 8001, "default", 0);
+    public ServiceContainerRule serviceContainer = new ServiceContainerRule(actorScheduler);
+
+    public RaftRule raft1 = new RaftRule(serviceContainer, "localhost", 8001, "default", 0);
 
     @Rule
-    public RaftClusterRule cluster = new RaftClusterRule(actorScheduler, serviceContainerRule, raft1);
+    public RaftClusterRule cluster = new RaftClusterRule(actorScheduler, serviceContainer, raft1);
 
     @Test
     public void shouldJoinCluster()
@@ -48,35 +49,21 @@ public class RaftSingleNodeTest
         cluster.awaitInitialEventCommittedOnAll(leader.getTerm());
 
         final List<RaftState> raftStateChanges = leader.getRaftStateChanges();
-        assertThat(raftStateChanges).containsExactly(RaftState.FOLLOWER, RaftState.CANDIDATE, RaftState.LEADER);
+        assertThat(raftStateChanges).contains(RaftState.LEADER);
     }
 
-
-    @Test
-    public void shouldNotLeaveCluster()
-    {
-        // given
-        final RaftRule leader = cluster.awaitLeader();
-        cluster.awaitInitialEventCommittedOnAll(leader.getTerm());
-
-        // expect
-        assertThatThrownBy(() -> leader.getRaft().leave().join())
-            .hasMessage("Can't leave as leader.")
-            .hasCauseInstanceOf(UnsupportedOperationException.class);
-    }
 
     @Test
     public void shouldCommitEntries()
     {
         // given
         final RaftRule leader = cluster.awaitLeader();
-        cluster.awaitLogControllerOpen(leader);
 
         // when
-        final long position = leader.writeEvents("foo", "bar", "end");
+        final EventInfo eventInfo = leader.writeEvents("foo", "bar", "end");
 
         // then
-        cluster.awaitEventCommittedOnAll(position, leader.getTerm(), "end");
+        cluster.awaitEventCommittedOnAll(eventInfo);
         cluster.awaitEventsCommittedOnAll("foo", "bar", "end");
     }
 

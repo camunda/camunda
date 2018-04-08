@@ -70,5 +70,4 @@ public class RaftConfigurationEventMember extends UnpackedObject
         socketAddress.port(getPort());
         return socketAddress;
     }
-
 }

@@ -15,20 +15,10 @@
  */
 package io.zeebe.raft;
 
-import java.util.Collection;
-
-import io.zeebe.raft.state.RaftState;
-import io.zeebe.transport.SocketAddress;
-
-public interface RaftStateListener
+public class RaftMath
 {
-    default void onStateChange(Raft raft, RaftState raftState)
+    public static int getRequiredQuorum(int membersize)
     {
-
-    }
-
-    default void onMembersChanged(Raft raft, Collection<SocketAddress> addresses)
-    {
-
+        return Math.floorDiv(membersize, 2) + 1;
     }
 }

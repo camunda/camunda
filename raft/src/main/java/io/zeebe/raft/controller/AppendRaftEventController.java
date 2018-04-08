@@ -55,6 +55,12 @@ public class AppendRaftEventController
         this.actorCondition = actor.onCondition("raft-event-commited", this::commited);
     }
 
+    public void close()
+    {
+        raft.getLogStream().removeOnCommitPositionUpdatedCondition(actorCondition);
+        actorCondition.cancel();
+    }
+
     public void appendEvent(final ServerOutput serverOutput, final RemoteAddress remoteAddress, final long requestId)
     {
         // this has to happen immediately so multiple membership request are not accepted

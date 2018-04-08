@@ -28,16 +28,16 @@ import io.zeebe.raft.Raft;
 import io.zeebe.raft.RaftMember;
 import io.zeebe.raft.backpressure.BackpressureHelper;
 import io.zeebe.raft.protocol.AppendRequest;
+import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.*;
 import io.zeebe.util.sched.*;
 import io.zeebe.util.sched.clock.ActorClock;
-import io.zeebe.util.sched.future.ActorFuture;
 import org.slf4j.Logger;
 
 /**
  * Per-follower replication controller
  */
-public class MemberReplicateLogController extends Actor
+public class MemberReplicateLogController extends Actor implements Service<Void>
 {
     /**
      * TODO: remove constant, follower should tell us on join or other request
@@ -70,8 +70,11 @@ public class MemberReplicateLogController extends Actor
     private ActorCondition appenderCondition;
     private final String name;
 
+    private RaftMember member;
+
     public MemberReplicateLogController(Raft raft, RaftMember member, ClientTransport clientTransport)
     {
+        this.member = member;
         this.remoteAddress = member.getRemoteAddress();
         this.name = String.format("raft-repl-%s-%s", raft.getName(), remoteAddress.toString());
 
@@ -88,14 +91,23 @@ public class MemberReplicateLogController extends Actor
         return name;
     }
 
-    public ActorFuture<Void> close()
+    @Override
+    public void start(ServiceStartContext startContext)
     {
-        return actor.close();
+        startContext.async(startContext.getScheduler().submitActor(this, true));
+    }
+
+    @Override
+    public void stop(ServiceStopContext stopContext)
+    {
+        stopContext.async(actor.close());
     }
 
     @Override
     protected void onActorStarted()
     {
+        member.setReplicationController(this);
+
         if (IS_TRACE_ENABLED)
         {
             LOG.trace("started");
@@ -111,6 +123,8 @@ public class MemberReplicateLogController extends Actor
     @Override
     protected void onActorClosing()
     {
+        member.setReplicationController(null);
+
         raft.getLogStream().removeOnCommitPositionUpdatedCondition(appenderCondition);
     }
 
@@ -377,8 +391,9 @@ public class MemberReplicateLogController extends Actor
         }
     }
 
-    private boolean hasNextEvent()
+    @Override
+    public Void get()
     {
-        return bufferedEvent != null || reader.hasNext();
+        return null;
     }
 }

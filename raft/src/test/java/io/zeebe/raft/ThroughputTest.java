@@ -17,8 +17,7 @@ package io.zeebe.raft;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 import java.util.concurrent.locks.LockSupport;
 
 import io.zeebe.logstreams.log.*;
@@ -121,6 +120,7 @@ public class ThroughputTest
             raft1.close();
             raft2.close();
             raft3.close();
+            serviceContainer.close(5000, TimeUnit.SECONDS);
             scheduler.stop().get();
         }
     }

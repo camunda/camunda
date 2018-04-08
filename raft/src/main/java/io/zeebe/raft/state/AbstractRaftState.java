@@ -17,18 +17,28 @@ package io.zeebe.raft.state;
 
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.raft.BufferedLogStorageAppender;
-import io.zeebe.raft.Loggers;
-import io.zeebe.raft.Raft;
+import io.zeebe.raft.*;
 import io.zeebe.raft.protocol.*;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.ServerOutput;
+import io.zeebe.util.sched.ActorControl;
+import io.zeebe.util.sched.channel.ChannelSubscription;
+import io.zeebe.util.sched.channel.ConcurrentQueueChannel;
+import io.zeebe.util.sched.channel.OneToOneRingBufferChannel;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.MessageHandler;
 
-public abstract class AbstractRaftState
+public abstract class AbstractRaftState implements Service<AbstractRaftState>, MessageHandler
 {
     protected final Raft raft;
+    protected final ActorControl raftActor;
     protected final BufferedLogStorageAppender appender;
     protected final LogStream logStream;
+    protected final Heartbeat heartbeat;
+    protected RaftMembers raftMembers;
 
     protected final ConfigurationResponse configurationResponse = new ConfigurationResponse();
     protected final PollResponse pollResponse = new PollResponse();
@@ -36,27 +46,117 @@ public abstract class AbstractRaftState
 
     protected final AppendResponse appendResponse = new AppendResponse();
 
+    protected final ConfigurationRequest configurationRequest = new ConfigurationRequest();
+    protected final PollRequest pollRequest = new PollRequest();
+    protected final VoteRequest voteRequest = new VoteRequest();
+    protected final AppendRequest appendRequest = new AppendRequest();
+
     protected final BufferedLogStreamReader reader;
 
-    public AbstractRaftState(final Raft raft, final BufferedLogStorageAppender appender)
+    protected final ConcurrentQueueChannel<IncomingRaftRequest> requestQueue;
+    protected ChannelSubscription requestQueueSubscription;
+
+    protected final OneToOneRingBufferChannel messageBuffer;
+    protected ChannelSubscription messageBufferSubscription;
+
+    public AbstractRaftState(final Raft raft, ActorControl raftActor)
     {
         this.raft = raft;
+        this.raftActor = raftActor;
+        this.requestQueue = raft.getRequestQueue();
+        this.messageBuffer = raft.getMessageReceiveBuffer();
         this.logStream = raft.getLogStream();
-        this.appender = appender;
+        this.appender = new BufferedLogStorageAppender(raft);
+        this.heartbeat = raft.getHeartbeat();
+        this.raftMembers = raft.getRaftMembers();
 
         reader = new BufferedLogStreamReader(logStream, true);
+
+        reset();
+    }
+
+    public void reset()
+    {
+        this.appender.reset();
+    }
+
+    @Override
+    public final void start(ServiceStartContext startContext)
+    {
+        startContext.async(raftActor.call(this::onEnterState));
+    }
+
+    @Override
+    public final void stop(ServiceStopContext stopContext)
+    {
+        stopContext.async(raftActor.call(this::onLeaveState));
+    }
+
+    protected void onEnterState()
+    {
+        requestQueueSubscription = raftActor.consume(requestQueue, this::consumeRequest);
+        messageBufferSubscription = raftActor.consume(messageBuffer, this::consumeMessage);
+    }
+
+    protected void onLeaveState()
+    {
+        requestQueueSubscription.cancel();
+        messageBufferSubscription.cancel();
+        reader.close();
+        appender.close();
+    }
+
+    private void consumeRequest()
+    {
+        final IncomingRaftRequest request = requestQueue.poll();
+
+        if (request != null)
+        {
+            final ServerOutput output = request.getOutput();
+            final RemoteAddress remoteAddress = request.getRemoteAddress();
+            final long requestId = request.getRequestId();
+            final MutableDirectBuffer requestData = request.getRequestData();
+            final int length = requestData.capacity();
+
+            if (configurationRequest.tryWrap(requestData, 0, length))
+            {
+                configurationRequest(output, remoteAddress, requestId, configurationRequest);
+            }
+            else if (pollRequest.tryWrap(requestData, 0, length))
+            {
+                pollRequest(output, remoteAddress, requestId, pollRequest);
+            }
+            else if (voteRequest.tryWrap(requestData, 0, length))
+            {
+                voteRequest(output, remoteAddress, requestId, voteRequest);
+            }
+        }
+    }
+
+    protected void consumeMessage()
+    {
+        messageBuffer.read(this, 1);
+    }
+
+    @Override
+    public void onMessage(int msgTypeId, MutableDirectBuffer buffer, int index, int length)
+    {
+        if (appendRequest.tryWrap(buffer, index, length))
+        {
+            appendRequest(appendRequest);
+        }
+        else if (appendResponse.tryWrap(buffer, index, length))
+        {
+            appendResponse(appendResponse);
+        }
     }
 
     public abstract RaftState getState();
 
-    public void reset()
+    @Override
+    public AbstractRaftState get()
     {
-        appender.reset();
-    }
-
-    public void close()
-    {
-        reader.close();
+        return this;
     }
 
     public void configurationRequest(final ServerOutput serverOutput, final RemoteAddress remoteAddress, final long requestId, final ConfigurationRequest configurationRequest)
@@ -74,7 +174,7 @@ public abstract class AbstractRaftState
 
         if (granted)
         {
-            if (raft.shouldElect())
+            if (heartbeat.shouldElect())
             {
                 Loggers.RAFT_LOGGER.debug("accept poll request");
                 acceptPollRequest(serverOutput, remoteAddress, requestId);
@@ -82,7 +182,6 @@ public abstract class AbstractRaftState
             else
             {
                 Loggers.RAFT_LOGGER.debug("Reject poll, because have no heart beat timeout.");
-                rejectVoteRequest(serverOutput, remoteAddress, requestId);
             }
         }
         else
@@ -98,11 +197,11 @@ public abstract class AbstractRaftState
         final boolean granted = raft.isTermCurrent(voteRequest) &&
             raft.canVoteFor(voteRequest) &&
             appender.isAfterOrEqualsLastEvent(voteRequest.getLastEventPosition(), voteRequest.getLastEventTerm()) &&
-            raft.shouldElect();
+            heartbeat.shouldElect();
 
         if (granted)
         {
-            if (raft.shouldElect())
+            if (heartbeat.shouldElect())
             {
                 raft.setVotedFor(voteRequest.getSocketAddress());
                 acceptVoteRequest(serverOutput, remoteAddress, requestId);
@@ -110,7 +209,6 @@ public abstract class AbstractRaftState
             else
             {
                 Loggers.RAFT_LOGGER.debug("Reject poll, because have no heart beat timeout.");
-                rejectVoteRequest(serverOutput, remoteAddress, requestId);
             }
         }
         else
@@ -119,14 +217,14 @@ public abstract class AbstractRaftState
         }
     }
 
-    public void appendRequest(final AppendRequest appendRequest)
+    protected void appendRequest(final AppendRequest appendRequest)
     {
         Loggers.RAFT_LOGGER.debug("Got Append request in leader state ");
         raft.mayStepDown(appendRequest);
         rejectAppendRequest(appendRequest, appendRequest.getPreviousEventPosition());
     }
 
-    public void appendResponse(final AppendResponse appendResponse)
+    protected void appendResponse(final AppendResponse appendResponse)
     {
         raft.mayStepDown(appendResponse);
     }
@@ -201,5 +299,4 @@ public abstract class AbstractRaftState
 
         raft.sendMessage(hasSocketAddress.getSocketAddress(), appendResponse);
     }
-
 }

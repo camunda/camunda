@@ -15,6 +15,9 @@
  */
 package io.zeebe.raft.protocol;
 
+import static io.zeebe.test.util.BufferWriterUtil.writeAndRead;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
 import io.zeebe.logstreams.impl.LoggedEventImpl;
 import io.zeebe.logstreams.log.LogStream;
@@ -26,24 +29,18 @@ import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.agrona.BitUtil;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-
-import static io.zeebe.test.util.BufferWriterUtil.writeAndRead;
-import static io.zeebe.test.util.TestUtil.waitUntil;
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.*;
 
 public class RaftProtocolMessageTest
 {
     public static ActorSchedulerRule actorScheduler = new ActorSchedulerRule();
-    public static ServiceContainerRule serviceContainerRule = new ServiceContainerRule(actorScheduler);
+    public static ServiceContainerRule serviceContainer = new ServiceContainerRule(actorScheduler);
 
-    public static RaftRule raft1 = new RaftRule(actorScheduler, serviceContainerRule, "localhost", 8001, "test", 123);
-    public static RaftRule raft2 = new RaftRule(actorScheduler, serviceContainerRule, "localhost", 8002, "test", 123, raft1);
+    public static RaftRule raft1 = new RaftRule(serviceContainer, "localhost", 8001, "test", 123);
+    public static RaftRule raft2 = new RaftRule(serviceContainer, "localhost", 8002, "test", 123, raft1);
 
     @ClassRule
-    public static RaftClusterRule cluster = new RaftClusterRule(actorScheduler, serviceContainerRule, raft1, raft2);
+    public static RaftClusterRule cluster = new RaftClusterRule(actorScheduler, serviceContainer, raft1, raft2);
 
     public static Raft raft;
     public static LogStream logStream;
@@ -55,7 +52,7 @@ public class RaftProtocolMessageTest
         logStream = raft2.getLogStream();
 
         // wait for raft 2 to join raft group in term 1 as follower
-        waitUntil(() -> raft.getTerm() == 1);
+        cluster.awaitAllJoined();
 
         // freeze state by not calling doWork() on raft nodes anymore
         cluster.removeRafts(raft1, raft2);

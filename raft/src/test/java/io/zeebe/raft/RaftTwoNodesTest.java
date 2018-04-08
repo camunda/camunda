@@ -15,25 +15,24 @@
  */
 package io.zeebe.raft;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.List;
+
 import io.zeebe.raft.state.RaftState;
-import io.zeebe.raft.util.RaftClusterRule;
-import io.zeebe.raft.util.RaftRule;
+import io.zeebe.raft.util.*;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class RaftTwoNodesTest
 {
     public ActorSchedulerRule actorScheduler = new ActorSchedulerRule();
     public ServiceContainerRule serviceContainerRule = new ServiceContainerRule(actorScheduler);
 
-    public RaftRule raft1 = new RaftRule(actorScheduler, serviceContainerRule, "localhost", 8001, "default", 0);
-    public RaftRule raft2 = new RaftRule(actorScheduler, serviceContainerRule, "localhost", 8002, "default", 0, raft1);
+    public RaftRule raft1 = new RaftRule(serviceContainerRule, "localhost", 8001, "default", 0);
+    public RaftRule raft2 = new RaftRule(serviceContainerRule, "localhost", 8002, "default", 0, raft1);
 
     @Rule
     public RaftClusterRule cluster = new RaftClusterRule(actorScheduler, serviceContainerRule, raft1, raft2);
@@ -50,7 +49,7 @@ public class RaftTwoNodesTest
         cluster.awaitRaftEventCommittedOnAll(leader.getTerm());
 
         final List<RaftState> raftStateChanges = leader.getRaftStateChanges();
-        assertThat(raftStateChanges).containsExactly(RaftState.FOLLOWER, RaftState.CANDIDATE, RaftState.LEADER);
+        assertThat(raftStateChanges).contains(RaftState.LEADER);
     }
 
     @Test
@@ -63,35 +62,34 @@ public class RaftTwoNodesTest
 
         // when
         final RaftRule[] otherRafts = cluster.getOtherRafts(leader);
-        final Raft otherRaft = otherRafts[0].getRaft();
-        otherRaft.leave().join();
+        final RaftRule otherRaft = otherRafts[0];
+        otherRaft.closeRaft();
 
         // then
         cluster.awaitRaftEventCommittedOnAll(leader.getTerm());
 
-        assertThat(leader.getRaft().getMemberSize()).isEqualTo(cluster.getRafts().size() - 2);
-        assertThat(otherRaft.getMemberSize()).isEqualTo(cluster.getRafts().size() - 1);
-        assertThat(otherRaft.isJoined()).isFalse();
+        assertThat(leader.getRaft().getMemberSize()).isEqualTo(0);
     }
 
     @Test
-    public void shouldReplicateAfterNodeLeavesCluster()
+    public void shouldCommitAfterNodeLeavesCluster()
     {
         // given
         final RaftRule leader = cluster.awaitLeader();
         cluster.awaitInitialEventCommittedOnAll(leader.getTerm());
         cluster.awaitRaftEventCommittedOnAll(leader.getTerm(), raft1, raft2);
+
         final RaftRule[] otherRafts = cluster.getOtherRafts(leader);
-        final Raft otherRaft = otherRafts[0].getRaft();
-        otherRaft.leave().join();
+        final RaftRule otherRaft = otherRafts[0];
+        otherRaft.closeRaft();
         cluster.awaitRaftEventCommittedOnAll(leader.getTerm());
 
         // when
-        final long position = leader.writeEvents("foo", "bar", "end");
+        final EventInfo eventInfo = leader.writeEvents("foo", "bar", "end");
 
         // then we have single node cluster
         cluster.getRafts().remove(otherRafts[0]);
-        cluster.awaitEventCommittedOnAll(position, leader.getTerm(), "end");
+        cluster.awaitEventCommittedOnAll(eventInfo);
         cluster.awaitEventsCommittedOnAll("foo", "bar", "end");
     }
 
@@ -100,13 +98,12 @@ public class RaftTwoNodesTest
     {
         // given
         final RaftRule leader = cluster.awaitLeader();
-        cluster.awaitLogControllerOpen(leader);
 
         // when
-        final long position = leader.writeEvents("foo", "bar", "end");
+        final EventInfo eventInfo = leader.writeEvents("foo", "bar", "end");
 
         // then
-        cluster.awaitEventCommittedOnAll(position, leader.getTerm(), "end");
+        cluster.awaitEventCommittedOnAll(eventInfo);
         cluster.awaitEventsCommittedOnAll("foo", "bar", "end");
     }
 
@@ -124,6 +121,9 @@ public class RaftTwoNodesTest
         // then
         final RaftRule follower = cluster.getRafts().get(0);
         assertThat(follower.getState()).isEqualTo(RaftState.FOLLOWER);
+
+        // bring back old leader so that we can leave without timeout
+        cluster.registerRaft(oldLeader);
     }
 
 }

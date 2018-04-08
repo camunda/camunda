@@ -13,22 +13,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.raft;
+package io.zeebe.raft.controller;
 
-import java.util.Collection;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.servicecontainer.*;
 
-import io.zeebe.raft.state.RaftState;
-import io.zeebe.transport.SocketAddress;
-
-public interface RaftStateListener
+public class LeaderOpenLogStreamAppenderService implements Service<Void>
 {
-    default void onStateChange(Raft raft, RaftState raftState)
-    {
+    private final LogStream logStream;
 
+    public LeaderOpenLogStreamAppenderService(LogStream logStream)
+    {
+        this.logStream = logStream;
     }
 
-    default void onMembersChanged(Raft raft, Collection<SocketAddress> addresses)
+    @Override
+    public void start(ServiceStartContext startContext)
     {
-
+        startContext.async(logStream.openAppender());
     }
+
+    @Override
+    public void stop(ServiceStopContext stopContext)
+    {
+        stopContext.async(logStream.closeAppender());
+    }
+
+    @Override
+    public Void get()
+    {
+        return null;
+    }
+
 }

@@ -15,19 +15,16 @@
  */
 package io.zeebe.raft.protocol;
 
-import io.zeebe.raft.BooleanType;
-import io.zeebe.raft.ConfigurationResponseDecoder;
-import io.zeebe.raft.ConfigurationResponseEncoder;
-import io.zeebe.raft.Raft;
-import io.zeebe.transport.SocketAddress;
-import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
+import static io.zeebe.raft.ConfigurationResponseEncoder.termNullValue;
+import static io.zeebe.raft.ConfigurationResponseEncoder.MembersEncoder.*;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static io.zeebe.raft.ConfigurationResponseEncoder.MembersEncoder.*;
-import static io.zeebe.raft.ConfigurationResponseEncoder.termNullValue;
+import io.zeebe.raft.*;
+import io.zeebe.transport.SocketAddress;
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 
 public class ConfigurationResponse extends AbstractRaftMessage implements HasTerm
 {
@@ -106,10 +103,12 @@ public class ConfigurationResponse extends AbstractRaftMessage implements HasTer
     {
         term = raft.getTerm();
         writeMembers.add(raft.getSocketAddress());
-        for (int i = 0; i < raft.getMemberSize(); i++)
+
+        final List<RaftMember> memberList = raft.getRaftMembers().getMemberList();
+        memberList.forEach((m) ->
         {
-            writeMembers.add(raft.getMember(i).getRemoteAddress().getAddress());
-        }
+            writeMembers.add(m.getRemoteAddress().getAddress());
+        });
 
         return this;
     }

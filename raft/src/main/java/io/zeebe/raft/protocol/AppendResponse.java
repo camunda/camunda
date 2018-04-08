@@ -18,10 +18,7 @@ package io.zeebe.raft.protocol;
 import static io.zeebe.raft.AppendResponseEncoder.*;
 
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.raft.AppendResponseDecoder;
-import io.zeebe.raft.AppendResponseEncoder;
-import io.zeebe.raft.BooleanType;
-import io.zeebe.raft.Raft;
+import io.zeebe.raft.*;
 import io.zeebe.transport.SocketAddress;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;

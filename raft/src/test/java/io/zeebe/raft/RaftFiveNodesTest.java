@@ -15,33 +15,31 @@
  */
 package io.zeebe.raft;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.List;
+
 import io.zeebe.raft.state.RaftState;
+import io.zeebe.raft.util.EventInfo;
 import io.zeebe.raft.util.RaftClusterRule;
 import io.zeebe.raft.util.RaftRule;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
-import org.junit.Rule;
-import org.junit.Test;
-
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.*;
 
 public class RaftFiveNodesTest
 {
-
     public ActorSchedulerRule actorScheduler = new ActorSchedulerRule();
     public ServiceContainerRule serviceContainerRule = new ServiceContainerRule(actorScheduler);
 
-    public RaftRule raft1 = new RaftRule(actorScheduler, serviceContainerRule, "localhost", 8001, "default", 0);
-    public RaftRule raft2 = new RaftRule(actorScheduler, serviceContainerRule, "localhost", 8002, "default", 0, raft1);
-    public RaftRule raft3 = new RaftRule(actorScheduler, serviceContainerRule, "localhost", 8003, "default", 0, raft2);
-    public RaftRule raft4 = new RaftRule(actorScheduler, serviceContainerRule, "localhost", 8004, "default", 0, raft2, raft3);
-    public RaftRule raft5 = new RaftRule(actorScheduler, serviceContainerRule, "localhost", 8005, "default", 0, raft3);
+    public RaftRule raft1 = new RaftRule(serviceContainerRule, "localhost", 8001, "default", 0);
+    public RaftRule raft2 = new RaftRule(serviceContainerRule, "localhost", 8002, "default", 0, raft1);
+    public RaftRule raft3 = new RaftRule(serviceContainerRule, "localhost", 8003, "default", 0, raft2);
+    public RaftRule raft4 = new RaftRule(serviceContainerRule, "localhost", 8004, "default", 0, raft2, raft3);
+    public RaftRule raft5 = new RaftRule(serviceContainerRule, "localhost", 8005, "default", 0, raft3);
 
     @Rule
     public RaftClusterRule cluster = new RaftClusterRule(actorScheduler, serviceContainerRule, raft1, raft2, raft3, raft4, raft5);
-
 
     @Test
     public void shouldJoinCluster()
@@ -54,7 +52,7 @@ public class RaftFiveNodesTest
         cluster.awaitRaftEventCommittedOnAll(leader.getTerm());
 
         final List<RaftState> raftStateChanges = leader.getRaftStateChanges();
-        assertThat(raftStateChanges).containsExactly(RaftState.FOLLOWER, RaftState.CANDIDATE, RaftState.LEADER);
+        assertThat(raftStateChanges).contains(RaftState.LEADER);
     }
 
     @Test
@@ -67,67 +65,37 @@ public class RaftFiveNodesTest
 
         // when
         final RaftRule[] otherRafts = cluster.getOtherRafts(leader);
-        final Raft otherRaft = otherRafts[0].getRaft();
-        otherRaft.leave().join();
+        final RaftRule otherRaft = otherRafts[0];
+        otherRaft.closeRaft();
 
         // then
         cluster.awaitRaftEventCommittedOnAll(leader.getTerm());
-
-        assertThat(leader.getRaft().getMemberSize()).isEqualTo(cluster.getRafts().size() - 2);
-        assertThat(otherRaft.getMemberSize()).isEqualTo(cluster.getRafts().size() - 1);
-        assertThat(otherRaft.isJoined()).isFalse();
+        assertThat(leader.getRaft().getMemberSize()).isEqualTo(3);
     }
 
     @Test
-    public void shouldReplicateAfterNodeLeavesCluster()
+    public void shouldCommitAfterNodeLeavesCluster()
     {
         // given
         final RaftRule leader = cluster.awaitLeader();
         cluster.awaitInitialEventCommittedOnAll(leader.getTerm());
         cluster.awaitRaftEventCommittedOnAll(leader.getTerm(), raft1, raft2, raft3, raft4, raft5);
         final RaftRule[] otherRafts = cluster.getOtherRafts(leader);
-        final Raft otherRaft = otherRafts[0].getRaft();
-        otherRaft.leave().join();
+        final RaftRule otherRaft = otherRafts[0];
+        otherRaft.closeRaft();
         cluster.awaitRaftEventCommittedOnAll(leader.getTerm());
 
         // when
-        final long position = leader.writeEvents("foo", "bar", "end");
+        final EventInfo eventInfo = leader.writeEvents("foo", "bar", "end");
 
         // then
         cluster.getRafts().remove(otherRafts[0]);
-        cluster.awaitEventCommittedOnAll(position, leader.getTerm(), "end");
+        cluster.awaitEventCommittedOnAll(eventInfo);
         cluster.awaitEventsCommittedOnAll("foo", "bar", "end");
     }
 
     @Test
-    public void shouldAdjustQuourumOnLeavingCluster()
-    {
-        // given
-        final RaftRule leader = cluster.awaitLeader();
-        cluster.awaitInitialEventCommittedOnAll(leader.getTerm());
-        cluster.awaitRaftEventCommittedOnAll(leader.getTerm(), raft1, raft2, raft3, raft4, raft5);
-
-        // when
-        final RaftRule[] otherRafts = cluster.getOtherRafts(leader);
-
-        final int quorum = leader.getRaft().requiredQuorum();
-        for (int i = 0; i < quorum; i++)
-        {
-            final Raft otherRaft = otherRafts[i].getRaft();
-            otherRaft.leave().join();
-        }
-
-        // then we have a two node cluster
-        cluster.awaitRaftEventCommittedOnAll(leader.getTerm());
-        assertThat(leader.getRaft().getMemberSize()).isEqualTo(1);
-        assertThat(leader.getRaft().requiredQuorum()).isEqualTo(2);
-
-        assertThat(otherRafts[3].getRaft().getMemberSize()).isEqualTo(1);
-        assertThat(otherRafts[3].getRaft().requiredQuorum()).isEqualTo(2);
-    }
-
-    @Test
-    public void shouldReplicateAfterOldQuorumLeavesClusterClean()
+    public void shouldCommitAfterOldQuorumLeavesClusterClean()
     {
         // given
         final RaftRule leader = cluster.awaitLeader();
@@ -138,16 +106,16 @@ public class RaftFiveNodesTest
         final int quorum = leader.getRaft().requiredQuorum();
         for (int i = 0; i < quorum; i++)
         {
-            final Raft otherRaft = otherRafts[i].getRaft();
-            otherRaft.leave().join();
-            cluster.getRafts().remove(otherRafts[i]);
+            final RaftRule raftRule = otherRafts[i];
+            raftRule.closeRaft();
+            cluster.getRafts().remove(raftRule);
         }
 
         // when
-        final long position = leader.writeEvents("foo", "bar", "end");
+        final EventInfo eventInfo = leader.writeEvents("foo", "bar", "end");
 
         // then
-        cluster.awaitEventCommittedOnAll(position, leader.getTerm(), "end");
+        cluster.awaitEventCommittedOnAll(eventInfo);
         cluster.awaitEventsCommittedOnAll("foo", "bar", "end");
     }
 
@@ -156,13 +124,12 @@ public class RaftFiveNodesTest
     {
         // given
         final RaftRule leader = cluster.awaitLeader();
-        cluster.awaitLogControllerOpen(leader);
 
         // when
-        final long position = leader.writeEvents("foo", "bar", "end");
+        final EventInfo eventInfo = leader.writeEvents("foo", "bar", "end");
 
         // then
-        cluster.awaitEventCommittedOnAll(position, leader.getTerm(), "end");
+        cluster.awaitEventCommittedOnAll(eventInfo);
         cluster.awaitEventsCommittedOnAll("foo", "bar", "end");
     }
 
@@ -183,11 +150,10 @@ public class RaftFiveNodesTest
             .isNotEqualTo(raft1);
 
         // when
-        cluster.awaitLogControllerOpen(newLeader);
-        final long position = newLeader.writeEvents("foo", "bar", "end");
+        final EventInfo eventInfo = newLeader.writeEvents("foo", "bar", "end");
 
         // then
-        cluster.awaitEventCommittedOnAll(position, newLeader.getTerm(), "end");
+        cluster.awaitEventCommittedOnAll(eventInfo);
         cluster.awaitEventsCommittedOnAll("foo", "bar", "end");
     }
 
@@ -196,26 +162,24 @@ public class RaftFiveNodesTest
     {
         // given
         final RaftRule oldLeader = cluster.awaitLeader();
-        cluster.awaitLogControllerOpen(oldLeader);
 
-        long position = oldLeader.writeEvents("foo", "bar");
-        cluster.awaitEventCommittedOnAll(position, oldLeader.getTerm(), "bar");
+        EventInfo eventInfo = oldLeader.writeEvents("foo", "bar");
+        cluster.awaitEventCommittedOnAll(eventInfo);
 
         // when leader leaves the cluster
         cluster.removeRaft(oldLeader);
 
         // and a new leader writes more events
         final RaftRule newLeader = cluster.awaitLeader();
-        cluster.awaitLogControllerOpen(newLeader);
 
-        position = newLeader.writeEvents("hello", "world");
-        cluster.awaitEventCommittedOnAll(position, newLeader.getTerm(), "world");
+        eventInfo = newLeader.writeEvents("hello", "world");
+        cluster.awaitEventCommittedOnAll(eventInfo);
 
         // and the old leader rejoins the cluster
         cluster.registerRaft(oldLeader);
 
         // then the new events are also committed on the old leader
-        cluster.awaitEventCommitted(oldLeader, position, newLeader.getTerm(), "world");
+        cluster.awaitEventCommitted(oldLeader, eventInfo);
         cluster.awaitEventsCommittedOnAll("foo", "bar", "hello", "world");
     }
 
@@ -224,11 +188,10 @@ public class RaftFiveNodesTest
     {
         // given a log with two events committed
         final RaftRule oldLeader = cluster.awaitLeader();
-        cluster.awaitLogControllerOpen(oldLeader);
         cluster.awaitRaftEventCommittedOnAll(oldLeader.getTerm());
 
-        long position = oldLeader.writeEvents("foo", "bar");
-        cluster.awaitEventCommittedOnAll(position, oldLeader.getTerm(), "bar");
+        EventInfo eventInfo = oldLeader.writeEvents("foo", "bar");
+        cluster.awaitEventCommittedOnAll(eventInfo);
         cluster.awaitRaftEventCommittedOnAll(oldLeader.getTerm());
 
         // when a quorum leaves the cluster
@@ -236,8 +199,8 @@ public class RaftFiveNodesTest
         cluster.removeRafts(otherRafts);
 
         // and more events are written
-        position = oldLeader.writeEvents("hello", "world");
-        cluster.awaitEventAppendedOnAll(position, oldLeader.getTerm(), "world");
+        eventInfo = oldLeader.writeEvents("hello", "world");
+        cluster.awaitEventAppendedOnAll(eventInfo);
 
         // and leader and remaining leaves cluster
         cluster.removeRafts(oldLeader);
@@ -247,17 +210,16 @@ public class RaftFiveNodesTest
 
         // and a new leader writes more events
         final RaftRule newLeader = cluster.awaitLeader();
-        cluster.awaitLogControllerOpen(newLeader);
 
-        position = newLeader.writeEvents("oh", "boy");
-        cluster.awaitEventCommittedOnAll(position, newLeader.getTerm(), "boy");
+        eventInfo = newLeader.writeEvents("oh", "boy");
+        cluster.awaitEventCommittedOnAll(eventInfo);
 
         // and the nodes with the extended older log rejoins the cluster
         cluster.registerRaft(oldLeader);
 
         // then the new events are also committed on the returning nodes discarding there uncommitted events
         cluster.awaitInitialEventCommittedOnAll(newLeader.getTerm());
-        cluster.awaitEventCommittedOnAll(position, newLeader.getTerm(), "boy");
+        cluster.awaitEventCommittedOnAll(eventInfo);
         cluster.awaitEventsCommittedOnAll("foo", "bar", "oh", "boy");
     }
 

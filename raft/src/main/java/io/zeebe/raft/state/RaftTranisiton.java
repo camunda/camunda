@@ -13,22 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.raft;
+package io.zeebe.raft.state;
 
-import java.util.Collection;
-
-import io.zeebe.raft.state.RaftState;
-import io.zeebe.transport.SocketAddress;
-
-public interface RaftStateListener
+public enum RaftTranisiton
 {
-    default void onStateChange(Raft raft, RaftState raftState)
-    {
-
-    }
-
-    default void onMembersChanged(Raft raft, Collection<SocketAddress> addresses)
-    {
-
-    }
+    TO_FOLLOWER,
+    TO_CANDIDATE,
+    TO_LEADER
 }

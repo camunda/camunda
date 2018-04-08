@@ -181,7 +181,7 @@ public class BufferedLogStorageAppender
                 {
                     // update configuration
                     event.readValue(configuration);
-                    raft.setMembers(configuration.members());
+                    raft.replaceMembersOnConfigurationChange(configuration.members());
                 }
             }
             else
@@ -210,7 +210,7 @@ public class BufferedLogStorageAppender
         final long previousEventPosition = appendRequest.getPreviousEventPosition();
         final int previousEventTerm = appendRequest.getPreviousEventTerm();
 
-        if (previousEventPosition >= lastBufferedPosition || raft.isLogStorageAppenderOpen())
+        if (previousEventPosition >= lastBufferedPosition)
         {
             // event is either after our last position or the log stream controller
             // is still appendEvent, which does not allow to truncate the log

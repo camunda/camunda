@@ -21,7 +21,7 @@ public class RaftConfiguration
 {
     protected int heartbeatIntervalMs = 250;
     protected int electionIntervalMs = 1000;
-    protected int flushIntervalMs = 10;
+    protected int leaveTimeoutMs = 1000;
 
     public int getHeartbeatIntervalMs()
     {
@@ -50,28 +50,21 @@ public class RaftConfiguration
         return this;
     }
 
-    public int getFlushIntervalMs()
+    public int getLeaveTimeoutMs()
     {
-        return flushIntervalMs;
+        return leaveTimeoutMs;
     }
 
-    public Duration getFlushInterval()
+    public RaftConfiguration setLeaveTimeoutMs(int leaveTimeoutMs)
     {
-        return Duration.ofMillis(flushIntervalMs);
-    }
-
-    public RaftConfiguration setFlushIntervalMs(final int flushIntervalMs)
-    {
-        this.flushIntervalMs = flushIntervalMs;
+        this.leaveTimeoutMs = leaveTimeoutMs;
         return this;
     }
-
 
     @Override
     public String toString()
     {
         return "RaftConfiguration{" + "heartbeatIntervalMs=" + heartbeatIntervalMs +
-            ", electionIntervalMs=" + electionIntervalMs +
-            ", getFlushIntervalMs=" + flushIntervalMs + '}';
+            ", electionIntervalMs=" + electionIntervalMs + '}';
     }
 }

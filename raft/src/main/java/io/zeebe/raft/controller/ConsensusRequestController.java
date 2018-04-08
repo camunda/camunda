@@ -19,6 +19,7 @@ import static io.zeebe.raft.PollRequestEncoder.lastEventPositionNullValue;
 import static io.zeebe.raft.PollRequestEncoder.lastEventTermNullValue;
 
 import java.time.Duration;
+import java.util.List;
 
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
@@ -38,6 +39,8 @@ public class ConsensusRequestController
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
 
     private final Raft raft;
+    private final RaftMembers raftMembers;
+
     private BufferedLogStreamReader reader;
 
     private final ConsensusRequestHandler consensusRequestHandler;
@@ -50,6 +53,7 @@ public class ConsensusRequestController
     {
         this.actor = actorControl;
         this.raft = raft;
+        raftMembers = raft.getRaftMembers();
         this.consensusRequestHandler = consensusRequestHandler;
     }
 
@@ -85,7 +89,7 @@ public class ConsensusRequestController
         // always vote for yourself
         granted = 1;
         final String requestName = consensusRequestHandler.requestName();
-        final int memberSize = raft.getMemberSize();
+        final int memberSize = raftMembers.getMemberSize();
         final CompletableActorFuture<Void> grantedFuture = new CompletableActorFuture<>();
 
         if (memberSize == 0)
@@ -117,10 +121,12 @@ public class ConsensusRequestController
 
     private void sendRequestToMembers(BufferWriter pollRequest, String requestName, int memberSize, CompletableActorFuture<Void> grantedFuture)
     {
+        final List<RaftMember> memberList = raftMembers.getMemberList();
+
         pendingRequests = memberSize;
         for (int i = 0; i < memberSize; i++)
         {
-            final RaftMember member = raft.getMember(i);
+            final RaftMember member = memberList.get(i);
 
             final ActorFuture<ClientResponse> clientRequestActorFuture =
                 raft.sendRequest(member.getRemoteAddress(), pollRequest, REQUEST_TIMEOUT);

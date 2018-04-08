@@ -15,7 +15,7 @@
  */
 package io.zeebe.raft;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.raft.backpressure.EventSizesByPosition;
 import org.junit.Before;

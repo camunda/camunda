@@ -36,9 +36,9 @@ public class VoteRequestHandler implements ConsensusRequestHandler
     public BufferWriter createRequest(final Raft raft, final long lastEventPosition, final int lastTerm)
     {
         return voteRequest.reset()
-                          .setRaft(raft)
-                          .setLastEventPosition(lastEventPosition)
-                          .setLastEventTerm(lastTerm);
+            .setRaft(raft)
+            .setLastEventPosition(lastEventPosition)
+            .setLastEventTerm(lastTerm);
     }
 
     @Override
@@ -50,22 +50,22 @@ public class VoteRequestHandler implements ConsensusRequestHandler
     }
 
     @Override
-    public void reset()
-    {
-        voteRequest.reset();
-        voteResponse.reset();
-    }
-
-    @Override
     public void consensusGranted(final Raft raft)
     {
-        raft.becomeLeader();
+        raft.becomeLeader(raft.getTerm());
     }
 
     @Override
     public void consensusFailed(final Raft raft)
     {
-        raft.becomeFollower();
+        raft.becomeFollower(raft.getTerm());
+    }
+
+    @Override
+    public void reset()
+    {
+        voteRequest.reset();
+        voteResponse.reset();
     }
 
 }

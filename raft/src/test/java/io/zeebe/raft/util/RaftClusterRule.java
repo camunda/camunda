@@ -15,9 +15,14 @@
  */
 package io.zeebe.raft.util;
 
-import io.zeebe.logstreams.log.BufferedLogStreamReader;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LoggedEvent;
+import static io.zeebe.protocol.clientapi.EventType.NOOP_EVENT;
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
+
+import java.util.*;
+import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
+
+import io.zeebe.logstreams.log.*;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.raft.Loggers;
@@ -31,13 +36,6 @@ import org.junit.runners.model.Statement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
-import java.util.function.BooleanSupplier;
-import java.util.function.Supplier;
-
-import static io.zeebe.protocol.clientapi.EventType.NOOP_EVENT;
-import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
-
 public class RaftClusterRule implements TestRule
 {
 
@@ -50,13 +48,13 @@ public class RaftClusterRule implements TestRule
     protected final BrokerEventMetadata metadata = new BrokerEventMetadata();
 
     private final ActorSchedulerRule actorScheduler;
-    private final ServiceContainerRule serviceContainer;
+    private final ServiceContainerRule serviceContainerRule;
     private final List<RaftRule> rafts;
 
-    public RaftClusterRule(final ActorSchedulerRule actorScheduler, final ServiceContainerRule serviceContainerRule, final RaftRule... rafts)
+    public RaftClusterRule(final ActorSchedulerRule actorScheduler, ServiceContainerRule serviceContainerRule, final RaftRule... rafts)
     {
         this.actorScheduler = actorScheduler;
-        this.serviceContainer = serviceContainerRule;
+        this.serviceContainerRule = serviceContainerRule;
         this.rafts = rafts != null ? new ArrayList<>(Arrays.asList(rafts)) : Collections.emptyList();
     }
 
@@ -65,7 +63,7 @@ public class RaftClusterRule implements TestRule
     {
         final List<TestRule> rules = new ArrayList<>();
         rules.add(actorScheduler);
-        rules.add(serviceContainer);
+        rules.add(serviceContainerRule);
         rules.addAll(rafts);
         Collections.reverse(rules);
 
@@ -156,21 +154,22 @@ public class RaftClusterRule implements TestRule
         awaitCondition(() -> raft.getState() == state, "Failed to wait for %s to become %s", raft, state);
     }
 
-    public void awaitLogControllerOpen(final RaftRule raft)
+    public void awaitAllJoined()
     {
-        awaitCondition(() -> raft.getLogStream().getLogStorageAppender() != null, "Failed to wait for %s to appendEvent log stream controller", raft);
+        awaitCondition(() -> rafts.stream().allMatch(RaftRule::isJoined), ALL_COMMITTED_RETRIES,
+            "Failed to wait for all rafts to join");
     }
 
-    public void awaitEventCommitted(final RaftRule raftToWait, final long position, final int term, final String message)
+    public void awaitEventCommitted(final RaftRule raftToWait, final EventInfo eventInfo)
     {
-        awaitCondition(() -> raftToWait.eventCommitted(position, term, message), COMMITTED_RETRIES,
-            "Failed to wait for commit of event %d/%d with message on raft %s", position, term, message, raftToWait);
+        awaitCondition(() -> raftToWait.eventCommitted(eventInfo), COMMITTED_RETRIES,
+            "Failed to wait for commit of event %s with message on raft %s", eventInfo, raftToWait);
     }
 
-    public void awaitEventCommittedOnAll(final long position, final int term, final String message)
+    public void awaitEventCommittedOnAll(final EventInfo eventInfo)
     {
-        awaitCondition(() -> rafts.stream().allMatch(raft -> raft.eventCommitted(position, term, message)), ALL_COMMITTED_RETRIES,
-            "Failed to wait for commit of event %d/%d with message on all rafts", position, term, message);
+        awaitCondition(() -> rafts.stream().allMatch(raft -> raft.eventCommitted(eventInfo)), ALL_COMMITTED_RETRIES,
+            "Failed to wait for commit of event %s with message on all rafts", eventInfo);
     }
 
     public void awaitEventsCommittedOnAll(final String... messages)
@@ -179,10 +178,10 @@ public class RaftClusterRule implements TestRule
             "Failed to wait for events %s to be commit on all rafts", Arrays.asList(messages));
     }
 
-    public void awaitEventAppendedOnAll(final long position, final int term, final String message)
+    public void awaitEventAppendedOnAll(final EventInfo eventInfo)
     {
-        awaitCondition(() -> rafts.stream().allMatch(raft -> raft.eventAppended(position, term, message)), ALL_COMMITTED_RETRIES,
-            "Failed to wait for commit of event %d/%d with message on all rafts", position, term, message);
+        awaitCondition(() -> rafts.stream().allMatch(raft -> raft.eventAppended(eventInfo)), ALL_COMMITTED_RETRIES,
+            "Failed to wait for commit of event %s with message on all rafts", eventInfo);
     }
 
     public void awaitInitialEventCommittedOnAll(final int term)
@@ -204,6 +203,9 @@ public class RaftClusterRule implements TestRule
 
     public RaftRule awaitLeader()
     {
+        // ensure that all members joined the cluster before continuing
+        awaitAllJoined();
+
         return awaitCondition(() -> rafts.stream().filter(RaftRule::isLeader).findAny(), ALL_COMMITTED_RETRIES,
             "Failed to wait for a node to become leader in the cluster");
     }

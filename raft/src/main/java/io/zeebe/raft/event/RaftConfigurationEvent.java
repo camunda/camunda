@@ -34,5 +34,4 @@ public class RaftConfigurationEvent extends UnpackedObject
     {
         return membersProp;
     }
-
 }
