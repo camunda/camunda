@@ -156,7 +156,7 @@ public class LeaderState extends AbstractRaftState
         // position is the next position which is written. This means in a single node cluster the log
         // already committed an event which will be written in the future. `- 1` is a hotfix for this.
         // see https://github.com/zeebe-io/zeebe/issues/501
-        positions[memberSize] = raft.getLogStream().getCurrentAppenderPosition() - 1;
+        positions[memberSize] = raft.getLogStream().getLogStorageAppender().getCurrentAppenderPosition() - 1;
 
         Arrays.sort(positions);
 
@@ -173,7 +173,7 @@ public class LeaderState extends AbstractRaftState
 
     private void commitPositionOnSingleNode()
     {
-        final long commitPosition = raft.getLogStream().getCurrentAppenderPosition() - 1;
+        final long commitPosition = raft.getLogStream().getLogStorageAppender().getCurrentAppenderPosition() - 1;
         final long initialEventPosition = raft.getInitialEventPosition();
 
         if (initialEventPosition >= 0 && commitPosition >= initialEventPosition && logStream.getCommitPosition() < commitPosition)

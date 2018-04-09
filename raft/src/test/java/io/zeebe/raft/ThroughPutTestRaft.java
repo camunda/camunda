@@ -32,6 +32,7 @@ import io.zeebe.raft.controller.MemberReplicateLogController;
 import io.zeebe.raft.event.RaftConfigurationEvent;
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.raft.util.InMemoryRaftPersistentStorage;
+import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.*;
 import io.zeebe.util.sched.ActorScheduler;
@@ -73,7 +74,7 @@ public class ThroughPutTestRaft implements RaftStateListener
         this.socketAddress = socketAddress;
     }
 
-    public void open(ActorScheduler scheduler) throws IOException
+    public void open(ActorScheduler scheduler, ServiceContainer serviceContainer) throws IOException
     {
         final RaftApiMessageHandler raftApiMessageHandler = new RaftApiMessageHandler();
 
@@ -105,12 +106,12 @@ public class ThroughPutTestRaft implements RaftStateListener
 
         logStream =
             LogStreams.createFsLogStream(wrapString(topicName), partition)
+                      .logName(String.format("%s-%d-%s", topicName, partition, socketAddress))
                       .deleteOnClose(true)
                       .logDirectory(Files.createTempDirectory("raft-test-" + socketAddress.port() + "-").toString())
-                      .actorScheduler(scheduler)
-                      .build();
-
-        logStream.open();
+                      .serviceContainer(serviceContainer)
+                      .build()
+                      .join();
 
         persistentStorage = new InMemoryRaftPersistentStorage(logStream);
         final OneToOneRingBufferChannel messageBuffer = new OneToOneRingBufferChannel(new UnsafeBuffer(new byte[(MemberReplicateLogController.REMOTE_BUFFER_SIZE) + RingBufferDescriptor.TRAILER_LENGTH]));

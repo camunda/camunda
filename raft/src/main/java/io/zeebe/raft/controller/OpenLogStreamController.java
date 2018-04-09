@@ -15,6 +15,7 @@
  */
 package io.zeebe.raft.controller;
 
+import io.zeebe.logstreams.impl.LogStorageAppender;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.raft.Loggers;
 import io.zeebe.raft.Raft;
@@ -60,9 +61,9 @@ public class OpenLogStreamController
         {
             final LogStream logStream = raft.getLogStream();
 
-            final ActorFuture<Void> future = logStream.openLogStreamController();
+            final ActorFuture<LogStorageAppender> future = logStream.openAppender();
 
-            actor.runOnCompletion(future, ((aVoid, throwable) ->
+            actor.runOnCompletion(future, ((appender, throwable) ->
             {
                 if (throwable == null)
                 {
@@ -124,7 +125,7 @@ public class OpenLogStreamController
         final CompletableActorFuture<Void> completableActorFuture = new CompletableActorFuture<>();
         final LogStream logStream = raft.getLogStream();
         logStream.removeOnCommitPositionUpdatedCondition(actorCondition);
-        actor.runOnCompletion(logStream.closeLogStreamController(), ((aVoid, throwable) ->
+        actor.runOnCompletion(logStream.closeAppender(), ((aVoid, throwable) ->
         {
             if (throwable != null)
             {

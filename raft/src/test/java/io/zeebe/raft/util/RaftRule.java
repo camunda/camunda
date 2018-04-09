@@ -38,6 +38,7 @@ import io.zeebe.raft.controller.MemberReplicateLogController;
 import io.zeebe.raft.event.RaftConfigurationEvent;
 import io.zeebe.raft.event.RaftConfigurationEventMember;
 import io.zeebe.raft.state.RaftState;
+import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.*;
 import io.zeebe.util.sched.ActorControl;
@@ -59,6 +60,7 @@ public class RaftRule extends ExternalResource implements RaftStateListener
     public static final FragmentHandler NOOP_FRAGMENT_HANDLER = (buffer, offset, length, streamId, isMarkedFailed) -> FragmentHandler.CONSUME_FRAGMENT_RESULT;
 
     protected final ActorSchedulerRule actorSchedulerRule;
+    protected final ServiceContainerRule serviceContainerRule;
     protected final RaftConfiguration configuration;
     protected final SocketAddress socketAddress;
     protected final String topicName;
@@ -87,14 +89,16 @@ public class RaftRule extends ExternalResource implements RaftStateListener
     protected final List<RaftState> raftStateChanges = new ArrayList<>();
     protected Set<Integer> interrupedStreams = Collections.synchronizedSet(new HashSet<>());
 
-    public RaftRule(final ActorSchedulerRule actorSchedulerRule, final String host, final int port, final String topicName, final int partition, final RaftRule... members)
+
+    public RaftRule(final ActorSchedulerRule actorSchedulerRule, final ServiceContainerRule serviceContainerRule, final String host, final int port, final String topicName, final int partition, final RaftRule... members)
     {
-        this(actorSchedulerRule, new RaftConfiguration(), host, port, topicName, partition, members);
+        this(actorSchedulerRule, serviceContainerRule, new RaftConfiguration(), host, port, topicName, partition, members);
     }
 
-    public RaftRule(final ActorSchedulerRule actorSchedulerRule, final RaftConfiguration configuration, final String host, final int port, final String topicName, final int partition, final RaftRule... members)
+    public RaftRule(final ActorSchedulerRule actorSchedulerRule, final ServiceContainerRule serviceContainerRule, final RaftConfiguration configuration, final String host, final int port, final String topicName, final int partition, final RaftRule... members)
     {
         this.actorSchedulerRule = actorSchedulerRule;
+        this.serviceContainerRule = serviceContainerRule;
         this.configuration = configuration;
         this.socketAddress = new SocketAddress(host, port);
 
@@ -140,12 +144,12 @@ public class RaftRule extends ExternalResource implements RaftStateListener
 
         logStream =
             LogStreams.createFsLogStream(wrapString(topicName), partition)
+                      .logName(String.format("%s-%d-%s", topicName, partition, socketAddress))
                       .deleteOnClose(true)
                       .logDirectory(Files.createTempDirectory("raft-test-" + socketAddress.port() + "-").toString())
-                      .actorScheduler(actorSchedulerRule.get())
-                      .build();
-
-        logStream.open();
+                      .serviceContainer(serviceContainerRule.get())
+                      .build()
+                      .join();
 
         persistentStorage = new InMemoryRaftPersistentStorage(logStream);
         final OneToOneRingBufferChannel messageBuffer = new OneToOneRingBufferChannel(new UnsafeBuffer(new byte[(MemberReplicateLogController.REMOTE_BUFFER_SIZE) + RingBufferDescriptor.TRAILER_LENGTH]));

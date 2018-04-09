@@ -64,7 +64,8 @@ public class ConfigurationController
             {
                 LOG.debug("Joined single node cluster.");
                 isJoined = true;
-            }, () -> {
+            }, () ->
+            {
                 isJoined = true;
                 // as this will not trigger a state change in raft we have to notify listeners
                 // that this raft is now in a visible state

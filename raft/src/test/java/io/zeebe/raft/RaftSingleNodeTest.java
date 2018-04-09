@@ -18,6 +18,7 @@ package io.zeebe.raft;
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.raft.util.RaftClusterRule;
 import io.zeebe.raft.util.RaftRule;
+import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -30,11 +31,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 public class RaftSingleNodeTest
 {
     public ActorSchedulerRule actorScheduler = new ActorSchedulerRule();
+    public ServiceContainerRule serviceContainerRule = new ServiceContainerRule(actorScheduler);
 
-    public RaftRule raft1 = new RaftRule(actorScheduler, "localhost", 8001, "default", 0);
+    public RaftRule raft1 = new RaftRule(actorScheduler, serviceContainerRule, "localhost", 8001, "default", 0);
 
     @Rule
-    public RaftClusterRule cluster = new RaftClusterRule(actorScheduler, raft1);
+    public RaftClusterRule cluster = new RaftClusterRule(actorScheduler, serviceContainerRule, raft1);
 
     @Test
     public void shouldJoinCluster()

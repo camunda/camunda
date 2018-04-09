@@ -22,6 +22,7 @@ import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.raft.Loggers;
 import io.zeebe.raft.state.RaftState;
+import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.junit.rules.TestRule;
@@ -49,11 +50,13 @@ public class RaftClusterRule implements TestRule
     protected final BrokerEventMetadata metadata = new BrokerEventMetadata();
 
     private final ActorSchedulerRule actorScheduler;
+    private final ServiceContainerRule serviceContainer;
     private final List<RaftRule> rafts;
 
-    public RaftClusterRule(final ActorSchedulerRule actorScheduler, final RaftRule... rafts)
+    public RaftClusterRule(final ActorSchedulerRule actorScheduler, final ServiceContainerRule serviceContainerRule, final RaftRule... rafts)
     {
         this.actorScheduler = actorScheduler;
+        this.serviceContainer = serviceContainerRule;
         this.rafts = rafts != null ? new ArrayList<>(Arrays.asList(rafts)) : Collections.emptyList();
     }
 
@@ -62,6 +65,7 @@ public class RaftClusterRule implements TestRule
     {
         final List<TestRule> rules = new ArrayList<>();
         rules.add(actorScheduler);
+        rules.add(serviceContainer);
         rules.addAll(rafts);
         Collections.reverse(rules);
 
@@ -154,7 +158,7 @@ public class RaftClusterRule implements TestRule
 
     public void awaitLogControllerOpen(final RaftRule raft)
     {
-        awaitCondition(() -> raft.getLogStream().getLogStreamController() != null, "Failed to wait for %s to appendEvent log stream controller", raft);
+        awaitCondition(() -> raft.getLogStream().getLogStorageAppender() != null, "Failed to wait for %s to appendEvent log stream controller", raft);
     }
 
     public void awaitEventCommitted(final RaftRule raftToWait, final long position, final int term, final String message)

@@ -21,6 +21,7 @@ import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.raft.Raft;
 import io.zeebe.raft.util.RaftClusterRule;
 import io.zeebe.raft.util.RaftRule;
+import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.agrona.BitUtil;
 import org.agrona.MutableDirectBuffer;
@@ -36,12 +37,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class RaftProtocolMessageTest
 {
     public static ActorSchedulerRule actorScheduler = new ActorSchedulerRule();
+    public static ServiceContainerRule serviceContainerRule = new ServiceContainerRule(actorScheduler);
 
-    public static RaftRule raft1 = new RaftRule(actorScheduler, "localhost", 8001, "test", 123);
-    public static RaftRule raft2 = new RaftRule(actorScheduler, "localhost", 8002, "test", 123, raft1);
+    public static RaftRule raft1 = new RaftRule(actorScheduler, serviceContainerRule, "localhost", 8001, "test", 123);
+    public static RaftRule raft2 = new RaftRule(actorScheduler, serviceContainerRule, "localhost", 8002, "test", 123, raft1);
 
     @ClassRule
-    public static RaftClusterRule cluster = new RaftClusterRule(actorScheduler, raft1, raft2);
+    public static RaftClusterRule cluster = new RaftClusterRule(actorScheduler, serviceContainerRule, raft1, raft2);
 
     public static Raft raft;
     public static LogStream logStream;
