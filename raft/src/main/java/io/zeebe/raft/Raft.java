@@ -233,8 +233,6 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
         pollController.close();
         voteController.close();
 
-        notifyRaftStateListeners();
-
         LOG.debug("Transitioned to leader in term {}", getTerm());
     }
 

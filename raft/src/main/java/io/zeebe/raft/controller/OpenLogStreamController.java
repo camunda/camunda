@@ -117,6 +117,7 @@ public class OpenLogStreamController
 
             isCommited = true;
             raft.getLogStream().removeOnCommitPositionUpdatedCondition(actorCondition);
+            raft.notifyRaftStateListeners();
         }
     }
 
