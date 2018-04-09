@@ -84,4 +84,10 @@ public class ActorConditionImpl implements ActorCondition, ActorSubscription
     {
         return "Condition " + conditionName;
     }
+
+    @Override
+    public void cancel()
+    {
+        task.onSubscriptionCancelled(this);
+    }
 }

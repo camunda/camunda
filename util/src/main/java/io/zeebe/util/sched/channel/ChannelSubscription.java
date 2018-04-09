@@ -13,15 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.util.sched;
+package io.zeebe.util.sched.channel;
 
-/**
- * condition variable for actors.
- */
-public interface ActorCondition
+public interface ChannelSubscription
 {
-    /** notify that the condition is met (true) */
-    void signal();
-
     void cancel();
 }

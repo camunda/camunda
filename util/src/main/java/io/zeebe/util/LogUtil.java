@@ -17,6 +17,7 @@ package io.zeebe.util;
 
 import java.util.Map;
 
+import org.slf4j.Logger;
 import org.slf4j.MDC;
 
 public class LogUtil
@@ -44,5 +45,36 @@ public class LogUtil
                 MDC.clear();
             }
         }
+    }
+
+    public static void catchAndLog(Logger log, String msg, ThrowingRunnable r)
+    {
+        try
+        {
+            r.run();
+        }
+        catch (Throwable e)
+        {
+            log.error(msg, e);
+        }
+    }
+
+    public static void catchAndLog(Logger log, ThrowingRunnable r)
+    {
+        try
+        {
+            r.run();
+        }
+        catch (Throwable e)
+        {
+            log.error(e.getMessage(), e);
+        }
+    }
+
+
+    @FunctionalInterface
+    public interface ThrowingRunnable
+    {
+        void run() throws Exception;
     }
 }

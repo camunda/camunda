@@ -16,8 +16,7 @@
 package io.zeebe.util.sched;
 
 import io.zeebe.util.sched.ActorTask.ActorLifecyclePhase;
-import io.zeebe.util.sched.channel.ChannelConsumerCondition;
-import io.zeebe.util.sched.channel.ConsumableChannel;
+import io.zeebe.util.sched.channel.*;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.AllCompletedFutureConsumer;
 import io.zeebe.util.sched.future.FirstSuccessfullyCompletedFutureConsumer;
@@ -63,7 +62,7 @@ public class ActorControl
      * @param channel
      * @param consumer
      */
-    public void consume(ConsumableChannel channel, Runnable consumer)
+    public ChannelSubscription consume(ConsumableChannel channel, Runnable consumer)
     {
         ensureCalledFromWithinActor("consume(...)");
 
@@ -76,6 +75,8 @@ public class ActorControl
         job.setSubscription(subscription);
 
         channel.registerConsumer(subscription);
+
+        return subscription;
     }
 
     public void pollBlocking(Runnable condition, Runnable action)

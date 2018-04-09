@@ -20,7 +20,7 @@ import static org.agrona.UnsafeAccess.UNSAFE;
 import io.zeebe.util.sched.*;
 
 @SuppressWarnings("restriction")
-public class ChannelConsumerCondition implements ActorCondition, ActorSubscription
+public class ChannelConsumerCondition implements ActorCondition, ActorSubscription, ChannelSubscription
 {
     private static final long TRIGGER_COUNT_OFFSET;
 
@@ -84,4 +84,10 @@ public class ChannelConsumerCondition implements ActorCondition, ActorSubscripti
         return true;
     }
 
+    @Override
+    public void cancel()
+    {
+        channel.removeConsumer(this);
+        task.onSubscriptionCancelled(this);
+    }
 }
