@@ -75,7 +75,7 @@ public class LogBlockIndexWriter extends Actor
      */
     private final float deviation;
 
-    private final CompleteEventsInBlockProcessor readResultProcessor = new CompleteEventsInBlockProcessor();
+    private final CompleteEventsInBlockProcessor completeEventsProcessor = new CompleteEventsInBlockProcessor();
 
     private long nextAddress = INVALID_ADDRESS;
 
@@ -218,15 +218,16 @@ public class LogBlockIndexWriter extends Actor
 
     private void readLogStorage()
     {
-        final long currentAddress = nextAddress;
+        ioBuffer.clear();
 
-        // read only complete events
-        final long result = logStorage.read(ioBuffer, currentAddress, readResultProcessor);
+        final long currentAddress = nextAddress;
+        final long result = logStorage.read(ioBuffer, currentAddress, completeEventsProcessor);
 
         if (result > currentAddress)
         {
             nextAddress = result;
-            addToCurrentBlock(currentAddress);
+
+            addToCurrentBlock(currentAddress, ioBuffer.position());
         }
         else if (result == OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY)
         {
@@ -242,7 +243,7 @@ public class LogBlockIndexWriter extends Actor
         }
     }
 
-    private void addToCurrentBlock(long currentAddress)
+    private void addToCurrentBlock(long currentAddress, int readBytes)
     {
         if (currentBlockAddress == INVALID_ADDRESS)
         {
@@ -250,7 +251,7 @@ public class LogBlockIndexWriter extends Actor
             currentBlockEventPosition = getPosition(buffer, 0);
         }
 
-        currentBlockSize += ioBuffer.position();
+        currentBlockSize += readBytes;
 
         if (currentBlockSize >= indexBlockSize)
         {
@@ -260,7 +261,6 @@ public class LogBlockIndexWriter extends Actor
         {
             // block is not filled enough
             // - read more events into buffer
-            ioBuffer.clear();
             runCurrentWork();
         }
     }
@@ -294,7 +294,7 @@ public class LogBlockIndexWriter extends Actor
 
     private boolean isCurrentBlockCommitted()
     {
-        return commitPosition.getVolatile() >= readResultProcessor.getLastReadEventPosition();
+        return commitPosition.getVolatile() >= completeEventsProcessor.getLastReadEventPosition();
     }
 
     private void resetCurrentBlock()
@@ -302,8 +302,6 @@ public class LogBlockIndexWriter extends Actor
         currentBlockAddress = INVALID_ADDRESS;
         currentBlockEventPosition = 0;
         currentBlockSize = 0;
-
-        ioBuffer.clear();
     }
 
     private void increaseBufferSize()

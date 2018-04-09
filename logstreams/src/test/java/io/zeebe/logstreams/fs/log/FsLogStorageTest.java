@@ -347,6 +347,22 @@ public class FsLogStorageTest
     }
 
     @Test
+    public void shouldNotReadBlockIfBufferHasNoRemainingCapacity()
+    {
+        final ByteBuffer readBuffer = ByteBuffer.allocate(MSG.length);
+        readBuffer.position(readBuffer.capacity());
+
+        fsLogStorage.open();
+
+        final long address = fsLogStorage.append(ByteBuffer.wrap(MSG));
+
+        final long result = fsLogStorage.read(readBuffer, address);
+
+        assertThat(result).isEqualTo(0);
+        assertThat(readBuffer.array()).isEqualTo(new byte[MSG.length]);
+    }
+
+    @Test
     public void shouldNotReadBlockIfNotOpen()
     {
         final ByteBuffer readBuffer = ByteBuffer.allocate(MSG.length);

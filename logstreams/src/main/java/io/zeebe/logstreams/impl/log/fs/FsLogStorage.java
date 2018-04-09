@@ -16,8 +16,7 @@
 package io.zeebe.logstreams.impl.log.fs;
 
 import static io.zeebe.dispatcher.impl.PositionUtil.*;
-import static io.zeebe.logstreams.impl.log.fs.FsLogSegment.END_OF_SEGMENT;
-import static io.zeebe.logstreams.impl.log.fs.FsLogSegment.NO_DATA;
+import static io.zeebe.logstreams.impl.log.fs.FsLogSegment.*;
 import static io.zeebe.logstreams.impl.log.fs.FsLogSegmentDescriptor.METADATA_LENGTH;
 import static io.zeebe.logstreams.impl.log.fs.FsLogSegmentDescriptor.SEGMENT_SIZE_OFFSET;
 import static io.zeebe.util.FileUtil.moveFile;
@@ -268,6 +267,11 @@ public class FsLogStorage implements LogStorage
             else if (readResult == NO_DATA)
             {
                 opStatus = OP_RESULT_NO_DATA;
+            }
+            else if (readResult == INSUFFICIENT_CAPACITY)
+            {
+                // read buffer has no remaining capacity
+                opStatus = 0L;
             }
         }
 

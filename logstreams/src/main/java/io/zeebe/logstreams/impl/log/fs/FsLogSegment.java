@@ -15,12 +15,7 @@
  */
 package io.zeebe.logstreams.impl.log.fs;
 
-import io.zeebe.logstreams.impl.Loggers;
-import io.zeebe.util.FileUtil;
-import org.agrona.IoUtil;
-import org.agrona.LangUtil;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.slf4j.Logger;
+import static io.zeebe.logstreams.impl.log.fs.FsLogSegmentDescriptor.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,7 +24,12 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
 
-import static io.zeebe.logstreams.impl.log.fs.FsLogSegmentDescriptor.*;
+import io.zeebe.logstreams.impl.Loggers;
+import io.zeebe.util.FileUtil;
+import org.agrona.IoUtil;
+import org.agrona.LangUtil;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.slf4j.Logger;
 
 public class FsLogSegment
 {
@@ -293,6 +293,10 @@ public class FsLogSegment
             else if (available == 0)
             {
                 opResult = isFilled() ? END_OF_SEGMENT : NO_DATA;
+            }
+            else if (bufferRemaining == 0)
+            {
+                opResult = INSUFFICIENT_CAPACITY;
             }
         }
 

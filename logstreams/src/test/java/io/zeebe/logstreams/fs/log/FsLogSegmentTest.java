@@ -15,9 +15,9 @@
  */
 package io.zeebe.logstreams.fs.log;
 
+import static io.zeebe.util.StringUtil.getBytes;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
-import static io.zeebe.util.StringUtil.getBytes;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,9 +28,7 @@ import java.util.Random;
 import io.zeebe.logstreams.impl.log.fs.FsLogSegment;
 import io.zeebe.logstreams.impl.log.fs.FsLogSegmentDescriptor;
 import io.zeebe.util.FileUtil;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 
@@ -233,6 +231,21 @@ public class FsLogSegmentTest
         final int result = fsLogSegment.readBytes(readBuffer, currentSize);
 
         assertThat(result).isEqualTo(FsLogSegment.END_OF_SEGMENT);
+    }
+
+    @Test
+    public void shouldNotReadBlockIfBufferHasNoRemainingCapacity()
+    {
+        fsLogSegment.allocate(1, CAPACITY);
+
+        final int offset = fsLogSegment.append(ByteBuffer.wrap(MSG));
+
+        final ByteBuffer readBuffer = ByteBuffer.allocate(MSG.length);
+        readBuffer.position(readBuffer.capacity());
+
+        final int result = fsLogSegment.readBytes(readBuffer, offset);
+
+        assertThat(result).isEqualTo(FsLogSegment.INSUFFICIENT_CAPACITY);
     }
 
     @Test
