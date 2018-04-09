@@ -10,6 +10,8 @@ import {
   loadProcessDefinitionXml
 } from './service';
 
+import {loadProcessDefinitions} from 'services';
+
 jest.mock('components', () => {
   const Modal = props => <div {...props}>{props.children}</div>;
   Modal.Header = props => <div>{props.children}</div>;
@@ -48,6 +50,12 @@ jest.mock('./service', () => {
     getReportData: jest.fn(),
     saveReport: jest.fn(),
     loadProcessDefinitionXml: jest.fn()
+  };
+});
+
+jest.mock('services', () => {
+  return {
+    loadProcessDefinitions: () => [{key: 'key', versions: [{version: 2}, {version: 1}]}]
   };
 });
 
@@ -328,7 +336,14 @@ describe('edit mode', async () => {
             data: 'foo',
             type: 'variable'
           }
-        ]
+        ],
+        view: {
+          operation: 'operation'
+        },
+        groupBy: {
+          type: 'type'
+        },
+        visualization: 'visualization'
       }
     }));
 
@@ -400,12 +415,13 @@ describe('edit mode', async () => {
 
   it('should reset name on cancel', async () => {
     props.match.params.viewMode = 'edit';
-    const node = mount(<Report {...props} />);
-
+    const node = await mount(<Report {...props} />);
     node.setState({loaded: true});
 
     const input = 'asdf';
     await node.find(`input[id="name"]`).simulate('change', {target: {value: input}});
+
+    await node.instance().componentDidMount();
 
     await node.instance().cancel();
     expect(node).toHaveState('name', 'name');
@@ -420,6 +436,7 @@ describe('edit mode', async () => {
 
     const input = 'asdf';
     await node.find(`input[id="name"]`).simulate('change', {target: {value: input}});
+    await node.instance().componentDidMount();
 
     await node.find('.Report__cancel-button').simulate('click');
     expect(spy).toHaveBeenCalled();
@@ -460,5 +477,15 @@ describe('edit mode', async () => {
         .at(0)
         .getDOMNode()
     ).toBe(document.activeElement);
+  });
+
+  it("should select the only procDef and it's latest version by default", async () => {
+    props.match.params.viewMode = 'edit';
+
+    const node = mount(<Report {...props} />);
+    await node.instance().componentDidMount();
+
+    expect(node.state().data.processDefinitionKey).toBe('key');
+    expect(node.state().data.processDefinitionVersion).toBe(2);
   });
 });

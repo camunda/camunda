@@ -3,7 +3,7 @@ import classnames from 'classnames';
 
 import {Select, BPMNDiagram} from 'components';
 
-import {loadProcessDefinitions} from './service';
+import {loadProcessDefinitions} from 'services';
 
 import './ProcessDefinitionSelection.css';
 

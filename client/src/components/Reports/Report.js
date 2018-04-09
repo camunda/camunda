@@ -13,6 +13,8 @@ import {
   revokeReportSharing,
   getSharedReport
 } from './service';
+
+import {loadProcessDefinitions} from 'services';
 import ControlPanel from './ControlPanel';
 
 import './Report.css';
@@ -35,16 +37,33 @@ export default class Report extends React.Component {
     };
   }
 
-  initializeReport = () => {
-    return {
-      processDefinitionKey: '',
-      processDefinitionVersion: '',
+  getTheOnlyDefinition = async () => {
+    const avaliableDefinitions = await loadProcessDefinitions();
+    if (avaliableDefinitions.length === 1) {
+      const theOnlyKey = avaliableDefinitions[0].key;
+      const latestVersion = avaliableDefinitions[0].versions[0].version;
+      return {theOnlyKey, latestVersion};
+    }
+
+    return {theOnlyKey: 'a', latestVersion: 'b'};
+  };
+
+  initializeReport = async () => {
+    const {theOnlyKey, latestVersion} = await this.getTheOnlyDefinition();
+
+    const data = {
+      processDefinitionKey: theOnlyKey || '',
+      processDefinitionVersion: latestVersion || '',
       view: {operation: '', entity: '', property: ''},
       groupBy: {type: '', unit: null},
       visualization: '',
       filter: [],
       configuration: {}
     };
+
+    await this.loadXmlToConfiguration(data);
+
+    return data;
   };
 
   componentDidMount = async () => {
@@ -52,8 +71,7 @@ export default class Report extends React.Component {
     const {name, lastModifier, lastModified, data} = await loadSingleReport(this.id);
 
     const reportResult = await getReportData(this.id);
-    const stateData = data || this.initializeReport();
-
+    const stateData = data || (await this.initializeReport());
     this.setState(
       {
         name,

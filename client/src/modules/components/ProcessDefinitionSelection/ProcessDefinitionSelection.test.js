@@ -3,7 +3,7 @@ import {mount} from 'enzyme';
 
 import ProcessDefinitionSelection from './ProcessDefinitionSelection';
 
-import {loadProcessDefinitions} from './service';
+import {loadProcessDefinitions} from 'services';
 
 jest.mock('components', () => {
   const Select = props => (
@@ -23,7 +23,7 @@ jest.mock('components', () => {
   };
 });
 
-jest.mock('./service', () => {
+jest.mock('services', () => {
   return {
     loadProcessDefinitions: jest.fn()
   };
