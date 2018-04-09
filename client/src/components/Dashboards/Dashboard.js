@@ -223,7 +223,7 @@ export default class Dashboard extends React.Component {
           </div>
         </div>
         <DashboardView
-          scrollableReport={true}
+          disableReportScrolling
           loadReport={loadReport}
           reports={this.state.reports}
           reportAddons={[

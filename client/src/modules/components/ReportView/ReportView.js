@@ -148,7 +148,7 @@ export default class ReportView extends React.Component {
           props: {
             data: formattedResult,
             labels: [groupByLabel, viewLabel],
-            scrollableReport: this.props.scrollableReport
+            disableReportScrolling: this.props.disableReportScrolling
           }
         };
         break;

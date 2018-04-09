@@ -4,7 +4,7 @@ import ReactTable from 'react-table';
 
 import './Table.css';
 
-export default function Table({className, head, body, foot, scrollableReport}) {
+export default function Table({className, head, body, foot, disableReportScrolling}) {
   const columns = Table.formatColumns(head);
   const data = Table.formatData(head, body);
   return (
@@ -19,7 +19,7 @@ export default function Table({className, head, body, foot, scrollableReport}) {
       sortable={false}
       multiSort={false}
       className={classnames('-striped', '-highlight', 'Table', className, {
-        'Table__unscrollable-mode': scrollableReport
+        'Table__unscrollable-mode': disableReportScrolling
       })}
       noDataText="No data available"
     />
