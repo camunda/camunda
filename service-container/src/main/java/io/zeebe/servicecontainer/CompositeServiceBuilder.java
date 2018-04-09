@@ -130,9 +130,9 @@ public class CompositeServiceBuilder
         @Override
         public ActorFuture<Void> install()
         {
-            final ActorFuture<Void> installFuture = super.install();
+            final ActorFuture<S> installFuture = super.installAndReturn();
             installFutures.put(serviceName, (ActorFuture) installFuture);
-            return installFuture;
+            return (ActorFuture) installFuture;
         }
 
         @Override
