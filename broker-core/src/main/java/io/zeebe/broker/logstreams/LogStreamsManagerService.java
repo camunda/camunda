@@ -23,19 +23,22 @@ import io.zeebe.servicecontainer.*;
 
 public class LogStreamsManagerService implements Service<LogStreamsManager>
 {
+    private final ServiceContainer serviceContainer;
+
     protected LogStreamsCfg logStreamsCfg;
 
     protected LogStreamsManager service;
 
-    public LogStreamsManagerService(ConfigurationManager configurationManager)
+    public LogStreamsManagerService(ConfigurationManager configurationManager, ServiceContainer serviceContainer)
     {
+        this.serviceContainer = serviceContainer;
         logStreamsCfg = configurationManager.readEntry("logs", LogStreamsCfg.class);
     }
 
     @Override
     public void start(ServiceStartContext serviceContext)
     {
-        service = new LogStreamsManager(logStreamsCfg, serviceContext.getScheduler());
+        service = new LogStreamsManager(logStreamsCfg, serviceContainer);
     }
 
     @Override
@@ -50,4 +53,8 @@ public class LogStreamsManagerService implements Service<LogStreamsManager>
         return service;
     }
 
+    public ServiceContainer getServiceContainer()
+    {
+        return serviceContainer;
+    }
 }

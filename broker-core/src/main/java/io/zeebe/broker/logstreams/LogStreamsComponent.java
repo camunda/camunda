@@ -32,7 +32,8 @@ public class LogStreamsComponent implements Component
     @Override
     public void init(SystemContext context)
     {
-        final LogStreamsManagerService streamsManager = new LogStreamsManagerService(context.getConfigurationManager());
+
+        final LogStreamsManagerService streamsManager = new LogStreamsManagerService(context.getConfigurationManager(), context.getServiceContainer());
         context.getServiceContainer().createService(LOG_STREAMS_MANAGER_SERVICE, streamsManager)
             .install();
 

@@ -35,6 +35,7 @@ import org.junit.rules.Timeout;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Ignore
 public class DeploymentClusteredTest
 {
     private static final int PARTITION_COUNT = 5;

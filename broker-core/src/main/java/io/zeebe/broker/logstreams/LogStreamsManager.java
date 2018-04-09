@@ -17,34 +17,35 @@
  */
 package io.zeebe.broker.logstreams;
 
-import static io.zeebe.util.EnsureUtil.*;
+import io.zeebe.broker.logstreams.cfg.LogStreamsCfg;
+import io.zeebe.logstreams.LogStreams;
+import io.zeebe.logstreams.impl.LogStreamBuilder;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.servicecontainer.ServiceContainer;
+import io.zeebe.util.sched.future.ActorFuture;
+import org.agrona.DirectBuffer;
+import org.agrona.collections.Int2ObjectHashMap;
 
 import java.io.File;
 import java.util.Random;
 
-import io.zeebe.broker.logstreams.cfg.LogStreamsCfg;
-import io.zeebe.logstreams.LogStreams;
-import io.zeebe.logstreams.fs.FsLogStreamBuilder;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.util.sched.ActorScheduler;
-import org.agrona.DirectBuffer;
-import org.agrona.collections.Int2ObjectHashMap;
+import static io.zeebe.util.EnsureUtil.*;
 
 
 public class LogStreamsManager
 {
+    private final ServiceContainer serviceContainer;
     protected LogStreamsCfg logStreamsCfg;
-    protected ActorScheduler actorScheduler;
-    protected Int2ObjectHashMap<LogStream> logStreams;
+    protected Int2ObjectHashMap<ActorFuture<LogStream>> logStreams;
 
-    public LogStreamsManager(final LogStreamsCfg logStreamsCfg, final ActorScheduler actorScheduler)
+    public LogStreamsManager(final LogStreamsCfg logStreamsCfg, ServiceContainer serviceContainer)
     {
         this.logStreamsCfg = logStreamsCfg;
-        this.actorScheduler = actorScheduler;
+        this.serviceContainer = serviceContainer;
         this.logStreams = new Int2ObjectHashMap<>();
     }
 
-    public LogStream getLogStream(final int partitionId)
+    public ActorFuture<LogStream> getLogStream(final int partitionId)
     {
         return logStreams.get(partitionId);
     }
@@ -60,13 +61,14 @@ public class LogStreamsManager
      *
      * @return the newly created log stream
      */
-    public LogStream createLogStream(final DirectBuffer topicName, final int partitionId)
+    public ActorFuture<LogStream> createLogStream(final DirectBuffer topicName, final int partitionId)
     {
         ensureNotNullOrEmpty("topic name", topicName);
         ensureGreaterThanOrEqual("partition id", partitionId, 0);
         ensureLessThanOrEqual("partition id", partitionId, Short.MAX_VALUE);
 
-        final FsLogStreamBuilder logStreamBuilder = LogStreams.createFsLogStream(topicName, partitionId);
+        final LogStreamBuilder logStreamBuilder = LogStreams.createFsLogStream(topicName, partitionId);
+        logStreamBuilder.logName(String.format("%s-%d", io.zeebe.util.buffer.BufferUtil.bufferAsString(topicName), partitionId));
         final String logName = logStreamBuilder.getLogName();
 
         final String logDirectory;
@@ -86,35 +88,35 @@ public class LogStreamsManager
 
         final int logSegmentSize = logStreamsCfg.defaultLogSegmentSize * 1024 * 1024;
 
-        final LogStream logStream = logStreamBuilder
+        final ActorFuture<LogStream> logStream = logStreamBuilder
             .deleteOnClose(deleteOnExit)
             .logDirectory(logDirectory)
-            .actorScheduler(actorScheduler)
+            .serviceContainer(serviceContainer)
             .logSegmentSize(logSegmentSize)
             .build();
 
-        addLogStream(logStream);
+        addLogStream(partitionId, logStream);
 
         return logStream;
     }
 
-    public LogStream createLogStream(final DirectBuffer topicName, final int partitionId, final String logDirectory)
+    public ActorFuture<LogStream> createLogStream(final DirectBuffer topicName, final int partitionId, final String logDirectory)
     {
-        final LogStream logStream =
+        final ActorFuture<LogStream> logStream =
             LogStreams.createFsLogStream(topicName, partitionId)
                       .deleteOnClose(false)
                       .logDirectory(logDirectory)
-                      .actorScheduler(actorScheduler)
+                      .serviceContainer(serviceContainer)
                       .logSegmentSize(logStreamsCfg.defaultLogSegmentSize * 1024 * 1024)
                       .build();
 
-        addLogStream(logStream);
+        addLogStream(partitionId, logStream);
 
         return logStream;
     }
 
-    private void addLogStream(final LogStream logStream)
+    private void addLogStream(int partitionId, final ActorFuture<LogStream> logStream)
     {
-        logStreams.put(logStream.getPartitionId(), logStream);
+        logStreams.put(partitionId, logStream);
     }
 }

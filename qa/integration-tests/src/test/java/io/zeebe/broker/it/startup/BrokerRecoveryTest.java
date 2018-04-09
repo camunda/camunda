@@ -463,7 +463,7 @@ public class BrokerRecoveryTest
         // given
         final int testTerm = 8;
 
-        final ServiceName<Raft> serviceName = ClusterServiceNames.raftServiceName(clientRule.getDefaultTopic() + "." + clientRule.getDefaultPartition());
+        final ServiceName<Raft> serviceName = ClusterServiceNames.raftServiceName(clientRule.getDefaultTopic() + "-" + clientRule.getDefaultPartition());
 
         Raft raft = brokerRule.getService(serviceName);
         waitUntil(raft::isInitialEventCommitted);

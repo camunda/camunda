@@ -20,6 +20,7 @@ package io.zeebe.broker.logstreams.processor;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.junit.Before;
 import org.junit.Rule;
@@ -50,9 +51,13 @@ public class TypedStreamProcessorTest
     public AutoCloseableRule closeables = new AutoCloseableRule();
 
     public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
+    public ServiceContainerRule serviceContainerRule = new ServiceContainerRule(actorSchedulerRule);
 
     @Rule
-    public RuleChain ruleChain = RuleChain.outerRule(tempFolder).around(actorSchedulerRule).around(closeables);
+    public RuleChain ruleChain = RuleChain.outerRule(tempFolder)
+        .around(actorSchedulerRule)
+        .around(serviceContainerRule)
+        .around(closeables);
 
     protected TestStreams streams;
     protected LogStream stream;
@@ -65,7 +70,7 @@ public class TypedStreamProcessorTest
     {
         MockitoAnnotations.initMocks(this);
 
-        streams = new TestStreams(tempFolder.getRoot(), closeables, actorSchedulerRule.get());
+        streams = new TestStreams(tempFolder.getRoot(), closeables, serviceContainerRule.get(), actorSchedulerRule.get());
 
         stream = streams.createLogStream(STREAM_NAME);
     }

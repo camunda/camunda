@@ -17,22 +17,14 @@
  */
 package io.zeebe.broker.clustering.management;
 
-import static io.zeebe.broker.clustering.ClusterServiceNames.RAFT_SERVICE_GROUP;
-import static io.zeebe.broker.clustering.ClusterServiceNames.raftServiceName;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.util.*;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.stream.Collectors;
-
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.handler.Topology;
 import io.zeebe.broker.clustering.management.handler.ClusterManagerFragmentHandler;
 import io.zeebe.broker.clustering.management.memberList.ClusterMemberListManager;
 import io.zeebe.broker.clustering.management.memberList.MemberRaftComposite;
-import io.zeebe.broker.clustering.management.message.*;
+import io.zeebe.broker.clustering.management.message.CreatePartitionRequest;
+import io.zeebe.broker.clustering.management.message.InvitationRequest;
+import io.zeebe.broker.clustering.management.message.InvitationResponse;
 import io.zeebe.broker.clustering.raft.RaftPersistentFileStorage;
 import io.zeebe.broker.clustering.raft.RaftService;
 import io.zeebe.broker.logstreams.LogStreamsManager;
@@ -53,6 +45,16 @@ import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
+
+import static io.zeebe.broker.clustering.ClusterServiceNames.RAFT_SERVICE_GROUP;
+import static io.zeebe.broker.clustering.ClusterServiceNames.raftServiceName;
 
 public class ClusterManager extends Actor
 {
@@ -139,7 +141,7 @@ public class ClusterManager extends Actor
                 final DirectBuffer topicName = storage.getTopicName();
                 final int partitionId = storage.getPartitionId();
 
-                LogStream logStream = logStreamManager.getLogStream(partitionId);
+                ActorFuture<LogStream> logStream = logStreamManager.getLogStream(partitionId);
 
                 if (logStream == null)
                 {
@@ -147,9 +149,13 @@ public class ClusterManager extends Actor
                     logStream = logStreamManager.createLogStream(topicName, partitionId, directory);
                 }
 
-                storage.setLogStream(logStream);
+                actor.runOnCompletion(logStream, (log, t) ->
+                {
+                    storage.setLogStream(log);
 
-                createRaft(socketAddress, logStream, storage.getMembers(), storage);
+                    createRaft(socketAddress, log, storage.getMembers(), storage);
+                });
+
             }
         }
         else
@@ -295,11 +301,14 @@ public class ClusterManager extends Actor
      */
     protected void createPartition(DirectBuffer topicName, int partitionId, List<SocketAddress> members)
     {
-        final LogStream logStream = logStreamsManager.createLogStream(topicName, partitionId);
+        final ActorFuture<LogStream> logStream = logStreamsManager.createLogStream(topicName, partitionId);
 
-        final SocketBindingCfg replicationApi = transportComponentCfg.replicationApi;
-        final SocketAddress socketAddress = new SocketAddress(replicationApi.getHost(transportComponentCfg.host), replicationApi.port);
-        createRaft(socketAddress, logStream, members);
+        actor.runOnCompletion(logStream, (log, t) ->
+        {
+            final SocketBindingCfg replicationApi = transportComponentCfg.replicationApi;
+            final SocketAddress socketAddress = new SocketAddress(replicationApi.getHost(transportComponentCfg.host), replicationApi.port);
+            createRaft(socketAddress, log, members);
+        });
     }
 
     public boolean onInvitationRequest(final DirectBuffer buffer, final int offset, final int length, final ServerOutput output,

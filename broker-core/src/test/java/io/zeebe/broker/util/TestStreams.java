@@ -17,17 +17,6 @@
  */
 package io.zeebe.broker.util;
 
-import static io.zeebe.test.util.TestUtil.doRepeatedly;
-
-import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.*;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
-
 import io.zeebe.broker.incident.data.IncidentEvent;
 import io.zeebe.broker.logstreams.processor.TypedEvent;
 import io.zeebe.broker.system.log.PartitionEvent;
@@ -35,19 +24,40 @@ import io.zeebe.broker.system.log.TopicEvent;
 import io.zeebe.broker.task.data.TaskEvent;
 import io.zeebe.broker.topic.Events;
 import io.zeebe.broker.topic.StreamProcessorControl;
-import io.zeebe.broker.workflow.data.*;
+import io.zeebe.broker.workflow.data.DeploymentEvent;
+import io.zeebe.broker.workflow.data.WorkflowEvent;
+import io.zeebe.broker.workflow.data.WorkflowInstanceEvent;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.log.*;
-import io.zeebe.logstreams.processor.*;
+import io.zeebe.logstreams.processor.EventProcessor;
+import io.zeebe.logstreams.processor.StreamProcessor;
+import io.zeebe.logstreams.processor.StreamProcessorContext;
+import io.zeebe.logstreams.processor.StreamProcessorController;
 import io.zeebe.logstreams.spi.SnapshotStorage;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
+import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.buffer.BufferUtil;
-import io.zeebe.util.sched.*;
+import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.ActorCondition;
+import io.zeebe.util.sched.ActorScheduler;
+
+import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+
+import static io.zeebe.test.util.TestUtil.doRepeatedly;
 
 public class TestStreams
 {
@@ -68,6 +78,7 @@ public class TestStreams
 
     protected final File storageDirectory;
     protected final AutoCloseableRule closeables;
+    private final ServiceContainer serviceContainer;
 
     protected Map<String, LogStream> managedLogs = new HashMap<>();
 
@@ -78,10 +89,12 @@ public class TestStreams
     public TestStreams(
         File storageDirectory,
         AutoCloseableRule closeables,
+        ServiceContainer serviceContainer,
         ActorScheduler actorScheduler)
     {
         this.storageDirectory = storageDirectory;
         this.closeables = closeables;
+        this.serviceContainer = serviceContainer;
         this.actorScheduler = actorScheduler;
     }
 
@@ -90,12 +103,12 @@ public class TestStreams
         final String rootPath = storageDirectory.getAbsolutePath();
         final LogStream logStream = LogStreams.createFsLogStream(BufferUtil.wrapString(name), 0)
             .logRootPath(rootPath)
-            .actorScheduler(actorScheduler)
+            .serviceContainer(serviceContainer)
+            .logName(name)
             .deleteOnClose(true)
-            .build();
+            .build().join();
 
-        logStream.open();
-        logStream.openLogStreamController().join();
+        logStream.openAppender().join();
 
         actorScheduler.submitActor(new Actor()
         {
@@ -129,7 +142,7 @@ public class TestStreams
         final LogStream logStream = getLogStream(stream);
         try (LogStreamReader reader = new BufferedLogStreamReader(logStream))
         {
-            logStream.closeLogStreamController().get();
+            logStream.closeAppender().get();
 
             reader.seek(position + 1);
 
@@ -140,7 +153,7 @@ public class TestStreams
             }
             logStream.setCommitPosition(Long.MAX_VALUE);
 
-            logStream.openLogStreamController().get();
+            logStream.openAppender().get();
         }
         catch (Exception e)
         {

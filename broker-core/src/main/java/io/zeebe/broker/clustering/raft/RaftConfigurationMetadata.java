@@ -170,4 +170,21 @@ public class RaftConfigurationMetadata extends UnpackedObject
                    .setHost(member.getHostBuffer(), 0, member.hostLength())
                    .setPort(member.port());
     }
+
+
+    public void removeMember(final SocketAddress member)
+    {
+        ensureNotNull("Member", member);
+
+        final Iterator<RaftConfigurationMetadataMember> iterator = membersProp.iterator();
+        while (iterator.hasNext())
+        {
+            final RaftConfigurationMetadataMember next = iterator.next();
+            if (next.getHost().equals(member.getHostBuffer()) &&
+                next.getPort() == member.port())
+            {
+                iterator.remove();
+            }
+        }
+    }
 }

@@ -133,6 +133,14 @@ public class RaftPersistentFileStorage implements RaftPersistentStorage
     }
 
     @Override
+    public RaftPersistentStorage removeMember(SocketAddress member)
+    {
+        configuration.removeMember(member);
+
+        return this;
+    }
+
+    @Override
     public RaftPersistentFileStorage clearMembers()
     {
         configuration.membersProp.reset();

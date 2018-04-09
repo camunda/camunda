@@ -19,6 +19,7 @@ package io.zeebe.broker.util;
 
 import java.util.function.Function;
 
+import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
@@ -43,6 +44,7 @@ public class StreamProcessorRule implements TestRule
     private AutoCloseableRule closeables = new AutoCloseableRule();
     private ControlledActorClock clock = new ControlledActorClock();
     private ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(clock);
+    private ServiceContainerRule serviceContainerRule = new ServiceContainerRule(actorSchedulerRule);
 
     // things provisioned by this rule
     public static final String STREAM_NAME = "stream";
@@ -54,10 +56,11 @@ public class StreamProcessorRule implements TestRule
     private SetupRule rule = new SetupRule();
 
     private RuleChain chain = RuleChain
-            .outerRule(tempFolder)
-            .around(actorSchedulerRule)
-            .around(closeables)
-            .around(rule);
+        .outerRule(tempFolder)
+        .around(actorSchedulerRule)
+        .around(serviceContainerRule)
+        .around(closeables)
+        .around(rule);
 
     @Override
     public Statement apply(Statement base, Description description)
@@ -125,7 +128,7 @@ public class StreamProcessorRule implements TestRule
         {
             output = new BufferingServerOutput();
 
-            streams = new TestStreams(tempFolder.getRoot(), closeables, actorSchedulerRule.get());
+            streams = new TestStreams(tempFolder.getRoot(), closeables, serviceContainerRule.get(), actorSchedulerRule.get());
             streams.createLogStream(STREAM_NAME);
 
             streams.newEvent(STREAM_NAME) // TODO: workaround for https://github.com/zeebe-io/zeebe/issues/478

@@ -86,36 +86,25 @@ public class RaftService extends Actor implements Service<Raft>, RaftStateListen
     @Override
     protected void onActorStarted()
     {
-        actor.runOnCompletion(logStream.openAsync(), ((aVoid, throwable) ->
-        {
-            if (throwable == null)
-            {
-                final ClientTransport clientTransport = clientTransportInjector.getValue();
+        final ClientTransport clientTransport = clientTransportInjector.getValue();
 
-                final OneToOneRingBufferChannel messageBuffer = new OneToOneRingBufferChannel(new UnsafeBuffer(new byte[(MemberReplicateLogController.REMOTE_BUFFER_SIZE) + RingBufferDescriptor.TRAILER_LENGTH]));
+        final OneToOneRingBufferChannel messageBuffer = new OneToOneRingBufferChannel(new UnsafeBuffer(new byte[(MemberReplicateLogController.REMOTE_BUFFER_SIZE) + RingBufferDescriptor.TRAILER_LENGTH]));
 
-                raft = new Raft(
-                                actorScheduler,
-                                configuration,
-                                socketAddress,
-                                logStream,
-                                clientTransport,
-                                persistentStorage,
-                                messageBuffer,
-                                raftStateListener,
-                                RaftService.this);
+        raft = new Raft(
+                        actorScheduler,
+                        configuration,
+                        socketAddress,
+                        logStream,
+                        clientTransport,
+                        persistentStorage,
+                        messageBuffer,
+                        raftStateListener,
+                        RaftService.this);
 
-                raft.addMembers(members);
-                actorScheduler.submitActor(raft);
+        raft.addMembers(members);
+        actorScheduler.submitActor(raft);
 
-                raftServiceOpenFuture.complete(null);
-            }
-            else
-            {
-                raftServiceOpenFuture.completeExceptionally(throwable);
-                Loggers.CLUSTERING_LOGGER.debug("Failed to open log stream.");
-            }
-        }));
+        raftServiceOpenFuture.complete(null);
     }
 
     @Override

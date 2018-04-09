@@ -25,6 +25,7 @@ import io.zeebe.client.task.TaskSubscription;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.SocketAddress;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -37,12 +38,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 
+@Ignore
 public class BrokerLeaderChangeTest
 {
     public static final String TASK_TYPE = "testTask";
 
     public AutoCloseableRule closeables = new AutoCloseableRule();
-    public Timeout testTimeout = Timeout.seconds(30);
+    public Timeout testTimeout = Timeout.seconds(90);
     public ClientRule clientRule = new ClientRule(false);
     public ClusteringRule clusteringRule = new ClusteringRule(closeables, clientRule);
 

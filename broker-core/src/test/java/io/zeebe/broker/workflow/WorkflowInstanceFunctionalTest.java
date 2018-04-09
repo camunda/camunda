@@ -348,10 +348,10 @@ public class WorkflowInstanceFunctionalTest
                 .startEvent()
                 .exclusiveGateway("split")
                 .sequenceFlow("s1", s -> s.condition("$.foo < 5"))
-                    .exclusiveGateway("join")
+                    .exclusiveGateway("joinRequest")
                     .continueAt("split")
                 .sequenceFlow("s2", s -> s.defaultFlow())
-                    .joinWith("join")
+                    .joinWith("joinRequest")
                 .endEvent("end")
                 .done();
 

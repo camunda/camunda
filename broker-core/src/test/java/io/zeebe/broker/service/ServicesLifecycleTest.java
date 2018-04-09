@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.concurrent.ExecutionException;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -49,6 +50,7 @@ public class ServicesLifecycleTest
     public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
     @Test
+    @Ignore
     public void shouldShutdownStreamProcessingBeforeLogStream() throws Exception
     {
         // given

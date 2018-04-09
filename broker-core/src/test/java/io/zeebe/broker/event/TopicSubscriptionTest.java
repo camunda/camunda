@@ -26,6 +26,7 @@ import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.test.broker.protocol.clientapi.*;
 import io.zeebe.test.util.TestUtil;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -397,6 +398,7 @@ public class TopicSubscriptionTest
     }
 
     @Test
+    @Ignore
     public void shouldReturnErrorIfSubscriptionProcessorRemovalFails()
     {
         // given

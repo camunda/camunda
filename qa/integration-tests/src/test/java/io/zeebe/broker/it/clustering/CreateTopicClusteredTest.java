@@ -24,6 +24,7 @@ import io.zeebe.client.topic.Topics;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.SocketAddress;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -134,6 +135,7 @@ public class CreateTopicClusteredTest
     }
 
     @Test
+    @Ignore
     public void shouldCompleteTaskAfterNewLeaderWasChosen() throws Exception
     {
         // given
