@@ -4,6 +4,7 @@ import ControlPanel from './ControlPanel';
 import {BPMNDiagram} from 'components';
 
 import {loadProcessDefinitionXml, loadFrequencyData} from './service';
+import {loadProcessDefinitions} from 'services';
 import DiagramBehavior from './DiagramBehavior';
 import Statistics from './Statistics';
 
@@ -26,7 +27,26 @@ export default class Analysis extends React.Component {
       endEvent: null,
       xml: null
     };
+
+    this.selectTheOnlyDefinition();
   }
+
+  selectTheOnlyDefinition = async () => {
+    const avaliableDefinitions = await loadProcessDefinitions();
+    if (avaliableDefinitions.length === 1) {
+      const theOnlyKey = avaliableDefinitions[0].key;
+      const latestVersion = avaliableDefinitions[0].versions[0].version;
+
+      this.setState({
+        config: {
+          processDefinitionKey: theOnlyKey,
+          processDefinitionVersion: latestVersion,
+          filter: []
+        },
+        xml: await loadProcessDefinitionXml(theOnlyKey, latestVersion)
+      });
+    }
+  };
 
   render() {
     const {xml, config, hoveredControl, hoveredNode, gateway, endEvent, data} = this.state;

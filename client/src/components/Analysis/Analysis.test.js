@@ -2,6 +2,7 @@ import React from 'react';
 import {mount} from 'enzyme';
 
 import {loadProcessDefinitionXml, loadFrequencyData} from './service';
+import {loadProcessDefinitions} from 'services';
 
 import Analysis from './Analysis';
 
@@ -17,6 +18,13 @@ jest.mock('./service', () => {
     loadFrequencyData: jest.fn()
   };
 });
+
+jest.mock('services', () => {
+  return {
+    loadProcessDefinitions: () => [{key: 'key', versions: [{version: 2}, {version: 1}]}]
+  };
+});
+
 jest.mock('./DiagramBehavior', () => () => <div>DiagramBehavior</div>);
 jest.mock('./Statistics', () => () => <div>Statistics</div>);
 
@@ -101,4 +109,12 @@ it('should clear the selection when another process definition is selected', asy
 
   expect(node).toHaveState('gateway', null);
   expect(node).toHaveState('endEvent', null);
+});
+
+it("should pre-select the only available procDef and it's latest version", async () => {
+  const node = await mount(<Analysis />);
+  await node.update();
+
+  expect(node.state().config.processDefinitionKey).toBe('key');
+  expect(node.state().config.processDefinitionVersion).toBe(2);
 });
