@@ -129,7 +129,7 @@ class EntityList extends React.Component {
     }
 
     if (cell.shared) {
-      return <Icon type="share" title={`This ${this.props.api} is shared`} />;
+      return <Icon type="share" title={`This ${this.props.label} is shared`} />;
     }
 
     if (cell.link) {
