@@ -70,9 +70,20 @@ class EntityList extends React.Component {
   formatData = data =>
     data.map(({name, id, lastModified, lastModifier, shared}) => {
       const entry = [
-        {content: name, link: `/${this.props.api}/${id}`},
-        `Last modified ${moment(lastModified).format('lll')} by ${lastModifier}`,
-        {shared}
+        {
+          content: name,
+          link: `/${this.props.api}/${id}`,
+          parentClassName: 'EntityList__data--title'
+        },
+        {
+          plainText: true,
+          content: `Last modified ${moment(lastModified).format('lll')} by ${lastModifier}`,
+          parentClassName: 'EntityList__data--metadata'
+        },
+        {
+          shared,
+          parentClassName: 'EntityList__data--icons'
+        }
       ];
 
       if (this.props.operations.includes('delete')) {
@@ -80,14 +91,15 @@ class EntityList extends React.Component {
           content: 'delete',
           onClick: this.showDeleteModal({id, name}),
           props: {type: 'small'},
-          className: 'EntityList__deleteIcon'
+          className: 'EntityList__deleteIcon',
+          parentClassName: 'EntityList__data--tool'
         });
       }
       if (this.props.operations.includes('edit')) {
         entry.push({
-          content: 'edit',
+          content: <Icon type="edit" className="EntityList__editLink" />,
           link: `/${this.props.api}/${id}/edit`,
-          className: 'EntityList__editLink'
+          parentClassName: 'EntityList__data--tool'
         });
       }
 
@@ -124,8 +136,8 @@ class EntityList extends React.Component {
   };
 
   renderCell = cell => {
-    if (typeof cell !== 'object' || React.isValidElement(cell)) {
-      return cell;
+    if (cell.plainText) {
+      return cell.content;
     }
 
     if (cell.shared) {
@@ -135,16 +147,7 @@ class EntityList extends React.Component {
     if (cell.link) {
       return (
         <Link to={cell.link} className={cell.className}>
-          {cell.content === 'edit' ? (
-            <Icon
-              {...cell.props}
-              onClick={cell.onClick}
-              className={cell.className}
-              type={cell.content}
-            />
-          ) : (
-            cell.content
-          )}
+          {cell.content}
         </Link>
       );
     }
@@ -219,13 +222,7 @@ class EntityList extends React.Component {
                   return (
                     <span
                       key={idx}
-                      className={classnames('EntityList__data', {
-                        'EntityList__data--tool':
-                          cell.content === 'edit' || cell.content === 'delete',
-                        'EntityList__data--title': idx === 0,
-                        'EntityList__data--metadata': idx === 1,
-                        'EntityList__data--icons': idx === 2
-                      })}
+                      className={classnames('EntityList__data', cell.parentClassName)}
                     >
                       {this.renderCell(cell)}
                     </span>
