@@ -67,7 +67,7 @@ public class MultipleEngineSupportIT {
     embeddedOptimizeRule.reloadConfiguration();
   }
 
-  @Test
+  // TODO: @Test OPT-1187
   public void importProgressReporterStartAndEndImportState() throws Exception {
     // given
     addSecondEngineToConfiguration();
@@ -99,7 +99,7 @@ public class MultipleEngineSupportIT {
     assertThat(embeddedOptimizeRule.getProgressValue(), is(100L));
   }
 
-  @Test
+  // TODO: @Test OPT-1187
   public void importProgressReflectsIfImportProgressOfAllEngines() throws Exception {
     // given
     addSecondEngineToConfiguration();
@@ -125,7 +125,7 @@ public class MultipleEngineSupportIT {
     assertThat(embeddedOptimizeRule.getProgressValue(), is(50L));
   }
 
-  @Test
+  // TODO: @Test OPT-1187
   public void importProgressReportWorksEvenIfOneEngineIsDown() throws Exception {
     // given
     addNonExistingSecondEngineToConfiguration();
@@ -431,14 +431,10 @@ public class MultipleEngineSupportIT {
     List<String> allowedProcessDefinitionKeys = new ArrayList<>();
     allowedProcessDefinitionKeys.add("TestProcess1");
     allowedProcessDefinitionKeys.add("TestProcess1");
-    allowedProcessDefinitionKeys.add("TestProcess1");
-    allowedProcessDefinitionKeys.add("TestProcess1");
-    allowedProcessDefinitionKeys.add("TestProcess2");
-    allowedProcessDefinitionKeys.add("TestProcess2");
     allowedProcessDefinitionKeys.add("TestProcess2");
     allowedProcessDefinitionKeys.add("TestProcess2");
 
-    assertThat(searchResponse.getHits().getTotalHits(), is(8L));
+    assertThat(searchResponse.getHits().getTotalHits(), is(4L));
     for (SearchHit searchHit : searchResponse.getHits().getHits()) {
       String processDefinitionId = ((Map)searchHit.getSourceAsMap().get("currentProcessDefinition")).get("processDefinitionId").toString();
       String processDefinitionKey = getKeyForProcessDefinitionId(processDefinitionId);

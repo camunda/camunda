@@ -11,6 +11,7 @@ public class ProcessDefinitionType extends StrictTypeMappingCreator {
 
   public static final String PROCESS_DEFINITION_ID = "id";
   public static final String PROCESS_DEFINITION_KEY = "key";
+  public static final String ENGINE = "engine";
 
   @Override
   public String getType() {
@@ -29,7 +30,7 @@ public class ProcessDefinitionType extends StrictTypeMappingCreator {
       .startObject("version")
         .field("type", "long")
       .endObject()
-      .startObject("engine")
+      .startObject(ENGINE)
         .field("type", "keyword")
       .endObject()
       .startObject("name")

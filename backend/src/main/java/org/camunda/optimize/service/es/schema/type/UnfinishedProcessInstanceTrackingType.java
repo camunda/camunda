@@ -11,7 +11,7 @@ public class UnfinishedProcessInstanceTrackingType extends StrictTypeMappingCrea
 
   public static final String UNFINISHED_PROCESS_INSTANCE_TRACKING_TYPE = "unfinished-process-instance-tracking";
 
-  public static final String PROCESS_INSTANCE_IDS = "processInstanceIds";
+  public static final String PROCESS_INSTANCE_IDS = "ids";
 
   @Override
   public String getType() {

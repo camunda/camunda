@@ -1,21 +1,22 @@
 package org.camunda.optimize.service.engine.importing.index;
 
-import org.springframework.beans.factory.config.ConfigurableBeanFactory;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Component;
-
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.importing.DefinitionImportInformation;
-import org.camunda.optimize.dto.optimize.importing.VersionedDefinitionImportInformation;
+import org.camunda.optimize.dto.optimize.importing.VersionedDefinitionBasedImportPage;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.fetcher.instance.ProcessDefinitionFetcher;
+import org.camunda.optimize.service.engine.importing.index.page.DefinitionBasedImportPage;
 import org.camunda.optimize.service.util.BeanHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
 
+import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -37,10 +38,10 @@ public class EngineProcessDefinitions {
   @Autowired
   protected BeanHelper beanHelper;
 
-  private List<DefinitionImportInformation> availableProcessDefinitions = new ArrayList<>();
+  private List<DefinitionBasedImportPage> availableProcessDefinitions = new ArrayList<>();
   private OffsetDateTime timeToLoad = OffsetDateTime.now().minusMinutes(1);
 
-  public List<DefinitionImportInformation> getAvailableProcessDefinitions(EngineContext engineContext) {
+  public List<DefinitionBasedImportPage> getAvailableProcessDefinitions(EngineContext engineContext) {
     if (haveToReload()) {
       availableProcessDefinitions = retrieveDefinitionsToImport(engineContext);
       if (!availableProcessDefinitions.isEmpty()) {
@@ -49,7 +50,7 @@ public class EngineProcessDefinitions {
     }
     return availableProcessDefinitions
       .stream()
-      .map(DefinitionImportInformation::copy)
+      .map(DefinitionBasedImportPage::copy)
       .collect(Collectors.toList());
   }
 
@@ -58,8 +59,8 @@ public class EngineProcessDefinitions {
     return timeToLoad.isBefore(now) ;
   }
 
-  private List<DefinitionImportInformation> retrieveDefinitionsToImport(EngineContext engineContext) {
-    List<DefinitionImportInformation> processDefinitionsToImport =
+  private List<DefinitionBasedImportPage> retrieveDefinitionsToImport(EngineContext engineContext) {
+    List<DefinitionBasedImportPage> processDefinitionsToImport =
         retrieveDefinitionsToImportFromConfigurationProvidedList();
     if (processDefinitionsToImport.isEmpty()) {
       processDefinitionsToImport = retrieveDefinitionToImportFromEngine(engineContext);
@@ -67,23 +68,22 @@ public class EngineProcessDefinitions {
     return processDefinitionsToImport;
   }
 
-  private List<DefinitionImportInformation> retrieveDefinitionsToImportFromConfigurationProvidedList() {
-    List<DefinitionImportInformation> processDefinitionsToImport = new ArrayList<>();
+  private List<DefinitionBasedImportPage> retrieveDefinitionsToImportFromConfigurationProvidedList() {
+    List<DefinitionBasedImportPage> processDefinitionsToImport = new ArrayList<>();
     List<String> configuredProcessDefinitionIds =
         configurationService.getProcessDefinitionIdsToImport();
 
     for (String configuredProcessDefinitionId : configuredProcessDefinitionIds) {
-      DefinitionImportInformation definitionImportInformation =
-          new DefinitionImportInformation();
-      definitionImportInformation.setDefinitionBasedImportIndex(0);
-      definitionImportInformation.setMaxEntityCount(0);
-      definitionImportInformation.setProcessDefinitionId(configuredProcessDefinitionId);
-      processDefinitionsToImport.add(definitionImportInformation);
+      DefinitionBasedImportPage DefinitionBasedImportPage =
+          new DefinitionBasedImportPage();
+      DefinitionBasedImportPage.setTimestampOfLastEntity(OffsetDateTime.ofInstant(Instant.EPOCH, ZoneId.systemDefault()));
+      DefinitionBasedImportPage.setProcessDefinitionId(configuredProcessDefinitionId);
+      processDefinitionsToImport.add(DefinitionBasedImportPage);
     }
     return processDefinitionsToImport;
   }
 
-  private List<DefinitionImportInformation> retrieveDefinitionToImportFromEngine(EngineContext engineContext) {
+  private List<DefinitionBasedImportPage> retrieveDefinitionToImportFromEngine(EngineContext engineContext) {
     int currentStart = 0;
     long maxPageSize = configurationService.getEngineImportProcessDefinitionMaxPageSize();
     List<ProcessDefinitionEngineDto> currentPage = null;
@@ -98,16 +98,15 @@ public class EngineProcessDefinitions {
       logger.error("can't read initial PD list from the engine [{}]", engineContext.getEngineAlias(), e);
     }
 
-    HashMap<String, TreeSet<VersionedDefinitionImportInformation>> versionSortedProcesses = new HashMap<>();
+    HashMap<String, TreeSet<VersionedDefinitionBasedImportPage>> versionSortedProcesses = new HashMap<>();
     while (currentPage != null && !currentPage.isEmpty()) {
 
       for (ProcessDefinitionEngineDto dto : currentPage) {
-        VersionedDefinitionImportInformation definitionImportInformation =
-            new VersionedDefinitionImportInformation();
-        definitionImportInformation.setDefinitionBasedImportIndex(0);
-        definitionImportInformation.setMaxEntityCount(0);
-        definitionImportInformation.setProcessDefinitionId(dto.getId());
-        definitionImportInformation.setVersion(dto.getVersion());
+        VersionedDefinitionBasedImportPage DefinitionBasedImportPage =
+            new VersionedDefinitionBasedImportPage();
+        DefinitionBasedImportPage.setTimestampOfLastEntity(OffsetDateTime.ofInstant(Instant.EPOCH, ZoneId.systemDefault()));
+        DefinitionBasedImportPage.setProcessDefinitionId(dto.getId());
+        DefinitionBasedImportPage.setVersion(dto.getVersion());
 
         if (!versionSortedProcesses.containsKey(dto.getKey())) {
           versionSortedProcesses.put(
@@ -115,28 +114,28 @@ public class EngineProcessDefinitions {
               new TreeSet<>((o1, o2) -> Integer.compare(o2.getVersion(), o1.getVersion()))
           );
         }
-        versionSortedProcesses.get(dto.getKey()).add(definitionImportInformation);
+        versionSortedProcesses.get(dto.getKey()).add(DefinitionBasedImportPage);
       }
       currentStart = currentStart + currentPage.size();
       currentPage = engineEntityFetcher.fetchProcessDefinitions(currentStart, maxPageSize);
     }
-    List<DefinitionImportInformation> result = buildSortedOrder(versionSortedProcesses);
+    List<DefinitionBasedImportPage> result = buildSortedOrder(versionSortedProcesses);
     // transform to unversioned definition import information. Otherwise we have later
     // problems to store the information to Elasticsearch.
     result = result
         .stream()
-        .map(DefinitionImportInformation::copy)
+        .map(DefinitionBasedImportPage::copy)
         .collect(Collectors.toList());
     return result;
   }
 
-  private List<DefinitionImportInformation> buildSortedOrder(HashMap<String, TreeSet<VersionedDefinitionImportInformation>> processDefinitionsToImport) {
-    ArrayList<DefinitionImportInformation> result = new ArrayList<>();
+  private List<DefinitionBasedImportPage> buildSortedOrder(HashMap<String, TreeSet<VersionedDefinitionBasedImportPage>> processDefinitionsToImport) {
+    ArrayList<DefinitionBasedImportPage> result = new ArrayList<>();
     while (!processDefinitionsToImport.isEmpty()) {
-      Iterator<Map.Entry<String, TreeSet<VersionedDefinitionImportInformation>>> iterator =
+      Iterator<Map.Entry<String, TreeSet<VersionedDefinitionBasedImportPage>>> iterator =
           processDefinitionsToImport.entrySet().iterator();
       while (iterator.hasNext()) {
-        Map.Entry<String,TreeSet<VersionedDefinitionImportInformation>> entry = iterator.next();
+        Map.Entry<String,TreeSet<VersionedDefinitionBasedImportPage>> entry = iterator.next();
         if (!entry.getValue().isEmpty()) {
           result.add(entry.getValue().pollFirst());
         } else {

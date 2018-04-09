@@ -1,8 +1,12 @@
-package org.camunda.optimize.service.engine.importing.index.handler;
+package org.camunda.optimize.service.engine.importing.service.mediator;
 
-import org.camunda.optimize.service.engine.importing.index.page.ImportPage;
+import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandler;
+import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandlerProvider;
+import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.util.BeanHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.elasticsearch.client.Client;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,10 +14,27 @@ import org.springframework.beans.factory.annotation.Autowired;
 import javax.annotation.PostConstruct;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Optional;
 
-public abstract class BackoffImportIndexHandler<PAGE extends ImportPage, INDEX>
-  implements ImportIndexHandler<PAGE, INDEX> {
+public abstract class BackoffImportMediator<T extends ImportIndexHandler> implements EngineImportMediator {
+
+  protected T importIndexHandler;
+  @Autowired
+  protected BeanHelper beanHelper;
+
+  @Autowired
+  protected ConfigurationService configurationService;
+
+  @Autowired
+  protected Client esClient;
+
+  @Autowired
+  protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
+
+  @Autowired
+  protected ImportIndexHandlerProvider provider;
+
+  protected EngineContext engineContext;
+
 
   protected Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -21,12 +42,6 @@ public abstract class BackoffImportIndexHandler<PAGE extends ImportPage, INDEX>
   private long backoffCounter = STARTING_BACKOFF;
   private OffsetDateTime dateUntilPaginationIsBlocked = OffsetDateTime.now().minusMinutes(1L);
   private OffsetDateTime nextReset;
-
-  @Autowired
-  protected ConfigurationService configurationService;
-
-  @Autowired
-  protected BeanHelper beanHelper;
 
   @PostConstruct
   private void initialize() {
@@ -51,44 +66,35 @@ public abstract class BackoffImportIndexHandler<PAGE extends ImportPage, INDEX>
 
   protected abstract void init();
 
+  protected abstract boolean importNextEnginePage();
+
   @Override
-  public Optional<PAGE> getNextPage() {
+  public void importNextPage() {
     if (isReadyToFetchNextPage()) {
-      Optional<PAGE> page = getNextPageWithErrorCheck();
-      if (page.isPresent()) {
+      boolean pageIsPresent = getNextPageWithErrorCheck();
+      if (pageIsPresent) {
         resetBackoff();
-        return page;
       } else {
         calculateNewDateUntilIsBlocked();
-        return Optional.empty();
       }
     }
-    return Optional.empty();
   }
 
-  private Optional<PAGE> getNextPageWithErrorCheck() {
+  private boolean getNextPageWithErrorCheck() {
     try {
-      return getNextImportPage();
+      return importNextEnginePage();
     } catch (Exception e) {
       logger.error(
           "Was not able to produce next page. Maybe a problem with the connection to the engine [{}]?",
-          this.getEngineContext().getEngineAlias(),
+          this.engineContext.getEngineAlias(),
           e
       );
-      return Optional.empty();
+      return false;
     }
   }
 
-  /**
-   * Retrieves all information to import a new page from the engine. With
-   * especially an offset where to start the import and the number of
-   * instances to fetch.
-   */
-  protected abstract Optional<PAGE> getNextImportPage();
-
-
   public void restartImportCycle () {
-    //nothing to do by default
+    importIndexHandler.restartImportCycle();
   }
 
   private void calculateNewDateUntilIsBlocked() {
@@ -115,7 +121,7 @@ public abstract class BackoffImportIndexHandler<PAGE extends ImportPage, INDEX>
         this.restartImportCycle();
       }
     } catch (Exception e) {
-      logger.error("Can't restart or restart index for engine [{}]", this.getEngineContext().getEngineAlias());
+      logger.error("Can't restart or restart index for engine [{}]", this.engineContext.getEngineAlias());
     }
   }
 
@@ -127,17 +133,18 @@ public abstract class BackoffImportIndexHandler<PAGE extends ImportPage, INDEX>
   }
 
   private boolean isReadyToFetchNextPage() {
-    boolean isReady = dateUntilPaginationIsBlocked.isBefore(OffsetDateTime.now());
-    logger.debug("is ready to fetch next page [{}]", isReady);
-    return isReady;
+    return dateUntilPaginationIsBlocked.isBefore(OffsetDateTime.now());
   }
 
   @Override
-  public boolean hasNewPage() {
-    return isReadyToFetchNextPage() && canCreateNewPage();
+  public boolean canImport() {
+    boolean canImportNewPage = isReadyToFetchNextPage() && hasNewPage();
+    logger.debug("can import next page [{}]", canImportNewPage);
+    return canImportNewPage;
   }
 
-  protected abstract boolean canCreateNewPage();
+  protected abstract boolean hasNewPage();
+
 
   /**
    * Method is invoked by scheduler once no more jobs are created by factories
@@ -156,8 +163,8 @@ public abstract class BackoffImportIndexHandler<PAGE extends ImportPage, INDEX>
     dateUntilPaginationIsBlocked = OffsetDateTime.now().minusMinutes(1L);
   }
 
-  @Override
   public void resetImportIndex() {
     resetBackoff();
+    importIndexHandler.resetImportIndex();
   }
 }

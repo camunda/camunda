@@ -5,18 +5,22 @@ import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.index.page.AllEntitiesBasedImportPage;
 import org.camunda.optimize.service.es.reader.ImportIndexReader;
 import org.camunda.optimize.service.util.EsHelper;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.util.Optional;
 import java.util.OptionalDouble;
 
 @Component
 public abstract class AllEntitiesBasedImportIndexHandler
-  extends BackoffImportIndexHandler<AllEntitiesBasedImportPage, AllEntitiesBasedImportIndexDto> {
+  implements ImportIndexHandler<AllEntitiesBasedImportPage, AllEntitiesBasedImportIndexDto> {
 
   @Autowired
   protected ImportIndexReader importIndexReader;
+  @Autowired
+  protected ConfigurationService configurationService;
 
   protected long importIndex = 0;
   protected long maxEntityCount = 0;
@@ -26,6 +30,7 @@ public abstract class AllEntitiesBasedImportIndexHandler
     this.engineContext = engineContext;
   }
 
+  @PostConstruct
   protected void init() {
     updateMaxEntityCount();
     readIndexFromElasticsearch();
@@ -51,8 +56,8 @@ public abstract class AllEntitiesBasedImportIndexHandler
   }
 
   @Override
-  public Optional<AllEntitiesBasedImportPage> getNextImportPage() {
-    if (canCreateNewPage()) {
+  public Optional<AllEntitiesBasedImportPage> getNextPage() {
+    if (hasNewPage()) {
       AllEntitiesBasedImportPage page = new AllEntitiesBasedImportPage();
       page.setIndexOfFirstResult(importIndex);
       long nextPageSize = getNextPageSize();
@@ -92,7 +97,7 @@ public abstract class AllEntitiesBasedImportIndexHandler
     return importIndex == 0 && maxEntityCount == 0;
   }
 
-  protected boolean canCreateNewPage() {
+  public boolean hasNewPage() {
     if (indexReachedMaxCount()) {
       updateMaxEntityCount();
       return !indexReachedMaxCount();
@@ -104,7 +109,7 @@ public abstract class AllEntitiesBasedImportIndexHandler
     return importIndex >= maxEntityCount;
   }
 
-  protected long getNextPageSize() {
+  private long getNextPageSize() {
     long diff = maxEntityCount - importIndex;
     long nextPageSize = Math.min(getMaxPageSize(), diff);
     nextPageSize = Math.max(0L, nextPageSize);
@@ -115,17 +120,21 @@ public abstract class AllEntitiesBasedImportIndexHandler
     return importIndex;
   }
 
-  protected void moveImportIndex(long units) {
+  private void moveImportIndex(long units) {
     importIndex += units;
   }
 
   public void resetImportIndex() {
-    super.resetImportIndex();
     importIndex = 0;
   }
 
   @Override
   public EngineContext getEngineContext() {
     return engineContext;
+  }
+
+  @Override
+  public void restartImportCycle() {
+    // nothing to do here
   }
 }

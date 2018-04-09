@@ -20,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Component
@@ -33,6 +34,8 @@ public class ImportIndexWriter {
   private ConfigurationService configurationService;
   @Autowired
   private ObjectMapper objectMapper;
+  @Autowired
+  private DateTimeFormatter dateTimeFormatter;
 
   public void importIndexes(CombinedImportIndexesDto importIndexes) {
     logger.debug("Writing import index to Elasticsearch");
@@ -51,8 +54,10 @@ public class ImportIndexWriter {
   }
 
   private IndexRequestBuilder createDefinitionBasedRequest(DefinitionBasedImportIndexDto importIndex) {
+    String currentTimeStamp =
+      dateTimeFormatter.format(importIndex.getCurrentProcessDefinition().getTimestampOfLastEntity());
     logger.debug("Writing definition based import index [{}] of type [{}] to elasticsearch",
-      importIndex.getCurrentProcessDefinition().getDefinitionBasedImportIndex(), importIndex.getEsTypeIndexRefersTo());
+      currentTimeStamp, importIndex.getEsTypeIndexRefersTo());
     try {
       return esclient
         .prepareIndex(

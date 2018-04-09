@@ -3,29 +3,25 @@ package org.camunda.optimize.service.engine.importing.service;
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.engine.importing.fetcher.instance.EngineEntityFetcher;
-import org.camunda.optimize.service.engine.importing.index.page.DefinitionBasedImportPage;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
-import org.camunda.optimize.service.es.writer.EventsWriter;
 import org.camunda.optimize.service.engine.importing.diff.MissingEntitiesFinder;
+import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.EventElasticsearchImportJob;
+import org.camunda.optimize.service.es.writer.EventsWriter;
 
 import java.util.List;
 
 public class ActivityInstanceImportService extends
-  ImportService<HistoricActivityInstanceEngineDto, FlowNodeEventDto, DefinitionBasedImportPage> {
+  ImportService<HistoricActivityInstanceEngineDto, FlowNodeEventDto> {
 
   private EventsWriter eventsWriter;
 
   public ActivityInstanceImportService(EventsWriter eventsWriter,
                                        ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
                                        MissingEntitiesFinder<HistoricActivityInstanceEngineDto> missingActivityFinder,
-                                       EngineEntityFetcher<HistoricActivityInstanceEngineDto,
-                                         DefinitionBasedImportPage> engineEntityFetcher,
                                        EngineContext engineContext
   ) {
-    super(elasticsearchImportJobExecutor, missingActivityFinder, engineEntityFetcher, engineContext);
+    super(elasticsearchImportJobExecutor, missingActivityFinder, engineContext);
     this.eventsWriter = eventsWriter;
   }
 

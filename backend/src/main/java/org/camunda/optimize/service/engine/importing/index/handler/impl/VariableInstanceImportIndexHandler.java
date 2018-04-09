@@ -1,7 +1,6 @@
 package org.camunda.optimize.service.engine.importing.index.handler.impl;
 
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.engine.importing.index.ProcessDefinitionManager;
 import org.camunda.optimize.service.engine.importing.index.handler.ScrollBasedImportIndexHandler;
 import org.camunda.optimize.service.util.EsHelper;
 import org.elasticsearch.action.search.SearchResponse;
@@ -13,12 +12,10 @@ import org.elasticsearch.indices.TermsLookup;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -28,6 +25,7 @@ import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.DO
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.ENGINE;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.INTEGER_VARIABLES;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.LONG_VARIABLES;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_DEFINITION_ID;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_INSTANCE_ID;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.SHORT_VARIABLES;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.START_DATE;
@@ -42,16 +40,8 @@ import static org.elasticsearch.index.query.QueryBuilders.termsLookupQuery;
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class VariableInstanceImportIndexHandler extends ScrollBasedImportIndexHandler {
 
-  @Autowired
-  private ProcessDefinitionManager processDefinitionManager;
-
   public VariableInstanceImportIndexHandler(EngineContext engineContext) {
     this.engineContext = engineContext;
-  }
-
-  @PostConstruct
-  public void init() {
-    super.init();
   }
 
 
@@ -59,12 +49,22 @@ public class VariableInstanceImportIndexHandler extends ScrollBasedImportIndexHa
   public long fetchMaxEntityCount() {
     // here the import index is based on process instances and therefore
     // we need to fetch the maximum number of process instances
-    SearchResponse response = esclient
-      .prepareSearch(configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()))
-      .setTypes(configurationService.getProcessInstanceType())
-      .setQuery(buildBasicQuery())
-      .setSize(0) // Don't return any documents, we don't need them.
-      .get();
+    performRefresh();
+
+    SearchResponse response;
+    if (scrollId != null) {
+      response = esclient
+        .prepareSearchScroll(scrollId)
+        .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
+        .get();
+    } else {
+      response = esclient
+        .prepareSearch(configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()))
+        .setTypes(configurationService.getProcessInstanceType())
+        .setQuery(buildBasicQuery())
+        .setSize(0) // Don't return any documents, we don't need them.
+        .get();
+    }
     return response.getHits().getTotalHits();
   }
 
@@ -115,7 +115,7 @@ public class VariableInstanceImportIndexHandler extends ScrollBasedImportIndexHa
     esclient
       .admin()
       .indices()
-      .prepareRefresh()
+      .prepareRefresh(configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()))
       .get();
   }
 
@@ -140,7 +140,7 @@ public class VariableInstanceImportIndexHandler extends ScrollBasedImportIndexHa
     if (configurationService.areProcessDefinitionsToImportDefined()) {
       for (String processDefinitionId : configurationService.getProcessDefinitionIdsToImport()) {
         query
-          .should(termQuery("processDefinitionId", processDefinitionId));
+          .should(termQuery(PROCESS_DEFINITION_ID, processDefinitionId));
       }
     }
     return query;

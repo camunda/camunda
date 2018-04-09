@@ -7,8 +7,6 @@ import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionXmlOptimizeDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.diff.MissingEntitiesFinder;
-import org.camunda.optimize.service.engine.importing.fetcher.instance.EngineEntityFetcher;
-import org.camunda.optimize.service.engine.importing.index.page.DefinitionBasedImportPage;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.ProcessDefinitionXmlElasticsearchImportJob;
@@ -20,7 +18,7 @@ import java.util.List;
 import java.util.Map;
 
 public class ProcessDefinitionXmlImportService extends
-  ImportService<ProcessDefinitionXmlEngineDto, ProcessDefinitionXmlOptimizeDto, DefinitionBasedImportPage> {
+  ImportService<ProcessDefinitionXmlEngineDto, ProcessDefinitionXmlOptimizeDto> {
 
   private ProcessDefinitionXmlWriter processDefinitionXmlWriter;
 
@@ -28,10 +26,9 @@ public class ProcessDefinitionXmlImportService extends
       ProcessDefinitionXmlWriter processDefinitionXmlWriter,
       ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
       MissingEntitiesFinder<ProcessDefinitionXmlEngineDto> missingEntitiesFinder,
-      EngineEntityFetcher<ProcessDefinitionXmlEngineDto, DefinitionBasedImportPage> engineEntityFetcher,
       EngineContext engineContext
   ) {
-    super(elasticsearchImportJobExecutor, missingEntitiesFinder, engineEntityFetcher, engineContext);
+    super(elasticsearchImportJobExecutor, missingEntitiesFinder, engineContext);
     this.processDefinitionXmlWriter = processDefinitionXmlWriter;
 
   }

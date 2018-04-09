@@ -2,14 +2,13 @@ package org.camunda.optimize.service.engine.importing.fetcher.instance;
 
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.engine.importing.index.page.DefinitionBasedImportPage;
+import org.camunda.optimize.service.engine.importing.index.page.AllEntitiesBasedImportPage;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.INDEX_OF_FIRST_RESULT;
@@ -23,79 +22,75 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessDefinitionFetcher
-    extends RetryBackoffEngineEntityFetcher<ProcessDefinitionEngineDto, DefinitionBasedImportPage> {
+  extends RetryBackoffEngineEntityFetcher<ProcessDefinitionEngineDto, AllEntitiesBasedImportPage> {
 
   public ProcessDefinitionFetcher(EngineContext engineContext) {
     super(engineContext);
   }
 
   @Override
-  protected List<ProcessDefinitionEngineDto> fetchEntities(DefinitionBasedImportPage page) {
-    return fetchProcessDefinitions(
+  protected List<ProcessDefinitionEngineDto> fetchEntities(AllEntitiesBasedImportPage page) {
+    if (configurationService.getProcessDefinitionIdsToImport().isEmpty()) {
+      return fetchProcessDefinitions(
         page.getIndexOfFirstResult(),
-        page.getPageSize(),
-        page.getCurrentProcessDefinitionId()
-    );
+        page.getPageSize()
+      );
+    } else {
+      return fetchConfiguredProcessDefinitions(configurationService.getProcessDefinitionIdsToImport());
+    }
   }
 
-
-  public List<ProcessDefinitionEngineDto> fetchProcessDefinitions(
-      long indexOfFirstResult,
-      long maxPageSize,
-      String currentProcessDefinitionId
-  ) {
-
+  public List<ProcessDefinitionEngineDto> fetchProcessDefinitions(long indexOfFirstResult, long maxPageSize) {
     List<ProcessDefinitionEngineDto> entries;
 
     long requestStart = System.currentTimeMillis();
     entries = getEngineClient()
-        .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
-        .path(configurationService.getProcessDefinitionEndpoint())
-        .queryParam(INDEX_OF_FIRST_RESULT, indexOfFirstResult)
-        .queryParam(MAX_RESULTS_TO_RETURN, maxPageSize)
-        .queryParam(SORT_BY, SORT_TYPE_ID)
-        .queryParam(SORT_ORDER, SORT_ORDER_TYPE_DESCENDING)
-        .queryParam(PROCESS_DEFINITION_ID_IN, currentProcessDefinitionId)
-        .request(MediaType.APPLICATION_JSON)
-        .acceptEncoding(UTF8)
-        .get(new GenericType<List<ProcessDefinitionEngineDto>>() {
-        });
+      .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
+      .path(configurationService.getProcessDefinitionEndpoint())
+      .queryParam(INDEX_OF_FIRST_RESULT, indexOfFirstResult)
+      .queryParam(MAX_RESULTS_TO_RETURN, maxPageSize)
+      .queryParam(SORT_BY, SORT_TYPE_ID)
+      .queryParam(SORT_ORDER, SORT_ORDER_TYPE_DESCENDING)
+      .request(MediaType.APPLICATION_JSON)
+      .acceptEncoding(UTF8)
+      .get(new GenericType<List<ProcessDefinitionEngineDto>>() {
+      });
 
     long requestEnd = System.currentTimeMillis();
     logger.debug(
-        "Fetched [{}] process definitions within [{}] ms",
-        entries.size(),
-        requestEnd - requestStart
+      "Fetched [{}] process definitions within [{}] ms",
+      entries.size(),
+      requestEnd - requestStart
     );
 
 
     return entries;
   }
 
-  public List<ProcessDefinitionEngineDto> fetchProcessDefinitions(int indexOfFirstResult, long maxPageSize) {
+  private List<ProcessDefinitionEngineDto> fetchConfiguredProcessDefinitions(List<String> definitionsToImport) {
     List<ProcessDefinitionEngineDto> entries;
 
     long requestStart = System.currentTimeMillis();
     entries = getEngineClient()
-        .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
-        .path(configurationService.getProcessDefinitionEndpoint())
-        .queryParam(INDEX_OF_FIRST_RESULT, indexOfFirstResult)
-        .queryParam(MAX_RESULTS_TO_RETURN, maxPageSize)
-        .queryParam(SORT_BY, SORT_TYPE_ID)
-        .queryParam(SORT_ORDER, SORT_ORDER_TYPE_DESCENDING)
-        .request(MediaType.APPLICATION_JSON)
-        .acceptEncoding(UTF8)
-        .get(new GenericType<List<ProcessDefinitionEngineDto>>() {
-        });
+      .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
+      .path(configurationService.getProcessDefinitionEndpoint())
+      .queryParam(PROCESS_DEFINITION_ID_IN, definitionsToImport)
+      .queryParam(SORT_BY, SORT_TYPE_ID)
+      .queryParam(SORT_ORDER, SORT_ORDER_TYPE_DESCENDING)
+      .request(MediaType.APPLICATION_JSON)
+      .acceptEncoding(UTF8)
+      .get(new GenericType<List<ProcessDefinitionEngineDto>>() {
+      });
 
     long requestEnd = System.currentTimeMillis();
     logger.debug(
-        "Fetched [{}] process definitions within [{}] ms",
-        entries.size(),
-        requestEnd - requestStart
+      "Fetched [{}] process definitions within [{}] ms",
+      entries.size(),
+      requestEnd - requestStart
     );
 
 
     return entries;
   }
+
 }

@@ -57,7 +57,6 @@ public class MissingEntitiesFinder<ENG extends EngineDto> {
   }
 
   private Set<String> getIdsOfDocumentsAlreadyInElasticsearch(List<ENG> engineEntities) {
-
     String[] engineIds = getEngineIds(engineEntities);
     QueryBuilder qb = idsQuery(elasticseachType)
         .addIds(engineIds);

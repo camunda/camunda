@@ -1,40 +1,40 @@
 package org.camunda.optimize.dto.optimize.importing.index;
 
-import org.camunda.optimize.dto.optimize.importing.DefinitionImportInformation;
+import org.camunda.optimize.service.engine.importing.index.page.DefinitionBasedImportPage;
 
 import java.util.List;
 
 public class DefinitionBasedImportIndexDto implements ImportIndexDto {
 
-  protected DefinitionImportInformation currentProcessDefinition;
+  protected DefinitionBasedImportPage currentProcessDefinition;
   protected long totalEntitiesImported;
-  protected List<DefinitionImportInformation> alreadyImportedProcessDefinitions;
-  protected List<DefinitionImportInformation> processDefinitionsToImport;
+  protected List<DefinitionBasedImportPage> alreadyImportedProcessDefinitions;
+  protected List<DefinitionBasedImportPage> processDefinitionsToImport;
   protected String esTypeIndexRefersTo;
   protected String engine;
 
-  public DefinitionImportInformation getCurrentProcessDefinition() {
+  public DefinitionBasedImportPage getCurrentProcessDefinition() {
     return currentProcessDefinition;
   }
 
-  public void setCurrentProcessDefinition(DefinitionImportInformation currentProcessDefinition) {
+  public void setCurrentProcessDefinition(DefinitionBasedImportPage currentProcessDefinition) {
     this.currentProcessDefinition = currentProcessDefinition;
   }
 
-  public List<DefinitionImportInformation> getAlreadyImportedProcessDefinitions() {
+  public List<DefinitionBasedImportPage> getAlreadyImportedProcessDefinitions() {
     return alreadyImportedProcessDefinitions;
   }
 
-  public void setAlreadyImportedProcessDefinitions(List<DefinitionImportInformation>
+  public void setAlreadyImportedProcessDefinitions(List<DefinitionBasedImportPage>
                                                      alreadyImportedProcessDefinitions) {
     this.alreadyImportedProcessDefinitions = alreadyImportedProcessDefinitions;
   }
 
-  public List<DefinitionImportInformation> getProcessDefinitionsToImport() {
+  public List<DefinitionBasedImportPage> getProcessDefinitionsToImport() {
     return processDefinitionsToImport;
   }
 
-  public void setProcessDefinitionsToImport(List<DefinitionImportInformation> processDefinitionsToImport) {
+  public void setProcessDefinitionsToImport(List<DefinitionBasedImportPage> processDefinitionsToImport) {
     this.processDefinitionsToImport = processDefinitionsToImport;
   }
 

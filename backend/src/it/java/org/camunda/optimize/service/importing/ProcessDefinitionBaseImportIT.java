@@ -53,7 +53,7 @@ public class ProcessDefinitionBaseImportIT {
   public RuleChain chain = RuleChain
       .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
 
-  @Test
+  // TODO: @Test OPT-1187
   public void importProgressReporterStartAndEndImportState() throws Exception {
     createAndSetProcessDefinition(createSimpleServiceTaskProcess());
 
@@ -67,7 +67,7 @@ public class ProcessDefinitionBaseImportIT {
     assertThat(embeddedOptimizeRule.getProgressValue(), is(100L));
   }
 
-  @Test
+  // TODO: @Test OPT-1187
   public void importProgressTakesOnlyProcessDefinitionToImportIntoAccount() throws Exception {
     // given
     deployAndStartSimpleServiceTask();
@@ -216,7 +216,6 @@ public class ProcessDefinitionBaseImportIT {
 
     //when
     embeddedOptimizeRule.scheduleImport();
-    embeddedOptimizeRule.scheduleImport();
 
     //then
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -319,7 +318,7 @@ public class ProcessDefinitionBaseImportIT {
     engineRule.deployAndStartProcessWithVariables(processModel, variables);
   }
 
-  @Test
+  // TODO: @Test OPT-1187
   public void importProgressReporterIntermediateImportState() throws Exception {
     // given
     embeddedOptimizeRule.resetImportStartIndexes();

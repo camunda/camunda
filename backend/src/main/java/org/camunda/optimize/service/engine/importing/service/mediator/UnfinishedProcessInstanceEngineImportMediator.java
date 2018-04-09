@@ -14,14 +14,14 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import java.util.List;
 import java.util.Optional;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class UnfinishedProcessInstanceEngineImportMediator
-    extends EngineImportMediatorImpl<UnfinishedProcessInstanceImportIndexHandler> {
+    extends BackoffImportMediator<UnfinishedProcessInstanceImportIndexHandler> {
 
-  private MissingEntitiesFinder<HistoricProcessInstanceDto> missingEntitiesFinder;
   private UnfinishedProcessInstanceFetcher engineEntityFetcher;
 
   private UnfinishedProcessInstanceImportService unfinishedProcessInstanceImportService;
@@ -40,34 +40,36 @@ public class UnfinishedProcessInstanceEngineImportMediator
   public void init() {
     importIndexHandler = provider.getUnfinishedProcessInstanceImportIndexHandler(engineContext.getEngineAlias());
     engineEntityFetcher = beanHelper.getInstance(UnfinishedProcessInstanceFetcher.class, engineContext);
-    missingEntitiesFinder = new MissingEntitiesFinder<>(
+    MissingEntitiesFinder<HistoricProcessInstanceDto> missingEntitiesFinder =
+      new MissingEntitiesFinder<>(
         configurationService,
         esClient,
         configurationService.getUnfinishedProcessInstanceIdTrackingType()
-    );
-    unfinishedProcessInstanceImportService = new UnfinishedProcessInstanceImportService(
-        unfinishedProcessInstanceWriter,
-        elasticsearchImportJobExecutor,
-        missingEntitiesFinder,
-        engineEntityFetcher,
-        engineContext
       );
+    unfinishedProcessInstanceImportService = new UnfinishedProcessInstanceImportService(
+      unfinishedProcessInstanceWriter,
+      elasticsearchImportJobExecutor,
+      missingEntitiesFinder,
+      engineContext
+    );
   }
 
   @Override
-  public void importNextPage() {
+  protected boolean importNextEnginePage() {
     Optional<IdSetBasedImportPage> page = importIndexHandler.getNextPage();
-    page.ifPresent(unfinishedProcessInstanceImportService::executeImport);
+    if (page.isPresent() && !page.get().getIds().isEmpty()) {
+      List<HistoricProcessInstanceDto> entities =  engineEntityFetcher.fetchEngineEntities(page.get());
+      if (!entities.isEmpty()) {
+        unfinishedProcessInstanceImportService.executeImport(entities);
+        return true;
+      }
+    }
+    return false;
   }
 
   @Override
-  public boolean canImport() {
+  public boolean hasNewPage() {
     return importIndexHandler.hasNewPage();
-  }
-
-  @Override
-  public long getBackoffTimeInMs() {
-    return importIndexHandler.getBackoffTimeInMs();
   }
 
 }

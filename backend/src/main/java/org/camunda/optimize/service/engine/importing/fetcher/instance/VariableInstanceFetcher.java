@@ -35,7 +35,7 @@ public class  VariableInstanceFetcher
     return fetchHistoricVariableInstances(page.getIds());
   }
 
-  public List<HistoricVariableInstanceDto> fetchHistoricVariableInstances(Set<String> processInstanceIds) {
+  private List<HistoricVariableInstanceDto> fetchHistoricVariableInstances(Set<String> processInstanceIds) {
     long requestStart = System.currentTimeMillis();
 
     Map<String, Set<String>> pids = new HashMap<>();

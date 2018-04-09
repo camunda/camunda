@@ -25,7 +25,7 @@ import java.util.Map;
 
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType.BPMN_20_XML;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType.ENGINE;
-import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType.PROCESSS_DEFINITION_ID;
+import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType.PROCESS_DEFINITION_ID;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
@@ -95,7 +95,7 @@ public abstract class ReportCommand <T extends ReportResultDto>  implements Comm
 
         result = new ProcessDefinitionXmlOptimizeDto ();
         result.setBpmn20Xml(response.getSource().get(BPMN_20_XML).toString());
-        result.setProcessDefinitionId(response.getSource().get(PROCESSS_DEFINITION_ID).toString());
+        result.setProcessDefinitionId(response.getSource().get(PROCESS_DEFINITION_ID).toString());
         if (response.getSource().get(ENGINE) != null) {
           result.setEngine(response.getSource().get(ENGINE).toString());
         }

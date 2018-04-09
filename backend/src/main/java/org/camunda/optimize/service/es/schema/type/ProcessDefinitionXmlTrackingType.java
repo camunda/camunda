@@ -7,21 +7,21 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 
 @Component
-public class VariableProcessInstanceTrackingType extends StrictTypeMappingCreator {
+public class ProcessDefinitionXmlTrackingType extends StrictTypeMappingCreator {
 
-  public static final String VARIABLE_PROCESS_INSTANCE_TRACKING_TYPE = "variable-process-instance-tracking";
+  public static final String PROCESS_DEFINITION_XML_TRACKING_TYPE = "process-definition-xml-tracking";
 
-  public static final String PROCESS_INSTANCE_IDS = "ids";
+  public static final String PROCESS_DEFINITION_IDS = "ids";
 
   @Override
   public String getType() {
-    return VARIABLE_PROCESS_INSTANCE_TRACKING_TYPE;
+    return PROCESS_DEFINITION_XML_TRACKING_TYPE;
   }
 
   @Override
   protected XContentBuilder addProperties(XContentBuilder builder) throws IOException {
     return builder
-      .startObject(PROCESS_INSTANCE_IDS)
+      .startObject(PROCESS_DEFINITION_IDS)
         .field("type", "keyword")
       .endObject();
   }

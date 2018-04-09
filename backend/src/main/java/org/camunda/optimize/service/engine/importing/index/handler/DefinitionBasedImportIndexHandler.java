@@ -1,14 +1,19 @@
 package org.camunda.optimize.service.engine.importing.index.handler;
 
-import org.camunda.optimize.dto.optimize.importing.DefinitionImportInformation;
-import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionInformationNotAvailable;
+import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionImportPageNotAvailable;
 import org.camunda.optimize.dto.optimize.importing.index.DefinitionBasedImportIndexDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.index.ProcessDefinitionManager;
 import org.camunda.optimize.service.engine.importing.index.page.DefinitionBasedImportPage;
 import org.camunda.optimize.service.es.reader.DefinitionBasedImportIndexReader;
+import org.camunda.optimize.service.util.BeanHelper;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import javax.annotation.PostConstruct;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -17,45 +22,40 @@ import java.util.OptionalDouble;
 import java.util.Set;
 
 public abstract class DefinitionBasedImportIndexHandler
-  extends BackoffImportIndexHandler<DefinitionBasedImportPage, DefinitionBasedImportIndexDto> {
+  implements ImportIndexHandler<DefinitionBasedImportPage, DefinitionBasedImportIndexDto> {
+
+  protected Logger logger = LoggerFactory.getLogger(getClass());
 
   @Autowired
-  protected DefinitionBasedImportIndexReader importIndexReader;
+  private DefinitionBasedImportIndexReader importIndexReader;
   @Autowired
-  protected ProcessDefinitionManager processDefinitionManager;
+  private ProcessDefinitionManager processDefinitionManager;
+  @Autowired
+  protected ConfigurationService configurationService;
+  @Autowired
+  protected BeanHelper beanHelper;
 
-  protected List<DefinitionImportInformation> processDefinitionsToImport = new ArrayList<>();
-  protected Set<DefinitionImportInformation> alreadyImportedProcessDefinitions = new HashSet<>();
+  private List<DefinitionBasedImportPage> processDefinitionsToImport = new ArrayList<>();
+  private Set<DefinitionBasedImportPage> alreadyImportedProcessDefinitions = new HashSet<>();
 
-  protected DefinitionImportInformation currentIndex = new ProcessDefinitionInformationNotAvailable();
-  protected Long totalEntitiesImported = 0L;
+  private DefinitionBasedImportPage currentIndex = new ProcessDefinitionImportPageNotAvailable();
 
+  private OffsetDateTime maxTimestamp;
   protected EngineContext engineContext;
 
   public DefinitionBasedImportIndexHandler(EngineContext engineContext) {
     this.engineContext = engineContext;
   }
 
+  @PostConstruct
   protected void init() {
-    resetCurrentIndex();
     loadImportDefaults();
     readIndexFromElasticsearch();
   }
 
-  /**
-   * Fetch the maximum number of entities that belong to that process definition.
-   */
-  protected abstract long fetchMaxEntityCountForDefinition(String processDefinitionId);
-
-  /**
-   * Retrieves the maximum page size that should be used for this index handler.
-   */
-  protected abstract long getMaxPageSize();
-
-  /**
-   * Fetches the maximum number of entities that belong to all process definitions.
-   */
-  protected abstract long fetchMaxEntityCountForAllDefinitions();
+  public void updateIndexTimestamp(OffsetDateTime timestamp) {
+    currentIndex.setTimestampOfLastEntity(timestamp);
+  }
 
   /**
    * States the Elasticsearch type where the index information should be stored.
@@ -71,94 +71,52 @@ public abstract class DefinitionBasedImportIndexHandler
       alreadyImportedProcessDefinitions = new HashSet<>(loadedImportIndex.getAlreadyImportedProcessDefinitions());
       processDefinitionsToImport = loadedImportIndex.getProcessDefinitionsToImport();
       currentIndex = loadedImportIndex.getCurrentProcessDefinition();
-      totalEntitiesImported = loadedImportIndex.getTotalEntitiesImported();
     }
   }
 
   @Override
-  public Optional<DefinitionBasedImportPage> getNextImportPage() {
-    if (canCreateNewPage()) {
-      DefinitionBasedImportPage page = new DefinitionBasedImportPage();
-      page.setIndexOfFirstResult(currentIndex.getDefinitionBasedImportIndex());
-      page.setCurrentProcessDefinitionId(currentIndex.getProcessDefinitionId());
-      long nextPageSize = getNextPageSize();
-      page.setPageSize(nextPageSize);
-      moveImportIndex(nextPageSize);
-      return Optional.of(page);
-    } else {
-      addPossiblyNewDefinitionsFromEngineToImportList();
-      return Optional.empty();
-    }
-  }
-
-  private long getNextPageSize() {
-    long diff = currentIndex.getMaxEntityCount() - currentIndex.getDefinitionBasedImportIndex();
-    long nextPageSize = Math.min(getMaxPageSize(), diff);
-    nextPageSize = Math.max(0L, nextPageSize);
-    return nextPageSize;
-  }
-
-  protected boolean canCreateNewPage() {
-    if (currentIndex.reachedMaxCount()) {
-      updateMaxEntityCount();
-      if (currentIndex.reachedMaxCount()) {
-        moveToNextDefinitionToImport();
-        return !currentIndex.reachedMaxCount();
-      }
-    }
-    return true;
-  }
-
-  private void updateMaxEntityCount() {
-    // if process definition id is empty and we fetch max count, then
-    // the max count based on all process definition ids is fetched.
-    if (currentIndex.hasValidProcessDefinitionId()) {
-      currentIndex.setMaxEntityCount(fetchMaxEntityCountForDefinition(currentIndex.getProcessDefinitionId()));
-    }
+  public Optional<DefinitionBasedImportPage> getNextPage() {
+    DefinitionBasedImportPage page = new DefinitionBasedImportPage();
+    page.setTimestampOfLastEntity(currentIndex.getTimestampOfLastEntity());
+    page.setProcessDefinitionId(currentIndex.getProcessDefinitionId());
+    return Optional.of(page);
   }
 
   @Override
   public OptionalDouble computeProgress() {
-    long totalEntityCount = 0;
-    try {
-      totalEntityCount = fetchMaxEntityCountForAllDefinitions();
-    } catch (Exception e) {
-      //nothing to do error has been already reported before
-    }
-    long totalEntitiesImported = this.totalEntitiesImported;
-
-    boolean hasNothingToImport = totalEntityCount == 0L;
-    boolean allEntitiesHaveBeenImported = totalEntitiesImported >= totalEntityCount;
-    if (hasNothingToImport) {
-      return OptionalDouble.empty();
-    } else if (allEntitiesHaveBeenImported) {
-      return OptionalDouble.of(100.0);
-    } else {
-      Long maxCount = Math.max(1L, totalEntityCount);
-      return OptionalDouble.of(totalEntitiesImported / maxCount.doubleValue() * 100.0);
-    }
-  }
-
-  private void resetTotalEntitiesImported() {
-    totalEntitiesImported = 0L;
+    return OptionalDouble.of(100.0);
   }
 
   private void resetCurrentIndex() {
-    currentIndex = new ProcessDefinitionInformationNotAvailable();
+    currentIndex = new ProcessDefinitionImportPageNotAvailable();
   }
 
-  private void moveToNextDefinitionToImport() {
+  public void moveToNextDefinitionToImport() {
     if (hasStillNewDefinitionsToImport()) {
-      if (!(currentIndex instanceof ProcessDefinitionInformationNotAvailable)) {
+      if (!(currentIndex instanceof ProcessDefinitionImportPageNotAvailable)) {
         alreadyImportedProcessDefinitions.add(currentIndex);
       }
       currentIndex = removeFirstItemFromProcessDefinitionsToImport();
-      updateMaxEntityCount();
+      updateMaxTimestamp();
     }
   }
 
-  private DefinitionImportInformation removeFirstItemFromProcessDefinitionsToImport() {
-    DefinitionImportInformation result;
+  private void updateMaxTimestamp() {
+    Optional<OffsetDateTime> maxTimestamp = retrieveMaxTimestamp(currentIndex.getProcessDefinitionId());
+    maxTimestamp.ifPresent(offsetDateTime -> this.maxTimestamp = offsetDateTime);
+  }
+
+  protected abstract Optional<OffsetDateTime> retrieveMaxTimestamp(String processDefinitionId);
+
+  public boolean hasNewPage() {
+    if (!currentIndex.getTimestampOfLastEntity().isBefore(maxTimestamp)) {
+      updateMaxTimestamp();
+    }
+    return currentIndex.getTimestampOfLastEntity().isBefore(maxTimestamp) || hasStillNewDefinitionsToImport();
+  }
+
+  private DefinitionBasedImportPage removeFirstItemFromProcessDefinitionsToImport() {
+    DefinitionBasedImportPage result;
     if (hasStillNewDefinitionsToImport()) {
       result = processDefinitionsToImport.remove(0);
     } else {
@@ -172,19 +130,12 @@ public abstract class DefinitionBasedImportIndexHandler
   }
 
   private void initializeDefinitions() {
-    List<DefinitionImportInformation> processDefinitionsToImport = processDefinitionManager.getAvailableProcessDefinitions(engineContext);
-    this.processDefinitionsToImport = processDefinitionsToImport;
-  }
-
-  public void moveImportIndex(long units) {
-    currentIndex.moveImportIndex(units);
-    totalEntitiesImported += units;
+    this.processDefinitionsToImport = processDefinitionManager.getAvailableProcessDefinitions(engineContext);
   }
 
   @Override
   public DefinitionBasedImportIndexDto createIndexInformationForStoring() {
     DefinitionBasedImportIndexDto indexToStore = new DefinitionBasedImportIndexDto();
-    indexToStore.setTotalEntitiesImported(totalEntitiesImported);
     indexToStore.setCurrentProcessDefinition(currentIndex);
     indexToStore.setAlreadyImportedProcessDefinitions(new ArrayList<>(alreadyImportedProcessDefinitions));
     indexToStore.setProcessDefinitionsToImport(processDefinitionsToImport);
@@ -195,13 +146,12 @@ public abstract class DefinitionBasedImportIndexHandler
 
   @Override
   public void resetImportIndex() {
-    super.resetImportIndex();
     loadImportDefaults();
   }
 
   /**
-   * Resets the process definitions to import, but keeps the relative indexes
-   * from every respective process definition. Thus, we are not importing
+   * Resets the process definitions to import, but keeps the last timestamps
+   * for every respective process definition. Thus, we are not importing
    * all the once again, but starting from the last point we stopped at.
    */
   public void restartImportCycle() {
@@ -213,28 +163,16 @@ public abstract class DefinitionBasedImportIndexHandler
     }
   }
 
-  public Long getCurrentDefinitionBasedImportIndex() {
-    return currentIndex.getDefinitionBasedImportIndex();
-  }
-
-  public List<String> getAllProcessDefinitions() {
-    Set<String> result = new HashSet<>();
-    for (DefinitionImportInformation definitionImportInformation : processDefinitionsToImport) {
-      result.add(definitionImportInformation.getProcessDefinitionId());
-    }
-    result.add(currentIndex.getProcessDefinitionId());
-    for (DefinitionImportInformation alreadyImportedProcessDefinition : alreadyImportedProcessDefinitions) {
-      result.add(alreadyImportedProcessDefinition.getProcessDefinitionId());
-    }
-    return new ArrayList<>(result);
-  }
-
-  public void loadImportDefaults() {
+  private void loadImportDefaults() {
     initializeDefinitions();
     resetAlreadyImportedProcessDefinitions();
     resetCurrentIndex();
-    resetTotalEntitiesImported();
+    resetMaxTimestamp();
     moveToNextDefinitionToImport();
+  }
+
+  private void resetMaxTimestamp() {
+    maxTimestamp = OffsetDateTime.MIN;
   }
 
   private void resetAlreadyImportedProcessDefinitions() {
@@ -246,8 +184,8 @@ public abstract class DefinitionBasedImportIndexHandler
   }
 
   private void addPossiblyNewDefinitionsFromEngineToImportList() {
-    List<DefinitionImportInformation> engineList = processDefinitionManager.getAvailableProcessDefinitions(engineContext);
-    for (DefinitionImportInformation definition : engineList) {
+    List<DefinitionBasedImportPage> engineList = processDefinitionManager.getAvailableProcessDefinitions(engineContext);
+    for (DefinitionBasedImportPage definition : engineList) {
       boolean notImportedAndNew = !processDefinitionsToImport.contains(definition) &&
           !currentIndex.getProcessDefinitionId().equals(definition.getProcessDefinitionId()) &&
           !new ArrayList<>(alreadyImportedProcessDefinitions).contains(definition);

@@ -27,7 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType.PROCESSS_DEFINITION_ID;
+import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType.PROCESS_DEFINITION_ID;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType.PROCESS_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType.PROCESS_DEFINITION_VERSION;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -96,7 +96,7 @@ public class ProcessDefinitionReader {
   }
 
   private void addPartialDefinition(HashMap<String, ExtendedProcessDefinitionOptimizeDto> definitionsResult, SearchHit hit) {
-    String id = hit.getSourceAsMap().get(ProcessDefinitionXmlType.PROCESSS_DEFINITION_ID).toString();
+    String id = hit.getSourceAsMap().get(ProcessDefinitionXmlType.PROCESS_DEFINITION_ID).toString();
     String xml = hit.getSourceAsMap().get(ProcessDefinitionXmlType.BPMN_20_XML).toString();
     if (definitionsResult.containsKey(id)) {
       definitionsResult.get(id).setBpmn20Xml(xml);
@@ -161,7 +161,7 @@ public class ProcessDefinitionReader {
         configurationService.getOptimizeIndex(configurationService.getProcessDefinitionXmlType()))
         .setQuery(
           QueryBuilders.boolQuery()
-            .must(termQuery(PROCESSS_DEFINITION_ID, processDefinitionId))
+            .must(termQuery(PROCESS_DEFINITION_ID, processDefinitionId))
         )
         .setSize(1)
         .get();
@@ -183,7 +183,7 @@ public class ProcessDefinitionReader {
 
     Map<String, Object> xmlResponse = response.getSourceAsMap();
     xml.setBpmn20Xml(xmlResponse.get(ProcessDefinitionXmlType.BPMN_20_XML).toString());
-    xml.setProcessDefinitionId(xmlResponse.get(ProcessDefinitionXmlType.PROCESSS_DEFINITION_ID).toString());
+    xml.setProcessDefinitionId(xmlResponse.get(ProcessDefinitionXmlType.PROCESS_DEFINITION_ID).toString());
     if (xmlResponse.get(ProcessDefinitionXmlType.ENGINE) != null) {
       xml.setEngine(xmlResponse.get(ProcessDefinitionXmlType.ENGINE).toString());
     }
@@ -238,14 +238,14 @@ public class ProcessDefinitionReader {
         configurationService.getOptimizeIndex(configurationService.getProcessDefinitionXmlType()))
         .setTypes(configurationService.getProcessDefinitionXmlType())
         .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
-        .setQuery(QueryBuilders.termsQuery(PROCESSS_DEFINITION_ID, ids))
+        .setQuery(QueryBuilders.termsQuery(PROCESS_DEFINITION_ID, ids))
         .setSize(100)
         .get();
 
     do {
       for (SearchHit hit : scrollResp.getHits().getHits()) {
         result.put(
-            hit.getSourceAsMap().get(PROCESSS_DEFINITION_ID).toString(),
+            hit.getSourceAsMap().get(PROCESS_DEFINITION_ID).toString(),
             hit.getSourceAsMap().get(ProcessDefinitionXmlType.BPMN_20_XML).toString()
         );
       }

@@ -14,31 +14,27 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public abstract class ImportService<ENG extends EngineDto, OPT extends OptimizeDto, PAGE extends ImportPage> {
+public abstract class ImportService<ENG extends EngineDto, OPT extends OptimizeDto> {
 
   protected Logger logger = LoggerFactory.getLogger(getClass());
 
   protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   protected MissingEntitiesFinder<ENG> missingActivityFinder;
-  protected EngineEntityFetcher<ENG, PAGE> engineEntityFetcher;
   protected EngineContext engineContext;
 
   public ImportService(
                        ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
                        MissingEntitiesFinder<ENG> missingActivityFinder,
-                       EngineEntityFetcher<ENG, PAGE> engineEntityFetcher,
                        EngineContext engineContext
                          ) {
     this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
     this.missingActivityFinder = missingActivityFinder;
-    this.engineEntityFetcher = engineEntityFetcher;
     this.engineContext = engineContext;
   }
 
-  public void executeImport(PAGE engineImportPage) {
+  public void executeImport(List<ENG> pageOfEngineEntities) {
     logger.trace("Importing entities from engine...");
 
-    List<ENG> pageOfEngineEntities = queryEngineRestPoint(engineImportPage);
     List<ENG> newEngineEntities =
           missingActivityFinder.retrieveMissingEntities(pageOfEngineEntities);
     boolean newDataIsAvailable = !newEngineEntities.isEmpty();
@@ -79,12 +75,5 @@ public abstract class ImportService<ENG extends EngineDto, OPT extends OptimizeD
    */
   protected abstract OPT mapEngineEntityToOptimizeEntity(ENG engineEntity);
 
-  /**
-   * Queries the engine to fetch the entities from there given a page,
-   * which contains all the information of which chunk of data should be fetched.
-   */
-  protected List<ENG> queryEngineRestPoint(PAGE importPage) {
-    return engineEntityFetcher.fetchEngineEntities(importPage);
-  }
 
 }

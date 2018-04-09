@@ -130,7 +130,7 @@ public class StatusRestServiceIT {
     assertThat(actual.getEngineConnections().get(ENGINE_ALIAS), is(false));
   }
 
-  @Test
+  // TODO: @Test OPT-1187
   public void getImportProgressStatus() {
     // given
     long expectedCount = 0L;

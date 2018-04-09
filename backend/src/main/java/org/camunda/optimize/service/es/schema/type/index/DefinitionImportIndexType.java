@@ -14,8 +14,7 @@ public class DefinitionImportIndexType extends StrictTypeMappingCreator {
   public static final String PROCESS_DEFINITIONS_TO_IMPORT = "processDefinitionsToImport";
   public static final String CURRENT_PROCESS_DEFINITION = "currentProcessDefinition";
   public static final String PROCESS_DEFINITION_ID = "processDefinitionId";
-  public static final String DEFINITION_BASED_IMPORT_INDEX = "definitionBasedImportIndex";
-  public static final String MAX_ENTITY_COUNT = "maxEntityCount";
+  public static final String TIMESTAMP_OF_LAST_ENTITY = "timestampOfLastEntity";
   public static final String ES_TYPE_INDEX_REFERS_TO = "esTypeIndexRefersTo";
   private static final String ENGINE = "engine";
 
@@ -62,11 +61,9 @@ public class DefinitionImportIndexType extends StrictTypeMappingCreator {
       .startObject(PROCESS_DEFINITION_ID)
         .field("type", "keyword")
       .endObject()
-      .startObject(DEFINITION_BASED_IMPORT_INDEX)
-        .field("type", "long")
-      .endObject()
-      .startObject(MAX_ENTITY_COUNT)
-        .field("type", "long")
+      .startObject(TIMESTAMP_OF_LAST_ENTITY)
+        .field("type", "date")
+        .field("format",configurationService.getOptimizeDateFormat())
       .endObject();
   }
 }

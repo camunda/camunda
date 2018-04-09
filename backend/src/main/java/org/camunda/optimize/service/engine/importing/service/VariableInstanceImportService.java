@@ -7,8 +7,6 @@ import org.camunda.optimize.plugin.importing.variable.PluginVariableDto;
 import org.camunda.optimize.plugin.importing.variable.VariableImportAdapter;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.diff.MissingEntitiesFinder;
-import org.camunda.optimize.service.engine.importing.fetcher.instance.EngineEntityFetcher;
-import org.camunda.optimize.service.engine.importing.index.page.IdSetBasedImportPage;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.VariableElasticsearchImportJob;
@@ -20,7 +18,7 @@ import java.util.List;
 import static org.camunda.optimize.service.util.VariableHelper.isVariableTypeSupported;
 
 public class VariableInstanceImportService extends
-  ImportService<HistoricVariableInstanceDto, VariableDto, IdSetBasedImportPage> {
+  ImportService<HistoricVariableInstanceDto, VariableDto> {
 
   private VariableWriter variableWriter;
   private ImportAdapterProvider importAdapterProvider;
@@ -29,11 +27,9 @@ public class VariableInstanceImportService extends
                                        ImportAdapterProvider importAdapterProvider,
                                        ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
                                        MissingEntitiesFinder<HistoricVariableInstanceDto> missingEntitiesFinder,
-                                       EngineEntityFetcher<HistoricVariableInstanceDto,
-                                         IdSetBasedImportPage> engineEntityFetcher,
                                        EngineContext engineContext
   ) {
-    super(elasticsearchImportJobExecutor, missingEntitiesFinder, engineEntityFetcher, engineContext);
+    super(elasticsearchImportJobExecutor, missingEntitiesFinder, engineContext);
     this.variableWriter = variableWriter;
     this.importAdapterProvider = importAdapterProvider;
   }

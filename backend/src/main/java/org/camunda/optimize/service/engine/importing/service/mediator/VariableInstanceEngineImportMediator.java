@@ -15,21 +15,19 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import java.util.List;
 import java.util.Optional;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class VariableInstanceEngineImportMediator
-    extends EngineImportMediatorImpl<VariableInstanceImportIndexHandler> {
+    extends BackoffImportMediator<VariableInstanceImportIndexHandler> {
 
-  private MissingEntitiesFinder<HistoricVariableInstanceDto> missingEntitiesFinder;
   private VariableInstanceFetcher engineEntityFetcher;
-
   private VariableInstanceImportService variableInstanceImportService;
 
   @Autowired
   private VariableWriter variableWriter;
-
   @Autowired
   private ImportAdapterProvider importAdapterProvider;
 
@@ -40,38 +38,40 @@ public class VariableInstanceEngineImportMediator
   }
 
   @PostConstruct
-  public void init(){
+  public void init() {
     importIndexHandler = provider.getVariableInstanceImportIndexHandler(engineContext.getEngineAlias());
     engineEntityFetcher = beanHelper.getInstance(VariableInstanceFetcher.class, engineContext);
-    missingEntitiesFinder = new MissingEntitiesFinder<>(
+    MissingEntitiesFinder<HistoricVariableInstanceDto> missingEntitiesFinder =
+      new MissingEntitiesFinder<>(
         configurationService,
         esClient,
         configurationService.getVariableType()
-    );
-    variableInstanceImportService = new VariableInstanceImportService(
-        variableWriter,
-        importAdapterProvider,
-        elasticsearchImportJobExecutor,
-        missingEntitiesFinder,
-        engineEntityFetcher,
-        engineContext
       );
+    variableInstanceImportService = new VariableInstanceImportService(
+      variableWriter,
+      importAdapterProvider,
+      elasticsearchImportJobExecutor,
+      missingEntitiesFinder,
+      engineContext
+    );
   }
 
   @Override
-  public void importNextPage() {
+  protected boolean importNextEnginePage() {
     Optional<IdSetBasedImportPage> page = importIndexHandler.getNextPage();
-    page.ifPresent(variableInstanceImportService::executeImport);
+    if (page.isPresent() && !page.get().getIds().isEmpty()) {
+      List<HistoricVariableInstanceDto> entities =  engineEntityFetcher.fetchEngineEntities(page.get());
+      if (!entities.isEmpty()) {
+        variableInstanceImportService.executeImport(entities);
+        return true;
+      }
+    }
+    return false;
   }
 
   @Override
-  public boolean canImport() {
+  public boolean hasNewPage() {
     return importIndexHandler.hasNewPage();
-  }
-
-  @Override
-  public long getBackoffTimeInMs() {
-    return importIndexHandler.getBackoffTimeInMs();
   }
 
 }

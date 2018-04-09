@@ -12,6 +12,7 @@ import org.camunda.optimize.service.engine.importing.index.handler.AllEntitiesBa
 import org.camunda.optimize.service.engine.importing.index.handler.DefinitionBasedImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandlerProvider;
+import org.camunda.optimize.service.engine.importing.index.page.DefinitionBasedImportPage;
 import org.camunda.optimize.service.engine.importing.service.mediator.StoreIndexesEngineImportMediator;
 import org.camunda.optimize.service.es.ElasticSearchSchemaInitializer;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
@@ -35,6 +36,7 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 
 /**
@@ -268,11 +270,16 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
     for (String engineAlias : getConfigurationService().getConfiguredEngines().keySet()) {
       getIndexProvider()
-          .getAllEntitiesBasedHandlers(engineAlias)
-          .forEach(handler -> indexes.add(handler.getImportIndex()));
+        .getAllEntitiesBasedHandlers(engineAlias)
+        .forEach(handler -> indexes.add(handler.getImportIndex()));
       getIndexProvider()
-          .getDefinitionBasedHandlers(engineAlias)
-          .forEach(handler -> indexes.add(handler.getCurrentDefinitionBasedImportIndex()));
+        .getDefinitionBasedHandlers(engineAlias)
+        .forEach(handler -> {
+          Optional<DefinitionBasedImportPage> page = handler.getNextPage();
+          page.ifPresent(definitionBasedImportPage ->
+            indexes.add(definitionBasedImportPage.getTimestampOfLastEntity().toEpochSecond())
+          );
+        });
     }
 
     return indexes;

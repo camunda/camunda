@@ -57,12 +57,12 @@ public class EngineImportIndexHandlerProvider {
 
     scrollBasedHandlers.add(getUnfinishedProcessInstanceImportIndexHandler());
     scrollBasedHandlers.add(getVariableInstanceImportIndexHandler());
+    scrollBasedHandlers.add(getProcessDefinitionXmlImportIndexHandler());
 
     definitionBasedHandlers.add(getActivityImportIndexHandler());
     definitionBasedHandlers.add(getFinishedProcessInstanceImportIndexHandler());
 
-    definitionBasedHandlers.add(getProcessDefinitionXmlImportIndexHandler());
-    definitionBasedHandlers.add(getProcessDefinitionImportIndexHandler());
+    allEntitiesBasedHandlers.add(getProcessDefinitionImportIndexHandler());
   }
 
 

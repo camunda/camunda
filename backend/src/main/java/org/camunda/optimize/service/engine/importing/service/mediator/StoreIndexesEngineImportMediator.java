@@ -6,8 +6,11 @@ import org.camunda.optimize.dto.optimize.importing.index.DefinitionBasedImportIn
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.index.handler.AllEntitiesBasedImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.DefinitionBasedImportIndexHandler;
+import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandlerProvider;
 import org.camunda.optimize.service.engine.importing.service.StoreIndexesEngineImportService;
+import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.ImportIndexWriter;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,12 +27,21 @@ import java.util.List;
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class StoreIndexesEngineImportMediator
-    extends EngineImportMediatorImpl {
+    implements EngineImportMediator {
 
   private Logger logger = LoggerFactory.getLogger(getClass());
 
   @Autowired
   private ImportIndexWriter importIndexWriter;
+
+  @Autowired
+  protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
+
+  @Autowired
+  protected ConfigurationService configurationService;
+
+  @Autowired
+  protected ImportIndexHandlerProvider provider;
 
   private StoreIndexesEngineImportService importService;
 

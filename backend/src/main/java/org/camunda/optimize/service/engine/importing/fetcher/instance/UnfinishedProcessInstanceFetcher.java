@@ -31,7 +31,7 @@ public class UnfinishedProcessInstanceFetcher extends
     return fetchHistoricProcessInstances(page.getIds());
   }
 
-  public List<HistoricProcessInstanceDto> fetchHistoricProcessInstances(Set<String> processInstanceIds) {
+  private List<HistoricProcessInstanceDto> fetchHistoricProcessInstances(Set<String> processInstanceIds) {
 
     long requestStart = System.currentTimeMillis();
 

@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.time.format.DateTimeFormatter;
 
 @Component
 public class DefinitionBasedImportIndexWriter {
@@ -24,10 +25,14 @@ public class DefinitionBasedImportIndexWriter {
   private ConfigurationService configurationService;
   @Autowired
   private ObjectMapper objectMapper;
+  @Autowired
+  private DateTimeFormatter dateTimeFormatter;
 
   public void importIndex(DefinitionBasedImportIndexDto importStartIndex, String typeIndexComesFrom) throws IOException {
+    String currentTimeStamp =
+      dateTimeFormatter.format(importStartIndex.getCurrentProcessDefinition().getTimestampOfLastEntity());
     logger.debug("Writing definition based import index '{}' of type '{}' to elasticsearch",
-      importStartIndex.getCurrentProcessDefinition().getDefinitionBasedImportIndex(), typeIndexComesFrom);
+      currentTimeStamp, typeIndexComesFrom);
     esclient
       .prepareIndex(
         configurationService.getOptimizeIndex(configurationService.getProcessDefinitionImportIndexType()),

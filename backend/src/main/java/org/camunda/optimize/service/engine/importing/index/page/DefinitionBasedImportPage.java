@@ -1,32 +1,47 @@
 package org.camunda.optimize.service.engine.importing.index.page;
 
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+
 public class DefinitionBasedImportPage implements ImportPage {
 
-  protected long indexOfFirstResult;
-  protected long pageSize;
-  protected String currentProcessDefinitionId;
+  private OffsetDateTime timestampOfLastEntity = OffsetDateTime.ofInstant(Instant.EPOCH, ZoneId.systemDefault());
+  protected String processDefinitionId = "";
 
-  public long getIndexOfFirstResult() {
-    return indexOfFirstResult;
+  public String getProcessDefinitionId() {
+    return this.processDefinitionId;
   }
 
-  public void setIndexOfFirstResult(long indexOfFirstResult) {
-    this.indexOfFirstResult = indexOfFirstResult;
+  public void setProcessDefinitionId(String processDefinitionId) {
+    this.processDefinitionId = processDefinitionId;
   }
 
-  public String getCurrentProcessDefinitionId() {
-    return currentProcessDefinitionId;
+  public OffsetDateTime getTimestampOfLastEntity() {
+    return timestampOfLastEntity;
   }
 
-  public void setCurrentProcessDefinitionId(String currentProcessDefinitionId) {
-    this.currentProcessDefinitionId = currentProcessDefinitionId;
+  public void setTimestampOfLastEntity(OffsetDateTime timestampOfLastEntity) {
+    this.timestampOfLastEntity = timestampOfLastEntity;
   }
 
-  public long getPageSize() {
-    return pageSize;
+  public DefinitionBasedImportPage copy() {
+    DefinitionBasedImportPage definitionImportInformation =
+      new DefinitionBasedImportPage();
+    definitionImportInformation.setTimestampOfLastEntity(timestampOfLastEntity);
+    definitionImportInformation.setProcessDefinitionId(processDefinitionId);
+    return definitionImportInformation;
   }
 
-  public void setPageSize(long pageSize) {
-    this.pageSize = pageSize;
+  @Override
+  public boolean equals(Object o) {
+    if(o instanceof DefinitionBasedImportPage) {
+      DefinitionBasedImportPage otherDefinitionImportInformation = (DefinitionBasedImportPage) o;
+      return processDefinitionId.equals(otherDefinitionImportInformation.getProcessDefinitionId());
+    } else {
+      return false;
+    }
   }
+
+
 }

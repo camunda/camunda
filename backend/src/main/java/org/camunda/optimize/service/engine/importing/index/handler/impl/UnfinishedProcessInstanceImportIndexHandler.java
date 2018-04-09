@@ -1,9 +1,7 @@
 package org.camunda.optimize.service.engine.importing.index.handler.impl;
 
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.engine.importing.fetcher.count.UnfinishedProcessInstanceCountFetcher;
 import org.camunda.optimize.service.engine.importing.index.handler.ScrollBasedImportIndexHandler;
-import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.util.EsHelper;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.common.unit.TimeValue;
@@ -16,14 +14,12 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.util.HashSet;
 import java.util.Set;
 
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.END_DATE;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.ENGINE;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_INSTANCE_ID;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.START_DATE;
 import static org.camunda.optimize.service.es.schema.type.UnfinishedProcessInstanceTrackingType.PROCESS_INSTANCE_IDS;
 import static org.camunda.optimize.service.es.schema.type.UnfinishedProcessInstanceTrackingType.UNFINISHED_PROCESS_INSTANCE_TRACKING_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
@@ -35,29 +31,30 @@ import static org.elasticsearch.index.query.QueryBuilders.termsLookupQuery;
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class UnfinishedProcessInstanceImportIndexHandler extends ScrollBasedImportIndexHandler {
 
-  private UnfinishedProcessInstanceCountFetcher unfinishedProcessInstanceCountFetcher;
-
 
   public UnfinishedProcessInstanceImportIndexHandler(EngineContext engineContext) {
     this.engineContext = engineContext;
   }
 
-  @PostConstruct
-  public void init() {
-    unfinishedProcessInstanceCountFetcher = beanHelper.getInstance(UnfinishedProcessInstanceCountFetcher.class, this.engineContext);
-    super.init();
-  }
-
   @Override
   public long fetchMaxEntityCount() {
+    performRefresh();
 
-    SearchResponse scrollResp = esclient
+    SearchResponse response;
+    if (scrollId != null) {
+      response = esclient
+          .prepareSearchScroll(scrollId)
+          .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
+          .get();
+    } else {
+      response = esclient
         .prepareSearch(configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()))
         .setTypes(configurationService.getProcessInstanceType())
         .setQuery(buildBasicQuery())
         .setSize(0)
         .get();
-    return scrollResp.getHits().getTotalHits();
+    }
+    return response.getHits().getTotalHits();
   }
 
   protected Set<String> performScrollQuery() {
@@ -106,7 +103,7 @@ public class UnfinishedProcessInstanceImportIndexHandler extends ScrollBasedImpo
     esclient
       .admin()
       .indices()
-      .prepareRefresh()
+      .prepareRefresh(configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()))
       .get();
   }
 

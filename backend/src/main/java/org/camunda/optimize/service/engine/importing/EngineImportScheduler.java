@@ -107,6 +107,10 @@ public class EngineImportScheduler extends Thread {
   }
 
   private void scheduleCurrentImportRound(List<EngineImportMediator> currentImportRound) {
+    String mediators = currentImportRound.stream()
+        .map(c -> c.getClass().getSimpleName())
+        .reduce((a,b) -> a + ", " + b).get();
+      logger.debug("Scheduling import round for {}", mediators);
     for (EngineImportMediator engineImportMediator : currentImportRound) {
       try {
         engineImportMediator.importNextPage();

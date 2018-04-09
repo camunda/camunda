@@ -5,6 +5,7 @@ import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.index.page.IdSetBasedImportPage;
 import org.camunda.optimize.service.es.reader.ImportIndexReader;
 import org.camunda.optimize.service.util.EsHelper;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.update.UpdateRequestBuilder;
 import org.elasticsearch.client.Client;
@@ -15,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -23,24 +25,23 @@ import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.Set;
 
-import static org.camunda.optimize.service.es.schema.type.UnfinishedProcessInstanceTrackingType.PROCESS_INSTANCE_IDS;
-
 @Component
 public abstract class ScrollBasedImportIndexHandler
-  extends BackoffImportIndexHandler<IdSetBasedImportPage, AllEntitiesBasedImportIndexDto> {
+  implements ImportIndexHandler<IdSetBasedImportPage, AllEntitiesBasedImportIndexDto> {
 
   protected Logger logger = LoggerFactory.getLogger(getClass());
 
   @Autowired
   protected ImportIndexReader importIndexReader;
-
   @Autowired
   protected Client esclient;
+  @Autowired
+  protected ConfigurationService configurationService;
 
   protected EngineContext engineContext;
   protected String scrollId;
 
-  @Override
+  @PostConstruct
   protected void init() {
     readIndexFromElasticsearch();
   }
@@ -48,7 +49,7 @@ public abstract class ScrollBasedImportIndexHandler
   private Long maxEntityCount = 0L;
   private Long importIndex = 0L;
 
-  protected Set<String> fetchNextPageOfProcessInstanceIds() {
+  private Set<String> fetchNextPageOfProcessInstanceIds() {
     if (scrollId == null) {
       return performInitialSearchQuery();
     } else {
@@ -69,8 +70,9 @@ public abstract class ScrollBasedImportIndexHandler
 
   protected abstract Set<String> performInitialSearchQuery();
 
-  protected void resetScroll() {
+  private void resetScroll() {
     scrollId = null;
+    importIndex = 0L;
   }
 
   protected abstract long fetchMaxEntityCount();
@@ -78,15 +80,12 @@ public abstract class ScrollBasedImportIndexHandler
   protected abstract String getElasticsearchTrackingType();
 
   @Override
-  public Optional<IdSetBasedImportPage> getNextImportPage() {
+  public Optional<IdSetBasedImportPage> getNextPage() {
     Set<String> ids = fetchNextPageOfProcessInstanceIds();
     if (ids.isEmpty()) {
       resetScroll();
       //it might be the case that new PI's have been imported
       ids = fetchNextPageOfProcessInstanceIds();
-      if (ids.isEmpty()) {
-        return Optional.empty();
-      }
     }
     IdSetBasedImportPage page = new IdSetBasedImportPage();
     page.setIds(ids);
@@ -105,16 +104,16 @@ public abstract class ScrollBasedImportIndexHandler
   private UpdateRequestBuilder buildIdStoringRequest(List<String> ids) {
 
     Map<String, Object> params = new HashMap<>();
-    params.put("processInstanceIds", ids);
+    params.put("ids", ids);
     Script updateScript = new Script(
       ScriptType.INLINE,
       Script.DEFAULT_SCRIPT_LANG,
-      "ctx._source.processInstanceIds.addAll(params.processInstanceIds)",
+      "ctx._source.ids.addAll(params.ids)",
       params
     );
 
     Map<String, List<String>> newEntryIfAbsent = new HashMap<>();
-    newEntryIfAbsent.put(PROCESS_INSTANCE_IDS, ids);
+    newEntryIfAbsent.put("ids", ids);
 
     return esclient
       .prepareUpdate(
@@ -151,8 +150,10 @@ public abstract class ScrollBasedImportIndexHandler
     return importIndex == 0 && maxEntityCount == 0;
   }
 
-  @Override
-  protected boolean canCreateNewPage() {
+  public boolean hasNewPage() {
+    if( indexReachedMaxCount()) {
+      resetScroll();
+    }
     updateMaxEntityCount();
     return this.importIndex < this.maxEntityCount;
   }
@@ -190,7 +191,6 @@ public abstract class ScrollBasedImportIndexHandler
   @Override
   public void resetImportIndex() {
     logger.debug("Resetting import index");
-    super.resetImportIndex();
     resetScroll();
     resetElasticsearchTrackingType();
     importIndex = 0L;
@@ -205,6 +205,11 @@ public abstract class ScrollBasedImportIndexHandler
         getElasticsearchId()
         )
       .get();
+  }
+
+  @Override
+  public void restartImportCycle() {
+    // nothing to do here
   }
 
   @Override
