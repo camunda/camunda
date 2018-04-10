@@ -231,7 +231,6 @@ public class StreamProcessorReprocessingTest
         verify(eventProcessor, times(2)).updateState();
     }
 
-    @Ignore("enable when https://github.com/zeebe-io/zeebe/issues/786 is fixed")
     @Test
     public void shouldFailOnReprocessing()
     {
