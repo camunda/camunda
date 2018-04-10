@@ -45,7 +45,7 @@ export default class Report extends React.Component {
       return {theOnlyKey, latestVersion};
     }
 
-    return {theOnlyKey: 'a', latestVersion: 'b'};
+    return {theOnlyKey: null, latestVersion: null};
   };
 
   initializeReport = async () => {
