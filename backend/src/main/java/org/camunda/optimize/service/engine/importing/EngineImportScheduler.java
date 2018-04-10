@@ -1,11 +1,14 @@
 package org.camunda.optimize.service.engine.importing;
 
+import org.camunda.optimize.service.engine.importing.service.ImportObserver;
 import org.camunda.optimize.service.engine.importing.service.mediator.EngineImportMediator;
 import org.camunda.optimize.service.engine.importing.service.mediator.StoreIndexesEngineImportMediator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -16,13 +19,19 @@ public class EngineImportScheduler extends Thread {
   private List<EngineImportMediator> importMediators;
   private List<EngineImportMediator> sleepyMediators;
 
+  private List<ImportObserver> importObservers = Collections.synchronizedList(new LinkedList<>());
+
+  private String engineAlias;
   private volatile boolean isEnabled = true;
+  private boolean isImporting = false;
 
   public EngineImportScheduler(
-      List<EngineImportMediator> importMediators
+      List<EngineImportMediator> importMediators,
+      String engineAlias
   ) {
     this.importMediators = importMediators;
     this.sleepyMediators = filterSleepyFactories(importMediators);
+    this.engineAlias = engineAlias;
   }
 
   private List<EngineImportMediator> filterSleepyFactories(List<EngineImportMediator> mediators) {
@@ -34,6 +43,14 @@ public class EngineImportScheduler extends Thread {
       }
     }
     return result;
+  }
+
+  public void subscribe(ImportObserver importObserver) {
+    importObservers.add(importObserver);
+  }
+
+  public void unsubscribe(ImportObserver importObserver) {
+    importObservers.remove(importObserver);
   }
 
   public void disable() {
@@ -66,19 +83,33 @@ public class EngineImportScheduler extends Thread {
   }
 
   public void scheduleUntilImportIsFinished() {
-    List<EngineImportMediator> currentImportRound = obtainActiveMediators();
-    while (!nothingToBeImported(currentImportRound)) {
-      scheduleCurrentImportRound(currentImportRound);
-      currentImportRound = obtainActiveMediators();
-    }
+    do {
+      scheduleNextRound();
+    } while (this.isImporting);
   }
 
   public void scheduleNextRound() {
     List<EngineImportMediator> currentImportRound = obtainActiveMediators();
     if (nothingToBeImported(currentImportRound)) {
+      notifyThatImportIsIdle();
       doBackoff();
     } else {
+      notifyThatImportIsInProgress();
       scheduleCurrentImportRound(currentImportRound);
+    }
+  }
+
+  private void notifyThatImportIsInProgress() {
+    if (!this.isImporting) {
+      this.isImporting = true;
+      importObservers.forEach(o -> o.importInProgress(engineAlias));
+    }
+  }
+
+  private void notifyThatImportIsIdle() {
+    if (this.isImporting) {
+      this.isImporting = false;
+      importObservers.forEach(o -> o.importIsIdle(engineAlias));
     }
   }
 
@@ -122,5 +153,13 @@ public class EngineImportScheduler extends Thread {
 
   public boolean isEnabled() {
     return this.isEnabled;
+  }
+
+  public String getEngineAlias() {
+    return engineAlias;
+  }
+
+  public boolean isImporting() {
+    return isImporting;
   }
 }

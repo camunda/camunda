@@ -124,8 +124,6 @@ public class ConfigurationService {
   private Integer containerHttpPort;
 
   private Integer maxStatusConnections;
-  private Integer statusIntervalValue;
-  private String statusIntervalUnit;
 
   private Boolean emailsEnabled;
   private String alertEmailUsername;
@@ -763,20 +761,6 @@ public class ConfigurationService {
     return maxStatusConnections;
   }
 
-  public String getStatusIntervalUnit() {
-    if (statusIntervalUnit == null) {
-      statusIntervalUnit = jsonContext.read(ConfigurationServiceConstants.CONTAINER_STATUS_INTERVAL_UNIT);
-    }
-    return statusIntervalUnit;
-  }
-
-  public int getStatusIntervalValue() {
-    if (statusIntervalValue == null) {
-      statusIntervalValue = jsonContext.read(ConfigurationServiceConstants.CONTAINER_STATUS_INTERVAL_VALUE);
-    }
-    return statusIntervalValue;
-  }
-
   public String getHpiEndpoint() {
     if (hpiEndpoint == null) {
       hpiEndpoint = jsonContext.read(ConfigurationServiceConstants.HPI_ENDPOINT);
@@ -1003,14 +987,6 @@ public class ConfigurationService {
       exportCsvOffset = jsonContext.read(ConfigurationServiceConstants.EXPORT_CSV_OFFSET);
     }
     return exportCsvOffset;
-  }
-
-  public void setStatusIntervalValue(Integer statusIntervalValue) {
-    this.statusIntervalValue = statusIntervalValue;
-  }
-
-  public void setStatusIntervalUnit(String statusIntervalUnit) {
-    this.statusIntervalUnit = statusIntervalUnit;
   }
 
   public void setMaxStatusConnections(Integer maxStatusConnections) {

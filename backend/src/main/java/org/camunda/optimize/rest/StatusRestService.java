@@ -1,12 +1,8 @@
 package org.camunda.optimize.rest;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.query.status.ConnectionStatusDto;
-import org.camunda.optimize.dto.optimize.query.status.ProgressDto;
+import org.camunda.optimize.dto.optimize.query.status.StatusWithProgressDto;
 import org.camunda.optimize.rest.providers.Secured;
-import org.camunda.optimize.service.exceptions.OptimizeException;
-import org.camunda.optimize.service.status.ImportProgressReporter;
 import org.camunda.optimize.service.status.StatusCheckingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -24,12 +20,6 @@ public class StatusRestService {
   @Autowired
   private StatusCheckingService statusCheckingService;
 
-  @Autowired
-  private ImportProgressReporter importProgressReporter;
-
-  @Autowired
-  private ObjectMapper objectMapper;
-
   /**
    * Get the status of the connection from Optimize to Elasticsearch and Camunda.
    *
@@ -44,18 +34,12 @@ public class StatusRestService {
   }
 
   /**
-   * States how far the import advanced.
-   *
-   * @return A DTO containing a number between 0 and 100 showing the progress.
+   * States how far the import advanced
    */
   @GET
-  @Path("/import-progress")
   @Produces(MediaType.APPLICATION_JSON)
-  @Secured
-  public String getImportProgress() throws OptimizeException, JsonProcessingException {
-    ProgressDto progressDto = new ProgressDto();
-    progressDto.setProgress(importProgressReporter.computeTotalImportProgress());
-    return objectMapper.writeValueAsString(progressDto);
+  public StatusWithProgressDto getImportStatus() {
+    return statusCheckingService.getConnectionStatusWithProgress();
   }
 
 }

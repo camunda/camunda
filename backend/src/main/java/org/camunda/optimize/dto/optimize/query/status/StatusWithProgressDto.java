@@ -5,7 +5,7 @@ import java.util.Map;
 public class StatusWithProgressDto {
 
   protected ConnectionStatusDto connectionStatus;
-  protected Map<String, Long> progress;
+  protected Map<String, Boolean> isImporting;
 
   public ConnectionStatusDto getConnectionStatus() {
     return connectionStatus;
@@ -15,11 +15,11 @@ public class StatusWithProgressDto {
     this.connectionStatus = connectionStatus;
   }
 
-  public Map<String, Long> getProgress() {
-    return progress;
+  public Map<String, Boolean> getIsImporting() {
+    return isImporting;
   }
 
-  public void setProgress(Map<String, Long> progress) {
-    this.progress = progress;
+  public void setIsImporting(Map<String, Boolean> isImporting) {
+    this.isImporting = isImporting;
   }
 }

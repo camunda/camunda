@@ -40,10 +40,6 @@ container:
     password: optimize
   #configuration of status reporting web socket
   status:
-    #interval at which stats is reported once connection is established
-    interval:
-      value: 30
-      unit: Seconds
     #max number of threads\sessions that will be kept to report status
     connections:
       max: 10

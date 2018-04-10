@@ -53,33 +53,6 @@ public class ProcessDefinitionBaseImportIT {
   public RuleChain chain = RuleChain
       .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
 
-  // TODO: @Test OPT-1187
-  public void importProgressReporterStartAndEndImportState() throws Exception {
-    createAndSetProcessDefinition(createSimpleServiceTaskProcess());
-
-    // then
-    assertThat(embeddedOptimizeRule.getProgressValue(), is(0L));
-
-    // when
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-
-    // then
-    assertThat(embeddedOptimizeRule.getProgressValue(), is(100L));
-  }
-
-  // TODO: @Test OPT-1187
-  public void importProgressTakesOnlyProcessDefinitionToImportIntoAccount() throws Exception {
-    // given
-    deployAndStartSimpleServiceTask();
-    createAndSetProcessDefinition(createSimpleServiceTaskProcess());
-
-    // when
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-
-    // then
-    assertThat(embeddedOptimizeRule.getProgressValue(), is(100L));
-  }
-
   @Test
   public void importOnlyDataToGivenProcessDefinitionId() throws Exception {
     // given
@@ -268,11 +241,6 @@ public class ProcessDefinitionBaseImportIT {
     return processDefinitionId;
   }
 
-  private void createAndAddProcessDefinitionToImportList(BpmnModelInstance modelInstance) throws IOException {
-    String processDefinitionId = createAndStartProcessDefinition(modelInstance);
-    addProcessDefinitionIdToImportList(processDefinitionId);
-  }
-
   private String createAndStartProcessDefinition(BpmnModelInstance modelInstance) throws IOException {
     CloseableHttpClient client = engineRule.getHttpClient();
     DeploymentDto deploymentDto = engineRule.deployProcess(modelInstance, client);
@@ -300,11 +268,6 @@ public class ProcessDefinitionBaseImportIT {
       .done();
   }
 
-  private void addProcessDefinitionIdToImportList(String processDefinitionId) {
-    List<String> procDefsToImport = configurationService.getProcessDefinitionIdsToImport();
-    procDefsToImport.add(processDefinitionId);
-  }
-
   private void deployAndStartSimpleServiceTask() {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess" + System.currentTimeMillis())
       .name("aProcessName")
@@ -317,26 +280,4 @@ public class ProcessDefinitionBaseImportIT {
     variables.put("aVariable", "aStringVariables");
     engineRule.deployAndStartProcessWithVariables(processModel, variables);
   }
-
-  // TODO: @Test OPT-1187
-  public void importProgressReporterIntermediateImportState() throws Exception {
-    // given
-    embeddedOptimizeRule.resetImportStartIndexes();
-    createAndSetProcessDefinition(createSimpleServiceTaskProcess());
-
-    // when
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    createAndAddProcessDefinitionToImportList(createSimpleServiceTaskProcess());
-    embeddedOptimizeRule.updateImportIndex();
-
-    // then
-    // ( 50 (variable) +
-    //   50 (process definitions) +
-    //   50 (process definition xmls) +
-    //    50 (finished process instances) +
-    //    50 (activity instances) ) / 5 = 50
-    assertThat(embeddedOptimizeRule.getProgressValue(), is(50L));
-  }
-
-
 }

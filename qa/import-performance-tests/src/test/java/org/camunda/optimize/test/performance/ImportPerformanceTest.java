@@ -1,11 +1,14 @@
 package org.camunda.optimize.test.performance;
 
 import org.camunda.optimize.service.util.NamedThreadFactory;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.performance.data.generation.DataGenerator;
 import org.camunda.optimize.test.performance.data.generation.DataGeneratorProvider;
 import org.camunda.optimize.test.util.PropertyUtil;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -55,7 +58,7 @@ public class ImportPerformanceTest {
   @Before
   public void setUp() {
     Properties properties = PropertyUtil.loadProperties("import-performance-test.properties");
-    NUMBER_OF_INSTANCES = Integer.parseInt(properties.getProperty("import.test.number.of.processes"));
+    NUMBER_OF_INSTANCES = Integer.parseInt(properties.getProperty("import.test.number.of.processes", "2000000"));
     shouldGenerateData = Boolean.parseBoolean(properties.getProperty("import.test.generate.data"));
     maxImportDurationInMin = Long.parseLong(properties.getProperty("import.test.max.duration.in.max"));
     elasticSearchRule.disableCleanup();
@@ -80,20 +83,34 @@ public class ImportPerformanceTest {
     OffsetDateTime pointThree = OffsetDateTime.now();
 
     //report results
-    long importDurationInMinutes = ChronoUnit.MINUTES.between(pointTwo,pointThree);
-    logger.info("Import took [ " +  importDurationInMinutes + " ] min");
+    long importDurationInMinutes = ChronoUnit.MINUTES.between(pointTwo, pointThree);
+    logger.info("Import took [ " + importDurationInMinutes + " ] min");
     assertThat(importDurationInMinutes, lessThanOrEqualTo(maxImportDurationInMin));
   }
 
   private ScheduledExecutorService reportImportProgress() {
     ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory(this.getClass().getSimpleName()));
     exec.scheduleAtFixedRate(
-      () -> {
-        logger.info("Progress of engine import: {}%",
-          embeddedOptimizeRule.getProgressValue());
-      }, 0, 5, TimeUnit.SECONDS
+      () -> logger.info("Progress of engine import: {}%",
+        computeImportProgress()), 0, 5, TimeUnit.SECONDS
     );
     return exec;
+  }
+
+  private long computeImportProgress() {
+    // assumption: we know how many process instances have been generated
+    ConfigurationService configurationService = embeddedOptimizeRule.getConfigurationService();
+    SearchResponse response = elasticSearchRule.getClient()
+      .prepareSearch(configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()))
+      .setTypes(configurationService.getProcessInstanceType())
+      .setQuery(QueryBuilders.matchAllQuery())
+      .setSize(0)
+      .setFetchSource(false)
+      .get();
+
+    Long processInstancesImported = response.getHits().getTotalHits();
+    Long totalInstances = Math.max(NUMBER_OF_INSTANCES, 1L);
+    return Math.round(processInstancesImported.doubleValue() / totalInstances.doubleValue());
   }
 
   public void generateData() throws InterruptedException {

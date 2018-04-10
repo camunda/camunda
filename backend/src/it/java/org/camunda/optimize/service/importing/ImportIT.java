@@ -2,8 +2,6 @@ package org.camunda.optimize.service.importing;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.result.raw.RawDataReportResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableRetrievalDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
@@ -19,23 +17,18 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.stream.IntStream;
 
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.END_DATE;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
-import static org.camunda.optimize.test.util.ReportDataHelper.createReportDataViewRawAsTable;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -64,94 +57,6 @@ public class ImportIT  {
 
     //then
     allEntriesInElasticsearchHaveAllData(elasticSearchRule.getProcessDefinitionType());
-  }
-
-  // TODO: @Test OPT-1187
-  public void importProgressReporterStartAndEndImportState() {
-    // when
-    deployAndStartSimpleServiceTask();
-    embeddedOptimizeRule.resetImportStartIndexes();
-
-    // then
-    assertThat(embeddedOptimizeRule.getProgressValue(), is(0L));
-
-    // when
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-
-    // then
-    assertThat(embeddedOptimizeRule.getProgressValue(), is(100L));
-  }
-
-  @Test
-  public void variableImportProgressIsCalculatedCorrectly() {
-    // given
-    Map<String, Object> variables = new HashMap<>();
-    IntStream.range(0, 15).forEach(i -> variables.put("var"+i, i));
-    deployAndStartSimpleServiceTaskWithVariables(variables);
-
-    // when
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-
-    // then
-    assertThat(embeddedOptimizeRule.getProgressValue(), is(100L));
-  }
-
-  // TODO: @Test OPT-1187
-  public void importProgressReporterIntermediateImportState() {
-    // given
-    deployAndStartSimpleServiceTask();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-
-    // when
-    deployAndStartSimpleServiceTask();
-    embeddedOptimizeRule.resetProcessDefinitionManager();
-
-    // then
-    // ( 50 (variable) +
-    //   50 (process definitions) +
-    //   50 (process definition xmls) +
-    //    50 (finished process instances) +
-    //    50 (activity instances) ) / 5 = 50
-    assertThat(embeddedOptimizeRule.getProgressValue(), is(50L));
-  }
-
-  // TODO: @Test OPT-1187
-  public void importProgressReporterConsidersOnlyFinishedHistoricalActivityInstances() {
-    // given
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .name("aProcessName")
-        .startEvent()
-        .userTask()
-        .endEvent()
-      .done();
-    engineRule.deployAndStartProcess(processModel);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-
-    // when
-    long importProgress = embeddedOptimizeRule.getProgressValue();
-
-    // then
-    assertThat(importProgress, is(100L));
-  }
-
-  // TODO: @Test OPT-1187
-  public void importProgressAfterRestartStaysTheSame() {
-    // given
-    deployAndStartSimpleServiceTask();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    embeddedOptimizeRule.storeImportIndexesToElasticsearch();
-    deployAndStartSimpleServiceTask();
-    embeddedOptimizeRule.resetProcessDefinitionManager();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-    long firstImportProgress = embeddedOptimizeRule.getProgressValue();
-
-    // when
-    embeddedOptimizeRule.stopOptimize();
-    embeddedOptimizeRule.startOptimize();
-
-    // then
-    assertThat(embeddedOptimizeRule.getProgressValue(), is(firstImportProgress));
   }
 
   @Test
@@ -418,24 +323,6 @@ public class ImportIT  {
     }
   }
 
-  // TODO: @Test OPT-1187
-  public void importProgressIfUnfinishedProcessInstancesGetFinished() {
-    // given
-    deployAndStartSimpleUserTask();
-    deployAndStartSimpleUserTask();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-
-    // when
-    deployAndStartSimpleUserTask();
-    engineRule.finishAllUserTasks();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-
-    // then
-    assertThat(embeddedOptimizeRule.getProgressValue(), is(100L));
-  }
-
   @Test
   public void latestImportIndexAfterRestartOfOptimize() {
     // given
@@ -519,119 +406,10 @@ public class ImportIT  {
     }
   }
 
-  // TODO: @Test OPT-1187
-  public void importProgressContinuesAfterRestartOnceNewDataAppears() {
-    // given
-    ProcessInstanceEngineDto process1 = deployAndStartSimpleServiceTask();
-    ProcessInstanceEngineDto process2 = deployAndStartSimpleServiceTask();
-
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-
-    ReportDataDto reportData =
-      createReportDataViewRawAsTable(process1.getProcessDefinitionKey(), process1.getProcessDefinitionVersion());
-    RawDataReportResultDto result = evaluateReport(reportData);
-
-    assertThat(result.getResult().size(), is(1));
-
-    reportData =
-      createReportDataViewRawAsTable(process2.getProcessDefinitionKey(), process2.getProcessDefinitionVersion());
-    result = evaluateReport(reportData);
-
-    assertThat(result.getResult().size(), is(1));
-    assertThat(embeddedOptimizeRule.getProgressValue(), is(100L));
-
-    //when
-    ProcessInstanceEngineDto process3 = engineRule.startProcessInstance(process2.getDefinitionId());
-    assertThat(process2.getId(), is(not(process3.getId())));
-    assertThat(process2.getDefinitionId(), is(process3.getDefinitionId()));
-
-    embeddedOptimizeRule.restartImportCycle();
-    embeddedOptimizeRule.importWithoutReset();
-
-    reportData = createReportDataViewRawAsTable(process2.getProcessDefinitionKey(), process2.getProcessDefinitionVersion());
-    result = evaluateReport(reportData);
-
-    // then
-    assertThat(result.getResult().size(), is(2));
-    assertThat(embeddedOptimizeRule.getProgressValue(), is(100L));
-  }
-
-  // TODO: @Test OPT-1187
-  public void importProgressContinuesAfterResetOnceNewDataAppears() {
-    // given
-    ProcessInstanceEngineDto process1 = deployAndStartSimpleServiceTask();
-    ProcessInstanceEngineDto process2 = deployAndStartSimpleServiceTask();
-
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-
-    ReportDataDto reportData =
-      createReportDataViewRawAsTable(process1.getProcessDefinitionKey(), process1.getProcessDefinitionVersion());
-    RawDataReportResultDto result = evaluateReport(reportData);
-
-    assertThat(result.getResult().size(), is(1));
-
-    reportData =
-      createReportDataViewRawAsTable(process2.getProcessDefinitionKey(), process2.getProcessDefinitionVersion());
-    result = evaluateReport(reportData);
-
-    assertThat(result.getResult().size(), is(1));
-    assertThat(embeddedOptimizeRule.getProgressValue(), is(100L));
-
-    //when
-    ProcessInstanceEngineDto process3 = engineRule.startProcessInstance(process2.getDefinitionId());
-    assertThat(process2.getId(), is(not(process3.getId())));
-    assertThat(process2.getDefinitionId(), is(process3.getDefinitionId()));
-
-    //once new round starts reset will happen instead of restart
-    embeddedOptimizeRule.resetImportStartIndexes();
-    embeddedOptimizeRule.importWithoutReset();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-
-    reportData =
-      createReportDataViewRawAsTable(process2.getProcessDefinitionKey(), process2.getProcessDefinitionVersion());
-    result = evaluateReport(reportData);
-
-    // then
-    assertThat(result.getResult().size(), is(2));
-    assertThat(embeddedOptimizeRule.getProgressValue(), is(100L));
-
-  }
-
-  @Test
-  public void restartDoesNotAffectProgress() throws Exception {
-    deployAndStartSimpleServiceTask();
-    deployAndStartSimpleServiceTask();
-    engineRule.waitForAllProcessesToFinish();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-    assertThat(embeddedOptimizeRule.getProgressValue(), is(100L));
-
-    embeddedOptimizeRule.restartImportCycle();
-    
-    assertThat(embeddedOptimizeRule.getProgressValue(), is(100L));
-  }
-
-  private RawDataReportResultDto evaluateReport(ReportDataDto reportData) {
-    Response response = evaluateReportAndReturnResponse(reportData);
-    assertThat(response.getStatus(), is(200));
-
-    return response.readEntity(RawDataReportResultDto.class);
-  }
-
-  private Response evaluateReportAndReturnResponse(ReportDataDto reportData) {
-    return embeddedOptimizeRule.target("report/evaluate")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .post(Entity.json(reportData));
-  }
-
-  private ProcessInstanceEngineDto deployAndStartSimpleServiceTask() {
+  private void deployAndStartSimpleServiceTask() {
     Map<String, Object> variables = new HashMap<>();
     variables.put("aVariable", "aStringVariables");
-    return deployAndStartSimpleServiceTaskWithVariables(variables);
+    deployAndStartSimpleServiceTaskWithVariables(variables);
   }
 
   private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskWithVariables(Map<String, Object> variables) {
@@ -643,15 +421,6 @@ public class ImportIT  {
         .endEvent()
       .done();
     return engineRule.deployAndStartProcessWithVariables(processModel, variables);
-  }
-
-  private void deployAndStartSimpleUserTask() {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("ASimpleUserTaskProcess" + System.currentTimeMillis())
-        .startEvent()
-          .userTask()
-        .endEvent()
-      .done();
-    engineRule.deployAndStartProcess(processModel);
   }
 
   private void allEntriesInElasticsearchHaveAllData(String elasticsearchType) {

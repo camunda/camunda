@@ -15,6 +15,9 @@ import java.net.URI;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeUnit;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+
 /**
  * @author Askar Akhmerov
  */
@@ -30,14 +33,13 @@ public class StatusWebSocketIT {
     .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
 
   @Test
-  public void getConnectionStatusOk() throws Exception {
+  public void getImportStatus() throws Exception {
     //given
     BpmnModelInstance processModel = Bpmn.createExecutableProcess(PROCESS_ID)
         .startEvent()
         .endEvent()
       .done();
     engineRule.deployAndStartProcess(processModel);
-    embeddedOptimizeRule.getConfigurationService().setStatusIntervalUnit(ChronoUnit.MILLIS.toString());
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
@@ -49,7 +51,29 @@ public class StatusWebSocketIT {
     container.connectToServer(socket, new URI(dest));
 
     //then
-    socket.getLatch().await(3, TimeUnit.SECONDS);
+    boolean statusCorrectlyReceived = socket.getLatch().await(100, TimeUnit.MILLISECONDS);
+    assertThat(statusCorrectlyReceived, is(true));
+  }
+
+  @Test
+  public void importStatusHasChanged() throws Exception {
+    //given
+    String dest = "ws://localhost:8090/ws/status";
+    AssertHasChangedStatusClientSocket socket = new AssertHasChangedStatusClientSocket();
+    WebSocketContainer container = ContainerProvider.getWebSocketContainer();
+    container.connectToServer(socket, new URI(dest));
+
+    //when
+    BpmnModelInstance processModel = Bpmn.createExecutableProcess(PROCESS_ID)
+      .startEvent()
+      .endEvent()
+      .done();
+    engineRule.deployAndStartProcess(processModel);
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    //then
+    assertThat(socket.hasImportStatusChanged, is(true));
   }
 
 }

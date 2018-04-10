@@ -2,6 +2,7 @@ package org.camunda.optimize.service.importing;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.optimize.dto.optimize.query.status.ConnectionStatusDto;
+import org.camunda.optimize.dto.optimize.query.status.StatusWithProgressDto;
 import org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -67,91 +68,8 @@ public class MultipleEngineSupportIT {
     embeddedOptimizeRule.reloadConfiguration();
   }
 
-  // TODO: @Test OPT-1187
-  public void importProgressReporterStartAndEndImportState() throws Exception {
-    // given
-    addSecondEngineToConfiguration();
-
-    // when
-    defaultEngineRule.deployAndStartProcess(
-      Bpmn.createExecutableProcess()
-        .startEvent()
-        .endEvent()
-        .done()
-    );
-
-    secondEngineRule.deployAndStartProcess(
-      Bpmn.createExecutableProcess()
-        .startEvent()
-        .endEvent()
-        .done()
-    );
-
-    // then
-    assertThat(embeddedOptimizeRule.getProgressValue(), is(0L));
-
-    // when
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    embeddedOptimizeRule.storeImportIndexesToElasticsearch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-
-    // then
-    assertThat(embeddedOptimizeRule.getProgressValue(), is(100L));
-  }
-
-  // TODO: @Test OPT-1187
-  public void importProgressReflectsIfImportProgressOfAllEngines() throws Exception {
-    // given
-    addSecondEngineToConfiguration();
-    defaultEngineRule.deployAndStartProcess(
-      Bpmn.createExecutableProcess()
-        .startEvent()
-        .endEvent()
-        .done()
-    );
-
-    // when
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-    secondEngineRule.deployAndStartProcess(
-      Bpmn.createExecutableProcess()
-        .startEvent()
-        .endEvent()
-        .done()
-    );
-    embeddedOptimizeRule.updateImportIndex();
-
-    // then
-    assertThat(embeddedOptimizeRule.getProgressValue(), is(50L));
-  }
-
-  // TODO: @Test OPT-1187
-  public void importProgressReportWorksEvenIfOneEngineIsDown() throws Exception {
-    // given
-    addNonExistingSecondEngineToConfiguration();
-    embeddedOptimizeRule.getConfigurationService().setMaximumBackoff(1l);
-    embeddedOptimizeRule.reloadConfiguration();
-    defaultEngineRule.deployAndStartProcess(
-      Bpmn.createExecutableProcess()
-        .startEvent()
-        .endEvent()
-        .done()
-    );
-
-    // when
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-
-    // then
-    assertThat(embeddedOptimizeRule.getProgressValue(), is(100L));
-
-    embeddedOptimizeRule.stopOptimize();
-    embeddedOptimizeRule.startOptimize();
-    embeddedOptimizeRule.getConfigurationService().setMaximumBackoff(5l);
-  }
-
   @Test
-  public void connectionStatusCheck() throws Exception {
+  public void connectionStatusCheck() {
     // given
     addSecondEngineToConfiguration();
 
@@ -172,7 +90,7 @@ public class MultipleEngineSupportIT {
   }
 
   @Test
-  public void connectionStatusCheckWithOneEngineDown() throws Exception {
+  public void connectionStatusCheckWithOneEngineDown() {
     // given
     addNonExistingSecondEngineToConfiguration();
     embeddedOptimizeRule.reloadConfiguration();
@@ -194,7 +112,30 @@ public class MultipleEngineSupportIT {
   }
 
   @Test
-  public void allProcessDefinitionXmlsAreImported() throws Exception {
+  public void getImportStatusFromMultipleEngines() {
+    // given
+    addSecondEngineToConfiguration();
+
+    // when
+    Response response = embeddedOptimizeRule.target("status")
+      .request()
+      .get();
+
+    // then
+    assertThat(response.getStatus(), is(200));
+    StatusWithProgressDto actual =
+      response.readEntity(StatusWithProgressDto.class);
+    assertThat(actual, is(notNullValue()));
+    assertThat(actual.getConnectionStatus().isConnectedToElasticsearch(), is(true));
+    assertThat(actual.getConnectionStatus().getEngineConnections(), is(notNullValue()));
+    assertThat(actual.getConnectionStatus().getEngineConnections().get(ENGINE_ALIAS), is(true));
+    assertThat(actual.getConnectionStatus().getEngineConnections().get(SECOND_ENGINE_ALIAS), is(true));
+    assertThat(actual.getIsImporting().get(ENGINE_ALIAS), is(false));
+    assertThat(actual.getIsImporting().get(SECOND_ENGINE_ALIAS), is(false));
+  }
+
+  @Test
+  public void allProcessDefinitionXmlsAreImported() {
     // given
     addSecondEngineToConfiguration();
     deployAndStartSimpleProcessDefinitionForAllEngines();
@@ -235,7 +176,7 @@ public class MultipleEngineSupportIT {
   }
 
   @Test
-  public void allProcessDefinitionsAreImported() throws Exception {
+  public void allProcessDefinitionsAreImported() {
     // given
     addSecondEngineToConfiguration();
     deployAndStartSimpleProcessDefinitionForAllEngines();
@@ -265,7 +206,7 @@ public class MultipleEngineSupportIT {
   }
 
   @Test
-  public void allProcessInstancesEventAndVariablesAreImported() throws Exception {
+  public void allProcessInstancesEventAndVariablesAreImported() {
     // given
     addSecondEngineToConfiguration();
     deployAndStartSimpleProcessDefinitionForAllEngines();
@@ -305,7 +246,7 @@ public class MultipleEngineSupportIT {
   }
 
   @Test
-  public void allProcessInstancesEventAndVariablesAreImportedWithAuthentication() throws Exception {
+  public void allProcessInstancesEventAndVariablesAreImportedWithAuthentication() {
     // given
     secondEngineRule.addUser("demo", "demo");
     addSecureEngineToConfiguration("anotherEngine");
@@ -408,7 +349,7 @@ public class MultipleEngineSupportIT {
   }
 
   @Test
-  public void afterRestartOfOptimizeRightImportIndexIsUsed() throws Exception {
+  public void afterRestartOfOptimizeRightImportIndexIsUsed() {
     // given
     addSecondEngineToConfiguration();
     deployAndStartSimpleProcessDefinitionForAllEngines();

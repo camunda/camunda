@@ -1,7 +1,7 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.query.status.ConnectionStatusDto;
-import org.camunda.optimize.dto.optimize.query.status.ProgressDto;
+import org.camunda.optimize.dto.optimize.query.status.StatusWithProgressDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.security.TokenService;
@@ -80,7 +80,7 @@ public class StatusRestServiceIT {
     Mockito.verify(tokenService, Mockito.times(0)).validateToken(Mockito.anyString());
 
     // when
-    embeddedOptimizeRule.target("status/import-progress")
+    embeddedOptimizeRule.target("status")
         .request()
         .get();
     //then
@@ -130,22 +130,22 @@ public class StatusRestServiceIT {
     assertThat(actual.getEngineConnections().get(ENGINE_ALIAS), is(false));
   }
 
-  // TODO: @Test OPT-1187
-  public void getImportProgressStatus() {
-    // given
-    long expectedCount = 0L;
-
+  @Test
+  public void getImportStatus() {
     // when
-    Response response = embeddedOptimizeRule.target("status/import-progress")
+    Response response = embeddedOptimizeRule.target("status")
       .request()
       .get();
 
     // then
     assertThat(response.getStatus(), is(200));
-    ProgressDto actual =
-      response.readEntity(ProgressDto.class);
+    StatusWithProgressDto actual =
+      response.readEntity(StatusWithProgressDto.class);
     assertThat(actual, is(notNullValue()));
-    assertThat(actual.getProgress(), is(expectedCount));
+    assertThat(actual.getConnectionStatus().isConnectedToElasticsearch(), is(true));
+    assertThat(actual.getConnectionStatus().getEngineConnections(), is(notNullValue()));
+    assertThat(actual.getConnectionStatus().getEngineConnections().get(ENGINE_ALIAS), is(true));
+    assertThat(actual.getIsImporting().get(ENGINE_ALIAS), is(false));
   }
   
 }

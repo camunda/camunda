@@ -43,7 +43,8 @@ public class EngineImportSchedulerFactory implements ConfigurationReloadable {
       try {
         List<EngineImportMediator> mediators = createMediatorList(engineContext);
         EngineImportScheduler scheduler = new EngineImportScheduler(
-            mediators
+          mediators,
+          engineContext.getEngineAlias()
         );
         result.add(scheduler);
       } catch (Exception e) {

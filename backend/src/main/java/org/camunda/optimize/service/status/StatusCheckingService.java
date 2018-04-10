@@ -2,8 +2,10 @@ package org.camunda.optimize.service.status;
 
 import org.camunda.optimize.dto.engine.ProcessEngineDto;
 import org.camunda.optimize.dto.optimize.query.status.ConnectionStatusDto;
+import org.camunda.optimize.dto.optimize.query.status.StatusWithProgressDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
+import org.camunda.optimize.service.engine.importing.EngineImportSchedulerFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.cluster.health.ClusterHealthStatus;
@@ -30,6 +32,19 @@ public class StatusCheckingService {
   @Autowired
   private EngineContextFactory engineContextFactory;
 
+  @Autowired
+  private EngineImportSchedulerFactory engineImportSchedulerFactory;
+
+  public StatusWithProgressDto getConnectionStatusWithProgress() {
+    StatusWithProgressDto result = new StatusWithProgressDto();
+    result.setConnectionStatus(getConnectionStatus());
+    Map<String, Boolean> importStatusMap = new HashMap<>();
+    engineImportSchedulerFactory
+      .getImportSchedulers()
+      .forEach(s -> importStatusMap.put(s.getEngineAlias(), s.isImporting()));
+    result.setIsImporting(importStatusMap);
+    return result;
+  }
 
   public ConnectionStatusDto getConnectionStatus() {
     ConnectionStatusDto status = new ConnectionStatusDto();

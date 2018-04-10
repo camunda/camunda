@@ -1,7 +1,7 @@
 package org.camunda.optimize.test.it.rule;
 
 import org.camunda.optimize.dto.optimize.query.CredentialsDto;
-import org.camunda.optimize.dto.optimize.query.status.ProgressDto;
+import org.camunda.optimize.dto.optimize.query.status.StatusWithProgressDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.alert.AlertService;
@@ -305,13 +305,6 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
   public void resetProcessDefinitionManager() {
     getApplicationContext().getBean(ProcessDefinitionManager.class).reset();
-  }
-
-  public long getProgressValue() {
-    return this.target()
-        .path("status/import-progress")
-        .request()
-        .get(ProgressDto.class).getProgress();
   }
 
   public boolean isImporting() {
