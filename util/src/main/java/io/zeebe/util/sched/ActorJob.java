@@ -70,10 +70,8 @@ public class ActorJob
         {
             e.printStackTrace();
 
-            if (resultFuture != null)
-            {
-                resultFuture.completeExceptionally(e);
-            }
+            task.onFailure(e);
+
             // TODO: what else to do?
         }
         finally
@@ -272,9 +270,14 @@ public class ActorJob
 
     public void failFuture(String reason)
     {
+        failFuture(new RuntimeException(reason));
+    }
+
+    public void failFuture(Exception cause)
+    {
         if (this.resultFuture != null)
         {
-            resultFuture.completeExceptionally(new RuntimeException(reason));
+            resultFuture.completeExceptionally(cause);
         }
     }
 }

@@ -56,7 +56,8 @@ public class ActorTask
         STARTED(2),
         CLOSE_REQUESTED(4),
         CLOSING(8),
-        CLOSED(16);
+        CLOSED(16),
+        FAILED(32);
 
         private final int value;
 
@@ -286,6 +287,11 @@ public class ActorTask
                     closeFuture.completeWith(jobClosingTaskFuture);
                     resubmit = false;
                     break;
+
+                case FAILED:
+                    onClosed();
+                    resubmit = false;
+                    break;
             }
         }
         else
@@ -363,21 +369,47 @@ public class ActorTask
         {
             this.lifecyclePhase = ActorLifecyclePhase.CLOSE_REQUESTED;
 
-            // discard next jobs
-            ActorJob current = currentJob;
-            ActorJob next;
-            while ((next = current.next) != null)
-            {
-                next.failFuture("Actor is closed");
-
-                current.next = null;
-                current = next;
-            }
-
-            currentJob.next = null;
+            discardNextJobs();
 
             actor.onActorCloseRequested();
         }
+    }
+
+    public void onFailure(Exception failure)
+    {
+        switch (lifecyclePhase)
+        {
+            case STARTING:
+                lifecyclePhase = ActorLifecyclePhase.FAILED;
+                discardNextJobs();
+                startingFuture.completeExceptionally(failure);
+                break;
+
+            case CLOSING:
+                lifecyclePhase = ActorLifecyclePhase.FAILED;
+                discardNextJobs();
+                closeFuture.completeExceptionally(failure);
+                break;
+
+            default:
+                currentJob.failFuture(failure);
+        }
+    }
+
+    private void discardNextJobs()
+    {
+        // discard next jobs
+        ActorJob current = currentJob;
+        ActorJob next;
+        while ((next = current.next) != null)
+        {
+            next.failFuture("Actor is closed");
+
+            current.next = null;
+            current = next;
+        }
+
+        currentJob.next = null;
     }
 
     boolean casStateCount(long expectedCount)

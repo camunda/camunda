@@ -15,6 +15,15 @@
  */
 package io.zeebe.util.sched.functional;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
+
 import io.zeebe.util.collection.Tuple;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -23,20 +32,6 @@ import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 import org.assertj.core.api.AbstractThrowableAssert;
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class ActorFutureTest
 {
@@ -627,7 +622,8 @@ public class ActorFutureTest
             }
         });
 
-        new Thread() {
+        new Thread()
+        {
             @Override
             public void run()
             {
@@ -657,7 +653,8 @@ public class ActorFutureTest
             }
         });
 
-        new Thread() {
+        new Thread()
+        {
             @Override
             public void run()
             {

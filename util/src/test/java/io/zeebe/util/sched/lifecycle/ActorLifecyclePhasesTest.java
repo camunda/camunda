@@ -15,11 +15,12 @@
  */
 package io.zeebe.util.sched.lifecycle;
 
-import static io.zeebe.util.sched.ActorTask.ActorLifecyclePhase.STARTED;
-import static io.zeebe.util.sched.ActorTask.ActorLifecyclePhase.STARTING;
+import static io.zeebe.util.sched.ActorTask.ActorLifecyclePhase.*;
 import static io.zeebe.util.sched.lifecycle.LifecycleRecordingActor.FULL_LIFECYCLE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.util.Lists.newArrayList;
+
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
@@ -78,5 +79,155 @@ public class ActorLifecyclePhasesTest
         assertThat(closeFuture).isDone();
         assertThat(actor.phases).isEqualTo(FULL_LIFECYCLE);
     }
+
+    @Test
+    public void shouldCloseOnFailureWhileActorStarting()
+    {
+        // given
+        final RuntimeException failure = new RuntimeException("foo");
+
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
+        {
+            @Override
+            public void onActorStarting()
+            {
+                super.onActorStarting();
+
+                throw failure;
+            }
+        };
+
+        // when
+        final ActorFuture<Void> startedFuture = schedulerRule.submitActor(actor);
+        schedulerRule.workUntilDone();
+
+        // then
+        assertThat(startedFuture.isCompletedExceptionally()).isTrue();
+        assertThat(startedFuture.getException()).isEqualTo(failure);
+        assertThat(actor.phases).isEqualTo(newArrayList(STARTING));
+    }
+
+    @Test
+    public void shouldCloseOnFailureWhileActorClosing()
+    {
+        // given
+        final RuntimeException failure = new RuntimeException("foo");
+
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
+        {
+            @Override
+            public void onActorClosing()
+            {
+                super.onActorClosing();
+
+                throw failure;
+            }
+        };
+
+        schedulerRule.submitActor(actor);
+        schedulerRule.workUntilDone();
+
+        // when
+        final ActorFuture<Void> closeFuture = actor.close();
+        schedulerRule.workUntilDone();
+
+        // then
+        assertThat(closeFuture.isCompletedExceptionally()).isTrue();
+        assertThat(closeFuture.getException()).isEqualTo(failure);
+        assertThat(actor.phases).isEqualTo(newArrayList(STARTING, STARTED, CLOSE_REQUESTED, CLOSING));
+    }
+
+    @Test
+    public void shouldPropagateFailureWhileActorStartingAndRun()
+    {
+        // given
+        final RuntimeException failure = new RuntimeException("foo");
+
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
+        {
+            @Override
+            public void onActorStarting()
+            {
+                super.onActorStarting();
+
+                this.actor.run(() ->
+                {
+                    throw failure;
+                });
+            }
+        };
+
+        // when
+        final ActorFuture<Void> startedFuture = schedulerRule.submitActor(actor);
+        schedulerRule.workUntilDone();
+
+        // then
+        assertThat(startedFuture.isCompletedExceptionally()).isTrue();
+        assertThat(startedFuture.getException()).isEqualTo(failure);
+        assertThat(actor.phases).isEqualTo(newArrayList(STARTING));
+    }
+
+    @Test
+    public void shouldPropagateFailureWhileActorClosingAndRun()
+    {
+        // given
+        final RuntimeException failure = new RuntimeException("foo");
+
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
+        {
+            @Override
+            public void onActorClosing()
+            {
+                super.onActorClosing();
+
+                this.actor.run(() ->
+                {
+                    throw failure;
+                });
+            }
+        };
+
+        schedulerRule.submitActor(actor);
+        schedulerRule.workUntilDone();
+
+        // when
+        final ActorFuture<Void> closeFuture = actor.close();
+        schedulerRule.workUntilDone();
+
+        // then
+        assertThat(closeFuture.isCompletedExceptionally()).isTrue();
+        assertThat(closeFuture.getException()).isEqualTo(failure);
+        assertThat(actor.phases).isEqualTo(newArrayList(STARTING, STARTED, CLOSE_REQUESTED, CLOSING));
+    }
+
+    @Test
+    public void shouldDiscardJobsOnFailureWhileActorStarting()
+    {
+        // given
+        final RuntimeException failure = new RuntimeException("foo");
+        final AtomicBoolean isInvoked = new AtomicBoolean();
+
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
+        {
+            @Override
+            public void onActorStarting()
+            {
+                super.onActorStarting();
+
+                this.actor.run(() -> isInvoked.set(true));
+
+                throw failure;
+            }
+        };
+
+        // when
+        final ActorFuture<Void> startedFuture = schedulerRule.submitActor(actor);
+        schedulerRule.workUntilDone();
+
+        // then
+        assertThat(startedFuture.isCompletedExceptionally()).isTrue();
+        assertThat(isInvoked).isFalse();
+    }
+
 
 }
