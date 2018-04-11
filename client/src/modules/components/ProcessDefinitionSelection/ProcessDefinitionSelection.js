@@ -15,11 +15,9 @@ export default class ProcessDefinitionSelection extends React.Component {
       availableDefinitions: [],
       loaded: false
     };
-
-    this.loadAvailableDefinitions();
   }
 
-  loadAvailableDefinitions = async () => {
+  componentDidMount = async () => {
     const availableDefinitions = await loadProcessDefinitions();
 
     this.setState({

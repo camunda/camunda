@@ -44,8 +44,8 @@ export default class AutoRefreshIcon extends React.Component {
     cancelAnimationFrame(this.rafId);
   }
 
-  componentWillReceiveProps(nextProps) {
-    if (nextProps.interval !== this.props.interval) {
+  componentDidUpdate(prevProps) {
+    if (prevProps.interval !== this.props.interval) {
       this.setState({animationStarted: Date.now()});
     }
   }

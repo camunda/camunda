@@ -10,7 +10,7 @@ jest.mock('components', () => {
         {props.value}
       </div>
     ),
-    Switch: props => <input id="switch" ref={props.reference} value={props.value} {...props} />,
+    Switch: props => <input id="switch" ref={props.ref} value={props.value} {...props} />,
     Icon: props => <span>{props.type}</span>
   };
 });

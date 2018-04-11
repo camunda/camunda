@@ -19,7 +19,7 @@ import {formatters} from 'services';
 
 import './TargetValueModal.css';
 
-export default class TargetValueComparison extends React.Component {
+export default class TargetValueModal extends React.Component {
   constructor(props) {
     super(props);
 
@@ -36,24 +36,24 @@ export default class TargetValueComparison extends React.Component {
     return this.props.configuration.targetValue || {};
   };
 
-  async componentWillReceiveProps(nextProps) {
-    if (this.props.open !== nextProps.open) {
-      if (nextProps.open) {
-        const {values, nodeNames} = await this.constructValues();
+  // async componentWillReceiveProps(nextProps) {
+  //   if (this.props.open !== nextProps.open) {
+  //     if (nextProps.open) {
+  //       const {values, nodeNames} = await this.constructValues();
 
-        this.setState({
-          focus: null,
-          values,
-          nodeNames
-        });
-      } else {
-        this.setState({
-          values: {},
-          nodeNames: {}
-        });
-      }
-    }
-  }
+  //       this.setState({
+  //         focus: null,
+  //         values,
+  //         nodeNames
+  //       });
+  //     } else {
+  //       this.setState({
+  //         values: {},
+  //         nodeNames: {}
+  //       });
+  //     }
+  //   }
+  // }
 
   confirmModal = () => {
     this.props.onConfirm(this.cleanUpValues());
@@ -154,7 +154,7 @@ export default class TargetValueComparison extends React.Component {
           <div className="TargetValueModal__selection">
             <Input
               value={settings.value}
-              reference={this.storeInputReferenceFor(id)}
+              ref={this.storeInputReferenceFor(id)}
               onChange={this.setTarget('value', id)}
               onFocus={() => {
                 this.updateFocus(id);
@@ -216,10 +216,27 @@ export default class TargetValueComparison extends React.Component {
 
   updateFocus = focus => this.setState({focus});
 
-  componentDidUpdate(_, prevState) {
+  async componentDidUpdate(prevProps, prevState) {
     if (this.state.focus && this.state.focus !== prevState.focus) {
       this.inputRefs[this.state.focus].focus();
       this.inputRefs[this.state.focus].select();
+    }
+
+    if (this.props.open !== prevProps.open) {
+      if (this.props.open) {
+        const {values, nodeNames} = await this.constructValues();
+
+        this.setState({
+          focus: null,
+          values,
+          nodeNames
+        });
+      } else {
+        this.setState({
+          values: {},
+          nodeNames: {}
+        });
+      }
     }
   }
 

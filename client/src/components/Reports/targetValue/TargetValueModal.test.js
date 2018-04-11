@@ -28,43 +28,6 @@ jest.mock('bpmn-js/lib/NavigatedViewer', () => {
   };
 });
 
-jest.mock('components', () => {
-  const Modal = props => <div {...props}>{props.children}</div>;
-  Modal.Header = props => <div>{props.children}</div>;
-  Modal.Content = props => <div>{props.children}</div>;
-  Modal.Actions = props => <div>{props.children}</div>;
-
-  const Select = props => <select {...props}>{props.children}</select>;
-  Select.Option = props => <option {...props}>{props.children}</option>;
-
-  return {
-    Modal,
-    Select,
-    Button: props => (
-      <button {...props} active="true">
-        {props.children}
-      </button>
-    ),
-    ErrorMessage: props => <div {...props}>{props.text}</div>,
-    BPMNDiagram: () => <div>BPMNDiagram</div>,
-    TargetValueBadge: () => <div>TargetValueBadge</div>,
-    Input: props => (
-      <input
-        ref={props.reference}
-        id={props.id}
-        readOnly={props.readOnly}
-        type={props.type}
-        onChange={props.onChange}
-        value={props.value}
-        className={props.className}
-      />
-    ),
-    Table: ({body}) => (
-      <div>{body.map(row => row.map((col, idx) => <div key={idx}>{col}</div>))}</div>
-    )
-  };
-});
-
 jest.mock('services', () => {
   return {
     formatters: {

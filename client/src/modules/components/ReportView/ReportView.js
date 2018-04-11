@@ -18,9 +18,6 @@ export default class ReportView extends React.Component {
       flowNodeNames: null,
       loaded: false
     };
-    if (this.getProcDefKey() && this.getProcDefVersion()) {
-      this.loadFlowNodeNames(this.getProcDefKey(), this.getProcDefVersion());
-    }
   }
 
   getProcDefKey = () => {
@@ -30,6 +27,15 @@ export default class ReportView extends React.Component {
   getProcDefVersion = () => {
     return this.props.report.data.processDefinitionVersion;
   };
+
+  componentDidMount() {
+    const {processDefinitionVersion, processDefinitionKey} = this.getDataFromProps(this.props);
+    if (processDefinitionKey && processDefinitionVersion) {
+      this.loadFlowNodeNames(processDefinitionKey, processDefinitionVersion);
+    }
+  }
+
+  getDataFromProps = ({report: {data}}) => data;
 
   render() {
     if (this.props.report) {
@@ -96,12 +102,19 @@ export default class ReportView extends React.Component {
     });
   };
 
-  componentWillReceiveProps(nextProps) {
-    const nextProcDefKey = nextProps.report.data.processDefinitionKey;
-    const nextProcDefVersion = nextProps.report.data.processDefinitionVersion;
-    const procDefKeyChanged = nextProcDefKey && nextProcDefKey !== this.getProcDefKey();
-    const procDefVersionChanged =
-      nextProcDefVersion && nextProcDefVersion !== this.getProcDefVersion();
+  componentDidUpdate(prevProps) {
+    const {
+      processDefinitionVersion: nextProcDefVersion,
+      processDefinitionKey: nextProcDefKey
+    } = this.getDataFromProps(this.props);
+
+    const {
+      processDefinitionVersion: prevProcDefVersion,
+      processDefinitionKey: prevProcDefKey
+    } = this.getDataFromProps(prevProps);
+
+    const procDefKeyChanged = nextProcDefKey && nextProcDefKey !== prevProcDefKey;
+    const procDefVersionChanged = nextProcDefVersion && nextProcDefVersion !== prevProcDefVersion;
     if (procDefKeyChanged || procDefVersionChanged) {
       this.setState({loaded: false});
       this.loadFlowNodeNames(nextProcDefKey, nextProcDefVersion);

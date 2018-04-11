@@ -12,6 +12,9 @@ export default class FilterList extends React.Component {
     this.state = {
       flowNodeNames: null
     };
+  }
+
+  componentDidMount() {
     this.loadFlowNodeNames();
   }
 

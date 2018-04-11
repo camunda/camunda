@@ -12,7 +12,9 @@ export default class DashboardReport extends React.Component {
     this.state = {
       data: undefined
     };
+  }
 
+  componentDidMount() {
     this.loadReportData();
   }
 

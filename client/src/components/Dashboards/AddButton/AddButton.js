@@ -17,11 +17,9 @@ export default class AddButton extends React.Component {
       availableReports: [],
       selectedReportId: ''
     };
-
-    this.loadAvailableReports();
   }
 
-  loadAvailableReports = async () => {
+  componentDidMount = async () => {
     const reports = await loadReports();
 
     this.setState({

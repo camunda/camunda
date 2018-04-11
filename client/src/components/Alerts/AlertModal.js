@@ -34,40 +34,38 @@ export default class AlertModal extends React.Component {
       ...newAlert,
       errorInput: 'email'
     };
-    this.checkIfEmailNotificationIsConfigured();
   }
 
-  checkIfEmailNotificationIsConfigured = async () => {
+  componentDidMount = async () => {
     this.setState({
       emailNotificationIsEnabled: await emailNotificationIsEnabled()
     });
   };
 
-  componentWillReceiveProps({alert}) {
-    // set initial state after opening modal
-    if (this.props.alert !== alert) {
-      this.setState(
-        (alert &&
-          alert.id && {
-            ...alert,
-            threshold:
-              this.getReportType(alert.reportId) === 'duration'
-                ? convertDurationToObject(alert.threshold)
-                : alert.threshold.toString(),
-            checkInterval: {
-              value: alert.checkInterval.value.toString(),
-              unit: alert.checkInterval.unit
-            },
-            reminder: alert.reminder
-              ? {
-                  value: alert.reminder.value.toString(),
-                  unit: alert.reminder.unit
-                }
-              : null
-          }) ||
-          newAlert
-      );
-    }
+  updateAlert() {
+    const {alert} = this.props;
+
+    this.setState(
+      (alert &&
+        alert.id && {
+          ...alert,
+          threshold:
+            this.getReportType(alert.reportId) === 'duration'
+              ? convertDurationToObject(alert.threshold)
+              : alert.threshold.toString(),
+          checkInterval: {
+            value: alert.checkInterval.value.toString(),
+            unit: alert.checkInterval.unit
+          },
+          reminder: alert.reminder
+            ? {
+                value: alert.reminder.value.toString(),
+                unit: alert.reminder.unit
+              }
+            : null
+        }) ||
+        newAlert
+    );
   }
 
   updateReminder = ({target: {checked}}) => {
@@ -109,7 +107,10 @@ export default class AlertModal extends React.Component {
     return value.trim() && !isNaN(value);
   };
 
-  componentDidUpdate() {
+  componentDidUpdate({alert}) {
+    if (this.props.alert !== alert) {
+      this.updateAlert();
+    }
     if (!this.state.name.trim()) {
       this.setErrorField('name');
       return;

@@ -19,7 +19,7 @@ export default class CopyToClipboard extends React.Component {
     return (
       <div className={classnames('CopyToClipboard', this.props.className)}>
         <Input
-          reference={this.storeInputElement}
+          ref={this.storeInputElement}
           className="CopyToClipboard__input"
           readOnly
           disabled={this.props.disabled}

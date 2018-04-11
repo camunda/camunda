@@ -22,11 +22,9 @@ class EntityList extends React.Component {
       deleteModalVisible: false,
       deleteModalEntity: {}
     };
-
-    this.loadEntities();
   }
 
-  loadEntities = async () => {
+  componentDidMount = async () => {
     this.props.mightFail(
       load(this.props.api, this.props.displayOnly, this.props.sortBy),
       response => {

@@ -89,7 +89,7 @@ export default class Login extends React.Component {
               onChange={this.handleInputChange}
               type="password"
               name="password"
-              reference={input => (this.passwordField = input)}
+              ref={input => (this.passwordField = input)}
             />
           </div>
         </div>

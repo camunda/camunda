@@ -64,7 +64,7 @@ export default class DateFields extends React.PureComponent {
             className={classnames('DateInput__end', {
               'DateInput__start--highlight': this.isFieldSelected('endDate')
             })}
-            reference={this.saveEndDateField}
+            ref={this.saveEndDateField}
             format={this.props.format}
             onDateChange={this.setEndDate}
             onFocus={() => {

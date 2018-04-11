@@ -3,9 +3,8 @@ import classnames from 'classnames';
 
 import './Input.css';
 
-export default function Input(props) {
+export default React.forwardRef(function Input(props, ref) {
   const allowedProps = {...props};
-  delete allowedProps.reference;
   delete allowedProps.isInvalid;
 
   return (
@@ -15,9 +14,9 @@ export default function Input(props) {
       className={classnames('Input', props.className, {
         'is-invalid': props.isInvalid
       })}
-      ref={props.reference}
+      ref={ref}
     >
       {props.children}
     </input>
   );
-}
+});

@@ -27,11 +27,9 @@ export default class Analysis extends React.Component {
       endEvent: null,
       xml: null
     };
-
-    this.selectTheOnlyDefinition();
   }
 
-  selectTheOnlyDefinition = async () => {
+  componentDidMount = async () => {
     const avaliableDefinitions = await loadProcessDefinitions();
     if (avaliableDefinitions.length === 1) {
       const theOnlyKey = avaliableDefinitions[0].key;

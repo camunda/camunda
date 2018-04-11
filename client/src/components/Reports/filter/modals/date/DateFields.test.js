@@ -5,7 +5,7 @@ import DateFields from './DateFields';
 import {mount} from 'enzyme';
 
 jest.mock('./DateRange', () => props => `DateRange: props: ${JSON.stringify(props)}`);
-jest.mock('./DateInput', () => props => `DateInput: props: ${JSON.stringify(props)}`);
+jest.mock('./DateInput');
 
 const format = 'YYYY-MM-DD';
 const startDate = moment([2017, 8, 29]);

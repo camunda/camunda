@@ -7,11 +7,13 @@ export default class PrivateRoute extends React.Component {
   constructor(props) {
     super(props);
 
-    addHandler(this.handleResponse);
-
     this.state = {
       forceRedirect: false
     };
+  }
+
+  componentDidMount() {
+    addHandler(this.handleResponse);
   }
 
   handleResponse = response => {

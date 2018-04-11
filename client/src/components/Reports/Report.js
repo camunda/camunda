@@ -237,7 +237,7 @@ export default class Report extends React.Component {
             <Input
               id="name"
               type="text"
-              reference={this.inputRef}
+              ref={this.inputRef}
               onChange={this.updateName}
               value={name || ''}
               className="Report__name-input"

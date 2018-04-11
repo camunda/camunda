@@ -20,11 +20,9 @@ export default class VariableFilter extends React.Component {
       valuesAreComplete: false,
       loading: false
     };
-
-    this.loadAvailableVariables();
   }
 
-  loadAvailableVariables = async () => {
+  componentDidMount = async () => {
     const variables = await loadVariables(
       this.props.processDefinitionKey,
       this.props.processDefinitionVersion

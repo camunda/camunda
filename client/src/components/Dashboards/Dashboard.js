@@ -58,11 +58,9 @@ export default class Dashboard extends React.Component {
       autoRefreshInterval: null,
       fullScreenActive: false
     };
-
-    this.load();
   }
 
-  load = async () => {
+  componentDidMount = async () => {
     const {name, lastModifier, lastModified, reports} = await loadDashboard(this.id);
 
     this.setState({
@@ -194,7 +192,7 @@ export default class Dashboard extends React.Component {
             <Input
               type="text"
               id={'name'}
-              reference={this.inputRef}
+              ref={this.inputRef}
               onChange={this.updateName}
               value={name || ''}
               className="Dashboard__name-input"

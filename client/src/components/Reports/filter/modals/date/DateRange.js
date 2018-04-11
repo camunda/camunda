@@ -1,6 +1,8 @@
 import React from 'react';
 import {Calendar} from 'react-date-range';
 
+import {adjustRange} from './service';
+
 import './DateRange.css';
 
 const theme = {
@@ -23,7 +25,7 @@ export default class DateRange extends React.Component {
   constructor(props) {
     super(props);
 
-    this.state = this.adjustRange({
+    this.state = adjustRange({
       startLink: this.props.startDate.clone(),
       endLink: this.props.endDate.clone()
     });
@@ -80,24 +82,10 @@ export default class DateRange extends React.Component {
     }
   }
 
-  componentWillReceiveProps(newProps) {
-    this.setState(
-      this.adjustRange({
-        startLink: newProps.startDate.clone(),
-        endLink: newProps.endDate.clone()
-      })
-    );
-  }
-
-  adjustRange({startLink, endLink}) {
-    if (startLink.startOf('month').isSame(endLink.startOf('month'))) {
-      endLink.add(1, 'months');
-    }
-
+  static getDerivedStateFromProps({startDate, endDate}) {
     return {
-      startLink: startLink,
-      endLink: endLink,
-      innerArrowsDisabled: this.shouldDisableInnerArrows(startLink, endLink)
+      startLink: startDate.clone(),
+      endLink: endDate.clone()
     };
   }
 
@@ -109,18 +97,10 @@ export default class DateRange extends React.Component {
     const newLink = this.state[name].clone().add(direction, 'months');
 
     this.setState(
-      this.adjustRange({
+      adjustRange({
         ...this.state,
         [name]: newLink
       })
     );
   };
-
-  shouldDisableInnerArrows(startLink, endLink) {
-    return startLink
-      .clone()
-      .add(1, 'months')
-      .startOf('month')
-      .isSame(endLink.startOf('month'));
-  }
 }

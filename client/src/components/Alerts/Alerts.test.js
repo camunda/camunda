@@ -42,9 +42,7 @@ loadReports.mockReturnValue(reports);
 loadAlerts.mockReturnValue([]);
 
 it('should load existing reports', async () => {
-  const node = mount(<Alerts />);
-
-  await node.instance().loadData();
+  await mount(<Alerts />);
 
   expect(loadReports).toHaveBeenCalled();
 });
@@ -52,15 +50,15 @@ it('should load existing reports', async () => {
 it('should only save single number reports', async () => {
   const node = mount(<Alerts />);
 
-  await node.instance().loadData();
+  await node.instance().componentDidMount();
 
   expect(node.state('reports').map(report => report.id)).toEqual(['2']);
 });
 
 it('should load existing alerts initially', async () => {
-  const node = mount(<Alerts />);
+  const node = await mount(<Alerts />);
 
-  await node.instance().loadData();
+  await node.instance().componentDidMount();
 
   expect(loadAlerts).toHaveBeenCalled();
 });
@@ -68,7 +66,7 @@ it('should load existing alerts initially', async () => {
 it('should include an edit/add alert modal after reports are loaded', async () => {
   const node = mount(<Alerts />);
 
-  await node.instance().loadData();
+  await node.instance().componentDidMount();
 
   expect(node).toIncludeText('EditModal');
 });
@@ -82,7 +80,7 @@ it('should display a loading message while content is loading', () => {
 it('should show a message when no alerts are defined', async () => {
   const node = mount(<Alerts />);
 
-  await node.instance().loadData();
+  await node.instance().componentDidMount();
 
   expect(node).toIncludeText('You have no Alerts configured yet.');
 });
@@ -93,7 +91,7 @@ it('should pass an alert configuration to the alert edit modal', async () => {
 
   const node = mount(<Alerts />);
 
-  await node.instance().loadData();
+  await node.instance().componentDidMount();
 
   // some enzyme bug causes update not to fire sometime :/
   // https://github.com/airbnb/enzyme/issues/1233#issuecomment-343449560
@@ -107,7 +105,7 @@ it('should pass an alert configuration to the alert edit modal', async () => {
 it('should format durations with value and unit', async () => {
   const node = mount(<Alerts />);
 
-  await node.instance().loadData();
+  await node.instance().componentDidMount();
 
   expect(node).toIncludeText('14 seconds');
 });

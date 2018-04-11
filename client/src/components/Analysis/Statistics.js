@@ -15,8 +15,6 @@ export default class Statistics extends React.Component {
       data: null,
       flowNodeNames: null
     };
-
-    this.loadFlowNodeNames();
   }
 
   loadFlowNodeNames = async () => {
@@ -85,6 +83,7 @@ export default class Statistics extends React.Component {
   }
 
   componentDidMount() {
+    this.loadFlowNodeNames();
     this.loadCorrelation();
   }
 

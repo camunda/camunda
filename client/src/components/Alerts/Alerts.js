@@ -25,11 +25,9 @@ export default class Alerts extends React.Component {
       alertToEdit: null,
       alertToDelete: null
     };
-
-    this.loadData();
   }
 
-  loadData = async () => {
+  componentDidMount = async () => {
     this.setState({
       alerts: await loadAlerts(),
       reports: (await loadReports()).filter(({data: {visualization}}) => visualization === 'number')

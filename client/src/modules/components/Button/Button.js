@@ -4,12 +4,11 @@ import {Link} from 'react-router-dom';
 
 import './Button.css';
 
-export default function Button(props) {
+export default React.forwardRef(function Button(props, ref) {
   const filteredProps = {...props};
   delete filteredProps.active;
   delete filteredProps.color;
   delete filteredProps.type;
-  delete filteredProps.reference;
   if (props.tag === 'a') {
     return (
       <Link
@@ -32,10 +31,10 @@ export default function Button(props) {
           ['Button--' + props.color]: props.color,
           'is-active': props.active
         })}
-        ref={props.reference}
+        ref={ref}
       >
         {props.children}
       </button>
     );
   }
-}
+});

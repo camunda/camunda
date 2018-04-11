@@ -51,7 +51,7 @@ jest.mock('components', () => {
     TargetValueBadge: () => <div>TargetValueBadge</div>,
     Input: props => (
       <input
-        ref={props.reference}
+        ref={props.ref}
         id={props.id}
         readOnly={props.readOnly}
         type={props.type}

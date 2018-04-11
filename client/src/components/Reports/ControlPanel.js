@@ -15,11 +15,14 @@ export default class ControlPanel extends React.Component {
     this.state = {
       processDefinitionName: this.props.processDefinitionKey
     };
-
-    this.loadProcessDefinitionName(this.props.configuration.xml);
   }
 
-  loadProcessDefinitionName = async xml => {
+  componentDidMount() {
+    this.loadProcessDefinitionName();
+  }
+
+  loadProcessDefinitionName = async () => {
+    const {xml} = this.props.configuration;
     if (xml) {
       const processDefinitionName = await extractProcessDefinitionName(xml);
       this.setState({
@@ -80,9 +83,9 @@ export default class ControlPanel extends React.Component {
     };
   };
 
-  componentWillReceiveProps(nextProps) {
-    if (this.props.processDefinitionKey !== nextProps.processDefinitionKey) {
-      this.loadProcessDefinitionName(nextProps.configuration.xml);
+  componentDidUpdate(prevProps) {
+    if (this.props.processDefinitionKey !== prevProps.processDefinitionKey) {
+      this.loadProcessDefinitionName();
     }
   }
 

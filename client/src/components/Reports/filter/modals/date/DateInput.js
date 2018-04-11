@@ -5,7 +5,7 @@ import {Input, ErrorMessage} from 'components';
 
 import './DateInput.css';
 
-export default class DateInput extends React.PureComponent {
+class DateInput extends React.PureComponent {
   constructor(props) {
     super(props);
 
@@ -15,16 +15,17 @@ export default class DateInput extends React.PureComponent {
     };
   }
 
-  componentWillReceiveProps({date, format}) {
+  static getDerivedStateFromProps({date, format}, {stringDate}) {
     const newStringDate = date.format(format);
 
-    // prevents unnecessary state change
-    if (this.state.stringDate !== newStringDate) {
-      this.setState({
+    if (stringDate !== newStringDate) {
+      return {
         stringDate: newStringDate,
         error: false
-      });
+      };
     }
+
+    return null;
   }
 
   render() {
@@ -77,3 +78,5 @@ export default class DateInput extends React.PureComponent {
     this.props.enableAddButton(isValid);
   };
 }
+
+export default React.forwardRef((props, ref) => <DateInput {...props} reference={ref} />);

@@ -235,7 +235,7 @@ it('should be able to sort by date', async () => {
   load.mockReturnValue([sampleEntity2, sampleEntity]);
 
   //this will make method to be invoked twice, but we can wait on second call
-  await node.instance().loadEntities();
+  await node.instance().componentDidMount();
   expect(load).toBeCalledWith('endpoint', undefined, 'lastModified');
   expect(node.state().data[0]).toEqual(sampleEntity2);
 });

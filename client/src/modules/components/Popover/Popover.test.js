@@ -3,16 +3,6 @@ import {mount} from 'enzyme';
 
 import Popover from './Popover';
 
-jest.mock('components', () => {
-  return {
-    Button: props => (
-      <button onClick={props.onClick} ref={props.reference}>
-        {props.children}
-      </button>
-    )
-  };
-});
-
 it('should include a button to toggle the popover', () => {
   const node = mount(<Popover title="Foobar" />);
 

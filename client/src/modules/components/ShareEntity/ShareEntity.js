@@ -12,11 +12,9 @@ export default class ShareEntity extends React.Component {
       isShared: false,
       id: ''
     };
-
-    this.loadSharedEntity();
   }
 
-  loadSharedEntity = async () => {
+  componentDidMount = async () => {
     const id = await this.props.getSharedEntity(this.props.resourceId);
     this.setState({
       id,
