@@ -17,18 +17,15 @@
  */
 package io.zeebe.broker.event.processor;
 
-import static io.zeebe.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE;
-
 import java.util.Objects;
 
 import io.zeebe.broker.Loggers;
-import io.zeebe.broker.event.TopicSubscriptionServiceNames;
-import io.zeebe.broker.logstreams.processor.*;
+import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
+import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
 import io.zeebe.broker.system.ConfigurationManager;
 import io.zeebe.broker.transport.clientapi.*;
+import io.zeebe.logstreams.impl.service.StreamProcessorService;
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.processor.StreamProcessor;
-import io.zeebe.logstreams.processor.StreamProcessorController;
 import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.*;
 import io.zeebe.util.sched.Actor;
@@ -42,22 +39,26 @@ public class TopicSubscriptionService extends Actor implements Service<TopicSubs
     private static final Logger LOG = Loggers.SERVICES_LOGGER;
 
     protected final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
-    protected final SubscriptionCfg config;
+    protected final Injector<StreamProcessorServiceFactory> streamProcessorServiceFactoryInjector = new Injector<>();
 
-    protected ServiceStartContext serviceContext;
+    protected final SubscriptionCfg config;
+    protected final ServiceContainer serviceContainer;
+
     protected Int2ObjectHashMap<TopicSubscriptionManagementProcessor> managersByLog = new Int2ObjectHashMap<>();
     protected ServerOutput serverOutput;
-
+    protected StreamProcessorServiceFactory streamProcessorServiceFactory;
 
     protected final ServiceGroupReference<LogStream> logStreamsGroupReference = ServiceGroupReference.<LogStream>create()
         .onAdd(this::onStreamAdded)
         .onRemove((logStreamServiceName, logStream) -> onStreamRemoved(logStream))
         .build();
 
-    public TopicSubscriptionService(ConfigurationManager configurationManager)
+    public TopicSubscriptionService(ConfigurationManager configurationManager, ServiceContainer serviceContainer)
     {
         config = configurationManager.readEntry("subscriptions", SubscriptionCfg.class);
         Objects.requireNonNull(config);
+
+        this.serviceContainer = serviceContainer;
     }
 
     @Override
@@ -71,6 +72,11 @@ public class TopicSubscriptionService extends Actor implements Service<TopicSubs
         return clientApiTransportInjector;
     }
 
+    public Injector<StreamProcessorServiceFactory> getStreamProcessorServiceFactoryInjector()
+    {
+        return streamProcessorServiceFactoryInjector;
+    }
+
     public ServiceGroupReference<LogStream> getLogStreamsGroupReference()
     {
         return logStreamsGroupReference;
@@ -79,10 +85,10 @@ public class TopicSubscriptionService extends Actor implements Service<TopicSubs
     @Override
     public void start(ServiceStartContext startContext)
     {
+        this.streamProcessorServiceFactory = streamProcessorServiceFactoryInjector.getValue();
+
         final ServerTransport transport = clientApiTransportInjector.getValue();
         this.serverOutput = transport.getOutput();
-
-        this.serviceContext = startContext;
 
         final ActorFuture<Void> registration = transport.registerChannelListener(this);
         startContext.async(registration);
@@ -100,27 +106,26 @@ public class TopicSubscriptionService extends Actor implements Service<TopicSubs
     {
         actor.call(() ->
         {
-            final TopicSubscriptionManagementProcessor ackProcessor = new TopicSubscriptionManagementProcessor(
-                logStreamServiceName,
+            final TopicSubscriptionManagementProcessor streamProcessor = new TopicSubscriptionManagementProcessor(
                 new CommandResponseWriter(serverOutput),
                 new ErrorResponseWriter(serverOutput),
                 () -> new SubscribedEventWriter(serverOutput),
-                serviceContext
+                streamProcessorServiceFactory,
+                serviceContainer
                 );
 
+            final ActorFuture<StreamProcessorService> openFuture = streamProcessorServiceFactory.createService(logStream)
+                .processor(streamProcessor)
+                .processorId(StreamProcessorIds.TOPIC_SUBSCRIPTION_MANAGEMENT_PROCESSOR_ID)
+                .processorName("topic-management")
+                .eventFilter(TopicSubscriptionManagementProcessor.filter())
+                .build();
 
-            final ActorFuture<Void> future = createStreamProcessorService(
-                logStreamServiceName,
-                TopicSubscriptionServiceNames.subscriptionManagementServiceName(logStream.getLogName()),
-                StreamProcessorIds.TOPIC_SUBSCRIPTION_MANAGEMENT_PROCESSOR_ID,
-                ackProcessor,
-                TopicSubscriptionManagementProcessor.filter());
-
-            actor.runOnCompletion(future, (aVoid, throwable) ->
+            actor.runOnCompletion(openFuture, (aVoid, throwable) ->
             {
                 if (throwable == null)
                 {
-                    managersByLog.put(logStream.getPartitionId(), ackProcessor);
+                    managersByLog.put(logStream.getPartitionId(), streamProcessor);
                 }
                 else
                 {
@@ -128,25 +133,6 @@ public class TopicSubscriptionService extends Actor implements Service<TopicSubs
                 }
             });
         });
-    }
-
-    protected ActorFuture<Void> createStreamProcessorService(
-            ServiceName<LogStream> logStreamName,
-            ServiceName<StreamProcessorController> processorName,
-            int processorId,
-            StreamProcessor streamProcessor,
-            MetadataFilter eventFilter)
-    {
-        final StreamProcessorService streamProcessorService = new StreamProcessorService(
-            processorName.getName(),
-            processorId,
-            streamProcessor)
-            .eventFilter(eventFilter);
-
-        return serviceContext.createService(processorName, streamProcessorService)
-                             .dependency(logStreamName, streamProcessorService.getLogStreamInjector())
-                             .dependency(SNAPSHOT_STORAGE_SERVICE, streamProcessorService.getSnapshotStorageInjector())
-                             .install();
     }
 
     public void onStreamRemoved(LogStream logStream)

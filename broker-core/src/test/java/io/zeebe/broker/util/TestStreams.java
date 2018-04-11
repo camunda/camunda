@@ -17,6 +17,16 @@
  */
 package io.zeebe.broker.util;
 
+import static io.zeebe.test.util.TestUtil.doRepeatedly;
+
+import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.*;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+
 import io.zeebe.broker.incident.data.IncidentEvent;
 import io.zeebe.broker.logstreams.processor.TypedEvent;
 import io.zeebe.broker.system.log.PartitionEvent;
@@ -24,15 +34,11 @@ import io.zeebe.broker.system.log.TopicEvent;
 import io.zeebe.broker.task.data.TaskEvent;
 import io.zeebe.broker.topic.Events;
 import io.zeebe.broker.topic.StreamProcessorControl;
-import io.zeebe.broker.workflow.data.DeploymentEvent;
-import io.zeebe.broker.workflow.data.WorkflowEvent;
-import io.zeebe.broker.workflow.data.WorkflowInstanceEvent;
+import io.zeebe.broker.workflow.data.*;
 import io.zeebe.logstreams.LogStreams;
+import io.zeebe.logstreams.impl.service.StreamProcessorService;
 import io.zeebe.logstreams.log.*;
-import io.zeebe.logstreams.processor.EventProcessor;
-import io.zeebe.logstreams.processor.StreamProcessor;
-import io.zeebe.logstreams.processor.StreamProcessorContext;
-import io.zeebe.logstreams.processor.StreamProcessorController;
+import io.zeebe.logstreams.processor.*;
 import io.zeebe.logstreams.spi.SnapshotStorage;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.msgpack.UnpackedObject;
@@ -42,22 +48,7 @@ import io.zeebe.protocol.impl.BrokerEventMetadata;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.buffer.BufferUtil;
-import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.ActorCondition;
-import io.zeebe.util.sched.ActorScheduler;
-
-import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
-
-import static io.zeebe.test.util.TestUtil.doRepeatedly;
+import io.zeebe.util.sched.*;
 
 public class TestStreams
 {
@@ -164,7 +155,10 @@ public class TestStreams
     public Stream<LoggedEvent> events(String logName)
     {
         final LogStream logStream = managedLogs.get(logName);
+
         final LogStreamReader reader = new BufferedLogStreamReader(logStream);
+        closeables.manage(reader);
+
         reader.seekToFirstEvent();
 
         final Iterable<LoggedEvent> iterable = () -> reader;
@@ -216,6 +210,7 @@ public class TestStreams
 
         protected SuspendableStreamProcessor currentStreamProcessor;
         protected StreamProcessorController currentController;
+        protected StreamProcessorService currentStreamProcessorService;
         private Consumer<SnapshotStorage> snapshotCleaner;
 
         public StreamProcessorControlImpl(
@@ -288,16 +283,10 @@ public class TestStreams
         {
             if (currentController != null && currentController.isOpened())
             {
-                try
-                {
-                    currentController.closeAsync().get();
-                }
-                catch (InterruptedException | ExecutionException e)
-                {
-                    throw new RuntimeException(e);
-                }
+                currentStreamProcessorService.close();
             }
 
+            currentStreamProcessorService = null;
             currentController = null;
             currentStreamProcessor = null;
         }
@@ -305,18 +294,10 @@ public class TestStreams
         @Override
         public void start()
         {
-            currentController = buildStreamProcessorController();
+            currentStreamProcessorService = buildStreamProcessorController();
+            currentController = currentStreamProcessorService.getController();
             final String controllerName = currentController.getName();
             snapshotCleaner = storage -> storage.purgeSnapshot(controllerName);
-
-            try
-            {
-                currentController.openAsync().get();
-            }
-            catch (InterruptedException | ExecutionException e)
-            {
-                throw new RuntimeException(e);
-            }
         }
 
         @Override
@@ -335,7 +316,7 @@ public class TestStreams
             }
         }
 
-        private StreamProcessorController buildStreamProcessorController()
+        private StreamProcessorService buildStreamProcessorController()
         {
             ensureStreamProcessorBuilt();
 
@@ -347,7 +328,9 @@ public class TestStreams
                 .logStream(stream)
                 .snapshotStorage(getSnapshotStorage())
                 .actorScheduler(actorScheduler)
-                .build();
+                .serviceContainer(serviceContainer)
+                .build()
+                .join();
         }
 
     }

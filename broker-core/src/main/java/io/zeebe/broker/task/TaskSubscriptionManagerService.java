@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.task;
 
+import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.ServerTransport;
@@ -26,6 +27,9 @@ import io.zeebe.util.sched.future.ActorFuture;
 public class TaskSubscriptionManagerService implements Service<TaskSubscriptionManager>
 {
     protected final Injector<ServerTransport> transportInjector = new Injector<>();
+    protected final Injector<StreamProcessorServiceFactory> streamProcessorServiceFactoryInjector = new Injector<>();
+
+    protected final ServiceContainer serviceContainer;
 
     protected TaskSubscriptionManager service;
 
@@ -34,13 +38,19 @@ public class TaskSubscriptionManagerService implements Service<TaskSubscriptionM
         .onRemove((name, stream) -> service.removeStream(stream))
         .build();
 
+    public TaskSubscriptionManagerService(ServiceContainer serviceContainer)
+    {
+        this.serviceContainer = serviceContainer;
+    }
+
     @Override
     public void start(ServiceStartContext startContext)
     {
         final ServerTransport clientApiTransport = transportInjector.getValue();
+        final StreamProcessorServiceFactory streamProcessorServiceFactory = streamProcessorServiceFactoryInjector.getValue();
 
         final ActorScheduler actorScheduler = startContext.getScheduler();
-        service = new TaskSubscriptionManager(startContext, clientApiTransport);
+        service = new TaskSubscriptionManager(serviceContainer, streamProcessorServiceFactory, clientApiTransport);
         actorScheduler.submitActor(service);
 
         final ActorFuture<Void> transportRegistration = clientApiTransport.registerChannelListener(service);
@@ -66,6 +76,11 @@ public class TaskSubscriptionManagerService implements Service<TaskSubscriptionM
     public Injector<ServerTransport> getClientApiTransportInjector()
     {
         return transportInjector;
+    }
+
+    public Injector<StreamProcessorServiceFactory> getStreamProcessorServiceFactoryInjector()
+    {
+        return streamProcessorServiceFactoryInjector;
     }
 
 }

@@ -22,6 +22,7 @@ import static io.zeebe.broker.task.TaskQueueServiceNames.TASK_QUEUE_MANAGER;
 import static io.zeebe.broker.task.TaskQueueServiceNames.TASK_QUEUE_SUBSCRIPTION_MANAGER;
 import static io.zeebe.broker.transport.TransportServiceNames.CLIENT_API_SERVER_NAME;
 
+import io.zeebe.broker.logstreams.LogStreamServiceNames;
 import io.zeebe.broker.system.Component;
 import io.zeebe.broker.system.SystemContext;
 import io.zeebe.broker.transport.TransportServiceNames;
@@ -35,9 +36,10 @@ public class TaskQueueComponent implements Component
     {
         final ServiceContainer serviceContainer = context.getServiceContainer();
 
-        final TaskSubscriptionManagerService taskSubscriptionManagerService = new TaskSubscriptionManagerService();
+        final TaskSubscriptionManagerService taskSubscriptionManagerService = new TaskSubscriptionManagerService(serviceContainer);
         serviceContainer.createService(TASK_QUEUE_SUBSCRIPTION_MANAGER, taskSubscriptionManagerService)
             .dependency(TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME), taskSubscriptionManagerService.getClientApiTransportInjector())
+            .dependency(LogStreamServiceNames.STREAM_PROCESSOR_SERVICE_FACTORY, taskSubscriptionManagerService.getStreamProcessorServiceFactoryInjector())
             .groupReference(WORKFLOW_STREAM_GROUP, taskSubscriptionManagerService.getLogStreamsGroupReference())
             .install();
 
@@ -45,6 +47,7 @@ public class TaskQueueComponent implements Component
         serviceContainer.createService(TASK_QUEUE_MANAGER, taskQueueManagerService)
             .dependency(TransportServiceNames.serverTransport(CLIENT_API_SERVER_NAME), taskQueueManagerService.getClientApiTransportInjector())
             .dependency(TASK_QUEUE_SUBSCRIPTION_MANAGER, taskQueueManagerService.getTaskSubscriptionManagerInjector())
+            .dependency(LogStreamServiceNames.STREAM_PROCESSOR_SERVICE_FACTORY, taskQueueManagerService.getStreamProcessorServiceFactoryInjector())
             .groupReference(WORKFLOW_STREAM_GROUP, taskQueueManagerService.getLogStreamsGroupReference())
             .install();
 

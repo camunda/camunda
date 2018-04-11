@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.event.processor;
 
+import io.zeebe.logstreams.impl.service.StreamProcessorService;
 import io.zeebe.logstreams.log.LogStreamWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.processor.EventProcessor;
@@ -140,7 +141,7 @@ public class SubscribeProcessor implements EventProcessor
                 subscriberEvent.getPrefetchCapacity(),
                 manager.getEventWriterFactory().get());
 
-            final ActorFuture<Void> future = manager.openPushProcessorAsync(processor);
+            final ActorFuture<StreamProcessorService> future = manager.openPushProcessorAsync(processor);
 
             awaitProcessorState.wrap(future);
             successState.wrap(processor);
@@ -152,11 +153,11 @@ public class SubscribeProcessor implements EventProcessor
 
     protected class AwaitSubscriptionServiceProcessor implements EventProcessor
     {
-        protected ActorFuture<Void> processorFuture;
+        protected ActorFuture<StreamProcessorService> streamProcessorServiceFuture;
 
-        public void wrap(ActorFuture<Void> processorFuture)
+        public void wrap(ActorFuture<StreamProcessorService> future)
         {
-            this.processorFuture = processorFuture;
+            this.streamProcessorServiceFuture = future;
         }
 
         @Override
@@ -167,13 +168,13 @@ public class SubscribeProcessor implements EventProcessor
         @Override
         public boolean executeSideEffects()
         {
-            if (!processorFuture.isDone())
+            if (!streamProcessorServiceFuture.isDone())
             {
                 // waiting
             }
-            else if (processorFuture.isCompletedExceptionally())
+            else if (streamProcessorServiceFuture.isCompletedExceptionally())
             {
-                final String errorMessage = processorFuture.getException().getMessage();
+                final String errorMessage = streamProcessorServiceFuture.getException().getMessage();
 
                 failedRequestState.wrapError(errorMessage);
                 state = failedRequestState;

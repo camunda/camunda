@@ -17,28 +17,17 @@
  */
 package io.zeebe.broker.task;
 
-import static io.zeebe.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE;
 import static io.zeebe.broker.logstreams.processor.StreamProcessorIds.TASK_EXPIRE_LOCK_STREAM_PROCESSOR_ID;
 import static io.zeebe.broker.logstreams.processor.StreamProcessorIds.TASK_QUEUE_STREAM_PROCESSOR_ID;
-import static io.zeebe.broker.task.TaskQueueServiceNames.TASK_QUEUE_STREAM_PROCESSOR_SERVICE_GROUP_NAME;
-import static io.zeebe.broker.task.TaskQueueServiceNames.taskQueueExpireLockStreamProcessorServiceName;
-import static io.zeebe.broker.task.TaskQueueServiceNames.taskQueueInstanceStreamProcessorServiceName;
 
 import java.time.Duration;
 
-import io.zeebe.broker.logstreams.processor.StreamProcessorService;
+import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
-import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.task.processor.TaskExpireLockStreamProcessor;
 import io.zeebe.broker.task.processor.TaskInstanceStreamProcessor;
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.processor.StreamProcessorController;
-import io.zeebe.servicecontainer.Injector;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceGroupReference;
-import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.ServerTransport;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorScheduler;
@@ -50,20 +39,18 @@ public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQ
 
     protected final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
     protected final Injector<TaskSubscriptionManager> taskSubscriptionManagerInjector = new Injector<>();
+    private final Injector<StreamProcessorServiceFactory> streamProcessorServiceFactoryInjector = new Injector<>();
 
     protected final ServiceGroupReference<LogStream> logStreamsGroupReference = ServiceGroupReference.<LogStream>create()
             .onAdd(this::addStream)
             .build();
 
-    private ServiceStartContext serviceContext;
     private ActorScheduler actorScheduler;
+    private StreamProcessorServiceFactory streamProcessorServiceFactory;
 
     @Override
     public void startTaskQueue(ServiceName<LogStream> logStreamServiceName, final LogStream stream)
     {
-        final ServiceName<StreamProcessorController> streamProcessorServiceName = taskQueueInstanceStreamProcessorServiceName(stream.getLogName());
-        final String streamProcessorName = streamProcessorServiceName.getName();
-
         final ServerTransport serverTransport = clientApiTransportInjector.getValue();
 
         final TaskSubscriptionManager taskSubscriptionManager = taskSubscriptionManagerInjector.getValue();
@@ -71,47 +58,31 @@ public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQ
         final TaskInstanceStreamProcessor taskInstanceStreamProcessor = new TaskInstanceStreamProcessor(taskSubscriptionManager);
         final TypedStreamEnvironment env = new TypedStreamEnvironment(stream, serverTransport.getOutput());
 
-        final TypedStreamProcessor streamProcessor = taskInstanceStreamProcessor.createStreamProcessor(env);
-        final StreamProcessorService taskInstanceStreamProcessorService = new StreamProcessorService(
-                streamProcessorName,
-                TASK_QUEUE_STREAM_PROCESSOR_ID,
-                streamProcessor)
-                .eventFilter(streamProcessor.buildTypeFilter());
-
-        serviceContext.createService(streamProcessorServiceName, taskInstanceStreamProcessorService)
-              .group(TASK_QUEUE_STREAM_PROCESSOR_SERVICE_GROUP_NAME)
-              .dependency(logStreamServiceName, taskInstanceStreamProcessorService.getLogStreamInjector())
-              .dependency(SNAPSHOT_STORAGE_SERVICE, taskInstanceStreamProcessorService.getSnapshotStorageInjector())
-              .install();
+        streamProcessorServiceFactory.createService(stream)
+            .processor(taskInstanceStreamProcessor.createStreamProcessor(env))
+            .processorId(TASK_QUEUE_STREAM_PROCESSOR_ID)
+            .processorName("task-instance")
+            .build();
 
         startExpireLockService(logStreamServiceName, stream, env);
     }
 
     protected void startExpireLockService(ServiceName<LogStream> logStreamServiceName, LogStream stream, TypedStreamEnvironment env)
     {
-
-        final ServiceName<StreamProcessorController> expireLockStreamProcessorServiceName = taskQueueExpireLockStreamProcessorServiceName(stream.getLogName());
         final TaskExpireLockStreamProcessor expireLockStreamProcessor = new TaskExpireLockStreamProcessor(env.buildStreamReader(), env.buildStreamWriter());
-        final TypedStreamProcessor streamProcessor = expireLockStreamProcessor.createStreamProcessor(env);
 
-        final StreamProcessorService expireLockStreamProcessorService = new StreamProcessorService(
-                expireLockStreamProcessorServiceName.getName(),
-                TASK_EXPIRE_LOCK_STREAM_PROCESSOR_ID,
-                streamProcessor)
-                .eventFilter(streamProcessor.buildTypeFilter());
-
-        serviceContext.createService(expireLockStreamProcessorServiceName, expireLockStreamProcessorService)
-            .dependency(logStreamServiceName, expireLockStreamProcessorService.getLogStreamInjector())
-            .dependency(SNAPSHOT_STORAGE_SERVICE, expireLockStreamProcessorService.getSnapshotStorageInjector())
-            .install();
+        streamProcessorServiceFactory.createService(stream)
+            .processor(expireLockStreamProcessor.createStreamProcessor(env))
+            .processorId(TASK_EXPIRE_LOCK_STREAM_PROCESSOR_ID)
+            .processorName("task-expire-lock")
+            .build();
     }
 
     @Override
     public void start(ServiceStartContext serviceContext)
     {
-        this.serviceContext = serviceContext;
-
         actorScheduler = serviceContext.getScheduler();
+        streamProcessorServiceFactory = streamProcessorServiceFactoryInjector.getValue();
     }
 
     @Override
@@ -150,6 +121,11 @@ public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQ
                 startTaskQueue(name, logStream);
             }
         });
+    }
+
+    public Injector<StreamProcessorServiceFactory> getStreamProcessorServiceFactoryInjector()
+    {
+        return streamProcessorServiceFactoryInjector;
     }
 
 }

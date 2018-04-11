@@ -17,15 +17,14 @@
  */
 package io.zeebe.broker.event.processor;
 
-import static io.zeebe.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE;
-
 import java.util.Iterator;
 import java.util.function.Supplier;
 
 import io.zeebe.broker.Loggers;
-import io.zeebe.broker.event.TopicSubscriptionServiceNames;
 import io.zeebe.broker.logstreams.processor.*;
 import io.zeebe.broker.transport.clientapi.*;
+import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
+import io.zeebe.logstreams.impl.service.StreamProcessorService;
 import io.zeebe.logstreams.log.*;
 import io.zeebe.logstreams.processor.*;
 import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
@@ -35,8 +34,8 @@ import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.impl.BrokerEventMetadata;
+import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
@@ -51,14 +50,14 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
 
     protected LogStream logStream;
     protected int logStreamPartitionId;
-    protected final ServiceName<LogStream> streamServiceName;
 
     protected final SubscriptionRegistry subscriptionRegistry = new SubscriptionRegistry();
 
     protected final ErrorResponseWriter errorWriter;
     protected final CommandResponseWriter responseWriter;
     protected final Supplier<SubscribedEventWriter> eventWriterFactory;
-    protected final ServiceStartContext serviceContext;
+    protected final StreamProcessorServiceFactory streamProcessorServiceFactory;
+    protected final ServiceContainer serviceContext;
     protected final Bytes2LongZbMap ackMap;
 
     private ActorControl actor;
@@ -73,19 +72,19 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
     protected LoggedEvent currentEvent;
 
     public TopicSubscriptionManagementProcessor(
-            ServiceName<LogStream> streamServiceName,
             CommandResponseWriter responseWriter,
             ErrorResponseWriter errorWriter,
             Supplier<SubscribedEventWriter> eventWriterFactory,
-            ServiceStartContext serviceContext)
+            StreamProcessorServiceFactory streamProcessorServiceFactory,
+            ServiceContainer serviceContainer)
     {
-        this.streamServiceName = streamServiceName;
         this.responseWriter = responseWriter;
         this.errorWriter = errorWriter;
         this.eventWriterFactory = eventWriterFactory;
-        this.serviceContext = serviceContext;
         this.ackMap = new Bytes2LongZbMap(MAXIMUM_SUBSCRIPTION_NAME_LENGTH);
         this.snapshotResource = new ZbMapSnapshotSupport<>(ackMap);
+        this.serviceContext = serviceContainer;
+        this.streamProcessorServiceFactory = streamProcessorServiceFactory;
     }
 
     public Supplier<SubscribedEventWriter> getEventWriterFactory()
@@ -215,12 +214,9 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
 
     protected ActorFuture<Void> closePushProcessor(TopicSubscriptionPushProcessor processor)
     {
-        final ServiceName<StreamProcessorController> subscriptionProcessorName =
-                TopicSubscriptionServiceNames.subscriptionPushServiceName(streamServiceName.getName(), processor.getNameAsString());
-
-        return serviceContext.removeService(subscriptionProcessorName);
+        final ServiceName<StreamProcessorService> pushProcessorServiceName = LogStreamServiceNames.streamProcessorService(logStream.getLogName(), pushProcessorName(processor));
+        return serviceContext.removeService(pushProcessorServiceName);
     }
-
 
     public long determineResumePosition(DirectBuffer subscriptionName, long startPosition, boolean forceStart)
     {
@@ -243,23 +239,17 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
         }
     }
 
-    public ActorFuture<Void> openPushProcessorAsync(final TopicSubscriptionPushProcessor processor)
+    public ActorFuture<StreamProcessorService> openPushProcessorAsync(final TopicSubscriptionPushProcessor processor)
     {
-
-        final ServiceName<StreamProcessorController> serviceName = TopicSubscriptionServiceNames.subscriptionPushServiceName(streamServiceName.getName(), processor.getNameAsString());
-
-        final StreamProcessorService streamProcessorService = new StreamProcessorService(
-            serviceName.getName(),
-            StreamProcessorIds.TOPIC_SUBSCRIPTION_PUSH_PROCESSOR_ID,
-            processor)
-            .eventFilter(TopicSubscriptionPushProcessor.eventFilter())
-            .readOnly(true);
-
-        return serviceContext.createService(serviceName, streamProcessorService)
-                             .dependency(streamServiceName, streamProcessorService.getLogStreamInjector())
-                             .dependency(SNAPSHOT_STORAGE_SERVICE, streamProcessorService.getSnapshotStorageInjector())
-                             .install();
+        return streamProcessorServiceFactory.createService(logStream)
+                .processor(processor)
+                .processorId(StreamProcessorIds.TOPIC_SUBSCRIPTION_PUSH_PROCESSOR_ID)
+                .processorName(pushProcessorName(processor))
+                .eventFilter(TopicSubscriptionPushProcessor.eventFilter())
+                .readOnly(true)
+                .build();
     }
+
 
     public boolean writeRequestResponseError(BrokerEventMetadata metadata, String error)
     {
@@ -292,12 +282,10 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
         });
     }
 
-
     public static MetadataFilter filter()
     {
         return (m) -> EventType.SUBSCRIPTION_EVENT == m.getEventType() || EventType.SUBSCRIBER_EVENT == m.getEventType();
     }
-
 
     protected class AckProcessor implements EventProcessor
     {
@@ -399,6 +387,11 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
                     .valueWriter(subscriptionEvent)
                     .tryWrite();
         }
+    }
+
+    private static String pushProcessorName(final TopicSubscriptionPushProcessor processor)
+    {
+        return String.format("topic-push.%s", processor.getNameAsString());
     }
 
 }

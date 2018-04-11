@@ -17,14 +17,15 @@
  */
 package io.zeebe.broker.logstreams;
 
-import static io.zeebe.broker.logstreams.LogStreamServiceNames.LOG_STREAMS_MANAGER_SERVICE;
-import static io.zeebe.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE;
+import static io.zeebe.broker.logstreams.LogStreamServiceNames.*;
 
 import io.zeebe.broker.event.TopicSubscriptionServiceNames;
 import io.zeebe.broker.event.processor.TopicSubscriptionService;
+import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
 import io.zeebe.broker.system.Component;
 import io.zeebe.broker.system.SystemContext;
 import io.zeebe.broker.transport.TransportServiceNames;
+import io.zeebe.servicecontainer.ServiceContainer;
 
 public class LogStreamsComponent implements Component
 {
@@ -32,21 +33,30 @@ public class LogStreamsComponent implements Component
     @Override
     public void init(SystemContext context)
     {
+        final ServiceContainer serviceContainer = context.getServiceContainer();
 
-        final LogStreamsManagerService streamsManager = new LogStreamsManagerService(context.getConfigurationManager(), context.getServiceContainer());
-        context.getServiceContainer().createService(LOG_STREAMS_MANAGER_SERVICE, streamsManager)
+        final LogStreamsManagerService streamsManager = new LogStreamsManagerService(context.getConfigurationManager(), serviceContainer);
+        serviceContainer.createService(LOG_STREAMS_MANAGER_SERVICE, streamsManager)
             .install();
 
         final SnapshotStorageService snapshotStorageService = new SnapshotStorageService(context.getConfigurationManager());
-        context.getServiceContainer().createService(SNAPSHOT_STORAGE_SERVICE, snapshotStorageService)
+        serviceContainer.createService(SNAPSHOT_STORAGE_SERVICE, snapshotStorageService)
             .install();
 
-        final TopicSubscriptionService topicSubscriptionService = new TopicSubscriptionService(context.getConfigurationManager());
-        context.getServiceContainer()
+        final TopicSubscriptionService topicSubscriptionService = new TopicSubscriptionService(context.getConfigurationManager(), serviceContainer);
+        serviceContainer
             .createService(TopicSubscriptionServiceNames.TOPIC_SUBSCRIPTION_SERVICE, topicSubscriptionService)
             .dependency(TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME), topicSubscriptionService.getClientApiTransportInjector())
+            .dependency(LogStreamServiceNames.STREAM_PROCESSOR_SERVICE_FACTORY, topicSubscriptionService.getStreamProcessorServiceFactoryInjector())
             .groupReference(LogStreamServiceNames.WORKFLOW_STREAM_GROUP, topicSubscriptionService.getLogStreamsGroupReference())
             .install();
+
+        final StreamProcessorServiceFactory streamProcessorFactory = new StreamProcessorServiceFactory(serviceContainer);
+        serviceContainer
+            .createService(STREAM_PROCESSOR_SERVICE_FACTORY, streamProcessorFactory)
+            .dependency(SNAPSHOT_STORAGE_SERVICE, streamProcessorFactory.getSnapshotStorageInjector())
+            .install();
+
     }
 
 }

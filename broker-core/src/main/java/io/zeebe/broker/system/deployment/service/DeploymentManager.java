@@ -20,17 +20,10 @@ package io.zeebe.broker.system.deployment.service;
 import java.time.Duration;
 
 import io.zeebe.broker.clustering.management.PartitionManager;
-import io.zeebe.broker.logstreams.LogStreamServiceNames;
 import io.zeebe.broker.logstreams.processor.*;
 import io.zeebe.broker.system.SystemConfiguration;
-import io.zeebe.broker.system.SystemServiceNames;
-import io.zeebe.broker.system.deployment.data.PendingDeployments;
-import io.zeebe.broker.system.deployment.data.PendingWorkflows;
-import io.zeebe.broker.system.deployment.data.TopicPartitions;
-import io.zeebe.broker.system.deployment.data.WorkflowVersions;
-import io.zeebe.broker.system.deployment.handler.DeploymentEventWriter;
-import io.zeebe.broker.system.deployment.handler.DeploymentTimer;
-import io.zeebe.broker.system.deployment.handler.RemoteWorkflowsManager;
+import io.zeebe.broker.system.deployment.data.*;
+import io.zeebe.broker.system.deployment.handler.*;
 import io.zeebe.broker.system.deployment.processor.*;
 import io.zeebe.broker.workflow.data.DeploymentState;
 import io.zeebe.broker.workflow.data.WorkflowState;
@@ -45,14 +38,14 @@ public class DeploymentManager implements Service<DeploymentManager>
     private final Injector<PartitionManager> partitionManagerInjector = new Injector<>();
     private final Injector<ClientTransport> managementClientInjector = new Injector<>();
     private final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
+    private final Injector<StreamProcessorServiceFactory> streamProcessorServiceFactoryInjector = new Injector<>();
 
     private final SystemConfiguration systemConfiguration;
-
-    private ServiceStartContext serviceContext;
 
     private PartitionManager partitionManager;
     private ClientTransport managementClient;
     private ServerTransport clientApiTransport;
+    private StreamProcessorServiceFactory streamProcessorServiceFactory;
 
     private final ServiceGroupReference<LogStream> systemStreamGroupReference = ServiceGroupReference.<LogStream>create()
             .onAdd((name, stream) -> installDeploymentStreamProcessor(stream, name))
@@ -66,11 +59,10 @@ public class DeploymentManager implements Service<DeploymentManager>
     @Override
     public void start(ServiceStartContext startContext)
     {
-        serviceContext = startContext;
-
         partitionManager = partitionManagerInjector.getValue();
         managementClient = managementClientInjector.getValue();
         clientApiTransport = clientApiTransportInjector.getValue();
+        streamProcessorServiceFactory = streamProcessorServiceFactoryInjector.getValue();
     }
 
     @Override
@@ -111,16 +103,11 @@ public class DeploymentManager implements Service<DeploymentManager>
                         deploymentEventWriter,
                         remoteManager);
 
-        final StreamProcessorService streamProcessorService = new StreamProcessorService(
-             "deployment",
-             StreamProcessorIds.DEPLOYMENT_PROCESSOR_ID,
-             streamProcessor)
-             .eventFilter(streamProcessor.buildTypeFilter());
-
-        serviceContext.createService(SystemServiceNames.DEPLOYMENT_PROCESSOR, streamProcessorService)
-             .dependency(serviceName, streamProcessorService.getLogStreamInjector())
-             .dependency(LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE, streamProcessorService.getSnapshotStorageInjector())
-             .install();
+        streamProcessorServiceFactory.createService(logStream)
+            .processor(streamProcessor)
+            .processorId(StreamProcessorIds.DEPLOYMENT_PROCESSOR_ID)
+            .processorName("deployment")
+            .build();
     }
 
     public static TypedStreamProcessor createDeploymentStreamProcessor(
@@ -182,6 +169,11 @@ public class DeploymentManager implements Service<DeploymentManager>
     public Injector<ServerTransport> getClientApiTransportInjector()
     {
         return clientApiTransportInjector;
+    }
+
+    public Injector<StreamProcessorServiceFactory> getStreamProcessorServiceFactoryInjector()
+    {
+        return streamProcessorServiceFactoryInjector;
     }
 
 

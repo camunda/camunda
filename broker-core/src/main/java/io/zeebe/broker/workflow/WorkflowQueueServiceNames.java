@@ -17,20 +17,9 @@
  */
 package io.zeebe.broker.workflow;
 
-import io.zeebe.logstreams.processor.StreamProcessorController;
 import io.zeebe.servicecontainer.ServiceName;
 
 public class WorkflowQueueServiceNames
 {
     public static final ServiceName<WorkflowQueueManager> WORKFLOW_QUEUE_MANAGER = ServiceName.newServiceName("workflow.manager", WorkflowQueueManager.class);
-
-    public static ServiceName<StreamProcessorController> workflowInstanceStreamProcessorServiceName(String queueName)
-    {
-        return ServiceName.newServiceName(String.format("workflow.%s.processor.instance", queueName), StreamProcessorController.class);
-    }
-
-    public static ServiceName<StreamProcessorController> incidentStreamProcessorServiceName(String queueName)
-    {
-        return ServiceName.newServiceName(String.format("workflow.%s.processor.incident", queueName), StreamProcessorController.class);
-    }
 }

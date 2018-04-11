@@ -54,6 +54,7 @@ public class SystemComponent implements Component
         serviceContainer.createService(SystemServiceNames.SYSTEM_LOG_MANAGER, systemPartitionManager)
             .dependency(TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME), systemPartitionManager.getClientApiTransportInjector())
             .dependency(PARTITION_MANAGER_SERVICE, systemPartitionManager.getPartitionManagerInjector())
+            .dependency(LogStreamServiceNames.STREAM_PROCESSOR_SERVICE_FACTORY, systemPartitionManager.getStreamProcessorServiceFactoryInjector())
             .groupReference(LogStreamServiceNames.SYSTEM_STREAM_GROUP, systemPartitionManager.getLogStreamsGroupReference())
             .install();
 
@@ -62,6 +63,7 @@ public class SystemComponent implements Component
             .dependency(TransportServiceNames.clientTransport(TransportServiceNames.MANAGEMENT_API_CLIENT_NAME), deploymentManagerService.getManagementClientInjector())
             .dependency(TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME), deploymentManagerService.getClientApiTransportInjector())
             .dependency(PARTITION_MANAGER_SERVICE, deploymentManagerService.getPartitionManagerInjector())
+            .dependency(LogStreamServiceNames.STREAM_PROCESSOR_SERVICE_FACTORY, deploymentManagerService.getStreamProcessorServiceFactoryInjector())
             .groupReference(LogStreamServiceNames.SYSTEM_STREAM_GROUP, deploymentManagerService.getSystemStreamGroupReference())
             .install();
 

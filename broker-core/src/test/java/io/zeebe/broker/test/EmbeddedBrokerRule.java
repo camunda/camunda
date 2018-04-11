@@ -17,27 +17,26 @@
  */
 package io.zeebe.broker.test;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
+import java.util.concurrent.*;
+import java.util.function.Supplier;
+
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.TestLoggers;
-import io.zeebe.broker.system.SystemServiceNames;
 import io.zeebe.broker.system.log.SystemPartitionManager;
 import io.zeebe.broker.topic.RequestPartitionsTest;
 import io.zeebe.broker.transport.TransportServiceNames;
+import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.servicecontainer.*;
 import io.zeebe.test.util.TestFileUtil;
 import io.zeebe.util.allocation.DirectBufferAllocator;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.function.Supplier;
 
 public class EmbeddedBrokerRule extends ExternalResource
 {
@@ -141,8 +140,10 @@ public class EmbeddedBrokerRule extends ExternalResource
             // Hack: block until the system stream processor is available
             // this is required in the broker-test suite, because the client rule does not perform request retries
             // How to make it better: https://github.com/zeebe-io/zeebe/issues/196
+            final String systemTopicName = Protocol.SYSTEM_TOPIC + "-" + Protocol.SYSTEM_PARTITION;
+
             serviceContainer.createService(TestService.NAME, new TestService())
-                .dependency(SystemServiceNames.systemProcessorName(SystemPartitionManager.CREATE_TOPICS_PROCESSOR))
+                .dependency(LogStreamServiceNames.streamProcessorService(systemTopicName, SystemPartitionManager.CREATE_TOPICS_PROCESSOR))
                 .dependency(TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME))
                 .install()
                 .get(25, TimeUnit.SECONDS);

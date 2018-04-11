@@ -17,47 +17,40 @@
  */
 package io.zeebe.broker.task;
 
-import static io.zeebe.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE;
 import static io.zeebe.broker.logstreams.processor.StreamProcessorIds.TASK_LOCK_STREAM_PROCESSOR_ID;
-import static io.zeebe.broker.task.TaskQueueServiceNames.taskQueueLockStreamProcessorServiceName;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
-
-import org.agrona.DirectBuffer;
-import org.agrona.collections.Int2ObjectHashMap;
-import org.agrona.collections.Long2ObjectHashMap;
 
 import io.zeebe.broker.Loggers;
-import io.zeebe.broker.logstreams.processor.StreamProcessorService;
+import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
-import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.task.processor.LockTaskStreamProcessor;
 import io.zeebe.broker.task.processor.TaskSubscription;
+import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
+import io.zeebe.logstreams.impl.service.StreamProcessorService;
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.processor.StreamProcessorController;
+import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.ServerTransport;
-import io.zeebe.transport.TransportListener;
+import io.zeebe.transport.*;
 import io.zeebe.util.allocation.HeapBufferAllocator;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.collection.CompactList;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
+import org.agrona.DirectBuffer;
+import org.agrona.collections.Int2ObjectHashMap;
+import org.agrona.collections.Long2ObjectHashMap;
 
 public class TaskSubscriptionManager extends Actor implements TransportListener
 {
     protected static final String NAME = "taskqueue.subscription.manager";
     public static final int NUM_CONCURRENT_REQUESTS = 1_024;
 
-    protected final ServiceStartContext serviceContext;
+    protected final StreamProcessorServiceFactory streamProcessorServiceFactory;
+    protected final ServiceContainer serviceContext;
     private final ServerTransport transport;
 
     protected final Int2ObjectHashMap<LogStreamBucket> logStreamBuckets = new Int2ObjectHashMap<>();
@@ -80,10 +73,12 @@ public class TaskSubscriptionManager extends Actor implements TransportListener
 
     protected long nextSubscriptionId = 0;
 
-    public TaskSubscriptionManager(ServiceStartContext serviceContext, ServerTransport transport)
+    public TaskSubscriptionManager(ServiceContainer serviceContainer, StreamProcessorServiceFactory streamProcessorServiceFactory, ServerTransport transport)
     {
         this.transport = transport;
-        this.serviceContext = serviceContext;
+        this.serviceContext = serviceContainer;
+        this.streamProcessorServiceFactory = streamProcessorServiceFactory;
+
         this.creditRequestBuffer = new CreditsRequestBuffer(
             NUM_CONCURRENT_REQUESTS,
             (r) ->
@@ -144,9 +139,9 @@ public class TaskSubscriptionManager extends Actor implements TransportListener
             else
             {
                 final LockTaskStreamProcessor processor = new LockTaskStreamProcessor(taskType);
-                final ActorFuture<Void> processorFuture = createStreamProcessorService(processor, taskType, logStreamBucket, taskType);
+                final ActorFuture<StreamProcessorService> processorFuture = createStreamProcessorService(processor, taskType, logStreamBucket, taskType);
 
-                actor.runOnCompletion(processorFuture, (v, t) ->
+                actor.runOnCompletion(processorFuture, (service, t) ->
                 {
                     if (t == null)
                     {
@@ -179,7 +174,7 @@ public class TaskSubscriptionManager extends Actor implements TransportListener
         return future;
     }
 
-    protected ActorFuture<Void> createStreamProcessorService(
+    protected ActorFuture<StreamProcessorService> createStreamProcessorService(
             final LockTaskStreamProcessor factory,
             DirectBuffer newTaskTypeBuffer,
             final LogStreamBucket logStreamBucket,
@@ -187,25 +182,13 @@ public class TaskSubscriptionManager extends Actor implements TransportListener
     {
         final TypedStreamEnvironment env = new TypedStreamEnvironment(logStreamBucket.getLogStream(), transport.getOutput());
 
-        final TypedStreamProcessor streamProcessor = factory.createStreamProcessor(env);
-
-        final ServiceName<LogStream> logStreamServiceName = logStreamBucket.getLogServiceName();
-
-        final String logName = logStreamBucket.getLogStream().getLogName();
-        final ServiceName<StreamProcessorController> streamProcessorServiceName = taskQueueLockStreamProcessorServiceName(logName, bufferAsString(taskType));
-        final String streamProcessorName = streamProcessorServiceName.getName();
-
-        final StreamProcessorService streamProcessorService = new StreamProcessorService(
-                streamProcessorName,
-                TASK_LOCK_STREAM_PROCESSOR_ID,
-                streamProcessor)
-            .eventFilter(streamProcessor.buildTypeFilter());
-
-        return serviceContext.createService(streamProcessorServiceName, streamProcessorService)
-                             .dependency(logStreamServiceName, streamProcessorService.getLogStreamInjector())
-                             .dependency(SNAPSHOT_STORAGE_SERVICE, streamProcessorService.getSnapshotStorageInjector())
-                             .install();
+        return streamProcessorServiceFactory.createService(logStreamBucket.getLogStream())
+            .processor(factory.createStreamProcessor(env))
+            .processorId(TASK_LOCK_STREAM_PROCESSOR_ID)
+            .processorName(streamProcessorName(taskType))
+            .build();
     }
+
 
     public ActorFuture<Void> removeSubscription(long subscriptionId)
     {
@@ -261,10 +244,9 @@ public class TaskSubscriptionManager extends Actor implements TransportListener
         logStreamBucket.removeStreamProcessor(streamProcessor);
 
         final String logName = logStreamBucket.getLogStream().getLogName();
-        final String taskType = bufferAsString(streamProcessor.getSubscriptedTaskType());
-        final ServiceName<StreamProcessorController> streamProcessorServiceName = taskQueueLockStreamProcessorServiceName(logName, taskType);
+        final DirectBuffer taskType = streamProcessor.getSubscriptedTaskType();
 
-        return serviceContext.removeService(streamProcessorServiceName);
+        return serviceContext.removeService(LogStreamServiceNames.streamProcessorService(logName, streamProcessorName(taskType)));
     }
 
     public boolean increaseSubscriptionCreditsAsync(CreditsRequest request)
@@ -402,6 +384,11 @@ public class TaskSubscriptionManager extends Actor implements TransportListener
     public int getCreditRequestCapacityUpperBound()
     {
         return creditRequestBuffer.getCapacityUpperBound();
+    }
+
+    private static String streamProcessorName(final DirectBuffer taskType)
+    {
+        return String.format("task-lock.%s", bufferAsString(taskType));
     }
 
     static class LogStreamBucket
