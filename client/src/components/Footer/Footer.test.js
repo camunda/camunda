@@ -24,7 +24,7 @@ it('includes the version number provided as property', () => {
   expect(node).toIncludeText(version);
 });
 
-it('displays the loading indicator if import progress is less than 100', () => {
+it('displays the loading indicator if is importing', () => {
   const node = mount(<Footer />);
 
   node.setState({
@@ -34,15 +34,15 @@ it('displays the loading indicator if import progress is less than 100', () => {
         property1: true
       }
     },
-    progress: {
-      property1: 50
+    isImporting: {
+      property1: true
     }
   });
 
   expect(node.find('.is-in-progress')).toBePresent();
 });
 
-it('does not display the loading indicator if import progress is 100', () => {
+it('does not display the loading indicator if is not importing', () => {
   const node = mount(<Footer />);
 
   node.setState({
@@ -52,8 +52,8 @@ it('does not display the loading indicator if import progress is 100', () => {
         property1: true
       }
     },
-    progress: {
-      property1: 100
+    isImporting: {
+      property1: false
     }
   });
 
@@ -80,8 +80,8 @@ it('should store data from the socket connection in state', () => {
         property1: true
       }
     },
-    progress: {
-      property1: 100
+    isImporting: {
+      property1: true
     }
   };
 

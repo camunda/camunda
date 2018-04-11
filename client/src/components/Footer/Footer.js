@@ -11,7 +11,7 @@ export default class Footer extends React.Component {
         engineConnections: {},
         connectedToElasticsearch: true // initial status before we get first data
       },
-      progress: {}
+      isImporting: {}
     };
   }
 
@@ -27,18 +27,17 @@ export default class Footer extends React.Component {
     this.connection.close();
   }
 
-  renderListElement = (key, connectionStatus, importProgress) => {
-    const importFinished = importProgress !== null && importProgress === 100;
+  renderListElement = (key, connectionStatus, isImporting) => {
     let className = 'Footer__connect-status-item';
     let title;
 
     if (connectionStatus) {
-      if (importFinished) {
+      if (isImporting) {
+        title = key + ' is importing ... ';
+        className += ' is-in-progress';
+      } else {
         className += ' is-connected';
         title = key + ' is connected';
-      } else {
-        title = 'Import progress is ' + importProgress + '%';
-        className += ' is-in-progress';
       }
     } else {
       title = key + ' is not connected';
@@ -52,16 +51,19 @@ export default class Footer extends React.Component {
   };
 
   render() {
-    const {progress, connectionStatus: {engineConnections, connectedToElasticsearch}} = this.state;
+    const {
+      isImporting,
+      connectionStatus: {engineConnections, connectedToElasticsearch}
+    } = this.state;
 
     return (
       <footer className="Footer">
         <div className="Footer__content">
           <ul className="Footer__connect-status">
             {Object.keys(engineConnections).map(key => {
-              return this.renderListElement(key, engineConnections[key], progress[key]);
+              return this.renderListElement(key, engineConnections[key], isImporting[key]);
             })}
-            {this.renderListElement('Elasticsearch', connectedToElasticsearch, 100)}
+            {this.renderListElement('Elasticsearch', connectedToElasticsearch, false)}
           </ul>
           <div className="Footer__colophon">
             © Camunda Services GmbH 2017, All Rights Reserved. | {this.props.version}
