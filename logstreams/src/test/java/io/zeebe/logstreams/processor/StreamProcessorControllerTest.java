@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import io.zeebe.logstreams.LogStreams;
+import io.zeebe.logstreams.impl.service.StreamProcessorService;
 import io.zeebe.logstreams.log.LogStreamWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.spi.ReadableSnapshot;
@@ -74,15 +75,17 @@ public class StreamProcessorControllerTest
         eventFilter = mock(EventFilter.class);
         when(eventFilter.applies(any())).thenReturn(true);
 
-        controller = LogStreams.createStreamProcessor(PROCESSOR_NAME, PROCESSOR_ID, streamProcessor)
+        final StreamProcessorService streamProcessorService = LogStreams.createStreamProcessor(PROCESSOR_NAME, PROCESSOR_ID, streamProcessor)
             .logStream(logStreamRule.getLogStream())
             .snapshotStorage(logStreamRule.getSnapshotStorage())
             .actorScheduler(logStreamRule.getActorScheduler())
             .eventFilter(eventFilter)
             .snapshotPeriod(SNAPSHOT_INTERVAL)
-            .build();
+            .serviceContainer(logStreamRule.getServiceContainer())
+            .build()
+            .join();
 
-        controller.openAsync().join();
+        controller = streamProcessorService.getController();
     }
 
     @Test
@@ -464,12 +467,15 @@ public class StreamProcessorControllerTest
     {
         controller.closeAsync().join();
 
-        controller = LogStreams.createStreamProcessor(PROCESSOR_NAME, PROCESSOR_ID, streamProcessor)
+        controller = LogStreams.createStreamProcessor("read-only", PROCESSOR_ID, streamProcessor)
                 .logStream(logStreamRule.getLogStream())
                 .snapshotStorage(logStreamRule.getSnapshotStorage())
                 .actorScheduler(logStreamRule.getActorScheduler())
+                .serviceContainer(logStreamRule.getServiceContainer())
                 .readOnly(true)
-                .build();
+                .build()
+                .join()
+                .getController();
 
         // given
         when(eventProcessor.writeEvent(any())).thenAnswer(inv ->
@@ -482,8 +488,6 @@ public class StreamProcessorControllerTest
                     .value(EVENT_2)
                     .tryWrite();
         });
-
-        controller.openAsync().join();
 
         // when
         writer.writeEvent(EVENT_1, true);

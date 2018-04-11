@@ -18,9 +18,14 @@ package io.zeebe.logstreams.processor;
 import java.time.Duration;
 import java.util.Objects;
 
+import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
+import io.zeebe.logstreams.impl.service.StreamProcessorService;
 import io.zeebe.logstreams.log.*;
 import io.zeebe.logstreams.spi.SnapshotStorage;
+import io.zeebe.servicecontainer.ServiceContainer;
+import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.util.sched.ActorScheduler;
+import io.zeebe.util.sched.future.ActorFuture;
 
 public class StreamProcessorBuilder
 {
@@ -42,6 +47,8 @@ public class StreamProcessorBuilder
     protected EventFilter eventFilter;
 
     protected boolean readOnly;
+
+    protected ServiceContainer serviceContainer;
 
     public StreamProcessorBuilder(int id, String name, StreamProcessor streamProcessor)
     {
@@ -89,19 +96,61 @@ public class StreamProcessorBuilder
         return this;
     }
 
-    protected void initContext()
+    public StreamProcessorBuilder serviceContainer(ServiceContainer serviceContainer)
+    {
+        this.serviceContainer = serviceContainer;
+        return this;
+    }
+
+    public ActorFuture<StreamProcessorService> build()
+    {
+        validate();
+
+        final StreamProcessorContext context = createContext();
+        final StreamProcessorController controller = new StreamProcessorController(context);
+
+        final String logName = logStream.getLogName();
+
+        final ServiceName<StreamProcessorService> serviceName = LogStreamServiceNames.streamProcessorService(logName, name);
+        final StreamProcessorService service = new StreamProcessorService(controller, serviceContainer, serviceName);
+        return serviceContainer.createService(serviceName, service)
+            .dependency(LogStreamServiceNames.logStreamServiceName(logName))
+            .installAndReturn();
+    }
+
+    private void validate()
     {
         Objects.requireNonNull(streamProcessor, "No stream processor provided.");
         Objects.requireNonNull(logStream, "No log stream provided.");
         Objects.requireNonNull(actorScheduler, "No task scheduler provided.");
         Objects.requireNonNull(snapshotStorage, "No snapshot storage provided.");
+        Objects.requireNonNull(serviceContainer, "No service container provided.");
+    }
+
+    private StreamProcessorContext createContext()
+    {
+        final StreamProcessorContext ctx = new StreamProcessorContext();
+        ctx.setId(id);
+        ctx.setName(name);
+        ctx.setStreamProcessor(streamProcessor);
+
+        ctx.setLogStream(logStream);
+
+        ctx.setActorScheduler(actorScheduler);
+
+        ctx.setSnapshotStorage(snapshotStorage);
+
+        ctx.setEventFilter(eventFilter);
+        ctx.setReadOnly(readOnly);
 
         if (snapshotPeriod == null)
         {
             snapshotPeriod = Duration.ofMinutes(1);
         }
+        ctx.setSnapshotPeriod(snapshotPeriod);
 
         logStreamReader = new BufferedLogStreamReader();
+        ctx.setLogStreamReader(logStreamReader);
 
         if (readOnly)
         {
@@ -111,32 +160,9 @@ public class StreamProcessorBuilder
         {
             logStreamWriter = new LogStreamWriterImpl();
         }
-    }
-
-    public StreamProcessorController build()
-    {
-        initContext();
-
-        final StreamProcessorContext ctx = new StreamProcessorContext();
-
-        ctx.setId(id);
-        ctx.setName(name);
-
-        ctx.setStreamProcessor(streamProcessor);
-
-        ctx.setLogStream(logStream);
-
-        ctx.setActorScheduler(actorScheduler);
-
-        ctx.setLogStreamReader(logStreamReader);
         ctx.setLogStreamWriter(logStreamWriter);
 
-        ctx.setSnapshotPeriod(snapshotPeriod);
-        ctx.setSnapshotStorage(snapshotStorage);
-
-        ctx.setEventFilter(eventFilter);
-        ctx.setReadOnly(readOnly);
-
-        return new StreamProcessorController(ctx);
+        return ctx;
     }
+
 }

@@ -146,4 +146,9 @@ public class LogStreamRule extends ExternalResource
         return actorScheduler;
     }
 
+    public ServiceContainer getServiceContainer()
+    {
+        return serviceContainer;
+    }
+
 }

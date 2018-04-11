@@ -24,6 +24,7 @@ import static org.mockito.Mockito.*;
 import java.util.function.Consumer;
 
 import io.zeebe.logstreams.LogStreams;
+import io.zeebe.logstreams.impl.service.StreamProcessorService;
 import io.zeebe.logstreams.log.LogStreamWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.util.LogStreamRule;
@@ -52,7 +53,7 @@ public class StreamProcessorReprocessingTest
                  .around(logStreamRule)
                  .around(writer);
 
-    private StreamProcessorController controller;
+    private StreamProcessorBuilder builder;
     private RecordingStreamProcessor streamProcessor;
     private EventProcessor eventProcessor;
     private EventFilter eventFilter;
@@ -69,12 +70,17 @@ public class StreamProcessorReprocessingTest
         eventFilter = mock(EventFilter.class);
         when(eventFilter.applies(any())).thenReturn(true);
 
-        controller = LogStreams.createStreamProcessor(PROCESSOR_NAME, PROCESSOR_ID, streamProcessor)
+        builder = LogStreams.createStreamProcessor(PROCESSOR_NAME, PROCESSOR_ID, streamProcessor)
             .logStream(logStreamRule.getLogStream())
             .snapshotStorage(logStreamRule.getSnapshotStorage())
             .actorScheduler(logStreamRule.getActorScheduler())
-            .eventFilter(eventFilter)
-            .build();
+            .serviceContainer(logStreamRule.getServiceContainer())
+            .eventFilter(eventFilter);
+    }
+
+    private void openStreamProcessorController()
+    {
+        builder.build().join();
     }
 
     /**
@@ -92,7 +98,7 @@ public class StreamProcessorReprocessingTest
         final long eventPosition2 = writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceEvent(partitionId, eventPosition1));
 
         // when
-        controller.openAsync().join();
+        openStreamProcessorController();
 
         waitUntil(() -> streamProcessor.getProcessedEventCount() == 2);
 
@@ -115,7 +121,7 @@ public class StreamProcessorReprocessingTest
         final long eventPosition2 = writeEventWith(w -> w.producerId(OTHER_PROCESSOR_ID).sourceEvent(partitionId, eventPosition1));
 
         // when
-        controller.openAsync().join();
+        openStreamProcessorController();
 
         waitUntil(() -> streamProcessor.getProcessedEventCount() == 2);
 
@@ -139,7 +145,7 @@ public class StreamProcessorReprocessingTest
         final long eventPosition3 = writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceEvent(partitionId, eventPosition2));
 
         // when
-        controller.openAsync().join();
+        openStreamProcessorController();
 
         waitUntil(() -> streamProcessor.getProcessedEventCount() == 3);
 
@@ -163,7 +169,7 @@ public class StreamProcessorReprocessingTest
         final long eventPosition3 = writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceEvent(partitionId, eventPosition2));
 
         // when
-        controller.openAsync().join();
+        openStreamProcessorController();
 
         waitUntil(() -> streamProcessor.getProcessedEventCount() == 3);
 
@@ -190,7 +196,7 @@ public class StreamProcessorReprocessingTest
         doReturn(null).doCallRealMethod().when(streamProcessor).onEvent(any());
 
         // when
-        controller.openAsync().join();
+        openStreamProcessorController();
 
         waitUntil(() -> streamProcessor.getProcessedEventCount() == 2);
 
@@ -216,7 +222,7 @@ public class StreamProcessorReprocessingTest
         when(eventFilter.applies(any())).thenReturn(false, true, true);
 
         // when
-        controller.openAsync().join();
+        openStreamProcessorController();
 
         waitUntil(() -> streamProcessor.getProcessedEventCount() == 2);
 
@@ -241,33 +247,31 @@ public class StreamProcessorReprocessingTest
         doThrow(new RuntimeException("expected")).when(eventProcessor).processEvent();
 
         // when
-        final ActorFuture<Void> future = controller.openAsync();
+        final ActorFuture<StreamProcessorService> future = builder.build();
 
         waitUntil(() -> future.isDone());
 
         // then
         assertThat(future.isCompletedExceptionally()).isTrue();
         assertThat(future.getException().getMessage()).contains("failed to reprocess event");
-
-        assertThat(controller.isFailed()).isTrue();
     }
 
     @Test
     public void shouldNotReprocessEventsIfReadOnly()
     {
-        controller = LogStreams.createStreamProcessor(PROCESSOR_NAME, PROCESSOR_ID, streamProcessor)
+        builder = LogStreams.createStreamProcessor("read-only", PROCESSOR_ID, streamProcessor)
                 .logStream(logStreamRule.getLogStream())
                 .snapshotStorage(logStreamRule.getSnapshotStorage())
                 .actorScheduler(logStreamRule.getActorScheduler())
-                .readOnly(true)
-                .build();
+                .serviceContainer(logStreamRule.getServiceContainer())
+                .readOnly(true);
 
         // given [1|S:-] --> [2|S:1]
         final long eventPosition1 = writeEvent();
         final long eventPosition2 = writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceEvent(partitionId, eventPosition1));
 
         // when
-        controller.openAsync().join();
+        openStreamProcessorController();
 
         waitUntil(() -> streamProcessor.getProcessedEventCount() == 2);
 
