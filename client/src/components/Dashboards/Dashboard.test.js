@@ -38,6 +38,7 @@ jest.mock('components', () => {
         className={props.className}
       />
     ),
+    ErrorMessage: props => <div {...props}>{props.text}</div>,
     ControlGroup: props => <div {...props}>{props.children}</div>,
     ShareEntity: () => <div />,
     DashboardView: ({children, reportAddons}) => (
@@ -365,6 +366,18 @@ describe('edit mode', async () => {
     node.setState({loaded: true});
 
     expect(node).toIncludeText('ResizeHandle');
+  });
+
+  it('should disable the save button and highlight the input if name empty', () => {
+    props.match.params.viewMode = 'edit';
+    const node = mount(<Dashboard {...props} />);
+    node.setState({
+      loaded: true,
+      name: ''
+    });
+
+    expect(node.find('Input').props()).toHaveProperty('isInvalid', true);
+    expect(node.find('.Dashboard__save-button')).toBeDisabled();
   });
 
   it('should select the name input field if dashboard is just created', () => {

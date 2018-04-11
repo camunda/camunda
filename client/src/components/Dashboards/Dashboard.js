@@ -13,7 +13,8 @@ import {
   DashboardView,
   Icon,
   Dropdown,
-  Popover
+  Popover,
+  ErrorMessage
 } from 'components';
 
 import {
@@ -198,7 +199,11 @@ export default class Dashboard extends React.Component {
               value={name || ''}
               className="Dashboard__name-input"
               placeholder="Dashboard Name"
+              isInvalid={!this.state.name}
             />
+            {!this.state.name && (
+              <ErrorMessage className="Report__warning" text="Report's name can not be empty" />
+            )}
             <div className="Dashboard__metadata">
               Last modified {moment(lastModified).format('lll')} by {lastModifier}
             </div>
@@ -208,6 +213,7 @@ export default class Dashboard extends React.Component {
               className="Button Dashboard__tool-button Dashboard__save-button"
               to={`/dashboard/${this.id}`}
               onClick={this.saveChanges.bind(this)}
+              disabled={!this.state.name}
             >
               <Icon type="check" />
               Save
