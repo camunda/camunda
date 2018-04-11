@@ -45,6 +45,7 @@ jest.mock('components', () => {
         {props.children}
       </button>
     ),
+    ErrorMessage: props => <div {...props}>{props.text}</div>,
     BPMNDiagram: () => <div>BPMNDiagram</div>,
     TargetValueBadge: () => <div>TargetValueBadge</div>,
     Input: props => (

@@ -1,6 +1,6 @@
 import React from 'react';
 
-import {Modal, Button, Input, Select} from 'components';
+import {Modal, Button, Input, Select, ErrorMessage} from 'components';
 
 import './DurationFilter.css';
 
@@ -27,7 +27,7 @@ export default class DurationFilter extends React.Component {
 
   render() {
     const {value, operator, unit} = this.state;
-
+    const isValidInput = value.trim() && !isNaN(value.trim()) && +value > 0;
     return (
       <Modal open={true} onClose={this.props.close} className="DurationFilter__modal">
         <Modal.Header>Add Duration Filter</Modal.Header>
@@ -45,7 +45,12 @@ export default class DurationFilter extends React.Component {
               </Select>{' '}
               than
             </label>
-            <Input value={value} onChange={this.setValue} className="DurationFilter__input" />
+            <Input
+              isInvalid={!isValidInput}
+              value={value}
+              onChange={this.setValue}
+              className="DurationFilter__input"
+            />
             <Select value={unit} onChange={this.setUnit}>
               <Select.Option value="millis">Milliseconds</Select.Option>
               <Select.Option value="seconds">Seconds</Select.Option>
@@ -56,16 +61,17 @@ export default class DurationFilter extends React.Component {
               <Select.Option value="months">Months</Select.Option>
               <Select.Option value="years">Years</Select.Option>
             </Select>
+            {!isValidInput && (
+              <ErrorMessage
+                className="DurationFilter__warning"
+                text="Please enter a numeric value"
+              />
+            )}
           </div>
         </Modal.Content>
         <Modal.Actions>
           <Button onClick={this.props.close}>Cancel</Button>
-          <Button
-            type="primary"
-            color="blue"
-            disabled={!value.trim() || isNaN(value.trim()) || +value <= 0}
-            onClick={this.createFilter}
-          >
+          <Button type="primary" color="blue" disabled={!isValidInput} onClick={this.createFilter}>
             {this.props.filterData ? 'Edit ' : 'Add '}Filter
           </Button>
         </Modal.Actions>

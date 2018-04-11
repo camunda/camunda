@@ -1,7 +1,16 @@
 import React from 'react';
 import moment from 'moment';
 import {Link, Redirect} from 'react-router-dom';
-import {Button, Modal, Input, ShareEntity, ReportView, Popover, Icon} from 'components';
+import {
+  Button,
+  Modal,
+  Input,
+  ShareEntity,
+  ReportView,
+  Popover,
+  Icon,
+  ErrorMessage
+} from 'components';
 
 import {
   loadSingleReport,
@@ -233,7 +242,11 @@ export default class Report extends React.Component {
               value={name || ''}
               className="Report__name-input"
               placeholder="Report Name"
+              isInvalid={!this.state.name}
             />
+            {!this.state.name && (
+              <ErrorMessage className="Report__warning" text="Report's name can not be empty" />
+            )}
             <div className="Report__metadata">
               Last modified {moment(lastModified).format('lll')} by {lastModifier}
             </div>

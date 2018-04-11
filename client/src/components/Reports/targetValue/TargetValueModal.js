@@ -5,7 +5,16 @@ import Viewer from 'bpmn-js/lib/NavigatedViewer';
 
 import TargetValueDiagramBehavior from './TargetValueDiagramBehavior';
 
-import {Button, Modal, BPMNDiagram, Table, Input, Select, TargetValueBadge} from 'components';
+import {
+  Button,
+  Modal,
+  BPMNDiagram,
+  Table,
+  Input,
+  Select,
+  TargetValueBadge,
+  ErrorMessage
+} from 'components';
 import {formatters} from 'services';
 
 import './TargetValueModal.css';
@@ -236,6 +245,19 @@ export default class TargetValueComparison extends React.Component {
             foot={[]}
             className="TargetValueModal__Table"
           />
+          {!this.hasSomethingChanged() &&
+            this.areAllFieldsNumbers() && (
+              <ErrorMessage
+                className="TargetValueModal__warning"
+                text="Please change at least one value"
+              />
+            )}
+          {!this.areAllFieldsNumbers() && (
+            <ErrorMessage
+              className="TargetValueModal__warning"
+              text="All fields should have a numeric value"
+            />
+          )}
         </Modal.Content>
         <Modal.Actions>
           <Button onClick={this.props.onClose}>Cancel</Button>

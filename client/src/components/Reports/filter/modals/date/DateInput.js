@@ -1,6 +1,7 @@
 import React from 'react';
 import moment from 'moment';
 import classnames from 'classnames';
+import {Input, ErrorMessage} from 'components';
 
 import './DateInput.css';
 
@@ -28,18 +29,22 @@ export default class DateInput extends React.PureComponent {
 
   render() {
     return (
-      <input
-        type="text"
-        ref={this.props.reference}
-        className={classnames(this.props.className, 'Input', 'DateInput', {
-          'DateInput--error': this.state.error
-        })}
-        value={this.state.stringDate}
-        onFocus={this.props.onFocus}
-        onClick={this.onClick}
-        onKeyDown={this.onKeyDown}
-        onChange={this.onInputChange}
-      />
+      <div className="DateInput__input-group">
+        <Input
+          type="text"
+          reference={this.props.reference}
+          className={classnames(this.props.className, 'DateInput')}
+          value={this.state.stringDate}
+          onFocus={this.props.onFocus}
+          onClick={this.onClick}
+          onKeyDown={this.onKeyDown}
+          onChange={this.onInputChange}
+          isInvalid={this.state.error}
+        />
+        {this.state.error && (
+          <ErrorMessage className="DateInput__warning" text="Please enter a valid date" />
+        )}
+      </div>
     );
   }
 

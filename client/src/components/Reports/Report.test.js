@@ -26,6 +26,7 @@ jest.mock('components', () => {
       </div>
     ),
     Button: props => <button {...props}>{props.children}</button>,
+    ErrorMessage: props => <div {...props}>{props.text}</div>,
     Input: props => (
       <input
         ref={props.reference}
@@ -352,6 +353,19 @@ describe('edit mode', async () => {
     expect(node.state().data.filter.length).toBe(1);
     expect(node.state().data.filter[0].data).toBe('foo');
     expect(node.state().data.filter[0].type).toBe('bar');
+  });
+
+  it('should add isInvalid prop to the name input is name is empty', async () => {
+    props.match.params.viewMode = 'edit';
+    const node = await mount(<Report {...props} />);
+    await node.instance().componentDidMount();
+
+    await node.setState({
+      name: '',
+      loaded: true
+    });
+
+    expect(node.find('Input').props()).toHaveProperty('isInvalid', true);
   });
 
   it('should store xml if process definition is changed', async () => {

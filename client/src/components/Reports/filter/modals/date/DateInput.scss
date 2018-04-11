@@ -5,6 +5,12 @@
   padding: 8px 6px;
 }
 
+.DateInput__input-group {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
 .Input.DateInput__start {
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;

@@ -22,7 +22,12 @@ jest.mock('components', () => {
     Modal,
     Select,
     Button: props => <button {...props}>{props.children}</button>,
-    Input: props => <input {...props} />,
+    Input: props => {
+      const allowedProps = {...props};
+      delete allowedProps.isInvalid;
+      return <input {...allowedProps} />;
+    },
+    ErrorMessage: props => <div {...props}>{props.text}</div>,
     ControlGroup: props => <div>{props.children}</div>,
     ButtonGroup: props => <div {...props}>{props.children}</div>
   };
@@ -241,6 +246,25 @@ describe('number variables', () => {
     const buttons = node.find('#modal_actions button');
     expect(buttons.at(0).prop('disabled')).toBeFalsy(); // abort
     expect(buttons.at(1).prop('disabled')).toBeTruthy(); // create filter
+  });
+
+  it('should highlight value input if provided value is invalid', () => {
+    const node = mount(
+      <VariableFilter processDefinitionKey="procDefKey" processDefinitionVersion="1" />
+    );
+
+    node.setState({
+      variables: [{name: 'foo', type: 'Float'}],
+      selectedVariableIdx: 0,
+      values: ['not a number']
+    });
+
+    expect(
+      node
+        .find('Input')
+        .first()
+        .props()
+    ).toHaveProperty('isInvalid', true);
   });
 
   it('should disable add filter button if variable is integer but provided input is float', () => {

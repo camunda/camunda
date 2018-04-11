@@ -1,7 +1,7 @@
 import React from 'react';
 import moment from 'moment';
 
-import {Modal, Button, ButtonGroup, Input, Select} from 'components';
+import {Modal, Button, ButtonGroup, Input, Select, ErrorMessage} from 'components';
 
 import './DateFilter.css';
 
@@ -157,6 +157,7 @@ export default class DateFilter extends React.Component {
                 value={this.state.dynamicValue}
                 onChange={this.setDynamicValue}
                 className="DateFilter__rolling-input"
+                isInvalid={!this.state.validDate}
               />
               <Select value={this.state.dynamicUnit} onChange={this.setDynamicUnit}>
                 <Select.Option value="minutes">Minutes</Select.Option>
@@ -166,6 +167,9 @@ export default class DateFilter extends React.Component {
                 <Select.Option value="months">Months</Select.Option>
                 <Select.Option value="years">Years</Select.Option>
               </Select>
+              {!this.state.validDate && (
+                <ErrorMessage className="DateFilter__warning" text="Please enter a numeric value" />
+              )}
             </div>
           )}
         </Modal.Content>

@@ -1,6 +1,6 @@
 import React from 'react';
 import classnames from 'classnames';
-import {Modal, Button, Select, Input, ControlGroup, ButtonGroup} from 'components';
+import {Modal, Button, Select, Input, ControlGroup, ButtonGroup, ErrorMessage} from 'components';
 
 import {loadVariables, loadValues} from './service';
 import './VariableFilter.css';
@@ -385,6 +385,7 @@ export default class VariableFilter extends React.Component {
                     data-idx={idx}
                     onChange={this.changeValue}
                     placeholder="Enter value"
+                    isInvalid={!this.isValidInput(value)}
                   />
                   {values.length > 1 && (
                     <Button
@@ -400,6 +401,11 @@ export default class VariableFilter extends React.Component {
                 </li>
               );
             })}
+            {!this.selectionIsValid() && (
+              <li className="VariableFilter__valueListWarning">
+                <ErrorMessage text="All fields should have a numeric value" />
+              </li>
+            )}
             {
               <li className="VariableFilter__valueListButton">
                 <Button onClick={this.addValue} className="VariableFilter__addValueButton">
@@ -410,6 +416,10 @@ export default class VariableFilter extends React.Component {
           </ul>
         );
     }
+  };
+
+  isValidInput = value => {
+    return value.trim() && +value >= 0;
   };
 
   removeValue = index => {

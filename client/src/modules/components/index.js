@@ -23,3 +23,4 @@ export {DashboardObject} from './DashboardView';
 export {ProcessDefinitionSelection} from './ProcessDefinitionSelection';
 export {TargetValueBadge} from './TargetValueBadge';
 export {ErrorPage} from './ErrorPage';
+export {ErrorMessage} from './ErrorMessage';

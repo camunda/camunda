@@ -15,7 +15,12 @@ jest.mock('components', () => {
   return {
     Modal,
     Button: props => <button {...props}>{props.children}</button>,
-    Input: props => <input {...props} />,
+    Input: props => {
+      const allowedProps = {...props};
+      delete allowedProps.isInvalid;
+      return <input {...allowedProps} />;
+    },
+    ErrorMessage: props => <div {...props}>{props.text}</div>,
     Select
   };
 });
@@ -35,6 +40,15 @@ it('should contain a button to abort the filter creation', () => {
   abortButton.simulate('click');
 
   expect(spy).toHaveBeenCalled();
+});
+
+it('should have isInvalid prop on the input if value is invalid', async () => {
+  const node = mount(<DurationFilter />);
+  await node.setState({
+    value: 'NaN'
+  });
+
+  expect(node.find('Input').props()).toHaveProperty('isInvalid', true);
 });
 
 it('should have a create filter button', () => {

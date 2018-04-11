@@ -29,6 +29,7 @@ jest.mock('components', () => {
 
   return {
     Modal,
+    ErrorMessage: props => <div {...props}>{props.text}</div>,
     Button: props => <button {...props}>{props.children}</button>,
     Input: props => {
       const allowedProps = {...props};

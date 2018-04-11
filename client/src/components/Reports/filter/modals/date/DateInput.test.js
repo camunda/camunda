@@ -4,6 +4,17 @@ import {mount} from 'enzyme';
 
 import DateInput from './DateInput';
 
+jest.mock('components', () => {
+  return {
+    Input: props => {
+      const allowedProps = {...props};
+      delete allowedProps.isInvalid;
+      return <input {...allowedProps} />;
+    },
+    ErrorMessage: props => <div {...props}>{props.text}</div>
+  };
+});
+
 it('should create a text input field', () => {
   const node = mount(<DateInput date={moment()} format="YYYY-MM-DD" />);
 
@@ -22,7 +33,7 @@ it('should trigger onDateChange callback when input changes to valid date', () =
     <DateInput date={moment()} format="YYYY-MM-DD" onDateChange={spy} enableAddButton={jest.fn()} />
   );
 
-  node.simulate('change', {
+  node.find('Input').simulate('change', {
     target: {
       value: '2016-05-07'
     }
@@ -32,17 +43,17 @@ it('should trigger onDateChange callback when input changes to valid date', () =
   expect(spy.mock.calls[0][0].format('YYYY-MM-DD')).toBe('2016-05-07');
 });
 
-it('should add error class to true when input changes to invalid date', () => {
+it('should add isInvalid prop to true when input changes to invalid date', () => {
   const spy = jest.fn();
   const node = mount(
     <DateInput date={moment()} format="YYYY-MM-DD" onDateChange={spy} enableAddButton={jest.fn()} />
   );
 
-  node.simulate('change', {
+  node.find('Input').simulate('change', {
     target: {
       value: '2016-05-0'
     }
   });
 
-  expect(node.find('input')).toHaveClassName('DateInput--error');
+  expect(node.find('Input').props()).toHaveProperty('isInvalid', true);
 });
