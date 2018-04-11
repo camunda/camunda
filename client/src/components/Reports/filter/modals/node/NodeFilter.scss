@@ -1,13 +1,11 @@
 .NodeFilter__diagram-container {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
   flex-grow: 1;
   display: flex;
+}
 
-  margin-top: 70px;
+.NodeFilter__modal-content {
+  display: flex;
+  flex-direction: column;
 }
 
 .NodeFilter__preview {

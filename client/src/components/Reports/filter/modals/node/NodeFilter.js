@@ -80,7 +80,7 @@ export default class NodeFilter extends React.Component {
     return (
       <Modal open={true} onClose={this.props.close} className="NodeFilter__modal" size="max">
         <Modal.Header>Add Flow Node Filter</Modal.Header>
-        <Modal.Content>
+        <Modal.Content className="NodeFilter__modal-content">
           {this.createPreviewList()}
           {this.props.xml && (
             <div className="NodeFilter__diagram-container">
