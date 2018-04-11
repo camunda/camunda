@@ -9,7 +9,9 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
+import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
@@ -258,6 +260,21 @@ public class EngineIntegrationRule extends TestWatcher {
       logger.error("Could not get process definition for process instance: " + processInstanceId, e );
     }
     return processInstanceDto;
+  }
+
+  public void deleteHistoricProcessInstance(String processInstanceId) {
+    CloseableHttpClient client = getHttpClient();
+    HttpDelete delete = new HttpDelete(getHistoricGetProcessInstanceUri(processInstanceId));
+    try {
+      CloseableHttpResponse response = client.execute(delete);
+      if(response.getStatusLine().getStatusCode() != 204) {
+        logger.error("Could not delete process definition for process instance [{}]. Reason: wrong response code [{}]",
+          processInstanceId,
+          response.getStatusLine().getStatusCode());
+      }
+    } catch (Exception e) {
+      logger.error("Could not delete process definition for process instance: " + processInstanceId, e );
+    }
   }
 
   public CloseableHttpClient getHttpClient() {
