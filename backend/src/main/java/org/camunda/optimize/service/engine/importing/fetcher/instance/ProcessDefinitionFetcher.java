@@ -7,6 +7,7 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
 import java.util.List;
@@ -71,13 +72,16 @@ public class ProcessDefinitionFetcher
     List<ProcessDefinitionEngineDto> entries;
 
     long requestStart = System.currentTimeMillis();
-    entries = getEngineClient()
+    WebTarget webTarget = getEngineClient()
       .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
       .path(configurationService.getProcessDefinitionEndpoint())
-      .queryParam(PROCESS_DEFINITION_ID_IN, definitionsToImport)
       .queryParam(SORT_BY, SORT_TYPE_ID)
-      .queryParam(SORT_ORDER, SORT_ORDER_TYPE_DESCENDING)
-      .request(MediaType.APPLICATION_JSON)
+      .queryParam(SORT_ORDER, SORT_ORDER_TYPE_DESCENDING);
+
+    for (String definitionId : definitionsToImport) {
+      webTarget = webTarget.queryParam(PROCESS_DEFINITION_ID_IN, definitionId);
+    }
+    entries = webTarget.request(MediaType.APPLICATION_JSON)
       .acceptEncoding(UTF8)
       .get(new GenericType<List<ProcessDefinitionEngineDto>>() {
       });

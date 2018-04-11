@@ -93,6 +93,7 @@ public class ProcessDefinitionBaseImportIT {
     createAndSetProcessDefinition(createSimpleServiceTaskProcess());
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     embeddedOptimizeRule.resetImportStartIndexes();
+    embeddedOptimizeRule.storeImportIndexesToElasticsearch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when

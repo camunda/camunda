@@ -124,6 +124,11 @@ public class StoreIndexesEngineImportMediator
     return allEntitiesBasedImportIndexes;
   }
 
+  @Override
+  public void resetBackoff() {
+    disableBlocking();
+  }
+
   public void disableBlocking() {
     this.dateUntilJobCreationIsBlocked = OffsetDateTime.MIN;
   }

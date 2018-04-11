@@ -2,11 +2,9 @@ package org.camunda.optimize.service.engine.importing;
 
 import org.camunda.optimize.service.engine.importing.service.ImportObserver;
 import org.camunda.optimize.service.engine.importing.service.mediator.EngineImportMediator;
-import org.camunda.optimize.service.engine.importing.service.mediator.StoreIndexesEngineImportMediator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -17,12 +15,12 @@ public class EngineImportScheduler extends Thread {
   private Logger logger = LoggerFactory.getLogger(getClass());
 
   private List<EngineImportMediator> importMediators;
-  private List<EngineImportMediator> sleepyMediators;
 
   private List<ImportObserver> importObservers = Collections.synchronizedList(new LinkedList<>());
 
   private String engineAlias;
   private volatile boolean isEnabled = true;
+  private boolean shouldPerformBackoff = true;
   private boolean isImporting = false;
 
   public EngineImportScheduler(
@@ -30,19 +28,7 @@ public class EngineImportScheduler extends Thread {
       String engineAlias
   ) {
     this.importMediators = importMediators;
-    this.sleepyMediators = filterSleepyFactories(importMediators);
     this.engineAlias = engineAlias;
-  }
-
-  private List<EngineImportMediator> filterSleepyFactories(List<EngineImportMediator> mediators) {
-    ArrayList result = new ArrayList();
-
-    for (EngineImportMediator factory : mediators) {
-      if (!factory.getClass().equals(StoreIndexesEngineImportMediator.class)) {
-        result.add(factory);
-      }
-    }
-    return result;
   }
 
   public void subscribe(ImportObserver importObserver) {
@@ -83,9 +69,11 @@ public class EngineImportScheduler extends Thread {
   }
 
   public void scheduleUntilImportIsFinished() {
+    shouldPerformBackoff = false;
     do {
       scheduleNextRound();
     } while (this.isImporting);
+    shouldPerformBackoff = true;
   }
 
   public void scheduleNextRound() {
@@ -118,17 +106,19 @@ public class EngineImportScheduler extends Thread {
   }
 
   private void doBackoff() {
-    long timeToSleep = calculateTimeToSleep();
-    try {
-      logger.debug("No imports to schedule. Scheduler is sleeping for [{}] ms.", timeToSleep);
-      Thread.sleep(timeToSleep);
-    } catch (InterruptedException e) {
-      logger.error("Scheduler was interrupted while sleeping.", e);
+    if (shouldPerformBackoff) {
+      long timeToSleep = calculateTimeToSleep();
+      try {
+        logger.debug("No imports to schedule. Scheduler is sleeping for [{}] ms.", timeToSleep);
+        Thread.sleep(timeToSleep);
+      } catch (InterruptedException e) {
+        logger.error("Scheduler was interrupted while sleeping.", e);
+      }
     }
   }
 
   private long calculateTimeToSleep() {
-    long timeToSleepInMs = sleepyMediators
+    long timeToSleepInMs = importMediators
         .stream()
         .map(EngineImportMediator::getBackoffTimeInMs)
         .min(Long::compare)
@@ -140,8 +130,8 @@ public class EngineImportScheduler extends Thread {
   private void scheduleCurrentImportRound(List<EngineImportMediator> currentImportRound) {
     String mediators = currentImportRound.stream()
         .map(c -> c.getClass().getSimpleName())
-        .reduce((a,b) -> a + ", " + b).get();
-      logger.debug("Scheduling import round for {}", mediators);
+        .reduce((a,b) -> a + ", " + b).orElse("");
+    logger.debug("Scheduling import round for {}", mediators);
     for (EngineImportMediator engineImportMediator : currentImportRound) {
       try {
         engineImportMediator.importNextPage();
@@ -161,5 +151,9 @@ public class EngineImportScheduler extends Thread {
 
   public boolean isImporting() {
     return isImporting;
+  }
+
+  public List<EngineImportMediator> getImportMediators() {
+    return importMediators;
   }
 }

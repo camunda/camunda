@@ -13,13 +13,7 @@ public interface ImportIndexHandler<PAGE extends ImportPage, INDEX> {
    * especially an offset where to start the import and the number of
    * instances to fetch.
    */
-  Optional<PAGE> getNextPage();
-
-  /**
-   * Computes how far the import already progressed. Returns a number between
-   * 0 (nothing imported yet) and 100 (every was imported).
-   */
-  OptionalDouble computeProgress();
+  PAGE getNextPage();
 
   /**
    * Creates a data transfer object (DTO) about an index to store that
@@ -33,12 +27,6 @@ public interface ImportIndexHandler<PAGE extends ImportPage, INDEX> {
    */
   void readIndexFromElasticsearch();
 
-
-  /**
-   * @return true if the import index handler is able to create another page and
-   * false if there is no new data or the handler is doing backoff.
-   */
-  boolean hasNewPage();
 
   /**
    * Resets the import index such that it can start the import

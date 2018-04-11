@@ -1,18 +1,17 @@
 package org.camunda.optimize.test.it.rule;
 
 import org.camunda.optimize.dto.optimize.query.CredentialsDto;
-import org.camunda.optimize.dto.optimize.query.status.StatusWithProgressDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.alert.AlertService;
 import org.camunda.optimize.service.engine.importing.EngineImportScheduler;
 import org.camunda.optimize.service.engine.importing.EngineImportSchedulerFactory;
 import org.camunda.optimize.service.engine.importing.index.ProcessDefinitionManager;
-import org.camunda.optimize.service.engine.importing.index.handler.AllEntitiesBasedImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.DefinitionBasedImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandlerProvider;
 import org.camunda.optimize.service.engine.importing.index.page.DefinitionBasedImportPage;
+import org.camunda.optimize.service.engine.importing.service.mediator.EngineImportMediator;
 import org.camunda.optimize.service.engine.importing.service.mediator.StoreIndexesEngineImportMediator;
 import org.camunda.optimize.service.es.ElasticSearchSchemaInitializer;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
@@ -36,7 +35,6 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 
 /**
@@ -78,38 +76,16 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     resetProcessDefinitionManager();
   }
 
-  /**
-   * use this method if you want to rely on backoff and reset implementation provided
-   * by optimize itself. It will perform 3 import rounds in total to ensure that:
-   *
-   * 1. backoff\reset has happened
-   * 2. PI are imported
-   * 3. Scrolling entities are imported
-   *
-   * NOTE: you have to adjust backoff and reset times manually in your test before
-   * invoking this method
-   */
-  public void importWithoutReset() {
-    ElasticsearchImportJobExecutor elasticsearchImportJobExecutor = getElasticsearchImportJobExecutor();
-    elasticsearchImportJobExecutor.startExecutingImportJobs();
-
+  private void resetImportBackoff() {
     for (EngineImportScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
-      if (scheduler.isEnabled()) {
-        //reset should happen
-        scheduleImportAndWaitUntilIsFinished(scheduler);
-
-        //first round is through, update indexes in ES
-        logger.debug("scheduling second import round");
-        scheduleImportAndWaitUntilIsFinished(scheduler);
-
-        //scroll based imports are through
-        logger.debug("scheduling third import round");
-        scheduleImportAndWaitUntilIsFinished(scheduler);
-      }
+      scheduler
+        .getImportMediators()
+        .forEach(EngineImportMediator::resetBackoff);
     }
   }
 
   private void scheduleImportAndWaitUntilIsFinished(EngineImportScheduler scheduler) {
+    resetImportBackoff();
     scheduler.scheduleUntilImportIsFinished();
     makeSureAllScheduledJobsAreFinished();
   }
@@ -275,10 +251,8 @@ public class EmbeddedOptimizeRule extends TestWatcher {
       getIndexProvider()
         .getDefinitionBasedHandlers(engineAlias)
         .forEach(handler -> {
-          Optional<DefinitionBasedImportPage> page = handler.getNextPage();
-          page.ifPresent(definitionBasedImportPage ->
-            indexes.add(definitionBasedImportPage.getTimestampOfLastEntity().toEpochSecond())
-          );
+          DefinitionBasedImportPage page = handler.getNextPage();
+          indexes.add(page.getTimestampOfLastEntity().toEpochSecond());
         });
     }
 
@@ -299,11 +273,10 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     for (ImportIndexHandler importIndexHandler : getIndexProvider().getAllHandlers()) {
       importIndexHandler.resetImportIndex();
     }
-
     resetProcessDefinitionManager();
   }
 
-  public void resetProcessDefinitionManager() {
+  private void resetProcessDefinitionManager() {
     getApplicationContext().getBean(ProcessDefinitionManager.class).reset();
   }
 
@@ -334,23 +307,11 @@ public class EmbeddedOptimizeRule extends TestWatcher {
           importIndexHandler.updateImportIndex();
         }
       }
-
-      if (getIndexProvider().getAllEntitiesBasedHandlers(engineAlias) != null) {
-        for (AllEntitiesBasedImportIndexHandler importIndexHandler : getIndexProvider().getAllEntitiesBasedHandlers(engineAlias)) {
-          importIndexHandler.updateMaxEntityCount();
-        }
-      }
     }
   }
 
   private ImportIndexHandlerProvider getIndexProvider() {
     return getApplicationContext().getBean(ImportIndexHandlerProvider.class);
-  }
-
-  public void restartImportCycle() {
-    for (ImportIndexHandler importIndexHandler : getIndexProvider().getAllHandlers()) {
-      importIndexHandler.restartImportCycle();
-    }
   }
 
   public AlertService getAlertService() {

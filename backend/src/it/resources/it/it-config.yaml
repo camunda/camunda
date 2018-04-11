@@ -17,4 +17,4 @@ import:
   elasticsearchJobExecutorThreadCount: 1
   handler:
     backoff:
-      isEnabled: false
+      isEnabled: true

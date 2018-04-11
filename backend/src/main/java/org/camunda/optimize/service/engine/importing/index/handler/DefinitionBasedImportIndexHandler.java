@@ -18,7 +18,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.OptionalDouble;
 import java.util.Set;
 
 public abstract class DefinitionBasedImportIndexHandler
@@ -40,7 +39,6 @@ public abstract class DefinitionBasedImportIndexHandler
 
   private DefinitionBasedImportPage currentIndex = new ProcessDefinitionImportPageNotAvailable();
 
-  private OffsetDateTime maxTimestamp;
   protected EngineContext engineContext;
 
   public DefinitionBasedImportIndexHandler(EngineContext engineContext) {
@@ -75,16 +73,11 @@ public abstract class DefinitionBasedImportIndexHandler
   }
 
   @Override
-  public Optional<DefinitionBasedImportPage> getNextPage() {
+  public DefinitionBasedImportPage getNextPage() {
     DefinitionBasedImportPage page = new DefinitionBasedImportPage();
     page.setTimestampOfLastEntity(currentIndex.getTimestampOfLastEntity());
     page.setProcessDefinitionId(currentIndex.getProcessDefinitionId());
-    return Optional.of(page);
-  }
-
-  @Override
-  public OptionalDouble computeProgress() {
-    return OptionalDouble.of(100.0);
+    return page;
   }
 
   private void resetCurrentIndex() {
@@ -97,22 +90,7 @@ public abstract class DefinitionBasedImportIndexHandler
         alreadyImportedProcessDefinitions.add(currentIndex);
       }
       currentIndex = removeFirstItemFromProcessDefinitionsToImport();
-      updateMaxTimestamp();
     }
-  }
-
-  private void updateMaxTimestamp() {
-    Optional<OffsetDateTime> maxTimestamp = retrieveMaxTimestamp(currentIndex.getProcessDefinitionId());
-    maxTimestamp.ifPresent(offsetDateTime -> this.maxTimestamp = offsetDateTime);
-  }
-
-  protected abstract Optional<OffsetDateTime> retrieveMaxTimestamp(String processDefinitionId);
-
-  public boolean hasNewPage() {
-    if (!currentIndex.getTimestampOfLastEntity().isBefore(maxTimestamp)) {
-      updateMaxTimestamp();
-    }
-    return currentIndex.getTimestampOfLastEntity().isBefore(maxTimestamp) || hasStillNewDefinitionsToImport();
   }
 
   private DefinitionBasedImportPage removeFirstItemFromProcessDefinitionsToImport() {
@@ -167,12 +145,7 @@ public abstract class DefinitionBasedImportIndexHandler
     initializeDefinitions();
     resetAlreadyImportedProcessDefinitions();
     resetCurrentIndex();
-    resetMaxTimestamp();
     moveToNextDefinitionToImport();
-  }
-
-  private void resetMaxTimestamp() {
-    maxTimestamp = OffsetDateTime.MIN;
   }
 
   private void resetAlreadyImportedProcessDefinitions() {

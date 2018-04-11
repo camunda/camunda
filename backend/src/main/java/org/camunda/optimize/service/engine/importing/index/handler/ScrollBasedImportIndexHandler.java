@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.OptionalDouble;
 import java.util.Set;
 
 @Component
@@ -46,7 +45,6 @@ public abstract class ScrollBasedImportIndexHandler
     readIndexFromElasticsearch();
   }
 
-  private Long maxEntityCount = 0L;
   private Long importIndex = 0L;
 
   private Set<String> fetchNextPageOfProcessInstanceIds() {
@@ -75,12 +73,10 @@ public abstract class ScrollBasedImportIndexHandler
     importIndex = 0L;
   }
 
-  protected abstract long fetchMaxEntityCount();
-
   protected abstract String getElasticsearchTrackingType();
 
   @Override
-  public Optional<IdSetBasedImportPage> getNextPage() {
+  public IdSetBasedImportPage getNextPage() {
     Set<String> ids = fetchNextPageOfProcessInstanceIds();
     if (ids.isEmpty()) {
       resetScroll();
@@ -91,7 +87,7 @@ public abstract class ScrollBasedImportIndexHandler
     page.setIds(ids);
     importIndex += ids.size();
     storeIdsForTracking(ids);
-    return Optional.of(page);
+    return page;
   }
 
   private void storeIdsForTracking(Set<String> ids) {
@@ -129,50 +125,10 @@ public abstract class ScrollBasedImportIndexHandler
     return EsHelper.constructKey(getElasticsearchTrackingType(), engineContext.getEngineAlias());
   }
 
-  public OptionalDouble computeProgress() {
-    updateMaxEntityCount();
-    Long maxEntityCount = this.maxEntityCount;
-    Long importIndex = this.importIndex;
-
-    if (hasNothingToImport(importIndex, maxEntityCount)) {
-      return OptionalDouble.empty();
-    } else if (indexReachedMaxCount()) {
-      return OptionalDouble.of(100.0);
-    } else {
-      Long maxCount = Math.max(1, maxEntityCount);
-      double calculatedProgress = importIndex.doubleValue() / maxCount.doubleValue() * 100.0;
-      calculatedProgress = Math.min(100.0, calculatedProgress);
-      return OptionalDouble.of(calculatedProgress);
-    }
-  }
-
-  private boolean hasNothingToImport(long importIndex, long maxEntityCount) {
-    return importIndex == 0 && maxEntityCount == 0;
-  }
-
-  public boolean hasNewPage() {
-    if( indexReachedMaxCount()) {
-      resetScroll();
-    }
-    updateMaxEntityCount();
-    return this.importIndex < this.maxEntityCount;
-  }
-
-  private void updateMaxEntityCount() {
-    this.maxEntityCount = fetchMaxEntityCount();
-    importIndex = maxEntityCount < importIndex? maxEntityCount : importIndex;
-  }
-
-  private boolean indexReachedMaxCount() {
-    return importIndex >= maxEntityCount;
-  }
-
-
   @Override
   public AllEntitiesBasedImportIndexDto createIndexInformationForStoring() {
     AllEntitiesBasedImportIndexDto importIndexDto = new AllEntitiesBasedImportIndexDto();
     importIndexDto.setEsTypeIndexRefersTo(getElasticsearchTrackingType());
-    importIndexDto.setMaxEntityCount(maxEntityCount);
     importIndexDto.setImportIndex(importIndex);
     importIndexDto.setEngine(engineContext.getEngineAlias());
     return importIndexDto;
@@ -184,7 +140,6 @@ public abstract class ScrollBasedImportIndexHandler
       importIndexReader.getImportIndex(getElasticsearchId());
     if (storedIndex.isPresent()) {
       importIndex = storedIndex.get().getImportIndex();
-      maxEntityCount = storedIndex.get().getMaxEntityCount();
     }
   }
 
@@ -194,8 +149,6 @@ public abstract class ScrollBasedImportIndexHandler
     resetScroll();
     resetElasticsearchTrackingType();
     importIndex = 0L;
-    this.maxEntityCount = 0L;
-    updateMaxEntityCount();
   }
 
   private void resetElasticsearchTrackingType() {

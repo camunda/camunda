@@ -11,7 +11,6 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.util.Optional;
-import java.util.OptionalDouble;
 
 @Component
 public abstract class AllEntitiesBasedImportIndexHandler
@@ -23,7 +22,6 @@ public abstract class AllEntitiesBasedImportIndexHandler
   protected ConfigurationService configurationService;
 
   protected long importIndex = 0;
-  protected long maxEntityCount = 0;
   protected EngineContext engineContext;
 
   public AllEntitiesBasedImportIndexHandler(EngineContext engineContext) {
@@ -32,7 +30,6 @@ public abstract class AllEntitiesBasedImportIndexHandler
 
   @PostConstruct
   protected void init() {
-    updateMaxEntityCount();
     readIndexFromElasticsearch();
   }
 
@@ -41,7 +38,6 @@ public abstract class AllEntitiesBasedImportIndexHandler
       importIndexReader.getImportIndex(EsHelper.constructKey(getElasticsearchImportIndexType(), engineContext.getEngineAlias()));
     if (storedIndex.isPresent()) {
       importIndex = storedIndex.get().getImportIndex();
-      maxEntityCount = storedIndex.get().getMaxEntityCount();
     }
   }
 
@@ -49,78 +45,28 @@ public abstract class AllEntitiesBasedImportIndexHandler
   public AllEntitiesBasedImportIndexDto createIndexInformationForStoring() {
     AllEntitiesBasedImportIndexDto indexToStore = new AllEntitiesBasedImportIndexDto();
     indexToStore.setImportIndex(importIndex);
-    indexToStore.setMaxEntityCount(maxEntityCount);
     indexToStore.setEsTypeIndexRefersTo(getElasticsearchImportIndexType());
     indexToStore.setEngine(engineContext.getEngineAlias());
     return indexToStore;
   }
 
   @Override
-  public Optional<AllEntitiesBasedImportPage> getNextPage() {
-    if (hasNewPage()) {
-      AllEntitiesBasedImportPage page = new AllEntitiesBasedImportPage();
-      page.setIndexOfFirstResult(importIndex);
-      long nextPageSize = getNextPageSize();
-      page.setPageSize(nextPageSize);
-      moveImportIndex(nextPageSize);
-      return Optional.of(page);
-    } else {
-      return Optional.empty();
-    }
+  public AllEntitiesBasedImportPage getNextPage() {
+    AllEntitiesBasedImportPage page = new AllEntitiesBasedImportPage();
+    page.setIndexOfFirstResult(importIndex);
+    page.setPageSize(getMaxPageSize());
+    return page;
   }
-
-  public void updateMaxEntityCount() {
-    this.maxEntityCount = fetchMaxEntityCount();
-  }
-
-  protected abstract long fetchMaxEntityCount();
 
   protected abstract long getMaxPageSize();
 
   protected abstract String getElasticsearchImportIndexType();
 
-  public OptionalDouble computeProgress() {
-    long maxEntityCount = this.maxEntityCount;
-    long importIndex = this.importIndex;
-
-    if (hasNothingToImport(importIndex, maxEntityCount)) {
-      return OptionalDouble.empty();
-    } else if (indexReachedMaxCount()) {
-      return OptionalDouble.of(100.0);
-    } else {
-      long maxCount = Math.max(1, maxEntityCount);
-      return OptionalDouble.of(importIndex / maxCount * 100.0);
-    }
-  }
-
-  private boolean hasNothingToImport(long importIndex, long maxEntityCount) {
-    return importIndex == 0 && maxEntityCount == 0;
-  }
-
-  public boolean hasNewPage() {
-    if (indexReachedMaxCount()) {
-      updateMaxEntityCount();
-      return !indexReachedMaxCount();
-    }
-    return true;
-  }
-
-  private boolean indexReachedMaxCount() {
-    return importIndex >= maxEntityCount;
-  }
-
-  private long getNextPageSize() {
-    long diff = maxEntityCount - importIndex;
-    long nextPageSize = Math.min(getMaxPageSize(), diff);
-    nextPageSize = Math.max(0L, nextPageSize);
-    return nextPageSize;
-  }
-
   public Long getImportIndex() {
     return importIndex;
   }
 
-  private void moveImportIndex(long units) {
+  public void moveImportIndex(long units) {
     importIndex += units;
   }
 

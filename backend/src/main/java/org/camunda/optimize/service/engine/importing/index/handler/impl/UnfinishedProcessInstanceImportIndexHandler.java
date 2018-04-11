@@ -36,27 +36,6 @@ public class UnfinishedProcessInstanceImportIndexHandler extends ScrollBasedImpo
     this.engineContext = engineContext;
   }
 
-  @Override
-  public long fetchMaxEntityCount() {
-    performRefresh();
-
-    SearchResponse response;
-    if (scrollId != null) {
-      response = esclient
-          .prepareSearchScroll(scrollId)
-          .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
-          .get();
-    } else {
-      response = esclient
-        .prepareSearch(configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()))
-        .setTypes(configurationService.getProcessInstanceType())
-        .setQuery(buildBasicQuery())
-        .setSize(0)
-        .get();
-    }
-    return response.getHits().getTotalHits();
-  }
-
   protected Set<String> performScrollQuery() {
     logger.debug("Performing scroll search query!");
     Set<String> result = new HashSet<>();

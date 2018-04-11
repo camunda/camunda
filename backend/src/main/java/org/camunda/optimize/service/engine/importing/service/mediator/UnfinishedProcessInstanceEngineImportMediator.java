@@ -15,22 +15,17 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.util.List;
-import java.util.Optional;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class UnfinishedProcessInstanceEngineImportMediator
-    extends BackoffImportMediator<UnfinishedProcessInstanceImportIndexHandler> {
-
-  private UnfinishedProcessInstanceFetcher engineEntityFetcher;
-
-  private UnfinishedProcessInstanceImportService unfinishedProcessInstanceImportService;
-
-  @Autowired
-  private UnfinishedProcessInstanceWriter unfinishedProcessInstanceWriter;
-
+  extends BackoffImportMediator<UnfinishedProcessInstanceImportIndexHandler> {
 
   protected EngineContext engineContext;
+  private UnfinishedProcessInstanceFetcher engineEntityFetcher;
+  private UnfinishedProcessInstanceImportService unfinishedProcessInstanceImportService;
+  @Autowired
+  private UnfinishedProcessInstanceWriter unfinishedProcessInstanceWriter;
 
   public UnfinishedProcessInstanceEngineImportMediator(EngineContext engineContext) {
     this.engineContext = engineContext;
@@ -56,20 +51,15 @@ public class UnfinishedProcessInstanceEngineImportMediator
 
   @Override
   protected boolean importNextEnginePage() {
-    Optional<IdSetBasedImportPage> page = importIndexHandler.getNextPage();
-    if (page.isPresent() && !page.get().getIds().isEmpty()) {
-      List<HistoricProcessInstanceDto> entities =  engineEntityFetcher.fetchEngineEntities(page.get());
+    IdSetBasedImportPage page = importIndexHandler.getNextPage();
+    if (!page.getIds().isEmpty()) {
+      List<HistoricProcessInstanceDto> entities = engineEntityFetcher.fetchEngineEntities(page);
       if (!entities.isEmpty()) {
         unfinishedProcessInstanceImportService.executeImport(entities);
         return true;
       }
     }
     return false;
-  }
-
-  @Override
-  public boolean hasNewPage() {
-    return importIndexHandler.hasNewPage();
   }
 
 }

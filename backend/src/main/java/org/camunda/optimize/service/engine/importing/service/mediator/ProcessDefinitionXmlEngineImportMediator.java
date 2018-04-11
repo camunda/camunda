@@ -15,23 +15,19 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.util.List;
-import java.util.Optional;
 
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlTrackingType.PROCESS_DEFINITION_XML_TRACKING_TYPE;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessDefinitionXmlEngineImportMediator
-    extends BackoffImportMediator<ProcessDefinitionXmlImportIndexHandler> {
-
-  private ProcessDefinitionXmlFetcher engineEntityFetcher;
-
-  private ProcessDefinitionXmlImportService definitionXmlImportService;
-
-  @Autowired
-  private ProcessDefinitionXmlWriter processDefinitionXmlWriter;
+  extends BackoffImportMediator<ProcessDefinitionXmlImportIndexHandler> {
 
   protected EngineContext engineContext;
+  private ProcessDefinitionXmlFetcher engineEntityFetcher;
+  private ProcessDefinitionXmlImportService definitionXmlImportService;
+  @Autowired
+  private ProcessDefinitionXmlWriter processDefinitionXmlWriter;
 
   public ProcessDefinitionXmlEngineImportMediator(EngineContext engineContext) {
     this.engineContext = engineContext;
@@ -58,20 +54,15 @@ public class ProcessDefinitionXmlEngineImportMediator
 
   @Override
   protected boolean importNextEnginePage() {
-    Optional<IdSetBasedImportPage> page = importIndexHandler.getNextPage();
-    if (page.isPresent() && !page.get().getIds().isEmpty()) {
-      List<ProcessDefinitionXmlEngineDto> entities =  engineEntityFetcher.fetchEngineEntities(page.get());
+    IdSetBasedImportPage page = importIndexHandler.getNextPage();
+    if (!page.getIds().isEmpty()) {
+      List<ProcessDefinitionXmlEngineDto> entities = engineEntityFetcher.fetchEngineEntities(page);
       if (!entities.isEmpty()) {
         definitionXmlImportService.executeImport(entities);
         return true;
       }
     }
     return false;
-  }
-
-  @Override
-  public boolean hasNewPage() {
-    return importIndexHandler.hasNewPage();
   }
 
 }

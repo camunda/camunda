@@ -90,8 +90,8 @@ public class ImportIndexWriter {
 
   private IndexRequestBuilder createAllEntitiesBasedRequest(AllEntitiesBasedImportIndexDto importIndex) {
     logger.debug("Writing all entities based import index type [{}] to elasticsearch. " +
-        "Starting from [{}] and having a max entity count [{}]",
-      importIndex.getEsTypeIndexRefersTo(), importIndex.getImportIndex(), importIndex.getMaxEntityCount());
+        "Starting from [{}]",
+      importIndex.getEsTypeIndexRefersTo(), importIndex.getImportIndex());
     try {
       return esclient
         .prepareIndex(
@@ -104,7 +104,6 @@ public class ImportIndexWriter {
             .startObject()
               .field(ImportIndexType.ENGINE, importIndex.getEngine())
               .field(ImportIndexType.IMPORT_INDEX, importIndex.getImportIndex())
-              .field(ImportIndexType.MAX_ENTITIES_COUNT, importIndex.getMaxEntityCount())
             .endObject()
         );
     } catch (IOException e) {

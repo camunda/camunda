@@ -16,7 +16,6 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.util.List;
-import java.util.Optional;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
@@ -58,20 +57,15 @@ public class VariableInstanceEngineImportMediator
 
   @Override
   protected boolean importNextEnginePage() {
-    Optional<IdSetBasedImportPage> page = importIndexHandler.getNextPage();
-    if (page.isPresent() && !page.get().getIds().isEmpty()) {
-      List<HistoricVariableInstanceDto> entities =  engineEntityFetcher.fetchEngineEntities(page.get());
+    IdSetBasedImportPage page = importIndexHandler.getNextPage();
+    if (!page.getIds().isEmpty()) {
+      List<HistoricVariableInstanceDto> entities = engineEntityFetcher.fetchEngineEntities(page);
       if (!entities.isEmpty()) {
         variableInstanceImportService.executeImport(entities);
         return true;
       }
     }
     return false;
-  }
-
-  @Override
-  public boolean hasNewPage() {
-    return importIndexHandler.hasNewPage();
   }
 
 }

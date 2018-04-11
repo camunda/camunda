@@ -44,30 +44,6 @@ public class VariableInstanceImportIndexHandler extends ScrollBasedImportIndexHa
     this.engineContext = engineContext;
   }
 
-
-  @Override
-  public long fetchMaxEntityCount() {
-    // here the import index is based on process instances and therefore
-    // we need to fetch the maximum number of process instances
-    performRefresh();
-
-    SearchResponse response;
-    if (scrollId != null) {
-      response = esclient
-        .prepareSearchScroll(scrollId)
-        .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
-        .get();
-    } else {
-      response = esclient
-        .prepareSearch(configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()))
-        .setTypes(configurationService.getProcessInstanceType())
-        .setQuery(buildBasicQuery())
-        .setSize(0) // Don't return any documents, we don't need them.
-        .get();
-    }
-    return response.getHits().getTotalHits();
-  }
-
   protected Set<String> performScrollQuery() {
     logger.debug("Performing scroll search query!");
     Set<String> result = new HashSet<>();

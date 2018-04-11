@@ -138,13 +138,10 @@ public abstract class BackoffImportMediator<T extends ImportIndexHandler> implem
 
   @Override
   public boolean canImport() {
-    boolean canImportNewPage = isReadyToFetchNextPage() && hasNewPage();
+    boolean canImportNewPage = isReadyToFetchNextPage() ;
     logger.debug("can import next page [{}]", canImportNewPage);
     return canImportNewPage;
   }
-
-  protected abstract boolean hasNewPage();
-
 
   /**
    * Method is invoked by scheduler once no more jobs are created by factories
@@ -158,7 +155,8 @@ public abstract class BackoffImportMediator<T extends ImportIndexHandler> implem
     return backoffTime;
   }
 
-  private void resetBackoff() {
+  @Override
+  public void resetBackoff() {
     this.backoffCounter = STARTING_BACKOFF;
     dateUntilPaginationIsBlocked = OffsetDateTime.now().minusMinutes(1L);
   }

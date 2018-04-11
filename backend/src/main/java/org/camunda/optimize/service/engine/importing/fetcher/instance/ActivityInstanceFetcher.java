@@ -74,23 +74,4 @@ public class ActivityInstanceFetcher
     return entries;
   }
 
-  public Optional<OffsetDateTime> fetchLatestEndTimeOfHistoricActivityInstances(String processDefinitionId) {
-    List<HistoricActivityInstanceEngineDto> entries = getEngineClient()
-          .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
-          .path(configurationService.getHistoricActivityInstanceEndpoint())
-          .queryParam(SORT_BY, SORT_TYPE_END_TIME)
-          .queryParam(SORT_ORDER, SORT_ORDER_TYPE_DESCENDING)
-          .queryParam(MAX_RESULTS_TO_RETURN, 1)
-          .queryParam(PROCESS_DEFINITION_ID, processDefinitionId)
-          .queryParam(INCLUDE_ONLY_FINISHED_INSTANCES, TRUE)
-          .request()
-          .acceptEncoding(UTF8)
-          .get(new GenericType<List<HistoricActivityInstanceEngineDto>>() {
-      });
-    if (entries.size() > 0) {
-      return Optional.of(entries.get(0).getEndTime());
-    } else {
-      return Optional.empty();
-    }
-  }
 }

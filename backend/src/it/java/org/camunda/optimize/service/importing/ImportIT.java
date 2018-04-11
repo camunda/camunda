@@ -457,6 +457,7 @@ public class ImportIT  {
     deployAndStartSimpleServiceTask();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     embeddedOptimizeRule.resetImportStartIndexes();
+    embeddedOptimizeRule.storeImportIndexesToElasticsearch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when

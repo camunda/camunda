@@ -17,22 +17,18 @@ import javax.annotation.PostConstruct;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.Optional;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class FinishedProcessInstanceEngineImportMediator
-    extends BackoffImportMediator<FinishedProcessInstanceImportIndexHandler> {
-
-  private FinishedProcessInstanceImportIndexHandler importIndexHandler;
-  private FinishedProcessInstanceFetcher engineEntityFetcher;
-
-  private FinishedProcessInstanceImportService finishedProcessInstanceImportService;
-
-  @Autowired
-  private FinishedProcessInstanceWriter finishedProcessInstanceWriter;
+  extends BackoffImportMediator<FinishedProcessInstanceImportIndexHandler> {
 
   protected EngineContext engineContext;
+  private FinishedProcessInstanceImportIndexHandler importIndexHandler;
+  private FinishedProcessInstanceFetcher engineEntityFetcher;
+  private FinishedProcessInstanceImportService finishedProcessInstanceImportService;
+  @Autowired
+  private FinishedProcessInstanceWriter finishedProcessInstanceWriter;
 
   public FinishedProcessInstanceEngineImportMediator(EngineContext engineContext) {
     this.engineContext = engineContext;
@@ -48,41 +44,31 @@ public class FinishedProcessInstanceEngineImportMediator
         esClient,
         configurationService.getFinishedProcessInstanceIdTrackingType()
       );
-    finishedProcessInstanceImportService =  new FinishedProcessInstanceImportService(
-        finishedProcessInstanceWriter,
-        elasticsearchImportJobExecutor,
-        missingEntitiesFinder,
-        engineContext
-      );
+    finishedProcessInstanceImportService = new FinishedProcessInstanceImportService(
+      finishedProcessInstanceWriter,
+      elasticsearchImportJobExecutor,
+      missingEntitiesFinder,
+      engineContext
+    );
   }
 
   @Override
   public boolean importNextEnginePage() {
-    Optional<DefinitionBasedImportPage> page = importIndexHandler.getNextPage();
-    if (page.isPresent()) {
-      List<HistoricProcessInstanceDto> entities =  engineEntityFetcher.fetchEngineEntities(page.get());
-      if (!entities.isEmpty()) {
-        // we have to subtract one millisecond because the operator for comparing (finished after) timestamps
-        // in the engine is >= . Therefore we add the small count of the smallest unit to achieve the > operator
-        OffsetDateTime timestamp = entities.get(entities.size() - 1).getEndTime().plus(1L, ChronoUnit.MILLIS);
-        importIndexHandler.updateIndexTimestamp(timestamp);
-        finishedProcessInstanceImportService.executeImport(entities);
-      } else {
-        if (importIndexHandler.hasStillNewDefinitionsToImport()) {
-          importIndexHandler.moveToNextDefinitionToImport();
-        } else {
-          return false;
-        }
-      }
+    DefinitionBasedImportPage page = importIndexHandler.getNextPage();
+    List<HistoricProcessInstanceDto> entities = engineEntityFetcher.fetchEngineEntities(page);
+    if (!entities.isEmpty()) {
+      // we have to subtract one millisecond because the operator for comparing (finished after) timestamps
+      // in the engine is >= . Therefore we add the small count of the smallest unit to achieve the > operator
+      OffsetDateTime timestamp = entities.get(entities.size() - 1).getEndTime().plus(1L, ChronoUnit.MILLIS);
+      importIndexHandler.updateIndexTimestamp(timestamp);
+      finishedProcessInstanceImportService.executeImport(entities);
+    }
+    if (entities.size() < configurationService.getEngineImportProcessInstanceMaxPageSize() && importIndexHandler.hasStillNewDefinitionsToImport()) {
+      importIndexHandler.moveToNextDefinitionToImport();
     } else {
-       importIndexHandler.moveToNextDefinitionToImport();
+      return false;
     }
     return true;
-  }
-
-  @Override
-  public boolean hasNewPage() {
-    return importIndexHandler.hasNewPage();
   }
 
 }

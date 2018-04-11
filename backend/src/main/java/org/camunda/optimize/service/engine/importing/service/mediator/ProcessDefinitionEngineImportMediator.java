@@ -15,21 +15,17 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.util.List;
-import java.util.Optional;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessDefinitionEngineImportMediator
-    extends BackoffImportMediator<AllEntitiesBasedImportIndexHandler> {
-
-  private ProcessDefinitionFetcher engineEntityFetcher;
-
-  private ProcessDefinitionImportService definitionImportService;
-
-  @Autowired
-  private ProcessDefinitionWriter processDefinitionWriter;
+  extends BackoffImportMediator<AllEntitiesBasedImportIndexHandler> {
 
   protected EngineContext engineContext;
+  private ProcessDefinitionFetcher engineEntityFetcher;
+  private ProcessDefinitionImportService definitionImportService;
+  @Autowired
+  private ProcessDefinitionWriter processDefinitionWriter;
 
   public ProcessDefinitionEngineImportMediator(EngineContext engineContext) {
     this.engineContext = engineContext;
@@ -55,20 +51,14 @@ public class ProcessDefinitionEngineImportMediator
 
   @Override
   protected boolean importNextEnginePage() {
-    Optional<AllEntitiesBasedImportPage> page = importIndexHandler.getNextPage();
-    if (page.isPresent()) {
-      List<ProcessDefinitionEngineDto> entities =  engineEntityFetcher.fetchEngineEntities(page.get());
-      if (!entities.isEmpty()) {
-        definitionImportService.executeImport(entities);
-        return true;
-      }
+    AllEntitiesBasedImportPage page = importIndexHandler.getNextPage();
+    List<ProcessDefinitionEngineDto> entities = engineEntityFetcher.fetchEngineEntities(page);
+    if (!entities.isEmpty()) {
+      definitionImportService.executeImport(entities);
+      importIndexHandler.moveImportIndex(entities.size());
+      return entities.size() >= configurationService.getEngineImportProcessDefinitionMaxPageSize();
     }
     return false;
-  }
-
-  @Override
-  public boolean hasNewPage() {
-    return importIndexHandler.hasNewPage();
   }
 
 }

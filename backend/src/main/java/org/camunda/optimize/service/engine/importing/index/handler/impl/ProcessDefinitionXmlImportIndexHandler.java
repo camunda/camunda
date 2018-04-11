@@ -108,30 +108,6 @@ public class ProcessDefinitionXmlImportIndexHandler extends ScrollBasedImportInd
   }
 
   @Override
-  protected long fetchMaxEntityCount() {
-    // here the import index is based on process definition ids and therefore
-    // we need to fetch the maximum number of process definitions
-    performRefresh();
-
-    SearchResponse response;
-    if (scrollId != null) {
-      response =
-      esclient
-        .prepareSearchScroll(scrollId)
-        .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
-        .get();
-    } else {
-      response = esclient
-        .prepareSearch(configurationService.getOptimizeIndex(configurationService.getProcessDefinitionType()))
-        .setTypes(configurationService.getProcessDefinitionType())
-        .setQuery(buildBasicQuery())
-        .setSize(0) // Don't return any documents, we don't need them.
-        .get();
-    }
-    return response.getHits().getTotalHits();
-  }
-
-  @Override
   protected String getElasticsearchTrackingType() {
     return PROCESS_DEFINITION_XML_TRACKING_TYPE;
   }

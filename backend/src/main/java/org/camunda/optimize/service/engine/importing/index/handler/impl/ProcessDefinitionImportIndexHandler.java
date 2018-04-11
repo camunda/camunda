@@ -21,11 +21,6 @@ public class ProcessDefinitionImportIndexHandler extends AllEntitiesBasedImportI
   }
 
   @Override
-  protected long fetchMaxEntityCount() {
-    return processDefinitionManager.getAvailableProcessDefinitionCount(engineContext);
-  }
-
-  @Override
   protected String getElasticsearchImportIndexType() {
     return configurationService.getProcessDefinitionImportIndexType();
   }

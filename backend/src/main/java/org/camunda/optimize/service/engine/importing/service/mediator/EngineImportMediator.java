@@ -6,5 +6,7 @@ public interface EngineImportMediator {
 
   long getBackoffTimeInMs();
 
+  void resetBackoff();
+
   boolean canImport();
 }
