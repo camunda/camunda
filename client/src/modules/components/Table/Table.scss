@@ -1,5 +1,10 @@
 @import '~react-table/react-table.css';
 
+.Table__container {
+  display: flex;
+  flex-direction: column;
+}
+
 .Table__unscrollable-mode {
   overflow: hidden;
 }
@@ -17,6 +22,7 @@
 
   .rt-table {
     overflow: inherit;
+    min-height: 0;
   }
 
   .rt-th {

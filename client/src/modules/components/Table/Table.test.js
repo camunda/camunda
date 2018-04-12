@@ -11,9 +11,12 @@ jest.mock('react-router-dom', () => {
   };
 });
 
-jest.mock('react-table', () => ({children, props}) => (
+jest.mock('react-table', () => () => (
   <div>
-    {children} {props}
+    <div className="rt-thead">
+      <div className="rt-tr" />
+    </div>
+    <div className="rt-tbody" />
   </div>
 ));
 
