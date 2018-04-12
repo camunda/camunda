@@ -115,6 +115,9 @@ public class StreamProcessorBuilder
         final StreamProcessorService service = new StreamProcessorService(controller, serviceContainer, serviceName);
         return serviceContainer.createService(serviceName, service)
             .dependency(LogStreamServiceNames.logStreamServiceName(logName))
+            .dependency(LogStreamServiceNames.logWriteBufferServiceName(logName))
+            .dependency(LogStreamServiceNames.logStorageServiceName(logName))
+            .dependency(LogStreamServiceNames.logBlockIndexServiceName(logName))
             .installAndReturn();
     }
 
