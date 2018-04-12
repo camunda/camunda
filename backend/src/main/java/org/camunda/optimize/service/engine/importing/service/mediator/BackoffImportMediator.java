@@ -50,18 +50,22 @@ public abstract class BackoffImportMediator<T extends ImportIndexHandler> implem
   }
 
   private void setNextReset() {
-    ChronoUnit unit = ChronoUnit.MINUTES;
+    ChronoUnit unit = ChronoUnit.HOURS;
     try {
-      unit = ChronoUnit.valueOf(configurationService.getImportResetIntervalUnit());
+      unit = unitOf(configurationService.getImportResetIntervalUnit());
     } catch (Exception e) {
       //nothing to do falling back to default
-      logger.error("Was not able to parse interval unit [{}] for import reset. Using minutes instead!",
+      logger.error("Was not able to parse interval unit [{}] for import reset. Using hours instead!",
         configurationService.getImportResetIntervalUnit());
     }
     nextReset = OffsetDateTime.now().plus(
         configurationService.getImportResetIntervalValue(),
         unit
     );
+  }
+
+  private ChronoUnit unitOf(String unit) {
+    return ChronoUnit.valueOf(unit.toUpperCase());
   }
 
   protected abstract void init();
