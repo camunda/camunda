@@ -36,25 +36,6 @@ export default class TargetValueModal extends React.Component {
     return this.props.configuration.targetValue || {};
   };
 
-  // async componentWillReceiveProps(nextProps) {
-  //   if (this.props.open !== nextProps.open) {
-  //     if (nextProps.open) {
-  //       const {values, nodeNames} = await this.constructValues();
-
-  //       this.setState({
-  //         focus: null,
-  //         values,
-  //         nodeNames
-  //       });
-  //     } else {
-  //       this.setState({
-  //         values: {},
-  //         nodeNames: {}
-  //       });
-  //     }
-  //   }
-  // }
-
   confirmModal = () => {
     this.props.onConfirm(this.cleanUpValues());
   };
