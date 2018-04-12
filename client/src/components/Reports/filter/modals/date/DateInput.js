@@ -15,17 +15,16 @@ class DateInput extends React.PureComponent {
     };
   }
 
-  static getDerivedStateFromProps({date, format}, {stringDate}) {
-    const newStringDate = date.format(format);
+  componentDidUpdate({date, format}) {
+    const oldStringDate = date.format(format);
+    const newStringDate = this.props.date.format(this.props.format);
 
-    if (stringDate !== newStringDate) {
-      return {
+    if (oldStringDate !== newStringDate) {
+      this.setState({
         stringDate: newStringDate,
         error: false
-      };
+      });
     }
-
-    return null;
   }
 
   render() {
@@ -33,7 +32,7 @@ class DateInput extends React.PureComponent {
       <div className="DateInput__input-group">
         <Input
           type="text"
-          reference={this.props.reference}
+          ref={this.props.reference}
           className={classnames(this.props.className, 'DateInput')}
           value={this.state.stringDate}
           onFocus={this.props.onFocus}
