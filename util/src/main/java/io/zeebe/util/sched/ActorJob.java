@@ -68,11 +68,7 @@ public class ActorJob
         }
         catch (Exception e)
         {
-            e.printStackTrace();
-
             task.onFailure(e);
-
-            // TODO: what else to do?
         }
         finally
         {

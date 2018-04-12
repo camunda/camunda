@@ -21,7 +21,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.util.Lists.newArrayList;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import io.zeebe.util.TestUtil;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 import org.junit.Rule;
@@ -229,5 +231,46 @@ public class ActorLifecyclePhasesTest
         assertThat(isInvoked).isFalse();
     }
 
+    @Test
+    public void shouldNotCloseOnFailureWhileActorStarted()
+    {
+        // given
+        final AtomicInteger invocations = new AtomicInteger();
+
+        final LifecycleRecordingActor actor = new LifecycleRecordingActor()
+        {
+            @Override
+            public void onActorStarted()
+            {
+                super.onActorStarted();
+
+                this.actor.runUntilDone(() ->
+                {
+                    final int inv = invocations.getAndIncrement();
+
+                    if (inv == 0)
+                    {
+                        throw new RuntimeException("foo");
+                    }
+                    else if (inv == 10)
+                    {
+                        actor.done();
+                    }
+                });
+            }
+        };
+
+        // when
+        schedulerRule.submitActor(actor);
+        schedulerRule.workUntilDone();
+
+        TestUtil.waitUntil(() -> invocations.get() >= 10);
+
+        actor.close();
+        schedulerRule.workUntilDone();
+
+        // then
+        assertThat(actor.phases).isEqualTo(FULL_LIFECYCLE);
+    }
 
 }

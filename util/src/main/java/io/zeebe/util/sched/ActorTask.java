@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 
+import io.zeebe.util.Loggers;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import io.zeebe.util.sched.metrics.TaskMetrics;
@@ -189,15 +190,7 @@ public class ActorTask
         boolean resubmit = false;
         while (!resubmit && (currentJob != null || poll()))
         {
-            try
-            {
-                currentJob.execute(runner);
-            }
-            catch (Exception e)
-            {
-                // TODO: what to do?
-                e.printStackTrace();
-            }
+            currentJob.execute(runner);
 
             switch (currentJob.schedulingState)
             {
@@ -380,18 +373,24 @@ public class ActorTask
         switch (lifecyclePhase)
         {
             case STARTING:
+                Loggers.ACTOR_LOGGER.error("Actor failed in phase 'STARTING'. Discard all jobs and stop immediatly.", failure);
+
                 lifecyclePhase = ActorLifecyclePhase.FAILED;
                 discardNextJobs();
                 startingFuture.completeExceptionally(failure);
                 break;
 
             case CLOSING:
+                Loggers.ACTOR_LOGGER.error("Actor failed in phase 'CLOSING'. Discard all jobs and stop immediatly.", failure);
+
                 lifecyclePhase = ActorLifecyclePhase.FAILED;
                 discardNextJobs();
                 closeFuture.completeExceptionally(failure);
                 break;
 
             default:
+                Loggers.ACTOR_LOGGER.error("Actor failed in phase '{}'. Continue with next job.", lifecyclePhase, failure);
+
                 currentJob.failFuture(failure);
         }
     }
