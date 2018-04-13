@@ -65,13 +65,13 @@ public class ActivityInstanceEngineImportMediator
       importIndexHandler.updateIndexTimestamp(timestamp);
       activityInstanceImportService.executeImport(entities);
     }
-    if (entities.size() < configurationService.getEngineImportActivityInstanceMaxPageSize() &&
-      importIndexHandler.hasStillNewDefinitionsToImport()) {
-      importIndexHandler.moveToNextDefinitionToImport();
-    } else {
-      return false;
+    if (entities.size() < configurationService.getEngineImportActivityInstanceMaxPageSize()) {
+      if (importIndexHandler.hasStillNewDefinitionsToImport()) {
+        importIndexHandler.moveToNextDefinitionToImport();
+      } else {
+        return false;
+      }
     }
-
     return true;
   }
 }

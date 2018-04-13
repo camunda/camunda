@@ -48,7 +48,7 @@ public class UnfinishedProcessInstanceFetcher extends
 
     long requestEnd = System.currentTimeMillis();
     logger.debug(
-      "Fetched [{}] process definitions within [{}] ms",
+      "Fetched [{}] unfinished process instances within [{}] ms",
       entries.size(),
       requestEnd - requestStart
     );

@@ -63,10 +63,12 @@ public class FinishedProcessInstanceEngineImportMediator
       importIndexHandler.updateIndexTimestamp(timestamp);
       finishedProcessInstanceImportService.executeImport(entities);
     }
-    if (entities.size() < configurationService.getEngineImportProcessInstanceMaxPageSize() && importIndexHandler.hasStillNewDefinitionsToImport()) {
-      importIndexHandler.moveToNextDefinitionToImport();
-    } else {
-      return false;
+    if (entities.size() < configurationService.getEngineImportProcessInstanceMaxPageSize()) {
+      if (importIndexHandler.hasStillNewDefinitionsToImport()) {
+        importIndexHandler.moveToNextDefinitionToImport();
+      } else {
+        return false;
+      }
     }
     return true;
   }
