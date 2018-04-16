@@ -13,11 +13,17 @@ import com.jayway.jsonpath.spi.json.JacksonJsonProvider;
 import com.jayway.jsonpath.spi.json.JsonProvider;
 import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
 import com.jayway.jsonpath.spi.mapper.MappingProvider;
+import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
+import org.camunda.optimize.upgrade.service.ValidationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -29,7 +35,8 @@ import java.util.Set;
  * @author Askar Akhmerov
  */
 public class ConfigurationService {
-  private static final String[] DEFAULT_LOCATIONS = { "upgrade-config.yaml" };
+  private static final String ENVIRONMENT_CONFIG_YAML_REL_PATH = "/../environment/environment-config.yaml";
+  private static final String[] DEFAULT_LOCATIONS = { ENVIRONMENT_CONFIG_YAML_REL_PATH };
 
   private ObjectMapper objectMapper = new ObjectMapper();
   private HashMap defaults = null;
@@ -134,26 +141,42 @@ public class ConfigurationService {
   }
 
   private InputStream wrapInputStream(String location) {
-    return this.getClass().getClassLoader().getResourceAsStream(location);
+    String executionFolderPath = null;
+    try {
+      executionFolderPath = getClass().getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
+      executionFolderPath = executionFolderPath.substring(0, executionFolderPath.lastIndexOf("/"));
+      executionFolderPath = executionFolderPath.replaceAll("%20"," ");
+
+      File config = new File(executionFolderPath + location);
+      return new FileInputStream(config);
+    } catch (FileNotFoundException e) {
+      String errorMessage = "can't read configuration for " + location + " relative to " + executionFolderPath;
+      logger.error(errorMessage);
+      throw new UpgradeRuntimeException(errorMessage);
+    } catch (URISyntaxException e) {
+      String errorMessage = "can't read configuration for " + location + " relative to " + executionFolderPath;
+      logger.error(errorMessage);
+      throw new UpgradeRuntimeException(errorMessage);
+    }
   }
 
   public String getClientHost() {
     if (clientHost == null) {
-      clientHost = jsonContext.read("client.host");
+      clientHost = jsonContext.read("es.host");
     }
     return clientHost;
   }
 
   public int getClientPort() {
     if (clientPort == null) {
-      clientPort = jsonContext.read("client.port");
+      clientPort = jsonContext.read("es.port");
     }
     return clientPort;
   }
 
   public String getDateFormat() {
     if (dateFormat == null) {
-      dateFormat = jsonContext.read("dateFormat");
+      dateFormat = jsonContext.read("serialization.optimizeDateFormat");
     }
     return dateFormat;
   }

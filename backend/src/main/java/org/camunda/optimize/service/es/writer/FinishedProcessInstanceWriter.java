@@ -26,7 +26,7 @@ import java.util.Map;
 
 @Component
 public class FinishedProcessInstanceWriter {
-  private final Logger logger = LoggerFactory.getLogger(FinishedProcessInstanceWriter.class);
+  private final Logger logger = LoggerFactory.getLogger(getClass());
 
   @Autowired
   private Client esclient;

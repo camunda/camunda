@@ -1,4 +1,6 @@
-package org.camunda.optimize.upgrade;
+package org.camunda.optimize.upgrade.plan;
+
+import org.camunda.optimize.upgrade.UpgradeStep;
 
 import java.util.ArrayList;
 import java.util.List;

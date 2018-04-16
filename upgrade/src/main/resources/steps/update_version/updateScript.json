@@ -1,0 +1,6 @@
+{
+  "script": {
+    "source": "ctx._source.schemaVersion = \"2.1\"",
+    "lang": "painless"
+  }
+}

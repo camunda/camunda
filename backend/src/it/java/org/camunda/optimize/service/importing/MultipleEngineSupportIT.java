@@ -339,7 +339,7 @@ public class MultipleEngineSupportIT {
   }
 
   @Test
-  public void afterRestartOfOptimizeRightImportIndexIsUsed() {
+  public void afterRestartOfOptimizeRightImportIndexIsUsed() throws Exception {
     // given
     addSecondEngineToConfiguration();
     deployAndStartSimpleProcessDefinitionForAllEngines();

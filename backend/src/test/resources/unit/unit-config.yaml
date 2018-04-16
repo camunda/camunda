@@ -9,6 +9,8 @@ import:
       resetInterval:
         unit: Millis
         value: 100
+container:
+  checkMetadata: false
 es:
   sampler:
     interval: 100

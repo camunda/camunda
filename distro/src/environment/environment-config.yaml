@@ -36,3 +36,7 @@ es:
   host: localhost
   port: 9300
   index: optimize
+
+serialization:
+  # the date format that is used in Optimize internally
+  optimizeDateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ

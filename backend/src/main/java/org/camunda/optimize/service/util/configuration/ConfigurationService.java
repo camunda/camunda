@@ -73,6 +73,7 @@ public class ConfigurationService {
   private String alertType;
   private String reportShareType;
   private String dashboardShareType;
+  private String metaDataType;
 
   private String analyzerName;
   private String tokenizer;
@@ -120,6 +121,7 @@ public class ConfigurationService {
   private Integer containerHttpPort;
 
   private Integer maxStatusConnections;
+  private Boolean checkMetadata;
 
   private Boolean emailsEnabled;
   private String alertEmailUsername;
@@ -317,6 +319,13 @@ public class ConfigurationService {
       processDefinitionType = jsonContext.read(ConfigurationServiceConstants.PROCESS_DEFINITION_TYPE);
     }
     return processDefinitionType;
+  }
+
+  public String getMeataDataType() {
+    if (metaDataType == null) {
+      metaDataType = jsonContext.read(ConfigurationServiceConstants.METADATA_TYPE);
+    }
+    return metaDataType;
   }
 
   public String getProcessDefinitionEndpoint() {
@@ -732,6 +741,13 @@ public class ConfigurationService {
       maxStatusConnections = jsonContext.read(ConfigurationServiceConstants.CONTAINER_STATUS_MAX_CONNECTIONS);
     }
     return maxStatusConnections;
+  }
+
+  public Boolean getCheckMetadata() {
+    if (checkMetadata == null) {
+      checkMetadata = jsonContext.read(ConfigurationServiceConstants.CHECK_METADATA);
+    }
+    return checkMetadata;
   }
 
   public String getHpiEndpoint() {
@@ -1264,6 +1280,10 @@ public class ConfigurationService {
     this.containerHttpPort = containerHttpPort;
   }
 
+  public void setCheckMetadata(Boolean checkMetadata) {
+    this.checkMetadata = checkMetadata;
+  }
+
   public void setBackoffEnabled(Boolean backoffEnabled) {
     this.backoffEnabled = backoffEnabled;
   }
@@ -1299,5 +1319,6 @@ public class ConfigurationService {
   public void setAlertEmailProtocol(String alertEmailProtocol) {
     this.alertEmailProtocol = alertEmailProtocol;
   }
+
 
 }

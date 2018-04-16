@@ -1,10 +1,14 @@
 package org.camunda.optimize.upgrade.util;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.file.Files;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 /**
  * Bunch of utility methods that might be required during upgrade
@@ -14,29 +18,32 @@ import java.nio.file.Paths;
  */
 public class SchemaUpgradeUtil {
   public static final String CREATE_SNAPSHOT = "create-snapshot";
+  protected static Logger logger = LoggerFactory.getLogger(SchemaUpgradeUtil.class);
 
   /**
-   *
    * @param filePath -
    * @return
    */
   public static String readClasspathFileAsString(String filePath) {
-    Path path = null;
+    InputStream inputStream = SchemaUpgradeUtil.class.getClassLoader().getResourceAsStream(filePath);
+    String data = null;
     try {
-      path = Paths.get(
-        SchemaUpgradeUtil.class.getClassLoader()
-          .getResource(filePath).toURI()
-      );
-    } catch (URISyntaxException e) {
-      e.printStackTrace();
-    }
-    byte[] fileBytes = new byte[0];
-    try {
-      fileBytes = Files.readAllBytes(path);
+      data = readFromInputStream(inputStream);
     } catch (IOException e) {
-      e.printStackTrace();
+      logger.error("can't read [{}] from classpath", filePath, e);
     }
-    String data = new String(fileBytes);
     return data;
+  }
+
+  private static String readFromInputStream(InputStream inputStream) throws IOException {
+    try(ByteArrayOutputStream result = new ByteArrayOutputStream()) {
+      byte[] buffer = new byte[1024];
+      int length;
+      while ((length = inputStream.read(buffer)) != -1) {
+        result.write(buffer, 0, length);
+      }
+
+      return result.toString("UTF-8");
+    }
   }
 }

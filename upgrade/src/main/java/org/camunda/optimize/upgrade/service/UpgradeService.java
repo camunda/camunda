@@ -1,6 +1,9 @@
-package org.camunda.optimize.upgrade;
+package org.camunda.optimize.upgrade.service;
 
 import org.apache.http.HttpHost;
+import org.camunda.optimize.upgrade.plan.AbstractUpgradePlan;
+import org.camunda.optimize.upgrade.UpgradeStep;
+import org.camunda.optimize.upgrade.UpgradeStepExecutor;
 import org.camunda.optimize.upgrade.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.executor.AddFieldExecutor;
 import org.camunda.optimize.upgrade.executor.CreateIndexExecutor;
@@ -23,9 +26,11 @@ import org.camunda.optimize.upgrade.steps.UpdateDataStep;
 import org.camunda.optimize.upgrade.util.SchemaUpgradeUtil;
 import org.elasticsearch.client.RestClient;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Consumer;
 
 /**
@@ -39,26 +44,40 @@ public class UpgradeService {
 
   //fields actually belong to context
   private ConfigurationService configurationService;
+  private ValidationService validationService;
   private boolean createSnapshot;
   private RestClient restClient;
   private Map<String, UpgradeStepExecutor> executorMap = new HashMap<>();
 
-  public UpgradeService(AbstractUpgradePlan upgradePlan, String[] args) {
+  public UpgradeService(AbstractUpgradePlan upgradePlan, String[] args, ValidationService validationService) {
     this.upgradePlan = upgradePlan;
     this.arguments = args;
+    this.validationService = validationService;
 
-    //initialize context based on arguments
+    String configLocation = null;
     if (args != null) {
-      for (String argument : args) {
-        if (SchemaUpgradeUtil.CREATE_SNAPSHOT.equals(argument)) {
-          this.createSnapshot = true;
-        }
+      List<String> argsList = Arrays.asList(args);
+      int configPosition = argsList.indexOf("--config");
+      if (configPosition >= 0) {
+         configLocation = argsList.get(configPosition + 1);
+      }
+
+      if (argsList.contains("--snapshot")) {
+        this.createSnapshot = true;
       }
     }
 
-    //TODO: customize location based on args
-    configurationService = new ConfigurationService();
+    configurationService = configLocation == null ?
+      new ConfigurationService() : new ConfigurationService(new String[]{configLocation});
     this.restClient = initClient();
+
+    if (validationService != null) {
+      validationService.validateVersions(restClient);
+    }
+  }
+
+  public UpgradeService(AbstractUpgradePlan upgradePlan, String[] args) {
+    this(upgradePlan, args, null);
   }
 
   private void initExecutors(RestClient restClient) {

@@ -105,7 +105,11 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
   }
 
   public void destroy() throws Exception {
-    BeanUtils.copyProperties(testOptimizeInstance.getConfigurationService(), perTestConfiguration);
+    try {
+      BeanUtils.copyProperties(testOptimizeInstance.getConfigurationService(), perTestConfiguration);
+    } catch(Exception e) {
+      //nothing to do, optimize did not start correctly in a first place
+    }
     testOptimizeInstance.destroyOptimize();
     testOptimizeInstance = null;
   }

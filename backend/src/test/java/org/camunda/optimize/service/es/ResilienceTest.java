@@ -67,28 +67,6 @@ public class ResilienceTest {
     esFolder.deleteOnExit();
   }
 
-  @Test
-  public void testStartWithoutES () throws Exception {
-    //given
-    EmbeddedOptimizeRule optimize = new EmbeddedOptimizeRule();
-    optimize.startOptimize();
-
-    //when + then
-    verifyRedirectToError(optimize);
-
-    //given
-    Node testNode = elasticSearchTestNode();
-
-    // when
-    waitUntilIsConnectedToElasticsearch(optimize);
-
-    // then
-    verifyIndexServed(optimize);
-
-    optimize.stopOptimize();
-    testNode.close();
-  }
-
   private void waitUntilIsConnectedToElasticsearch(EmbeddedOptimizeRule optimize) throws TestTimedOutException {
     ConnectionStatusDto connectionStatusDto = new ConnectionStatusDto();
     connectionStatusDto.setConnectedToElasticsearch(false);

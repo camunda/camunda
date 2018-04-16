@@ -1,5 +1,6 @@
 package org.camunda.optimize.upgrade;
 
+import org.camunda.optimize.upgrade.plan.AbstractUpgradePlan;
 import org.camunda.optimize.upgrade.steps.AddFieldStep;
 import org.camunda.optimize.upgrade.steps.CreateIndexStep;
 import org.camunda.optimize.upgrade.steps.DeleteFieldStep;

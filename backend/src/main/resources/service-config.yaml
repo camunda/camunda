@@ -43,6 +43,7 @@ container:
     #max number of threads\sessions that will be kept to report status
     connections:
       max: 10
+  checkMetadata: true
 #Configuration for engines used to import data. Please note that you have to have atleast one
 #engine configured at all times.
 engines:
@@ -211,6 +212,7 @@ es:
   alertStatusType: alert-status
   reportShareType: report-share
   dashboardShareType: dashboard-share
+  metaDataType: metadata
   sampler:
     #Connection sampler interval set to the client
     interval: 5000

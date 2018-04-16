@@ -7,7 +7,6 @@ import org.camunda.optimize.qa.performance.framework.PerfTestConfiguration;
 import org.camunda.optimize.qa.performance.util.PerfTestException;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -51,7 +50,7 @@ public abstract class OptimizePerformanceTestCase {
 
   @AfterClass
   public static void cleanUp() {
-    elasticSearchRule.deleteOptimizeIndex();
+    elasticSearchRule.deleteOptimizeIndexes();
     embeddedOptimizeRule.initializeSchema();
   }
 

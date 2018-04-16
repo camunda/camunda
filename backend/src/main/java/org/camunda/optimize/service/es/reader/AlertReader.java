@@ -26,7 +26,7 @@ import java.util.List;
  */
 @Component
 public class AlertReader {
-  private final Logger logger = LoggerFactory.getLogger(AlertReader.class);
+  private final Logger logger = LoggerFactory.getLogger(getClass());
 
   @Autowired
   private Client esclient;

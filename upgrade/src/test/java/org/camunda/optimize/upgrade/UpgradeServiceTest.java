@@ -2,6 +2,7 @@ package org.camunda.optimize.upgrade;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.util.EntityUtils;
+import org.camunda.optimize.upgrade.service.UpgradeService;
 import org.camunda.optimize.upgrade.steps.AddFieldStep;
 import org.camunda.optimize.upgrade.steps.ChangeFieldTypeStep;
 import org.camunda.optimize.upgrade.steps.CreateIndexStep;
@@ -42,7 +43,7 @@ public class UpgradeServiceTest extends AbstractUpgradeTest {
     //given
     restClient = initClient();
     initAssertions();
-    String[] args = new String[0];
+    String[] args = new String[] {"--config", "/../test-classes/upgrade-config.yaml"};
     UpgradeService toTest = new UpgradeService(new TestSchemaUpgrade(), args);
 
     //assertions

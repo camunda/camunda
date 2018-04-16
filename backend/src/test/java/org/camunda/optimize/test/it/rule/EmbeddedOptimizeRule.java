@@ -34,6 +34,7 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 
 /**
@@ -186,24 +187,21 @@ public class EmbeddedOptimizeRule extends TestWatcher {
       .post(Entity.json(entity));
   }
 
-  public void startOptimize() {
-    try {
-      getOptimize().start();
-      getAlertService().init();
-    } catch (Exception e) {
-      logger.error("Failed to start Optimize", e);
-    }
+  public void startOptimize() throws Exception {
+    getOptimize().start();
+    getAlertService().init();
   }
 
   protected void finished(Description description) {
     try {
       this.getAlertService().getScheduler().clear();
-    } catch (SchedulerException e) {
-      logger.error("cant clear scheduler after test", e);
+      TestEmbeddedCamundaOptimize.getInstance().resetConfiguration();
+      LocalDateUtil.reset();
+      reloadConfiguration();
+    } catch (Exception e) {
+      logger.error("clean up after test", e);
     }
-    TestEmbeddedCamundaOptimize.getInstance().resetConfiguration();
-    LocalDateUtil.reset();
-    reloadConfiguration();
+
   }
 
   public void reloadConfiguration() {
@@ -213,6 +211,11 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   public void stopOptimize() {
     try {
       this.getAlertService().destroy();
+    } catch (Exception e) {
+      logger.error("Failed to destroy alert service", e);
+    }
+
+    try {
       getOptimize().destroy();
     } catch (Exception e) {
       logger.error("Failed to stop Optimize", e);

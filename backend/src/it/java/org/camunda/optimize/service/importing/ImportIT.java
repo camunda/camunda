@@ -361,7 +361,7 @@ public class ImportIT  {
   }
 
   @Test
-  public void latestImportIndexAfterRestartOfOptimize() {
+  public void latestImportIndexAfterRestartOfOptimize() throws Exception {
     // given
     deployAndStartSimpleServiceTask();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
@@ -380,7 +380,7 @@ public class ImportIT  {
   }
 
   @Test
-  public void indexAfterRestartOfOptimizeHasCorrectProcessDefinitionsToImport() {
+  public void indexAfterRestartOfOptimizeHasCorrectProcessDefinitionsToImport() throws Exception {
     // given
     deployAndStartSimpleServiceTask();
     deployAndStartSimpleServiceTask();
@@ -402,7 +402,7 @@ public class ImportIT  {
   }
 
   @Test
-  public void afterRestartOfOptimizeAlsoNewDataIsImported() {
+  public void afterRestartOfOptimizeAlsoNewDataIsImported() throws Exception {
     // given
     deployAndStartSimpleServiceTask();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
@@ -426,7 +426,7 @@ public class ImportIT  {
   }
 
   @Test
-  public void itIsPossibleToResetTheImportIndex() {
+  public void itIsPossibleToResetTheImportIndex() throws Exception {
     // given
     deployAndStartSimpleServiceTask();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();

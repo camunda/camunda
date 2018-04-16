@@ -1,5 +1,7 @@
 package org.camunda.optimize.service.util.configuration;
 
+import com.jayway.jsonpath.JsonPath;
+
 /**
  * This interface should contain constants only in order not to have magic
  * string inlined in the service class.
@@ -26,6 +28,7 @@ public interface ConfigurationServiceConstants {
   String ELASTICSEARCH_MAX_JOB_QUEUE_SIZE = "$.import.elasticsearchJobExecutorQueueSize";
   String ELASTICSEARCH_IMPORT_EXECUTOR_THREAD_COUNT = "$.import.elasticsearchJobExecutorThreadCount";
   String NUMBER_OF_RETRIES_ON_CONFLICT = "$.import.writer.numberOfRetries";
+  String PROCESS_DEFINITION_IDS_TO_IMPORT = "$.import.process-definition-ids-to-import";
 
   String ENGINE_IMPORT_MAX_PAGE_SIZE = "$.import.maxPageSize";
   String ENGINE_IMPORT_PROCESS_DEFINITION_MAX_PAGE_SIZE = "$.import.data.process-definition.maxPageSize";
@@ -54,12 +57,14 @@ public interface ConfigurationServiceConstants {
   String IMPORT_INDEX_TYPE = "$.import.indexType";
   String SCROLL_IMPORT_INDEX_TYPE = "$.import.scrollImportIndexType";
   String IMPORT_INDEX_AUTO_STORAGE_INTERVAL = "$.import.importIndexStorageIntervalInSec";
+  String PROCESS_DEFINITION_IMPORT_INDEX_TYPE = "$.import.data.process-definition.indexType";
   String LICENSE_TYPE = "$.es.licenseType";
   String REPORT_TYPE = "$.es.reportType";
   String DASHBOARD_TYPE = "$.es.dashboardType";
   String ALERT_TYPE = "$.es.alertType";
   String REPORT_SHARE_TYPE = "$.es.reportShareType";
   String DASHBOARD_SHARE_TYPE = "$.es.dashboardShareType";
+  String METADATA_TYPE = "$.es.metaDataType";
 
   String ENGINE_CONNECT_TIMEOUT = "$.engine-commons.connection.timeout";
   String ENGINE_READ_TIMEOUT = "$.engine-commons.read.timeout";
@@ -95,6 +100,8 @@ public interface ConfigurationServiceConstants {
   String CONTAINER_HTTPS_PORT = "$.container.ports.https";
   String CONTAINER_HTTP_PORT = "$.container.ports.http";
   String CONTAINER_STATUS_MAX_CONNECTIONS = "$.container.status.connections.max";
+
+  String CHECK_METADATA = "$.container.checkMetadata";
 
   String EXPORT_CSV_LIMIT = "$.export.csv.limit";
   String EXPORT_CSV_OFFSET = "$.export.csv.offset";

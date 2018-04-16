@@ -1,5 +1,7 @@
 package org.camunda.optimize.upgrade;
 
+import org.camunda.optimize.upgrade.plan.AbstractUpgradePlan;
+import org.camunda.optimize.upgrade.service.UpgradeService;
 import org.camunda.optimize.upgrade.steps.CreateIndexStep;
 import org.camunda.optimize.upgrade.steps.DeleteIndexStep;
 import org.camunda.optimize.upgrade.util.SchemaUpgradeUtil;
@@ -16,7 +18,7 @@ import java.util.function.Consumer;
 public class DateFormatProcessingTest extends AbstractUpgradeTest {
 
   private static final String TEST_INDEX = "test-index";
-  private String[] args;
+  private String[] args = new String[] {"--config", "/../test-classes/upgrade-config.yaml"};
   private AbstractUpgradePlan upgradeSchema;
 
 
@@ -24,7 +26,7 @@ public class DateFormatProcessingTest extends AbstractUpgradeTest {
   public void setUp() {
     restClient = initClient();
 
-    this.args = new String[0];
+    this.args = new String[] {"--config", "/../test-classes/upgrade-config.yaml"};
     this.upgradeSchema = new AbstractUpgradePlan() {
       @Override
       public List<UpgradeStep> getUpgradeSteps() {

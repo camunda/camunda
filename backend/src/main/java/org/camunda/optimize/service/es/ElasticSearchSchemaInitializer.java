@@ -8,6 +8,7 @@ import org.camunda.optimize.service.es.schema.type.DurationHeatmapTargetValueTyp
 import org.camunda.optimize.service.es.schema.type.EventType;
 import org.camunda.optimize.service.es.schema.type.FinishedProcessInstanceIdTrackingType;
 import org.camunda.optimize.service.es.schema.type.LicenseType;
+import org.camunda.optimize.service.es.schema.type.MetadataType;
 import org.camunda.optimize.service.es.schema.type.ProcessDefinitionType;
 import org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlTrackingType;
 import org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType;
@@ -90,6 +91,9 @@ public class ElasticSearchSchemaInitializer {
   @Autowired
   private DashboardShareType dashboardShareType;
 
+  @Autowired
+  private MetadataType metadataType;
+
   public void initializeSchema() {
     if (!initialized) {
       try {
@@ -125,6 +129,7 @@ public class ElasticSearchSchemaInitializer {
     schemaManager.addMapping(alertType);
     schemaManager.addMapping(reportShareType);
     schemaManager.addMapping(dashboardShareType);
+    schemaManager.addMapping(metadataType);
   }
 
   /**

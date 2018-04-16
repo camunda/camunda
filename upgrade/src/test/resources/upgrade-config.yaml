@@ -1,0 +1,10 @@
+es:
+  # NOTE: changing these properties also might need adjustments in the startup script
+  # start-optimize.sh on Linux or start-optimize.bat on Windows if you don't have
+  # configured your own elasticsearch instance.
+  host: localhost
+  port: 9200
+
+serialization:
+  # the date format that is used in Optimize internally
+  optimizeDateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ
