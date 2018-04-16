@@ -530,7 +530,6 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             {
                 logStreamBatchWriter
                     .producerId(streamProcessorId)
-                    .raftTermId(logStream.getTerm())
                     .sourceEvent(logStreamPartitionId, eventPosition);
 
                 targetEventMetadata.reset();
@@ -1213,7 +1212,6 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         {
             logStreamBatchWriter
                 .producerId(streamProcessorId)
-                .raftTermId(logStream.getTerm())
                 .sourceEvent(logStreamPartitionId, eventPosition);
 
             if (taskKey > 0)

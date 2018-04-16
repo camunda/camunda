@@ -172,7 +172,6 @@ public class TypedStreamWriterImpl implements TypedStreamWriter, TypedBatchWrite
     {
         batchWriter.reset();
         batchWriter.producerId(producerId);
-        batchWriter.raftTermId(stream.getTerm());
 
         if (sourcePartitionId >= 0)
         {
