@@ -358,6 +358,12 @@ public class ServiceController extends Actor
         }
 
         @Override
+        public ServiceName<?> getServiceName()
+        {
+            return name;
+        }
+
+        @Override
         @SuppressWarnings("unchecked")
         public <S> S getService(ServiceName<S> name)
         {

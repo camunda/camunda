@@ -22,6 +22,8 @@ public interface ServiceStartContext extends AsyncContext
 {
     String getName();
 
+    ServiceName<?> getServiceName();
+
     <S> S getService(ServiceName<S> name);
 
     <S> S getService(String name, Class<S> type);

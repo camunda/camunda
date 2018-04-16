@@ -170,6 +170,17 @@ public class ServiceStartContextTest
         assertThat(providedScheduler).isSameAs(actorSchedulerRule.get());
     }
 
+    @Test
+    public void shouldProvideServiceName()
+    {
+        final MockService service = new MockService();
+
+        serviceContainer.createService(service1, service).install();
+        actorSchedulerRule.workUntilDone();
+
+        assertThat(service1).isEqualTo(service.startContext.getServiceName());
+    }
+
     class MockService implements Service<Object>
     {
         ServiceStartContext startContext;
