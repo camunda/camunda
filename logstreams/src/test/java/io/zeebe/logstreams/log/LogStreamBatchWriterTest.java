@@ -429,11 +429,10 @@ public class LogStreamBatchWriterTest
     public void shouldWriteEventWithRaftTerm()
     {
         // given
-        // logStreamRule.getLogStream().setTerm(123);
+        logStreamRule.getLogStream().setTerm(123);
 
         // when
         final long position = writer
-            .raftTermId(123)
             .event()
                 .positionAsKey()
                 .value(EVENT_VALUE_1)

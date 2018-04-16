@@ -15,8 +15,8 @@
  */
 package io.zeebe.logstreams.log;
 
-import org.agrona.DirectBuffer;
 import io.zeebe.util.buffer.BufferWriter;
+import org.agrona.DirectBuffer;
 
 /**
  * Write log entries to the log stream write buffer as batch. This ensures that
@@ -82,8 +82,6 @@ public interface LogStreamBatchWriter
      * Initialize the write for the given log stream.
      */
     void wrap(LogStream log);
-
-    LogStreamBatchWriter raftTermId(int term);
 
     /**
      * Set the source event for all log entries.
