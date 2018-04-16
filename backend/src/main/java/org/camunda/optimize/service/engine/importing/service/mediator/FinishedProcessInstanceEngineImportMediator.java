@@ -23,7 +23,6 @@ import java.util.List;
 public class FinishedProcessInstanceEngineImportMediator
   extends BackoffImportMediator<FinishedProcessInstanceImportIndexHandler> {
 
-  protected EngineContext engineContext;
   private FinishedProcessInstanceFetcher engineEntityFetcher;
   private FinishedProcessInstanceImportService finishedProcessInstanceImportService;
   @Autowired
