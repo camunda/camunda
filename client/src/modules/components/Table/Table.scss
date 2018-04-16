@@ -39,4 +39,17 @@
       outline: none;
     }
   }
+
+  .-pagination {
+    padding: 5px;
+
+    .-previous,
+    .-next {
+      flex: 0;
+    }
+
+    .-pageInfo {
+      margin: 0;
+    }
+  }
 }

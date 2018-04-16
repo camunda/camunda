@@ -1,8 +1,11 @@
 import React from 'react';
 import classnames from 'classnames';
 import ReactTable from 'react-table';
+import {Button} from 'components';
 
 import './Table.css';
+
+const pageSize = 50;
 
 export default class Table extends React.Component {
   constructor(props) {
@@ -19,25 +22,36 @@ export default class Table extends React.Component {
     const columns = Table.formatColumns(head);
     const data = Table.formatData(head, body);
     return (
-      <div className={classnames('Table__container', className)} ref={ref => (this.tableRef = ref)}>
-        <ReactTable
-          data={data}
-          columns={columns}
-          resized={this.state.resizedState}
-          defaultPageSize={Number.MAX_SAFE_INTEGER}
-          showPagination={false}
-          showPaginationTop={false}
-          showPaginationBottom={false}
-          minRows={0}
-          sortable={false}
-          multiSort={false}
-          className={classnames('-striped', '-highlight', 'Table', {
-            'Table__unscrollable-mode': disableReportScrolling
-          })}
-          noDataText="No data available"
-          onResizedChange={this.updateResizedState}
-        />
-      </div>
+      <ReactTable
+        data={data}
+        columns={columns}
+        resized={this.state.resizedState}
+        pageSize={pageSize}
+        showPagination={data.length > pageSize}
+        showPaginationTop={false}
+        showPaginationBottom={true}
+        showPageSizeOptions={false}
+        minRows={0}
+        sortable={false}
+        multiSort={false}
+        className={classnames('-striped', '-highlight', 'Table', {
+          'Table__unscrollable-mode': disableReportScrolling
+        })}
+        noDataText="No data available"
+        onResizedChange={this.updateResizedState}
+        PreviousComponent={props => <Button {...props} />}
+        NextComponent={props => <Button {...props} />}
+      >
+        {({rowMinWidth}, render) => (
+          <div
+            className={classnames('Table__container', className)}
+            ref={ref => (this.tableRef = ref)}
+            style={{minWidth: rowMinWidth}}
+          >
+            {render()}
+          </div>
+        )}
+      </ReactTable>
     );
   }
 
