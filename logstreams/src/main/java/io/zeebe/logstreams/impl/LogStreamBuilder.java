@@ -248,6 +248,7 @@ public class LogStreamBuilder
 
     public ActorFuture<LogStream> build()
     {
+        Objects.requireNonNull(serviceContainer, "serviceContainer");
         validate();
 
         final CompositeServiceBuilder installOperation = serviceContainer.createComposite(logStreamRootServiceName(logName));
@@ -296,7 +297,6 @@ public class LogStreamBuilder
 
     private void validate()
     {
-        Objects.requireNonNull(serviceContainer, "serviceContainer");
         Objects.requireNonNull(logName, "logName");
         Objects.requireNonNull(getTopicName(), "topicName");
         ensureGreaterThanOrEqual("partitionId", partitionId, 0);

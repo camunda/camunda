@@ -16,14 +16,13 @@
 package io.zeebe.logstreams.processor;
 
 import java.time.Duration;
-import java.util.Objects;
+import java.util.*;
 
 import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
 import io.zeebe.logstreams.log.*;
 import io.zeebe.logstreams.spi.SnapshotStorage;
-import io.zeebe.servicecontainer.ServiceContainer;
-import io.zeebe.servicecontainer.ServiceName;
+import io.zeebe.servicecontainer.*;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
 
@@ -49,12 +48,19 @@ public class StreamProcessorBuilder
     protected boolean readOnly;
 
     protected ServiceContainer serviceContainer;
+    private List<ServiceName<?>> additionalDependencies;
 
     public StreamProcessorBuilder(int id, String name, StreamProcessor streamProcessor)
     {
         this.id = id;
         this.name = name;
         this.streamProcessor = streamProcessor;
+    }
+
+    public StreamProcessorBuilder additionalDependencies(List<ServiceName<?>> additionalDependencies)
+    {
+        this.additionalDependencies = additionalDependencies;
+        return this;
     }
 
     public StreamProcessorBuilder logStream(LogStream stream)
@@ -113,12 +119,19 @@ public class StreamProcessorBuilder
 
         final ServiceName<StreamProcessorService> serviceName = LogStreamServiceNames.streamProcessorService(logName, name);
         final StreamProcessorService service = new StreamProcessorService(controller, serviceContainer, serviceName);
-        return serviceContainer.createService(serviceName, service)
+        final ServiceBuilder<StreamProcessorService> serviceBuilder = serviceContainer.createService(serviceName, service)
             .dependency(LogStreamServiceNames.logStreamServiceName(logName))
             .dependency(LogStreamServiceNames.logWriteBufferServiceName(logName))
             .dependency(LogStreamServiceNames.logStorageServiceName(logName))
-            .dependency(LogStreamServiceNames.logBlockIndexServiceName(logName))
-            .installAndReturn();
+            .dependency(LogStreamServiceNames.logBlockIndexServiceName(logName));
+
+        if (additionalDependencies != null)
+        {
+            additionalDependencies.forEach((d) -> serviceBuilder.dependency(d));
+        }
+
+        return serviceBuilder.installAndReturn();
+
     }
 
     private void validate()
@@ -167,5 +180,4 @@ public class StreamProcessorBuilder
 
         return ctx;
     }
-
 }
