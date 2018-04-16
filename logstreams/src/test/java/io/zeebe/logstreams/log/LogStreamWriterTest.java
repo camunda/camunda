@@ -15,313 +15,309 @@
  */
 package io.zeebe.logstreams.log;
 
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedFramedLength;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.keyOffset;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.metadataOffset;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.positionOffset;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.producerIdOffset;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.sourceEventLogStreamPartitionIdOffset;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.sourceEventPositionOffset;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.valueOffset;
-import static io.zeebe.util.StringUtil.getBytes;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.zeebe.dispatcher.ClaimedFragment;
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.dispatcher.impl.log.LogBufferAppender;
-import io.zeebe.logstreams.impl.LogEntryDescriptor;
-import io.zeebe.util.buffer.BufferWriter;
+import io.zeebe.logstreams.util.*;
+import io.zeebe.util.buffer.DirectBufferWriter;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.mockito.stubbing.Answer;
+import org.junit.*;
+import org.junit.rules.*;
 
 public class LogStreamWriterTest
 {
-    private static final DirectBuffer TOPIC_NAME = wrapString("test-topic");
-    private static final int PARTITION_ID = 1;
-    private static final int TERM = 255;
-    private static final byte[] EVENT_VALUE = getBytes("test");
-    private static final byte[] EVENT_METADATA = getBytes("metadata");
+    private static final DirectBuffer EVENT_VALUE = wrapString("value");
+    private static final DirectBuffer EVENT_METADATA = wrapString("metadata");
 
-    private static final int MESSAGE_OFFSET = messageOffset(0);
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
 
-    @Mock
-    private LogStream mockLog;
+    public TemporaryFolder temporaryFolder = new TemporaryFolder();
+    public LogStreamRule logStreamRule = new LogStreamRule(temporaryFolder);
+    public LogStreamReaderRule readerRule = new LogStreamReaderRule(logStreamRule);
+    public LogStreamWriterRule writerRule = new LogStreamWriterRule(logStreamRule);
 
-    @Mock
-    private Dispatcher mockWriteBuffer;
-
-    @Mock
-    private BufferWriter mockBufferWriter;
-
-    @Mock
-    private BufferWriter mockMetadataWriter;
-
-    private UnsafeBuffer writeBuffer;
+    @Rule
+    public RuleChain ruleChain =
+        RuleChain.outerRule(temporaryFolder)
+                 .around(logStreamRule)
+                 .around(writerRule)
+                 .around(readerRule);
 
     private LogStreamWriter writer;
 
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
-
     @Before
-    public void init() throws Exception
+    public void setUp()
     {
-        MockitoAnnotations.initMocks(this);
+        writer = new LogStreamWriterImpl(logStreamRule.getLogStream());
 
-        when(mockLog.getWriteBuffer()).thenReturn(mockWriteBuffer);
-        when(mockLog.getTopicName()).thenReturn(TOPIC_NAME);
-        when(mockLog.getPartitionId()).thenReturn(PARTITION_ID);
-        when(mockLog.getTerm()).thenReturn(TERM);
+        logStreamRule.setCommitPosition(Long.MAX_VALUE);
+    }
 
-        writer = new LogStreamWriterImpl(mockLog);
+    private LoggedEvent getWrittenEvent(long position)
+    {
+        assertThat(position).isGreaterThan(0);
 
-        writeBuffer = new UnsafeBuffer(new byte[1024]);
+        writerRule.waitForPositionToBeAppended(position);
+
+        final LoggedEvent event = readerRule.readEventAtPosition(position);
+
+        assertThat(event)
+            .withFailMessage("No written event found at position: {}", position)
+            .isNotNull();
+
+        return event;
     }
 
     @Test
-    public void shouldWriteEvent()
+    public void shouldReturnPositionOfWrittenEvent()
     {
-        final long dispatcherPosition = 24L;
-        when(mockWriteBuffer.claim(any(ClaimedFragment.class), anyInt(), eq(PARTITION_ID))).thenAnswer(claimFragment(dispatcherPosition));
-
+        // when
         final long position = writer
-            .key(4L)
-            .value(new UnsafeBuffer(EVENT_VALUE))
+            .positionAsKey()
+            .value(EVENT_VALUE)
             .tryWrite();
 
-        assertThat(position).isEqualTo(dispatcherPosition);
-        assertThat(writeBuffer.getLong(positionOffset(MESSAGE_OFFSET))).isEqualTo(position);
+        // then
+        assertThat(position).isGreaterThan(0);
 
-        final byte[] valueBuffer = new byte[EVENT_VALUE.length];
-        writeBuffer.getBytes(valueOffset(MESSAGE_OFFSET, (short) 0), valueBuffer);
-        assertThat(valueBuffer).isEqualTo(EVENT_VALUE);
+        final LoggedEvent event = getWrittenEvent(position);
+        assertThat(event.getPosition()).isEqualTo(position);
     }
 
     @Test
     public void shouldWriteEventWithValueBuffer()
     {
-        when(mockWriteBuffer.claim(any(ClaimedFragment.class), anyInt(), anyInt())).thenAnswer(claimFragment(24));
-
-        writer
-            .key(4L)
-            .value(new UnsafeBuffer(EVENT_VALUE), 1, 2)
+        // when
+        final long position = writer
+            .positionAsKey()
+            .value(EVENT_VALUE)
             .tryWrite();
 
-        final byte[] valueBuffer = new byte[2];
-        writeBuffer.getBytes(valueOffset(MESSAGE_OFFSET, (short) 0), valueBuffer);
-        assertThat(valueBuffer).isEqualTo(new byte[] {EVENT_VALUE[1], EVENT_VALUE[2]});
+        // then
+        final LoggedEvent event = getWrittenEvent(position);
+        final DirectBuffer valueBuffer = event.getValueBuffer();
+        final UnsafeBuffer value = new UnsafeBuffer(valueBuffer, event.getValueOffset(), event.getValueLength());
+
+        assertThat(value).isEqualTo(EVENT_VALUE);
+    }
+
+    @Test
+    public void shouldWriteEventWithValueBufferPartially()
+    {
+        // when
+        final long position = writer
+            .positionAsKey()
+            .value(EVENT_VALUE, 1, 2)
+            .tryWrite();
+
+        // then
+        final LoggedEvent event = getWrittenEvent(position);
+        final DirectBuffer valueBuffer = event.getValueBuffer();
+        final UnsafeBuffer value = new UnsafeBuffer(valueBuffer, event.getValueOffset(), event.getValueLength());
+
+        assertThat(value).isEqualTo(new UnsafeBuffer(EVENT_VALUE, 1, 2));
     }
 
     @Test
     public void shouldWriteEventWithValueWriter()
     {
-        when(mockWriteBuffer.claim(any(ClaimedFragment.class), anyInt(), anyInt())).thenAnswer(claimFragment(24));
-
-        writer
-            .key(4L)
-            .valueWriter(mockBufferWriter)
+        // when
+        final long position = writer
+            .positionAsKey()
+            .valueWriter(new DirectBufferWriter().wrap(EVENT_VALUE))
             .tryWrite();
 
-        final int valueOffset = valueOffset(MESSAGE_OFFSET, (short) 0);
-        verify(mockBufferWriter).write(any(), eq(valueOffset));
+        // then
+        final LoggedEvent event = getWrittenEvent(position);
+        final DirectBuffer valueBuffer = event.getValueBuffer();
+        final UnsafeBuffer value = new UnsafeBuffer(valueBuffer, event.getValueOffset(), event.getValueLength());
+
+        assertThat(value).isEqualTo(EVENT_VALUE);
     }
 
     @Test
     public void shouldWriteEventWithMetadataBuffer()
     {
-        when(mockWriteBuffer.claim(any(ClaimedFragment.class), anyInt(), anyInt())).thenAnswer(claimFragment(24));
-
-        writer
-            .key(4L)
-            .metadata(new UnsafeBuffer(EVENT_METADATA), 3, 4)
-            .valueWriter(mockBufferWriter)
+        // when
+        final long position = writer
+            .positionAsKey()
+            .value(EVENT_VALUE)
+            .metadata(EVENT_METADATA)
             .tryWrite();
 
-        final byte[] valueBuffer = new byte[2];
-        writeBuffer.getBytes(metadataOffset(MESSAGE_OFFSET), valueBuffer);
-        assertThat(valueBuffer).isEqualTo(new byte[] {EVENT_METADATA[3], EVENT_METADATA[4]});
+        // then
+        final LoggedEvent event = getWrittenEvent(position);
+        final DirectBuffer metadataBuffer = event.getMetadata();
+        final UnsafeBuffer metadata = new UnsafeBuffer(metadataBuffer, event.getMetadataOffset(), event.getMetadataLength());
+
+        assertThat(metadata).isEqualTo(EVENT_METADATA);
+    }
+
+    @Test
+    public void shouldWriteEventWithMetadataBufferPartially()
+    {
+        // when
+        final long position = writer
+            .positionAsKey()
+            .value(EVENT_VALUE)
+            .metadata(EVENT_METADATA, 1, 2)
+            .tryWrite();
+
+        // then
+        final LoggedEvent event = getWrittenEvent(position);
+        final DirectBuffer metadataBuffer = event.getMetadata();
+        final UnsafeBuffer metadata = new UnsafeBuffer(metadataBuffer, event.getMetadataOffset(), event.getMetadataLength());
+
+        assertThat(metadata).isEqualTo(new UnsafeBuffer(EVENT_METADATA, 1, 2));
     }
 
     @Test
     public void shouldWriteEventWithMetadataWriter()
     {
-        when(mockWriteBuffer.claim(any(ClaimedFragment.class), anyInt(), anyInt())).thenAnswer(claimFragment(24));
-        when(mockMetadataWriter.getLength()).thenReturn(EVENT_METADATA.length);
-
-        writer
-            .key(4L)
-            .metadataWriter(mockMetadataWriter)
-            .valueWriter(mockBufferWriter)
+        // when
+        final long position = writer
+            .positionAsKey()
+            .value(EVENT_VALUE)
+            .metadataWriter(new DirectBufferWriter().wrap(EVENT_METADATA))
             .tryWrite();
 
-        final int valueOffset = metadataOffset(MESSAGE_OFFSET);
-        verify(mockMetadataWriter).write(any(), eq(valueOffset));
+        // then
+        final LoggedEvent event = getWrittenEvent(position);
+        final DirectBuffer metadataBuffer = event.getMetadata();
+        final UnsafeBuffer metadata = new UnsafeBuffer(metadataBuffer, event.getMetadataOffset(), event.getMetadataLength());
+
+        assertThat(metadata).isEqualTo(EVENT_METADATA);
     }
 
     @Test
     public void shouldWriteEventWithKey()
     {
-        when(mockWriteBuffer.claim(any(ClaimedFragment.class), anyInt(), anyInt())).thenAnswer(claimFragment(0));
-
-        writer
-            .key(4L)
-            .value(new UnsafeBuffer(EVENT_VALUE))
+        // when
+        final long position = writer
+            .key(123L)
+            .value(EVENT_VALUE)
             .tryWrite();
 
-        assertThat(writeBuffer.getLong(keyOffset(MESSAGE_OFFSET))).isEqualTo(4L);
+        // then
+        assertThat(getWrittenEvent(position).getKey()).isEqualTo(123L);
     }
 
     @Test
     public void shouldWriteEventWithPositionAsKey()
     {
-        when(mockWriteBuffer.claim(any(ClaimedFragment.class), anyInt(), anyInt())).thenAnswer(claimFragment(24));
-
+        // when
         final long position = writer
             .positionAsKey()
-            .value(new UnsafeBuffer(EVENT_VALUE))
+            .value(EVENT_VALUE)
             .tryWrite();
 
-        assertThat(writeBuffer.getLong(keyOffset(MESSAGE_OFFSET))).isEqualTo(position);
+        // then
+        assertThat(getWrittenEvent(position).getKey()).isEqualTo(position);
     }
 
     @Test
     public void shouldWriteEventWithSourceEvent()
     {
-        when(mockWriteBuffer.claim(any(ClaimedFragment.class), anyInt(), anyInt())).thenAnswer(claimFragment(0));
-
-        writer
+        // when
+        final long position = writer
             .positionAsKey()
-            .value(new UnsafeBuffer(EVENT_VALUE))
-            .sourceEvent(PARTITION_ID, 3L)
+            .value(EVENT_VALUE)
+            .sourceEvent(4, 123L)
             .tryWrite();
 
-        assertThat(writeBuffer.getInt(sourceEventLogStreamPartitionIdOffset(MESSAGE_OFFSET))).isEqualTo(PARTITION_ID);
-        assertThat(writeBuffer.getLong(sourceEventPositionOffset(MESSAGE_OFFSET))).isEqualTo(3L);
+        // then
+        final LoggedEvent event = getWrittenEvent(position);
+        assertThat(event.getSourceEventLogStreamPartitionId()).isEqualTo(4);
+        assertThat(event.getSourceEventPosition()).isEqualTo(123L);
     }
 
     @Test
     public void shouldWriteEventWithoutSourceEvent()
     {
-        when(mockWriteBuffer.claim(any(ClaimedFragment.class), anyInt(), anyInt())).thenAnswer(claimFragment(0));
-
-        writer
-            .positionAsKey()
-            .value(new UnsafeBuffer(EVENT_VALUE))
-            .tryWrite();
-
-        assertThat(writeBuffer.getInt(sourceEventLogStreamPartitionIdOffset(MESSAGE_OFFSET))).isEqualTo(-1);
-        assertThat(writeBuffer.getLong(sourceEventPositionOffset(MESSAGE_OFFSET))).isEqualTo(-1L);
-    }
-
-    @Test
-    public void shouldWriteEventWithStreamProcessorId()
-    {
-        when(mockWriteBuffer.claim(any(ClaimedFragment.class), anyInt(), anyInt())).thenAnswer(claimFragment(0));
-
-        writer
-            .positionAsKey()
-            .producerId(2)
-            .value(new UnsafeBuffer(EVENT_VALUE))
-            .tryWrite();
-
-        assertThat(writeBuffer.getInt(producerIdOffset(MESSAGE_OFFSET))).isEqualTo(2);
-    }
-
-    @Test
-    public void shouldRetryIfFailToClaimFragmentOnPaddingAtPartitionEnd()
-    {
-        when(mockWriteBuffer.claim(any(ClaimedFragment.class), anyInt(), anyInt()))
-            .thenReturn((long) LogBufferAppender.RESULT_PADDING_AT_END_OF_PARTITION)
-            .thenAnswer(claimFragment(24));
-
+        // when
         final long position = writer
-            .key(4L)
-            .value(new UnsafeBuffer(EVENT_VALUE))
+            .positionAsKey()
+            .value(EVENT_VALUE)
             .tryWrite();
 
-        assertThat(position).isEqualTo(24);
+        // then
+        final LoggedEvent event = getWrittenEvent(position);
+        assertThat(event.getSourceEventLogStreamPartitionId()).isEqualTo(-1);
+        assertThat(event.getSourceEventPosition()).isEqualTo(-1L);
     }
 
     @Test
-    public void shouldNotRetryIfFailToClaimFragmentOnPartitionEnd()
+    public void shouldWriteEventWithProducerId()
     {
-        when(mockWriteBuffer.claim(any(ClaimedFragment.class), anyInt(), anyInt()))
-            .thenReturn((long) LogBufferAppender.RESULT_END_OF_PARTITION)
-            .thenAnswer(claimFragment(24));
-
+        // when
         final long position = writer
-            .key(4L)
-            .value(new UnsafeBuffer(EVENT_VALUE))
+            .positionAsKey()
+            .value(EVENT_VALUE)
+            .producerId(123)
             .tryWrite();
 
-        assertThat(position).isEqualTo(-1);
+        // then
+        assertThat(getWrittenEvent(position).getProducerId()).isEqualTo(123);
     }
 
     @Test
-    public void shouldFailToWriteEventWithoutValue()
+    public void shouldWriteEventWithoutProducerId()
     {
-        when(mockWriteBuffer.claim(any(ClaimedFragment.class), anyInt(), anyInt())).thenAnswer(claimFragment(24));
-
-        thrown.expect(RuntimeException.class);
-        thrown.expectMessage("value must not be null");
-
-        writer
-            .key(4L)
+        // when
+        final long position = writer
+            .positionAsKey()
+            .value(EVENT_VALUE)
             .tryWrite();
+
+        // then
+        assertThat(getWrittenEvent(position).getProducerId()).isEqualTo(-1);
+    }
+
+    @Test
+    public void shouldWriteEventWithRaftTerm()
+    {
+        // given
+        logStreamRule.getLogStream().setTerm(123);
+
+        // when
+        final long position = writer
+            .positionAsKey()
+            .value(EVENT_VALUE)
+            .tryWrite();
+
+        // then
+        assertThat(getWrittenEvent(position).getRaftTerm()).isEqualTo(123);
     }
 
     @Test
     public void shouldFailToWriteEventWithoutKey()
     {
-        when(mockWriteBuffer.claim(any(ClaimedFragment.class), anyInt(), anyInt())).thenAnswer(claimFragment(24));
-
-        thrown.expect(RuntimeException.class);
-        thrown.expectMessage("key must be greater than or equal to 0");
-
-        writer
-            .value(new UnsafeBuffer(EVENT_VALUE))
-            .tryWrite();
+        // when
+        assertThatThrownBy(() ->
+        {
+            writer
+                .value(EVENT_VALUE)
+                .tryWrite();
+        })
+            .isInstanceOf(RuntimeException.class)
+            .hasMessage("key must be greater than or equal to 0");
     }
 
     @Test
-    public void shouldWriteEventRaftTerm()
+    public void shouldFailToWriteEventWithoutValue()
     {
-        when(mockWriteBuffer.claim(any(ClaimedFragment.class), anyInt(), anyInt())).thenAnswer(claimFragment(0));
-
-        writer
-            .key(4L)
-            .value(new UnsafeBuffer(EVENT_VALUE))
-            .tryWrite();
-
-        assertThat(writeBuffer.getInt(LogEntryDescriptor.raftTermOffset(MESSAGE_OFFSET))).isEqualTo(TERM);
-    }
-
-    protected Answer<?> claimFragment(final long offset)
-    {
-        return invocation ->
+        // when
+        assertThatThrownBy(() ->
         {
-            final ClaimedFragment claimedFragment = (ClaimedFragment) invocation.getArguments()[0];
-            final int length = (int) invocation.getArguments()[1];
-
-            claimedFragment.wrap(writeBuffer, 0, alignedFramedLength(length), () ->
-            { });
-
-            return offset + alignedFramedLength(length);
-        };
+            writer
+                .positionAsKey()
+                .tryWrite();
+        })
+            .isInstanceOf(RuntimeException.class)
+            .hasMessage("value must not be null");
     }
 
 }
