@@ -123,11 +123,10 @@ public class ServiceContainerImpl extends Actor implements ServiceContainer
 
         actor.run(() ->
         {
+            final ServiceName<?> serviceName = serviceBuilder.getName();
             if (state == ContainerState.OPEN)
             {
                 final ServiceController serviceController = new ServiceController(serviceBuilder, this, future);
-
-                final ServiceName<?> serviceName = serviceBuilder.getName();
 
                 if (!hasService(serviceController.getServiceName()))
                 {
@@ -141,7 +140,7 @@ public class ServiceContainerImpl extends Actor implements ServiceContainer
             }
             else
             {
-                final String errorMessage = String.format("Cannot install new service into the contianer, state is '%s'", state);
+                final String errorMessage = String.format("Cannot install new service %s into the contianer, state is '%s'", serviceName, state);
                 future.completeExceptionally(new IllegalStateException(errorMessage));
             }
 
