@@ -19,6 +19,7 @@ import java.util.Set;
 
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.END_DATE;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.ENGINE;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_DEFINITION_ID;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_INSTANCE_ID;
 import static org.camunda.optimize.service.es.schema.type.UnfinishedProcessInstanceTrackingType.PROCESS_INSTANCE_IDS;
 import static org.camunda.optimize.service.es.schema.type.UnfinishedProcessInstanceTrackingType.UNFINISHED_PROCESS_INSTANCE_TRACKING_TYPE;
@@ -97,12 +98,13 @@ public class UnfinishedProcessInstanceImportIndexHandler extends ScrollBasedImpo
       .mustNot(existsQuery(END_DATE))
       .mustNot(termsLookupQuery(PROCESS_INSTANCE_ID, termsLookup))
       .must(termQuery(ENGINE, engineContext.getEngineAlias()));
-    if (configurationService.getProcessDefinitionIdsToImport() != null &&
-      !configurationService.getProcessDefinitionIdsToImport().isEmpty()) {
+    if (configurationService.areProcessDefinitionsToImportDefined()) {
+      BoolQueryBuilder matchConfiguredProcessDefinitions = QueryBuilders.boolQuery();
       for (String processDefinitionId : configurationService.getProcessDefinitionIdsToImport()) {
-        query
-          .should(QueryBuilders.termQuery("processDefinitionId", processDefinitionId));
+        matchConfiguredProcessDefinitions
+          .should(termQuery(PROCESS_DEFINITION_ID, processDefinitionId));
       }
+      query.must(matchConfiguredProcessDefinitions);
     }
     return query;
   }

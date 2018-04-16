@@ -30,10 +30,10 @@ public class ProcessDefinitionXmlFetcher
   @Override
   protected List<ProcessDefinitionXmlEngineDto> fetchEntities(IdSetBasedImportPage page) {
     Set<String> ids = page.getIds();
-    return fetchAllXmls(new ArrayList<>(ids));
+    return fetchXmlsForDefinitions(new ArrayList<>(ids));
   }
 
-  private List<ProcessDefinitionXmlEngineDto> fetchAllXmls(List<String> processDefinitionIds) {
+  private List<ProcessDefinitionXmlEngineDto> fetchXmlsForDefinitions(List<String> processDefinitionIds) {
     List<ProcessDefinitionXmlEngineDto> xmls = new ArrayList<>(processDefinitionIds.size());
     long requestStart = System.currentTimeMillis();
     for (String processDefinitionId : processDefinitionIds) {

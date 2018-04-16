@@ -122,7 +122,7 @@ public abstract class DefinitionBasedImportIndexHandler
    * for every respective process definition. Thus, we are not importing
    * all the once again, but starting from the last point we stopped at.
    */
-  public void restartImportCycle() {
+  public void executeAfterMaxBackoffIsReached() {
     logger.debug("Restarting import cycle for type [{}]", getElasticsearchType());
     allDefinitionsWithoutNewData = true;
     addPossiblyNewDefinitionsFromEngineToImportList();
@@ -135,7 +135,7 @@ public abstract class DefinitionBasedImportIndexHandler
   }
 
   public void updateImportIndex() {
-    restartImportCycle();
+    executeAfterMaxBackoffIsReached();
   }
 
   @Override

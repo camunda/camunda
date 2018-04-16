@@ -47,7 +47,7 @@ public abstract class ScrollBasedImportIndexHandler
 
   private Long importIndex = 0L;
 
-  private Set<String> fetchNextPageOfProcessInstanceIds() {
+  private Set<String> fetchNextPageOfIds() {
     if (scrollId == null) {
       return performInitialSearchQuery();
     } else {
@@ -77,11 +77,11 @@ public abstract class ScrollBasedImportIndexHandler
 
   @Override
   public IdSetBasedImportPage getNextPage() {
-    Set<String> ids = fetchNextPageOfProcessInstanceIds();
+    Set<String> ids = fetchNextPageOfIds();
     if (ids.isEmpty()) {
       resetScroll();
       //it might be the case that new PI's have been imported
-      ids = fetchNextPageOfProcessInstanceIds();
+      ids = fetchNextPageOfIds();
     }
     IdSetBasedImportPage page = new IdSetBasedImportPage();
     page.setIds(ids);
@@ -161,7 +161,7 @@ public abstract class ScrollBasedImportIndexHandler
   }
 
   @Override
-  public void restartImportCycle() {
+  public void executeAfterMaxBackoffIsReached() {
     // nothing to do here
   }
 

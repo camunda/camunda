@@ -80,7 +80,7 @@ public abstract class AllEntitiesBasedImportIndexHandler
   }
 
   @Override
-  public void restartImportCycle() {
+  public void executeAfterMaxBackoffIsReached() {
     resetImportIndex();
   }
 }

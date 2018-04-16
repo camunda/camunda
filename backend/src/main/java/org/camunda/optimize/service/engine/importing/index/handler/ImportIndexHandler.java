@@ -35,7 +35,7 @@ public interface ImportIndexHandler<PAGE extends ImportPage, INDEX> {
    */
   void resetImportIndex();
 
-  void restartImportCycle();
+  void executeAfterMaxBackoffIsReached();
 
   EngineContext getEngineContext();
 }

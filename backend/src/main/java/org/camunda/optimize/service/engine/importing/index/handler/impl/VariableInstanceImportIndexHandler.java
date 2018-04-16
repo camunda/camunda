@@ -22,6 +22,7 @@ import java.util.Set;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.BOOLEAN_VARIABLES;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.DATE_VARIABLES;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.DOUBLE_VARIABLES;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.END_DATE;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.ENGINE;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.INTEGER_VARIABLES;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.LONG_VARIABLES;
@@ -104,7 +105,7 @@ public class VariableInstanceImportIndexHandler extends ScrollBasedImportIndexHa
     BoolQueryBuilder query = QueryBuilders.boolQuery();
     query
       .must(termQuery(ENGINE, engineContext.getEngineAlias()))
-      .must(existsQuery(START_DATE))
+      .must(existsQuery(END_DATE))
       .mustNot(termsLookupQuery(PROCESS_INSTANCE_ID, termsLookup))
       .mustNot(existsQuery(BOOLEAN_VARIABLES))
       .mustNot(existsQuery(DOUBLE_VARIABLES))
@@ -114,10 +115,12 @@ public class VariableInstanceImportIndexHandler extends ScrollBasedImportIndexHa
       .mustNot(existsQuery(DATE_VARIABLES))
       .mustNot(existsQuery(INTEGER_VARIABLES));
     if (configurationService.areProcessDefinitionsToImportDefined()) {
+      BoolQueryBuilder matchConfiguredProcessDefinitions = QueryBuilders.boolQuery();
       for (String processDefinitionId : configurationService.getProcessDefinitionIdsToImport()) {
-        query
+        matchConfiguredProcessDefinitions
           .should(termQuery(PROCESS_DEFINITION_ID, processDefinitionId));
       }
+      query.must(matchConfiguredProcessDefinitions);
     }
     return query;
   }

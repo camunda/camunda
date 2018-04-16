@@ -282,36 +282,6 @@ public class ImportIT  {
     assertThat(variablesResponseDtos.size(),is(variables.size()));
   }
 
-   @Test
-  public void variableImportWorksForUnfinishedProcesses() {
-    //given
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-          .startEvent()
-            .userTask()
-          .endEvent()
-        .done();
-
-    Map<String, Object> variables = createPrimitiveTypeVariables();
-    ProcessInstanceEngineDto instanceDto =
-      engineRule.deployAndStartProcessWithVariables(processModel, variables);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-
-    //when
-    List<VariableRetrievalDto> variablesResponseDtos =
-      embeddedOptimizeRule.target("variables")
-        .queryParam("processDefinitionKey", instanceDto.getProcessDefinitionKey())
-        .queryParam("processDefinitionVersion", instanceDto.getProcessDefinitionVersion())
-        .request()
-        .header(HttpHeaders.AUTHORIZATION,embeddedOptimizeRule.getAuthorizationHeader())
-        .get(new GenericType<List<VariableRetrievalDto>>(){});
-
-    //then
-    assertThat(variablesResponseDtos.size(),is(variables.size()));
-  }
-
   @Test
   public void variablesWithComplexTypeAreNotImported() {
     // given

@@ -40,7 +40,7 @@ public abstract class BackoffImportMediator<T extends ImportIndexHandler> implem
 
   private static final long STARTING_BACKOFF = 0;
   private long backoffCounter = STARTING_BACKOFF;
-  private OffsetDateTime dateUntilPaginationIsBlocked = OffsetDateTime.now().minusMinutes(1L);
+  private OffsetDateTime dateUntilImportIsBlocked = OffsetDateTime.now().minusMinutes(1L);
 
   @PostConstruct
   private void initialize() {
@@ -76,19 +76,19 @@ public abstract class BackoffImportMediator<T extends ImportIndexHandler> implem
     }
   }
 
-  private void restartImportCycle() {
-    importIndexHandler.restartImportCycle();
+  private void executeAfterMaxBackoffIsReached() {
+    importIndexHandler.executeAfterMaxBackoffIsReached();
   }
 
   private void calculateNewDateUntilIsBlocked() {
     if (configurationService.isBackoffEnabled()) {
       backoffCounter = Math.min(backoffCounter + 1, configurationService.getMaximumBackoff());
       if (backoffCounter == configurationService.getMaximumBackoff()) {
-        restartImportCycle();
+        executeAfterMaxBackoffIsReached();
       } else {
         long interval = configurationService.getImportHandlerWait();
         long sleepTimeInMs = interval * backoffCounter;
-        dateUntilPaginationIsBlocked = OffsetDateTime.now().plus(sleepTimeInMs, ChronoUnit.MILLIS);
+        dateUntilImportIsBlocked = OffsetDateTime.now().plus(sleepTimeInMs, ChronoUnit.MILLIS);
         logDebugSleepInformation(sleepTimeInMs);
       }
     }
@@ -102,7 +102,7 @@ public abstract class BackoffImportMediator<T extends ImportIndexHandler> implem
   }
 
   private boolean isReadyToFetchNextPage() {
-    return dateUntilPaginationIsBlocked.isBefore(OffsetDateTime.now());
+    return dateUntilImportIsBlocked.isBefore(OffsetDateTime.now());
   }
 
   @Override
@@ -119,7 +119,7 @@ public abstract class BackoffImportMediator<T extends ImportIndexHandler> implem
    * @return time to sleep for import process of an engine in general
    */
   public long getBackoffTimeInMs() {
-    long backoffTime = configurationService.isBackoffEnabled() ? OffsetDateTime.now().until(dateUntilPaginationIsBlocked, ChronoUnit.MILLIS) : 0L;
+    long backoffTime = configurationService.isBackoffEnabled() ? OffsetDateTime.now().until(dateUntilImportIsBlocked, ChronoUnit.MILLIS) : 0L;
     backoffTime = Math.max(0, backoffTime);
     return backoffTime;
   }
@@ -127,7 +127,7 @@ public abstract class BackoffImportMediator<T extends ImportIndexHandler> implem
   @Override
   public void resetBackoff() {
     this.backoffCounter = STARTING_BACKOFF;
-    dateUntilPaginationIsBlocked = OffsetDateTime.now().minusMinutes(1L);
+    dateUntilImportIsBlocked = OffsetDateTime.now().minusMinutes(1L);
   }
 
 }
