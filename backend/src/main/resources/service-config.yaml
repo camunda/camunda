@@ -173,20 +173,6 @@ import:
       max: 15
       #Tells if the backoff is enabled of not.
       isEnabled: true
-    pages:
-      resetInterval:
-        #Chronological unit used to calculate index reloadConfiguration due date.
-        #Possible values are:
-        #
-        #Seconds, Minutes, Hours, HalfDays, Days, Weeks, Months
-        #
-        #in case not supported value is provided 'Minutes' will be used
-        #for interval calculation.
-        unit: Hours
-        #Interval the import is started all over again, meaning only missing 
-        #entities are fetched during the import restart. The data already    
-        #imported is kept.                                                   
-        value: 12
   #The name of the import index type.
   indexType: import-index
   #The name of the id set based import index type
