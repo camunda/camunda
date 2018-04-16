@@ -20,6 +20,7 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
@@ -41,17 +42,17 @@ public class EngineProcessDefinitions {
   private List<DefinitionBasedImportPage> availableProcessDefinitions = new ArrayList<>();
   private OffsetDateTime timeToLoad = OffsetDateTime.now().minusMinutes(1);
 
-  public List<DefinitionBasedImportPage> getAvailableProcessDefinitions(EngineContext engineContext) {
+  public LinkedList<DefinitionBasedImportPage> getAvailableProcessDefinitions(EngineContext engineContext) {
     if (haveToReload()) {
       availableProcessDefinitions = retrieveDefinitionsToImport(engineContext);
       if (!availableProcessDefinitions.isEmpty()) {
         timeToLoad = OffsetDateTime.now().plusMinutes(5);
       }
     }
-    return availableProcessDefinitions
-      .stream()
-      .map(DefinitionBasedImportPage::copy)
-      .collect(Collectors.toList());
+    LinkedList<DefinitionBasedImportPage> result = new LinkedList<>();
+    availableProcessDefinitions
+      .forEach(s -> result.add(s.copy()));
+    return result;
   }
 
   private boolean haveToReload() {

@@ -2,14 +2,13 @@ package org.camunda.optimize.dto.optimize.importing.index;
 
 import org.camunda.optimize.service.engine.importing.index.page.DefinitionBasedImportPage;
 
-import java.util.List;
+import java.util.LinkedList;
+import java.util.Queue;
 
 public class DefinitionBasedImportIndexDto implements ImportIndexDto {
 
   protected DefinitionBasedImportPage currentProcessDefinition;
-  protected long totalEntitiesImported;
-  protected List<DefinitionBasedImportPage> alreadyImportedProcessDefinitions;
-  protected List<DefinitionBasedImportPage> processDefinitionsToImport;
+  protected LinkedList<DefinitionBasedImportPage> processDefinitionsToImport;
   protected String esTypeIndexRefersTo;
   protected String engine;
 
@@ -21,29 +20,12 @@ public class DefinitionBasedImportIndexDto implements ImportIndexDto {
     this.currentProcessDefinition = currentProcessDefinition;
   }
 
-  public List<DefinitionBasedImportPage> getAlreadyImportedProcessDefinitions() {
-    return alreadyImportedProcessDefinitions;
-  }
-
-  public void setAlreadyImportedProcessDefinitions(List<DefinitionBasedImportPage>
-                                                     alreadyImportedProcessDefinitions) {
-    this.alreadyImportedProcessDefinitions = alreadyImportedProcessDefinitions;
-  }
-
-  public List<DefinitionBasedImportPage> getProcessDefinitionsToImport() {
+  public LinkedList<DefinitionBasedImportPage> getProcessDefinitionsToImport() {
     return processDefinitionsToImport;
   }
 
-  public void setProcessDefinitionsToImport(List<DefinitionBasedImportPage> processDefinitionsToImport) {
+  public void setProcessDefinitionsToImport(LinkedList<DefinitionBasedImportPage> processDefinitionsToImport) {
     this.processDefinitionsToImport = processDefinitionsToImport;
-  }
-
-  public long getTotalEntitiesImported() {
-    return totalEntitiesImported;
-  }
-
-  public void setTotalEntitiesImported(long totalEntitiesImported) {
-    this.totalEntitiesImported = totalEntitiesImported;
   }
 
   public String getEngine() {

@@ -7,7 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
-import java.util.List;
+import java.util.LinkedList;
 import java.util.Map;
 
 /**
@@ -22,7 +22,7 @@ public class ProcessDefinitionManager {
 
   private Map<String, EngineProcessDefinitions> engineAliasToProcessDefinitions = new HashMap<>();
 
-  public List<DefinitionBasedImportPage> getAvailableProcessDefinitions(EngineContext engineContext) {
+  public LinkedList<DefinitionBasedImportPage> getAvailableProcessDefinitions(EngineContext engineContext) {
     String engineAlias = engineContext.getEngineAlias();
     if (!engineAliasToProcessDefinitions.containsKey(engineAlias)) {
       engineAliasToProcessDefinitions.put(engineAlias, beanFactory.getBean(EngineProcessDefinitions.class));

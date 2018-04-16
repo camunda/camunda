@@ -24,7 +24,6 @@ public class FinishedProcessInstanceEngineImportMediator
   extends BackoffImportMediator<FinishedProcessInstanceImportIndexHandler> {
 
   protected EngineContext engineContext;
-  private FinishedProcessInstanceImportIndexHandler importIndexHandler;
   private FinishedProcessInstanceFetcher engineEntityFetcher;
   private FinishedProcessInstanceImportService finishedProcessInstanceImportService;
   @Autowired
@@ -64,10 +63,10 @@ public class FinishedProcessInstanceEngineImportMediator
       finishedProcessInstanceImportService.executeImport(entities);
     }
     if (entities.size() < configurationService.getEngineImportProcessInstanceMaxPageSize()) {
-      if (importIndexHandler.hasStillNewDefinitionsToImport()) {
-        importIndexHandler.moveToNextDefinitionToImport();
-      } else {
+      if (importIndexHandler.finishedDefinitionRoundWithoutNewData()) {
         return false;
+      } else {
+        importIndexHandler.moveToNextDefinitionToImport();
       }
     }
     return true;

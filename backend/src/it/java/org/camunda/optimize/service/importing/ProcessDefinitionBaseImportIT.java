@@ -31,7 +31,6 @@ import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.isIn;
 import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.fail;
 
@@ -173,32 +172,27 @@ public class ProcessDefinitionBaseImportIT {
     //given
     int oldPageSize = configurationService.getEngineImportProcessInstanceMaxPageSize();
     configurationService.setEngineImportProcessInstanceMaxPageSize(1);
-    ArrayList<String> ids = new ArrayList<>();
 
     BpmnModelInstance simpleServiceTaskProcess = createSimpleServiceTaskProcess();
 
     ProcessInstanceEngineDto latestProcessInstance = engineRule.deployAndStartProcess(simpleServiceTaskProcess);
-    String latestPd = latestProcessInstance.getDefinitionId();
-    ids.add(latestPd);
 
     simpleServiceTaskProcess = createSimpleServiceTaskProcess();
     latestProcessInstance = engineRule.deployAndStartProcess(simpleServiceTaskProcess);
-    latestPd = latestProcessInstance.getDefinitionId();
-    ids.add(latestPd);
+    String latestPd = latestProcessInstance.getDefinitionId();
 
-    embeddedOptimizeRule.updateImportIndex();
 
     //when
+    embeddedOptimizeRule.updateImportIndex();
     embeddedOptimizeRule.scheduleImport();
-
-    //then
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
+    //then
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(elasticSearchRule.getProcessInstanceType());
     assertThat(idsResp.getHits().getTotalHits(), is(not(0)));
     for (SearchHit searchHitFields : idsResp.getHits()) {
-      assertThat(idsResp.getHits().getTotalHits(), is((long) ids.size()));
-      assertThat((String) searchHitFields.getSourceAsMap().get("processDefinitionId"), isIn(ids));
+      assertThat(idsResp.getHits().getTotalHits(), is(1L));
+      assertThat(searchHitFields.getSourceAsMap().get("processDefinitionId"), is(latestPd));
     }
     configurationService.setEngineImportProcessInstanceMaxPageSize(oldPageSize);
   }
@@ -253,7 +247,7 @@ public class ProcessDefinitionBaseImportIT {
   }
 
   private BpmnModelInstance createSimpleServiceTaskProcess() {
-    return Bpmn.createExecutableProcess("ASimpleServiceTaskProcess" + System.currentTimeMillis())
+    return Bpmn.createExecutableProcess("ASimpleServiceTaskProcess")
       .startEvent()
       .serviceTask()
         .camundaExpression("${true}")

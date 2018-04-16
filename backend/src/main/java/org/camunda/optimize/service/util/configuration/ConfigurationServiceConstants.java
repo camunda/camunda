@@ -81,8 +81,6 @@ public interface ConfigurationServiceConstants {
   String TOKENIZER = "$.es.analyzer.tokenizer";
   String TOKEN_FILTER = "$.es.analyzer.tokenfilter";
   String IMPORT_HANDLER_INTERVAL = "$.import.handler.backoff.interval";
-  String IMPORT_RESET_INTERVAL_VALUE = "$.import.handler.pages.resetInterval.value";
-  String IMPORT_RESET_INTERVAL_UNIT = "$.import.handler.pages.resetInterval.unit";
   String MAXIMUM_BACK_OFF = "$.import.handler.backoff.max";
   String IS_BACK_OFF_ENABLED = "$.import.handler.backoff.isEnabled";
   String ES_REFRESH_INTERVAL = "$.es.settings.index.refresh_interval";

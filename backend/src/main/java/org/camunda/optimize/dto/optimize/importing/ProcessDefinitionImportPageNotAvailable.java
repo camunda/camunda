@@ -5,4 +5,9 @@ import org.camunda.optimize.service.engine.importing.index.page.DefinitionBasedI
 public class ProcessDefinitionImportPageNotAvailable extends DefinitionBasedImportPage {
 
   protected String processDefinitionId = "notAvailable";
+
+  @Override
+  public String getProcessDefinitionId() {
+    return processDefinitionId;
+  }
 }

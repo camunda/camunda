@@ -115,8 +115,6 @@ public class ConfigurationService {
   private Long engineImportActivityInstanceMaxPageSize;
   private Boolean defaultUserCreationEnabled;
   private String groupsEndpoint;
-  private Integer importResetIntervalValue;
-  private String importResetIntervalUnit;
   private String containerHost;
   private String containerKeystorePassword;
   private String containerKeystoreLocation;
@@ -712,13 +710,6 @@ public class ConfigurationService {
     return groupsEndpoint;
   }
 
-  public String getImportResetIntervalUnit() {
-    if (importResetIntervalUnit == null) {
-      importResetIntervalUnit = jsonContext.read(ConfigurationServiceConstants.IMPORT_RESET_INTERVAL_UNIT);
-    }
-    return importResetIntervalUnit;
-  }
-
   public String getContainerHost() {
     if (containerHost == null) {
       containerHost = jsonContext.read(ConfigurationServiceConstants.CONTAINER_HOST);
@@ -822,13 +813,6 @@ public class ConfigurationService {
       dashboardShareType = jsonContext.read(ConfigurationServiceConstants.DASHBOARD_SHARE_TYPE);
     }
     return dashboardShareType;
-  }
-
-  public Integer getImportResetIntervalValue() {
-    if (importResetIntervalValue == null) {
-      importResetIntervalValue = jsonContext.read(ConfigurationServiceConstants.IMPORT_RESET_INTERVAL_VALUE);
-    }
-    return importResetIntervalValue;
   }
 
   public String getHviCountEndpoint() {
@@ -1165,10 +1149,6 @@ public class ConfigurationService {
     this.hpiEndpoint = hpiEndpoint;
   }
 
-  public void setImportResetIntervalValue(Integer importResetIntervalValue) {
-    this.importResetIntervalValue = importResetIntervalValue;
-  }
-
   public void setElasticsearchScrollTimeout(Integer elasticsearchScrollTimeout) {
     this.elasticsearchScrollTimeout = elasticsearchScrollTimeout;
   }
@@ -1293,10 +1273,6 @@ public class ConfigurationService {
 
   public void setGroupsEndpoint(String groupsEndpoint) {
     this.groupsEndpoint = groupsEndpoint;
-  }
-
-  public void setImportResetIntervalUnit(String importResetIntervalUnit) {
-    this.importResetIntervalUnit = importResetIntervalUnit;
   }
 
   public void setContainerHost(String containerHost) {

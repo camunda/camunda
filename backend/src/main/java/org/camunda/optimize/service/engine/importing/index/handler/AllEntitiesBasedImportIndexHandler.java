@@ -81,6 +81,6 @@ public abstract class AllEntitiesBasedImportIndexHandler
 
   @Override
   public void restartImportCycle() {
-    // nothing to do here
+    resetImportIndex();
   }
 }

@@ -259,16 +259,6 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     return indexes;
   }
 
-  public List<DefinitionBasedImportIndexHandler> getDefinitionBasedImportIndexHandler() {
-    List<DefinitionBasedImportIndexHandler> indexes = new LinkedList<>();
-    for (ImportIndexHandler importIndexHandler : getIndexProvider().getAllHandlers()) {
-      if (importIndexHandler instanceof DefinitionBasedImportIndexHandler) {
-        indexes.add((DefinitionBasedImportIndexHandler) importIndexHandler);
-      }
-    }
-    return indexes;
-  }
-
   public void resetImportStartIndexes() {
     for (ImportIndexHandler importIndexHandler : getIndexProvider().getAllHandlers()) {
       importIndexHandler.resetImportIndex();

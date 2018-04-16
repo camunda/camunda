@@ -7,7 +7,6 @@ import org.camunda.optimize.dto.optimize.query.report.result.MapReportResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableRetrievalDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
-import org.camunda.optimize.service.engine.importing.index.handler.DefinitionBasedImportIndexHandler;
 import org.camunda.optimize.service.util.configuration.EngineConfiguration;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -415,15 +414,16 @@ public class ImportIT  {
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     embeddedOptimizeRule.storeImportIndexesToElasticsearch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    List<Long> firstRoundIndexes = embeddedOptimizeRule.getImportIndexes();
 
     // when
     embeddedOptimizeRule.stopOptimize();
     embeddedOptimizeRule.startOptimize();
-    List<DefinitionBasedImportIndexHandler> handler = embeddedOptimizeRule.getDefinitionBasedImportIndexHandler();
+    List<Long> secondsRoundIndexes = embeddedOptimizeRule.getImportIndexes();
 
     // then
-    for (DefinitionBasedImportIndexHandler definitionBasedImportIndexHandler : handler) {
-      assertThat(definitionBasedImportIndexHandler.hasStillNewDefinitionsToImport(), is(false));
+    for (int i = 0; i < firstRoundIndexes.size(); i++) {
+      assertThat(firstRoundIndexes.get(i), is(secondsRoundIndexes.get(i)));
     }
   }
 

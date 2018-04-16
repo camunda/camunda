@@ -14,11 +14,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.annotation.PostConstruct;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 public abstract class DefinitionBasedImportIndexHandler
   implements ImportIndexHandler<DefinitionBasedImportPage, DefinitionBasedImportIndexDto> {
@@ -34,10 +32,11 @@ public abstract class DefinitionBasedImportIndexHandler
   @Autowired
   protected BeanHelper beanHelper;
 
-  private List<DefinitionBasedImportPage> processDefinitionsToImport = new ArrayList<>();
-  private Set<DefinitionBasedImportPage> alreadyImportedProcessDefinitions = new HashSet<>();
+  private LinkedList<DefinitionBasedImportPage> processDefinitionsToImport = new LinkedList<>();
 
-  private DefinitionBasedImportPage currentIndex = new ProcessDefinitionImportPageNotAvailable();
+  private DefinitionBasedImportPage lastPage;
+  private DefinitionBasedImportPage currentPage = new ProcessDefinitionImportPageNotAvailable();
+  private boolean allDefinitionsWithoutNewData = false;
 
   protected EngineContext engineContext;
 
@@ -52,7 +51,8 @@ public abstract class DefinitionBasedImportIndexHandler
   }
 
   public void updateIndexTimestamp(OffsetDateTime timestamp) {
-    currentIndex.setTimestampOfLastEntity(timestamp);
+    currentPage.setTimestampOfLastEntity(timestamp);
+    allDefinitionsWithoutNewData = false;
   }
 
   /**
@@ -66,56 +66,46 @@ public abstract class DefinitionBasedImportIndexHandler
       importIndexReader.getImportIndex(getElasticsearchType(), engineContext.getEngineAlias());
     if (dto.isPresent()) {
       DefinitionBasedImportIndexDto loadedImportIndex = dto.get();
-      alreadyImportedProcessDefinitions = new HashSet<>(loadedImportIndex.getAlreadyImportedProcessDefinitions());
       processDefinitionsToImport = loadedImportIndex.getProcessDefinitionsToImport();
-      currentIndex = loadedImportIndex.getCurrentProcessDefinition();
+      currentPage = loadedImportIndex.getCurrentProcessDefinition();
+      lastPage = processDefinitionsToImport.isEmpty()? currentPage: processDefinitionsToImport.peekLast();
     }
   }
 
   @Override
   public DefinitionBasedImportPage getNextPage() {
     DefinitionBasedImportPage page = new DefinitionBasedImportPage();
-    page.setTimestampOfLastEntity(currentIndex.getTimestampOfLastEntity());
-    page.setProcessDefinitionId(currentIndex.getProcessDefinitionId());
+    page.setTimestampOfLastEntity(currentPage.getTimestampOfLastEntity());
+    page.setProcessDefinitionId(currentPage.getProcessDefinitionId());
     return page;
   }
 
-  private void resetCurrentIndex() {
-    currentIndex = new ProcessDefinitionImportPageNotAvailable();
-  }
-
   public void moveToNextDefinitionToImport() {
-    if (hasStillNewDefinitionsToImport()) {
-      if (!(currentIndex instanceof ProcessDefinitionImportPageNotAvailable)) {
-        alreadyImportedProcessDefinitions.add(currentIndex);
-      }
-      currentIndex = removeFirstItemFromProcessDefinitionsToImport();
+    if (currentPage == lastPage) {
+      allDefinitionsWithoutNewData = true;
+      addPossiblyNewDefinitionsFromEngineToImportList();
     }
-  }
-
-  private DefinitionBasedImportPage removeFirstItemFromProcessDefinitionsToImport() {
-    DefinitionBasedImportPage result;
-    if (hasStillNewDefinitionsToImport()) {
-      result = processDefinitionsToImport.remove(0);
-    } else {
-      result = currentIndex;
+    DefinitionBasedImportPage result = processDefinitionsToImport.poll();
+    if (result != null) {
+      processDefinitionsToImport.add(currentPage);
+      currentPage = result;
     }
-    return result;
-  }
-
-  public boolean hasStillNewDefinitionsToImport() {
-    return !processDefinitionsToImport.isEmpty();
   }
 
   private void initializeDefinitions() {
     this.processDefinitionsToImport = processDefinitionManager.getAvailableProcessDefinitions(engineContext);
+    if(!processDefinitionsToImport.isEmpty()) {
+      lastPage = processDefinitionsToImport.peekLast();
+      currentPage = processDefinitionsToImport.poll();
+    } else {
+      currentPage = new ProcessDefinitionImportPageNotAvailable();
+    }
   }
 
   @Override
   public DefinitionBasedImportIndexDto createIndexInformationForStoring() {
     DefinitionBasedImportIndexDto indexToStore = new DefinitionBasedImportIndexDto();
-    indexToStore.setCurrentProcessDefinition(currentIndex);
-    indexToStore.setAlreadyImportedProcessDefinitions(new ArrayList<>(alreadyImportedProcessDefinitions));
+    indexToStore.setCurrentProcessDefinition(currentPage);
     indexToStore.setProcessDefinitionsToImport(processDefinitionsToImport);
     indexToStore.setEngine(this.engineContext.getEngineAlias());
     indexToStore.setEsTypeIndexRefersTo(getElasticsearchType());
@@ -133,35 +123,31 @@ public abstract class DefinitionBasedImportIndexHandler
    * all the once again, but starting from the last point we stopped at.
    */
   public void restartImportCycle() {
-    if(!hasStillNewDefinitionsToImport()) {
-      logger.debug("Restarting import cycle for type [{}]", getElasticsearchType());
-      processDefinitionsToImport.addAll(alreadyImportedProcessDefinitions);
-      addPossiblyNewDefinitionsFromEngineToImportList();
-      alreadyImportedProcessDefinitions = new HashSet<>();
-    }
-  }
-
-  private void loadImportDefaults() {
-    initializeDefinitions();
-    resetAlreadyImportedProcessDefinitions();
-    resetCurrentIndex();
+    logger.debug("Restarting import cycle for type [{}]", getElasticsearchType());
+    allDefinitionsWithoutNewData = true;
+    addPossiblyNewDefinitionsFromEngineToImportList();
     moveToNextDefinitionToImport();
   }
 
-  private void resetAlreadyImportedProcessDefinitions() {
-    alreadyImportedProcessDefinitions = new HashSet<>(processDefinitionsToImport.size());
+  private void loadImportDefaults() {
+    allDefinitionsWithoutNewData = true;
+    initializeDefinitions();
   }
 
   public void updateImportIndex() {
-    addPossiblyNewDefinitionsFromEngineToImportList();
+    restartImportCycle();
+  }
+
+  @Override
+  public EngineContext getEngineContext() {
+    return engineContext;
   }
 
   private void addPossiblyNewDefinitionsFromEngineToImportList() {
     List<DefinitionBasedImportPage> engineList = processDefinitionManager.getAvailableProcessDefinitions(engineContext);
     for (DefinitionBasedImportPage definition : engineList) {
       boolean notImportedAndNew = !processDefinitionsToImport.contains(definition) &&
-          !currentIndex.getProcessDefinitionId().equals(definition.getProcessDefinitionId()) &&
-          !new ArrayList<>(alreadyImportedProcessDefinitions).contains(definition);
+          !currentPage.getProcessDefinitionId().equals(definition.getProcessDefinitionId());
       if (notImportedAndNew && configurationService.areProcessDefinitionsToImportDefined()) {
         notImportedAndNew =
             configurationService.getProcessDefinitionIdsToImport().contains(definition.getProcessDefinitionId());
@@ -170,10 +156,12 @@ public abstract class DefinitionBasedImportIndexHandler
         processDefinitionsToImport.add(definition);
       }
     }
+    if (!processDefinitionsToImport.isEmpty()) {
+      this.lastPage = processDefinitionsToImport.peekLast();
+    }
   }
 
-  @Override
-  public EngineContext getEngineContext() {
-    return engineContext;
+  public boolean finishedDefinitionRoundWithoutNewData() {
+    return currentPage == lastPage && allDefinitionsWithoutNewData;
   }
 }

@@ -41,31 +41,10 @@ public abstract class BackoffImportMediator<T extends ImportIndexHandler> implem
   private static final long STARTING_BACKOFF = 0;
   private long backoffCounter = STARTING_BACKOFF;
   private OffsetDateTime dateUntilPaginationIsBlocked = OffsetDateTime.now().minusMinutes(1L);
-  private OffsetDateTime nextReset;
 
   @PostConstruct
   private void initialize() {
     init();
-    setNextReset();
-  }
-
-  private void setNextReset() {
-    ChronoUnit unit = ChronoUnit.HOURS;
-    try {
-      unit = unitOf(configurationService.getImportResetIntervalUnit());
-    } catch (Exception e) {
-      //nothing to do falling back to default
-      logger.error("Was not able to parse interval unit [{}] for import reset. Using hours instead!",
-        configurationService.getImportResetIntervalUnit());
-    }
-    nextReset = OffsetDateTime.now().plus(
-        configurationService.getImportResetIntervalValue(),
-        unit
-    );
-  }
-
-  private ChronoUnit unitOf(String unit) {
-    return ChronoUnit.valueOf(unit.toUpperCase());
   }
 
   protected abstract void init();
@@ -97,7 +76,7 @@ public abstract class BackoffImportMediator<T extends ImportIndexHandler> implem
     }
   }
 
-  public void restartImportCycle () {
+  private void restartImportCycle() {
     importIndexHandler.restartImportCycle();
   }
 
@@ -105,27 +84,13 @@ public abstract class BackoffImportMediator<T extends ImportIndexHandler> implem
     if (configurationService.isBackoffEnabled()) {
       backoffCounter = Math.min(backoffCounter + 1, configurationService.getMaximumBackoff());
       if (backoffCounter == configurationService.getMaximumBackoff()) {
-        restartOrReset();
+        restartImportCycle();
       } else {
         long interval = configurationService.getImportHandlerWait();
         long sleepTimeInMs = interval * backoffCounter;
         dateUntilPaginationIsBlocked = OffsetDateTime.now().plus(sleepTimeInMs, ChronoUnit.MILLIS);
         logDebugSleepInformation(sleepTimeInMs);
       }
-    }
-  }
-
-  private void restartOrReset() {
-    try {
-      if (OffsetDateTime.now().isAfter(this.nextReset)) {
-        this.resetImportIndex();
-        this.setNextReset();
-      } else {
-        this.resetBackoff();
-        this.restartImportCycle();
-      }
-    } catch (Exception e) {
-      logger.error("Can't restart or restart index for engine [{}]", this.engineContext.getEngineAlias());
     }
   }
 
@@ -165,8 +130,4 @@ public abstract class BackoffImportMediator<T extends ImportIndexHandler> implem
     dateUntilPaginationIsBlocked = OffsetDateTime.now().minusMinutes(1L);
   }
 
-  public void resetImportIndex() {
-    resetBackoff();
-    importIndexHandler.resetImportIndex();
-  }
 }

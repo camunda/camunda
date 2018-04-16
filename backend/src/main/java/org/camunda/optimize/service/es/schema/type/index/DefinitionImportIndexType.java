@@ -9,8 +9,6 @@ import java.io.IOException;
 @Component
 public class DefinitionImportIndexType extends StrictTypeMappingCreator {
 
-  public static final String TOTAL_ENTITIES_IMPORTED = "totalEntitiesImported";
-  public static final String ALREADY_IMPORTED_PROCESS_DEFINITIONS = "alreadyImportedProcessDefinitions";
   public static final String PROCESS_DEFINITIONS_TO_IMPORT = "processDefinitionsToImport";
   public static final String CURRENT_PROCESS_DEFINITION = "currentProcessDefinition";
   public static final String PROCESS_DEFINITION_ID = "processDefinitionId";
@@ -32,16 +30,7 @@ public class DefinitionImportIndexType extends StrictTypeMappingCreator {
       .startObject(ES_TYPE_INDEX_REFERS_TO)
         .field("type", "keyword")
       .endObject()
-      .startObject(TOTAL_ENTITIES_IMPORTED)
-        .field("type", "long")
-      .endObject()
       .startObject(CURRENT_PROCESS_DEFINITION)
-        .field("type", "nested")
-        .startObject("properties");
-          addNestedDefinitionInformation(newBuilder)
-        .endObject()
-      .endObject()
-      .startObject(ALREADY_IMPORTED_PROCESS_DEFINITIONS)
         .field("type", "nested")
         .startObject("properties");
           addNestedDefinitionInformation(newBuilder)
