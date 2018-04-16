@@ -5,6 +5,14 @@ import ReactTable from 'react-table';
 import './Table.css';
 
 export default class Table extends React.Component {
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      resizedState: []
+    };
+  }
+
   render() {
     const {className, head, body, disableReportScrolling} = this.props;
 
@@ -15,6 +23,7 @@ export default class Table extends React.Component {
         <ReactTable
           data={data}
           columns={columns}
+          resized={this.state.resizedState}
           defaultPageSize={Number.MAX_SAFE_INTEGER}
           showPagination={false}
           showPaginationTop={false}
@@ -26,10 +35,22 @@ export default class Table extends React.Component {
             'Table__unscrollable-mode': disableReportScrolling
           })}
           noDataText="No data available"
+          onResizedChange={this.updateResizedState}
         />
       </div>
     );
   }
+
+  updateResizedState = columns => {
+    this.setState({
+      resizedState: columns.map(column => {
+        return {
+          ...column,
+          value: Math.max(column.value, 40)
+        };
+      })
+    });
+  };
 
   fixColumnAlignment = () => {
     const {clientWidth, offsetWidth} = this.tableRef.querySelector('.rt-tbody');
@@ -70,7 +91,7 @@ export default class Table extends React.Component {
       return {
         Header: elem,
         accessor: convertHeaderNameToAccessor(elem),
-        minWidth: 40
+        minWidth: 100
       };
     });
   };

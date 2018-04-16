@@ -34,9 +34,9 @@ it('shoud correctly format header', () => {
   const result = Table.formatColumns(['x', 'y', 'z']);
 
   expect(result).toEqual([
-    {Header: 'x', accessor: 'x', minWidth: 40},
-    {Header: 'y', accessor: 'y', minWidth: 40},
-    {Header: 'z', accessor: 'z', minWidth: 40}
+    {Header: 'x', accessor: 'x', minWidth: 100},
+    {Header: 'y', accessor: 'y', minWidth: 100},
+    {Header: 'z', accessor: 'z', minWidth: 100}
   ]);
 });
 
