@@ -106,7 +106,7 @@ public class LogStreamService implements LogStream, Service<LogStream>
         writeBufferFuture = installOperation.createService(logWriteBufferServiceName, writeBufferService)
             .dependency(logStorageInjector.getInjectedServiceName(), writeBufferService.getLogStorageInjector())
             .dependency(logBlockIndexInjector.getInjectedServiceName(), writeBufferService.getLogBlockIndexInjector())
-            .installAndReturn();
+            .install();
 
         final LogWriteBufferSubscriptionService subscriptionService = new LogWriteBufferSubscriptionService(APPENDER_SUBSCRIPTION_NAME);
         installOperation.createService(appenderSubscriptionServiceName, subscriptionService)
@@ -117,7 +117,7 @@ public class LogStreamService implements LogStream, Service<LogStream>
         appenderFuture = installOperation.createService(logStorageAppenderServiceName, appenderService)
             .dependency(appenderSubscriptionServiceName, appenderService.getAppenderSubscriptionInjector())
             .dependency(logStorageInjector.getInjectedServiceName(), appenderService.getLogStorageInjector())
-            .installAndReturn();
+            .install();
 
         return installOperation.installAndReturn(logStorageAppenderServiceName);
     }

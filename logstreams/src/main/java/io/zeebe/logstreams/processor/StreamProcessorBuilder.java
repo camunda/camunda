@@ -130,7 +130,7 @@ public class StreamProcessorBuilder
             additionalDependencies.forEach((d) -> serviceBuilder.dependency(d));
         }
 
-        return serviceBuilder.installAndReturn();
+        return serviceBuilder.install();
 
     }
 
