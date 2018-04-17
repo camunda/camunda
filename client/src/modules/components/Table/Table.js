@@ -100,12 +100,18 @@ export default class Table extends React.Component {
     window.removeEventListener('resize', this.fixColumnAlignment);
   }
 
-  static formatColumns = head => {
+  static formatColumns = (head, ctx = '') => {
     return head.map(elem => {
+      if (typeof elem === 'string') {
+        return {
+          Header: elem,
+          accessor: convertHeaderNameToAccessor(ctx + elem),
+          minWidth: 100
+        };
+      }
       return {
-        Header: elem,
-        accessor: convertHeaderNameToAccessor(elem),
-        minWidth: 100
+        Header: elem.label,
+        columns: Table.formatColumns(elem.columns, ctx + elem.label)
       };
     });
   };
@@ -114,12 +120,18 @@ export default class Table extends React.Component {
     return body.map((row, rowIdx) => {
       const newRow = {};
       row.forEach((cell, columnIdx) => {
-        newRow[convertHeaderNameToAccessor(head[columnIdx])] = cell;
+        newRow[convertHeaderNameToAccessor(head.reduce(flatten(), [])[columnIdx])] = cell;
       });
       return newRow;
     });
   };
 }
+
+const flatten = (ctx = '') => (flat, entry) => {
+  return flat.concat(
+    (entry.columns && entry.columns.reduce(flatten(ctx + entry.label), [])) || ctx + entry
+  );
+};
 
 function convertHeaderNameToAccessor(name) {
   return name

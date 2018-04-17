@@ -51,7 +51,22 @@ it('shoud correctly format header', () => {
   ]);
 });
 
-it('shoud correctly format header', () => {
+it('should correctly format multi-level header', () => {
+  const result = Table.formatColumns(['x', {label: 'a', columns: ['i', 'j']}]);
+
+  expect(result).toEqual([
+    {Header: 'x', accessor: 'x', minWidth: 100},
+    {
+      Header: 'a',
+      columns: [
+        {Header: 'i', accessor: 'ai', minWidth: 100},
+        {Header: 'j', accessor: 'aj', minWidth: 100}
+      ]
+    }
+  ]);
+});
+
+it('shoud correctly format body', () => {
   const result = Table.formatData(['Header 1', 'Header 2', 'Header 3'], [['a', 'b', 'c']]);
 
   expect(result).toEqual([{header_1: 'a', header_2: 'b', header_3: 'c'}]);

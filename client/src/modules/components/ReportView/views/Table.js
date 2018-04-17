@@ -20,19 +20,18 @@ function formatData(data, formatter, labels) {
   if (data.length) {
     // raw data
     const processInstanceProps = Object.keys(data[0]).filter(entry => entry !== 'variables');
-    const rawVariableNames = Object.keys(data[0].variables);
+    const variableNames = Object.keys(data[0].variables);
 
     const body = data.map(instance => {
       let row = processInstanceProps.map(entry => instance[entry]);
-      const variableValues = rawVariableNames.map(entry => instance.variables[entry]);
+      const variableValues = variableNames.map(entry => instance.variables[entry]);
       row.push(...variableValues);
       row = row.map(entry => (entry === null ? '' : entry.toString()));
       return row;
     });
 
-    const variableNames = rawVariableNames.map(varName => `Variable: ${varName}`);
     const head = processInstanceProps;
-    head.push(...variableNames);
+    head.push({label: 'Variables', columns: variableNames});
 
     return {head, body};
   } else {
