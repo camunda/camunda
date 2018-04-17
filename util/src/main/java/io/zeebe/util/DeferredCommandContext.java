@@ -15,11 +15,10 @@
  */
 package io.zeebe.util;
 
+import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
+
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
-
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
-import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 
 public class DeferredCommandContext
 {
