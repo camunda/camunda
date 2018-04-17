@@ -19,20 +19,16 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
+import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 
 public class DeferredCommandContext
 {
-    protected final ManyToOneConcurrentArrayQueue<Runnable> cmdQueue;
+    protected final ManyToOneConcurrentLinkedQueue<Runnable> cmdQueue;
     protected final Consumer<Runnable> cmdConsumer = Runnable::run;
 
     public DeferredCommandContext()
     {
-        this(100);
-    }
-
-    public DeferredCommandContext(int capacity)
-    {
-        this.cmdQueue = new ManyToOneConcurrentArrayQueue<>(capacity);
+        this.cmdQueue = new ManyToOneConcurrentLinkedQueue<>();
     }
 
     public <T> CompletableFuture<T> runAsync(Consumer<CompletableFuture<T>> action)
@@ -61,9 +57,16 @@ public class DeferredCommandContext
         cmdQueue.add(r);
     }
 
-    public int doWork()
+    public void doWork()
     {
-        return cmdQueue.drain(cmdConsumer);
+        while (!cmdQueue.isEmpty())
+        {
+            final Runnable runnable = cmdQueue.poll();
+            if (runnable != null)
+            {
+                cmdConsumer.accept(runnable);
+            }
+        }
     }
 
 }
