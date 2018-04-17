@@ -55,7 +55,7 @@ public class ServiceController extends Actor
     private final Map<ServiceName<?>, ServiceGroupReference<?>> injectedReferences;
 
     private final CompletableActorFuture<Void> stopFuture = new CompletableActorFuture<>();
-    private final CompletableActorFuture<Void> startFuture;
+    private final CompletableActorFuture startFuture;
 
     private List<ServiceController> resolvedDependencies;
 
@@ -64,7 +64,7 @@ public class ServiceController extends Actor
 
     private Consumer<ServiceEvent> state = awaitDependenciesStartedState;
 
-    public ServiceController(ServiceBuilder<?> builder, ServiceContainerImpl serviceContainer, CompletableActorFuture<Void> startFuture)
+    public ServiceController(ServiceBuilder<?> builder, ServiceContainerImpl serviceContainer, CompletableActorFuture startFuture)
     {
         this.container = serviceContainer;
         this.startFuture = startFuture;
@@ -212,6 +212,7 @@ public class ServiceController extends Actor
             }
         }
 
+        @SuppressWarnings("unchecked")
         public void onStarted()
         {
             if (stopAfterStarted)
@@ -224,7 +225,7 @@ public class ServiceController extends Actor
             else
             {
                 state = startedState;
-                startFuture.complete(null);
+                startFuture.complete(getService().get());
             }
         }
 

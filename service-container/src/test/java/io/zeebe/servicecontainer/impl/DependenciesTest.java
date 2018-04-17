@@ -15,17 +15,17 @@
  */
 package io.zeebe.servicecontainer.impl;
 
-import static io.zeebe.servicecontainer.impl.ActorFutureAssertions.assertCompleted;
-import static io.zeebe.servicecontainer.impl.ActorFutureAssertions.assertFailed;
-import static io.zeebe.servicecontainer.impl.ActorFutureAssertions.assertNotCompleted;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
-
 import io.zeebe.servicecontainer.*;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
-import org.junit.*;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.mockito.InOrder;
+
+import static io.zeebe.servicecontainer.impl.ActorFutureAssertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 @SuppressWarnings({"unchecked"})
 public class DependenciesTest
@@ -53,7 +53,7 @@ public class DependenciesTest
     {
         final Service<Object> mockService = mock(Service.class);
 
-        final ActorFuture<Void> serviceFuture = serviceContainer.createService(service1, mockService).install();
+        final ActorFuture<Object>serviceFuture = serviceContainer.createService(service1, mockService).install();
 
         actorSchedulerRule.workUntilDone();
 
@@ -73,7 +73,7 @@ public class DependenciesTest
         actorSchedulerRule.workUntilDone();
 
         // when then
-        final ActorFuture<Void> installFuture = serviceContainer.createService(service1, mockService).install();
+        final ActorFuture<Object>installFuture = serviceContainer.createService(service1, mockService).install();
         actorSchedulerRule.workUntilDone();
 
         assertCompleted(installFuture);
@@ -84,7 +84,7 @@ public class DependenciesTest
     {
         final Service<Object> mockService = mock(Service.class);
 
-        final ActorFuture<Void> serviceFuture = serviceContainer.createService(service1, mockService)
+        final ActorFuture<Object> serviceFuture = serviceContainer.createService(service1, mockService)
                                                                 .dependency(service2)
                                                                 .install();
 
@@ -105,7 +105,7 @@ public class DependenciesTest
         actorSchedulerRule.workUntilDone();
 
         // when
-        final ActorFuture<Void> serviceFuture2 = serviceContainer.createService(service1, mockService)
+        final ActorFuture<Object>serviceFuture2 = serviceContainer.createService(service1, mockService)
                                                                  .dependency(service2)
                                                                  .install();
 

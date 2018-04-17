@@ -15,13 +15,6 @@
  */
 package io.zeebe.servicecontainer.impl;
 
-import static io.zeebe.servicecontainer.impl.ActorFutureAssertions.*;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
-
-import java.util.concurrent.ExecutionException;
-
 import io.zeebe.servicecontainer.*;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -30,6 +23,13 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
+import java.util.concurrent.ExecutionException;
+
+import static io.zeebe.servicecontainer.impl.ActorFutureAssertions.assertCompleted;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 @SuppressWarnings("unchecked")
 public class ServiceStartContextTest
@@ -61,12 +61,12 @@ public class ServiceStartContextTest
         final MockService mockService1 = new MockService();
         final Service<Object> mockService2 = mock(Service.class);
 
-        final ActorFuture<Void> service1Future = serviceContainer.createService(service1, mockService1).install();
+        final ActorFuture<Object> service1Future = serviceContainer.createService(service1, mockService1).install();
 
         actorSchedulerRule.workUntilDone();
         assertCompleted(service1Future);
 
-        final ActorFuture<Void> service2Future = mockService1.startContext.createService(service2, mockService2).install();
+        final ActorFuture<Object> service2Future = mockService1.startContext.createService(service2, mockService2).install();
 
         actorSchedulerRule.workUntilDone();
         assertCompleted(service2Future);

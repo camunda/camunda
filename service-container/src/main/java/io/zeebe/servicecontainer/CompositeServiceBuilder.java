@@ -15,13 +15,15 @@
  */
 package io.zeebe.servicecontainer;
 
-import java.util.*;
-import java.util.Map.Entry;
-
 import io.zeebe.servicecontainer.impl.ServiceContainerImpl;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
+
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  * Can be used to install a list of services "transactionally" (in the sense that if
@@ -128,19 +130,11 @@ public class CompositeServiceBuilder
         }
 
         @Override
-        public ActorFuture<Void> install()
+        public ActorFuture<S> install()
         {
-            final ActorFuture<S> installFuture = super.installAndReturn();
+            final ActorFuture<S> installFuture = super.install();
             installFutures.put(serviceName, (ActorFuture) installFuture);
             return (ActorFuture) installFuture;
-        }
-
-        @Override
-        public ActorFuture<S> installAndReturn()
-        {
-            final ActorFuture<S> installFuture = super.installAndReturn();
-            installFutures.put(serviceName, (ActorFuture) installFuture);
-            return installFuture;
         }
     }
 

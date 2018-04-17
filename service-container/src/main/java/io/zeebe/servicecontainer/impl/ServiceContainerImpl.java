@@ -117,9 +117,9 @@ public class ServiceContainerImpl extends Actor implements ServiceContainer
         return new CompositeServiceBuilder(name, this);
     }
 
-    public ActorFuture<Void> onServiceBuilt(ServiceBuilder<?> serviceBuilder)
+    public <S> ActorFuture<S> onServiceBuilt(ServiceBuilder<S> serviceBuilder)
     {
-        final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+        final CompletableActorFuture<S> future = new CompletableActorFuture<>();
 
         actor.run(() ->
         {
@@ -155,29 +155,6 @@ public class ServiceContainerImpl extends Actor implements ServiceContainer
 
 
         return future;
-    }
-
-
-    public <S> ActorFuture<S> onServiceBuiltAndReturn(ServiceBuilder<S> serviceBuilder)
-    {
-        final CompletableActorFuture<S> returnedFuture = new CompletableActorFuture<>();
-
-        actor.run(() ->
-        {
-            actor.runOnCompletion(onServiceBuilt(serviceBuilder), (r, t) ->
-            {
-                if (t != null)
-                {
-                    returnedFuture.completeExceptionally(t);
-                }
-                else
-                {
-                    returnedFuture.complete(serviceBuilder.getService().get());
-                }
-            });
-        });
-
-        return returnedFuture;
     }
 
     @Override

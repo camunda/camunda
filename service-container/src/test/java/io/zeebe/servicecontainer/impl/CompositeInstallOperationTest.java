@@ -15,19 +15,21 @@
  */
 package io.zeebe.servicecontainer.impl;
 
-import static io.zeebe.servicecontainer.impl.ActorFutureAssertions.*;
-import static org.mockito.Mockito.*;
-import static org.assertj.core.api.Assertions.*;
-
-import java.util.concurrent.CompletableFuture;
-
 import io.zeebe.servicecontainer.*;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
-import org.junit.*;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.mockito.InOrder;
+
+import java.util.concurrent.CompletableFuture;
+
+import static io.zeebe.servicecontainer.impl.ActorFutureAssertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.*;
 
 @SuppressWarnings("unchecked")
 public class CompositeInstallOperationTest
@@ -73,8 +75,8 @@ public class CompositeInstallOperationTest
         // when
         final CompositeServiceBuilder composite = container.createComposite(compositeName);
 
-        final ActorFuture<Void> service1Future = composite.createService(service1Name, mockService1).install();
-        final ActorFuture<Void> service2Future = composite.createService(service1Name, mockService2).install();
+        final ActorFuture<Object> service1Future = composite.createService(service1Name, mockService1).install();
+        final ActorFuture<Object> service2Future = composite.createService(service1Name, mockService2).install();
 
         final ActorFuture<Void> compositeFuture = composite.install();
 
@@ -97,8 +99,8 @@ public class CompositeInstallOperationTest
         // when
         final CompositeServiceBuilder composite = container.createComposite(compositeName);
 
-        final ActorFuture<Void> service1Future = composite.createService(service1Name, mockService1).install();
-        final ActorFuture<Void> service2Future = composite.createService(service1Name, asyncService2).install();
+        final ActorFuture<Object> service1Future = composite.createService(service1Name, mockService1).install();
+        final ActorFuture<Object> service2Future = composite.createService(service1Name, asyncService2).install();
 
         final ActorFuture<Void> compositeFuture = composite.install();
 
@@ -130,8 +132,8 @@ public class CompositeInstallOperationTest
         // when
         final CompositeServiceBuilder composite = container.createComposite(compositeName);
 
-        final ActorFuture<Void> service1Future = composite.createService(service1Name, mockService1).install();
-        final ActorFuture<Void> service2Future = composite.createService(service1Name, asyncService2).install();
+        final ActorFuture<Object> service1Future = composite.createService(service1Name, mockService1).install();
+        final ActorFuture<Object> service2Future = composite.createService(service1Name, asyncService2).install();
 
         final ActorFuture<Void> compositeFuture = composite.install();
 

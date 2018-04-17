@@ -15,10 +15,10 @@
  */
 package io.zeebe.servicecontainer;
 
-import java.util.*;
-
 import io.zeebe.servicecontainer.impl.ServiceContainerImpl;
 import io.zeebe.util.sched.future.ActorFuture;
+
+import java.util.*;
 
 public class ServiceBuilder<S>
 {
@@ -75,14 +75,9 @@ public class ServiceBuilder<S>
         return this;
     }
 
-    public ActorFuture<Void> install()
+    public ActorFuture<S> install()
     {
         return serviceContainer.onServiceBuilt(this);
-    }
-
-    public ActorFuture<S> installAndReturn()
-    {
-        return serviceContainer.onServiceBuiltAndReturn(this);
     }
 
     public ServiceName<S> getName()
