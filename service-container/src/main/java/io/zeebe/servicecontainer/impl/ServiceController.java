@@ -109,6 +109,11 @@ public class ServiceController extends Actor
         }
     }
 
+    private void logIgnoringEvent(final ServiceEvent event)
+    {
+        LOG.warn("Ignoring event {} in state {}", event.getType(), state.getClass().getSimpleName());
+    }
+
     @SuppressWarnings("unchecked")
     class AwaitDependenciesStartedState implements Consumer<ServiceEvent>
     {
@@ -130,6 +135,7 @@ public class ServiceController extends Actor
                     break;
 
                 default:
+                    logIgnoringEvent(evt);
                     break;
             }
         }
@@ -208,6 +214,7 @@ public class ServiceController extends Actor
                     break;
 
                 default:
+                    logIgnoringEvent(t);
                     break;
             }
         }
@@ -253,6 +260,7 @@ public class ServiceController extends Actor
                     break;
 
                 default:
+                    logIgnoringEvent(t);
                     break;
             }
         }
