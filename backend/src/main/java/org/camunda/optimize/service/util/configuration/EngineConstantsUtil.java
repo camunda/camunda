@@ -14,6 +14,7 @@ public class EngineConstantsUtil {
   public static final String ID = "id";
 
   public static final String FINISHED_AFTER = "finishedAfter";
+  public static final String FINISHED_BEFORE = "finishedBefore";
 
   public static final String INCLUDE_ONLY_FINISHED_INSTANCES = "finished";
   public static final String INCLUDE_ONLY_UNFINISHED_INSTANCES = "unfinished";

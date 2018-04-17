@@ -10,6 +10,7 @@ import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
 import org.camunda.optimize.service.util.configuration.EngineConfiguration;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
+import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -23,6 +24,8 @@ import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
+import java.sql.SQLException;
+import java.time.OffsetDateTime;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -47,10 +50,11 @@ public class ImportIT  {
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
+  public EngineDatabaseRule engineDatabaseRule = new EngineDatabaseRule();
 
   @Rule
   public RuleChain chain = RuleChain
-      .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
+      .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule).around(engineDatabaseRule);
 
   @Test
   public void allProcessDefinitionFieldDataOfImportIsAvailable() {
@@ -441,10 +445,38 @@ public class ImportIT  {
     }
   }
 
-  private void deployAndStartSimpleServiceTask() {
+  @Test
+  public void doNotSkipProcessInstancesWithSameEndTime() throws Exception {
+    // given
+    int originalMaxPageSize =
+      embeddedOptimizeRule.getConfigurationService().getEngineImportProcessInstanceMaxPageSize();
+    embeddedOptimizeRule.getConfigurationService().setEngineImportProcessInstanceMaxPageSize(1);
+    startTwoProcessInstancesWithSameEndTime();
+
+    // when
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // then
+    allEntriesInElasticsearchHaveAllDataWithCount(elasticSearchRule.getProcessInstanceType(), 2L);
+    embeddedOptimizeRule.getConfigurationService().setEngineImportProcessInstanceMaxPageSize(originalMaxPageSize);
+  }
+
+  private void startTwoProcessInstancesWithSameEndTime() throws SQLException {
+    OffsetDateTime endTime = OffsetDateTime.now();
+    ProcessInstanceEngineDto firstProcInst = deployAndStartSimpleServiceTask();
+    ProcessInstanceEngineDto secondProcInst =
+      engineRule.startProcessInstance(firstProcInst.getDefinitionId());
+    Map<String, OffsetDateTime> procInstEndDateUpdates = new HashMap<>();
+    procInstEndDateUpdates.put(firstProcInst.getId(), endTime);
+    procInstEndDateUpdates.put(secondProcInst.getId(), endTime);
+    engineDatabaseRule.updateProcessInstanceEndDates(procInstEndDateUpdates);
+  }
+
+  private ProcessInstanceEngineDto deployAndStartSimpleServiceTask() {
     Map<String, Object> variables = new HashMap<>();
     variables.put("aVariable", "aStringVariables");
-    deployAndStartSimpleServiceTaskWithVariables(variables);
+    return deployAndStartSimpleServiceTaskWithVariables(variables);
   }
 
   private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskWithVariables(Map<String, Object> variables) {

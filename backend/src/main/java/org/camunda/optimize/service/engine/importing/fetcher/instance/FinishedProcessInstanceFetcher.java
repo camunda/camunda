@@ -13,16 +13,15 @@ import javax.ws.rs.core.MediaType;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Optional;
 
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.FINISHED_AFTER;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.FINISHED_BEFORE;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.INCLUDE_ONLY_FINISHED_INSTANCES;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.MAX_RESULTS_TO_RETURN;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.PROCESS_DEFINITION_ID;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.SORT_BY;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.SORT_ORDER;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.SORT_ORDER_TYPE_ASCENDING;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.SORT_ORDER_TYPE_DESCENDING;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.SORT_TYPE_END_TIME;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.TRUE;
 
@@ -66,31 +65,41 @@ public class FinishedProcessInstanceFetcher extends
       });
     long requestEnd = System.currentTimeMillis();
     logger.debug(
-      "Fetched [{}] historic process instances within [{}] ms",
+      "Fetched [{}] historic process instances which ended after set timestamp with page size [{}] within [{}] ms",
       entries.size(),
+      pageSize,
       requestEnd - requestStart
     );
 
+    if (!entries.isEmpty()) {
+      OffsetDateTime endTimeOfLastInstance = entries.get(entries.size() - 1).getEndTime();
+      List<HistoricProcessInstanceDto> secondEntries =
+        fetchFinishedProcessInstancesForTimestamp(processDefinitionId, endTimeOfLastInstance);
+      entries.addAll(secondEntries);
+    }
     return entries;
   }
 
-  public Optional<OffsetDateTime> fetchLatestEndTimeOfHistoricProcessInstances(String processDefinitionId) {
-    List<HistoricProcessInstanceDto> entries = getEngineClient()
-          .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
-          .path(configurationService.getHistoricProcessInstanceEndpoint())
-          .queryParam(SORT_BY, SORT_TYPE_END_TIME)
-          .queryParam(SORT_ORDER, SORT_ORDER_TYPE_DESCENDING)
-          .queryParam(MAX_RESULTS_TO_RETURN, 1)
-          .queryParam(PROCESS_DEFINITION_ID, processDefinitionId)
-          .queryParam(INCLUDE_ONLY_FINISHED_INSTANCES, TRUE)
-          .request()
-          .acceptEncoding(UTF8)
-          .get(new GenericType<List<HistoricProcessInstanceDto>>() {
+  private List<HistoricProcessInstanceDto> fetchFinishedProcessInstancesForTimestamp(String processDefinitionId,
+                                                                                     OffsetDateTime endTimeOfLastInstance) {
+    long requestStart = System.currentTimeMillis();
+    List<HistoricProcessInstanceDto> secondEntries = getEngineClient()
+      .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
+      .path(configurationService.getHistoricProcessInstanceEndpoint())
+      .queryParam(FINISHED_AFTER, dateTimeFormatter.format(endTimeOfLastInstance))
+      .queryParam(FINISHED_BEFORE, dateTimeFormatter.format(endTimeOfLastInstance))
+      .queryParam(PROCESS_DEFINITION_ID, processDefinitionId)
+      .queryParam(INCLUDE_ONLY_FINISHED_INSTANCES, TRUE)
+      .request(MediaType.APPLICATION_JSON)
+      .acceptEncoding(UTF8)
+      .get(new GenericType<List<HistoricProcessInstanceDto>>() {
       });
-    if (entries.size() > 0) {
-      return Optional.of(entries.get(0).getEndTime());
-    } else {
-      return Optional.empty();
-    }
+    long requestEnd = System.currentTimeMillis();
+    logger.debug(
+      "Fetched [{}] historic process instances for set end time within [{}] ms",
+      secondEntries.size(),
+      requestEnd - requestStart
+    );
+    return secondEntries;
   }
 }

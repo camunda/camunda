@@ -13,16 +13,15 @@ import javax.ws.rs.core.MediaType;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Optional;
 
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.FINISHED_AFTER;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.FINISHED_BEFORE;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.INCLUDE_ONLY_FINISHED_INSTANCES;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.MAX_RESULTS_TO_RETURN;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.PROCESS_DEFINITION_ID;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.SORT_BY;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.SORT_ORDER;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.SORT_ORDER_TYPE_ASCENDING;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.SORT_ORDER_TYPE_DESCENDING;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.SORT_TYPE_END_TIME;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.TRUE;
 
@@ -66,12 +65,42 @@ public class ActivityInstanceFetcher
       });
     long requestEnd = System.currentTimeMillis();
     logger.debug(
-      "Fetched [{}] historic activity instances within [{}] ms",
+      "Fetched [{}] historic activity instances which ended after set timestamp with page size [{}] within [{}] ms",
       entries.size(),
+      pageSize,
       requestEnd - requestStart
     );
 
+    if (!entries.isEmpty()) {
+      OffsetDateTime endTimeOfLastInstance = entries.get(entries.size() - 1).getEndTime();
+      List<HistoricActivityInstanceEngineDto> secondEntries =
+        fetchHistoricActivityInstancesForTimestamp(processDefinitionId, endTimeOfLastInstance);
+      entries.addAll(secondEntries);
+    }
     return entries;
+  }
+
+  private List<HistoricActivityInstanceEngineDto> fetchHistoricActivityInstancesForTimestamp(String processDefinitionId,
+                                                                                             OffsetDateTime endTimeOfLastInstance) {
+    long requestStart = System.currentTimeMillis();
+    List<HistoricActivityInstanceEngineDto> secondEntries = getEngineClient()
+      .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
+      .path(configurationService.getHistoricActivityInstanceEndpoint())
+      .queryParam(FINISHED_AFTER, dateTimeFormatter.format(endTimeOfLastInstance))
+      .queryParam(FINISHED_BEFORE, dateTimeFormatter.format(endTimeOfLastInstance))
+      .queryParam(PROCESS_DEFINITION_ID, processDefinitionId)
+      .queryParam(INCLUDE_ONLY_FINISHED_INSTANCES, TRUE)
+      .request(MediaType.APPLICATION_JSON)
+      .acceptEncoding(UTF8)
+      .get(new GenericType<List<HistoricActivityInstanceEngineDto>>() {
+      });
+    long requestEnd = System.currentTimeMillis();
+    logger.debug(
+      "Fetched [{}] historic activity instances for set end time within [{}] ms",
+      secondEntries.size(),
+      requestEnd - requestStart
+    );
+    return secondEntries;
   }
 
 }

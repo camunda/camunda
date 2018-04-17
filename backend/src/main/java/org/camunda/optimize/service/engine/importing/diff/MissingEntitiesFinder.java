@@ -48,9 +48,12 @@ public class MissingEntitiesFinder<ENG extends EngineDto> {
 
   private List<ENG> removeAlreadyAddedEntities(Set<String> idsAlreadyAddedToOptimize, List<ENG> engineEntities) {
     List<ENG> newEngineEntities = new ArrayList<>(engineEntities.size());
+    Set<String> alreadyAddedToNewEngineEntities = new HashSet<>();
     for (ENG engineEntity : engineEntities) {
-      if (!idsAlreadyAddedToOptimize.contains(engineEntity.getId())) {
+      if (!idsAlreadyAddedToOptimize.contains(engineEntity.getId()) &&
+        !alreadyAddedToNewEngineEntities.contains(engineEntity.getId())) {
         newEngineEntities.add(engineEntity);
+        alreadyAddedToNewEngineEntities.add(engineEntity.getId());
       }
     }
     return newEngineEntities;
