@@ -13,6 +13,8 @@ import stop from '-!svg-react-loader!./stop.svg';
 import link from '-!svg-react-loader!./link.svg';
 import embed from '-!svg-react-loader!./embed.svg';
 import save from '-!svg-react-loader!./save.svg';
+import overflowMenuVertical from '-!svg-react-loader!./overflow-menu-vertical.svg';
+import overflowMenuHorizontal from '-!svg-react-loader!./overflow-menu-horizontal.svg';
 
 const icons = {
   autorefresh,
@@ -27,7 +29,9 @@ const icons = {
   stop,
   link,
   embed,
-  save
+  save,
+  'overflow-menu-vertical': overflowMenuVertical,
+  'overflow-menu-horizontal': overflowMenuHorizontal
 };
 
 export default icons;

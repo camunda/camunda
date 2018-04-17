@@ -27,7 +27,9 @@ $icons: (
   'stop',
   'link',
   'embed',
-  'save'
+  'save',
+  'overflow-menu-vertical',
+  'overflow-menu-horizontal'
 );
 
 @each $icon in $icons {
