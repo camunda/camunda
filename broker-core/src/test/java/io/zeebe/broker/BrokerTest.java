@@ -62,7 +62,7 @@ public class BrokerTest
         broker = new Broker(configurationManager);
 
         // then I can register a dependency to a broker service successfully
-        final ActorFuture<Void> future = broker.getBrokerContext().getServiceContainer()
+        final ActorFuture<Object> future = broker.getBrokerContext().getServiceContainer()
                                                .createService(ServiceName.newServiceName("foo", Object.class), new Service<Object>()
                                                {
                                                    @Override

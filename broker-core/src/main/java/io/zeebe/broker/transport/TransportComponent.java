@@ -17,28 +17,33 @@
  */
 package io.zeebe.broker.transport;
 
-import static io.zeebe.broker.transport.TransportServiceNames.*;
-
-import java.net.InetSocketAddress;
-import java.util.Collection;
-import java.util.Collections;
-
 import io.zeebe.broker.clustering.ClusterServiceNames;
 import io.zeebe.broker.clustering.raft.RaftApiMessageHandlerService;
 import io.zeebe.broker.event.TopicSubscriptionServiceNames;
 import io.zeebe.broker.logstreams.LogStreamServiceNames;
 import io.zeebe.broker.services.DispatcherService;
-import io.zeebe.broker.system.*;
+import io.zeebe.broker.system.Component;
+import io.zeebe.broker.system.SystemContext;
+import io.zeebe.broker.system.SystemServiceNames;
 import io.zeebe.broker.task.TaskQueueServiceNames;
 import io.zeebe.broker.transport.cfg.SocketBindingCfg;
 import io.zeebe.broker.transport.cfg.TransportComponentCfg;
 import io.zeebe.broker.transport.clientapi.ClientApiMessageHandlerService;
+import io.zeebe.broker.transport.controlmessage.ControlMessageHandlerManager;
 import io.zeebe.broker.transport.controlmessage.ControlMessageHandlerManagerService;
-import io.zeebe.dispatcher.*;
+import io.zeebe.dispatcher.Dispatcher;
+import io.zeebe.dispatcher.DispatcherBuilder;
+import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.transport.*;
 import io.zeebe.util.sched.future.ActorFuture;
+
+import java.net.InetSocketAddress;
+import java.util.Collection;
+import java.util.Collections;
+
+import static io.zeebe.broker.transport.TransportServiceNames.*;
 
 public class TransportComponent implements Component
 {
@@ -50,7 +55,7 @@ public class TransportComponent implements Component
         final TransportComponentCfg transportComponentCfg = context.getConfigurationManager().readEntry("network", TransportComponentCfg.class);
         final ServiceContainer serviceContainer = context.getServiceContainer();
 
-        final ActorFuture<Void> replactionApiFuture = bindNonBufferingProtocolEndpoint(
+        final ActorFuture<ServerTransport> replactionApiFuture = bindNonBufferingProtocolEndpoint(
                 serviceContainer,
                 REPLICATION_API_SERVER_NAME,
                 transportComponentCfg.replicationApi,
@@ -58,13 +63,13 @@ public class TransportComponent implements Component
                 REPLICATION_API_MESSAGE_HANDLER,
                 REPLICATION_API_MESSAGE_HANDLER);
 
-        final ActorFuture<Void> managementApiFuture = bindBufferingProtocolEndpoint(
+        final ActorFuture<BufferingServerTransport> managementApiFuture = bindBufferingProtocolEndpoint(
                 serviceContainer,
                 MANAGEMENT_API_SERVER_NAME,
                 transportComponentCfg.managementApi,
                 transportComponentCfg);
 
-        final ActorFuture<Void> clientApiFuture = bindNonBufferingProtocolEndpoint(
+        final ActorFuture<ServerTransport> clientApiFuture = bindNonBufferingProtocolEndpoint(
                 serviceContainer,
                 CLIENT_API_SERVER_NAME,
                 transportComponentCfg.clientApi,
@@ -74,14 +79,14 @@ public class TransportComponent implements Component
 
         final SocketAddress managementEndpoint = transportComponentCfg.managementApi.toSocketAddress(transportComponentCfg.host);
 
-        final ActorFuture<Void> managementClientFuture = createClientTransport(serviceContainer,
+        final ActorFuture<ClientTransport> managementClientFuture = createClientTransport(serviceContainer,
                 MANAGEMENT_API_CLIENT_NAME,
                 transportComponentCfg.managementApi.getReceiveBufferSize(transportComponentCfg.defaultReceiveBufferSize),
                 MGMT_REQUEST_POOL_SIZE,
                 true,
                 Collections.singletonList(managementEndpoint));
 
-        final ActorFuture<Void> replicationClientFuture = createClientTransport(serviceContainer,
+        final ActorFuture<ClientTransport> replicationClientFuture = createClientTransport(serviceContainer,
                 REPLICATION_API_CLIENT_NAME,
                 transportComponentCfg.replicationApi.getReceiveBufferSize(transportComponentCfg.defaultReceiveBufferSize),
                 MGMT_REQUEST_POOL_SIZE,
@@ -108,7 +113,7 @@ public class TransportComponent implements Component
         final long controlMessageRequestTimeoutInMillis = transportComponentCfg.clientApi.getControlMessageRequestTimeoutInMillis(Long.MAX_VALUE);
 
         final ControlMessageHandlerManagerService controlMessageHandlerManagerService = new ControlMessageHandlerManagerService(controlMessageRequestTimeoutInMillis);
-        final ActorFuture<Void> controlMessageServiceFuture = serviceContainer.createService(TransportServiceNames.CONTROL_MESSAGE_HANDLER_MANAGER, controlMessageHandlerManagerService)
+        final ActorFuture<ControlMessageHandlerManager> controlMessageServiceFuture = serviceContainer.createService(TransportServiceNames.CONTROL_MESSAGE_HANDLER_MANAGER, controlMessageHandlerManagerService)
                                                                               .dependency(controlMessageBufferService, controlMessageHandlerManagerService.getControlMessageBufferInjector())
                                                                               .dependency(TransportServiceNames.serverTransport(CLIENT_API_SERVER_NAME), controlMessageHandlerManagerService.getTransportInjector())
                                                                               .dependency(TaskQueueServiceNames.TASK_QUEUE_SUBSCRIPTION_MANAGER, controlMessageHandlerManagerService.getTaskSubscriptionManagerInjector())
@@ -125,7 +130,7 @@ public class TransportComponent implements Component
         context.addRequiredStartAction(controlMessageServiceFuture);
     }
 
-    protected ActorFuture<Void> bindBufferingProtocolEndpoint(
+    protected ActorFuture<BufferingServerTransport> bindBufferingProtocolEndpoint(
             ServiceContainer serviceContainer,
             String name,
             SocketBindingCfg socketBindingCfg,
@@ -142,7 +147,7 @@ public class TransportComponent implements Component
                 socketBindingCfg.getReceiveBufferSize(defaultConfig.defaultReceiveBufferSize));
     }
 
-    protected ActorFuture<Void> bindNonBufferingProtocolEndpoint(
+    protected ActorFuture<ServerTransport> bindNonBufferingProtocolEndpoint(
             ServiceContainer serviceContainer,
             String name,
             SocketBindingCfg socketBindingCfg,
@@ -162,7 +167,7 @@ public class TransportComponent implements Component
                 messageHandlerService);
     }
 
-    protected ActorFuture<Void> createServerTransport(
+    protected ActorFuture<ServerTransport> createServerTransport(
             ServiceContainer serviceContainer,
             String name,
             InetSocketAddress bindAddress,
@@ -182,7 +187,7 @@ public class TransportComponent implements Component
 
     }
 
-    protected ActorFuture<Void> createBufferingServerTransport(
+    protected ActorFuture<BufferingServerTransport> createBufferingServerTransport(
             ServiceContainer serviceContainer,
             String name,
             InetSocketAddress bindAddress,
@@ -229,7 +234,7 @@ public class TransportComponent implements Component
         return serviceName;
     }
 
-    protected ActorFuture<Void> createClientTransport(
+    protected ActorFuture<ClientTransport> createClientTransport(
             ServiceContainer serviceContainer,
             String name,
             int receiveBufferSize,
