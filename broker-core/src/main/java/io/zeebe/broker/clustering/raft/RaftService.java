@@ -182,7 +182,7 @@ public class RaftService extends Actor implements Service<Raft>, RaftStateListen
                     LogStreamServiceNames.SYSTEM_STREAM_GROUP :
                     LogStreamServiceNames.WORKFLOW_STREAM_GROUP;
 
-                final ActorFuture<Void> future =
+                final ActorFuture<LogStream> future =
                     startContext
                         .createService(logStreamServiceName, service)
                         .dependency(CLUSTER_MANAGER_SERVICE)
