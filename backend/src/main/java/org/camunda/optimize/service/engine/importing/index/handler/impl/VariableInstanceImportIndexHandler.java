@@ -2,13 +2,11 @@ package org.camunda.optimize.service.engine.importing.index.handler.impl;
 
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.index.handler.ScrollBasedImportIndexHandler;
-import org.camunda.optimize.service.util.EsHelper;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.indices.TermsLookup;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
@@ -20,23 +18,11 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.ALL_VARIABLES_IMPORTED;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.BOOLEAN_VARIABLES;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.DATE_VARIABLES;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.DOUBLE_VARIABLES;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.END_DATE;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.ENGINE;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.INTEGER_VARIABLES;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.LONG_VARIABLES;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_DEFINITION_ID;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_INSTANCE_ID;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.SHORT_VARIABLES;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.START_DATE;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.STRING_VARIABLES;
-import static org.camunda.optimize.service.es.schema.type.VariableProcessInstanceTrackingType.PROCESS_INSTANCE_IDS;
-import static org.camunda.optimize.service.es.schema.type.VariableProcessInstanceTrackingType.VARIABLE_PROCESS_INSTANCE_TRACKING_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsLookupQuery;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
@@ -98,16 +84,10 @@ public class VariableInstanceImportIndexHandler extends ScrollBasedImportIndexHa
   }
 
   private QueryBuilder buildBasicQuery() {
-    TermsLookup termsLookup = new TermsLookup(
-      configurationService.getOptimizeIndex(VARIABLE_PROCESS_INSTANCE_TRACKING_TYPE),
-      VARIABLE_PROCESS_INSTANCE_TRACKING_TYPE,
-      EsHelper.constructKey(VARIABLE_PROCESS_INSTANCE_TRACKING_TYPE, engineContext.getEngineAlias()),
-      PROCESS_INSTANCE_IDS);
     BoolQueryBuilder query = QueryBuilders.boolQuery();
     query
       .must(termQuery(ENGINE, engineContext.getEngineAlias()))
       .must(existsQuery(END_DATE))
-      .mustNot(termsLookupQuery(PROCESS_INSTANCE_ID, termsLookup))
       .must(termQuery(ALL_VARIABLES_IMPORTED, false));
     if (configurationService.areProcessDefinitionsToImportDefined()) {
       BoolQueryBuilder matchConfiguredProcessDefinitions = QueryBuilders.boolQuery();
@@ -120,7 +100,7 @@ public class VariableInstanceImportIndexHandler extends ScrollBasedImportIndexHa
     return query;
   }
   @Override
-  protected String getElasticsearchTrackingType() {
-    return VARIABLE_PROCESS_INSTANCE_TRACKING_TYPE;
+  protected String getElasticsearchTypeForStoring() {
+    return configurationService.getVariableType();
   }
 }

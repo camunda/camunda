@@ -2,15 +2,12 @@ package org.camunda.optimize.service.engine.importing.index.handler.impl;
 
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.index.handler.ScrollBasedImportIndexHandler;
-import org.camunda.optimize.service.util.EsHelper;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.indices.TermsLookup;
 import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -20,12 +17,11 @@ import org.springframework.stereotype.Component;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlTrackingType.PROCESS_DEFINITION_IDS;
-import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlTrackingType.PROCESS_DEFINITION_XML_TRACKING_TYPE;
-import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.ENGINE;
-import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_ID;
+import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType.ENGINE;
+import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType.BPMN_20_XML;
+import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType.PROCESS_DEFINITION_ID;
+import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsLookupQuery;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
@@ -58,20 +54,15 @@ public class ProcessDefinitionXmlImportIndexHandler extends ScrollBasedImportInd
     esclient
       .admin()
       .indices()
-      .prepareRefresh(configurationService.getOptimizeIndex(configurationService.getProcessDefinitionType()))
+      .prepareRefresh(configurationService.getOptimizeIndex(configurationService.getProcessDefinitionXmlType()))
       .get();
   }
 
   private QueryBuilder buildBasicQuery() {
-    TermsLookup termsLookup = new TermsLookup(
-      configurationService.getOptimizeIndex(PROCESS_DEFINITION_XML_TRACKING_TYPE),
-      PROCESS_DEFINITION_XML_TRACKING_TYPE,
-      EsHelper.constructKey(PROCESS_DEFINITION_XML_TRACKING_TYPE, engineContext.getEngineAlias()),
-      PROCESS_DEFINITION_IDS);
     BoolQueryBuilder query = QueryBuilders.boolQuery();
     query
-      .must(termQuery(ENGINE, engineContext.getEngineAlias()))
-      .mustNot(termsLookupQuery(PROCESS_DEFINITION_ID, termsLookup));
+      .mustNot(existsQuery(BPMN_20_XML))
+      .must(termQuery(ENGINE, engineContext.getEngineAlias()));
     if (configurationService.areProcessDefinitionsToImportDefined()) {
       BoolQueryBuilder matchConfiguredProcessDefinitions = QueryBuilders.boolQuery();
       for (String processDefinitionId : configurationService.getProcessDefinitionIdsToImport()) {
@@ -91,8 +82,8 @@ public class ProcessDefinitionXmlImportIndexHandler extends ScrollBasedImportInd
     QueryBuilder query;
     query = buildBasicQuery();
     SearchResponse scrollResp = esclient
-        .prepareSearch(configurationService.getOptimizeIndex(configurationService.getProcessDefinitionType()))
-        .setTypes(configurationService.getProcessDefinitionType())
+        .prepareSearch(configurationService.getOptimizeIndex(configurationService.getProcessDefinitionXmlType()))
+        .setTypes(configurationService.getProcessDefinitionXmlType())
         .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
         .setQuery(query)
         .setFetchSource(false)
@@ -110,7 +101,7 @@ public class ProcessDefinitionXmlImportIndexHandler extends ScrollBasedImportInd
   }
 
   @Override
-  protected String getElasticsearchTrackingType() {
-    return PROCESS_DEFINITION_XML_TRACKING_TYPE;
+  protected String getElasticsearchTypeForStoring() {
+    return configurationService.getProcessDefinitionXmlType();
   }
 }

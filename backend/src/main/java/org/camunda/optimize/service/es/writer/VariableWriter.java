@@ -12,11 +12,10 @@ import org.camunda.optimize.dto.optimize.query.variable.value.LongVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.value.ShortVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.value.StringVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.value.VariableInstanceDto;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.VariableHelper;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
-import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.script.Script;
@@ -26,15 +25,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.io.IOException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -120,7 +115,7 @@ public class VariableWriter {
   private void addImportVariablesRequest(
     BulkRequestBuilder addVariablesToProcessInstanceBulkRequest,
     String processInstanceId,
-    Map<String, List<VariableDto>> typeMappedVars) throws IOException, ParseException {
+    Map<String, List<VariableDto>> typeMappedVars) throws IOException {
 
     Map<String, Object> params = buildParameters(typeMappedVars);
 
@@ -148,7 +143,7 @@ public class VariableWriter {
 
   }
 
-  private Map<String, Object> buildParameters(Map<String, List<VariableDto>> typeMappedVars) throws IOException, ParseException {
+  private Map<String, Object> buildParameters(Map<String, List<VariableDto>> typeMappedVars) throws IOException {
     Map<String, Object> params = new HashMap<>();
     for (Map.Entry<String, List<VariableDto>> typedVarsEntry : typeMappedVars.entrySet()) {
       String typeName = typedVarsEntry.getKey();
@@ -161,8 +156,8 @@ public class VariableWriter {
     return params;
   }
 
-  private List<VariableInstanceDto> mapTypeValues(List<VariableDto> variablesOfOneType) throws ParseException {
-    List <VariableInstanceDto> result = new ArrayList();
+  private List<VariableInstanceDto> mapTypeValues(List<VariableDto> variablesOfOneType) {
+    List <VariableInstanceDto> result = new ArrayList<>();
     for (VariableDto variable : variablesOfOneType) {
       result.add(parseValue(variable));
     }
@@ -171,15 +166,17 @@ public class VariableWriter {
 
   private String createInlineUpdateScript(Map<String, List<VariableDto>> typeMappedVars) {
     StringBuilder builder = new StringBuilder();
-    for (Map.Entry<String, List<VariableDto>> typedVarsEntry : typeMappedVars.entrySet()) {
-      String typeName = typedVarsEntry.getKey();
-      builder.append("ctx._source." + typeName + ".addAll(params." + typeName + ");\n");
-    }
-    builder.append("ctx._source.allVariablesImported=true");
+    builder.append("if(!ctx._source.allVariablesImported) {\n"); // we need to ensure that variables are not added twice
+      for (Map.Entry<String, List<VariableDto>> typedVarsEntry : typeMappedVars.entrySet()) {
+        String typeName = typedVarsEntry.getKey();
+        builder.append("ctx._source." + typeName + ".addAll(params." + typeName + ");\n");
+      }
+      builder.append("ctx._source.allVariablesImported=true; \n");
+    builder.append("}");
     return builder.toString();
   }
 
-  private String getNewProcessInstanceRecordString(String processInstanceId, Map<String, List<VariableDto>> typeMappedVars) throws JsonProcessingException, ParseException {
+  private String getNewProcessInstanceRecordString(String processInstanceId, Map<String, List<VariableDto>> typeMappedVars) throws JsonProcessingException {
 
     VariableDto variable = grabFirstOne(typeMappedVars);
     if (variable == null) {
@@ -214,7 +211,7 @@ public class VariableWriter {
   }
 
 
-  private void addVariableRequest(BulkRequestBuilder variableBulkRequest, VariableDto variable) throws JsonProcessingException {
+  private void addVariableRequest(BulkRequestBuilder variableBulkRequest, VariableDto variable) {
     String variableId = variable.getId();
     variableBulkRequest.add(esclient
       .prepareIndex(
@@ -230,7 +227,7 @@ public class VariableWriter {
     return variable.getProcessDefinitionId() == null;
   }
 
-  private VariableInstanceDto parseValue(VariableDto e) throws ParseException {
+  private VariableInstanceDto parseValue(VariableDto e) {
     VariableInstanceDto variableInstanceDto;
     if (isStringType(e.getType())) {
       StringVariableDto stringVariableDto = new StringVariableDto();

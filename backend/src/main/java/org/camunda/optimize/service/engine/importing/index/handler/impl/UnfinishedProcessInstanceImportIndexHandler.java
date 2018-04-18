@@ -2,13 +2,11 @@ package org.camunda.optimize.service.engine.importing.index.handler.impl;
 
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.index.handler.ScrollBasedImportIndexHandler;
-import org.camunda.optimize.service.util.EsHelper;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.indices.TermsLookup;
 import org.elasticsearch.search.SearchHit;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -20,12 +18,9 @@ import java.util.Set;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.END_DATE;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.ENGINE;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_DEFINITION_ID;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_INSTANCE_ID;
-import static org.camunda.optimize.service.es.schema.type.UnfinishedProcessInstanceTrackingType.PROCESS_INSTANCE_IDS;
-import static org.camunda.optimize.service.es.schema.type.UnfinishedProcessInstanceTrackingType.UNFINISHED_PROCESS_INSTANCE_TRACKING_TYPE;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.START_DATE;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsLookupQuery;
 
 
 @Component
@@ -88,15 +83,10 @@ public class UnfinishedProcessInstanceImportIndexHandler extends ScrollBasedImpo
   }
 
   private QueryBuilder buildBasicQuery() {
-    TermsLookup termsLookup = new TermsLookup(
-      configurationService.getOptimizeIndex(UNFINISHED_PROCESS_INSTANCE_TRACKING_TYPE),
-      UNFINISHED_PROCESS_INSTANCE_TRACKING_TYPE,
-      EsHelper.constructKey(UNFINISHED_PROCESS_INSTANCE_TRACKING_TYPE, engineContext.getEngineAlias()),
-      PROCESS_INSTANCE_IDS);
     BoolQueryBuilder query = QueryBuilders.boolQuery();
     query
       .mustNot(existsQuery(END_DATE))
-      .mustNot(termsLookupQuery(PROCESS_INSTANCE_ID, termsLookup))
+      .mustNot(existsQuery(START_DATE))
       .must(termQuery(ENGINE, engineContext.getEngineAlias()));
     if (configurationService.areProcessDefinitionsToImportDefined()) {
       BoolQueryBuilder matchConfiguredProcessDefinitions = QueryBuilders.boolQuery();
@@ -110,8 +100,8 @@ public class UnfinishedProcessInstanceImportIndexHandler extends ScrollBasedImpo
   }
 
   @Override
-  protected String getElasticsearchTrackingType() {
-    return UNFINISHED_PROCESS_INSTANCE_TRACKING_TYPE;
+  protected String getElasticsearchTypeForStoring() {
+    return configurationService.getUnfinishedProcessInstanceIdTrackingType();
   }
 
 }

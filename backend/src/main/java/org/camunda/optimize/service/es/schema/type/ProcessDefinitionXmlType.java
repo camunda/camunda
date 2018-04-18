@@ -42,7 +42,7 @@ public class ProcessDefinitionXmlType extends StrictTypeMappingCreator {
       .endObject()
       .startObject(BPMN_20_XML)
         .field("type", "text")
-        .field("index", false)
+        .field("index", true)
       .endObject();
   }
 

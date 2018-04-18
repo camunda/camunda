@@ -11,8 +11,6 @@ public class ProcessDefinitionXmlTrackingType extends StrictTypeMappingCreator {
 
   public static final String PROCESS_DEFINITION_XML_TRACKING_TYPE = "process-definition-xml-tracking";
 
-  public static final String PROCESS_DEFINITION_IDS = "ids";
-
   @Override
   public String getType() {
     return PROCESS_DEFINITION_XML_TRACKING_TYPE;
@@ -20,9 +18,6 @@ public class ProcessDefinitionXmlTrackingType extends StrictTypeMappingCreator {
 
   @Override
   protected XContentBuilder addProperties(XContentBuilder builder) throws IOException {
-    return builder
-      .startObject(PROCESS_DEFINITION_IDS)
-        .field("type", "keyword")
-      .endObject();
+    return builder;
   }
 }
