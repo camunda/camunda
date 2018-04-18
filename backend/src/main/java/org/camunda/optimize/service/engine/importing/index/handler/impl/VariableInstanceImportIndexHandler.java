@@ -19,6 +19,7 @@ import org.springframework.stereotype.Component;
 import java.util.HashSet;
 import java.util.Set;
 
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.ALL_VARIABLES_IMPORTED;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.BOOLEAN_VARIABLES;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.DATE_VARIABLES;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.DOUBLE_VARIABLES;
@@ -107,13 +108,7 @@ public class VariableInstanceImportIndexHandler extends ScrollBasedImportIndexHa
       .must(termQuery(ENGINE, engineContext.getEngineAlias()))
       .must(existsQuery(END_DATE))
       .mustNot(termsLookupQuery(PROCESS_INSTANCE_ID, termsLookup))
-      .mustNot(existsQuery(BOOLEAN_VARIABLES))
-      .mustNot(existsQuery(DOUBLE_VARIABLES))
-      .mustNot(existsQuery(STRING_VARIABLES))
-      .mustNot(existsQuery(SHORT_VARIABLES))
-      .mustNot(existsQuery(LONG_VARIABLES))
-      .mustNot(existsQuery(DATE_VARIABLES))
-      .mustNot(existsQuery(INTEGER_VARIABLES));
+      .must(termQuery(ALL_VARIABLES_IMPORTED, false));
     if (configurationService.areProcessDefinitionsToImportDefined()) {
       BoolQueryBuilder matchConfiguredProcessDefinitions = QueryBuilders.boolQuery();
       for (String processDefinitionId : configurationService.getProcessDefinitionIdsToImport()) {

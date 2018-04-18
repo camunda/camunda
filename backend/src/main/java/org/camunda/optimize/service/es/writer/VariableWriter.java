@@ -175,6 +175,7 @@ public class VariableWriter {
       String typeName = typedVarsEntry.getKey();
       builder.append("ctx._source." + typeName + ".addAll(params." + typeName + ");\n");
     }
+    builder.append("ctx._source.allVariablesImported=true");
     return builder.toString();
   }
 
@@ -192,6 +193,7 @@ public class VariableWriter {
     procInst.setProcessInstanceId(processInstanceId);
     procInst.setStartDate(OffsetDateTime.now());
     procInst.setEndDate(OffsetDateTime.now());
+    procInst.setAllVariablesImported(true);
     for (Map.Entry<String, List<VariableDto>> entry: typeMappedVars.entrySet()) {
       for (VariableDto var : entry.getValue()) {
         procInst.addVariableInstance(parseValue(var));

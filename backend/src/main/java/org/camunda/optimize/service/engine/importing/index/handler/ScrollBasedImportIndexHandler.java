@@ -104,7 +104,12 @@ public abstract class ScrollBasedImportIndexHandler
     Script updateScript = new Script(
       ScriptType.INLINE,
       Script.DEFAULT_SCRIPT_LANG,
-      "ctx._source.ids.addAll(params.ids)",
+      // the terms lookup does not work with values about 65536. Thus, we need to ensure that the value is always below
+      // check OPT-1212 for more information
+      "ctx._source.ids.addAll(params.ids); " +
+      "if(ctx._source.ids.length > 20000) {" +
+        "ctx._source.ids.removeRange(0, 10000)" +
+      "}",
       params
     );
 

@@ -33,6 +33,7 @@ public class ProcessInstanceDto implements OptimizeDto {
   protected List<DoubleVariableDto> doubleVariables = new ArrayList<>();
   protected List<DateVariableDto> dateVariables = new ArrayList<>();
   protected List<BooleanVariableDto> booleanVariables = new ArrayList<>();
+  protected Boolean allVariablesImported = false;
 
   public void addVariableInstance(VariableInstanceDto variableInstanceDto) {
     if( variableInstanceDto instanceof StringVariableDto) {
@@ -197,5 +198,13 @@ public class ProcessInstanceDto implements OptimizeDto {
 
   public void setEngine(String engine) {
     this.engine = engine;
+  }
+
+  public Boolean getAllVariablesImported() {
+    return allVariablesImported;
+  }
+
+  public void setAllVariablesImported(Boolean allVariablesImported) {
+    this.allVariablesImported = allVariablesImported;
   }
 }
