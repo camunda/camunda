@@ -3,7 +3,14 @@ import ReportBlankSlate from '../ReportBlankSlate';
 
 import {Table as TableRenderer} from 'components';
 
-export default function Table({data, formatter, labels, errorMessage, disableReportScrolling}) {
+export default function Table({
+  data,
+  hiddenColumns = [],
+  formatter = v => v,
+  labels,
+  errorMessage,
+  disableReportScrolling
+}) {
   if (!data || typeof data !== 'object') {
     return <ReportBlankSlate message={errorMessage} />;
   }
@@ -11,16 +18,20 @@ export default function Table({data, formatter, labels, errorMessage, disableRep
   return (
     <TableRenderer
       disableReportScrolling={disableReportScrolling}
-      {...formatData(data, formatter, labels)}
+      {...formatData(data, formatter, labels, hiddenColumns)}
     />
   );
 }
 
-function formatData(data, formatter, labels) {
+function formatData(data, formatter, labels, hiddenColumns) {
   if (data.length) {
     // raw data
-    const processInstanceProps = Object.keys(data[0]).filter(entry => entry !== 'variables');
-    const variableNames = Object.keys(data[0].variables);
+    const processInstanceProps = Object.keys(data[0]).filter(
+      entry => entry !== 'variables' && !hiddenColumns.includes(entry)
+    );
+    const variableNames = Object.keys(data[0].variables).filter(
+      entry => !hiddenColumns.includes('var__' + entry)
+    );
 
     const body = data.map(instance => {
       let row = processInstanceProps.map(entry => instance[entry]);
@@ -31,7 +42,10 @@ function formatData(data, formatter, labels) {
     });
 
     const head = processInstanceProps;
-    head.push({label: 'Variables', columns: variableNames});
+
+    if (variableNames.length > 0) {
+      head.push({label: 'Variables', columns: variableNames});
+    }
 
     return {head, body};
   } else {

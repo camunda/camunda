@@ -1,0 +1,30 @@
+.ColumnSelection {
+  padding: 10px;
+}
+
+.ColumnSelection__entry {
+  white-space: nowrap;
+  margin-top: 5px;
+}
+
+.ColumnSelection__Switch {
+  transform: scale(0.75);
+  vertical-align: middle;
+}
+
+.ColumnSelection__notice {
+  font-size: 12px;
+  color: #888;
+}
+
+.ColumnSelection__Popover {
+  width: 32px;
+
+  .Popover__button {
+    padding-left: 7px;
+    padding-right: 7px;
+    border-left: none;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+  }
+}

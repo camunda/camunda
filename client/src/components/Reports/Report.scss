@@ -64,9 +64,13 @@
   margin-right: 0;
 }
 
-.Report__content {
+.Report__view {
+  display: flex;
   margin-top: 24px;
   margin-bottom: 24px;
+}
+
+.Report__content {
   display: flex;
   justify-content: flex-start;
   flex-direction: column;

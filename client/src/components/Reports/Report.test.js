@@ -20,6 +20,8 @@ jest.mock('./service', () => {
   };
 });
 
+jest.mock('./ColumnSelection', () => () => <div>ColumnSelection</div>);
+
 jest.mock('services', () => {
   return {
     loadProcessDefinitions: () => [{key: 'key', versions: [{version: 2}, {version: 1}]}]
@@ -469,4 +471,43 @@ describe('edit mode', async () => {
     expect(node.state().data.processDefinitionKey).toBe('key');
     expect(node.state().data.processDefinitionVersion).toBe(2);
   });
+});
+
+it('should include a column selection for raw data reports in edit mode', async () => {
+  props.match.params.viewMode = 'edit';
+
+  const node = mount(<Report {...props} />);
+  await node.instance().componentDidMount();
+
+  node.setState({
+    loaded: true,
+    data: {
+      view: {operation: 'rawData'},
+      configuration: {}
+    },
+    reportResult: {
+      result: [{foo: 'bar'}]
+    }
+  });
+
+  expect(node).toIncludeText('ColumnSelection');
+});
+
+it('should not include a column selection for raw data reports in view mode', async () => {
+  const node = mount(<Report {...props} />);
+  await node.instance().componentDidMount();
+
+  node.setState({
+    loaded: true,
+    data: {
+      view: {operation: 'rawData'},
+      configuration: {}
+    },
+    reportResult: {
+      data: {visualization: 'table'},
+      result: [{foo: 'bar'}]
+    }
+  });
+
+  expect(node).not.toIncludeText('ColumnSelection');
 });

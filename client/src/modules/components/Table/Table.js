@@ -67,12 +67,14 @@ export default class Table extends React.Component {
   };
 
   fixColumnAlignment = () => {
-    const {clientWidth, offsetWidth} = this.tableRef.querySelector('.rt-tbody');
-    const margin = clientWidth < offsetWidth ? offsetWidth - clientWidth : 0;
+    if (this.tableRef) {
+      const {clientWidth, offsetWidth} = this.tableRef.querySelector('.rt-tbody');
+      const margin = clientWidth < offsetWidth ? offsetWidth - clientWidth : 0;
 
-    this.tableRef.querySelectorAll('.rt-thead > .rt-tr').forEach(({style}) => {
-      style.marginRight = margin + 'px';
-    });
+      this.tableRef.querySelectorAll('.rt-thead > .rt-tr').forEach(({style}) => {
+        style.marginRight = margin + 'px';
+      });
+    }
   };
 
   componentDidMount() {

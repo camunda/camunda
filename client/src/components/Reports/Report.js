@@ -1,5 +1,7 @@
 import React from 'react';
 import moment from 'moment';
+import update from 'immutability-helper';
+
 import {Link, Redirect} from 'react-router-dom';
 import {
   Button,
@@ -25,6 +27,8 @@ import {
 
 import {loadProcessDefinitions} from 'services';
 import ControlPanel from './ControlPanel';
+
+import ColumnSelection from './ColumnSelection';
 
 import './Report.css';
 
@@ -273,10 +277,42 @@ export default class Report extends React.Component {
         </div>
 
         <ControlPanel {...data} reportResult={reportResult} onChange={this.updateReport} />
-        <div className="Report__content">
-          <ReportView report={reportResult} />
+        <div className="Report__view">
+          <div className="Report__content">
+            <ReportView report={reportResult} />
+          </div>
+          {this.shouldShowColumnSelection() && (
+            <ColumnSelection
+              columns={reportResult.result[0]}
+              excludedColumns={data.configuration.excludedColumns}
+              onChange={this.updateExcludedColumns}
+            />
+          )}
         </div>
       </div>
+    );
+  };
+
+  shouldShowColumnSelection = () => {
+    const {data, reportResult} = this.state;
+
+    return (
+      data &&
+      data.view &&
+      data.view.operation === 'rawData' &&
+      reportResult &&
+      reportResult.result &&
+      reportResult.result[0]
+    );
+  };
+
+  updateExcludedColumns = excludedColumns => {
+    const changes = {data: {configuration: {excludedColumns: {$set: excludedColumns}}}};
+    this.setState(
+      update(this.state, {
+        ...changes,
+        reportResult: changes
+      })
     );
   };
 
@@ -358,8 +394,10 @@ export default class Report extends React.Component {
             </Button>
           </Modal.Actions>
         </Modal>
-        <div className="Report__content">
-          <ReportView report={reportResult} />
+        <div className="Report__view">
+          <div className="Report__content">
+            <ReportView report={reportResult} />
+          </div>
         </div>
       </div>
     );

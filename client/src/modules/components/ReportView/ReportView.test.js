@@ -235,7 +235,8 @@ const exampleDurationReport = {
       type: 'processInstance',
       unit: 'day'
     },
-    visualization: 'table'
+    visualization: 'table',
+    configuration: {}
   },
   result: {
     '2015-03-25T12:00:00Z': 2,

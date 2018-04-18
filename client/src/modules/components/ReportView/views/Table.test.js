@@ -135,3 +135,23 @@ it('should format data according to the provided formatter', () => {
   expect(node).toIncludeText('4');
   expect(node).toIncludeText('6');
 });
+
+it('should exclude hidden columns', () => {
+  const node = mount(
+    <Table
+      data={[
+        {
+          a: 1,
+          b: 2,
+          c: 3,
+          variables: {}
+        }
+      ]}
+      hiddenColumns={['b']}
+    />
+  );
+
+  expect(node).toIncludeText('"a"');
+  expect(node).not.toIncludeText('"b"');
+  expect(node).toIncludeText('"c"');
+});
