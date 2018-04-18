@@ -210,6 +210,7 @@ public class ServiceController extends Actor
                     onStartFailed((Throwable) t.getPayload());
                     break;
                 case DEPENDENCIES_UNAVAILABLE:
+                case DEPENDENTS_STOPPED:
                 case SERVICE_STOPPING:
                     stopAfterStarted = true;
                     break;
