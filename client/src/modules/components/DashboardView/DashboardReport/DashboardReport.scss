@@ -14,6 +14,10 @@
   padding: 10px;
 }
 
+.DashboardReport__visualization--unscrollable {
+  overflow: hidden;
+}
+
 .DashboardReport__header {
   position: absolute;
   top: 0;

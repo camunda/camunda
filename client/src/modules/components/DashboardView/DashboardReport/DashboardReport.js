@@ -1,5 +1,7 @@
 import React from 'react';
 
+import classnames from 'classnames';
+
 import {ReportView} from 'components';
 import {Link} from 'react-router-dom';
 
@@ -35,33 +37,36 @@ export default class DashboardReport extends React.Component {
       return 'loading...';
     }
 
+    const {report, disableNameLink, disableReportScrolling, addons, tileDimensions} = this.props;
+
     return (
       <div className="DashboardReport__wrapper">
         <div className="DashboardReport__header">
-          {this.props.disableNameLink ? (
+          {disableNameLink ? (
             <span className="DashboardReport__heading">{this.getName()}</span>
           ) : (
-            <Link to={`/report/${this.props.report.id}`} className="DashboardReport__heading">
+            <Link to={`/report/${report.id}`} className="DashboardReport__heading">
               {this.getName()}
             </Link>
           )}
         </div>
-        <div className="DashboardReport__visualization">
+        <div
+          className={classnames('DashboardReport__visualization', {
+            'DashboardReport__visualization--unscrollable': disableReportScrolling
+          })}
+        >
           {this.state.data.errorMessage ? (
             this.state.data.errorMessage
           ) : (
-            <ReportView
-              disableReportScrolling={this.props.disableReportScrolling}
-              report={this.state.data}
-            />
+            <ReportView disableReportScrolling={disableReportScrolling} report={this.state.data} />
           )}
         </div>
-        {this.props.addons &&
-          this.props.addons.map(addon =>
+        {addons &&
+          addons.map(addon =>
             React.cloneElement(addon, {
-              report: this.props.report,
+              report,
               loadReportData: this.loadReportData,
-              tileDimensions: this.props.tileDimensions
+              tileDimensions
             })
           )}
       </div>
