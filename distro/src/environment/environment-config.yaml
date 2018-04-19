@@ -1,4 +1,14 @@
 ---
+###############################################################################
+#                                                                             #
+#                     Optimize Environment Configuration                      #
+#                                                                             #
+###############################################################################
+
+# Note: for all possible configuration options please have a look
+#       at the Optimize documentation:
+#       https://docs.camunda.org/optimize/latest/technical-guide/configuration/
+
 container:
   # NOTE: changing this property also requires adjustments in the startup script
   # start-optimize.sh on Linux or start-optimize.bat on Windows.
