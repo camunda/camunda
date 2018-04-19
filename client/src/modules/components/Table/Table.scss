@@ -5,8 +5,11 @@
   flex-direction: column;
 }
 
-.Table__unscrollable-mode .rt-tbody {
-  overflow: hidden;
+.Table__unscrollable-mode {
+  .rt-tbody,
+  .rt-table {
+    overflow: hidden;
+  }
 }
 
 .Table {
@@ -21,7 +24,6 @@
   }
 
   .rt-table {
-    overflow: inherit;
     min-height: 0;
   }
 
@@ -42,10 +44,24 @@
 
   .-pagination {
     padding: 5px;
+    box-shadow: none;
 
     .-previous,
     .-next {
-      flex: 0;
+      flex: 1 0;
+      padding: 0 20px;
+    }
+
+    .-previous {
+      text-align: right;
+    }
+
+    .-next {
+      text-align: left;
+    }
+
+    .-center {
+      flex: 0 1;
     }
 
     .-pageInfo {

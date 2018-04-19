@@ -22,36 +22,28 @@ export default class Table extends React.Component {
     const columns = Table.formatColumns(head);
     const data = Table.formatData(head, body);
     return (
-      <ReactTable
-        data={data}
-        columns={columns}
-        resized={this.state.resizedState}
-        pageSize={pageSize}
-        showPagination={data.length > pageSize}
-        showPaginationTop={false}
-        showPaginationBottom={true}
-        showPageSizeOptions={false}
-        minRows={0}
-        sortable={false}
-        multiSort={false}
-        className={classnames('-striped', '-highlight', 'Table', {
-          'Table__unscrollable-mode': disableReportScrolling
-        })}
-        noDataText="No data available"
-        onResizedChange={this.updateResizedState}
-        PreviousComponent={props => <Button {...props} />}
-        NextComponent={props => <Button {...props} />}
-      >
-        {({rowMinWidth}, render) => (
-          <div
-            className={classnames('Table__container', className)}
-            ref={ref => (this.tableRef = ref)}
-            style={{minWidth: rowMinWidth}}
-          >
-            {render()}
-          </div>
-        )}
-      </ReactTable>
+      <div className={classnames('Table__container', className)} ref={ref => (this.tableRef = ref)}>
+        <ReactTable
+          data={data}
+          columns={columns}
+          resized={this.state.resizedState}
+          pageSize={pageSize}
+          showPagination={data.length > pageSize}
+          showPaginationTop={false}
+          showPaginationBottom={true}
+          showPageSizeOptions={false}
+          minRows={0}
+          sortable={false}
+          multiSort={false}
+          className={classnames('-striped', '-highlight', 'Table', {
+            'Table__unscrollable-mode': disableReportScrolling
+          })}
+          noDataText="No data available"
+          onResizedChange={this.updateResizedState}
+          PreviousComponent={props => <Button {...props} />}
+          NextComponent={props => <Button {...props} />}
+        />
+      </div>
     );
   }
 

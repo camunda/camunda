@@ -12,16 +12,14 @@ jest.mock('react-router-dom', () => {
   };
 });
 
-jest.mock('react-table', () => ({children}) =>
-  children({rowMinWidth: 500}, () => (
-    <div>
-      <div className="rt-thead">
-        <div className="rt-tr" />
-      </div>
-      <div className="rt-tbody" />
+jest.mock('react-table', () => () => (
+  <div>
+    <div className="rt-thead">
+      <div className="rt-tr" />
     </div>
-  ))
-);
+    <div className="rt-tbody" />
+  </div>
+));
 
 jest.mock('components', () => {
   return {
