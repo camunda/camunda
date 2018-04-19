@@ -5,6 +5,7 @@ public class ReportLocationDto {
   protected String id;
   protected PositionDto position;
   protected DimensionDto dimensions;
+  protected Object configuration;
 
   public String getId() {
     return id;
@@ -28,5 +29,13 @@ public class ReportLocationDto {
 
   public void setDimensions(DimensionDto dimensions) {
     this.dimensions = dimensions;
+  }
+
+  public Object getConfiguration() {
+    return configuration;
+  }
+
+  public void setConfiguration(Object configuration) {
+    this.configuration = configuration;
   }
 }

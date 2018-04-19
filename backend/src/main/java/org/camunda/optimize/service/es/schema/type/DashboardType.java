@@ -26,7 +26,7 @@ public class DashboardType extends StrictTypeMappingCreator {
   public static final String WIDTH = "width";
 
   public static final String REPORT_ID = "id";
-  public static final String REPORT_NAME = "name";
+  public static final String CONFIGURATION = "configuration";
 
   @Override
   public String getType() {
@@ -70,9 +70,6 @@ public class DashboardType extends StrictTypeMappingCreator {
       .startObject(REPORT_ID)
         .field("type", "keyword")
       .endObject()
-      .startObject(REPORT_NAME)
-        .field("type", "keyword")
-      .endObject()
       .startObject(POSITION)
         .field("type", "nested")
         .startObject("properties");
@@ -84,7 +81,11 @@ public class DashboardType extends StrictTypeMappingCreator {
         .startObject("properties");
           addNestedDimensionField(newBuilder)
         .endObject()
-      .endObject();
+      .endObject()
+      .startObject(CONFIGURATION)
+        .field("type", "text")
+        .field("index", false)
+      .endObject();;
     return newBuilder;
   }
 

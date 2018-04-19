@@ -119,6 +119,7 @@ public class DashboardHandlingIT {
     String id = createNewDashboard();
     ReportLocationDto reportLocationDto = new ReportLocationDto();
     reportLocationDto.setId("report-123");
+    reportLocationDto.setConfiguration("testConfiguration");
     DashboardDefinitionDto dashboard = new DashboardDefinitionDto();
     dashboard.setReports(Collections.singletonList(reportLocationDto));
     dashboard.setId("shouldNotBeUpdated");
@@ -139,6 +140,7 @@ public class DashboardHandlingIT {
     assertThat(newDashboard.getReports().size(), is(1));
     ReportLocationDto retrievedLocation = newDashboard.getReports().get(0);
     assertThat(retrievedLocation.getId(), is("report-123"));
+    assertThat(retrievedLocation.getConfiguration(), is("testConfiguration"));
     assertThat(newDashboard.getId(), is(id));
     assertThat(newDashboard.getCreated(), is(not(shouldBeIgnoredDate)));
     assertThat(newDashboard.getLastModified(), is(not(shouldBeIgnoredDate)));
