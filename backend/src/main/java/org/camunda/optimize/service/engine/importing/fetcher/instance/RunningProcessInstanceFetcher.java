@@ -19,10 +19,10 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class UnfinishedProcessInstanceFetcher extends
+public class RunningProcessInstanceFetcher extends
   RetryBackoffEngineEntityFetcher<HistoricProcessInstanceDto, IdSetBasedImportPage> {
 
-  public UnfinishedProcessInstanceFetcher(EngineContext engineContext) {
+  public RunningProcessInstanceFetcher(EngineContext engineContext) {
     super(engineContext);
   }
 

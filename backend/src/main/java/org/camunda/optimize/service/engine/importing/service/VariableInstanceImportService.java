@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.engine.importing.service;
 
 import org.camunda.optimize.dto.engine.HistoricVariableInstanceDto;
+import org.camunda.optimize.dto.optimize.query.variable.ProcessInstanceId;
 import org.camunda.optimize.dto.optimize.query.variable.VariableDto;
 import org.camunda.optimize.plugin.ImportAdapterProvider;
 import org.camunda.optimize.plugin.importing.variable.PluginVariableDto;
@@ -9,11 +10,15 @@ import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.diff.MissingEntitiesFinder;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
+import org.camunda.optimize.service.es.job.importing.AllVariablesImportedElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.VariableElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.VariableWriter;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.util.VariableHelper.isVariableTypeSupported;
 
@@ -109,6 +114,22 @@ public class VariableInstanceImportService extends
     VariableElasticsearchImportJob variableImportJob = new VariableElasticsearchImportJob(variableWriter);
     variableImportJob.setEntitiesToImport(variables);
     return variableImportJob;
+  }
+
+  public void flagProcessInstancesThatVariablesHaveBeenImported(Set<String> processInstanceIds) {
+    AllVariablesImportedElasticsearchImportJob allVariablesImportedJob =
+      new AllVariablesImportedElasticsearchImportJob(variableWriter);
+    List<ProcessInstanceId> processInstancesToFlag =
+      processInstanceIds
+        .stream()
+        .map(ProcessInstanceId::new)
+        .collect(Collectors.toList());
+    allVariablesImportedJob.setEntitiesToImport(processInstancesToFlag);
+    try {
+      elasticsearchImportJobExecutor.executeImportJob(allVariablesImportedJob);
+    } catch (InterruptedException e) {
+      logger.error("Was interrupted while trying to add new job to Elasticsearch import queue.", e);
+    }
   }
 
   @Override

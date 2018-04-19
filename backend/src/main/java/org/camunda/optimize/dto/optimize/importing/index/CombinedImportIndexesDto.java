@@ -5,10 +5,10 @@ import java.util.List;
 
 public class CombinedImportIndexesDto {
 
-  private List<DefinitionBasedImportIndexDto> definitionBasedIndexes = new ArrayList<>();
+  private List<TimestampBasedImportIndexDto> definitionBasedIndexes = new ArrayList<>();
   private List<AllEntitiesBasedImportIndexDto> allEntitiesBasedImportIndexes = new ArrayList<>();
 
-  public List<DefinitionBasedImportIndexDto> getDefinitionBasedIndexes() {
+  public List<TimestampBasedImportIndexDto> getDefinitionBasedIndexes() {
     return definitionBasedIndexes;
   }
 
@@ -16,15 +16,15 @@ public class CombinedImportIndexesDto {
     return allEntitiesBasedImportIndexes;
   }
 
-  public void addDefinitionBasedIndexDto(DefinitionBasedImportIndexDto definitionBasedImportIndexDto) {
-    definitionBasedIndexes.add(definitionBasedImportIndexDto);
+  public void addDefinitionBasedIndexDto(TimestampBasedImportIndexDto timestampBasedImportIndexDto) {
+    definitionBasedIndexes.add(timestampBasedImportIndexDto);
   }
 
   public void addAllEntitiesBasedIndexDto(AllEntitiesBasedImportIndexDto importIndexDto) {
     allEntitiesBasedImportIndexes.add(importIndexDto);
   }
 
-  public void setDefinitionBasedIndexes(List<DefinitionBasedImportIndexDto> definitionBasedIndexes) {
+  public void setDefinitionBasedIndexes(List<TimestampBasedImportIndexDto> definitionBasedIndexes) {
     this.definitionBasedIndexes = definitionBasedIndexes;
   }
 

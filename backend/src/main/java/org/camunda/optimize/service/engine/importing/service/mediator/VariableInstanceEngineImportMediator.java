@@ -8,6 +8,7 @@ import org.camunda.optimize.service.engine.importing.fetcher.instance.VariableIn
 import org.camunda.optimize.service.engine.importing.index.handler.impl.VariableInstanceImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.page.IdSetBasedImportPage;
 import org.camunda.optimize.service.engine.importing.service.VariableInstanceImportService;
+import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.VariableWriter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -29,6 +30,8 @@ public class VariableInstanceEngineImportMediator
   private VariableWriter variableWriter;
   @Autowired
   private ImportAdapterProvider importAdapterProvider;
+  @Autowired
+  private ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
 
   protected EngineContext engineContext;
 
@@ -62,8 +65,9 @@ public class VariableInstanceEngineImportMediator
       List<HistoricVariableInstanceDto> entities = engineEntityFetcher.fetchEngineEntities(page);
       if (!entities.isEmpty()) {
         variableInstanceImportService.executeImport(entities);
-        return true;
       }
+      variableInstanceImportService.flagProcessInstancesThatVariablesHaveBeenImported(page.getIds());
+      return true;
     }
     return false;
   }

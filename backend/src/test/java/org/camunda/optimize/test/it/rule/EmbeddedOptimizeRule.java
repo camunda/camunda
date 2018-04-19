@@ -6,11 +6,10 @@ import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.alert.AlertService;
 import org.camunda.optimize.service.engine.importing.EngineImportScheduler;
 import org.camunda.optimize.service.engine.importing.EngineImportSchedulerFactory;
-import org.camunda.optimize.service.engine.importing.index.ProcessDefinitionManager;
-import org.camunda.optimize.service.engine.importing.index.handler.DefinitionBasedImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandlerProvider;
-import org.camunda.optimize.service.engine.importing.index.page.DefinitionBasedImportPage;
+import org.camunda.optimize.service.engine.importing.index.handler.TimestampBasedImportIndexHandler;
+import org.camunda.optimize.service.engine.importing.index.page.TimestampBasedImportPage;
 import org.camunda.optimize.service.engine.importing.service.mediator.EngineImportMediator;
 import org.camunda.optimize.service.engine.importing.service.mediator.StoreIndexesEngineImportMediator;
 import org.camunda.optimize.service.es.ElasticSearchSchemaInitializer;
@@ -73,7 +72,6 @@ public class EmbeddedOptimizeRule extends TestWatcher {
         scheduleImportAndWaitUntilIsFinished(scheduler);
       }
     }
-    resetProcessDefinitionManager();
   }
 
   private void resetImportBackoff() {
@@ -251,7 +249,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
       getIndexProvider()
         .getDefinitionBasedHandlers(engineAlias)
         .forEach(handler -> {
-          DefinitionBasedImportPage page = handler.getNextPage();
+          TimestampBasedImportPage page = handler.getNextPage();
           indexes.add(page.getTimestampOfLastEntity().toEpochSecond());
         });
     }
@@ -263,11 +261,6 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     for (ImportIndexHandler importIndexHandler : getIndexProvider().getAllHandlers()) {
       importIndexHandler.resetImportIndex();
     }
-    resetProcessDefinitionManager();
-  }
-
-  private void resetProcessDefinitionManager() {
-    getApplicationContext().getBean(ProcessDefinitionManager.class).reset();
   }
 
   public boolean isImporting() {
@@ -290,10 +283,9 @@ public class EmbeddedOptimizeRule extends TestWatcher {
    * In case the engine got new entities, e.g., process definitions, those are then added to the import index
    */
   public void updateImportIndex() {
-    resetProcessDefinitionManager();
     for (String engineAlias : getConfigurationService().getConfiguredEngines().keySet()) {
       if (getIndexProvider().getDefinitionBasedHandlers(engineAlias) != null) {
-        for (DefinitionBasedImportIndexHandler importIndexHandler : getIndexProvider().getDefinitionBasedHandlers(engineAlias)) {
+        for (TimestampBasedImportIndexHandler importIndexHandler : getIndexProvider().getDefinitionBasedHandlers(engineAlias)) {
           importIndexHandler.updateImportIndex();
         }
       }

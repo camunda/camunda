@@ -2,10 +2,10 @@ package org.camunda.optimize.service.engine.importing.service.mediator;
 
 import org.camunda.optimize.dto.optimize.importing.index.AllEntitiesBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.importing.index.CombinedImportIndexesDto;
-import org.camunda.optimize.dto.optimize.importing.index.DefinitionBasedImportIndexDto;
+import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.index.handler.AllEntitiesBasedImportIndexHandler;
-import org.camunda.optimize.service.engine.importing.index.handler.DefinitionBasedImportIndexHandler;
+import org.camunda.optimize.service.engine.importing.index.handler.TimestampBasedImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandlerProvider;
 import org.camunda.optimize.service.engine.importing.service.StoreIndexesEngineImportService;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
@@ -111,11 +111,11 @@ public class StoreIndexesEngineImportMediator
     return allEntitiesBasedImportIndexes;
   }
 
-  private List<DefinitionBasedImportIndexDto> getDefinitionBasedImportIndexes() {
-    List<DefinitionBasedImportIndexDto> allEntitiesBasedImportIndexes = new ArrayList<>();
+  private List<TimestampBasedImportIndexDto> getDefinitionBasedImportIndexes() {
+    List<TimestampBasedImportIndexDto> allEntitiesBasedImportIndexes = new ArrayList<>();
 
     if (provider.getDefinitionBasedHandlers(engineContext.getEngineAlias()) != null) {
-      for (DefinitionBasedImportIndexHandler importIndexHandler :
+      for (TimestampBasedImportIndexHandler importIndexHandler :
           provider.getDefinitionBasedHandlers(engineContext.getEngineAlias())) {
         allEntitiesBasedImportIndexes.add(importIndexHandler.createIndexInformationForStoring());
       }

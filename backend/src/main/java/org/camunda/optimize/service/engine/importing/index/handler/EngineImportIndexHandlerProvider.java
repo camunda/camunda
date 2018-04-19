@@ -5,7 +5,7 @@ import org.camunda.optimize.service.engine.importing.index.handler.impl.Activity
 import org.camunda.optimize.service.engine.importing.index.handler.impl.FinishedProcessInstanceImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.ProcessDefinitionImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.ProcessDefinitionXmlImportIndexHandler;
-import org.camunda.optimize.service.engine.importing.index.handler.impl.UnfinishedProcessInstanceImportIndexHandler;
+import org.camunda.optimize.service.engine.importing.index.handler.impl.RunningProcessInstanceImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.VariableInstanceImportIndexHandler;
 import org.camunda.optimize.service.util.BeanHelper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,7 +34,7 @@ public class EngineImportIndexHandlerProvider {
 
   private List<AllEntitiesBasedImportIndexHandler>  allEntitiesBasedHandlers;
   private List<ScrollBasedImportIndexHandler>       scrollBasedHandlers;
-  private List<DefinitionBasedImportIndexHandler>   definitionBasedHandlers;
+  private List<TimestampBasedImportIndexHandler>   definitionBasedHandlers;
   private Map<String, ImportIndexHandler>           allHandlers;
 
   public EngineImportIndexHandlerProvider(EngineContext engineContext) {
@@ -52,7 +52,7 @@ public class EngineImportIndexHandlerProvider {
     allHandlers.put(FinishedProcessInstanceImportIndexHandler.class.getSimpleName(), getFinishedProcessInstanceImportIndexHandler());
     allHandlers.put(ProcessDefinitionImportIndexHandler.class.getSimpleName(), getProcessDefinitionImportIndexHandler());
     allHandlers.put(ProcessDefinitionXmlImportIndexHandler.class.getSimpleName(), getProcessDefinitionXmlImportIndexHandler());
-    allHandlers.put(UnfinishedProcessInstanceImportIndexHandler.class.getSimpleName(), getUnfinishedProcessInstanceImportIndexHandler());
+    allHandlers.put(RunningProcessInstanceImportIndexHandler.class.getSimpleName(), getUnfinishedProcessInstanceImportIndexHandler());
     allHandlers.put(VariableInstanceImportIndexHandler.class.getSimpleName(), getVariableInstanceImportIndexHandler());
 
     scrollBasedHandlers.add(getUnfinishedProcessInstanceImportIndexHandler());
@@ -70,7 +70,7 @@ public class EngineImportIndexHandlerProvider {
     return allEntitiesBasedHandlers;
   }
 
-  public List<DefinitionBasedImportIndexHandler> getDefinitionBasedHandlers() {
+  public List<TimestampBasedImportIndexHandler> getDefinitionBasedHandlers() {
     return definitionBasedHandlers;
   }
 
@@ -120,8 +120,8 @@ public class EngineImportIndexHandlerProvider {
     return getImportIndexHandlerInstance(engineContext, ProcessDefinitionXmlImportIndexHandler.class);
   }
 
-  public UnfinishedProcessInstanceImportIndexHandler getUnfinishedProcessInstanceImportIndexHandler() {
-    return getImportIndexHandlerInstance(engineContext, UnfinishedProcessInstanceImportIndexHandler.class);
+  public RunningProcessInstanceImportIndexHandler getUnfinishedProcessInstanceImportIndexHandler() {
+    return getImportIndexHandlerInstance(engineContext, RunningProcessInstanceImportIndexHandler.class);
   }
 
   public VariableInstanceImportIndexHandler getVariableInstanceImportIndexHandler() {

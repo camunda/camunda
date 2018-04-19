@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.importing.index.AllEntitiesBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.importing.index.CombinedImportIndexesDto;
-import org.camunda.optimize.dto.optimize.importing.index.DefinitionBasedImportIndexDto;
+import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.importing.index.ImportIndexDto;
 import org.camunda.optimize.service.es.schema.type.index.ImportIndexType;
 import org.camunda.optimize.service.util.EsHelper;
@@ -22,6 +22,8 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+
+import static org.camunda.optimize.service.es.schema.type.index.TimestampBasedImportIndexType.TIMESTAMP_BASED_IMPORT_INDEX_TYPE;
 
 @Component
 public class ImportIndexWriter {
@@ -46,23 +48,23 @@ public class ImportIndexWriter {
   }
 
   private void addDefinitionBasedImportIndexesToBulk(
-    BulkRequestBuilder bulkRequest, List<DefinitionBasedImportIndexDto> importIndexesDefinitionBasedIndexes) {
+    BulkRequestBuilder bulkRequest, List<TimestampBasedImportIndexDto> importIndexesDefinitionBasedIndexes) {
     importIndexesDefinitionBasedIndexes
       .forEach(importIndex ->
         bulkRequest.add(createDefinitionBasedRequest(importIndex))
       );
   }
 
-  private IndexRequestBuilder createDefinitionBasedRequest(DefinitionBasedImportIndexDto importIndex) {
+  private IndexRequestBuilder createDefinitionBasedRequest(TimestampBasedImportIndexDto importIndex) {
     String currentTimeStamp =
-      dateTimeFormatter.format(importIndex.getCurrentProcessDefinition().getTimestampOfLastEntity());
+      dateTimeFormatter.format(importIndex.getTimestampOfLastEntity());
     logger.debug("Writing definition based import index [{}] of type [{}] to elasticsearch",
       currentTimeStamp, importIndex.getEsTypeIndexRefersTo());
     try {
       return esclient
         .prepareIndex(
-          configurationService.getOptimizeIndex(configurationService.getProcessDefinitionImportIndexType()),
-          configurationService.getProcessDefinitionImportIndexType(),
+          configurationService.getOptimizeIndex(TIMESTAMP_BASED_IMPORT_INDEX_TYPE),
+          TIMESTAMP_BASED_IMPORT_INDEX_TYPE,
           getId(importIndex)
         )
         .setSource(

@@ -2,7 +2,7 @@ package org.camunda.optimize.service.engine.importing.fetcher.instance;
 
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.engine.importing.index.page.DefinitionBasedImportPage;
+import org.camunda.optimize.service.engine.importing.index.page.TimestampBasedImportPage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -18,7 +18,6 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.FINISHED_BEFORE;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.INCLUDE_ONLY_FINISHED_INSTANCES;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.MAX_RESULTS_TO_RETURN;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.PROCESS_DEFINITION_ID;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.SORT_BY;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.SORT_ORDER;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.SORT_ORDER_TYPE_ASCENDING;
@@ -28,7 +27,7 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ActivityInstanceFetcher
-  extends RetryBackoffEngineEntityFetcher<HistoricActivityInstanceEngineDto, DefinitionBasedImportPage> {
+  extends RetryBackoffEngineEntityFetcher<HistoricActivityInstanceEngineDto, TimestampBasedImportPage> {
 
   @Autowired
   private DateTimeFormatter dateTimeFormatter;
@@ -38,16 +37,14 @@ public class ActivityInstanceFetcher
   }
 
   @Override
-  public List<HistoricActivityInstanceEngineDto> fetchEntities(DefinitionBasedImportPage page) {
+  public List<HistoricActivityInstanceEngineDto> fetchEntities(TimestampBasedImportPage page) {
     return fetchHistoricActivityInstances(
       page.getTimestampOfLastEntity(),
-      page.getProcessDefinitionId(),
       configurationService.getEngineImportActivityInstanceMaxPageSize()
     );
   }
 
   private List<HistoricActivityInstanceEngineDto> fetchHistoricActivityInstances(OffsetDateTime timeStamp,
-                                                                                 String processDefinitionId,
                                                                                  long pageSize) {
     long requestStart = System.currentTimeMillis();
     List<HistoricActivityInstanceEngineDto> entries = getEngineClient()
@@ -57,7 +54,6 @@ public class ActivityInstanceFetcher
       .queryParam(SORT_ORDER, SORT_ORDER_TYPE_ASCENDING)
       .queryParam(FINISHED_AFTER, dateTimeFormatter.format(timeStamp))
       .queryParam(MAX_RESULTS_TO_RETURN, pageSize)
-      .queryParam(PROCESS_DEFINITION_ID, processDefinitionId)
       .queryParam(INCLUDE_ONLY_FINISHED_INSTANCES, TRUE)
       .request(MediaType.APPLICATION_JSON)
       .acceptEncoding(UTF8)
@@ -74,21 +70,20 @@ public class ActivityInstanceFetcher
     if (!entries.isEmpty()) {
       OffsetDateTime endTimeOfLastInstance = entries.get(entries.size() - 1).getEndTime();
       List<HistoricActivityInstanceEngineDto> secondEntries =
-        fetchHistoricActivityInstancesForTimestamp(processDefinitionId, endTimeOfLastInstance);
+        fetchHistoricActivityInstancesForTimestamp(endTimeOfLastInstance);
       entries.addAll(secondEntries);
     }
     return entries;
   }
 
-  private List<HistoricActivityInstanceEngineDto> fetchHistoricActivityInstancesForTimestamp(String processDefinitionId,
-                                                                                             OffsetDateTime endTimeOfLastInstance) {
+  private List<HistoricActivityInstanceEngineDto> fetchHistoricActivityInstancesForTimestamp(
+    OffsetDateTime endTimeOfLastInstance) {
     long requestStart = System.currentTimeMillis();
     List<HistoricActivityInstanceEngineDto> secondEntries = getEngineClient()
       .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
       .path(configurationService.getHistoricActivityInstanceEndpoint())
       .queryParam(FINISHED_AFTER, dateTimeFormatter.format(endTimeOfLastInstance))
       .queryParam(FINISHED_BEFORE, dateTimeFormatter.format(endTimeOfLastInstance))
-      .queryParam(PROCESS_DEFINITION_ID, processDefinitionId)
       .queryParam(INCLUDE_ONLY_FINISHED_INSTANCES, TRUE)
       .request(MediaType.APPLICATION_JSON)
       .acceptEncoding(UTF8)

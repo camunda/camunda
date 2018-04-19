@@ -3,6 +3,7 @@ package org.camunda.optimize.service.es.writer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.variable.ProcessInstanceId;
 import org.camunda.optimize.dto.optimize.query.variable.VariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.value.BooleanVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.value.DateVariableDto;
@@ -34,6 +35,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.ALL_VARIABLES_IMPORTED;
 import static org.camunda.optimize.service.util.VariableHelper.isBooleanType;
 import static org.camunda.optimize.service.util.VariableHelper.isDateType;
 import static org.camunda.optimize.service.util.VariableHelper.isDoubleType;
@@ -58,6 +60,30 @@ public class VariableWriter {
 
   @Autowired
   private DateTimeFormatter dateTimeFormatter;
+
+  public void flagProcessInstanceWhereAllVariablesHaveBeenImported(List<ProcessInstanceId> ids) {
+    BulkRequestBuilder variableBulkRequest = esclient.prepareBulk();
+
+    for (ProcessInstanceId processInstanceId : ids) {
+      Script updateScript = new Script(
+        ScriptType.INLINE,
+        Script.DEFAULT_SCRIPT_LANG,
+        "ctx._source.allVariablesImported = true; ",
+        new HashMap<>()
+      );
+
+      variableBulkRequest.add(
+        esclient.prepareUpdate(
+          configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()),
+          configurationService.getProcessInstanceType(),
+          processInstanceId.getId()
+        )
+        .setScript(updateScript)
+      );
+    }
+
+    variableBulkRequest.get();
+  }
 
   public void importVariables(List<VariableDto> variables) throws Exception {
     logger.debug("Writing [{}] variables to elasticsearch", variables.size());

@@ -5,7 +5,7 @@ import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.diff.MissingEntitiesFinder;
 import org.camunda.optimize.service.engine.importing.fetcher.instance.ActivityInstanceFetcher;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.ActivityImportIndexHandler;
-import org.camunda.optimize.service.engine.importing.index.page.DefinitionBasedImportPage;
+import org.camunda.optimize.service.engine.importing.index.page.TimestampBasedImportPage;
 import org.camunda.optimize.service.engine.importing.service.ActivityInstanceImportService;
 import org.camunda.optimize.service.es.writer.EventsWriter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,22 +56,15 @@ public class ActivityInstanceEngineImportMediator
 
   @Override
   public boolean importNextEnginePage() {
-    DefinitionBasedImportPage page = importIndexHandler.getNextPage();
+    TimestampBasedImportPage page = importIndexHandler.getNextPage();
     List<HistoricActivityInstanceEngineDto> entities = engineEntityFetcher.fetchEngineEntities(page);
     if (!entities.isEmpty()) {
       // we have to subtract one millisecond because the operator for comparing (finished after) timestamps
       // in the engine is >= . Therefore we add the small count of the smallest unit to achieve the > operator
       OffsetDateTime timestamp = entities.get(entities.size() - 1).getEndTime().plus(1L, ChronoUnit.MILLIS);
-      importIndexHandler.updateIndexTimestamp(timestamp);
+      importIndexHandler.updateTimestampOfLastEntity(timestamp);
       activityInstanceImportService.executeImport(entities);
     }
-    if (entities.size() < configurationService.getEngineImportActivityInstanceMaxPageSize()) {
-      if (importIndexHandler.finishedDefinitionRoundWithoutNewData()) {
-        return false;
-      } else {
-        importIndexHandler.moveToNextDefinitionToImport();
-      }
-    }
-    return true;
+    return entities.size() >= configurationService.getEngineImportActivityInstanceMaxPageSize();
   }
 }

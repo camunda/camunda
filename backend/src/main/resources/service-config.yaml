@@ -119,10 +119,6 @@ import:
     process-definition:
       #Overwrites the minimum page size for process definitions fetching.
       maxPageSize: 1000
-      #The name of the import index type when a list of process definitions
-      #to import is defined.
-      #
-      indexType: process-definition-import-index
       #The name of the process definition type.
       elasticsearchType: process-definition
     process-definition-xml:
@@ -157,9 +153,6 @@ import:
   #maximum size or, to be precise, a range for the number
   #of entities that should be fetched at once for each import type.
   maxPageSize: 1000
-  #Restrict the import to the given process definition ids.
-  #If empty, all the data is imported.
-  process-definition-ids-to-import: []
   handler:
     backoff:
       #Interval which is used for the backoff time calculation.

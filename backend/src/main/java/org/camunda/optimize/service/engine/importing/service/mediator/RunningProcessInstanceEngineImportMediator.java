@@ -3,11 +3,11 @@ package org.camunda.optimize.service.engine.importing.service.mediator;
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.diff.MissingEntitiesFinder;
-import org.camunda.optimize.service.engine.importing.fetcher.instance.UnfinishedProcessInstanceFetcher;
-import org.camunda.optimize.service.engine.importing.index.handler.impl.UnfinishedProcessInstanceImportIndexHandler;
+import org.camunda.optimize.service.engine.importing.fetcher.instance.RunningProcessInstanceFetcher;
+import org.camunda.optimize.service.engine.importing.index.handler.impl.RunningProcessInstanceImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.page.IdSetBasedImportPage;
-import org.camunda.optimize.service.engine.importing.service.UnfinishedProcessInstanceImportService;
-import org.camunda.optimize.service.es.writer.UnfinishedProcessInstanceWriter;
+import org.camunda.optimize.service.engine.importing.service.RunningProcessInstanceImportService;
+import org.camunda.optimize.service.es.writer.RunningProcessInstanceWriter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -18,31 +18,31 @@ import java.util.List;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class UnfinishedProcessInstanceEngineImportMediator
-  extends BackoffImportMediator<UnfinishedProcessInstanceImportIndexHandler> {
+public class RunningProcessInstanceEngineImportMediator
+  extends BackoffImportMediator<RunningProcessInstanceImportIndexHandler> {
 
   protected EngineContext engineContext;
-  private UnfinishedProcessInstanceFetcher engineEntityFetcher;
-  private UnfinishedProcessInstanceImportService unfinishedProcessInstanceImportService;
+  private RunningProcessInstanceFetcher engineEntityFetcher;
+  private RunningProcessInstanceImportService runningProcessInstanceImportService;
   @Autowired
-  private UnfinishedProcessInstanceWriter unfinishedProcessInstanceWriter;
+  private RunningProcessInstanceWriter runningProcessInstanceWriter;
 
-  public UnfinishedProcessInstanceEngineImportMediator(EngineContext engineContext) {
+  public RunningProcessInstanceEngineImportMediator(EngineContext engineContext) {
     this.engineContext = engineContext;
   }
 
   @PostConstruct
   public void init() {
     importIndexHandler = provider.getUnfinishedProcessInstanceImportIndexHandler(engineContext.getEngineAlias());
-    engineEntityFetcher = beanHelper.getInstance(UnfinishedProcessInstanceFetcher.class, engineContext);
+    engineEntityFetcher = beanHelper.getInstance(RunningProcessInstanceFetcher.class, engineContext);
     MissingEntitiesFinder<HistoricProcessInstanceDto> missingEntitiesFinder =
       new MissingEntitiesFinder<>(
         configurationService,
         esClient,
         configurationService.getUnfinishedProcessInstanceIdTrackingType()
       );
-    unfinishedProcessInstanceImportService = new UnfinishedProcessInstanceImportService(
-      unfinishedProcessInstanceWriter,
+    runningProcessInstanceImportService = new RunningProcessInstanceImportService(
+      runningProcessInstanceWriter,
       elasticsearchImportJobExecutor,
       missingEntitiesFinder,
       engineContext
@@ -55,7 +55,7 @@ public class UnfinishedProcessInstanceEngineImportMediator
     if (!page.getIds().isEmpty()) {
       List<HistoricProcessInstanceDto> entities = engineEntityFetcher.fetchEngineEntities(page);
       if (!entities.isEmpty()) {
-        unfinishedProcessInstanceImportService.executeImport(entities);
+        runningProcessInstanceImportService.executeImport(entities);
         return true;
       }
     }

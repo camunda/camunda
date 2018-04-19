@@ -25,10 +25,10 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class UnfinishedProcessInstanceImportIndexHandler extends ScrollBasedImportIndexHandler {
+public class RunningProcessInstanceImportIndexHandler extends ScrollBasedImportIndexHandler {
 
 
-  public UnfinishedProcessInstanceImportIndexHandler(EngineContext engineContext) {
+  public RunningProcessInstanceImportIndexHandler(EngineContext engineContext) {
     this.engineContext = engineContext;
   }
 
@@ -88,14 +88,6 @@ public class UnfinishedProcessInstanceImportIndexHandler extends ScrollBasedImpo
       .mustNot(existsQuery(END_DATE))
       .mustNot(existsQuery(START_DATE))
       .must(termQuery(ENGINE, engineContext.getEngineAlias()));
-    if (configurationService.areProcessDefinitionsToImportDefined()) {
-      BoolQueryBuilder matchConfiguredProcessDefinitions = QueryBuilders.boolQuery();
-      for (String processDefinitionId : configurationService.getProcessDefinitionIdsToImport()) {
-        matchConfiguredProcessDefinitions
-          .should(termQuery(PROCESS_DEFINITION_ID, processDefinitionId));
-      }
-      query.must(matchConfiguredProcessDefinitions);
-    }
     return query;
   }
 

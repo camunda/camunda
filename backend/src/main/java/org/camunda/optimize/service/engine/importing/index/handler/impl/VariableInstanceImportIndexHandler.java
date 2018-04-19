@@ -89,14 +89,6 @@ public class VariableInstanceImportIndexHandler extends ScrollBasedImportIndexHa
       .must(termQuery(ENGINE, engineContext.getEngineAlias()))
       .must(existsQuery(END_DATE))
       .must(termQuery(ALL_VARIABLES_IMPORTED, false));
-    if (configurationService.areProcessDefinitionsToImportDefined()) {
-      BoolQueryBuilder matchConfiguredProcessDefinitions = QueryBuilders.boolQuery();
-      for (String processDefinitionId : configurationService.getProcessDefinitionIdsToImport()) {
-        matchConfiguredProcessDefinitions
-          .should(termQuery(PROCESS_DEFINITION_ID, processDefinitionId));
-      }
-      query.must(matchConfiguredProcessDefinitions);
-    }
     return query;
   }
   @Override

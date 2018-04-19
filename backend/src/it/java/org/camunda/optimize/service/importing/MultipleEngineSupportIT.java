@@ -20,7 +20,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import javax.ws.rs.core.Response;
-import java.util.ArrayList;
+import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -28,13 +28,14 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.camunda.optimize.rest.StatusRestServiceIT.ENGINE_ALIAS;
-import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_ID;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.STRING_VARIABLES;
+import static org.camunda.optimize.service.es.schema.type.index.TimestampBasedImportIndexType.TIMESTAMP_BASED_IMPORT_INDEX_TYPE;
+import static org.camunda.optimize.service.es.schema.type.index.TimestampBasedImportIndexType.TIMESTAMP_OF_LAST_ENTITY;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsNull.notNullValue;
 
@@ -162,17 +163,6 @@ public class MultipleEngineSupportIT {
       assertThat(allowedProcessDefinitionKeys.contains(processDefinitionKey), is(true));
       allowedProcessDefinitionKeys.remove(processDefinitionKey);
     }
-  }
-
-  private String getKeyForProcessDefinitionId(String processDefinitionId) {
-    SearchResponse searchResponse = elasticSearchRule.getClient()
-      .prepareSearch(elasticSearchRule.getOptimizeIndex(configurationService.getProcessDefinitionType()))
-      .setTypes(configurationService.getProcessDefinitionType())
-      .setQuery(termQuery(PROCESS_DEFINITION_ID, processDefinitionId))
-      .setSize(100)
-      .get();
-    assertThat(searchResponse.getHits().getTotalHits(), is(1L));
-    return (String) searchResponse.getHits().getHits()[0].getSourceAsMap().get(PROCESS_DEFINITION_KEY);
   }
 
   @Test
@@ -363,26 +353,18 @@ public class MultipleEngineSupportIT {
 
     // then
     SearchResponse searchResponse = elasticSearchRule.getClient()
-      .prepareSearch(elasticSearchRule.getOptimizeIndex(configurationService.getProcessDefinitionImportIndexType()))
-      .setTypes(configurationService.getProcessDefinitionImportIndexType())
+      .prepareSearch(elasticSearchRule.getOptimizeIndex(TIMESTAMP_BASED_IMPORT_INDEX_TYPE))
+      .setTypes(TIMESTAMP_BASED_IMPORT_INDEX_TYPE)
       .setQuery(matchAllQuery())
       .setSize(100)
       .get();
 
-    List<String> allowedProcessDefinitionKeys = new ArrayList<>();
-    allowedProcessDefinitionKeys.add("TestProcess1");
-    allowedProcessDefinitionKeys.add("TestProcess1");
-    allowedProcessDefinitionKeys.add("TestProcess2");
-    allowedProcessDefinitionKeys.add("TestProcess2");
-
     assertThat(searchResponse.getHits().getTotalHits(), is(4L));
     for (SearchHit searchHit : searchResponse.getHits().getHits()) {
-      String processDefinitionId = ((Map)searchHit.getSourceAsMap().get("currentProcessDefinition")).get("processDefinitionId").toString();
-      String processDefinitionKey = getKeyForProcessDefinitionId(processDefinitionId);
-      assertThat(allowedProcessDefinitionKeys.contains(processDefinitionKey), is(true));
-      allowedProcessDefinitionKeys.remove(processDefinitionKey);
+      String timestampOfLastEntity = searchHit.getSourceAsMap().get(TIMESTAMP_OF_LAST_ENTITY).toString();
+      OffsetDateTime timestamp = OffsetDateTime.parse(timestampOfLastEntity, embeddedOptimizeRule.getDateTimeFormatter());
+      assertThat(timestamp, greaterThan(OffsetDateTime.now().minusHours(1)));
     }
-    assertThat(allowedProcessDefinitionKeys.isEmpty(), is(true));
   }
 
   private void deployAndStartSimpleProcessDefinitionForAllEngines() {

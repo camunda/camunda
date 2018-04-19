@@ -65,7 +65,6 @@ public class ConfigurationService {
   private String durationHeatmapTargetValueType;
   private String variableType;
   private String processInstanceType;
-  private String processDefinitionImportIndexType;
   private String licenseType;
   private String reportType;
   private String dashboardType;
@@ -99,7 +98,6 @@ public class ConfigurationService {
   private String hpiCountEndpoint;
   private Integer engineImportProcessInstanceMaxPageSize;
   private Integer engineImportVariableInstanceMaxPageSize;
-  private List<String> processDefinitionIdsToImport;
   private String esRefreshInterval;
   private Integer esNumberOfReplicas;
   private Integer esNumberOfShards;
@@ -563,22 +561,6 @@ public class ConfigurationService {
     return engineImportVariableInstanceMaxPageSize;
   }
 
-  public List<String> getProcessDefinitionIdsToImport() {
-    if (processDefinitionIdsToImport == null) {
-      TypeRef<List<String>> typeRef = new TypeRef<List<String>>() {};
-      processDefinitionIdsToImport =
-        jsonContext.read(ConfigurationServiceConstants.PROCESS_DEFINITION_IDS_TO_IMPORT, typeRef);
-    }
-    return processDefinitionIdsToImport;
-  }
-
-  public String getProcessDefinitionImportIndexType() {
-    if (processDefinitionImportIndexType == null) {
-      processDefinitionImportIndexType = jsonContext.read(ConfigurationServiceConstants.PROCESS_DEFINITION_IMPORT_INDEX_TYPE);
-    }
-    return processDefinitionImportIndexType;
-  }
-
   public String getEsRefreshInterval() {
     if (esRefreshInterval == null) {
       esRefreshInterval = jsonContext.read(ConfigurationServiceConstants.ES_REFRESH_INTERVAL);
@@ -897,11 +879,6 @@ public class ConfigurationService {
     return this.getConfiguredEngines().get(engineAlias);
   }
 
-  public boolean areProcessDefinitionsToImportDefined() {
-    return getProcessDefinitionIdsToImport() != null && !getProcessDefinitionIdsToImport().isEmpty();
-  }
-
-
   public Properties getQuartzProperties() {
     if (quartzProperties == null) {
       quartzProperties = new Properties();
@@ -991,10 +968,6 @@ public class ConfigurationService {
 
   public void setDefaultUserCreationEnabled(Boolean defaultUserCreationEnabled) {
     this.defaultUserCreationEnabled = defaultUserCreationEnabled;
-  }
-
-  public void setProcessDefinitionIdsToImport(List<String> processDefinitionIdsToImport) {
-    this.processDefinitionIdsToImport = processDefinitionIdsToImport;
   }
 
   public void setConfiguredEngines(Map<String, EngineConfiguration> configuredEngines) {
@@ -1207,10 +1180,6 @@ public class ConfigurationService {
 
   public void setEngineImportVariableInstanceMaxPageSize(Integer engineImportVariableInstanceMaxPageSize) {
     this.engineImportVariableInstanceMaxPageSize = engineImportVariableInstanceMaxPageSize;
-  }
-
-  public void setProcessDefinitionImportIndexType(String processDefinitionImportIndexType) {
-    this.processDefinitionImportIndexType = processDefinitionImportIndexType;
   }
 
   public void setEsRefreshInterval(String esRefreshInterval) {

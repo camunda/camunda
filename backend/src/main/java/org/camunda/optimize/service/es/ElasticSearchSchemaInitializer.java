@@ -14,10 +14,10 @@ import org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.es.schema.type.ReportShareType;
 import org.camunda.optimize.service.es.schema.type.ReportType;
-import org.camunda.optimize.service.es.schema.type.UnfinishedProcessInstanceIdTrackingType;
+import org.camunda.optimize.service.es.schema.type.RunningProcessInstanceIdTrackingType;
 import org.camunda.optimize.service.es.schema.type.UsersType;
 import org.camunda.optimize.service.es.schema.type.VariableType;
-import org.camunda.optimize.service.es.schema.type.index.DefinitionImportIndexType;
+import org.camunda.optimize.service.es.schema.type.index.TimestampBasedImportIndexType;
 import org.camunda.optimize.service.es.schema.type.index.ImportIndexType;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.client.Client;
@@ -67,13 +67,13 @@ public class ElasticSearchSchemaInitializer {
   private FinishedProcessInstanceIdTrackingType finishedProcessInstanceIdTrackingType;
 
   @Autowired
-  private UnfinishedProcessInstanceIdTrackingType unfinishedProcessInstanceIdTrackingType;
+  private RunningProcessInstanceIdTrackingType runningProcessInstanceIdTrackingType;
 
   @Autowired
   private ProcessDefinitionXmlTrackingType processDefinitionXmlTrackingType;
 
   @Autowired
-  private DefinitionImportIndexType definitionImportIndexType;
+  private TimestampBasedImportIndexType timestampBasedImportIndexType;
 
   @Autowired
   private ReportType reportType;
@@ -109,7 +109,7 @@ public class ElasticSearchSchemaInitializer {
   public void initializeMappings() {
     schemaManager.addMapping(eventType);
     schemaManager.addMapping(finishedProcessInstanceIdTrackingType);
-    schemaManager.addMapping(unfinishedProcessInstanceIdTrackingType);
+    schemaManager.addMapping(runningProcessInstanceIdTrackingType);
     schemaManager.addMapping(processDefinitionXmlTrackingType);
     schemaManager.addMapping(variableType);
     schemaManager.addMapping(processDefinitionType);
@@ -118,7 +118,7 @@ public class ElasticSearchSchemaInitializer {
     schemaManager.addMapping(importIndexType);
     schemaManager.addMapping(targetValueType);
     schemaManager.addMapping(processInstanceType);
-    schemaManager.addMapping(definitionImportIndexType);
+    schemaManager.addMapping(timestampBasedImportIndexType);
     schemaManager.addMapping(licenseType);
     schemaManager.addMapping(reportType);
     schemaManager.addMapping(dashboardType);

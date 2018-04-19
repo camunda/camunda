@@ -16,8 +16,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
-import java.text.SimpleDateFormat;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.HashMap;
@@ -25,8 +23,8 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-public class UnfinishedProcessInstanceWriter {
-  private final Logger logger = LoggerFactory.getLogger(UnfinishedProcessInstanceWriter.class);
+public class RunningProcessInstanceWriter {
+  private final Logger logger = LoggerFactory.getLogger(RunningProcessInstanceWriter.class);
 
   @Autowired
   private Client esclient;

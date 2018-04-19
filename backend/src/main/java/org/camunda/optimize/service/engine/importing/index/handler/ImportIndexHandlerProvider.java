@@ -5,7 +5,7 @@ import org.camunda.optimize.service.engine.importing.index.handler.impl.Activity
 import org.camunda.optimize.service.engine.importing.index.handler.impl.FinishedProcessInstanceImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.ProcessDefinitionImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.ProcessDefinitionXmlImportIndexHandler;
-import org.camunda.optimize.service.engine.importing.index.handler.impl.UnfinishedProcessInstanceImportIndexHandler;
+import org.camunda.optimize.service.engine.importing.index.handler.impl.RunningProcessInstanceImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.VariableInstanceImportIndexHandler;
 import org.camunda.optimize.service.util.BeanHelper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,8 +45,8 @@ public class ImportIndexHandlerProvider {
     return result;
   }
 
-  public List<DefinitionBasedImportIndexHandler> getDefinitionBasedHandlers(String engineAlias) {
-    List<DefinitionBasedImportIndexHandler> result = new ArrayList<>();
+  public List<TimestampBasedImportIndexHandler> getDefinitionBasedHandlers(String engineAlias) {
+    List<TimestampBasedImportIndexHandler> result = new ArrayList<>();
     EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(engineAlias);
     if (engineImportIndexHandlerProvider != null) {
       result = engineImportIndexHandlerProvider.getDefinitionBasedHandlers();
@@ -81,8 +81,8 @@ public class ImportIndexHandlerProvider {
     return result;
   }
 
-  public UnfinishedProcessInstanceImportIndexHandler getUnfinishedProcessInstanceImportIndexHandler(String engineAlias) {
-    UnfinishedProcessInstanceImportIndexHandler result = null;
+  public RunningProcessInstanceImportIndexHandler getUnfinishedProcessInstanceImportIndexHandler(String engineAlias) {
+    RunningProcessInstanceImportIndexHandler result = null;
     EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(engineAlias);
     if (engineImportIndexHandlerProvider != null) {
       result = engineImportIndexHandlerProvider.getUnfinishedProcessInstanceImportIndexHandler();

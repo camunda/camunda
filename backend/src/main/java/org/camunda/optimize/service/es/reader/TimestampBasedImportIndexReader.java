@@ -1,7 +1,7 @@
 package org.camunda.optimize.service.es.reader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.camunda.optimize.dto.optimize.importing.index.DefinitionBasedImportIndexDto;
+import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.service.util.EsHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.get.GetResponse;
@@ -14,10 +14,12 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.Optional;
 
-@Component
-public class DefinitionBasedImportIndexReader {
+import static org.camunda.optimize.service.es.schema.type.index.TimestampBasedImportIndexType.TIMESTAMP_BASED_IMPORT_INDEX_TYPE;
 
-  private final Logger logger = LoggerFactory.getLogger(DefinitionBasedImportIndexReader.class);
+@Component
+public class TimestampBasedImportIndexReader {
+
+  private final Logger logger = LoggerFactory.getLogger(TimestampBasedImportIndexReader.class);
 
   @Autowired
   private Client esclient;
@@ -28,15 +30,15 @@ public class DefinitionBasedImportIndexReader {
   @Autowired
   private ObjectMapper objectMapper;
 
-  public Optional<DefinitionBasedImportIndexDto> getImportIndex(String typeIndexComesFrom, String engineAlias) {
+  public Optional<TimestampBasedImportIndexDto> getImportIndex(String typeIndexComesFrom, String engineAlias) {
     logger.debug("Fetching definition based import index of type '{}'", typeIndexComesFrom);
-    DefinitionBasedImportIndexDto dto;
+    TimestampBasedImportIndexDto dto;
     GetResponse getResponse = null;
     try {
       getResponse = esclient
         .prepareGet(
-          configurationService.getOptimizeIndex(configurationService.getProcessDefinitionImportIndexType()),
-          configurationService.getProcessDefinitionImportIndexType(),
+          configurationService.getOptimizeIndex(TIMESTAMP_BASED_IMPORT_INDEX_TYPE),
+          TIMESTAMP_BASED_IMPORT_INDEX_TYPE,
           EsHelper.constructKey(typeIndexComesFrom, engineAlias))
         .setFetchSource(true)
         .get();
@@ -45,7 +47,7 @@ public class DefinitionBasedImportIndexReader {
     if (getResponse != null && getResponse.isExists()) {
       String content = getResponse.getSourceAsString();
       try {
-        dto = objectMapper.readValue(content, DefinitionBasedImportIndexDto.class);
+        dto = objectMapper.readValue(content, TimestampBasedImportIndexDto.class);
       } catch (IOException e) {
         logger.debug("Error while reading definition based import index from elastic search!", e);
         return Optional.empty();
@@ -54,7 +56,7 @@ public class DefinitionBasedImportIndexReader {
       logger.debug(
         "Was not able to retrieve definition based import index from [{}] " +
         "for type [{}] and engine [{}] from elasticsearch.",
-          configurationService.getOptimizeIndex(configurationService.getProcessDefinitionImportIndexType()),
+          configurationService.getOptimizeIndex(TIMESTAMP_BASED_IMPORT_INDEX_TYPE),
           typeIndexComesFrom,
           engineAlias
       );

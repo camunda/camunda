@@ -6,30 +6,30 @@ import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.diff.MissingEntitiesFinder;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
-import org.camunda.optimize.service.es.job.importing.UnfinishedProcessInstanceElasticsearchImportJob;
-import org.camunda.optimize.service.es.writer.UnfinishedProcessInstanceWriter;
+import org.camunda.optimize.service.es.job.importing.RunningProcessInstanceElasticsearchImportJob;
+import org.camunda.optimize.service.es.writer.RunningProcessInstanceWriter;
 
 import java.util.List;
 
-public class UnfinishedProcessInstanceImportService
+public class RunningProcessInstanceImportService
     extends ImportService<HistoricProcessInstanceDto, ProcessInstanceDto> {
 
-  private UnfinishedProcessInstanceWriter unfinishedProcessInstanceWriter;
+  private RunningProcessInstanceWriter runningProcessInstanceWriter;
 
-  public UnfinishedProcessInstanceImportService(
-      UnfinishedProcessInstanceWriter unfinishedProcessInstanceWriter,
+  public RunningProcessInstanceImportService(
+      RunningProcessInstanceWriter runningProcessInstanceWriter,
       ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
       MissingEntitiesFinder<HistoricProcessInstanceDto> missingEntitiesFinder,
       EngineContext engineContext
   ) {
     super(elasticsearchImportJobExecutor, missingEntitiesFinder, engineContext);
-    this.unfinishedProcessInstanceWriter = unfinishedProcessInstanceWriter;
+    this.runningProcessInstanceWriter = runningProcessInstanceWriter;
   }
 
   @Override
   protected ElasticsearchImportJob<ProcessInstanceDto> createElasticsearchImportJob(List<ProcessInstanceDto> processInstances) {
-    UnfinishedProcessInstanceElasticsearchImportJob importJob =
-        new UnfinishedProcessInstanceElasticsearchImportJob(unfinishedProcessInstanceWriter);
+    RunningProcessInstanceElasticsearchImportJob importJob =
+        new RunningProcessInstanceElasticsearchImportJob(runningProcessInstanceWriter);
     importJob.setEntitiesToImport(processInstances);
     return importJob;
   }

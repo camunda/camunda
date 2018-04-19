@@ -63,14 +63,6 @@ public class ProcessDefinitionXmlImportIndexHandler extends ScrollBasedImportInd
     query
       .mustNot(existsQuery(BPMN_20_XML))
       .must(termQuery(ENGINE, engineContext.getEngineAlias()));
-    if (configurationService.areProcessDefinitionsToImportDefined()) {
-      BoolQueryBuilder matchConfiguredProcessDefinitions = QueryBuilders.boolQuery();
-      for (String processDefinitionId : configurationService.getProcessDefinitionIdsToImport()) {
-        matchConfiguredProcessDefinitions
-          .should(termQuery(PROCESS_DEFINITION_ID, processDefinitionId));
-      }
-      query.must(matchConfiguredProcessDefinitions);
-    }
     return query;
   }
 
