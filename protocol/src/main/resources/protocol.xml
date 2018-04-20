@@ -39,6 +39,7 @@
         <validValue name="NOOP_EVENT">8</validValue>
         <validValue name="TOPIC_EVENT">9</validValue>
         <validValue name="PARTITION_EVENT">10</validValue>
+        <validValue name="ID_EVENT">11</validValue>
     </enum>
 
     <enum name="ControlMessageType" encodingType="uint8" description="The type of the control message.">
