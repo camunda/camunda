@@ -85,6 +85,7 @@ public abstract class BackoffImportMediator<T extends ImportIndexHandler> implem
       backoffCounter = Math.min(backoffCounter + 1, configurationService.getMaximumBackoff());
       if (backoffCounter == configurationService.getMaximumBackoff()) {
         executeAfterMaxBackoffIsReached();
+        backoffCounter = 0;
       } else {
         long interval = configurationService.getImportHandlerWait();
         long sleepTimeInMs = interval * backoffCounter;
