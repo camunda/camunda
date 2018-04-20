@@ -21,6 +21,7 @@ jest.mock('./service', () => {
 });
 
 jest.mock('./ColumnSelection', () => () => <div>ColumnSelection</div>);
+jest.mock('./ColumnRearrangement', () => props => <div>ColumnRearrangement: {props.children}</div>);
 
 jest.mock('services', () => {
   return {
@@ -510,4 +511,43 @@ it('should not include a column selection for raw data reports in view mode', as
   });
 
   expect(node).not.toIncludeText('ColumnSelection');
+});
+
+it('should include column rearrangement logic for raw data reports in edit mode', async () => {
+  props.match.params.viewMode = 'edit';
+
+  const node = mount(<Report {...props} />);
+  await node.instance().componentDidMount();
+
+  node.setState({
+    loaded: true,
+    data: {
+      view: {operation: 'rawData'},
+      configuration: {}
+    },
+    reportResult: {
+      result: [{foo: 'bar'}]
+    }
+  });
+
+  expect(node).toIncludeText('ColumnRearrangement');
+});
+
+it('should not include column rearrangement logic for raw data reports in view mode', async () => {
+  const node = mount(<Report {...props} />);
+  await node.instance().componentDidMount();
+
+  node.setState({
+    loaded: true,
+    data: {
+      view: {operation: 'rawData'},
+      configuration: {}
+    },
+    reportResult: {
+      data: {visualization: 'table'},
+      result: [{foo: 'bar'}]
+    }
+  });
+
+  expect(node).not.toIncludeText('ColumnRearrangement');
 });

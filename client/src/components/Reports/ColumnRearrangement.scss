@@ -1,0 +1,52 @@
+.ColumnRearrangement {
+  display: flex;
+  flex-direction: column;
+}
+
+.ColumnRearrangement .rt-resizable-header {
+  cursor: grab;
+}
+
+.ColumnRearrangement__draggedColumn {
+  opacity: 0.3;
+}
+
+.ReactTable .rt-tr .ColumnRearrangement__dropTarget--left {
+  box-shadow: -2px 0 0 green inset;
+}
+
+.ReactTable .rt-tr .ColumnRearrangement__dropTarget--right {
+  box-shadow: 2px 0 0 green inset;
+}
+
+.ReactTable .rt-tr .ColumnRearrangement__dropTarget--invalid-left {
+  box-shadow: -2px 0 0 red inset;
+}
+
+.ReactTable .rt-tr .ColumnRearrangement__dropTarget--invalid-right {
+  box-shadow: 2px 0 0 red inset;
+}
+
+.ColumnRearrangement__dragPreview {
+  background-color: white;
+  width: 250px;
+  max-height: 400px;
+  z-index: 12;
+  transform: scale(0.7);
+  transform-origin: top left;
+  pointer-events: none;
+  position: absolute;
+  overflow: hidden;
+
+  .rt-table {
+    overflow: hidden;
+
+    .rt-thead.-headerGroups {
+      display: none;
+    }
+  }
+
+  .pagination-bottom {
+    display: none;
+  }
+}

@@ -161,7 +161,7 @@ export default class ReportView extends React.Component {
           props: {
             data: formattedResult,
             labels: [groupByLabel, viewLabel],
-            hiddenColumns: data.configuration.excludedColumns,
+            configuration: data.configuration,
             disableReportScrolling: this.props.disableReportScrolling
           }
         };

@@ -29,6 +29,7 @@ import {loadProcessDefinitions} from 'services';
 import ControlPanel from './ControlPanel';
 
 import ColumnSelection from './ColumnSelection';
+import ColumnRearrangement from './ColumnRearrangement';
 
 import './Report.css';
 
@@ -281,13 +282,22 @@ export default class Report extends React.Component {
         <ControlPanel {...data} reportResult={reportResult} onChange={this.updateReport} />
         <div className="Report__view">
           <div className="Report__content">
-            <ReportView report={reportResult} />
+            {this.shouldShowColumnInteractions() ? (
+              <ColumnRearrangement
+                report={reportResult}
+                onChange={this.updateConfiguration('columnOrder')}
+              >
+                <ReportView report={reportResult} />
+              </ColumnRearrangement>
+            ) : (
+              <ReportView report={reportResult} />
+            )}
           </div>
-          {this.shouldShowColumnSelection() && (
+          {this.shouldShowColumnInteractions() && (
             <ColumnSelection
               columns={reportResult.result[0]}
               excludedColumns={data.configuration.excludedColumns}
-              onChange={this.updateExcludedColumns}
+              onChange={this.updateConfiguration('excludedColumns')}
             />
           )}
         </div>
@@ -295,7 +305,7 @@ export default class Report extends React.Component {
     );
   };
 
-  shouldShowColumnSelection = () => {
+  shouldShowColumnInteractions = () => {
     const {data, reportResult} = this.state;
 
     return (
@@ -308,8 +318,8 @@ export default class Report extends React.Component {
     );
   };
 
-  updateExcludedColumns = excludedColumns => {
-    const changes = {data: {configuration: {excludedColumns: {$set: excludedColumns}}}};
+  updateConfiguration = prop => newValue => {
+    const changes = {data: {configuration: {[prop]: {$set: newValue}}}};
     this.setState(
       update(this.state, {
         ...changes,
