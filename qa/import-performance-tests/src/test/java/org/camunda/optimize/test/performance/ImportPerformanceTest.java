@@ -133,7 +133,7 @@ public class ImportPerformanceTest {
     // assumption: we know how many process instances have been generated
     Long processInstancesImported = getImportedCountOf(configurationService.getProcessInstanceType());
     Long totalInstances = Math.max(NUMBER_OF_PROCESS_INSTANCES, 1L);
-    return Math.round(processInstancesImported.doubleValue() / totalInstances.doubleValue());
+    return Math.round(processInstancesImported.doubleValue() / totalInstances.doubleValue() * 100);
   }
 
   private Long getImportedCountOf(String elasticsearchType) {
