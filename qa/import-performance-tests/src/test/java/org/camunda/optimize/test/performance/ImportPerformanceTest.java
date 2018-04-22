@@ -46,10 +46,10 @@ public class ImportPerformanceTest {
 
 
   private static final int QUEUE_SIZE = 100;
-  private int NUMBER_OF_PROCESS_INSTANCES;
-  private int NUMBER_OF_ACTIVITY_INSTANCES;
-  private int NUMBER_OF_VARIABLE_INSTANCES;
-  private int NUMBER_OF_PROCESS_DEFINITIONS;
+  private long NUMBER_OF_PROCESS_INSTANCES;
+  private long NUMBER_OF_ACTIVITY_INSTANCES;
+  private long NUMBER_OF_VARIABLE_INSTANCES;
+  private long NUMBER_OF_PROCESS_DEFINITIONS;
   private boolean shouldGenerateData;
   private long maxImportDurationInMin;
 
@@ -63,13 +63,13 @@ public class ImportPerformanceTest {
   public void setUp() {
     Properties properties = PropertyUtil.loadProperties("import-performance-test.properties");
     NUMBER_OF_PROCESS_INSTANCES =
-      Integer.parseInt(properties.getProperty("import.test.number.of.process-instances", "2000000"));
+      Long.parseLong(properties.getProperty("import.test.number.of.process-instances", "2000000"));
     NUMBER_OF_ACTIVITY_INSTANCES =
-      Integer.parseInt(properties.getProperty("import.test.number.of.activity-instances", "21932786"));
+      Long.parseLong(properties.getProperty("import.test.number.of.activity-instances", "21932786"));
     NUMBER_OF_VARIABLE_INSTANCES =
-      Integer.parseInt(properties.getProperty("import.test.number.of.variable-instances", "6913889"));
+      Long.parseLong(properties.getProperty("import.test.number.of.variable-instances", "6913889"));
     NUMBER_OF_PROCESS_DEFINITIONS =
-      Integer.parseInt(properties.getProperty("import.test.number.of.process-definitions", "288"));
+      Long.parseLong(properties.getProperty("import.test.number.of.process-definitions", "288"));
 
     shouldGenerateData = Boolean.parseBoolean(properties.getProperty("import.test.generate.data", "false"));
     maxImportDurationInMin = Long.parseLong(properties.getProperty("import.test.max.duration.in.min", "240"));

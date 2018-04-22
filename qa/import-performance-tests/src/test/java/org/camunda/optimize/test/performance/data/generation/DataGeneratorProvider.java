@@ -23,9 +23,9 @@ import java.util.List;
 public class DataGeneratorProvider {
 
   private List<DataGenerator> dataGenerators;
-  private int totalInstanceCount;
+  private Long totalInstanceCount;
 
-  public DataGeneratorProvider(int totalInstanceCount) {
+  public DataGeneratorProvider(long totalInstanceCount) {
     this.totalInstanceCount = totalInstanceCount;
     init();
   }
@@ -57,8 +57,8 @@ public class DataGeneratorProvider {
 
   private void setInstanceNumberToGenerateForEachGenerator() {
     int nGenerators = dataGenerators.size();
-    int stepSize = totalInstanceCount / nGenerators;
-    int missingCount = totalInstanceCount % nGenerators;
+    int stepSize = totalInstanceCount.intValue() / nGenerators;
+    int missingCount = totalInstanceCount.intValue() % nGenerators;
     dataGenerators.forEach(
       generator -> generator.setInstanceCountToGenerate(stepSize)
     );
