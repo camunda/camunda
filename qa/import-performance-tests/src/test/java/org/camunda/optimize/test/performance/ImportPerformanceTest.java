@@ -24,18 +24,17 @@ import java.time.temporal.ChronoUnit;
 import java.util.Properties;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
 
-/**
- * @author Askar Akhmerov
- */
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"/import-performance-applicationContext.xml"})
 public class ImportPerformanceTest {
@@ -47,9 +46,14 @@ public class ImportPerformanceTest {
 
 
   private static final int QUEUE_SIZE = 100;
-  private int NUMBER_OF_INSTANCES;
+  private int NUMBER_OF_PROCESS_INSTANCES;
+  private int NUMBER_OF_ACTIVITY_INSTANCES;
+  private int NUMBER_OF_VARIABLE_INSTANCES;
+  private int NUMBER_OF_PROCESS_DEFINITIONS;
   private boolean shouldGenerateData;
   private long maxImportDurationInMin;
+
+  private ConfigurationService configurationService;
 
   @Rule
   public RuleChain chain = RuleChain
@@ -58,38 +62,66 @@ public class ImportPerformanceTest {
   @Before
   public void setUp() {
     Properties properties = PropertyUtil.loadProperties("import-performance-test.properties");
-    NUMBER_OF_INSTANCES = Integer.parseInt(properties.getProperty("import.test.number.of.processes", "2000000"));
-    shouldGenerateData = Boolean.parseBoolean(properties.getProperty("import.test.generate.data"));
-    maxImportDurationInMin = Long.parseLong(properties.getProperty("import.test.max.duration.in.max"));
+    NUMBER_OF_PROCESS_INSTANCES =
+      Integer.parseInt(properties.getProperty("import.test.number.of.process-instances", "2000000"));
+    NUMBER_OF_ACTIVITY_INSTANCES =
+      Integer.parseInt(properties.getProperty("import.test.number.of.activity-instances", "21932786"));
+    NUMBER_OF_VARIABLE_INSTANCES =
+      Integer.parseInt(properties.getProperty("import.test.number.of.variable-instances", "6913889"));
+    NUMBER_OF_PROCESS_DEFINITIONS =
+      Integer.parseInt(properties.getProperty("import.test.number.of.process-definitions", "288"));
+
+    shouldGenerateData = Boolean.parseBoolean(properties.getProperty("import.test.generate.data", "false"));
+    maxImportDurationInMin = Long.parseLong(properties.getProperty("import.test.max.duration.in.min", "240"));
     elasticSearchRule.disableCleanup();
+    configurationService = embeddedOptimizeRule.getConfigurationService();
   }
 
   @Test
   public void importPerformanceTest() throws Exception {
-    //given
-    OffsetDateTime pointOne = OffsetDateTime.now();
+    //given I have data in the data
+    OffsetDateTime beforeDataGeneration = OffsetDateTime.now();
     if (shouldGenerateData) {
       generateData();
     }
-    OffsetDateTime pointTwo = OffsetDateTime.now();
-    logger.info("Data generation took [ " + ChronoUnit.MINUTES.between(pointOne, pointTwo) + " ] min");
+    OffsetDateTime afterDataGeneration = OffsetDateTime.now();
+    logger.info(
+      "Data generation took [{}] min",
+      ChronoUnit.MINUTES.between(beforeDataGeneration, afterDataGeneration));
 
-    //trigger import
+    // when I import all data
     logger.info("Starting import of engine data to Optimize...");
     ScheduledExecutorService progressReporter = reportImportProgress();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    importEngineData();
     stopReportingProgress(progressReporter);
-
-    OffsetDateTime pointThree = OffsetDateTime.now();
-
-    //report results
-    long importDurationInMinutes = ChronoUnit.MINUTES.between(pointTwo, pointThree);
+    OffsetDateTime afterImport = OffsetDateTime.now();
+    long importDurationInMinutes = ChronoUnit.MINUTES.between(afterDataGeneration, afterImport);
     logger.info("Import took [ " + importDurationInMinutes + " ] min");
-    assertThat(importDurationInMinutes, lessThanOrEqualTo(maxImportDurationInMin));
+
+    // then all data from the engine should be in Elasticsearch
+    assertThat(getImportedCountOf(configurationService.getProcessInstanceType()), is(NUMBER_OF_PROCESS_INSTANCES));
+    assertThat(getImportedCountOf(configurationService.getEventType()), is(NUMBER_OF_ACTIVITY_INSTANCES));
+    assertThat(getImportedCountOf(configurationService.getVariableType()), is(NUMBER_OF_VARIABLE_INSTANCES));
+    assertThat(getImportedCountOf(configurationService.getProcessDefinitionType()), is(NUMBER_OF_PROCESS_DEFINITIONS));
+  }
+
+  private void importEngineData() throws InterruptedException, TimeoutException {
+    ExecutorService executor = Executors.newSingleThreadExecutor();
+    executor.execute(
+      () -> embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities()
+    );
+
+    executor.shutdown();
+    boolean wasAbleToFinishImportInTime =
+      executor.awaitTermination(maxImportDurationInMin, TimeUnit.MINUTES);
+    if (!wasAbleToFinishImportInTime) {
+      throw new TimeoutException("Import was not able to finish import in " + maxImportDurationInMin + " minutes!");
+    }
   }
 
   private ScheduledExecutorService reportImportProgress() {
-    ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory(this.getClass().getSimpleName()));
+    ScheduledExecutorService exec =
+      Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory(this.getClass().getSimpleName()));
     exec.scheduleAtFixedRate(
       () -> logger.info("Progress of engine import: {}%",
         computeImportProgress()), 0, 5, TimeUnit.SECONDS
@@ -99,18 +131,20 @@ public class ImportPerformanceTest {
 
   private long computeImportProgress() {
     // assumption: we know how many process instances have been generated
-    ConfigurationService configurationService = embeddedOptimizeRule.getConfigurationService();
-    SearchResponse response = elasticSearchRule.getClient()
-      .prepareSearch(configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()))
-      .setTypes(configurationService.getProcessInstanceType())
+    Long processInstancesImported = getImportedCountOf(configurationService.getProcessInstanceType());
+    Long totalInstances = Math.max(NUMBER_OF_PROCESS_INSTANCES, 1L);
+    return Math.round(processInstancesImported.doubleValue() / totalInstances.doubleValue());
+  }
+
+  private Long getImportedCountOf(String elasticsearchType) {
+    SearchResponse searchResponse = elasticSearchRule.getClient()
+      .prepareSearch(configurationService.getOptimizeIndex(elasticsearchType))
+      .setTypes(elasticsearchType)
       .setQuery(QueryBuilders.matchAllQuery())
       .setSize(0)
       .setFetchSource(false)
       .get();
-
-    Long processInstancesImported = response.getHits().getTotalHits();
-    Long totalInstances = Math.max(NUMBER_OF_INSTANCES, 1L);
-    return Math.round(processInstancesImported.doubleValue() / totalInstances.doubleValue());
+    return searchResponse.getHits().getTotalHits();
   }
 
   public void generateData() throws InterruptedException {
@@ -118,7 +152,7 @@ public class ImportPerformanceTest {
     ThreadPoolExecutor importExecutor = new ThreadPoolExecutor(
       3, 20, Long.MAX_VALUE, TimeUnit.DAYS, importJobsQueue, new WaitHandler());
 
-    DataGeneratorProvider dataGeneratorProvider = new DataGeneratorProvider(NUMBER_OF_INSTANCES);
+    DataGeneratorProvider dataGeneratorProvider = new DataGeneratorProvider(NUMBER_OF_PROCESS_INSTANCES);
     for (DataGenerator dataGenerator : dataGeneratorProvider.getDataGenerators()) {
       importExecutor.execute(dataGenerator);
     }
