@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -45,7 +46,7 @@ public class ProcessDefinitionReader {
   @Autowired
   private ObjectMapper objectMapper;
 
-  public List<ExtendedProcessDefinitionOptimizeDto> getProcessDefinitions() {
+  private List<ExtendedProcessDefinitionOptimizeDto> getProcessDefinitions() {
     return this.getProcessDefinitions(false);
   }
 
@@ -120,8 +121,16 @@ public class ProcessDefinitionReader {
   }
 
   public String getProcessDefinitionXml(String processDefinitionKey, String processDefinitionVersion) {
-    ProcessDefinitionXmlOptimizeDto processDefinitionXmlDto = getProcessDefinitionXmlDto(processDefinitionKey, processDefinitionVersion);
-    return processDefinitionXmlDto == null ? null : processDefinitionXmlDto.getBpmn20Xml();
+    ProcessDefinitionXmlOptimizeDto processDefinitionXmlDto =
+      getProcessDefinitionXmlDto(processDefinitionKey, processDefinitionVersion);
+    if( processDefinitionXmlDto != null && processDefinitionXmlDto.getBpmn20Xml() != null ){
+      return processDefinitionXmlDto.getBpmn20Xml();
+    } else {
+      String notFoundErrorMessage = "Could not find xml for process definition with key [" + processDefinitionKey +
+        "] and version [" + processDefinitionVersion + "]. It is possible that is hasn't been imported yet.";
+      logger.error(notFoundErrorMessage);
+      throw new NotFoundException(notFoundErrorMessage);
+    }
   }
 
   private String convertToValidVersion(String processDefinitionKey, String processDefinitionVersion) {
@@ -156,34 +165,15 @@ public class ProcessDefinitionReader {
     return xml;
   }
 
-  private ProcessDefinitionXmlOptimizeDto getProcessDefinitionXmlDto(String processDefinitionId) {
-    SearchResponse response = esclient.prepareSearch(
-        configurationService.getOptimizeIndex(configurationService.getProcessDefinitionXmlType()))
-        .setQuery(
-          QueryBuilders.boolQuery()
-            .must(termQuery(PROCESS_DEFINITION_ID, processDefinitionId))
-        )
-        .setSize(1)
-        .get();
-
-    ProcessDefinitionXmlOptimizeDto xml = null;
-    if (response.getHits().getTotalHits() > 0L) {
-      xml = getProcessDefinitionXmlOptimizeDto(response.getHits().getAt(0));
-    } else {
-      logger.warn("Could not find process definition xml with id [{}]",
-        processDefinitionId
-      );
-    }
-    return xml;
-  }
-
-  public static ProcessDefinitionXmlOptimizeDto getProcessDefinitionXmlOptimizeDto(SearchHit response) {
+  private static ProcessDefinitionXmlOptimizeDto getProcessDefinitionXmlOptimizeDto(SearchHit response) {
     ProcessDefinitionXmlOptimizeDto xml;
     xml = new ProcessDefinitionXmlOptimizeDto ();
 
     Map<String, Object> xmlResponse = response.getSourceAsMap();
-    xml.setBpmn20Xml(xmlResponse.get(ProcessDefinitionXmlType.BPMN_20_XML).toString());
     xml.setProcessDefinitionId(xmlResponse.get(ProcessDefinitionXmlType.PROCESS_DEFINITION_ID).toString());
+    if (xmlResponse.get(ProcessDefinitionXmlType.BPMN_20_XML) != null) {
+      xml.setBpmn20Xml(xmlResponse.get(ProcessDefinitionXmlType.BPMN_20_XML).toString());
+    }
     if (xmlResponse.get(ProcessDefinitionXmlType.ENGINE) != null) {
       xml.setEngine(xmlResponse.get(ProcessDefinitionXmlType.ENGINE).toString());
     }
@@ -197,7 +187,7 @@ public class ProcessDefinitionReader {
     return new ArrayList<>(resultMap.values());
   }
 
-  public String getLatestVersionToKey(String key) {
+  private String getLatestVersionToKey(String key) {
     Map<String, ProcessDefinitionGroupOptimizeDto> keyToVersionsMap = getKeyToProcessDefinitionMap();
     if (keyToVersionsMap.containsKey(key)) {
       List<ExtendedProcessDefinitionOptimizeDto> versions = keyToVersionsMap.get(key).getVersions();
@@ -244,9 +234,13 @@ public class ProcessDefinitionReader {
 
     do {
       for (SearchHit hit : scrollResp.getHits().getHits()) {
+        String xml = null;
+        if (hit.getSourceAsMap().get(ProcessDefinitionXmlType.BPMN_20_XML) != null) {
+          xml = hit.getSourceAsMap().get(ProcessDefinitionXmlType.BPMN_20_XML).toString();
+        }
         result.put(
             hit.getSourceAsMap().get(PROCESS_DEFINITION_ID).toString(),
-            hit.getSourceAsMap().get(ProcessDefinitionXmlType.BPMN_20_XML).toString()
+            xml
         );
       }
       scrollResp = esclient

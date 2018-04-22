@@ -12,7 +12,6 @@ import org.springframework.stereotype.Component;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
-import javax.ws.rs.NotFoundException;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -71,16 +70,7 @@ public class ProcessDefinitionRestService {
   public String getProcessDefinitionXml(
       @QueryParam("processDefinitionKey") String processDefinitionKey,
       @QueryParam("processDefinitionVersion") String processDefinitionVersion) {
-    String response;
-    String xml = processDefinitionReader.getProcessDefinitionXml(processDefinitionKey, processDefinitionVersion);
-    if (xml == null) {
-      String notFoundErrorMessage = "Could not find xml for process definition with key: " + processDefinitionKey +
-        " and version: " + processDefinitionVersion;
-      throw new NotFoundException(notFoundErrorMessage);
-    } else {
-      response = xml;
-    }
-    return response;
+    return processDefinitionReader.getProcessDefinitionXml(processDefinitionKey, processDefinitionVersion);
   }
 
   /**
