@@ -73,14 +73,14 @@ public class RemoteAddressManager implements Service<Object>
         @Override
         public void onMemberAdded(NodeInfo memberInfo, Topology topology)
         {
-            final ServiceName<RemoteAddress> managementRemoteAddrServiceName = remoteAddressServiceName(memberInfo.getManagementPort());
-            final RemoteAddressService managementRemoteAddrService = new RemoteAddressService(memberInfo.getManagementPort());
+            final ServiceName<RemoteAddress> managementRemoteAddrServiceName = remoteAddressServiceName(memberInfo.getManagementApiAddress());
+            final RemoteAddressService managementRemoteAddrService = new RemoteAddressService(memberInfo.getManagementApiAddress());
             serviceContext.createService(managementRemoteAddrServiceName, managementRemoteAddrService)
                 .dependency(clientTransport(MANAGEMENT_API_CLIENT_NAME), managementRemoteAddrService.getClientTransportInjector())
                 .install();
 
-            final ServiceName<RemoteAddress> replicationRemoteAddrServiceName = remoteAddressServiceName(memberInfo.getReplicationPort());
-            final RemoteAddressService replicationRemoteAddrService = new RemoteAddressService(memberInfo.getReplicationPort());
+            final ServiceName<RemoteAddress> replicationRemoteAddrServiceName = remoteAddressServiceName(memberInfo.getReplicationApiAddress());
+            final RemoteAddressService replicationRemoteAddrService = new RemoteAddressService(memberInfo.getReplicationApiAddress());
             serviceContext.createService(replicationRemoteAddrServiceName, replicationRemoteAddrService)
                 .dependency(clientTransport(REPLICATION_API_CLIENT_NAME), replicationRemoteAddrService.getClientTransportInjector())
                 .install();
@@ -89,10 +89,10 @@ public class RemoteAddressManager implements Service<Object>
         @Override
         public void onMemberRemoved(NodeInfo memberInfo, Topology topology)
         {
-            final ServiceName<RemoteAddress> managementRemoteAddrServiceName = remoteAddressServiceName(memberInfo.getManagementPort());
+            final ServiceName<RemoteAddress> managementRemoteAddrServiceName = remoteAddressServiceName(memberInfo.getManagementApiAddress());
             serviceContext.removeService(managementRemoteAddrServiceName);
 
-            final ServiceName<RemoteAddress> replicationRemoteAddrServiceName = remoteAddressServiceName(memberInfo.getReplicationPort());
+            final ServiceName<RemoteAddress> replicationRemoteAddrServiceName = remoteAddressServiceName(memberInfo.getReplicationApiAddress());
             serviceContext.removeService(replicationRemoteAddrServiceName);
         }
     }

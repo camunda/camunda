@@ -54,7 +54,7 @@ public class RoundRobinSelectionStrategy implements PartitionCreatorSelectionStr
     @Override
     public void onMemberAdded(NodeInfo memberInfo, Topology topology)
     {
-        final SocketAddress managementPort = memberInfo.getManagementPort();
+        final SocketAddress managementPort = memberInfo.getManagementApiAddress();
 
         lock.lock();
         try
@@ -73,7 +73,7 @@ public class RoundRobinSelectionStrategy implements PartitionCreatorSelectionStr
         lock.lock();
         try
         {
-            availableNodes.remove(memberInfo.getManagementPort());
+            availableNodes.remove(memberInfo.getManagementApiAddress());
         }
         finally
         {

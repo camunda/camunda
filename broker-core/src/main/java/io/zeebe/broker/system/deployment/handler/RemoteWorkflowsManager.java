@@ -141,7 +141,7 @@ public class RemoteWorkflowsManager implements StreamProcessorLifecycleAware
             {
                 final NodeInfo leader = leaders.get(partitionId);
                 partitionIdConsumer.accept(partitionId);
-                action.test(leader.getManagementPort());
+                action.test(leader.getManagementApiAddress());
             });
         });
 

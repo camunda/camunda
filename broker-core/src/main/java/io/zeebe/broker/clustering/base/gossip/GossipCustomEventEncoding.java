@@ -37,9 +37,9 @@ public final class GossipCustomEventEncoding
 {
     public static int writeSockedAddresses(NodeInfo memberInfo, MutableDirectBuffer directBuffer, int offset)
     {
-        offset = writeSocketAddress(memberInfo.getManagementPort(), directBuffer, offset);
-        offset = writeSocketAddress(memberInfo.getApiPort(), directBuffer, offset);
-        offset = writeSocketAddress(memberInfo.getReplicationPort(), directBuffer, offset);
+        offset = writeSocketAddress(memberInfo.getManagementApiAddress(), directBuffer, offset);
+        offset = writeSocketAddress(memberInfo.getClientApiAddress(), directBuffer, offset);
+        offset = writeSocketAddress(memberInfo.getReplicationApiAddress(), directBuffer, offset);
 
         return offset;
     }

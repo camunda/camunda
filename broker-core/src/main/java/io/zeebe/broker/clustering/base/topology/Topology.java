@@ -18,6 +18,7 @@
 package io.zeebe.broker.clustering.base.topology;
 
 import java.util.*;
+import java.util.function.Function;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.base.topology.TopologyDto.BrokerDto;
@@ -55,7 +56,22 @@ public class Topology
         return local;
     }
 
-    public NodeInfo getMemberByAddress(SocketAddress apiAddress)
+    public NodeInfo getMemberByClientApi(SocketAddress apiAddress)
+    {
+        return getMemberByApi(NodeInfo::getClientApiAddress, apiAddress);
+    }
+
+    public NodeInfo getMemberByManagementApi(SocketAddress apiAddress)
+    {
+        return getMemberByApi(NodeInfo::getManagementApiAddress, apiAddress);
+    }
+
+    public NodeInfo getMemberByReplicationApi(SocketAddress apiAddress)
+    {
+        return getMemberByApi(NodeInfo::getReplicationApiAddress, apiAddress);
+    }
+
+    protected NodeInfo getMemberByApi(Function<NodeInfo, SocketAddress> apiAddressMapper, SocketAddress apiAddress)
     {
         NodeInfo member = null;
 
@@ -63,7 +79,7 @@ public class Topology
         {
             final NodeInfo current = members.get(i);
 
-            if (current.getApiPort().equals(apiAddress))
+            if (apiAddressMapper.apply(current).equals(apiAddress))
             {
                 member = current;
             }
@@ -224,7 +240,7 @@ public class Topology
         for (NodeInfo member : members)
         {
             final BrokerDto broker = dto.brokers().add();
-            final SocketAddress apiContactPoint = member.getApiPort();
+            final SocketAddress apiContactPoint = member.getClientApiAddress();
             broker.setHost(apiContactPoint.getHostBuffer(), 0, apiContactPoint.getHostBuffer().capacity());
             broker.setPort(apiContactPoint.port());
 
@@ -258,35 +274,35 @@ public class Topology
 
     public static class NodeInfo
     {
-        private final SocketAddress apiPort;
-        private final SocketAddress managementPort;
-        private final SocketAddress replicationPort;
+        private final SocketAddress clientApiAddress;
+        private final SocketAddress managementApiAddress;
+        private final SocketAddress replicationApiAddress;
 
         private final List<PartitionInfo> leader = new ArrayList<>();
         private final List<PartitionInfo> follower = new ArrayList<>();
 
-        public NodeInfo(SocketAddress apiPort,
-            SocketAddress managementPort,
-            SocketAddress replicationPort)
+        public NodeInfo(SocketAddress clientApiAddress,
+            SocketAddress managementApiAddress,
+            SocketAddress replicationApiAddress)
         {
-            this.apiPort = apiPort;
-            this.managementPort = managementPort;
-            this.replicationPort = replicationPort;
+            this.clientApiAddress = clientApiAddress;
+            this.managementApiAddress = managementApiAddress;
+            this.replicationApiAddress = replicationApiAddress;
         }
 
-        public SocketAddress getApiPort()
+        public SocketAddress getClientApiAddress()
         {
-            return apiPort;
+            return clientApiAddress;
         }
 
-        public SocketAddress getManagementPort()
+        public SocketAddress getManagementApiAddress()
         {
-            return managementPort;
+            return managementApiAddress;
         }
 
-        public SocketAddress getReplicationPort()
+        public SocketAddress getReplicationApiAddress()
         {
-            return replicationPort;
+            return replicationApiAddress;
         }
 
         public List<PartitionInfo> getLeader()
@@ -302,7 +318,7 @@ public class Topology
         @Override
         public String toString()
         {
-            return String.format("Node{clientApi=%s, managementApi=%s, replicationApi=%s}", apiPort, managementPort, replicationPort);
+            return String.format("Node{clientApi=%s, managementApi=%s, replicationApi=%s}", clientApiAddress, managementApiAddress, replicationApiAddress);
         }
 
         @Override
@@ -310,7 +326,7 @@ public class Topology
         {
             final int prime = 31;
             int result = 1;
-            result = prime * result + ((apiPort == null) ? 0 : apiPort.hashCode());
+            result = prime * result + ((clientApiAddress == null) ? 0 : clientApiAddress.hashCode());
             return result;
         }
 
@@ -330,14 +346,14 @@ public class Topology
                 return false;
             }
             final NodeInfo other = (NodeInfo) obj;
-            if (apiPort == null)
+            if (clientApiAddress == null)
             {
-                if (other.apiPort != null)
+                if (other.clientApiAddress != null)
                 {
                     return false;
                 }
             }
-            else if (!apiPort.equals(other.apiPort))
+            else if (!clientApiAddress.equals(other.clientApiAddress))
             {
                 return false;
             }

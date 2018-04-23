@@ -168,7 +168,7 @@ public class TopologyManagerImpl extends Actor implements TopologyManager
         @Override
         public void onRemove(Member member)
         {
-            final NodeInfo topologyMember = topology.getMemberByAddress(member.getAddress());
+            final NodeInfo topologyMember = topology.getMemberByManagementApi(member.getAddress());
             if (topologyMember != null)
             {
                 topology.removeMember(topologyMember);
@@ -189,7 +189,7 @@ public class TopologyManagerImpl extends Actor implements TopologyManager
             {
                 LOG.trace("Received raft state change event for member {}", senderCopy);
 
-                final NodeInfo member = topology.getMemberByAddress(senderCopy);
+                final NodeInfo member = topology.getMemberByManagementApi(senderCopy);
 
                 if (member != null)
                 {
@@ -217,7 +217,7 @@ public class TopologyManagerImpl extends Actor implements TopologyManager
                 for (NodeInfo member : topology.getMembers())
                 {
                     final int length = writeSockedAddresses(member, writeBuffer, 0);
-                    request.addPayload(member.getManagementPort(), writeBuffer, 0, length);
+                    request.addPayload(member.getManagementApiAddress(), writeBuffer, 0, length);
                 }
 
                 LOG.trace("Send API sync response.");
@@ -239,7 +239,7 @@ public class TopologyManagerImpl extends Actor implements TopologyManager
                 for (NodeInfo member : topology.getMembers())
                 {
                     final int length = writeTopology(topology, writeBuffer, 0);
-                    request.addPayload(member.getManagementPort(), writeBuffer, 0, length);
+                    request.addPayload(member.getManagementApiAddress(), writeBuffer, 0, length);
                 }
 
                 LOG.trace("Send RAFT state sync response.");

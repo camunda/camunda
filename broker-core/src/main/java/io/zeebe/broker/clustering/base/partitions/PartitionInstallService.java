@@ -102,7 +102,7 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
 
         final Raft raftService = new Raft(logName,
             new RaftConfiguration(),
-            localNode.getReplicationPort(),
+            localNode.getReplicationApiAddress(),
             clientTransport,
             configuration,
             messageBuffer,
