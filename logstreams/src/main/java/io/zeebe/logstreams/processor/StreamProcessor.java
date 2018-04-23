@@ -51,6 +51,15 @@ public interface StreamProcessor
     }
 
     /**
+     * Callback which is invoked by the controller when the recovery is done.
+     * Implementation could contain logic which should not be done on recovery, but afterwards.
+     */
+    default void onRecovered()
+    {
+
+    }
+
+    /**
      * Callback which is invoked by the controller when it closes. An
      * implementation can provide any clean up logic here.
      */

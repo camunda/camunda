@@ -271,6 +271,7 @@ public class StreamProcessorController extends Actor
         actor.runAtFixedRate(snapshotPeriod, this::createSnapshot);
 
         // start reading
+        streamProcessor.onRecovered();
         actor.submit(readNextEvent);
     }
 
