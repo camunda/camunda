@@ -20,26 +20,17 @@ import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.File;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.Collections;
 import java.util.List;
-import java.util.regex.Pattern;
 
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.RecordingTaskHandler;
 import io.zeebe.broker.it.util.TopicEventRecorder;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.clustering.impl.BrokerPartitionState;
-import io.zeebe.client.clustering.impl.TopologyBroker;
-import io.zeebe.client.clustering.impl.TopologyResponse;
+import io.zeebe.client.clustering.impl.*;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
-import io.zeebe.client.event.DeploymentEvent;
-import io.zeebe.client.event.TaskEvent;
-import io.zeebe.client.event.WorkflowInstanceEvent;
+import io.zeebe.client.event.*;
 import io.zeebe.client.task.TaskSubscription;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
@@ -47,7 +38,6 @@ import io.zeebe.raft.Raft;
 import io.zeebe.raft.RaftServiceNames;
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.test.util.TestFileUtil;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.SocketAddress;
 import org.junit.Rule;
@@ -55,7 +45,6 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
-import org.junit.rules.TemporaryFolder;
 
 public class BrokerRestartTest
 {
@@ -80,9 +69,7 @@ public class BrokerRestartTest
             .endEvent("end")
             .done();
 
-    public TemporaryFolder tempFolder = new TemporaryFolder();
-
-    public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(() -> brokerConfig(tempFolder.getRoot().getAbsolutePath()));
+    public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
     public ClientRule clientRule = new ClientRule();
 
@@ -90,23 +77,12 @@ public class BrokerRestartTest
 
     @Rule
     public RuleChain ruleChain = RuleChain
-        .outerRule(tempFolder)
-        .around(brokerRule)
+        .outerRule(brokerRule)
         .around(clientRule)
         .around(eventRecorder);
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
-
-    protected static InputStream brokerConfig(String path)
-    {
-        final String canonicallySeparatedPath = path.replaceAll(Pattern.quote(File.separator), "/");
-
-        return TestFileUtil.readAsTextFileAndReplace(
-                BrokerRestartTest.class.getClassLoader().getResourceAsStream("persistent-broker.cfg.toml"),
-                StandardCharsets.UTF_8,
-                Collections.singletonMap("brokerFolder", canonicallySeparatedPath));
-    }
 
     @Test
     public void shouldCreateWorkflowInstanceAfterRestart()
@@ -473,7 +449,7 @@ public class BrokerRestartTest
         assertThat(raftAfterRestart.getState()).isEqualTo(RaftState.LEADER);
         assertThat(raftAfterRestart.getTerm()).isGreaterThanOrEqualTo(9);
         assertThat(raftAfterRestart.getMemberSize()).isEqualTo(0);
-        assertThat(raftAfterRestart.getVotedFor()).isEqualTo(new SocketAddress("localhost", 51017));
+        assertThat(raftAfterRestart.getVotedFor()).isEqualTo(new SocketAddress("0.0.0.0", 51017));
     }
 
     @Test

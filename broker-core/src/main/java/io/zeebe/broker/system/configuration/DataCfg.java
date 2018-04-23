@@ -15,38 +15,40 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.logstreams.cfg;
+package io.zeebe.broker.system.configuration;
 
-import io.zeebe.broker.system.DirectoryConfiguration;
-import io.zeebe.broker.system.GlobalConfiguration;
-import io.zeebe.util.FileUtil;
-
-public class LogStreamsCfg extends DirectoryConfiguration
+public class DataCfg implements ConfigurationEntry
 {
-    public int defaultLogSegmentSize = 512;
+    private String[] directories = new String[] { "data" };
 
-    public String[] directories = null;
+    private String defaultLogSegmentSize = "512M";
 
     @Override
-    public void applyGlobalConfiguration(GlobalConfiguration globalConfig)
+    public void init(BrokerCfg globalConfig, String brokerBase)
     {
-        if (directories == null || directories.length == 0)
-        {
-            super.applyGlobalConfiguration(globalConfig);
-            directories = new String[] { directory };
-            return;
-        }
-
         for (int i = 0; i < directories.length; i++)
         {
-            directories[i] = FileUtil.getCanonicalPath(directories[i]);
+            directories[i] = ConfigurationUtil.toAbsolutePath(directories[i], brokerBase);
         }
     }
 
-    @Override
-    protected String componentDirectoryName()
+    public String[] getDirectories()
     {
-        return "logs";
+        return directories;
     }
 
+    public void setDirectories(String[] directories)
+    {
+        this.directories = directories;
+    }
+
+    public String getDefaultLogSegmentSize()
+    {
+        return defaultLogSegmentSize;
+    }
+
+    public void setDefaultLogSegmentSize(String defaultLogSegmentSize)
+    {
+        this.defaultLogSegmentSize = defaultLogSegmentSize;
+    }
 }

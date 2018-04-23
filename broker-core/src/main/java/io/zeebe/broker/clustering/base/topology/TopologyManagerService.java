@@ -19,7 +19,7 @@ package io.zeebe.broker.clustering.base.topology;
 
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LOCAL_NODE;
 
-import io.zeebe.broker.transport.cfg.TransportComponentCfg;
+import io.zeebe.broker.system.configuration.NetworkCfg;
 import io.zeebe.gossip.Gossip;
 import io.zeebe.raft.Raft;
 import io.zeebe.servicecontainer.*;
@@ -38,13 +38,11 @@ public class TopologyManagerService implements Service<TopologyManager>
 
     private final NodeInfo localMember;
 
-    public TopologyManagerService(TransportComponentCfg cfg)
+    public TopologyManagerService(NetworkCfg cfg)
     {
-        final String defaultHost = cfg.host;
-
-        final SocketAddress managementApi = cfg.managementApi.toSocketAddress(defaultHost);
-        final SocketAddress clientApi = cfg.clientApi.toSocketAddress(defaultHost);
-        final SocketAddress replicationApi = cfg.replicationApi.toSocketAddress(defaultHost);
+        final SocketAddress managementApi = cfg.getManagement().toSocketAddress();
+        final SocketAddress clientApi = cfg.getClient().toSocketAddress();
+        final SocketAddress replicationApi = cfg.getReplication().toSocketAddress();
 
         localMember = new NodeInfo(clientApi, managementApi, replicationApi);
     }

@@ -24,7 +24,6 @@ import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.incident.processor.IncidentStreamProcessor;
 import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
-import io.zeebe.broker.system.ConfigurationManager;
 import io.zeebe.broker.system.deployment.handler.CreateWorkflowResponseSender;
 import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
 import io.zeebe.broker.workflow.processor.WorkflowInstanceStreamProcessor;
@@ -44,15 +43,10 @@ public class WorkflowQueueManagerService extends Actor implements Service<Workfl
             .onAdd((name, stream) -> addPartition(stream, name))
             .build();
 
-    private WorkflowCfg workflowCfg;
     private StreamProcessorServiceFactory streamProcessorServiceFactory;
 
     private ServerTransport transport;
 
-    public WorkflowQueueManagerService(final ConfigurationManager configurationManager)
-    {
-        workflowCfg = configurationManager.readEntry("workflow", WorkflowCfg.class);
-    }
 
     public void startWorkflowQueue(Partition partition, ServiceName<Partition> partitionServiceName)
     {
@@ -70,8 +64,8 @@ public class WorkflowQueueManagerService extends Actor implements Service<Workfl
 
         final WorkflowInstanceStreamProcessor workflowInstanceStreamProcessor = new WorkflowInstanceStreamProcessor(responseWriter,
              createWorkflowResponseSender,
-             workflowCfg.deploymentCacheSize,
-             workflowCfg.payloadCacheSize);
+             32,
+             64);
 
         streamProcessorServiceFactory.createService(partition, partitionServiceName)
             .processor(workflowInstanceStreamProcessor)

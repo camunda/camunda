@@ -15,6 +15,14 @@
  */
 package io.zeebe.broker.it.clustering;
 
+import static io.zeebe.test.util.TestUtil.doRepeatedly;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.io.*;
+import java.util.*;
+import java.util.concurrent.Callable;
+import java.util.stream.Collectors;
+
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.client.ZeebeClient;
@@ -25,15 +33,9 @@ import io.zeebe.client.topic.Topic;
 import io.zeebe.client.topic.Topics;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.SocketAddress;
+import io.zeebe.util.FileUtil;
+import org.assertj.core.util.Files;
 import org.junit.rules.ExternalResource;
-
-import java.io.InputStream;
-import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.stream.Collectors;
-
-import static io.zeebe.test.util.TestUtil.doRepeatedly;
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class ClusteringRule extends ExternalResource
 {
@@ -91,7 +93,8 @@ public class ClusteringRule extends ExternalResource
 
     private void waitUntilBrokersInTopology(int size)
     {
-        waitForSpreading(() -> {
+        waitForSpreading(() ->
+        {
             doRepeatedly(() -> zeebeClient.requestTopology().execute().getBrokers())
                 .until(topologyBrokers -> topologyBrokers.size() == size);
         });
@@ -111,7 +114,8 @@ public class ClusteringRule extends ExternalResource
     public TopologyBroker getLeaderForPartition(int partition)
     {
         return
-            doRepeatedly(() -> {
+            doRepeatedly(() ->
+            {
                 final List<TopologyBroker> brokers = zeebeClient.requestTopology().execute().getBrokers();
                 return extractPartitionLeader(brokers, partition);
             })
@@ -177,7 +181,8 @@ public class ClusteringRule extends ExternalResource
 
     private void waitForTopicPartitionReplicationFactor(String topicName, int partitionCount, int replicationFactor)
     {
-        waitForSpreading(() -> {
+        waitForSpreading(() ->
+        {
             doRepeatedly(() -> zeebeClient.requestTopology().execute().getBrokers())
                 .until(topologyBrokers -> hasPartitionsWithReplicationFactor(topologyBrokers, topicName, partitionCount, replicationFactor));
         });
@@ -185,7 +190,8 @@ public class ClusteringRule extends ExternalResource
 
     private Topic waitForTopicAvailability(String topicName)
     {
-        return doRepeatedly(() -> {
+        return doRepeatedly(() ->
+        {
             final Topics topics = zeebeClient.topics().getTopics().execute();
             return topics.getTopics().stream().filter(topic -> topicName.equals(topic.getName())).findAny();
         })
@@ -195,9 +201,12 @@ public class ClusteringRule extends ExternalResource
 
     private Broker startBroker(String configFile)
     {
+        final File base = Files.newTemporaryFolder();
+
         final InputStream config = this.getClass().getClassLoader().getResourceAsStream(configFile);
-        final Broker broker = new Broker(config);
+        final Broker broker = new Broker(config, base.getAbsolutePath(), null);
         autoCloseableRule.manage(broker);
+        autoCloseableRule.manage(() -> FileUtil.deleteFolder(base.getAbsolutePath()));
 
         return broker;
     }
@@ -234,7 +243,8 @@ public class ClusteringRule extends ExternalResource
 
     private void waitUntilBrokerIsAddedToTopology(SocketAddress socketAddress)
     {
-        waitForSpreading(() -> {
+        waitForSpreading(() ->
+        {
             doRepeatedly(() -> zeebeClient.requestTopology().execute().getBrokers())
                 .until(topologyBrokers -> topologyBrokers.stream().anyMatch(topologyBroker -> topologyBroker.getSocketAddress().equals(socketAddress)));
         });
@@ -321,7 +331,8 @@ public class ClusteringRule extends ExternalResource
 
     private void waitUntilBrokerIsRemovedFromTopology(SocketAddress socketAddress)
     {
-        waitForSpreading(() -> {
+        waitForSpreading(() ->
+        {
             doRepeatedly(() -> zeebeClient.requestTopology().execute().getBrokers())
                 .until(topologyBrokers -> topologyBrokers.stream().noneMatch(topologyBroker -> topologyBroker.getSocketAddress().equals(socketAddress)));
         });
@@ -329,7 +340,8 @@ public class ClusteringRule extends ExternalResource
 
     private void waitForNewLeaderOfPartitions(List<Integer> partitions, SocketAddress oldLeader)
     {
-        waitForSpreading(() -> {
+        waitForSpreading(() ->
+        {
             doRepeatedly(() -> zeebeClient.requestTopology().execute().getBrokers())
                 .until(topologyBrokers ->
                     topologyBrokers != null && topologyBrokers.stream()

@@ -23,7 +23,10 @@ import io.zeebe.servicecontainer.ServiceName;
 
 public class LogStreamServiceNames
 {
-    public static final ServiceName<SnapshotStorage> SNAPSHOT_STORAGE_SERVICE = ServiceName.newServiceName("snapshot.storage", SnapshotStorage.class);
+    public static final ServiceName<SnapshotStorage> snapshotStorageServiceName(String partitionName)
+    {
+        return ServiceName.newServiceName(String.format("%s.snapshot.storage", partitionName), SnapshotStorage.class);
+    }
 
     public static final ServiceName<StreamProcessorServiceFactory> STREAM_PROCESSOR_SERVICE_FACTORY = ServiceName.newServiceName("logstreams.processor-factory", StreamProcessorServiceFactory.class);
 }

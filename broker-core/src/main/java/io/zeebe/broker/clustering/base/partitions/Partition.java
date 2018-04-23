@@ -19,6 +19,7 @@ package io.zeebe.broker.clustering.base.partitions;
 
 import io.zeebe.broker.clustering.base.topology.PartitionInfo;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.spi.SnapshotStorage;
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.servicecontainer.*;
 
@@ -29,11 +30,15 @@ public class Partition implements Service<Partition>
 {
     private final Injector<LogStream> logStreamInjector = new Injector<>();
 
+    private final Injector<SnapshotStorage> snapshotStorageInjector = new Injector<>();
+
     private final PartitionInfo info;
 
     private final RaftState state;
 
     private LogStream logStream;
+
+    private SnapshotStorage snapshotStorage;
 
     public Partition(PartitionInfo partitionInfo, RaftState state)
     {
@@ -45,6 +50,7 @@ public class Partition implements Service<Partition>
     public void start(ServiceStartContext startContext)
     {
         logStream = logStreamInjector.getValue();
+        snapshotStorage = snapshotStorageInjector.getValue();
     }
 
     @Override
@@ -71,5 +77,15 @@ public class Partition implements Service<Partition>
     public Injector<LogStream> getLogStreamInjector()
     {
         return logStreamInjector;
+    }
+
+    public SnapshotStorage getSnapshotStorage()
+    {
+        return snapshotStorage;
+    }
+
+    public Injector<SnapshotStorage> getSnapshotStorageInjector()
+    {
+        return snapshotStorageInjector;
     }
 }

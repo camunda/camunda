@@ -15,29 +15,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.configuration;
+package io.zeebe.broker.system.configuration;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-
-import io.zeebe.broker.transport.cfg.TransportComponentCfg;
-import io.zeebe.raft.RaftConfiguration;
-import org.junit.Rule;
-import org.junit.Test;
-
-public class ConfigurationTest
+public class SocketBindingReplicationCfg extends SocketBindingCfg
 {
-
-    @Rule
-    public ConfigurationRule configurationRule = new ConfigurationRule();
-
-    @Test
-    @ConfigurationFile("zeebe.test.raft.cfg.toml")
-    public void shouldSetRaftConfiguration()
+    public SocketBindingReplicationCfg()
     {
-        final RaftConfiguration config = configurationRule.getComponent("network", TransportComponentCfg.class).raft;
-
-        assertThat(config.getHeartbeatIntervalMs()).isEqualTo(1234);
-        assertThat(config.getElectionIntervalMs()).isEqualTo(2345);
+        port = 51017;
     }
-
 }

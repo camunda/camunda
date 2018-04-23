@@ -40,12 +40,9 @@ public class StreamProcessorServiceFactory implements Service<StreamProcessorSer
 {
     private static final Duration SNAPSHOT_INTERVAL = Duration.ofMinutes(15);
 
-    private final Injector<SnapshotStorage> snapshotStorageInjector = new Injector<>();
-
     private final ServiceContainer serviceContainer;
 
     private ActorScheduler actorScheduler;
-    private SnapshotStorage snapshotStorage;
 
     public StreamProcessorServiceFactory(ServiceContainer serviceContainer)
     {
@@ -56,19 +53,12 @@ public class StreamProcessorServiceFactory implements Service<StreamProcessorSer
     public void start(ServiceStartContext startContext)
     {
         this.actorScheduler = startContext.getScheduler();
-
-        snapshotStorage = snapshotStorageInjector.getValue();
     }
 
     @Override
     public StreamProcessorServiceFactory get()
     {
         return this;
-    }
-
-    public Injector<SnapshotStorage> getSnapshotStorageInjector()
-    {
-        return snapshotStorageInjector;
     }
 
     public Builder createService(Partition partition, ServiceName<Partition> serviceName)
@@ -79,6 +69,7 @@ public class StreamProcessorServiceFactory implements Service<StreamProcessorSer
     public class Builder
     {
         private final LogStream logStream;
+        private final SnapshotStorage snapshotStorage;
 
         private String processorName;
         private int processorId = -1;
@@ -88,9 +79,11 @@ public class StreamProcessorServiceFactory implements Service<StreamProcessorSer
         protected MetadataFilter customEventFilter;
         protected boolean readOnly = false;
 
+
         public Builder(Partition partition, ServiceName<Partition> serviceName)
         {
             this.logStream = partition.getLogStream();
+            snapshotStorage = partition.getSnapshotStorage();
             this.additionalDependencies.add(serviceName);
         }
 

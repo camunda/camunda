@@ -17,50 +17,24 @@ package io.zeebe.broker.it.subscription;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.File;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.regex.Pattern;
-
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
-import io.zeebe.broker.it.startup.BrokerRestartTest;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.event.TopicSubscription;
-import io.zeebe.test.util.TestFileUtil;
 import io.zeebe.test.util.TestUtil;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
-import org.junit.rules.TemporaryFolder;
 
 public class PersistentTopicSubscriptionTest
 {
-
-    protected static InputStream persistentBrokerConfig(String path)
-    {
-        final String canonicallySeparatedPath = path.replaceAll(Pattern.quote(File.separator), "/");
-
-        return TestFileUtil.readAsTextFileAndReplace(
-                BrokerRestartTest.class.getClassLoader().getResourceAsStream("persistent-broker.cfg.toml"),
-                StandardCharsets.UTF_8,
-                Collections.singletonMap("brokerFolder", canonicallySeparatedPath));
-    }
-
-
-    public TemporaryFolder tempFolder = new TemporaryFolder();
-
-    public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(() -> persistentBrokerConfig(tempFolder.getRoot().getAbsolutePath()));
+    public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
     public ClientRule clientRule = new ClientRule();
 
     @Rule
     public RuleChain ruleChain = RuleChain
-        .outerRule(tempFolder)
-        .around(brokerRule)
+        .outerRule(brokerRule)
         .around(clientRule);
 
     @Rule

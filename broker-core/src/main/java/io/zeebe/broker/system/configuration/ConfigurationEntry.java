@@ -15,15 +15,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.clustering;
+package io.zeebe.broker.system.configuration;
 
-import io.zeebe.broker.system.DirectoryConfiguration;
-
-public class ClusterComponentConfiguration extends DirectoryConfiguration
+public interface ConfigurationEntry
 {
-    @Override
-    protected String componentDirectoryName()
+    default void init(BrokerCfg brokerConfiguration, String brokerBase)
     {
-        return "meta";
+        // noop;
     }
 }

@@ -1,43 +1,15 @@
-# Default Zeebe Config File. Used if no config file is provided to the broker.
+# Broker 1
 
-# Global configuration --------------------------------
+bootstrap = 1
 
-[global]
-useTempDirectory = true
-
-# Networking configuration ----------------------------
-
-[network]
-host = "localhost"
-sendBufferSize = 128
-
-[network.clientApi]
-host = "localhost"
+[network.client]
 port = 51015
-receiveBufferSize = 16
-controlMessageRequestTimeoutInMillis = 10000
 
-[network.managementApi]
-host = "localhost"
+[network.management]
 port = 51016
-receiveBufferSize = 16
 
-[network.replicationApi]
-host = "localhost"
+[network.replication]
 port = 51017
-receiveBufferSize = 16
 
-# System Configuration --------------------------------
-
-[threading]
-numberOfThreads = 2
-maxIdleTimeMs = 100
-idleStrategy = "BACKOFF"
-
-[system]
-deploymentCreationTimeoutSeconds = 3
-
-# Log Configuration -----------------------------------
-
-[logs]
-defaultLogSegmentSize = 512
+[cluster]
+initialContactPoints = []

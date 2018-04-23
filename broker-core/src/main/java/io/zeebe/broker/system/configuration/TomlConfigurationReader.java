@@ -15,15 +15,34 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.logstreams.cfg;
+package io.zeebe.broker.system.configuration;
 
-import io.zeebe.broker.system.DirectoryConfiguration;
+import java.io.File;
+import java.io.InputStream;
 
-public class SnapshotStorageCfg extends DirectoryConfiguration
+import com.moandjiezana.toml.Toml;
+import io.zeebe.broker.Loggers;
+import org.slf4j.Logger;
+
+public class TomlConfigurationReader
 {
-    @Override
-    protected String componentDirectoryName()
+    public static final Logger LOG = Loggers.SYSTEM_LOGGER;
+
+    public BrokerCfg read(String filePath)
     {
-        return "snapshot";
+        final File file = new File(filePath);
+
+        LOG.info("Using configuration file " + file.getAbsolutePath());
+
+        return new Toml().read(file)
+            .to(BrokerCfg.class);
+    }
+
+    public BrokerCfg read(InputStream configStream)
+    {
+        LOG.info("Reading configuration from input stream");
+
+        return new Toml().read(configStream)
+            .to(BrokerCfg.class);
     }
 }

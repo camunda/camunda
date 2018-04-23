@@ -17,7 +17,10 @@
  */
 package io.zeebe.broker.clustering;
 
-import static io.zeebe.broker.transport.TransportServiceNames.*;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.*;
+import static io.zeebe.broker.system.SystemServiceNames.WORKFLOW_REQUEST_MESSAGE_HANDLER_SERVICE;
+import static io.zeebe.broker.transport.TransportServiceNames.MANAGEMENT_API_SERVER_NAME;
+import static io.zeebe.broker.transport.TransportServiceNames.bufferingServerTransport;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.api.ManagementApiRequestHandlerService;
@@ -25,17 +28,12 @@ import io.zeebe.broker.clustering.base.bootstrap.*;
 import io.zeebe.broker.clustering.base.connections.RemoteAddressManager;
 import io.zeebe.broker.clustering.base.gossip.GossipJoinService;
 import io.zeebe.broker.clustering.base.gossip.GossipService;
-import io.zeebe.broker.clustering.base.raft.config.RaftPersistentConfigurationManagerService;
+import io.zeebe.broker.clustering.base.raft.RaftPersistentConfigurationManagerService;
 import io.zeebe.broker.clustering.base.topology.TopologyManagerService;
-import io.zeebe.broker.logstreams.cfg.LogStreamsCfg;
-
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.*;
-import static io.zeebe.broker.system.SystemServiceNames.*;
-
-import io.zeebe.broker.system.*;
+import io.zeebe.broker.system.Component;
+import io.zeebe.broker.system.SystemContext;
+import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.transport.TransportServiceNames;
-import io.zeebe.broker.transport.cfg.TransportComponentCfg;
-import io.zeebe.broker.util.BrokerArguments;
 import io.zeebe.servicecontainer.CompositeServiceBuilder;
 import io.zeebe.servicecontainer.ServiceContainer;
 import org.slf4j.Logger;
@@ -51,20 +49,16 @@ public class ClusterComponent implements Component
     public void init(final SystemContext context)
     {
         final ServiceContainer serviceContainer = context.getServiceContainer();
-        final ConfigurationManager configurationManager = context.getConfigurationManager();
-        final TransportComponentCfg transportCfg = configurationManager.readEntry("network", TransportComponentCfg.class);
-        final GlobalConfiguration globalCfg = configurationManager.readEntry("global", GlobalConfiguration.class);
-        final LogStreamsCfg logsCfg = configurationManager.readEntry("logs", LogStreamsCfg.class);
 
-        initClusteringBaseLayer(context, serviceContainer, transportCfg, logsCfg);
-        initBootstrapSystemPartition(context, serviceContainer, globalCfg);
+        initClusteringBaseLayer(context, serviceContainer);
+        initBootstrapSystemPartition(context, serviceContainer);
     }
 
-    private void initClusteringBaseLayer(final SystemContext context, final ServiceContainer serviceContainer, final TransportComponentCfg config, LogStreamsCfg logsCfg)
+    private void initClusteringBaseLayer(final SystemContext context, final ServiceContainer serviceContainer)
     {
         final CompositeServiceBuilder baseLayerInstall = serviceContainer.createComposite(CLUSTERING_BASE_LAYER);
 
-        final TopologyManagerService topologyManagerService = new TopologyManagerService(config);
+        final TopologyManagerService topologyManagerService = new TopologyManagerService(context.getBrokerConfiguration().getNetwork());
         baseLayerInstall.createService(TOPOLOGY_MANAGER_SERVICE, topologyManagerService)
             .dependency(GOSSIP_SERVICE, topologyManagerService.getGossipInjector())
             .groupReference(RAFT_SERVICE_GROUP, topologyManagerService.getRaftReference())
@@ -75,53 +69,57 @@ public class ClusterComponent implements Component
             .dependency(TOPOLOGY_MANAGER_SERVICE, remoteAddressManager.getTopologyManagerInjector())
             .install();
 
-        final ManagementApiRequestHandlerService managementApiRequestHandlerService = new ManagementApiRequestHandlerService();
+        final ManagementApiRequestHandlerService managementApiRequestHandlerService = new ManagementApiRequestHandlerService(context.getBrokerConfiguration());
         baseLayerInstall.createService(MANAGEMENT_API_REQUEST_HANDLER_SERVICE_NAME, managementApiRequestHandlerService)
             .dependency(bufferingServerTransport(MANAGEMENT_API_SERVER_NAME), managementApiRequestHandlerService.getServerTransportInjector())
             .dependency(RAFT_CONFIGURATION_MANAGER, managementApiRequestHandlerService.getRaftPersistentConfigurationManagerInjector())
             .dependency(WORKFLOW_REQUEST_MESSAGE_HANDLER_SERVICE, managementApiRequestHandlerService.getWorkflowRequestMessageHandlerInjector())
             .install();
 
-        initGossip(baseLayerInstall, config);
-        initRaft(baseLayerInstall, config, logsCfg);
+        initGossip(baseLayerInstall, context);
+        initRaft(baseLayerInstall, context);
 
         context.addRequiredStartAction(baseLayerInstall.install());
     }
 
-    private void initGossip(CompositeServiceBuilder baseLayerInstall, final TransportComponentCfg config)
+    private void initGossip(final CompositeServiceBuilder baseLayerInstall, final SystemContext context)
     {
-        final GossipService gossipService = new GossipService(config);
+        final GossipService gossipService = new GossipService(context.getBrokerConfiguration());
         baseLayerInstall.createService(GOSSIP_SERVICE, gossipService)
             .dependency(TransportServiceNames.clientTransport(TransportServiceNames.MANAGEMENT_API_CLIENT_NAME), gossipService.getClientTransportInjector())
             .dependency(TransportServiceNames.bufferingServerTransport(TransportServiceNames.MANAGEMENT_API_SERVER_NAME), gossipService.getBufferingServerTransportInjector())
             .install();
 
         // TODO: decide whether failure to join gossip cluster should result in broker startup fail
-        final GossipJoinService gossipJoinService = new GossipJoinService(config);
+        final GossipJoinService gossipJoinService = new GossipJoinService(context.getBrokerConfiguration().getCluster());
         baseLayerInstall.createService(GOSSIP_JOIN_SERVICE, gossipJoinService)
             .dependency(GOSSIP_SERVICE, gossipJoinService.getGossipInjector())
             .install();
     }
 
-    private void initRaft(CompositeServiceBuilder baseLayerInstall, final TransportComponentCfg transportCfg, LogStreamsCfg logsCfg)
+    private void initRaft(final CompositeServiceBuilder baseLayerInstall, final SystemContext context)
     {
-        final RaftPersistentConfigurationManagerService raftConfigurationManagerService = new RaftPersistentConfigurationManagerService(transportCfg, logsCfg);
+        final RaftPersistentConfigurationManagerService raftConfigurationManagerService = new RaftPersistentConfigurationManagerService(context.getBrokerConfiguration());
         baseLayerInstall.createService(RAFT_CONFIGURATION_MANAGER, raftConfigurationManagerService)
             .install();
 
-        final BootstrapLocalPartitions raftBootstrapService = new BootstrapLocalPartitions();
+        final BootstrapLocalPartitions raftBootstrapService = new BootstrapLocalPartitions(context.getBrokerConfiguration());
         baseLayerInstall.createService(RAFT_BOOTSTRAP_SERVICE, raftBootstrapService)
             .dependency(RAFT_CONFIGURATION_MANAGER, raftBootstrapService.getConfigurationManagerInjector())
             .install();
     }
 
-    private void initBootstrapSystemPartition(SystemContext context, ServiceContainer serviceContainer, GlobalConfiguration configuration)
+    private void initBootstrapSystemPartition(final SystemContext context, final ServiceContainer serviceContainer)
     {
-        if (configuration.standalone)
+        final BrokerCfg brokerConfiguration = context.getBrokerConfiguration();
+
+        final int bootstrap = brokerConfiguration.getBootstrap();
+
+        if (bootstrap == 1)
         {
             LOG.info("Starting standalone broker.");
 
-            final BootstrapSystemTopic systemPartitionBootstrapService = new BootstrapSystemTopic(1);
+            final BootstrapSystemTopic systemPartitionBootstrapService = new BootstrapSystemTopic(1, context.getBrokerConfiguration());
 
             serviceContainer.createService(SYSTEM_PARTITION_BOOTSTRAP_SERVICE_NAME, systemPartitionBootstrapService)
                 .dependency(RAFT_BOOTSTRAP_SERVICE)
@@ -132,23 +130,13 @@ public class ClusterComponent implements Component
         {
             LOG.info("Starting clustered broker.");
 
-            final BrokerArguments brokerArguments = context.getBrokerArguments();
-            final Integer expectedNodeCount = brokerArguments.getBoostrapExpectCount();
-
-            if (expectedNodeCount != null)
+            if (bootstrap > 0)
             {
-                LOG.info("Node started in bootstrap mode. Expecting {} nodes to join the cluster before bootstrap.", expectedNodeCount);
+                LOG.info("Node started in bootstrap mode. Expecting {} nodes to join the cluster before bootstrap.", bootstrap);
 
-                final int replicationFactor = brokerArguments.getReplicationFactor();
+                final int replicationFactor = bootstrap;
 
-                if (replicationFactor > expectedNodeCount)
-                {
-                    throw new RuntimeException(String.format("Configuration error: cannot bootstrap system topic.\n" +
-                            "Configured replication factor is %d but expecting fewer nodes to join the cluster before bootstrap (%d).\n" +
-                            "Either start more nodes or use '-system-topic-replication-factor' to configure a lower replication factor for the system topic.", replicationFactor, expectedNodeCount));
-                }
-
-                final BootstrapExpectNodes bootstrapExpectService = new BootstrapExpectNodes(replicationFactor, expectedNodeCount);
+                final BootstrapExpectNodes bootstrapExpectService = new BootstrapExpectNodes(replicationFactor, bootstrap, context.getBrokerConfiguration());
                 serviceContainer.createService(SYSTEM_PARTITION_BOOTSTRAP_EXPECTED_SERVICE_NAME, bootstrapExpectService)
                     .dependency(TOPOLOGY_MANAGER_SERVICE, bootstrapExpectService.getTopologyManagerInjector())
                     .install();

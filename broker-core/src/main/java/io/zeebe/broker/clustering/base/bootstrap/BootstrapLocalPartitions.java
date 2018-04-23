@@ -25,8 +25,9 @@ import static io.zeebe.broker.transport.TransportServiceNames.clientTransport;
 import java.util.List;
 
 import io.zeebe.broker.clustering.base.partitions.PartitionInstallService;
-import io.zeebe.broker.clustering.base.raft.config.RaftPersistentConfiguration;
-import io.zeebe.broker.clustering.base.raft.config.RaftPersistentConfigurationManager;
+import io.zeebe.broker.clustering.base.raft.RaftPersistentConfiguration;
+import io.zeebe.broker.clustering.base.raft.RaftPersistentConfigurationManager;
+import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.servicecontainer.*;
 import io.zeebe.util.buffer.BufferUtil;
@@ -38,6 +39,12 @@ import io.zeebe.util.buffer.BufferUtil;
 public class BootstrapLocalPartitions implements Service<Object>
 {
     private final Injector<RaftPersistentConfigurationManager> configurationManagerInjector = new Injector<>();
+    private final BrokerCfg brokerCfg;
+
+    public BootstrapLocalPartitions(BrokerCfg brokerCfg)
+    {
+        this.brokerCfg = brokerCfg;
+    }
 
     @Override
     public void start(ServiceStartContext startContext)
@@ -61,7 +68,7 @@ public class BootstrapLocalPartitions implements Service<Object>
         final ServiceName<Void> partitionInstallServiceName = partitionInstallServiceName(partitionName);
         final boolean isInternalSystemPartition = configuration.getPartitionId() == Protocol.SYSTEM_PARTITION;
 
-        final PartitionInstallService partitionInstallService = new PartitionInstallService(configuration, isInternalSystemPartition);
+        final PartitionInstallService partitionInstallService = new PartitionInstallService(brokerCfg, configuration, isInternalSystemPartition);
 
         startContext.createService(partitionInstallServiceName, partitionInstallService)
             .dependency(LOCAL_NODE, partitionInstallService.getLocalNodeInjector())

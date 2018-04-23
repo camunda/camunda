@@ -22,7 +22,6 @@ import java.time.Duration;
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
 import io.zeebe.broker.logstreams.processor.*;
-import io.zeebe.broker.system.SystemConfiguration;
 import io.zeebe.broker.system.deployment.data.*;
 import io.zeebe.broker.system.deployment.handler.*;
 import io.zeebe.broker.system.deployment.processor.*;
@@ -44,24 +43,14 @@ public class DeploymentManager implements Service<DeploymentManager>
     private final Injector<StreamProcessorServiceFactory> streamProcessorServiceFactoryInjector = new Injector<>();
     private final Injector<TopologyManager> topologyManagerInjector = new Injector<>();
 
-    private final SystemConfiguration systemConfiguration;
-
-    private ServiceStartContext serviceContext;
-
     private ClientTransport managementClient;
     private ServerTransport clientApiTransport;
     private TopologyManager topologyManager;
     private StreamProcessorServiceFactory streamProcessorServiceFactory;
 
-    public DeploymentManager(SystemConfiguration systemConfiguration)
-    {
-        this.systemConfiguration = systemConfiguration;
-    }
-
     @Override
     public void start(ServiceStartContext startContext)
     {
-        serviceContext = startContext;
         topologyManager = topologyManagerInjector.getValue();
         managementClient = managementClientInjector.getValue();
         clientApiTransport = clientApiTransportInjector.getValue();
@@ -74,10 +63,7 @@ public class DeploymentManager implements Service<DeploymentManager>
         final PendingDeployments pendingDeployments = new PendingDeployments();
         final PendingWorkflows pendingWorkflows = new PendingWorkflows();
 
-        final Duration deploymentRequestTimeout = Duration.ofSeconds(systemConfiguration.getDeploymentCreationTimeoutSeconds());
-
-
-
+        final Duration deploymentRequestTimeout = Duration.ofSeconds(10);
 
         final TypedStreamEnvironment streamEnvironment = new TypedStreamEnvironment(partition.getLogStream(), clientApiTransport.getOutput());
 
@@ -105,13 +91,13 @@ public class DeploymentManager implements Service<DeploymentManager>
     }
 
     public static TypedStreamProcessor createDeploymentStreamProcessor(
-            final WorkflowVersions workflowVersions,
-            final PendingDeployments pendingDeployments,
-            final PendingWorkflows pendingWorkflows,
-            final Duration deploymentTimeout,
-            final TypedStreamEnvironment streamEnvironment,
-            final DeploymentEventWriter eventWriter,
-            final RemoteWorkflowsManager remoteManager)
+        final WorkflowVersions workflowVersions,
+        final PendingDeployments pendingDeployments,
+        final PendingWorkflows pendingWorkflows,
+        final Duration deploymentTimeout,
+        final TypedStreamEnvironment streamEnvironment,
+        final DeploymentEventWriter eventWriter,
+        final RemoteWorkflowsManager remoteManager)
     {
 
         final TypedEventStreamProcessorBuilder streamProcessorBuilder = streamEnvironment.newStreamProcessor();

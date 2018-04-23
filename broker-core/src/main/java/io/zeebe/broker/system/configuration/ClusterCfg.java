@@ -15,24 +15,19 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.system;
+package io.zeebe.broker.system.configuration;
 
-public class ComponentConfiguration
+public class ClusterCfg implements ConfigurationEntry
 {
-    public void applyGlobalConfiguration(GlobalConfiguration globalConfig)
+    private String[] initialContactPoints = new String[0];
+
+    public String[] getInitialContactPoints()
     {
-        // noop;
+        return initialContactPoints;
     }
 
-    protected String getOrDefault(String configuredValue, String defaultValue)
+    public void setInitialContactPoints(String[] initialContactPoints)
     {
-        if (configuredValue == null || configuredValue.isEmpty())
-        {
-            return defaultValue;
-        }
-        else
-        {
-            return configuredValue;
-        }
+        this.initialContactPoints = initialContactPoints;
     }
 }

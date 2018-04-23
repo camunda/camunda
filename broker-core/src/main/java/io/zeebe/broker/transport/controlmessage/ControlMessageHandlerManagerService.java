@@ -45,14 +45,7 @@ public class ControlMessageHandlerManagerService implements Service<ControlMessa
     protected final Injector<SystemPartitionManager> systemPartitionManagerInjector = new Injector<>();
     private final Injector<TopologyManager> topologyManagerInjector = new Injector<>();
 
-    protected final long controlMessageRequestTimeoutInMillis;
-
     protected ControlMessageHandlerManager service;
-
-    public ControlMessageHandlerManagerService(long controlMessageRequestTimeoutInMillis)
-    {
-        this.controlMessageRequestTimeoutInMillis = controlMessageRequestTimeoutInMillis;
-    }
 
     @Override
     public void start(ServiceStartContext context)
@@ -80,7 +73,6 @@ public class ControlMessageHandlerManagerService implements Service<ControlMessa
         service = new ControlMessageHandlerManager(
                 transport.getOutput(),
                 controlMessageBuffer,
-                controlMessageRequestTimeoutInMillis,
                 actorScheduler,
                 controlMessageHandlers);
 

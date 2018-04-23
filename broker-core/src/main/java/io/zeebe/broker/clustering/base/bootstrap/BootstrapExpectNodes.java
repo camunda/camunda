@@ -17,19 +17,17 @@
  */
 package io.zeebe.broker.clustering.base.bootstrap;
 
-import io.zeebe.broker.Loggers;
-import io.zeebe.broker.clustering.base.topology.*;
-import io.zeebe.servicecontainer.Injector;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
-import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.ScheduledTimer;
-import org.slf4j.Logger;
-
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.*;
 
 import java.time.Duration;
+
+import io.zeebe.broker.Loggers;
+import io.zeebe.broker.clustering.base.topology.*;
+import io.zeebe.broker.system.configuration.BrokerCfg;
+import io.zeebe.servicecontainer.*;
+import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.ScheduledTimer;
+import org.slf4j.Logger;
 
 /**
  * Service implementing the "-bootstrap-expect" parameter on startup:
@@ -43,6 +41,7 @@ public class BootstrapExpectNodes extends Actor implements Service<Void>, Topolo
     private final Injector<TopologyManager> topologyManagerInjector = new Injector<>();
     private TopologyManager topologyManager;
 
+    private final BrokerCfg brokerCfg;
     private final int replicationFactor;
     private final int countOfExpectedNodes;
     private int nodeCount;
@@ -50,10 +49,12 @@ public class BootstrapExpectNodes extends Actor implements Service<Void>, Topolo
     private ServiceStartContext serviceStartContext;
     private ScheduledTimer loggerTimer;
 
-    public BootstrapExpectNodes(int replicationFactor, int countOfExpectedNodes)
+
+    public BootstrapExpectNodes(int replicationFactor, int countOfExpectedNodes, BrokerCfg brokerCfg)
     {
         this.replicationFactor = replicationFactor;
         this.countOfExpectedNodes = countOfExpectedNodes;
+        this.brokerCfg = brokerCfg;
         this.nodeCount = 0;
     }
 
@@ -121,7 +122,7 @@ public class BootstrapExpectNodes extends Actor implements Service<Void>, Topolo
 
     private void installSystemTopicBootstrapService()
     {
-        final BootstrapSystemTopic systemPartitionBootstrapService = new BootstrapSystemTopic(replicationFactor);
+        final BootstrapSystemTopic systemPartitionBootstrapService = new BootstrapSystemTopic(replicationFactor, brokerCfg);
 
         serviceStartContext.createService(SYSTEM_PARTITION_BOOTSTRAP_SERVICE_NAME, systemPartitionBootstrapService)
             .dependency(RAFT_CONFIGURATION_MANAGER, systemPartitionBootstrapService.getRaftPersistentConfigurationManagerInjector())

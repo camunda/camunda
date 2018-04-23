@@ -15,21 +15,24 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.system;
+package io.zeebe.broker.system.configuration;
 
-public class SystemConfiguration extends ComponentConfiguration
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+public class ConfigurationUtil
 {
-    public long partitionCreationTimeoutSeconds = 30;
-
-    private long deploymentCreationTimeoutSeconds = 10;
-
-    public long getPartitionCreationTimeoutSeconds()
+    public static String toAbsolutePath(String path, String base)
     {
-        return partitionCreationTimeoutSeconds;
-    }
+        final Path asPath = Paths.get(path);
 
-    public long getDeploymentCreationTimeoutSeconds()
-    {
-        return deploymentCreationTimeoutSeconds;
+        if (asPath.isAbsolute())
+        {
+            return path;
+        }
+        else
+        {
+            return Paths.get(base, path).toString();
+        }
     }
 }

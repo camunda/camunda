@@ -21,7 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import io.zeebe.broker.transport.cfg.TransportComponentCfg;
+import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.gossip.Gossip;
 import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.SocketAddress;
@@ -32,12 +32,12 @@ import io.zeebe.transport.SocketAddress;
 public class GossipJoinService implements Service<Object>
 {
     private final Injector<Gossip> gossipInjector = new Injector<>();
-    private final TransportComponentCfg config;
+    private final ClusterCfg clusterCfg;
     private Gossip gossip;
 
-    public GossipJoinService(TransportComponentCfg config)
+    public GossipJoinService(ClusterCfg clusterCfg)
     {
-        this.config = config;
+        this.clusterCfg = clusterCfg;
     }
 
     @Override
@@ -45,7 +45,7 @@ public class GossipJoinService implements Service<Object>
     {
         gossip = gossipInjector.getValue();
 
-        final List<SocketAddress> initalContactPoints = Arrays.stream(config.gossip.initialContactPoints)
+        final List<SocketAddress> initalContactPoints = Arrays.stream(clusterCfg.getInitialContactPoints())
             .map(SocketAddress::from)
             .collect(Collectors.toList());
 

@@ -20,41 +20,26 @@ package io.zeebe.broker.topic;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.File;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
-
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TemporaryFolder;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.ErrorCode;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.ControlMessageResponse;
-import io.zeebe.test.broker.protocol.clientapi.ErrorResponse;
+import io.zeebe.test.broker.protocol.clientapi.*;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 @SuppressWarnings("unchecked")
 public class RequestPartitionsTest
 {
     public ClientApiRule apiRule = new ClientApiRule(false);
-    public TemporaryFolder tempFolder = new TemporaryFolder();
-    public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule("zeebe.test.configurable.cfg.toml",
-        () ->
-        {
-            final String brokerPath = tempFolder.getRoot().getAbsolutePath();
-            final String canonicalPath = brokerPath.replaceAll(Pattern.quote(File.separator), "/");
-
-            return Collections.singletonMap("brokerFolder", canonicalPath);
-        });
+    public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
     @Rule
-    public RuleChain ruleChain = RuleChain.outerRule(tempFolder).around(brokerRule).around(apiRule);
+    public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
     @Test
     public void shouldReturnCreatedPartitions()

@@ -18,7 +18,6 @@
 package io.zeebe.broker.logstreams;
 
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADER_PARTITION_GROUP_NAME;
-import static io.zeebe.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE;
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.STREAM_PROCESSOR_SERVICE_FACTORY;
 
 import io.zeebe.broker.event.TopicSubscriptionServiceNames;
@@ -36,22 +35,15 @@ public class LogStreamsComponent implements Component
     {
         final ServiceContainer serviceContainer = context.getServiceContainer();
 
-        final SnapshotStorageService snapshotStorageService = new SnapshotStorageService(context.getConfigurationManager());
-        serviceContainer.createService(SNAPSHOT_STORAGE_SERVICE, snapshotStorageService)
-            .install();
-
-        final TopicSubscriptionService topicSubscriptionService = new TopicSubscriptionService(context.getConfigurationManager(), serviceContainer);
-        serviceContainer
-            .createService(TopicSubscriptionServiceNames.TOPIC_SUBSCRIPTION_SERVICE, topicSubscriptionService)
+        final TopicSubscriptionService topicSubscriptionService = new TopicSubscriptionService(serviceContainer);
+        serviceContainer.createService(TopicSubscriptionServiceNames.TOPIC_SUBSCRIPTION_SERVICE, topicSubscriptionService)
             .dependency(TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME), topicSubscriptionService.getClientApiTransportInjector())
             .dependency(LogStreamServiceNames.STREAM_PROCESSOR_SERVICE_FACTORY, topicSubscriptionService.getStreamProcessorServiceFactoryInjector())
             .groupReference(LEADER_PARTITION_GROUP_NAME, topicSubscriptionService.getPartitionsGroupReference())
             .install();
 
         final StreamProcessorServiceFactory streamProcessorFactory = new StreamProcessorServiceFactory(serviceContainer);
-        serviceContainer
-            .createService(STREAM_PROCESSOR_SERVICE_FACTORY, streamProcessorFactory)
-            .dependency(SNAPSHOT_STORAGE_SERVICE, streamProcessorFactory.getSnapshotStorageInjector())
+        serviceContainer.createService(STREAM_PROCESSOR_SERVICE_FACTORY, streamProcessorFactory)
             .install();
     }
 

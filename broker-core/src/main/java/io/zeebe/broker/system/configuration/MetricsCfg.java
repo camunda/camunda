@@ -15,11 +15,37 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.system.threads.cfg;
+package io.zeebe.broker.system.configuration;
 
-import io.zeebe.broker.system.ComponentConfiguration;
-
-public class ThreadingCfg extends ComponentConfiguration
+public class MetricsCfg implements ConfigurationEntry
 {
-    public int numberOfThreads = -1;
+    private int reportingInterval = 5000;
+    private String file = "metrics/zeebe.prom";
+
+    @Override
+    public void init(BrokerCfg brokerCfg, String brokerBase)
+    {
+        file = ConfigurationUtil.toAbsolutePath(file, brokerBase);
+    }
+
+    public int getReportingInterval()
+    {
+        return reportingInterval;
+    }
+
+    public void setReportingInterval(int reportingInterval)
+    {
+        this.reportingInterval = reportingInterval;
+    }
+
+    public String getFile()
+    {
+        return file;
+    }
+
+    public void setFile(String metricsFile)
+    {
+        this.file = metricsFile;
+    }
+
 }

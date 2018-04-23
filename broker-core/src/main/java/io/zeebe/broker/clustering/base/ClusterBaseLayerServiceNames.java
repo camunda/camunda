@@ -18,7 +18,7 @@
 package io.zeebe.broker.clustering.base;
 
 import io.zeebe.broker.clustering.base.partitions.Partition;
-import io.zeebe.broker.clustering.base.raft.config.RaftPersistentConfigurationManager;
+import io.zeebe.broker.clustering.base.raft.RaftPersistentConfigurationManager;
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
 import io.zeebe.broker.clustering.base.topology.NodeInfo;
 import io.zeebe.gossip.Gossip;

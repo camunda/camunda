@@ -22,7 +22,8 @@ import static io.zeebe.broker.logstreams.LogStreamServiceNames.STREAM_PROCESSOR_
 import static io.zeebe.broker.transport.TransportServiceNames.*;
 import static io.zeebe.broker.workflow.WorkflowQueueServiceNames.WORKFLOW_QUEUE_MANAGER;
 
-import io.zeebe.broker.system.*;
+import io.zeebe.broker.system.Component;
+import io.zeebe.broker.system.SystemContext;
 import io.zeebe.servicecontainer.ServiceContainer;
 
 public class WorkflowComponent implements Component
@@ -31,9 +32,8 @@ public class WorkflowComponent implements Component
     public void init(SystemContext context)
     {
         final ServiceContainer serviceContainer = context.getServiceContainer();
-        final ConfigurationManager configurationManager = context.getConfigurationManager();
 
-        final WorkflowQueueManagerService workflowQueueManagerService = new WorkflowQueueManagerService(configurationManager);
+        final WorkflowQueueManagerService workflowQueueManagerService = new WorkflowQueueManagerService();
         serviceContainer.createService(WORKFLOW_QUEUE_MANAGER, workflowQueueManagerService)
             .dependency(serverTransport(CLIENT_API_SERVER_NAME), workflowQueueManagerService.getClientApiTransportInjector())
             .dependency(bufferingServerTransport(MANAGEMENT_API_SERVER_NAME), workflowQueueManagerService.getManagementServerInjector())

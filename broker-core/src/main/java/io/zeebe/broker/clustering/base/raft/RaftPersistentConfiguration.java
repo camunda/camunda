@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.clustering.base.raft.config;
+package io.zeebe.broker.clustering.base.raft;
 
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
@@ -54,12 +54,17 @@ public class RaftPersistentConfiguration implements RaftPersistentStorage
 
     private final SocketAddress votedFor = new SocketAddress();
 
-    public RaftPersistentConfiguration(final String filename)
+    private final File logDirectory;
+    private final File snapshotsDirectory;
+
+    public RaftPersistentConfiguration(final File metaFile, File partitionLogDir, File partitionSnapshotsDir)
     {
-        file = new File(filename);
-        tmpFile = new File(filename + ".tmp");
-        path = Paths.get(filename);
-        tmpPath = Paths.get(filename + ".tmp");
+        this.logDirectory = partitionLogDir;
+        this.snapshotsDirectory = partitionSnapshotsDir;
+        file = metaFile;
+        tmpFile = new File(file.getAbsolutePath() + ".tmp");
+        path = Paths.get(file.getAbsolutePath());
+        tmpPath = Paths.get(file.getAbsolutePath() + ".tmp");
 
         load();
     }
@@ -247,14 +252,15 @@ public class RaftPersistentConfiguration implements RaftPersistentStorage
         return configuration.getPartitionId();
     }
 
+    @Override
     public int getReplicationFactor()
     {
         return configuration.getReplicationFactor();
     }
 
-    public String getLogDirectory()
+    public File getLogDirectory()
     {
-        return configuration.getLogDirectory();
+        return logDirectory;
     }
 
     public RaftPersistentConfiguration setTopicName(DirectBuffer topicName)
@@ -275,9 +281,19 @@ public class RaftPersistentConfiguration implements RaftPersistentStorage
         return this;
     }
 
-    public RaftPersistentConfiguration setLogDirectory(final String logDirectory)
+    public RaftPersistentConfiguration setLogSegmentSize(long value)
     {
-        configuration.setLogDirectory(logDirectory);
+        configuration.setLogSegmentSize(value);
         return this;
+    }
+
+    public long getLogSegmentSize()
+    {
+        return configuration.getLogSegmentSize();
+    }
+
+    public File getSnapshotsDirectory()
+    {
+        return snapshotsDirectory;
     }
 }

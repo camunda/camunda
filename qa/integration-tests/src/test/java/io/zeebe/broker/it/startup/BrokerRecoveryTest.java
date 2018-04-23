@@ -19,42 +19,35 @@ import static io.zeebe.broker.it.util.TopicEventRecorder.*;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.fail;
 
-import java.io.File;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
+import java.io.IOException;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Duration;
-import java.util.Collections;
 import java.util.List;
-import java.util.regex.Pattern;
 
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.RecordingTaskHandler;
 import io.zeebe.broker.it.util.TopicEventRecorder;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.clustering.impl.BrokerPartitionState;
-import io.zeebe.client.clustering.impl.TopologyBroker;
-import io.zeebe.client.clustering.impl.TopologyResponse;
+import io.zeebe.client.clustering.impl.*;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
-import io.zeebe.client.event.DeploymentEvent;
-import io.zeebe.client.event.TaskEvent;
-import io.zeebe.client.event.WorkflowInstanceEvent;
+import io.zeebe.client.event.*;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.raft.Raft;
 import io.zeebe.raft.RaftServiceNames;
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.test.util.TestFileUtil;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.SocketAddress;
-import org.assertj.core.util.Files;
+import io.zeebe.util.FileUtil;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
-import org.junit.rules.TemporaryFolder;
 
 public class BrokerRecoveryTest
 {
@@ -78,9 +71,7 @@ public class BrokerRecoveryTest
             .endEvent("end")
             .done();
 
-    public TemporaryFolder tempFolder = new TemporaryFolder();
-
-    public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(() -> brokerConfig(tempFolder.getRoot().getAbsolutePath()));
+    public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
     public ClientRule clientRule = new ClientRule();
 
@@ -88,23 +79,12 @@ public class BrokerRecoveryTest
 
     @Rule
     public RuleChain ruleChain = RuleChain
-        .outerRule(tempFolder)
-        .around(brokerRule)
+        .outerRule(brokerRule)
         .around(clientRule)
         .around(eventRecorder);
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
-
-    protected static InputStream brokerConfig(String path)
-    {
-        final String canonicallySeparatedPath = path.replaceAll(Pattern.quote(File.separator), "/");
-
-        return TestFileUtil.readAsTextFileAndReplace(
-                BrokerRecoveryTest.class.getClassLoader().getResourceAsStream("recovery-broker.cfg.toml"),
-                StandardCharsets.UTF_8,
-                Collections.singletonMap("brokerFolder", canonicallySeparatedPath));
-    }
 
     @Test
     public void shouldCreateWorkflowInstanceAfterRestart()
@@ -115,7 +95,7 @@ public class BrokerRecoveryTest
             .execute();
 
         // when
-        restartBroker();
+        deleteSnapshotsAndRestart();
 
         clientRule.workflows().create(clientRule.getDefaultTopic())
             .bpmnProcessId("process")
@@ -140,7 +120,7 @@ public class BrokerRecoveryTest
         waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("CREATED")));
 
         // when
-        restartBroker();
+        deleteSnapshotsAndRestart();
 
         clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopic())
             .taskType("foo")
@@ -177,7 +157,7 @@ public class BrokerRecoveryTest
         waitUntil(() -> !recordingTaskHandler.getHandledTasks().isEmpty());
 
         // when
-        restartBroker();
+        deleteSnapshotsAndRestart();
 
         final TaskEvent task = recordingTaskHandler.getHandledTasks().get(0);
         clientRule.tasks().complete(task).execute();
@@ -209,7 +189,7 @@ public class BrokerRecoveryTest
         waitUntil(() -> eventRecorder.getTaskEvents(taskEvent("CREATED")).size() > 1);
 
         // when
-        restartBroker();
+        deleteSnapshotsAndRestart();
 
         clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopic())
             .taskType("bar")
@@ -232,7 +212,7 @@ public class BrokerRecoveryTest
             .execute();
 
         // when
-        restartBroker();
+        deleteSnapshotsAndRestart();
 
         final DeploymentEvent deploymentResult = clientRule.workflows().deploy(clientRule.getDefaultTopic())
             .addWorkflowModel(WORKFLOW, "workflow.bpmn")
@@ -267,7 +247,7 @@ public class BrokerRecoveryTest
         waitUntil(() -> eventRecorder.hasTaskEvent(taskEvent("CREATED")));
 
         // when
-        restartBroker();
+        deleteSnapshotsAndRestart();
 
         clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopic())
             .taskType("foo")
@@ -297,7 +277,7 @@ public class BrokerRecoveryTest
         waitUntil(() -> !recordingTaskHandler.getHandledTasks().isEmpty());
 
         // when
-        restartBroker();
+        deleteSnapshotsAndRestart();
 
         final TaskEvent task = recordingTaskHandler.getHandledTasks().get(0);
         clientRule.tasks().complete(task).execute();
@@ -323,7 +303,7 @@ public class BrokerRecoveryTest
         waitUntil(() -> !taskHandler.getHandledTasks().isEmpty());
 
         // when
-        restartBroker();
+        deleteSnapshotsAndRestart();
 
         taskHandler.clear();
 
@@ -358,7 +338,7 @@ public class BrokerRecoveryTest
         waitUntil(() -> !recordingTaskHandler.getHandledTasks().isEmpty());
 
         // when
-        restartBroker();
+        deleteSnapshotsAndRestart();
 
         // wait until stream processor and scheduler process the lock task event which is not re-processed on recovery
         doRepeatedly(() ->
@@ -403,7 +383,7 @@ public class BrokerRecoveryTest
                 eventRecorder.getSingleWorkflowInstanceEvent(TopicEventRecorder.wfInstanceEvent("ACTIVITY_READY"));
 
         // when
-        restartBroker();
+        deleteSnapshotsAndRestart();
 
         clientRule.workflows().updatePayload(activityInstance)
             .payload("{\"foo\":\"bar\"}")
@@ -442,7 +422,7 @@ public class BrokerRecoveryTest
         waitUntil(() -> eventRecorder.hasIncidentEvent(incidentEvent("RESOLVE_FAILED")));
 
         // when
-        restartBroker();
+        deleteSnapshotsAndRestart();
 
         clientRule.workflows().updatePayload(activityInstance)
             .payload("{\"foo\":\"bar\"}")
@@ -471,7 +451,7 @@ public class BrokerRecoveryTest
         raft.setTerm(testTerm);
 
         // when
-        restartBroker();
+        deleteSnapshotsAndRestart();
 
         final Raft raftAfterRestart = brokerRule.getService(serviceName);
         waitUntil(() -> raftAfterRestart.getState() == RaftState.LEADER);
@@ -480,7 +460,7 @@ public class BrokerRecoveryTest
         assertThat(raftAfterRestart.getState()).isEqualTo(RaftState.LEADER);
         assertThat(raftAfterRestart.getTerm()).isGreaterThanOrEqualTo(9);
         assertThat(raftAfterRestart.getMemberSize()).isEqualTo(0);
-        assertThat(raftAfterRestart.getVotedFor()).isEqualTo(new SocketAddress("localhost", 51017));
+        assertThat(raftAfterRestart.getVotedFor()).isEqualTo(new SocketAddress("0.0.0.0", 51017));
     }
 
     @Test
@@ -488,7 +468,7 @@ public class BrokerRecoveryTest
     {
         // given
         final ZeebeClient client = clientRule.getClient();
-        restartBroker();
+        deleteSnapshotsAndRestart();
 
         // when
         client.topics().create("foo", 2).execute();
@@ -508,7 +488,7 @@ public class BrokerRecoveryTest
         final String topicName = "foo";
         client.topics().create(topicName, 2).execute();
 
-        restartBroker();
+        deleteSnapshotsAndRestart();
 
         // then
         exception.expect(ClientCommandRejectedException.class);
@@ -525,7 +505,7 @@ public class BrokerRecoveryTest
 
         client.topics().create("foo", 2).execute();
 
-        restartBroker();
+        deleteSnapshotsAndRestart();
 
         // when
         client.topics().create("bar", 2).execute();
@@ -542,24 +522,44 @@ public class BrokerRecoveryTest
         assertThat(partitions).extracting("partitionId").doesNotHaveDuplicates();
     }
 
-    protected void restartBroker()
+    protected void deleteSnapshotsAndRestart()
     {
-        restartBroker(() ->
+        deleteSnapshotsAndRestart(() ->
         { });
     }
 
-    protected void restartBroker(Runnable onStop)
+    protected void deleteSnapshotsAndRestart(Runnable onStop)
     {
         eventRecorder.stopRecordingEvents();
         brokerRule.stopBroker();
 
         // delete snapshot files to trigger recovery
-        final File configDir = new File(tempFolder.getRoot().getAbsolutePath());
-        final File snapshotDir = new File(configDir, "snapshot");
 
-        assertThat(snapshotDir).exists().isDirectory();
+        try
+        {
+            java.nio.file.Files.walkFileTree(brokerRule.getBrokerBase().toPath(), new SimpleFileVisitor<Path>()
+            {
+                @Override
+                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException
+                {
+                    if (dir.endsWith("snapshots"))
+                    {
+                        FileUtil.deleteFolder(dir.normalize().toAbsolutePath().toString());
+                        return FileVisitResult.SKIP_SUBTREE;
+                    }
+                    else
+                    {
+                        return FileVisitResult.CONTINUE;
+                    }
 
-        Files.delete(snapshotDir);
+                }
+            });
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+            fail(e.getMessage());
+        }
 
         onStop.run();
 

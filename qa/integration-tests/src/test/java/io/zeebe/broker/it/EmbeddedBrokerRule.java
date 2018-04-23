@@ -15,13 +15,8 @@
  */
 package io.zeebe.broker.it;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.io.*;
+import java.util.concurrent.*;
 import java.util.function.Supplier;
 
 import io.zeebe.broker.Broker;
@@ -29,9 +24,10 @@ import io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames;
 import io.zeebe.broker.transport.TransportServiceNames;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.servicecontainer.*;
-import io.zeebe.test.util.TestFileUtil;
+import io.zeebe.util.FileUtil;
 import io.zeebe.util.allocation.DirectBufferAllocator;
 import io.zeebe.util.sched.clock.ControlledActorClock;
+import org.assertj.core.util.Files;
 import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
 
@@ -49,7 +45,7 @@ public class EmbeddedBrokerRule extends ExternalResource
 
     public EmbeddedBrokerRule()
     {
-        this(() -> null);
+        this(() -> EmbeddedBrokerRule.class.getResourceAsStream("/zeebe.default.cfg.toml"));
     }
 
     public EmbeddedBrokerRule(Supplier<InputStream> configSupplier)
@@ -62,18 +58,10 @@ public class EmbeddedBrokerRule extends ExternalResource
         this(() -> EmbeddedBrokerRule.class.getClassLoader().getResourceAsStream(configFileClasspathLocation));
     }
 
-    public EmbeddedBrokerRule(String configFileClasspathLocation, Supplier<Map<String, String>> properties)
-    {
-        this(() ->
-        {
-            return TestFileUtil.readAsTextFileAndReplace(
-                EmbeddedBrokerRule.class.getClassLoader().getResourceAsStream(configFileClasspathLocation),
-                StandardCharsets.UTF_8,
-                properties.get());
-        });
-    }
-
     protected long startTime;
+
+    private File brokerBase;
+
     @Override
     protected void before()
     {
@@ -96,6 +84,16 @@ public class EmbeddedBrokerRule extends ExternalResource
         {
             LOG.warn("There are still allocated direct buffers of a total size of {}kB.", allocatedMemoryInKb);
         }
+
+        try
+        {
+            FileUtil.deleteFolder(brokerBase.getAbsolutePath());
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+
     }
 
     public Broker getBroker()
@@ -123,9 +121,14 @@ public class EmbeddedBrokerRule extends ExternalResource
 
     public void startBroker()
     {
+        if (brokerBase == null)
+        {
+            brokerBase = Files.newTemporaryFolder();
+        }
+
         try (InputStream configStream = configSupplier.get())
         {
-            broker = new Broker(configStream, controlledActorClock);
+            broker = new Broker(configStream, brokerBase.getAbsolutePath(), controlledActorClock);
         }
         catch (final IOException e)
         {
@@ -197,5 +200,10 @@ public class EmbeddedBrokerRule extends ExternalResource
             return null;
         }
 
+    }
+
+    public File getBrokerBase()
+    {
+        return brokerBase;
     }
 }

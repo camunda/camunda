@@ -19,8 +19,9 @@ package io.zeebe.broker.clustering.base.bootstrap;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.base.partitions.PartitionInstallService;
-import io.zeebe.broker.clustering.base.raft.config.RaftPersistentConfiguration;
-import io.zeebe.broker.clustering.base.raft.config.RaftPersistentConfigurationManager;
+import io.zeebe.broker.clustering.base.raft.RaftPersistentConfiguration;
+import io.zeebe.broker.clustering.base.raft.RaftPersistentConfigurationManager;
+import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.servicecontainer.*;
 import io.zeebe.util.sched.Actor;
@@ -51,9 +52,12 @@ public class BootstrapSystemTopic extends Actor implements Service<Void>
     private RaftPersistentConfigurationManager configurationManager;
     private ServiceStartContext serviceStartContext;
 
-    public BootstrapSystemTopic(int replicationFactor)
+    private final BrokerCfg brokerCfg;
+
+    public BootstrapSystemTopic(int replicationFactor, BrokerCfg brokerCfg)
     {
         this.replicationFactor = replicationFactor;
+        this.brokerCfg = brokerCfg;
     }
 
     public Injector<RaftPersistentConfigurationManager> getRaftPersistentConfigurationManagerInjector()
@@ -115,7 +119,7 @@ public class BootstrapSystemTopic extends Actor implements Service<Void>
             {
                 final String partitionName = String.format("%s-%d", Protocol.SYSTEM_TOPIC, Protocol.SYSTEM_PARTITION);
                 final ServiceName<Void> partitionInstallServiceName = partitionInstallServiceName(partitionName);
-                final PartitionInstallService partitionInstallService = new PartitionInstallService(configuration, true);
+                final PartitionInstallService partitionInstallService = new PartitionInstallService(brokerCfg, configuration, true);
 
                 final ActorFuture<Void> partitionInstallFuture = serviceStartContext.createService(partitionInstallServiceName, partitionInstallService)
                     .dependency(LOCAL_NODE, partitionInstallService.getLocalNodeInjector())

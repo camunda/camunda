@@ -17,9 +17,9 @@
  */
 package io.zeebe.broker.clustering.base.gossip;
 
-import io.zeebe.broker.transport.cfg.SocketBindingCfg;
-import io.zeebe.broker.transport.cfg.TransportComponentCfg;
+import io.zeebe.broker.system.configuration.*;
 import io.zeebe.gossip.Gossip;
+import io.zeebe.gossip.GossipConfiguration;
 import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.*;
 
@@ -30,28 +30,28 @@ public class GossipService implements Service<Gossip>
 {
     private final Injector<ClientTransport> clientTransportInjector = new Injector<>();
     private final Injector<BufferingServerTransport> bufferingServerTransportInjector = new Injector<>();
-    private final TransportComponentCfg transportComponentCfg;
+    private final BrokerCfg configuration;
 
     private Gossip gossip;
 
-    public GossipService(TransportComponentCfg transportComponentCfg)
+    public GossipService(BrokerCfg configuration)
     {
-        this.transportComponentCfg = transportComponentCfg;
+        this.configuration = configuration;
     }
 
     @Override
     public void start(ServiceStartContext startContext)
     {
-        final BrokerGossipConfiguration configuration = transportComponentCfg.gossip;
         final BufferingServerTransport serverTransport = bufferingServerTransportInjector.getValue();
         final ClientTransport clientTransport = clientTransportInjector.getValue();
 
-        final SocketBindingCfg managementApiConfig = transportComponentCfg.managementApi;
-        final String bindHostname = managementApiConfig.getHost(transportComponentCfg.host);
-        final int bindPort = managementApiConfig.port;
-        final SocketAddress bindHost = new SocketAddress(bindHostname, bindPort);
+        final SocketAddress bindHost = configuration.getNetwork()
+            .getManagement()
+            .toSocketAddress();
 
-        gossip = new Gossip(bindHost, serverTransport, clientTransport, configuration);
+        final GossipConfiguration gossipConfiguration = configuration.getGossip();
+
+        gossip = new Gossip(bindHost, serverTransport, clientTransport, gossipConfiguration);
 
         startContext.async(startContext.getScheduler().submitActor(gossip));
     }

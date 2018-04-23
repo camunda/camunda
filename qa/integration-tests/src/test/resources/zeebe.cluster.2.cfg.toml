@@ -1,46 +1,15 @@
-# Global configuration --------------------------------
+# Broker 2
 
-[global]
-useTempDirectory = true
+bootstrap = 2
 
-# Networking configuration ----------------------------
-
-[network]
-host = "localhost"
-sendBufferSize = 128
-
-[network.clientApi]
-host = "localhost"
+[network.client]
 port = 41015
-receiveBufferSize = 16
-controlMessageRequestTimeoutInMillis = 10000
 
-[network.managementApi]
-host = "localhost"
+[network.management]
 port = 41016
-receiveBufferSize = 16
 
-[network.replicationApi]
-host = "localhost"
+[network.replication]
 port = 41017
-receiveBufferSize = 16
 
-[network.gossip]
-initialContactPoints = [
-  "localhost:51016"
-]
-
-# System Configuration --------------------------------
-
-[threading]
-numberOfThreads = 2
-maxIdleTimeMs = 100
-idleStrategy = "BACKOFF"
-
-[system]
-deploymentCreationTimeoutSeconds = 3
-
-# Log Configuration -----------------------------------
-
-[logs]
-defaultLogSegmentSize = 512
+[cluster]
+initialContactPoints = [ "localhost:51016" ]

@@ -17,13 +17,10 @@
  */
 package io.zeebe.broker.event.processor;
 
-import java.util.Objects;
-
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
 import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
-import io.zeebe.broker.system.ConfigurationManager;
 import io.zeebe.broker.transport.clientapi.*;
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
 import io.zeebe.servicecontainer.*;
@@ -41,7 +38,6 @@ public class TopicSubscriptionService extends Actor implements Service<TopicSubs
     protected final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
     protected final Injector<StreamProcessorServiceFactory> streamProcessorServiceFactoryInjector = new Injector<>();
 
-    protected final SubscriptionCfg config;
     protected final ServiceContainer serviceContainer;
 
     protected final Int2ObjectHashMap<TopicSubscriptionManagementProcessor> managersByPartition = new Int2ObjectHashMap<>();
@@ -54,11 +50,8 @@ public class TopicSubscriptionService extends Actor implements Service<TopicSubs
         .onRemove(this::onPartitionRemoved)
         .build();
 
-    public TopicSubscriptionService(ConfigurationManager configurationManager, ServiceContainer serviceContainer)
+    public TopicSubscriptionService(ServiceContainer serviceContainer)
     {
-        config = configurationManager.readEntry("subscriptions", SubscriptionCfg.class);
-        Objects.requireNonNull(config);
-
         this.serviceContainer = serviceContainer;
     }
 

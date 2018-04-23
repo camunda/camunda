@@ -15,15 +15,24 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.event.processor;
+package io.zeebe.broker.system.configuration;
 
-import io.zeebe.broker.system.DirectoryConfiguration;
-
-public class SubscriptionCfg extends DirectoryConfiguration
+public class SocketBindingClientApiCfg extends SocketBindingCfg
 {
-    @Override
-    protected String componentDirectoryName()
+    private String controlMessageBufferSize = "8M";
+
+    public SocketBindingClientApiCfg()
     {
-        return "subscription";
+        port = 51015;
+    }
+
+    public String getControlMessageBufferSize()
+    {
+        return controlMessageBufferSize;
+    }
+
+    public void setControlMessageBufferSize(String controlMessageBufferSize)
+    {
+        this.controlMessageBufferSize = controlMessageBufferSize;
     }
 }

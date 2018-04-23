@@ -15,47 +15,52 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.clustering.base.raft.config;
+package io.zeebe.broker.clustering.base.raft;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 
-import io.zeebe.broker.logstreams.cfg.LogStreamsCfg;
-import io.zeebe.broker.transport.cfg.TransportComponentCfg;
+import io.zeebe.broker.system.configuration.BrokerCfg;
+import io.zeebe.broker.system.configuration.DataCfg;
 import io.zeebe.servicecontainer.*;
 
 public class RaftPersistentConfigurationManagerService implements Service<RaftPersistentConfigurationManager>
 {
-    private final TransportComponentCfg config;
-    private final LogStreamsCfg logStreamsCfg;
     private RaftPersistentConfigurationManager service;
+    private BrokerCfg configuration;
 
-    public RaftPersistentConfigurationManagerService(TransportComponentCfg config, LogStreamsCfg logStreamsCfg)
+    public RaftPersistentConfigurationManagerService(BrokerCfg configuration)
     {
-        this.config = config;
-        this.logStreamsCfg = logStreamsCfg;
+        this.configuration = configuration;
     }
 
     @Override
     public void start(ServiceStartContext startContext)
     {
-        final File configDirectory = new File(config.management.getDirectory());
+        final DataCfg dataConfiguration = configuration.getData();
 
-        if (!configDirectory.exists())
+        final String[] directories = dataConfiguration.getDirectories();
+
+        for (String directory : directories)
         {
-            try
+            final File configDirectory = new File(directory);
+
+            if (!configDirectory.exists())
             {
-                configDirectory.getParentFile().mkdirs();
-                Files.createDirectory(configDirectory.toPath());
-            }
-            catch (final IOException e)
-            {
-                throw new RuntimeException("Unable to create directory " + configDirectory, e);
+                try
+                {
+                    configDirectory.getParentFile().mkdirs();
+                    Files.createDirectory(configDirectory.toPath());
+                }
+                catch (final IOException e)
+                {
+                    throw new RuntimeException("Unable to create directory " + configDirectory, e);
+                }
             }
         }
 
-        service = new RaftPersistentConfigurationManager(config.management.getDirectory(), logStreamsCfg);
+        service = new RaftPersistentConfigurationManager(configuration.getData());
 
         startContext.async(startContext.getScheduler().submitActor(service));
     }

@@ -26,8 +26,9 @@ import java.util.List;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.base.partitions.PartitionInstallService;
-import io.zeebe.broker.clustering.base.raft.config.RaftPersistentConfiguration;
-import io.zeebe.broker.clustering.base.raft.config.RaftPersistentConfigurationManager;
+import io.zeebe.broker.clustering.base.raft.RaftPersistentConfiguration;
+import io.zeebe.broker.clustering.base.raft.RaftPersistentConfigurationManager;
+import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.deployment.handler.WorkflowRequestMessageHandler;
 import io.zeebe.clustering.management.*;
 import io.zeebe.protocol.Protocol;
@@ -56,15 +57,19 @@ public class ManagementApiRequestHandler implements ServerMessageHandler, Server
     private final ActorControl actor;
     private final ServiceStartContext serviceStartContext;
 
+    private final BrokerCfg brokerCfg;
+
     public ManagementApiRequestHandler(WorkflowRequestMessageHandler workflowRequestMessageHandler,
         RaftPersistentConfigurationManager raftPersistentConfigurationManager,
         ActorControl actor,
-        ServiceStartContext serviceStartContext)
+        ServiceStartContext serviceStartContext,
+        BrokerCfg brokerCfg)
     {
         this.workflowRequestMessageHandler = workflowRequestMessageHandler;
         this.raftPersistentConfigurationManager = raftPersistentConfigurationManager;
         this.actor = actor;
         this.serviceStartContext = serviceStartContext;
+        this.brokerCfg = brokerCfg;
     }
 
     @Override
@@ -157,7 +162,7 @@ public class ManagementApiRequestHandler implements ServerMessageHandler, Server
                 final String partitionName = String.format("%s-%d", BufferUtil.bufferAsString(configuration.getTopicName()), configuration.getPartitionId());
                 final ServiceName<Void> partitionInstallServiceName = partitionInstallServiceName(partitionName);
                 final boolean isSystemPartition = Protocol.SYSTEM_PARTITION == configuration.getPartitionId();
-                final PartitionInstallService partitionInstallService = new PartitionInstallService(configuration, isSystemPartition);
+                final PartitionInstallService partitionInstallService = new PartitionInstallService(brokerCfg, configuration, isSystemPartition);
 
                 final ActorFuture<Void> partitionInstallFuture = serviceStartContext.createService(partitionInstallServiceName, partitionInstallService)
                     .dependency(LOCAL_NODE, partitionInstallService.getLocalNodeInjector())

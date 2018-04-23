@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
 import io.zeebe.broker.logstreams.processor.*;
-import io.zeebe.broker.system.SystemConfiguration;
 import io.zeebe.broker.system.deployment.processor.PartitionCollector;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.servicecontainer.*;
@@ -48,19 +47,12 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
 
     private final RoundRobinSelectionStrategy nodeSelectionStrategy = new RoundRobinSelectionStrategy();
 
-    private final SystemConfiguration systemConfiguration;
-
     private ServerTransport clientApiTransport;
     private StreamProcessorServiceFactory streamProcessorServiceFactory;
     private ClientTransport clientTransport;
     private TopologyManager topologyManager;
 
     private AtomicReference<PartitionResponder> partitionResponderRef = new AtomicReference<>();
-
-    public SystemPartitionManager(SystemConfiguration systemConfiguration)
-    {
-        this.systemConfiguration = systemConfiguration;
-    }
 
     public void addSystemPartition(Partition partition, ServiceName<Partition> serviceName)
     {
@@ -102,7 +94,7 @@ public class SystemPartitionManager implements Service<SystemPartitionManager>
             nodeSelectionStrategy,
             topicsIndex,
             partitionsIndex,
-            Duration.ofSeconds(systemConfiguration.getPartitionCreationTimeoutSeconds()));
+            Duration.ofSeconds(20));
 
         streamProcessorServiceFactory.createService(partition, partitionServiceName)
             .processor(streamProcessor)

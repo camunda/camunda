@@ -17,23 +17,20 @@
  */
 package io.zeebe.broker.test;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.Map;
+import java.io.*;
 import java.util.concurrent.*;
 import java.util.function.Supplier;
 
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.TestLoggers;
 import io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames;
-import io.zeebe.broker.topic.RequestPartitionsTest;
 import io.zeebe.broker.transport.TransportServiceNames;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.servicecontainer.*;
-import io.zeebe.test.util.TestFileUtil;
+import io.zeebe.util.FileUtil;
 import io.zeebe.util.allocation.DirectBufferAllocator;
 import io.zeebe.util.sched.clock.ControlledActorClock;
+import org.assertj.core.util.Files;
 import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
 
@@ -62,21 +59,14 @@ public class EmbeddedBrokerRule extends ExternalResource
         this(() -> EmbeddedBrokerRule.class.getClassLoader().getResourceAsStream(configFileClasspathLocation));
     }
 
-    public EmbeddedBrokerRule(String configFileClasspathLocation, Supplier<Map<String, String>> properties)
-    {
-        this(() ->
-        {
-            return TestFileUtil.readAsTextFileAndReplace(
-                    RequestPartitionsTest.class.getClassLoader().getResourceAsStream(configFileClasspathLocation),
-                    StandardCharsets.UTF_8,
-                    properties.get());
-        });
-    }
-
     protected long startTime;
+
+    private File newTemporaryFolder;
+
     @Override
     protected void before()
     {
+        newTemporaryFolder = Files.newTemporaryFolder();
         startTime = System.currentTimeMillis();
         startBroker();
         LOG.info("\n====\nBroker startup time: {}\n====\n", (System.currentTimeMillis() - startTime));
@@ -86,15 +76,29 @@ public class EmbeddedBrokerRule extends ExternalResource
     @Override
     protected void after()
     {
-        LOG.info("Test execution time: " + (System.currentTimeMillis() - startTime));
-        startTime = System.currentTimeMillis();
-        stopBroker();
-        LOG.info("Broker closing time: " + (System.currentTimeMillis() - startTime));
-
-        final long allocatedMemoryInKb = DirectBufferAllocator.getAllocatedMemoryInKb();
-        if (allocatedMemoryInKb > 0)
+        try
         {
-            LOG.warn("There are still allocated direct buffers of a total size of {}kB.", allocatedMemoryInKb);
+            LOG.info("Test execution time: " + (System.currentTimeMillis() - startTime));
+            startTime = System.currentTimeMillis();
+            stopBroker();
+            LOG.info("Broker closing time: " + (System.currentTimeMillis() - startTime));
+
+            final long allocatedMemoryInKb = DirectBufferAllocator.getAllocatedMemoryInKb();
+            if (allocatedMemoryInKb > 0)
+            {
+                LOG.warn("There are still allocated direct buffers of a total size of {}kB.", allocatedMemoryInKb);
+            }
+        }
+        finally
+        {
+            try
+            {
+                FileUtil.deleteFolder(newTemporaryFolder.getAbsolutePath());
+            }
+            catch (IOException e)
+            {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -125,7 +129,7 @@ public class EmbeddedBrokerRule extends ExternalResource
     {
         try (InputStream configStream = configSupplier.get())
         {
-            broker = new Broker(configStream, controlledActorClock);
+            broker = new Broker(configStream, newTemporaryFolder.getAbsolutePath(), controlledActorClock);
         }
         catch (final IOException e)
         {

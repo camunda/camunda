@@ -17,10 +17,9 @@
  */
 package io.zeebe.broker.system.metrics;
 
-import java.io.File;
 import java.time.Duration;
 
-import io.zeebe.broker.system.metrics.cfg.MetricsCfg;
+import io.zeebe.broker.system.configuration.MetricsCfg;
 import io.zeebe.servicecontainer.*;
 import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.sched.ActorScheduler;
@@ -29,11 +28,11 @@ import io.zeebe.util.sched.SchedulingHints;
 public class MetricsFileWriterService implements Service<MetricsFileWriter>
 {
     private MetricsFileWriter metricsFileWriter;
-    private MetricsCfg cfg;
+    private MetricsCfg configuration;
 
     public MetricsFileWriterService(MetricsCfg cfg)
     {
-        this.cfg = cfg;
+        this.configuration = cfg;
     }
 
     @Override
@@ -42,9 +41,9 @@ public class MetricsFileWriterService implements Service<MetricsFileWriter>
         final ActorScheduler scheduler = startContext.getScheduler();
         final MetricsManager metricsManager = startContext.getScheduler().getMetricsManager();
 
-        final String metricsFileName = new File(cfg.getDirectory(), cfg.metricsFile).getAbsolutePath();
+        final String metricsFileName = configuration.getFile();
 
-        metricsFileWriter = new MetricsFileWriter(Duration.ofSeconds(cfg.reportingInterval), metricsFileName, metricsManager);
+        metricsFileWriter = new MetricsFileWriter(Duration.ofMillis(configuration.getReportingInterval()), metricsFileName, metricsManager);
         startContext.async(scheduler.submitActor(metricsFileWriter, SchedulingHints.isIoBound(0)));
     }
 

@@ -1,7 +1,0 @@
-[global]
-useTempDirectory = true
-
-[network.raft]
-heartbeatIntervalMs = 1234
-electionIntervalMs = 2345
-flushIntervalMs = 3456

@@ -415,11 +415,11 @@ public class ZeebeClientTest
                 .execute();
         });
 
-        // +2 (one for the extra request when client is started)
+        // +4 (one for the extra request when client is started)
         final Duration requestTimeout = client.getConfiguration().getRequestTimeout();
         final long requestTimeoutMs = requestTimeout.toMillis();
         final long expectedMaximumTopologyRequests =
-                (requestTimeoutMs / ClientTopologyManager.MIN_REFRESH_INTERVAL_MILLIS.toMillis()) + 2;
+                (requestTimeoutMs / ClientTopologyManager.MIN_REFRESH_INTERVAL_MILLIS.toMillis()) + 4;
         final long actualTopologyRequests = broker
             .getReceivedControlMessageRequests()
             .stream()
@@ -443,10 +443,10 @@ public class ZeebeClientTest
             client.tasks().complete(taskEvent).execute();
         });
 
-        // +2 (one for the extra request when client is started)
+        // +4 (one for the extra request when client is started)
         final Duration requestTimeout = client.getConfiguration().getRequestTimeout();
         final long requestTimeoutMs = requestTimeout.toMillis();
-        final long expectedMaximumTopologyRequests = (requestTimeoutMs / ClientTopologyManager.MIN_REFRESH_INTERVAL_MILLIS.toMillis()) + 2;
+        final long expectedMaximumTopologyRequests = (requestTimeoutMs / ClientTopologyManager.MIN_REFRESH_INTERVAL_MILLIS.toMillis()) + 4;
         final long actualTopologyRequests = broker
             .getReceivedControlMessageRequests()
             .stream()

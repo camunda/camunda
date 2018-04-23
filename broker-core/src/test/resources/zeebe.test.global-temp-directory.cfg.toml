@@ -1,6 +1,0 @@
-# Default Zeebe Config File. Used if no config file is provided to the broker.
-
-# Global configuration --------------------------------
-
-[global]
-useTempDirectory = true

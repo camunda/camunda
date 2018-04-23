@@ -15,15 +15,30 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.logstreams.cfg;
+package io.zeebe.broker.system.configuration;
 
-import io.zeebe.broker.system.DirectoryConfiguration;
-
-public class StreamProcessorCfg extends DirectoryConfiguration
+public class ThreadsCfg implements ConfigurationEntry
 {
-    @Override
-    protected String componentDirectoryName()
+    private int cpuThreadCount = 1;
+    private int ioThreadCount = 2;
+
+    public int getCpuThreadCount()
     {
-        return "map";
+        return cpuThreadCount;
+    }
+
+    public void setCpuThreadCount(int cpuThreads)
+    {
+        this.cpuThreadCount = cpuThreads;
+    }
+
+    public int getIoThreadCount()
+    {
+        return ioThreadCount;
+    }
+
+    public void setIoThreadCount(int ioThreads)
+    {
+        this.ioThreadCount = ioThreads;
     }
 }

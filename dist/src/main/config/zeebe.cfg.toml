@@ -1,50 +1,69 @@
-# Default Zeebe Config File. Used if no config file is provided to the broker.
+# Zeebe broker configuration file
 
-# Global configuration --------------------------------
-
-[global]
-directory = "../data"
-standalone = true
+# Controls the number of nodes (including itself) this broker waits for until
+# bootrapping. 
+bootstrap = 1
 
 # Networking configuration ----------------------------
 
-[network]
-host = "0.0.0.0"
-sendBufferSize = 128
+# [network]
+# host = "0.0.0.0"
+# defaultSendBufferSize = "16MB"
 
-[network.clientApi]
-port = 51015
-receiveBufferSize = 16
-controlMessageRequestTimeoutInMillis = 10000
+# [network.client]
+# host = "localhost"
+# port = 51015
+# sendBufferSize = "16MB"
+# controlMessageBufferSize = "8MB"
 
-[network.managementApi]
-host = "localhost"
-port = 51016
-receiveBufferSize = 16
+# [network.management]
+# host = "localhost"
+# port = 51016
+# sendBufferSize = "16MB"
+# receiveBufferSize = "8MB"
 
-[network.replicationApi]
-host = "localhost"
-port = 51017
-receiveBufferSize = 16
+# [network.replication]
+# host = "localhost"
+# port = 51017
+# sendBufferSize = "16MB"
 
-# System Configuration --------------------------------
+# Cluster Configuration -------------------------------
 
-[threading]
-#numberOfThreads = 2
-maxIdleTimeMs = 10
-idleStrategy = "BACKOFF"
+# [cluster]
+# initialContactPoints = []
 
-[metrics]
-reportingInterval = 5
-metricsFile = "zeebe.prom"
+# [gossip]
+# retransmissionMultiplier = 3
+# probeInterval = 1000
+# probeTimeout = 500
+# probeIndirectNodes = 3
+# probeIndirectTimeout = 1000
+# suspicionMultiplier = 5
+# syncTimeout = 3000
+# joinTimeout = 1000
+# joinInterval = 5000
+# leaveTimeout = 1000
+# maxMembershipEventsPerMessage = 32
+# maxCustomEventsPerMessage = 8
 
-# Log Configuration -----------------------------------
+# [raft]
+# heartbeatInterval = 250
+# electionInterval = 1000
+# leaveTimeout = 1000
 
-[logs]
-defaultLogSegmentSize = 512
+# System configuration ------------------------------------
 
-# Workflow Configuration ------------------------------------------
+[threads]
+cpuThreadCount = 2
+ioThreadCount = 2
 
-[workflow]
-deploymentCacheSize = 1024
-payloadCacheSize = 4096
+# [metrics]
+# reportingInterval = 5000
+# directory = ""
+# metricsFile = "metrics/zeebe.prom"
+
+# Data Configuration ---------------------------------------
+
+# [data]
+# defaultSegmentSize = "512MB"
+# directories = [ "data" ]

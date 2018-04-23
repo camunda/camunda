@@ -15,15 +15,30 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.system;
+package io.zeebe.broker.system.configuration;
 
-import java.util.List;
-
-public interface ConfigurationManager
+public class SocketBindingManagementCfg extends SocketBindingCfg
 {
-    <T> T readEntry(String componentName, Class<T> configObjectType);
+    private String receiveBufferSize = "8M";
 
-    <T> List<T> readList(String string, Class<T> class1);
+    public SocketBindingManagementCfg()
+    {
+        port = 51016;
+    }
 
-    GlobalConfiguration getGlobalConfiguration();
+    @Override
+    public void applyDefaults(NetworkCfg networkCfg)
+    {
+        super.applyDefaults(networkCfg);
+    }
+
+    public String getReceiveBufferSize()
+    {
+        return receiveBufferSize;
+    }
+
+    public void setReceiveBufferSize(String receiveBufferSize)
+    {
+        this.receiveBufferSize = receiveBufferSize;
+    }
 }

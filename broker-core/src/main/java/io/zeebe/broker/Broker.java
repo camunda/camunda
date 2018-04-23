@@ -17,19 +17,19 @@
  */
 package io.zeebe.broker;
 
+import java.io.InputStream;
+
 import io.zeebe.broker.clustering.ClusterComponent;
 import io.zeebe.broker.logstreams.LogStreamsComponent;
-import io.zeebe.broker.system.ConfigurationManager;
 import io.zeebe.broker.system.SystemComponent;
 import io.zeebe.broker.system.SystemContext;
+import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.task.TaskQueueComponent;
 import io.zeebe.broker.transport.TransportComponent;
 import io.zeebe.broker.workflow.WorkflowComponent;
 import io.zeebe.util.LogUtil;
 import io.zeebe.util.sched.clock.ActorClock;
 import org.slf4j.Logger;
-
-import java.io.InputStream;
 
 public class Broker implements AutoCloseable
 {
@@ -46,35 +46,25 @@ public class Broker implements AutoCloseable
     protected final SystemContext brokerContext;
     protected boolean isClosed = false;
 
-    public Broker(String[] args)
+    public Broker(String configFileLocation, String basePath, ActorClock clock)
     {
-        this(new SystemContext(args, null));
+        this(new SystemContext(configFileLocation, basePath, clock));
     }
 
-    public Broker(String configFileLocation, ActorClock clock)
+    public Broker(InputStream configStream, String basePath, ActorClock clock)
     {
-        this(new SystemContext(configFileLocation, clock));
+        this(new SystemContext(configStream, basePath, clock));
     }
 
-    public Broker(InputStream configStream)
+    public Broker(BrokerCfg cfg, String basePath, ActorClock clock)
     {
-        this(new SystemContext(configStream, null));
+        this(new SystemContext(cfg, basePath, clock));
     }
 
-    public Broker(InputStream configStream, ActorClock clock)
+    public Broker(SystemContext systemContext)
     {
-        this(new SystemContext(configStream, clock));
-    }
-
-    public Broker(ConfigurationManager configurationManager)
-    {
-        this(new SystemContext(configurationManager, null));
-    }
-
-    public Broker(SystemContext brokerContext)
-    {
-        this.brokerContext = brokerContext;
-        LogUtil.doWithMDC(brokerContext.getDiagnosticContext(), () -> start());
+        this.brokerContext = systemContext;
+        LogUtil.doWithMDC(systemContext.getDiagnosticContext(), () -> start());
     }
 
     protected void start()

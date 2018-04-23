@@ -69,18 +69,14 @@ public class ControlMessageHandlerManager extends Actor implements FragmentHandl
     protected final BrokerEventMetadata eventMetada = new BrokerEventMetadata();
     protected final ServerResponse response = new ServerResponse();
 
-    protected final long requestTimeoutInMillis;
-
     public ControlMessageHandlerManager(
             ServerOutput output,
             Dispatcher controlMessageDispatcher,
-            long requestTimeoutInMillis,
             ActorScheduler actorScheduler,
             List<ControlMessageHandler> handlers)
     {
         this.actorScheduler = actorScheduler;
         this.controlMessageDispatcher = controlMessageDispatcher;
-        this.requestTimeoutInMillis = requestTimeoutInMillis;
         this.errorResponseWriter = new ErrorResponseWriter(output);
 
         for (ControlMessageHandler handler : handlers)

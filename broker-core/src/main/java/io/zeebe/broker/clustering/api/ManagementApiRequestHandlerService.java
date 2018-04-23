@@ -17,7 +17,8 @@
  */
 package io.zeebe.broker.clustering.api;
 
-import io.zeebe.broker.clustering.base.raft.config.RaftPersistentConfigurationManager;
+import io.zeebe.broker.clustering.base.raft.RaftPersistentConfigurationManager;
+import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.deployment.handler.WorkflowRequestMessageHandler;
 import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.BufferingServerTransport;
@@ -31,10 +32,17 @@ public class ManagementApiRequestHandlerService extends Actor implements Service
     private final Injector<WorkflowRequestMessageHandler> workflowRequestMessageHandlerInjector = new Injector<>();
     private final Injector<RaftPersistentConfigurationManager> raftPersistentConfigurationManagerInjector = new Injector<>();
 
+    private final BrokerCfg brokerCfg;
+
     private BufferingServerTransport serverTransport;
     private ManagementApiRequestHandler managementApiRequestHandler;
     private WorkflowRequestMessageHandler workflowRequestMessageHandler;
     private RaftPersistentConfigurationManager raftPersistentConfigurationManager;
+
+    public ManagementApiRequestHandlerService(BrokerCfg brokerCfg)
+    {
+        this.brokerCfg = brokerCfg;
+    }
 
     @Override
     public void start(ServiceStartContext startContext)
@@ -45,7 +53,8 @@ public class ManagementApiRequestHandlerService extends Actor implements Service
         managementApiRequestHandler = new ManagementApiRequestHandler(workflowRequestMessageHandler,
             raftPersistentConfigurationManager,
             actor,
-            startContext);
+            startContext,
+            brokerCfg);
 
         startContext.async(startContext.getScheduler().submitActor(this, true));
     }

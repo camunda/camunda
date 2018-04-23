@@ -19,13 +19,27 @@ package io.zeebe.broker;
 
 import static java.lang.Runtime.getRuntime;
 
+import java.nio.file.Paths;
 import java.util.Scanner;
 
 public class StandaloneBroker
 {
     public static void main(String[] args)
     {
-        final Broker broker = new Broker(args);
+        final String basePath = System.getProperty("basedir");
+
+        if (basePath == null)
+        {
+            Paths.get(".").toAbsolutePath().normalize().toString();
+        }
+
+        if (args.length == 0)
+        {
+            System.err.println("Configuration file location not specified. Must specify exactly one argument.");
+            System.exit(-1);
+        }
+
+        final Broker broker = new Broker(args[0], basePath, null);
 
         getRuntime().addShutdownHook(new Thread("Broker close Thread")
         {

@@ -17,20 +17,16 @@
  */
 package io.zeebe.broker.system;
 
-import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.*;
 
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.Loggers;
-import io.zeebe.broker.system.threads.cfg.ThreadingCfg;
-import io.zeebe.broker.transport.cfg.SocketBindingCfg;
-import io.zeebe.broker.transport.cfg.TransportComponentCfg;
-import io.zeebe.broker.util.BrokerArguments;
+import io.zeebe.broker.system.configuration.*;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.impl.ServiceContainerImpl;
-import io.zeebe.util.FileUtil;
 import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ActorClock;
@@ -39,8 +35,6 @@ import org.slf4j.Logger;
 
 public class SystemContext implements AutoCloseable
 {
-    private static final int MAX_THREAD_COUNT = Math.max(Runtime.getRuntime().availableProcessors() - 1, 1);
-
     public static final Logger LOG = Loggers.SYSTEM_LOGGER;
     public static final String BROKER_ID_LOG_PROPERTY = "broker-id";
     public static final int CLOSE_TIMEOUT = 10;
@@ -49,7 +43,7 @@ public class SystemContext implements AutoCloseable
 
     protected final List<Component> components = new ArrayList<>();
 
-    protected final ConfigurationManager configurationManager;
+    protected final BrokerCfg brokerCfg;
 
     protected final List<ActorFuture<?>> requiredStartActions = new ArrayList<>();
 
@@ -57,37 +51,42 @@ public class SystemContext implements AutoCloseable
     protected ActorScheduler scheduler;
 
     private MetricsManager metricsManager;
-    private BrokerArguments brokerArguments;
 
-    public SystemContext(String[] commandLineArgs, ActorClock clock)
+    public SystemContext(String configFileLocation, String basePath, ActorClock clock)
     {
-        this.brokerArguments = new BrokerArguments(commandLineArgs);
-        this.configurationManager =
-            new ConfigurationManagerImpl(brokerArguments.getConfigFile());
+        if (!Paths.get(configFileLocation).isAbsolute())
+        {
+            configFileLocation = Paths.get(basePath, configFileLocation).normalize().toAbsolutePath().toString();
+        }
 
-        initSystemContext(clock);
+        brokerCfg = new TomlConfigurationReader().read(configFileLocation);
+
+        initSystemContext(clock, basePath);
     }
 
-    public SystemContext(String configFileLocation, ActorClock clock)
+    public SystemContext(InputStream configStream, String basePath, ActorClock clock)
     {
-        this(new String[]{"-config", configFileLocation}, clock);
+        brokerCfg = new TomlConfigurationReader().read(configStream);
+
+        initSystemContext(clock, basePath);
     }
 
-    public SystemContext(InputStream configStream, ActorClock clock)
+    public SystemContext(BrokerCfg brokerCfg, String basePath, ActorClock clock)
     {
-        this(new ConfigurationManagerImpl(configStream), clock);
+        this.brokerCfg = brokerCfg;
+
+        initSystemContext(clock, basePath);
     }
 
-    public SystemContext(ConfigurationManager configurationManager, ActorClock clock)
+    private void initSystemContext(ActorClock clock, String basePath)
     {
-        this.configurationManager = configurationManager;
-        this.brokerArguments = new BrokerArguments(new String[0]);
-        initSystemContext(clock);
-    }
+        LOG.debug("Initializing configuration with base path {}", basePath);
 
-    private void initSystemContext(ActorClock clock)
-    {
-        final String brokerId = readBrokerId(configurationManager);
+        brokerCfg.init(basePath);
+
+        final SocketBindingCfg clientApiCfg = brokerCfg.getNetwork().getClient();
+        final String brokerId = String.format("%s:%d", clientApiCfg.getHost(), clientApiCfg.getPort());
+
         this.diagnosticContext = Collections.singletonMap(BROKER_ID_LOG_PROPERTY, brokerId);
 
         // TODO: submit diagnosticContext to actor scheduler once supported
@@ -95,6 +94,7 @@ public class SystemContext implements AutoCloseable
         this.scheduler = initScheduler(clock, brokerId);
         this.serviceContainer = new ServiceContainerImpl(this.scheduler);
         this.scheduler.start();
+
         initBrokerInfoMetric();
     }
 
@@ -110,49 +110,29 @@ public class SystemContext implements AutoCloseable
     {
         // one-shot metric to submit metadata
         metricsManager.newMetric("broker_info")
-                .type("counter")
-                .label("version", Broker.VERSION)
-                .create()
-                .incrementOrdered();
+            .type("counter")
+            .label("version", Broker.VERSION)
+            .create()
+            .incrementOrdered();
     }
 
     private ActorScheduler initScheduler(ActorClock clock, String brokerId)
     {
-        final ThreadingCfg cfg = configurationManager.readEntry("threading", ThreadingCfg.class);
-        int numberOfThreads = cfg.numberOfThreads;
+        final ThreadsCfg cfg = brokerCfg.getThreads();
 
-        if (numberOfThreads > MAX_THREAD_COUNT)
-        {
-            LOG.warn("Configured thread count {} is larger than MAX_THREAD_COUNT {}. Falling back max thread count.", numberOfThreads, MAX_THREAD_COUNT);
-            numberOfThreads = MAX_THREAD_COUNT;
-        }
-        else if (numberOfThreads < 1)
-        {
-            // use max threads by default
-            numberOfThreads = MAX_THREAD_COUNT;
-        }
+        final int cpuThreads = cfg.getCpuThreadCount();
+        final int ioThreads = cfg.getIoThreadCount();
 
-        final int ioBoundThreads = 2;
-        final int cpuBoundThreads = Math.max(1, numberOfThreads - ioBoundThreads);
-
-        Loggers.SYSTEM_LOGGER.info("Scheduler configuration: Threads{cpu-bound: {}, io-bound: {}}.", cpuBoundThreads, ioBoundThreads);
+        Loggers.SYSTEM_LOGGER.info("Scheduler configuration: Threads{cpu-bound: {}, io-bound: {}}.", cpuThreads, ioThreads);
 
         return ActorScheduler.newActorScheduler()
             .setActorClock(clock)
             .setMetricsManager(metricsManager)
-            .setCpuBoundActorThreadCount(cpuBoundThreads)
-            .setIoBoundActorThreadCount(ioBoundThreads)
+            .setCpuBoundActorThreadCount(cpuThreads)
+            .setIoBoundActorThreadCount(ioThreads)
             .setSchedulerName(brokerId)
             .build();
     }
-
-    protected static String readBrokerId(ConfigurationManager configurationManager)
-    {
-        final TransportComponentCfg transportComponentCfg = configurationManager.readEntry("network", TransportComponentCfg.class);
-        final SocketBindingCfg clientApiCfg = transportComponentCfg.clientApi;
-        return clientApiCfg.getHost(transportComponentCfg.host) + ":" + clientApiCfg.getPort();
-    }
-
 
     public ActorScheduler getScheduler()
     {
@@ -238,31 +218,14 @@ public class SystemContext implements AutoCloseable
             {
                 LOG.error("Exception while closing scheduler", e);
             }
-            finally
-            {
-                final GlobalConfiguration config = configurationManager.getGlobalConfiguration();
-                final String directory = config.getDirectory();
-                if (config.isTempDirectory())
-                {
-                    try
-                    {
-                        FileUtil.deleteFolder(directory);
-                    }
-                    catch (IOException e)
-                    {
-                        LOG.error("Exception while deleting temp folder", e);
-                    }
-                }
-
-            }
-
         }
     }
 
-    public ConfigurationManager getConfigurationManager()
+    public BrokerCfg getBrokerConfiguration()
     {
-        return configurationManager;
+        return brokerCfg;
     }
+
 
     public void addRequiredStartAction(ActorFuture<?> future)
     {
@@ -272,10 +235,5 @@ public class SystemContext implements AutoCloseable
     public Map<String, String> getDiagnosticContext()
     {
         return diagnosticContext;
-    }
-
-    public BrokerArguments getBrokerArguments()
-    {
-        return brokerArguments;
     }
 }
