@@ -3,7 +3,6 @@ package org.camunda.optimize.service.es.writer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.variable.ProcessInstanceId;
 import org.camunda.optimize.dto.optimize.query.variable.VariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.value.BooleanVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.value.DateVariableDto;
@@ -35,7 +34,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.ALL_VARIABLES_IMPORTED;
 import static org.camunda.optimize.service.util.VariableHelper.isBooleanType;
 import static org.camunda.optimize.service.util.VariableHelper.isDateType;
 import static org.camunda.optimize.service.util.VariableHelper.isDoubleType;
@@ -61,10 +59,11 @@ public class VariableWriter {
   @Autowired
   private DateTimeFormatter dateTimeFormatter;
 
-  public void flagProcessInstanceWhereAllVariablesHaveBeenImported(List<ProcessInstanceId> ids) {
+  public void flagProcessInstancesAllVariablesHaveBeenImportedFor(List<String> processDefinitionIds) {
+    logger.debug("Marking [{}] process instance that all variables have been imported", processDefinitionIds.size());
     BulkRequestBuilder variableBulkRequest = esclient.prepareBulk();
 
-    for (ProcessInstanceId processInstanceId : ids) {
+    for (String processInstanceId : processDefinitionIds) {
       Script updateScript = new Script(
         ScriptType.INLINE,
         Script.DEFAULT_SCRIPT_LANG,
@@ -76,13 +75,15 @@ public class VariableWriter {
         esclient.prepareUpdate(
           configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()),
           configurationService.getProcessInstanceType(),
-          processInstanceId.getId()
+          processInstanceId
         )
         .setScript(updateScript)
       );
     }
 
-    variableBulkRequest.get();
+    if (variableBulkRequest.numberOfActions() != 0) {
+      variableBulkRequest.get();
+    }
   }
 
   public void importVariables(List<VariableDto> variables) throws Exception {

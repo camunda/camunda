@@ -63,10 +63,7 @@ public class VariableInstanceEngineImportMediator
     IdSetBasedImportPage page = importIndexHandler.getNextPage();
     if (!page.getIds().isEmpty()) {
       List<HistoricVariableInstanceDto> entities = engineEntityFetcher.fetchEngineEntities(page);
-      if (!entities.isEmpty()) {
-        variableInstanceImportService.executeImport(entities);
-      }
-      variableInstanceImportService.flagProcessInstancesThatVariablesHaveBeenImported(page.getIds());
+      variableInstanceImportService.executeImport(entities, page.getIds());
       return true;
     }
     return false;
