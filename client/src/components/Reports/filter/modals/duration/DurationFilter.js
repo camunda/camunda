@@ -62,10 +62,9 @@ export default class DurationFilter extends React.Component {
               <Select.Option value="years">Years</Select.Option>
             </Select>
             {!isValidInput && (
-              <ErrorMessage
-                className="DurationFilter__warning"
-                text="Please enter a numeric value"
-              />
+              <ErrorMessage className="DurationFilter__warning">
+                Please enter a numeric value
+              </ErrorMessage>
             )}
           </div>
         </Modal.Content>

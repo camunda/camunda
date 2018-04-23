@@ -3,14 +3,14 @@ import classnames from 'classnames';
 
 import './Message.css';
 
-export default function Message({type, message}) {
+export default function Message({type, children}) {
   return (
     <div
       className={classnames('Message', {
         ['Message--' + type]: type
       })}
     >
-      {message}
+      {children}
     </div>
   );
 }

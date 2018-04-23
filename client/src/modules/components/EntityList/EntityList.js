@@ -187,7 +187,7 @@ class EntityList extends React.Component {
       return (
         <section className="EntityList">
           {header}
-          <Message type="error" message={errorMessage} />
+          <Message type="error">{errorMessage}</Message>
         </section>
       );
     }

@@ -245,7 +245,7 @@ export default class TargetValueModal extends React.Component {
             foot={[]}
             className="TargetValueModal__Table"
           />
-          <ErrorMessage className="TargetValueModal__warning" text={errorMessage} />
+          <ErrorMessage className="TargetValueModal__warning">{errorMessage}</ErrorMessage>
         </Modal.Content>
         <Modal.Actions>
           <Button onClick={this.props.onClose}>Cancel</Button>

@@ -42,7 +42,7 @@ class DateInput extends React.PureComponent {
           isInvalid={this.state.error}
         />
         {this.state.error && (
-          <ErrorMessage className="DateInput__warning" text="Please enter a valid date" />
+          <ErrorMessage className="DateInput__warning">Please enter a valid date</ErrorMessage>
         )}
       </div>
     );

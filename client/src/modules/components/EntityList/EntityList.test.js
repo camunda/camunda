@@ -52,7 +52,7 @@ jest.mock('components', () => {
   return {
     Modal,
     Icon: props => <span>{props.type}</span>,
-    Message: props => <p>{props.message}</p>,
+    Message: props => <p>{props.children}</p>,
     Button: props => <button {...props}>{props.children}</button>
   };
 });

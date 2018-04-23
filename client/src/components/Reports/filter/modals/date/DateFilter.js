@@ -168,7 +168,9 @@ export default class DateFilter extends React.Component {
                 <Select.Option value="years">Years</Select.Option>
               </Select>
               {!this.state.validDate && (
-                <ErrorMessage className="DateFilter__warning" text="Please enter a numeric value" />
+                <ErrorMessage className="DateFilter__warning">
+                  Please enter a numeric value
+                </ErrorMessage>
               )}
             </div>
           )}

@@ -213,7 +213,7 @@ export default class AlertModal extends React.Component {
                 onChange={({target: {value}}) => this.setState({name: value})}
               />
               {errorInput === 'name' && (
-                <ErrorMessage className="AlertModal__warning" text="Please enter a name" />
+                <ErrorMessage className="AlertModal__warning">Please enter a name</ErrorMessage>
               )}
             </div>
             <div className="AlertModal__inputGroup">
@@ -228,10 +228,9 @@ export default class AlertModal extends React.Component {
                 onChange={({target: {value}}) => this.setState({email: value})}
               />
               {errorInput === 'email' && (
-                <ErrorMessage
-                  className="AlertModal__warning"
-                  text="Please enter a valid Email address"
-                />
+                <ErrorMessage className="AlertModal__warning">
+                  Please enter a valid Email address
+                </ErrorMessage>
               )}
             </div>
             <div className="AlertModal__inputGroup">
@@ -281,7 +280,9 @@ export default class AlertModal extends React.Component {
                 />
               </div>
               {errorInput === 'threshold' && (
-                <ErrorMessage className="AlertModal__warning" text="Please enter a numeric value" />
+                <ErrorMessage className="AlertModal__warning">
+                  Please enter a numeric value
+                </ErrorMessage>
               )}
             </div>
           </div>
@@ -314,7 +315,9 @@ export default class AlertModal extends React.Component {
               </Select>
             </div>
             {errorInput === 'checkInterval' && (
-              <ErrorMessage className="AlertModal__warning" text="Please enter a numeric value" />
+              <ErrorMessage className="AlertModal__warning">
+                Please enter a numeric value
+              </ErrorMessage>
             )}
           </div>
           <div className="AlertModal__inputGroup">
@@ -363,10 +366,9 @@ export default class AlertModal extends React.Component {
                   </Select>
                 </div>
                 {errorInput === 'reminder' && (
-                  <ErrorMessage
-                    className="AlertModal__warning"
-                    text="Please enter a numeric value"
-                  />
+                  <ErrorMessage className="AlertModal__warning">
+                    Please enter a numeric value
+                  </ErrorMessage>
                 )}
               </div>
             )}

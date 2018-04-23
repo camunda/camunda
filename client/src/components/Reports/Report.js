@@ -249,7 +249,9 @@ export default class Report extends React.Component {
               isInvalid={!this.state.name}
             />
             {!this.state.name && (
-              <ErrorMessage className="Report__warning" text="Report's name can not be empty" />
+              <ErrorMessage className="Report__warning">
+                Report's name can not be empty
+              </ErrorMessage>
             )}
             <div className="Report__metadata">
               Last modified {moment(lastModified).format('lll')} by {lastModifier}

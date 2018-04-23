@@ -10,7 +10,7 @@ it('renders without crashing', () => {
 it('renders the message text provided as a property', () => {
   const text = 'This is a Message!';
 
-  const node = mount(<Message message={text} />);
+  const node = mount(<Message>{text}</Message>);
   expect(node).toIncludeText(text);
 });
 

@@ -40,7 +40,7 @@ jest.mock('components', () => {
   return {
     Modal,
     Select,
-    ErrorMessage: props => <div {...props}>{props.text}</div>,
+    ErrorMessage: props => <div {...props}>{props.children}</div>,
     Button: props => (
       <button {...props} active="true">
         {props.children}

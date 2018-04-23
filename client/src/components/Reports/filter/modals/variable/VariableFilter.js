@@ -401,7 +401,7 @@ export default class VariableFilter extends React.Component {
             })}
             {!this.selectionIsValid() && (
               <li className="VariableFilter__valueListWarning">
-                <ErrorMessage text="All fields should have a numeric value" />
+                <ErrorMessage>All fields should have a numeric value</ErrorMessage>
               </li>
             )}
             {

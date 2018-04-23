@@ -56,10 +56,9 @@ export default class Login extends React.Component {
           Camunda Optimize
         </h1>
         {error ? (
-          <Message
-            type="error"
-            message="Could not log you in. Please check your username and password."
-          />
+          <Message type="error">
+            Could not log you in. Please check your username and password.
+          </Message>
         ) : (
           ''
         )}

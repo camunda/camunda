@@ -27,7 +27,7 @@ jest.mock('components', () => {
       delete allowedProps.isInvalid;
       return <input {...allowedProps} />;
     },
-    ErrorMessage: props => <div {...props}>{props.text}</div>,
+    ErrorMessage: props => <div {...props}>{props.children}</div>,
     ControlGroup: props => <div>{props.children}</div>,
     ButtonGroup: props => <div {...props}>{props.children}</div>
   };
