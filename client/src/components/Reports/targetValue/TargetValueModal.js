@@ -222,6 +222,8 @@ export default class TargetValueModal extends React.Component {
   }
 
   render() {
+    let errorMessage = !this.hasSomethingChanged() ? 'Please change at least one value' : '';
+    if (!this.areAllFieldsNumbers()) errorMessage += 'All fields should have a numeric value';
     return (
       <Modal
         size="max"
@@ -243,19 +245,7 @@ export default class TargetValueModal extends React.Component {
             foot={[]}
             className="TargetValueModal__Table"
           />
-          {!this.hasSomethingChanged() &&
-            this.areAllFieldsNumbers() && (
-              <ErrorMessage
-                className="TargetValueModal__warning"
-                text="Please change at least one value"
-              />
-            )}
-          {!this.areAllFieldsNumbers() && (
-            <ErrorMessage
-              className="TargetValueModal__warning"
-              text="All fields should have a numeric value"
-            />
-          )}
+          <ErrorMessage className="TargetValueModal__warning" text={errorMessage} />
         </Modal.Content>
         <Modal.Actions>
           <Button onClick={this.props.onClose}>Cancel</Button>
