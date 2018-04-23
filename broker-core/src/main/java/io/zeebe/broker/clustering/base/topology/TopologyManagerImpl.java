@@ -217,7 +217,7 @@ public class TopologyManagerImpl extends Actor implements TopologyManager
                 for (NodeInfo member : topology.getMembers())
                 {
                     final int length = writeSockedAddresses(member, writeBuffer, 0);
-                    request.addPayload(member.getApiPort(), writeBuffer, 0, length);
+                    request.addPayload(member.getManagementPort(), writeBuffer, 0, length);
                 }
 
                 LOG.trace("Send API sync response.");
@@ -239,7 +239,7 @@ public class TopologyManagerImpl extends Actor implements TopologyManager
                 for (NodeInfo member : topology.getMembers())
                 {
                     final int length = writeTopology(topology, writeBuffer, 0);
-                    request.addPayload(member.getApiPort(), writeBuffer, 0, length);
+                    request.addPayload(member.getManagementPort(), writeBuffer, 0, length);
                 }
 
                 LOG.trace("Send RAFT state sync response.");
