@@ -94,7 +94,7 @@ public class AlertJob implements Job {
 
   private String composeFixText(AlertDefinitionDto alert, ReportDefinitionDto reportDefinition, NumberReportResultDto result) {
     String emailBody = "Camunda Optimize - Report Status\n" +
-        "Alert [" + alert.getName() + "]:\n" +
+        "Alert name: " + alert.getName() + "\n" +
         "Report name: " + reportDefinition.getName() + "\n" +
         "Status: Given threshold [" +
         alert.getThreshold() +
