@@ -117,6 +117,7 @@ public class ImportPerformanceTest {
     if (!wasAbleToFinishImportInTime) {
       throw new TimeoutException("Import was not able to finish import in " + maxImportDurationInMin + " minutes!");
     }
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
   }
 
   private ScheduledExecutorService reportImportProgress() {
