@@ -200,7 +200,7 @@ export default class Dashboard extends React.Component {
               isInvalid={!this.state.name}
             />
             {!this.state.name && (
-              <ErrorMessage className="Report__warning" text="Report's name can not be empty" />
+              <ErrorMessage className="Report__warning" text="Dashboard's name can not be empty" />
             )}
             <div className="Dashboard__metadata">
               Last modified {moment(lastModified).format('lll')} by {lastModifier}
