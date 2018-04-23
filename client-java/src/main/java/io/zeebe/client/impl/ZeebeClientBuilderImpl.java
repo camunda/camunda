@@ -15,15 +15,10 @@
  */
 package io.zeebe.client.impl;
 
-import static io.zeebe.client.ClientProperties.CLIENT_MAXREQUESTS;
-import static io.zeebe.client.ClientProperties.CLIENT_REQUEST_BLOCKTIME_MILLIS;
-import static io.zeebe.client.ClientProperties.CLIENT_SENDBUFFER_SIZE;
+import static io.zeebe.client.ClientProperties.*;
 
 import java.time.Duration;
-import java.util.Enumeration;
 import java.util.Properties;
-import java.util.TreeMap;
-import java.util.Map.Entry;
 
 import io.zeebe.client.ClientProperties;
 import io.zeebe.client.ZeebeClient;
