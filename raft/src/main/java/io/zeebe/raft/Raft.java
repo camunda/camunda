@@ -711,6 +711,21 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
         return logStream.getTopicName();
     }
 
+    public int getReplicationFactor()
+    {
+        return persistentStorage.getReplicationFactor();
+    }
+
+    public void registerRaftStateListener(final RaftStateListener listener)
+    {
+        actor.run(() -> raftStateListeners.add(listener));
+    }
+
+    public void unregisterRaftStateListener(final RaftStateListener listener)
+    {
+        actor.run(() -> raftStateListeners.remove(listener));
+    }
+
     @Override
     public Raft get()
     {

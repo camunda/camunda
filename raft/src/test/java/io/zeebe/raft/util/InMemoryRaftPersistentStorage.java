@@ -35,6 +35,13 @@ public class InMemoryRaftPersistentStorage implements RaftPersistentStorage
     }
 
     @Override
+    public int getReplicationFactor()
+    {
+        // TODO: implement?
+        return 0;
+    }
+
+    @Override
     public int getTerm()
     {
         return logStream.getTerm();

@@ -25,6 +25,8 @@ import io.zeebe.transport.SocketAddress;
 public interface RaftPersistentStorage
 {
 
+    int getReplicationFactor();
+
     /**
      * @return the current term
      */
@@ -69,5 +71,4 @@ public interface RaftPersistentStorage
      * Blocks until the current state is persisted.
      */
     RaftPersistentStorage save();
-
 }
