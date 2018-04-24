@@ -63,7 +63,7 @@ public class DeploymentManager implements Service<DeploymentManager>
         final PendingDeployments pendingDeployments = new PendingDeployments();
         final PendingWorkflows pendingWorkflows = new PendingWorkflows();
 
-        final Duration deploymentRequestTimeout = Duration.ofSeconds(10);
+        final Duration deploymentRequestTimeout = Duration.ofMinutes(1);
 
         final TypedStreamEnvironment streamEnvironment = new TypedStreamEnvironment(partition.getLogStream(), clientApiTransport.getOutput());
 

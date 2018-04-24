@@ -52,7 +52,7 @@ public class TopologyManagerImpl extends Actor implements TopologyManager, RaftS
 
     private final MembershipListener membershipListner = new MembershipListener();
     private final ContactPointsChangeListener contactPointsChangeListener = new ContactPointsChangeListener();
-    private final ParitionChangeListener paritionChangeListener = new ParitionChangeListener();
+    private final PartitionChangeListener partitionChangeListener = new PartitionChangeListener();
     private final KnownContactPointsSyncHandler localContactPointsSycHandler = new KnownContactPointsSyncHandler();
     private final KnownPartitionsSyncHandler knownPartitionsSyncHandler = new KnownPartitionsSyncHandler();
 
@@ -69,12 +69,18 @@ public class TopologyManagerImpl extends Actor implements TopologyManager, RaftS
     }
 
     @Override
+    public String getName()
+    {
+        return "topology";
+    }
+
+    @Override
     protected void onActorStarting()
     {
         gossip.addMembershipListener(membershipListner);
 
         gossip.addCustomEventListener(CONTACT_POINTS_EVENT_TYPE, contactPointsChangeListener);
-        gossip.addCustomEventListener(PARTITIONS_EVENT_TYPE, paritionChangeListener);
+        gossip.addCustomEventListener(PARTITIONS_EVENT_TYPE, partitionChangeListener);
 
         gossip.registerSyncRequestHandler(CONTACT_POINTS_EVENT_TYPE, localContactPointsSycHandler);
         gossip.registerSyncRequestHandler(PARTITIONS_EVENT_TYPE, knownPartitionsSyncHandler);
@@ -85,7 +91,7 @@ public class TopologyManagerImpl extends Actor implements TopologyManager, RaftS
     @Override
     protected void onActorClosing()
     {
-        gossip.removeCustomEventListener(paritionChangeListener);
+        gossip.removeCustomEventListener(partitionChangeListener);
         gossip.removeCustomEventListener(contactPointsChangeListener);
 
         // remove gossip sync handlers?
@@ -109,7 +115,7 @@ public class TopologyManagerImpl extends Actor implements TopologyManager, RaftS
             member,
             raftState);
 
-        notifyPartitionUpdated(updatedPartition);
+        notifyPartitionUpdated(updatedPartition, member);
     }
 
     public void onRaftRemoved(Raft raft)
@@ -129,15 +135,17 @@ public class TopologyManagerImpl extends Actor implements TopologyManager, RaftS
     @Override
     public void onStateChange(Raft raft, RaftState raftState)
     {
-        final NodeInfo memberInfo = topology.getLocal();
+        actor.run(() -> {
+            final NodeInfo memberInfo = topology.getLocal();
 
-        updatePartition(raft.getPartitionId(),
-            raft.getTopicName(),
-            raft.getReplicationFactor(),
-            memberInfo,
-            raft.getState());
+            updatePartition(raft.getPartitionId(),
+                raft.getTopicName(),
+                raft.getReplicationFactor(),
+                memberInfo,
+                raft.getState());
 
-        publishLocalPartitions();
+            publishLocalPartitions();
+        });
     }
 
     private class ContactPointsChangeListener implements GossipCustomEventListener
@@ -190,7 +198,7 @@ public class TopologyManagerImpl extends Actor implements TopologyManager, RaftS
         }
     }
 
-    private class ParitionChangeListener implements GossipCustomEventListener
+    private class PartitionChangeListener implements GossipCustomEventListener
     {
         @Override
         public void onEvent(SocketAddress sender, DirectBuffer payload)
@@ -319,7 +327,21 @@ public class TopologyManagerImpl extends Actor implements TopologyManager, RaftS
             topologyPartitionListers.add(listener);
 
             // notify initially
-            topology.getPartitions().forEach((p) -> LogUtil.catchAndLog(LOG, () -> listener.onPartitionUpdated(p, topology)));
+            topology.getPartitions().forEach((p) -> LogUtil.catchAndLog(LOG, () ->
+            {
+                final NodeInfo leader = topology.getLeader(p.getPartitionId());
+                if (leader != null)
+                {
+                    listener.onPartitionUpdated(p, leader);
+                }
+
+
+                final List<NodeInfo> followers = topology.getFollowers(p.getPartitionId());
+                if (followers != null && !followers.isEmpty())
+                {
+                    followers.forEach(follower -> listener.onPartitionUpdated(p, follower));
+                }
+            }));
         });
     }
 
@@ -348,11 +370,11 @@ public class TopologyManagerImpl extends Actor implements TopologyManager, RaftS
         }
     }
 
-    private void notifyPartitionUpdated(PartitionInfo partitionInfo)
+    private void notifyPartitionUpdated(PartitionInfo partitionInfo, NodeInfo member)
     {
         for (TopologyPartitionListener listener : topologyPartitionListers)
         {
-            LogUtil.catchAndLog(LOG, () -> listener.onPartitionUpdated(partitionInfo, topology));
+            LogUtil.catchAndLog(LOG, () -> listener.onPartitionUpdated(partitionInfo, member));
         }
     }
 

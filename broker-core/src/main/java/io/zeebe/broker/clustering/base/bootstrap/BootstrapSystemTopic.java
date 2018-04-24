@@ -18,6 +18,7 @@
 package io.zeebe.broker.clustering.base.bootstrap;
 
 import io.zeebe.broker.Loggers;
+import io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames;
 import io.zeebe.broker.clustering.base.partitions.PartitionInstallService;
 import io.zeebe.broker.clustering.base.raft.RaftPersistentConfiguration;
 import io.zeebe.broker.clustering.base.raft.RaftPersistentConfigurationManager;
@@ -67,7 +68,7 @@ public class BootstrapSystemTopic extends Actor implements Service<Void>
 
 
     @Override
-    public void start(ServiceStartContext startContext)
+    public void start(final ServiceStartContext startContext)
     {
         serviceStartContext = startContext;
         configurationManager = raftPersistentConfigurationManagerInjector.getValue();
@@ -128,7 +129,15 @@ public class BootstrapSystemTopic extends Actor implements Service<Void>
 
                 actor.runOnCompletion(partitionInstallFuture, (aVoid, installThrowable) ->
                 {
-                    if (installThrowable != null)
+
+                    if (installThrowable == null)
+                    {
+                        final BootstrapSystemTopicReplication bootstrapSystemTopicReplication = new BootstrapSystemTopicReplication();
+                        serviceStartContext.createService(SYSTEM_PARTITION_BOOTSTRAP_REPLICATION_SERVICE_NAME, bootstrapSystemTopicReplication)
+                                           .dependency(ClusterBaseLayerServiceNames.leaderPartitionServiceName(partitionName), bootstrapSystemTopicReplication.getPartitionInjector())
+                                           .install();
+                    }
+                    else
                     {
                         configurationManager.deleteConfiguration(configuration);
                         throw new RuntimeException(installThrowable);
@@ -139,7 +148,7 @@ public class BootstrapSystemTopic extends Actor implements Service<Void>
     }
 
     @Override
-    public void stop(ServiceStopContext stopContext)
+    public void stop(final ServiceStopContext stopContext)
     {
         stopContext.async(actor.close());
     }

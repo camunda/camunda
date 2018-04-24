@@ -21,9 +21,9 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 
+import io.zeebe.broker.clustering.orchestration.id.IdEvent;
 import io.zeebe.broker.incident.data.IncidentEvent;
-import io.zeebe.broker.system.log.PartitionEvent;
-import io.zeebe.broker.system.log.TopicEvent;
+import io.zeebe.broker.clustering.orchestration.topic.TopicEvent;
 import io.zeebe.broker.task.data.TaskEvent;
 import io.zeebe.broker.workflow.data.DeploymentEvent;
 import io.zeebe.broker.workflow.data.WorkflowEvent;
@@ -154,10 +154,6 @@ public class TypedStreamProcessor implements StreamProcessor
         {
             return ((TopicEvent) value).getState();
         }
-        else if (value instanceof PartitionEvent)
-        {
-            return ((PartitionEvent) value).getState();
-        }
         else if (value instanceof DeploymentEvent)
         {
             return ((DeploymentEvent) value).getState();
@@ -177,6 +173,10 @@ public class TypedStreamProcessor implements StreamProcessor
         else if (value instanceof IncidentEvent)
         {
             return ((IncidentEvent) value).getState();
+        }
+        else if (value instanceof IdEvent)
+        {
+            return ((IdEvent) value).getState();
         }
         else
         {

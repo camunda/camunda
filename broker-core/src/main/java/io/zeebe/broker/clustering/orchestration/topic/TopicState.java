@@ -15,25 +15,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.util;
+package io.zeebe.broker.clustering.orchestration.topic;
 
-import java.util.stream.Stream;
-
-import io.zeebe.broker.logstreams.processor.TypedEvent;
-import io.zeebe.broker.system.log.PartitionEvent;
-import io.zeebe.broker.system.log.PartitionState;
-import io.zeebe.test.util.stream.StreamWrapper;
-
-public class PartitionEventStream extends StreamWrapper<TypedEvent<PartitionEvent>>
+public enum TopicState
 {
 
-    public PartitionEventStream(Stream<TypedEvent<PartitionEvent>> wrappedStream)
-    {
-        super(wrappedStream);
-    }
-
-    public PartitionEventStream inState(PartitionState state)
-    {
-        return new PartitionEventStream(filter(e -> e.getValue().getState() == state));
-    }
+    CREATE,
+    CREATING,
+    CREATE_REJECTED,
+    CREATE_COMPLETE,
+    CREATE_COMPLETE_REJECTED,
+    CREATED
 }

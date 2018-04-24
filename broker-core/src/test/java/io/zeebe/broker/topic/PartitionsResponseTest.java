@@ -27,7 +27,7 @@ import org.msgpack.jackson.dataformat.MessagePackFactory;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.zeebe.broker.system.log.PartitionsResponse;
+import io.zeebe.broker.clustering.orchestration.topic.PartitionsResponse;
 import io.zeebe.util.buffer.BufferUtil;
 
 public class PartitionsResponseTest

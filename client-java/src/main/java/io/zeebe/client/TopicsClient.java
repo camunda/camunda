@@ -51,6 +51,7 @@ public interface TopicsClient
      * Creates a new topic with the given name and number of partitions.
      */
     Request<Event> create(String topicName, int partitions);
+    Request<Event> create(String topicName, int partitions, int replicationFactor);
 
     /**
      * Requests all topics. Can be used to inspect which topics and partitions have been created.

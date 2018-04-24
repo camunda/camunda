@@ -27,29 +27,21 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.zeebe.broker.it.ClientRule;
+import io.zeebe.broker.it.EmbeddedBrokerRule;
+import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.event.*;
+import io.zeebe.client.task.impl.CreateTaskCommandImpl;
+import io.zeebe.client.topic.Topic;
+import io.zeebe.client.topic.Topics;
+import io.zeebe.test.util.TestUtil;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import io.zeebe.broker.it.ClientRule;
-import io.zeebe.broker.it.EmbeddedBrokerRule;
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.event.GeneralEvent;
-import io.zeebe.client.event.PollableTopicSubscription;
-import io.zeebe.client.event.TaskEvent;
-import io.zeebe.client.event.TopicEventType;
-import io.zeebe.client.event.TopicSubscription;
-import io.zeebe.client.event.UniversalEventHandler;
-import io.zeebe.client.task.impl.CreateTaskCommandImpl;
-import io.zeebe.client.topic.Topic;
-import io.zeebe.client.topic.Topics;
-import io.zeebe.client.topic.impl.TopicEventImpl;
-import io.zeebe.test.util.TestUtil;
 
 public class TopicSubscriptionTest
 {
@@ -513,6 +505,7 @@ public class TopicSubscriptionTest
         // given
         final String anotherTopicName = "another-topic";
         client.topics().create(anotherTopicName, 1).execute();
+        clientRule.waitUntilTopicsExists(anotherTopicName);
 
         client.topics().newSubscription(clientRule.getDefaultTopic())
             .handler(recordingHandler)
@@ -534,7 +527,8 @@ public class TopicSubscriptionTest
     {
         // given
         final String anotherTopicName = "another-topic";
-        final TopicEventImpl event = (TopicEventImpl) client.topics().create(anotherTopicName, 1).execute();
+        client.topics().create(anotherTopicName, 1).execute();
+        clientRule.waitUntilTopicsExists(anotherTopicName);
         final int anotherPartitionId = 2;
 
         final TopicSubscription topic0subscription = client.topics().newSubscription(clientRule.getDefaultTopic())
@@ -647,6 +641,7 @@ public class TopicSubscriptionTest
         final String topicName = "pasta al forno";
         final int numPartitions = 2;
         client.topics().create(topicName, numPartitions).execute();
+        clientRule.waitUntilTopicsExists(topicName);
 
         final Topics topics = client.topics().getTopics().execute();
         final Topic topic = topics.getTopics().stream()

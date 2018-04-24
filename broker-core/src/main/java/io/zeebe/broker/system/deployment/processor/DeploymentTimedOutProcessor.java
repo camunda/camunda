@@ -64,12 +64,14 @@ public class DeploymentTimedOutProcessor implements TypedEventProcessor<Deployme
 
         if (pendingDeployment != null && !pendingDeployment.isResolved())
         {
-            event.getValue().setState(REJECT);
+            final DeploymentEvent deploymentEvent = event.getValue();
+            deploymentEvent.setState(REJECT);
 
             workflowKeys.clear();
             collectWorkflowKeysForDeployment(event.getKey());
 
-            LOG.info("Creation of deployment with key '{}' timed out. Delete containg workflows with keys: {}", event.getKey(), workflowKeys);
+            LOG.info("Creation of deployment with key '{}' timed out. Delete containing workflows with keys: {}", event.getKey(), workflowKeys);
+            deploymentEvent.setErrorMessage("Creation of deployment with key '" + event.getKey() + "' timed out. Delete containing workflows with keys: " + workflowKeys);
         }
 
         if (!event.getMetadata().hasRequestMetadata())

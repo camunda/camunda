@@ -29,8 +29,7 @@ import java.util.stream.StreamSupport;
 
 import io.zeebe.broker.incident.data.IncidentEvent;
 import io.zeebe.broker.logstreams.processor.TypedEvent;
-import io.zeebe.broker.system.log.PartitionEvent;
-import io.zeebe.broker.system.log.TopicEvent;
+import io.zeebe.broker.clustering.orchestration.topic.TopicEvent;
 import io.zeebe.broker.task.data.TaskEvent;
 import io.zeebe.broker.topic.Events;
 import io.zeebe.broker.topic.StreamProcessorControl;
@@ -58,7 +57,6 @@ public class TestStreams
     {
         EVENT_TYPES.put(DeploymentEvent.class, EventType.DEPLOYMENT_EVENT);
         EVENT_TYPES.put(IncidentEvent.class, EventType.INCIDENT_EVENT);
-        EVENT_TYPES.put(PartitionEvent.class, EventType.PARTITION_EVENT);
         EVENT_TYPES.put(TaskEvent.class, EventType.TASK_EVENT);
         EVENT_TYPES.put(TopicEvent.class, EventType.TOPIC_EVENT);
         EVENT_TYPES.put(WorkflowEvent.class, EventType.WORKFLOW_EVENT);
@@ -264,12 +262,6 @@ public class TestStreams
         public void blockAfterTopicEvent(Predicate<TypedEvent<TopicEvent>> test)
         {
             blockAfterEvent(e -> Events.isTopicEvent(e) && test.test(CopiedTypedEvent.toTypedEvent(e, TopicEvent.class)));
-        }
-
-        @Override
-        public void blockAfterPartitionEvent(Predicate<TypedEvent<PartitionEvent>> test)
-        {
-            blockAfterEvent(e -> Events.isPartitionEvent(e) && test.test(CopiedTypedEvent.toTypedEvent(e, PartitionEvent.class)));
         }
 
         @Override

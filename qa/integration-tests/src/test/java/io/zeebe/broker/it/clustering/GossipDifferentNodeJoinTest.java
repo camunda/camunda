@@ -15,6 +15,11 @@
  */
 package io.zeebe.broker.it.clustering;
 
+import static io.zeebe.broker.it.clustering.ClusteringRule.*;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.List;
+
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.client.clustering.impl.TopologyBroker;
 import io.zeebe.test.util.AutoCloseableRule;
@@ -25,23 +30,15 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 
-import java.util.List;
-
-import static io.zeebe.broker.it.clustering.ClusteringRule.*;
-import static org.assertj.core.api.Assertions.assertThat;
-
-@Ignore
 public class GossipDifferentNodeJoinTest
 {
-    public static final String BROKER_4_TOML = "zeebe.cluster.4.cfg.toml";
-
-    private static final int PARTITION_COUNT = 5;
+    private static final int PARTITION_COUNT = 3;
 
     public AutoCloseableRule closeables = new AutoCloseableRule();
     public Timeout testTimeout = Timeout.seconds(30);
     public ClientRule clientRule = new ClientRule(false);
 
-    private SocketAddress[] brokerAddresses = new SocketAddress[]{BROKER_1_CLIENT_ADDRESS, BROKER_2_CLIENT_ADDRESS, BROKER_3_CLIENT_ADDRESS};
+    private SocketAddress[] brokerAddresses = new SocketAddress[]{BROKER_1_CLIENT_ADDRESS, BROKER_2_CLIENT_ADDRESS, BROKER_4_CLIENT_ADDRESS};
     private String[] brokerConfigs = new String[]{BROKER_1_TOML, BROKER_2_TOML, BROKER_4_TOML};
 
     public ClusteringRule clusteringRule = new ClusteringRule(closeables, clientRule, brokerAddresses, brokerConfigs);
@@ -63,8 +60,8 @@ public class GossipDifferentNodeJoinTest
 
         // then
         assertThat(topologyBrokers).containsExactlyInAnyOrder(ClusteringRule.BROKER_1_CLIENT_ADDRESS,
-                                                              ClusteringRule.BROKER_3_CLIENT_ADDRESS,
-                                                              ClusteringRule.BROKER_2_CLIENT_ADDRESS);
+                                                              ClusteringRule.BROKER_2_CLIENT_ADDRESS,
+                                                              ClusteringRule.BROKER_4_CLIENT_ADDRESS);
     }
 
     @Test
@@ -84,7 +81,7 @@ public class GossipDifferentNodeJoinTest
     public void shouldRemoveMemberFromTopology()
     {
         // given
-        final SocketAddress brokerAddress = ClusteringRule.BROKER_3_CLIENT_ADDRESS;
+        final SocketAddress brokerAddress = ClusteringRule.BROKER_4_CLIENT_ADDRESS;
         final SocketAddress[] otherBrokers = clusteringRule.getOtherBrokers(brokerAddress);
 
         // when
@@ -113,20 +110,21 @@ public class GossipDifferentNodeJoinTest
     }
 
     @Test
+    @Ignore
     public void shouldReAddToCluster()
     {
         // given
-        clusteringRule.stopBroker(ClusteringRule.BROKER_3_CLIENT_ADDRESS);
+        clusteringRule.stopBroker(ClusteringRule.BROKER_4_CLIENT_ADDRESS);
 
         // when
-        clusteringRule.restartBroker(ClusteringRule.BROKER_3_CLIENT_ADDRESS);
+        clusteringRule.restartBroker(ClusteringRule.BROKER_4_CLIENT_ADDRESS);
 
         // then
         final List<SocketAddress> topologyBrokers = clusteringRule.getBrokersInCluster();
 
         assertThat(topologyBrokers).containsExactlyInAnyOrder(ClusteringRule.BROKER_1_CLIENT_ADDRESS,
-                                                              ClusteringRule.BROKER_3_CLIENT_ADDRESS,
-                                                              ClusteringRule.BROKER_2_CLIENT_ADDRESS);
+                                                              ClusteringRule.BROKER_2_CLIENT_ADDRESS,
+                                                              ClusteringRule.BROKER_4_CLIENT_ADDRESS);
     }
 
 }

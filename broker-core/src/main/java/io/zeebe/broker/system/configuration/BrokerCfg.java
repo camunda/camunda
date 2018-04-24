@@ -45,10 +45,12 @@ public class BrokerCfg
     {
         return bootstrap;
     }
+
     public void setBootstrap(int bootstrap)
     {
         this.bootstrap = bootstrap;
     }
+
     public NetworkCfg getNetwork()
     {
         return network;

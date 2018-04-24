@@ -15,12 +15,16 @@
  */
 package io.zeebe.broker.it;
 
-import java.util.List;
-import java.util.Properties;
+import static io.zeebe.test.util.TestUtil.doRepeatedly;
+
+import java.util.*;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import io.zeebe.client.clustering.impl.BrokerPartitionState;
 import io.zeebe.client.clustering.impl.TopologyBroker;
+import io.zeebe.client.topic.Partition;
+import io.zeebe.client.topic.Topic;
 import org.junit.rules.ExternalResource;
 
 import io.zeebe.client.TasksClient;
@@ -71,6 +75,8 @@ public class ClientRule extends ExternalResource
     private void createDefaultTopic()
     {
         client.topics().create(DEFAULT_TOPIC, 1).execute();
+        waitUntilTopicsExists(DEFAULT_TOPIC);
+
         final TopologyResponse topology = client.requestTopology().execute();
 
         defaultPartition = -1;
@@ -113,6 +119,22 @@ public class ClientRule extends ExternalResource
     {
         final ClientTransport transport = ((ZeebeClientImpl) client).getTransport();
         transport.interruptAllChannels();
+    }
+
+    public void waitUntilTopicsExists(final String... topicNames)
+    {
+        final List<String> expectedTopicNames = Arrays.asList(topicNames);
+
+        doRepeatedly(this::topicsByName)
+            .until(t -> t.keySet().containsAll(expectedTopicNames));
+    }
+
+    public Map<String, List<Partition>> topicsByName()
+    {
+        return topics().getTopics().execute()
+                       .getTopics()
+                       .stream()
+                       .collect(Collectors.toMap(Topic::getName, Topic::getPartitions));
     }
 
     public TopicsClient topics()

@@ -24,25 +24,27 @@ import org.agrona.DirectBuffer;
 
 public class PartitionInfo
 {
-    private final DirectBuffer topicName;
+    private final String topicName;
+    private final DirectBuffer topicNameBuffer;
     private final int paritionId;
     private final int replicationFactor;
 
-    public PartitionInfo(final DirectBuffer topicName, final int paritionId, final int replicationFactor)
+    public PartitionInfo(final DirectBuffer topicNameBuffer, final int paritionId, final int replicationFactor)
     {
-        this.topicName = topicName;
+        this.topicName = BufferUtil.bufferAsString(topicNameBuffer);
+        this.topicNameBuffer = topicNameBuffer;
         this.paritionId = paritionId;
         this.replicationFactor = replicationFactor;
     }
 
-    public DirectBuffer getTopicName()
+    public String getTopicName()
     {
         return topicName;
     }
 
-    public String getTopicNameAsString()
+    public DirectBuffer getTopicNameBuffer()
     {
-        return BufferUtil.bufferAsString(topicName);
+        return topicNameBuffer;
     }
 
     public int getPartitionId()
@@ -67,18 +69,18 @@ public class PartitionInfo
             return false;
         }
         final PartitionInfo that = (PartitionInfo) o;
-        return paritionId == that.paritionId && replicationFactor == that.replicationFactor && BufferUtil.equals(topicName, that.topicName);
+        return paritionId == that.paritionId && replicationFactor == that.replicationFactor && BufferUtil.equals(topicNameBuffer, that.topicNameBuffer);
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash(topicName, paritionId, replicationFactor);
+        return Objects.hash(topicNameBuffer, paritionId, replicationFactor);
     }
 
     @Override
     public String toString()
     {
-        return String.format("Partition{topic=%s, partitionId=%d, replicationFactor=%d}", getTopicNameAsString(), paritionId, replicationFactor);
+        return String.format("Partition{topic=%s, partitionId=%d, replicationFactor=%d}", topicName, paritionId, replicationFactor);
     }
 }

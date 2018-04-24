@@ -144,6 +144,7 @@ public class InvitationRequest implements BufferWriter, BufferReader
 
         final MembersEncoder encoder = bodyEncoder.wrap(buffer, offset)
             .partitionId(partitionId)
+            .replicationFactor(replicationFactor)
             .term(term)
             .membersCount(size);
 
@@ -170,6 +171,7 @@ public class InvitationRequest implements BufferWriter, BufferReader
         bodyDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
 
         partitionId = bodyDecoder.partitionId();
+        replicationFactor = bodyDecoder.replicationFactor();
         term = bodyDecoder.term();
 
         members.clear();

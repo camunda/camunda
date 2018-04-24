@@ -17,22 +17,16 @@
  */
 package io.zeebe.broker.system.deployment.processor;
 
-import org.agrona.DirectBuffer;
-import org.agrona.collections.IntArrayList;
-
+import io.zeebe.broker.clustering.orchestration.topic.TopicEvent;
+import io.zeebe.broker.clustering.orchestration.topic.TopicState;
 import io.zeebe.broker.logstreams.processor.TypedEvent;
 import io.zeebe.broker.logstreams.processor.TypedEventProcessor;
 import io.zeebe.broker.logstreams.processor.TypedEventStreamProcessorBuilder;
 import io.zeebe.broker.system.deployment.data.TopicPartitions;
-import io.zeebe.broker.system.deployment.data.TopicPartitions.TopicPartition;
-import io.zeebe.broker.system.deployment.data.TopicPartitions.TopicPartitionIterator;
-import io.zeebe.broker.system.log.PartitionEvent;
-import io.zeebe.broker.system.log.PartitionState;
-import io.zeebe.broker.system.log.TopicEvent;
-import io.zeebe.broker.system.log.TopicState;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.util.IntObjectBiConsumer;
-import io.zeebe.util.buffer.BufferUtil;
+import org.agrona.DirectBuffer;
+import org.agrona.collections.IntArrayList;
 
 public class PartitionCollector
 {
@@ -55,7 +49,6 @@ public class PartitionCollector
     public void registerWith(TypedEventStreamProcessorBuilder builder)
     {
         builder
-            .onEvent(EventType.PARTITION_EVENT, PartitionState.CREATED, new PartitionCreatedProcessor())
             .onEvent(EventType.TOPIC_EVENT, TopicState.CREATED, new TopicCreatedProcessor())
             .withStateResource(partitions.getRawMap());
     }
@@ -72,20 +65,10 @@ public class PartitionCollector
         @Override
         public void processEvent(TypedEvent<TopicEvent> event)
         {
+            final TopicEvent topicEvent = event.getValue();
+
             partitionIds.clear();
-
-            final DirectBuffer topicName = event.getValue().getName();
-
-            final TopicPartitionIterator iterator = partitions.iterator();
-            while (iterator.hasNext())
-            {
-                final TopicPartition partition = iterator.next();
-
-                if (BufferUtil.equals(topicName, partition.getTopicName()))
-                {
-                    partitionIds.addInt(partition.getPartitionId());
-                }
-            }
+            topicEvent.getPartitionIds().forEach(id -> partitionIds.addInt(id.getValue()));
         }
 
         @Override
@@ -102,23 +85,4 @@ public class PartitionCollector
 
     }
 
-    protected class PartitionCreatedProcessor implements TypedEventProcessor<PartitionEvent>
-    {
-        @Override
-        public void processEvent(TypedEvent<PartitionEvent> event)
-        {
-            // just add the created partition to the index
-        }
-
-        @Override
-        public void updateState(TypedEvent<PartitionEvent> event)
-        {
-            final PartitionEvent partitionEvent = event.getValue();
-            final DirectBuffer topicName = partitionEvent.getTopicName();
-            final int partitionId = partitionEvent.getPartitionId();
-
-            partitions.put(partitionId, topicName, TopicPartitions.STATE_CREATING);
-        }
-
-    }
 }

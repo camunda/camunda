@@ -15,30 +15,29 @@
  */
 package io.zeebe.broker.it.clustering;
 
-import io.zeebe.broker.it.ClientRule;
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.clustering.impl.TopologyBroker;
-import io.zeebe.client.event.TaskEvent;
-import io.zeebe.client.topic.Topic;
-import io.zeebe.client.topic.Topics;
-import io.zeebe.test.util.AutoCloseableRule;
-import io.zeebe.transport.SocketAddress;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.Timeout;
+import static io.zeebe.test.util.TestUtil.doRepeatedly;
+import static io.zeebe.test.util.TestUtil.waitUntil;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
-import static io.zeebe.test.util.TestUtil.doRepeatedly;
-import static io.zeebe.test.util.TestUtil.waitUntil;
-import static org.assertj.core.api.Assertions.assertThat;
+import io.zeebe.broker.it.ClientRule;
+import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.clustering.impl.TopologyBroker;
+import io.zeebe.client.event.TaskEvent;
+import io.zeebe.client.topic.Partition;
+import io.zeebe.client.topic.Topic;
+import io.zeebe.client.topic.Topics;
+import io.zeebe.test.util.AutoCloseableRule;
+import io.zeebe.transport.SocketAddress;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
+import org.junit.rules.Timeout;
 
-@Ignore
 public class CreateTopicClusteredTest
 {
     private static final int PARTITION_COUNT = 5;
@@ -85,18 +84,15 @@ public class CreateTopicClusteredTest
         // when
         final Topics topicsResponse =
             doRepeatedly(() -> client.topics().getTopics().execute())
-                .until((topics -> topics.getTopics().size() == 1));
+                .until((topics -> topics.getTopics().size() == 2));
 
         final List<Topic> topics = topicsResponse.getTopics();
 
         // then
-        assertThat(topics.size()).isEqualTo(1);
-        assertThat(topics.get(0).getName()).isEqualTo("foo");
-        final List<Integer> partitions = topics.get(0)
-                                                 .getPartitions()
-                                                 .stream()
-                                                 .map((partition -> partition.getId()))
-                                                 .collect(Collectors.toList());
+        final List<Integer> partitions = topics.stream().filter(t -> t.getName().equals("foo"))
+              .flatMap(t -> t.getPartitions().stream())
+              .map(Partition::getId)
+              .collect(Collectors.toList());
 
         assertThat(partitions.size()).isEqualTo(5);
         assertThat(partitions).containsExactlyInAnyOrder(1, 2, 3, 4, 5);
@@ -120,7 +116,7 @@ public class CreateTopicClusteredTest
     {
         // given
         final int partitionsCount = 1;
-        clusteringRule.createTopic("foo", partitionsCount);
+        clusteringRule.createTopic("foo", partitionsCount, 3);
         final TaskEvent taskEvent = client.tasks().create("foo", "bar").execute();
         final int partitionId = taskEvent.getMetadata().getPartitionId();
 
@@ -136,12 +132,11 @@ public class CreateTopicClusteredTest
     }
 
     @Test
-    @Ignore
     public void shouldCompleteTaskAfterNewLeaderWasChosen() throws Exception
     {
         // given
         final int partitionsCount = 1;
-        clusteringRule.createTopic("foo", partitionsCount);
+        clusteringRule.createTopic("foo", partitionsCount, 3);
         final TaskEvent taskEvent = client.tasks().create("foo", "bar").execute();
         final int partitionId = taskEvent.getMetadata().getPartitionId();
 
@@ -169,7 +164,7 @@ public class CreateTopicClusteredTest
               .lockTime(5000)
               .open();
 
-        waitUntil(() -> taskCompleted.isDone());
+        waitUntil(taskCompleted::isDone);
 
         assertThat(taskCompleted).isCompleted();
         final TaskEvent completedTask = taskCompleted.get();

@@ -15,12 +15,19 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.system.log;
+package io.zeebe.broker.clustering.orchestration.state;
 
-public enum TopicState
+public interface KnownTopicsListener
 {
 
-    CREATE,
-    CREATE_REJECTED,
-    CREATED
+    default void topicAdded(String topicName)
+    {
+
+    }
+
+    default void topicCreated(String topicName)
+    {
+
+    }
+
 }

@@ -96,9 +96,11 @@ public class DeploymentCreateProcessor implements TypedEventProcessor<Deployment
         {
             if (hasPendingDeploymentForTopic(topicName))
             {
+                final String name = bufferAsString(topicName);
                 // reject deployment if a previous deployment is not completed yet
                 // -- otherwise, we could run into problems with the workflow versions when the previous deployment is rejected
-                LOG.info("Cannot create deployment: pending deployment found for topic with name '{}'.", bufferAsString(topicName));
+                LOG.info("Cannot create deployment: pending deployment found for topic with name '{}'.", name);
+                deploymentEvent.setErrorMessage("Pending deployment found for topic with name " + name);
             }
             else
             {
@@ -107,7 +109,9 @@ public class DeploymentCreateProcessor implements TypedEventProcessor<Deployment
         }
         else
         {
-            LOG.info("Cannot create deployment: no topic found with name '{}'.", bufferAsString(topicName));
+            final String name = bufferAsString(topicName);
+            LOG.info("Cannot create deployment: no topic found with name '{}'.", name);
+            deploymentEvent.setErrorMessage("No topic found with name " + name);
         }
 
         deploymentEvent.setState(success ? VALIDATED : REJECTED);

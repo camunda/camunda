@@ -113,7 +113,7 @@ public class Topology implements ReadableTopology
     @Override
     public List<NodeInfo> getFollowers(int partitionId)
     {
-        return partitionFollowers.get(partitionId);
+        return partitionFollowers.getOrDefault(partitionId, Collections.emptyList());
     }
 
     @Override
@@ -251,7 +251,7 @@ public class Topology implements ReadableTopology
 
             for (PartitionInfo partition : member.getLeaders())
             {
-                final DirectBuffer topicName = BufferUtil.cloneBuffer(partition.getTopicName());
+                final DirectBuffer topicName = BufferUtil.cloneBuffer(partition.getTopicNameBuffer());
 
                 broker.partitionStates()
                     .add()
@@ -263,7 +263,7 @@ public class Topology implements ReadableTopology
 
             for (PartitionInfo partition : member.getFollowers())
             {
-                final DirectBuffer topicName = BufferUtil.cloneBuffer(partition.getTopicName());
+                final DirectBuffer topicName = BufferUtil.cloneBuffer(partition.getTopicNameBuffer());
 
                 broker.partitionStates()
                     .add()

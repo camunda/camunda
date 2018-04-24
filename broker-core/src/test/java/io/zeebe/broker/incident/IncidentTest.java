@@ -90,6 +90,7 @@ public class IncidentTest
     public void init() throws Exception
     {
         testClient = apiRule.topic();
+        apiRule.waitForTopic("default-topic", 1);
     }
 
     @Test

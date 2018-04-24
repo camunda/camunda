@@ -30,8 +30,8 @@ import org.junit.rules.TemporaryFolder;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import io.zeebe.broker.system.log.TopicEvent;
-import io.zeebe.broker.system.log.TopicState;
+import io.zeebe.broker.clustering.orchestration.topic.TopicEvent;
+import io.zeebe.broker.clustering.orchestration.topic.TopicState;
 import io.zeebe.broker.topic.Events;
 import io.zeebe.broker.topic.StreamProcessorControl;
 import io.zeebe.broker.util.TestStreams;

@@ -15,6 +15,8 @@
  */
 package io.zeebe.broker.it.clustering;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
@@ -33,12 +35,9 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-@Ignore
 public class DeploymentClusteredTest
 {
-    private static final int PARTITION_COUNT = 5;
+    private static final int PARTITION_COUNT = 3;
 
     private static final WorkflowDefinition INVALID_WORKFLOW = Bpmn.createExecutableWorkflow("invalid").done();
 
@@ -110,7 +109,6 @@ public class DeploymentClusteredTest
     public void shouldDeployWorkflowAndCreateInstances()
     {
         // given
-        final int workCount = 10 * PARTITION_COUNT;
         clusteringRule.createTopic("test", PARTITION_COUNT);
 
         // when
@@ -119,7 +117,7 @@ public class DeploymentClusteredTest
             .execute();
 
         // then
-        for (int p = 0; p < workCount; p++)
+        for (int p = 0; p < PARTITION_COUNT; p++)
         {
             final WorkflowInstanceEvent workflowInstanceEvent = client.workflows()
                                                                       .create("test")
@@ -150,11 +148,12 @@ public class DeploymentClusteredTest
     }
 
     @Test
+    @Ignore
     public void shouldCreateInstancesOnRestartedBroker()
     {
         // given
-        final int workCount = PARTITION_COUNT;
         final Topic topic = clusteringRule.createTopic("test", PARTITION_COUNT);
+
         clusteringRule.stopBroker(ClusteringRule.BROKER_3_CLIENT_ADDRESS);
         client.workflows()
               .deploy("test")
@@ -188,6 +187,7 @@ public class DeploymentClusteredTest
     }
 
     @Test
+    @Ignore
     public void shouldDeployAfterRestartBroker()
     {
         // given
@@ -202,24 +202,6 @@ public class DeploymentClusteredTest
                                                       .addWorkflowModel(WORKFLOW, "workflow.bpmn")
                                                       .execute();
 
-        assertThat(deploymentEvent.getDeployedWorkflows().size()).isEqualTo(1);
-        assertThat(deploymentEvent.getErrorMessage()).isEmpty();
-    }
-
-    @Test
-    @Ignore("https://github.com/zeebe-io/zeebe/issues/644")
-    public void shouldDeployOnTopicWithManyPartitions()
-    {
-        // given
-        clusteringRule.createTopic("test", 15);
-
-        // when
-        final DeploymentEvent deploymentEvent = client.workflows()
-                                                      .deploy("test")
-                                                      .addWorkflowModel(WORKFLOW, "workflow.bpmn")
-                                                      .execute();
-
-        // then
         assertThat(deploymentEvent.getDeployedWorkflows().size()).isEqualTo(1);
         assertThat(deploymentEvent.getErrorMessage()).isEmpty();
     }

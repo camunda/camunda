@@ -23,10 +23,7 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.agrona.DirectBuffer;
@@ -68,29 +65,11 @@ public class CreateTopicTest
         // then
         assertThat(response.getEvent())
             .containsExactly(
-                entry("state", "CREATED"),
+                entry("state", "CREATING"),
                 entry("name", topicName),
                 entry("partitions", 2),
-                entry("replicationFactor", 1)
-            );
-    }
-
-    @Test
-    public void shouldCreateTopicWith64Partitions()
-    {
-        // given
-        final String topicName = "newTopic";
-
-        // when
-        final ExecuteCommandResponse response = apiRule.createTopic(topicName, 64);
-
-        // then
-        assertThat(response.getEvent())
-            .containsExactly(
-                entry("state", "CREATED"),
-                entry("name", topicName),
-                entry("partitions", 64),
-                entry("replicationFactor", 1)
+                entry("replicationFactor", 1),
+                entry("partitionIds", Collections.EMPTY_LIST)
             );
     }
 
@@ -106,7 +85,8 @@ public class CreateTopicTest
                 entry("state", "CREATE_REJECTED"),
                 entry("name", Protocol.SYSTEM_TOPIC),
                 entry("partitions", 2),
-                entry("replicationFactor", 1)
+                entry("replicationFactor", 1),
+                entry("partitionIds", Collections.EMPTY_LIST)
             );
     }
 
@@ -126,7 +106,8 @@ public class CreateTopicTest
                 entry("state", "CREATE_REJECTED"),
                 entry("name", topicName),
                 entry("partitions", 2),
-                entry("replicationFactor", 1)
+                entry("replicationFactor", 1),
+                entry("partitionIds", Collections.EMPTY_LIST)
             );
     }
 
@@ -146,7 +127,8 @@ public class CreateTopicTest
                 entry("state", "CREATE_REJECTED"),
                 entry("name", topicName),
                 entry("partitions", numberOfPartitions),
-                entry("replicationFactor", 1)
+                entry("replicationFactor", 1),
+                entry("partitionIds", Collections.EMPTY_LIST)
             );
     }
 
@@ -166,7 +148,48 @@ public class CreateTopicTest
                 entry("state", "CREATE_REJECTED"),
                 entry("name", topicName),
                 entry("partitions", numberOfPartitions),
-                entry("replicationFactor", 1)
+                entry("replicationFactor", 1),
+                entry("partitionIds", Collections.EMPTY_LIST)
+            );
+    }
+
+    @Test
+    public void shouldNotCreateTopicWithZeroReplicationFactor()
+    {
+        // given
+        final String topicName = "newTopic";
+
+        // when
+        final ExecuteCommandResponse response = apiRule.createTopic(topicName, 1, 0);
+
+        // then
+        assertThat(response.getEvent())
+            .containsExactly(
+                entry("state", "CREATE_REJECTED"),
+                entry("name", topicName),
+                entry("partitions", 1),
+                entry("replicationFactor", 0),
+                entry("partitionIds", Collections.EMPTY_LIST)
+            );
+    }
+
+    @Test
+    public void shouldNotCreateTopicWithNegativeReplicationFactor()
+    {
+        // given
+        final String topicName = "newTopic";
+
+        // when
+        final ExecuteCommandResponse response = apiRule.createTopic(topicName, 1, -1);
+
+        // then
+        assertThat(response.getEvent())
+            .containsExactly(
+                entry("state", "CREATE_REJECTED"),
+                entry("name", topicName),
+                entry("partitions", 1),
+                entry("replicationFactor", -1),
+                entry("partitionIds", Collections.EMPTY_LIST)
             );
     }
 
@@ -184,10 +207,11 @@ public class CreateTopicTest
         // then this is successful
         assertThat(response.getEvent())
             .containsExactly(
-                entry("state", "CREATED"),
+                entry("state", "CREATING"),
                 entry("name", topicName),
                 entry("partitions", 1),
-                entry("replicationFactor", 1)
+                entry("replicationFactor", 1),
+                entry("partitionIds", Collections.EMPTY_LIST)
             );
     }
 

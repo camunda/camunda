@@ -17,6 +17,13 @@
  */
 package io.zeebe.broker.transport.controlmessage;
 
+import static io.zeebe.broker.services.DispatcherSubscriptionNames.TRANSPORT_CONTROL_MESSAGE_HANDLER_SUBSCRIPTION;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BooleanSupplier;
+
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.transport.clientapi.ErrorResponseWriter;
 import io.zeebe.dispatcher.Dispatcher;
@@ -38,13 +45,6 @@ import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BooleanSupplier;
-
-import static io.zeebe.broker.services.DispatcherSubscriptionNames.TRANSPORT_CONTROL_MESSAGE_HANDLER_SUBSCRIPTION;
 
 public class ControlMessageHandlerManager extends Actor implements FragmentHandler
 {
@@ -81,8 +81,7 @@ public class ControlMessageHandlerManager extends Actor implements FragmentHandl
 
         for (ControlMessageHandler handler : handlers)
         {
-            final ControlMessageType messageType = handler.getMessageType();
-            handlersByTypeId.put(messageType.value(), handler);
+            addHandler(handler);
         }
     }
 
@@ -120,8 +119,8 @@ public class ControlMessageHandlerManager extends Actor implements FragmentHandl
 
 
     private final CompletableActorFuture<Void> openFuture = new CompletableActorFuture<>();
-    private final AtomicBoolean isOpenend = new AtomicBoolean(false);
 
+    private final AtomicBoolean isOpenend = new AtomicBoolean(false);
     public ActorFuture<Void> openAsync()
     {
         openFuture.close();
@@ -167,6 +166,17 @@ public class ControlMessageHandlerManager extends Actor implements FragmentHandl
         {
             return CompletableActorFuture.completed(null);
         }
+    }
+
+    private void addHandler(final ControlMessageHandler handler)
+    {
+        final ControlMessageType messageType = handler.getMessageType();
+        handlersByTypeId.put(messageType.value(), handler);
+    }
+
+    public void registerHandler(final ControlMessageHandler handler)
+    {
+        actor.call(() -> addHandler(handler));
     }
 
     @Override

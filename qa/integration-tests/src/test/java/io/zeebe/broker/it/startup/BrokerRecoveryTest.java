@@ -504,11 +504,13 @@ public class BrokerRecoveryTest
         final ZeebeClient client = clientRule.getClient();
 
         client.topics().create("foo", 2).execute();
+        clientRule.waitUntilTopicsExists("foo");
 
         deleteSnapshotsAndRestart();
 
         // when
         client.topics().create("bar", 2).execute();
+        clientRule.waitUntilTopicsExists("bar");
 
         // then
         final TopologyResponse topology = client.requestTopology().execute();

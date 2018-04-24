@@ -20,8 +20,7 @@ package io.zeebe.broker.util;
 import java.util.stream.Stream;
 
 import io.zeebe.broker.incident.data.IncidentEvent;
-import io.zeebe.broker.system.log.PartitionEvent;
-import io.zeebe.broker.system.log.TopicEvent;
+import io.zeebe.broker.clustering.orchestration.topic.TopicEvent;
 import io.zeebe.broker.task.data.TaskEvent;
 import io.zeebe.broker.topic.Events;
 import io.zeebe.broker.workflow.data.DeploymentEvent;
@@ -56,13 +55,6 @@ public class TypedEventStream extends StreamWrapper<LoggedEvent>
         return new DeploymentEventStream(
             filter(Events::isDeploymentEvent)
             .map(e -> CopiedTypedEvent.toTypedEvent(e, DeploymentEvent.class)));
-    }
-
-    public PartitionEventStream onlyPartitionEvents()
-    {
-        return new PartitionEventStream(
-            filter(Events::isPartitionEvent)
-            .map(e -> CopiedTypedEvent.toTypedEvent(e, PartitionEvent.class)));
     }
 
 

@@ -15,19 +15,14 @@
  */
 package io.zeebe.broker.it.topic;
 
+import static io.zeebe.protocol.Protocol.SYSTEM_TOPIC;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
-import org.junit.rules.Timeout;
 
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
@@ -37,10 +32,14 @@ import io.zeebe.client.event.TaskEvent;
 import io.zeebe.client.topic.Partition;
 import io.zeebe.client.topic.Topic;
 import io.zeebe.client.topic.Topics;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
+import org.junit.rules.Timeout;
 
 public class CreateTopicTest
 {
-
 
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
@@ -74,37 +73,46 @@ public class CreateTopicTest
     public void shouldCreateMultipleTopicsInParallel() throws Exception
     {
         // given
-        final TopicsClient topics = clientRule.topics();
+        final TopicsClient client = clientRule.topics();
 
         // when
-        final Future<Event> foo = topics.create("foo", 2).executeAsync();
-        final Future<Event> bar = topics.create("bar", 2).executeAsync();
+        final Future<Event> foo = client.create("foo", 2).executeAsync();
+        final Future<Event> bar = client.create("bar", 2).executeAsync();
 
         // then
-        assertThat(bar.get(10, TimeUnit.SECONDS).getState()).isEqualTo("CREATED");
-        assertThat(foo.get(10, TimeUnit.SECONDS).getState()).isEqualTo("CREATED");
+        assertThat(bar.get(10, TimeUnit.SECONDS).getState()).isEqualTo("CREATING");
+        assertThat(foo.get(10, TimeUnit.SECONDS).getState()).isEqualTo("CREATING");
+
+        // when
+        clientRule.waitUntilTopicsExists("foo", "bar");
+
+        // then
+        final Topics topics = client.getTopics().execute();
+
+        final Optional<Topic> fooTopic = topics.getTopics().stream().filter(t -> t.getName().equals("foo")).findFirst();
+        assertThat(fooTopic).hasValueSatisfying(t -> assertThat(t.getPartitions()).hasSize(2));
+
+        final Optional<Topic> barTopic = topics.getTopics().stream().filter(t -> t.getName().equals("bar")).findFirst();
+        assertThat(barTopic).hasValueSatisfying(t -> assertThat(t.getPartitions()).hasSize(2));
+
     }
 
     @Test
     public void shouldRequestTopics()
     {
         // given
-        final TopicsClient topics = clientRule.topics();
-        topics.create("foo", 2).execute();
+        clientRule.topics().create("foo", 2).execute();
+
+        clientRule.waitUntilTopicsExists("foo");
 
         // when
-        final Topics returnedTopics = clientRule.topics().getTopics().execute();
+        final Map<String, List<Partition>> topics = clientRule.topicsByName();
 
         // then
-        assertThat(returnedTopics.getTopics()).hasSize(2);
-        final Map<String, List<Partition>> topicsByName =
-                returnedTopics.getTopics()
-                    .stream()
-                    .collect(Collectors.toMap(Topic::getName, Topic::getPartitions));
-
-        assertThat(topicsByName.get("foo")).hasSize(2);
-        assertThat(topicsByName.get(ClientRule.DEFAULT_TOPIC)).hasSize(1);
-
+        assertThat(topics).hasSize(3);
+        assertThat(topics.get(SYSTEM_TOPIC)).hasSize(1);
+        assertThat(topics.get(clientRule.getDefaultTopic())).hasSize(1);
+        assertThat(topics.get("foo")).hasSize(2);
     }
 
 }

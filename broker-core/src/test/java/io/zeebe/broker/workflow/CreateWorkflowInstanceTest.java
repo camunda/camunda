@@ -442,7 +442,7 @@ public class CreateWorkflowInstanceTest
         final int partitions = 3;
 
         apiRule.createTopic("test", partitions);
-        final List<Integer> partitionIds = apiRule.getPartitionIds("test");
+        final List<Integer> partitionIds = apiRule.getPartitionsFromTopology("test");
 
         final WorkflowDefinition definition = Bpmn.createExecutableWorkflow("process")
             .startEvent()

@@ -486,6 +486,7 @@ public class TaskSubscriptionTest
 
         final ZeebeClient client = clientRule.getClient();
         client.topics().create(topicName, numPartitions).execute();
+        clientRule.waitUntilTopicsExists(topicName);
 
         final Topics topics = client.topics().getTopics().execute();
         final Topic topic = topics.getTopics().stream()

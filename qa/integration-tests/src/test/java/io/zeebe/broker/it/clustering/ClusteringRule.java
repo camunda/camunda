@@ -18,8 +18,12 @@ package io.zeebe.broker.it.clustering;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.*;
-import java.util.*;
+import java.io.File;
+import java.io.InputStream;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
@@ -39,27 +43,32 @@ import org.junit.rules.ExternalResource;
 
 public class ClusteringRule extends ExternalResource
 {
-    public static final int DEFAULT_REPLICATION_FACTOR = 3;
+    private static final int REPLICATION_RETRY_COUNT = 100;
+
+    public static final int DEFAULT_REPLICATION_FACTOR = 1;
+    public static final int SYSTEM_TOPIC_REPLICATION_FACTOR = 3;
 
     public static final String BROKER_1_TOML = "zeebe.cluster.1.cfg.toml";
-    public static final SocketAddress BROKER_1_CLIENT_ADDRESS = new SocketAddress("localhost", 51015);
+    public static final SocketAddress BROKER_1_CLIENT_ADDRESS = new SocketAddress("0.0.0.0", 51015);
 
     public static final String BROKER_2_TOML = "zeebe.cluster.2.cfg.toml";
-    public static final SocketAddress BROKER_2_CLIENT_ADDRESS = new SocketAddress("localhost", 41015);
+    public static final SocketAddress BROKER_2_CLIENT_ADDRESS = new SocketAddress("0.0.0.0", 41015);
 
     public static final String BROKER_3_TOML = "zeebe.cluster.3.cfg.toml";
-    public static final SocketAddress BROKER_3_CLIENT_ADDRESS = new SocketAddress("localhost", 31015);
+    public static final SocketAddress BROKER_3_CLIENT_ADDRESS = new SocketAddress("0.0.0.0", 31015);
+
+    public static final String BROKER_4_TOML = "zeebe.cluster.4.cfg.toml";
+    public static final SocketAddress BROKER_4_CLIENT_ADDRESS = new SocketAddress("0.0.0.0", 21015);
 
     private SocketAddress[] brokerAddresses = new SocketAddress[]{BROKER_1_CLIENT_ADDRESS, BROKER_2_CLIENT_ADDRESS, BROKER_3_CLIENT_ADDRESS};
     private String[] brokerConfigs = new String[]{BROKER_1_TOML, BROKER_2_TOML, BROKER_3_TOML};
-    private final int spreadCount = brokerAddresses.length * 2;
+    private final int spreadCount = brokerAddresses.length * 6;
 
     // rules
     private final AutoCloseableRule autoCloseableRule;
     private final ClientRule clientRule;
 
-    // interal
-    private int replicationFactor = DEFAULT_REPLICATION_FACTOR;
+    // internal
     private ZeebeClient zeebeClient;
     protected final Map<SocketAddress, Broker> brokers = new HashMap<>();
 
@@ -86,7 +95,7 @@ public class ClusteringRule extends ExternalResource
             brokers.put(brokerAddresses[i], startBroker(brokerConfigs[i]));
         }
 
-        waitForInternalSystemAndReplicationFactor(3);
+        waitForInternalSystemAndReplicationFactor();
 
         waitUntilBrokersInTopology(3);
     }
@@ -100,9 +109,9 @@ public class ClusteringRule extends ExternalResource
         });
     }
 
-    private void waitForInternalSystemAndReplicationFactor(int replicationFactor)
+    private void waitForInternalSystemAndReplicationFactor()
     {
-        waitForTopicPartitionReplicationFactor("internal-system", 1, replicationFactor);
+        waitForTopicPartitionReplicationFactor("internal-system", 1, SYSTEM_TOPIC_REPLICATION_FACTOR);
     }
 
     /**
@@ -140,19 +149,23 @@ public class ClusteringRule extends ExternalResource
      * and the replication factor was reached for each partition.
      * Besides that the topic request needs to be return the created topic.
      *
-     * The replication factor is per default {@link #DEFAULT_REPLICATION_FACTOR}, but can be modified with
-     * {@link #setReplicationFactor(int)}.
+     * The replication factor is per default the number of current brokers in the cluster, see {@link #getReplicationFactor()}.
      *
-     * @param topicName
-     * @param partitionCount
-     * @return
+     * @param topicName the name of the topic to create
+     * @param partitionCount to number of partitions for the new topic
+     * @return the created topic
      */
     public Topic createTopic(String topicName, int partitionCount)
     {
+        return createTopic(topicName, partitionCount, DEFAULT_REPLICATION_FACTOR);
+    }
+
+    public Topic createTopic(String topicName, int partitionCount, int replicationFactor)
+    {
         final Event topicEvent = zeebeClient.topics()
-                                         .create(topicName, partitionCount)
+                                         .create(topicName, partitionCount, replicationFactor)
                                          .execute();
-        assertThat(topicEvent.getState()).isEqualTo("CREATED");
+        assertThat(topicEvent.getState()).isEqualTo("CREATING");
 
         waitForTopicPartitionReplicationFactor(topicName, partitionCount, replicationFactor);
 
@@ -161,22 +174,12 @@ public class ClusteringRule extends ExternalResource
 
     private boolean hasPartitionsWithReplicationFactor(List<TopologyBroker> brokers, String topicName, int partitionCount, int replicationFactor)
     {
-        final Map<Integer, List<BrokerPartitionState>> brokersPerPartition = brokers.stream()
-                .flatMap(b -> b.getPartitions().stream())
-                .filter(p -> topicName.equals(p.getTopicName()))
-                .collect(Collectors.groupingBy(p -> p.getPartitionId()));
+        final long partitions = brokers.stream()
+                                       .flatMap(b -> b.getPartitions().stream())
+                                       .filter(p -> p.getTopicName().equals(topicName))
+                                       .count();
 
-        if (brokersPerPartition.size() == partitionCount)
-        {
-            return brokersPerPartition
-                    .values()
-                    .stream()
-                    .allMatch(m -> m.size() >= replicationFactor);
-        }
-        else
-        {
-            return false;
-        }
+        return partitions >= partitionCount * replicationFactor;
     }
 
     private void waitForTopicPartitionReplicationFactor(String topicName, int partitionCount, int replicationFactor)
@@ -184,7 +187,7 @@ public class ClusteringRule extends ExternalResource
         waitForSpreading(() ->
         {
             doRepeatedly(() -> zeebeClient.requestTopology().execute().getBrokers())
-                .until(topologyBrokers -> hasPartitionsWithReplicationFactor(topologyBrokers, topicName, partitionCount, replicationFactor));
+                .until(topologyBrokers -> hasPartitionsWithReplicationFactor(topologyBrokers, topicName, partitionCount, replicationFactor), REPLICATION_RETRY_COUNT);
         });
     }
 
@@ -205,8 +208,8 @@ public class ClusteringRule extends ExternalResource
 
         final InputStream config = this.getClass().getClassLoader().getResourceAsStream(configFile);
         final Broker broker = new Broker(config, base.getAbsolutePath(), null);
-        autoCloseableRule.manage(broker);
         autoCloseableRule.manage(() -> FileUtil.deleteFolder(base.getAbsolutePath()));
+        autoCloseableRule.manage(broker);
 
         return broker;
     }
@@ -232,13 +235,12 @@ public class ClusteringRule extends ExternalResource
             if (brokerAddresses[i].equals(socketAddress))
             {
                 brokers.put(socketAddress, startBroker(brokerConfigs[i]));
-
-                waitForInternalSystemAndReplicationFactor(replicationFactor);
                 break;
             }
         }
 
         waitUntilBrokerIsAddedToTopology(socketAddress);
+        waitForInternalSystemAndReplicationFactor();
     }
 
     private void waitUntilBrokerIsAddedToTopology(SocketAddress socketAddress)
@@ -323,7 +325,9 @@ public class ClusteringRule extends ExternalResource
     {
         final List<Integer> brokersLeadingPartitions = getBrokersLeadingPartitions(socketAddress);
 
-        brokers.remove(socketAddress).close();
+        final Broker removedBroker = brokers.remove(socketAddress);
+        assertThat(removedBroker).withFailMessage("Unable to find broker to remove %s", socketAddress).isNotNull();
+        removedBroker.close();
 
         waitForNewLeaderOfPartitions(brokersLeadingPartitions, socketAddress);
         waitUntilBrokerIsRemovedFromTopology(socketAddress);
@@ -384,8 +388,4 @@ public class ClusteringRule extends ExternalResource
         return value;
     }
 
-    public void setReplicationFactor(int replicationFactor)
-    {
-        this.replicationFactor = replicationFactor;
-    }
 }

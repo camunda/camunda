@@ -1,6 +1,6 @@
 # Broker 1
 
-bootstrap = 1
+bootstrap = 3
 
 [network.client]
 port = 51015

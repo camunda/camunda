@@ -15,6 +15,10 @@
  */
 package io.zeebe.broker.it.clustering;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.List;
+
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.client.clustering.impl.TopologyBroker;
 import io.zeebe.test.util.AutoCloseableRule;
@@ -25,14 +29,9 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
 /**
  *
  */
-@Ignore
 public class GossipClusteringTest
 {
     private static final int PARTITION_COUNT = 5;
@@ -109,6 +108,7 @@ public class GossipClusteringTest
     }
 
     @Test
+    @Ignore
     public void shouldReAddToCluster()
     {
         // given

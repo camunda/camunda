@@ -27,12 +27,12 @@ public class CreateTopicCommandImpl extends CommandImpl<Event>
 
     protected final TopicEventImpl event;
 
-    public CreateTopicCommandImpl(RequestManager client, String name, int partitions)
+    public CreateTopicCommandImpl(RequestManager client, String name, int partitions, int replicationFactor)
     {
         super(client);
         EnsureUtil.ensureNotNull("name", name);
 
-        this.event = new TopicEventImpl(TopicEventType.CREATE.name(), name, partitions);
+        this.event = new TopicEventImpl(TopicEventType.CREATE.name(), name, partitions, replicationFactor);
         this.event.setTopicName(Protocol.SYSTEM_TOPIC);
         this.event.setPartitionId(Protocol.SYSTEM_PARTITION);
     }
@@ -47,7 +47,7 @@ public class CreateTopicCommandImpl extends CommandImpl<Event>
     @Override
     public String getExpectedStatus()
     {
-        return TopicEventType.CREATED.name();
+        return TopicEventType.CREATING.name();
     }
 
 }

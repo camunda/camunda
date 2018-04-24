@@ -19,5 +19,6 @@ public enum TopicEventType
 {
     CREATE,
     CREATED,
+    CREATING,
     CREATE_REJECTED
 }

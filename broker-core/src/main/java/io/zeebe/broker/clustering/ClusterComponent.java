@@ -18,18 +18,21 @@
 package io.zeebe.broker.clustering;
 
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.*;
+import static io.zeebe.broker.clustering.orchestration.ClusterOrchestrationLayerServiceNames.CLUSTER_ORCHESTRATION_INSTALL_SERVICE_NAME;
 import static io.zeebe.broker.system.SystemServiceNames.WORKFLOW_REQUEST_MESSAGE_HANDLER_SERVICE;
-import static io.zeebe.broker.transport.TransportServiceNames.MANAGEMENT_API_SERVER_NAME;
-import static io.zeebe.broker.transport.TransportServiceNames.bufferingServerTransport;
+import static io.zeebe.broker.transport.TransportServiceNames.*;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.api.ManagementApiRequestHandlerService;
-import io.zeebe.broker.clustering.base.bootstrap.*;
+import io.zeebe.broker.clustering.base.bootstrap.BootstrapExpectNodes;
+import io.zeebe.broker.clustering.base.bootstrap.BootstrapLocalPartitions;
+import io.zeebe.broker.clustering.base.bootstrap.BootstrapSystemTopic;
 import io.zeebe.broker.clustering.base.connections.RemoteAddressManager;
 import io.zeebe.broker.clustering.base.gossip.GossipJoinService;
 import io.zeebe.broker.clustering.base.gossip.GossipService;
 import io.zeebe.broker.clustering.base.raft.RaftPersistentConfigurationManagerService;
 import io.zeebe.broker.clustering.base.topology.TopologyManagerService;
+import io.zeebe.broker.clustering.orchestration.ClusterOrchestrationInstallService;
 import io.zeebe.broker.system.Component;
 import io.zeebe.broker.system.SystemContext;
 import io.zeebe.broker.system.configuration.BrokerCfg;
@@ -50,11 +53,12 @@ public class ClusterComponent implements Component
     {
         final ServiceContainer serviceContainer = context.getServiceContainer();
 
-        initClusteringBaseLayer(context, serviceContainer);
+        initClusterBaseLayer(context, serviceContainer);
         initBootstrapSystemPartition(context, serviceContainer);
+        initClusterOrchestrationLayer(serviceContainer);
     }
 
-    private void initClusteringBaseLayer(final SystemContext context, final ServiceContainer serviceContainer)
+    private void initClusterBaseLayer(final SystemContext context, final ServiceContainer serviceContainer)
     {
         final CompositeServiceBuilder baseLayerInstall = serviceContainer.createComposite(CLUSTERING_BASE_LAYER);
 
@@ -142,5 +146,16 @@ public class ClusterComponent implements Component
                     .install();
             }
         }
+    }
+
+    private void initClusterOrchestrationLayer(final ServiceContainer serviceContainer)
+    {
+        final ClusterOrchestrationInstallService clusterOrchestrationInstallService = new ClusterOrchestrationInstallService(serviceContainer);
+
+        serviceContainer.createService(CLUSTER_ORCHESTRATION_INSTALL_SERVICE_NAME, clusterOrchestrationInstallService)
+                        .dependency(CONTROL_MESSAGE_HANDLER_MANAGER, clusterOrchestrationInstallService.getControlMessageHandlerManagerInjector())
+                        .dependency(serverTransport(CLIENT_API_SERVER_NAME), clusterOrchestrationInstallService.getTransportInjector())
+                        .groupReference(LEADER_PARTITION_SYSTEM_GROUP_NAME, clusterOrchestrationInstallService.getSystemLeaderGroupReference())
+                        .install();
     }
 }

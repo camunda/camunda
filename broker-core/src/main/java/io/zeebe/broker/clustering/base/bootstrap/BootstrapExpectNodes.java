@@ -105,6 +105,7 @@ public class BootstrapExpectNodes extends Actor implements Service<Void>, Topolo
 
             if (nodeCount >= countOfExpectedNodes)
             {
+                LOG.info("Cluster bootstrap: Reached expected node count of {} got {}", countOfExpectedNodes, nodeCount);
                 loggerTimer.cancel();
                 topologyManager.removeTopologyMemberListener(this);
 

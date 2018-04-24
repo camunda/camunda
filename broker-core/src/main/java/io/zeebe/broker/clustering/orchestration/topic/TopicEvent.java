@@ -15,8 +15,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.system.log;
+package io.zeebe.broker.clustering.orchestration.topic;
 
+import io.zeebe.msgpack.property.ArrayProperty;
+import io.zeebe.msgpack.value.IntegerValue;
+import io.zeebe.msgpack.value.ValueArray;
 import org.agrona.DirectBuffer;
 
 import io.zeebe.msgpack.UnpackedObject;
@@ -32,6 +35,7 @@ public class TopicEvent extends UnpackedObject
     protected final StringProperty name = new StringProperty("name");
     protected final IntegerProperty partitions = new IntegerProperty("partitions");
     protected final IntegerProperty replicationFactor = new IntegerProperty("replicationFactor", 1);
+    protected final ArrayProperty<IntegerValue> partitionIds = new ArrayProperty<>("partitionIds", new IntegerValue());
 
     public TopicEvent()
     {
@@ -39,7 +43,8 @@ public class TopicEvent extends UnpackedObject
             .declareProperty(state)
             .declareProperty(name)
             .declareProperty(partitions)
-            .declareProperty(replicationFactor);
+            .declareProperty(replicationFactor)
+            .declareProperty(partitionIds);
     }
 
     public TopicState getState()
@@ -81,4 +86,10 @@ public class TopicEvent extends UnpackedObject
     {
         return replicationFactor.getValue();
     }
+
+    public ValueArray<IntegerValue> getPartitionIds()
+    {
+        return partitionIds;
+    }
+
 }

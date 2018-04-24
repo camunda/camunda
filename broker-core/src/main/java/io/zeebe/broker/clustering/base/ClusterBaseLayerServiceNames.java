@@ -78,5 +78,6 @@ public class ClusterBaseLayerServiceNames
 
     public static final ServiceName<Void> SYSTEM_PARTITION_BOOTSTRAP_SERVICE_NAME = ServiceName.newServiceName("cluster.base.system.partition.bootstrap", Void.class);
     public static final ServiceName<Void> SYSTEM_PARTITION_BOOTSTRAP_EXPECTED_SERVICE_NAME = ServiceName.newServiceName("cluster.base.system.partition.bootstrap.expect", Void.class);
+    public static final ServiceName<Void> SYSTEM_PARTITION_BOOTSTRAP_REPLICATION_SERVICE_NAME = ServiceName.newServiceName("cluster.base.system.partition.bootstrap.replication", Void.class);
 
 }

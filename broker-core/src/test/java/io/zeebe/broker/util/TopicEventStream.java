@@ -20,8 +20,8 @@ package io.zeebe.broker.util;
 import java.util.stream.Stream;
 
 import io.zeebe.broker.logstreams.processor.TypedEvent;
-import io.zeebe.broker.system.log.TopicEvent;
-import io.zeebe.broker.system.log.TopicState;
+import io.zeebe.broker.clustering.orchestration.topic.TopicEvent;
+import io.zeebe.broker.clustering.orchestration.topic.TopicState;
 import io.zeebe.test.util.stream.StreamWrapper;
 
 public class TopicEventStream extends StreamWrapper<TypedEvent<TopicEvent>>

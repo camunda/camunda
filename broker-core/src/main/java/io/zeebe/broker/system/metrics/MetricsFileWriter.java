@@ -50,6 +50,12 @@ public class MetricsFileWriter extends Actor
     }
 
     @Override
+    public String getName()
+    {
+        return "metricsFileWriter";
+    }
+
+    @Override
     protected void onActorStarting()
     {
         LOG.debug("Writing metrics to file {}. Reporting interval {}s.", filePath, reportingInterval.toMillis() / 1000);

@@ -116,7 +116,7 @@ public final class GossipCustomEventEncoding
         writeBuffer.putInt(offset, partition.getReplicationFactor(), ByteOrder.LITTLE_ENDIAN);
         offset += SIZE_OF_INT;
 
-        final DirectBuffer currentTopicName = partition.getTopicName();
+        final DirectBuffer currentTopicName = partition.getTopicNameBuffer();
         writeBuffer.putInt(offset, currentTopicName.capacity(), ByteOrder.LITTLE_ENDIAN);
         offset += SIZE_OF_INT;
 

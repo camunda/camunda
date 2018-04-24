@@ -55,8 +55,8 @@ public class CreateTopicTest
             .key(123)
             .position(456)
             .event()
-              .allOf((r) -> r.getCommand())
-              .put("state", "CREATED")
+              .allOf(ExecuteCommandRequest::getCommand)
+              .put("state", "CREATING")
               .done()
             .register();
 
@@ -72,14 +72,15 @@ public class CreateTopicTest
         assertThat(request.getCommand()).containsOnly(
                 entry("state", "CREATE"),
                 entry("name", "newTopic"),
-                entry("partitions", 14));
+                entry("partitions", 14),
+                entry("replicationFactor", 1));
 
         assertThat(responseEvent.getMetadata().getKey()).isEqualTo(123L);
         assertThat(responseEvent.getMetadata().getTopicName()).isEqualTo(Protocol.SYSTEM_TOPIC);
         assertThat(responseEvent.getMetadata().getPartitionId()).isEqualTo(Protocol.SYSTEM_PARTITION);
         assertThat(responseEvent.getMetadata().getPosition()).isEqualTo(456);
 
-        assertThat(responseEvent.getState()).isEqualTo("CREATED");
+        assertThat(responseEvent.getState()).isEqualTo("CREATING");
     }
 
     @Test

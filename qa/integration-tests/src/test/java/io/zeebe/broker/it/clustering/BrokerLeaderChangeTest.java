@@ -15,6 +15,13 @@
  */
 package io.zeebe.broker.it.clustering;
 
+import static io.zeebe.test.util.TestUtil.doRepeatedly;
+import static io.zeebe.test.util.TestUtil.waitUntil;
+
+import java.time.Duration;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.client.TasksClient;
 import io.zeebe.client.TopicsClient;
@@ -25,20 +32,11 @@ import io.zeebe.client.task.TaskSubscription;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.SocketAddress;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 
-import java.time.Duration;
-import java.util.Objects;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import static io.zeebe.test.util.TestUtil.doRepeatedly;
-import static io.zeebe.test.util.TestUtil.waitUntil;
-
-@Ignore
 public class BrokerLeaderChangeTest
 {
     public static final String TASK_TYPE = "testTask";
@@ -69,7 +67,7 @@ public class BrokerLeaderChangeTest
     public void shouldChangeLeaderAfterLeaderDies()
     {
         // given
-        clusteringRule.createTopic(clientRule.getDefaultTopic(), 2);
+        clusteringRule.createTopic(clientRule.getDefaultTopic(), 1, 3);
 
         final TopologyBroker leaderForPartition = clusteringRule.getLeaderForPartition(1);
         final SocketAddress leaderAddress = leaderForPartition.getSocketAddress();

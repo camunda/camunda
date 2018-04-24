@@ -15,40 +15,44 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.system.log;
+package io.zeebe.broker.clustering.orchestration.id;
+
+import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_STATE;
 
 import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.msgpack.property.EnumProperty;
 import io.zeebe.msgpack.property.IntegerProperty;
-import io.zeebe.protocol.Protocol;
 
-public class PartitionIdGenerator extends UnpackedObject
+public class IdEvent extends UnpackedObject
 {
-    protected IntegerProperty id = new IntegerProperty("id", Protocol.SYSTEM_PARTITION + 1);
 
-    public PartitionIdGenerator()
+    private final EnumProperty<IdEventState> stateProp = new EnumProperty<>(PROP_STATE, IdEventState.class);
+
+    private final IntegerProperty id = new IntegerProperty("id");
+
+    public IdEvent()
     {
-        declareProperty(id);
+        this.declareProperty(stateProp).declareProperty(id);
     }
 
-    public int currentId()
+    public Integer getId()
     {
-        return currentId(0);
+        return id.getValue();
     }
 
-    public int currentId(int offset)
+    public void setId(final int id)
     {
-        return this.id.getValue() + offset;
+        this.id.setValue(id);
     }
 
-    public void moveToNextId()
+
+    public IdEventState getState()
     {
-        moveToNextIds(1);
+        return stateProp.getValue();
     }
 
-    public void moveToNextIds(int offset)
+    public void setState(final IdEventState state)
     {
-        final int id = this.id.getValue();
-        this.id.setValue(id + offset);
+        stateProp.setValue(state);
     }
-
 }

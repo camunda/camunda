@@ -16,12 +16,10 @@
 package io.zeebe.test.broker.protocol.clientapi;
 
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
+import static io.zeebe.test.util.TestUtil.waitUntil;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.zeebe.dispatcher.Dispatcher;
@@ -46,6 +44,7 @@ public class ClientApiRule extends ExternalResource
 {
     public static final String DEFAULT_TOPIC_NAME = "default-topic";
     public static final long DEFAULT_LOCK_DURATION = 10000L;
+    public static final int DEFAULT_REPLICATION_FACTOR = 1;
 
     protected ClientTransport transport;
     protected Dispatcher sendBuffer;
@@ -103,7 +102,7 @@ public class ClientApiRule extends ExternalResource
 
         msgPackHelper = new MsgPackHelper();
         streamAddress = transport.registerRemoteAddress(brokerAddress);
-        doRepeatedly(() -> getPartitionIds(Protocol.SYSTEM_TOPIC)).until(l -> l != null, e -> e == null);
+        doRepeatedly(() -> getPartitionsFromTopology(Protocol.SYSTEM_TOPIC)).until(l -> l != null, e -> e == null);
 
         if (createDefaultTopic)
         {
@@ -302,19 +301,61 @@ public class ClientApiRule extends ExternalResource
 
     public ExecuteCommandResponse createTopic(String name, int partitions)
     {
-        return createCmdRequest()
+        return createTopic(name, partitions, DEFAULT_REPLICATION_FACTOR);
+    }
+
+    public ExecuteCommandResponse createTopic(String name, int partitions, int replicationFactor)
+    {
+        final ExecuteCommandResponse response = createCmdRequest()
             .partitionId(Protocol.SYSTEM_PARTITION)
             .eventType(EventType.TOPIC_EVENT)
             .command()
                 .put("state", "CREATE")
                 .put("name", name)
                 .put("partitions", partitions)
+                .put("replicationFactor", replicationFactor)
                 .done()
             .sendAndAwait();
+
+        if (response.getEvent().get("state").equals("CREATING"))
+        {
+            waitForTopic(name, partitions);
+        }
+
+        return response;
+    }
+
+    public void waitForTopic(String name, int partitions)
+    {
+
+        waitUntil(() -> getPartitionIds(name).size() >= partitions);
     }
 
     @SuppressWarnings("unchecked")
     public List<Integer> getPartitionIds(String topicName)
+    {
+        final ControlMessageResponse response = requestPartitions();
+
+        final Map<String, Object> data = response.getData();
+        final List<Map<String, Object>> partitions = (List<Map<String, Object>>) data.get("partitions");
+
+        return partitions.stream()
+                         .filter(p -> topicName.equals(p.get("topic")))
+                         .map(p -> (Integer) p.get("id"))
+                         .collect(Collectors.toList());
+    }
+
+    public ControlMessageResponse requestPartitions()
+    {
+        return createControlMessageRequest()
+            .partitionId(Protocol.SYSTEM_PARTITION)
+            .messageType(ControlMessageType.REQUEST_PARTITIONS)
+            .data().done()
+            .sendAndAwait();
+    }
+
+    @SuppressWarnings("unchecked")
+    public List<Integer> getPartitionsFromTopology(String topicName)
     {
         final ControlMessageResponse response = createControlMessageRequest()
             .messageType(ControlMessageType.REQUEST_TOPOLOGY)
@@ -341,7 +382,7 @@ public class ClientApiRule extends ExternalResource
 
     public int getSinglePartitionId(String topicName)
     {
-        final List<Integer> partitionIds = getPartitionIds(topicName);
+        final List<Integer> partitionIds = getPartitionsFromTopology(topicName);
         if (partitionIds.size() != 1)
         {
             throw new RuntimeException("There are " + partitionIds.size() + " partitions of topic " + topicName);

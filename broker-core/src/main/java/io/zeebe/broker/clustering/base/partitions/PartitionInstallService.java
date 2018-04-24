@@ -188,7 +188,7 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
 
         if (!startContext.hasService(partitionServiceName))
         {
-            if (raftMemberSize >= replicationFactor)
+            if (isInternalSystemPartition || raftMemberSize >= replicationFactor)
             {
                 LOG.debug("Installing partition service for {}. Replication factor reached, got {}/{}.", partitionInfo, raftMemberSize, replicationFactor);
 
