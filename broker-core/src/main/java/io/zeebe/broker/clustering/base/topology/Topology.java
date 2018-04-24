@@ -265,7 +265,7 @@ public class Topology
                     .setPartitionId(partition.getPartitionId())
                     .setTopicName(topicName, 0, topicName.capacity())
                     .setReplicationFactor(partition.getReplicationFactor())
-                    .setState(RaftState.LEADER);
+                    .setState(RaftState.FOLLOWER);
             }
         }
 
