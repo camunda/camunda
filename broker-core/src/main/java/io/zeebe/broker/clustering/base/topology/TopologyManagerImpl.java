@@ -24,22 +24,28 @@ import java.util.List;
 import java.util.function.Function;
 
 import io.zeebe.broker.Loggers;
-import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.base.topology.Topology.NodeInfo;
 import io.zeebe.broker.clustering.base.topology.Topology.PartitionInfo;
-import io.zeebe.gossip.*;
+import io.zeebe.gossip.Gossip;
+import io.zeebe.gossip.GossipCustomEventListener;
+import io.zeebe.gossip.GossipMembershipListener;
+import io.zeebe.gossip.GossipSyncRequestHandler;
 import io.zeebe.gossip.dissemination.GossipSyncRequest;
 import io.zeebe.gossip.membership.Member;
+import io.zeebe.raft.Raft;
+import io.zeebe.raft.RaftStateListener;
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.LogUtil;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
-import org.agrona.*;
+import org.agrona.DirectBuffer;
+import org.agrona.ExpandableArrayBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.slf4j.Logger;
 
-public class TopologyManagerImpl extends Actor implements TopologyManager
+public class TopologyManagerImpl extends Actor implements TopologyManager, RaftStateListener
 {
     private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
 
@@ -87,20 +93,13 @@ public class TopologyManagerImpl extends Actor implements TopologyManager
         // remove gossip sync handlers?
     }
 
-    public void onPartitionStarted(Partition partition)
+    public void onRaftStarted(Raft raft)
     {
         actor.run(() ->
         {
-            final NodeInfo memberInfo = topology.getLocal();
-            final PartitionInfo partitionInfo = partition.getInfo();
+            raft.registerRaftStateListener(this);
 
-            updatePartition(partitionInfo.getPartitionId(),
-                partitionInfo.getTopicName(),
-                partitionInfo.getReplicationFactor(),
-                memberInfo,
-                partition.getState());
-
-            publishLocalPartitions();
+            onStateChange(raft, raft.getState());
         });
     }
 
@@ -115,16 +114,32 @@ public class TopologyManagerImpl extends Actor implements TopologyManager
         notifyPartitionUpdated(updatedPartition);
     }
 
-    public void onPartitionRemoved(Partition partition)
+    public void onRaftRemoved(Raft raft)
     {
         actor.run(() ->
         {
             final NodeInfo memberInfo = topology.getLocal();
 
-            topology.removePartitionForMember(partition.getInfo().getPartitionId(), memberInfo);
+            topology.removePartitionForMember(raft.getPartitionId(), memberInfo);
+
+            raft.unregisterRaftStateListener(this);
 
             publishLocalPartitions();
         });
+    }
+
+    @Override
+    public void onStateChange(Raft raft, RaftState raftState)
+    {
+        final NodeInfo memberInfo = topology.getLocal();
+
+        updatePartition(raft.getPartitionId(),
+            raft.getTopicName(),
+            raft.getReplicationFactor(),
+            memberInfo,
+            raft.getState());
+
+        publishLocalPartitions();
     }
 
     private class ContactPointsChangeListener implements GossipCustomEventListener

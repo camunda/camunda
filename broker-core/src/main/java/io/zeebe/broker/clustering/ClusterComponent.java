@@ -67,10 +67,7 @@ public class ClusterComponent implements Component
         final TopologyManagerService topologyManagerService = new TopologyManagerService(config);
         baseLayerInstall.createService(TOPOLOGY_MANAGER_SERVICE, topologyManagerService)
             .dependency(GOSSIP_SERVICE, topologyManagerService.getGossipInjector())
-            .groupReference(LEADER_PARTITION_GROUP_NAME, topologyManagerService.getPartitionsReference())
-            .groupReference(LEADER_PARTITION_SYSTEM_GROUP_NAME, topologyManagerService.getPartitionsReference())
-            .groupReference(FOLLOWER_PARTITION_SYSTEM_GROUP_NAME, topologyManagerService.getPartitionsReference())
-            .groupReference(FOLLOWER_PARTITION_GROUP_NAME, topologyManagerService.getPartitionsReference())
+            .groupReference(RAFT_SERVICE_GROUP, topologyManagerService.getRaftReference())
             .install();
 
         final RemoteAddressManager remoteAddressManager = new RemoteAddressManager();

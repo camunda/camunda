@@ -185,49 +185,52 @@ public class Topology
 
         LOG.debug("Updating partition information for parition {}", partition);
 
-        switch (state)
+        if (state != null)
         {
-            case LEADER:
-                if (followers != null)
-                {
-                    followers.remove(member);
-                }
-                partitionLeaders.put(paritionId, member);
+            switch (state)
+            {
+                case LEADER:
+                    if (followers != null)
+                    {
+                        followers.remove(member);
+                    }
+                    partitionLeaders.put(paritionId, member);
 
-                member.follower.remove(partition);
+                    member.follower.remove(partition);
 
-                if (!member.leader.contains(partition))
-                {
-                    member.leader.add(partition);
-                }
-                break;
+                    if (!member.leader.contains(partition))
+                    {
+                        member.leader.add(partition);
+                    }
+                    break;
 
-            case FOLLOWER:
-                if (member.equals(partitionLeaders.get(paritionId)))
-                {
-                    partitionLeaders.remove(paritionId);
-                }
-                if (followers == null)
-                {
-                    followers = new ArrayList<>();
-                    partitionFollowers.put(paritionId, followers);
-                }
-                if (!followers.contains(member))
-                {
-                    followers.add(member);
-                }
+                case FOLLOWER:
+                    if (member.equals(partitionLeaders.get(paritionId)))
+                    {
+                        partitionLeaders.remove(paritionId);
+                    }
+                    if (followers == null)
+                    {
+                        followers = new ArrayList<>();
+                        partitionFollowers.put(paritionId, followers);
+                    }
+                    if (!followers.contains(member))
+                    {
+                        followers.add(member);
+                    }
 
-                member.leader.remove(partition);
+                    member.leader.remove(partition);
 
-                if (!member.follower.contains(partition))
-                {
-                    member.follower.add(partition);
-                }
-                break;
+                    if (!member.follower.contains(partition))
+                    {
+                        member.follower.add(partition);
+                    }
+                    break;
 
-            case CANDIDATE:
-                // internal raft state: not tracked by topology
-                break;
+                case CANDIDATE:
+                    // internal raft state: not tracked by topology
+                    break;
+            }
         }
 
         return partition;

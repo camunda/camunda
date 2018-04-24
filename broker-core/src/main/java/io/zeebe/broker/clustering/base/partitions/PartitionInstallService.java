@@ -112,6 +112,7 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
 
         partitionInstall.createService(raftServiceName, raftService)
             .dependency(logStreamServiceName, raftService.getLogStreamInjector())
+            .group(RAFT_SERVICE_GROUP)
             .install();
 
         partitionInstall.install();

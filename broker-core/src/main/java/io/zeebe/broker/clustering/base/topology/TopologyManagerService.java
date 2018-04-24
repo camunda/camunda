@@ -19,10 +19,10 @@ package io.zeebe.broker.clustering.base.topology;
 
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LOCAL_NODE;
 
-import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.base.topology.Topology.NodeInfo;
 import io.zeebe.broker.transport.cfg.TransportComponentCfg;
 import io.zeebe.gossip.Gossip;
+import io.zeebe.raft.Raft;
 import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.SocketAddress;
 
@@ -32,9 +32,9 @@ public class TopologyManagerService implements Service<TopologyManager>
 
     private final Injector<Gossip> gossipInjector = new Injector<>();
 
-    private final ServiceGroupReference<Partition> partitionsReference = ServiceGroupReference.<Partition>create()
-        .onAdd((name, raft) -> topologyManager.onPartitionStarted(raft))
-        .onRemove((name, raft) -> topologyManager.onPartitionRemoved(raft))
+    private final ServiceGroupReference<Raft> raftReference = ServiceGroupReference.<Raft>create()
+        .onAdd((name, raft) -> topologyManager.onRaftStarted(raft))
+        .onRemove((name, raft) -> topologyManager.onRaftRemoved(raft))
         .build();
 
     private final NodeInfo localMember;
@@ -75,9 +75,9 @@ public class TopologyManagerService implements Service<TopologyManager>
         return topologyManager;
     }
 
-    public ServiceGroupReference<Partition> getPartitionsReference()
+    public ServiceGroupReference<Raft> getRaftReference()
     {
-        return partitionsReference;
+        return raftReference;
     }
 
     public Injector<Gossip> getGossipInjector()
