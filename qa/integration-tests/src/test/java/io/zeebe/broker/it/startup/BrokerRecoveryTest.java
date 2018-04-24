@@ -15,26 +15,37 @@
  */
 package io.zeebe.broker.it.startup;
 
-import static io.zeebe.broker.it.util.TopicEventRecorder.*;
+import static io.zeebe.broker.it.util.TopicEventRecorder.incidentEvent;
+import static io.zeebe.broker.it.util.TopicEventRecorder.taskEvent;
+import static io.zeebe.broker.it.util.TopicEventRecorder.wfInstanceEvent;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
-import java.nio.file.*;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Duration;
 import java.util.List;
+
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
 
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.RecordingTaskHandler;
 import io.zeebe.broker.it.util.TopicEventRecorder;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.clustering.impl.*;
+import io.zeebe.client.api.events.DeploymentEvent;
+import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
-import io.zeebe.client.event.*;
+import io.zeebe.client.event.TaskEvent;
+import io.zeebe.client.impl.clustering.*;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.raft.Raft;
@@ -44,10 +55,6 @@ import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.FileUtil;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
 
 public class BrokerRecoveryTest
 {
@@ -513,12 +520,12 @@ public class BrokerRecoveryTest
         clientRule.waitUntilTopicsExists("bar");
 
         // then
-        final TopologyResponse topology = client.requestTopology().execute();
-        final List<TopologyBroker> brokers = topology.getBrokers();
+        final TopologyImpl topology = client.requestTopology().execute();
+        final List<BrokerInfoImpl> brokers = topology.getBrokers();
         assertThat(brokers).hasSize(1);
 
-        final TopologyBroker topologyBroker = brokers.get(0);
-        final List<BrokerPartitionState> partitions = topologyBroker.getPartitions();
+        final BrokerInfoImpl topologyBroker = brokers.get(0);
+        final List<PartitionInfoImpl> partitions = topologyBroker.getPartitions();
 
         assertThat(partitions).hasSize(6); // default partition + system partition + 4 partitions we create here
         assertThat(partitions).extracting("partitionId").doesNotHaveDuplicates();

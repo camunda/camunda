@@ -26,7 +26,7 @@ import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.TopicEventRecorder;
 import io.zeebe.client.event.WorkflowInstanceEvent;
-import io.zeebe.client.task.PollableTaskSubscription;
+import io.zeebe.client.impl.job.PollableTaskSubscription;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import org.junit.*;

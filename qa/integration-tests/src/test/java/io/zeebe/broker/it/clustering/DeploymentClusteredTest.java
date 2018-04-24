@@ -23,6 +23,8 @@ import io.zeebe.client.event.WorkflowInstanceEvent;
 import io.zeebe.client.topic.Partition;
 import io.zeebe.client.topic.Topic;
 import io.zeebe.client.workflow.impl.CreateWorkflowInstanceCommandImpl;
+import io.zeebe.client.impl.topic.Topic;
+import io.zeebe.client.impl.workflow.impl.CreateWorkflowInstanceCommandImpl;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.test.util.AutoCloseableRule;
@@ -182,7 +184,7 @@ public class DeploymentClusteredTest
     {
         final CreateWorkflowInstanceCommandImpl createTaskCommand =
             (CreateWorkflowInstanceCommandImpl) client.workflows().create(topic).bpmnProcessId(processId);
-        createTaskCommand.getEvent().setPartitionId(partition);
+        createTaskCommand.getCommand().setPartitionId(partition);
         return createTaskCommand.execute();
     }
 

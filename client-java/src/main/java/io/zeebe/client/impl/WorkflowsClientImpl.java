@@ -15,48 +15,42 @@
  */
 package io.zeebe.client.impl;
 
-import io.zeebe.client.WorkflowsClient;
-import io.zeebe.client.cmd.Request;
-import io.zeebe.client.event.WorkflowInstanceEvent;
-import io.zeebe.client.workflow.cmd.CreateDeploymentCommand;
-import io.zeebe.client.workflow.cmd.CreateWorkflowInstanceCommand;
-import io.zeebe.client.workflow.cmd.UpdatePayloadCommand;
-import io.zeebe.client.workflow.impl.CancelWorkflowInstanceCmdImpl;
-import io.zeebe.client.workflow.impl.CreateDeploymentCommandImpl;
-import io.zeebe.client.workflow.impl.CreateWorkflowInstanceCommandImpl;
-import io.zeebe.client.workflow.impl.UpdatePayloadCommandImpl;
+import io.zeebe.client.api.clients.WorkflowClient;
+import io.zeebe.client.api.commands.*;
+import io.zeebe.client.api.events.WorkflowInstanceEvent;
+import io.zeebe.client.impl.workflow.*;
 
-public class WorkflowsClientImpl implements WorkflowsClient
+public class WorkflowsClientImpl implements WorkflowClient
 {
-    protected final ZeebeClientImpl client;
+    private final TopicClientImpl client;
 
-    public WorkflowsClientImpl(final ZeebeClientImpl client)
+    public WorkflowsClientImpl(final TopicClientImpl client)
     {
         this.client = client;
     }
 
     @Override
-    public CreateDeploymentCommand deploy(String topic)
+    public DeployWorkflowCommandStep1 newDeployCommand()
     {
-        return new CreateDeploymentCommandImpl(client.getCommandManager(), topic);
+        return new DeployWorkflowCommandImpl(client.getCommandManager(), client.getTopic());
     }
 
     @Override
-    public CreateWorkflowInstanceCommand create(String topic)
+    public CreateWorkflowInstanceCommandStep1 newCreateInstanceCommand()
     {
-        return new CreateWorkflowInstanceCommandImpl(client.getCommandManager(), client.getMsgPackConverter(), topic);
+        return new CreateWorkflowInstanceCommandImpl(client.getCommandManager(), client.getMsgPackConverter(), client.getTopic());
     }
 
     @Override
-    public Request<WorkflowInstanceEvent> cancel(WorkflowInstanceEvent baseEvent)
+    public CancelWorkflowInstanceCommandStep1 newCancelInstanceCommand(WorkflowInstanceEvent event)
     {
-        return new CancelWorkflowInstanceCmdImpl(client.getCommandManager(), baseEvent);
+        return new CancelWorkflowInstanceCommandImpl(client.getCommandManager(), event);
     }
 
     @Override
-    public UpdatePayloadCommand updatePayload(WorkflowInstanceEvent baseEvent)
+    public UpdatePayloadWorkflowInstanceCommandStep1 newUpdatePayloadCommand(WorkflowInstanceEvent event)
     {
-        return new UpdatePayloadCommandImpl(client.getCommandManager(), baseEvent);
+        return new UpdatePayloadCommandImpl(client.getCommandManager(), event);
     }
 
 }

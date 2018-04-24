@@ -18,22 +18,35 @@ package io.zeebe.test.broker.protocol.brokerapi;
 import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
 
 import java.net.InetSocketAddress;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
+import org.junit.rules.ExternalResource;
+
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.*;
-import io.zeebe.protocol.intent.*;
+import io.zeebe.protocol.clientapi.ControlMessageType;
+import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.SubscriptionType;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.protocol.intent.SubscriberIntent;
+import io.zeebe.protocol.intent.SubscriptionIntent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
-import io.zeebe.test.broker.protocol.brokerapi.data.*;
-import io.zeebe.test.util.collection.MapFactoryBuilder;
-import io.zeebe.transport.*;
+import io.zeebe.test.broker.protocol.brokerapi.data.BrokerPartitionState;
+import io.zeebe.test.broker.protocol.brokerapi.data.Topology;
+import io.zeebe.test.broker.protocol.brokerapi.data.TopologyBroker;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.ServerTransport;
+import io.zeebe.transport.Transports;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ControlledActorClock;
-import org.junit.rules.ExternalResource;
 
 public class StubBrokerRule extends ExternalResource
 {
@@ -139,23 +152,6 @@ public class StubBrokerRule extends ExternalResource
     public ServerTransport getTransport()
     {
         return transport;
-    }
-
-    public MapFactoryBuilder<ExecuteCommandRequest, ExecuteCommandResponseBuilder> onWorkflowRequestRespondWith(long key)
-    {
-        return onWorkflowRequestRespondWith(TEST_TOPIC_NAME, TEST_PARTITION_ID, key);
-    }
-
-    public MapFactoryBuilder<ExecuteCommandRequest, ExecuteCommandResponseBuilder> onWorkflowRequestRespondWith(final String topicName, final int partitionId, final long key)
-    {
-        final MapFactoryBuilder<ExecuteCommandRequest, ExecuteCommandResponseBuilder> eventType = onExecuteCommandRequest(ecr -> ecr.valueType() == ValueType.WORKFLOW_INSTANCE)
-            .respondWith()
-            .partitionId(partitionId)
-            .key(key)
-            .value()
-            .allOf((r) -> r.getCommand());
-
-        return eventType;
     }
 
     public ExecuteCommandResponseTypeBuilder onExecuteCommandRequest()
@@ -345,18 +341,27 @@ public class StubBrokerRule extends ExternalResource
             .register();
     }
 
-    public void pushTopicEvent(RemoteAddress remote, long subscriberKey, long key, long position)
+    public void pushRaftEvent(RemoteAddress remote, long subscriberKey, long key, long position)
     {
-        pushTopicEvent(remote, subscriberKey, key, position, ValueType.RAFT);
+        pushRecord(remote, subscriberKey, key, position, RecordType.EVENT, ValueType.RAFT, Intent.UNKNOWN);
     }
 
-    public void pushTopicEvent(RemoteAddress remote, long subscriberKey, long key, long position, ValueType valueType)
+    public void pushRecord(
+            RemoteAddress remote,
+            long subscriberKey,
+            long key,
+            long position,
+            RecordType recordType,
+            ValueType valueType,
+            Intent intent)
     {
         newSubscribedEvent()
             .partitionId(TEST_PARTITION_ID)
             .key(key)
             .position(position)
+            .recordType(recordType)
             .valueType(valueType)
+            .intent(intent)
             .subscriberKey(subscriberKey)
             .subscriptionType(SubscriptionType.TOPIC_SUBSCRIPTION)
             .value()
@@ -370,6 +375,8 @@ public class StubBrokerRule extends ExternalResource
             .subscriptionType(SubscriptionType.TOPIC_SUBSCRIPTION);
 
         // defaults that the config can override
+        builder.recordType(RecordType.EVENT);
+        builder.intent(Intent.UNKNOWN);
         builder.partitionId(1);
         builder.key(0);
         builder.position(0);
@@ -390,7 +397,9 @@ public class StubBrokerRule extends ExternalResource
             .partitionId(TEST_PARTITION_ID)
             .key(key)
             .position(position)
+            .recordType(RecordType.EVENT)
             .valueType(ValueType.JOB)
+            .intent(JobIntent.LOCKED)
             .subscriberKey(subscriberKey)
             .subscriptionType(SubscriptionType.JOB_SUBSCRIPTION)
             .value()
@@ -402,6 +411,21 @@ public class StubBrokerRule extends ExternalResource
                 .put("state", "LOCKED")
                 .done()
             .push(remote);
+    }
+
+    public JobStubs jobs()
+    {
+        return new JobStubs(this);
+    }
+
+    public WorkflowInstanceStubs workflowInstances()
+    {
+        return new WorkflowInstanceStubs(this);
+    }
+
+    public DeploymentStubs deployments()
+    {
+        return new DeploymentStubs(this);
     }
 
     public String getHost()

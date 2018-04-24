@@ -15,23 +15,25 @@
  */
 package io.zeebe.client.workflow;
 
-import static io.zeebe.util.StringUtil.getBytes;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 import java.io.ByteArrayInputStream;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
-
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.api.commands.CreateWorkflowInstanceCommandStep1;
+import io.zeebe.client.api.events.WorkflowInstanceEvent;
+import io.zeebe.client.api.events.WorkflowInstanceEvent.WorkflowInstanceState;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
-import io.zeebe.client.event.WorkflowInstanceEvent;
 import io.zeebe.client.impl.data.MsgPackConverter;
 import io.zeebe.client.util.ClientRule;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
+import org.junit.*;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
 
 
 public class CreateWorkflowInstanceTest
@@ -59,121 +61,101 @@ public class CreateWorkflowInstanceTest
     public void shouldCreateWorkflowInstanceByBpmnProcessId()
     {
         // given
-        brokerRule.onWorkflowRequestRespondWith(1L)
-                .put("state", "WORKFLOW_INSTANCE_CREATED")
+        brokerRule.workflowInstances().registerCreateCommand(b ->
+            b.value()
+                .allOf(r -> r.getCommand())
                 .put("version", 1)
                 .put("workflowInstanceKey", 1)
-                .put("payload", msgPackConverter.convertToMsgPack("null"))
-                .done()
-                .register();
+            .done());
 
         // when
-        final WorkflowInstanceEvent workflowInstance = clientRule.workflows()
-                .create(clientRule.getDefaultTopicName())
-                .bpmnProcessId("foo")
-                .execute();
+        final WorkflowInstanceEvent workflowInstance = clientRule.workflowClient().newCreateInstanceCommand()
+            .bpmnProcessId("foo")
+            .latestVersion()
+            .send()
+            .join();
 
         // then
-        assertThat(workflowInstance).isNotNull();
+        final ExecuteCommandRequest commandRequest = brokerRule.getReceivedCommandRequests().get(0);
+        assertThat(commandRequest.valueType()).isEqualTo(ValueType.WORKFLOW_INSTANCE);
+        assertThat(commandRequest.intent()).isEqualTo(WorkflowInstanceIntent.CREATE);
+
+        assertThat(commandRequest.getCommand()).containsOnly(
+              entry("bpmnProcessId", "foo"),
+              entry("version", CreateWorkflowInstanceCommandStep1.LATEST_VERSION),
+              entry("workflowKey", -1),
+              entry("workflowInstanceKey", -1));
+
+        assertThat(workflowInstance.getState()).isEqualTo(WorkflowInstanceState.CREATED);
         assertThat(workflowInstance.getBpmnProcessId()).isEqualTo("foo");
         assertThat(workflowInstance.getVersion()).isEqualTo(1);
         assertThat(workflowInstance.getWorkflowInstanceKey()).isEqualTo(1);
+        assertThat(workflowInstance.getPayload()).isNull();
     }
 
     @Test
     public void shouldCreateWorkflowInstanceWithPayload() throws Exception
     {
         // given
-        final byte[] payload = getBytes("{ \"bar\" : 4 }");
+        final String payload = "{\"bar\":4}";
 
-        brokerRule.onWorkflowRequestRespondWith(1L)
-            .put("state", "WORKFLOW_INSTANCE_CREATED")
-            .put("version", 1)
-            .put("workflowInstanceKey", 1)
-            .put("payload", msgPackConverter.convertToMsgPack("{ \"bar\" : 4 }"))
-            .done()
-            .register();
+        brokerRule.workflowInstances().registerCreateCommand(b ->
+                b.value()
+                    .allOf(r -> r.getCommand())
+                    .put("version", 1)
+                    .put("workflowInstanceKey", 1)
+                .done());
 
         // when
-        final WorkflowInstanceEvent workflowInstance = clientRule.workflows()
-            .create(clientRule.getDefaultTopicName())
+        final WorkflowInstanceEvent workflowInstance = clientRule.workflowClient()
+            .newCreateInstanceCommand()
             .bpmnProcessId("foo")
-            .payload(new ByteArrayInputStream(payload))
-            .execute();
+            .latestVersion()
+            .payload(new ByteArrayInputStream(payload.getBytes()))
+            .send()
+            .join();
 
         // then
-        assertThat(workflowInstance).isNotNull();
+        final ExecuteCommandRequest commandRequest = brokerRule.getReceivedCommandRequests().get(0);
+        assertThat(commandRequest.getCommand()).containsOnly(
+              entry("bpmnProcessId", "foo"),
+              entry("version", CreateWorkflowInstanceCommandStep1.LATEST_VERSION),
+              entry("workflowKey", -1),
+              entry("workflowInstanceKey", -1),
+              entry("payload", msgPackConverter.convertToMsgPack(payload)));
+
         assertThat(workflowInstance.getBpmnProcessId()).isEqualTo("foo");
         assertThat(workflowInstance.getVersion()).isEqualTo(1);
         assertThat(workflowInstance.getWorkflowInstanceKey()).isEqualTo(1);
-        assertThat(workflowInstance.getPayload()).isEqualTo("{\"bar\":4}");
-    }
-
-    @Test
-    public void shouldRejectCreateWorkflowInstanceByBpmnProcessId()
-    {
-        // given
-        brokerRule.onWorkflowRequestRespondWith(1L)
-                .put("state", "WORKFLOW_INSTANCE_REJECTED")
-                .put("bpmnProcessId", "foo")
-                .put("version", 1)
-                .done()
-                .register();
-
-
-        // expect exception
-        expectedException.expect(ClientCommandRejectedException.class);
-        expectedException.expectMessage("Failed to create instance of workflow with BPMN process id 'foo' and version '1'.");
-
-        // when
-        clientRule.workflows()
-            .create(clientRule.getDefaultTopicName())
-            .bpmnProcessId("foo")
-            .execute();
-    }
-
-    @Test
-    public void shouldRejectCreateWorkflowInstanceByWorkflowKey()
-    {
-        // given
-        brokerRule.onWorkflowRequestRespondWith(1L)
-                .put("state", "WORKFLOW_INSTANCE_REJECTED")
-                .put("workflowKey", 2L)
-                .done()
-                .register();
-
-
-        // expect exception
-        expectedException.expect(ClientCommandRejectedException.class);
-        expectedException.expectMessage("Failed to create instance of workflow with key '2'");
-
-        // when
-        clientRule.workflows()
-            .create(clientRule.getDefaultTopicName())
-            .workflowKey(2L)
-            .execute();
+        assertThat(workflowInstance.getPayload()).isEqualTo(payload);
     }
 
     @Test
     public void shouldCreateWorkflowInstanceByBpmnProcessIdAndVersion()
     {
         // given
-        brokerRule.onWorkflowRequestRespondWith(1L)
-                .put("state", "WORKFLOW_INSTANCE_CREATED")
-                .put("workflowInstanceKey", 1)
-                .put("payload", msgPackConverter.convertToMsgPack("null"))
-                .done()
-                .register();
+        brokerRule.workflowInstances().registerCreateCommand(b ->
+                b.value()
+                    .allOf(r -> r.getCommand())
+                    .put("workflowInstanceKey", 1)
+                .done());
 
         // when
-        final WorkflowInstanceEvent workflowInstance = clientRule.workflows()
-                .create(clientRule.getDefaultTopicName())
+        final WorkflowInstanceEvent workflowInstance = clientRule.workflowClient()
+                .newCreateInstanceCommand()
                 .bpmnProcessId("foo")
                 .version(2)
-                .execute();
+                .send()
+                .join();
 
         // then
-        assertThat(workflowInstance).isNotNull();
+        final ExecuteCommandRequest commandRequest = brokerRule.getReceivedCommandRequests().get(0);
+        assertThat(commandRequest.getCommand()).containsOnly(
+              entry("bpmnProcessId", "foo"),
+              entry("version", 2),
+              entry("workflowKey", -1),
+              entry("workflowInstanceKey", -1));
+
         assertThat(workflowInstance.getBpmnProcessId()).isEqualTo("foo");
         assertThat(workflowInstance.getVersion()).isEqualTo(2);
         assertThat(workflowInstance.getWorkflowInstanceKey()).isEqualTo(1);
@@ -183,21 +165,48 @@ public class CreateWorkflowInstanceTest
     public void shouldCreateWorkflowInstanceByWorkflowKey()
     {
         // given
-        brokerRule.onWorkflowRequestRespondWith(1L)
-                .put("state", "WORKFLOW_INSTANCE_CREATED")
-                .put("workflowInstanceKey", 1)
-                .put("payload", msgPackConverter.convertToMsgPack("null"))
-                .done()
-                .register();
+        brokerRule.workflowInstances().registerCreateCommand(b ->
+                b.value()
+                    .allOf(r -> r.getCommand())
+                    .put("workflowInstanceKey", 1)
+                    .put("payload", msgPackConverter.convertToMsgPack("{ \"bar\" : 4 }"))
+                .done());
 
         // when
-        final WorkflowInstanceEvent workflowInstance = clientRule.workflows()
-                .create(clientRule.getDefaultTopicName())
+        final WorkflowInstanceEvent workflowInstance = clientRule.workflowClient()
+                .newCreateInstanceCommand()
                 .workflowKey(2L)
-                .execute();
+                .send()
+                .join();
 
         // then
-        assertThat(workflowInstance).isNotNull();
-        assertThat(workflowInstance.getWorkflowKey()).isEqualTo(2L);
+        final ExecuteCommandRequest commandRequest = brokerRule.getReceivedCommandRequests().get(0);
+        assertThat(commandRequest.getCommand()).containsOnly(
+              entry("version", -1),
+              entry("workflowKey", 2),
+              entry("workflowInstanceKey", -1));
+
+        assertThat(workflowInstance.getWorkflowKey()).isEqualTo(2);
+        assertThat(workflowInstance.getWorkflowInstanceKey()).isEqualTo(1);
     }
+
+    @Test
+    public void shouldThrowExceptionOnRejection()
+    {
+        // given
+        brokerRule.workflowInstances().registerCreateCommand(r -> r.rejection());
+
+        // expect exception
+        expectedException.expect(ClientCommandRejectedException.class);
+        expectedException.expectMessage("Command was rejected by broker (CREATE)");
+
+        // when
+        clientRule.workflowClient()
+            .newCreateInstanceCommand()
+            .bpmnProcessId("foo")
+            .latestVersion()
+            .send()
+            .join();
+    }
+
 }

@@ -23,7 +23,9 @@ import io.zeebe.client.event.TaskEvent;
 import io.zeebe.client.topic.Partition;
 import io.zeebe.client.topic.Topic;
 import io.zeebe.client.topic.Topics;
-import io.zeebe.protocol.Protocol;
+import io.zeebe.client.impl.clustering.BrokerInfoImpl;
+import io.zeebe.client.impl.topic.Topic;
+import io.zeebe.client.impl.topic.Topics;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.SocketAddress;
 import org.junit.Before;
@@ -127,14 +129,14 @@ public class CreateTopicClusteredTest
         final TaskEvent taskEvent = client.tasks().create("foo", "bar").execute();
         final int partitionId = taskEvent.getMetadata().getPartitionId();
 
-        final TopologyBroker leaderForPartition = clusteringRule.getLeaderForPartition(partitionId);
+        final BrokerInfoImpl leaderForPartition = clusteringRule.getLeaderForPartition(partitionId);
         final SocketAddress currentLeaderAddress = leaderForPartition.getSocketAddress();
 
         // when
         clusteringRule.stopBroker(currentLeaderAddress);
 
         // then
-        final TopologyBroker newLeader = clusteringRule.getLeaderForPartition(partitionId);
+        final BrokerInfoImpl newLeader = clusteringRule.getLeaderForPartition(partitionId);
         assertThat(newLeader.getSocketAddress()).isNotEqualTo(leaderForPartition.getSocketAddress());
     }
 
@@ -151,14 +153,14 @@ public class CreateTopicClusteredTest
         final TaskEvent taskEvent = client.tasks().create(topicName, "bar").execute();
         final int partitionId = taskEvent.getMetadata().getPartitionId();
 
-        final TopologyBroker leaderForPartition = clusteringRule.getLeaderForPartition(partitionId);
+        final BrokerInfoImpl leaderForPartition = clusteringRule.getLeaderForPartition(partitionId);
         final SocketAddress currentLeaderAddress = leaderForPartition.getSocketAddress();
 
         // when
         clusteringRule.stopBroker(currentLeaderAddress);
 
         // then
-        final TopologyBroker newLeader = clusteringRule.getLeaderForPartition(partitionId);
+        final BrokerInfoImpl newLeader = clusteringRule.getLeaderForPartition(partitionId);
         assertThat(newLeader.getSocketAddress()).isNotEqualTo(leaderForPartition.getSocketAddress());
 
         final CompletableFuture<TaskEvent> taskCompleted = new CompletableFuture<>();

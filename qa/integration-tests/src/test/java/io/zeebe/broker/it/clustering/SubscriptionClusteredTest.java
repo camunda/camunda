@@ -17,15 +17,20 @@ package io.zeebe.broker.it.clustering;
 
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.subscription.RecordingEventHandler;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.task.impl.CreateTaskCommandImpl;
-import io.zeebe.client.topic.Topic;
+import io.zeebe.client.impl.job.impl.CreateTaskCommandImpl;
+import io.zeebe.client.impl.topic.Topic;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
 import io.zeebe.test.util.AutoCloseableRule;
 import org.junit.Before;
 import org.junit.Rule;
@@ -104,11 +109,16 @@ public class SubscriptionClusteredTest
         assertThat(receivedPartitionIds).containsExactlyInAnyOrder(partitionIds);
     }
 
+    @Test
+    public void shouldReceiveRaftEvent()
+    {
+        fail("assert that raft events are received and have a proper intent value");
+    }
 
     protected void createTaskOnPartition(String topic, int partition)
     {
         final CreateTaskCommandImpl createTaskCommand = (CreateTaskCommandImpl) client.tasks().create(topic, "baz");
-        createTaskCommand.getEvent().setPartitionId(partition);
+        createTaskCommand.getCommand().setPartitionId(partition);
         createTaskCommand.execute();
     }
 }

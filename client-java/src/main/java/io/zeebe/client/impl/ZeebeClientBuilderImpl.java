@@ -34,7 +34,8 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
     private int topicSubscriptionPrefetchCapacity = 32;
     private Duration tcpChannelKeepAlivePeriod;
     private ActorClock actorClock;
-
+    private String defaultJobLockOwner = "default";
+    private Duration defaultJobLockTime = Duration.ofMinutes(5);
 
     @Override
     public String getBrokerContactPoint()
@@ -152,6 +153,32 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
     }
 
     @Override
+    public String getDefaultJobLockOwner()
+    {
+        return defaultJobLockOwner;
+    }
+
+    @Override
+    public Duration getDefaultJobLockTime()
+    {
+        return defaultJobLockTime;
+    }
+
+    @Override
+    public ZeebeClientBuilder defaultJobLockOwner(String jobOwner)
+    {
+        this.defaultJobLockOwner = jobOwner;
+        return this;
+    }
+
+    @Override
+    public ZeebeClientBuilder defaultJobLockTime(Duration lockTime)
+    {
+        this.defaultJobLockTime = lockTime;
+        return this;
+    }
+
+    @Override
     public ZeebeClient create()
     {
         return new ZeebeClientImpl(this, actorClock);
@@ -193,6 +220,14 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
         {
             builder.topicSubscriptionPrefetchCapacity(Integer.parseInt(properties.getProperty(ClientProperties.CLIENT_TOPIC_SUBSCRIPTION_PREFETCH_CAPACITY)));
         }
+        if (properties.containsKey(CLIENT_JOB_DEFAULT_LOCK_OWNER))
+        {
+            builder.defaultJobLockOwner(properties.getProperty(CLIENT_JOB_DEFAULT_LOCK_OWNER));
+        }
+        if (properties.containsKey(CLIENT_JOB_DEFAULT_LOCK_TIME))
+        {
+            builder.defaultJobLockTime(Duration.ofMillis(Integer.parseInt(properties.getProperty(CLIENT_JOB_DEFAULT_LOCK_TIME))));
+        }
 
         return builder;
     }
@@ -210,6 +245,8 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
         appendProperty(sb, "numSubscriptionExecutionThreads", numSubscriptionExecutionThreads);
         appendProperty(sb, "topicSubscriptionPrefetchCapacity", topicSubscriptionPrefetchCapacity);
         appendProperty(sb, "tcpChannelKeepAlivePeriod", tcpChannelKeepAlivePeriod);
+        appendProperty(sb, "defaultJobLockOwner", defaultJobLockOwner);
+        appendProperty(sb, "defaultJobLockTime", defaultJobLockTime);
 
         return sb.toString();
     }

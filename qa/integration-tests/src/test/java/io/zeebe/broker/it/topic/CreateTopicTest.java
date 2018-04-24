@@ -17,6 +17,7 @@ package io.zeebe.broker.it.topic;
 
 import static io.zeebe.protocol.Protocol.SYSTEM_TOPIC;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.fail;
 
 import java.util.List;
 import java.util.Map;
@@ -26,7 +27,6 @@ import java.util.concurrent.TimeUnit;
 
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
-import io.zeebe.client.TopicsClient;
 import io.zeebe.client.event.Event;
 import io.zeebe.client.event.TaskEvent;
 import io.zeebe.client.topic.Partition;
@@ -37,6 +37,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
+import io.zeebe.client.impl.topic.*;
 
 public class CreateTopicTest
 {
@@ -84,7 +85,13 @@ public class CreateTopicTest
         assertThat(foo.get(10, TimeUnit.SECONDS).getState()).isEqualTo("CREATING");
 
         // when
-        clientRule.waitUntilTopicsExists("foo", "bar");
+        fail("what is correct here?");
+//<<<<<<< fd141d4533c2ec77bee64cc237c6e1a0c7d5dabe
+//        clientRule.waitUntilTopicsExists("foo", "bar");
+//=======
+//        final Future<Event> foo = topics.create("foo", 2).send();
+//        final Future<Event> bar = topics.create("bar", 2).send();
+//>>>>>>> wip
 
         // then
         final Topics topics = client.getTopics().execute();

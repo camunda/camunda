@@ -17,9 +17,7 @@ package io.zeebe.client.event;
 
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.assertj.core.api.Assertions.*;
 
 import java.time.Duration;
 import java.util.List;
@@ -27,27 +25,21 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.api.subscription.TopicSubscription;
+import io.zeebe.client.api.subscription.TopicSubscriptionBuilderStep1.TopicSubscriptionBuilderStep3;
 import io.zeebe.client.cmd.ClientException;
-import io.zeebe.client.event.impl.TopicSubscriberGroup;
-import io.zeebe.client.event.impl.TopicSubscriptionBuilderImpl;
-import io.zeebe.client.task.impl.subscription.SubscriberGroup;
+import io.zeebe.client.impl.subscription.topic.TopicSubscriberGroup;
+import io.zeebe.client.impl.subscription.topic.TopicSubscriptionBuilderImpl;
 import io.zeebe.client.util.ClientRule;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.clientapi.ErrorCode;
-import io.zeebe.protocol.clientapi.EventType;
-import io.zeebe.test.broker.protocol.brokerapi.ControlMessageRequest;
-import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
-import io.zeebe.test.broker.protocol.brokerapi.ResponseController;
-import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
+import io.zeebe.protocol.clientapi.*;
+import io.zeebe.protocol.intent.SubscriberIntent;
+import io.zeebe.test.broker.protocol.brokerapi.*;
 import io.zeebe.test.broker.protocol.brokerapi.data.Topology;
 import io.zeebe.transport.RemoteAddress;
+import org.junit.*;
+import org.junit.rules.RuleChain;
 
 public class PartitionedTopicSubscriptionTest
 {
@@ -73,8 +65,8 @@ public class PartitionedTopicSubscriptionTest
     {
         final Topology topology = new Topology()
             .addLeader(broker1, Protocol.SYSTEM_TOPIC, Protocol.SYSTEM_PARTITION)
-            .addLeader(broker1, TOPIC, PARTITION_1)
-            .addLeader(broker2, TOPIC, PARTITION_2);
+            .addLeader(broker1, clientRule.getDefaultTopicName(), PARTITION_1)
+            .addLeader(broker2, clientRule.getDefaultTopicName(), PARTITION_2);
 
         broker1.setCurrentTopology(topology);
         broker2.setCurrentTopology(topology);
@@ -90,9 +82,10 @@ public class PartitionedTopicSubscriptionTest
         broker2.stubTopicSubscriptionApi(789);
 
         // when
-        final TopicSubscription subscription = client.topics().newSubscription(TOPIC)
-            .handler(new RecordingEventHandler())
+        final TopicSubscription subscription = clientRule.subscriptionClient()
+            .newTopicSubscription()
             .name("hohoho")
+            .recordHandler(new RecordingHandler())
             .open();
 
         // then
@@ -112,8 +105,8 @@ public class PartitionedTopicSubscriptionTest
     protected List<ExecuteCommandRequest> getSubscribeRequests(StubBrokerRule broker)
     {
         return broker.getReceivedCommandRequests().stream()
-                .filter(r -> r.eventType() == EventType.SUBSCRIBER_EVENT
-                    && "SUBSCRIBE".equals(r.getCommand().get("state")))
+                .filter(r -> r.valueType() == ValueType.SUBSCRIBER
+                    && r.intent() == SubscriberIntent.SUBSCRIBE)
                 .collect(Collectors.toList());
     }
 
@@ -127,10 +120,11 @@ public class PartitionedTopicSubscriptionTest
         final int subscriberKey2 = 789;
         broker2.stubTopicSubscriptionApi(subscriberKey2);
 
-        final RecordingEventHandler eventHandler = new RecordingEventHandler();
-        client.topics().newSubscription(TOPIC)
-            .handler(eventHandler)
+        final RecordingHandler eventHandler = new RecordingHandler();
+        clientRule.subscriptionClient()
+            .newTopicSubscription()
             .name("hohoho")
+            .recordHandler(eventHandler)
             .open();
 
         final RemoteAddress clientAddressFromBroker1 = broker1.getReceivedCommandRequests().get(0).getSource();
@@ -143,8 +137,8 @@ public class PartitionedTopicSubscriptionTest
         broker2.pushTopicEvent(clientAddressFromBroker2, b -> b.partitionId(PARTITION_2).subscriberKey(subscriberKey2).key(key2));
 
         // then
-        waitUntil(() -> eventHandler.numRecordedEvents() == 2);
-        assertThat(eventHandler.getRecordedEvents()).extracting("metadata.key").containsExactlyInAnyOrder(key1, key2);
+        waitUntil(() -> eventHandler.numRecordedRecords() == 2);
+        assertThat(eventHandler.getRecordedRecords()).extracting("metadata.key").containsExactlyInAnyOrder(key1, key2);
     }
 
     @Test
@@ -156,10 +150,11 @@ public class PartitionedTopicSubscriptionTest
         final int subscriberKey2 = 789;
         broker2.stubTopicSubscriptionApi(subscriberKey2);
 
-        final TopicSubscription subscription = client.topics().newSubscription(TOPIC)
-                .handler(new RecordingEventHandler())
-                .name("hohoho")
-                .open();
+        final TopicSubscription subscription = clientRule.subscriptionClient()
+            .newTopicSubscription()
+            .name("hohoho")
+            .recordHandler(new RecordingHandler())
+            .open();
 
         // when
         subscription.close();
@@ -181,18 +176,19 @@ public class PartitionedTopicSubscriptionTest
         final int subscriberKey1 = 456;
         broker1.stubTopicSubscriptionApi(subscriberKey1);
 
-        broker2.onExecuteCommandRequest(EventType.SUBSCRIBER_EVENT, "SUBSCRIBE")
+        broker2.onExecuteCommandRequest(ValueType.SUBSCRIBER, SubscriberIntent.SUBSCRIBE)
             .respondWithError()
             .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
             .errorData("foo")
             .register();
 
-        final TopicSubscriptionBuilder subscriptionBuilder = client.topics().newSubscription(TOPIC)
-                .handler(new RecordingEventHandler())
-                .name("hohoho");
+        final TopicSubscriptionBuilderStep3 builder = clientRule.subscriptionClient()
+            .newTopicSubscription()
+            .name("hohoho")
+            .recordHandler(new RecordingHandler());
 
         // when
-        final Throwable failure = catchThrowable(() -> subscriptionBuilder.open());
+        final Throwable failure = catchThrowable(() -> builder.open());
 
         // then
         assertThat(failure)
@@ -210,16 +206,17 @@ public class PartitionedTopicSubscriptionTest
         final int subscriberKey1 = 456;
         broker1.stubTopicSubscriptionApi(subscriberKey1);
 
-        final ResponseController responseController = broker2.onExecuteCommandRequest(EventType.SUBSCRIBER_EVENT, "SUBSCRIBE")
+        final ResponseController responseController = broker2.onExecuteCommandRequest(ValueType.SUBSCRIBER, SubscriberIntent.SUBSCRIBE)
             .respondWithError()
             .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
             .errorData("foo")
             .registerControlled();
 
         // assuming that subscription to broker 1 is successful
-        final TopicSubscriptionBuilderImpl builder = (TopicSubscriptionBuilderImpl) client.topics().newSubscription(TOPIC)
-            .handler(new RecordingEventHandler())
-            .name("hohoho");
+        final TopicSubscriptionBuilderImpl builder = (TopicSubscriptionBuilderImpl) clientRule.subscriptionClient()
+            .newTopicSubscription()
+            .name("hohoho")
+            .recordHandler(new RecordingHandler());
 
         final Future<TopicSubscriberGroup> groupFuture = builder.buildSubscriberGroup();
         waitUntil(() -> getOpenSubscriptionRequests(broker1).size() == 1);
@@ -244,9 +241,10 @@ public class PartitionedTopicSubscriptionTest
         final int subscriberKey2 = 789;
         broker2.stubTopicSubscriptionApi(subscriberKey2);
 
-        final TopicSubscription subscription = client.topics().newSubscription(TOPIC)
-            .handler(new RecordingEventHandler())
+        final TopicSubscription subscription = clientRule.subscriptionClient()
+            .newTopicSubscription()
             .name("hohoho")
+            .recordHandler(new RecordingHandler())
             .open();
 
         // when
@@ -270,9 +268,10 @@ public class PartitionedTopicSubscriptionTest
         broker2.stubTopicSubscriptionApi(789);
 
         final String subscriptionName = "hohoho";
-        final TopicSubscription subscription = client.topics().newSubscription(TOPIC)
-            .handler(new RecordingEventHandler())
+        final TopicSubscription subscription = clientRule.subscriptionClient()
+            .newTopicSubscription()
             .name(subscriptionName)
+            .recordHandler(new RecordingHandler())
             .open();
 
         // when
@@ -301,12 +300,13 @@ public class PartitionedTopicSubscriptionTest
             .errorData("foo")
             .register();
 
-        final TopicSubscriptionBuilder subscriptionBuilder = client.topics().newSubscription(TOPIC)
-                .handler(new RecordingEventHandler())
-                .name("hohoho");
+        final TopicSubscriptionBuilderStep3 builder = clientRule.subscriptionClient()
+            .newTopicSubscription()
+            .name("hohoho")
+            .recordHandler(new RecordingHandler());
 
         // when
-        final Throwable failure = catchThrowable(() -> subscriptionBuilder.open());
+        final Throwable failure = catchThrowable(() -> builder.open());
 
         // then
         assertThat(failure)
@@ -325,13 +325,14 @@ public class PartitionedTopicSubscriptionTest
     {
         // given
         final String nonExistingTopic = "jj";
-        final TopicSubscriptionBuilder subscriptionBuilder = client.topics()
-                .newSubscription(nonExistingTopic)
-                .handler(new RecordingEventHandler())
-                .name("hohoho");
+
+        final TopicSubscriptionBuilderStep3 builder = client.topicClient(nonExistingTopic).subscriptionClient()
+            .newTopicSubscription()
+            .name("hohoho")
+            .recordHandler(new RecordingHandler());
 
         // when
-        final Throwable failure = catchThrowable(() -> subscriptionBuilder.open());
+        final Throwable failure = catchThrowable(() -> builder.open());
 
         // then
         assertThat(failure)
@@ -346,36 +347,6 @@ public class PartitionedTopicSubscriptionTest
     }
 
     @Test
-    public void shouldSumWorkCountOfPollableSubscription()
-    {
-        // given
-        final int subscriberKey1 = 456;
-        broker1.stubTopicSubscriptionApi(subscriberKey1);
-
-        final int subscriberKey2 = 789;
-        broker2.stubTopicSubscriptionApi(subscriberKey2);
-
-        final RecordingEventHandler eventHandler = new RecordingEventHandler();
-        final PollableTopicSubscription subscription = client.topics().newPollableSubscription(TOPIC)
-            .name("hohoho")
-            .open();
-
-        final RemoteAddress clientAddressFromBroker1 = broker1.getReceivedCommandRequests().get(0).getSource();
-        final RemoteAddress clientAddressFromBroker2 = broker2.getReceivedCommandRequests().get(0).getSource();
-
-        broker1.pushTopicEvent(clientAddressFromBroker1, b -> b.partitionId(PARTITION_1).subscriberKey(subscriberKey1).key(3));
-        broker2.pushTopicEvent(clientAddressFromBroker2, b -> b.partitionId(PARTITION_2).subscriberKey(subscriberKey2).key(4));
-
-        waitUntil(() -> ((SubscriberGroup<?>) subscription).size() == 2);
-
-        // when
-        final int polledEvents = subscription.poll(eventHandler);
-
-        // then
-        assertThat(polledEvents).isEqualTo(2);
-    }
-
-    @Test
     public void shouldSerializeHandlerInvocationForDifferentSubscribers()
     {
         // given
@@ -386,9 +357,11 @@ public class PartitionedTopicSubscriptionTest
         broker2.stubTopicSubscriptionApi(subscriberKey2);
 
         final ParallelismDetectionHandler eventHandler = new ParallelismDetectionHandler(Duration.ofMillis(500));
-        client.topics().newSubscription(TOPIC)
+
+        clientRule.subscriptionClient()
+            .newTopicSubscription()
             .name("hohoho")
-            .handler(eventHandler)
+            .recordHandler(eventHandler)
             .open();
 
         final RemoteAddress clientAddressFromBroker1 = broker1.getReceivedCommandRequests().get(0).getSource();
@@ -413,12 +386,12 @@ public class PartitionedTopicSubscriptionTest
         final int position1 = 987;
         final int position2 = 546;
 
-        // when
-        client.topics().newSubscription(TOPIC)
+        clientRule.subscriptionClient()
+            .newTopicSubscription()
             .name("hohoho")
+            .recordHandler(new RecordingHandler())
             .startAtPosition(PARTITION_1, position1)
             .startAtPosition(PARTITION_2, position2)
-            .handler(new RecordingEventHandler())
             .open();
 
         // then
@@ -438,12 +411,12 @@ public class PartitionedTopicSubscriptionTest
 
         final int position1 = 987;
 
-        // when
-        client.topics().newSubscription(TOPIC)
+        clientRule.subscriptionClient()
+            .newTopicSubscription()
             .name("hohoho")
+            .recordHandler(new RecordingHandler())
             .startAtTailOfTopic()
             .startAtPosition(PARTITION_1, position1)
-            .handler(new RecordingEventHandler())
             .open();
 
         // then
@@ -454,36 +427,11 @@ public class PartitionedTopicSubscriptionTest
         assertThat(broker2Request.getCommand()).containsEntry("startPosition", -1);
     }
 
-    @Test
-    public void shouldApplyStartPositionPerSubscriberForPollableSubscription()
-    {
-        // given
-        broker1.stubTopicSubscriptionApi(456);
-        broker2.stubTopicSubscriptionApi(789);
-
-        final int position1 = 987;
-        final int position2 = 546;
-
-        // when
-        client.topics().newPollableSubscription(TOPIC)
-            .name("hohoho")
-            .startAtPosition(PARTITION_1, position1)
-            .startAtPosition(PARTITION_2, position2)
-            .open();
-
-        // then
-        final ExecuteCommandRequest broker1Request = getSubscribeRequests(broker1).get(0);
-        assertThat(broker1Request.getCommand()).containsEntry("startPosition", position1);
-
-        final ExecuteCommandRequest broker2Request = getSubscribeRequests(broker2).get(0);
-        assertThat(broker2Request.getCommand()).containsEntry("startPosition", position2);
-    }
-
     protected List<ExecuteCommandRequest> getOpenSubscriptionRequests(StubBrokerRule broker)
     {
         return broker.getReceivedCommandRequests().stream()
-            .filter(r -> r.eventType() == EventType.SUBSCRIBER_EVENT &&
-                    "SUBSCRIBE".equals(r.getCommand().get("state")))
+            .filter(r -> r.valueType() == ValueType.SUBSCRIBER &&
+                r.intent() == SubscriberIntent.SUBSCRIBE)
             .collect(Collectors.toList());
     }
 

@@ -81,6 +81,8 @@ public class ExecuteCommandResponseBuilder
     public ExecuteCommandResponseBuilder rejection()
     {
         commandResponseWriter.setRecordType(RecordType.COMMAND_REJECTION);
+        commandResponseWriter.setIntentFunction(r -> r.intent());
+
         return this;
     }
 
@@ -92,7 +94,7 @@ public class ExecuteCommandResponseBuilder
 
     public ExecuteCommandResponseBuilder intent(Intent intent)
     {
-        commandResponseWriter.setIntent(intent);
+        commandResponseWriter.setIntentFunction(r -> intent);
         return this;
     }
 

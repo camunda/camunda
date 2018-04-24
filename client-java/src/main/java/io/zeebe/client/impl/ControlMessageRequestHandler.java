@@ -15,20 +15,10 @@
  */
 package io.zeebe.client.impl;
 
-import org.agrona.DirectBuffer;
-import org.agrona.ExpandableArrayBuffer;
-import org.agrona.MutableDirectBuffer;
+import io.zeebe.protocol.clientapi.*;
+import org.agrona.*;
 import org.agrona.io.DirectBufferInputStream;
 import org.agrona.io.ExpandableDirectBufferOutputStream;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import io.zeebe.client.task.impl.ControlMessageRequest;
-import io.zeebe.protocol.clientapi.ControlMessageRequestDecoder;
-import io.zeebe.protocol.clientapi.ControlMessageRequestEncoder;
-import io.zeebe.protocol.clientapi.ControlMessageResponseDecoder;
-import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
-import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
 
 @SuppressWarnings("rawtypes")
 public class ControlMessageRequestHandler implements RequestResponseHandler
@@ -38,14 +28,14 @@ public class ControlMessageRequestHandler implements RequestResponseHandler
 
     protected final ControlMessageRequestDecoder decoder = new ControlMessageRequestDecoder();
 
-    protected final ObjectMapper objectMapper;
+    protected final ZeebeObjectMapperImpl objectMapper;
 
     protected ExpandableArrayBuffer serializedMessage = new ExpandableArrayBuffer();
     protected int serializedMessageLength = 0;
 
     protected ControlMessageRequest message;
 
-    public ControlMessageRequestHandler(ObjectMapper objectMapper, ControlMessageRequest controlMessage)
+    public ControlMessageRequestHandler(ZeebeObjectMapperImpl objectMapper, ControlMessageRequest controlMessage)
     {
         this.objectMapper = objectMapper;
         this.message = controlMessage;
@@ -73,14 +63,8 @@ public class ControlMessageRequestHandler implements RequestResponseHandler
         final int serializedMessageOffset = messageHeaderOffset + ControlMessageRequestEncoder.dataHeaderLength();
 
         final ExpandableDirectBufferOutputStream out = new ExpandableDirectBufferOutputStream(serializedMessage, serializedMessageOffset);
-        try
-        {
-            objectMapper.writeValue(out, message.getRequest());
-        }
-        catch (final Throwable e)
-        {
-            throw new RuntimeException("Failed to serialize message", e);
-        }
+
+        objectMapper.toJson(out, message.getRequest());
 
         // can only write the header after we have written the message, as we don't know the length beforehand
         final short commandLength = (short)out.position();
@@ -107,7 +91,7 @@ public class ControlMessageRequestHandler implements RequestResponseHandler
         return responseHeader.schemaId() == ControlMessageResponseDecoder.SCHEMA_ID && responseHeader.templateId() == ControlMessageResponseDecoder.TEMPLATE_ID;
     }
 
-    @SuppressWarnings({ "unchecked", "resource" })
+    @SuppressWarnings({ "unchecked" })
     @Override
     public Object getResult(DirectBuffer buffer, int offset, int blockLength, int version)
     {
@@ -119,15 +103,8 @@ public class ControlMessageRequestHandler implements RequestResponseHandler
                 decoder.limit() + ControlMessageRequestDecoder.dataHeaderLength(),
                 dataLength);
 
-        final Object response;
-        try
-        {
-            response = objectMapper.readValue(inStream, message.getResponseClass());
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException("Cannot deserialize event in response", e);
-        }
+        final Object response = objectMapper.fromJson(inStream, message.getResponseClass());
+
         message.onResponse(response);
 
         return response;

@@ -17,16 +17,19 @@ package io.zeebe.client.event;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class ControllableHandler implements UniversalEventHandler
+import io.zeebe.client.api.record.Record;
+import io.zeebe.client.api.subscription.RecordHandler;
+
+public class ControllableHandler implements RecordHandler
 {
 
     protected Object monitor = new Object();
     protected boolean shouldWait = true;
     protected boolean isWaiting = false;
-    protected AtomicInteger numHandledEvents = new AtomicInteger(0);
+    protected AtomicInteger numHandledRecords = new AtomicInteger(0);
 
     @Override
-    public void handle(GeneralEvent event) throws Exception
+    public void onRecord(Record record) throws Exception
     {
         if (shouldWait)
         {
@@ -38,12 +41,12 @@ public class ControllableHandler implements UniversalEventHandler
             }
         }
 
-        numHandledEvents.incrementAndGet();
+        numHandledRecords.incrementAndGet();
     }
 
-    public int getNumHandledEvents()
+    public int getNumHandledRecords()
     {
-        return numHandledEvents.get();
+        return numHandledRecords.get();
     }
 
     public void signal()

@@ -15,28 +15,18 @@
  */
 package io.zeebe.client.impl;
 
-import static io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder.commandHeaderLength;
-
 import java.util.function.BiFunction;
 
-import org.agrona.DirectBuffer;
-import org.agrona.ExpandableArrayBuffer;
-import org.agrona.MutableDirectBuffer;
+import io.zeebe.client.api.record.Record;
+import io.zeebe.client.api.record.RecordMetadata;
+import io.zeebe.client.cmd.ClientCommandRejectedException;
+import io.zeebe.client.impl.record.RecordImpl;
+import io.zeebe.client.impl.record.RecordMetadataImpl;
+import io.zeebe.protocol.clientapi.*;
+import io.zeebe.protocol.intent.Intent;
+import org.agrona.*;
 import org.agrona.io.DirectBufferInputStream;
 import org.agrona.io.ExpandableDirectBufferOutputStream;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import io.zeebe.client.cmd.ClientCommandRejectedException;
-import io.zeebe.client.cmd.ClientException;
-import io.zeebe.client.event.EventMetadata;
-import io.zeebe.client.event.impl.EventImpl;
-import io.zeebe.client.event.impl.EventTypeMapping;
-import io.zeebe.client.impl.cmd.CommandImpl;
-import io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder;
-import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
-import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
-import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
 
 public class CommandRequestHandler implements RequestResponseHandler
 {
@@ -45,26 +35,24 @@ public class CommandRequestHandler implements RequestResponseHandler
 
     protected ExecuteCommandResponseDecoder decoder = new ExecuteCommandResponseDecoder();
 
-    protected EventImpl event;
-    protected String expectedState;
-    protected BiFunction<EventImpl, EventImpl, String> errorFunction;
+    protected RecordImpl command;
+    protected BiFunction<Record, String, String> errorFunction;
 
-    protected final ObjectMapper objectMapper;
+    protected final ZeebeObjectMapperImpl objectMapper;
 
     protected ExpandableArrayBuffer serializedCommand = new ExpandableArrayBuffer();
     protected int serializedCommandLength = 0;
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public CommandRequestHandler(ObjectMapper objectMapper, CommandImpl command)
+    public CommandRequestHandler(ZeebeObjectMapperImpl objectMapper, CommandImpl command)
     {
         this.objectMapper = objectMapper;
-        this.event = command.getEvent();
-        this.expectedState = command.getExpectedStatus();
+        this.command = command.getCommand();
         this.errorFunction = command::generateError;
-        serialize(event);
+        serialize(command.getCommand());
     }
 
-    protected void serialize(EventImpl event)
+    protected void serialize(RecordImpl event)
     {
         int offset = 0;
         headerEncoder.wrap(serializedCommand, offset)
@@ -77,7 +65,11 @@ public class CommandRequestHandler implements RequestResponseHandler
 
         encoder.wrap(serializedCommand, offset);
 
-        final EventMetadata metadata = event.getMetadata();
+        final RecordMetadataImpl metadata = event.getMetadata();
+
+        encoder
+            .partitionId(metadata.getPartitionId())
+            .position(metadata.getPosition());
 
         if (metadata.getKey() < 0)
         {
@@ -88,24 +80,16 @@ public class CommandRequestHandler implements RequestResponseHandler
             encoder.key(metadata.getKey());
         }
 
-        encoder
-            .partitionId(metadata.getPartitionId())
-            .eventType(EventTypeMapping.mapEventType(metadata.getType()))
-            .position(metadata.getPosition());
+        encoder.valueType(metadata.getProtocolValueType());
+        encoder.intent(metadata.getProtocolIntent().value());
 
         offset = encoder.limit();
         final int commandHeaderOffset = offset;
-        final int serializedCommandOffset = commandHeaderOffset + commandHeaderLength();
+        final int serializedCommandOffset = commandHeaderOffset + ExecuteCommandRequestEncoder.valueHeaderLength();
 
         final ExpandableDirectBufferOutputStream out = new ExpandableDirectBufferOutputStream(serializedCommand, serializedCommandOffset);
-        try
-        {
-            objectMapper.writeValue(out, event);
-        }
-        catch (final Throwable e)
-        {
-            throw new RuntimeException("Failed to serialize command", e);
-        }
+
+        objectMapper.toJson(out, event);
 
         // can only write the header after we have written the command, as we don't know the length beforehand
         final short commandLength = (short) out.position();
@@ -133,39 +117,44 @@ public class CommandRequestHandler implements RequestResponseHandler
     }
 
     @Override
-    public EventImpl getResult(DirectBuffer buffer, int offset, int blockLength, int version)
+    public RecordImpl getResult(DirectBuffer buffer, int offset, int blockLength, int version)
     {
         decoder.wrap(buffer, offset, blockLength, version);
 
-        final long key = decoder.key();
+
         final int partitionId = decoder.partitionId();
         final long position = decoder.position();
+        final long key = decoder.key();
+        final RecordType recordType = decoder.recordType();
 
-        final int eventLength = decoder.eventLength();
+        if (recordType == RecordType.COMMAND_REJECTION)
+        {
+            final String rejectionReason = "unknown";
+
+            throw new ClientCommandRejectedException(errorFunction.apply(command, rejectionReason));
+        }
+
+        final ValueType valueType = decoder.valueType();
+        final Intent intent = Intent.fromProtocolValue(valueType, decoder.intent());
+
+        final int valueLength = decoder.valueLength();
 
         final DirectBufferInputStream inStream = new DirectBufferInputStream(
                 buffer,
-                decoder.limit() + ExecuteCommandResponseDecoder.eventHeaderLength(),
-                eventLength);
-        final EventImpl result;
-        try
-        {
-            result = objectMapper.readValue(inStream, event.getClass());
-        }
-        catch (Exception e)
-        {
-            throw new ClientException("Cannot deserialize event in response", e);
-        }
+                decoder.limit() + ExecuteCommandResponseDecoder.valueHeaderLength(),
+                valueLength);
 
-        result.setKey(key);
-        result.setPartitionId(partitionId);
-        result.setTopicName(event.getMetadata().getTopicName());
-        result.setEventPosition(position);
+        final RecordImpl result = objectMapper.fromJson(inStream, command.getEventClass());
 
-        if (expectedState != null && !expectedState.equals(result.getState()))
-        {
-            throw new ClientCommandRejectedException(errorFunction.apply(event, result));
-        }
+        result.setIntent(intent);
+
+        final RecordMetadataImpl metadata = result.getMetadata();
+        metadata.setKey(key);
+        metadata.setPartitionId(partitionId);
+        metadata.setTopicName(command.getMetadata().getTopicName());
+        metadata.setPosition(position);
+        metadata.setRecordType(recordType);
+        metadata.setValueType(valueType);
 
         return result;
     }
@@ -173,16 +162,16 @@ public class CommandRequestHandler implements RequestResponseHandler
     @Override
     public String getTargetTopic()
     {
-        final EventMetadata metadata = event.getMetadata();
+        final RecordMetadata metadata = command.getMetadata();
         return metadata.getTopicName();
     }
 
     @Override
     public int getTargetPartition()
     {
-        if (event.hasValidPartitionId())
+        if (command.hasValidPartitionId())
         {
-            return event.getMetadata().getPartitionId();
+            return command.getMetadata().getPartitionId();
         }
         else
         {
@@ -193,18 +182,18 @@ public class CommandRequestHandler implements RequestResponseHandler
     @Override
     public void onSelectedPartition(int partitionId)
     {
-        event.setPartitionId(partitionId);
+        command.setPartitionId(partitionId);
         encoder.partitionId(partitionId);
     }
 
     @Override
     public String describeRequest()
     {
-        final EventMetadata eventMetadata = event.getMetadata();
-        return "[ topic = " + eventMetadata.getTopicName() +
-                ", partition = " + (event.hasValidPartitionId() ? eventMetadata.getPartitionId() : "any") +
-                ", event type = " + eventMetadata.getType().name() +
-                ", state = " + event.getState() + " ]";
+        final RecordMetadata metadata = command.getMetadata();
+        return "[ topic = " + metadata.getTopicName() +
+                ", partition = " + (command.hasValidPartitionId() ? metadata.getPartitionId() : "any") +
+                ", value type = " + metadata.getValueType() +
+                ", command = " + metadata.getIntent() + " ]";
     }
 
 }

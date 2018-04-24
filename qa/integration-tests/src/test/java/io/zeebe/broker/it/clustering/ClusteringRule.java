@@ -22,8 +22,10 @@ import io.zeebe.client.clustering.impl.BrokerPartitionState;
 import io.zeebe.client.clustering.impl.TopologyBroker;
 import io.zeebe.client.clustering.impl.TopologyResponse;
 import io.zeebe.client.event.Event;
-import io.zeebe.client.topic.Topic;
-import io.zeebe.client.topic.Topics;
+import io.zeebe.client.impl.clustering.BrokerInfoImpl;
+import io.zeebe.client.impl.clustering.PartitionInfoImpl;
+import io.zeebe.client.impl.topic.Topic;
+import io.zeebe.client.impl.topic.Topics;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.FileUtil;
@@ -129,19 +131,18 @@ public class ClusteringRule extends ExternalResource
      * @param partition
      * @return
      */
-    public TopologyBroker getLeaderForPartition(int partition)
+    public BrokerInfoImpl getLeaderForPartition(int partition)
     {
         return
-            doRepeatedly(() ->
-            {
-                final List<TopologyBroker> brokers = requestBrokers();
+            doRepeatedly(() -> {
+                final List<BrokerInfoImpl> brokers = zeebeClient.requestTopology().execute().getBrokers();
                 return extractPartitionLeader(brokers, partition);
             })
                 .until(Optional::isPresent)
                 .get();
     }
 
-    private Optional<TopologyBroker> extractPartitionLeader(List<TopologyBroker> topologyBrokers, int partition)
+    private Optional<BrokerInfoImpl> extractPartitionLeader(List<BrokerInfoImpl> topologyBrokers, int partition)
     {
         return topologyBrokers.stream()
             .filter(b -> b.getPartitions()
@@ -181,7 +182,7 @@ public class ClusteringRule extends ExternalResource
         return waitForSpreading(() -> waitForTopicAvailability(topicName));
     }
 
-    private boolean hasPartitionsWithReplicationFactor(List<TopologyBroker> brokers, String topicName, int partitionCount, int replicationFactor)
+    private boolean hasPartitionsWithReplicationFactor(List<BrokerInfoImpl> brokers, String topicName, int partitionCount, int replicationFactor)
     {
         final AtomicLong leaders = new AtomicLong();
         final AtomicLong followers = new AtomicLong();
@@ -292,8 +293,8 @@ public class ClusteringRule extends ExternalResource
                           .stream()
                           .filter(broker -> broker.getSocketAddress().equals(socketAddress))
                           .flatMap(broker -> broker.getPartitions().stream())
-                          .filter(BrokerPartitionState::isLeader)
-                          .map(BrokerPartitionState::getPartitionId)
+                          .filter(PartitionInfoImpl::isLeader)
+                          .map(PartitionInfoImpl::getPartitionId)
                           .collect(Collectors.toList());
     }
 
@@ -307,7 +308,7 @@ public class ClusteringRule extends ExternalResource
                           .execute()
                           .getBrokers()
                           .stream()
-                          .map(TopologyBroker::getSocketAddress)
+                          .map(BrokerInfoImpl::getSocketAddress)
                           .collect(Collectors.toList());
 
     }
@@ -377,8 +378,8 @@ public class ClusteringRule extends ExternalResource
                     topologyBrokers != null && topologyBrokers.stream()
                         .filter(broker -> !broker.getSocketAddress().equals(oldLeader))
                         .flatMap(broker -> broker.getPartitions().stream())
-                        .filter(BrokerPartitionState::isLeader)
-                        .map(BrokerPartitionState::getPartitionId)
+                        .filter(PartitionInfoImpl::isLeader)
+                        .map(PartitionInfoImpl::getPartitionId)
                         .collect(Collectors.toSet())
                         .containsAll(partitions));
         });

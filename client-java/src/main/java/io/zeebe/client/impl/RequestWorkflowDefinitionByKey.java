@@ -15,28 +15,27 @@
  */
 package io.zeebe.client.impl;
 
-import io.zeebe.client.clustering.impl.ClientTopologyManager;
-import io.zeebe.client.event.WorkflowDefinition;
-import io.zeebe.client.task.impl.ControlMessageRequest;
-import io.zeebe.client.workflow.impl.WorkflowDefinitionImpl;
+import io.zeebe.client.api.commands.Workflow;
+import io.zeebe.client.impl.clustering.ClientTopologyManager;
+import io.zeebe.client.impl.event.WorkflowImpl;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 
-public class RequestWorkflowDefinitionByKey extends ControlMessageRequest<WorkflowDefinition>
+public class RequestWorkflowDefinitionByKey extends ControlMessageRequest<Workflow>
 {
     private RequestWorkflowDefinitionRequest request = new RequestWorkflowDefinitionRequest();
 
     public RequestWorkflowDefinitionByKey(RequestManager commandManager, ClientTopologyManager topologyListener, long key)
     {
-        super(commandManager, ControlMessageType.REQUEST_WORKFLOW, WorkflowDefinition.class);
+        super(commandManager, ControlMessageType.GET_WORKFLOW, Workflow.class);
         setTargetPartition(Protocol.SYSTEM_PARTITION);
         request.setWorkflowKey(key);
     }
 
     @Override
-    public Class<? extends WorkflowDefinition> getResponseClass()
+    public Class<? extends Workflow> getResponseClass()
     {
-        return WorkflowDefinitionImpl.class;
+        return WorkflowImpl.class;
     }
 
     @Override

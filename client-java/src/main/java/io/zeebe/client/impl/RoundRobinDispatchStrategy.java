@@ -19,8 +19,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import io.zeebe.client.clustering.impl.ClientTopologyManager;
-import io.zeebe.client.clustering.impl.TopologyImpl;
+import io.zeebe.client.impl.clustering.ClientTopologyManager;
+import io.zeebe.client.impl.clustering.ClusterStateImpl;
 
 public class RoundRobinDispatchStrategy implements RequestDispatchStrategy
 {
@@ -36,7 +36,7 @@ public class RoundRobinDispatchStrategy implements RequestDispatchStrategy
     @Override
     public int determinePartition(String topic)
     {
-        final TopologyImpl topology = topologyManager.getTopology();
+        final ClusterStateImpl topology = topologyManager.getTopology();
 
         final AtomicInteger offsetCounter = topicOffsets.computeIfAbsent(topic, t -> new AtomicInteger(0));
         final int offset = offsetCounter.getAndIncrement();

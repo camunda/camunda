@@ -24,11 +24,12 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.event.Event;
+import io.zeebe.client.api.events.TopicEvent;
 import io.zeebe.client.util.ClientRule;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.intent.TopicIntent;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 
@@ -50,37 +51,42 @@ public class CreateTopicTest
     public void shouldCreateTopic()
     {
         // given
-        brokerRule.onExecuteCommandRequest(Protocol.SYSTEM_PARTITION, EventType.TOPIC_EVENT, "CREATE")
+        brokerRule.onExecuteCommandRequest(Protocol.SYSTEM_PARTITION, ValueType.TOPIC, TopicIntent.CREATE)
             .respondWith()
+            .event()
             .key(123)
             .position(456)
+            .intent(TopicIntent.CREATING)
             .value()
               .allOf(ExecuteCommandRequest::getCommand)
-              .put("state", "CREATING")
               .done()
             .register();
 
         // when
-        final Event responseEvent = clientRule.topics().create("newTopic", 14).execute();
+        final TopicEvent responseEvent = clientRule.getClient().newCreateTopicCommand()
+            .name("newTopic")
+            .partitions(14)
+            .replicationFactor(3)
+            .send()
+            .join();
 
         // then
         final ExecuteCommandRequest request = brokerRule.getReceivedCommandRequests().get(0);
-        assertThat(request.eventType()).isEqualTo(EventType.TOPIC_EVENT);
+        assertThat(request.valueType()).isEqualTo(ValueType.TOPIC);
         assertThat(request.partitionId()).isEqualTo(Protocol.SYSTEM_PARTITION);
+        assertThat(request.intent()).isEqualTo(TopicIntent.CREATE);
         assertThat(request.position()).isEqualTo(ExecuteCommandRequestEncoder.positionNullValue());
 
         assertThat(request.getCommand()).containsOnly(
-                entry("state", "CREATE"),
                 entry("name", "newTopic"),
                 entry("partitions", 14),
-                entry("replicationFactor", 1));
+                entry("replicationFactor", 3));
 
         assertThat(responseEvent.getMetadata().getKey()).isEqualTo(123L);
         assertThat(responseEvent.getMetadata().getTopicName()).isEqualTo(Protocol.SYSTEM_TOPIC);
         assertThat(responseEvent.getMetadata().getPartitionId()).isEqualTo(Protocol.SYSTEM_PARTITION);
         assertThat(responseEvent.getMetadata().getPosition()).isEqualTo(456);
-
-        assertThat(responseEvent.getState()).isEqualTo("CREATING");
+        assertThat(responseEvent.getState()).isEqualTo(TopicEvent.TopicState.CREATING);
     }
 
     @Test
@@ -91,8 +97,43 @@ public class CreateTopicTest
         exception.expectMessage("name must not be null");
 
         // when
-        clientRule.topics()
-            .create(null, 3)
-            .execute();
+        clientRule.getClient().newCreateTopicCommand()
+            .name(null)
+            .partitions(14)
+            .replicationFactor(3)
+            .send()
+            .join();
+    }
+
+    @Test
+    public void shouldValidatePartitionsGreaterThanZero()
+    {
+        // then
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("partitions must be greater than 0");
+
+        // when
+        clientRule.getClient().newCreateTopicCommand()
+            .name("foo")
+            .partitions(-1)
+            .replicationFactor(3)
+            .send()
+            .join();
+    }
+
+    @Test
+    public void shouldValidateReplicationFactorGreaterThanZero()
+    {
+        // then
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("replicationFactor must be greater than 0");
+
+        // when
+        clientRule.getClient().newCreateTopicCommand()
+            .name("foo")
+            .partitions(14)
+            .replicationFactor(-1)
+            .send()
+            .join();
     }
 }

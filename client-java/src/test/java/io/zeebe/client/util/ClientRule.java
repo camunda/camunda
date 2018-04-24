@@ -15,14 +15,19 @@
  */
 package io.zeebe.client.util;
 
-import io.zeebe.client.*;
+import java.util.function.Consumer;
+
+import org.junit.rules.ExternalResource;
+
+import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.ZeebeClientBuilder;
+import io.zeebe.client.api.clients.JobClient;
+import io.zeebe.client.api.clients.SubscriptionClient;
+import io.zeebe.client.api.clients.WorkflowClient;
 import io.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.zeebe.client.impl.ZeebeClientImpl;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import io.zeebe.util.sched.clock.ControlledActorClock;
-import org.junit.rules.ExternalResource;
-
-import java.util.function.Consumer;
 
 public class ClientRule extends ExternalResource
 {
@@ -72,19 +77,19 @@ public class ClientRule extends ExternalResource
         return client;
     }
 
-    public TopicsClient topics()
+    public WorkflowClient workflowClient()
     {
-        return client.topics();
+        return client.topicClient(getDefaultTopicName()).workflowClient();
     }
 
-    public WorkflowsClient workflows()
+    public JobClient jobClient()
     {
-        return client.workflows();
+        return client.topicClient(getDefaultTopicName()).jobClient();
     }
 
-    public TasksClient tasks()
+    public SubscriptionClient subscriptionClient()
     {
-        return client.tasks();
+        return client.topicClient(getDefaultTopicName()).subscriptionClient();
     }
 
     public String getDefaultTopicName()

@@ -15,7 +15,6 @@
  */
 package io.zeebe.client.workflow;
 
-import static io.zeebe.protocol.clientapi.EventType.DEPLOYMENT_EVENT;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -24,12 +23,14 @@ import java.io.File;
 import java.util.*;
 
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.api.events.DeploymentEvent;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
-import io.zeebe.client.event.DeploymentEvent;
 import io.zeebe.client.util.ClientRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.protocol.Protocol;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import org.junit.*;
@@ -65,18 +66,14 @@ public class CreateDeploymentTest
     public void shouldSendDeploymentRequestToSystemTopic()
     {
         // given
-        brokerRule.onExecuteCommandRequest(Protocol.SYSTEM_PARTITION, DEPLOYMENT_EVENT, "CREATE")
-            .respondWith()
-            .key(2L)
-            .value()
-                .put("state", "CREATED")
-                .done()
-            .register();
+        brokerRule.deployments().registerCreateCommand();
 
         // when
-        final DeploymentEvent deployment = clientRule.workflows().deploy("test-topic")
+        final DeploymentEvent deployment = client.topicClient("test-topic").workflowClient()
+            .newDeployCommand()
             .addWorkflowModel(WORKFLOW_MODEL, "model.bpmn")
-            .execute();
+            .send()
+            .join();
 
         // then
         assertThat(brokerRule.getReceivedCommandRequests()).hasSize(1);
@@ -85,6 +82,7 @@ public class CreateDeploymentTest
         assertThat(commandRequest.partitionId()).isEqualTo(Protocol.SYSTEM_PARTITION);
         assertThat(commandRequest.getCommand()).containsEntry("topicName", "test-topic");
 
+        assertThat(deployment.getDeploymentTopic()).isEqualTo("test-topic");
         assertThat(deployment.getMetadata().getTopicName()).isEqualTo(Protocol.SYSTEM_TOPIC);
     }
 
@@ -103,28 +101,28 @@ public class CreateDeploymentTest
         deployedWorkflow.put("version", 2);
         deployedWorkflows.add(deployedWorkflow);
 
-        brokerRule.onExecuteCommandRequest(r -> r.eventType() == DEPLOYMENT_EVENT)
-            .respondWith()
+        brokerRule.deployments().registerCreateCommand(b -> b
             .key(2L)
-            .value()
-                .put("state", "CREATED")
-                .put("deployedWorkflows", deployedWorkflows)
-                .done()
-            .register();
+            .value().put("deployedWorkflows", deployedWorkflows).done());
 
         // when
-        final DeploymentEvent deployment = clientRule.workflows().deploy(clientRule.getDefaultTopicName())
+        final DeploymentEvent deployment = clientRule.workflowClient()
+            .newDeployCommand()
             .addWorkflowModel(WORKFLOW_MODEL, "model.bpmn")
-            .execute();
+            .send()
+            .join();
 
         // then
         assertThat(brokerRule.getReceivedCommandRequests()).hasSize(1);
 
         final ExecuteCommandRequest commandRequest = brokerRule.getReceivedCommandRequests().get(0);
+        assertThat(commandRequest.valueType()).isEqualTo(ValueType.DEPLOYMENT);
+        assertThat(commandRequest.intent()).isEqualTo(DeploymentIntent.CREATE);
         assertThat(commandRequest.key()).isEqualTo(-1);
-        assertThat(commandRequest.getCommand()).containsEntry("state", "CREATE");
 
         assertThat(deployment.getMetadata().getKey()).isEqualTo(2L);
+        assertThat(deployment.getMetadata().getTopicName()).isEqualTo(Protocol.SYSTEM_TOPIC);
+        assertThat(deployment.getMetadata().getPartitionId()).isEqualTo(Protocol.SYSTEM_PARTITION);
 
         assertThat(deployment.getDeployedWorkflows()).hasSize(2);
         assertThat(deployment.getDeployedWorkflows()).extracting("bpmnProcessId").contains("foo", "bar");
@@ -135,23 +133,18 @@ public class CreateDeploymentTest
     public void shouldRejectCreateDeployment()
     {
         // given
-        brokerRule.onExecuteCommandRequest(DEPLOYMENT_EVENT, "CREATE")
-            .respondWith()
-            .key(2L)
-            .value()
-                .put("state", "REJECTED")
-                .put("errorMessage", "foo")
-                .done()
-            .register();
+        brokerRule.deployments().registerCreateCommand(b -> b.rejection());
 
         // then
         thrown.expect(ClientCommandRejectedException.class);
-        thrown.expectMessage("Deployment was rejected: foo");
+        thrown.expectMessage("Command was rejected by broker (CREATE)");
 
         // when
-        clientRule.workflows().deploy(clientRule.getDefaultTopicName())
+        clientRule.workflowClient()
+            .newDeployCommand()
             .addWorkflowModel(WORKFLOW_MODEL, "model.bpmn")
-            .execute();
+            .send()
+            .join();
     }
 
     @SuppressWarnings("unchecked")
@@ -159,12 +152,14 @@ public class CreateDeploymentTest
     public void shouldDeployResourceAsWorkflowModel()
     {
         // given
-        stubDeploymentRequest();
+        brokerRule.deployments().registerCreateCommand();
 
         // when
-        clientRule.workflows().deploy(clientRule.getDefaultTopicName())
+        clientRule.workflowClient()
+            .newDeployCommand()
             .addWorkflowModel(WORKFLOW_MODEL, "model.bpmn")
-            .execute();
+            .send()
+            .join();
 
         // then
         assertThat(brokerRule.getReceivedCommandRequests()).hasSize(1);
@@ -183,12 +178,14 @@ public class CreateDeploymentTest
     public void shouldDeployResourceAsString()
     {
         // given
-        stubDeploymentRequest();
+        brokerRule.deployments().registerCreateCommand();
 
         // when
-        clientRule.workflows().deploy(clientRule.getDefaultTopicName())
+        clientRule.workflowClient()
+            .newDeployCommand()
             .addResourceStringUtf8(Bpmn.convertToString(WORKFLOW_MODEL), "workflow.bpmn")
-            .execute();
+            .send()
+            .join();
 
         // then
         assertThat(brokerRule.getReceivedCommandRequests()).hasSize(1);
@@ -207,12 +204,14 @@ public class CreateDeploymentTest
     public void shouldDeployResourceAsBytes()
     {
         // given
-        stubDeploymentRequest();
+        brokerRule.deployments().registerCreateCommand();
 
         // when
-        clientRule.workflows().deploy(clientRule.getDefaultTopicName())
+        clientRule.workflowClient()
+            .newDeployCommand()
             .addResourceBytes(WORKFLOW_AS_BYTES, "workflow.bpmn")
-            .execute();
+            .send()
+            .join();
 
         // then
         assertThat(brokerRule.getReceivedCommandRequests()).hasSize(1);
@@ -231,12 +230,14 @@ public class CreateDeploymentTest
     public void shouldDeployResourceAsStream()
     {
         // given
-        stubDeploymentRequest();
+        brokerRule.deployments().registerCreateCommand();
 
         // when
-        clientRule.workflows().deploy(clientRule.getDefaultTopicName())
+        clientRule.workflowClient()
+            .newDeployCommand()
             .addResourceStream(new ByteArrayInputStream(WORKFLOW_AS_BYTES), "workflow.bpmn")
-            .execute();
+            .send()
+            .join();
 
         // then
         assertThat(brokerRule.getReceivedCommandRequests()).hasSize(1);
@@ -255,14 +256,16 @@ public class CreateDeploymentTest
     public void shouldDeployResourceAsXmlFile() throws Exception
     {
         // given
-        stubDeploymentRequest();
+        brokerRule.deployments().registerCreateCommand();
 
         // when
         final String filePath = getClass().getResource("/workflows/one-task-process.bpmn").toURI().getPath();
 
-        clientRule.workflows().deploy(clientRule.getDefaultTopicName())
+        clientRule.workflowClient()
+            .newDeployCommand()
             .addResourceFile(filePath)
-            .execute();
+            .send()
+            .join();
 
         // then
         assertThat(brokerRule.getReceivedCommandRequests()).hasSize(1);
@@ -284,14 +287,16 @@ public class CreateDeploymentTest
     public void shouldDeployResourceAsYamlFile() throws Exception
     {
         // given
-        stubDeploymentRequest();
+        brokerRule.deployments().registerCreateCommand();
 
         // when
         final String filePath = getClass().getResource("/workflows/simple-workflow.yaml").toURI().getPath();
 
-        clientRule.workflows().deploy(clientRule.getDefaultTopicName())
+        clientRule.workflowClient()
+            .newDeployCommand()
             .addResourceFile(filePath)
-            .execute();
+            .send()
+            .join();
 
         // then
         assertThat(brokerRule.getReceivedCommandRequests()).hasSize(1);
@@ -313,13 +318,14 @@ public class CreateDeploymentTest
     public void shouldDeployResourceFromXmlClasspath() throws Exception
     {
         // given
-        stubDeploymentRequest();
+        brokerRule.deployments().registerCreateCommand();
 
         // when
-
-        clientRule.workflows().deploy(clientRule.getDefaultTopicName())
+        clientRule.workflowClient()
+            .newDeployCommand()
             .addResourceFromClasspath("workflows/one-task-process.bpmn")
-            .execute();
+            .send()
+            .join();
 
         // then
         assertThat(brokerRule.getReceivedCommandRequests()).hasSize(1);
@@ -343,13 +349,14 @@ public class CreateDeploymentTest
     public void shouldDeployResourceFromYamlClasspath() throws Exception
     {
         // given
-        stubDeploymentRequest();
+        brokerRule.deployments().registerCreateCommand();
 
         // when
-
-        clientRule.workflows().deploy(clientRule.getDefaultTopicName())
+        clientRule.workflowClient()
+            .newDeployCommand()
             .addResourceFromClasspath("workflows/simple-workflow.yaml")
-            .execute();
+            .send()
+            .join();
 
         // then
         assertThat(brokerRule.getReceivedCommandRequests()).hasSize(1);
@@ -373,16 +380,18 @@ public class CreateDeploymentTest
     public void shouldDeployMultipleResources()
     {
         // given
-        stubDeploymentRequest();
+        brokerRule.deployments().registerCreateCommand();
 
         final WorkflowDefinition definition1 = Bpmn.createExecutableWorkflow("model1").startEvent().done();
         final WorkflowDefinition definition2 = Bpmn.createExecutableWorkflow("model2").startEvent().done();
 
         // when
-        clientRule.workflows().deploy(clientRule.getDefaultTopicName())
+        clientRule.workflowClient()
+            .newDeployCommand()
             .addWorkflowModel(definition1, "model1.bpmn")
             .addWorkflowModel(definition2, "model2.bpmn")
-            .execute();
+            .send()
+            .join();
 
         // then
         assertThat(brokerRule.getReceivedCommandRequests()).hasSize(1);
@@ -402,9 +411,11 @@ public class CreateDeploymentTest
         thrown.expect(RuntimeException.class);
         thrown.expectMessage("Cannot deploy resource from file");
 
-        clientRule.workflows().deploy(clientRule.getDefaultTopicName())
+        clientRule.workflowClient()
+            .newDeployCommand()
             .addResourceFile("not existing")
-            .execute();
+            .send()
+            .join();
     }
 
     @Test
@@ -413,9 +424,11 @@ public class CreateDeploymentTest
         thrown.expect(RuntimeException.class);
         thrown.expectMessage("Cannot deploy resource from classpath");
 
-        clientRule.workflows().deploy(clientRule.getDefaultTopicName())
+        clientRule.workflowClient()
+            .newDeployCommand()
             .addResourceFromClasspath("not existing")
-            .execute();
+            .send()
+            .join();
     }
 
     @Test
@@ -424,9 +437,11 @@ public class CreateDeploymentTest
         thrown.expect(RuntimeException.class);
         thrown.expectMessage("resource stream must not be null");
 
-        clientRule.workflows().deploy(clientRule.getDefaultTopicName())
+        clientRule.workflowClient()
+            .newDeployCommand()
             .addResourceStream(getClass().getResourceAsStream("not existing"), "workflow.bpmn")
-            .execute();
+            .send()
+            .join();
     }
 
     @Test
@@ -435,9 +450,11 @@ public class CreateDeploymentTest
         thrown.expect(RuntimeException.class);
         thrown.expectMessage("Cannot resolve type of resource 'example_file'.");
 
-        clientRule.workflows().deploy(clientRule.getDefaultTopicName())
+        clientRule.workflowClient()
+            .newDeployCommand()
             .addResourceFromClasspath("example_file")
-            .execute();
+            .send()
+            .join();
     }
 
     @Test
@@ -448,20 +465,13 @@ public class CreateDeploymentTest
         thrown.expect(RuntimeException.class);
         thrown.expectMessage("Cannot resolve type of resource");
 
-        clientRule.workflows().deploy(clientRule.getDefaultTopicName())
+
+        clientRule.workflowClient()
+            .newDeployCommand()
             .addResourceFile(filePath)
-            .execute();
+            .send()
+            .join();
     }
 
-    private void stubDeploymentRequest()
-    {
-        brokerRule.onExecuteCommandRequest(DEPLOYMENT_EVENT, "CREATE")
-            .respondWith()
-            .key(2L)
-            .value()
-                .put("state", "CREATED")
-                .done()
-            .register();
-    }
 
 }

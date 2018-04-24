@@ -19,7 +19,7 @@ import java.time.Duration;
 import java.util.Scanner;
 
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.task.TaskSubscription;
+import io.zeebe.client.impl.job.TaskSubscription;
 
 public class WorkflowInstanceWorker
 {

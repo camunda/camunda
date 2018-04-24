@@ -31,11 +31,11 @@ import io.zeebe.broker.it.util.RecordingTaskHandler;
 import io.zeebe.broker.it.util.TopicEventRecorder;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.event.TaskEvent;
-import io.zeebe.client.task.PollableTaskSubscription;
-import io.zeebe.client.task.TaskSubscription;
-import io.zeebe.client.task.impl.CreateTaskCommandImpl;
-import io.zeebe.client.topic.Topic;
-import io.zeebe.client.topic.Topics;
+import io.zeebe.client.impl.job.PollableTaskSubscription;
+import io.zeebe.client.impl.job.TaskSubscription;
+import io.zeebe.client.impl.job.impl.CreateTaskCommandImpl;
+import io.zeebe.client.impl.topic.Topic;
+import io.zeebe.client.impl.topic.Topics;
 import io.zeebe.test.util.TestUtil;
 import org.junit.Rule;
 import org.junit.Test;
@@ -527,7 +527,7 @@ public class TaskSubscriptionTest
     protected void createTaskOnPartition(ZeebeClient client, String topic, int partition, String type)
     {
         final CreateTaskCommandImpl createTaskCommand = (CreateTaskCommandImpl) client.tasks().create(topic, type);
-        createTaskCommand.getEvent().setPartitionId(partition);
+        createTaskCommand.getCommand().setPartitionId(partition);
         createTaskCommand.execute();
     }
 

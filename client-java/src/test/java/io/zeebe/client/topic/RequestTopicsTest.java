@@ -30,6 +30,9 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.api.commands.Partition;
+import io.zeebe.client.api.commands.Topic;
+import io.zeebe.client.api.commands.Topics;
 import io.zeebe.client.util.ClientRule;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ControlMessageType;
@@ -64,7 +67,9 @@ public class RequestTopicsTest
         final ZeebeClient client = clientRule.getClient();
 
         // when
-        final Topics result = client.topics().getTopics().execute();
+        final Topics result = client.newTopicsRequest()
+                .send()
+                .join();
 
         // then
         final List<Topic> returnedTopics = result.getTopics();

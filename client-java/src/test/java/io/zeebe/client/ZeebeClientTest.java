@@ -16,44 +16,32 @@
 package io.zeebe.client;
 
 import static io.zeebe.test.util.TestUtil.waitUntil;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.*;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.TestName;
-
-import io.zeebe.client.clustering.impl.ClientTopologyManager;
+import io.zeebe.client.api.ZeebeFuture;
+import io.zeebe.client.api.clients.JobClient;
+import io.zeebe.client.api.events.JobEvent;
+import io.zeebe.client.api.subscription.TopicSubscription;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
 import io.zeebe.client.cmd.ClientException;
-import io.zeebe.client.event.TaskEvent;
-import io.zeebe.client.event.TopicSubscription;
-import io.zeebe.client.event.impl.TaskEventImpl;
 import io.zeebe.client.impl.ZeebeClientImpl;
-import io.zeebe.client.impl.data.MsgPackConverter;
+import io.zeebe.client.impl.clustering.ClientTopologyManager;
+import io.zeebe.client.impl.event.JobEventImpl;
 import io.zeebe.client.util.Events;
-import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.clientapi.EventType;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.transport.ClientTransport;
-import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.ServerTransport;
-import io.zeebe.transport.TransportListener;
+import io.zeebe.transport.*;
+import org.junit.*;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.TestName;
 
 public class ZeebeClientTest
 {
@@ -77,8 +65,6 @@ public class ZeebeClientTest
         final Properties properties = new Properties();
         properties.setProperty(ClientProperties.CLIENT_REQUEST_TIMEOUT_SEC, "3");
         properties.setProperty(ClientProperties.CLIENT_REQUEST_BLOCKTIME_MILLIS, "250");
-        properties.setProperty(ClientProperties.CLIENT_MAXREQUESTS, String.valueOf(clientMaxRequests));
-
 
         client = (ZeebeClientImpl) ZeebeClient.create(properties);
         broker.stubTopicSubscriptionApi(0);
@@ -116,7 +102,7 @@ public class ZeebeClientTest
         final ClientTransport clientTransport = client.getTransport();
 
         // ensuring an open connection
-        client.requestTopology().execute();
+        client.newTopologyRequest().send().join();
 
         final LoggingChannelListener channelListener = new LoggingChannelListener();
         clientTransport.registerChannelListener(channelListener).join();
@@ -161,12 +147,17 @@ public class ZeebeClientTest
         broker.addTopic(topic, 0);
         broker.addTopic(topic, 1);
 
-        stubTaskResponse();
+        stubJobResponse();
 
         // when then
         for (int i = 0; i < clientMaxRequests; i++)
         {
-            client.tasks().create(topic, "bar").executeAsync();
+            client.topicClient(topic)
+                    .jobClient()
+                    .newCreateCommand()
+                    .jobType("foo")
+                    .send()
+                    .join();
         }
 
     }
@@ -182,24 +173,36 @@ public class ZeebeClientTest
         broker.addTopic(topic, 0);
         broker.addTopic(topic, 1);
 
-        stubTaskResponse();
+        stubJobResponse();
 
-        final List<Future<TaskEvent>> futures = new ArrayList<>();
+        final List<ZeebeFuture<JobEvent>> futures = new ArrayList<>();
         for (int i = 0; i < clientMaxRequests; i++)
         {
-            futures.add(client.tasks().create(topic, "bar").executeAsync());
+            final ZeebeFuture<JobEvent> future = client.topicClient(topic)
+                    .jobClient()
+                    .newCreateCommand()
+                    .jobType("bar")
+                    .send();
+
+            futures.add(future);
         }
 
         // when
-        for (Future<TaskEvent> future : futures)
+        for (ZeebeFuture<JobEvent> future : futures)
         {
-            future.get();
+            future.join();
         }
 
         // then
         for (int i = 0; i < clientMaxRequests; i++)
         {
-            futures.add(client.tasks().create(topic, "bar").executeAsync());
+            final ZeebeFuture<JobEvent> future = client.topicClient(topic)
+                    .jobClient()
+                    .newCreateCommand()
+                    .jobType("bar")
+                    .send();
+
+            futures.add(future);
         }
     }
 
@@ -207,24 +210,29 @@ public class ZeebeClientTest
     public void shouldReleaseRequestsOnTimeout()
     {
         // given
-        final TaskEventImpl baseEvent = Events.exampleTask();
+        final JobEvent baseEvent = Events.exampleJob();
 
-        broker.onExecuteCommandRequest(EventType.TASK_EVENT, "COMPLETE")
+        broker.onExecuteCommandRequest(ValueType.JOB, JobIntent.COMPLETE)
             .doNotRespond();
 
         // given
-        final List<Future<TaskEvent>> futures = new ArrayList<>();
+        final List<ZeebeFuture<JobEvent>> futures = new ArrayList<>();
         for (int i = 0; i < clientMaxRequests; i++)
         {
-            futures.add(client.tasks().complete(baseEvent).executeAsync());
+            final ZeebeFuture<JobEvent> future = client.topicClient()
+                    .jobClient()
+                    .newCompleteCommand(baseEvent)
+                    .send();
+
+            futures.add(future);
         }
 
         // when
-        for (Future<TaskEvent> future : futures)
+        for (ZeebeFuture<JobEvent> future : futures)
         {
             try
             {
-                future.get();
+                future.join();
                 fail("exception expected");
             }
             catch (Exception e)
@@ -236,40 +244,13 @@ public class ZeebeClientTest
         // then
         for (int i = 0; i < clientMaxRequests; i++)
         {
-            futures.add(client.tasks().complete(baseEvent).executeAsync());
+            final ZeebeFuture<JobEvent> future = client.topicClient()
+                    .jobClient()
+                    .newCompleteCommand(baseEvent)
+                    .send();
+
+            futures.add(future);
         }
-
-    }
-
-    @Test
-    public void shouldBlockOnAsyncRequestsPastPoolCapacity()
-    {
-        // given
-        final String topic = "foo";
-
-        broker.clearTopology();
-        broker.addSystemTopic();
-        broker.addTopic(topic, 0);
-        broker.addTopic(topic, 1);
-
-        stubTaskResponse();
-
-        for (int i = 0; i < clientMaxRequests; i++)
-        {
-            client.tasks().create(topic, "bar").executeAsync();
-        }
-
-        try
-        {
-            client.tasks().create(topic, "bar").executeAsync();
-            fail("should throw exception");
-        }
-        catch (Exception e)
-        {
-            // expected
-            assertThat(e.getMessage()).startsWith("Could not send request");
-        }
-
     }
 
     @Test
@@ -283,16 +264,18 @@ public class ZeebeClientTest
         broker.addTopic(topic, 0);
         broker.addTopic(topic, 1);
 
-        stubTaskResponse();
+        stubJobResponse();
+
+        final JobClient jobClient = client.topicClient(topic).jobClient();
 
         // when
-        final TaskEvent task1 = client.tasks().create(topic, "bar").execute();
-        final TaskEvent task2 = client.tasks().create(topic, "bar").execute();
-        final TaskEvent task3 = client.tasks().create(topic, "bar").execute();
-        final TaskEvent task4 = client.tasks().create(topic, "bar").execute();
+        final JobEvent job1 = jobClient.newCreateCommand().jobType("bar").send().join();
+        final JobEvent job2 = jobClient.newCreateCommand().jobType("bar").send().join();
+        final JobEvent job3 = jobClient.newCreateCommand().jobType("bar").send().join();
+        final JobEvent job4 = jobClient.newCreateCommand().jobType("bar").send().join();
 
         // then
-        assertThat(Arrays.asList(task1, task2, task3, task4))
+        assertThat(Arrays.asList(job1, job2, job3, job4))
             .extracting("metadata.partitionId")
             .containsExactlyInAnyOrder(0, 1, 0, 1);
     }
@@ -306,56 +289,61 @@ public class ZeebeClientTest
         broker.clearTopology();
         broker.addSystemTopic();
 
-        stubTaskResponse();
+        stubJobResponse();
 
         // then
         exception.expect(ClientException.class);
         exception.expectMessage("Cannot determine target partition for request. " +
-                "Request was: [ topic = foo, partition = any, event type = TASK, state = CREATE ]");
+                "Request was: [ topic = foo, partition = any, value type = JOB, command = CREATE ]");
 
         // when
-        client.tasks().create(topic, "bar").execute();
+        client.topicClient(topic)
+                .jobClient()
+                .newCreateCommand()
+                .jobType("bar")
+                .send()
+                .join();
     }
 
     @Test
     public void shouldThrowExceptionOnTimeout()
     {
         // given
-        final TaskEventImpl baseEvent = Events.exampleTask();
+        final JobEventImpl baseEvent = Events.exampleJob();
 
-        broker.onExecuteCommandRequest(EventType.TASK_EVENT, "COMPLETE")
+        broker.onExecuteCommandRequest(ValueType.JOB, JobIntent.COMPLETE)
             .doNotRespond();
 
         // then
         exception.expect(ClientException.class);
         exception.expectMessage("Request timed out (PT3S). " +
-                "Request was: [ topic = default-topic, partition = 99, event type = TASK, state = COMPLETE ]");
+                "Request was: [ topic = default-topic, partition = 99, value type = JOB, command = COMPLETE ]");
 
         // when
-        client.tasks().complete(baseEvent).execute();
+        client.topicClient()
+                .jobClient()
+                .newCompleteCommand(baseEvent)
+                .send()
+                .join();
     }
 
     @Test
     public void shouldIncludeCallingFrameInExceptionStacktrace()
     {
         // given
-        final TaskEventImpl baseEvent = Events.exampleTask();
+        final JobEventImpl baseEvent = Events.exampleJob();
 
-        broker.onExecuteCommandRequest(EventType.TASK_EVENT, "COMPLETE")
-            .respondWith()
-            .key(r -> r.key())
-            .value()
-              .allOf((r) -> r.getCommand())
-              .put("state", "COMPLETE_REJECTED")
-              .done()
-            .register();
+        broker.jobs().registerCompleteCommand(r -> r.rejection());
 
         // when
         try
         {
-            client.tasks()
-                .complete(baseEvent)
-                .execute();
+            client.topicClient()
+                    .jobClient()
+                    .newCompleteCommand(baseEvent)
+                    .send()
+                    .join();
+
             fail("should throw exception");
         }
         catch (ClientCommandRejectedException e)
@@ -373,27 +361,22 @@ public class ZeebeClientTest
     public void shouldIncludeCallingFrameInExceptionStacktraceOnAsyncRootCause() throws Exception
     {
         // given
-        final TaskEventImpl baseEvent = Events.exampleTask();
+        final JobEventImpl baseEvent = Events.exampleJob();
 
-        broker.onExecuteCommandRequest(EventType.TASK_EVENT, "COMPLETE")
-              .respondWith()
-              .key(r -> r.key())
-              .value()
-              .allOf((r) -> r.getCommand())
-              .put("state", "COMPLETE_REJECTED")
-              .done()
-              .register();
+        broker.jobs().registerCompleteCommand(r -> r.rejection());
 
         // when
         try
         {
-            client.tasks()
-                  .complete(baseEvent)
-                  .executeAsync().get();
+            client.topicClient()
+                    .jobClient()
+                    .newCompleteCommand(baseEvent)
+                    .send()
+                    .join();
 
             fail("should throw exception");
         }
-        catch (ExecutionException e)
+        catch (Exception e)
         {
             // then
             assertThat(e.getStackTrace()).anySatisfy(frame ->
@@ -410,9 +393,12 @@ public class ZeebeClientTest
         // when
         assertThatThrownBy(() ->
         {
-            client.tasks()
-                .create("non-existing-topic", "baz")
-                .execute();
+            client.topicClient("non-existing-topic")
+                    .jobClient()
+                    .newCreateCommand()
+                    .jobType("baz")
+                    .send()
+                    .join();
         });
 
         // +4 (one for the extra request when client is started)
@@ -435,12 +421,16 @@ public class ZeebeClientTest
         // when
         final int nonExistingPartition = 999;
 
-        final TaskEventImpl taskEvent = new TaskEventImpl("CREATED", new MsgPackConverter());
-        taskEvent.setPartitionId(nonExistingPartition);
+        final JobEventImpl jobEvent = Events.exampleJob();
+        jobEvent.setPartitionId(nonExistingPartition);
 
         assertThatThrownBy(() ->
         {
-            client.tasks().complete(taskEvent).execute();
+            client.topicClient()
+                    .jobClient()
+                    .newCompleteCommand(jobEvent)
+                    .send()
+                    .join();
         });
 
         // +4 (one for the extra request when client is started)
@@ -461,7 +451,6 @@ public class ZeebeClientTest
     {
         // given
         final String contactPoint = "foo:123";
-        final int maxRequests = 1;
         final int numManagementThreads = 2;
         final int numSubscriptionThreads = 3;
         final Duration requestBlockTime = Duration.ofSeconds(4);
@@ -473,7 +462,6 @@ public class ZeebeClientTest
         // when
         final ZeebeClient client = ZeebeClient.newClient()
                 .brokerContactPoint(contactPoint)
-                .maxRequests(maxRequests)
                 .numManagementThreads(numManagementThreads)
                 .numSubscriptionExecutionThreads(numSubscriptionThreads)
                 .requestBlocktime(requestBlockTime)
@@ -486,7 +474,6 @@ public class ZeebeClientTest
         // then
         final ZeebeClientConfiguration configuration = client.getConfiguration();
         assertThat(configuration.getBrokerContactPoint()).isEqualTo(contactPoint);
-        assertThat(configuration.getMaxRequests()).isEqualTo(maxRequests);
         assertThat(configuration.getNumManagementThreads()).isEqualTo(numManagementThreads);
         assertThat(configuration.getNumSubscriptionExecutionThreads()).isEqualTo(numSubscriptionThreads);
         assertThat(configuration.getRequestBlocktime()).isEqualTo(requestBlockTime);
@@ -496,13 +483,43 @@ public class ZeebeClientTest
         assertThat(configuration.getTopicSubscriptionPrefetchCapacity()).isEqualTo(topicSubscriptionPrefetchCapacity);
     }
 
+    @Test
+    public void shouldThrowExceptionIfTopicNameIsNull()
+    {
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("topic name must not be null");
+
+        client.topicClient(null)
+                .jobClient()
+                .newCreateCommand()
+                .jobType("foo")
+                .send()
+                .join();
+    }
+
+    @Test
+    public void shouldThrowExceptionIfTopicNameIsEmpty()
+    {
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("topic name must not be empty");
+
+        client.topicClient("")
+                .jobClient()
+                .newCreateCommand()
+                .jobType("foo")
+                .send()
+                .join();
+    }
+
     protected TopicSubscription openSubscription()
     {
-        return client.topics().newSubscription(ClientApiRule.DEFAULT_TOPIC_NAME)
-                .handler(e ->
+        return client.topicClient(ClientApiRule.DEFAULT_TOPIC_NAME)
+                .subscriptionClient()
+                .newTopicSubscription()
+                .name("foo")
+                .recordHandler(r ->
                 {
                 })
-                .name("foo")
                 .startAtHeadOfTopic()
                 .open();
     }
@@ -525,18 +542,10 @@ public class ZeebeClientTest
         }
     }
 
-    protected void stubTaskResponse()
+    protected void stubJobResponse()
     {
-        broker.onExecuteCommandRequest(EventType.TASK_EVENT, "CREATE")
-            .respondWith()
-            .key(123)
-            .value()
-              .allOf((r) -> r.getCommand())
-              .put("state", "CREATED")
-              .put("lockTime", Protocol.INSTANT_NULL_VALUE)
-              .put("lockOwner", "")
-              .done()
-            .register();
+        broker.jobs().registerCreateCommand();
+        broker.jobs().registerCompleteCommand();
     }
 
     protected enum ConnectionState

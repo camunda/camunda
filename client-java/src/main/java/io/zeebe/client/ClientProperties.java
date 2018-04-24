@@ -69,4 +69,17 @@ public class ClientProperties
      * The request timeout in seconds.
      */
     public static final String CLIENT_REQUEST_TIMEOUT_SEC = "zeebe.client.request.timeout";
+
+    /**
+     * The lock owner which is used when no owner is set for the job
+     * subscription. Default is 'default'.
+     */
+    public static final String CLIENT_JOB_DEFAULT_LOCK_OWNER = "zeebe.client.job.lockOwner";
+
+    /**
+     * The lock time in milliseconds which is used when no time is set for the
+     * job subscription. Default is 5 minutes.
+     */
+    public static final String CLIENT_JOB_DEFAULT_LOCK_TIME = "zeebe.client.job.lockTime";
+
 }

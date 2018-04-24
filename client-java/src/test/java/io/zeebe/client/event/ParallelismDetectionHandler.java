@@ -19,7 +19,10 @@ import java.time.Duration;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class ParallelismDetectionHandler implements UniversalEventHandler
+import io.zeebe.client.api.record.Record;
+import io.zeebe.client.api.subscription.RecordHandler;
+
+public class ParallelismDetectionHandler implements RecordHandler
 {
 
     protected AtomicBoolean executing = new AtomicBoolean(false);
@@ -33,7 +36,7 @@ public class ParallelismDetectionHandler implements UniversalEventHandler
     }
 
     @Override
-    public void handle(GeneralEvent event) throws Exception
+    public void onRecord(Record record) throws Exception
     {
         numInvocations.incrementAndGet();
         if (executing.compareAndSet(false, true))

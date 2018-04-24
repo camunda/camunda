@@ -17,10 +17,10 @@ package io.zeebe.broker.it.clustering;
 
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.clustering.impl.TopologyBroker;
 import io.zeebe.client.event.TaskEvent;
-import io.zeebe.client.topic.Topic;
-import io.zeebe.client.topic.Topics;
+import io.zeebe.client.impl.clustering.BrokerInfoImpl;
+import io.zeebe.client.impl.topic.Topic;
+import io.zeebe.client.impl.topic.Topics;
 import io.zeebe.test.util.AutoCloseableRule;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -59,7 +59,7 @@ public class TaskEventClusteredTest
             .findFirst()
             .get();
 
-        final TopologyBroker leader = clusteringRule.getLeaderForPartition(topic.getPartitions().get(0).getId());
+        final BrokerInfoImpl leader = clusteringRule.getLeaderForPartition(topic.getPartitions().get(0).getId());
 
         // choosing a new leader in a raft group where the previously leading broker is no longer available
         clusteringRule.stopBroker(leader.getSocketAddress());

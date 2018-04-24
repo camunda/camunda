@@ -24,32 +24,22 @@ import static org.hamcrest.CoreMatchers.containsString;
 import java.time.Duration;
 import java.util.List;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.event.TaskEvent;
-import io.zeebe.client.event.TopicEventType;
-import io.zeebe.client.event.impl.EventImpl;
-import io.zeebe.client.event.impl.TaskEventImpl;
-import io.zeebe.client.impl.RequestManager;
+import io.zeebe.client.api.ZeebeFuture;
+import io.zeebe.client.api.events.JobEvent;
+import io.zeebe.client.impl.CommandImpl;
 import io.zeebe.client.impl.ZeebeClientImpl;
-import io.zeebe.client.impl.cmd.CommandImpl;
-import io.zeebe.client.task.cmd.CreateTaskCommand;
+import io.zeebe.client.impl.event.JobEventImpl;
+import io.zeebe.client.impl.record.RecordImpl;
 import io.zeebe.client.util.ClientRule;
 import io.zeebe.client.util.Events;
-import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.ErrorCode;
-import io.zeebe.protocol.clientapi.EventType;
-import io.zeebe.test.broker.protocol.brokerapi.ControlMessageRequest;
-import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
-import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
+import io.zeebe.protocol.clientapi.*;
+import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.test.broker.protocol.brokerapi.*;
+import org.junit.*;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
 
 public class ClientCommandManagerTest
 {
@@ -88,16 +78,20 @@ public class ClientCommandManagerTest
         // initial topology has been fetched
         waitUntil(() -> broker.getReceivedControlMessageRequests().size() == 1);
 
-        stubCreateTaskResponse();
+        broker.jobs().registerCreateCommand();
 
         // extend topology
         broker.addTopic("other-topic", 0);
 
         // when
-        final TaskEvent taskEvent = createTaskCmd("other-topic").execute();
+        final JobEvent jobEvent = client.topicClient("other-topic").jobClient()
+                    .newCreateCommand()
+                    .jobType("foo")
+                    .send()
+                    .join();
 
         // then the client has refreshed its topology
-        assertThat(taskEvent).isNotNull();
+        assertThat(jobEvent).isNotNull();
 
         assertTopologyRefreshRequests(2);
     }
@@ -109,20 +103,23 @@ public class ClientCommandManagerTest
         // initial topology has been fetched
         waitUntil(() -> broker.getReceivedControlMessageRequests().size() == 1);
 
-        stubCompleteTaskResponse();
+        broker.jobs().registerCompleteCommand();
 
         // extend topology
         broker.addTopic("other-topic", 1);
 
-        final TaskEventImpl task = Events.exampleTask();
-        task.setTopicName("other-topic");
-        task.setPartitionId(1);
+        final JobEventImpl baseEvent = Events.exampleJob();
+        baseEvent.setTopicName("other-topic");
+        baseEvent.setPartitionId(1);
 
         // when
-        final TaskEvent result = client.tasks().complete(task).execute();
+        final JobEvent jobEvent = client.topicClient("other-topic").jobClient()
+                .newCompleteCommand(baseEvent)
+                .send()
+                .join();
 
         // then the client has refreshed its topology
-        assertThat(result).isNotNull();
+        assertThat(jobEvent).isNotNull();
 
         assertTopologyRefreshRequests(2);
     }
@@ -131,26 +128,40 @@ public class ClientCommandManagerTest
     public void testRequestFailure()
     {
         // given
-        stubRequestProcessingFailureResponse();
-        final CreateTaskCommand command = createTaskCmd();
+        broker.onExecuteCommandRequest(ValueType.JOB, JobIntent.CREATE)
+                  .respondWithError()
+                    .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
+                    .errorData("test")
+                  .register();
 
-        // when
-        assertThatThrownBy(command::execute)
+        final ZeebeFuture<JobEvent> future = client.topicClient().jobClient()
+                .newCreateCommand()
+                .jobType("foo")
+                .send();
+
+        assertThatThrownBy(() -> future.join())
             .isInstanceOf(RuntimeException.class)
             .hasMessageContaining("Request exception (REQUEST_PROCESSING_FAILURE): test");
 
         // then
         assertAtLeastTopologyRefreshRequests(1);
-        assertCreateTaskRequests(1);
+        assertCreateJobRequests(1);
     }
 
     @Test
     public void testReadResponseFailure()
     {
         // given
-        stubCreateTaskResponse();
+        broker.jobs().registerCreateCommand();
 
-        final FailingCommand command = new FailingCommand(((ZeebeClientImpl) client).getCommandManager());
+        final CommandImpl<RecordImpl> command = new CommandImpl<RecordImpl>(((ZeebeClientImpl) client).getCommandManager())
+        {
+            @Override
+            public RecordImpl getCommand()
+            {
+                return new FailingCommand();
+            }
+        };
 
         // then
         exception.expect(ClientException.class);
@@ -164,75 +175,25 @@ public class ClientCommandManagerTest
     public void testPartitionNotFoundResponse()
     {
         // given
-        stubPartitionNotFoundResponse();
+        broker.onExecuteCommandRequest(ValueType.JOB, JobIntent.CREATE)
+            .respondWithError()
+                .errorCode(ErrorCode.PARTITION_NOT_FOUND)
+                .errorData("")
+            .register();
 
         // then
-        exception.expect(RuntimeException.class);
+        exception.expect(ClientException.class);
         exception.expectMessage(containsString("Request timed out (PT3S)"));
         // when the partition is repeatedly not found, the client loops
         // over refreshing the topology and making a request that fails and so on. The timeout
         // kicks in at any point in that loop, so we cannot assert the exact error message any more specifically.
 
         // when
-        createTaskCmd().execute();
-    }
-
-
-    protected CreateTaskCommand createTaskCmd()
-    {
-        return createTaskCmd(clientRule.getDefaultTopicName());
-    }
-
-    protected CreateTaskCommand createTaskCmd(final String topicName)
-    {
-        return client.tasks().create(topicName, "test");
-    }
-
-    protected void stubCreateTaskResponse()
-    {
-        broker.onExecuteCommandRequest(EventType.TASK_EVENT, "CREATE")
-            .respondWith()
-            .partitionId(StubBrokerRule.TEST_PARTITION_ID)
-            .key(123)
-            .value()
-              .allOf((r) -> r.getCommand())
-              .put("state", "CREATED")
-              .put("lockTime", Protocol.INSTANT_NULL_VALUE)
-              .put("lockOwner", "")
-              .done()
-            .register();
-    }
-
-    protected void stubCompleteTaskResponse()
-    {
-        broker.onExecuteCommandRequest(EventType.TASK_EVENT, "COMPLETE")
-            .respondWith()
-            .partitionId(r -> r.partitionId())
-            .key(r -> r.key())
-            .value()
-              .allOf((r) -> r.getCommand())
-              .put("state", "COMPLETED")
-              .done()
-            .register();
-    }
-
-    protected void stubRequestProcessingFailureResponse()
-    {
-        broker.onExecuteCommandRequest(ecr -> ecr.eventType() == EventType.TASK_EVENT &&
-            "CREATE".equals(ecr.getCommand().get("state")))
-              .respondWithError()
-                .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
-                .errorData("test")
-              .register();
-    }
-
-    protected void stubPartitionNotFoundResponse()
-    {
-        broker.onExecuteCommandRequest(EventType.TASK_EVENT, "CREATE")
-              .respondWithError()
-                  .errorCode(ErrorCode.PARTITION_NOT_FOUND)
-                  .errorData("")
-              .register();
+        client.topicClient().jobClient()
+                .newCreateCommand()
+                .jobType("foo")
+                .send()
+                .join();
     }
 
     protected void assertTopologyRefreshRequests(final int count)
@@ -259,47 +220,28 @@ public class ClientCommandManagerTest
         });
     }
 
-    protected void assertCreateTaskRequests(final int count)
+    protected void assertCreateJobRequests(final int count)
     {
         final List<ExecuteCommandRequest> receivedCommandRequests = broker.getReceivedCommandRequests();
         assertThat(receivedCommandRequests).hasSize(count);
 
         receivedCommandRequests.forEach(request ->
         {
-            assertThat(request.eventType()).isEqualTo(EventType.TASK_EVENT);
-            assertThat(request.getCommand().get("state")).isEqualTo("CREATE");
+            assertThat(request.valueType()).isEqualTo(ValueType.JOB);
+            assertThat(request.intent()).isEqualTo(JobIntent.CREATE);
         });
     }
 
-    protected static class FailingCommand extends CommandImpl<EventImpl>
-    {
-        public FailingCommand(RequestManager client)
-        {
-            super(client);
-        }
-
-        @Override
-        public EventImpl getEvent()
-        {
-            return new FailingEvent("CREATE");
-        }
-
-        @Override
-        public String getExpectedStatus()
-        {
-            return "CREATED";
-        }
-    }
-
-    protected static class FailingEvent extends EventImpl
+    protected static class FailingCommand extends RecordImpl
     {
 
         @JsonCreator
-        public FailingEvent(@JsonProperty("state") String state)
+        public FailingCommand()
         {
-            super(TopicEventType.TASK, state);
+            super(null, RecordType.COMMAND, ValueType.JOB);
             this.setTopicName(StubBrokerRule.TEST_TOPIC_NAME);
             this.setPartitionId(StubBrokerRule.TEST_PARTITION_ID);
+            this.setIntent(JobIntent.CREATE);
         }
 
         public String getFailingProp()
@@ -307,11 +249,35 @@ public class ClientCommandManagerTest
             return "foo";
         }
 
+        @Override
+        public Class<? extends RecordImpl> getEventClass()
+        {
+            return FailingEvent.class;
+        }
+    }
+
+    protected static class FailingEvent extends RecordImpl
+    {
+
+        @JsonCreator
+        public FailingEvent()
+        {
+            super(null, RecordType.EVENT, ValueType.JOB);
+            this.setTopicName(StubBrokerRule.TEST_TOPIC_NAME);
+            this.setPartitionId(StubBrokerRule.TEST_PARTITION_ID);
+            this.setIntent(JobIntent.CREATED);
+        }
+
         public void setFailingProp(String prop)
         {
             throw new RuntimeException("expected");
         }
 
+        @Override
+        public Class<? extends RecordImpl> getEventClass()
+        {
+            return FailingEvent.class;
+        }
     }
 
 }

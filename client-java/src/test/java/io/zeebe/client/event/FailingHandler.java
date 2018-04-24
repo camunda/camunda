@@ -17,12 +17,14 @@ package io.zeebe.client.event;
 
 import java.util.function.Predicate;
 
-public class FailingHandler extends RecordingEventHandler
+import io.zeebe.client.api.record.Record;
+
+public class FailingHandler extends RecordingHandler
 {
 
-    protected Predicate<GeneralEvent> failureCondition;
+    protected Predicate<Record> failureCondition;
 
-    public FailingHandler(Predicate<GeneralEvent> failureCondition)
+    public FailingHandler(Predicate<Record> failureCondition)
     {
         this.failureCondition = failureCondition;
     }
@@ -33,11 +35,11 @@ public class FailingHandler extends RecordingEventHandler
     }
 
     @Override
-    public void handle(GeneralEvent event)
+    public void onRecord(Record record)
     {
-        super.handle(event);
+        super.onRecord(record);
 
-        if (failureCondition.test(event))
+        if (failureCondition.test(record))
         {
             throw new RuntimeException("Handler invocation fails");
         }

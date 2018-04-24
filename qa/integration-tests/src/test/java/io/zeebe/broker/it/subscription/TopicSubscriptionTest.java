@@ -27,21 +27,32 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.zeebe.broker.it.ClientRule;
-import io.zeebe.broker.it.EmbeddedBrokerRule;
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.event.*;
-import io.zeebe.client.task.impl.CreateTaskCommandImpl;
-import io.zeebe.client.topic.Topic;
-import io.zeebe.client.topic.Topics;
-import io.zeebe.test.util.TestUtil;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import io.zeebe.broker.it.ClientRule;
+import io.zeebe.broker.it.EmbeddedBrokerRule;
+import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.event.GeneralEvent;
+import io.zeebe.client.event.PollableTopicSubscription;
+import io.zeebe.client.event.TaskEvent;
+import io.zeebe.client.event.TopicEventType;
+import io.zeebe.client.event.TopicSubscription;
+import io.zeebe.client.event.UniversalEventHandler;
+import io.zeebe.client.job.impl.CreateTaskCommandImpl;
+import io.zeebe.client.topic.Topic;
+import io.zeebe.client.topic.Topics;
+import io.zeebe.client.impl.job.impl.CreateTaskCommandImpl;
+import io.zeebe.client.impl.topic.Topic;
+import io.zeebe.client.impl.topic.Topics;
+import io.zeebe.client.impl.topic.impl.TopicEventImpl;
+import io.zeebe.test.util.TestUtil;
 
 public class TopicSubscriptionTest
 {
@@ -682,7 +693,7 @@ public class TopicSubscriptionTest
     protected void createTaskOnPartition(String topic, int partition)
     {
         final CreateTaskCommandImpl createTaskCommand = (CreateTaskCommandImpl) client.tasks().create(topic, "baz");
-        createTaskCommand.getEvent().setPartitionId(partition);
+        createTaskCommand.getCommand().setPartitionId(partition);
         createTaskCommand.execute();
     }
 

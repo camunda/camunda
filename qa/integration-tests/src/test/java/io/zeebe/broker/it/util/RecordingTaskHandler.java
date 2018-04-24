@@ -21,13 +21,13 @@ import java.util.List;
 
 import io.zeebe.client.TasksClient;
 import io.zeebe.client.event.TaskEvent;
-import io.zeebe.client.task.TaskHandler;
+import io.zeebe.client.impl.job.JobHandler;
 
-public class RecordingTaskHandler implements TaskHandler
+public class RecordingTaskHandler implements JobHandler
 {
     protected List<TaskEvent> handledTasks = Collections.synchronizedList(new ArrayList<>());
     protected int nextTaskHandler = 0;
-    protected final TaskHandler[] taskHandlers;
+    protected final JobHandler[] taskHandlers;
 
     public RecordingTaskHandler()
     {
@@ -37,7 +37,7 @@ public class RecordingTaskHandler implements TaskHandler
         });
     }
 
-    public RecordingTaskHandler(TaskHandler... taskHandlers)
+    public RecordingTaskHandler(JobHandler... taskHandlers)
     {
         this.taskHandlers = taskHandlers;
     }
@@ -45,7 +45,7 @@ public class RecordingTaskHandler implements TaskHandler
     @Override
     public void handle(TasksClient client, TaskEvent task)
     {
-        final TaskHandler handler = taskHandlers[nextTaskHandler];
+        final JobHandler handler = taskHandlers[nextTaskHandler];
         nextTaskHandler = Math.min(nextTaskHandler + 1, taskHandlers.length - 1);
 
         try

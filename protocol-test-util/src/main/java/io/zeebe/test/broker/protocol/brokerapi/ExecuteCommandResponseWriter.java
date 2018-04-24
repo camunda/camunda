@@ -23,8 +23,10 @@ import org.agrona.MutableDirectBuffer;
 import io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder;
 import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
 import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
+import io.zeebe.util.EnsureUtil;
 
 public class ExecuteCommandResponseWriter extends AbstractMessageBuilder<ExecuteCommandRequest>
 {
@@ -36,6 +38,7 @@ public class ExecuteCommandResponseWriter extends AbstractMessageBuilder<Execute
     protected Function<ExecuteCommandRequest, Integer> partitionIdFunction = r -> r.partitionId();
     protected Function<ExecuteCommandRequest, Map<String, Object>> eventFunction;
     protected Function<ExecuteCommandRequest, Long> positionFunction = r -> r.position();
+    private Function<ExecuteCommandRequest, Intent> intentFunction = r -> r.intent();
 
     protected long key;
     protected int partitionId;
@@ -43,6 +46,7 @@ public class ExecuteCommandResponseWriter extends AbstractMessageBuilder<Execute
     protected long position;
     private RecordType recordType;
     private Intent intent;
+    private ValueType valueType;
 
     public ExecuteCommandResponseWriter(MsgPackHelper msgPackHelper)
     {
@@ -57,6 +61,8 @@ public class ExecuteCommandResponseWriter extends AbstractMessageBuilder<Execute
         position = positionFunction.apply(request);
         final Map<String, Object> deserializedEvent = eventFunction.apply(request);
         value = msgPackHelper.encodeAsMsgPack(deserializedEvent);
+        this.valueType = request.valueType();
+        this.intent = intentFunction.apply(request);
     }
 
     public void setPartitionIdFunction(Function<ExecuteCommandRequest, Integer> partitionIdFunction)
@@ -67,11 +73,6 @@ public class ExecuteCommandResponseWriter extends AbstractMessageBuilder<Execute
     public void setEventFunction(Function<ExecuteCommandRequest, Map<String, Object>> eventFunction)
     {
         this.eventFunction = eventFunction;
-    }
-
-    public void setIntent(Intent intent)
-    {
-        this.intent = intent;
     }
 
     public void setRecordType(RecordType recordType)
@@ -87,7 +88,11 @@ public class ExecuteCommandResponseWriter extends AbstractMessageBuilder<Execute
     public void setPositionFunction(Function<ExecuteCommandRequest, Long> positionFunction)
     {
         this.positionFunction = positionFunction;
+    }
 
+    public void setIntentFunction(Function<ExecuteCommandRequest, Intent> intentFunction)
+    {
+        this.intentFunction = intentFunction;
     }
 
     @Override
@@ -102,6 +107,10 @@ public class ExecuteCommandResponseWriter extends AbstractMessageBuilder<Execute
     @Override
     public void write(MutableDirectBuffer buffer, int offset)
     {
+        EnsureUtil.ensureNotNull("recordType", recordType);
+        EnsureUtil.ensureNotNull("valueType", valueType);
+        EnsureUtil.ensureNotNull("intent", intent);
+
         // protocol header
         headerEncoder
             .wrap(buffer, offset)
@@ -116,6 +125,7 @@ public class ExecuteCommandResponseWriter extends AbstractMessageBuilder<Execute
         bodyEncoder
             .wrap(buffer, offset)
             .recordType(recordType)
+            .valueType(valueType)
             .intent(intent.value())
             .partitionId(partitionId)
             .key(key)

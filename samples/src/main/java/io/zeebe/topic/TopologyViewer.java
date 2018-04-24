@@ -19,7 +19,7 @@ import java.util.Properties;
 
 import io.zeebe.client.ClientProperties;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.clustering.impl.TopologyResponse;
+import io.zeebe.client.impl.clustering.TopologyImpl;
 
 public class TopologyViewer
 {
@@ -35,7 +35,7 @@ public class TopologyViewer
 
             try (ZeebeClient zeebeClient = ZeebeClient.create(clientProperties))
             {
-                final TopologyResponse topology = zeebeClient.requestTopology().execute();
+                final TopologyImpl topology = zeebeClient.requestTopology().execute();
 
                 System.out.println("Requesting topology with initial contact point " + broker);
 

@@ -17,53 +17,134 @@ package io.zeebe.client;
 
 import java.util.Properties;
 
-import io.zeebe.client.clustering.impl.TopologyResponse;
+import io.zeebe.client.api.clients.TopicClient;
+import io.zeebe.client.api.commands.*;
+import io.zeebe.client.api.record.ZeebeObjectMapper;
 import io.zeebe.client.cmd.Request;
-import io.zeebe.client.event.WorkflowDefinition;
 import io.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.zeebe.client.impl.ZeebeClientImpl;
 
+/**
+ * The client to communicate with a Zeebe broker/cluster.
+ * <p>
+ * TODO: show how to configure and bootstrap the client
+ * <p>
+ * TODO: explain something about topic
+ * <p>
+ * TODO: explain something about command (async, rejection)
+ */
 public interface ZeebeClient extends AutoCloseable
 {
-    /**
-     * Provides APIs revolving around task events, such as creating a task.
-     */
-    TasksClient tasks();
 
     /**
-     * Provides APIs revolving around workflow events, such as creating a workflow instance.
+     * A client to operate on workflows, jobs and subscriptions.
+     *
+     * <pre>
+     * zeebeClient
+     *  .topicClient("my-topic")
+     *  .workflowClient()
+     *  .newCreateInstanceCommand()
+     *  ...
+     * </pre>
+     *
+     * @param topicName
+     *            the name of the topic to operate on
+     *
+     * @return a client with access to all operations on the given topic
      */
-    WorkflowsClient workflows();
+    TopicClient topicClient(String topicName);
 
     /**
-     * Provides cross-cutting APIs related to any topic, such as subscribing to topic events.
+     * A client to operate on workflows, jobs and subscriptions.
+     *
+     * <pre>
+     * zeebeClient
+     *  .topicClient()
+     *  .workflowClient()
+     *  .newCreateInstanceCommand()
+     *  ...
+     * </pre>
+     *
+     * @return a client with access to all operations on the configured default
+     *         topic.
      */
-    TopicsClient topics();
+    TopicClient topicClient();
 
     /**
-     * Fetches the current cluster topology, i.e. which brokers are available at which endpoint
-     * and which broker is the leader of which topic.
+     * An object to (de-)serialize records from/to JSON.
+     *
+     * <pre>
+     * JobEvent job = zeebeClient
+     *  .objectMapper()
+     *  .fromJson(json, JobEvent.class);
+     * </pre>
+     *
+     * @return an object that provides (de-)serialization of all records to/from JSON.
      */
-    Request<TopologyResponse> requestTopology();
+    ZeebeObjectMapper objectMapper();
 
-    Request<WorkflowDefinition> requestWorkflowDefinitionByKey(long key);
+    /**
+     * Command to create a new topic.
+     *
+     * <pre>
+     * zeebeClient
+     *  .newCreateTopicCommand()
+     *  .name("my-topic")
+     *  .partitions(3)
+     *  .send();
+     * </pre>
+     *
+     * @return a builder for the command
+     */
+    CreateTopicCommandStep1 newCreateTopicCommand();
+
+    // TODO: Put this in the proper place
+    Request<Workflow> requestWorkflowDefinitionByKey(long key);
+
+    /**
+     * Request all topics. Can be used to inspect which topics and partitions
+     * have been created.
+     *
+     * <pre>
+     * List&#60;Topic&#62; topics = zeebeClient
+     *  .newTopicsRequest()
+     *  .send()
+     *  .join()
+     *  .getTopics();
+     *
+     *  String topicName = topic.getName();
+     * </pre>
+     *
+     * @return the request where you must call {@code send()}
+     */
+    TopicsRequestStep1 newTopicsRequest();
+
+    /**
+     * Request the current cluster topology. Can be used to inspect which
+     * brokers are available at which endpoint and which broker is the leader
+     * of which partition.
+     *
+     * <pre>
+     * List&#60;BrokerInfo&#62; topics = zeebeClient
+     *  .newTopologyRequest()
+     *  .send()
+     *  .join()
+     *  .getBrokers();
+     *
+     *  SocketAddress address = broker.getSocketAddress();
+     *
+     *  List&#60;PartitionInfo&#62; partitions = broker.getPartitions();
+     * </pre>
+     *
+     * @return the request where you must call {@code send()}
+     */
+    TopologyRequestStep1 newTopologyRequest();
 
     /**
      * @return the client's configuration
      */
     ZeebeClientConfiguration getConfiguration();
 
-    @Override
-    void close();
-
-    static ZeebeClient create()
-    {
-        return newClient().create();
-    }
-
-    /**
-     * See {@link ClientProperties} for configuration options.
-     */
     static ZeebeClient create(Properties properties)
     {
         return newClient(properties).create();
@@ -79,14 +160,11 @@ public interface ZeebeClient extends AutoCloseable
         return new ZeebeClientBuilderImpl();
     }
 
-    /**
-     * Returns a new builder for a {@link ZeebeClient} initialized with the provided properties.
-     * See {@link ClientProperties} for configuration options.
-     */
     static ZeebeClientBuilder newClient(Properties initProperties)
     {
         return ZeebeClientBuilderImpl.fromProperties(initProperties);
     }
 
-
+    @Override
+    void close();
 }

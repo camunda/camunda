@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.List;
 
 import io.zeebe.broker.it.ClientRule;
-import io.zeebe.client.clustering.impl.TopologyBroker;
+import io.zeebe.client.impl.clustering.BrokerInfoImpl;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.SocketAddress;
 import org.junit.Rule;
@@ -96,7 +96,7 @@ public class GossipDifferentNodeJoinTest
     public void shouldRemoveLeaderFromCluster()
     {
         // given
-        final TopologyBroker leaderForPartition = clusteringRule.getLeaderForPartition(0);
+        final BrokerInfoImpl leaderForPartition = clusteringRule.getLeaderForPartition(0);
         final SocketAddress[] otherBrokers = clusteringRule.getOtherBrokers(leaderForPartition.getSocketAddress());
 
         // when

@@ -27,7 +27,7 @@ import io.zeebe.broker.it.util.TopicEventRecorder;
 import io.zeebe.client.TasksClient;
 import io.zeebe.client.event.TaskEvent;
 import io.zeebe.client.event.WorkflowInstanceEvent;
-import io.zeebe.client.task.TaskHandler;
+import io.zeebe.client.impl.job.JobHandler;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import org.junit.Rule;
@@ -142,7 +142,7 @@ public class IncidentTest
         waitUntil(() -> eventRecorder.hasIncidentEvent(incidentEvent("DELETED")));
     }
 
-    private static final class ControllableTaskHandler implements TaskHandler
+    private static final class ControllableTaskHandler implements JobHandler
     {
         boolean failTask = false;
         TaskEvent task;

@@ -16,20 +16,22 @@
 package io.zeebe.client.workflow;
 
 import static org.assertj.core.api.Assertions.assertThat;
-
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
+import static org.assertj.core.api.Assertions.entry;
 
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.api.events.WorkflowInstanceEvent;
+import io.zeebe.client.api.events.WorkflowInstanceEvent.WorkflowInstanceState;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
+import io.zeebe.client.impl.event.WorkflowInstanceEventImpl;
 import io.zeebe.client.util.ClientRule;
 import io.zeebe.client.util.Events;
-import io.zeebe.client.workflow.impl.WorkflowInstanceEventImpl;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
+import org.junit.*;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
 
 public class CancelWorkflowInstanceTest
 {
@@ -54,58 +56,67 @@ public class CancelWorkflowInstanceTest
     public void shouldCancelWorkflowInstance()
     {
         // given
-        final WorkflowInstanceEventImpl event = Events.exampleWorfklowInstance();
-        event.setKey(2L);
+        final WorkflowInstanceEventImpl baseEvent = Events.exampleWorfklowInstance();
 
-        brokerRule.onWorkflowRequestRespondWith(2L)
-                .put("state", "WORKFLOW_INSTANCE_CANCELED")
-                .done()
-                .register();
+        brokerRule.workflowInstances().registerCancelCommand();
 
         // when
-        clientRule.workflows()
-                .cancel(event)
-                .execute();
+        final WorkflowInstanceEvent workflowInstanceEvent = clientRule.workflowClient()
+            .newCancelInstanceCommand(baseEvent)
+            .send()
+            .join();
 
         // then
         assertThat(brokerRule.getReceivedCommandRequests()).hasSize(1);
 
         final ExecuteCommandRequest commandRequest = brokerRule.getReceivedCommandRequests().get(0);
-        assertThat(commandRequest.getCommand()).containsEntry("state", "CANCEL_WORKFLOW_INSTANCE");
-        assertThat(commandRequest.key()).isEqualTo(2L);
+        assertThat(commandRequest.valueType()).isEqualTo(ValueType.WORKFLOW_INSTANCE);
+        assertThat(commandRequest.intent()).isEqualTo(WorkflowInstanceIntent.CANCEL);
+        assertThat(commandRequest.key()).isEqualTo(baseEvent.getKey());
+        assertThat(commandRequest.partitionId()).isEqualTo(baseEvent.getMetadata().getPartitionId());
+        assertThat(commandRequest.position()).isEqualTo(baseEvent.getMetadata().getPosition());
+
+        assertThat(commandRequest.getCommand()).containsOnly(
+              entry("bpmnProcessId", baseEvent.getBpmnProcessId()),
+              entry("version", baseEvent.getVersion()),
+              entry("workflowKey", (int) baseEvent.getWorkflowKey()),
+              entry("workflowInstanceKey", (int) baseEvent.getWorkflowInstanceKey()),
+              entry("activityId", baseEvent.getActivityId()),
+              entry("payload", baseEvent.getPayloadMsgPack()));
+
+        assertThat(workflowInstanceEvent.getState()).isEqualTo(WorkflowInstanceState.CANCELED);
     }
 
     @Test
-    public void shouldFailCancelWorkflowInstanceIfKeyMissing()
+    public void shouldThrowExceptionIfBaseEventIsNull()
     {
         thrown.expect(RuntimeException.class);
         thrown.expectMessage("base event must not be null");
 
         // when
-        clientRule.workflows()
-                .cancel(null)
-                .execute();
+        clientRule.workflowClient()
+            .newCancelInstanceCommand(null)
+            .send()
+            .join();
     }
 
     @Test
-    public void shouldRejectCancelWorkflowInstance()
+    public void shouldThrowExceptionOnRejection()
     {
         // given
         final WorkflowInstanceEventImpl event = Events.exampleWorfklowInstance();
         event.setKey(2L);
 
-        brokerRule.onWorkflowRequestRespondWith(2L)
-                .put("state", "CANCEL_WORKFLOW_INSTANCE_REJECTED")
-                .done()
-                .register();
+        brokerRule.workflowInstances().registerCancelCommand(b -> b.rejection());
 
         thrown.expect(ClientCommandRejectedException.class);
-        thrown.expectMessage("Command for event with key 2 was rejected by broker (CANCEL_WORKFLOW_INSTANCE_REJECTED)");
+        thrown.expectMessage("Command for event with key 2 was rejected by broker (CANCEL)");
 
         // when
-        clientRule.workflows()
-            .cancel(event)
-            .execute();
+        clientRule.workflowClient()
+            .newCancelInstanceCommand(event)
+            .send()
+            .join();
     }
 
 }
