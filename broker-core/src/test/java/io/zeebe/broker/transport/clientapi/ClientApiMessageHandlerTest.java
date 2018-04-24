@@ -18,7 +18,7 @@
 package io.zeebe.broker.transport.clientapi;
 
 import io.zeebe.broker.clustering.base.partitions.Partition;
-import io.zeebe.broker.clustering.base.topology.Topology.PartitionInfo;
+import io.zeebe.broker.clustering.base.topology.PartitionInfo;
 import io.zeebe.broker.task.data.TaskEvent;
 import io.zeebe.broker.task.data.TaskState;
 import io.zeebe.broker.transport.controlmessage.ControlMessageRequestHeaderDescriptor;

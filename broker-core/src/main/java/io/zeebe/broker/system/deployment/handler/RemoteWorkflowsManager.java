@@ -23,7 +23,7 @@ import java.util.function.IntConsumer;
 import java.util.function.Predicate;
 
 import io.zeebe.broker.Loggers;
-import io.zeebe.broker.clustering.base.topology.Topology.NodeInfo;
+import io.zeebe.broker.clustering.base.topology.NodeInfo;
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
 import io.zeebe.broker.logstreams.processor.StreamProcessorLifecycleAware;
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;

@@ -17,24 +17,30 @@
  */
 package io.zeebe.broker.clustering.base.topology;
 
-import io.zeebe.servicecontainer.*;
+import java.util.Collection;
+import java.util.List;
 
-/**
- * This is us :)
- */
-public class LocalNodeService implements Service<NodeInfo>
+import io.zeebe.transport.SocketAddress;
+
+public interface ReadableTopology
 {
-    private final NodeInfo localNode;
+    NodeInfo getLocal();
 
-    public LocalNodeService(NodeInfo memberInfo)
-    {
-        this.localNode = memberInfo;
-    }
+    NodeInfo getMemberByClientApi(SocketAddress apiAddress);
 
-    @Override
-    public NodeInfo get()
-    {
-        return localNode;
-    }
+    NodeInfo getMemberByManagementApi(SocketAddress apiAddress);
 
+    NodeInfo getMemberByReplicationApi(SocketAddress apiAddress);
+
+    List<NodeInfo> getMembers();
+
+    PartitionInfo getParition(int partitionId);
+
+    NodeInfo getLeader(int partitionId);
+
+    List<NodeInfo> getFollowers(int partitionId);
+
+    Collection<PartitionInfo> getPartitions();
+
+    TopologyDto asDto();
 }

@@ -22,8 +22,8 @@ import java.util.Iterator;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.base.topology.*;
-import io.zeebe.broker.clustering.base.topology.Topology.NodeInfo;
-import io.zeebe.broker.clustering.base.topology.Topology.PartitionInfo;
+import io.zeebe.broker.clustering.base.topology.NodeInfo;
+import io.zeebe.broker.clustering.base.topology.PartitionInfo;
 import io.zeebe.broker.logstreams.processor.*;
 import io.zeebe.broker.system.log.PendingPartitionsIndex.PendingPartition;
 import io.zeebe.util.CloseableSilently;

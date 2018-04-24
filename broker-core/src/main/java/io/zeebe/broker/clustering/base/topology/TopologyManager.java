@@ -36,7 +36,7 @@ public interface TopologyManager
     /**
      * Can be used to query the topology.
      */
-    <R> ActorFuture<R> query(Function<Topology, R> query);
+    <R> ActorFuture<R> query(Function<ReadableTopology, R> query);
 
     ActorFuture<TopologyDto> getTopologyDto();
 

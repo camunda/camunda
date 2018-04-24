@@ -96,7 +96,7 @@ public class BootstrapExpectNodes extends Actor implements Service<Void>, Topolo
     }
 
     @Override
-    public void onMemberAdded(Topology.NodeInfo memberInfo, Topology topology)
+    public void onMemberAdded(NodeInfo memberInfo, Topology topology)
     {
         actor.run(() ->
         {
@@ -114,7 +114,7 @@ public class BootstrapExpectNodes extends Actor implements Service<Void>, Topolo
     }
 
     @Override
-    public void onMemberRemoved(Topology.NodeInfo memberInfo, Topology topology)
+    public void onMemberRemoved(NodeInfo memberInfo, Topology topology)
     {
         actor.run(() -> nodeCount--);
     }

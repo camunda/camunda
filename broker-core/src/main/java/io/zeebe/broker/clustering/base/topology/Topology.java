@@ -33,7 +33,7 @@ import org.slf4j.Logger;
  * Represents this node's view of the cluster. Includes
  * info about known nodes as well as partitions and their current distribution to nodes.
  */
-public class Topology
+public class Topology implements ReadableTopology
 {
     private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
 
@@ -51,21 +51,25 @@ public class Topology
         this.addMember(localBroker);
     }
 
+    @Override
     public NodeInfo getLocal()
     {
         return local;
     }
 
+    @Override
     public NodeInfo getMemberByClientApi(SocketAddress apiAddress)
     {
         return getMemberByApi(NodeInfo::getClientApiAddress, apiAddress);
     }
 
+    @Override
     public NodeInfo getMemberByManagementApi(SocketAddress apiAddress)
     {
         return getMemberByApi(NodeInfo::getManagementApiAddress, apiAddress);
     }
 
+    @Override
     public NodeInfo getMemberByReplicationApi(SocketAddress apiAddress)
     {
         return getMemberByApi(NodeInfo::getReplicationApiAddress, apiAddress);
@@ -88,26 +92,31 @@ public class Topology
         return member;
     }
 
+    @Override
     public List<NodeInfo> getMembers()
     {
         return members;
     }
 
+    @Override
     public PartitionInfo getParition(int partitionId)
     {
         return partitions.get(partitionId);
     }
 
+    @Override
     public NodeInfo getLeader(int partitionId)
     {
         return partitionLeaders.get(partitionId);
     }
 
+    @Override
     public List<NodeInfo> getFollowers(int partitionId)
     {
         return partitionFollowers.get(partitionId);
     }
 
+    @Override
     public Collection<PartitionInfo> getPartitions()
     {
         return new ArrayList<>(partitions.values());
@@ -128,7 +137,7 @@ public class Topology
     {
         LOG.debug("Removing {} from list of known members", member);
 
-        for (PartitionInfo partition : member.follower)
+        for (PartitionInfo partition : member.getFollowers())
         {
             final List<NodeInfo> followers = partitionFollowers.get(partition.getPartitionId());
 
@@ -138,7 +147,7 @@ public class Topology
             }
         }
 
-        for (PartitionInfo partition : member.leader)
+        for (PartitionInfo partition : member.getLeaders())
         {
             partitionLeaders.remove(partition.getPartitionId());
         }
@@ -156,8 +165,8 @@ public class Topology
 
         LOG.debug("Removing {} list of known partitions", partition);
 
-        memberInfo.leader.remove(partition);
-        memberInfo.follower.remove(partition);
+        memberInfo.removeLeader(partition);
+        memberInfo.removeFollower(partition);
 
         final List<NodeInfo> followers = partitionFollowers.get(partitionId);
         if (followers != null)
@@ -183,7 +192,7 @@ public class Topology
             partitions.put(paritionId, partition);
         }
 
-        LOG.debug("Updating partition information for parition {}", partition);
+        LOG.debug("Updating partition information for partition {} and state {}", partition, state);
 
         if (state != null)
         {
@@ -196,12 +205,8 @@ public class Topology
                     }
                     partitionLeaders.put(paritionId, member);
 
-                    member.follower.remove(partition);
-
-                    if (!member.leader.contains(partition))
-                    {
-                        member.leader.add(partition);
-                    }
+                    member.removeFollower(partition);
+                    member.addLeader(partition);
                     break;
 
                 case FOLLOWER:
@@ -219,12 +224,8 @@ public class Topology
                         followers.add(member);
                     }
 
-                    member.leader.remove(partition);
-
-                    if (!member.follower.contains(partition))
-                    {
-                        member.follower.add(partition);
-                    }
+                    member.removeLeader(partition);
+                    member.addFollower(partition);
                     break;
 
                 case CANDIDATE:
@@ -236,6 +237,7 @@ public class Topology
         return partition;
     }
 
+    @Override
     public TopologyDto asDto()
     {
         final TopologyDto dto = new TopologyDto();
@@ -247,7 +249,7 @@ public class Topology
             broker.setHost(apiContactPoint.getHostBuffer(), 0, apiContactPoint.getHostBuffer().capacity());
             broker.setPort(apiContactPoint.port());
 
-            for (PartitionInfo partition : member.getLeader())
+            for (PartitionInfo partition : member.getLeaders())
             {
                 final DirectBuffer topicName = BufferUtil.cloneBuffer(partition.getTopicName());
 
@@ -259,7 +261,7 @@ public class Topology
                     .setState(RaftState.LEADER);
             }
 
-            for (PartitionInfo partition : member.getFollower())
+            for (PartitionInfo partition : member.getFollowers())
             {
                 final DirectBuffer topicName = BufferUtil.cloneBuffer(partition.getTopicName());
 
@@ -275,132 +277,4 @@ public class Topology
         return dto;
     }
 
-    public static class NodeInfo
-    {
-        private final SocketAddress clientApiAddress;
-        private final SocketAddress managementApiAddress;
-        private final SocketAddress replicationApiAddress;
-
-        private final List<PartitionInfo> leader = new ArrayList<>();
-        private final List<PartitionInfo> follower = new ArrayList<>();
-
-        public NodeInfo(SocketAddress clientApiAddress,
-            SocketAddress managementApiAddress,
-            SocketAddress replicationApiAddress)
-        {
-            this.clientApiAddress = clientApiAddress;
-            this.managementApiAddress = managementApiAddress;
-            this.replicationApiAddress = replicationApiAddress;
-        }
-
-        public SocketAddress getClientApiAddress()
-        {
-            return clientApiAddress;
-        }
-
-        public SocketAddress getManagementApiAddress()
-        {
-            return managementApiAddress;
-        }
-
-        public SocketAddress getReplicationApiAddress()
-        {
-            return replicationApiAddress;
-        }
-
-        public List<PartitionInfo> getLeader()
-        {
-            return leader;
-        }
-
-        public List<PartitionInfo> getFollower()
-        {
-            return follower;
-        }
-
-        @Override
-        public String toString()
-        {
-            return String.format("Node{clientApi=%s, managementApi=%s, replicationApi=%s}", clientApiAddress, managementApiAddress, replicationApiAddress);
-        }
-
-        @Override
-        public int hashCode()
-        {
-            final int prime = 31;
-            int result = 1;
-            result = prime * result + ((clientApiAddress == null) ? 0 : clientApiAddress.hashCode());
-            return result;
-        }
-
-        @Override
-        public boolean equals(Object obj)
-        {
-            if (this == obj)
-            {
-                return true;
-            }
-            if (obj == null)
-            {
-                return false;
-            }
-            if (getClass() != obj.getClass())
-            {
-                return false;
-            }
-            final NodeInfo other = (NodeInfo) obj;
-            if (clientApiAddress == null)
-            {
-                if (other.clientApiAddress != null)
-                {
-                    return false;
-                }
-            }
-            else if (!clientApiAddress.equals(other.clientApiAddress))
-            {
-                return false;
-            }
-            return true;
-        }
-    }
-
-    public static class PartitionInfo
-    {
-        private final DirectBuffer topicName;
-        private final int paritionId;
-        private final int replicationFactor;
-
-        public PartitionInfo(DirectBuffer topicName, int paritionId, int replicationFactor)
-        {
-            this.topicName = topicName;
-            this.paritionId = paritionId;
-            this.replicationFactor = replicationFactor;
-        }
-
-        public DirectBuffer getTopicName()
-        {
-            return topicName;
-        }
-
-        public String getTopicNameAsString()
-        {
-            return BufferUtil.bufferAsString(topicName);
-        }
-
-        public int getPartitionId()
-        {
-            return paritionId;
-        }
-
-        public int getReplicationFactor()
-        {
-            return replicationFactor;
-        }
-
-        @Override
-        public String toString()
-        {
-            return String.format("Partition{topic=%s, partitionId=%d, replicationFactor=%d}", getTopicNameAsString(), paritionId, replicationFactor);
-        }
-    }
 }

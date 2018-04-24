@@ -21,12 +21,12 @@ import static org.agrona.BitUtil.SIZE_OF_BYTE;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 
 import java.nio.ByteOrder;
-import java.util.List;
+import java.util.Set;
 
+import io.zeebe.broker.clustering.base.topology.NodeInfo;
+import io.zeebe.broker.clustering.base.topology.PartitionInfo;
 import io.zeebe.broker.clustering.base.topology.Topology;
 import io.zeebe.broker.clustering.base.topology.TopologyManagerImpl;
-import io.zeebe.broker.clustering.base.topology.Topology.NodeInfo;
-import io.zeebe.broker.clustering.base.topology.Topology.PartitionInfo;
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.transport.SocketAddress;
 import org.agrona.DirectBuffer;
@@ -88,8 +88,8 @@ public final class GossipCustomEventEncoding
 
     public static int writePartitions(NodeInfo member, MutableDirectBuffer writeBuffer, int offset)
     {
-        final List<PartitionInfo> leader = member.getLeader();
-        final List<PartitionInfo> follower = member.getFollower();
+        final Set<PartitionInfo> leader = member.getLeaders();
+        final Set<PartitionInfo> follower = member.getFollowers();
 
         final int partitionCount = leader.size() + follower.size();
 

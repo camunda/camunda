@@ -24,8 +24,6 @@ import java.util.List;
 import java.util.function.Function;
 
 import io.zeebe.broker.Loggers;
-import io.zeebe.broker.clustering.base.topology.Topology.NodeInfo;
-import io.zeebe.broker.clustering.base.topology.Topology.PartitionInfo;
 import io.zeebe.gossip.Gossip;
 import io.zeebe.gossip.GossipCustomEventListener;
 import io.zeebe.gossip.GossipMembershipListener;
@@ -202,13 +200,13 @@ public class TopologyManagerImpl extends Actor implements TopologyManager, RaftS
 
             actor.run(() ->
             {
-                LOG.trace("Received raft state change event for member {}", senderCopy);
 
                 final NodeInfo member = topology.getMemberByManagementApi(senderCopy);
 
                 if (member != null)
                 {
                     readPartitions(payloadCopy, 0, member, TopologyManagerImpl.this);
+                    LOG.trace("Received raft state change event for member {} {}", senderCopy, member);
                 }
                 else
                 {
@@ -286,10 +284,7 @@ public class TopologyManagerImpl extends Actor implements TopologyManager, RaftS
     @Override
     public ActorFuture<TopologyDto> getTopologyDto()
     {
-        return actor.call(() ->
-        {
-            return topology.asDto();
-        });
+        return actor.call(topology::asDto);
     }
 
     @Override
@@ -324,10 +319,7 @@ public class TopologyManagerImpl extends Actor implements TopologyManager, RaftS
             topologyPartitionListers.add(listener);
 
             // notify initially
-            topology.getPartitions().forEach((p) ->
-            {
-                LogUtil.catchAndLog(LOG, () -> listener.onPartitionUpdated(p, topology));
-            });
+            topology.getPartitions().forEach((p) -> LogUtil.catchAndLog(LOG, () -> listener.onPartitionUpdated(p, topology)));
         });
     }
 
@@ -365,7 +357,7 @@ public class TopologyManagerImpl extends Actor implements TopologyManager, RaftS
     }
 
     @Override
-    public <R> ActorFuture<R> query(Function<Topology, R> query)
+    public <R> ActorFuture<R> query(Function<ReadableTopology, R> query)
     {
         return actor.call(() -> query.apply(topology));
     }

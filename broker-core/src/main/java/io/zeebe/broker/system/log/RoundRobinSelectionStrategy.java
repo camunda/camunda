@@ -23,7 +23,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import io.zeebe.broker.clustering.base.topology.Topology;
 import io.zeebe.broker.clustering.base.topology.TopologyMemberListener;
-import io.zeebe.broker.clustering.base.topology.Topology.NodeInfo;
+import io.zeebe.broker.clustering.base.topology.NodeInfo;
 import io.zeebe.transport.SocketAddress;
 
 public class RoundRobinSelectionStrategy implements PartitionCreatorSelectionStrategy, TopologyMemberListener

@@ -21,7 +21,7 @@ import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.remot
 import static io.zeebe.broker.transport.TransportServiceNames.*;
 
 import io.zeebe.broker.clustering.base.topology.*;
-import io.zeebe.broker.clustering.base.topology.Topology.NodeInfo;
+import io.zeebe.broker.clustering.base.topology.NodeInfo;
 import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.RemoteAddress;
 

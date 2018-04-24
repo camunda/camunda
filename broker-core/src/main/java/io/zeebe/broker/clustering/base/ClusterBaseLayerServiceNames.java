@@ -20,7 +20,7 @@ package io.zeebe.broker.clustering.base;
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.base.raft.config.RaftPersistentConfigurationManager;
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
-import io.zeebe.broker.clustering.base.topology.Topology.NodeInfo;
+import io.zeebe.broker.clustering.base.topology.NodeInfo;
 import io.zeebe.gossip.Gossip;
 import io.zeebe.raft.Raft;
 import io.zeebe.servicecontainer.ServiceName;

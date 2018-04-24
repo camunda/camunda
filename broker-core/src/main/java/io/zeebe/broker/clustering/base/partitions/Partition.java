@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.clustering.base.partitions;
 
-import io.zeebe.broker.clustering.base.topology.Topology.PartitionInfo;
+import io.zeebe.broker.clustering.base.topology.PartitionInfo;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.servicecontainer.*;
