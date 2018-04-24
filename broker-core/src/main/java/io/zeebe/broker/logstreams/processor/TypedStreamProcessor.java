@@ -17,20 +17,20 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.List;
 
-import io.zeebe.broker.clustering.orchestration.id.IdEvent;
-import io.zeebe.broker.clustering.orchestration.topic.TopicEvent;
-import io.zeebe.broker.incident.data.IncidentEvent;
-import io.zeebe.broker.task.data.TaskEvent;
-import io.zeebe.broker.workflow.data.DeploymentEvent;
-import io.zeebe.broker.workflow.data.WorkflowInstanceEvent;
-import io.zeebe.logstreams.log.*;
-import io.zeebe.logstreams.processor.*;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamWriter;
+import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.logstreams.processor.EventProcessor;
+import io.zeebe.logstreams.processor.StreamProcessor;
+import io.zeebe.logstreams.processor.StreamProcessorContext;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.protocol.clientapi.EventType;
-import io.zeebe.protocol.impl.BrokerEventMetadata;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.util.ReflectUtil;
 import io.zeebe.util.sched.ActorControl;
@@ -42,14 +42,16 @@ public class TypedStreamProcessor implements StreamProcessor
 
     protected final SnapshotSupport snapshotSupport;
     protected final ServerOutput output;
-    protected final EnumMap<EventType, EnumMap> eventProcessors;
+    protected final FlatEnumMap<TypedRecordProcessor> eventProcessors;
     protected final List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
 
-    protected final BrokerEventMetadata metadata = new BrokerEventMetadata();
-    protected final EnumMap<EventType, Class<? extends UnpackedObject>> eventRegistry;
-    protected final EnumMap<EventType, UnpackedObject> eventCache;
+    protected final RecordMetadata metadata = new RecordMetadata();
+    protected final EnumMap<ValueType, Class<? extends UnpackedObject>> eventRegistry;
+    protected final EnumMap<ValueType, UnpackedObject> eventCache;
 
     protected final TypedEventImpl typedEvent = new TypedEventImpl();
+    private final TypedStreamEnvironment environment;
+
     protected DelegatingEventProcessor eventProcessorWrapper;
     protected ActorControl actor;
     private StreamProcessorContext streamProcessorContext;
@@ -57,20 +59,23 @@ public class TypedStreamProcessor implements StreamProcessor
     public TypedStreamProcessor(
             SnapshotSupport snapshotSupport,
             ServerOutput output,
-            EnumMap<EventType, EnumMap> eventProcessors,
+            FlatEnumMap<TypedRecordProcessor> eventProcessors,
             List<StreamProcessorLifecycleAware> lifecycleListeners,
-            EnumMap<EventType, Class<? extends UnpackedObject>> eventRegistry)
+            EnumMap<ValueType, Class<? extends UnpackedObject>> eventRegistry,
+            TypedStreamEnvironment environment)
     {
         this.snapshotSupport = snapshotSupport;
         this.output = output;
         this.eventProcessors = eventProcessors;
-        eventProcessors.values().forEach(p -> this.lifecycleListeners.addAll(p.values()));
+        eventProcessors.values().forEachRemaining(p -> this.lifecycleListeners.add(p));
+
         this.lifecycleListeners.addAll(lifecycleListeners);
 
-        this.eventCache = new EnumMap<>(EventType.class);
+        this.eventCache = new EnumMap<>(ValueType.class);
 
         eventRegistry.forEach((t, c) -> eventCache.put(t, ReflectUtil.newInstance(c)));
         this.eventRegistry = eventRegistry;
+        this.environment = environment;
     }
 
     @Override
@@ -105,21 +110,14 @@ public class TypedStreamProcessor implements StreamProcessor
         metadata.reset();
         event.readMetadata(metadata);
 
-        final EnumMap processorsForType = eventProcessors.get(metadata.getEventType());
-        if (processorsForType == null || processorsForType.isEmpty())
-        {
-            return null;
-        }
-
-        final UnpackedObject value = eventCache.get(metadata.getEventType());
-        value.reset();
-        event.readValue(value);
-
-        final Enum state = getEventState(value);
-        final TypedEventProcessor currentProcessor = (TypedEventProcessor) processorsForType.get(state);
+        final TypedRecordProcessor currentProcessor = eventProcessors.get(metadata.getValueType(), metadata.getRecordType(), metadata.getIntent());
 
         if (currentProcessor != null)
         {
+            final UnpackedObject value = eventCache.get(metadata.getValueType());
+            value.reset();
+            event.readValue(value);
+
             typedEvent.wrap(event, metadata, value);
             eventProcessorWrapper.wrap(currentProcessor, typedEvent);
             return eventProcessorWrapper;
@@ -132,45 +130,12 @@ public class TypedStreamProcessor implements StreamProcessor
 
     public MetadataFilter buildTypeFilter()
     {
-        return m -> eventProcessors.containsKey(m.getEventType());
+        return m -> eventProcessors.containsKey(m.getValueType(), m.getRecordType(), m.getIntent());
     }
 
     public ActorFuture<Void> runAsync(Runnable runnable)
     {
         return actor.call(runnable);
-    }
-
-    // TODO: this goes away when we move the state into the event header => https://github.com/zeebe-io/zeebe/issues/367
-    protected Enum getEventState(UnpackedObject value)
-    {
-        if (value instanceof TopicEvent)
-        {
-            return ((TopicEvent) value).getState();
-        }
-        else if (value instanceof DeploymentEvent)
-        {
-            return ((DeploymentEvent) value).getState();
-        }
-        else if (value instanceof TaskEvent)
-        {
-            return ((TaskEvent) value).getState();
-        }
-        else if (value instanceof WorkflowInstanceEvent)
-        {
-            return ((WorkflowInstanceEvent) value).getState();
-        }
-        else if (value instanceof IncidentEvent)
-        {
-            return ((IncidentEvent) value).getState();
-        }
-        else if (value instanceof IdEvent)
-        {
-            return ((IdEvent) value).getState();
-        }
-        else
-        {
-            throw new RuntimeException("event type " + value.getClass() + " not supported");
-        }
     }
 
     protected static class DelegatingEventProcessor implements EventProcessor
@@ -181,14 +146,14 @@ public class TypedStreamProcessor implements StreamProcessor
         protected final TypedStreamWriterImpl writer;
         protected final TypedResponseWriterImpl responseWriter;
 
-        protected TypedEventProcessor eventProcessor;
+        protected TypedRecordProcessor eventProcessor;
         protected TypedEventImpl event;
 
         public DelegatingEventProcessor(
                 int streamProcessorId,
                 ServerOutput output,
                 LogStream logStream,
-                EnumMap<EventType, Class<? extends UnpackedObject>> eventRegistry)
+                EnumMap<ValueType, Class<? extends UnpackedObject>> eventRegistry)
         {
             this.streamProcessorId = streamProcessorId;
             this.logStream = logStream;
@@ -196,7 +161,7 @@ public class TypedStreamProcessor implements StreamProcessor
             this.responseWriter = new TypedResponseWriterImpl(output, logStream.getPartitionId());
         }
 
-        public void wrap(TypedEventProcessor eventProcessor, TypedEventImpl event)
+        public void wrap(TypedRecordProcessor eventProcessor, TypedEventImpl event)
         {
             this.eventProcessor = eventProcessor;
             this.event = event;
@@ -205,7 +170,7 @@ public class TypedStreamProcessor implements StreamProcessor
         @Override
         public void processEvent()
         {
-            eventProcessor.processEvent(event);
+            eventProcessor.processRecord(event);
         }
 
         @Override
@@ -218,7 +183,7 @@ public class TypedStreamProcessor implements StreamProcessor
         public long writeEvent(LogStreamWriter writer)
         {
             this.writer.configureSourceContext(streamProcessorId, logStream.getPartitionId(), event.getPosition());
-            return eventProcessor.writeEvent(event, this.writer);
+            return eventProcessor.writeRecord(event, this.writer);
         }
 
         @Override
@@ -237,5 +202,10 @@ public class TypedStreamProcessor implements StreamProcessor
     public StreamProcessorContext getStreamProcessorContext()
     {
         return streamProcessorContext;
+    }
+
+    public TypedStreamEnvironment getEnvironment()
+    {
+        return environment;
     }
 }

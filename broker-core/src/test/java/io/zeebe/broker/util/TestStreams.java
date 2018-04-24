@@ -23,45 +23,60 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.*;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import io.zeebe.broker.incident.data.IncidentEvent;
-import io.zeebe.broker.logstreams.processor.TypedEvent;
 import io.zeebe.broker.clustering.orchestration.topic.TopicEvent;
+import io.zeebe.broker.incident.data.IncidentEvent;
+import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.task.data.TaskEvent;
-import io.zeebe.broker.topic.Events;
+import io.zeebe.broker.topic.Records;
 import io.zeebe.broker.topic.StreamProcessorControl;
-import io.zeebe.broker.workflow.data.*;
+import io.zeebe.broker.workflow.data.DeploymentEvent;
+import io.zeebe.broker.workflow.data.WorkflowInstanceEvent;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
-import io.zeebe.logstreams.log.*;
-import io.zeebe.logstreams.processor.*;
+import io.zeebe.logstreams.log.BufferedLogStreamReader;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamReader;
+import io.zeebe.logstreams.log.LogStreamWriter;
+import io.zeebe.logstreams.log.LogStreamWriterImpl;
+import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.logstreams.processor.EventProcessor;
+import io.zeebe.logstreams.processor.StreamProcessor;
+import io.zeebe.logstreams.processor.StreamProcessorContext;
+import io.zeebe.logstreams.processor.StreamProcessorController;
 import io.zeebe.logstreams.spi.SnapshotStorage;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.EventType;
-import io.zeebe.protocol.impl.BrokerEventMetadata;
+import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.impl.RecordMetadata;
+import io.zeebe.protocol.intent.Intent;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.buffer.BufferUtil;
-import io.zeebe.util.sched.*;
+import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.ActorCondition;
+import io.zeebe.util.sched.ActorScheduler;
 
 public class TestStreams
 {
-    protected static final Map<Class<?>, EventType> EVENT_TYPES = new HashMap<>();
+    protected static final Map<Class<?>, ValueType> VALUE_TYPES = new HashMap<>();
 
     static
     {
-        EVENT_TYPES.put(DeploymentEvent.class, EventType.DEPLOYMENT_EVENT);
-        EVENT_TYPES.put(IncidentEvent.class, EventType.INCIDENT_EVENT);
-        EVENT_TYPES.put(TaskEvent.class, EventType.TASK_EVENT);
-        EVENT_TYPES.put(TopicEvent.class, EventType.TOPIC_EVENT);
-        EVENT_TYPES.put(WorkflowInstanceEvent.class, EventType.WORKFLOW_INSTANCE_EVENT);
+        VALUE_TYPES.put(DeploymentEvent.class, ValueType.DEPLOYMENT);
+        VALUE_TYPES.put(IncidentEvent.class, ValueType.INCIDENT);
+        VALUE_TYPES.put(TaskEvent.class, ValueType.TASK);
+        VALUE_TYPES.put(TopicEvent.class, ValueType.TOPIC);
+        VALUE_TYPES.put(WorkflowInstanceEvent.class, ValueType.WORKFLOW_INSTANCE);
 
-        EVENT_TYPES.put(UnpackedObject.class, EventType.NOOP_EVENT);
+        VALUE_TYPES.put(UnpackedObject.class, ValueType.NOOP);
     }
 
     protected final File storageDirectory;
@@ -163,7 +178,7 @@ public class TestStreams
         return StreamSupport.stream(iterable.spliterator(), false);
     }
 
-    public FluentLogWriter newEvent(String logName)
+    public FluentLogWriter newRecord(String logName)
     {
         final LogStream logStream = getLogStream(logName);
         return new FluentLogWriter(logStream);
@@ -246,27 +261,27 @@ public class TestStreams
         }
 
         @Override
-        public void blockAfterTaskEvent(Predicate<TypedEvent<TaskEvent>> test)
+        public void blockAfterTaskEvent(Predicate<TypedRecord<TaskEvent>> test)
         {
-            blockAfterEvent(e -> Events.isTaskEvent(e) && test.test(CopiedTypedEvent.toTypedEvent(e, TaskEvent.class)));
+            blockAfterEvent(e -> Records.isTaskRecord(e) && test.test(CopiedTypedEvent.toTypedEvent(e, TaskEvent.class)));
         }
 
         @Override
-        public void blockAfterDeploymentEvent(Predicate<TypedEvent<DeploymentEvent>> test)
+        public void blockAfterDeploymentEvent(Predicate<TypedRecord<DeploymentEvent>> test)
         {
-            blockAfterEvent(e -> Events.isDeploymentEvent(e) && test.test(CopiedTypedEvent.toTypedEvent(e, DeploymentEvent.class)));
+            blockAfterEvent(e -> Records.isDeploymentRecord(e) && test.test(CopiedTypedEvent.toTypedEvent(e, DeploymentEvent.class)));
         }
 
         @Override
-        public void blockAfterTopicEvent(Predicate<TypedEvent<TopicEvent>> test)
+        public void blockAfterTopicEvent(Predicate<TypedRecord<TopicEvent>> test)
         {
-            blockAfterEvent(e -> Events.isTopicEvent(e) && test.test(CopiedTypedEvent.toTypedEvent(e, TopicEvent.class)));
+            blockAfterEvent(e -> Records.isTopicRecord(e) && test.test(CopiedTypedEvent.toTypedEvent(e, TopicEvent.class)));
         }
 
         @Override
-        public void blockAfterIncidentEvent(Predicate<TypedEvent<IncidentEvent>> test)
+        public void blockAfterIncidentEvent(Predicate<TypedRecord<IncidentEvent>> test)
         {
-            blockAfterEvent(e -> Events.isIncidentEvent(e) && test.test(CopiedTypedEvent.toTypedEvent(e, IncidentEvent.class)));
+            blockAfterEvent(e -> Records.isIncidentRecord(e) && test.test(CopiedTypedEvent.toTypedEvent(e, IncidentEvent.class)));
         }
 
         @Override
@@ -425,7 +440,7 @@ public class TestStreams
     public static class FluentLogWriter
     {
 
-        protected BrokerEventMetadata metadata = new BrokerEventMetadata();
+        protected RecordMetadata metadata = new RecordMetadata();
         protected UnpackedObject value;
         protected LogStream logStream;
         protected long key = -1;
@@ -437,9 +452,21 @@ public class TestStreams
             metadata.protocolVersion(Protocol.PROTOCOL_VERSION);
         }
 
-        public FluentLogWriter metadata(Consumer<BrokerEventMetadata> metadata)
+        public FluentLogWriter metadata(Consumer<RecordMetadata> metadata)
         {
             metadata.accept(this.metadata);
+            return this;
+        }
+
+        public FluentLogWriter intent(Intent intent)
+        {
+            this.metadata.intent(intent);
+            return this;
+        }
+
+        public FluentLogWriter recordType(RecordType recordType)
+        {
+            this.metadata.recordType(recordType);
             return this;
         }
 
@@ -451,13 +478,13 @@ public class TestStreams
 
         public TestStreams.FluentLogWriter event(UnpackedObject event)
         {
-            final EventType eventType = EVENT_TYPES.get(event.getClass());
+            final ValueType eventType = VALUE_TYPES.get(event.getClass());
             if (eventType == null)
             {
                 throw new RuntimeException("No event type registered for value " + event.getClass());
             }
 
-            this.metadata.eventType(eventType);
+            this.metadata.valueType(eventType);
             this.value = event;
             return this;
         }

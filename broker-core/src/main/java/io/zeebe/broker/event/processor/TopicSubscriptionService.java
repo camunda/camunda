@@ -104,7 +104,7 @@ public class TopicSubscriptionService extends Actor implements Service<TopicSubs
                 partitionServiceName,
                 new CommandResponseWriter(serverOutput),
                 new ErrorResponseWriter(serverOutput),
-                () -> new SubscribedEventWriter(serverOutput),
+                () -> new SubscribedRecordWriter(serverOutput),
                 streamProcessorServiceFactory,
                 serviceContainer);
 

@@ -19,16 +19,16 @@ package io.zeebe.broker.logstreams.processor;
 
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.protocol.impl.BrokerEventMetadata;
+import io.zeebe.protocol.impl.RecordMetadata;
 
 @SuppressWarnings({"rawtypes"})
-public class TypedEventImpl implements TypedEvent
+public class TypedEventImpl implements TypedRecord
 {
     protected LoggedEvent rawEvent;
-    protected BrokerEventMetadata metadata;
+    protected RecordMetadata metadata;
     protected UnpackedObject value;
 
-    public void wrap(LoggedEvent rawEvent, BrokerEventMetadata metadata, UnpackedObject value)
+    public void wrap(LoggedEvent rawEvent, RecordMetadata metadata, UnpackedObject value)
     {
         this.rawEvent = rawEvent;
         this.metadata = metadata;
@@ -54,7 +54,7 @@ public class TypedEventImpl implements TypedEvent
     }
 
     @Override
-    public BrokerEventMetadata getMetadata()
+    public RecordMetadata getMetadata()
     {
         return metadata;
     }

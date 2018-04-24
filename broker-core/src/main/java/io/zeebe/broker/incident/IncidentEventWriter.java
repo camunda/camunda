@@ -20,22 +20,25 @@ package io.zeebe.broker.incident;
 import static io.zeebe.util.EnsureUtil.ensureGreaterThan;
 import static io.zeebe.util.EnsureUtil.ensureNotNull;
 
-import io.zeebe.broker.incident.data.*;
+import io.zeebe.broker.incident.data.ErrorType;
+import io.zeebe.broker.incident.data.IncidentEvent;
 import io.zeebe.broker.workflow.data.WorkflowInstanceEvent;
 import io.zeebe.logstreams.log.LogStreamWriter;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.EventType;
-import io.zeebe.protocol.impl.BrokerEventMetadata;
+import io.zeebe.protocol.clientapi.Intent;
+import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.impl.RecordMetadata;
 
 public class IncidentEventWriter
 {
     private static final String UNKNOWN_ERROR = "unknown";
 
-    private final BrokerEventMetadata incidentEventMetadata = new BrokerEventMetadata();
+    private final RecordMetadata incidentEventMetadata = new RecordMetadata();
     private final IncidentEvent incidentEvent = new IncidentEvent();
 
     private final WorkflowInstanceEvent workflowInstanceEvent;
-    private final BrokerEventMetadata failureEventMetadata;
+    private final RecordMetadata failureEventMetadata;
 
     private long failureEventPosition;
     private long activityInstanceKey;
@@ -43,7 +46,7 @@ public class IncidentEventWriter
     private ErrorType errorType;
     private String errorMessage;
 
-    public IncidentEventWriter(BrokerEventMetadata failureEventMetadata, WorkflowInstanceEvent workflowInstanceEvent)
+    public IncidentEventWriter(RecordMetadata failureEventMetadata, WorkflowInstanceEvent workflowInstanceEvent)
     {
         ensureNotNull("failure event metadata", failureEventMetadata);
         ensureNotNull("workflow instance event", workflowInstanceEvent);
@@ -94,7 +97,8 @@ public class IncidentEventWriter
 
         incidentEventMetadata.reset()
             .protocolVersion(Protocol.PROTOCOL_VERSION)
-            .eventType(EventType.INCIDENT_EVENT);
+            .valueType(ValueType.INCIDENT)
+            .recordType(RecordType.EVENT);
 
         incidentEvent.reset();
         incidentEvent
@@ -108,13 +112,15 @@ public class IncidentEventWriter
 
         if (!failureEventMetadata.hasIncidentKey())
         {
-            incidentEvent.setState(IncidentState.CREATE);
+            incidentEventMetadata.recordType(RecordType.COMMAND);
+            incidentEventMetadata.intent(Intent.CREATE);
 
             logStreamWriter.positionAsKey();
         }
         else
         {
-            incidentEvent.setState(IncidentState.RESOLVE_FAILED);
+            incidentEventMetadata.recordType(RecordType.EVENT);
+            incidentEventMetadata.intent(Intent.RESOLVE_FAILED);
 
             logStreamWriter.key(failureEventMetadata.getIncidentKey());
         }

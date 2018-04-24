@@ -30,12 +30,10 @@ public class TopicSubscriberEvent extends UnpackedObject
 
     // true if startPosition should override any previously acknowledged position
     protected BooleanProperty forceStartProp = new BooleanProperty("forceStart", false);
-    protected EnumProperty<TopicSubscriberState> stateProp = new EnumProperty<>("state", TopicSubscriberState.class);
 
     public TopicSubscriberEvent()
     {
         this
-            .declareProperty(stateProp)
             .declareProperty(startPositionProp)
             .declareProperty(nameProp)
             .declareProperty(prefetchCapacityProp)
@@ -84,17 +82,6 @@ public class TopicSubscriberEvent extends UnpackedObject
     public boolean getForceStart()
     {
         return forceStartProp.getValue();
-    }
-
-    public TopicSubscriberState getState()
-    {
-        return stateProp.getValue();
-    }
-
-    public TopicSubscriberEvent setState(TopicSubscriberState event)
-    {
-        this.stateProp.setValue(event);
-        return this;
     }
 
 }

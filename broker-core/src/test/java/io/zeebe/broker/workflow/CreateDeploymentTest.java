@@ -17,26 +17,36 @@
  */
 package io.zeebe.broker.workflow;
 
-import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.*;
+import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_BPMN_PROCESS_ID;
+import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_VERSION;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.*;
-import java.util.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.assertj.core.util.Files;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.broker.workflow.data.ResourceType;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.EventType;
+import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.intent.Intent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.util.StreamUtil;
-import org.assertj.core.util.Files;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
 
 public class CreateDeploymentTest
 {
@@ -58,9 +68,8 @@ public class CreateDeploymentTest
         // when
         final ExecuteCommandResponse resp = apiRule.createCmdRequest()
                 .partitionId(Protocol.SYSTEM_PARTITION)
-                .eventType(EventType.DEPLOYMENT_EVENT)
+                .type(ValueType.DEPLOYMENT, Intent.CREATE)
                 .command()
-                    .put(PROP_STATE, "CREATE")
                     .put("topicName", ClientApiRule.DEFAULT_TOPIC_NAME)
                     .put("resources", Collections.singletonList(deploymentResource(bpmnXml(WORKFLOW), "process.bpmn")))
                 .done()
@@ -70,7 +79,8 @@ public class CreateDeploymentTest
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
         assertThat(resp.position()).isGreaterThanOrEqualTo(0L);
         assertThat(resp.partitionId()).isEqualTo(Protocol.SYSTEM_PARTITION);
-        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "CREATED");
+        assertThat(resp.recordType()).isEqualTo(RecordType.EVENT);
+        assertThat(resp.intent()).isEqualTo(Intent.CREATED);
     }
 
     @SuppressWarnings("unchecked")
@@ -81,7 +91,7 @@ public class CreateDeploymentTest
         ExecuteCommandResponse resp = apiRule.topic().deployWithResponse(ClientApiRule.DEFAULT_TOPIC_NAME, WORKFLOW);
 
         // then
-        List<Map<String, Object>> deployedWorkflows = (List<Map<String, Object>>) resp.getEvent().get("deployedWorkflows");
+        List<Map<String, Object>> deployedWorkflows = (List<Map<String, Object>>) resp.getValue().get("deployedWorkflows");
         assertThat(deployedWorkflows).hasSize(1);
         assertThat(deployedWorkflows.get(0)).containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process");
         assertThat(deployedWorkflows.get(0)).containsEntry(PROP_WORKFLOW_VERSION, 1);
@@ -90,7 +100,7 @@ public class CreateDeploymentTest
         resp = apiRule.topic().deployWithResponse(ClientApiRule.DEFAULT_TOPIC_NAME, WORKFLOW);
 
         // then the workflow definition version is increased
-        deployedWorkflows = (List<Map<String, Object>>) resp.getEvent().get("deployedWorkflows");
+        deployedWorkflows = (List<Map<String, Object>>) resp.getValue().get("deployedWorkflows");
         assertThat(deployedWorkflows).hasSize(1);
         assertThat(deployedWorkflows.get(0)).containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process");
         assertThat(deployedWorkflows.get(0)).containsEntry(PROP_WORKFLOW_VERSION, 2);
@@ -110,7 +120,8 @@ public class CreateDeploymentTest
                                     "collaboration.bpmn");
 
         // then
-        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "CREATED");
+        assertThat(resp.recordType()).isEqualTo(RecordType.EVENT);
+        assertThat(resp.intent()).isEqualTo(Intent.CREATED);
 
         final List<Map<String, Object>> deployedWorkflows = Arrays.asList(getDeployedWorkflow(resp, 0), getDeployedWorkflow(resp, 1));
 
@@ -127,8 +138,9 @@ public class CreateDeploymentTest
 
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
-        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "REJECTED");
-        assertThat((String) resp.getEvent().get("errorMessage")).isEqualTo("No topic found with name not-existing");
+        assertThat(resp.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+        assertThat(resp.intent()).isEqualTo(Intent.CREATE);
+        assertThat((String) resp.getValue().get("errorMessage")).isEqualTo("No topic found with name not-existing");
     }
 
     @Test
@@ -142,8 +154,9 @@ public class CreateDeploymentTest
 
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
-        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "REJECTED");
-        assertThat((String) resp.getEvent().get("errorMessage")).contains("The process must contain at least one none start event.");
+        assertThat(resp.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+        assertThat(resp.intent()).isEqualTo(Intent.CREATE);
+        assertThat((String) resp.getValue().get("errorMessage")).contains("The process must contain at least one none start event.");
     }
 
     @Test
@@ -157,9 +170,8 @@ public class CreateDeploymentTest
         // when
         final ExecuteCommandResponse resp = apiRule.createCmdRequest()
                 .partitionId(Protocol.SYSTEM_PARTITION)
-                .eventType(EventType.DEPLOYMENT_EVENT)
+                .type(ValueType.DEPLOYMENT, Intent.CREATE)
                 .command()
-                    .put(PROP_STATE, "CREATE")
                     .put("topicName", ClientApiRule.DEFAULT_TOPIC_NAME)
                     .put("resources", resources)
                 .done()
@@ -167,8 +179,9 @@ public class CreateDeploymentTest
 
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
-        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "REJECTED");
-        assertThat((String) resp.getEvent().get("errorMessage"))
+        assertThat(resp.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+        assertThat(resp.intent()).isEqualTo(Intent.CREATE);
+        assertThat((String) resp.getValue().get("errorMessage"))
             .contains("Resource 'process2.bpmn':")
             .contains("The process must contain at least one none start event.");
     }
@@ -179,9 +192,8 @@ public class CreateDeploymentTest
         // when
         final ExecuteCommandResponse resp = apiRule.createCmdRequest()
                 .partitionId(Protocol.SYSTEM_PARTITION)
-                .eventType(EventType.DEPLOYMENT_EVENT)
+                .type(ValueType.DEPLOYMENT, Intent.CREATE)
                 .command()
-                    .put(PROP_STATE, "CREATE")
                     .put("topicName", ClientApiRule.DEFAULT_TOPIC_NAME)
                     .put("resources", Collections.emptyList())
                 .done()
@@ -189,8 +201,9 @@ public class CreateDeploymentTest
 
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
-        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "REJECTED");
-        assertThat((String) resp.getEvent().get("errorMessage")).isEqualTo("Deployment doesn't contain a resource to deploy.");
+        assertThat(resp.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+        assertThat(resp.intent()).isEqualTo(Intent.CREATE);
+        assertThat((String) resp.getValue().get("errorMessage")).isEqualTo("Deployment doesn't contain a resource to deploy.");
     }
 
     @Test
@@ -205,8 +218,9 @@ public class CreateDeploymentTest
 
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
-        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "REJECTED");
-        assertThat((String) resp.getEvent().get("errorMessage"))
+        assertThat(resp.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+        assertThat(resp.intent()).isEqualTo(Intent.CREATE);
+        assertThat((String) resp.getValue().get("errorMessage"))
             .contains("Failed to deploy resource 'invalid.bpmn':")
             .contains("Failed to read BPMN model");
     }
@@ -228,8 +242,9 @@ public class CreateDeploymentTest
 
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
-        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "REJECTED");
-        assertThat((String) resp.getEvent().get("errorMessage")).contains("The condition 'foobar' is not valid");
+        assertThat(resp.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+        assertThat(resp.intent()).isEqualTo(Intent.CREATE);
+        assertThat((String) resp.getValue().get("errorMessage")).contains("The condition 'foobar' is not valid");
     }
 
     @Test
@@ -247,7 +262,8 @@ public class CreateDeploymentTest
                                     "simple-workflow.yaml");
 
         // then
-        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "CREATED");
+        assertThat(resp.recordType()).isEqualTo(RecordType.EVENT);
+        assertThat(resp.intent()).isEqualTo(Intent.CREATED);
 
         final Map<String, Object> deployedWorkflow = getDeployedWorkflow(resp, 0);
 
@@ -263,12 +279,14 @@ public class CreateDeploymentTest
         apiRule.createTopic("foo", 1);
         apiRule.createTopic("bar", 1);
 
+        final int fooPartition = apiRule.getSinglePartitionId("foo");
+        final int barPartition = apiRule.getSinglePartitionId("bar");
+
         // when
         final ExecuteCommandResponse d1 = apiRule.topic().deployWithResponse("foo", WORKFLOW);
         final ExecuteCommandResponse d2 = apiRule.topic().deployWithResponse("bar", WORKFLOW);
 
         // then
-
         final Map<String, Object> workflow1 = getDeployedWorkflow(d1, 0);
         assertThat(workflow1.get("version")).isEqualTo(1);
 

@@ -20,11 +20,12 @@ package io.zeebe.broker.clustering.base.bootstrap;
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.base.topology.PartitionInfo;
 import io.zeebe.broker.clustering.orchestration.topic.TopicEvent;
-import io.zeebe.broker.clustering.orchestration.topic.TopicState;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.EventType;
-import io.zeebe.protocol.impl.BrokerEventMetadata;
+import io.zeebe.protocol.clientapi.Intent;
+import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
@@ -40,7 +41,7 @@ class BootstrapSystemTopicReplication extends Actor implements Service<Void>
 
     private final Injector<Partition> partitionInjector = new Injector<>();
 
-    private final BrokerEventMetadata metadata = new BrokerEventMetadata();
+    private final RecordMetadata metadata = new RecordMetadata();
     private final TopicEvent topicEvent = new TopicEvent();
     private final LogStreamWriterImpl writer = new LogStreamWriterImpl();
 
@@ -62,9 +63,10 @@ class BootstrapSystemTopicReplication extends Actor implements Service<Void>
         final Partition partition = partitionInjector.getValue();
         final PartitionInfo partitionInfo = partition.getInfo();
 
-        metadata.eventType(EventType.TOPIC_EVENT);
+        metadata.recordType(RecordType.EVENT);
+        metadata.valueType(ValueType.TOPIC);
+        metadata.intent(Intent.CREATE_COMPLETE);
 
-        topicEvent.setState(TopicState.CREATE_COMPLETE);
         topicEvent.setName(partitionInfo.getTopicNameBuffer());
         topicEvent.setReplicationFactor(partitionInfo.getReplicationFactor());
         topicEvent.setPartitions(1);

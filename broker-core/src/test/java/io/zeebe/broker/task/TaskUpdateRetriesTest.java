@@ -20,6 +20,7 @@ package io.zeebe.broker.task;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import java.util.HashMap;
 import java.util.List;
@@ -32,11 +33,13 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.protocol.clientapi.EventType;
+import io.zeebe.protocol.clientapi.Intent;
+import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.SubscriptionType;
+import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
-import io.zeebe.test.broker.protocol.clientapi.SubscribedEvent;
+import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
 import io.zeebe.test.broker.protocol.clientapi.TestTopicClient;
 
 public class TaskUpdateRetriesTest
@@ -66,26 +69,24 @@ public class TaskUpdateRetriesTest
 
         apiRule.openTaskSubscription(TASK_TYPE).await();
 
-        final SubscribedEvent subscribedEvent = receiveSingleSubscribedEvent();
+        final SubscribedRecord subscribedEvent = receiveSingleSubscribedEvent();
 
-        Map<String, Object> event = subscribedEvent.event();
+        Map<String, Object> event = subscribedEvent.value();
         event.put("retries", 0);
         final ExecuteCommandResponse failResponse = client.failTask(subscribedEvent.key(), event);
 
-        event = failResponse.getEvent();
+        event = failResponse.getValue();
         event.put("retries", NEW_RETRIES);
 
         // when
         final ExecuteCommandResponse response = client.updateTaskRetries(subscribedEvent.key(), event);
 
         // then
-        final Map<String, Object> expectedEvent = new HashMap<>(event);
-        expectedEvent.put("state", "RETRIES_UPDATED");
-
-        assertThat(response.getEvent()).containsAllEntriesOf(expectedEvent);
+        assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
+        assertThat(response.intent()).isEqualTo(Intent.RETRIES_UPDATED);
 
         // and the task is published again
-        final SubscribedEvent republishedEvent = receiveSingleSubscribedEvent();
+        final SubscribedRecord republishedEvent = receiveSingleSubscribedEvent();
         assertThat(republishedEvent.key()).isEqualTo(subscribedEvent.key());
         assertThat(republishedEvent.position()).isNotEqualTo(subscribedEvent.position());
 
@@ -94,27 +95,27 @@ public class TaskUpdateRetriesTest
 
         final int expectedTopicEvents = 10;
 
-        final List<SubscribedEvent> taskEvents = doRepeatedly(() -> apiRule
+        final List<SubscribedRecord> taskEvents = doRepeatedly(() -> apiRule
                 .moveMessageStreamToHead()
                 .subscribedEvents()
                 .filter(e -> e.subscriptionType() == SubscriptionType.TOPIC_SUBSCRIPTION &&
-                      e.eventType() == EventType.TASK_EVENT)
+                      e.valueType() == ValueType.TASK)
                 .limit(expectedTopicEvents)
                 .collect(Collectors.toList()))
             .until(e -> e.size() == expectedTopicEvents);
 
-        assertThat(taskEvents).extracting(e -> e.event().get("state"))
+        assertThat(taskEvents).extracting(e -> e.recordType(), e -> e.valueType(), e -> e.intent())
             .containsExactly(
-                    "CREATE",
-                    "CREATED",
-                    "LOCK",
-                    "LOCKED",
-                    "FAIL",
-                    "FAILED",
-                    "UPDATE_RETRIES",
-                    "RETRIES_UPDATED",
-                    "LOCK",
-                    "LOCKED");
+                tuple(RecordType.COMMAND, ValueType.TASK, Intent.CREATE),
+                tuple(RecordType.EVENT, ValueType.TASK, Intent.CREATED),
+                tuple(RecordType.COMMAND, ValueType.TASK, Intent.LOCK),
+                tuple(RecordType.EVENT, ValueType.TASK, Intent.LOCKED),
+                tuple(RecordType.COMMAND, ValueType.TASK, Intent.FAIL),
+                tuple(RecordType.EVENT, ValueType.TASK, Intent.FAILED),
+                tuple(RecordType.COMMAND, ValueType.TASK, Intent.UPDATE_RETRIES),
+                tuple(RecordType.EVENT, ValueType.TASK, Intent.RETRIES_UPDATED),
+                tuple(RecordType.COMMAND, ValueType.TASK, Intent.LOCK),
+                tuple(RecordType.EVENT, ValueType.TASK, Intent.LOCKED));
     }
 
     @Test
@@ -130,7 +131,8 @@ public class TaskUpdateRetriesTest
         final ExecuteCommandResponse response = client.updateTaskRetries(123, event);
 
         // then
-        assertThat(response.getEvent()).containsEntry("state", "UPDATE_RETRIES_REJECTED");
+        assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+        assertThat(response.intent()).isEqualTo(Intent.UPDATE_RETRIES);
     }
 
     @Test
@@ -141,19 +143,20 @@ public class TaskUpdateRetriesTest
 
         apiRule.openTaskSubscription(TASK_TYPE).await();
 
-        final SubscribedEvent subscribedEvent = receiveSingleSubscribedEvent();
+        final SubscribedRecord subscribedEvent = receiveSingleSubscribedEvent();
 
-        Map<String, Object> event = subscribedEvent.event();
+        Map<String, Object> event = subscribedEvent.value();
         final ExecuteCommandResponse completeResponse = client.completeTask(subscribedEvent.key(), event);
 
-        event = completeResponse.getEvent();
+        event = completeResponse.getValue();
         event.put("retries", NEW_RETRIES);
 
         // when
         final ExecuteCommandResponse response = client.updateTaskRetries(subscribedEvent.key(), event);
 
         // then
-        assertThat(response.getEvent()).containsEntry("state", "UPDATE_RETRIES_REJECTED");
+        assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+        assertThat(response.intent()).isEqualTo(Intent.UPDATE_RETRIES);
     }
 
     @Test
@@ -164,16 +167,17 @@ public class TaskUpdateRetriesTest
 
         apiRule.openTaskSubscription(TASK_TYPE).await();
 
-        final SubscribedEvent subscribedEvent = receiveSingleSubscribedEvent();
+        final SubscribedRecord subscribedEvent = receiveSingleSubscribedEvent();
 
-        final Map<String, Object> event = subscribedEvent.event();
+        final Map<String, Object> event = subscribedEvent.value();
         event.put("retries", NEW_RETRIES);
 
         // when
         final ExecuteCommandResponse response = client.updateTaskRetries(subscribedEvent.key(), event);
 
         // then
-        assertThat(response.getEvent()).containsEntry("state", "UPDATE_RETRIES_REJECTED");
+        assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+        assertThat(response.intent()).isEqualTo(Intent.UPDATE_RETRIES);
     }
 
 
@@ -185,20 +189,21 @@ public class TaskUpdateRetriesTest
 
         apiRule.openTaskSubscription(TASK_TYPE).await();
 
-        final SubscribedEvent subscribedEvent = receiveSingleSubscribedEvent();
+        final SubscribedRecord subscribedEvent = receiveSingleSubscribedEvent();
 
-        Map<String, Object> event = subscribedEvent.event();
+        Map<String, Object> event = subscribedEvent.value();
         event.put("retries", 0);
         final ExecuteCommandResponse failResponse = client.failTask(subscribedEvent.key(), event);
 
-        event = failResponse.getEvent();
+        event = failResponse.getValue();
         event.put("retries", 0);
 
         // when
         final ExecuteCommandResponse response = client.updateTaskRetries(subscribedEvent.key(), event);
 
         // then
-        assertThat(response.getEvent()).containsEntry("state", "UPDATE_RETRIES_REJECTED");
+        assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+        assertThat(response.intent()).isEqualTo(Intent.UPDATE_RETRIES);
     }
 
     @Test
@@ -209,23 +214,24 @@ public class TaskUpdateRetriesTest
 
         apiRule.openTaskSubscription(TASK_TYPE).await();
 
-        final SubscribedEvent subscribedEvent = receiveSingleSubscribedEvent();
+        final SubscribedRecord subscribedEvent = receiveSingleSubscribedEvent();
 
-        Map<String, Object> event = subscribedEvent.event();
+        Map<String, Object> event = subscribedEvent.value();
         event.put("retries", 0);
         final ExecuteCommandResponse failResponse = client.failTask(subscribedEvent.key(), event);
 
-        event = failResponse.getEvent();
+        event = failResponse.getValue();
         event.put("retries", -1);
 
         // when
         final ExecuteCommandResponse response = client.updateTaskRetries(subscribedEvent.key(), event);
 
         // then
-        assertThat(response.getEvent()).containsEntry("state", "UPDATE_RETRIES_REJECTED");
+        assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+        assertThat(response.intent()).isEqualTo(Intent.UPDATE_RETRIES);
     }
 
-    private SubscribedEvent receiveSingleSubscribedEvent()
+    private SubscribedRecord receiveSingleSubscribedEvent()
     {
         waitUntil(() -> apiRule.numSubscribedEventsAvailable() == 1);
         return apiRule.subscribedEvents().findFirst().get();

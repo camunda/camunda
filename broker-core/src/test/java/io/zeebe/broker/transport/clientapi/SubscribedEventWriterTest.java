@@ -27,10 +27,12 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.MockitoAnnotations;
 
-import io.zeebe.protocol.clientapi.EventType;
+import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
-import io.zeebe.protocol.clientapi.SubscribedEventDecoder;
+import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.SubscribedRecordDecoder;
 import io.zeebe.protocol.clientapi.SubscriptionType;
+import io.zeebe.protocol.clientapi.ValueType;
 
 public class SubscribedEventWriterTest
 {
@@ -38,7 +40,7 @@ public class SubscribedEventWriterTest
     protected static final DirectBuffer BUFFER = wrapString("foo");
 
     protected MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
-    protected SubscribedEventDecoder bodyDecoder = new SubscribedEventDecoder();
+    protected SubscribedRecordDecoder bodyDecoder = new SubscribedRecordDecoder();
 
     @Before
     public void setUp()
@@ -50,10 +52,12 @@ public class SubscribedEventWriterTest
     public void shouldWriteEventToBuffer()
     {
         // given
-        final SubscribedEventWriter eventWriter = new SubscribedEventWriter(null);
+        final SubscribedRecordWriter eventWriter = new SubscribedRecordWriter(null);
         eventWriter
-            .event(BUFFER, 1, BUFFER.capacity() - 1)
-            .eventType(EventType.RAFT_EVENT)
+            .value(BUFFER, 1, BUFFER.capacity() - 1)
+            .recordType(RecordType.EVENT)
+            .valueType(ValueType.RAFT)
+            .intent(Intent.CREATED)
             .key(123L)
             .position(546L)
             .partitionId(876)
@@ -69,14 +73,16 @@ public class SubscribedEventWriterTest
         headerDecoder.wrap(buffer, 2);
         bodyDecoder.wrap(buffer, 2 + headerDecoder.encodedLength(), headerDecoder.blockLength(), headerDecoder.version());
 
-        assertThat(bodyDecoder.eventType()).isEqualTo(EventType.RAFT_EVENT);
+        assertThat(bodyDecoder.recordType()).isEqualTo(RecordType.EVENT);
+        assertThat(bodyDecoder.valueType()).isEqualTo(ValueType.RAFT);
+        assertThat(bodyDecoder.intent()).isEqualTo(Intent.CREATED);
         assertThat(bodyDecoder.key()).isEqualTo(123L);
         assertThat(bodyDecoder.position()).isEqualTo(546L);
         assertThat(bodyDecoder.partitionId()).isEqualTo(876);
         assertThat(bodyDecoder.subscriberKey()).isEqualTo(4L);
 
-        final UnsafeBuffer eventBuffer = new UnsafeBuffer(new byte[bodyDecoder.eventLength()]);
-        bodyDecoder.getEvent(eventBuffer, 0, eventBuffer.capacity());
+        final UnsafeBuffer eventBuffer = new UnsafeBuffer(new byte[bodyDecoder.valueLength()]);
+        bodyDecoder.getValue(eventBuffer, 0, eventBuffer.capacity());
 
         assertThatBuffer(eventBuffer).hasBytes(BUFFER, 1, BUFFER.capacity() - 1);
     }

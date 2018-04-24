@@ -288,7 +288,7 @@ public class PollableTopicSubscriptionTest
         return broker.onExecuteCommandRequest(EventType.SUBSCRIPTION_EVENT, "ACKNOWLEDGE")
             .respondWith()
             .key(r -> r.key())
-            .event()
+            .value()
                 .allOf((r) -> r.getCommand())
                 .put("state", "ACKNOWLEDGED")
                 .done();

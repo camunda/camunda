@@ -33,7 +33,7 @@ import io.zeebe.protocol.clientapi.ControlMessageRequestDecoder;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
-import io.zeebe.protocol.impl.BrokerEventMetadata;
+import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerResponse;
 import io.zeebe.util.sched.Actor;
@@ -66,7 +66,7 @@ public class ControlMessageHandlerManager extends Actor implements FragmentHandl
     protected final Int2ObjectHashMap<ControlMessageHandler> handlersByTypeId = new Int2ObjectHashMap<>();
 
     protected final ErrorResponseWriter errorResponseWriter;
-    protected final BrokerEventMetadata eventMetada = new BrokerEventMetadata();
+    protected final RecordMetadata eventMetada = new RecordMetadata();
     protected final ServerResponse response = new ServerResponse();
 
     public ControlMessageHandlerManager(

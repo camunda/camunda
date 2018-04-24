@@ -15,15 +15,15 @@
  */
 package io.zeebe.test.broker.protocol.brokerapi;
 
-import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.eventHeaderLength;
-
 import java.util.Map;
 import java.util.function.Function;
 
 import org.agrona.MutableDirectBuffer;
 
 import io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder;
+import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
+import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 
 public class ExecuteCommandResponseWriter extends AbstractMessageBuilder<ExecuteCommandRequest>
@@ -39,8 +39,10 @@ public class ExecuteCommandResponseWriter extends AbstractMessageBuilder<Execute
 
     protected long key;
     protected int partitionId;
-    protected byte[] event;
+    protected byte[] value;
     protected long position;
+    private RecordType recordType;
+    private Intent intent;
 
     public ExecuteCommandResponseWriter(MsgPackHelper msgPackHelper)
     {
@@ -54,7 +56,7 @@ public class ExecuteCommandResponseWriter extends AbstractMessageBuilder<Execute
         partitionId = partitionIdFunction.apply(request);
         position = positionFunction.apply(request);
         final Map<String, Object> deserializedEvent = eventFunction.apply(request);
-        event = msgPackHelper.encodeAsMsgPack(deserializedEvent);
+        value = msgPackHelper.encodeAsMsgPack(deserializedEvent);
     }
 
     public void setPartitionIdFunction(Function<ExecuteCommandRequest, Integer> partitionIdFunction)
@@ -65,6 +67,16 @@ public class ExecuteCommandResponseWriter extends AbstractMessageBuilder<Execute
     public void setEventFunction(Function<ExecuteCommandRequest, Map<String, Object>> eventFunction)
     {
         this.eventFunction = eventFunction;
+    }
+
+    public void setIntent(Intent intent)
+    {
+        this.intent = intent;
+    }
+
+    public void setRecordType(RecordType recordType)
+    {
+        this.recordType = recordType;
     }
 
     public void setKeyFunction(Function<ExecuteCommandRequest, Long> keyFunction)
@@ -83,8 +95,8 @@ public class ExecuteCommandResponseWriter extends AbstractMessageBuilder<Execute
     {
         return MessageHeaderEncoder.ENCODED_LENGTH +
                 ExecuteCommandResponseEncoder.BLOCK_LENGTH +
-                eventHeaderLength() +
-                event.length;
+                ExecuteCommandResponseEncoder.valueHeaderLength() +
+                value.length;
     }
 
     @Override
@@ -103,10 +115,12 @@ public class ExecuteCommandResponseWriter extends AbstractMessageBuilder<Execute
         // protocol message
         bodyEncoder
             .wrap(buffer, offset)
+            .recordType(recordType)
+            .intent(intent)
             .partitionId(partitionId)
             .key(key)
             .position(position)
-            .putEvent(event, 0, event.length);
+            .putValue(value, 0, value.length);
 
     }
 

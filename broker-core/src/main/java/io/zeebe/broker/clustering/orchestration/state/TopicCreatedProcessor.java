@@ -21,18 +21,19 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-import io.zeebe.broker.Loggers;
-import io.zeebe.broker.clustering.orchestration.topic.TopicEvent;
-import io.zeebe.broker.clustering.orchestration.topic.TopicState;
-import io.zeebe.broker.logstreams.processor.TypedEvent;
-import io.zeebe.broker.logstreams.processor.TypedEventProcessor;
-import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
-import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
-import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 
-public class TopicCreatedProcessor implements TypedEventProcessor<TopicEvent>
+import io.zeebe.broker.Loggers;
+import io.zeebe.broker.clustering.orchestration.topic.TopicEvent;
+import io.zeebe.broker.logstreams.processor.TypedRecord;
+import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
+import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
+import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
+import io.zeebe.protocol.clientapi.Intent;
+import io.zeebe.util.buffer.BufferUtil;
+
+public class TopicCreatedProcessor implements TypedRecordProcessor<TopicEvent>
 {
     private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
 
@@ -50,7 +51,7 @@ public class TopicCreatedProcessor implements TypedEventProcessor<TopicEvent>
     }
 
     @Override
-    public void processEvent(final TypedEvent<TopicEvent> event)
+    public void processRecord(final TypedRecord<TopicEvent> event)
     {
         final TopicEvent topicEvent = event.getValue();
 
@@ -58,19 +59,14 @@ public class TopicCreatedProcessor implements TypedEventProcessor<TopicEvent>
 
         isCreated = !topicAlreadyCreated.test(topicName);
 
-        if (isCreated)
-        {
-            topicEvent.setState(TopicState.CREATED);
-        }
-        else
+        if (!isCreated)
         {
             LOG.warn("Rejecting topic create complete as topic {} was already created", BufferUtil.bufferAsString(topicName));
-            topicEvent.setState(TopicState.CREATE_COMPLETE_REJECTED);
         }
     }
 
     @Override
-    public boolean executeSideEffects(final TypedEvent<TopicEvent> event, final TypedResponseWriter responseWriter)
+    public boolean executeSideEffects(final TypedRecord<TopicEvent> event, final TypedResponseWriter responseWriter)
     {
         if (isCreated)
         {
@@ -81,13 +77,20 @@ public class TopicCreatedProcessor implements TypedEventProcessor<TopicEvent>
     }
 
     @Override
-    public long writeEvent(final TypedEvent<TopicEvent> event, final TypedStreamWriter writer)
+    public long writeRecord(final TypedRecord<TopicEvent> event, final TypedStreamWriter writer)
     {
-        return writer.writeFollowupEvent(event.getKey(), event.getValue());
+        if (isCreated)
+        {
+            return writer.writeFollowUpEvent(event.getKey(), Intent.CREATED, event.getValue());
+        }
+        else
+        {
+            return writer.writeRejection(event);
+        }
     }
 
     @Override
-    public void updateState(final TypedEvent<TopicEvent> event)
+    public void updateState(final TypedRecord<TopicEvent> event)
     {
         if (isCreated)
         {

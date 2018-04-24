@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.api.CreatePartitionRequest;
 import io.zeebe.broker.clustering.base.partitions.Partition;
@@ -33,13 +35,14 @@ import io.zeebe.broker.clustering.base.topology.TopologyManager;
 import io.zeebe.broker.clustering.base.topology.TopologyPartitionListener;
 import io.zeebe.broker.clustering.orchestration.NodeSelector;
 import io.zeebe.broker.clustering.orchestration.id.IdGenerator;
-import io.zeebe.broker.clustering.orchestration.state.KnownTopicsListener;
 import io.zeebe.broker.clustering.orchestration.state.KnownTopics;
+import io.zeebe.broker.clustering.orchestration.state.KnownTopicsListener;
 import io.zeebe.broker.clustering.orchestration.state.TopicInfo;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.msgpack.value.IntegerValue;
 import io.zeebe.msgpack.value.ValueArray;
+import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
@@ -49,7 +52,6 @@ import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
-import org.slf4j.Logger;
 
 public class TopicCreationService extends Actor implements Service<TopicCreationService>, KnownTopicsListener, TopologyPartitionListener
 {
@@ -176,7 +178,6 @@ public class TopicCreationService extends Actor implements Service<TopicCreation
                             final int replicationFactor = pendingTopic.getReplicationFactor();
 
                             final TopicEvent topicEvent = new TopicEvent();
-                            topicEvent.setState(TopicState.CREATE_COMPLETE);
                             topicEvent.setName(pendingTopic.getTopicNameBuffer());
                             topicEvent.setPartitions(partitionCount);
                             topicEvent.setReplicationFactor(replicationFactor);
@@ -184,7 +185,7 @@ public class TopicCreationService extends Actor implements Service<TopicCreation
                             final ValueArray<IntegerValue> eventPartitionIds = topicEvent.getPartitionIds();
                             pendingTopic.getPartitionIds().forEach(id -> eventPartitionIds.add().setValue(id));
 
-                            actor.runUntilDone(() -> writeEvent(pendingTopic.getKey(), topicEvent));
+                            actor.runUntilDone(() -> writeEvent(pendingTopic.getKey(), Intent.CREATE_COMPLETE, topicEvent));
 
                             pendingTopicCreationRequests.remove(topicName);
                             pendingTopicCompletions.add(topicName);
@@ -286,9 +287,9 @@ public class TopicCreationService extends Actor implements Service<TopicCreation
         });
     }
 
-    private void writeEvent(final long key, final TopicEvent topicEvent)
+    private void writeEvent(final long key, Intent intent, final TopicEvent topicEvent)
     {
-        if (streamWriter.writeFollowupEvent(key, topicEvent) >= 0)
+        if (streamWriter.writeFollowUpEvent(key, intent, topicEvent) >= 0)
         {
             actor.done();
         }

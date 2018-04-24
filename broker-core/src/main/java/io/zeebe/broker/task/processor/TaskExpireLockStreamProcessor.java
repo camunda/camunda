@@ -25,18 +25,18 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import io.zeebe.broker.logstreams.processor.StreamProcessorLifecycleAware;
-import io.zeebe.broker.logstreams.processor.TypedEvent;
-import io.zeebe.broker.logstreams.processor.TypedEventProcessor;
+import io.zeebe.broker.logstreams.processor.TypedRecord;
+import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.logstreams.processor.TypedStreamReader;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.task.TaskQueueManagerService;
 import io.zeebe.broker.task.data.TaskEvent;
-import io.zeebe.broker.task.data.TaskState;
 import io.zeebe.map.Long2BytesZbMap;
 import io.zeebe.map.iterator.Long2BytesZbMapEntry;
-import io.zeebe.protocol.clientapi.EventType;
+import io.zeebe.protocol.clientapi.Intent;
+import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.util.sched.ScheduledTimer;
 import io.zeebe.util.sched.clock.ActorClock;
 
@@ -48,19 +48,16 @@ public class TaskExpireLockStreamProcessor implements StreamProcessorLifecycleAw
 
     private UnsafeBuffer mapAccessBuffer = new UnsafeBuffer(new byte[MAP_VALUE_MAX_LENGTH]);
 
-    private final TaskEventWriter streamWriter;
-
     private ScheduledTimer timer;
-
-    public TaskExpireLockStreamProcessor(TypedStreamReader streamReader, TypedStreamWriter streamWriter)
-    {
-        this.streamWriter = new TaskEventWriter(streamWriter, streamReader);
-    }
+    private TypedStreamWriter writer;
+    private TypedStreamReader reader;
 
     @Override
     public void onOpen(TypedStreamProcessor streamProcessor)
     {
         timer = streamProcessor.getActor().runAtFixedRate(TaskQueueManagerService.LOCK_EXPIRATION_INTERVAL, this::timeOutTasks);
+        this.writer = streamProcessor.getEnvironment().buildStreamWriter();
+        this.reader = streamProcessor.getEnvironment().buildStreamReader();
     }
 
     @Override
@@ -72,7 +69,8 @@ public class TaskExpireLockStreamProcessor implements StreamProcessorLifecycleAw
             timer = null;
         }
 
-        streamWriter.close();
+        // TODO: check all locations where we need to close readers
+        this.reader.close();
     }
 
     private void timeOutTasks()
@@ -93,7 +91,10 @@ public class TaskExpireLockStreamProcessor implements StreamProcessorLifecycleAw
                 // TODO: would be nicer to have a consumable channel for timed-out timers
                 //   that we can stop consuming/yield on backpressure
 
-                final boolean success = streamWriter.tryWriteTaskEvent(eventPosition, TaskState.EXPIRE_LOCK);
+                final TypedRecord<TaskEvent> event = reader.readValue(eventPosition, TaskEvent.class);
+                final long position = writer.writeFollowUpCommand(event.getKey(), Intent.EXPIRE_LOCK, event.getValue());
+                final boolean success = position >= 0;
+
                 if (!success)
                 {
                     return;
@@ -109,10 +110,10 @@ public class TaskExpireLockStreamProcessor implements StreamProcessorLifecycleAw
 
     public TypedStreamProcessor createStreamProcessor(TypedStreamEnvironment environment)
     {
-        final TypedEventProcessor<TaskEvent> registerTask = new TypedEventProcessor<TaskEvent>()
+        final TypedRecordProcessor<TaskEvent> registerTask = new TypedRecordProcessor<TaskEvent>()
         {
             @Override
-            public void updateState(TypedEvent<TaskEvent> event)
+            public void updateState(TypedRecord<TaskEvent> event)
             {
                 final long lockTime = event.getValue().getLockTime();
 
@@ -123,20 +124,20 @@ public class TaskExpireLockStreamProcessor implements StreamProcessorLifecycleAw
             }
         };
 
-        final TypedEventProcessor<TaskEvent> unregisterTask = new TypedEventProcessor<TaskEvent>()
+        final TypedRecordProcessor<TaskEvent> unregisterTask = new TypedRecordProcessor<TaskEvent>()
         {
             @Override
-            public void updateState(TypedEvent<TaskEvent> event)
+            public void updateState(TypedRecord<TaskEvent> event)
             {
                 expirationMap.remove(event.getKey());
             }
         };
 
         return environment.newStreamProcessor()
-            .onEvent(EventType.TASK_EVENT, TaskState.LOCKED, registerTask)
-            .onEvent(EventType.TASK_EVENT, TaskState.LOCK_EXPIRED, unregisterTask)
-            .onEvent(EventType.TASK_EVENT, TaskState.COMPLETED, unregisterTask)
-            .onEvent(EventType.TASK_EVENT, TaskState.FAILED, unregisterTask)
+            .onEvent(ValueType.TASK, Intent.LOCKED, registerTask)
+            .onEvent(ValueType.TASK, Intent.LOCK_EXPIRED, unregisterTask)
+            .onEvent(ValueType.TASK, Intent.COMPLETED, unregisterTask)
+            .onEvent(ValueType.TASK, Intent.FAILED, unregisterTask)
             .withListener(this)
             .withStateResource(expirationMap)
             .build();

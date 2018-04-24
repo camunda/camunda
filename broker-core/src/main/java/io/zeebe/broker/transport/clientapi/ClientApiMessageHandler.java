@@ -35,7 +35,7 @@ import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.*;
-import io.zeebe.protocol.impl.BrokerEventMetadata;
+import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.ServerMessageHandler;
 import io.zeebe.transport.ServerOutput;
@@ -55,14 +55,14 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
     protected final Consumer<Runnable> cmdConsumer = (c) -> c.run();
 
     protected final Int2ObjectHashMap<Partition> leaderPartitions = new Int2ObjectHashMap<>();
-    protected final BrokerEventMetadata eventMetadata = new BrokerEventMetadata();
+    protected final RecordMetadata eventMetadata = new RecordMetadata();
     protected final LogStreamWriter logStreamWriter = new LogStreamWriterImpl();
 
     protected final ErrorResponseWriter errorResponseWriter = new ErrorResponseWriter();
     protected final Dispatcher controlMessageDispatcher;
     protected final ClaimedFragment claimedControlMessageFragment = new ClaimedFragment();
 
-    protected final EnumMap<EventType, UnpackedObject> eventsByType = new EnumMap<>(EventType.class);
+    protected final EnumMap<ValueType, UnpackedObject> recordsByType = new EnumMap<>(ValueType.class);
 
     public ClientApiMessageHandler(final Dispatcher controlMessageDispatcher)
     {
@@ -73,19 +73,19 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
 
     private void initEventTypeMap()
     {
-        eventsByType.put(EventType.DEPLOYMENT_EVENT, new DeploymentEvent());
-        eventsByType.put(EventType.TASK_EVENT, new TaskEvent());
-        eventsByType.put(EventType.WORKFLOW_INSTANCE_EVENT, new WorkflowInstanceEvent());
-        eventsByType.put(EventType.SUBSCRIBER_EVENT, new TopicSubscriberEvent());
-        eventsByType.put(EventType.SUBSCRIPTION_EVENT, new TopicSubscriptionEvent());
-        eventsByType.put(EventType.TOPIC_EVENT, new TopicEvent());
+        recordsByType.put(ValueType.DEPLOYMENT, new DeploymentEvent());
+        recordsByType.put(ValueType.TASK, new TaskEvent());
+        recordsByType.put(ValueType.WORKFLOW_INSTANCE, new WorkflowInstanceEvent());
+        recordsByType.put(ValueType.SUBSCRIBER, new TopicSubscriberEvent());
+        recordsByType.put(ValueType.SUBSCRIPTION, new TopicSubscriptionEvent());
+        recordsByType.put(ValueType.TOPIC, new TopicEvent());
     }
 
     private boolean handleExecuteCommandRequest(
             final ServerOutput output,
             final RemoteAddress requestAddress,
             final long requestId,
-            final BrokerEventMetadata eventMetadata,
+            final RecordMetadata eventMetadata,
             final DirectBuffer buffer,
             final int messageOffset,
             final int messageLength)
@@ -105,8 +105,9 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
                 .tryWriteResponseOrLogFailure(output, requestAddress.getStreamId(), requestId);
         }
 
-        final EventType eventType = executeCommandRequestDecoder.eventType();
-        final UnpackedObject event = eventsByType.get(eventType);
+        final ValueType eventType = executeCommandRequestDecoder.valueType();
+        final Intent intent = executeCommandRequestDecoder.intent();
+        final UnpackedObject event = recordsByType.get(eventType);
 
         if (event == null)
         {
@@ -116,8 +117,8 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
                     .tryWriteResponseOrLogFailure(output, requestAddress.getStreamId(), requestId);
         }
 
-        final int eventOffset = executeCommandRequestDecoder.limit() + ExecuteCommandRequestDecoder.commandHeaderLength();
-        final int eventLength = executeCommandRequestDecoder.commandLength();
+        final int eventOffset = executeCommandRequestDecoder.limit() + ExecuteCommandRequestDecoder.valueHeaderLength();
+        final int eventLength = executeCommandRequestDecoder.valueLength();
 
         event.reset();
 
@@ -134,7 +135,9 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
                     .tryWriteResponseOrLogFailure(output, requestAddress.getStreamId(), requestId);
         }
 
-        eventMetadata.eventType(eventType);
+        eventMetadata.recordType(RecordType.COMMAND);
+        eventMetadata.intent(intent);
+        eventMetadata.valueType(eventType);
 
         logStreamWriter.wrap(partition.getLogStream());
 
@@ -173,7 +176,7 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
     }
 
     private boolean handleControlMessageRequest(
-            final BrokerEventMetadata eventMetadata,
+            final RecordMetadata eventMetadata,
             final DirectBuffer buffer,
             final int messageOffset,
             final int messageLength)

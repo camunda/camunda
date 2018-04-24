@@ -18,7 +18,7 @@
 package io.zeebe.broker.transport.controlmessage;
 
 import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.impl.BrokerEventMetadata;
+import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.util.sched.ActorControl;
 import org.agrona.DirectBuffer;
 
@@ -37,7 +37,7 @@ public interface ControlMessageHandler
      * copy the buffer if the data is used beyond the invocation.
      *
      *
-     * Backpressure should be implemented in the {@link #handle(ActorControl, int, DirectBuffer, BrokerEventMetadata)}
+     * Backpressure should be implemented in the {@link #handle(ActorControl, int, DirectBuffer, RecordMetadata)}
      * methdod like follows:
      * Sending response (success or error) should be done via actor.runUntilDone. This
      * will block the calling actor, until the response is send successfully.
@@ -52,5 +52,5 @@ public interface ControlMessageHandler
      *            the metadata (channel partitionId, connection partitionId, request partitionId) of the
      *            request
      */
-    void handle(ActorControl actor, int partitionId, DirectBuffer buffer, BrokerEventMetadata metadata);
+    void handle(ActorControl actor, int partitionId, DirectBuffer buffer, RecordMetadata metadata);
 }

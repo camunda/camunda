@@ -17,11 +17,10 @@
  */
 package io.zeebe.broker.transport.clientapi;
 
-import static io.zeebe.protocol.clientapi.SubscribedEventEncoder.eventHeaderLength;
-import static io.zeebe.protocol.clientapi.SubscribedEventEncoder.keyNullValue;
-import static io.zeebe.protocol.clientapi.SubscribedEventEncoder.partitionIdNullValue;
-import static io.zeebe.protocol.clientapi.SubscribedEventEncoder.positionNullValue;
-import static io.zeebe.protocol.clientapi.SubscribedEventEncoder.subscriberKeyNullValue;
+import static io.zeebe.protocol.clientapi.SubscribedRecordEncoder.keyNullValue;
+import static io.zeebe.protocol.clientapi.SubscribedRecordEncoder.partitionIdNullValue;
+import static io.zeebe.protocol.clientapi.SubscribedRecordEncoder.positionNullValue;
+import static io.zeebe.protocol.clientapi.SubscribedRecordEncoder.subscriberKeyNullValue;
 
 import java.util.Objects;
 
@@ -29,83 +28,99 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.EventType;
+import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
-import io.zeebe.protocol.clientapi.SubscribedEventEncoder;
+import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.SubscribedRecordEncoder;
 import io.zeebe.protocol.clientapi.SubscriptionType;
+import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.TransportMessage;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.buffer.DirectBufferWriter;
 
-public class SubscribedEventWriter implements BufferWriter
+public class SubscribedRecordWriter implements BufferWriter
 {
     protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
-    protected final SubscribedEventEncoder bodyEncoder = new SubscribedEventEncoder();
+    protected final SubscribedRecordEncoder bodyEncoder = new SubscribedRecordEncoder();
 
     protected int partitionId = partitionIdNullValue();
     protected long position = positionNullValue();
     protected long key = keyNullValue();
     protected long subscriberKey = subscriberKeyNullValue();
     protected SubscriptionType subscriptionType;
-    protected EventType eventType;
-    protected DirectBufferWriter eventBuffer = new DirectBufferWriter();
-    protected BufferWriter eventWriter;
+    protected ValueType valueType;
+    protected DirectBufferWriter valueBuffer = new DirectBufferWriter();
+    protected BufferWriter valueWriter;
+    private RecordType recordType = RecordType.NULL_VAL;
+    private Intent intent = Intent.NULL_VAL;
 
     protected final ServerOutput output;
     protected final TransportMessage message = new TransportMessage();
 
-    public SubscribedEventWriter(final ServerOutput output)
+    public SubscribedRecordWriter(final ServerOutput output)
     {
         this.output = output;
     }
 
-    public SubscribedEventWriter partitionId(final int partitionId)
+    public SubscribedRecordWriter partitionId(final int partitionId)
     {
         this.partitionId = partitionId;
         return this;
     }
 
-    public SubscribedEventWriter position(final long position)
+    public SubscribedRecordWriter position(final long position)
     {
         this.position = position;
         return this;
     }
 
-    public SubscribedEventWriter key(final long key)
+    public SubscribedRecordWriter key(final long key)
     {
         this.key = key;
         return this;
     }
 
-    public SubscribedEventWriter subscriberKey(final long subscriberKey)
+    public SubscribedRecordWriter subscriberKey(final long subscriberKey)
     {
         this.subscriberKey = subscriberKey;
         return this;
     }
 
-    public SubscribedEventWriter subscriptionType(final SubscriptionType subscriptionType)
+    public SubscribedRecordWriter subscriptionType(final SubscriptionType subscriptionType)
     {
         this.subscriptionType = subscriptionType;
         return this;
     }
 
-    public SubscribedEventWriter eventType(final EventType eventType)
+    public SubscribedRecordWriter valueType(final ValueType valueType)
     {
-        this.eventType = eventType;
+        this.valueType = valueType;
         return this;
     }
 
-    public SubscribedEventWriter event(final DirectBuffer buffer, final int offset, final int length)
+    public SubscribedRecordWriter recordType(RecordType recordType)
     {
-        this.eventBuffer.wrap(buffer, offset, length);
-        this.eventWriter = eventBuffer;
+        this.recordType = recordType;
         return this;
     }
 
-    public SubscribedEventWriter eventWriter(final BufferWriter eventWriter)
+    public SubscribedRecordWriter intent(Intent intent)
     {
-        this.eventWriter = eventWriter;
+        this.intent = intent;
+        return this;
+    }
+
+    public SubscribedRecordWriter value(final DirectBuffer buffer, final int offset, final int length)
+    {
+        this.valueBuffer.wrap(buffer, offset, length);
+        this.valueWriter = valueBuffer;
+        return this;
+    }
+
+    public SubscribedRecordWriter valueWriter(final BufferWriter valueWriter)
+    {
+        this.valueWriter = valueWriter;
         return this;
     }
 
@@ -113,9 +128,9 @@ public class SubscribedEventWriter implements BufferWriter
     public int getLength()
     {
         return MessageHeaderEncoder.ENCODED_LENGTH +
-                SubscribedEventEncoder.BLOCK_LENGTH +
-                eventHeaderLength() +
-                eventWriter.getLength();
+                SubscribedRecordEncoder.BLOCK_LENGTH +
+                SubscribedRecordEncoder.valueHeaderLength() +
+                valueWriter.getLength();
     }
 
     @Override
@@ -132,25 +147,27 @@ public class SubscribedEventWriter implements BufferWriter
 
         bodyEncoder
             .wrap(buffer, offset)
+            .recordType(recordType)
             .partitionId(partitionId)
             .position(position)
             .key(key)
             .subscriberKey(subscriberKey)
             .subscriptionType(subscriptionType)
-            .eventType(eventType);
+            .valueType(valueType)
+            .intent(intent);
 
-        offset += SubscribedEventEncoder.BLOCK_LENGTH;
+        offset += SubscribedRecordEncoder.BLOCK_LENGTH;
 
-        final int eventLength = eventWriter.getLength();
+        final int eventLength = valueWriter.getLength();
         buffer.putShort(offset, (short) eventLength, Protocol.ENDIANNESS);
 
-        offset += eventHeaderLength();
-        eventWriter.write(buffer, offset);
+        offset += SubscribedRecordEncoder.valueHeaderLength();
+        valueWriter.write(buffer, offset);
     }
 
     public boolean tryWriteMessage(int remoteStreamId)
     {
-        Objects.requireNonNull(eventWriter);
+        Objects.requireNonNull(valueWriter);
 
         try
         {
@@ -173,7 +190,9 @@ public class SubscribedEventWriter implements BufferWriter
         this.key = keyNullValue();
         this.subscriberKey = subscriberKeyNullValue();
         this.subscriptionType = SubscriptionType.NULL_VAL;
-        this.eventType = EventType.NULL_VAL;
-        this.eventWriter = null;
+        this.valueType = ValueType.NULL_VAL;
+        this.valueWriter = null;
+        this.recordType = RecordType.NULL_VAL;
+        this.intent = Intent.NULL_VAL;
     }
 }

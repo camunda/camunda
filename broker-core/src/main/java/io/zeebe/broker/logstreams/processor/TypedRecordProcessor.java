@@ -17,22 +17,30 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
+import io.zeebe.logstreams.processor.EventLifecycleContext;
 import io.zeebe.logstreams.processor.EventProcessor;
 import io.zeebe.msgpack.UnpackedObject;
 
-public interface TypedEventProcessor<T extends UnpackedObject> extends StreamProcessorLifecycleAware
+public interface TypedRecordProcessor<T extends UnpackedObject> extends StreamProcessorLifecycleAware
 {
     /**
      * @see EventProcessor#processEvent()
      */
-    default void processEvent(TypedEvent<T> event)
+    default void processRecord(TypedRecord<T> record)
+    {
+    }
+
+    /**
+     * @see EventProcessor#processEvent()
+     */
+    default void processRecord(TypedRecord<T> record, EventLifecycleContext ctx)
     {
     }
 
     /**
      * @see EventProcessor#executeSideEffects()
      */
-    default boolean executeSideEffects(TypedEvent<T> event, TypedResponseWriter responseWriter)
+    default boolean executeSideEffects(TypedRecord<T> record, TypedResponseWriter responseWriter)
     {
         return true;
     }
@@ -40,7 +48,7 @@ public interface TypedEventProcessor<T extends UnpackedObject> extends StreamPro
     /**
      * @see EventProcessor#writeEvent(io.zeebe.logstreams.log.LogStreamWriter)
      */
-    default long writeEvent(TypedEvent<T> event, TypedStreamWriter writer)
+    default long writeRecord(TypedRecord<T> record, TypedStreamWriter writer)
     {
         return 0;
     }
@@ -48,7 +56,7 @@ public interface TypedEventProcessor<T extends UnpackedObject> extends StreamPro
     /**
      * @see EventProcessor#updateState()
      */
-    default void updateState(TypedEvent<T> event)
+    default void updateState(TypedRecord<T> record)
     {
     }
 }

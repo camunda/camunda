@@ -15,16 +15,16 @@
  */
 package io.zeebe.test.broker.protocol.brokerapi;
 
-import static io.zeebe.protocol.clientapi.SubscribedEventEncoder.eventHeaderLength;
-
 import java.util.Map;
 
 import org.agrona.MutableDirectBuffer;
 
-import io.zeebe.protocol.clientapi.EventType;
+import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
-import io.zeebe.protocol.clientapi.SubscribedEventEncoder;
+import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.SubscribedRecordEncoder;
 import io.zeebe.protocol.clientapi.SubscriptionType;
+import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.test.util.collection.MapBuilder;
 import io.zeebe.transport.RemoteAddress;
@@ -32,10 +32,10 @@ import io.zeebe.transport.ServerTransport;
 import io.zeebe.transport.TransportMessage;
 import io.zeebe.util.buffer.BufferWriter;
 
-public class SubscribedEventBuilder implements BufferWriter
+public class SubscribedRecordBuilder implements BufferWriter
 {
     protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
-    protected final SubscribedEventEncoder bodyEncoder = new SubscribedEventEncoder();
+    protected final SubscribedRecordEncoder bodyEncoder = new SubscribedRecordEncoder();
     protected final TransportMessage message = new TransportMessage();
 
     protected final MsgPackHelper msgPackHelper;
@@ -46,60 +46,74 @@ public class SubscribedEventBuilder implements BufferWriter
     protected long key;
     protected long subscriberKey;
     protected SubscriptionType subscriptionType;
-    protected EventType eventType;
+    private RecordType recordType;
+    protected ValueType valueType;
+    private Intent intent;
     protected byte[] event;
 
-    public SubscribedEventBuilder(MsgPackHelper msgPackHelper, ServerTransport transport)
+    public SubscribedRecordBuilder(MsgPackHelper msgPackHelper, ServerTransport transport)
     {
         this.msgPackHelper = msgPackHelper;
         this.transport = transport;
     }
 
-    public SubscribedEventBuilder partitionId(int partitionId)
+    public SubscribedRecordBuilder partitionId(int partitionId)
     {
         this.partitionId = partitionId;
         return this;
     }
 
-    public SubscribedEventBuilder position(long position)
+    public SubscribedRecordBuilder position(long position)
     {
         this.position = position;
         return this;
     }
 
-    public SubscribedEventBuilder key(long key)
+    public SubscribedRecordBuilder key(long key)
     {
         this.key = key;
         return this;
     }
 
-    public SubscribedEventBuilder subscriberKey(long subscriberKey)
+    public SubscribedRecordBuilder subscriberKey(long subscriberKey)
     {
         this.subscriberKey = subscriberKey;
         return this;
     }
 
-    public SubscribedEventBuilder subscriptionType(SubscriptionType subscriptionType)
+    public SubscribedRecordBuilder subscriptionType(SubscriptionType subscriptionType)
     {
         this.subscriptionType = subscriptionType;
         return this;
     }
 
-    public SubscribedEventBuilder eventType(EventType eventType)
+    public SubscribedRecordBuilder recordType(RecordType recordType)
     {
-        this.eventType = eventType;
+        this.recordType = recordType;
         return this;
     }
 
-    public SubscribedEventBuilder event(Map<String, Object> event)
+    public SubscribedRecordBuilder intent(Intent intent)
+    {
+        this.intent = intent;
+        return this;
+    }
+
+    public SubscribedRecordBuilder valueType(ValueType valueType)
+    {
+        this.valueType = valueType;
+        return this;
+    }
+
+    public SubscribedRecordBuilder value(Map<String, Object> event)
     {
         this.event = msgPackHelper.encodeAsMsgPack(event);
         return this;
     }
 
-    public MapBuilder<SubscribedEventBuilder> event()
+    public MapBuilder<SubscribedRecordBuilder> value()
     {
-        return new MapBuilder<>(this, this::event);
+        return new MapBuilder<>(this, this::value);
     }
 
     public void push(RemoteAddress target)
@@ -120,8 +134,8 @@ public class SubscribedEventBuilder implements BufferWriter
     public int getLength()
     {
         return MessageHeaderEncoder.ENCODED_LENGTH +
-                SubscribedEventEncoder.BLOCK_LENGTH +
-                eventHeaderLength() +
+                SubscribedRecordEncoder.BLOCK_LENGTH +
+                SubscribedRecordEncoder.valueHeaderLength() +
                 event.length;
     }
 
@@ -135,13 +149,15 @@ public class SubscribedEventBuilder implements BufferWriter
             .version(bodyEncoder.sbeSchemaVersion());
 
         bodyEncoder.wrap(buffer, offset + headerEncoder.encodedLength())
-            .eventType(eventType)
+            .recordType(recordType)
+            .valueType(valueType)
+            .intent(intent)
             .key(key)
             .position(position)
             .subscriberKey(subscriberKey)
             .subscriptionType(subscriptionType)
             .partitionId(partitionId)
-            .putEvent(event, 0, event.length);
+            .putValue(event, 0, event.length);
     }
 
 

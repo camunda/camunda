@@ -18,17 +18,31 @@
 package io.zeebe.broker.system.deployment.service;
 
 import io.zeebe.broker.clustering.base.partitions.Partition;
-import io.zeebe.broker.clustering.orchestration.topic.TopicState;
-import io.zeebe.broker.logstreams.processor.*;
+import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
+import io.zeebe.broker.logstreams.processor.StreamProcessorLifecycleAware;
+import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
+import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
+import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.system.SystemServiceNames;
-import io.zeebe.broker.system.deployment.data.*;
-import io.zeebe.broker.system.deployment.processor.*;
+import io.zeebe.broker.system.deployment.data.DeploymentPositionByWorkflowKey;
+import io.zeebe.broker.system.deployment.data.LastWorkflowKey;
+import io.zeebe.broker.system.deployment.data.LatestVersionByProcessIdAndTopicName;
+import io.zeebe.broker.system.deployment.data.TopicNames;
+import io.zeebe.broker.system.deployment.data.WorkflowKeyByProcessIdAndVersion;
+import io.zeebe.broker.system.deployment.processor.DeploymentCreateEventProcessor;
+import io.zeebe.broker.system.deployment.processor.DeploymentCreatedEventProcess;
+import io.zeebe.broker.system.deployment.processor.DeploymentRejectedEventProcessor;
+import io.zeebe.broker.system.deployment.processor.DeploymentTopicCreatingEventProcessor;
 import io.zeebe.broker.transport.controlmessage.ControlMessageHandlerManager;
-import io.zeebe.broker.workflow.data.DeploymentState;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
-import io.zeebe.protocol.clientapi.EventType;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.intent.Intent;
+import io.zeebe.servicecontainer.Injector;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceGroupReference;
+import io.zeebe.servicecontainer.ServiceName;
+import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.transport.ServerTransport;
 
 public class DeploymentManager implements Service<DeploymentManager>
@@ -75,10 +89,10 @@ public class DeploymentManager implements Service<DeploymentManager>
         final WorkflowKeyByProcessIdAndVersion workflowKeyByProcessIdAndVersion = new WorkflowKeyByProcessIdAndVersion();
 
         final TypedStreamProcessor streamProcessor = streamEnvironment.newStreamProcessor()
-            .onEvent(EventType.DEPLOYMENT_EVENT, DeploymentState.CREATE, new DeploymentCreateEventProcessor(latestVersionByProcessIdAndTopicName, lastWorkflowKey, topicNames))
-            .onEvent(EventType.DEPLOYMENT_EVENT, DeploymentState.CREATED, new DeploymentCreatedEventProcess(deploymentPositionByWorkflowKey, workflowKeyByProcessIdAndVersion))
-            .onEvent(EventType.DEPLOYMENT_EVENT, DeploymentState.REJECTED, new DeploymentRejectedEventProcessor())
-            .onEvent(EventType.TOPIC_EVENT, TopicState.CREATING, new DeploymentTopicCreatingEventProcessor(topicNames))
+            .onCommand(ValueType.DEPLOYMENT, Intent.CREATE, new DeploymentCreateEventProcessor(latestVersionByProcessIdAndTopicName, lastWorkflowKey, topicNames))
+            .onEvent(ValueType.DEPLOYMENT, Intent.CREATED, new DeploymentCreatedEventProcess(deploymentPositionByWorkflowKey, workflowKeyByProcessIdAndVersion))
+            .onRejection(ValueType.DEPLOYMENT, Intent.CREATE, new DeploymentRejectedEventProcessor())
+            .onEvent(ValueType.TOPIC, Intent.CREATING, new DeploymentTopicCreatingEventProcessor(topicNames))
             .withStateResource(lastWorkflowKey.getRawValue())
             .withStateResource(latestVersionByProcessIdAndTopicName.getRawMap())
             .withStateResource(topicNames.getRawMap())

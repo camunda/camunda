@@ -17,16 +17,26 @@
  */
 package io.zeebe.broker.workflow;
 
-import static io.zeebe.broker.test.MsgPackUtil.*;
-import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.workflowInstanceEvents;
+import static io.zeebe.broker.test.MsgPackUtil.JSON_MAPPER;
+import static io.zeebe.broker.test.MsgPackUtil.MSGPACK_MAPPER;
+import static io.zeebe.broker.test.MsgPackUtil.MSGPACK_PAYLOAD;
 import static org.assertj.core.api.Assertions.assertThat;
+
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
-import io.zeebe.test.broker.protocol.clientapi.*;
-import org.junit.*;
-import org.junit.rules.RuleChain;
+import io.zeebe.protocol.clientapi.Intent;
+import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
+import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
+import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
+import io.zeebe.test.broker.protocol.clientapi.TestTopicClient;
 
 public class UpdatePayloadTest
 {
@@ -65,7 +75,7 @@ public class UpdatePayloadTest
 
         final long workflowInstanceKey = testClient.createWorkflowInstance("process");
 
-        final SubscribedEvent activityInstanceEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_ACTIVATED"));
+        final SubscribedRecord activityInstanceEvent = waitForActivityActivatedEvent();
 
         // when
         final ExecuteCommandResponse response = updatePayload(workflowInstanceKey,
@@ -73,15 +83,19 @@ public class UpdatePayloadTest
                                                               MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("{'foo':'bar'}")));
 
         // then
-        assertThat(response.getEvent()).containsEntry("state", "PAYLOAD_UPDATED");
+        assertThat(response.intent()).isEqualTo(Intent.PAYLOAD_UPDATED);
 
-        final SubscribedEvent updatedEvent = testClient.receiveSingleEvent(workflowInstanceEvents("PAYLOAD_UPDATED"));
+        final SubscribedRecord updatedEvent = testClient.receiveEvents()
+            .ofTypeWorkflowInstance()
+            .withIntent(Intent.PAYLOAD_UPDATED)
+            .getFirst();
+
 
         assertThat(updatedEvent.position()).isGreaterThan(response.position());
         assertThat(updatedEvent.key()).isEqualTo(activityInstanceEvent.key());
-        assertThat(updatedEvent.event()).containsEntry("workflowInstanceKey", workflowInstanceKey);
+        assertThat(updatedEvent.value()).containsEntry("workflowInstanceKey", workflowInstanceKey);
 
-        final byte[] payload = (byte[]) updatedEvent.event().get("payload");
+        final byte[] payload = (byte[]) updatedEvent.value().get("payload");
 
         assertThat(MSGPACK_MAPPER.readTree(payload))
             .isEqualTo(JSON_MAPPER.readTree("{'foo':'bar'}"));
@@ -95,20 +109,23 @@ public class UpdatePayloadTest
 
         final long workflowInstanceKey = testClient.createWorkflowInstance("process");
 
-        final SubscribedEvent activityInstanceEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_ACTIVATED"));
+        final SubscribedRecord activityInstanceEvent = waitForActivityActivatedEvent();
 
         // when
         updatePayload(workflowInstanceKey, activityInstanceEvent.key(),
                       MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("{'b':'wf'}")));
 
-        testClient.receiveSingleEvent(workflowInstanceEvents("PAYLOAD_UPDATED"));
+        testClient.receiveEvents()
+            .ofTypeWorkflowInstance()
+            .withIntent(Intent.PAYLOAD_UPDATED)
+            .getFirst();
 
         testClient.completeTaskOfType("task-1", MSGPACK_PAYLOAD);
 
         // then
-        final SubscribedEvent activityCompletedEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETED"));
+        final SubscribedRecord activityCompletedEvent = waitForActivityCompletedEvent();
 
-        final byte[] payload = (byte[]) activityCompletedEvent.event().get("payload");
+        final byte[] payload = (byte[]) activityCompletedEvent.value().get("payload");
 
         assertThat(MSGPACK_MAPPER.readTree(payload))
             .isEqualTo(JSON_MAPPER.readTree("{'obj':{'testAttr':'test'}, 'b':'wf'}"));
@@ -120,16 +137,20 @@ public class UpdatePayloadTest
         // given
         testClient.deploy(WORKFLOW);
         final long workflowInstanceKey = testClient.createWorkflowInstance("process");
-        final SubscribedEvent activityInstanceEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_ACTIVATED"));
+        final SubscribedRecord activityInstanceEvent = waitForActivityActivatedEvent();
 
         // when
         final ExecuteCommandResponse response = updatePayload(workflowInstanceKey, activityInstanceEvent.key(),
                                                               MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("'foo'")));
 
         // then
-        assertThat(response.getEvent()).containsEntry("state", "UPDATE_PAYLOAD_REJECTED");
+        assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
 
-        testClient.receiveSingleEvent(workflowInstanceEvents("UPDATE_PAYLOAD_REJECTED"));
+        final SubscribedRecord rejection = testClient.receiveRejections()
+            .withIntent(Intent.UPDATE_PAYLOAD)
+            .getFirst();
+
+        assertThat(rejection).isNotNull();
     }
 
     @Test
@@ -139,9 +160,13 @@ public class UpdatePayloadTest
         final ExecuteCommandResponse response = updatePayload(-1L, -1L, MSGPACK_PAYLOAD);
 
         // then
-        assertThat(response.getEvent()).containsEntry("state", "UPDATE_PAYLOAD_REJECTED");
+        assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
 
-        testClient.receiveSingleEvent(workflowInstanceEvents("UPDATE_PAYLOAD_REJECTED"));
+        final SubscribedRecord rejection = testClient.receiveRejections()
+            .withIntent(Intent.UPDATE_PAYLOAD)
+            .getFirst();
+
+        assertThat(rejection).isNotNull();
     }
 
     @Test
@@ -152,31 +177,61 @@ public class UpdatePayloadTest
 
         final long workflowInstanceKey = testClient.createWorkflowInstance("process");
 
-        final SubscribedEvent activityInstanceEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_ACTIVATED"));
+        final SubscribedRecord activityInstanceEvent = waitForActivityActivatedEvent();
 
         testClient.completeTaskOfType("task-1", MSGPACK_PAYLOAD);
 
-        testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETED"));
+        waitForActivityCompletedEvent();
         testClient.completeTaskOfType("task-2");
 
-        testClient.receiveSingleEvent(workflowInstanceEvents("WORKFLOW_INSTANCE_COMPLETED"));
+        waitForWorkflowInstanceCompletedEvent();
 
         // when
         final ExecuteCommandResponse response = updatePayload(workflowInstanceKey, activityInstanceEvent.key(), MSGPACK_PAYLOAD);
 
         // then
-        assertThat(response.getEvent()).containsEntry("state", "UPDATE_PAYLOAD_REJECTED");
+        assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
 
-        testClient.receiveSingleEvent(workflowInstanceEvents("UPDATE_PAYLOAD_REJECTED"));
+        final SubscribedRecord rejection = testClient.receiveRejections()
+            .withIntent(Intent.UPDATE_PAYLOAD)
+            .getFirst();
+
+        assertThat(rejection).isNotNull();
+    }
+
+    private SubscribedRecord waitForWorkflowInstanceCompletedEvent()
+    {
+        return testClient
+            .receiveEvents()
+            .ofTypeWorkflowInstance()
+            .withIntent(Intent.COMPLETED)
+            .getFirst();
+    }
+
+    private SubscribedRecord waitForActivityCompletedEvent()
+    {
+        return testClient
+            .receiveEvents()
+            .ofTypeWorkflowInstance()
+            .withIntent(Intent.ACTIVITY_COMPLETED)
+            .getFirst();
+    }
+
+    private SubscribedRecord waitForActivityActivatedEvent()
+    {
+        return testClient
+                .receiveEvents()
+                .ofTypeWorkflowInstance()
+                .withIntent(Intent.ACTIVITY_ACTIVATED)
+                .getFirst();
     }
 
     private ExecuteCommandResponse updatePayload(final long workflowInstanceKey, final long activityInstanceKey, byte[] payload) throws Exception
     {
         return apiRule.createCmdRequest()
-            .eventTypeWorkflow()
+            .type(ValueType.WORKFLOW_INSTANCE, Intent.UPDATE_PAYLOAD)
             .key(activityInstanceKey)
             .command()
-                .put("state", "UPDATE_PAYLOAD")
                 .put("workflowInstanceKey", workflowInstanceKey)
                 .put("payload", payload)
             .done()

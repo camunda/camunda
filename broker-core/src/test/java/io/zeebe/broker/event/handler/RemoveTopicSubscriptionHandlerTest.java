@@ -23,7 +23,7 @@ import io.zeebe.broker.transport.clientapi.BufferingServerOutput;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.clientapi.ErrorResponseDecoder;
-import io.zeebe.protocol.impl.BrokerEventMetadata;
+import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
@@ -74,7 +74,7 @@ public class RemoveTopicSubscriptionHandlerTest
         // given
         final RemoveTopicSubscriptionHandler handler = new RemoveTopicSubscriptionHandler(output, subscriptionService);
 
-        final BrokerEventMetadata metadata = new BrokerEventMetadata();
+        final RecordMetadata metadata = new RecordMetadata();
         metadata.requestStreamId(14);
 
         final DirectBuffer request = encode(new CloseSubscriptionRequest().setSubscriberKey(5L));

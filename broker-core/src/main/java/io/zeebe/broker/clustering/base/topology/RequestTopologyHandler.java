@@ -20,7 +20,7 @@ package io.zeebe.broker.clustering.base.topology;
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.transport.controlmessage.AbstractControlMessageHandler;
 import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.impl.BrokerEventMetadata;
+import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.util.sched.ActorControl;
 import org.agrona.DirectBuffer;
@@ -42,7 +42,7 @@ public class RequestTopologyHandler extends AbstractControlMessageHandler
     }
 
     @Override
-    public void handle(final ActorControl actor, final int partitionId, final DirectBuffer buffer, final BrokerEventMetadata metadata)
+    public void handle(final ActorControl actor, final int partitionId, final DirectBuffer buffer, final RecordMetadata metadata)
     {
         final int requestStreamId = metadata.getRequestStreamId();
         final long requestId = metadata.getRequestId();

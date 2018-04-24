@@ -30,7 +30,7 @@ import io.zeebe.logstreams.processor.EventFilter;
 import io.zeebe.logstreams.processor.StreamProcessor;
 import io.zeebe.logstreams.spi.SnapshotStorage;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.impl.BrokerEventMetadata;
+import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.servicecontainer.*;
 import io.zeebe.util.EnsureUtil;
 import io.zeebe.util.sched.ActorScheduler;
@@ -162,7 +162,7 @@ public class StreamProcessorServiceFactory implements Service<StreamProcessorSer
     private static class MetadataEventFilter implements EventFilter
     {
 
-        protected final BrokerEventMetadata metadata = new BrokerEventMetadata();
+        protected final RecordMetadata metadata = new RecordMetadata();
         protected final MetadataFilter metadataFilter;
 
         MetadataEventFilter(MetadataFilter metadataFilter)
@@ -182,7 +182,7 @@ public class StreamProcessorServiceFactory implements Service<StreamProcessorSer
     private final class VersionFilter implements MetadataFilter
     {
         @Override
-        public boolean applies(BrokerEventMetadata m)
+        public boolean applies(RecordMetadata m)
         {
             if (m.getProtocolVersion() > Protocol.PROTOCOL_VERSION)
             {

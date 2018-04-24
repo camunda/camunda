@@ -25,8 +25,8 @@ import static io.zeebe.util.EnsureUtil.ensureNotNullOrEmpty;
 import org.agrona.DirectBuffer;
 
 import io.zeebe.broker.logstreams.processor.StreamProcessorLifecycleAware;
-import io.zeebe.broker.logstreams.processor.TypedEvent;
-import io.zeebe.broker.logstreams.processor.TypedEventProcessor;
+import io.zeebe.broker.logstreams.processor.TypedRecord;
+import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
@@ -34,18 +34,18 @@ import io.zeebe.broker.task.CreditsRequest;
 import io.zeebe.broker.task.CreditsRequestBuffer;
 import io.zeebe.broker.task.TaskSubscriptionManager;
 import io.zeebe.broker.task.data.TaskEvent;
-import io.zeebe.broker.task.data.TaskState;
 import io.zeebe.broker.task.processor.TaskSubscriptions.SubscriptionIterator;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
-import io.zeebe.protocol.clientapi.EventType;
-import io.zeebe.protocol.impl.BrokerEventMetadata;
+import io.zeebe.protocol.clientapi.Intent;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 
-public class LockTaskStreamProcessor implements TypedEventProcessor<TaskEvent>, StreamProcessorLifecycleAware
+public class LockTaskStreamProcessor implements TypedRecordProcessor<TaskEvent>, StreamProcessorLifecycleAware
 {
     protected final CreditsRequestBuffer creditsBuffer = new CreditsRequestBuffer(TaskSubscriptionManager.NUM_CONCURRENT_REQUESTS, this::increaseSubscriptionCredits);
 
@@ -92,10 +92,10 @@ public class LockTaskStreamProcessor implements TypedEventProcessor<TaskEvent>, 
         this.partitionId = env.getStream().getPartitionId();
 
         return env.newStreamProcessor()
-                .onEvent(EventType.TASK_EVENT, TaskState.CREATED, this)
-                .onEvent(EventType.TASK_EVENT, TaskState.LOCK_EXPIRED, this)
-                .onEvent(EventType.TASK_EVENT, TaskState.FAILED, this)
-                .onEvent(EventType.TASK_EVENT, TaskState.RETRIES_UPDATED, this)
+                .onEvent(ValueType.TASK, Intent.CREATED, this)
+                .onEvent(ValueType.TASK, Intent.LOCK_EXPIRED, this)
+                .onEvent(ValueType.TASK, Intent.FAILED, this)
+                .onEvent(ValueType.TASK, Intent.RETRIES_UPDATED, this)
                 .build();
     }
 
@@ -219,7 +219,7 @@ public class LockTaskStreamProcessor implements TypedEventProcessor<TaskEvent>, 
     }
 
     @Override
-    public void processEvent(TypedEvent<TaskEvent> event)
+    public void processRecord(TypedRecord<TaskEvent> event)
     {
         selectedSubscriber = null;
 
@@ -234,7 +234,6 @@ public class LockTaskStreamProcessor implements TypedEventProcessor<TaskEvent>, 
                 final long lockTimeout = ActorClock.currentTimeMillis() + selectedSubscriber.getLockDuration();
 
                 taskEvent
-                    .setState(TaskState.LOCK)
                     .setLockTime(lockTimeout)
                     .setLockOwner(selectedSubscriber.getLockOwner());
             }
@@ -242,28 +241,29 @@ public class LockTaskStreamProcessor implements TypedEventProcessor<TaskEvent>, 
     }
 
     @Override
-    public long writeEvent(TypedEvent<TaskEvent> event, TypedStreamWriter writer)
+    public long writeRecord(TypedRecord<TaskEvent> event, TypedStreamWriter writer)
     {
         long position = 0;
 
         if (selectedSubscriber != null)
         {
-            position = writer.writeFollowupEvent(
+            position = writer.writeFollowUpCommand(
                 event.getKey(),
+                Intent.LOCK,
                 event.getValue(),
                 this::assignToSelectedSubscriber);
         }
         return position;
     }
 
-    private void assignToSelectedSubscriber(BrokerEventMetadata metadata)
+    private void assignToSelectedSubscriber(RecordMetadata metadata)
     {
         metadata.subscriberKey(selectedSubscriber.getSubscriberKey());
         metadata.requestStreamId(selectedSubscriber.getStreamId());
     }
 
     @Override
-    public void updateState(TypedEvent<TaskEvent> event)
+    public void updateState(TypedRecord<TaskEvent> event)
     {
         if (selectedSubscriber != null)
         {

@@ -19,6 +19,8 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import io.zeebe.protocol.clientapi.Intent;
+import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.test.util.collection.MapFactoryBuilder;
 
@@ -70,13 +72,31 @@ public class ExecuteCommandResponseBuilder
         return this;
     }
 
-    public ExecuteCommandResponseBuilder event(Map<String, Object> map)
+    public ExecuteCommandResponseBuilder value(Map<String, Object> map)
     {
         commandResponseWriter.setEventFunction((re) -> map);
         return this;
     }
 
-    public MapFactoryBuilder<ExecuteCommandRequest, ExecuteCommandResponseBuilder> event()
+    public ExecuteCommandResponseBuilder rejection()
+    {
+        commandResponseWriter.setRecordType(RecordType.COMMAND_REJECTION);
+        return this;
+    }
+
+    public ExecuteCommandResponseBuilder event()
+    {
+        commandResponseWriter.setRecordType(RecordType.EVENT);
+        return this;
+    }
+
+    public ExecuteCommandResponseBuilder intent(Intent intent)
+    {
+        commandResponseWriter.setIntent(intent);
+        return this;
+    }
+
+    public MapFactoryBuilder<ExecuteCommandRequest, ExecuteCommandResponseBuilder> value()
     {
         return new MapFactoryBuilder<>(this, commandResponseWriter::setEventFunction);
     }

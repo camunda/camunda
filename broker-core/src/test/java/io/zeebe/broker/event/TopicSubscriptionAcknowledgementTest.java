@@ -30,10 +30,12 @@ import org.junit.rules.RuleChain;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.clientapi.EventType;
+import io.zeebe.protocol.clientapi.Intent;
+import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
-import io.zeebe.test.broker.protocol.clientapi.SubscribedEvent;
+import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
 
 public class TopicSubscriptionAcknowledgementTest
 {
@@ -78,17 +80,17 @@ public class TopicSubscriptionAcknowledgementTest
     {
         // when
         final ExecuteCommandResponse response = apiRule.createCmdRequest()
-            .eventTypeSubscription()
+            .type(ValueType.SUBSCRIPTION, Intent.ACKNOWLEDGE)
             .command()
                 .put("name", SUBSCRIPTION_NAME)
-                .put("state", "ACKNOWLEDGE")
                 .put("ackPosition", 0)
                 .done()
             .sendAndAwait();
 
         // then
-        assertThat(response.getEvent()).containsEntry("name", SUBSCRIPTION_NAME);
-        assertThat(response.getEvent()).containsEntry("state", "ACKNOWLEDGED");
+        assertThat(response.getValue()).containsEntry("name", SUBSCRIPTION_NAME);
+        assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
+        assertThat(response.intent()).isEqualTo(Intent.ACKNOWLEDGED);
     }
 
     @Test
@@ -97,16 +99,15 @@ public class TopicSubscriptionAcknowledgementTest
         // given
         createTask();
 
-        final List<SubscribedEvent> events = apiRule
+        final List<SubscribedRecord> events = apiRule
                 .subscribedEvents()
                 .limit(2L)
                 .collect(Collectors.toList());
 
         apiRule.createCmdRequest()
-            .eventTypeSubscription()
+            .type(ValueType.SUBSCRIPTION, Intent.ACKNOWLEDGE)
             .command()
                 .put("name", SUBSCRIPTION_NAME)
-                .put("state", "ACKNOWLEDGE")
                 .put("ackPosition", events.get(0).position())
                 .done()
             .sendAndAwait();
@@ -119,7 +120,7 @@ public class TopicSubscriptionAcknowledgementTest
         openSubscription();
 
         // then
-        final Optional<SubscribedEvent> firstEvent = apiRule
+        final Optional<SubscribedRecord> firstEvent = apiRule
                 .subscribedEvents()
                 .findFirst();
 
@@ -132,10 +133,9 @@ public class TopicSubscriptionAcknowledgementTest
     {
         // given
         apiRule.createCmdRequest()
-            .eventTypeSubscription()
+            .type(ValueType.SUBSCRIPTION, Intent.ACKNOWLEDGE)
             .command()
                 .put("name", SUBSCRIPTION_NAME)
-                .put("state", "ACKNOWLEDGE")
                 .put("ackPosition", Long.MAX_VALUE)
                 .done()
             .sendAndAwait();
@@ -149,9 +149,8 @@ public class TopicSubscriptionAcknowledgementTest
 
         // and
         final ExecuteCommandResponse response = apiRule.createCmdRequest()
-            .eventTypeTask()
+            .type(ValueType.TASK, Intent.CREATE)
             .command()
-                .put("state", "CREATE")
                 .put("type", "theTaskType")
                 .done()
             .sendAndAwait();
@@ -159,7 +158,7 @@ public class TopicSubscriptionAcknowledgementTest
         final long taskKey = response.key();
 
         // then
-        final Optional<SubscribedEvent> firstEvent = apiRule
+        final Optional<SubscribedRecord> firstEvent = apiRule
                 .subscribedEvents()
                 .findFirst();
 
@@ -174,7 +173,7 @@ public class TopicSubscriptionAcknowledgementTest
         createTask();
 
         final List<Long> taskEventPositions = apiRule.subscribedEvents()
-            .filter((e) -> e.eventType() == EventType.TASK_EVENT)
+            .filter((e) -> e.valueType() == ValueType.TASK)
             .map((e) -> e.position())
             .limit(2)
             .collect(Collectors.toList());
@@ -187,7 +186,7 @@ public class TopicSubscriptionAcknowledgementTest
 
         // then it begins at the original offset (we didn't send any ACK before)
         final List<Long> taskEventPositionsAfterReopen = apiRule.subscribedEvents()
-            .filter((e) -> e.eventType() == EventType.TASK_EVENT)
+            .filter((e) -> e.valueType() == ValueType.TASK)
             .map((e) -> e.position())
             .limit(2)
             .collect(Collectors.toList());
@@ -198,9 +197,8 @@ public class TopicSubscriptionAcknowledgementTest
     private ExecuteCommandResponse createTask()
     {
         return apiRule.createCmdRequest()
-            .eventTypeTask()
+            .type(ValueType.TASK, Intent.CREATE)
             .command()
-                .put("state", "CREATE")
                 .put("type", "foo")
                 .put("retries", 1)
                 .done()

@@ -21,20 +21,26 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import io.zeebe.logstreams.log.*;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.zeebe.logstreams.log.LogStreamBatchWriter.LogEntryBuilder;
+import io.zeebe.logstreams.log.LogStreamBatchWriterImpl;
+import io.zeebe.logstreams.log.LogStreamWriter;
+import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.EventType;
-import io.zeebe.protocol.impl.BrokerEventMetadata;
+import io.zeebe.protocol.clientapi.Intent;
+import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.impl.RecordMetadata;
 
 public class TypedStreamWriterImpl implements TypedStreamWriter, TypedBatchWriter
 {
-    protected final Consumer<BrokerEventMetadata> noop = m ->
+    protected final Consumer<RecordMetadata> noop = m ->
     { };
 
-    protected BrokerEventMetadata metadata = new BrokerEventMetadata();
-    protected final Map<Class<? extends UnpackedObject>, EventType> typeRegistry;
+    protected RecordMetadata metadata = new RecordMetadata();
+    protected final Map<Class<? extends UnpackedObject>, ValueType> typeRegistry;
     protected final LogStream stream;
 
     protected LogStreamWriter writer;
@@ -46,7 +52,7 @@ public class TypedStreamWriterImpl implements TypedStreamWriter, TypedBatchWrite
 
     public TypedStreamWriterImpl(
             LogStream stream,
-            Map<EventType, Class<? extends UnpackedObject>> eventRegistry)
+            Map<ValueType, Class<? extends UnpackedObject>> eventRegistry)
     {
         this.stream = stream;
         metadata.protocolVersion(Protocol.PROTOCOL_VERSION);
@@ -63,16 +69,22 @@ public class TypedStreamWriterImpl implements TypedStreamWriter, TypedBatchWrite
         this.sourcePosition = sourcePosition;
     }
 
-    protected void initMetadata(UnpackedObject event)
+    protected void initMetadata(RecordType type, Intent intent, UnpackedObject value)
     {
         metadata.reset();
-        final EventType eventType = typeRegistry.get(event.getClass());
+        final ValueType valueType = typeRegistry.get(value.getClass());
 
-        metadata.eventType(eventType);
+        metadata.recordType(type);
+        metadata.valueType(valueType);
+        metadata.intent(intent);
     }
 
-    @Override
-    public long writeFollowupEvent(long key, UnpackedObject event, Consumer<BrokerEventMetadata> additionalMetadata)
+    private long writeRecord(
+            long key,
+            RecordType type,
+            Intent intent,
+            UnpackedObject value,
+            Consumer<RecordMetadata> additionalMetadata)
     {
         writer.reset();
         writer.producerId(producerId);
@@ -82,7 +94,7 @@ public class TypedStreamWriterImpl implements TypedStreamWriter, TypedBatchWrite
             writer.sourceEvent(sourcePartitionId, sourcePosition);
         }
 
-        initMetadata(event);
+        initMetadata(type, intent, value);
         additionalMetadata.accept(metadata);
 
         if (key >= 0)
@@ -96,32 +108,96 @@ public class TypedStreamWriterImpl implements TypedStreamWriter, TypedBatchWrite
 
         return writer
             .metadataWriter(metadata)
-            .valueWriter(event)
+            .valueWriter(value)
             .tryWrite();
     }
 
     @Override
-    public long writeFollowupEvent(long key, UnpackedObject event)
+    public long writeNewCommand(Intent intent, UnpackedObject value)
     {
-        return writeFollowupEvent(key, event, noop);
+        return writeRecord(-1, RecordType.COMMAND, intent, value, noop);
     }
 
     @Override
-    public long writeNewEvent(UnpackedObject event, Consumer<BrokerEventMetadata> metadata)
+    public long writeFollowUpCommand(long key, Intent intent, UnpackedObject value)
     {
-        return writeFollowupEvent(-1, event, metadata);
+        return writeRecord(key, RecordType.COMMAND, intent, value, noop);
     }
 
     @Override
-    public long writeNewEvent(UnpackedObject event)
+    public long writeFollowUpCommand(long key, Intent intent, UnpackedObject value, Consumer<RecordMetadata> metadata)
     {
-        return writeFollowupEvent(-1, event, noop);
+        return writeRecord(key, RecordType.COMMAND, intent, value, metadata);
     }
 
     @Override
-    public TypedBatchWriter addFollowUpEvent(long key, UnpackedObject event, Consumer<BrokerEventMetadata> additionalMetadata)
+    public long writeNewEvent(Intent intent, UnpackedObject value)
     {
-        initMetadata(event);
+        return writeRecord(-1, RecordType.EVENT, intent, value, noop);
+    }
+
+    @Override
+    public long writeFollowUpEvent(long key, Intent intent, UnpackedObject value)
+    {
+        return writeRecord(key, RecordType.EVENT, intent, value, noop);
+    }
+
+    @Override
+    public long writeFollowUpEvent(long key, Intent intent, UnpackedObject value, Consumer<RecordMetadata> metadata)
+    {
+        return writeRecord(key, RecordType.EVENT, intent, value, metadata);
+    }
+
+    @Override
+    public long writeRejection(TypedRecord<? extends UnpackedObject> command)
+    {
+        return writeRecord(command.getKey(), RecordType.COMMAND_REJECTION, command.getMetadata().getIntent(), command.getValue(), noop);
+    }
+
+    @Override
+    public TypedBatchWriter addNewCommand(Intent intent, UnpackedObject value)
+    {
+        return addRecord(-1, RecordType.COMMAND, intent, value, noop);
+    }
+
+    @Override
+    public TypedBatchWriter addFollowUpCommand(long key, Intent intent, UnpackedObject value)
+    {
+        return addRecord(key, RecordType.COMMAND, intent, value, noop);
+    }
+
+    @Override
+    public TypedBatchWriter addNewEvent(Intent intent, UnpackedObject value)
+    {
+        return addRecord(-1, RecordType.EVENT, intent, value, noop);
+    }
+
+    @Override
+    public TypedBatchWriter addFollowUpEvent(long key, Intent intent, UnpackedObject value)
+    {
+        return addRecord(key, RecordType.EVENT, intent, value, noop);
+    }
+
+    @Override
+    public TypedBatchWriter addFollowUpEvent(long key, Intent intent, UnpackedObject value, Consumer<RecordMetadata> metadata)
+    {
+        return addRecord(key, RecordType.EVENT, intent, value, metadata);
+    }
+
+    @Override
+    public TypedBatchWriter addRejection(TypedRecord<? extends UnpackedObject> command)
+    {
+        return addRecord(command.getKey(), RecordType.COMMAND_REJECTION, command.getMetadata().getIntent(), command.getValue(), noop);
+    }
+
+    private TypedBatchWriter addRecord(
+            long key,
+            RecordType type,
+            Intent intent,
+            UnpackedObject value,
+            Consumer<RecordMetadata> additionalMetadata)
+    {
+        initMetadata(type, intent, value);
         additionalMetadata.accept(metadata);
 
         final LogEntryBuilder logEntryBuilder = batchWriter.event();
@@ -137,28 +213,10 @@ public class TypedStreamWriterImpl implements TypedStreamWriter, TypedBatchWrite
 
         logEntryBuilder
             .metadataWriter(metadata)
-            .valueWriter(event)
+            .valueWriter(value)
             .done();
 
         return this;
-    }
-
-    @Override
-    public TypedBatchWriter addFollowUpEvent(long key, UnpackedObject event)
-    {
-        return addFollowUpEvent(key, event, noop);
-    }
-
-    @Override
-    public TypedBatchWriter addNewEvent(UnpackedObject event)
-    {
-        return addFollowUpEvent(-1, event, noop);
-    }
-
-    @Override
-    public TypedBatchWriter addNewEvent(UnpackedObject event, Consumer<BrokerEventMetadata> metadata)
-    {
-        return addFollowUpEvent(-1, event, metadata);
     }
 
     @Override

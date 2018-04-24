@@ -68,7 +68,7 @@ public class TaskQueueManagerService implements Service<TaskQueueManagerService>
 
     protected void startExpireLockService(ServiceName<Partition> partitionServiceName, Partition partition, TypedStreamEnvironment env)
     {
-        final TaskExpireLockStreamProcessor expireLockStreamProcessor = new TaskExpireLockStreamProcessor(env.buildStreamReader(), env.buildStreamWriter());
+        final TaskExpireLockStreamProcessor expireLockStreamProcessor = new TaskExpireLockStreamProcessor();
 
         streamProcessorServiceFactory.createService(partition, partitionServiceName)
             .processor(expireLockStreamProcessor.createStreamProcessor(env))

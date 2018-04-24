@@ -20,27 +20,38 @@ package io.zeebe.broker.event.processor;
 import java.util.Iterator;
 import java.util.function.Supplier;
 
+import org.agrona.DirectBuffer;
+
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.base.partitions.Partition;
-import io.zeebe.broker.logstreams.processor.*;
-import io.zeebe.broker.transport.clientapi.*;
+import io.zeebe.broker.logstreams.processor.MetadataFilter;
+import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
+import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
+import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
+import io.zeebe.broker.transport.clientapi.ErrorResponseWriter;
+import io.zeebe.broker.transport.clientapi.SubscribedRecordWriter;
 import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
-import io.zeebe.logstreams.log.*;
-import io.zeebe.logstreams.processor.*;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamWriter;
+import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.logstreams.processor.EventProcessor;
+import io.zeebe.logstreams.processor.StreamProcessor;
+import io.zeebe.logstreams.processor.StreamProcessorContext;
 import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.map.Bytes2LongZbMap;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ErrorCode;
-import io.zeebe.protocol.clientapi.EventType;
-import io.zeebe.protocol.impl.BrokerEventMetadata;
+import io.zeebe.protocol.clientapi.Intent;
+import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
-import org.agrona.DirectBuffer;
 
 public class TopicSubscriptionManagementProcessor implements StreamProcessor
 {
@@ -59,7 +70,7 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
 
     protected final ErrorResponseWriter errorWriter;
     protected final CommandResponseWriter responseWriter;
-    protected final Supplier<SubscribedEventWriter> eventWriterFactory;
+    protected final Supplier<SubscribedRecordWriter> eventWriterFactory;
     protected final StreamProcessorServiceFactory streamProcessorServiceFactory;
     protected final ServiceContainer serviceContext;
     protected final Bytes2LongZbMap ackMap;
@@ -70,7 +81,7 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
     protected final SubscribeProcessor subscribeProcessor = new SubscribeProcessor(MAXIMUM_SUBSCRIPTION_NAME_LENGTH, this);
     protected final SubscribedProcessor subscribedProcessor = new SubscribedProcessor();
 
-    protected final BrokerEventMetadata metadata = new BrokerEventMetadata();
+    protected final RecordMetadata metadata = new RecordMetadata();
     protected final TopicSubscriptionEvent subscriptionEvent = new TopicSubscriptionEvent();
     protected final TopicSubscriberEvent subscriberEvent = new TopicSubscriberEvent();
     protected LoggedEvent currentEvent;
@@ -80,7 +91,7 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
             ServiceName<Partition> partitionServiceName,
             CommandResponseWriter responseWriter,
             ErrorResponseWriter errorWriter,
-            Supplier<SubscribedEventWriter> eventWriterFactory,
+            Supplier<SubscribedRecordWriter> eventWriterFactory,
             StreamProcessorServiceFactory streamProcessorServiceFactory,
             ServiceContainer serviceContainer)
     {
@@ -95,7 +106,7 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
         this.streamProcessorServiceFactory = streamProcessorServiceFactory;
     }
 
-    public Supplier<SubscribedEventWriter> getEventWriterFactory()
+    public Supplier<SubscribedRecordWriter> getEventWriterFactory()
     {
         return eventWriterFactory;
     }
@@ -136,11 +147,11 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
         event.readMetadata(metadata);
         currentEvent = event;
 
-        if (metadata.getEventType() == EventType.SUBSCRIPTION_EVENT)
+        if (metadata.getValueType() == ValueType.SUBSCRIPTION)
         {
             return onSubscriptionEvent(event);
         }
-        else if (metadata.getEventType() == EventType.SUBSCRIBER_EVENT)
+        else if (metadata.getValueType() == ValueType.SUBSCRIBER)
         {
             return onSubscriberEvent(event);
         }
@@ -155,12 +166,12 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
         subscriberEvent.reset();
         subscriberEvent.wrap(event.getValueBuffer(), event.getValueOffset(), event.getValueLength());
 
-        if (subscriberEvent.getState() == TopicSubscriberState.SUBSCRIBE)
+        if (metadata.getIntent() == Intent.SUBSCRIBE)
         {
             subscribeProcessor.wrap(currentEvent, metadata, subscriberEvent);
             return subscribeProcessor;
         }
-        else if (subscriberEvent.getState() == TopicSubscriberState.SUBSCRIBED)
+        else if (metadata.getIntent() == Intent.SUBSCRIBED)
         {
             return subscribedProcessor;
         }
@@ -175,7 +186,7 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
         subscriptionEvent.reset();
         subscriptionEvent.wrap(event.getValueBuffer(), event.getValueOffset(), event.getValueLength());
 
-        if (subscriptionEvent.getState() == TopicSubscriptionState.ACKNOWLEDGE)
+        if (metadata.getIntent() == Intent.ACKNOWLEDGE)
         {
             return ackProcessor;
         }
@@ -260,7 +271,7 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
     }
 
 
-    public boolean writeRequestResponseError(BrokerEventMetadata metadata, String error)
+    public boolean writeRequestResponseError(RecordMetadata metadata, String error)
     {
         return errorWriter
             .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
@@ -293,7 +304,7 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
 
     public static MetadataFilter filter()
     {
-        return (m) -> EventType.SUBSCRIPTION_EVENT == m.getEventType() || EventType.SUBSCRIBER_EVENT == m.getEventType();
+        return (m) -> ValueType.SUBSCRIPTION == m.getValueType() || ValueType.SUBSCRIBER == m.getValueType();
     }
 
     protected class AckProcessor implements EventProcessor
@@ -301,13 +312,16 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
         @Override
         public void processEvent()
         {
-            subscriptionEvent.setState(TopicSubscriptionState.ACKNOWLEDGED);
         }
 
         @Override
         public long writeEvent(LogStreamWriter writer)
         {
-            metadata.protocolVersion(Protocol.PROTOCOL_VERSION);
+            metadata
+                .recordType(RecordType.EVENT)
+                .valueType(ValueType.SUBSCRIPTION)
+                .intent(Intent.ACKNOWLEDGED)
+                .protocolVersion(Protocol.PROTOCOL_VERSION);
 
             return writer
                 .key(currentEvent.getKey())
@@ -330,8 +344,10 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
             {
                 return responseWriter
                     .partitionId(logStreamPartitionId)
-                    .eventWriter(subscriptionEvent)
+                    .valueWriter(subscriptionEvent)
                     .key(currentEvent.getKey())
+                    .recordType(RecordType.EVENT)
+                    .intent(Intent.ACKNOWLEDGED)
                     .tryWriteResponse(metadata.getRequestStreamId(), metadata.getRequestId());
             }
             else
@@ -361,7 +377,9 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
 
             final boolean responseWritten = responseWriter
                     .partitionId(logStreamPartitionId)
-                    .eventWriter(subscriberEvent)
+                    .recordType(RecordType.EVENT)
+                    .intent(Intent.SUBSCRIBED)
+                    .valueWriter(subscriberEvent)
                     .position(currentEvent.getPosition())
                     .key(currentEvent.getKey())
                     .tryWriteResponse(metadata.getRequestStreamId(), metadata.getRequestId());
@@ -382,11 +400,14 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
             final DirectBuffer openedSubscriptionName = subscriberEvent.getName();
 
             subscriptionEvent.reset();
-            subscriptionEvent.setState(TopicSubscriptionState.ACKNOWLEDGE)
+            subscriptionEvent
                 .setName(openedSubscriptionName, 0, openedSubscriptionName.capacity())
                 .setAckPosition(subscriberEvent.getStartPosition() - 1);
 
-            metadata.eventType(EventType.SUBSCRIPTION_EVENT)
+            metadata
+                .recordType(RecordType.COMMAND)
+                .valueType(ValueType.SUBSCRIPTION)
+                .intent(Intent.ACKNOWLEDGE)
                 .requestStreamId(-1)
                 .requestId(-1);
 

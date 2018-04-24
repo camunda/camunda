@@ -18,7 +18,9 @@
 package io.zeebe.broker.logstreams.processor;
 
 import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
-import io.zeebe.protocol.impl.BrokerEventMetadata;
+import io.zeebe.protocol.clientapi.Intent;
+import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.transport.ServerOutput;
 
 public class TypedResponseWriterImpl implements TypedResponseWriter
@@ -33,15 +35,28 @@ public class TypedResponseWriterImpl implements TypedResponseWriter
     }
 
     @Override
-    public boolean write(TypedEvent<?> event)
+    public boolean writeRejection(TypedRecord<?> record)
     {
-        final BrokerEventMetadata metadata = event.getMetadata();
+        return write(RecordType.COMMAND_REJECTION, record.getMetadata().getIntent(), record);
+    }
+
+    @Override
+    public boolean writeEvent(Intent intent, TypedRecord<?> record)
+    {
+        return write(RecordType.EVENT, intent, record);
+    }
+
+    private boolean write(RecordType type, Intent intent, TypedRecord<?> record)
+    {
+        final RecordMetadata metadata = record.getMetadata();
 
         return writer
             .partitionId(partitionId)
             .position(0) // TODO: this depends on the value of written event => https://github.com/zeebe-io/zeebe/issues/374
-            .key(event.getKey())
-            .eventWriter(event.getValue())
+            .key(record.getKey())
+            .intent(intent)
+            .recordType(type)
+            .valueWriter(record.getValue())
             .tryWriteResponse(metadata.getRequestStreamId(), metadata.getRequestId());
     }
 

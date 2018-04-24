@@ -17,11 +17,18 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
+import io.zeebe.protocol.clientapi.Intent;
+
 public interface TypedResponseWriter
 {
 
     /**
      * @return true if successful
      */
-    boolean write(TypedEvent<?> event);
+    boolean writeRejection(TypedRecord<?> record);
+
+    /**
+     * @return true if successful
+     */
+    boolean writeEvent(Intent intent, TypedRecord<?> record);
 }

@@ -17,9 +17,13 @@
  */
 package io.zeebe.broker.event.processor;
 
+import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
+
+import org.agrona.DirectBuffer;
+
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
 import io.zeebe.broker.logstreams.processor.NoopSnapshotSupport;
-import io.zeebe.broker.transport.clientapi.SubscribedEventWriter;
+import io.zeebe.broker.transport.clientapi.SubscribedRecordWriter;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
@@ -27,18 +31,15 @@ import io.zeebe.logstreams.processor.EventProcessor;
 import io.zeebe.logstreams.processor.StreamProcessor;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
 import io.zeebe.logstreams.spi.SnapshotSupport;
-import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.clientapi.SubscriptionType;
-import io.zeebe.protocol.impl.BrokerEventMetadata;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.util.collection.LongRingBuffer;
-import org.agrona.DirectBuffer;
-
-import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
 
 public class TopicSubscriptionPushProcessor implements StreamProcessor, EventProcessor
 {
 
-    protected final BrokerEventMetadata metadata = new BrokerEventMetadata();
+    protected final RecordMetadata metadata = new RecordMetadata();
 
     protected LoggedEvent event;
 
@@ -50,7 +51,7 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
     protected int logStreamPartitionId;
 
     protected final SnapshotSupport snapshotSupport = new NoopSnapshotSupport();
-    protected final SubscribedEventWriter channelWriter;
+    protected final SubscribedRecordWriter channelWriter;
 
     protected LongRingBuffer pendingEvents;
     private StreamProcessorContext context;
@@ -61,7 +62,7 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
             long startPosition,
             DirectBuffer name,
             int prefetchCapacity,
-            SubscribedEventWriter channelWriter)
+            SubscribedRecordWriter channelWriter)
     {
         this.channelWriter = channelWriter;
         this.clientStreamId = clientStreamId;
@@ -141,12 +142,14 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
 
         final boolean success = channelWriter
             .partitionId(logStreamPartitionId)
-            .eventType(metadata.getEventType())
+            .valueType(metadata.getValueType())
+            .recordType(metadata.getRecordType())
+            .intent(metadata.getIntent())
             .key(event.getKey())
             .position(event.getPosition())
             .subscriberKey(subscriberKey)
             .subscriptionType(SubscriptionType.TOPIC_SUBSCRIPTION)
-            .event(event.getValueBuffer(), event.getValueOffset(), event.getValueLength())
+            .value(event.getValueBuffer(), event.getValueOffset(), event.getValueLength())
             .tryWriteMessage(clientStreamId);
 
         if (success && recordsPendingEvents())
@@ -203,14 +206,14 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
     {
         return m ->
         {
-            final EventType eventType = m.getEventType();
+            final ValueType eventType = m.getValueType();
             return
                     // don't push subscription or subscriber events;
                     // this may lead to infinite loops of pushing events that in turn trigger creation of more such events (e.g. ACKs)
-                    eventType != EventType.SUBSCRIPTION_EVENT &&
-                    eventType != EventType.SUBSCRIBER_EVENT &&
+                    eventType != ValueType.SUBSCRIPTION &&
+                    eventType != ValueType.SUBSCRIBER &&
                     // don't push noop events as they are rather an implementation detail of raft
-                    eventType != EventType.NOOP_EVENT;
+                    eventType != ValueType.NOOP;
         };
     }
 

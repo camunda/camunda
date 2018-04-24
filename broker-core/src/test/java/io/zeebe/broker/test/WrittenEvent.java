@@ -17,15 +17,15 @@
  */
 package io.zeebe.broker.test;
 
-import io.zeebe.protocol.impl.BrokerEventMetadata;
+import io.zeebe.protocol.impl.RecordMetadata;
 
 public class WrittenEvent<E>
 {
     final long key;
     final E value;
-    final BrokerEventMetadata metadata;
+    final RecordMetadata metadata;
 
-    public WrittenEvent(long key, E value, BrokerEventMetadata metadata)
+    public WrittenEvent(long key, E value, RecordMetadata metadata)
     {
         this.key = key;
         this.value = value;
@@ -42,7 +42,7 @@ public class WrittenEvent<E>
         return value;
     }
 
-    public BrokerEventMetadata getMetadata()
+    public RecordMetadata getMetadata()
     {
         return metadata;
     }

@@ -19,13 +19,15 @@ package io.zeebe.broker.clustering.orchestration.topic;
 
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.agrona.DirectBuffer;
+
 import io.zeebe.broker.clustering.orchestration.state.KnownTopics;
 import io.zeebe.broker.clustering.orchestration.state.TopicInfo;
 import io.zeebe.broker.transport.controlmessage.AbstractControlMessageHandler;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.ErrorCode;
-import io.zeebe.protocol.impl.BrokerEventMetadata;
+import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
@@ -33,7 +35,6 @@ import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
-import org.agrona.DirectBuffer;
 
 public class RequestPartitionsMessageHandler extends AbstractControlMessageHandler implements Service<RequestPartitionsMessageHandler>
 {
@@ -73,7 +74,7 @@ public class RequestPartitionsMessageHandler extends AbstractControlMessageHandl
     }
 
     @Override
-    public void handle(final ActorControl actor, final int partitionId, final DirectBuffer buffer, final BrokerEventMetadata metadata)
+    public void handle(final ActorControl actor, final int partitionId, final DirectBuffer buffer, final RecordMetadata metadata)
     {
         final int requestStreamId = metadata.getRequestStreamId();
         final long requestId = metadata.getRequestId();

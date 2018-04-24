@@ -15,18 +15,21 @@
  */
 package io.zeebe.test.broker.protocol.clientapi;
 
-import static io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder.eventHeaderLength;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
 
-import io.zeebe.protocol.clientapi.*;
-import io.zeebe.test.broker.protocol.MsgPackHelper;
-import io.zeebe.util.buffer.BufferReader;
 import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
 import org.agrona.io.DirectBufferInputStream;
+
+import io.zeebe.protocol.clientapi.ErrorResponseDecoder;
+import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
+import io.zeebe.protocol.clientapi.Intent;
+import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
+import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.test.broker.protocol.MsgPackHelper;
+import io.zeebe.util.buffer.BufferReader;
 
 public class ExecuteCommandResponse implements BufferReader
 {
@@ -36,7 +39,7 @@ public class ExecuteCommandResponse implements BufferReader
 
     protected final MsgPackHelper msgPackHelper;
 
-    protected Map<String, Object> event;
+    protected Map<String, Object> value;
 
     public ExecuteCommandResponse(MsgPackHelper msgPackHelper)
     {
@@ -44,9 +47,9 @@ public class ExecuteCommandResponse implements BufferReader
         this.errorResponse = new ErrorResponse(msgPackHelper);
     }
 
-    public Map<String, Object> getEvent()
+    public Map<String, Object> getValue()
     {
-        return event;
+        return value;
     }
 
     public long position()
@@ -62,6 +65,16 @@ public class ExecuteCommandResponse implements BufferReader
     public int partitionId()
     {
         return responseDecoder.partitionId();
+    }
+
+    public Intent intent()
+    {
+        return responseDecoder.intent();
+    }
+
+    public RecordType recordType()
+    {
+        return responseDecoder.recordType();
     }
 
     @Override
@@ -85,12 +98,12 @@ public class ExecuteCommandResponse implements BufferReader
 
         responseDecoder.wrap(responseBuffer, offset + messageHeaderDecoder.encodedLength(), messageHeaderDecoder.blockLength(), messageHeaderDecoder.version());
 
-        final int eventLength = responseDecoder.eventLength();
-        final int eventOffset = responseDecoder.limit() + eventHeaderLength();
+        final int eventLength = responseDecoder.valueLength();
+        final int eventOffset = responseDecoder.limit() + ExecuteCommandResponseDecoder.valueHeaderLength();
 
         try (InputStream is = new DirectBufferInputStream(responseBuffer, eventOffset, eventLength))
         {
-            event = msgPackHelper.readMsgPack(is);
+            value = msgPackHelper.readMsgPack(is);
         }
         catch (IOException e)
         {

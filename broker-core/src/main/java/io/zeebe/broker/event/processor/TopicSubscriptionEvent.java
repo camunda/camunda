@@ -17,22 +17,20 @@
  */
 package io.zeebe.broker.event.processor;
 
+import org.agrona.DirectBuffer;
+
 import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.msgpack.property.EnumProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
-import org.agrona.DirectBuffer;
 
 public class TopicSubscriptionEvent extends UnpackedObject
 {
     protected StringProperty nameProp = new StringProperty("name");
-    protected EnumProperty<TopicSubscriptionState> stateProp = new EnumProperty<>("state", TopicSubscriptionState.class);
     protected LongProperty ackPositionProp = new LongProperty("ackPosition");
 
     public TopicSubscriptionEvent()
     {
         declareProperty(nameProp)
-            .declareProperty(stateProp)
             .declareProperty(ackPositionProp);
     }
 
@@ -55,17 +53,6 @@ public class TopicSubscriptionEvent extends UnpackedObject
     public TopicSubscriptionEvent setAckPosition(long ackPosition)
     {
         this.ackPositionProp.setValue(ackPosition);
-        return this;
-    }
-
-    public TopicSubscriptionState getState()
-    {
-        return stateProp.getValue();
-    }
-
-    public TopicSubscriptionEvent setState(TopicSubscriptionState event)
-    {
-        this.stateProp.setValue(event);
         return this;
     }
 

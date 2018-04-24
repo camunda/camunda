@@ -15,24 +15,7 @@
  */
 package io.zeebe.test.broker.protocol.brokerapi;
 
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.dispatcher.Dispatchers;
-import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.clientapi.EventType;
-import io.zeebe.protocol.clientapi.SubscriptionType;
-import io.zeebe.test.broker.protocol.MsgPackHelper;
-import io.zeebe.test.broker.protocol.brokerapi.data.BrokerPartitionState;
-import io.zeebe.test.broker.protocol.brokerapi.data.Topology;
-import io.zeebe.test.broker.protocol.brokerapi.data.TopologyBroker;
-import io.zeebe.test.util.collection.MapFactoryBuilder;
-import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.ServerTransport;
-import io.zeebe.transport.Transports;
-import io.zeebe.util.ByteValue;
-import io.zeebe.util.sched.ActorScheduler;
-import io.zeebe.util.sched.clock.ControlledActorClock;
-import org.junit.rules.ExternalResource;
+import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -44,7 +27,26 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
+import org.junit.rules.ExternalResource;
+
+import io.zeebe.dispatcher.Dispatcher;
+import io.zeebe.dispatcher.Dispatchers;
+import io.zeebe.protocol.Protocol;
+import io.zeebe.protocol.clientapi.ControlMessageType;
+import io.zeebe.protocol.clientapi.Intent;
+import io.zeebe.protocol.clientapi.SubscriptionType;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.test.broker.protocol.MsgPackHelper;
+import io.zeebe.test.broker.protocol.brokerapi.data.BrokerPartitionState;
+import io.zeebe.test.broker.protocol.brokerapi.data.Topology;
+import io.zeebe.test.broker.protocol.brokerapi.data.TopologyBroker;
+import io.zeebe.test.util.collection.MapFactoryBuilder;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.ServerTransport;
+import io.zeebe.transport.Transports;
+import io.zeebe.util.ByteValue;
+import io.zeebe.util.sched.ActorScheduler;
+import io.zeebe.util.sched.clock.ControlledActorClock;
 
 public class StubBrokerRule extends ExternalResource
 {
@@ -172,11 +174,11 @@ public class StubBrokerRule extends ExternalResource
 
     public MapFactoryBuilder<ExecuteCommandRequest, ExecuteCommandResponseBuilder> onWorkflowRequestRespondWith(final String topicName, final int partitionId, final long key)
     {
-        final MapFactoryBuilder<ExecuteCommandRequest, ExecuteCommandResponseBuilder> eventType = onExecuteCommandRequest(ecr -> ecr.eventType() == EventType.WORKFLOW_INSTANCE_EVENT)
+        final MapFactoryBuilder<ExecuteCommandRequest, ExecuteCommandResponseBuilder> eventType = onExecuteCommandRequest(ecr -> ecr.valueType() == ValueType.WORKFLOW_INSTANCE)
             .respondWith()
             .partitionId(partitionId)
             .key(key)
-            .event()
+            .value()
             .allOf((r) -> r.getCommand());
 
         return eventType;
@@ -196,20 +198,20 @@ public class StubBrokerRule extends ExternalResource
                 );
     }
 
-    public ExecuteCommandResponseTypeBuilder onExecuteCommandRequest(EventType eventType, String eventStatus)
+    public ExecuteCommandResponseTypeBuilder onExecuteCommandRequest(ValueType eventType, Intent intent)
     {
-        return onExecuteCommandRequest(ecr -> ecr.eventType() == eventType && eventStatus.equals(ecr.getCommand().get("state")));
+        return onExecuteCommandRequest(ecr -> ecr.valueType() == eventType && ecr.intent() == intent);
     }
 
     public ExecuteCommandResponseTypeBuilder onExecuteCommandRequest(
             int partitionId,
-            EventType eventType,
-            String eventStatus)
+            ValueType valueType,
+            Intent intent)
     {
         return onExecuteCommandRequest(ecr ->
             ecr.partitionId() == partitionId &&
-            ecr.eventType() == eventType &&
-            eventStatus.equals(ecr.getCommand().get("state")));
+            ecr.valueType() == valueType &&
+            ecr.intent() == intent);
     }
 
     public ControlMessageResponseTypeBuilder onControlMessageRequest()
@@ -241,9 +243,9 @@ public class StubBrokerRule extends ExternalResource
         return channelHandler.getAllReceivedRequests();
     }
 
-    public SubscribedEventBuilder newSubscribedEvent()
+    public SubscribedRecordBuilder newSubscribedEvent()
     {
-        return new SubscribedEventBuilder(msgPackHelper, transport);
+        return new SubscribedRecordBuilder(msgPackHelper, transport);
     }
 
     public void stubTopologyRequest()
@@ -313,12 +315,13 @@ public class StubBrokerRule extends ExternalResource
         final AtomicLong subscriberKeyProvider = new AtomicLong(initialSubscriberKey);
         final AtomicLong subscriptionKeyProvider = new AtomicLong(0);
 
-        onExecuteCommandRequest(EventType.SUBSCRIBER_EVENT, "SUBSCRIBE")
+        onExecuteCommandRequest(ValueType.SUBSCRIBER, Intent.SUBSCRIBE)
             .respondWith()
-            .key((r) -> subscriberKeyProvider.getAndIncrement())
             .event()
+            .intent(Intent.SUBSCRIBED)
+            .key((r) -> subscriberKeyProvider.getAndIncrement())
+            .value()
                 .allOf((r) -> r.getCommand())
-                .put("state", "SUBSCRIBED")
                 .done()
             .register();
 
@@ -329,13 +332,14 @@ public class StubBrokerRule extends ExternalResource
                 .done()
             .register();
 
-        onExecuteCommandRequest(EventType.SUBSCRIPTION_EVENT, "ACKNOWLEDGE")
+        onExecuteCommandRequest(ValueType.SUBSCRIPTION, Intent.ACKNOWLEDGE)
             .respondWith()
+            .event()
+            .intent(Intent.ACKNOWLEDGED)
             .key((r) -> subscriptionKeyProvider.getAndIncrement())
             .partitionId((r) -> r.partitionId())
-            .event()
+            .value()
                 .allOf((r) -> r.getCommand())
-                .put("state", "ACKNOWLEDGED")
                 .done()
             .register();
     }
@@ -369,36 +373,36 @@ public class StubBrokerRule extends ExternalResource
 
     public void pushTopicEvent(RemoteAddress remote, long subscriberKey, long key, long position)
     {
-        pushTopicEvent(remote, subscriberKey, key, position, EventType.RAFT_EVENT);
+        pushTopicEvent(remote, subscriberKey, key, position, ValueType.RAFT);
     }
 
-    public void pushTopicEvent(RemoteAddress remote, long subscriberKey, long key, long position, EventType eventType)
+    public void pushTopicEvent(RemoteAddress remote, long subscriberKey, long key, long position, ValueType valueType)
     {
         newSubscribedEvent()
             .partitionId(TEST_PARTITION_ID)
             .key(key)
             .position(position)
-            .eventType(eventType)
+            .valueType(valueType)
             .subscriberKey(subscriberKey)
             .subscriptionType(SubscriptionType.TOPIC_SUBSCRIPTION)
-            .event()
+            .value()
                 .done()
             .push(remote);
     }
 
-    public void pushTopicEvent(RemoteAddress remote, Consumer<SubscribedEventBuilder> eventConfig)
+    public void pushTopicEvent(RemoteAddress remote, Consumer<SubscribedRecordBuilder> eventConfig)
     {
-        final SubscribedEventBuilder builder = newSubscribedEvent()
+        final SubscribedRecordBuilder builder = newSubscribedEvent()
             .subscriptionType(SubscriptionType.TOPIC_SUBSCRIPTION);
 
         // defaults that the config can override
         builder.partitionId(1);
         builder.key(0);
         builder.position(0);
-        builder.eventType(EventType.RAFT_EVENT);
+        builder.valueType(ValueType.RAFT);
         builder.subscriberKey(0);
         builder.partitionId(TEST_PARTITION_ID);
-        builder.event().done();
+        builder.value().done();
 
         eventConfig.accept(builder);
 
@@ -412,10 +416,10 @@ public class StubBrokerRule extends ExternalResource
             .partitionId(TEST_PARTITION_ID)
             .key(key)
             .position(position)
-            .eventType(EventType.TASK_EVENT)
+            .valueType(ValueType.TASK)
             .subscriberKey(subscriberKey)
             .subscriptionType(SubscriptionType.TASK_SUBSCRIPTION)
-            .event()
+            .value()
                 .put("type", taskType)
                 .put("lockTime", 1000L)
                 .put("lockOwner", lockOwner)

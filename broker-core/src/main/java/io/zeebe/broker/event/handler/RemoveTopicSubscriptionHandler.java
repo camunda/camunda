@@ -23,7 +23,7 @@ import io.zeebe.broker.event.processor.CloseSubscriptionRequest;
 import io.zeebe.broker.event.processor.TopicSubscriptionService;
 import io.zeebe.broker.transport.controlmessage.AbstractControlMessageHandler;
 import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.impl.BrokerEventMetadata;
+import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -48,7 +48,7 @@ public class RemoveTopicSubscriptionHandler extends AbstractControlMessageHandle
     }
 
     @Override
-    public void handle(final ActorControl actor, final int partitionId, final DirectBuffer buffer, final BrokerEventMetadata metadata)
+    public void handle(final ActorControl actor, final int partitionId, final DirectBuffer buffer, final RecordMetadata metadata)
     {
         final int requestStreamId = metadata.getRequestStreamId();
         final long requestId = metadata.getRequestId();

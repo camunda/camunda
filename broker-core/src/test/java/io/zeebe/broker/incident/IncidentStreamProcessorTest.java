@@ -19,6 +19,7 @@ package io.zeebe.broker.incident;
 
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -27,17 +28,16 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import io.zeebe.broker.incident.data.IncidentEvent;
-import io.zeebe.broker.incident.data.IncidentState;
 import io.zeebe.broker.incident.processor.IncidentStreamProcessor;
-import io.zeebe.broker.logstreams.processor.TypedEvent;
+import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.task.data.TaskEvent;
-import io.zeebe.broker.task.data.TaskState;
 import io.zeebe.broker.topic.StreamProcessorControl;
 import io.zeebe.broker.util.StreamProcessorRule;
 import io.zeebe.broker.workflow.data.WorkflowInstanceEvent;
-import io.zeebe.broker.workflow.data.WorkflowInstanceState;
+import io.zeebe.protocol.clientapi.Intent;
+import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.util.buffer.BufferUtil;
 
 public class IncidentStreamProcessorTest
@@ -60,24 +60,23 @@ public class IncidentStreamProcessorTest
     public void shouldNotCreateIncidentIfRetriesAreUpdatedIntermittently()
     {
         // given
-        final TaskEvent task = taskFailed(0);
-        final long key = rule.writeEvent(task); // trigger incident creation
+        final TaskEvent task = task(0);
+        final long key = rule.writeEvent(Intent.FAILED, task); // trigger incident creation
 
-        task.setState(TaskState.RETRIES_UPDATED);
         task.setRetries(1);
-        rule.writeEvent(key, task); // triggering incident removal
+        rule.writeEvent(key, Intent.RETRIES_UPDATED, task); // triggering incident removal
 
         // when
         rule.runStreamProcessor(this::buildStreamProcessor);
 
         // then
-        waitForEventInState(IncidentState.CREATE_REJECTED);
+        waitForRejectionWithIntent(Intent.CREATE);
 
-        final List<TypedEvent<IncidentEvent>> incidentEvents = rule.events().onlyIncidentEvents().collect(Collectors.toList());
-        assertThat(incidentEvents).extracting("value.state")
+        final List<TypedRecord<IncidentEvent>> incidentEvents = rule.events().onlyIncidentRecords().collect(Collectors.toList());
+        assertThat(incidentEvents).extracting(r -> r.getMetadata()).extracting(m -> m.getRecordType(), m -> m.getIntent())
             .containsExactly(
-                IncidentState.CREATE,
-                IncidentState.CREATE_REJECTED);
+                tuple(RecordType.COMMAND, Intent.CREATE),
+                tuple(RecordType.COMMAND_REJECTION, Intent.CREATE));
     }
 
     @Test
@@ -88,60 +87,59 @@ public class IncidentStreamProcessorTest
         final long activityInstanceKey = 2L;
 
         final StreamProcessorControl control = rule.runStreamProcessor(this::buildStreamProcessor);
-        control.blockAfterIncidentEvent(e -> e.getValue().getState() == IncidentState.CREATED);
+        control.blockAfterIncidentEvent(e -> e.getMetadata().getIntent() == Intent.CREATED);
 
         final WorkflowInstanceEvent activityInstance = new WorkflowInstanceEvent();
-        activityInstance.setState(WorkflowInstanceState.ACTIVITY_READY);
         activityInstance.setWorkflowInstanceKey(workflowInstanceKey);
 
-        final long position = rule.writeEvent(activityInstanceKey, activityInstance);
+        final long position = rule.writeEvent(activityInstanceKey, Intent.ACTIVITY_READY, activityInstance);
 
         final IncidentEvent incident = new IncidentEvent();
-        incident.setState(IncidentState.CREATE);
         incident.setWorkflowInstanceKey(workflowInstanceKey);
         incident.setActivityInstanceKey(activityInstanceKey);
         incident.setFailureEventPosition(position);
 
-        rule.writeEvent(incident);
+        rule.writeCommand(Intent.CREATE, incident);
 
-        waitForEventInState(IncidentState.CREATED); // stream processor is now blocked
+        waitForEventWithIntent(Intent.CREATED); // stream processor is now blocked
 
-        activityInstance.setState(WorkflowInstanceState.PAYLOAD_UPDATED);
-        rule.writeEvent(activityInstanceKey, activityInstance);
-
-        activityInstance.setState(WorkflowInstanceState.ACTIVITY_TERMINATED);
-        rule.writeEvent(activityInstanceKey, activityInstance);
+        rule.writeEvent(activityInstanceKey, Intent.PAYLOAD_UPDATED, activityInstance);
+        rule.writeEvent(activityInstanceKey, Intent.ACTIVITY_TERMINATED, activityInstance);
 
         // when
         control.unblock();
 
         // then
-        waitForEventInState(IncidentState.DELETED);
-        final List<TypedEvent<IncidentEvent>> incidentEvents = rule.events().onlyIncidentEvents().collect(Collectors.toList());
+        waitForEventWithIntent(Intent.DELETED);
+        final List<TypedRecord<IncidentEvent>> incidentEvents = rule.events().onlyIncidentRecords().collect(Collectors.toList());
 
-        assertThat(incidentEvents).extracting("value.state")
+        assertThat(incidentEvents).extracting(r -> r.getMetadata()).extracting(m -> m.getRecordType(), m -> m.getIntent())
             .containsExactly(
-                IncidentState.CREATE,
-                IncidentState.CREATED,
-                IncidentState.RESOLVE,
-                IncidentState.DELETE,
-                IncidentState.RESOLVE_REJECTED,
-                IncidentState.DELETED);
+                tuple(RecordType.COMMAND, Intent.CREATE),
+                tuple(RecordType.EVENT, Intent.CREATED),
+                tuple(RecordType.COMMAND, Intent.RESOLVE),
+                tuple(RecordType.COMMAND, Intent.DELETE),
+                tuple(RecordType.COMMAND_REJECTION, Intent.RESOLVE),
+                tuple(RecordType.EVENT, Intent.DELETED));
     }
 
-    private TaskEvent taskFailed(int retries)
+    private TaskEvent task(int retries)
     {
         final TaskEvent event = new TaskEvent();
 
-        event.setState(TaskState.FAILED);
         event.setRetries(retries);
         event.setType(BufferUtil.wrapString("foo"));
 
         return event;
     }
 
-    private void waitForEventInState(IncidentState state)
+    private void waitForEventWithIntent(Intent state)
     {
-        waitUntil(() -> rule.events().onlyIncidentEvents().inState(state).findFirst().isPresent());
+        waitUntil(() -> rule.events().onlyIncidentRecords().onlyEvents().withIntent(state).findFirst().isPresent());
+    }
+
+    private void waitForRejectionWithIntent(Intent state)
+    {
+        waitUntil(() -> rule.events().onlyIncidentRecords().onlyRejections().withIntent(state).findFirst().isPresent());
     }
 }

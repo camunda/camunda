@@ -23,11 +23,11 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
 import java.nio.ByteOrder;
 import java.util.Iterator;
 
-import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
-import io.zeebe.map.Long2BytesZbMap;
-import io.zeebe.map.iterator.Long2BytesZbMapEntry;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+
+import io.zeebe.map.Long2BytesZbMap;
+import io.zeebe.map.iterator.Long2BytesZbMapEntry;
 
 /**
  * Maps <b>workflow instance key</b> to
@@ -52,17 +52,15 @@ public class WorkflowInstanceIndex implements AutoCloseable
     private final WorkflowInstanceIterator iterator = new WorkflowInstanceIterator();
 
     private final Long2BytesZbMap map;
-    private final ZbMapSnapshotSupport<Long2BytesZbMap> snapshotSupport;
 
     public WorkflowInstanceIndex()
     {
         this.map = new Long2BytesZbMap(INDEX_VALUE_SIZE);
-        this.snapshotSupport = new ZbMapSnapshotSupport<>(map);
     }
 
-    public ZbMapSnapshotSupport<Long2BytesZbMap> getSnapshotSupport()
+    public Long2BytesZbMap getMap()
     {
-        return snapshotSupport;
+        return map;
     }
 
     public void remove(long workflowInstanceKey)

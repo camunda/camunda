@@ -17,31 +17,40 @@
  */
 package io.zeebe.broker.clustering.orchestration.state;
 
-import static io.zeebe.broker.clustering.orchestration.topic.TopicState.CREATE;
-import static io.zeebe.broker.clustering.orchestration.topic.TopicState.CREATE_COMPLETE;
 import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.streamProcessorService;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
+import org.agrona.DirectBuffer;
+import org.slf4j.Logger;
+
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.orchestration.topic.TopicEvent;
-import io.zeebe.broker.logstreams.processor.*;
+import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
+import io.zeebe.broker.logstreams.processor.StreamProcessorLifecycleAware;
+import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
+import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
+import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
 import io.zeebe.msgpack.property.ArrayProperty;
 import io.zeebe.msgpack.value.ArrayValue;
 import io.zeebe.msgpack.value.IntegerValue;
 import io.zeebe.msgpack.value.ValueArray;
-import io.zeebe.protocol.clientapi.EventType;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.protocol.clientapi.Intent;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.servicecontainer.Injector;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceContainer;
+import io.zeebe.servicecontainer.ServiceName;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.transport.ServerTransport;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
-import org.agrona.DirectBuffer;
-import org.slf4j.Logger;
 
 public class KnownTopics implements Service<KnownTopics>, StreamProcessorLifecycleAware
 {
@@ -179,8 +188,8 @@ public class KnownTopics implements Service<KnownTopics>, StreamProcessorLifecyc
 
         final TypedStreamProcessor streamProcessor = new TypedStreamEnvironment(partition.getLogStream(), serverTransport.getOutput())
             .newStreamProcessor()
-            .onEvent(EventType.TOPIC_EVENT, CREATE, topicCreateProcessor)
-            .onEvent(EventType.TOPIC_EVENT, CREATE_COMPLETE, topicCreatedProcessor)
+            .onCommand(ValueType.TOPIC, Intent.CREATE, topicCreateProcessor)
+            .onEvent(ValueType.TOPIC, Intent.CREATE_COMPLETE, topicCreatedProcessor)
             .withListener(this)
             .withStateResource(knownTopics)
             .build();

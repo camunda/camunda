@@ -15,11 +15,20 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.data;
+package io.zeebe.broker.logstreams.processor;
 
-public enum DeploymentState
+import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.protocol.impl.RecordMetadata;
+
+public interface TypedRecord<T extends UnpackedObject>
 {
-    CREATE,
-    CREATED,
-    REJECTED;
+    long getPosition();
+
+    long getSourcePosition();
+
+    long getKey();
+
+    RecordMetadata getMetadata();
+
+    T getValue();
 }

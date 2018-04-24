@@ -26,7 +26,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
+import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
+import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.util.buffer.DirectBufferWriter;
 
 public class CommandResponseWriterTest
@@ -58,7 +60,9 @@ public class CommandResponseWriterTest
         responseWriter
             .partitionId(PARTITION_ID)
             .key(KEY)
-            .eventWriter(eventWriter);
+            .recordType(RecordType.EVENT)
+            .intent(Intent.CREATED)
+            .valueWriter(eventWriter);
 
         final UnsafeBuffer buf = new UnsafeBuffer(new byte[responseWriter.getLength()]);
 
@@ -79,10 +83,12 @@ public class CommandResponseWriterTest
         responseDecoder.wrap(buf, offset, responseDecoder.sbeBlockLength(), responseDecoder.sbeSchemaVersion());
         assertThat(responseDecoder.partitionId()).isEqualTo(PARTITION_ID);
         assertThat(responseDecoder.key()).isEqualTo(2L);
+        assertThat(responseDecoder.recordType()).isEqualTo(RecordType.EVENT);
+        assertThat(responseDecoder.intent()).isEqualTo(Intent.CREATED);
 
-        assertThat(responseDecoder.eventLength()).isEqualTo(EVENT.length);
+        assertThat(responseDecoder.valueLength()).isEqualTo(EVENT.length);
 
-        final byte[] event = readBytes(responseDecoder::getEvent, responseDecoder::eventLength);
+        final byte[] event = readBytes(responseDecoder::getValue, responseDecoder::valueLength);
         assertThat(event).isEqualTo(EVENT);
     }
 }

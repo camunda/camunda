@@ -17,7 +17,8 @@ package io.zeebe.test.broker.protocol.clientapi;
 
 import java.util.Map;
 
-import io.zeebe.protocol.clientapi.EventType;
+import io.zeebe.protocol.clientapi.Intent;
+import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.test.util.collection.MapBuilder;
 import io.zeebe.transport.ClientOutput;
@@ -56,32 +57,16 @@ public class ExecuteCommandRequestBuilder
         return this;
     }
 
-    public ExecuteCommandRequestBuilder eventTypeTask()
+    public ExecuteCommandRequestBuilder type(ValueType valueType, Intent intent)
     {
-        return eventType(EventType.TASK_EVENT);
-    }
-
-    public ExecuteCommandRequestBuilder eventTypeWorkflow()
-    {
-        return eventType(EventType.WORKFLOW_INSTANCE_EVENT);
-    }
-
-
-    public ExecuteCommandRequestBuilder eventType(EventType eventType)
-    {
-        request.eventType(eventType);
+        request.valueType(valueType);
+        request.intent(intent);
         return this;
     }
 
-    public ExecuteCommandRequestBuilder eventTypeSubscription()
+    public ExecuteCommandRequestBuilder intent(Intent intent)
     {
-        request.eventType(EventType.SUBSCRIPTION_EVENT);
-        return this;
-    }
-
-    public ExecuteCommandRequestBuilder eventTypeSubscriber()
-    {
-        request.eventType(EventType.SUBSCRIBER_EVENT);
+        request.intent(intent);
         return this;
     }
 

@@ -17,10 +17,10 @@
  */
 package io.zeebe.broker.transport.clientapi;
 
-import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.eventHeaderLength;
+import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.valueHeaderLength;
 import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.keyNullValue;
 import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.partitionIdNullValue;
-import static io.zeebe.protocol.clientapi.SubscribedEventEncoder.positionNullValue;
+import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.positionNullValue;
 
 import java.util.Objects;
 
@@ -28,7 +28,9 @@ import org.agrona.MutableDirectBuffer;
 
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder;
+import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
+import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerResponse;
 import io.zeebe.util.buffer.BufferWriter;
@@ -41,14 +43,28 @@ public class CommandResponseWriter implements BufferWriter
     protected int partitionId = partitionIdNullValue();
     protected long position = positionNullValue();
     protected long key = keyNullValue();
+    private RecordType recordType = RecordType.NULL_VAL;
+    private Intent intent = Intent.NULL_VAL;
 
-    protected BufferWriter eventWriter;
+    protected BufferWriter valueWriter;
     protected final ServerResponse response = new ServerResponse();
     protected final ServerOutput output;
 
     public CommandResponseWriter(final ServerOutput output)
     {
         this.output = output;
+    }
+
+    public CommandResponseWriter recordType(RecordType recordType)
+    {
+        this.recordType = recordType;
+        return this;
+    }
+
+    public CommandResponseWriter intent(Intent intent)
+    {
+        this.intent = intent;
+        return this;
     }
 
     public CommandResponseWriter partitionId(final int partitionId)
@@ -69,15 +85,15 @@ public class CommandResponseWriter implements BufferWriter
         return this;
     }
 
-    public CommandResponseWriter eventWriter(final BufferWriter writer)
+    public CommandResponseWriter valueWriter(final BufferWriter writer)
     {
-        this.eventWriter = writer;
+        this.valueWriter = writer;
         return this;
     }
 
     public boolean tryWriteResponse(int remoteStreamId, long requestId)
     {
-        Objects.requireNonNull(eventWriter);
+        Objects.requireNonNull(valueWriter);
 
         try
         {
@@ -110,17 +126,19 @@ public class CommandResponseWriter implements BufferWriter
         // protocol message
         responseEncoder
             .wrap(buffer, offset)
+            .recordType(recordType)
             .partitionId(partitionId)
             .position(position)
+            .intent(intent)
             .key(key);
 
         offset = responseEncoder.limit();
 
-        final int eventLength = eventWriter.getLength();
+        final int eventLength = valueWriter.getLength();
         buffer.putShort(offset, (short) eventLength, Protocol.ENDIANNESS);
 
-        offset += eventHeaderLength();
-        eventWriter.write(buffer, offset);
+        offset += valueHeaderLength();
+        valueWriter.write(buffer, offset);
     }
 
     @Override
@@ -128,15 +146,17 @@ public class CommandResponseWriter implements BufferWriter
     {
         return MessageHeaderEncoder.ENCODED_LENGTH +
                 ExecuteCommandResponseEncoder.BLOCK_LENGTH +
-                eventHeaderLength() +
-                eventWriter.getLength();
+                valueHeaderLength() +
+                valueWriter.getLength();
     }
 
     protected void reset()
     {
         partitionId = partitionIdNullValue();
         key = keyNullValue();
-        eventWriter = null;
+        valueWriter = null;
+        recordType = RecordType.NULL_VAL;
+        intent = Intent.NULL_VAL;
     }
 
 }

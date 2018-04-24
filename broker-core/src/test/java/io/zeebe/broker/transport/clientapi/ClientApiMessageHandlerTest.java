@@ -17,27 +17,18 @@
  */
 package io.zeebe.broker.transport.clientapi;
 
-import io.zeebe.broker.clustering.base.partitions.Partition;
-import io.zeebe.broker.clustering.base.topology.PartitionInfo;
-import io.zeebe.broker.task.data.TaskEvent;
-import io.zeebe.broker.task.data.TaskState;
-import io.zeebe.broker.transport.controlmessage.ControlMessageRequestHeaderDescriptor;
-import io.zeebe.dispatcher.ClaimedFragment;
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.logstreams.LogStreams;
-import io.zeebe.logstreams.log.BufferedLogStreamReader;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.*;
-import io.zeebe.protocol.impl.BrokerEventMetadata;
-import io.zeebe.raft.state.RaftState;
-import io.zeebe.servicecontainer.testing.ServiceContainerRule;
-import io.zeebe.test.util.TestUtil;
-import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.SocketAddress;
-import io.zeebe.transport.impl.RemoteAddressImpl;
-import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedFramedLength;
+import static io.zeebe.util.VarDataUtil.readBytes;
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.After;
@@ -50,17 +41,33 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.stubbing.Answer;
 
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedFramedLength;
-import static io.zeebe.util.VarDataUtil.readBytes;
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import io.zeebe.broker.clustering.base.partitions.Partition;
+import io.zeebe.broker.clustering.base.topology.PartitionInfo;
+import io.zeebe.broker.task.data.TaskEvent;
+import io.zeebe.broker.transport.controlmessage.ControlMessageRequestHeaderDescriptor;
+import io.zeebe.dispatcher.ClaimedFragment;
+import io.zeebe.dispatcher.Dispatcher;
+import io.zeebe.logstreams.LogStreams;
+import io.zeebe.logstreams.log.BufferedLogStreamReader;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.protocol.Protocol;
+import io.zeebe.protocol.clientapi.ControlMessageRequestDecoder;
+import io.zeebe.protocol.clientapi.ControlMessageRequestEncoder;
+import io.zeebe.protocol.clientapi.ErrorCode;
+import io.zeebe.protocol.clientapi.ErrorResponseDecoder;
+import io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder;
+import io.zeebe.protocol.clientapi.Intent;
+import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.impl.RecordMetadata;
+import io.zeebe.raft.state.RaftState;
+import io.zeebe.servicecontainer.testing.ServiceContainerRule;
+import io.zeebe.test.util.TestUtil;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.SocketAddress;
+import io.zeebe.transport.impl.RemoteAddressImpl;
+import io.zeebe.util.sched.testing.ActorSchedulerRule;
 
 public class ClientApiMessageHandlerTest
 {
@@ -75,7 +82,6 @@ public class ClientApiMessageHandlerTest
     static
     {
         final TaskEvent taskEvent = new TaskEvent()
-                .setState(TaskState.CREATE)
                 .setType(wrapString("test"));
 
         final UnsafeBuffer buffer = new UnsafeBuffer(new byte[taskEvent.getEncodedLength()]);
@@ -156,7 +162,7 @@ public class ClientApiMessageHandlerTest
     public void shouldHandleCommandRequest() throws InterruptedException, ExecutionException
     {
         // given
-        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_PARTITION_ID, null, EventType.TASK_EVENT);
+        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_PARTITION_ID, null, ValueType.TASK, Intent.CREATE);
 
         // when
         final boolean isHandled = messageHandler.onRequest(serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, REQUEST_ID);
@@ -175,7 +181,7 @@ public class ClientApiMessageHandlerTest
         assertThat(loggedEvent.getValueLength()).isEqualTo(TASK_EVENT.length);
         assertThat(valueBuffer).isEqualTo(TASK_EVENT);
 
-        final BrokerEventMetadata eventMetadata = new BrokerEventMetadata();
+        final RecordMetadata eventMetadata = new RecordMetadata();
         loggedEvent.readMetadata(eventMetadata);
 
         assertThat(eventMetadata.getRequestId()).isEqualTo(REQUEST_ID);
@@ -187,7 +193,7 @@ public class ClientApiMessageHandlerTest
     {
         // given
         final short clientProtocolVersion = Protocol.PROTOCOL_VERSION - 1;
-        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_PARTITION_ID, clientProtocolVersion, EventType.TASK_EVENT);
+        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_PARTITION_ID, clientProtocolVersion, ValueType.TASK, Intent.CREATE);
 
         // when
         final boolean isHandled = messageHandler.onRequest(serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, 123);
@@ -199,7 +205,7 @@ public class ClientApiMessageHandlerTest
         waitForAvailableEvent(logStreamReader);
 
         final LoggedEvent loggedEvent = logStreamReader.next();
-        final BrokerEventMetadata eventMetadata = new BrokerEventMetadata();
+        final RecordMetadata eventMetadata = new RecordMetadata();
         loggedEvent.readMetadata(eventMetadata);
 
         assertThat(eventMetadata.getProtocolVersion()).isEqualTo(clientProtocolVersion);
@@ -209,7 +215,7 @@ public class ClientApiMessageHandlerTest
     public void shouldWriteCommandRequestEventType() throws InterruptedException, ExecutionException
     {
         // given
-        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_PARTITION_ID, null, EventType.TASK_EVENT);
+        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_PARTITION_ID, null, ValueType.TASK, Intent.CREATE);
 
         // when
         final boolean isHandled = messageHandler.onRequest(serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, 123);
@@ -221,10 +227,11 @@ public class ClientApiMessageHandlerTest
         waitForAvailableEvent(logStreamReader);
 
         final LoggedEvent loggedEvent = logStreamReader.next();
-        final BrokerEventMetadata eventMetadata = new BrokerEventMetadata();
+        final RecordMetadata eventMetadata = new RecordMetadata();
         loggedEvent.readMetadata(eventMetadata);
 
-        assertThat(eventMetadata.getEventType()).isEqualTo(EventType.TASK_EVENT);
+        assertThat(eventMetadata.getValueType()).isEqualTo(ValueType.TASK);
+        assertThat(eventMetadata.getIntent()).isEqualTo(Intent.CREATE);
     }
 
     @Test
@@ -267,7 +274,7 @@ public class ClientApiMessageHandlerTest
     public void shouldSendErrorMessageIfTopicNotFound()
     {
         // given
-        final int writtenLength = writeCommandRequestToBuffer(buffer, 99, null, EventType.TASK_EVENT);
+        final int writtenLength = writeCommandRequestToBuffer(buffer, 99, null, ValueType.TASK, Intent.CREATE);
 
         // when
         final boolean isHandled = messageHandler.onRequest(serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, REQUEST_ID);
@@ -312,7 +319,7 @@ public class ClientApiMessageHandlerTest
     public void shouldSendErrorMessageOnRequestWithNewerProtocolVersion()
     {
         // given
-        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_PARTITION_ID, Short.MAX_VALUE, EventType.TASK_EVENT);
+        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_PARTITION_ID, Short.MAX_VALUE, ValueType.TASK, Intent.CREATE);
 
         // when
         final boolean isHandled = messageHandler.onRequest(serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, REQUEST_ID);
@@ -332,7 +339,8 @@ public class ClientApiMessageHandlerTest
     public void shouldSendErrorMessageOnInvalidRequest() throws InterruptedException, ExecutionException
     {
         // given
-        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_PARTITION_ID, null, EventType.WORKFLOW_INSTANCE_EVENT);
+        // request is invalid because Value type DEPLOYMENT does not match value contents, i.e. required values are not present
+        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_PARTITION_ID, null, ValueType.DEPLOYMENT, Intent.CREATE);
 
         // when
         final boolean isHandled = messageHandler.onRequest(serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, REQUEST_ID);
@@ -347,14 +355,14 @@ public class ClientApiMessageHandlerTest
         assertThat(errorDecoder.errorCode()).isEqualTo(ErrorCode.INVALID_MESSAGE);
         assertThat(errorDecoder.errorData())
             .contains("Cannot deserialize command:")
-            .contains("Could not read property 'state'");
+            .contains("Property 'topicName' has no valid value");
     }
 
     @Test
     public void shouldSendErrorMessageOnUnsupportedRequest() throws InterruptedException, ExecutionException
     {
         // given
-        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_PARTITION_ID, null, EventType.SBE_UNKNOWN);
+        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_PARTITION_ID, null, ValueType.SBE_UNKNOWN, Intent.SBE_UNKNOWN);
 
         // when
         final boolean isHandled = messageHandler.onRequest(serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, REQUEST_ID);
@@ -370,12 +378,12 @@ public class ClientApiMessageHandlerTest
         assertThat(errorDecoder.errorData()).isEqualTo("Cannot execute command. Invalid event type 'NULL_VAL'.");
     }
 
-    protected int writeCommandRequestToBuffer(UnsafeBuffer buffer, int partitionId, Short protocolVersion, EventType eventType)
+    protected int writeCommandRequestToBuffer(UnsafeBuffer buffer, int partitionId, Short protocolVersion, ValueType type, Intent intent)
     {
         int offset = 0;
 
         final int protocolVersionToWrite = protocolVersion != null ? protocolVersion : commandRequestEncoder.sbeSchemaVersion();
-        final EventType eventTypeToWrite = eventType != null ? eventType : EventType.NULL_VAL;
+        final ValueType eventTypeToWrite = type != null ? type : ValueType.NULL_VAL;
 
         headerEncoder.wrap(buffer, offset)
             .blockLength(commandRequestEncoder.sbeBlockLength())
@@ -389,8 +397,9 @@ public class ClientApiMessageHandlerTest
 
         commandRequestEncoder
             .partitionId(partitionId)
-            .eventType(eventTypeToWrite)
-            .putCommand(TASK_EVENT, 0, TASK_EVENT.length);
+            .valueType(eventTypeToWrite)
+            .intent(intent)
+            .putValue(TASK_EVENT, 0, TASK_EVENT.length);
 
         return headerEncoder.encodedLength() +
                 commandRequestEncoder.encodedLength();

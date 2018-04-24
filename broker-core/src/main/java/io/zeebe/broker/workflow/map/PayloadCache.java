@@ -17,13 +17,15 @@
  */
 package io.zeebe.broker.workflow.map;
 
+import org.agrona.DirectBuffer;
+
+import io.zeebe.broker.logstreams.processor.StreamProcessorLifecycleAware;
+import io.zeebe.broker.logstreams.processor.TypedRecord;
+import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
+import io.zeebe.broker.logstreams.processor.TypedStreamReader;
 import io.zeebe.broker.workflow.data.WorkflowInstanceEvent;
-import io.zeebe.logstreams.log.LogStreamReader;
-import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
 import io.zeebe.map.Long2LongZbMap;
 import io.zeebe.util.cache.ExpandableBufferCache;
-import org.agrona.DirectBuffer;
 
 /**
  * Cache of workflow instance payload. It contains an LRU cache of the payload
@@ -33,41 +35,35 @@ import org.agrona.DirectBuffer;
  * When a payload is requested then the it is returned from the cache. If it is
  * not present in the cache then the payload event is seek in the log stream.
  */
-public class PayloadCache implements AutoCloseable
+public class PayloadCache implements AutoCloseable, StreamProcessorLifecycleAware
 {
-    private final WorkflowInstanceEvent workflowInstanceEvent = new WorkflowInstanceEvent();
-
     private final Long2LongZbMap map;
-    private final ZbMapSnapshotSupport<Long2LongZbMap> snapshotSupport;
 
     private final ExpandableBufferCache cache;
-    private final LogStreamReader logStreamReader;
+    private TypedStreamReader logStreamReader;
 
-    public PayloadCache(int cacheSize, LogStreamReader logStreamReader)
+    public PayloadCache(int cacheSize)
     {
         this.map = new Long2LongZbMap();
-        this.snapshotSupport = new ZbMapSnapshotSupport<>(map);
-
-        this.logStreamReader = logStreamReader;
         this.cache = new ExpandableBufferCache(cacheSize, 1024, this::lookupPayload);
+    }
+
+    @Override
+    public void onOpen(TypedStreamProcessor streamProcessor)
+    {
+        this.logStreamReader = streamProcessor.getEnvironment().buildStreamReader();
+    }
+
+    @Override
+    public void onClose()
+    {
+        this.logStreamReader.close();
     }
 
     private DirectBuffer lookupPayload(long position)
     {
-        DirectBuffer payload = null;
-
-        final boolean found = logStreamReader.seek(position);
-        if (found && logStreamReader.hasNext())
-        {
-            final LoggedEvent event = logStreamReader.next();
-
-            workflowInstanceEvent.reset();
-            event.readValue(workflowInstanceEvent);
-
-            payload = workflowInstanceEvent.getPayload();
-        }
-
-        return payload;
+        final TypedRecord<WorkflowInstanceEvent> record = logStreamReader.readValue(position, WorkflowInstanceEvent.class);
+        return record.getValue().getPayload();
     }
 
     public DirectBuffer getPayload(long workflowInstanceKey)
@@ -94,9 +90,9 @@ public class PayloadCache implements AutoCloseable
         map.remove(workflowInstanceKey, -1L);
     }
 
-    public ZbMapSnapshotSupport<Long2LongZbMap> getSnapshotSupport()
+    public Long2LongZbMap getMap()
     {
-        return snapshotSupport;
+        return map;
     }
 
     @Override

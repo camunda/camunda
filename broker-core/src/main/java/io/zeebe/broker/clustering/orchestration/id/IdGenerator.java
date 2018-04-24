@@ -22,23 +22,33 @@ import static io.zeebe.broker.logstreams.processor.StreamProcessorIds.SYSTEM_ID_
 import java.util.ArrayDeque;
 import java.util.Queue;
 
+import org.slf4j.Logger;
+
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.base.partitions.Partition;
-import io.zeebe.broker.logstreams.processor.*;
+import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
+import io.zeebe.broker.logstreams.processor.TypedRecord;
+import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
+import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
+import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
+import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.msgpack.value.IntegerValue;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.EventType;
-import io.zeebe.protocol.impl.BrokerEventMetadata;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.protocol.clientapi.Intent;
+import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.impl.RecordMetadata;
+import io.zeebe.servicecontainer.Injector;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.transport.ServerTransport;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
-import org.slf4j.Logger;
 
-public class IdGenerator implements TypedEventProcessor<IdEvent>, Service<IdGenerator>
+public class IdGenerator implements TypedRecordProcessor<IdEvent>, Service<IdGenerator>
 {
 
     private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
@@ -64,7 +74,7 @@ public class IdGenerator implements TypedEventProcessor<IdEvent>, Service<IdGene
     }
 
     @Override
-    public boolean executeSideEffects(final TypedEvent<IdEvent> event, final TypedResponseWriter responseWriter)
+    public boolean executeSideEffects(final TypedRecord<IdEvent> event, final TypedResponseWriter responseWriter)
     {
         // complete pending futures
         final IdEvent value = event.getValue();
@@ -82,7 +92,7 @@ public class IdGenerator implements TypedEventProcessor<IdEvent>, Service<IdGene
     }
 
     @Override
-    public void updateState(final TypedEvent<IdEvent> event)
+    public void updateState(final TypedRecord<IdEvent> event)
     {
         committedId.setValue(event.getValue().getId());
     }
@@ -99,7 +109,7 @@ public class IdGenerator implements TypedEventProcessor<IdEvent>, Service<IdGene
         final TypedStreamEnvironment typedStreamEnvironment = new TypedStreamEnvironment(leaderSystemPartition.getLogStream(), clientApiTransport.getOutput());
 
         final TypedStreamProcessor streamProcessor = typedStreamEnvironment.newStreamProcessor()
-                                                                           .onEvent(EventType.ID_EVENT, IdEventState.GENERATED,  this)
+                                                                           .onEvent(ValueType.ID, Intent.GENERATED,  this)
                                                                            .withStateResource(committedId)
                                                                            .build();
 
@@ -130,11 +140,12 @@ public class IdGenerator implements TypedEventProcessor<IdEvent>, Service<IdGene
                 nextIdToWrite = committedId.getValue() + 1;
             }
 
-            final BrokerEventMetadata metadata = new BrokerEventMetadata();
-            metadata.eventType(EventType.ID_EVENT);
+            final RecordMetadata metadata = new RecordMetadata();
+            metadata.recordType(RecordType.EVENT);
+            metadata.valueType(ValueType.ID);
+            metadata.intent(Intent.GENERATED);
 
             idEvent.reset();
-            idEvent.setState(IdEventState.GENERATED);
             idEvent.setId(nextIdToWrite);
 
             final long position = logStreamWriter

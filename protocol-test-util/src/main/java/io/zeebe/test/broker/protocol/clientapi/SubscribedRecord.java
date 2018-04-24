@@ -15,31 +15,35 @@
  */
 package io.zeebe.test.broker.protocol.clientapi;
 
-import static io.zeebe.protocol.clientapi.SubscribedEventDecoder.eventHeaderLength;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
 
-import io.zeebe.protocol.clientapi.*;
-import io.zeebe.test.broker.protocol.MsgPackHelper;
-import io.zeebe.util.buffer.BufferReader;
 import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
 import org.agrona.io.DirectBufferInputStream;
 
-public class SubscribedEvent implements BufferReader
+import io.zeebe.protocol.clientapi.Intent;
+import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
+import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.SubscribedRecordDecoder;
+import io.zeebe.protocol.clientapi.SubscriptionType;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.test.broker.protocol.MsgPackHelper;
+import io.zeebe.util.buffer.BufferReader;
+
+public class SubscribedRecord implements BufferReader
 {
     protected final RawMessage rawMessage;
 
     protected MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
-    protected SubscribedEventDecoder bodyDecoder = new SubscribedEventDecoder();
+    protected SubscribedRecordDecoder bodyDecoder = new SubscribedRecordDecoder();
 
-    protected Map<String, Object> event;
+    protected Map<String, Object> value;
 
     protected MsgPackHelper msgPackHelper = new MsgPackHelper();
 
-    public SubscribedEvent(RawMessage rawMessage)
+    public SubscribedRecord(RawMessage rawMessage)
     {
         this.rawMessage = rawMessage;
         final DirectBuffer buffer = rawMessage.getMessage();
@@ -71,14 +75,24 @@ public class SubscribedEvent implements BufferReader
         return bodyDecoder.subscriptionType();
     }
 
-    public EventType eventType()
+    public ValueType valueType()
     {
-        return bodyDecoder.eventType();
+        return bodyDecoder.valueType();
     }
 
-    public Map<String, Object> event()
+    public RecordType recordType()
     {
-        return event;
+        return bodyDecoder.recordType();
+    }
+
+    public Intent intent()
+    {
+        return bodyDecoder.intent();
+    }
+
+    public Map<String, Object> value()
+    {
+        return value;
     }
 
     public RawMessage getRawMessage()
@@ -98,12 +112,12 @@ public class SubscribedEvent implements BufferReader
 
         bodyDecoder.wrap(responseBuffer, offset + headerDecoder.encodedLength(), headerDecoder.blockLength(), headerDecoder.version());
 
-        final int eventLength = bodyDecoder.eventLength();
-        final int eventOffset = bodyDecoder.limit() + eventHeaderLength();
+        final int eventLength = bodyDecoder.valueLength();
+        final int eventOffset = bodyDecoder.limit() + SubscribedRecordDecoder.valueHeaderLength();
 
         try (InputStream is = new DirectBufferInputStream(responseBuffer, offset + eventOffset, eventLength))
         {
-            event = msgPackHelper.readMsgPack(is);
+            value = msgPackHelper.readMsgPack(is);
         }
         catch (IOException e)
         {

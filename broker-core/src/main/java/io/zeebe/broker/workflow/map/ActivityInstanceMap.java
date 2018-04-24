@@ -17,15 +17,17 @@
  */
 package io.zeebe.broker.workflow.map;
 
-import static org.agrona.BitUtil.*;
+import static org.agrona.BitUtil.SIZE_OF_CHAR;
+import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 import java.nio.ByteOrder;
 
-import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
-import io.zeebe.map.Long2BytesZbMap;
-import io.zeebe.model.bpmn.impl.ZeebeConstraints;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+
+import io.zeebe.map.Long2BytesZbMap;
+import io.zeebe.model.bpmn.impl.ZeebeConstraints;
 
 /**
  * Maps <b>activity instance key</b> to
@@ -49,7 +51,6 @@ public class ActivityInstanceMap implements AutoCloseable
     private final UnsafeBuffer activityIdBuffer = new UnsafeBuffer(new byte[SIZE_OF_ACTIVITY_ID]);
 
     private final Long2BytesZbMap map;
-    private final ZbMapSnapshotSupport<Long2BytesZbMap> snapshotSupport;
 
     private long key;
     private boolean isRead = false;
@@ -57,12 +58,11 @@ public class ActivityInstanceMap implements AutoCloseable
     public ActivityInstanceMap()
     {
         this.map = new Long2BytesZbMap(INDEX_VALUE_SIZE);
-        this.snapshotSupport = new ZbMapSnapshotSupport<>(map);
     }
 
-    public ZbMapSnapshotSupport<Long2BytesZbMap> getSnapshotSupport()
+    public Long2BytesZbMap getMap()
     {
-        return snapshotSupport;
+        return map;
     }
 
     public void reset()

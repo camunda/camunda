@@ -22,46 +22,45 @@ import java.util.stream.Stream;
 import io.zeebe.broker.incident.data.IncidentEvent;
 import io.zeebe.broker.clustering.orchestration.topic.TopicEvent;
 import io.zeebe.broker.task.data.TaskEvent;
-import io.zeebe.broker.topic.Events;
+import io.zeebe.broker.topic.Records;
 import io.zeebe.broker.workflow.data.DeploymentEvent;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.test.util.stream.StreamWrapper;
 
-public class TypedEventStream extends StreamWrapper<LoggedEvent>
+public class RecordStream extends StreamWrapper<LoggedEvent>
 {
 
-    public TypedEventStream(Stream<LoggedEvent> stream)
+    public RecordStream(Stream<LoggedEvent> stream)
     {
         super(stream);
     }
 
-    public TaskEventStream onlyTaskEvents()
+    public TypedRecordStream<TaskEvent> onlyTaskRecords()
     {
-        return new TaskEventStream(
-            filter(Events::isTaskEvent)
+        return new TypedRecordStream<>(
+            filter(Records::isTaskRecord)
             .map(e -> CopiedTypedEvent.toTypedEvent(e, TaskEvent.class)));
     }
 
-    public IncidentEventStream onlyIncidentEvents()
+    public TypedRecordStream<IncidentEvent> onlyIncidentRecords()
     {
-        return new IncidentEventStream(
-            filter(Events::isIncidentEvent)
+        return new TypedRecordStream<>(
+            filter(Records::isIncidentRecord)
             .map(e -> CopiedTypedEvent.toTypedEvent(e, IncidentEvent.class)));
     }
 
 
-    public DeploymentEventStream onlyDeploymentEvents()
+    public TypedRecordStream<DeploymentEvent> onlyDeploymentRecords()
     {
-        return new DeploymentEventStream(
-            filter(Events::isDeploymentEvent)
+        return new TypedRecordStream<>(
+            filter(Records::isDeploymentRecord)
             .map(e -> CopiedTypedEvent.toTypedEvent(e, DeploymentEvent.class)));
     }
 
-
-    public TopicEventStream onlyTopicEvents()
+    public TypedRecordStream<TopicEvent> onlyTopicRecords()
     {
-        return new TopicEventStream(
-            filter(Events::isTopicEvent)
+        return new TypedRecordStream<>(
+            filter(Records::isTopicRecord)
             .map(e -> CopiedTypedEvent.toTypedEvent(e, TopicEvent.class)));
     }
 

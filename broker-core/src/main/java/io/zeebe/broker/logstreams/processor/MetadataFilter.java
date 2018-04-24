@@ -19,7 +19,7 @@ package io.zeebe.broker.logstreams.processor;
 
 import java.util.Objects;
 
-import io.zeebe.protocol.impl.BrokerEventMetadata;
+import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.logstreams.processor.StreamProcessor;
 
 /**
@@ -34,7 +34,7 @@ public interface MetadataFilter
      * @return true to mark the event for processing; false to skip it
      * @throws RuntimeException to signal that processing cannot continue
      */
-    boolean applies(BrokerEventMetadata metadata);
+    boolean applies(RecordMetadata metadata);
 
     default MetadataFilter and(MetadataFilter other)
     {

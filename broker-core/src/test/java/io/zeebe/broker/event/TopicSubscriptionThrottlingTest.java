@@ -27,6 +27,8 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.protocol.clientapi.Intent;
+import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.util.TestUtil;
 
@@ -43,11 +45,10 @@ public class TopicSubscriptionThrottlingTest
     public void openSubscription(int prefetchCapacity)
     {
         apiRule.createCmdRequest()
-            .eventTypeSubscriber()
+            .type(ValueType.SUBSCRIBER, Intent.SUBSCRIBE)
             .command()
                 .put("startPosition", 0)
                 .put("name", "foo")
-                .put("state", "SUBSCRIBE")
                 .put("prefetchCapacity", prefetchCapacity)
                 .done()
             .sendAndAwait();
@@ -92,10 +93,9 @@ public class TopicSubscriptionThrottlingTest
 
         // when
         apiRule.createCmdRequest()
-            .eventTypeSubscription()
+            .type(ValueType.SUBSCRIPTION, Intent.ACKNOWLEDGE)
             .command()
                 .put("name", SUBSCRIPTION_NAME)
-                .put("state", "ACKNOWLEDGE")
                 .put("ackPosition", eventPositions.get(1))
                 .done()
             .sendAndAwait();
@@ -136,9 +136,8 @@ public class TopicSubscriptionThrottlingTest
         for (int i = 0; i < nrOfTasks; i++)
         {
             apiRule.createCmdRequest()
-                .eventTypeTask()
+                .type(ValueType.TASK, Intent.CREATE)
                 .command()
-                    .put("state", "CREATE")
                     .put("type", "theTaskType")
                     .done()
                 .sendAndAwait();

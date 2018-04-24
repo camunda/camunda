@@ -22,5 +22,5 @@ import io.zeebe.util.CloseableSilently;
 
 public interface TypedStreamReader extends CloseableSilently
 {
-    <T extends UnpackedObject> TypedEvent<T> readValue(long position, Class<T> eventClass);
+    <T extends UnpackedObject> TypedRecord<T> readValue(long position, Class<T> eventClass);
 }

@@ -25,10 +25,12 @@ import io.zeebe.broker.clustering.base.topology.TopologyManager;
 import io.zeebe.broker.incident.processor.IncidentStreamProcessor;
 import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
-import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
 import io.zeebe.broker.workflow.processor.WorkflowInstanceStreamProcessor;
-import io.zeebe.servicecontainer.*;
-import io.zeebe.transport.ClientTransport;
+import io.zeebe.servicecontainer.Injector;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceGroupReference;
+import io.zeebe.servicecontainer.ServiceName;
+import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.transport.ServerTransport;
 
 /**
@@ -41,7 +43,6 @@ public class WorkflowStreamProcessingManagerService implements Service<WorkflowS
     protected static final String NAME = "workflow.queue.manager";
 
     private final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
-    private final Injector<ClientTransport> managementApiClientInjector = new Injector<>();
     private final Injector<TopologyManager> topologyManagerInjector = new Injector<>();
 
     private final Injector<StreamProcessorServiceFactory> streamProcessorServiceFactoryInjector = new Injector<>();
@@ -54,7 +55,6 @@ public class WorkflowStreamProcessingManagerService implements Service<WorkflowS
 
     private ServerTransport transport;
     private TopologyManager topologyManager;
-    private ClientTransport managementApiClient;
 
     public void startStreamProcessors(ServiceName<Partition> partitionServiceName, Partition partition)
     {
@@ -65,18 +65,16 @@ public class WorkflowStreamProcessingManagerService implements Service<WorkflowS
     private void installWorkflowStreamProcessor(Partition partition, ServiceName<Partition> partitionServiceName)
     {
         final ServerTransport transport = clientApiTransportInjector.getValue();
-        final CommandResponseWriter responseWriter = new CommandResponseWriter(transport.getOutput());
 
-        final WorkflowInstanceStreamProcessor workflowInstanceStreamProcessor = new WorkflowInstanceStreamProcessor(responseWriter,
-            managementApiClient,
+        final WorkflowInstanceStreamProcessor streamProcessor = new WorkflowInstanceStreamProcessor(
             topologyManager,
             PAYLOAD_CACHE_SIZE);
+        final TypedStreamEnvironment env = new TypedStreamEnvironment(partition.getLogStream(), transport.getOutput());
 
         streamProcessorServiceFactory.createService(partition, partitionServiceName)
-            .processor(workflowInstanceStreamProcessor)
+            .processor(streamProcessor.createStreamProcessor(env))
             .processorId(WORKFLOW_INSTANCE_PROCESSOR_ID)
             .processorName("workflow-instance")
-            .eventFilter(WorkflowInstanceStreamProcessor.eventFilter())
             .build();
     }
 
@@ -98,7 +96,6 @@ public class WorkflowStreamProcessingManagerService implements Service<WorkflowS
         this.transport = clientApiTransportInjector.getValue();
         this.streamProcessorServiceFactory =  streamProcessorServiceFactoryInjector.getValue();
         this.topologyManager = topologyManagerInjector.getValue();
-        this.managementApiClient = managementApiClientInjector.getValue();
     }
 
     @Override
@@ -120,11 +117,6 @@ public class WorkflowStreamProcessingManagerService implements Service<WorkflowS
     public Injector<StreamProcessorServiceFactory> getStreamProcessorServiceFactoryInjector()
     {
         return streamProcessorServiceFactoryInjector;
-    }
-
-    public Injector<ClientTransport> getManagementApiClientInjector()
-    {
-        return managementApiClientInjector;
     }
 
     public Injector<TopologyManager> getTopologyManagerInjector()

@@ -15,25 +15,25 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.util;
+package io.zeebe.broker.system.deployment.processor;
 
-import java.util.stream.Stream;
-
-import io.zeebe.broker.logstreams.processor.TypedEvent;
+import io.zeebe.broker.logstreams.processor.TypedRecord;
+import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
+import io.zeebe.broker.system.deployment.data.PendingDeployments;
 import io.zeebe.broker.workflow.data.DeploymentEvent;
-import io.zeebe.broker.workflow.data.DeploymentState;
-import io.zeebe.test.util.stream.StreamWrapper;
 
-public class DeploymentEventStream extends StreamWrapper<TypedEvent<DeploymentEvent>>
+public class DeploymentRejectedProcessor implements TypedRecordProcessor<DeploymentEvent>
 {
+    private final PendingDeployments pendingDeployments;
 
-    public DeploymentEventStream(Stream<TypedEvent<DeploymentEvent>> wrappedStream)
+    public DeploymentRejectedProcessor(PendingDeployments pendingDeployments)
     {
-        super(wrappedStream);
+        this.pendingDeployments = pendingDeployments;
     }
 
-    public DeploymentEventStream inState(DeploymentState state)
+    @Override
+    public void updateState(TypedRecord<DeploymentEvent> record)
     {
-        return new DeploymentEventStream(filter(e -> e.getValue().getState() == state));
+        pendingDeployments.remove(record.getKey());
     }
 }

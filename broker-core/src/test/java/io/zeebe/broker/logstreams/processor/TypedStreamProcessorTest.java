@@ -20,8 +20,6 @@ package io.zeebe.broker.logstreams.processor;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.servicecontainer.testing.ServiceContainerRule;
-import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -31,16 +29,19 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import io.zeebe.broker.clustering.orchestration.topic.TopicEvent;
-import io.zeebe.broker.clustering.orchestration.topic.TopicState;
-import io.zeebe.broker.topic.Events;
+import io.zeebe.broker.topic.Records;
 import io.zeebe.broker.topic.StreamProcessorControl;
 import io.zeebe.broker.util.TestStreams;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.protocol.clientapi.EventType;
+import io.zeebe.protocol.clientapi.Intent;
+import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.util.buffer.BufferUtil;
+import io.zeebe.util.sched.testing.ActorSchedulerRule;
 
 public class TypedStreamProcessorTest
 {
@@ -82,19 +83,22 @@ public class TypedStreamProcessorTest
         final TypedStreamEnvironment env = new TypedStreamEnvironment(streams.getLogStream(STREAM_NAME), output);
 
         final TypedStreamProcessor streamProcessor = env.newStreamProcessor()
-            .onEvent(EventType.TOPIC_EVENT, TopicState.CREATE, new BatchProcessor())
+            .onCommand(ValueType.TOPIC, Intent.CREATE, new BatchProcessor())
             .build();
 
         final StreamProcessorControl streamProcessorControl = streams.initStreamProcessor(STREAM_NAME, STREAM_PROCESSOR_ID, () -> streamProcessor);
         streamProcessorControl.start();
-        final long firstEventPosition = streams.newEvent(STREAM_NAME).event(createTopic("foo", 1)).write();
+        final long firstEventPosition = streams.newRecord(STREAM_NAME)
+                .event(topic("foo", 1))
+                .recordType(RecordType.COMMAND)
+                .intent(Intent.CREATE)
+                .write();
 
         // when
         streamProcessorControl.unblock();
 
         final LoggedEvent writtenEvent = doRepeatedly(() -> streams.events(STREAM_NAME)
-                .filter(Events::isTopicEvent)
-                .filter(e -> Events.asTopicEvent(e).getState() == TopicState.CREATE_REJECTED)
+                .filter(e -> Records.isRejection(e, ValueType.TOPIC, Intent.CREATE))
                 .findFirst())
             .until(o -> o.isPresent())
             .get();
@@ -106,31 +110,23 @@ public class TypedStreamProcessorTest
         assertThat(writtenEvent.getSourceEventPosition()).isEqualTo(firstEventPosition);
     }
 
-    protected TopicEvent createTopic(String name, int partitions)
+    protected TopicEvent topic(String name, int partitions)
     {
         final TopicEvent event = new TopicEvent();
         event.setName(BufferUtil.wrapString(name));
         event.setPartitions(partitions);
-        event.setState(TopicState.CREATE);
 
         return event;
     }
 
 
-    protected static class BatchProcessor implements TypedEventProcessor<TopicEvent>
+    protected static class BatchProcessor implements TypedRecordProcessor<TopicEvent>
     {
 
         @Override
-        public void processEvent(TypedEvent<TopicEvent> event)
+        public long writeRecord(TypedRecord<TopicEvent> event, TypedStreamWriter writer)
         {
-        }
-
-        @Override
-        public long writeEvent(TypedEvent<TopicEvent> event, TypedStreamWriter writer)
-        {
-            final TopicEvent value = event.getValue();
-            value.setState(TopicState.CREATE_REJECTED);
-            return writer.newBatch().addNewEvent(value).write();
+            return writer.newBatch().addRejection(event).write();
         }
 
     }

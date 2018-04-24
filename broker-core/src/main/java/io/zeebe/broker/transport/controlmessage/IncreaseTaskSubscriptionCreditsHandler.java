@@ -21,7 +21,7 @@ import io.zeebe.broker.task.CreditsRequest;
 import io.zeebe.broker.task.TaskSubscriptionManager;
 import io.zeebe.broker.task.processor.TaskSubscriptionRequest;
 import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.impl.BrokerEventMetadata;
+import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.util.sched.ActorControl;
 import org.agrona.DirectBuffer;
@@ -47,7 +47,7 @@ public class IncreaseTaskSubscriptionCreditsHandler extends AbstractControlMessa
     }
 
     @Override
-    public void handle(final ActorControl actor, final int partitionId, final DirectBuffer buffer, final BrokerEventMetadata eventMetadata)
+    public void handle(final ActorControl actor, final int partitionId, final DirectBuffer buffer, final RecordMetadata eventMetadata)
     {
         final long requestId = eventMetadata.getRequestId();
         final int requestStreamId = eventMetadata.getRequestStreamId();

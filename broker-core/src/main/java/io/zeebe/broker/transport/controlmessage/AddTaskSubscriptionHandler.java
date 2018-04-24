@@ -23,7 +23,7 @@ import io.zeebe.broker.task.TaskSubscriptionManager;
 import io.zeebe.broker.task.processor.TaskSubscription;
 import io.zeebe.broker.task.processor.TaskSubscriptionRequest;
 import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.impl.BrokerEventMetadata;
+import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -46,7 +46,7 @@ public class AddTaskSubscriptionHandler extends AbstractControlMessageHandler
     }
 
     @Override
-    public void handle(final ActorControl actor, final int partitionId, final DirectBuffer buffer, final BrokerEventMetadata eventMetada)
+    public void handle(final ActorControl actor, final int partitionId, final DirectBuffer buffer, final RecordMetadata eventMetada)
     {
         final TaskSubscriptionRequest request = new TaskSubscriptionRequest();
         request.wrap(cloneBuffer(buffer));

@@ -30,9 +30,12 @@ import org.junit.rules.RuleChain;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.protocol.clientapi.ControlMessageType;
+import io.zeebe.protocol.clientapi.Intent;
+import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
-import io.zeebe.test.broker.protocol.clientapi.SubscribedEvent;
+import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
 
 public class CompleteTaskTest
 {
@@ -52,16 +55,14 @@ public class CompleteTaskTest
 
         apiRule.openTaskSubscription(TASK_TYPE).await();
 
-        final SubscribedEvent subscribedEvent = receiveSingleSubscribedEvent();
+        final SubscribedRecord subscribedEvent = receiveSingleSubscribedEvent();
 
         // when
-        final ExecuteCommandResponse response = completeTask(subscribedEvent.key(), subscribedEvent.event());
+        final ExecuteCommandResponse response = completeTask(subscribedEvent.key(), subscribedEvent.value());
 
         // then
-        final Map<String, Object> expectedEvent = new HashMap<>(subscribedEvent.event());
-        expectedEvent.put("state", "COMPLETED");
-
-        assertThat(response.getEvent()).containsAllEntriesOf(expectedEvent);
+        assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
+        assertThat(response.intent()).isEqualTo(Intent.COMPLETED);
     }
 
     @Test
@@ -77,7 +78,8 @@ public class CompleteTaskTest
         final ExecuteCommandResponse response = completeTask(key, event);
 
         // then
-        assertThat(response.getEvent()).containsEntry("state", "COMPLETE_REJECTED");
+        assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+        assertThat(response.intent()).isEqualTo(Intent.COMPLETE);
     }
 
     @Test
@@ -88,34 +90,37 @@ public class CompleteTaskTest
 
         apiRule.openTaskSubscription(TASK_TYPE).await();
 
-        final SubscribedEvent subscribedEvent = receiveSingleSubscribedEvent();
+        final SubscribedRecord subscribedEvent = receiveSingleSubscribedEvent();
 
-        final Map<String, Object> event = subscribedEvent.event();
+        final Map<String, Object> event = subscribedEvent.value();
         event.put("payload", new byte[] {1}); // positive fixnum, i.e. no object
 
         // when
         final ExecuteCommandResponse response = completeTask(subscribedEvent.key(), event);
 
         // then
-        assertThat(response.getEvent()).containsEntry("state", "COMPLETE_REJECTED");
+        assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+        assertThat(response.intent()).isEqualTo(Intent.COMPLETE);
     }
 
     @Test
     public void shouldRejectCompletionIfTaskIsCompleted()
     {
         // given
-        createTask(TASK_TYPE);
+        final ExecuteCommandResponse response2 = createTask(TASK_TYPE);
+        assertThat(response2.recordType()).isEqualTo(RecordType.EVENT);
 
         apiRule.openTaskSubscription(TASK_TYPE).await();
 
-        final SubscribedEvent subscribedEvent = receiveSingleSubscribedEvent();
-        completeTask(subscribedEvent.key(), subscribedEvent.event());
+        final SubscribedRecord subscribedEvent = receiveSingleSubscribedEvent();
+        completeTask(subscribedEvent.key(), subscribedEvent.value());
 
         // when
-        final ExecuteCommandResponse response = completeTask(subscribedEvent.key(), subscribedEvent.event());
+        final ExecuteCommandResponse response = completeTask(subscribedEvent.key(), subscribedEvent.value());
 
         // then
-        assertThat(response.getEvent()).containsEntry("state", "COMPLETE_REJECTED");
+        assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+        assertThat(response.intent()).isEqualTo(Intent.COMPLETE);
     }
 
     @Test
@@ -125,10 +130,11 @@ public class CompleteTaskTest
         final ExecuteCommandResponse task = createTask(TASK_TYPE);
 
         // when
-        final ExecuteCommandResponse response = completeTask(task.key(), task.getEvent());
+        final ExecuteCommandResponse response = completeTask(task.key(), task.getValue());
 
         // then
-        assertThat(response.getEvent()).containsEntry("state", "COMPLETE_REJECTED");
+        assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+        assertThat(response.intent()).isEqualTo(Intent.COMPLETE);
     }
 
     @Test
@@ -150,24 +156,24 @@ public class CompleteTaskTest
                 .done()
             .sendAndAwait();
 
-        final SubscribedEvent subscribedEvent = receiveSingleSubscribedEvent();
-        final Map<String, Object> event = subscribedEvent.event();
+        final SubscribedRecord subscribedEvent = receiveSingleSubscribedEvent();
+        final Map<String, Object> event = subscribedEvent.value();
         event.put("lockOwner", "ms piggy");
 
         // when
         final ExecuteCommandResponse response = completeTask(subscribedEvent.key(), event);
 
         // then
-        assertThat(response.getEvent()).containsEntry("state", "COMPLETE_REJECTED");
+        assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+        assertThat(response.intent()).isEqualTo(Intent.COMPLETE);
     }
 
 
     private ExecuteCommandResponse createTask(String type)
     {
         return apiRule.createCmdRequest()
-            .eventTypeTask()
+            .type(ValueType.TASK, Intent.CREATE)
             .command()
-                .put("state", "CREATE")
                 .put("type", type)
                 .put("retries", 3)
             .done()
@@ -177,16 +183,15 @@ public class CompleteTaskTest
     private ExecuteCommandResponse completeTask(long key, Map<String, Object> event)
     {
         return apiRule.createCmdRequest()
-            .eventTypeTask()
+            .type(ValueType.TASK, Intent.COMPLETE)
             .key(key)
             .command()
                 .putAll(event)
-                .put("state", "COMPLETE")
             .done()
             .sendAndAwait();
     }
 
-    private SubscribedEvent receiveSingleSubscribedEvent()
+    private SubscribedRecord receiveSingleSubscribedEvent()
     {
         waitUntil(() -> apiRule.numSubscribedEventsAvailable() == 1);
         return apiRule.subscribedEvents().findFirst().get();

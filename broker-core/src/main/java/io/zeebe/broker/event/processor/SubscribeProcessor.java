@@ -22,7 +22,8 @@ import io.zeebe.logstreams.log.LogStreamWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.processor.EventProcessor;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.impl.BrokerEventMetadata;
+import io.zeebe.protocol.clientapi.Intent;
+import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
 
@@ -32,7 +33,7 @@ public class SubscribeProcessor implements EventProcessor
     protected final TopicSubscriptionManagementProcessor manager;
 
     protected LoggedEvent event;
-    protected BrokerEventMetadata metadata;
+    protected RecordMetadata metadata;
     protected TopicSubscriberEvent subscriberEvent;
 
     protected EventProcessor state;
@@ -49,7 +50,7 @@ public class SubscribeProcessor implements EventProcessor
         this.manager = manager;
     }
 
-    public void wrap(LoggedEvent event, BrokerEventMetadata metadata, TopicSubscriberEvent subscriberEvent)
+    public void wrap(LoggedEvent event, RecordMetadata metadata, TopicSubscriberEvent subscriberEvent)
     {
         this.event = event;
         this.metadata = metadata;
@@ -215,11 +216,12 @@ public class SubscribeProcessor implements EventProcessor
         @Override
         public long writeEvent(LogStreamWriter writer)
         {
-            metadata.protocolVersion(Protocol.PROTOCOL_VERSION);
+            metadata
+                .protocolVersion(Protocol.PROTOCOL_VERSION)
+                .intent(Intent.SUBSCRIBED);
 
             subscriberEvent
-                .setStartPosition(processor.getStartPosition())
-                .setState(TopicSubscriberState.SUBSCRIBED);
+                .setStartPosition(processor.getStartPosition());
 
             return writer
                 .metadataWriter(metadata)

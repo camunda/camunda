@@ -22,14 +22,18 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.agrona.DirectBuffer;
+import org.junit.rules.ExternalResource;
+
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
+import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
-import io.zeebe.protocol.clientapi.SubscribedEventDecoder;
+import io.zeebe.protocol.clientapi.SubscribedRecordDecoder;
+import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.RemoteAddress;
@@ -38,8 +42,6 @@ import io.zeebe.transport.Transports;
 import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ControlledActorClock;
-import org.agrona.DirectBuffer;
-import org.junit.rules.ExternalResource;
 
 public class ClientApiRule extends ExternalResource
 {
@@ -186,11 +188,10 @@ public class ClientApiRule extends ExternalResource
     {
         return createCmdRequest()
             .partitionId(partitionId)
-            .eventTypeSubscriber()
+            .type(ValueType.SUBSCRIBER, Intent.SUBSCRIBE)
             .command()
                 .put("startPosition", startPosition)
                 .put("name", name)
-                .put("state", "SUBSCRIBE")
                 .done()
             .send();
     }
@@ -257,7 +258,7 @@ public class ClientApiRule extends ExternalResource
      * @return an infinite stream of received subscribed events; make sure to use short-circuiting operations
      *   to reduce it to a finite stream
      */
-    public Stream<SubscribedEvent> subscribedEvents()
+    public Stream<SubscribedRecord> subscribedEvents()
     {
         return incomingMessages().filter(this::isSubscribedEvent)
                 .map(this::asSubscribedEvent);
@@ -278,9 +279,9 @@ public class ClientApiRule extends ExternalResource
         return brokerAddress;
     }
 
-    protected SubscribedEvent asSubscribedEvent(RawMessage message)
+    protected SubscribedRecord asSubscribedEvent(RawMessage message)
     {
-        final SubscribedEvent event = new SubscribedEvent(message);
+        final SubscribedRecord event = new SubscribedRecord(message);
         event.wrap(message.getMessage(), 0, message.getMessage().capacity());
         return event;
     }
@@ -294,7 +295,7 @@ public class ClientApiRule extends ExternalResource
     protected boolean isSubscribedEvent(RawMessage message)
     {
         return message.isMessage() &&
-                isMessageOfType(message.getMessage(), SubscribedEventDecoder.TEMPLATE_ID);
+                isMessageOfType(message.getMessage(), SubscribedRecordDecoder.TEMPLATE_ID);
     }
 
     protected boolean isMessageOfType(DirectBuffer message, int type)
@@ -314,16 +315,15 @@ public class ClientApiRule extends ExternalResource
     {
         final ExecuteCommandResponse response = createCmdRequest()
             .partitionId(Protocol.SYSTEM_PARTITION)
-            .eventType(EventType.TOPIC_EVENT)
+            .type(ValueType.TOPIC, Intent.CREATE)
             .command()
-                .put("state", "CREATE")
                 .put("name", name)
                 .put("partitions", partitions)
                 .put("replicationFactor", replicationFactor)
                 .done()
             .sendAndAwait();
 
-        if (response.getEvent().get("state").equals("CREATING"))
+        if (response.intent() == Intent.CREATING)
         {
             waitForTopic(name, partitions);
         }

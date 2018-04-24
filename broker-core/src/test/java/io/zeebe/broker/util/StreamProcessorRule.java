@@ -19,7 +19,6 @@ package io.zeebe.broker.util;
 
 import java.util.function.Function;
 
-import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
@@ -33,6 +32,9 @@ import io.zeebe.broker.transport.clientapi.BufferingServerOutput;
 import io.zeebe.broker.util.TestStreams.FluentLogWriter;
 import io.zeebe.logstreams.processor.StreamProcessor;
 import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.protocol.clientapi.Intent;
+import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
@@ -85,30 +87,54 @@ public class StreamProcessorRule implements TestRule
         return clock;
     }
 
-    public TypedEventStream events()
+    public RecordStream events()
     {
-        return new TypedEventStream(streams.events(STREAM_NAME));
+        return new RecordStream(streams.events(STREAM_NAME));
     }
 
-    public long writeEvent(long key, UnpackedObject value)
+    public long writeEvent(long key, Intent intent, UnpackedObject value)
     {
-        return streams.newEvent(STREAM_NAME)
+        return streams.newRecord(STREAM_NAME)
+            .recordType(RecordType.EVENT)
             .key(key)
+            .intent(intent)
             .event(value)
             .write();
     }
 
-    public FluentLogWriter newEvent()
+    public long writeEvent(Intent intent, UnpackedObject value)
     {
-        return streams.newEvent(STREAM_NAME);
-    }
-
-    public long writeEvent(UnpackedObject value)
-    {
-        return streams.newEvent(STREAM_NAME)
+        return streams.newRecord(STREAM_NAME)
+            .recordType(RecordType.EVENT)
+            .intent(intent)
             .event(value)
             .write();
     }
+
+    public long writeCommand(long key, Intent intent, UnpackedObject value)
+    {
+        return streams.newRecord(STREAM_NAME)
+            .recordType(RecordType.COMMAND)
+            .key(key)
+            .intent(intent)
+            .event(value)
+            .write();
+    }
+
+    public long writeCommand(Intent intent, UnpackedObject value)
+    {
+        return streams.newRecord(STREAM_NAME)
+            .recordType(RecordType.COMMAND)
+            .intent(intent)
+            .event(value)
+            .write();
+    }
+
+    public FluentLogWriter newRecord()
+    {
+        return streams.newRecord(STREAM_NAME);
+    }
+
 
     public void truncateLog(long position)
     {
@@ -131,7 +157,7 @@ public class StreamProcessorRule implements TestRule
             streams = new TestStreams(tempFolder.getRoot(), closeables, serviceContainerRule.get(), actorSchedulerRule.get());
             streams.createLogStream(STREAM_NAME);
 
-            streams.newEvent(STREAM_NAME) // TODO: workaround for https://github.com/zeebe-io/zeebe/issues/478
+            streams.newRecord(STREAM_NAME) // TODO: workaround for https://github.com/zeebe-io/zeebe/issues/478
                 .event(new UnpackedObject())
                 .write();
 

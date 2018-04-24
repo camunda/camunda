@@ -69,7 +69,7 @@ public class UpdatePayloadTest
 
         brokerRule.onExecuteCommandRequest().respondWith()
             .key(r -> r.key())
-            .event()
+            .value()
                 .put("state", "PAYLOAD_UPDATED")
                 .done()
             .register();
@@ -101,7 +101,7 @@ public class UpdatePayloadTest
 
         brokerRule.onExecuteCommandRequest().respondWith()
             .key(r -> r.key())
-            .event()
+            .value()
                 .allOf(r -> r.getCommand())
                 .put("state", "UPDATE_PAYLOAD_REJECTED")
                 .done()

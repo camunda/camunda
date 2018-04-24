@@ -20,13 +20,19 @@ import static io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder.partition
 
 import java.util.Map;
 
-import io.zeebe.protocol.clientapi.*;
-import io.zeebe.test.broker.protocol.MsgPackHelper;
-import io.zeebe.transport.*;
-import io.zeebe.util.buffer.BufferWriter;
-import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+
+import io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder;
+import io.zeebe.protocol.clientapi.Intent;
+import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.test.broker.protocol.MsgPackHelper;
+import io.zeebe.transport.ClientOutput;
+import io.zeebe.transport.ClientResponse;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.util.buffer.BufferWriter;
+import io.zeebe.util.sched.future.ActorFuture;
 
 public class ExecuteCommandRequest implements BufferWriter
 {
@@ -39,7 +45,8 @@ public class ExecuteCommandRequest implements BufferWriter
 
     protected int partitionId = partitionIdNullValue();
     protected long key = keyNullValue();
-    protected EventType eventType = EventType.NULL_VAL;
+    protected ValueType valueType = ValueType.NULL_VAL;
+    private Intent intent = Intent.NULL_VAL;
     protected byte[] encodedCmd;
 
     protected ActorFuture<ClientResponse> responseFuture;
@@ -63,9 +70,15 @@ public class ExecuteCommandRequest implements BufferWriter
         return this;
     }
 
-    public ExecuteCommandRequest eventType(final EventType eventType)
+    public ExecuteCommandRequest valueType(final ValueType valueType)
     {
-        this.eventType = eventType;
+        this.valueType = valueType;
+        return this;
+    }
+
+    public ExecuteCommandRequest intent(Intent intent)
+    {
+        this.intent = intent;
         return this;
     }
 
@@ -113,7 +126,7 @@ public class ExecuteCommandRequest implements BufferWriter
     {
         return MessageHeaderEncoder.ENCODED_LENGTH +
                 ExecuteCommandRequestEncoder.BLOCK_LENGTH +
-                ExecuteCommandRequestEncoder.commandHeaderLength() +
+                ExecuteCommandRequestEncoder.valueHeaderLength() +
                 encodedCmd.length;
     }
 
@@ -129,8 +142,9 @@ public class ExecuteCommandRequest implements BufferWriter
         requestEncoder.wrap(buffer, offset + messageHeaderEncoder.encodedLength())
             .partitionId(partitionId)
             .key(key)
-            .eventType(eventType)
-            .putCommand(encodedCmd, 0, encodedCmd.length);
+            .valueType(valueType)
+            .intent(intent)
+            .putValue(encodedCmd, 0, encodedCmd.length);
     }
 
 }

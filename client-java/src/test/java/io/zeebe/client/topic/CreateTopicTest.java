@@ -54,7 +54,7 @@ public class CreateTopicTest
             .respondWith()
             .key(123)
             .position(456)
-            .event()
+            .value()
               .allOf(ExecuteCommandRequest::getCommand)
               .put("state", "CREATING")
               .done()

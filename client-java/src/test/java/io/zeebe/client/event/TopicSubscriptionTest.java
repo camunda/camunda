@@ -879,7 +879,7 @@ public class TopicSubscriptionTest
         final ResponseController responseController = broker.onExecuteCommandRequest(EventType.SUBSCRIBER_EVENT, "SUBSCRIBE")
             .respondWith()
             .key(subscriberKey)
-            .event()
+            .value()
                 .allOf((r) -> r.getCommand())
                 .put("state", "SUBSCRIBED")
                 .done()

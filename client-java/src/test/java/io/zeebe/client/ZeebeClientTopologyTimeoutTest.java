@@ -98,7 +98,7 @@ public class ZeebeClientTopologyTimeoutTest
         broker.onExecuteCommandRequest(EventType.TASK_EVENT, "COMPLETE")
             .respondWith()
             .key(123)
-            .event()
+            .value()
               .allOf((r) -> r.getCommand())
               .put("state", "COMPLETED")
               .done()

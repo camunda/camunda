@@ -23,17 +23,18 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-import io.zeebe.broker.Loggers;
-import io.zeebe.broker.clustering.orchestration.topic.TopicEvent;
-import io.zeebe.broker.clustering.orchestration.topic.TopicState;
-import io.zeebe.broker.logstreams.processor.TypedEvent;
-import io.zeebe.broker.logstreams.processor.TypedEventProcessor;
-import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
-import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 
-public class TopicCreateProcessor implements TypedEventProcessor<TopicEvent>
+import io.zeebe.broker.Loggers;
+import io.zeebe.broker.clustering.orchestration.topic.TopicEvent;
+import io.zeebe.broker.logstreams.processor.TypedRecord;
+import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
+import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
+import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
+import io.zeebe.protocol.clientapi.Intent;
+
+public class TopicCreateProcessor implements TypedRecordProcessor<TopicEvent>
 {
     private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
 
@@ -51,61 +52,71 @@ public class TopicCreateProcessor implements TypedEventProcessor<TopicEvent>
     }
 
     @Override
-    public void processEvent(final TypedEvent<TopicEvent> event)
+    public void processRecord(final TypedRecord<TopicEvent> command)
     {
         isCreating = false;
 
-        final TopicEvent topicEvent = event.getValue();
+        final TopicEvent topicEvent = command.getValue();
         final DirectBuffer topicName = topicEvent.getName();
 
         if (topicExists.test(topicName))
         {
             LOG.warn("Rejecting topic {} creation as a topic with the same name already exists", bufferAsString(topicName));
-            topicEvent.setState(TopicState.CREATE_REJECTED);
         }
         else if (topicEvent.getPartitions() < 1)
         {
             LOG.warn("Rejecting topic {} creation as a topic has to have at least one partition", bufferAsString(topicName));
-            topicEvent.setState(TopicState.CREATE_REJECTED);
         }
         else if (topicEvent.getReplicationFactor() < 1)
         {
             LOG.warn("Rejecting topic {} creation as a topic has to have at least one replication", bufferAsString(topicName));
-            topicEvent.setState(TopicState.CREATE_REJECTED);
         }
         else
         {
             LOG.info("Creating topic {} with partition count {} and replication factor {}", bufferAsString(topicName), topicEvent.getPartitions(), topicEvent.getReplicationFactor());
             isCreating = true;
-            topicEvent.setState(TopicState.CREATING);
         }
     }
 
     @Override
-    public boolean executeSideEffects(final TypedEvent<TopicEvent> event, final TypedResponseWriter responseWriter)
-    {
-        final boolean written = responseWriter.write(event);
-
-        if (written && isCreating)
-        {
-            notifyListeners.accept(event.getValue().getName());
-        }
-
-        return written;
-    }
-
-    @Override
-    public long writeEvent(final TypedEvent<TopicEvent> event, final TypedStreamWriter writer)
-    {
-        return writer.writeFollowupEvent(event.getKey(), event.getValue());
-    }
-
-    @Override
-    public void updateState(final TypedEvent<TopicEvent> event)
+    public boolean executeSideEffects(final TypedRecord<TopicEvent> command, final TypedResponseWriter responseWriter)
     {
         if (isCreating)
         {
-            addTopic.accept(event.getKey(), event.getValue());
+            final boolean written = responseWriter.writeEvent(Intent.CREATING, command);
+
+            if (written)
+            {
+                notifyListeners.accept(command.getValue().getName());
+            }
+
+            return written;
+        }
+        else
+        {
+            return responseWriter.writeRejection(command);
+        }
+    }
+
+    @Override
+    public long writeRecord(final TypedRecord<TopicEvent> command, final TypedStreamWriter writer)
+    {
+        if (isCreating)
+        {
+            return writer.writeFollowUpEvent(command.getKey(), Intent.CREATING, command.getValue());
+        }
+        else
+        {
+            return writer.writeRejection(command);
+        }
+    }
+
+    @Override
+    public void updateState(final TypedRecord<TopicEvent> command)
+    {
+        if (isCreating)
+        {
+            addTopic.accept(command.getKey(), command.getValue());
         }
     }
 }

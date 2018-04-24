@@ -15,19 +15,18 @@
  */
 package io.zeebe.test.broker.protocol.brokerapi;
 
-import static io.zeebe.protocol.clientapi.ExecuteCommandRequestDecoder.commandHeaderLength;
-
 import java.util.Map;
 
 import org.agrona.DirectBuffer;
 import org.agrona.io.DirectBufferInputStream;
-import io.zeebe.protocol.clientapi.EventType;
-import io.zeebe.protocol.clientapi.ExecuteCommandRequestDecoder;
-import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
-import io.zeebe.test.broker.protocol.MsgPackHelper;
-import io.zeebe.util.buffer.BufferReader;
 
+import io.zeebe.protocol.clientapi.ExecuteCommandRequestDecoder;
+import io.zeebe.protocol.clientapi.Intent;
+import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.transport.RemoteAddress;
+import io.zeebe.util.buffer.BufferReader;
 
 public class ExecuteCommandRequest implements BufferReader
 {
@@ -61,9 +60,14 @@ public class ExecuteCommandRequest implements BufferReader
         return bodyDecoder.position();
     }
 
-    public EventType eventType()
+    public ValueType valueType()
     {
-        return bodyDecoder.eventType();
+        return bodyDecoder.valueType();
+    }
+
+    public Intent intent()
+    {
+        return bodyDecoder.intent();
     }
 
     public Map<String, Object> getCommand()
@@ -83,8 +87,8 @@ public class ExecuteCommandRequest implements BufferReader
 
         bodyDecoder.wrap(buffer, offset + headerDecoder.encodedLength(), headerDecoder.blockLength(), headerDecoder.version());
 
-        final int commandLength = bodyDecoder.commandLength();
-        final int commandOffset = bodyDecoder.limit() + commandHeaderLength();
+        final int commandLength = bodyDecoder.valueLength();
+        final int commandOffset = bodyDecoder.limit() + ExecuteCommandRequestDecoder.valueHeaderLength();
 
         command = msgPackHelper.readMsgPack(new DirectBufferInputStream(
                 buffer,

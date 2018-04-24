@@ -23,17 +23,24 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.agrona.DirectBuffer;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
+
 import io.zeebe.broker.clustering.api.CreatePartitionRequest;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ControlMessageType;
+import io.zeebe.protocol.clientapi.Intent;
+import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ControlMessageResponse;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
@@ -63,14 +70,16 @@ public class CreateTopicTest
         final ExecuteCommandResponse response = apiRule.createTopic(topicName, 2);
 
         // then
-        assertThat(response.getEvent())
+        assertThat(response.getValue())
             .containsExactly(
-                entry("state", "CREATING"),
                 entry("name", topicName),
                 entry("partitions", 2),
                 entry("replicationFactor", 1),
                 entry("partitionIds", Collections.EMPTY_LIST)
             );
+
+        assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
+        assertThat(response.intent()).isEqualTo(Intent.CREATING);
     }
 
     @Test
@@ -80,14 +89,16 @@ public class CreateTopicTest
         final ExecuteCommandResponse response = apiRule.createTopic(Protocol.SYSTEM_TOPIC, 2);
 
         // then
-        assertThat(response.getEvent())
+        assertThat(response.getValue())
             .containsExactly(
-                entry("state", "CREATE_REJECTED"),
                 entry("name", Protocol.SYSTEM_TOPIC),
                 entry("partitions", 2),
                 entry("replicationFactor", 1),
                 entry("partitionIds", Collections.EMPTY_LIST)
             );
+
+        assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+        assertThat(response.intent()).isEqualTo(Intent.CREATE);
     }
 
     @Test
@@ -101,14 +112,16 @@ public class CreateTopicTest
         final ExecuteCommandResponse response = apiRule.createTopic(topicName, 2);
 
         // then
-        assertThat(response.getEvent())
+        assertThat(response.getValue())
             .containsExactly(
-                entry("state", "CREATE_REJECTED"),
                 entry("name", topicName),
                 entry("partitions", 2),
                 entry("replicationFactor", 1),
                 entry("partitionIds", Collections.EMPTY_LIST)
             );
+
+        assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+        assertThat(response.intent()).isEqualTo(Intent.CREATE);
     }
 
     @Test
@@ -122,14 +135,16 @@ public class CreateTopicTest
         final ExecuteCommandResponse response = apiRule.createTopic(topicName, numberOfPartitions);
 
         // then
-        assertThat(response.getEvent())
+        assertThat(response.getValue())
             .containsExactly(
-                entry("state", "CREATE_REJECTED"),
                 entry("name", topicName),
                 entry("partitions", numberOfPartitions),
                 entry("replicationFactor", 1),
                 entry("partitionIds", Collections.EMPTY_LIST)
             );
+
+        assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+        assertThat(response.intent()).isEqualTo(Intent.CREATE);
     }
 
     @Test
@@ -143,9 +158,8 @@ public class CreateTopicTest
         final ExecuteCommandResponse response = apiRule.createTopic(topicName, numberOfPartitions);
 
         // then
-        assertThat(response.getEvent())
+        assertThat(response.getValue())
             .containsExactly(
-                entry("state", "CREATE_REJECTED"),
                 entry("name", topicName),
                 entry("partitions", numberOfPartitions),
                 entry("replicationFactor", 1),
@@ -163,9 +177,11 @@ public class CreateTopicTest
         final ExecuteCommandResponse response = apiRule.createTopic(topicName, 1, 0);
 
         // then
-        assertThat(response.getEvent())
+        assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+        assertThat(response.intent()).isEqualTo(Intent.CREATE);
+
+        assertThat(response.getValue())
             .containsExactly(
-                entry("state", "CREATE_REJECTED"),
                 entry("name", topicName),
                 entry("partitions", 1),
                 entry("replicationFactor", 0),
@@ -183,14 +199,19 @@ public class CreateTopicTest
         final ExecuteCommandResponse response = apiRule.createTopic(topicName, 1, -1);
 
         // then
-        assertThat(response.getEvent())
+        assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+        assertThat(response.intent()).isEqualTo(Intent.CREATE);
+
+        assertThat(response.getValue())
             .containsExactly(
-                entry("state", "CREATE_REJECTED"),
                 entry("name", topicName),
                 entry("partitions", 1),
                 entry("replicationFactor", -1),
                 entry("partitionIds", Collections.EMPTY_LIST)
             );
+
+        assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+        assertThat(response.intent()).isEqualTo(Intent.CREATE);
     }
 
     @Test
@@ -205,14 +226,16 @@ public class CreateTopicTest
         final ExecuteCommandResponse response = apiRule.createTopic(topicName, 1);
 
         // then this is successful
-        assertThat(response.getEvent())
+        assertThat(response.getValue())
             .containsExactly(
-                entry("state", "CREATING"),
                 entry("name", topicName),
                 entry("partitions", 1),
                 entry("replicationFactor", 1),
                 entry("partitionIds", Collections.EMPTY_LIST)
             );
+
+        assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
+        assertThat(response.intent()).isEqualTo(Intent.CREATING);
     }
 
     @Test

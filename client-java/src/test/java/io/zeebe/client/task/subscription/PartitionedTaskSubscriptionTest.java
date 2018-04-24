@@ -141,7 +141,7 @@ public class PartitionedTaskSubscriptionTest
             .subscriberKey(subscriberKey1)
             .key(key1)
             .subscriptionType(SubscriptionType.TASK_SUBSCRIPTION)
-            .event().done()
+            .value().done()
             .push(clientAddressFromBroker1);
 
         final long key2 = 4;
@@ -151,7 +151,7 @@ public class PartitionedTaskSubscriptionTest
             .subscriberKey(subscriberKey1)
             .key(key2)
             .subscriptionType(SubscriptionType.TASK_SUBSCRIPTION)
-            .event().done()
+            .value().done()
             .push(clientAddressFromBroker2);
 
         // then
@@ -186,7 +186,7 @@ public class PartitionedTaskSubscriptionTest
             .subscriberKey(subscriberKey1)
             .key(key1)
             .subscriptionType(SubscriptionType.TASK_SUBSCRIPTION)
-            .event().done()
+            .value().done()
             .push(clientAddressFromBroker1);
 
         final long key2 = 4;
@@ -196,7 +196,7 @@ public class PartitionedTaskSubscriptionTest
             .subscriberKey(subscriberKey1)
             .key(key2)
             .subscriptionType(SubscriptionType.TASK_SUBSCRIPTION)
-            .event().done()
+            .value().done()
             .push(clientAddressFromBroker2);
 
         waitUntil(() -> ((SubscriberGroup<?>) subscription).size() == 2);

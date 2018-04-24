@@ -26,6 +26,9 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.protocol.clientapi.Intent;
+import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 
@@ -43,9 +46,8 @@ public class CreateTaskTest
     {
         // when
         final ExecuteCommandResponse resp = apiRule.createCmdRequest()
-            .eventTypeTask()
+            .type(ValueType.TASK, Intent.CREATE)
             .command()
-                .put("state", "CREATE")
                 .put("type", "theTaskType")
                 .done()
             .sendAndAwait();
@@ -54,9 +56,10 @@ public class CreateTaskTest
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
         assertThat(resp.position()).isGreaterThanOrEqualTo(0L);
         assertThat(resp.partitionId()).isEqualTo(apiRule.getDefaultPartitionId());
+        assertThat(resp.recordType()).isEqualTo(RecordType.EVENT);
+        assertThat(resp.intent()).isEqualTo(Intent.CREATED);
 
-        final Map<String, Object> event = resp.getEvent();
-        assertThat(event).containsEntry("state", "CREATED");
+        final Map<String, Object> event = resp.getValue();
         assertThat(event).containsEntry("type", "theTaskType");
     }
 }

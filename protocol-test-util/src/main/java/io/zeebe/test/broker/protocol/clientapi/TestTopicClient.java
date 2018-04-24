@@ -25,20 +25,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 
 import org.agrona.DirectBuffer;
 
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.EventType;
+import io.zeebe.protocol.clientapi.Intent;
+import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.SubscriptionType;
+import io.zeebe.protocol.clientapi.ValueType;
 
 public class TestTopicClient
 {
-    public static final String PROP_STATE = "state";
-
     // workflow related properties
 
     public static final String PROP_WORKFLOW_BPMN_PROCESS_ID = "bpmnProcessId";
@@ -68,9 +67,9 @@ public class TestTopicClient
     {
         final ExecuteCommandResponse response = deployWithResponse(topic, workflow);
 
-        assertThat(response.getEvent().get(PROP_STATE))
-            .withFailMessage("Deployment failed: %s", response.getEvent().get("errorMessage"))
-            .isEqualTo("CREATED");
+        assertThat(response.recordType())
+            .withFailMessage("Deployment failed: %s", response.getValue().get("errorMessage"))
+            .isEqualTo(RecordType.EVENT);
 
         return response.key();
     }
@@ -91,9 +90,8 @@ public class TestTopicClient
 
         return apiRule.createCmdRequest()
                 .partitionId(Protocol.SYSTEM_PARTITION)
-                .eventType(EventType.DEPLOYMENT_EVENT)
+                .type(ValueType.DEPLOYMENT, Intent.CREATE)
                 .command()
-                    .put(PROP_STATE, "CREATE")
                     .put("topicName", topic)
                     .put(PROP_WORKFLOW_RESOURCES, Collections.singletonList(deploymentResource))
                     .put("resouceType", resourceType)
@@ -105,10 +103,9 @@ public class TestTopicClient
     {
         return apiRule.createCmdRequest()
                       .partitionId(partitionId)
-                      .eventTypeWorkflow()
+                      .type(ValueType.WORKFLOW_INSTANCE, Intent.CREATE)
                       .command()
-                      .put(PROP_STATE, "CREATE_WORKFLOW_INSTANCE")
-                      .put(PROP_WORKFLOW_BPMN_PROCESS_ID, bpmnProcessId)
+                          .put(PROP_WORKFLOW_BPMN_PROCESS_ID, bpmnProcessId)
                       .done()
                       .sendAndAwait();
     }
@@ -130,7 +127,8 @@ public class TestTopicClient
     {
         final ExecuteCommandResponse response = createWorkflowInstanceWithResponse(bpmnProcessId);
 
-        assertThat(response.getEvent().get(PROP_STATE)).isEqualTo("WORKFLOW_INSTANCE_CREATED");
+        assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
+        assertThat(response.intent()).isEqualTo(Intent.CREATED);
         assertThat(response.position()).isGreaterThanOrEqualTo(0L);
 
         return response.key();
@@ -145,15 +143,15 @@ public class TestTopicClient
     {
         final ExecuteCommandResponse response = apiRule.createCmdRequest()
                 .partitionId(partitionId)
-                .eventTypeWorkflow()
+                .type(ValueType.WORKFLOW_INSTANCE, Intent.CREATE)
                 .command()
-                    .put(PROP_STATE, "CREATE_WORKFLOW_INSTANCE")
                     .put(PROP_WORKFLOW_BPMN_PROCESS_ID, bpmnProcessId)
                     .put(PROP_WORKFLOW_PAYLOAD, payload)
                 .done()
                 .sendAndAwait();
 
-        assertThat(response.getEvent().get(PROP_STATE)).isEqualTo("WORKFLOW_INSTANCE_CREATED");
+        assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
+        assertThat(response.intent()).isEqualTo(Intent.CREATED);
 
         return response.key();
     }
@@ -161,9 +159,8 @@ public class TestTopicClient
     public ExecuteCommandResponse createTask(String type)
     {
         return apiRule.createCmdRequest()
-                .eventTypeTask()
+                .type(ValueType.TASK, Intent.CREATE)
                 .command()
-                    .put("state", "CREATE")
                     .put("type", type)
                     .put("retries", 3)
                 .done()
@@ -188,20 +185,20 @@ public class TestTopicClient
     @SuppressWarnings("rawtypes")
     public void completeTaskOfWorkflowInstance(String taskType, long workflowInstanceKey, byte[] payload)
     {
-        completeTask(taskType, payload, e -> ((Map) e.event().get("headers")).get(PROP_WORKFLOW_INSTANCE_KEY).equals(workflowInstanceKey));
+        completeTask(taskType, payload, e -> ((Map) e.value().get("headers")).get(PROP_WORKFLOW_INSTANCE_KEY).equals(workflowInstanceKey));
     }
 
-    public void completeTask(String taskType, byte[] payload, Predicate<SubscribedEvent> taskEventFilter)
+    public void completeTask(String taskType, byte[] payload, Predicate<SubscribedRecord> taskEventFilter)
     {
         apiRule.openTaskSubscription(partitionId, taskType, 1000L).await();
 
-        final SubscribedEvent taskEvent = apiRule
+        final SubscribedRecord taskEvent = apiRule
             .subscribedEvents()
-            .filter(taskEvents("LOCKED").and(taskType(taskType)).and(taskEventFilter))
+            .filter(taskRecords(Intent.LOCKED).and(taskType(taskType)).and(taskEventFilter))
             .findFirst()
             .orElseThrow(() -> new AssertionError("Expected task locked event but not found."));
 
-        final Map<String, Object> event = new HashMap<>(taskEvent.event());
+        final Map<String, Object> event = new HashMap<>(taskEvent.value());
         if (payload != null)
         {
             event.put("payload", payload);
@@ -213,17 +210,17 @@ public class TestTopicClient
 
         final ExecuteCommandResponse response = completeTask(taskEvent.key(), event);
 
-        assertThat(response.getEvent().get(PROP_STATE)).isEqualTo("COMPLETED");
+        assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
+        assertThat(response.intent()).isEqualTo(Intent.COMPLETED);
     }
 
     public ExecuteCommandResponse completeTask(long key, Map<String, Object> event)
     {
         return apiRule.createCmdRequest()
-            .eventTypeTask()
+            .type(ValueType.TASK, Intent.COMPLETE)
             .key(key)
             .command()
                 .putAll(event)
-                .put("state", "COMPLETE")
             .done()
             .sendAndAwait();
     }
@@ -231,11 +228,10 @@ public class TestTopicClient
     public ExecuteCommandResponse failTask(long key, Map<String, Object> event)
     {
         return apiRule.createCmdRequest()
-            .eventTypeTask()
+            .type(ValueType.TASK, Intent.FAIL)
             .key(key)
             .command()
                 .putAll(event)
-                .put("state", "FAIL")
             .done()
             .sendAndAwait();
     }
@@ -243,11 +239,10 @@ public class TestTopicClient
     public ExecuteCommandResponse updateTaskRetries(long key, Map<String, Object> event)
     {
         return apiRule.createCmdRequest()
-            .eventTypeTask()
+            .type(ValueType.TASK, Intent.UPDATE_RETRIES)
             .key(key)
             .command()
                 .putAll(event)
-                .put("state", "UPDATE_RETRIES")
             .done()
             .sendAndAwait();
     }
@@ -256,23 +251,33 @@ public class TestTopicClient
      * @return an infinite stream of received subscribed events; make sure to use short-circuiting operations
      *   to reduce it to a finite stream
      */
-    public Stream<SubscribedEvent> receiveEvents(Predicate<SubscribedEvent> filter)
+    public SubscribedRecordStream receiveEvents()
+    {
+        return receiveRecords()
+                .onlyEvents();
+    }
+
+    public SubscribedRecordStream receiveCommands()
+    {
+        return receiveRecords()
+                .onlyCommands();
+    }
+
+    public SubscribedRecordStream receiveRejections()
+    {
+        return receiveRecords()
+                .onlyRejections();
+    }
+
+    public SubscribedRecordStream receiveRecords()
     {
         ensureOpenTopicSubscription();
 
-        return apiRule
+        return new SubscribedRecordStream(apiRule
                 .moveMessageStreamToHead()
                 .subscribedEvents()
                 .filter(s -> s.subscriptionType() == SubscriptionType.TOPIC_SUBSCRIPTION)
-                .filter(s -> s.partitionId() == partitionId)
-                .filter(filter);
-    }
-
-    public SubscribedEvent receiveSingleEvent(Predicate<SubscribedEvent> filter)
-    {
-        return receiveEvents(filter)
-                .findFirst()
-                .orElseThrow(() -> new AssertionError("no event received"));
+                .filter(s -> s.partitionId() == partitionId));
     }
 
     private void ensureOpenTopicSubscription()
@@ -286,64 +291,78 @@ public class TestTopicClient
         }
     }
 
-    public static Predicate<SubscribedEvent> state(String eventType)
+    public static Predicate<SubscribedRecord> intent(Intent intent)
     {
-        return e -> e.event().get(PROP_STATE).equals(eventType);
+        return e -> e.intent() == intent;
     }
 
-    public static Predicate<SubscribedEvent> workflowInstanceKey(long workflowInstanceKey)
+    public static Predicate<SubscribedRecord> recordType(RecordType recordType)
     {
-        return e -> e.event().get(PROP_WORKFLOW_INSTANCE_KEY).equals(workflowInstanceKey);
+        return e -> e.recordType() == recordType;
     }
 
-    public static Predicate<SubscribedEvent> workflowInstanceEvents()
+    public static Predicate<SubscribedRecord> workflowInstanceKey(long workflowInstanceKey)
     {
-        return e -> e.eventType() == EventType.WORKFLOW_INSTANCE_EVENT;
+        return e -> e.value().get(PROP_WORKFLOW_INSTANCE_KEY).equals(workflowInstanceKey);
     }
 
-    public static Predicate<SubscribedEvent> workflowInstanceEvents(String eventType)
+    public static Predicate<SubscribedRecord> workflowInstanceRecords()
     {
-        return workflowInstanceEvents().and(state(eventType));
+        return e -> e.valueType() == ValueType.WORKFLOW_INSTANCE;
     }
 
-    public static Predicate<SubscribedEvent> workflowInstanceEvents(String eventType, long workflowInstanceKey)
+    public static Predicate<SubscribedRecord> workflowInstanceRecords(Intent intent)
     {
-        return workflowInstanceEvents(eventType).and(workflowInstanceKey(workflowInstanceKey));
+        return workflowInstanceRecords().and(intent(intent));
     }
 
-    public static Predicate<SubscribedEvent> taskEvents()
+    public static Predicate<SubscribedRecord> workflowInstanceEvents(Intent intent)
     {
-        return e -> e.eventType() == EventType.TASK_EVENT;
+        return workflowInstanceRecords().and(recordType(RecordType.EVENT)).and(intent(intent));
     }
 
-    public static Predicate<SubscribedEvent> taskEvents(String eventType)
+    public static Predicate<SubscribedRecord> workflowInstanceRejections(Intent intent)
     {
-        return taskEvents().and(state(eventType));
+        return workflowInstanceRecords().and(recordType(RecordType.COMMAND_REJECTION)).and(intent(intent));
     }
 
-    public static Predicate<SubscribedEvent> taskType(String taskType)
+    public static Predicate<SubscribedRecord> workflowInstanceRecords(Intent intent, long workflowInstanceKey)
     {
-        return e -> taskType.equals(e.event().get("type"));
+        return workflowInstanceRecords(intent).and(workflowInstanceKey(workflowInstanceKey));
     }
 
-    public static Predicate<SubscribedEvent> incidentEvents()
+    public static Predicate<SubscribedRecord> taskRecords()
     {
-        return e -> e.eventType() == EventType.INCIDENT_EVENT;
+        return e -> e.valueType() == ValueType.TASK;
     }
 
-    public static Predicate<SubscribedEvent> incidentEvents(String eventType)
+    public static Predicate<SubscribedRecord> taskRecords(Intent intent)
     {
-        return incidentEvents().and(state(eventType));
+        return taskRecords().and(intent(intent));
     }
 
-    public static Predicate<SubscribedEvent> incidentEvents(String eventType, long workflowInstanceKey)
+    public static Predicate<SubscribedRecord> taskType(String taskType)
     {
-        return incidentEvents(eventType).and(workflowInstanceKey(workflowInstanceKey));
+        return e -> taskType.equals(e.value().get("type"));
     }
 
-    public static Predicate<SubscribedEvent> workflowEvents()
+    public static Predicate<SubscribedRecord> incidentEvents()
     {
-        return e -> e.eventType() == EventType.WORKFLOW_EVENT;
+        return e -> e.valueType() == ValueType.INCIDENT;
     }
 
+    public static Predicate<SubscribedRecord> incidentRecords(Intent intent)
+    {
+        return incidentEvents().and(intent(intent));
+    }
+
+    public static Predicate<SubscribedRecord> incidentRecords(Intent intent, long workflowInstanceKey)
+    {
+        return incidentRecords(intent).and(workflowInstanceKey(workflowInstanceKey));
+    }
+
+    public static Predicate<SubscribedRecord> workflowRecords(Intent intent)
+    {
+        return workflowRecords().and(intent(intent));
+    }
 }

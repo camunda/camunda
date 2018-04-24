@@ -27,11 +27,11 @@ import java.util.stream.Collectors;
 import org.junit.Rule;
 import org.junit.Test;
 
-import io.zeebe.broker.logstreams.processor.TypedEvent;
+import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.task.TaskQueueManagerService;
 import io.zeebe.broker.task.data.TaskEvent;
-import io.zeebe.broker.task.data.TaskState;
 import io.zeebe.broker.util.StreamProcessorRule;
+import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.util.buffer.BufferUtil;
 
 public class TaskLockExpirationStreamProcessorTest
@@ -39,11 +39,10 @@ public class TaskLockExpirationStreamProcessorTest
     @Rule
     public StreamProcessorRule rule = new StreamProcessorRule();
 
-    private TaskEvent taskLocked()
+    private TaskEvent task()
     {
         final TaskEvent event = new TaskEvent();
 
-        event.setState(TaskState.LOCKED);
         event.setType(BufferUtil.wrapString("foo"));
 
         return event;
@@ -55,22 +54,20 @@ public class TaskLockExpirationStreamProcessorTest
         // given
         rule.getClock().pinCurrentTime();
 
-        rule.runStreamProcessor(e -> new TaskExpireLockStreamProcessor(
-                e.buildStreamReader(),
-                e.buildStreamWriter())
+        rule.runStreamProcessor(e -> new TaskExpireLockStreamProcessor()
             .createStreamProcessor(e));
 
-        rule.writeEvent(1, taskLocked());
-        rule.writeEvent(2, taskLocked());
+        rule.writeEvent(1, Intent.LOCKED, task());
+        rule.writeEvent(2, Intent.LOCKED, task());
 
         // when
         rule.getClock().addTime(TaskQueueManagerService.LOCK_EXPIRATION_INTERVAL.plus(Duration.ofSeconds(1)));
 
         // then
-        final List<TypedEvent<TaskEvent>> expirationEvents = doRepeatedly(
+        final List<TypedRecord<TaskEvent>> expirationEvents = doRepeatedly(
             () -> rule.events()
-                .onlyTaskEvents()
-                .inState(TaskState.EXPIRE_LOCK)
+                .onlyTaskRecords()
+                .withIntent(Intent.EXPIRE_LOCK)
                 .collect(Collectors.toList()))
             .until(l -> l.size() == 2);
 
