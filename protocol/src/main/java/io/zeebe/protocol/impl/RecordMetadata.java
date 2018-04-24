@@ -15,37 +15,44 @@
  */
 package io.zeebe.protocol.impl;
 
-import static io.zeebe.protocol.clientapi.EventType.NULL_VAL;
-
-import io.zeebe.protocol.Protocol;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
-import io.zeebe.protocol.clientapi.BrokerEventMetadataDecoder;
-import io.zeebe.protocol.clientapi.BrokerEventMetadataEncoder;
-import io.zeebe.protocol.clientapi.EventType;
+import io.zeebe.protocol.Protocol;
+import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
 import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
+import io.zeebe.protocol.clientapi.RecordMetadataDecoder;
+import io.zeebe.protocol.clientapi.RecordMetadataEncoder;
+import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.util.buffer.BufferReader;
 import io.zeebe.util.buffer.BufferWriter;
 
-public class BrokerEventMetadata implements BufferWriter, BufferReader
+public class RecordMetadata implements BufferWriter, BufferReader
 {
     public static final int ENCODED_LENGTH = MessageHeaderEncoder.ENCODED_LENGTH +
-            BrokerEventMetadataEncoder.BLOCK_LENGTH;
+            RecordMetadataEncoder.BLOCK_LENGTH;
 
     protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
 
-    protected BrokerEventMetadataEncoder encoder = new BrokerEventMetadataEncoder();
-    protected BrokerEventMetadataDecoder decoder = new BrokerEventMetadataDecoder();
+    protected RecordMetadataEncoder encoder = new RecordMetadataEncoder();
+    protected RecordMetadataDecoder decoder = new RecordMetadataDecoder();
 
+    private RecordType recordType = RecordType.NULL_VAL;
+    private Intent intent = Intent.NULL_VAL;
     protected int requestStreamId;
     protected long requestId;
     protected long subscriberKey;
     protected int protocolVersion = Protocol.PROTOCOL_VERSION; // always the current version by default
-    protected EventType eventType = NULL_VAL;
+    protected ValueType valueType = ValueType.NULL_VAL;
     protected long incidentKey;
+
+    public RecordMetadata()
+    {
+        reset();
+    }
 
     @Override
     public void wrap(DirectBuffer buffer, int offset, int length)
@@ -58,11 +65,13 @@ public class BrokerEventMetadata implements BufferWriter, BufferReader
 
         decoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
 
+        recordType = decoder.recordType();
         requestStreamId = decoder.requestStreamId();
         requestId = decoder.requestId();
         subscriberKey = decoder.subscriptionId();
         protocolVersion = decoder.protocolVersion();
-        eventType = decoder.eventType();
+        valueType = decoder.valueType();
+        intent = decoder.intent();
         incidentKey = decoder.incidentKey();
     }
 
@@ -86,11 +95,14 @@ public class BrokerEventMetadata implements BufferWriter, BufferReader
 
         encoder.wrap(buffer, offset);
 
-        encoder.requestId(requestId)
+        encoder
+            .recordType(recordType)
             .requestStreamId(requestStreamId)
+            .requestId(requestId)
             .subscriptionId(subscriberKey)
             .protocolVersion(protocolVersion)
-            .eventType(eventType)
+            .valueType(valueType)
+            .intent(intent)
             .incidentKey(incidentKey);
     }
 
@@ -99,7 +111,7 @@ public class BrokerEventMetadata implements BufferWriter, BufferReader
         return requestId;
     }
 
-    public BrokerEventMetadata requestId(long requestId)
+    public RecordMetadata requestId(long requestId)
     {
         this.requestId = requestId;
         return this;
@@ -110,7 +122,7 @@ public class BrokerEventMetadata implements BufferWriter, BufferReader
         return requestStreamId;
     }
 
-    public BrokerEventMetadata requestStreamId(int requestStreamId)
+    public RecordMetadata requestStreamId(int requestStreamId)
     {
         this.requestStreamId = requestStreamId;
         return this;
@@ -121,13 +133,13 @@ public class BrokerEventMetadata implements BufferWriter, BufferReader
         return subscriberKey;
     }
 
-    public BrokerEventMetadata subscriberKey(long subscriberKey)
+    public RecordMetadata subscriberKey(long subscriberKey)
     {
         this.subscriberKey = subscriberKey;
         return this;
     }
 
-    public BrokerEventMetadata protocolVersion(int protocolVersion)
+    public RecordMetadata protocolVersion(int protocolVersion)
     {
         this.protocolVersion = protocolVersion;
         return this;
@@ -138,14 +150,14 @@ public class BrokerEventMetadata implements BufferWriter, BufferReader
         return protocolVersion;
     }
 
-    public EventType getEventType()
+    public ValueType getValueType()
     {
-        return eventType;
+        return valueType;
     }
 
-    public BrokerEventMetadata eventType(EventType eventType)
+    public RecordMetadata valueType(ValueType eventType)
     {
-        this.eventType = eventType;
+        this.valueType = eventType;
         return this;
     }
 
@@ -154,7 +166,7 @@ public class BrokerEventMetadata implements BufferWriter, BufferReader
         return incidentKey;
     }
 
-    public BrokerEventMetadata incidentKey(long incidentKey)
+    public RecordMetadata incidentKey(long incidentKey)
     {
         this.incidentKey = incidentKey;
         return this;
@@ -162,31 +174,60 @@ public class BrokerEventMetadata implements BufferWriter, BufferReader
 
     public boolean hasIncidentKey()
     {
-        return incidentKey != BrokerEventMetadataDecoder.incidentKeyNullValue();
+        return incidentKey != RecordMetadataDecoder.incidentKeyNullValue();
     }
 
-    public BrokerEventMetadata reset()
+    public RecordMetadata intent(Intent intent)
     {
-        requestId = BrokerEventMetadataEncoder.requestIdNullValue();
-        requestStreamId = BrokerEventMetadataEncoder.requestStreamIdNullValue();
-        subscriberKey = BrokerEventMetadataDecoder.subscriptionIdNullValue();
+        this.intent = intent;
+        return this;
+    }
+
+    public Intent getIntent()
+    {
+        return intent;
+    }
+
+    public RecordMetadata recordType(RecordType recordType)
+    {
+        this.recordType = recordType;
+        return this;
+    }
+
+    public RecordType getRecordType()
+    {
+        return recordType;
+    }
+
+    public RecordMetadata reset()
+    {
+        recordType = RecordType.NULL_VAL;
+        requestId = RecordMetadataEncoder.requestIdNullValue();
+        requestStreamId = RecordMetadataEncoder.requestStreamIdNullValue();
+        subscriberKey = RecordMetadataEncoder.subscriptionIdNullValue();
         protocolVersion = Protocol.PROTOCOL_VERSION;
-        eventType = NULL_VAL;
-        incidentKey = BrokerEventMetadataDecoder.incidentKeyNullValue();
+        valueType = ValueType.NULL_VAL;
+        incidentKey = RecordMetadataEncoder.incidentKeyNullValue();
+        intent = Intent.NULL_VAL;
         return this;
     }
 
     public boolean hasRequestMetadata()
     {
-        return requestId != BrokerEventMetadataEncoder.requestIdNullValue() &&
-                requestStreamId != BrokerEventMetadataEncoder.requestStreamIdNullValue();
+        return requestId != RecordMetadataEncoder.requestIdNullValue() &&
+                requestStreamId != RecordMetadataEncoder.requestStreamIdNullValue();
+    }
+
+    public void copyRequestMetadata(RecordMetadata target)
+    {
+        target.requestId(requestId).requestStreamId(requestStreamId);
     }
 
     @Override
     public String toString()
     {
         return "BrokerEventMetadata{" + "requestStreamId=" + requestStreamId + ", requestId=" + requestId +
-            ", subscriberKey=" + subscriberKey + ", protocolVersion=" + protocolVersion + ", eventType=" + eventType +
+            ", subscriberKey=" + subscriberKey + ", protocolVersion=" + protocolVersion + ", eventType=" + valueType +
             ", incidentKey=" + incidentKey + '}';
     }
 }
