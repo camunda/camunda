@@ -1,21 +1,18 @@
-package org.camunda.optimize.dto.optimize.query;
+package org.camunda.optimize.dto.optimize.query.user;
 
 import java.io.Serializable;
 
-/**
- * @author Askar Akhmerov
- */
 public class CredentialsDto implements Serializable {
 
-  protected String username;
+  protected String id;
   protected String password;
 
-  public String getUsername() {
-    return username;
+  public String getId() {
+    return id;
   }
 
-  public void setUsername(String username) {
-    this.username = username;
+  public void setId(String username) {
+    this.id = username;
   }
 
   public String getPassword() {

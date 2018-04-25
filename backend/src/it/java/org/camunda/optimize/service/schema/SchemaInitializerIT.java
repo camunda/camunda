@@ -2,7 +2,7 @@ package org.camunda.optimize.service.schema;
 
 import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
 import org.camunda.optimize.service.schema.type.MyUpdatedEventType;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
+import org.camunda.optimize.test.it.rule.ElasticsearchIntegrationRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.elasticsearch.action.admin.indices.mapping.get.GetFieldMappingsResponse;
 import org.elasticsearch.action.admin.indices.mapping.get.GetFieldMappingsResponse.FieldMappingMetaData;
@@ -24,7 +24,7 @@ public class SchemaInitializerIT {
   @Rule
   public ExpectedException thrown = ExpectedException.none();
 
-  public static ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
+  public static ElasticsearchIntegrationRule elasticSearchRule = new ElasticsearchIntegrationRule();
   public static EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 
   @ClassRule

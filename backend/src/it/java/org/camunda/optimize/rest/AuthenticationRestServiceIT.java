@@ -6,7 +6,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.camunda.optimize.dto.engine.CredentialsDto;
 import org.camunda.optimize.rest.util.AuthenticationUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
+import org.camunda.optimize.test.it.rule.ElasticsearchIntegrationRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -28,7 +28,7 @@ import static org.junit.Assert.assertThat;
 
 public class AuthenticationRestServiceIT {
 
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
+  public ElasticsearchIntegrationRule elasticSearchRule = new ElasticsearchIntegrationRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 
   @Rule

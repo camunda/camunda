@@ -16,7 +16,7 @@ import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.es.schema.type.ReportShareType;
 import org.camunda.optimize.service.es.schema.type.ReportType;
 import org.camunda.optimize.service.es.schema.type.RunningProcessInstanceIdTrackingType;
-import org.camunda.optimize.service.es.schema.type.UsersType;
+import org.camunda.optimize.service.es.schema.type.UserType;
 import org.camunda.optimize.service.es.schema.type.VariableType;
 import org.camunda.optimize.service.es.schema.type.index.TimestampBasedImportIndexType;
 import org.camunda.optimize.service.es.schema.type.index.ImportIndexType;
@@ -53,7 +53,7 @@ public class ElasticSearchSchemaInitializer {
   private ProcessDefinitionXmlType processDefinitionXmlType;
 
   @Autowired
-  private UsersType usersType;
+  private UserType userType;
 
   @Autowired
   private LicenseType licenseType;
@@ -118,7 +118,7 @@ public class ElasticSearchSchemaInitializer {
     schemaManager.addMapping(variableType);
     schemaManager.addMapping(processDefinitionType);
     schemaManager.addMapping(processDefinitionXmlType);
-    schemaManager.addMapping(usersType);
+    schemaManager.addMapping(userType);
     schemaManager.addMapping(importIndexType);
     schemaManager.addMapping(targetValueType);
     schemaManager.addMapping(processInstanceType);

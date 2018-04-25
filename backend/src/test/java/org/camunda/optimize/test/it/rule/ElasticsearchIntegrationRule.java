@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import org.camunda.optimize.dto.optimize.query.CredentialsDto;
+import org.camunda.optimize.dto.optimize.query.user.CredentialsDto;
 import org.camunda.optimize.service.util.CustomDeserializer;
 import org.camunda.optimize.service.util.CustomSerializer;
 import org.camunda.optimize.test.util.PropertyUtil;
@@ -41,9 +41,9 @@ import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class ElasticSearchIntegrationTestRule extends TestWatcher {
+public class ElasticsearchIntegrationRule extends TestWatcher {
 
-  private Logger logger = LoggerFactory.getLogger(ElasticSearchIntegrationTestRule.class);
+  private Logger logger = LoggerFactory.getLogger(ElasticsearchIntegrationRule.class);
   private Properties properties;
   private static ObjectMapper objectMapper;
   private static Client esclient;
@@ -52,7 +52,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   // maps types to a list of document entry ids added to that type
   private Map<String, List<String>> documentEntriesTracker = new HashMap<>();
 
-  public ElasticSearchIntegrationTestRule() {
+  public ElasticsearchIntegrationRule() {
     properties = PropertyUtil.loadProperties("integration-rules.properties");
   }
 
@@ -211,7 +211,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
 
   public void addDemoUser() throws JsonProcessingException {
     CredentialsDto user = new CredentialsDto();
-    user.setUsername("demo");
+    user.setId("demo");
     user.setPassword("demo");
 
     System.out.println("Objectmapper" + objectMapper);

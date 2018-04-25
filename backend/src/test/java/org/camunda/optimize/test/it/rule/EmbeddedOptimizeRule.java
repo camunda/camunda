@@ -1,6 +1,6 @@
 package org.camunda.optimize.test.it.rule;
 
-import org.camunda.optimize.dto.optimize.query.CredentialsDto;
+import org.camunda.optimize.dto.optimize.query.user.CredentialsDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.alert.AlertService;
@@ -22,7 +22,6 @@ import org.camunda.optimize.test.util.SynchronizationElasticsearchImportJob;
 import org.elasticsearch.client.Client;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
-import org.quartz.SchedulerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
@@ -34,7 +33,6 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 
 /**
@@ -179,7 +177,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
   public Response authenticateUserRequest(String username, String password) {
     CredentialsDto entity = new CredentialsDto();
-    entity.setUsername(username);
+    entity.setId(username);
     entity.setPassword(password);
 
     return target("authentication")
@@ -197,7 +195,6 @@ public class EmbeddedOptimizeRule extends TestWatcher {
       this.getAlertService().getScheduler().clear();
       TestEmbeddedCamundaOptimize.getInstance().resetConfiguration();
       LocalDateUtil.reset();
-      reloadConfiguration();
     } catch (Exception e) {
       logger.error("clean up after test", e);
     }

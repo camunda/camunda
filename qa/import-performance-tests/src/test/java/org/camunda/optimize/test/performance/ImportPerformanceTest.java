@@ -2,7 +2,7 @@ package org.camunda.optimize.test.performance;
 
 import org.camunda.optimize.service.util.NamedThreadFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
+import org.camunda.optimize.test.it.rule.ElasticsearchIntegrationRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.performance.data.generation.DataGenerator;
 import org.camunda.optimize.test.performance.data.generation.DataGeneratorProvider;
@@ -41,7 +41,7 @@ public class ImportPerformanceTest {
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
-  private ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
+  private ElasticsearchIntegrationRule elasticSearchRule = new ElasticsearchIntegrationRule();
   private EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 
 

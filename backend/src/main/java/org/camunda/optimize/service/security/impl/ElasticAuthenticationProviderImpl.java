@@ -1,13 +1,14 @@
 package org.camunda.optimize.service.security.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.camunda.optimize.dto.optimize.query.CredentialsDto;
+import org.camunda.optimize.dto.optimize.query.user.CredentialsDto;
+import org.camunda.optimize.service.es.schema.type.UserType;
+import org.camunda.optimize.service.es.writer.UserWriter;
 import org.camunda.optimize.service.security.AuthenticationProvider;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
-import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,7 +16,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
-import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
+import static org.camunda.optimize.service.es.schema.type.UserType.PASSWORD;
+import static org.camunda.optimize.service.es.schema.type.UserType.USER_ID;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 /**
@@ -35,6 +37,9 @@ public class ElasticAuthenticationProviderImpl implements AuthenticationProvider
   @Autowired
   private ObjectMapper objectMapper;
 
+  @Autowired
+  private UserWriter userWriter;
+
   private void initialize() {
     if (!initialized) {
       addDefaultUserIfCreationIsEnabled();
@@ -51,30 +56,20 @@ public class ElasticAuthenticationProviderImpl implements AuthenticationProvider
   }
 
   private void deleteDefaultUserIfExist() {
-    client.prepareDelete(
-      configurationService.getOptimizeIndex(configurationService.getElasticSearchUsersType()),
-      configurationService.getElasticSearchUsersType(),
-      configurationService.getDefaultUser()
-    )
-    .setRefreshPolicy(IMMEDIATE)
-    .get();
+    try {
+      userWriter.deleteUser(configurationService.getDefaultUser());
+    } catch (Exception e) {
+      logger.warn("Could not delete default user!");
+    }
   }
 
   private void addDefaultUser() {
     CredentialsDto user = new CredentialsDto();
-    user.setUsername(configurationService.getDefaultUser());
+    user.setId(configurationService.getDefaultUser());
     user.setPassword(configurationService.getDefaultPassword());
 
     try {
-      client
-        .prepareIndex(
-          configurationService.getOptimizeIndex(configurationService.getElasticSearchUsersType()),
-          configurationService.getElasticSearchUsersType(),
-          configurationService.getDefaultUser()
-        )
-        .setRefreshPolicy(IMMEDIATE)
-        .setSource(objectMapper.writeValueAsString(user), XContentType.JSON)
-        .get();
+      userWriter.createNewUser(user, user.getId());
     } catch (Exception e) {
       logger.error("Can't write default user to elasticsearch", e);
     }
@@ -88,8 +83,8 @@ public class ElasticAuthenticationProviderImpl implements AuthenticationProvider
     )
     .setTypes(configurationService.getElasticSearchUsersType())
     .setQuery(QueryBuilders.boolQuery()
-        .must(termQuery("username", credentialsDto.getUsername()))
-        .must(termQuery("password", credentialsDto.getPassword()))
+        .must(termQuery(USER_ID, credentialsDto.getId()))
+        .must(termQuery(PASSWORD, credentialsDto.getPassword()))
     )
     .get();
     if (response.getHits().getTotalHits() <= 0) {

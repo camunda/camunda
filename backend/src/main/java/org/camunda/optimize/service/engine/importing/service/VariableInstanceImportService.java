@@ -133,12 +133,12 @@ public class VariableInstanceImportService {
     return value == null || value.isEmpty();
   }
 
-  public void executeImport(List<HistoricVariableInstanceDto> entities,
+  public void executeImport(List<HistoricVariableInstanceDto> variables,
                             Set<String> processInstanceIds) {
     logger.trace("Importing entities from engine...");
 
     List<HistoricVariableInstanceDto> newEngineEntities =
-          missingActivityFinder.retrieveMissingEntities(entities);
+          missingActivityFinder.retrieveMissingEntities(variables);
     boolean newDataIsAvailable = !newEngineEntities.isEmpty();
     VariableElasticsearchImportJob variableImportJob = new VariableElasticsearchImportJob(variableWriter);
     if (newDataIsAvailable) {

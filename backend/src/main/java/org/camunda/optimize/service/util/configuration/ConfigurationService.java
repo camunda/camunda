@@ -30,9 +30,6 @@ import java.util.Set;
 
 import static org.camunda.optimize.service.util.ValidationHelper.ensureGreaterThanZero;
 
-/**
- * @author Askar Akhmerov
- */
 public class ConfigurationService {
 
   private static final String ENGINES_FIELD = "engines";
@@ -776,13 +773,6 @@ public class ConfigurationService {
       haiCountEndpoint = jsonContext.read(ConfigurationServiceConstants.HAI_COUNT_ENDPOINT);
     }
     return haiCountEndpoint;
-  }
-
-  public String getElasticsearchUsersType() {
-    if (elasticsearchUsersType == null) {
-      elasticsearchUsersType = jsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_USERS_TYPE);
-    }
-    return elasticsearchUsersType;
   }
 
   public String getFinishedPiIdTrackingType() {

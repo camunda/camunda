@@ -2,6 +2,7 @@ package org.camunda.optimize.rest.queryparam.adjustment;
 
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.user.OptimizeUserDto;
 import org.camunda.optimize.rest.queryparam.adjustment.decorator.OffsetResultListDecorator;
 import org.camunda.optimize.rest.queryparam.adjustment.decorator.OrderByQueryParamResultListDecorator;
 import org.camunda.optimize.rest.queryparam.adjustment.decorator.OriginalResultList;
@@ -10,6 +11,7 @@ import org.camunda.optimize.rest.queryparam.adjustment.decorator.RestrictResultL
 import org.camunda.optimize.rest.queryparam.adjustment.decorator.ReverseResultListDecorator;
 
 import javax.ws.rs.core.MultivaluedMap;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -23,6 +25,7 @@ public class QueryParamAdjustmentUtil {
 
   private static final String LAST_MODIFIED = "lastModified";
   private static final String NAME = "name";
+  private static final String ID = "id";
 
   private static final String DESC = "desc";
   private static final String ASC = "asc";
@@ -39,6 +42,16 @@ public class QueryParamAdjustmentUtil {
 
     reportComparators.put(DESC, desComparators);
     reportComparators.put(ASC, ascComparators);
+  }
+
+  public static List<OptimizeUserDto> adjustUserResultsToQueryParameters(
+      List<OptimizeUserDto> resultList,
+      MultivaluedMap<String, String> queryParameters
+  ) {
+    Comparator<OptimizeUserDto> sorting =
+        Comparator.comparing(OptimizeUserDto::getId);
+
+    return adjustResultListAccordingToQueryParameters(resultList, queryParameters, sorting, ID);
   }
 
   public static List<ReportDefinitionDto> adjustReportResultsToQueryParameters(

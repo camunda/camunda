@@ -1,9 +1,9 @@
 package org.camunda.optimize.dto.engine;
 
-/**
- * @author Askar Akhmerov
- */
-public class CredentialsDto {
+import java.io.Serializable;
+
+public class CredentialsDto implements Serializable {
+
   protected String username;
   protected String password;
 

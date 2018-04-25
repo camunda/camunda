@@ -1,12 +1,8 @@
 package org.camunda.optimize.service.util.configuration;
 
-import com.jayway.jsonpath.JsonPath;
-
 /**
  * This interface should contain constants only in order not to have magic
  * string inlined in the service class.
- *
- * @author Askar Akhmerov
  */
 public interface ConfigurationServiceConstants {
   String LIFE_TIME = "$.auth.token.lifeMin";
@@ -28,7 +24,6 @@ public interface ConfigurationServiceConstants {
   String ELASTICSEARCH_MAX_JOB_QUEUE_SIZE = "$.import.elasticsearchJobExecutorQueueSize";
   String ELASTICSEARCH_IMPORT_EXECUTOR_THREAD_COUNT = "$.import.elasticsearchJobExecutorThreadCount";
   String NUMBER_OF_RETRIES_ON_CONFLICT = "$.import.writer.numberOfRetries";
-  String PROCESS_DEFINITION_IDS_TO_IMPORT = "$.import.process-definition-ids-to-import";
 
   String ENGINE_IMPORT_MAX_PAGE_SIZE = "$.import.maxPageSize";
   String ENGINE_IMPORT_PROCESS_DEFINITION_MAX_PAGE_SIZE = "$.import.data.process-definition.maxPageSize";
@@ -57,7 +52,6 @@ public interface ConfigurationServiceConstants {
   String IMPORT_INDEX_TYPE = "$.import.indexType";
   String SCROLL_IMPORT_INDEX_TYPE = "$.import.scrollImportIndexType";
   String IMPORT_INDEX_AUTO_STORAGE_INTERVAL = "$.import.importIndexStorageIntervalInSec";
-  String PROCESS_DEFINITION_IMPORT_INDEX_TYPE = "$.import.data.process-definition.indexType";
   String LICENSE_TYPE = "$.es.licenseType";
   String REPORT_TYPE = "$.es.reportType";
   String DASHBOARD_TYPE = "$.es.dashboardType";
