@@ -2,7 +2,6 @@ package org.camunda.optimize.service.engine.importing.service.mediator;
 
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.engine.importing.diff.MissingEntitiesFinder;
 import org.camunda.optimize.service.engine.importing.fetcher.instance.ActivityInstanceFetcher;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.ActivityImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.page.TimestampBasedImportPage;
@@ -40,16 +39,9 @@ public class ActivityInstanceEngineImportMediator
   public void init() {
     importIndexHandler = provider.getActivityImportIndexHandler(engineContext.getEngineAlias());
     engineEntityFetcher = beanHelper.getInstance(ActivityInstanceFetcher.class, engineContext);
-    MissingEntitiesFinder<HistoricActivityInstanceEngineDto> missingActivityFinder =
-      new MissingEntitiesFinder<>(
-        configurationService,
-        esClient,
-        configurationService.getEventType()
-      );
     activityInstanceImportService = new ActivityInstanceImportService(
         eventsWriter,
         elasticsearchImportJobExecutor,
-        missingActivityFinder,
         engineContext
       );
   }

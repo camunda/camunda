@@ -3,7 +3,6 @@ package org.camunda.optimize.service.engine.importing.service;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.engine.importing.diff.MissingEntitiesFinder;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.ProcessDefinitionElasticsearchImportJob;
@@ -19,18 +18,15 @@ public class ProcessDefinitionImportService {
   protected Logger logger = LoggerFactory.getLogger(getClass());
 
   protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
-  private MissingEntitiesFinder<ProcessDefinitionEngineDto> missingProcessDefinitionFinder;
   protected EngineContext engineContext;
   private ProcessDefinitionWriter processDefinitionWriter;
 
   public ProcessDefinitionImportService(
       ProcessDefinitionWriter processDefinitionWriter,
       ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
-      MissingEntitiesFinder<ProcessDefinitionEngineDto> missingProcessDefinitionFinder,
       EngineContext engineContext
   ) {
     this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
-    this.missingProcessDefinitionFinder = missingProcessDefinitionFinder;
     this.engineContext = engineContext;
     this.processDefinitionWriter = processDefinitionWriter;
 
@@ -39,11 +35,9 @@ public class ProcessDefinitionImportService {
   public void executeImport(List<ProcessDefinitionEngineDto> pageOfEngineEntities) {
     logger.trace("Importing entities from engine...");
 
-    List<ProcessDefinitionEngineDto> newEngineEntities =
-          missingProcessDefinitionFinder.retrieveMissingEntities(pageOfEngineEntities);
-    boolean newDataIsAvailable = !newEngineEntities.isEmpty();
+    boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
     if (newDataIsAvailable) {
-      List<ProcessDefinitionOptimizeDto> newOptimizeEntities = mapEngineEntitiesToOptimizeEntities(newEngineEntities);
+      List<ProcessDefinitionOptimizeDto> newOptimizeEntities = mapEngineEntitiesToOptimizeEntities(pageOfEngineEntities);
       ElasticsearchImportJob<ProcessDefinitionOptimizeDto> elasticsearchImportJob =
         createElasticsearchImportJob(newOptimizeEntities);
       addElasticsearchImportJobToQueue(elasticsearchImportJob);

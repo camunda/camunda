@@ -6,7 +6,6 @@ import org.camunda.optimize.plugin.ImportAdapterProvider;
 import org.camunda.optimize.plugin.importing.variable.PluginVariableDto;
 import org.camunda.optimize.plugin.importing.variable.VariableImportAdapter;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.engine.importing.diff.MissingEntitiesFinder;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.VariableElasticsearchImportJob;
@@ -29,17 +28,14 @@ public class VariableInstanceImportService {
   protected Logger logger = LoggerFactory.getLogger(getClass());
 
   protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
-  private MissingEntitiesFinder<HistoricVariableInstanceDto> missingActivityFinder;
   protected EngineContext engineContext;
 
   public VariableInstanceImportService(VariableWriter variableWriter,
                                        ImportAdapterProvider importAdapterProvider,
                                        ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
-                                       MissingEntitiesFinder<HistoricVariableInstanceDto> missingActivityFinder,
                                        EngineContext engineContext
   ) {
     this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
-    this.missingActivityFinder = missingActivityFinder;
     this.engineContext = engineContext;
     this.variableWriter = variableWriter;
     this.importAdapterProvider = importAdapterProvider;
@@ -133,16 +129,14 @@ public class VariableInstanceImportService {
     return value == null || value.isEmpty();
   }
 
-  public void executeImport(List<HistoricVariableInstanceDto> variables,
+  public void executeImport(List<HistoricVariableInstanceDto> variablesFromEngine,
                             Set<String> processInstanceIds) {
     logger.trace("Importing entities from engine...");
 
-    List<HistoricVariableInstanceDto> newEngineEntities =
-          missingActivityFinder.retrieveMissingEntities(variables);
-    boolean newDataIsAvailable = !newEngineEntities.isEmpty();
+    boolean newDataIsAvailable = !variablesFromEngine.isEmpty();
     VariableElasticsearchImportJob variableImportJob = new VariableElasticsearchImportJob(variableWriter);
     if (newDataIsAvailable) {
-      List<VariableDto> newOptimizeEntities = mapEngineEntitiesToOptimizeEntities(newEngineEntities);
+      List<VariableDto> newOptimizeEntities = mapEngineEntitiesToOptimizeEntities(variablesFromEngine);
       variableImportJob.setEntitiesToImport(newOptimizeEntities);
     }
     variableImportJob.setProcessInstanceIdsVariablesHaveBeenImportedFor(new ArrayList<>(processInstanceIds));

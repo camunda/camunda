@@ -6,7 +6,6 @@ import org.camunda.bpm.model.bpmn.instance.FlowNode;
 import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionXmlOptimizeDto;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.engine.importing.diff.MissingEntitiesFinder;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.ProcessDefinitionXmlElasticsearchImportJob;
@@ -25,18 +24,15 @@ public class ProcessDefinitionXmlImportService {
   protected Logger logger = LoggerFactory.getLogger(getClass());
 
   protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
-  private MissingEntitiesFinder<ProcessDefinitionXmlEngineDto> missingXmlFinder;
   protected EngineContext engineContext;
   private ProcessDefinitionXmlWriter processDefinitionXmlWriter;
 
   public ProcessDefinitionXmlImportService(
       ProcessDefinitionXmlWriter processDefinitionXmlWriter,
       ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
-      MissingEntitiesFinder<ProcessDefinitionXmlEngineDto> missingXmlFinder,
       EngineContext engineContext
   ) {
     this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
-    this.missingXmlFinder = missingXmlFinder;
     this.engineContext = engineContext;
     this.processDefinitionXmlWriter = processDefinitionXmlWriter;
 
@@ -45,11 +41,10 @@ public class ProcessDefinitionXmlImportService {
   public void executeImport(List<ProcessDefinitionXmlEngineDto> pageOfEngineEntities) {
     logger.trace("Importing entities from engine...");
 
-    List<ProcessDefinitionXmlEngineDto> newEngineEntities =
-          missingXmlFinder.retrieveMissingEntities(pageOfEngineEntities);
-    boolean newDataIsAvailable = !newEngineEntities.isEmpty();
+    boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
     if (newDataIsAvailable) {
-      List<ProcessDefinitionXmlOptimizeDto> newOptimizeEntities = mapEngineEntitiesToOptimizeEntities(newEngineEntities);
+      List<ProcessDefinitionXmlOptimizeDto> newOptimizeEntities =
+        mapEngineEntitiesToOptimizeEntities(pageOfEngineEntities);
       ElasticsearchImportJob<ProcessDefinitionXmlOptimizeDto> elasticsearchImportJob =
         createElasticsearchImportJob(newOptimizeEntities);
       addElasticsearchImportJobToQueue(elasticsearchImportJob);

@@ -2,7 +2,6 @@ package org.camunda.optimize.service.engine.importing.service.mediator;
 
 import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.engine.importing.diff.MissingEntitiesFinder;
 import org.camunda.optimize.service.engine.importing.fetcher.instance.ProcessDefinitionXmlFetcher;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.ProcessDefinitionXmlImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.page.IdSetBasedImportPage;
@@ -15,8 +14,6 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.util.List;
-
-import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlTrackingType.PROCESS_DEFINITION_XML_TRACKING_TYPE;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
@@ -38,16 +35,9 @@ public class ProcessDefinitionXmlEngineImportMediator
     importIndexHandler = provider.getProcessDefinitionXmlImportIndexHandler(engineContext.getEngineAlias());
     engineEntityFetcher = beanHelper.getInstance(ProcessDefinitionXmlFetcher.class, engineContext);
 
-    MissingEntitiesFinder<ProcessDefinitionXmlEngineDto> missingEntitiesFinder =
-      new MissingEntitiesFinder<>(
-        configurationService,
-        esClient,
-        PROCESS_DEFINITION_XML_TRACKING_TYPE
-      );
     definitionXmlImportService = new ProcessDefinitionXmlImportService(
       processDefinitionXmlWriter,
       elasticsearchImportJobExecutor,
-      missingEntitiesFinder,
       engineContext
     );
   }

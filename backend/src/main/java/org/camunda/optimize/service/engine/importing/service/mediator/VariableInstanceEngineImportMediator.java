@@ -3,7 +3,6 @@ package org.camunda.optimize.service.engine.importing.service.mediator;
 import org.camunda.optimize.dto.engine.HistoricVariableInstanceDto;
 import org.camunda.optimize.plugin.ImportAdapterProvider;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.engine.importing.diff.MissingEntitiesFinder;
 import org.camunda.optimize.service.engine.importing.fetcher.instance.VariableInstanceFetcher;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.VariableInstanceImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.page.IdSetBasedImportPage;
@@ -43,17 +42,10 @@ public class VariableInstanceEngineImportMediator
   public void init() {
     importIndexHandler = provider.getVariableInstanceImportIndexHandler(engineContext.getEngineAlias());
     engineEntityFetcher = beanHelper.getInstance(VariableInstanceFetcher.class, engineContext);
-    MissingEntitiesFinder<HistoricVariableInstanceDto> missingEntitiesFinder =
-      new MissingEntitiesFinder<>(
-        configurationService,
-        esClient,
-        configurationService.getVariableType()
-      );
     variableInstanceImportService = new VariableInstanceImportService(
       variableWriter,
       importAdapterProvider,
       elasticsearchImportJobExecutor,
-      missingEntitiesFinder,
       engineContext
     );
   }

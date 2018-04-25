@@ -73,6 +73,7 @@ public class ActivityInstanceFetcher
         fetchHistoricActivityInstancesForTimestamp(endTimeOfLastInstance);
       entries.addAll(secondEntries);
     }
+    removeDuplicates(entries);
     return entries;
   }
 

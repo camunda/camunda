@@ -2,7 +2,6 @@ package org.camunda.optimize.service.engine.importing.service.mediator;
 
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.engine.importing.diff.MissingEntitiesFinder;
 import org.camunda.optimize.service.engine.importing.fetcher.instance.ProcessDefinitionFetcher;
 import org.camunda.optimize.service.engine.importing.index.handler.AllEntitiesBasedImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.page.AllEntitiesBasedImportPage;
@@ -35,16 +34,9 @@ public class ProcessDefinitionEngineImportMediator
   public void init() {
     importIndexHandler = provider.getProcessDefinitionImportIndexHandler(engineContext.getEngineAlias());
     engineEntityFetcher = beanHelper.getInstance(ProcessDefinitionFetcher.class, engineContext);
-    MissingEntitiesFinder<ProcessDefinitionEngineDto> missingEntitiesFinder =
-      new MissingEntitiesFinder<>(
-        configurationService,
-        esClient,
-        configurationService.getProcessDefinitionType()
-      );
     definitionImportService = new ProcessDefinitionImportService(
       processDefinitionWriter,
       elasticsearchImportJobExecutor,
-      missingEntitiesFinder,
       engineContext
     );
   }

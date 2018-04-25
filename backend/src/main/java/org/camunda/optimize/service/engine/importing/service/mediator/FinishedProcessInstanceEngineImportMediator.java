@@ -2,7 +2,6 @@ package org.camunda.optimize.service.engine.importing.service.mediator;
 
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.engine.importing.diff.MissingEntitiesFinder;
 import org.camunda.optimize.service.engine.importing.fetcher.instance.FinishedProcessInstanceFetcher;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.FinishedProcessInstanceImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.page.TimestampBasedImportPage;
@@ -36,16 +35,9 @@ public class FinishedProcessInstanceEngineImportMediator
   public void init() {
     importIndexHandler = provider.getFinishedProcessInstanceImportIndexHandler(engineContext.getEngineAlias());
     engineEntityFetcher = beanHelper.getInstance(FinishedProcessInstanceFetcher.class, engineContext);
-    MissingEntitiesFinder<HistoricProcessInstanceDto> missingEntitiesFinder =
-      new MissingEntitiesFinder<>(
-        configurationService,
-        esClient,
-        configurationService.getFinishedProcessInstanceIdTrackingType()
-      );
     finishedProcessInstanceImportService = new FinishedProcessInstanceImportService(
       finishedProcessInstanceWriter,
       elasticsearchImportJobExecutor,
-      missingEntitiesFinder,
       engineContext
     );
   }

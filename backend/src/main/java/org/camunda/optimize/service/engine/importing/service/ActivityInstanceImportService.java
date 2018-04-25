@@ -3,7 +3,6 @@ package org.camunda.optimize.service.engine.importing.service;
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.engine.importing.diff.MissingEntitiesFinder;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.EventElasticsearchImportJob;
@@ -20,16 +19,13 @@ public class ActivityInstanceImportService {
 
   protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   protected EngineContext engineContext;
-  private MissingEntitiesFinder<HistoricActivityInstanceEngineDto> missingActivityFinder;
   private EventsWriter eventsWriter;
 
   public ActivityInstanceImportService(EventsWriter eventsWriter,
                                        ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
-                                       MissingEntitiesFinder<HistoricActivityInstanceEngineDto> missingActivityFinder,
                                        EngineContext engineContext
   ) {
     this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
-    this.missingActivityFinder = missingActivityFinder;
     this.engineContext = engineContext;
     this.eventsWriter = eventsWriter;
   }
@@ -37,11 +33,9 @@ public class ActivityInstanceImportService {
   public void executeImport(List<HistoricActivityInstanceEngineDto> pageOfEngineEntities) {
     logger.trace("Importing entities from engine...");
 
-    List<HistoricActivityInstanceEngineDto> newEngineEntities =
-      missingActivityFinder.retrieveMissingEntities(pageOfEngineEntities);
-    boolean newDataIsAvailable = !newEngineEntities.isEmpty();
+    boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
     if (newDataIsAvailable) {
-      List<FlowNodeEventDto> newOptimizeEntities = mapEngineEntitiesToOptimizeEntities(newEngineEntities);
+      List<FlowNodeEventDto> newOptimizeEntities = mapEngineEntitiesToOptimizeEntities(pageOfEngineEntities);
       ElasticsearchImportJob<FlowNodeEventDto> elasticsearchImportJob =
         createElasticsearchImportJob(newOptimizeEntities);
       addElasticsearchImportJobToQueue(elasticsearchImportJob);

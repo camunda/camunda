@@ -73,6 +73,7 @@ public class FinishedProcessInstanceFetcher extends
         fetchFinishedProcessInstancesForTimestamp(endTimeOfLastInstance);
       entries.addAll(secondEntries);
     }
+    removeDuplicates(entries);
     return entries;
   }
 

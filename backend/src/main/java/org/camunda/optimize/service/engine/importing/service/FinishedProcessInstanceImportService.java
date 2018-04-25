@@ -3,7 +3,6 @@ package org.camunda.optimize.service.engine.importing.service;
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.engine.importing.diff.MissingEntitiesFinder;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.FinishedProcessInstanceElasticsearchImportJob;
@@ -20,17 +19,14 @@ public class FinishedProcessInstanceImportService {
   protected Logger logger = LoggerFactory.getLogger(getClass());
 
   protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
-  private MissingEntitiesFinder<HistoricProcessInstanceDto> missingProcessInstanceFinder;
   protected EngineContext engineContext;
   private FinishedProcessInstanceWriter finishedProcessInstanceWriter;
 
   public FinishedProcessInstanceImportService(FinishedProcessInstanceWriter finishedProcessInstanceWriter,
                                               ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
-                                              MissingEntitiesFinder<HistoricProcessInstanceDto> missingProcessInstanceFinder,
                                               EngineContext engineContext
                                                 ) {
     this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
-    this.missingProcessInstanceFinder = missingProcessInstanceFinder;
     this.engineContext = engineContext;
     this.finishedProcessInstanceWriter = finishedProcessInstanceWriter;
   }
@@ -38,11 +34,9 @@ public class FinishedProcessInstanceImportService {
   public void executeImport(List<HistoricProcessInstanceDto> pageOfEngineEntities) {
     logger.trace("Importing entities from engine...");
 
-    List<HistoricProcessInstanceDto> newEngineEntities =
-          missingProcessInstanceFinder.retrieveMissingEntities(pageOfEngineEntities);
-    boolean newDataIsAvailable = !newEngineEntities.isEmpty();
+    boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
     if (newDataIsAvailable) {
-      List<ProcessInstanceDto> newOptimizeEntities = mapEngineEntitiesToOptimizeEntities(newEngineEntities);
+      List<ProcessInstanceDto> newOptimizeEntities = mapEngineEntitiesToOptimizeEntities(pageOfEngineEntities);
       ElasticsearchImportJob<ProcessInstanceDto> elasticsearchImportJob =
         createElasticsearchImportJob(newOptimizeEntities);
       addElasticsearchImportJobToQueue(elasticsearchImportJob);
