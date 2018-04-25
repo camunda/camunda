@@ -8,12 +8,19 @@ import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.EventElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.EventsWriter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
-public class ActivityInstanceImportService extends
-  ImportService<HistoricActivityInstanceEngineDto, FlowNodeEventDto> {
+public class ActivityInstanceImportService {
 
+  protected Logger logger = LoggerFactory.getLogger(getClass());
+
+  protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
+  protected EngineContext engineContext;
+  private MissingEntitiesFinder<HistoricActivityInstanceEngineDto> missingActivityFinder;
   private EventsWriter eventsWriter;
 
   public ActivityInstanceImportService(EventsWriter eventsWriter,
@@ -21,19 +28,47 @@ public class ActivityInstanceImportService extends
                                        MissingEntitiesFinder<HistoricActivityInstanceEngineDto> missingActivityFinder,
                                        EngineContext engineContext
   ) {
-    super(elasticsearchImportJobExecutor, missingActivityFinder, engineContext);
+    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
+    this.missingActivityFinder = missingActivityFinder;
+    this.engineContext = engineContext;
     this.eventsWriter = eventsWriter;
   }
 
-  @Override
-  protected ElasticsearchImportJob<FlowNodeEventDto> createElasticsearchImportJob(List<FlowNodeEventDto> events) {
+  public void executeImport(List<HistoricActivityInstanceEngineDto> pageOfEngineEntities) {
+    logger.trace("Importing entities from engine...");
+
+    List<HistoricActivityInstanceEngineDto> newEngineEntities =
+      missingActivityFinder.retrieveMissingEntities(pageOfEngineEntities);
+    boolean newDataIsAvailable = !newEngineEntities.isEmpty();
+    if (newDataIsAvailable) {
+      List<FlowNodeEventDto> newOptimizeEntities = mapEngineEntitiesToOptimizeEntities(newEngineEntities);
+      ElasticsearchImportJob<FlowNodeEventDto> elasticsearchImportJob =
+        createElasticsearchImportJob(newOptimizeEntities);
+      addElasticsearchImportJobToQueue(elasticsearchImportJob);
+    }
+  }
+
+  private void addElasticsearchImportJobToQueue(ElasticsearchImportJob elasticsearchImportJob) {
+    try {
+      elasticsearchImportJobExecutor.executeImportJob(elasticsearchImportJob);
+    } catch (InterruptedException e) {
+      logger.error("Was interrupted while trying to add new job to Elasticsearch import queue.", e);
+    }
+  }
+
+  private List<FlowNodeEventDto> mapEngineEntitiesToOptimizeEntities(List<HistoricActivityInstanceEngineDto> engineEntities) {
+    return engineEntities
+      .stream().map(this::mapEngineEntityToOptimizeEntity)
+      .collect(Collectors.toList());
+  }
+
+  private ElasticsearchImportJob<FlowNodeEventDto> createElasticsearchImportJob(List<FlowNodeEventDto> events) {
     EventElasticsearchImportJob eventImportJob = new EventElasticsearchImportJob(eventsWriter);
     eventImportJob.setEntitiesToImport(events);
     return eventImportJob;
   }
 
-  @Override
-  protected FlowNodeEventDto mapEngineEntityToOptimizeEntity(HistoricActivityInstanceEngineDto engineEntity) {
+  private FlowNodeEventDto mapEngineEntityToOptimizeEntity(HistoricActivityInstanceEngineDto engineEntity) {
     FlowNodeEventDto flowNodeEventDto = new FlowNodeEventDto();
     flowNodeEventDto.setId(engineEntity.getId());
     flowNodeEventDto.setActivityId(engineEntity.getActivityId());

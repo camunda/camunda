@@ -11,38 +11,73 @@ import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.ProcessDefinitionXmlElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.ProcessDefinitionXmlWriter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
-public class ProcessDefinitionXmlImportService extends
-  ImportService<ProcessDefinitionXmlEngineDto, ProcessDefinitionXmlOptimizeDto> {
+public class ProcessDefinitionXmlImportService {
 
+  protected Logger logger = LoggerFactory.getLogger(getClass());
+
+  protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
+  private MissingEntitiesFinder<ProcessDefinitionXmlEngineDto> missingXmlFinder;
+  protected EngineContext engineContext;
   private ProcessDefinitionXmlWriter processDefinitionXmlWriter;
 
   public ProcessDefinitionXmlImportService(
       ProcessDefinitionXmlWriter processDefinitionXmlWriter,
       ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
-      MissingEntitiesFinder<ProcessDefinitionXmlEngineDto> missingEntitiesFinder,
+      MissingEntitiesFinder<ProcessDefinitionXmlEngineDto> missingXmlFinder,
       EngineContext engineContext
   ) {
-    super(elasticsearchImportJobExecutor, missingEntitiesFinder, engineContext);
+    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
+    this.missingXmlFinder = missingXmlFinder;
+    this.engineContext = engineContext;
     this.processDefinitionXmlWriter = processDefinitionXmlWriter;
 
   }
 
-  @Override
-  protected ElasticsearchImportJob<ProcessDefinitionXmlOptimizeDto>
+  public void executeImport(List<ProcessDefinitionXmlEngineDto> pageOfEngineEntities) {
+    logger.trace("Importing entities from engine...");
+
+    List<ProcessDefinitionXmlEngineDto> newEngineEntities =
+          missingXmlFinder.retrieveMissingEntities(pageOfEngineEntities);
+    boolean newDataIsAvailable = !newEngineEntities.isEmpty();
+    if (newDataIsAvailable) {
+      List<ProcessDefinitionXmlOptimizeDto> newOptimizeEntities = mapEngineEntitiesToOptimizeEntities(newEngineEntities);
+      ElasticsearchImportJob<ProcessDefinitionXmlOptimizeDto> elasticsearchImportJob =
+        createElasticsearchImportJob(newOptimizeEntities);
+      addElasticsearchImportJobToQueue(elasticsearchImportJob);
+    }
+  }
+
+  private void addElasticsearchImportJobToQueue(ElasticsearchImportJob elasticsearchImportJob) {
+    try {
+      elasticsearchImportJobExecutor.executeImportJob(elasticsearchImportJob);
+    } catch (InterruptedException e) {
+      logger.error("Was interrupted while trying to add new job to Elasticsearch import queue.", e);
+    }
+  }
+
+  private List<ProcessDefinitionXmlOptimizeDto> mapEngineEntitiesToOptimizeEntities(List<ProcessDefinitionXmlEngineDto> engineEntities) {
+    return engineEntities
+      .stream().map(this::mapEngineEntityToOptimizeEntity)
+      .collect(Collectors.toList());
+  }
+
+  private ElasticsearchImportJob<ProcessDefinitionXmlOptimizeDto>
   createElasticsearchImportJob(List<ProcessDefinitionXmlOptimizeDto> processDefinitions) {
     ProcessDefinitionXmlElasticsearchImportJob procDefImportJob = new ProcessDefinitionXmlElasticsearchImportJob(processDefinitionXmlWriter);
     procDefImportJob.setEntitiesToImport(processDefinitions);
     return procDefImportJob;
   }
 
-  @Override
-  protected ProcessDefinitionXmlOptimizeDto mapEngineEntityToOptimizeEntity(ProcessDefinitionXmlEngineDto engineEntity) {
+  private ProcessDefinitionXmlOptimizeDto mapEngineEntityToOptimizeEntity(ProcessDefinitionXmlEngineDto engineEntity) {
     ProcessDefinitionXmlOptimizeDto optimizeDto = new ProcessDefinitionXmlOptimizeDto();
     optimizeDto.setBpmn20Xml(engineEntity.getBpmn20Xml());
     optimizeDto.setProcessDefinitionId(engineEntity.getId());
