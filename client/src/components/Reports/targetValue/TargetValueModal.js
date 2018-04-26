@@ -244,6 +244,7 @@ export default class TargetValueModal extends React.Component {
             body={this.constructTableBody()}
             foot={[]}
             className="TargetValueModal__Table"
+            disablePagination
           />
           {!this.validChanges() && (
             <ErrorMessage className="TargetValueModal__warning">{errorMessage}</ErrorMessage>

@@ -5,7 +5,7 @@ import {Button} from 'components';
 
 import './Table.css';
 
-const pageSize = 50;
+const defaultPageSize = 20;
 
 export default class Table extends React.Component {
   constructor(props) {
@@ -17,10 +17,14 @@ export default class Table extends React.Component {
   }
 
   render() {
-    const {className, head, body, disableReportScrolling} = this.props;
+    const {className, head, body, disableReportScrolling, disablePagination} = this.props;
 
     const columns = Table.formatColumns(head);
     const data = Table.formatData(head, body);
+
+    // react-table does not support Infinity as page size 👎
+    const pageSize = disablePagination ? Number.MAX_VALUE : defaultPageSize;
+
     return (
       <div className={classnames('Table__container', className)} ref={ref => (this.tableRef = ref)}>
         <ReactTable

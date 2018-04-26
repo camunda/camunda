@@ -70,14 +70,22 @@ it('shoud correctly format body', () => {
   expect(result).toEqual([{header_1: 'a', header_2: 'b', header_3: 'c'}]);
 });
 
-it('should show pagination if data contains more than 50 rows', () => {
-  const node = mount(<Table {...{head: ['a'], body: generateData(51), foot: []}} />);
+it('should show pagination if data contains more than 20 rows', () => {
+  const node = mount(<Table {...{head: ['a'], body: generateData(21), foot: []}} />);
 
   expect(node.find(ReactTable)).toHaveProp('showPagination', true);
 });
 
-it('should not show pagination if data contains less than or equal to 50 rows', () => {
-  const node = mount(<Table {...{head: ['a'], body: generateData(50), foot: []}} />);
+it('should not show pagination if data contains more than 20 rows, but disablePagination flag is set', () => {
+  const node = mount(
+    <Table {...{head: ['a'], body: generateData(21), foot: []}} disablePagination />
+  );
+
+  expect(node.find(ReactTable)).toHaveProp('showPagination', false);
+});
+
+it('should not show pagination if data contains less than or equal to 20 rows', () => {
+  const node = mount(<Table {...{head: ['a'], body: generateData(20), foot: []}} />);
 
   expect(node.find(ReactTable)).toHaveProp('showPagination', false);
 });
