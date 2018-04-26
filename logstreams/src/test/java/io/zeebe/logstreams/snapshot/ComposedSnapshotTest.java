@@ -188,12 +188,12 @@ public class ComposedSnapshotTest
         final FooObject obj1 = new FooObject();
         obj1.setProp1(42);
         obj1.setProp2("bar");
-        final UnpackedObjectSnapshotSupport snapshotSupport1 = new UnpackedObjectSnapshotSupport(obj1);
+        final BaseValueSnapshotSupport snapshotSupport1 = new BaseValueSnapshotSupport(obj1);
 
         final FooObject obj2 = new FooObject();
         obj2.setProp1(99);
         obj2.setProp2("baz");
-        final UnpackedObjectSnapshotSupport snapshotSupport2 = new UnpackedObjectSnapshotSupport(obj2);
+        final BaseValueSnapshotSupport snapshotSupport2 = new BaseValueSnapshotSupport(obj2);
 
         final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
         final ComposedSnapshot snapshot = new ComposedSnapshot(snapshotSupport1, snapshotSupport2);
@@ -220,7 +220,7 @@ public class ComposedSnapshotTest
         final FooObject obj = new FooObject();
         obj.setProp1(42);
         obj.setProp2("bar");
-        final UnpackedObjectSnapshotSupport snapshotSupport1 = new UnpackedObjectSnapshotSupport(obj);
+        final BaseValueSnapshotSupport snapshotSupport1 = new BaseValueSnapshotSupport(obj);
         final ZbMapSnapshotSupport<ZbMap<?, ?>> snapshotSupport2 = new ZbMapSnapshotSupport<>(long2LongMap);
 
         final ByteArrayOutputStream outStream = new ByteArrayOutputStream();

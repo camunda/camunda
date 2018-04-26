@@ -22,7 +22,7 @@ import java.io.ByteArrayOutputStream;
 
 import org.junit.Test;
 
-public class UnpackedObjectSnapshotTest
+public class BaseValueSnapshotTest
 {
 
     @Test
@@ -33,12 +33,12 @@ public class UnpackedObjectSnapshotTest
         foo.setProp1(42);
         foo.setProp2("bar");
 
-        final UnpackedObjectSnapshotSupport snapshotSupport = new UnpackedObjectSnapshotSupport(foo);
+        final BaseValueSnapshotSupport snapshotSupport = new BaseValueSnapshotSupport(foo);
         final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
         snapshotSupport.writeSnapshot(outStream);
 
         final FooObject deserializedFoo = new FooObject();
-        final UnpackedObjectSnapshotSupport deserializingSnapshotSupport = new UnpackedObjectSnapshotSupport(deserializedFoo);
+        final BaseValueSnapshotSupport deserializingSnapshotSupport = new BaseValueSnapshotSupport(deserializedFoo);
         final ByteArrayInputStream inStream = new ByteArrayInputStream(outStream.toByteArray());
 
         // when
