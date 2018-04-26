@@ -21,13 +21,13 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 
+import io.zeebe.logstreams.snapshot.BaseValueSnapshotSupport;
 import io.zeebe.logstreams.snapshot.ComposedSnapshot;
-import io.zeebe.logstreams.snapshot.UnpackedObjectSnapshotSupport;
 import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
 import io.zeebe.logstreams.spi.ComposableSnapshotSupport;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.map.ZbMap;
-import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.msgpack.value.BaseValue;
 import io.zeebe.protocol.clientapi.EventType;
 
 @SuppressWarnings({"rawtypes", "unchecked"})
@@ -79,9 +79,9 @@ public class TypedEventStreamProcessorBuilder
         return this;
     }
 
-    public TypedEventStreamProcessorBuilder withStateResource(UnpackedObject object)
+    public TypedEventStreamProcessorBuilder withStateResource(BaseValue value)
     {
-        this.stateResources.add(new UnpackedObjectSnapshotSupport(object));
+        this.stateResources.add(new BaseValueSnapshotSupport(value));
         return this;
     }
 
