@@ -111,10 +111,11 @@ export default class Table extends React.Component {
   };
 
   static formatData = (head, body) => {
-    return body.map((row, rowIdx) => {
+    const flatHead = head.reduce(flatten(), []);
+    return body.map(row => {
       const newRow = {};
       row.forEach((cell, columnIdx) => {
-        newRow[convertHeaderNameToAccessor(head.reduce(flatten(), [])[columnIdx])] = cell;
+        newRow[convertHeaderNameToAccessor(flatHead[columnIdx])] = cell;
       });
       return newRow;
     });
@@ -122,9 +123,13 @@ export default class Table extends React.Component {
 }
 
 const flatten = (ctx = '') => (flat, entry) => {
-  return flat.concat(
-    (entry.columns && entry.columns.reduce(flatten(ctx + entry.label), [])) || ctx + entry
-  );
+  if (entry.columns) {
+    // nested column, flatten recursivly with augmented context (e.g. for providing a Variable prefix)
+    return flat.concat(entry.columns.reduce(flatten(ctx + entry.label), []));
+  } else {
+    // normal column, return column name prefixed with current context
+    return flat.concat(ctx + entry);
+  }
 };
 
 function convertHeaderNameToAccessor(name) {
