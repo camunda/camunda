@@ -74,7 +74,7 @@ public class PingController
 
             LOG.trace("Send PING to '{}'", probeMember.getId());
 
-            final ActorFuture<ClientResponse> responseFuture = gossipEventSender.sendPing(probeMember.getAddress(), configuration.getProbeTimeout());
+            final ActorFuture<ClientResponse> responseFuture = gossipEventSender.sendPing(probeMember.getAddress(), configuration.getProbeTimeoutDuration());
 
             actor.runOnCompletion(responseFuture, (response, failure) ->
             {
@@ -84,7 +84,7 @@ public class PingController
 
                     processAckResponse(response);
 
-                    actor.runDelayed(configuration.getProbeInterval(), this::sendPing);
+                    actor.runDelayed(configuration.getProbeIntervalDuration(), this::sendPing);
                 }
                 else
                 {
@@ -114,7 +114,7 @@ public class PingController
             {
                 LOG.trace("Send PING-REQ to '{}' to probe '{}'", member.getId(), probeMember.getId());
 
-                final ActorFuture<ClientResponse> responseFuture = gossipEventSender.sendPingReq(member.getAddress(), probeMember.getAddress(), configuration.getProbeIndirectTimeout());
+                final ActorFuture<ClientResponse> responseFuture = gossipEventSender.sendPingReq(member.getAddress(), probeMember.getAddress(), configuration.getProbeIndirectTimeoutDuration());
                 indirectResponseFutures.add(responseFuture);
 
                 n += 1;
@@ -123,7 +123,7 @@ public class PingController
 
         if (indirectResponseFutures.isEmpty())
         {
-            actor.runDelayed(configuration.getProbeInterval(), this::sendPing);
+            actor.runDelayed(configuration.getProbeIntervalDuration(), this::sendPing);
         }
         else
         {
@@ -135,7 +135,7 @@ public class PingController
 
                     processAckResponse(response);
 
-                    actor.runDelayed(configuration.getProbeInterval(), this::sendPing);
+                    actor.runDelayed(configuration.getProbeIntervalDuration(), this::sendPing);
                 }
                 else
                 {
@@ -169,6 +169,6 @@ public class PingController
                 .gossipTerm(probeMember.getTerm());
         }
 
-        actor.runDelayed(configuration.getProbeInterval(), this::sendPing);
+        actor.runDelayed(configuration.getProbeIntervalDuration(), this::sendPing);
     }
 }

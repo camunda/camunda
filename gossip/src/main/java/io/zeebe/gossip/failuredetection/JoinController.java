@@ -119,7 +119,7 @@ public class JoinController
                     .type(MembershipEventType.JOIN)
                     .gossipTerm(self.getTerm());
 
-                final ActorFuture<ClientResponse> requestFuture = gossipEventSender.sendPing(contactPoint, configuration.getJoinTimeout());
+                final ActorFuture<ClientResponse> requestFuture = gossipEventSender.sendPing(contactPoint, configuration.getJoinTimeoutDurtion());
                 requestFutures.add(requestFuture);
             }
         }
@@ -137,7 +137,7 @@ public class JoinController
             {
                 LOG.info("Failed to contact any of '{}'. Try again in {}", contactPoints, configuration.getJoinInterval());
 
-                actor.runDelayed(configuration.getJoinInterval(), this::sendJoinEvent);
+                actor.runDelayed(configuration.getJoinIntervalDuration(), this::sendJoinEvent);
             }
         }, this::processAckResponse);
     }
@@ -154,7 +154,7 @@ public class JoinController
     {
         LOG.trace("Send SYNC request to '{}'", contactPoint);
 
-        final ActorFuture<ClientResponse> requestFuture = gossipEventSender.sendSyncRequest(contactPoint, configuration.getSyncTimeout());
+        final ActorFuture<ClientResponse> requestFuture = gossipEventSender.sendSyncRequest(contactPoint, configuration.getSyncTimeoutDuration());
 
         actor.runOnCompletion(requestFuture, (request, failure) ->
         {
@@ -178,7 +178,7 @@ public class JoinController
             {
                 LOG.debug("Failed to receive SYNC response from '{}'. Try again in {}", contactPoint, configuration.getJoinInterval());
 
-                actor.runDelayed(configuration.getJoinInterval(), this::sendJoinEvent);
+                actor.runDelayed(configuration.getJoinIntervalDuration(), this::sendJoinEvent);
             }
         });
     }
@@ -230,7 +230,7 @@ public class JoinController
             {
                 LOG.trace("Spread LEAVE event to '{}'", member.getAddress());
 
-                final ActorFuture<ClientResponse> requestFuture = gossipEventSender.sendPing(member.getAddress(), configuration.getLeaveTimeout());
+                final ActorFuture<ClientResponse> requestFuture = gossipEventSender.sendPing(member.getAddress(), configuration.getLeaveTimeoutDuration());
                 requestFutures.add(requestFuture);
 
                 spreadCount += 1;

@@ -87,7 +87,7 @@ public class GossipClusterRule implements TestRule
 
         while (!condition.getAsBoolean() && i < MAX_CONDITION_RETRIES)
         {
-            clock.addTime(configuration.getProbeInterval());
+            clock.addTime(configuration.getProbeIntervalDuration());
 
             try
             {

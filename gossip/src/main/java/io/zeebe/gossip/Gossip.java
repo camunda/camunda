@@ -143,7 +143,7 @@ public class Gossip extends Actor implements GossipController, GossipEventPublis
 
         final int multiplier = configuration.getSuspicionMultiplier();
         final int clusterSize = 1 + membershipList.size();
-        final Duration probeInterval = configuration.getProbeInterval();
+        final Duration probeInterval = configuration.getProbeIntervalDuration();
         final Duration suspicionTimeout = GossipMath.suspicionTimeout(multiplier, clusterSize, probeInterval);
 
         actor.runDelayed(suspicionTimeout, () ->

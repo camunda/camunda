@@ -57,7 +57,7 @@ public class PingReqEventHandler implements GossipEventConsumer
         {
             LOG.trace("Forward PING to '{}'", probeMember.getId());
 
-            final ActorFuture<ClientResponse> respFuture = gossipEventSender.sendPing(probeMember.getAddress(), configuration.getProbeTimeout());
+            final ActorFuture<ClientResponse> respFuture = gossipEventSender.sendPing(probeMember.getAddress(), configuration.getProbeTimeoutDuration());
 
             actor.runOnCompletion(respFuture, (resp, failure) ->
             {
