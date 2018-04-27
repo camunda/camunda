@@ -1,38 +1,168 @@
 # Zeebe broker configuration file
 
-# Controls the number of nodes (including itself) this broker waits for until
-# bootrapping. 
+# Overview -------------------------------------------
+
+# This file contains a complete list of available configuration options.
+
+# Default values:
+#
+# When the default value is used for a configuration option, the option is
+# commented out. You can learn the default value from this file
+
+# Conventions:
+#
+# Byte sizes
+# for buffers and others must be specified as strings and follow the following
+# format: "10U" where U is (K = Kilobytes, M = Megabytes, G = Gigabytes).
+# Example:
+# sendBufferSize = "16MB" (creates a buffer of 16 Megabytes)
+#
+# Time units
+# TODO: currently always in milliseconds
+#
+# Paths:
+# Relative paths are resolved relative to the installation directory of the
+# broker.
+
+# ----------------------------------------------------
+
+# Controls the number of nodes this broker waits for until doing bootstrapping.
+# * When using a single node cluser, the value should be 1
+# * When using a multi-node cluster, the value should be either 3 or 5,
+#   depending on the size of the cluster.
+# (The broker includes itself in the count, ie. when specifying '1', the broker
+# waits for itself.)
+#
+# Explanation: When doing bootstrapping, the broker ensures that internally used
+# resources such as the 'internal-system' topic are available. The
+# 'internal-system' topic is used for storing information about all the other,
+# user-defined, topics that are available in the cluster. When specifying a
+# value > 1 for this configuration property, the broker will wait for the
+# specified number of nodes to appear in the cluster and then create the
+# internal-system topic if not yet present, using the specified value as
+# replication factor.
 bootstrap = 1
 
-# Networking configuration ----------------------------
+[network]
 
-# [network]
+# This section contains the network configuration. Particularly, it allows to
+# configure the hosts and ports the broker should bind to. the broker exposes 3
+# ports: 1. client: the port on which client (Java, CLI, Go, ...) connections
+# are handled 2. management: used internally by the cluster for the gossip
+# membership protocol and other management interactions 3. replication: used
+# internally by the cluster for replicating data across nodes using the raft
+# protocol
+
+# Controls the default host the broker should bind to. Can be overwritten on a
+# per binding basis for client, management and replication
 # host = "0.0.0.0"
+
+# Controls the default size of the buffers that are used for buffering outgoing
+# messages. Can be overwritten on a per binding basis for client, management and
+# replication
 # defaultSendBufferSize = "16MB"
 
-# [network.client]
+[network.client]
+
+# Allows to override the host the client api binds to
 # host = "localhost"
+#
+# The port the client api binds to
 # port = 51015
+#
+# Overrides the size of the buffer used for buffering outgoing messages to
+# clients
 # sendBufferSize = "16MB"
+#
+# Sets the size of the buffer used for receiving control messages from clients
+# (such as management of subscriptions)
 # controlMessageBufferSize = "8MB"
 
-# [network.management]
+[network.management]
+
+# Overrides the host the management api binds to
 # host = "localhost"
+#
+# Sets the port the management api binds to
 # port = 51016
+#
+# Overrides the size of the buffer to be used for buffering outgoing messages to
+# other brokers through the management protocols
 # sendBufferSize = "16MB"
+#
+# Sets the buffer size used for receiving gossip messages and others
 # receiveBufferSize = "8MB"
 
-# [network.replication]
+[network.replication]
+
+# Overrides the host the replication api binds to
 # host = "localhost"
+#
+# Sets the port the replication api binds to
 # port = 51017
+#
+# Sets the buffer size used for buffering outgoing raft (replication) messages
 # sendBufferSize = "16MB"
 
-# Cluster Configuration -------------------------------
+[data]
 
-# [cluster]
+# This section allows to configure Zeebe's data storage Data is stored in
+# "partition folders". A partition folder has the following structure:
+#
+# internal-system-0                 (root partition folder)
+# ├── partition.msgpack             (metadata about the partition)
+# ├── segments                      (the actual data as segment files)
+# │   ├── 00.data
+# │   └── 01.data
+# └── snapshots                     (snapshot data)
+#
+
+# Specify a list of directories in which data is stored. Using multiple
+# directories makes sense in case the machine which is running Zeebe has
+# multiple disks which are used in a JBOD (just a bunch of disks) manner. This
+# allows to get greater throughput in combination with a higher io thread count
+# since writes to different disks can potentially be done in parallel.
+# directories = [ "data" ]
+
+# The default size of data segments.
+# defaultSegmentSize = "512MB"
+
+[cluster]
+
+# Allows to specify a list of known other nodes to connect to on startup
+# The contact points of the management api must be specified.
+# The format is [HOST:PORT]
+# Example:
+# initialContactPoints = [ "192.168.1.22:51016", "192.168.1.32:51016" ]
+#
+# Default is empty list:
 # initialContactPoints = []
 
-# [gossip]
+[threads]
+
+# Controls the number of non-blocking CPU threads to be used. WARNING: You
+# should never specify a value that is larger than the number of physical cores
+# available Good practice is to leave 1-2 cores for ioThreads and the operating
+# system (it has to run somewhere) For example, when running Zeebe on a machine
+# which has 4 cores, a good value would be 2.
+cpuThreadCount = 2
+
+# Controls the number of io threads to be used. These threads are used for
+# workloads that write data to disk. While writing, these threads are blocked
+# which means that they yield the CPU.
+ioThreadCount = 2
+
+[metrics]
+
+# Path to the file to which metrics are written. Metrics are written in a
+# text-based format understood by prometheus.io
+# metricsFile = "metrics/zeebe.prom"
+
+# Controls the interval at which the metrics are written to the metrics file
+# reportingInterval = 5000
+
+[gossip]
+
 # retransmissionMultiplier = 3
 # probeInterval = 1000
 # probeTimeout = 500
@@ -46,24 +176,8 @@ bootstrap = 1
 # maxMembershipEventsPerMessage = 32
 # maxCustomEventsPerMessage = 8
 
-# [raft]
+[raft]
+
 # heartbeatInterval = 250
 # electionInterval = 1000
 # leaveTimeout = 1000
-
-# System configuration ------------------------------------
-
-[threads]
-cpuThreadCount = 2
-ioThreadCount = 2
-
-# [metrics]
-# reportingInterval = 5000
-# directory = ""
-# metricsFile = "metrics/zeebe.prom"
-
-# Data Configuration ---------------------------------------
-
-# [data]
-# defaultSegmentSize = "512MB"
-# directories = [ "data" ]
