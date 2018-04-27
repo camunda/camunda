@@ -15,7 +15,7 @@
 # for buffers and others must be specified as strings and follow the following
 # format: "10U" where U is (K = Kilobytes, M = Megabytes, G = Gigabytes).
 # Example:
-# sendBufferSize = "16MB" (creates a buffer of 16 Megabytes)
+# sendBufferSize = "16M" (creates a buffer of 16 Megabytes)
 #
 # Time units
 # TODO: currently always in milliseconds
