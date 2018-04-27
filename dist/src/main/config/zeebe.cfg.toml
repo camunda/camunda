@@ -63,7 +63,7 @@ bootstrap = 1
 # Controls the default size of the buffers that are used for buffering outgoing
 # messages. Can be overwritten on a per binding basis for client, management and
 # replication
-# defaultSendBufferSize = "16MB"
+# defaultSendBufferSize = "16M"
 
 [network.client]
 
@@ -75,11 +75,11 @@ bootstrap = 1
 #
 # Overrides the size of the buffer used for buffering outgoing messages to
 # clients
-# sendBufferSize = "16MB"
+# sendBufferSize = "16M"
 #
 # Sets the size of the buffer used for receiving control messages from clients
 # (such as management of subscriptions)
-# controlMessageBufferSize = "8MB"
+# controlMessageBufferSize = "8M"
 
 [network.management]
 
@@ -91,10 +91,10 @@ bootstrap = 1
 #
 # Overrides the size of the buffer to be used for buffering outgoing messages to
 # other brokers through the management protocols
-# sendBufferSize = "16MB"
+# sendBufferSize = "16M"
 #
 # Sets the buffer size used for receiving gossip messages and others
-# receiveBufferSize = "8MB"
+# receiveBufferSize = "8M"
 
 [network.replication]
 
@@ -105,7 +105,7 @@ bootstrap = 1
 # port = 51017
 #
 # Sets the buffer size used for buffering outgoing raft (replication) messages
-# sendBufferSize = "16MB"
+# sendBufferSize = "16M"
 
 [data]
 
@@ -128,7 +128,7 @@ bootstrap = 1
 # directories = [ "data" ]
 
 # The default size of data segments.
-# defaultSegmentSize = "512MB"
+# defaultSegmentSize = "512M"
 
 [cluster]
 
