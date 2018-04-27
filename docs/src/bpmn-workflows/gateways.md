@@ -15,6 +15,8 @@ The workflow instance takes the first sequence flow which condition is fulfilled
 If no condition is fulfilled, then it takes the default flow which has no condition.
 In case the gateway has no default flow (not recommended), the execution stops and an incident is created.
 
+Read more about conditions in the [JSON Conditions reference](reference/json-conditions.html).
+
 XML representation:
 
 ```
@@ -29,4 +31,4 @@ XML representation:
 <bpmn:sequenceFlow id="else" name="else" sourceRef="exclusiveGateway" targetRef="shipParcel" />
 ```
 
-Read more about [conditions](reference/json-conditions.html).
+BPMN Modeler: [Click Here](/bpmn-modeler/gateways.html#create-an-exclusive-gateway)

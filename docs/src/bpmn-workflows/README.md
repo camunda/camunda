@@ -7,7 +7,7 @@ Zeebe uses visual workflows based on the industry standard BPMN 2.0.
 Read more about:
 
 * [BPMN Primer](bpmn-workflows/bpmn-primer.html)
+* [Data Flow](bpmn-workflows/data-flow.html)
 * [Tasks](bpmn-workflows/tasks.html)
 * [Gateways](bpmn-workflows/gateways.html)
 * [Events](bpmn-workflows/events.html)
-* [Data Flow](bpmn-workflows/data-flow.html)
