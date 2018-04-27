@@ -27,7 +27,7 @@ import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
-import io.zeebe.protocol.impl.BrokerEventMetadata;
+import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.raft.controller.MemberReplicateLogController;
 import io.zeebe.raft.event.RaftConfigurationEvent;
 import io.zeebe.raft.state.RaftState;
@@ -50,7 +50,7 @@ public class ThroughPutTestRaft implements RaftStateListener
     protected final RaftConfigurationEvent configurationEvent = new RaftConfigurationEvent();
     protected final LogStreamWriterImpl writer = new LogStreamWriterImpl();
     protected final List<ThroughPutTestRaft> members;
-    protected final BrokerEventMetadata metadata = new BrokerEventMetadata();
+    protected final RecordMetadata metadata = new RecordMetadata();
     private final String name;
 
     protected ClientTransport clientTransport;
@@ -176,7 +176,7 @@ public class ThroughPutTestRaft implements RaftStateListener
         return members;
     }
 
-    public BrokerEventMetadata getMetadata()
+    public RecordMetadata getMetadata()
     {
         return metadata;
     }

@@ -22,22 +22,48 @@ import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
 
 import java.lang.reflect.Field;
 import java.nio.file.Files;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import io.zeebe.dispatcher.*;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
+import org.junit.rules.ExternalResource;
+import org.mockito.ArgumentMatcher;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
+import io.zeebe.dispatcher.Dispatcher;
+import io.zeebe.dispatcher.Dispatchers;
+import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
-import io.zeebe.logstreams.log.*;
-import io.zeebe.protocol.clientapi.EventType;
-import io.zeebe.protocol.impl.BrokerEventMetadata;
-import io.zeebe.raft.*;
+import io.zeebe.logstreams.log.BufferedLogStreamReader;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamWriterImpl;
+import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.raft.Loggers;
+import io.zeebe.raft.Raft;
+import io.zeebe.raft.RaftApiMessageHandler;
+import io.zeebe.raft.RaftConfiguration;
+import io.zeebe.raft.RaftStateListener;
 import io.zeebe.raft.controller.MemberReplicateLogController;
 import io.zeebe.raft.event.RaftConfigurationEvent;
 import io.zeebe.raft.event.RaftConfigurationEventMember;
@@ -46,20 +72,20 @@ import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.test.util.TestUtil;
-import io.zeebe.transport.*;
+import io.zeebe.transport.ClientOutput;
+import io.zeebe.transport.ClientTransport;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.RequestTimeoutException;
+import io.zeebe.transport.ServerTransport;
+import io.zeebe.transport.SocketAddress;
+import io.zeebe.transport.TransportMessage;
+import io.zeebe.transport.Transports;
 import io.zeebe.util.ByteValue;
 import io.zeebe.util.LogUtil;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.channel.OneToOneRingBufferChannel;
 import io.zeebe.util.sched.future.CompletableActorFuture;
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
-import org.junit.rules.ExternalResource;
-import org.mockito.ArgumentMatcher;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 public class RaftRule extends ExternalResource implements RaftStateListener
 {
@@ -74,7 +100,7 @@ public class RaftRule extends ExternalResource implements RaftStateListener
     protected final RaftConfigurationEvent configurationEvent = new RaftConfigurationEvent();
     protected final LogStreamWriterImpl writer = new LogStreamWriterImpl();
     protected final List<RaftRule> members;
-    protected final BrokerEventMetadata metadata = new BrokerEventMetadata();
+    protected final RecordMetadata metadata = new RecordMetadata();
 
     protected ClientTransport clientTransport;
     protected ClientOutput spyClientOutput;
@@ -379,7 +405,7 @@ public class RaftRule extends ExternalResource implements RaftStateListener
     {
         committedReader.seekToFirstEvent();
 
-        final BrokerEventMetadata metadata = new BrokerEventMetadata();
+        final RecordMetadata metadata = new RecordMetadata();
 
         return
             Arrays.stream(messages)
@@ -390,7 +416,7 @@ public class RaftRule extends ExternalResource implements RaftStateListener
                           final LoggedEvent event = committedReader.next();
                           event.readMetadata(metadata);
 
-                          if (metadata.getEventType() == EventType.NULL_VAL)
+                          if (metadata.getValueType() == ValueType.NULL_VAL)
                           {
                               try
                               {
@@ -409,7 +435,7 @@ public class RaftRule extends ExternalResource implements RaftStateListener
                   });
     }
 
-    public boolean eventCommitted(final int term, final EventType eventType)
+    public boolean eventCommitted(final int term, final ValueType eventType)
     {
         committedReader.seekToFirstEvent();
 
@@ -418,7 +444,7 @@ public class RaftRule extends ExternalResource implements RaftStateListener
             final LoggedEvent event = committedReader.next();
             event.readMetadata(metadata);
 
-            if (event.getRaftTerm() == term && metadata.getEventType() == eventType)
+            if (event.getRaftTerm() == term && metadata.getValueType() == eventType)
             {
                 return true;
             }
@@ -453,7 +479,7 @@ public class RaftRule extends ExternalResource implements RaftStateListener
             final LoggedEvent event = committedReader.next();
             event.readMetadata(metadata);
 
-            if (event.getRaftTerm() == term && metadata.getEventType() == EventType.RAFT_EVENT)
+            if (event.getRaftTerm() == term && metadata.getValueType() == ValueType.RAFT)
             {
                 event.readValue(configurationEvent);
 

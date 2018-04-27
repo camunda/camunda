@@ -20,15 +20,15 @@ import java.util.List;
 import io.zeebe.logstreams.log.LogStreamWriter;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.msgpack.value.ValueArray;
-import io.zeebe.protocol.clientapi.EventType;
-import io.zeebe.protocol.impl.BrokerEventMetadata;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.raft.Raft;
 import io.zeebe.raft.RaftMember;
 
 public class RaftEvent
 {
     public final LogStreamWriter logStreamWriter = new LogStreamWriterImpl();
-    public final BrokerEventMetadata metadata = new BrokerEventMetadata();
+    public final RecordMetadata metadata = new RecordMetadata();
     public final RaftConfigurationEvent configuration = new RaftConfigurationEvent();
 
     public RaftEvent reset()
@@ -44,7 +44,7 @@ public class RaftEvent
     {
         logStreamWriter.wrap(raft.getLogStream());
 
-        metadata.reset().eventType(EventType.RAFT_EVENT);
+        metadata.reset().valueType(ValueType.RAFT);
 
         configuration.reset();
 

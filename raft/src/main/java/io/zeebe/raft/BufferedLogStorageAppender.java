@@ -20,26 +20,29 @@ import static io.zeebe.raft.AppendRequestEncoder.previousEventTermNullValue;
 
 import java.nio.ByteBuffer;
 
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.slf4j.Logger;
+
 import io.zeebe.logstreams.impl.LoggedEventImpl;
-import io.zeebe.logstreams.log.*;
-import io.zeebe.protocol.clientapi.EventType;
-import io.zeebe.protocol.impl.BrokerEventMetadata;
+import io.zeebe.logstreams.log.BufferedLogStreamReader;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.raft.event.RaftConfigurationEvent;
 import io.zeebe.raft.protocol.AppendRequest;
 import io.zeebe.raft.protocol.AppendResponse;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.allocation.AllocatedBuffer;
 import io.zeebe.util.allocation.BufferAllocators;
-import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.slf4j.Logger;
 
 public class BufferedLogStorageAppender
 {
     private static final Logger LOG = Loggers.RAFT_LOGGER;
     public static final int INITIAL_CAPACITY = 1024 * 32;
 
-    private final BrokerEventMetadata metadata = new BrokerEventMetadata();
+    private final RecordMetadata metadata = new RecordMetadata();
     private final RaftConfigurationEvent configuration = new RaftConfigurationEvent();
     private final AppendResponse appendResponse = new AppendResponse();
 
@@ -177,7 +180,7 @@ public class BufferedLogStorageAppender
                 lastBufferedPosition = event.getPosition();
                 lastBufferedTerm = event.getRaftTerm();
 
-                if (metadata.getEventType() == EventType.RAFT_EVENT)
+                if (metadata.getValueType() == ValueType.RAFT)
                 {
                     // update configuration
                     event.readValue(configuration);

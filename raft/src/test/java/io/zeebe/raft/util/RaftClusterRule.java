@@ -15,26 +15,32 @@
  */
 package io.zeebe.raft.util;
 
-import static io.zeebe.protocol.clientapi.EventType.NOOP_EVENT;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
-import io.zeebe.logstreams.log.*;
-import io.zeebe.protocol.clientapi.EventType;
-import io.zeebe.protocol.impl.BrokerEventMetadata;
-import io.zeebe.raft.Loggers;
-import io.zeebe.raft.state.RaftState;
-import io.zeebe.servicecontainer.testing.ServiceContainerRule;
-import io.zeebe.test.util.TestUtil;
-import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import io.zeebe.logstreams.log.BufferedLogStreamReader;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.impl.RecordMetadata;
+import io.zeebe.raft.Loggers;
+import io.zeebe.raft.state.RaftState;
+import io.zeebe.servicecontainer.testing.ServiceContainerRule;
+import io.zeebe.test.util.TestUtil;
+import io.zeebe.util.sched.testing.ActorSchedulerRule;
 
 public class RaftClusterRule implements TestRule
 {
@@ -45,7 +51,7 @@ public class RaftClusterRule implements TestRule
 
     public static final Logger LOG = LoggerFactory.getLogger("io.zeebe.raft.test");
 
-    protected final BrokerEventMetadata metadata = new BrokerEventMetadata();
+    protected final RecordMetadata metadata = new RecordMetadata();
 
     private final ActorSchedulerRule actorScheduler;
     private final ServiceContainerRule serviceContainerRule;
@@ -186,7 +192,7 @@ public class RaftClusterRule implements TestRule
 
     public void awaitInitialEventCommittedOnAll(final int term)
     {
-        awaitCondition(() -> rafts.stream().allMatch(raft -> raft.eventCommitted(term, NOOP_EVENT)), ALL_COMMITTED_RETRIES,
+        awaitCondition(() -> rafts.stream().allMatch(raft -> raft.eventCommitted(term, ValueType.NOOP)), ALL_COMMITTED_RETRIES,
             "Failed to wait for initial event of term %d to be committed on all log streams", term);
     }
 
@@ -237,7 +243,7 @@ public class RaftClusterRule implements TestRule
 
             String message = "";
 
-            if (metadata.getEventType() == EventType.NULL_VAL)
+            if (metadata.getValueType() == ValueType.NULL_VAL)
             {
                 try
                 {
@@ -249,7 +255,7 @@ public class RaftClusterRule implements TestRule
                 }
             }
 
-            LOG.error("Event { position: {}, term: {}, type: {}, committed: {}{} }", next.getPosition(), next.getRaftTerm(), metadata.getEventType(), next.getPosition() <= commitPosition, message);
+            LOG.error("Event { position: {}, term: {}, type: {}, committed: {}{} }", next.getPosition(), next.getRaftTerm(), metadata.getValueType(), next.getPosition() <= commitPosition, message);
         }
     }
 

@@ -15,22 +15,22 @@
  */
 package io.zeebe.raft.event;
 
-import static io.zeebe.protocol.clientapi.EventType.NOOP_EVENT;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import io.zeebe.logstreams.log.LogStreamWriter;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.msgpack.spec.MsgPackHelper;
-import io.zeebe.protocol.impl.BrokerEventMetadata;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.raft.Raft;
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public class InitialEvent
 {
     private static final DirectBuffer EMPTY_OBJECT = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
 
     public final LogStreamWriter logStreamWriter = new LogStreamWriterImpl();
-    public final BrokerEventMetadata metadata = new BrokerEventMetadata();
+    public final RecordMetadata metadata = new RecordMetadata();
 
     public InitialEvent reset()
     {
@@ -45,7 +45,7 @@ public class InitialEvent
 
         metadata
             .reset()
-            .eventType(NOOP_EVENT);
+            .valueType(ValueType.NOOP);
 
         return logStreamWriter
             .positionAsKey()
