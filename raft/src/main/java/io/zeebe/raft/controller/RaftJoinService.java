@@ -51,14 +51,14 @@ public class RaftJoinService implements Service<Void>
     private final CompletableActorFuture<Void> whenJoinCompleted = new CompletableActorFuture<>();
     private final CompletableActorFuture<Void> whenLeaveCompleted = new CompletableActorFuture<>();
 
-    private final int leaveTimeoutMs;
+    private final long leaveTimeout;
 
     public RaftJoinService(final Raft raft, ActorControl actorControl)
     {
         this.actor = actorControl;
         this.raft = raft;
         this.raftMembers = raft.getRaftMembers();
-        this.leaveTimeoutMs = raft.getConfiguration().getLeaveTimeoutMs();
+        this.leaveTimeout = raft.getConfiguration().getLeaveTimeout();
     }
 
     @Override
@@ -115,7 +115,7 @@ public class RaftJoinService implements Service<Void>
 
         }, onLeaveCluster);
 
-        actor.runDelayed(Duration.ofMillis(leaveTimeoutMs), () ->
+        actor.runDelayed(Duration.ofMillis(leaveTimeout), () ->
         {
             final String timeoutMessage = "Timeout while leaving raft cluster.";
             LOG.warn(timeoutMessage);

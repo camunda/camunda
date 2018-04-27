@@ -79,7 +79,7 @@ public class MemberReplicateLogController extends Actor implements Service<Void>
         this.name = String.format("raft-repl-%s-%s", raft.getName(), remoteAddress.toString());
 
         this.raft = raft;
-        this.heartbeatIntervalMs = raft.getConfiguration().getHeartbeatIntervalMs();
+        this.heartbeatIntervalMs = raft.getConfiguration().getHeartbeatInterval();
         this.clientOutput = clientTransport.getOutput();
         this.logStream = raft.getLogStream();
         this.reader = new BufferedLogStreamReader(logStream, true);

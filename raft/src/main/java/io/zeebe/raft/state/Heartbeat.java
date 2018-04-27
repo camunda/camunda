@@ -22,10 +22,10 @@ import io.zeebe.util.sched.clock.ActorClock;
 
 public class Heartbeat
 {
-    private final int electionInterval;
+    private final long electionInterval;
     private long lastHeartbeat = 0;
 
-    public Heartbeat(int electionInterval)
+    public Heartbeat(long electionInterval)
     {
         this.electionInterval = electionInterval;
     }

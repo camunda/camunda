@@ -19,52 +19,57 @@ import java.time.Duration;
 
 public class RaftConfiguration
 {
-    protected int heartbeatIntervalMs = 250;
-    protected int electionIntervalMs = 1000;
-    protected int leaveTimeoutMs = 1000;
+    private long heartbeatInterval = 250;
+    private long electionInterval = 1000;
+    private long leaveTimeout = 1000;
 
-    public int getHeartbeatIntervalMs()
+    public long getHeartbeatInterval()
     {
-        return heartbeatIntervalMs;
+        return heartbeatInterval;
     }
 
-    public Duration getHeartbeatInterval()
+    public RaftConfiguration setHeartbeatInterval(final long heartbeatIntervalMs)
     {
-        return Duration.ofMillis(heartbeatIntervalMs);
-    }
-
-    public RaftConfiguration setHeartbeatIntervalMs(final int heartbeatIntervalMs)
-    {
-        this.heartbeatIntervalMs = heartbeatIntervalMs;
+        this.heartbeatInterval = heartbeatIntervalMs;
         return this;
     }
 
-    public int getElectionIntervalMs()
+    public long getElectionInterval()
     {
-        return electionIntervalMs;
+        return electionInterval;
     }
 
-    public RaftConfiguration setElectionIntervalMs(final int electionIntervalMs)
+    public Duration getElectionIntervalDuration()
     {
-        this.electionIntervalMs = electionIntervalMs;
+        return Duration.ofMillis(electionInterval);
+    }
+
+    public RaftConfiguration setElectionInterval(final long electionInterval)
+    {
+        this.electionInterval = electionInterval;
         return this;
     }
 
-    public int getLeaveTimeoutMs()
+    public long getLeaveTimeout()
     {
-        return leaveTimeoutMs;
+        return leaveTimeout;
     }
 
-    public RaftConfiguration setLeaveTimeoutMs(int leaveTimeoutMs)
+    public Duration getLeaveTimeoutDuration()
     {
-        this.leaveTimeoutMs = leaveTimeoutMs;
+        return Duration.ofMillis(leaveTimeout);
+    }
+
+    public RaftConfiguration setLeaveTimeout(long leaveTimeoutMs)
+    {
+        this.leaveTimeout = leaveTimeoutMs;
         return this;
     }
 
     @Override
     public String toString()
     {
-        return "RaftConfiguration{" + "heartbeatIntervalMs=" + heartbeatIntervalMs +
-            ", electionIntervalMs=" + electionIntervalMs + '}';
+        return "RaftConfiguration{" + "heartbeatIntervalMs=" + heartbeatInterval +
+            ", electionIntervalMs=" + electionInterval + '}';
     }
 }
