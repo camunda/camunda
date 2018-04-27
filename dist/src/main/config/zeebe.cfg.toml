@@ -26,12 +26,15 @@
 
 # ----------------------------------------------------
 
-# Controls the number of nodes this broker waits for until doing bootstrapping.
-# * When using a single node cluser, the value should be 1
-# * When using a multi-node cluster, the value should be either 3 or 5,
-#   depending on the size of the cluster.
-# (The broker includes itself in the count, ie. when specifying '1', the broker
-# waits for itself.)
+# Controls the number of nodes this broker waits for until doing bootstrapping:
+#
+# * When using a single-node cluser, the value should be 1
+# * When using a multi-node cluster, one node should be configured with
+#   bootstrap = 3 (or 5, depending on the cluster size) and for all the other
+#   nodes it should be set to 0.
+#
+# (Note that the broker includes itself in the count, ie. when specifying '1',
+# the broker waits for itself.)
 #
 # Explanation: When doing bootstrapping, the broker ensures that internally used
 # resources such as the 'internal-system' topic are available. The
