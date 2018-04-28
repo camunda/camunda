@@ -1,5 +1,8 @@
 # Configuration file for docker
 
+# TODO: should be passed in as argument when starting container?
+bootstrap = 1
+
 [network]
 host = "@DNSNAME@"
 
