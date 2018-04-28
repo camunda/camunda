@@ -145,7 +145,7 @@ import:
       maxPageSize: 1000
       #The name of the variable type.
       elasticsearchType: variable
-  #Number of threads being used to process the import jobs that are writing data to elasticsearch.
+  # Number of threads being used to process the import jobs that are writing data to elasticsearch.
   elasticsearchJobExecutorThreadCount: 2
   #Adjust the queue size of the import jobs that store data to elasticsearch.
   #A too large value might cause memory problems.
@@ -156,16 +156,13 @@ import:
   maxPageSize: 1000
   handler:
     backoff:
-      #Interval which is used for the backoff time calculation.
-      interval: 10000
-      #If all jobs are backing off at the moment, this interval is used
-      #to trigger general backoff
-      value: 60000
-      #Once all pages are consumed, the import scheduler component will
-      #start scheduling fetching tasks in increasing periods of time,
-      #controlled by "backoff" counter.
+      # Interval which is used for the backoff time calculation.
+      interval: 5000
+      # Once all pages are consumed, the import service component will
+      # start scheduling fetching tasks in increasing periods of time,
+      # controlled by "backoff" counter.
       max: 15
-      #Tells if the backoff is enabled of not.
+      # Tells if the backoff is enabled of not.
       isEnabled: true
   #The name of the import index type.
   indexType: import-index

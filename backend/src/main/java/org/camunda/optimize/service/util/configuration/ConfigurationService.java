@@ -101,7 +101,6 @@ public class ConfigurationService {
   private Integer esNumberOfShards;
   private Integer engineImportProcessDefinitionXmlMaxPageSize;
   private String processDefinitionXmlEndpoint;
-  private Long generalBackoff;
   private Integer importIndexAutoStorageIntervalInSec;
   private Long samplerInterval;
   private List<String> variableImportPluginBasePackages;
@@ -622,13 +621,6 @@ public class ConfigurationService {
       dashboardType = jsonContext.read(ConfigurationServiceConstants.DASHBOARD_TYPE);
     }
     return dashboardType;
-  }
-
-  public long getGeneralBackoff() {
-    if (generalBackoff == null) {
-      generalBackoff = jsonContext.read(ConfigurationServiceConstants.GENERAL_BACKOFF, Long.class);
-    }
-    return generalBackoff;
   }
 
   public long getSamplerInterval() {
@@ -1218,10 +1210,6 @@ public class ConfigurationService {
 
   public void setDashboardType(String dashboardType) {
     this.dashboardType = dashboardType;
-  }
-
-  public void setGeneralBackoff(Long generalBackoff) {
-    this.generalBackoff = generalBackoff;
   }
 
   public void setSamplerInterval(Long samplerInterval) {
