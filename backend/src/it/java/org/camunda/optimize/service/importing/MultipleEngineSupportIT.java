@@ -8,7 +8,7 @@ import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.EngineAuthenticationConfiguration;
 import org.camunda.optimize.service.util.configuration.EngineConfiguration;
-import org.camunda.optimize.test.it.rule.ElasticsearchIntegrationRule;
+import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.elasticsearch.action.search.SearchResponse;
@@ -48,7 +48,7 @@ public class MultipleEngineSupportIT {
   private EngineIntegrationRule defaultEngineRule = new EngineIntegrationRule();
   private EngineIntegrationRule secondEngineRule =
     new EngineIntegrationRule("multiple-engine/multiple-engine-integration-rules.properties");
-  public ElasticsearchIntegrationRule elasticSearchRule = new ElasticsearchIntegrationRule();
+  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 
   private ConfigurationService configurationService;

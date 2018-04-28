@@ -1,12 +1,15 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.query.LicenseInformationDto;
-import org.camunda.optimize.test.it.rule.ElasticsearchIntegrationRule;
+import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
+import org.junit.runner.RunWith;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.GenericType;
@@ -17,8 +20,11 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Date;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -27,7 +33,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 public class LicenseCheckingRestServiceIT {
 
-  public static ElasticsearchIntegrationRule elasticSearchRule = new ElasticsearchIntegrationRule();
+  public static ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 
   private static final String CUSTOMER_ID = "schrottis inn";

@@ -2,7 +2,7 @@ package org.camunda.optimize.websocket;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.test.it.rule.ElasticsearchIntegrationRule;
+import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.junit.Rule;
@@ -12,6 +12,7 @@ import org.junit.rules.RuleChain;
 import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
 import java.net.URI;
+import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -24,7 +25,7 @@ public class StatusWebSocketIT {
 
   private static final String PROCESS_ID = "aProcessId";
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
-  public ElasticsearchIntegrationRule elasticSearchRule = new ElasticsearchIntegrationRule();
+  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 
   @Rule

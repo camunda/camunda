@@ -1,6 +1,6 @@
 package org.camunda.optimize.service.security;
 
-import org.camunda.optimize.dto.optimize.query.user.CredentialsDto;
+import org.camunda.optimize.dto.optimize.query.CredentialsDto;
 
 /**
  * @author Askar Akhmerov

@@ -2,7 +2,7 @@ package org.camunda.optimize.service.metadata;
 
 import org.camunda.optimize.dto.optimize.query.MetadataDto;
 import org.camunda.optimize.service.es.reader.MetadataReader;
-import org.camunda.optimize.test.it.rule.ElasticsearchIntegrationRule;
+import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.junit.Rule;
@@ -19,7 +19,7 @@ import static org.junit.Assert.fail;
 public class MetadataServiceIT {
 
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
-  public ElasticsearchIntegrationRule elasticSearchRule = new ElasticsearchIntegrationRule();
+  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 
   @Rule

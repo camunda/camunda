@@ -10,11 +10,11 @@ import org.camunda.optimize.dto.optimize.query.report.filter.VariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.data.DateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.data.ExecutedFlowNodeFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.filter.data.VariableFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.user.CredentialsDto;
-import org.camunda.optimize.dto.optimize.query.user.PermissionsDto;
-import org.camunda.optimize.dto.optimize.query.user.ProcessDefinitionPermissionsDto;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 
+/**
+ * @author Askar Akhmerov
+ */
 public class ValidationHelper {
 
   public static void validate(BranchAnalysisQueryDto dto) throws OptimizeValidationException {
@@ -112,17 +112,5 @@ public class ValidationHelper {
     if (value <= 0) {
       throw new OptimizeValidationException("Value should be greater than zero, but was " + value + "!");
     }
-  }
-
-  public static void validate(CredentialsDto userPassword) {
-    ensureNotNull("user and password", userPassword);
-    ensureNotEmpty("user id", userPassword.getId());
-    ensureNotEmpty("user password", userPassword.getPassword());
-  }
-
-  public static void validate(PermissionsDto updatedPermissions) {
-    ensureNotNull("permissions", updatedPermissions);
-    ProcessDefinitionPermissionsDto processDefinitions = updatedPermissions.getProcessDefinitions();
-    ensureNotNull("process definition permission list", processDefinitions.getIdList());
   }
 }

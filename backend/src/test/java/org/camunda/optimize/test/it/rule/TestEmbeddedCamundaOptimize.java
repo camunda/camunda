@@ -1,6 +1,6 @@
 package org.camunda.optimize.test.it.rule;
 
-import org.camunda.optimize.dto.optimize.query.user.CredentialsDto;
+import org.camunda.optimize.dto.optimize.query.CredentialsDto;
 import org.camunda.optimize.jetty.EmbeddedCamundaOptimize;
 import org.camunda.optimize.rest.providers.OptimizeObjectMapperProvider;
 import org.camunda.optimize.service.es.ElasticSearchSchemaInitializer;
@@ -91,9 +91,9 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
         BeanUtils.copyProperties(defaultConfiguration, perTestConfiguration);
       }
       BeanUtils.copyProperties(perTestConfiguration, testOptimizeInstance.getConfigurationService());
+      reloadConfiguration();
       storeAuthenticationToken();
     }
-    reloadConfiguration();
   }
 
   public boolean isStarted() {
@@ -171,7 +171,7 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
 
   private Response authenticateAdminRequest() {
     CredentialsDto entity = new CredentialsDto();
-    entity.setId(DEFAULT_USERNAME);
+    entity.setUsername(DEFAULT_USERNAME);
     entity.setPassword(DEFAULT_PASSWORD);
 
     return target()

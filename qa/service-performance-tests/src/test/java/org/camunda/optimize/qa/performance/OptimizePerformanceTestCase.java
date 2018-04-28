@@ -5,7 +5,7 @@ import org.camunda.bpm.engine.impl.util.IoUtil;
 import org.camunda.optimize.qa.performance.framework.PerfTestBuilder;
 import org.camunda.optimize.qa.performance.framework.PerfTestConfiguration;
 import org.camunda.optimize.qa.performance.util.PerfTestException;
-import org.camunda.optimize.test.it.rule.ElasticsearchIntegrationRule;
+import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -19,7 +19,7 @@ import java.util.Properties;
 
 public abstract class OptimizePerformanceTestCase {
 
-  public static ElasticsearchIntegrationRule elasticSearchRule = new ElasticsearchIntegrationRule();
+  public static ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public static EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 
   @ClassRule

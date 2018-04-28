@@ -120,6 +120,8 @@ public class AlertWriter {
 
   /**
    * Delete all alerts that are associated with following report ID
+   *
+   * @param reportId
    */
   public void deleteAlertsForReport(String reportId) {
     BulkByScrollResponse bulkByScrollResponse = DeleteByQueryAction.INSTANCE.newRequestBuilder(esclient)

@@ -1,7 +1,9 @@
 package org.camunda.optimize.service.security;
 
-import org.camunda.optimize.dto.optimize.query.user.CredentialsDto;
+import org.camunda.optimize.dto.optimize.query.CredentialsDto;
+import org.camunda.optimize.dto.optimize.query.EngineCredentialsDto;
 import org.camunda.optimize.service.exceptions.UnauthorizedUserException;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -24,11 +26,11 @@ public class AuthenticationService {
     boolean authorizedInEngine = engineAuthenticationProvider.authenticate(credentials);
 
     if (!authorizedInEngine && !elasticAuthenticationProvider.authenticate(credentials)) {
-      throw new UnauthorizedUserException("Can't authorize user [" + credentials.getId() + "]");
+      throw new UnauthorizedUserException("Can't authorize user [" + credentials.getUsername() + "]");
     }
 
     // Issue a token for the user
-    String token = tokenService.issueToken(credentials.getId());
+    String token = tokenService.issueToken(credentials.getUsername());
     return token;
   }
 }
