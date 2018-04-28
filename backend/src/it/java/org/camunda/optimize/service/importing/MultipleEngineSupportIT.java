@@ -238,7 +238,7 @@ public class MultipleEngineSupportIT {
   @Test
   public void allProcessInstancesEventAndVariablesAreImportedWithAuthentication() {
     // given
-    secondEngineRule.addUser("demo", "demo");
+    secondEngineRule.addUser("admin", "admin");
     addSecureEngineToConfiguration("anotherEngine");
     embeddedOptimizeRule.reloadConfiguration();
     deployAndStartSimpleProcessDefinitionForAllEngines();
@@ -277,8 +277,8 @@ public class MultipleEngineSupportIT {
 
     // given
     defaultEngineRule.createGroup("optimizeGroup1", "Optimize Access Group", "Foo type");
-    defaultEngineRule.addUser("demo", "demo");
-    defaultEngineRule.addUserToGroup("demo", "optimizeGroup1");
+    defaultEngineRule.addUser("admin", "admin");
+    defaultEngineRule.addUserToGroup("admin", "optimizeGroup1");
     defaultEngineRule.addUser("kermit", "frog");
 
     secondEngineRule.createGroup("optimizeGroup2", "Optimize Access Group", "Foo type");
@@ -287,7 +287,7 @@ public class MultipleEngineSupportIT {
     secondEngineRule.addUser("scooter", "scooter");
 
     // when
-    Response response = embeddedOptimizeRule.authenticateUserRequest("demo", "demo");
+    Response response = embeddedOptimizeRule.authenticateUserRequest("admin", "admin");
 
     // then
     assertThat(response.getStatus(),is(200));
@@ -319,11 +319,11 @@ public class MultipleEngineSupportIT {
   public void userIsAuthenticatedAgainstEachEngine() {
     // given
     addSecondEngineToConfiguration();
-    defaultEngineRule.addUser("demo", "demo");
+    defaultEngineRule.addUser("kermit", "kermit");
     secondEngineRule.addUser("gonzo", "gonzo");
 
     // when
-    Response response = embeddedOptimizeRule.authenticateUserRequest("demo", "demo");
+    Response response = embeddedOptimizeRule.authenticateUserRequest("kermit", "kermit");
 
     // then
     assertThat(response.getStatus(),is(200));
@@ -401,7 +401,7 @@ public class MultipleEngineSupportIT {
   }
 
   private void addSecureEngineToConfiguration(String engineName) {
-    addEngineToConfiguration(engineName, SECURE_REST_ENDPOINT, true, "demo", "demo");
+    addEngineToConfiguration(engineName, SECURE_REST_ENDPOINT, true, "admin", "admin");
   }
 
   private void addEngineToConfiguration(String engineName, String restEndpoint, boolean withAuthentication, String username, String password) {

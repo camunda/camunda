@@ -59,7 +59,6 @@ public class ConfigurationService {
   private String eventType;
   private String processDefinitionType;
   private String processDefinitionXmlType;
-  private String elasticsearchUsersType;
   private String importIndexType;
   private String scrollImportIndexType;
   private String durationHeatmapTargetValueType;
@@ -78,8 +77,6 @@ public class ConfigurationService {
   private String analyzerName;
   private String tokenizer;
   private String tokenFilter;
-  private String defaultUser;
-  private String defaultPassword;
   private String engineDateFormat;
   private String optimizeDateFormat;
   private Integer engineImportMaxPageSize;
@@ -111,7 +108,6 @@ public class ConfigurationService {
   private Integer numberOfRetriesOnConflict;
   private Integer engineImportProcessDefinitionMaxPageSize;
   private Long engineImportActivityInstanceMaxPageSize;
-  private Boolean defaultUserCreationEnabled;
   private String groupsEndpoint;
   private String containerHost;
   private String containerKeystorePassword;
@@ -348,13 +344,6 @@ public class ConfigurationService {
     return processDefinitionXmlType;
   }
 
-  public String getElasticSearchUsersType() {
-    if (elasticsearchUsersType == null) {
-      elasticsearchUsersType = jsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_USERS_TYPE);
-    }
-    return elasticsearchUsersType;
-  }
-
   public String getAnalyzerName() {
     if (analyzerName == null) {
       analyzerName = jsonContext.read(ConfigurationServiceConstants.ANALYZER_NAME);
@@ -374,20 +363,6 @@ public class ConfigurationService {
       tokenFilter = jsonContext.read(ConfigurationServiceConstants.TOKEN_FILTER);
     }
     return tokenFilter;
-  }
-
-  public String getDefaultUser() {
-    if (defaultUser == null) {
-      defaultUser = jsonContext.read(ConfigurationServiceConstants.DEFAULT_USER);
-    }
-    return defaultUser;
-  }
-
-  public String getDefaultPassword() {
-    if (defaultPassword == null) {
-      defaultPassword = jsonContext.read(ConfigurationServiceConstants.DEFAULT_PASSWORD);
-    }
-    return defaultPassword;
   }
 
   public String getEngineDateFormat() {
@@ -679,13 +654,6 @@ public class ConfigurationService {
     return engineImportActivityInstanceMaxPageSize;
   }
 
-  public boolean isDefaultUserCreationEnabled() {
-    if (defaultUserCreationEnabled == null) {
-      defaultUserCreationEnabled = jsonContext.read(ConfigurationServiceConstants.DEFAULT_USER_ENABLED);
-    }
-    return defaultUserCreationEnabled;
-  }
-
   public String getGetGroupsEndpoint() {
     if (groupsEndpoint == null) {
       groupsEndpoint = jsonContext.read(ConfigurationServiceConstants.GET_GROUPS_ENDPOINT);
@@ -770,13 +738,6 @@ public class ConfigurationService {
     return haiCountEndpoint;
   }
 
-  public String getElasticsearchUsersType() {
-    if (elasticsearchUsersType == null) {
-      elasticsearchUsersType = jsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_USERS_TYPE);
-    }
-    return elasticsearchUsersType;
-  }
-
   public String getFinishedPiIdTrackingType() {
     if (finishedPiIdTrackingType == null) {
       finishedPiIdTrackingType = jsonContext.read(ConfigurationServiceConstants.FINISHED_PROCESS_INSTANCE_ID_TRACKING_TYPE);
@@ -817,13 +778,6 @@ public class ConfigurationService {
       hpiCountEndpoint = jsonContext.read(ConfigurationServiceConstants.HPI_COUNT_ENDPOINT);
     }
     return hpiCountEndpoint;
-  }
-
-  public Boolean getDefaultUserCreationEnabled() {
-    if (defaultUserCreationEnabled == null) {
-      defaultUserCreationEnabled = jsonContext.read(ConfigurationServiceConstants.DEFAULT_USER_ENABLED);
-    }
-    return defaultUserCreationEnabled;
   }
 
   public String getGroupsEndpoint() {
@@ -974,10 +928,6 @@ public class ConfigurationService {
     this.variableImportPluginBasePackages = variableImportPluginBasePackages;
   }
 
-  public void setDefaultUserCreationEnabled(Boolean defaultUserCreationEnabled) {
-    this.defaultUserCreationEnabled = defaultUserCreationEnabled;
-  }
-
   public void setConfiguredEngines(Map<String, EngineConfiguration> configuredEngines) {
     this.configuredEngines = configuredEngines;
   }
@@ -1070,10 +1020,6 @@ public class ConfigurationService {
     this.processDefinitionXmlType = processDefinitionXmlType;
   }
 
-  public void setElasticsearchUsersType(String elasticsearchUsersType) {
-    this.elasticsearchUsersType = elasticsearchUsersType;
-  }
-
   public void setImportIndexAutoStorageIntervalInSec(Integer importIndexAutoStorageIntervalInSec) {
     this.importIndexAutoStorageIntervalInSec = importIndexAutoStorageIntervalInSec;
   }
@@ -1088,14 +1034,6 @@ public class ConfigurationService {
 
   public void setTokenFilter(String tokenFilter) {
     this.tokenFilter = tokenFilter;
-  }
-
-  public void setDefaultUser(String defaultUser) {
-    this.defaultUser = defaultUser;
-  }
-
-  public void setDefaultPassword(String defaultPassword) {
-    this.defaultPassword = defaultPassword;
   }
 
   public void setEngineDateFormat(String engineDateFormat) {

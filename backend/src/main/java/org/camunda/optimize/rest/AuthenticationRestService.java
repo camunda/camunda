@@ -22,8 +22,6 @@ import javax.ws.rs.core.Response;
 /**
  * Basic implementation of authentication tokens creation based on user credentials.
  * Please note that authentication token validation/refresh is performed in request filters.
- *
- * @author Askar Akhmerov
  */
 @Path("/authentication")
 @Component

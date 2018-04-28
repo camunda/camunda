@@ -2,6 +2,9 @@ package org.camunda.optimize.test.it.rule;
 
 import org.camunda.optimize.dto.optimize.query.CredentialsDto;
 import org.camunda.optimize.jetty.EmbeddedCamundaOptimize;
+import org.camunda.optimize.rest.engine.dto.UserCredentialsDto;
+import org.camunda.optimize.rest.engine.dto.UserDto;
+import org.camunda.optimize.rest.engine.dto.UserProfileDto;
 import org.camunda.optimize.rest.providers.OptimizeObjectMapperProvider;
 import org.camunda.optimize.service.es.ElasticSearchSchemaInitializer;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
@@ -9,6 +12,8 @@ import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.test.util.PropertyUtil;
 import org.glassfish.jersey.client.ClientProperties;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.context.ApplicationContext;
 
@@ -25,15 +30,15 @@ import java.util.Properties;
  * This class is wrapper around the embedded optimize to ensure
  * only one instance is used for all tests. Also makes sure the
  * configuration is reloadConfiguration after each test.
- *
- * @author Askar Akhmerov
  */
 public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
 
+  private Logger logger = LoggerFactory.getLogger(getClass());
+
   private final static String DEFAULT_CONTEXT_LOCATION = "classpath:embeddedOptimizeContext.xml";
   private final static String propertiesLocation = "integration-rules.properties";
-  public static final String DEFAULT_USERNAME = "admin";
-  public static final String DEFAULT_PASSWORD = "admin";
+  public static final String DEFAULT_USERNAME = "demo";
+  public static final String DEFAULT_PASSWORD = "demo";
 
   private static String authenticationToken;
   private Properties properties;
@@ -151,7 +156,7 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
    */
   private void storeAuthenticationToken() {
     if(authenticationToken == null) {
-      authenticationToken = this.authenticateAdmin();
+      authenticationToken = getNewAuthenticationToken();
     }
   }
 
@@ -160,16 +165,42 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
   }
 
   public String getNewAuthenticationToken() {
-    authenticationToken = this.authenticateAdmin();
+    addDemoUserToEngine();
+    authenticationToken = this.authenticateDemoUser();
     return authenticationToken;
   }
 
-  private String authenticateAdmin() {
-    Response tokenResponse = authenticateAdminRequest();
+  private String authenticateDemoUser() {
+    Response tokenResponse = authenticateDemo();
     return tokenResponse.readEntity(String.class);
   }
 
-  private Response authenticateAdminRequest() {
+  private void addDemoUserToEngine() {
+    UserDto userDto = constructDemoUserDto(DEFAULT_USERNAME, DEFAULT_PASSWORD);
+    try {
+      getClient()
+        .target(getEngineUrl())
+        .path("/user/create")
+        .request()
+        .post(Entity.json(userDto));
+    } catch (Exception e) {
+      logger.error("Could not create demo user", e);
+    }
+  }
+
+  private UserDto constructDemoUserDto(String username, String password) {
+    UserProfileDto profile = new UserProfileDto();
+    profile.setEmail("foo@camunda.org");
+    profile.setId(username);
+    UserCredentialsDto credentials = new UserCredentialsDto();
+    credentials.setPassword(password);
+    UserDto userDto = new UserDto();
+    userDto.setProfile(profile);
+    userDto.setCredentials(credentials);
+    return userDto;
+  }
+
+  private Response authenticateDemo() {
     CredentialsDto entity = new CredentialsDto();
     entity.setUsername(DEFAULT_USERNAME);
     entity.setPassword(DEFAULT_PASSWORD);
@@ -205,6 +236,11 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
 
   private String getEmbeddedOptimizeEndpoint() {
     return properties.getProperty("camunda.optimize.test.embedded-optimize");
+  }
+
+  private String getEngineUrl() {
+    return properties.get("camunda.optimize.engine.rest").toString() +
+        properties.get("camunda.optimize.engine.name").toString();
   }
 
   private String getEmbeddedOptimizeRootEndpoint() {

@@ -9,13 +9,8 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 
-/**
- * @author Askar Akhmerov
- */
 @Component
 public class AuthenticationService {
-  @Resource (name = "elasticAuthenticationProvider")
-  private AuthenticationProvider elasticAuthenticationProvider;
   @Resource (name = "engineAuthenticationProvider")
   private AuthenticationProvider engineAuthenticationProvider;
 
@@ -25,7 +20,7 @@ public class AuthenticationService {
   public String authenticateUser(CredentialsDto credentials) throws UnauthorizedUserException {
     boolean authorizedInEngine = engineAuthenticationProvider.authenticate(credentials);
 
-    if (!authorizedInEngine && !elasticAuthenticationProvider.authenticate(credentials)) {
+    if (!authorizedInEngine) {
       throw new UnauthorizedUserException("Can't authorize user [" + credentials.getUsername() + "]");
     }
 

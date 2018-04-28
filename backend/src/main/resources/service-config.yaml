@@ -1,16 +1,5 @@
 ---
 auth:
-  defaultAuthentication:
-    #Default password that is automatically added the first time
-    #optimize is started.
-    password: admin
-    #Default user name that is automatically added the first time
-    #optimize is started.
-    user: admin
-    #Enables the creation of the default Optimize user. If you're using
-    #Optimize in production, you should disable this property,
-    #so you just use the users from the engine.
-    creationEnabled: true
   token:
     #Optimize uses token-based authentication to keep track of which users are
     #logged in. Define when a token is supposed to expire.

@@ -48,11 +48,11 @@ public class AuthenticationRestServiceEngineIT {
   @Test
   public void authenticateUser() throws Exception {
     //given
-    engineRule.addUser("demo", "demo");
+    engineRule.addUser("kermit", "kermit");
 
 
     //when
-    Response response = embeddedOptimizeRule.authenticateUserRequest("demo", "demo");
+    Response response = embeddedOptimizeRule.authenticateUserRequest("kermit", "kermit");
 
     //then
     assertThat(response.getStatus(),is(200));
@@ -62,10 +62,10 @@ public class AuthenticationRestServiceEngineIT {
   public void everyUserCanBeAuthenticatedFromEngineIfNoAccessGroupWasSpecified() {
     // given
     setAccessGroupInConfiguration("");
-    engineRule.addUser("demo", "demo");
+    engineRule.addUser("kermit", "kermit");
 
     // when
-    Response response = embeddedOptimizeRule.authenticateDemoRequest();
+    Response response = embeddedOptimizeRule.authenticateUserRequest("kermit", "kermit");
 
     //then
     assertThat(response.getStatus(),is(200));
@@ -78,12 +78,12 @@ public class AuthenticationRestServiceEngineIT {
     // given
     setAccessGroupInConfiguration("optimizeGroup");
     engineRule.createGroup("optimizeGroup", "Optimize Access Group", "Foo type");
-    engineRule.addUser("demo", "demo");
-    engineRule.addUserToGroup("demo", "optimizeGroup");
-    engineRule.addUser("kermit", "frog");
+    engineRule.addUser("kermit", "kermit");
+    engineRule.addUserToGroup("kermit", "optimizeGroup");
+    engineRule.addUser("genzo", "frog");
 
     // when
-    Response response = embeddedOptimizeRule.authenticateUserRequest("demo", "demo");
+    Response response = embeddedOptimizeRule.authenticateUserRequest("kermit", "kermit");
 
     // then
     assertThat(response.getStatus(),is(200));
@@ -91,7 +91,7 @@ public class AuthenticationRestServiceEngineIT {
     assertThat(responseEntity,is(notNullValue()));
 
     // when
-    response = embeddedOptimizeRule.authenticateUserRequest("kermit", "frog");
+    response = embeddedOptimizeRule.authenticateUserRequest("genzo", "frog");
 
     // then
     assertThat(response.getStatus(),is(401));

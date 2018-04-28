@@ -7,6 +7,7 @@ import org.camunda.optimize.qa.performance.framework.PerfTestConfiguration;
 import org.camunda.optimize.qa.performance.util.PerfTestException;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
+import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -21,10 +22,11 @@ public abstract class OptimizePerformanceTestCase {
 
   public static ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public static EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
+  public static EngineIntegrationRule engineIntegrationRule = new EngineIntegrationRule();
 
   @ClassRule
   public static RuleChain chain = RuleChain
-      .outerRule(elasticSearchRule).around(embeddedOptimizeRule);
+      .outerRule(elasticSearchRule).around(engineIntegrationRule).around(embeddedOptimizeRule);
 
   private static final String PROPERTIES_FILE_NAME;
 
@@ -36,7 +38,7 @@ public abstract class OptimizePerformanceTestCase {
   protected PerfTestBuilder testBuilder;
 
   @BeforeClass
-  public static void init() throws IOException {
+  public static void init() {
     Properties properties = loadConfigurationProperties();
     configuration = new PerfTestConfiguration(properties);
   }
@@ -55,7 +57,7 @@ public abstract class OptimizePerformanceTestCase {
   }
 
   private void authenticate(PerfTestConfiguration configuration) throws JsonProcessingException {
-    elasticSearchRule.addDemoUser();
+    engineIntegrationRule.addUser("demo", "demo");
     String authorizationToken = embeddedOptimizeRule.authenticateDemo();
     configuration.setAuthorizationToken(authorizationToken);
   }

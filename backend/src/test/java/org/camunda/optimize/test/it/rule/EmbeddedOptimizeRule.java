@@ -177,6 +177,11 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     return authenticateUserRequest("demo", "demo");
   }
 
+  public String authenticateUser(String username, String password) {
+    Response tokenResponse = authenticateUserRequest(username, password);
+    return tokenResponse.readEntity(String.class);
+  }
+
   public Response authenticateUserRequest(String username, String password) {
     CredentialsDto entity = new CredentialsDto();
     entity.setUsername(username);
