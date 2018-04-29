@@ -39,14 +39,14 @@ public class ByteValue
 
         if (!matcher.matches())
         {
-            final String err = String.format("Illegal byte value '%s'. Must match '%s' Valid examples: 100MB, 4Kb, ...", humanReadable, PATTERN.pattern());
+            final String err = String.format("Illegal byte value '%s'. Must match '%s'. Valid examples: 100M, 4K, ...", humanReadable, PATTERN.pattern());
             throw new IllegalArgumentException(err);
         }
 
         final String valueString = matcher.group(1);
         value = Long.parseLong(valueString);
 
-        final String unitString = matcher.group(2);
+        final String unitString = matcher.group(2).toUpperCase();
 
         switch (unitString)
         {
@@ -102,5 +102,42 @@ public class ByteValue
     public String toString()
     {
         return String.format("%d%s", value, unit.metric());
+    }
+
+    @Override
+    public int hashCode()
+    {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((unit == null) ? 0 : unit.hashCode());
+        result = prime * result + (int) (value ^ (value >>> 32));
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (this == obj)
+        {
+            return true;
+        }
+        if (obj == null)
+        {
+            return false;
+        }
+        if (getClass() != obj.getClass())
+        {
+            return false;
+        }
+        final ByteValue other = (ByteValue) obj;
+        if (unit != other.unit)
+        {
+            return false;
+        }
+        if (value != other.value)
+        {
+            return false;
+        }
+        return true;
     }
 }
