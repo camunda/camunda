@@ -77,6 +77,12 @@ public class ServiceController extends Actor
     }
 
     @Override
+    public String getName()
+    {
+        return "service-controller";
+    }
+
+    @Override
     protected void onActorStarted()
     {
         actor.consume(channel, this::onServiceEvent);
