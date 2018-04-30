@@ -17,3 +17,5 @@ errorShots/
 client/.vscode/
 client/dist
 client/*.md
+
+qa/engine-rest-secure/overlays

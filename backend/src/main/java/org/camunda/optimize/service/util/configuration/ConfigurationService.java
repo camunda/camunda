@@ -108,7 +108,6 @@ public class ConfigurationService {
   private Integer numberOfRetriesOnConflict;
   private Integer engineImportProcessDefinitionMaxPageSize;
   private Long engineImportActivityInstanceMaxPageSize;
-  private String groupsEndpoint;
   private String containerHost;
   private String containerKeystorePassword;
   private String containerKeystoreLocation;
@@ -654,13 +653,6 @@ public class ConfigurationService {
     return engineImportActivityInstanceMaxPageSize;
   }
 
-  public String getGetGroupsEndpoint() {
-    if (groupsEndpoint == null) {
-      groupsEndpoint = jsonContext.read(ConfigurationServiceConstants.GET_GROUPS_ENDPOINT);
-    }
-    return groupsEndpoint;
-  }
-
   public String getContainerHost() {
     if (containerHost == null) {
       containerHost = jsonContext.read(ConfigurationServiceConstants.CONTAINER_HOST);
@@ -780,22 +772,10 @@ public class ConfigurationService {
     return hpiCountEndpoint;
   }
 
-  public String getGroupsEndpoint() {
-    if (groupsEndpoint == null) {
-      groupsEndpoint = jsonContext.read(ConfigurationServiceConstants.GET_GROUPS_ENDPOINT);
-    }
-    return groupsEndpoint;
-  }
-
-
   public String getProcessDefinitionXmlEndpoint(String processDefinitionId) {
     String processDefinitionXmlEndpoint =
         getProcessDefinitionEndpoint() + "/" + processDefinitionId + getProcessDefinitionXmlEndpoint();
     return processDefinitionXmlEndpoint;
-  }
-
-  public boolean isAuthorizationCheckNecessary(String engineAlias) {
-    return !getOptimizeAccessGroupId(engineAlias).trim().isEmpty();
   }
 
   public String getEngineRestApiEndpointOfCustomEngine(String engineAlias) {
@@ -812,10 +792,6 @@ public class ConfigurationService {
 
   public String getDefaultEngineAuthenticationPassword(String engineAlias) {
     return getEngineConfiguration(engineAlias).getAuthentication().getPassword();
-  }
-
-  public String getOptimizeAccessGroupId(String engineAlias) {
-    return getEngineConfiguration(engineAlias).getAuthentication().getAccessGroup();
   }
 
   public boolean isEngineConnected(String engineAlias) {
@@ -1178,12 +1154,6 @@ public class ConfigurationService {
 
   public void setEngineImportActivityInstanceMaxPageSize(Long engineImportActivityInstanceMaxPageSize) {
     this.engineImportActivityInstanceMaxPageSize = engineImportActivityInstanceMaxPageSize;
-  }
-
-
-
-  public void setGroupsEndpoint(String groupsEndpoint) {
-    this.groupsEndpoint = groupsEndpoint;
   }
 
   public void setContainerHost(String containerHost) {

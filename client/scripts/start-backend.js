@@ -112,7 +112,6 @@ function startBackend(code) {
                           name: 'default',
                           rest: `http://localhost:${port}/engine-rest`,
                           authentication: {
-                            accessGroup: '',
                             enabled: false,
                             password: '',
                             user: ''

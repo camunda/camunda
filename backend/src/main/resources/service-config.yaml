@@ -44,9 +44,6 @@ engines:
     #A base URL that will be used for connections to the Camunda Engine REST API.
     rest: http://localhost:8080/engine-rest
     authentication:
-      #With the specified group id, only engine users that are part of the
-      #group can access optimize.
-      accessGroup: ''
       #Toggles basic authentication on or off. When enabling basic
       #authentication, please be aware that you also need to adjust the values
       #of the user and password
@@ -64,9 +61,6 @@ engine-commons:
     #Maximum time without connection to the engine, Optimize should wait
     #until a time out is triggered.
     timeout: 10000
-  groups:
-    #The engine endpoint to verify group memberships of users.
-    resource: "/identity/groups"
   hai:
     #The engine endpoint to the historic activity instance count.
     count: "/history/activity-instance/count"

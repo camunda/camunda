@@ -64,7 +64,6 @@ public class MultipleEngineSupportIT {
 
   @After
   public void reset() {
-    configurationService.getConfiguredEngines().get(ENGINE_ALIAS).getAuthentication().setAccessGroup("");
     configurationService.getConfiguredEngines().remove(SECOND_ENGINE_ALIAS);
     embeddedOptimizeRule.reloadConfiguration();
   }
@@ -239,7 +238,8 @@ public class MultipleEngineSupportIT {
   public void allProcessInstancesEventAndVariablesAreImportedWithAuthentication() {
     // given
     secondEngineRule.addUser("admin", "admin");
-    addSecureEngineToConfiguration("anotherEngine");
+    secondEngineRule.grantAllAuthorizations("admin");
+    addSecureEngineToConfiguration();
     embeddedOptimizeRule.reloadConfiguration();
     deployAndStartSimpleProcessDefinitionForAllEngines();
 
@@ -264,63 +264,13 @@ public class MultipleEngineSupportIT {
   }
 
   @Test
-  public void optimizeGroupsFromEveryEngineAreAccepted() {
-
-    // given
-    addSecondEngineToConfiguration();
-    EngineConfiguration engineConfiguration =
-      configurationService.getConfiguredEngines().get(ENGINE_ALIAS);
-    engineConfiguration.getAuthentication().setAccessGroup("optimizeGroup1");
-    engineConfiguration =
-      configurationService.getConfiguredEngines().get(SECOND_ENGINE_ALIAS);
-    engineConfiguration.getAuthentication().setAccessGroup("optimizeGroup2");
-
-    // given
-    defaultEngineRule.createGroup("optimizeGroup1", "Optimize Access Group", "Foo type");
-    defaultEngineRule.addUser("admin", "admin");
-    defaultEngineRule.addUserToGroup("admin", "optimizeGroup1");
-    defaultEngineRule.addUser("kermit", "frog");
-
-    secondEngineRule.createGroup("optimizeGroup2", "Optimize Access Group", "Foo type");
-    secondEngineRule.addUser("gonzo", "gonzo");
-    secondEngineRule.addUserToGroup("gonzo", "optimizeGroup2");
-    secondEngineRule.addUser("scooter", "scooter");
-
-    // when
-    Response response = embeddedOptimizeRule.authenticateUserRequest("admin", "admin");
-
-    // then
-    assertThat(response.getStatus(),is(200));
-    String responseEntity = response.readEntity(String.class);
-    assertThat(responseEntity,is(notNullValue()));
-
-    response = embeddedOptimizeRule.authenticateUserRequest("gonzo", "gonzo");
-
-    // then
-    assertThat(response.getStatus(),is(200));
-    responseEntity = response.readEntity(String.class);
-    assertThat(responseEntity,is(notNullValue()));
-
-    // when
-    response = embeddedOptimizeRule.authenticateUserRequest("kermit", "frog");
-
-    // then
-    assertThat(response.getStatus(),is(401));
-
-    // when
-    response = embeddedOptimizeRule.authenticateUserRequest("scooter", "scooter");
-
-    // then
-    assertThat(response.getStatus(),is(401));
-
-  }
-
-  @Test
   public void userIsAuthenticatedAgainstEachEngine() {
     // given
     addSecondEngineToConfiguration();
     defaultEngineRule.addUser("kermit", "kermit");
+    defaultEngineRule.grantUserOptimizeAccess("kermit");
     secondEngineRule.addUser("gonzo", "gonzo");
+    secondEngineRule.grantUserOptimizeAccess("gonzo");
 
     // when
     Response response = embeddedOptimizeRule.authenticateUserRequest("kermit", "kermit");
@@ -400,8 +350,8 @@ public class MultipleEngineSupportIT {
     addEngineToConfiguration(engineName, REST_ENDPOINT, false, "", "");
   }
 
-  private void addSecureEngineToConfiguration(String engineName) {
-    addEngineToConfiguration(engineName, SECURE_REST_ENDPOINT, true, "admin", "admin");
+  private void addSecureEngineToConfiguration() {
+    addEngineToConfiguration("anotherEngine", SECURE_REST_ENDPOINT, true, "admin", "admin");
   }
 
   private void addEngineToConfiguration(String engineName, String restEndpoint, boolean withAuthentication, String username, String password) {
@@ -419,7 +369,6 @@ public class MultipleEngineSupportIT {
 
   private EngineAuthenticationConfiguration constructEngineAuthenticationConfiguration(boolean withAuthentication, String username, String password) {
     EngineAuthenticationConfiguration engineAuthenticationConfiguration = new EngineAuthenticationConfiguration();
-    engineAuthenticationConfiguration.setAccessGroup("");
     engineAuthenticationConfiguration.setEnabled(withAuthentication);
     engineAuthenticationConfiguration.setPassword(password);
     engineAuthenticationConfiguration.setUser(username);

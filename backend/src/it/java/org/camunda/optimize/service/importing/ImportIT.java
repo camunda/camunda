@@ -101,10 +101,11 @@ public class ImportIT  {
     EngineConfiguration engineConfiguration = embeddedOptimizeRule
       .getConfigurationService().getConfiguredEngines().get("1");
     engineConfiguration.getAuthentication().setEnabled(true);
-    engineConfiguration.getAuthentication().setPassword("demo");
-    engineConfiguration.getAuthentication().setUser("demo");
+    engineConfiguration.getAuthentication().setPassword("kermit");
+    engineConfiguration.getAuthentication().setUser("kermit");
     engineConfiguration.setRest("http://localhost:48080/engine-rest-secure");
-    engineRule.addUser("demo", "demo");
+    engineRule.addUser("kermit", "kermit");
+    engineRule.grantAllAuthorizations("kermit");
     embeddedOptimizeRule.reloadConfiguration();
     deployAndStartSimpleServiceTask();
 
@@ -112,11 +113,11 @@ public class ImportIT  {
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
-    //then
-    allEntriesInElasticsearchHaveAllData(elasticSearchRule.getProcessInstanceType());
-
     engineConfiguration.getAuthentication().setEnabled(false);
     engineConfiguration.setRest("http://localhost:48080/engine-rest");
+
+    //then
+    allEntriesInElasticsearchHaveAllData(elasticSearchRule.getProcessInstanceType());
   }
 
   @Test

@@ -58,6 +58,7 @@ public abstract class OptimizePerformanceTestCase {
 
   private void authenticate(PerfTestConfiguration configuration) throws JsonProcessingException {
     engineIntegrationRule.addUser("demo", "demo");
+    engineIntegrationRule.grantUserOptimizeAccess("demo");
     String authorizationToken = embeddedOptimizeRule.authenticateDemo();
     configuration.setAuthorizationToken(authorizationToken);
   }

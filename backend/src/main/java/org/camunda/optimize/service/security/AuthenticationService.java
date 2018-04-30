@@ -1,18 +1,15 @@
 package org.camunda.optimize.service.security;
 
 import org.camunda.optimize.dto.optimize.query.CredentialsDto;
-import org.camunda.optimize.dto.optimize.query.EngineCredentialsDto;
 import org.camunda.optimize.service.exceptions.UnauthorizedUserException;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
-
 @Component
 public class AuthenticationService {
-  @Resource (name = "engineAuthenticationProvider")
-  private AuthenticationProvider engineAuthenticationProvider;
+
+  @Autowired
+  private EngineAuthenticationProvider engineAuthenticationProvider;
 
   @Autowired
   private TokenService tokenService;

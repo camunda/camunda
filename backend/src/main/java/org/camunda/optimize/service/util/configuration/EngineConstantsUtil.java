@@ -10,7 +10,6 @@ public class EngineConstantsUtil {
   public static final String INCLUDE_VARIABLE_TYPE_IN = "variableTypeIn";
 
   public static final String PROCESS_DEFINITION_ID = "processDefinitionId";
-  public static final String PROCESS_DEFINITION_ID_IN = "processDefinitionIdIn";
   public static final String ID = "id";
 
   public static final String FINISHED_AFTER = "finishedAfter";
@@ -24,13 +23,26 @@ public class EngineConstantsUtil {
   public static final String SORT_TYPE_START_TIME = "startTime";
   public static final String SORT_TYPE_END_TIME = "endTime";
   public static final String SORT_TYPE_ID = "id";
-  public static final String SORT_TYPE_VERSION_TAG = "version";
-  public static final String SORT_TYPE_INSTANCE_ID = "instanceId";
 
   public static final String SORT_ORDER = "sortOrder";
   public static final String SORT_ORDER_TYPE_ASCENDING = "asc";
   public static final String SORT_ORDER_TYPE_DESCENDING = "desc";
 
-  public static final String USER_ID = "userId";
+  public static final String MEMBER = "member";
+
+  public static final String AUTHORIZATION_ENDPOINT = "/authorization";
+  public static final String GROUP_ENDPOINT = "/group";
+
+  public static final String ALL_PERMISSION = "ALL";
+  public static final String ACCESS_PERMISSION = "ACCESS";
+
+  public static final int AUTHORIZATION_TYPE_GLOBAL = 0;
+  public static final int AUTHORIZATION_TYPE_GRANT = 1;
+  public static final int AUTHORIZATION_TYPE_REVOKE = 2;
+
+  public static final int RESOURCE_TYPE_APPLICATION = 0;
+
+  public static final String OPTIMIZE_APPLICATION_RESOURCE_ID = "optimize";
+  public static final String ALL_APPLICATIONS_RESOURCE_ID = "*";
 
 }

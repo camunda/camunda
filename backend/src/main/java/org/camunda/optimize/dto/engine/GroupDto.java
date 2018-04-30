@@ -4,6 +4,7 @@ public class GroupDto {
 
   protected String id;
   protected String name;
+  protected String type;
 
   public String getId() {
     return id;
@@ -19,6 +20,14 @@ public class GroupDto {
 
   public void setName(String name) {
     this.name = name;
+  }
+
+  public String getType() {
+    return type;
+  }
+
+  public void setType(String type) {
+    this.type = type;
   }
 
   @Override

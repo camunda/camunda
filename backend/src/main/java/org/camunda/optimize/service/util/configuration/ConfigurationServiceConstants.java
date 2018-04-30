@@ -1,12 +1,8 @@
 package org.camunda.optimize.service.util.configuration;
 
-import com.jayway.jsonpath.JsonPath;
-
 /**
  * This interface should contain constants only in order not to have magic
  * string inlined in the service class.
- *
- * @author Askar Akhmerov
  */
 public interface ConfigurationServiceConstants {
   String LIFE_TIME = "$.auth.token.lifeMin";
@@ -49,7 +45,6 @@ public interface ConfigurationServiceConstants {
   String DURATION_HEATMAP_TARGET_VALUE_TYPE = "$.es.heatmap.duration.targetValueType";
   String PROCESS_DEFINITION_TYPE = "$.import.data.process-definition.elasticsearchType";
   String PROCESS_DEFINITION_XML_TYPE = "$.import.data.process-definition-xml.elasticsearchType";
-  String ELASTIC_SEARCH_USERS_TYPE = "$.es.users.type";
   String IMPORT_INDEX_TYPE = "$.import.indexType";
   String SCROLL_IMPORT_INDEX_TYPE = "$.import.scrollImportIndexType";
   String IMPORT_INDEX_AUTO_STORAGE_INTERVAL = "$.import.importIndexStorageIntervalInSec";
@@ -73,7 +68,6 @@ public interface ConfigurationServiceConstants {
   String HPI_ENDPOINT = "$.engine-commons.history.procinst.resource";
   String HPI_COUNT_ENDPOINT = "$.engine-commons.history.procinst.count";
   String USER_VALIDATION_ENDPOINT = "$.engine-commons.user.validation.resource";
-  String GET_GROUPS_ENDPOINT = "$.engine-commons.groups.resource";
 
   String ANALYZER_NAME = "$.es.analyzer.name";
   String TOKENIZER = "$.es.analyzer.tokenizer";

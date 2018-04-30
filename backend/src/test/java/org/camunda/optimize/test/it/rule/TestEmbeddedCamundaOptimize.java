@@ -1,5 +1,6 @@
 package org.camunda.optimize.test.it.rule;
 
+import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.optimize.query.CredentialsDto;
 import org.camunda.optimize.jetty.EmbeddedCamundaOptimize;
 import org.camunda.optimize.rest.engine.dto.UserCredentialsDto;
@@ -23,8 +24,14 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Response;
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Properties;
+
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_APPLICATIONS_RESOURCE_ID;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_PERMISSION;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GLOBAL;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_APPLICATION;
 
 /**
  * This class is wrapper around the embedded optimize to ensure
@@ -166,6 +173,7 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
 
   public String getNewAuthenticationToken() {
     addDemoUserToEngine();
+    grantDemoUserOptimizeAuthorizations();
     authenticationToken = this.authenticateDemoUser();
     return authenticationToken;
   }
@@ -183,6 +191,24 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
         .path("/user/create")
         .request()
         .post(Entity.json(userDto));
+    } catch (Exception e) {
+      logger.error("Could not create demo user", e);
+    }
+  }
+
+  private void grantDemoUserOptimizeAuthorizations() {
+    AuthorizationDto authorizationDto = new AuthorizationDto();
+    authorizationDto.setResourceType(RESOURCE_TYPE_APPLICATION);
+    authorizationDto.setPermissions(Collections.singletonList(ALL_PERMISSION));
+    authorizationDto.setResourceId(ALL_APPLICATIONS_RESOURCE_ID);
+    authorizationDto.setType(AUTHORIZATION_TYPE_GLOBAL);
+    authorizationDto.setUserId("*");
+    try {
+      getClient()
+        .target(getEngineUrl())
+        .path("/authorization/create")
+        .request()
+        .post(Entity.json(authorizationDto));
     } catch (Exception e) {
       logger.error("Could not create demo user", e);
     }

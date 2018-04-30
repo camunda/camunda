@@ -7,9 +7,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import org.apache.http.Header;
 import org.apache.http.HttpEntity;
-import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
@@ -25,6 +23,7 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.rest.engine.dto.DeploymentDto;
@@ -51,12 +50,17 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_PERMISSION;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GRANT;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.OPTIMIZE_APPLICATION_RESOURCE_ID;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_APPLICATION;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -72,10 +76,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 public class EngineIntegrationRule extends TestWatcher {
 
   private static final int MAX_WAIT = 10;
-  public static final String COUNT = "count";
-  public static final String DEFAULT_PROPERTIES_PATH = "integration-rules.properties";
+  private static final String COUNT = "count";
+  private static final String DEFAULT_PROPERTIES_PATH = "integration-rules.properties";
   private static final CloseableHttpClient closeableHttpClient = HttpClientBuilder.create().build();
-  private String propertiesPath;
 
   private Properties properties;
   private Logger logger = LoggerFactory.getLogger(EngineIntegrationRule.class);
@@ -87,12 +90,11 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   public EngineIntegrationRule(String propertiesLocation) {
-    this.propertiesPath = propertiesLocation;
-    properties = PropertyUtil.loadProperties(propertiesPath);
+    properties = PropertyUtil.loadProperties(propertiesLocation);
     setupObjectMapper();
   }
 
-  public void init() {
+  private void init() {
     cleanEngine();
   }
 
@@ -277,7 +279,7 @@ public class EngineIntegrationRule extends TestWatcher {
     }
   }
 
-  public CloseableHttpClient getHttpClient() {
+  private CloseableHttpClient getHttpClient() {
     return closeableHttpClient;
   }
 
@@ -307,7 +309,7 @@ public class EngineIntegrationRule extends TestWatcher {
     return getProcessDefinitionEngineDto(deploymentDto, client);
   }
 
-  public DeploymentDto deployProcess(BpmnModelInstance bpmnModelInstance, CloseableHttpClient client) {
+  private DeploymentDto deployProcess(BpmnModelInstance bpmnModelInstance, CloseableHttpClient client) {
     String process = Bpmn.convertToString(bpmnModelInstance);
     HttpPost deploymentRequest = createDeploymentRequest(process);
     DeploymentDto deployment = new DeploymentDto();
@@ -363,18 +365,13 @@ public class EngineIntegrationRule extends TestWatcher {
         properties.get("camunda.optimize.engine.name").toString();
   }
 
-  public String getProcessDefinitionId(DeploymentDto deployment, CloseableHttpClient client) throws IOException {
-    ProcessDefinitionEngineDto processDefinitionEngineDto = getProcessDefinitionEngineDto(deployment, client);
-    return processDefinitionEngineDto.getId();
-  }
-
   private ProcessDefinitionEngineDto getProcessDefinitionEngineDto(DeploymentDto deployment, CloseableHttpClient client) throws IOException {
     List<ProcessDefinitionEngineDto> processDefinitions = getAllProcessDefinitions(deployment, client);
     assertThat("Deployment should contain only one process definition!", processDefinitions.size(), is(1));
     return processDefinitions.get(0);
   }
 
-  public List<ProcessDefinitionEngineDto> getAllProcessDefinitions(DeploymentDto deployment, CloseableHttpClient client) throws IOException {
+  private List<ProcessDefinitionEngineDto> getAllProcessDefinitions(DeploymentDto deployment, CloseableHttpClient client) throws IOException {
     HttpRequestBase get = new HttpGet(getProcessDefinitionUri());
     URI uri = null;
     try {
@@ -401,8 +398,7 @@ public class EngineIntegrationRule extends TestWatcher {
 
   public ProcessInstanceEngineDto startProcessInstance(String processDefinitionId, Map<String, Object> variables) throws IOException {
     CloseableHttpClient client = getHttpClient();
-    ProcessInstanceEngineDto processInstanceDto = startProcessInstance(processDefinitionId, client, variables);
-    return processInstanceDto;
+    return startProcessInstance(processDefinitionId, client, variables);
   }
 
   private ProcessInstanceEngineDto startProcessInstance(String procDefId, CloseableHttpClient client, Map<String, Object> variables) throws IOException {
@@ -500,12 +496,37 @@ public class EngineIntegrationRule extends TestWatcher {
     } catch (Exception e) {
       logger.error("error creating user", e);
     }
-
-    this.addAuthorizations(username);
   }
 
-  private void addAuthorizations(String username) {
-    for (int i = 0; i <15; i++) {
+  public void createAuthorization(AuthorizationDto authorizationDto) {
+    try {
+      CloseableHttpClient client = getHttpClient();
+      HttpPost httpPost = new HttpPost(getEngineUrl() + "/authorization/create");
+      httpPost.addHeader("Content-Type", "application/json");
+
+      httpPost.setEntity(
+        new StringEntity(objectMapper.writeValueAsString(authorizationDto), ContentType.APPLICATION_JSON)
+      );
+      CloseableHttpResponse response = client.execute(httpPost);
+      assertThat(response.getStatusLine().getStatusCode(), is(200));
+      response.close();
+    } catch (IOException e) {
+      logger.error("Could not create authorization", e);
+    }
+  }
+
+  public void grantUserOptimizeAccess(String user) {
+    AuthorizationDto authorizationDto = new AuthorizationDto();
+    authorizationDto.setResourceType(RESOURCE_TYPE_APPLICATION);
+    authorizationDto.setPermissions(Collections.singletonList(ALL_PERMISSION));
+    authorizationDto.setResourceId(OPTIMIZE_APPLICATION_RESOURCE_ID);
+    authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
+    authorizationDto.setUserId(user);
+    createAuthorization(authorizationDto);
+  }
+
+  public void grantAllAuthorizations(String username) {
+    for (int i = 0; i < 15; i++) {
       HashMap<String, Object> values = new HashMap<>();
       values.put("type", 1);
       values.put("permissions", new String [] {"ALL"});

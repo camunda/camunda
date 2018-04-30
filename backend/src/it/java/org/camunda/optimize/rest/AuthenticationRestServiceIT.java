@@ -22,7 +22,7 @@ public class AuthenticationRestServiceIT {
 
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-  public EngineIntegrationRule engineIntegrationRule = new EngineIntegrationRule();
+  private EngineIntegrationRule engineIntegrationRule = new EngineIntegrationRule();
 
   @Rule
   public RuleChain chain = RuleChain
@@ -31,7 +31,7 @@ public class AuthenticationRestServiceIT {
   @Test
   public void authenticateUserUsingES() {
     // given
-    addAdminUser();
+    addAdminUserAndGrantAccessPermission();
 
     //when
     Response response = embeddedOptimizeRule.authenticateUserRequest("admin", "admin");
@@ -45,7 +45,7 @@ public class AuthenticationRestServiceIT {
   @Test
   public void logout() {
     //given
-    engineIntegrationRule.addUser("admin", "admin");
+    addAdminUserAndGrantAccessPermission();
     String token = authenticateAdminUser();
 
     //when
@@ -63,7 +63,7 @@ public class AuthenticationRestServiceIT {
   @Test
   public void securingRestApiWorksWithProxy() {
     //given
-    addAdminUser();
+    addAdminUserAndGrantAccessPermission();
     String token = authenticateAdminUser();
 
     //when
@@ -95,7 +95,7 @@ public class AuthenticationRestServiceIT {
   @Test
   public void cantKickOutUserByProvidingWrongToken() throws UnsupportedEncodingException {
     // given
-    addAdminUser();
+    addAdminUserAndGrantAccessPermission();
     authenticateAdminUser();
     Algorithm algorithm = Algorithm.HMAC256("secret");
     String selfGeneratedEvilToken = JWT.create()
@@ -115,7 +115,7 @@ public class AuthenticationRestServiceIT {
   @Test
   public void authenticatingSameUserTwiceDisablesFirstToken() {
     // given
-    addAdminUser();
+    addAdminUserAndGrantAccessPermission();
     String firstToken = authenticateAdminUser();
     authenticateAdminUser();
 
@@ -133,8 +133,9 @@ public class AuthenticationRestServiceIT {
     return embeddedOptimizeRule.authenticateUser("admin","admin");
   }
 
-  private void addAdminUser() {
+  private void addAdminUserAndGrantAccessPermission() {
     engineIntegrationRule.addUser("admin", "admin");
+    engineIntegrationRule.grantUserOptimizeAccess("admin");
   }
 
 }

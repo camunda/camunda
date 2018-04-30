@@ -1,8 +1,5 @@
 package org.camunda.optimize.service.util.configuration;
 
-/**
- * @author Askar Akhmerov
- */
 public class EngineConfiguration {
 
   private String name;
