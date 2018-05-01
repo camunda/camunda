@@ -21,6 +21,7 @@ import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.servicecontainer.*;
 import io.zeebe.util.sched.ActorScheduler;
+import io.zeebe.util.sched.SchedulingHints;
 
 public class LogBlockIndexWriterService implements Service<LogBlockIndexWriter>
 {
@@ -48,7 +49,7 @@ public class LogBlockIndexWriterService implements Service<LogBlockIndexWriter>
             logBlockIndex,
             scheduler.getMetricsManager());
 
-        startContext.async(scheduler.submitActor(logBlockIndexWriter));
+        startContext.async(scheduler.submitActor(logBlockIndexWriter, true, SchedulingHints.ioBound((short) 0)));
     }
 
     @Override

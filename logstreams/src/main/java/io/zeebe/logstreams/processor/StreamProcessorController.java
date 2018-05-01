@@ -24,6 +24,7 @@ import io.zeebe.logstreams.spi.*;
 import io.zeebe.util.LangUtil;
 import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.sched.*;
+import io.zeebe.util.sched.ActorTask.ActorLifecyclePhase;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.slf4j.Logger;
@@ -419,6 +420,20 @@ public class StreamProcessorController extends Actor
 
     private void createSnapshot()
     {
+        if (actor.getLifecyclePhase() == ActorLifecyclePhase.STARTED)
+        {
+            // run as io-bound actor while writing snapshot
+            actor.setSchedulingHints(SchedulingHints.ioBound((short) 0));
+            actor.submit(this::doCreateSnapshot);
+        }
+        else
+        {
+            doCreateSnapshot();
+        }
+    }
+
+    private void doCreateSnapshot()
+    {
         if (currentEvent != null)
         {
             final long commitPosition = streamProcessorContext.getLogStream().getCommitPosition();
@@ -434,6 +449,9 @@ public class StreamProcessorController extends Actor
                 }
             }
         }
+
+        // re-rest to cpu bound
+        actor.setSchedulingHints(SchedulingHints.cpuBound(ActorPriority.REGULAR));
     }
 
     private void writeSnapshot(final long eventPosition)
