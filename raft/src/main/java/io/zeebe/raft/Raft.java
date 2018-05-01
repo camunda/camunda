@@ -380,6 +380,10 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
             LOG.trace("Received message from {}", remoteAddress);
         }
 
+        // update heartbeat in receiver actor so that it reflects when last message
+        // was received
+        heartbeat.update();
+
         final boolean isWritten = messageReceiveBuffer.write(1, buffer, offset, length);
 
         if (!isWritten)

@@ -65,7 +65,6 @@ public class FollowerState extends AbstractRaftState
     @Override
     public void appendRequest(final AppendRequest appendRequest)
     {
-        heartbeat.updateLastHeartbeat();
         raft.mayStepDown(appendRequest);
 
         final long previousEventPosition = appendRequest.getPreviousEventPosition();

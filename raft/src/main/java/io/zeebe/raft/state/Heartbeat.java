@@ -23,14 +23,15 @@ import io.zeebe.util.sched.clock.ActorClock;
 public class Heartbeat
 {
     private final long electionInterval;
-    private long lastHeartbeat = 0;
+
+    private volatile long lastHeartbeat = 0;
 
     public Heartbeat(long electionInterval)
     {
         this.electionInterval = electionInterval;
     }
 
-    public void updateLastHeartbeat()
+    public void update()
     {
         lastHeartbeat = ActorClock.currentTimeMillis();
     }

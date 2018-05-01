@@ -81,7 +81,7 @@ public class RaftJoinService implements Service<Void>
         {
             LOG.info("Joined raft in term {}", raft.getTerm());
             // set initial heartbeat as we received a message from the leader
-            raft.getHeartbeat().updateLastHeartbeat();
+            raft.getHeartbeat().update();
             whenJoinCompleted.complete(null);
         };
 
