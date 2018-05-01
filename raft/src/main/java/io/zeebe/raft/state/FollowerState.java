@@ -50,6 +50,19 @@ public class FollowerState extends AbstractRaftState
     }
 
     @Override
+    protected void consumeMessage()
+    {
+        super.consumeMessage();
+
+        // when there are no more append requests immediately available,
+        // flush now and send the ack immediately
+        if (!messageBuffer.hasAvailable())
+        {
+            appender.flushAndAck();
+        }
+    }
+
+    @Override
     public void appendRequest(final AppendRequest appendRequest)
     {
         heartbeat.updateLastHeartbeat();
@@ -65,10 +78,6 @@ public class FollowerState extends AbstractRaftState
             if (lastEvent)
             {
                 appender.appendEvent(appendRequest, event);
-
-                // if there are no more append requests immediately available,
-                // flush now and send the ack immediately
-                appender.flushAndAck();
             }
             else
             {
