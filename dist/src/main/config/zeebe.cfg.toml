@@ -31,7 +31,8 @@
 # * When using a single-node cluser, the value should be 1
 # * When using a multi-node cluster, one node should be configured with
 #   bootstrap = 3 (or 5, depending on the cluster size) and for all the other
-#   nodes it should be set to 0.
+#   nodes it should be set to 0 (or removed from the configuration since default
+#   value is 0).
 #
 # (Note that the broker includes itself in the count, ie. when specifying '1',
 # the broker waits for itself.)
