@@ -15,14 +15,19 @@
  */
 package io.zeebe.raft;
 
+import static io.zeebe.raft.RaftServiceNames.*;
+import static io.zeebe.raft.state.RaftTranisiton.*;
+
+import java.time.Duration;
+import java.util.*;
+import java.util.function.BiConsumer;
+
 import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.msgpack.value.ValueArray;
 import io.zeebe.raft.controller.*;
 import io.zeebe.raft.event.RaftConfigurationEventMember;
-import io.zeebe.raft.protocol.HasPartition;
-import io.zeebe.raft.protocol.HasSocketAddress;
-import io.zeebe.raft.protocol.HasTerm;
+import io.zeebe.raft.protocol.*;
 import io.zeebe.raft.state.*;
 import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.*;
@@ -39,15 +44,6 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
-
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.function.BiConsumer;
-
-import static io.zeebe.raft.RaftServiceNames.*;
-import static io.zeebe.raft.state.RaftTranisiton.*;
 
 /**
  * Representation of a member of a raft cluster.
@@ -148,19 +144,19 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
     public void becomeFollower(final int term)
     {
         final Transition transition = new Transition(TO_FOLLOWER, term);
-        mayTakeTransition(transition, this::transitionToFollower);
+        tryTakeTransition(transition, this::transitionToFollower);
     }
 
     public void becomeCandidate(final int term)
     {
         final Transition transition = new Transition(TO_CANDIDATE, term);
-        mayTakeTransition(transition, this::transitionToCandidate);
+        tryTakeTransition(transition, this::transitionToCandidate);
     }
 
     public void becomeLeader(final int term)
     {
         final Transition transition = new Transition(TO_LEADER, term);
-        mayTakeTransition(transition, this::transitionToLeader);
+        tryTakeTransition(transition, this::transitionToLeader);
     }
 
     private void transitionToFollower(final Void value, final Throwable throwable)
@@ -255,7 +251,7 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
         currentStateServiceName = installOperationServiceName;
     }
 
-    private void mayTakeTransition(final Transition transition, final BiConsumer<Void, Throwable> whenLeftCallback)
+    private void tryTakeTransition(final Transition transition, final BiConsumer<Void, Throwable> whenLeftCallback)
     {
         if (currentTransition != null)
         {
@@ -353,12 +349,22 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
             l.onStateChange(this, getState())));
     }
 
-    private void notifyMembersChangedListeners()
+    private List<ActorFuture<Void>> notifyMemberLeavingListeners(List<SocketAddress> newMembers)
+    {
+        final List<ActorFuture<Void>> futures = new ArrayList<>();
+
+        raftStateListeners.forEach((l) -> LogUtil.catchAndLog(LOG, () ->
+            futures.add(l.onMemberLeaving(this, newMembers))));
+
+        return futures;
+    }
+
+    private void notifyMemberJoinedListeners()
     {
         final List<SocketAddress> memberAddresses = raftMembers.getMemberAddresses();
 
         raftStateListeners.forEach((l) -> LogUtil.catchAndLog(LOG, () ->
-            l.onMembersChanged(this, memberAddresses)));
+            l.onMemberJoined(this, memberAddresses)));
     }
 
     // message handler
@@ -535,7 +541,7 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
     public void replaceMembersOnConfigurationChange(final ValueArray<RaftConfigurationEventMember> members)
     {
         raftMembers.replaceMembersOnConfigurationChange(members);
-        notifyMembersChangedListeners();
+        notifyMemberJoinedListeners();
     }
 
     /**
@@ -552,7 +558,7 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
     public void addMembersWhenJoined(final List<SocketAddress> members)
     {
         raftMembers.addMembersWhenJoined(members);
-        notifyMembersChangedListeners();
+        notifyMemberJoinedListeners();
     }
 
     /**
@@ -574,29 +580,47 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
                 .dependency(leaderServiceName)
                 .install();
 
-            notifyMembersChangedListeners();
+            notifyMemberJoinedListeners();
 
             return true;
         }
         return false;
     }
 
-    public boolean leaveMember(final SocketAddress socketAddress)
+    public ActorFuture<Boolean> leaveMember(final SocketAddress socketAddress)
     {
+        final CompletableActorFuture<Boolean> leaveFuture = new CompletableActorFuture<>();
+
         LOG.debug("Member {} leaving the cluster", socketAddress);
-        final RaftMember removedMemeber = raftMembers.removeMember(socketAddress);
 
-        if (removedMemeber != null)
+        if (raftMembers.hasMember(socketAddress))
         {
-            persistentStorage.save();
-            // stop replication
-            serviceContext.removeService(replicateLogConrollerServiceName(raftName, getTerm(), socketAddress));
+            final List<SocketAddress> listWithoutMemberThatIsLeaving = raftMembers.getMemberAddresses();
 
-            notifyMembersChangedListeners();
+            listWithoutMemberThatIsLeaving.remove(socketAddress);
 
-            return true;
+            actor.runOnCompletion(notifyMemberLeavingListeners(listWithoutMemberThatIsLeaving), (t) ->
+            {
+                if (state.getState() == RaftState.LEADER)
+                {
+                    raftMembers.removeMember(socketAddress);
+                    persistentStorage.save();
+                    // stop replication
+                    serviceContext.removeService(replicateLogConrollerServiceName(raftName, getTerm(), socketAddress));
+                    leaveFuture.complete(true);
+                }
+                else
+                {
+                    leaveFuture.complete(false);
+                }
+            });
         }
-        return false;
+        else
+        {
+            leaveFuture.complete(false);
+        }
+
+        return leaveFuture;
     }
 
     /**

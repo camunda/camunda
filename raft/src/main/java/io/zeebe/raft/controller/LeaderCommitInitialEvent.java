@@ -23,15 +23,14 @@ import io.zeebe.raft.Raft;
 import io.zeebe.raft.event.InitialEvent;
 import io.zeebe.raft.state.LeaderState;
 import io.zeebe.servicecontainer.*;
-import io.zeebe.util.sched.ActorCondition;
-import io.zeebe.util.sched.ActorControl;
+import io.zeebe.util.sched.*;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.slf4j.Logger;
 
 public class LeaderCommitInitialEvent implements Service<Void>
 {
     private static final Logger LOG = Loggers.RAFT_LOGGER;
-    public static final Duration COMMIT_TIMEOUT = Duration.ofMinutes(15);
+    public static final Duration COMMIT_TIMEOUT = Duration.ofSeconds(15);
 
     private final LeaderState leaderState;
     private final ActorControl actor;
@@ -42,7 +41,7 @@ public class LeaderCommitInitialEvent implements Service<Void>
     private final CompletableActorFuture<Void> commitFuture = new CompletableActorFuture<>();
 
     private long position;
-    private boolean isCommited;
+    private ScheduledTimer scheduledRetry;
 
     public LeaderCommitInitialEvent(final Raft raft, ActorControl actorControl, LeaderState leaderState)
     {
@@ -50,7 +49,7 @@ public class LeaderCommitInitialEvent implements Service<Void>
         this.actor = actorControl;
         this.leaderState = leaderState;
 
-        this.commitPositionCondition = actor.onCondition("raft-event-commited", this::commited);
+        this.commitPositionCondition = actor.onCondition("raft-event-commited", this::onCommitPositionUpdated);
         this.logStream = raft.getLogStream();
     }
 
@@ -64,45 +63,60 @@ public class LeaderCommitInitialEvent implements Service<Void>
     @Override
     public void stop(ServiceStopContext stopContext)
     {
-        if (commitPositionCondition != null)
+        stopContext.async(actor.call(() ->
         {
-            commitPositionCondition.cancel();
-        }
+            if (scheduledRetry != null)
+            {
+                scheduledRetry.cancel();
+            }
+            if (commitPositionCondition != null)
+            {
+                commitPositionCondition.cancel();
+            }
+        }));
     }
 
     private void appendInitialEvent()
     {
-        final long position = initialEvent.tryWrite(raft);
-        if (position >= 0)
+        actor.runUntilDone(() ->
         {
-            LOG.debug("Initial event for term {} was appended on position {}", raft.getTerm(), position);
-            this.position = position;
-            leaderState.setInitialEventPosition(position);
+            final long position = initialEvent.tryWrite(raft);
 
-            logStream.registerOnCommitPositionUpdatedCondition(commitPositionCondition);
-
-            actor.runDelayed(COMMIT_TIMEOUT, () ->
+            if (position >= 0)
             {
-                if (!isCommited)
+                actor.done();
+
+                LOG.debug("Initial event for term {} was appended on position {}", raft.getTerm(), position);
+
+                this.position = position;
+                leaderState.setInitialEventPosition(position);
+
+                logStream.registerOnCommitPositionUpdatedCondition(commitPositionCondition);
+
+                scheduledRetry = actor.runDelayed(COMMIT_TIMEOUT, () ->
                 {
+                    logStream.removeOnCommitPositionUpdatedCondition(commitPositionCondition);
                     actor.submit(() -> appendInitialEvent());
-                }
-            });
-        }
-        else
-        {
-            LOG.debug("Failed to append initial event");
-            actor.submit(this::appendInitialEvent);
-        }
+                });
+            }
+            else
+            {
+                actor.yield();
+            }
+        });
     }
 
-    private void commited()
+    private void onCommitPositionUpdated()
     {
-        if (isPositionCommited())
+        if (isCommitted())
         {
             LOG.debug("Initial event for term {} was committed on position {}", raft.getTerm(), position);
 
-            isCommited = true;
+            if (scheduledRetry != null)
+            {
+                scheduledRetry.cancel();
+            }
+
             commitFuture.complete(null);
             commitPositionCondition.cancel();
             commitPositionCondition = null;
@@ -110,7 +124,7 @@ public class LeaderCommitInitialEvent implements Service<Void>
         }
     }
 
-    public boolean isPositionCommited()
+    private boolean isCommitted()
     {
         return position >= 0 && position <= logStream.getCommitPosition();
     }

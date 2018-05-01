@@ -92,7 +92,7 @@ public class LeaderState extends AbstractRaftState
     {
         if (!raft.mayStepDown(configurationRequest))
         {
-            if (initialEventCommitted && configurationChangeController.isCommitted())
+            if (initialEventCommitted && !configurationChangeController.isHandlingConfigurationChange())
             {
                 final SocketAddress socketAddress = configurationRequest.getSocketAddress();
                 if (configurationRequest.isJoinRequest())
@@ -122,7 +122,8 @@ public class LeaderState extends AbstractRaftState
             // create new socket address object as it is stored in a map
             if (raft.joinMember(new SocketAddress(socketAddress)))
             {
-                configurationChangeController.appendEvent(serverOutput, remoteAddress, requestId);
+                configurationChangeController.prepare(serverOutput, remoteAddress, requestId);
+                configurationChangeController.appendEvent();
 
                 // remove condition
                 removeOnAppendCondition();
@@ -138,16 +139,25 @@ public class LeaderState extends AbstractRaftState
         }
         else
         {
-            if (raft.leaveMember(socketAddress))
-            {
-                // re-add append condition
-                if (raftMembers.getMemberSize() == 0)
-                {
-                    createOnAppendContition();
-                }
+            configurationChangeController.prepare(serverOutput, remoteAddress, requestId);
 
-                configurationChangeController.appendEvent(serverOutput, remoteAddress, requestId);
-            }
+            raftActor.runOnCompletion(raft.leaveMember(socketAddress), (canLeave, t) ->
+            {
+                if (canLeave)
+                {
+                    // re-add append condition
+                    if (raftMembers.getMemberSize() == 0)
+                    {
+                        createOnAppendContition();
+                    }
+
+                    configurationChangeController.appendEvent();
+                }
+                else
+                {
+                    configurationChangeController.reset();
+                }
+            });
         }
     }
 

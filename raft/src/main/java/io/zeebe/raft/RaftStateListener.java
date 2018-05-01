@@ -19,6 +19,8 @@ import java.util.Collection;
 
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.transport.SocketAddress;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 
 public interface RaftStateListener
 {
@@ -27,7 +29,12 @@ public interface RaftStateListener
 
     }
 
-    default void onMembersChanged(Raft raft, Collection<SocketAddress> addresses)
+    default ActorFuture<Void> onMemberLeaving(Raft raft, Collection<SocketAddress> addresses)
+    {
+        return CompletableActorFuture.completed(null);
+    }
+
+    default void onMemberJoined(Raft raft, Collection<SocketAddress> currentMembers)
     {
 
     }

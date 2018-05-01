@@ -15,14 +15,14 @@
  */
 package io.zeebe.raft.controller;
 
+import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.raft.Loggers;
 import io.zeebe.raft.Raft;
 import io.zeebe.raft.event.RaftEvent;
 import io.zeebe.raft.protocol.ConfigurationResponse;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.ServerOutput;
-import io.zeebe.util.sched.ActorCondition;
-import io.zeebe.util.sched.ActorControl;
+import io.zeebe.util.sched.*;
 import org.slf4j.Logger;
 
 import java.time.Duration;
@@ -45,79 +45,116 @@ public class AppendRaftEventController
     private ServerOutput serverOutput;
     private RemoteAddress remoteAddress;
     private long requestId;
-    private boolean isCommited;
+
+    private boolean isHandlingConfigurationChange = false;
+    private ScheduledTimer appendRetry;
 
     public AppendRaftEventController(final Raft raft, ActorControl actorControl)
     {
         this.raft = raft;
         this.actor = actorControl;
 
-        this.actorCondition = actor.onCondition("raft-event-commited", this::commited);
+        this.actorCondition = actor.onCondition("raft-event-commited", this::onCommitPositionUpdated);
     }
 
     public void close()
     {
         raft.getLogStream().removeOnCommitPositionUpdatedCondition(actorCondition);
         actorCondition.cancel();
+
+        if (appendRetry != null)
+        {
+            appendRetry.cancel();
+        }
     }
 
-    public void appendEvent(final ServerOutput serverOutput, final RemoteAddress remoteAddress, final long requestId)
+    public void prepare(final ServerOutput serverOutput, final RemoteAddress remoteAddress, final long requestId)
     {
-        // this has to happen immediately so multiple membership request are not accepted
         this.serverOutput = serverOutput;
         this.remoteAddress = remoteAddress;
         this.requestId = requestId;
+        this.isHandlingConfigurationChange = true;
+    }
 
-        final long position = raftEvent.tryWrite(raft);
-        if (position >= 0)
+    public void reset()
+    {
+        this.raft.getLogStream().removeOnCommitPositionUpdatedCondition(actorCondition);
+
+        this.serverOutput = null;
+        this.remoteAddress = null;
+        this.requestId = -1;
+        this.isHandlingConfigurationChange = false;
+
+        if (appendRetry != null)
         {
-            this.position = position;
-            raft.getLogStream().registerOnCommitPositionUpdatedCondition(actorCondition);
-            actor.runDelayed(COMMIT_TIMEOUT, () ->
-            {
-                if (!isCommited)
-                {
-                    actor.submit(() -> appendEvent(serverOutput, remoteAddress, requestId));
-                }
-            });
-        }
-        else
-        {
-            LOG.debug("Failed to append raft event");
-            actor.submit(() -> appendEvent(serverOutput, remoteAddress, requestId));
+            appendRetry.cancel();
         }
     }
 
-    private void commited()
+    public void appendEvent()
+    {
+        actor.runUntilDone(() ->
+        {
+            final long position = raftEvent.tryWrite(raft);
+
+            if (position >= 0)
+            {
+                actor.done();
+
+                this.position = position;
+
+                final LogStream logStream = this.raft.getLogStream();
+
+                logStream.registerOnCommitPositionUpdatedCondition(actorCondition);
+
+                this.appendRetry = actor.runDelayed(COMMIT_TIMEOUT, () ->
+                {
+                    logStream.removeOnCommitPositionUpdatedCondition(actorCondition);
+                    actor.submit(this::appendEvent);
+                });
+            }
+            else
+            {
+                actor.yield();
+            }
+        });
+    }
+
+    private void onCommitPositionUpdated()
     {
         if (isCommitted())
         {
-            LOG.debug("Raft event for term {} was committed on position {}", raft.getTerm(), position);
+            try
+            {
+                LOG.debug("Raft event for term {} was committed on position {}", raft.getTerm(), position);
 
-            // send response
-            acceptConfigurationRequest();
+                // send response
+                configurationResponse
+                    .reset()
+                    .setSucceeded(true)
+                    .setRaft(raft);
 
-            isCommited = true;
-            raft.getLogStream().removeOnCommitPositionUpdatedCondition(actorCondition);
+                raft.sendResponse(serverOutput, remoteAddress, requestId, configurationResponse);
+            }
+            finally
+            {
+                reset();
+            }
         }
     }
 
-    public boolean isCommitted()
+    private boolean isCommitted()
     {
         return position >= 0 && position <= raft.getLogStream().getCommitPosition();
     }
 
-    private void acceptConfigurationRequest()
-    {
-        configurationResponse
-            .reset()
-            .setSucceeded(true)
-            .setRaft(raft);
-
-        raft.sendResponse(serverOutput, remoteAddress, requestId, configurationResponse);
-    }
     public long getPosition()
     {
         return position;
+    }
+
+    public boolean isHandlingConfigurationChange()
+    {
+        return isHandlingConfigurationChange;
     }
 }
