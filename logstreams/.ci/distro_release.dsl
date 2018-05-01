@@ -152,7 +152,7 @@ mavenJob(jobName) {
     archiveJunit '**/target/surefire-reports/*.xml'
 
     jmhReport {
-      resultPath 'util/target/jmh-result.json'
+      resultPath 'target/jmh-result.json'
     }
 
     extendedEmail {
