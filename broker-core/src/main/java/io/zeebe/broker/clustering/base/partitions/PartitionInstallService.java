@@ -19,7 +19,8 @@ package io.zeebe.broker.clustering.base.partitions;
 
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.*;
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.snapshotStorageServiceName;
-import static io.zeebe.raft.RaftServiceNames.*;
+import static io.zeebe.raft.RaftServiceNames.leaderInitialEventCommittedServiceName;
+import static io.zeebe.raft.RaftServiceNames.raftServiceName;
 
 import java.util.Collection;
 
@@ -32,7 +33,8 @@ import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.spi.SnapshotStorage;
-import io.zeebe.raft.*;
+import io.zeebe.raft.Raft;
+import io.zeebe.raft.RaftStateListener;
 import io.zeebe.raft.controller.MemberReplicateLogController;
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.servicecontainer.*;
@@ -40,6 +42,8 @@ import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.channel.OneToOneRingBufferChannel;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
@@ -131,7 +135,34 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
     }
 
     @Override
-    public void onMembersChanged(Raft raft, Collection<SocketAddress> addresses)
+    public ActorFuture<Void> onMemberLeaving(Raft raft, Collection<SocketAddress> addresses)
+    {
+        final ServiceName<Partition> partitionServiceName = leaderPartitionServiceName(raft.getName());
+
+        final int raftMemberSize = raft.getMemberSize() + 1; // raft does not count itself as member
+        final int replicationFactor = partitionInfo.getReplicationFactor();
+
+        ActorFuture<Void> leaveHandledFuture = CompletableActorFuture.completed(null);
+
+        if (startContext.hasService(partitionServiceName))
+        {
+            if (raftMemberSize < replicationFactor)
+            {
+                LOG.debug("Removing partition service for {}. Replication factor not reached, got {}/{}.", partitionInfo, raftMemberSize, replicationFactor);
+
+                leaveHandledFuture = startContext.removeService(partitionServiceName);
+            }
+            else
+            {
+                LOG.debug("Not removing partition, replication factor still reached, got {}/{}.", partitionInfo, raftMemberSize, replicationFactor);
+            }
+        }
+
+        return leaveHandledFuture;
+    }
+
+    @Override
+    public void onMemberJoined(Raft raft, Collection<SocketAddress> currentMembers)
     {
         if (raft.getState() == RaftState.LEADER)
         {
@@ -142,34 +173,10 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
     @Override
     public void onStateChange(Raft raft, RaftState raftState)
     {
-        switch (raftState)
+        if (raftState == RaftState.LEADER)
         {
-            case FOLLOWER:
-                installFollowerPartition(raft);
-                break;
-
-            case LEADER:
-                installLeaderPartition(raft);
-                break;
-
-            case CANDIDATE:
-                // do nothing
-                break;
+            installLeaderPartition(raft);
         }
-    }
-
-    private void installFollowerPartition(Raft raft)
-    {
-        final Partition partition = new Partition(partitionInfo, RaftState.FOLLOWER);
-
-        final ServiceName<Partition> partitionServiceName = followerPartitionServiceName(raft.getName());
-
-        startContext.createService(partitionServiceName, partition)
-            .dependency(followerServiceName(raft.getName(), raft.getTerm()))
-            .dependency(logStreamServiceName, partition.getLogStreamInjector())
-            .dependency(snapshotStorageServiceName, partition.getSnapshotStorageInjector())
-            .group(isInternalSystemPartition ? FOLLOWER_PARTITION_SYSTEM_GROUP_NAME : FOLLOWER_PARTITION_GROUP_NAME)
-            .install();
     }
 
     private void installLeaderPartition(Raft raft)
@@ -179,28 +186,13 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
         final int raftMemberSize = raft.getMemberSize() + 1; // raft does not count itself as member
         final int replicationFactor = partitionInfo.getReplicationFactor();
 
-        final int requiredQuorum = RaftMath.getRequiredQuorum(replicationFactor);
-        final int currentQuorum = raft.requiredQuorum();
-
-        if (startContext.hasService(partitionServiceName))
+        if (!startContext.hasService(partitionServiceName))
         {
-            if (currentQuorum < requiredQuorum)
-            {
-                LOG.debug("Removing partition service for {}. Replication factor not reached, got {}/{}.", partitionInfo, raftMemberSize, replicationFactor);
-
-                // TODO: ensure data appended after quorum lost and before partition removed
-                // does not get committed
-                startContext.removeService(partitionServiceName);
-            }
-        }
-        else
-        {
-            if (currentQuorum >= requiredQuorum)
+            if (raftMemberSize >= replicationFactor)
             {
                 LOG.debug("Installing partition service for {}. Replication factor reached, got {}/{}.", partitionInfo, raftMemberSize, replicationFactor);
 
                 final Partition partition = new Partition(partitionInfo, RaftState.LEADER);
-
 
                 startContext.createService(partitionServiceName, partition)
                     .dependency(leaderInitialEventCommittedServiceName(raft.getName(), raft.getTerm()))
