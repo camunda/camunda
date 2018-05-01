@@ -15,15 +15,10 @@
  */
 package io.zeebe.logstreams.snapshot.benchmarks;
 
-import io.zeebe.logstreams.snapshot.ComposedSnapshot;
-import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.annotations.BenchmarkMode;
-import org.openjdk.jmh.annotations.Mode;
-import org.openjdk.jmh.annotations.Threads;
+import java.io.*;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
+import io.zeebe.logstreams.snapshot.ComposedSnapshot;
+import org.openjdk.jmh.annotations.*;
 
 
 @BenchmarkMode(Mode.SingleShotTime)
@@ -40,8 +35,9 @@ public class ComposedMapSnapshotBenchmark
 
         // run
         composedZbMapSnapshot.writeSnapshot(outputStream);
+        outputStream.flush();
 
-        // some bytes are writen
+        // some bytes are written
         return composedZbMapSnapshot.getProcessedBytes();
     }
 
@@ -57,7 +53,7 @@ public class ComposedMapSnapshotBenchmark
         // run
         composedZbMapSnapshot.recoverFromSnapshot(outputStream);
 
-        // some bytes are writen
+        // some bytes are read
         return composedZbMapSnapshot.getProcessedBytes();
     }
 }

@@ -15,20 +15,18 @@
  */
 package io.zeebe.logstreams.snapshot.benchmarks;
 
+import static io.zeebe.map.ZbMap.DEFAULT_BLOCK_COUNT;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.Random;
+
 import io.zeebe.logstreams.snapshot.ComposedSnapshot;
 import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
 import io.zeebe.map.Long2LongZbMap;
 import org.openjdk.jmh.annotations.*;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Random;
-
-import static io.zeebe.map.ZbMap.DEFAULT_BLOCK_COUNT;
-
-/**
- *
- */
 @State(Scope.Benchmark)
 public class FilledMapSnapshotSupplier
 {
@@ -40,7 +38,7 @@ public class FilledMapSnapshotSupplier
     @Setup(Level.Iteration)
     public void fillMap() throws IOException
     {
-        tmpFile = new File("writeMapSnapshot-benchmark.txt");
+        tmpFile = Files.createTempFile("zeebe", "tmp").toFile();
         map = new Long2LongZbMap(Benchmarks.DATA_SET_SIZE / DEFAULT_BLOCK_COUNT, DEFAULT_BLOCK_COUNT);
 
         final Random random = new Random();
@@ -48,6 +46,7 @@ public class FilledMapSnapshotSupplier
         {
             map.put(idx, Math.min(Math.abs(random.nextLong()), Benchmarks.DATA_SET_SIZE - 1));
         }
+
         composedZbMapSnapshot = new ComposedSnapshot(new ZbMapSnapshotSupport<>(map));
     }
 
@@ -57,5 +56,4 @@ public class FilledMapSnapshotSupplier
         map.close();
         tmpFile.delete();
     }
-
 }

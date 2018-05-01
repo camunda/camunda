@@ -22,13 +22,12 @@ import org.openjdk.jmh.runner.options.TimeValue;
 
 public class Benchmarks
 {
-    public static final int DATA_SET_SIZE = 100_000;
+    public static final int DATA_SET_SIZE = 1_000_000;
 
     public static void main(String... args) throws Exception
     {
-
         final Options opts = new OptionsBuilder()
-                .include(".*LogStream")
+                .include(BufferedLogStreamReaderBenchmark.class.getName())
                 .warmupIterations(5)
                 .measurementIterations(5)
                 .measurementTime(TimeValue.seconds(30))
@@ -37,6 +36,5 @@ public class Benchmarks
                 .build();
 
         new Runner(opts).run();
-
     }
 }
