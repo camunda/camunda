@@ -635,15 +635,6 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
         return RaftMath.getRequiredQuorum(getMemberSize() + 1);
     }
 
-    /**
-     * @return true if the partition id of the log stream matches the argument, false otherwise
-     */
-    public boolean matchesLog(final HasPartition hasPartition)
-    {
-        // TOOD(menski): why is this method not used anymore???
-        return logStream.getPartitionId() == hasPartition.getPartitionId();
-    }
-
     // transport message sending
 
     /**
