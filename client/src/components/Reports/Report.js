@@ -281,42 +281,59 @@ export default class Report extends React.Component {
 
         <ControlPanel {...data} reportResult={reportResult} onChange={this.updateReport} />
         <div className="Report__view">
-          <div className="Report__content">
-            {this.shouldShowColumnInteractions() ? (
-              <ColumnRearrangement
-                report={reportResult}
-                onChange={this.updateConfiguration('columnOrder')}
-              >
-                <ReportView report={reportResult} />
-              </ColumnRearrangement>
-            ) : (
-              <ReportView report={reportResult} />
-            )}
-          </div>
-          {this.shouldShowColumnInteractions() && (
-            <ColumnSelection
-              columns={reportResult.result[0]}
-              excludedColumns={data.configuration.excludedColumns}
-              onChange={this.updateConfiguration('excludedColumns')}
-            />
-          )}
+          <ReportView
+            report={reportResult}
+            applyAddons={this.applyAddons(ColumnRearrangement, ColumnSelection)}
+          />
         </div>
       </div>
     );
   };
 
-  shouldShowColumnInteractions = () => {
-    const {data, reportResult} = this.state;
+  applyAddons = (...addons) => (Component, props) => (
+    <React.Fragment>
+      <div className="Report__content">{this.renderWrapperAddons(addons, Component, props)}</div>
+      {this.renderContentAddons(addons)}
+    </React.Fragment>
+  );
 
-    return (
-      data &&
-      data.view &&
-      data.view.operation === 'rawData' &&
-      reportResult &&
-      reportResult.result &&
-      reportResult.result[0]
+  renderWrapperAddons = ([{Wrapper}, ...rest], Component, props) => {
+    const renderedRest = rest.length ? (
+      this.renderWrapperAddons(rest, Component, props)
+    ) : (
+      <Component {...props} />
     );
+
+    if (Wrapper) {
+      return (
+        <Wrapper
+          report={this.state.reportResult}
+          data={this.state.data}
+          change={this.updateConfiguration}
+        >
+          {renderedRest}
+        </Wrapper>
+      );
+    } else {
+      return renderedRest;
+    }
   };
+
+  renderContentAddons = addons =>
+    addons.map(({Content}, idx) => {
+      if (Content) {
+        return (
+          <Content
+            key={idx}
+            report={this.state.reportResult}
+            data={this.state.data}
+            change={this.updateConfiguration}
+          />
+        );
+      } else {
+        return null;
+      }
+    });
 
   updateConfiguration = prop => newValue => {
     const changes = {data: {configuration: {[prop]: {$set: newValue}}}};

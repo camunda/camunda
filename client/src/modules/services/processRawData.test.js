@@ -41,16 +41,19 @@ it('should exclude variable columns using the var__ prefix', () => {
 });
 
 it('should apply column order', () => {
-  expect(processRawData(data, [], {meta: ['prop2', 'prop1'], variables: ['var1', 'var2']})).toEqual(
-    {
-      head: ['prop2', 'prop1', {label: 'Variables', columns: ['var1', 'var2']}],
-      body: [['bar', 'foo', '12', ''], ['abc', 'xyz', '', 'true']]
-    }
-  );
+  expect(
+    processRawData(data, [], {
+      processInstanceProps: ['prop2', 'prop1'],
+      variables: ['var1', 'var2']
+    })
+  ).toEqual({
+    head: ['prop2', 'prop1', {label: 'Variables', columns: ['var1', 'var2']}],
+    body: [['bar', 'foo', '12', ''], ['abc', 'xyz', '', 'true']]
+  });
 });
 
 it('should prepend columns without specified column position', () => {
-  expect(processRawData(data, [], {meta: ['prop1'], variables: ['var1']})).toEqual({
+  expect(processRawData(data, [], {processInstanceProps: ['prop1'], variables: ['var1']})).toEqual({
     head: ['prop2', 'prop1', {label: 'Variables', columns: ['var2', 'var1']}],
     body: [['bar', 'foo', '', '12'], ['abc', 'xyz', 'true', '']]
   });
@@ -58,7 +61,10 @@ it('should prepend columns without specified column position', () => {
 
 it('should sort and hide simulateously', () => {
   expect(
-    processRawData(data, ['prop2'], {meta: ['prop2', 'prop1'], variables: ['var2', 'var1']})
+    processRawData(data, ['prop2'], {
+      processInstanceProps: ['prop2', 'prop1'],
+      variables: ['var2', 'var1']
+    })
   ).toEqual({
     head: ['prop1', {label: 'Variables', columns: ['var2', 'var1']}],
     body: [['foo', '', '12'], ['xyz', 'true', '']]

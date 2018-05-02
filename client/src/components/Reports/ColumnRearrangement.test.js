@@ -1,11 +1,19 @@
 import React from 'react';
 import {mount} from 'enzyme';
 
-import ColumnRearrangement from './ColumnRearrangement';
+import ColumnRearrangementAddon from './ColumnRearrangement';
+
+const ColumnRearrangement = ColumnRearrangementAddon.Wrapper;
 
 jest.mock('services', () => {
   return {
     processRawData: jest.fn()
+  };
+});
+
+jest.mock('./service', () => {
+  return {
+    isRawDataReport: () => true
   };
 });
 

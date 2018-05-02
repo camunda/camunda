@@ -214,7 +214,11 @@ export default class ReportView extends React.Component {
 
     return (
       <ErrorBoundary>
-        <Component {...config.props} />
+        {this.props.applyAddons ? (
+          this.props.applyAddons(Component, config.props)
+        ) : (
+          <Component {...config.props} />
+        )}
       </ErrorBoundary>
     );
   };

@@ -65,3 +65,14 @@ export async function getSharedReport(reportId) {
 export async function revokeReportSharing(id) {
   return await del(`/api/share/report/${id}`);
 }
+
+export const isRawDataReport = (report, data) => {
+  return (
+    data &&
+    data.view &&
+    data.view.operation === 'rawData' &&
+    report &&
+    report.result &&
+    report.result[0]
+  );
+};

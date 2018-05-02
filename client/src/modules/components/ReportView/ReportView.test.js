@@ -274,3 +274,13 @@ it('should sort time data ascending for charts', () => {
 
   expect(node.find(Chart)).toIncludeText('{"2015-03-25":2,"2015-03-26":3}');
 });
+
+it('should call the applyAddons function if provided', () => {
+  const spy = jest.fn();
+  const node = mount(<ReportView report={exampleDurationReport} applyAddons={spy} />);
+  node.setState({
+    loaded: true
+  });
+
+  expect(spy).toHaveBeenCalled();
+});

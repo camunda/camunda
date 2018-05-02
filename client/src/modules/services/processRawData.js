@@ -1,7 +1,7 @@
 export default function processRawData(
   data,
   excludedColumns = [],
-  columnOrder = {meta: [], variables: []}
+  columnOrder = {processInstanceProps: [], variables: []}
 ) {
   const processInstanceProps = Object.keys(data[0]).filter(
     entry => entry !== 'variables' && !excludedColumns.includes(entry)
@@ -39,7 +39,7 @@ function sortColumns(head, body, columnOrder) {
 function sortHead(head, columnOrder) {
   const sortedHeadWithoutVariables = head
     .filter(onlyNonNestedColumns)
-    .sort(byOrder(columnOrder.meta));
+    .sort(byOrder(columnOrder.processInstanceProps));
 
   const sortedHeadVariables = head.filter(onlyNestedColumns).map(entry => {
     return {
@@ -74,14 +74,12 @@ function sortRow(row, head, sortedHead) {
     .filter(belongingToNonNestedColumn(head))
     .map(valueForNewColumnPosition(head, sortedHead));
 
-  const sortedRowVariables = row
-    .filter(belongingToNestedColumn(head))
-    .map(
-      valueForNewColumnPosition(
-        getNestedColumnsForLastEntry(head),
-        getNestedColumnsForLastEntry(sortedHead)
-      )
-    );
+  const sortedRowVariables = row.filter(belongingToNestedColumn(head)).map(
+    valueForNewColumnPosition(
+      getNestedColumnsForLastEntry(head), // nested columns for last head entry are variables
+      getNestedColumnsForLastEntry(sortedHead)
+    )
+  );
 
   return sortedRowWithoutVariables.concat(sortedRowVariables);
 }
