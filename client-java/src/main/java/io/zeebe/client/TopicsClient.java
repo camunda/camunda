@@ -49,8 +49,13 @@ public interface TopicsClient
 
     /**
      * Creates a new topic with the given name and number of partitions.
+     * Uses the {@link io.zeebe.client.event.impl.TopicClientImpl#DEFAULT_REPLICATION_FACTOR default replication factor}.
      */
     Request<Event> create(String topicName, int partitions);
+
+    /**
+     * Creates a new topic with the given name, number of partitions and replication factor.
+     */
     Request<Event> create(String topicName, int partitions, int replicationFactor);
 
     /**

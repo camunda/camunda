@@ -29,6 +29,8 @@ import io.zeebe.client.topic.impl.GetPartitionsRequestImpl;
 
 public class TopicClientImpl implements TopicsClient
 {
+    public static final int DEFAULT_REPLICATION_FACTOR = 1;
+
     protected final ZeebeClientImpl client;
 
     public TopicClientImpl(final ZeebeClientImpl client)
@@ -58,7 +60,7 @@ public class TopicClientImpl implements TopicsClient
     @Override
     public Request<Event> create(String topicName, int partitions)
     {
-        return create(topicName, partitions, 1);
+        return create(topicName, partitions, DEFAULT_REPLICATION_FACTOR);
     }
 
     @Override
