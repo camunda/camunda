@@ -34,6 +34,7 @@ import io.zeebe.gossip.protocol.*;
 import io.zeebe.transport.*;
 import io.zeebe.transport.impl.RequestResponseHeaderDescriptor;
 import io.zeebe.transport.impl.TransportHeaderDescriptor;
+import io.zeebe.util.ByteValue;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.*;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -85,14 +86,14 @@ public class GossipRule extends ExternalResource
 
         serverSendBuffer = Dispatchers
                 .create("serverSendBuffer-" + name)
-                .bufferSize(32 * 1024 * 1024)
+                .bufferSize(ByteValue.ofMegabytes(32))
                 .subscriptions("sender" + name)
                 .actorScheduler(actorScheduler)
                 .build();
 
         serverReceiveBuffer = Dispatchers
                 .create("serverReceiveBuffer-" + name)
-                .bufferSize(32 * 1024 * 1024)
+                .bufferSize(ByteValue.ofMegabytes(32))
                 .subscriptions("sender" + name)
                 .actorScheduler(actorScheduler)
                 .build();
@@ -106,7 +107,7 @@ public class GossipRule extends ExternalResource
 
         clientSendBuffer = Dispatchers
                 .create("clientSendBuffer-" + name)
-                .bufferSize(32 * 1024 * 1024)
+                .bufferSize(ByteValue.ofMegabytes(32))
                 .subscriptions("sender" + name)
                 .actorScheduler(actorScheduler)
                 .build();
