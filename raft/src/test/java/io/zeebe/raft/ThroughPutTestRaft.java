@@ -35,6 +35,7 @@ import io.zeebe.raft.util.InMemoryRaftPersistentStorage;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.*;
+import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.channel.OneToOneRingBufferChannel;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -81,7 +82,7 @@ public class ThroughPutTestRaft implements RaftStateListener
 
         serverSendBuffer =
             Dispatchers.create("serverSendBuffer-" + name)
-                       .bufferSize(8 * 1024 * 1024)
+                       .bufferSize(ByteValue.ofMegabytes(8))
                        .actorScheduler(scheduler)
                        .build();
 
@@ -94,7 +95,7 @@ public class ThroughPutTestRaft implements RaftStateListener
 
         clientSendBuffer =
             Dispatchers.create("clientSendBuffer-" + name)
-                       .bufferSize(8 * 1024 * 1024)
+                       .bufferSize(ByteValue.ofMegabytes(8))
                        .actorScheduler(scheduler)
                        .build();
 

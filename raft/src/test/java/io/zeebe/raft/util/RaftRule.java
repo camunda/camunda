@@ -47,6 +47,7 @@ import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.*;
+import io.zeebe.util.ByteValue;
 import io.zeebe.util.LogUtil;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.ActorScheduler;
@@ -122,7 +123,7 @@ public class RaftRule extends ExternalResource implements RaftStateListener
 
         serverSendBuffer =
             Dispatchers.create("serverSendBuffer-" + name)
-                       .bufferSize(32 * 1024 * 1024)
+                       .bufferSize(ByteValue.ofMegabytes(32))
                        .subscriptions("sender-" + name)
                        .actorScheduler(actorScheduler)
                        .build();
@@ -136,7 +137,7 @@ public class RaftRule extends ExternalResource implements RaftStateListener
 
         clientSendBuffer =
             Dispatchers.create("clientSendBuffer-" + name)
-                       .bufferSize(32 * 1024 * 1024)
+                       .bufferSize(ByteValue.ofMegabytes(32))
                        .subscriptions("sender-" + name)
                        .actorScheduler(actorScheduler)
                        .build();
