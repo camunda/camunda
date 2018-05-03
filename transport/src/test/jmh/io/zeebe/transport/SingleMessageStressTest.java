@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
+import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.ActorScheduler;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
