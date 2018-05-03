@@ -36,7 +36,10 @@ public class RaftConfiguration
         return this;
     }
 
-    public Duration getHeartbeatIntervalDuration() { return DurationUtil.parse(heartbeatInterval); }
+    public Duration getHeartbeatIntervalDuration()
+    {
+        return DurationUtil.parse(heartbeatInterval);
+    }
 
     public String getElectionInterval()
     {
