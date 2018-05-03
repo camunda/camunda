@@ -35,6 +35,7 @@ import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.Transports;
+import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import org.agrona.DirectBuffer;
@@ -87,7 +88,7 @@ public class ClientApiRule extends ExternalResource
         scheduler.start();
 
         sendBuffer = Dispatchers.create("clientSendBuffer")
-            .bufferSize(32 * 1024 * 1024)
+            .bufferSize(ByteValue.ofMegabytes(32))
             .actorScheduler(scheduler)
             .build();
 

@@ -212,7 +212,7 @@ public class TransportComponent implements Component
     protected void createDispatcher(ServiceContainer serviceContainer, ServiceName<Dispatcher> name, ByteValue sendBufferSize)
     {
         final DispatcherBuilder dispatcherBuilder = Dispatchers.create(null)
-            .bufferSize((int) sendBufferSize.toBytes().getValue());
+            .bufferSize(sendBufferSize);
 
         final DispatcherService receiveBufferService = new DispatcherService(dispatcherBuilder);
         serviceContainer.createService(name, receiveBufferService)

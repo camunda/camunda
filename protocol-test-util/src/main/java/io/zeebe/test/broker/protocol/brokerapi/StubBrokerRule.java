@@ -29,6 +29,7 @@ import io.zeebe.test.util.collection.MapFactoryBuilder;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.ServerTransport;
 import io.zeebe.transport.Transports;
+import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import org.junit.rules.ExternalResource;
@@ -93,7 +94,7 @@ public class StubBrokerRule extends ExternalResource
 
         sendBuffer = Dispatchers.create("send-buffer")
             .actorScheduler(scheduler)
-            .bufferSize(1024 * 1024)
+            .bufferSize(ByteValue.ofMegabytes(1))
             .build();
 
         channelHandler = new StubResponseChannelHandler(msgPackHelper);

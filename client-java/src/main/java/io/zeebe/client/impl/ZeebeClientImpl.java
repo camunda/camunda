@@ -19,6 +19,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import io.zeebe.util.ByteValue;
 import org.slf4j.Logger;
 
 import io.zeebe.client.WorkflowsClient;
@@ -96,7 +97,7 @@ public class ZeebeClientImpl implements ZeebeClient
         this.scheduler.start();
 
         dataFrameReceiveBuffer = Dispatchers.create("receive-buffer")
-            .bufferSize(1024 * 1024 * configuration.getSendBufferSize())
+            .bufferSize(ByteValue.ofMegabytes(configuration.getSendBufferSize()))
             .modePubSub()
             .frameMaxLength(1024 * 1024)
             .actorScheduler(scheduler)
@@ -104,7 +105,7 @@ public class ZeebeClientImpl implements ZeebeClient
 
         sendBuffer = Dispatchers.create("send-buffer")
             .actorScheduler(scheduler)
-            .bufferSize(1024 * 1024 * configuration.getSendBufferSize())
+            .bufferSize(ByteValue.ofMegabytes(configuration.getSendBufferSize()))
             .build();
 
         final ClientTransportBuilder transportBuilder = Transports.newClientTransport()
