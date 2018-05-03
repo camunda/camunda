@@ -17,24 +17,26 @@ package io.zeebe.gossip;
 
 import java.time.Duration;
 
+import io.zeebe.util.DurationUtil;
+
 public class GossipConfiguration
 {
     private int retransmissionMultiplier = 3;
 
-    private long probeInterval = 1000;
-    private long probeTimeout = 500;
+    private String probeInterval = "1s";
+    private String probeTimeout = "500ms";
 
     private int probeIndirectNodes = 3;
-    private long probeIndirectTimeout = 1000;
+    private String probeIndirectTimeout = "1s";
 
     private int suspicionMultiplier = 5;
 
-    private long syncTimeout = 3000;
+    private String syncTimeout = "3s";
 
-    private long joinTimeout = 1000;
-    private long joinInterval = 1000;
+    private String joinTimeout = "1s";
+    private String joinInterval = "1s";
 
-    private long leaveTimeout = 1000;
+    private String leaveTimeout = "1s";
 
     private int maxMembershipEventsPerMessage = 32;
     private int maxCustomEventsPerMessage = 8;
@@ -42,20 +44,17 @@ public class GossipConfiguration
     /**
      * The timeout of a join request.
      */
-    public long getJoinTimeout()
+    public String getJoinTimeout()
     {
         return joinTimeout;
     }
 
-    public Duration getJoinTimeoutDurtion()
-    {
-        return Duration.ofMillis(joinTimeout);
-    }
+    public Duration getJoinTimeoutDuration() { return DurationUtil.parse(joinTimeout); }
 
     /**
      * The timeout of a join request.
      */
-    public GossipConfiguration setJoinTimeout(long joinTimeout)
+    public GossipConfiguration setJoinTimeout(String joinTimeout)
     {
         this.joinTimeout = joinTimeout;
         return this;
@@ -64,20 +63,20 @@ public class GossipConfiguration
     /**
      * The time when a failed join request is send again.
      */
-    public long getJoinInterval()
+    public String getJoinInterval()
     {
         return joinInterval;
     }
 
     public Duration getJoinIntervalDuration()
     {
-        return Duration.ofMillis(joinInterval);
+        return DurationUtil.parse(joinInterval);
     }
 
     /**
      * The time when a failed join request is send again.
      */
-    public GossipConfiguration setJoinInterval(long joinInterval)
+    public GossipConfiguration setJoinInterval(String joinInterval)
     {
         this.joinInterval = joinInterval;
         return this;
@@ -109,7 +108,7 @@ public class GossipConfiguration
     /**
      * The time between two probe requests.
      */
-    public long getProbeInterval()
+    public String getProbeInterval()
     {
         return probeInterval;
     }
@@ -117,7 +116,7 @@ public class GossipConfiguration
     /**
      * The time between two probe requests.
      */
-    public GossipConfiguration setProbeInterval(final long probeInterval)
+    public GossipConfiguration setProbeInterval(final String probeInterval)
     {
         this.probeInterval = probeInterval;
         return this;
@@ -126,20 +125,20 @@ public class GossipConfiguration
     /**
      * The timeout of a probe request.
      */
-    public long getProbeTimeout()
+    public String getProbeTimeout()
     {
         return probeTimeout;
     }
 
     public Duration getProbeTimeoutDuration()
     {
-        return Duration.ofMillis(probeTimeout);
+        return DurationUtil.parse(probeTimeout);
     }
 
     /**
      * The timeout of a probe request.
      */
-    public GossipConfiguration setProbeTimeout(final long probeTimeout)
+    public GossipConfiguration setProbeTimeout(final String probeTimeout)
     {
         this.probeTimeout = probeTimeout;
         return this;
@@ -165,20 +164,20 @@ public class GossipConfiguration
     /**
      * The timeout of an indirect probe request.
      */
-    public long getProbeIndirectTimeout()
+    public String getProbeIndirectTimeout()
     {
         return probeIndirectTimeout;
     }
 
     public Duration getProbeIndirectTimeoutDuration()
     {
-        return Duration.ofMillis(probeIndirectTimeout);
+        return DurationUtil.parse(probeIndirectTimeout);
     }
 
     /**
      * The timeout of an indirect probe request.
      */
-    public GossipConfiguration probeIndirectTimeout(long probeIndirectTimeout)
+    public GossipConfiguration probeIndirectTimeout(String probeIndirectTimeout)
     {
         this.probeIndirectTimeout = probeIndirectTimeout;
         return this;
@@ -187,20 +186,20 @@ public class GossipConfiguration
     /**
      * The timeout of a sync request.
      */
-    public long getSyncTimeout()
+    public String getSyncTimeout()
     {
         return syncTimeout;
     }
 
     public Duration getSyncTimeoutDuration()
     {
-        return Duration.ofMillis(syncTimeout);
+        return DurationUtil.parse(syncTimeout);
     }
 
     /**
      * The timeout of a sync request.
      */
-    public GossipConfiguration syncTimeout(long syncTimeout)
+    public GossipConfiguration syncTimeout(String syncTimeout)
     {
         this.syncTimeout = syncTimeout;
         return this;
@@ -232,20 +231,20 @@ public class GossipConfiguration
     /**
      * The timeout of a leave request.
      */
-    public long getLeaveTimeout()
+    public String getLeaveTimeout()
     {
         return leaveTimeout;
     }
 
     public Duration getLeaveTimeoutDuration()
     {
-        return Duration.ofMillis(leaveTimeout);
+        return DurationUtil.parse(leaveTimeout);
     }
 
     /**
      * The timeout of a leave request.
      */
-    public GossipConfiguration setLeaveTimeout(long leaveTimeout)
+    public GossipConfiguration setLeaveTimeout(String leaveTimeout)
     {
         this.leaveTimeout = leaveTimeout;
         return this;
@@ -319,7 +318,7 @@ public class GossipConfiguration
 
     public Duration getProbeIntervalDuration()
     {
-        return Duration.ofMillis(probeInterval);
+        return DurationUtil.parse(probeInterval);
     }
 
 }

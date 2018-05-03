@@ -119,7 +119,7 @@ public class JoinController
                     .type(MembershipEventType.JOIN)
                     .gossipTerm(self.getTerm());
 
-                final ActorFuture<ClientResponse> requestFuture = gossipEventSender.sendPing(contactPoint, configuration.getJoinTimeoutDurtion());
+                final ActorFuture<ClientResponse> requestFuture = gossipEventSender.sendPing(contactPoint, configuration.getJoinTimeoutDuration());
                 requestFutures.add(requestFuture);
             }
         }

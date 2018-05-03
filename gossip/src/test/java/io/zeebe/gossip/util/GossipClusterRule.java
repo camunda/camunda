@@ -39,7 +39,7 @@ public class GossipClusterRule implements TestRule
 
     public GossipClusterRule(final GossipRule... gossips)
     {
-        this(new GossipConfiguration().setProbeTimeout(Duration.ofSeconds(2).toMillis()), gossips);
+        this(new GossipConfiguration().setProbeTimeout("2s"), gossips);
     }
 
     public GossipClusterRule(final GossipConfiguration configuration, final GossipRule... gossips)
