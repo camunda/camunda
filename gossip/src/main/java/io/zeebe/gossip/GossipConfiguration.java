@@ -49,7 +49,10 @@ public class GossipConfiguration
         return joinTimeout;
     }
 
-    public Duration getJoinTimeoutDuration() { return DurationUtil.parse(joinTimeout); }
+    public Duration getJoinTimeoutDuration()
+    {
+        return DurationUtil.parse(joinTimeout);
+    }
 
     /**
      * The timeout of a join request.

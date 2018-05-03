@@ -17,8 +17,10 @@ package io.zeebe.gossip.util;
 
 import static org.assertj.core.api.Assertions.fail;
 
-import java.time.Duration;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.function.BooleanSupplier;
 
 import io.zeebe.gossip.GossipConfiguration;
