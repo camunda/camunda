@@ -163,25 +163,25 @@ ioThreadCount = 2
 # metricsFile = "metrics/zeebe.prom"
 
 # Controls the interval at which the metrics are written to the metrics file
-# reportingInterval = 5000
+# reportingInterval = "5s"
 
 [gossip]
 
 # retransmissionMultiplier = 3
-# probeInterval = 1000
-# probeTimeout = 500
+# probeInterval = "1s"
+# probeTimeout = "500ms"
 # probeIndirectNodes = 3
-# probeIndirectTimeout = 1000
+# probeIndirectTimeout = "1s"
 # suspicionMultiplier = 5
-# syncTimeout = 3000
-# joinTimeout = 1000
-# joinInterval = 5000
-# leaveTimeout = 1000
+# syncTimeout = "3s"
+# joinTimeout = "1s"
+# joinInterval = "5s"
+# leaveTimeout = "1s"
 # maxMembershipEventsPerMessage = 32
 # maxCustomEventsPerMessage = 8
 
 [raft]
 
-# heartbeatInterval = 250
-# electionInterval = 1000
-# leaveTimeout = 1000
+# heartbeatInterval = "250ms"
+# electionInterval = "1s"
+# leaveTimeout = "1s"
