@@ -15,9 +15,14 @@
  */
 package io.zeebe.test;
 
+import static io.zeebe.test.util.TestUtil.doRepeatedly;
+
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import io.zeebe.client.TasksClient;
 import io.zeebe.client.TopicsClient;
@@ -26,6 +31,8 @@ import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.clustering.impl.BrokerPartitionState;
 import io.zeebe.client.clustering.impl.TopologyBroker;
 import io.zeebe.client.clustering.impl.TopologyResponse;
+import io.zeebe.client.topic.Partition;
+import io.zeebe.client.topic.Topic;
 import org.junit.rules.ExternalResource;
 
 public class ClientRule extends ExternalResource
@@ -98,6 +105,8 @@ public class ClientRule extends ExternalResource
     private void createDefaultTopic()
     {
         client.topics().create(DEFAULT_TOPIC, 1).execute();
+        waitUntilTopicsExists(DEFAULT_TOPIC);
+
         final TopologyResponse topology = client.requestTopology().execute();
 
         defaultPartition = -1;
@@ -121,6 +130,22 @@ public class ClientRule extends ExternalResource
         {
             throw new RuntimeException("Could not detect leader for default partition");
         }
+    }
+
+    public void waitUntilTopicsExists(final String... topicNames)
+    {
+        final List<String> expectedTopicNames = Arrays.asList(topicNames);
+
+        doRepeatedly(this::topicsByName)
+                .until(t -> t.keySet().containsAll(expectedTopicNames));
+    }
+
+    public Map<String, List<Partition>> topicsByName()
+    {
+        return topics().getTopics().execute()
+                       .getTopics()
+                       .stream()
+                       .collect(Collectors.toMap(Topic::getName, Topic::getPartitions));
     }
 
     @Override
