@@ -116,7 +116,7 @@ public class RaftTwoNodesTest
 
         // when
         cluster.removeRaft(oldLeader);
-        Thread.sleep(oldLeader.getConfiguration().getElectionInterval() * 4);
+        Thread.sleep(oldLeader.getConfiguration().getElectionIntervalDuration().toMillis() * 4);
 
         // then
         final RaftRule follower = cluster.getRafts().get(0);

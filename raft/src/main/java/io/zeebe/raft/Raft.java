@@ -103,7 +103,7 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
         this.messageReceiveBuffer = messageReceiveBuffer;
         this.raftName = raftName;
 
-        this.heartbeat = new Heartbeat(configuration.getElectionInterval());
+        this.heartbeat = new Heartbeat(configuration.getElectionIntervalDuration().toMillis());
         this.raftMembers = new RaftMembers(socketAddress, persistentStorage, clientTransport::registerRemoteAddress);
 
         raftStateListeners.addAll(Arrays.asList(listeners));

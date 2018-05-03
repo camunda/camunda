@@ -58,7 +58,7 @@ public class MemberReplicateLogController extends Actor implements Service<Void>
 
     private final Raft raft;
     private final LogStream logStream;
-    private final long heartbeatIntervalMs;
+    private final Duration heartbeatInterval;
     private final RemoteAddress remoteAddress;
     private final ClientOutput clientOutput;
 
@@ -79,7 +79,7 @@ public class MemberReplicateLogController extends Actor implements Service<Void>
         this.name = String.format("raft-repl-%s-%s", raft.getName(), remoteAddress.toString());
 
         this.raft = raft;
-        this.heartbeatIntervalMs = raft.getConfiguration().getHeartbeatInterval();
+        this.heartbeatInterval = raft.getConfiguration().getHeartbeatIntervalDuration();
         this.clientOutput = clientTransport.getOutput();
         this.logStream = raft.getLogStream();
         this.reader = new BufferedLogStreamReader(logStream, true);
@@ -113,7 +113,7 @@ public class MemberReplicateLogController extends Actor implements Service<Void>
             LOG.trace("started");
         }
 
-        actor.runAtFixedRate(Duration.ofMillis(heartbeatIntervalMs), this::onHeartbeatTimerFired);
+        actor.runAtFixedRate(heartbeatInterval, this::onHeartbeatTimerFired);
         appenderCondition = actor.onCondition("data-appended", this::onAppendPositionChanged);
         raft.getLogStream().registerOnAppendCondition(appenderCondition);
 
@@ -205,7 +205,7 @@ public class MemberReplicateLogController extends Actor implements Service<Void>
 
         final int requestSize = appendRequest.getLength();
         final long now = ActorClock.currentTimeMillis();
-        final boolean isHeartbeatTimeout = now - lastRequestTimestamp >= heartbeatIntervalMs;
+        final boolean isHeartbeatTimeout = now - lastRequestTimestamp >= heartbeatInterval.toMillis();
         final boolean isBackpressured = !backpressureHelper.canSend(requestSize);
         final boolean trySend = isHeartbeatTimeout || (nextEvent != null && !isBackpressured);
 

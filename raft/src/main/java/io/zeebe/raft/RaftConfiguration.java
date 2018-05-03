@@ -17,52 +17,56 @@ package io.zeebe.raft;
 
 import java.time.Duration;
 
+import io.zeebe.util.DurationUtil;
+
 public class RaftConfiguration
 {
-    private long heartbeatInterval = 250;
-    private long electionInterval = 1000;
-    private long leaveTimeout = 1000;
+    private String heartbeatInterval = "250ms";
+    private String electionInterval = "1s";
+    private String leaveTimeout = "1s";
 
-    public long getHeartbeatInterval()
+    public String getHeartbeatInterval()
     {
         return heartbeatInterval;
     }
 
-    public RaftConfiguration setHeartbeatInterval(final long heartbeatIntervalMs)
+    public RaftConfiguration setHeartbeatInterval(final String heartbeatInterval)
     {
-        this.heartbeatInterval = heartbeatIntervalMs;
+        this.heartbeatInterval = heartbeatInterval;
         return this;
     }
 
-    public long getElectionInterval()
+    public Duration getHeartbeatIntervalDuration() { return DurationUtil.parse(heartbeatInterval); }
+
+    public String getElectionInterval()
     {
         return electionInterval;
     }
 
     public Duration getElectionIntervalDuration()
     {
-        return Duration.ofMillis(electionInterval);
+        return DurationUtil.parse(electionInterval);
     }
 
-    public RaftConfiguration setElectionInterval(final long electionInterval)
+    public RaftConfiguration setElectionInterval(final String electionInterval)
     {
         this.electionInterval = electionInterval;
         return this;
     }
 
-    public long getLeaveTimeout()
+    public String getLeaveTimeout()
     {
         return leaveTimeout;
     }
 
     public Duration getLeaveTimeoutDuration()
     {
-        return Duration.ofMillis(leaveTimeout);
+        return DurationUtil.parse(leaveTimeout);
     }
 
-    public RaftConfiguration setLeaveTimeout(long leaveTimeoutMs)
+    public RaftConfiguration setLeaveTimeout(String leaveTimeout)
     {
-        this.leaveTimeout = leaveTimeoutMs;
+        this.leaveTimeout = leaveTimeout;
         return this;
     }
 
