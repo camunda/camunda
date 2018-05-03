@@ -124,12 +124,12 @@ public class SingleMessageStressTest
             final SocketAddress addr = new SocketAddress("localhost", 51115);
 
             clientSendBuffer = Dispatchers.create("clientSendBuffer")
-                .bufferSize(32 * 1024 * 1024)
+                .bufferSize(ByteValue.ofMegabytes(32))
                 .actorScheduler(scheduler)
                 .build();
 
             serverSendBuffer = Dispatchers.create("serverSendBuffer")
-                .bufferSize(32 * 1024 * 1024)
+                .bufferSize(ByteValue.ofMegabytes(32))
                 .actorScheduler(scheduler)
                 .build();
 

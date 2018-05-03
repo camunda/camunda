@@ -19,6 +19,7 @@ import static io.zeebe.test.util.BufferAssert.assertThatBuffer;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.util.ByteValue;
 import org.agrona.DirectBuffer;
 import org.junit.Before;
 import org.junit.Rule;
@@ -41,7 +42,7 @@ public class ServerTransportTest
     public static final SocketAddress SERVER_ADDRESS = new SocketAddress("localhost", 51115);
 
     public static final int REQUEST_POOL_SIZE = 4;
-    public static final int SEND_BUFFER_SIZE = 16 * 1024;
+    public static final ByteValue SEND_BUFFER_SIZE = ByteValue.ofKilobytes(16);
 
     public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3);
     public AutoCloseableRule closeables = new AutoCloseableRule();

@@ -17,6 +17,7 @@ package io.zeebe.transport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.util.ByteValue;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.After;
@@ -36,8 +37,9 @@ public class ControllableServerTransportTest
 
     public static final DirectBuffer BUF1 = new UnsafeBuffer(new byte[32]);
 
-    public static final int SEND_BUFFER_SIZE = 16 * 1024;
-    public static final int MESSAGES_REQUIRED_TO_SATURATE_SEND_BUFFER = SEND_BUFFER_SIZE / BUF1.capacity();
+    public static final ByteValue SEND_BUFFER_SIZE = ByteValue.ofKilobytes(16);
+
+    public static final int MESSAGES_REQUIRED_TO_SATURATE_SEND_BUFFER = (int)SEND_BUFFER_SIZE.toBytes().getValue() / BUF1.capacity();
 
     public ControlledActorSchedulerRule actorSchedulerRule = new ControlledActorSchedulerRule();
     public AutoCloseableRule closeables = new AutoCloseableRule();

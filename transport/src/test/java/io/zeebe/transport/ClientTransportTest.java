@@ -37,6 +37,7 @@ import io.zeebe.test.util.io.FailingBufferWriter.FailingBufferWriterException;
 import io.zeebe.transport.impl.TransportChannel;
 import io.zeebe.transport.impl.TransportHeaderDescriptor;
 import io.zeebe.transport.util.*;
+import io.zeebe.util.ByteValue;
 import io.zeebe.util.buffer.*;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -62,8 +63,8 @@ public class ClientTransportTest
     public static final SocketAddress SERVER_ADDRESS2 = new SocketAddress("localhost", 51116);
 
     public static final int REQUEST_POOL_SIZE = 4;
-    public static final int BUFFER_SIZE = 16 * 1024;
-    public static final int MESSAGES_REQUIRED_TO_SATURATE_SEND_BUFFER = BUFFER_SIZE / BUF1.capacity();
+    public static final ByteValue BUFFER_SIZE = ByteValue.ofKilobytes(16);
+    public static final int MESSAGES_REQUIRED_TO_SATURATE_SEND_BUFFER = (int) BUFFER_SIZE.toBytes().getValue() / BUF1.capacity();
 
     protected Dispatcher clientReceiveBuffer;
 
@@ -311,7 +312,7 @@ public class ClientTransportTest
 
         final DirectBuffer largeBuf = new UnsafeBuffer(new byte[maximumMessageLength]);
 
-        final int messagesToExhaustReceiveBuffer = (BUFFER_SIZE / largeBuf.capacity()) + 1;
+        final int messagesToExhaustReceiveBuffer = ((int) BUFFER_SIZE.toBytes().getValue() / largeBuf.capacity()) + 1;
         final SendMessagesHandler handler = new SendMessagesHandler(messagesToExhaustReceiveBuffer, largeBuf);
 
         buildServerTransport(

@@ -22,6 +22,7 @@ import java.nio.channels.SocketChannel;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
+import io.zeebe.util.ByteValue;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
@@ -64,7 +65,7 @@ public class TransportChannelListenerTest
     {
 
         final Dispatcher serverSendBuffer = Dispatchers.create("serverSendBuffer")
-            .bufferSize(32 * 1024 * 1024)
+            .bufferSize(ByteValue.ofMegabytes(32))
             .actorScheduler(actorSchedulerRule.get())
             .build();
         closeables.manage(serverSendBuffer);
@@ -87,7 +88,7 @@ public class TransportChannelListenerTest
     private ClientTransport buildClientTransport(Consumer<ClientTransportBuilder> builderConsumer)
     {
         final Dispatcher clientSendBuffer = Dispatchers.create("clientSendBuffer")
-            .bufferSize(32 * 1024 * 1024)
+            .bufferSize(ByteValue.ofMegabytes(32))
             .actorScheduler(actorSchedulerRule.get())
             .build();
         closeables.manage(clientSendBuffer);

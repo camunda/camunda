@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.concurrent.ExecutionException;
 
+import io.zeebe.util.ByteValue;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Rule;
@@ -53,13 +54,13 @@ public class MixedProtocolsTest
         final int numRequests = 1000;
 
         final Dispatcher clientSendBuffer = Dispatchers.create("clientSendBuffer")
-            .bufferSize(32 * 1024 * 1024)
+            .bufferSize(ByteValue.ofMegabytes(32))
             .actorScheduler(actorSchedulerRule.get())
             .build();
         closeables.manage(clientSendBuffer);
 
         final Dispatcher serverSendBuffer = Dispatchers.create("serverSendBuffer")
-            .bufferSize(32 * 1024 * 1024)
+            .bufferSize(ByteValue.ofMegabytes(32))
             .actorScheduler(actorSchedulerRule.get())
             .build();
         closeables.manage(serverSendBuffer);

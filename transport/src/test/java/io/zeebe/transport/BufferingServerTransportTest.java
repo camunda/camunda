@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+import io.zeebe.util.ByteValue;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
@@ -37,7 +38,7 @@ import io.zeebe.util.sched.testing.ActorSchedulerRule;
 
 public class BufferingServerTransportTest
 {
-    public static final int BUFFER_SIZE = 16 * 1024;
+    public static final ByteValue BUFFER_SIZE = ByteValue.ofKilobytes(16);
     public static final SocketAddress SERVER_ADDRESS = new SocketAddress("localhost", 51115);
 
     public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3);
@@ -98,7 +99,7 @@ public class BufferingServerTransportTest
 
         final DirectBuffer largeBuf = new UnsafeBuffer(new byte[maximumMessageLength]);
 
-        final int messagesToExhaustReceiveBuffer = (BUFFER_SIZE / largeBuf.capacity()) + 1;
+        final int messagesToExhaustReceiveBuffer = ((int) BUFFER_SIZE.toBytes().getValue() / largeBuf.capacity()) + 1;
 
         final RemoteAddress remoteAddress = clientTransport.registerRemoteAndAwaitChannel(SERVER_ADDRESS);
 

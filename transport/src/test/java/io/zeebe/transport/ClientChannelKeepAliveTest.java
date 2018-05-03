@@ -27,6 +27,7 @@ import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.impl.ControlMessages;
+import io.zeebe.util.ByteValue;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.clock.ControlledActorClock;
@@ -59,7 +60,7 @@ public class ClientChannelKeepAliveTest
     public void setUp()
     {
         clientSendBuffer = Dispatchers.create("clientSendBuffer")
-            .bufferSize(32 * 1024)
+            .bufferSize(ByteValue.ofKilobytes(32))
             .actorScheduler(actorSchedulerRule.get())
             .build();
         closeables.manage(clientSendBuffer);
@@ -71,7 +72,7 @@ public class ClientChannelKeepAliveTest
     protected ServerTransport buildServerTransport(SocketAddress bindAddress, ControlMessageRecorder recorder)
     {
         final Dispatcher serverSendBuffer = Dispatchers.create("serverSendBuffer")
-            .bufferSize(32 * 1024)
+            .bufferSize(ByteValue.ofKilobytes(32))
             .actorScheduler(actorSchedulerRule.get())
             .build();
         closeables.manage(serverSendBuffer);

@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.time.Duration;
 import java.util.function.Supplier;
 
+import io.zeebe.util.ByteValue;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
@@ -42,9 +43,9 @@ public class ControllableClientTransportTest
     public static final DirectBuffer BUF1 = new UnsafeBuffer(new byte[32]);
     public static final SocketAddress SERVER_ADDRESS1 = new SocketAddress("localhost", 51115);
 
-    public static final int SEND_BUFFER_SIZE = 16 * 1024;
+    public static final ByteValue SEND_BUFFER_SIZE = ByteValue.ofKilobytes(16);
 
-    public static final int MESSAGES_REQUIRED_TO_SATURATE_SEND_BUFFER = SEND_BUFFER_SIZE / BUF1.capacity();
+    public static final int MESSAGES_REQUIRED_TO_SATURATE_SEND_BUFFER = (int)SEND_BUFFER_SIZE.toBytes().getValue() / BUF1.capacity();
 
     public ControlledActorSchedulerRule scheduler = new ControlledActorSchedulerRule();
     public AutoCloseableRule closeables = new AutoCloseableRule();
