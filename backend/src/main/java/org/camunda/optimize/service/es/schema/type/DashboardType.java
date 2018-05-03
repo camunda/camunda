@@ -83,9 +83,8 @@ public class DashboardType extends StrictTypeMappingCreator {
         .endObject()
       .endObject()
       .startObject(CONFIGURATION)
-        .field("type", "text")
-        .field("index", false)
-      .endObject();;
+        .field("enabled", false)
+      .endObject();
     return newBuilder;
   }
 

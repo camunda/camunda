@@ -18,6 +18,8 @@ import org.junit.rules.RuleChain;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
+import java.time.OffsetDateTime;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
@@ -26,10 +28,6 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-
-/**
- * @author Askar Akhmerov
- */
 
 public class SharingServiceIT extends AbstractSharingIT {
 
@@ -263,6 +261,45 @@ public class SharingServiceIT extends AbstractSharingIT {
         .get();
     DashboardDefinitionDto dashboardShareDto = response.readEntity(DashboardDefinitionDto.class);
     assertThat(dashboardShareDto.getReports().size(), is(0));
+  }
+
+  @Test
+  public void updatingDashboardUpdatesRespectiveShare() {
+    // given
+    String dashboardId = addEmptyDashboardToOptimize();
+    String dashboardShareId = addShareForDashboard(dashboardId);
+
+    ReportLocationDto reportLocationDto = new ReportLocationDto();
+    reportLocationDto.setId("report-123");
+    reportLocationDto.setConfiguration("testConfiguration");
+    DashboardDefinitionDto dashboard = new DashboardDefinitionDto();
+    dashboard.setReports(Collections.singletonList(reportLocationDto));
+    dashboard.setId("shouldNotBeUpdated");
+    dashboard.setLastModifier("shouldNotBeUpdatedManually");
+    dashboard.setName("MyDashboard");
+    OffsetDateTime shouldBeIgnoredDate = OffsetDateTime.now().plusHours(1);
+    dashboard.setCreated(shouldBeIgnoredDate);
+    dashboard.setLastModified(shouldBeIgnoredDate);
+    dashboard.setOwner("NewOwner");
+
+    // when
+    updateDashboard(dashboardId, dashboard);
+    Response response =
+      embeddedOptimizeRule.target(getSharedDashboardEvaluationPath(dashboardShareId))
+        .request()
+        .get();
+    DashboardDefinitionDto dashboardShareDto = response.readEntity(DashboardDefinitionDto.class);
+
+    // then
+    assertThat(dashboardShareDto.getReports().size(), is(1));
+    ReportLocationDto retrievedLocation = dashboardShareDto.getReports().get(0);
+    assertThat(retrievedLocation.getId(), is("report-123"));
+    assertThat(retrievedLocation.getConfiguration(), is("testConfiguration"));
+    assertThat(dashboardShareDto.getId(), is(dashboardId));
+    assertThat(dashboardShareDto.getCreated(), is(not(shouldBeIgnoredDate)));
+    assertThat(dashboardShareDto.getLastModified(), is(not(shouldBeIgnoredDate)));
+    assertThat(dashboardShareDto.getName(), is("MyDashboard"));
+    assertThat(dashboardShareDto.getOwner(), is("NewOwner"));
   }
 
   @Test

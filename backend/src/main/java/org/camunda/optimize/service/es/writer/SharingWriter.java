@@ -21,10 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-/**
- * @author Askar Akhmerov
- */
-
 @Component
 public class SharingWriter {
 
@@ -109,37 +105,4 @@ public class SharingWriter {
     .get();
   }
 
-  public void deleteReportShares(List<String> reportShares) {
-    logger.debug("Deleting report shares with ids [{}]", reportShares);
-
-    BulkByScrollResponse response =
-      DeleteByQueryAction.INSTANCE.newRequestBuilder(esclient)
-        .filter(QueryBuilders.idsQuery().addIds(reportShares.toArray(new String[reportShares.size()])))
-        .source(configurationService.getOptimizeIndex(configurationService.getReportShareType()))
-        .refresh(true)
-        .get();
-
-    response.getDeleted();
-  }
-
-  public List<String> saveReportShares(List<ReportShareDto> toPersist) {
-    List<String> result = new ArrayList<>();
-    BulkRequestBuilder bulkRequest = esclient.prepareBulk();
-    for (ReportShareDto share : toPersist) {
-      String id = IdGenerator.getNextId();
-      share.setId(id);
-      result.add(id);
-      bulkRequest.add(esclient
-        .prepareIndex(
-          configurationService.getOptimizeIndex(configurationService.getReportShareType()),
-          configurationService.getReportShareType(),
-          id
-        )
-        .setSource(objectMapper.convertValue(share, Map.class))
-      );
-    }
-    bulkRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
-    bulkRequest.get();
-    return result;
-  }
 }

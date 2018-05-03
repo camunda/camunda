@@ -4,9 +4,6 @@ import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 
 import java.util.List;
 
-/**
- * @author Askar Akhmerov
- */
 public class DashboardShareDto {
 
   private String id;

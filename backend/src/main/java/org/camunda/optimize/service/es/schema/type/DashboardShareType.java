@@ -6,9 +6,6 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-/**
- * @author Askar Akhmerov
- */
 @Component
 public class DashboardShareType extends StrictTypeMappingCreator {
 
@@ -26,6 +23,8 @@ public class DashboardShareType extends StrictTypeMappingCreator {
 
   public static final String REPORT_ID = "id";
   public static final String REPORT_NAME = "name";
+
+  public static final String CONFIGURATION = "configuration";
 
   @Override
   public String getType() {
@@ -70,6 +69,9 @@ public class DashboardShareType extends StrictTypeMappingCreator {
         .startObject("properties");
           addNestedDimensionField(newBuilder)
         .endObject()
+      .endObject()
+      .startObject(CONFIGURATION)
+        .field("enabled", false)
       .endObject();
     return newBuilder;
   }

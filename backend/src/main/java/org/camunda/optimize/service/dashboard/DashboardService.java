@@ -39,7 +39,7 @@ public class DashboardService {
     updateDto.setLastModified(LocalDateUtil.getCurrentDateTime());
     updateDto.setOwner(updatedDashboard.getOwner());
     updateDto.setName(updatedDashboard.getName());
-    updateDto.setReports(updatedDashboard.getReports());
+      updateDto.setReports(updatedDashboard.getReports());
     updateDto.setLastModifier(userId);
     updateDto.setLastModified(LocalDateUtil.getCurrentDateTime());
     dashboardWriter.updateDashboard(updateDto, updatedDashboard.getId());
