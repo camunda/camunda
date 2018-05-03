@@ -17,10 +17,10 @@
  */
 package io.zeebe.broker.system.metrics;
 
-import java.time.Duration;
-
 import io.zeebe.broker.system.configuration.MetricsCfg;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.SchedulingHints;
@@ -43,7 +43,7 @@ public class MetricsFileWriterService implements Service<MetricsFileWriter>
 
         final String metricsFileName = configuration.getFile();
 
-        metricsFileWriter = new MetricsFileWriter(Duration.ofMillis(configuration.getReportingInterval()), metricsFileName, metricsManager);
+        metricsFileWriter = new MetricsFileWriter(configuration.getReportingIntervalDuration(), metricsFileName, metricsManager);
         startContext.async(scheduler.submitActor(metricsFileWriter, SchedulingHints.isIoBound(0)));
     }
 

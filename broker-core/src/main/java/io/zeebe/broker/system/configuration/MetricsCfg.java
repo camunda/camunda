@@ -17,9 +17,13 @@
  */
 package io.zeebe.broker.system.configuration;
 
+import java.time.Duration;
+
+import io.zeebe.util.DurationUtil;
+
 public class MetricsCfg implements ConfigurationEntry
 {
-    private int reportingInterval = 5000;
+    private String reportingInterval = "5s";
     private String file = "metrics/zeebe.prom";
 
     @Override
@@ -28,12 +32,17 @@ public class MetricsCfg implements ConfigurationEntry
         file = ConfigurationUtil.toAbsolutePath(file, brokerBase);
     }
 
-    public int getReportingInterval()
+    public Duration getReportingIntervalDuration()
+    {
+        return DurationUtil.parse(reportingInterval);
+    }
+
+    public String getReportingInterval()
     {
         return reportingInterval;
     }
 
-    public void setReportingInterval(int reportingInterval)
+    public void setReportingInterval(String reportingInterval)
     {
         this.reportingInterval = reportingInterval;
     }
