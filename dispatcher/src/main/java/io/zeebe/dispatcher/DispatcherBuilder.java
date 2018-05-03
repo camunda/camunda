@@ -25,6 +25,7 @@ import java.util.Objects;
 
 import io.zeebe.dispatcher.impl.log.LogBuffer;
 import io.zeebe.dispatcher.impl.log.LogBufferAppender;
+import io.zeebe.util.ByteValue;
 import io.zeebe.util.EnsureUtil;
 import io.zeebe.util.allocation.*;
 import io.zeebe.util.sched.ActorScheduler;
@@ -103,9 +104,9 @@ public class DispatcherBuilder
      * The number of bytes the buffer is be able to contain. Represents the size of the data section.
      * Additional space will be allocated for the meta-data sections
      */
-    public DispatcherBuilder bufferSize(final int size)
+    public DispatcherBuilder bufferSize(final ByteValue byteValue)
     {
-        this.bufferSize = size;
+        this.bufferSize = (int) byteValue.toBytes().getValue();
         return this;
     }
 

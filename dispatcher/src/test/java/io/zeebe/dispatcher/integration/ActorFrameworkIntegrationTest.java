@@ -20,6 +20,7 @@ import java.util.Iterator;
 import java.util.concurrent.CountDownLatch;
 
 import io.zeebe.dispatcher.*;
+import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
@@ -229,9 +230,9 @@ public class ActorFrameworkIntegrationTest
     public void testOffer() throws InterruptedException
     {
         final Dispatcher dispatcher = Dispatchers.create("default")
-                .actorScheduler(actorSchedulerRule.get())
-                .bufferSize(1024 * 1024 * 10) // 10 MB buffersize
-                .build();
+                                                 .actorScheduler(actorSchedulerRule.get())
+                                                 .bufferSize(ByteValue.ofMegabytes(10))
+                                                 .build();
 
         actorSchedulerRule.submitActor(new Consumer(dispatcher));
         final Producer producer = new Producer(dispatcher);
@@ -247,7 +248,7 @@ public class ActorFrameworkIntegrationTest
     {
         final Dispatcher dispatcher = Dispatchers.create("default")
                 .actorScheduler(actorSchedulerRule.get())
-                .bufferSize(1024 * 1024 * 10) // 10 MB buffersize
+                .bufferSize(ByteValue.ofMegabytes(10))
                 .build();
 
         actorSchedulerRule.submitActor(new Consumer(dispatcher));
@@ -263,7 +264,7 @@ public class ActorFrameworkIntegrationTest
     {
         final Dispatcher dispatcher = Dispatchers.create("default")
                 .actorScheduler(actorSchedulerRule.get())
-                .bufferSize(1024 * 1024 * 10) // 10 MB buffersize
+                .bufferSize(ByteValue.ofMegabytes(10))
                 .build();
 
         actorSchedulerRule.submitActor(new PeekingConsumer(dispatcher));

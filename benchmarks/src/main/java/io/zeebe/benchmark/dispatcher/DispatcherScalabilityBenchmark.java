@@ -19,6 +19,7 @@ import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import io.zeebe.util.ByteValue;
 import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -56,7 +57,7 @@ public class DispatcherScalabilityBenchmark
             }
 
             dispatcher = Dispatchers.create("default")
-                    .bufferSize(1024 * 1024 * 32)
+                    .bufferSize(ByteValue.ofMegabytes(32))
                     .build();
 
             subscription = dispatcher.openSubscription("test");

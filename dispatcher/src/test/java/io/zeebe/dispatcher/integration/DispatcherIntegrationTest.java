@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import io.zeebe.util.ByteValue;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -84,9 +85,9 @@ public class DispatcherIntegrationTest
         final UnsafeBuffer msg = new UnsafeBuffer(ByteBuffer.allocate(4534));
 
         final Dispatcher dispatcher = Dispatchers.create("default")
-                .actorScheduler(actorSchedulerRule.get())
-                .bufferSize(1024 * 1024 * 10) // 10 MB buffersize
-                .build();
+                                                 .actorScheduler(actorSchedulerRule.get())
+                                                 .bufferSize(ByteValue.ofMegabytes(10))
+                                                 .build();
 
         final Consumer consumer = new Consumer();
 
@@ -117,7 +118,7 @@ public class DispatcherIntegrationTest
 
         final Dispatcher dispatcher = Dispatchers.create("default")
                 .actorScheduler(actorSchedulerRule.get())
-                .bufferSize(1024 * 1024 * 10) // 10 MB buffersize
+                .bufferSize(ByteValue.ofMegabytes(10))
                 .build();
 
         final Consumer consumer = new Consumer();
@@ -150,7 +151,7 @@ public class DispatcherIntegrationTest
 
         final Dispatcher dispatcher = Dispatchers.create("default")
                 .actorScheduler(actorSchedulerRule.get())
-                .bufferSize(1024 * 1024 * 10) // 10 MB buffersize
+                .bufferSize(ByteValue.ofMegabytes(10))
                 .build();
 
         final Subscription subscription = dispatcher.openSubscription("test");
@@ -199,7 +200,7 @@ public class DispatcherIntegrationTest
 
         final Dispatcher dispatcher = Dispatchers.create("default")
                 .actorScheduler(actorSchedulerRule.get())
-                .bufferSize(1024 * 1024 * 10) // 10 MB buffersize
+                .bufferSize(ByteValue.ofMegabytes(10))
                 .modePipeline()
                 .subscriptions("s1", "s2")
                 .build();
@@ -257,7 +258,7 @@ public class DispatcherIntegrationTest
 
         final Dispatcher dispatcher = Dispatchers.create("default")
                 .actorScheduler(actorSchedulerRule.get())
-                .bufferSize(1024 * 1024 * 10) // 10 MB buffersize
+                .bufferSize(ByteValue.ofMegabytes(10))
                 .modePipeline()
                 .subscriptions("s1", "s2")
                 .build();
@@ -332,7 +333,7 @@ public class DispatcherIntegrationTest
 
         final Dispatcher dispatcher = Dispatchers.create("default")
                 .actorScheduler(actorSchedulerRule.get())
-                .bufferSize(1024 * 1024 * 10) // 10 MB buffersize
+                .bufferSize(ByteValue.ofMegabytes(10))
                 .modePipeline()
                 .subscriptions("s1", "s2")
                 .build();
@@ -376,7 +377,7 @@ public class DispatcherIntegrationTest
 
         final Dispatcher dispatcher = Dispatchers.create("default")
                 .actorScheduler(actorSchedulerRule.get())
-                .bufferSize(1024 * 1024 * 10) // 10 MB buffersize
+                .bufferSize(ByteValue.ofMegabytes(10))
                 .initialPartitionId(2)
                 .build();
 
@@ -413,7 +414,7 @@ public class DispatcherIntegrationTest
         // given
         final Dispatcher dispatcher = Dispatchers.create("default")
                 .actorScheduler(actorSchedulerRule.get())
-                .bufferSize(1024 * 10)
+                .bufferSize(ByteValue.ofKilobytes(10))
                 .initialPartitionId(2)
                 .build();
 
@@ -437,7 +438,7 @@ public class DispatcherIntegrationTest
         // given
         final Dispatcher dispatcher = Dispatchers.create("default")
             .actorScheduler(actorSchedulerRule.get())
-            .bufferSize(1024 * 10)
+            .bufferSize(ByteValue.ofKilobytes(10))
             .build();
 
         // when
@@ -454,7 +455,7 @@ public class DispatcherIntegrationTest
         // given
         final Dispatcher dispatcher = Dispatchers.create("default")
             .actorScheduler(actorSchedulerRule.get())
-            .bufferSize(1024 * 10)
+            .bufferSize(ByteValue.ofKilobytes(10))
             .build();
 
         // when
@@ -470,7 +471,7 @@ public class DispatcherIntegrationTest
         // given
         final Dispatcher dispatcher = Dispatchers.create("default")
             .actorScheduler(actorSchedulerRule.get())
-            .bufferSize(1024 * 10)
+            .bufferSize(ByteValue.ofKilobytes(10))
             .build();
 
         final Subscription subscription1 = dispatcher.openSubscription("sub1");

@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.dispatcher.*;
 import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
+import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -45,7 +46,7 @@ public class FragmentBatchIntegrationTest
     public void init()
     {
         dispatcher = Dispatchers.create("default")
-                .bufferSize(1024 * 32)
+                .bufferSize(ByteValue.ofKilobytes(32))
                 .actorScheduler(actorSchedulerRule.get())
                 .build();
 

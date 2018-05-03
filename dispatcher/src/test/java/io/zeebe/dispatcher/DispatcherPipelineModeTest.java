@@ -22,6 +22,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
 
+import io.zeebe.util.ByteValue;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Rule;
@@ -54,7 +55,7 @@ public class DispatcherPipelineModeTest
         final DispatcherBuilder builder = Dispatchers.create("foo")
                 .actorScheduler(scheduler.get())
                 .modePipeline()
-                .bufferSize(1024 * 1024);
+                .bufferSize(ByteValue.ofMegabytes(1));
 
         configurator.accept(builder);
         final Dispatcher d = builder.build();
@@ -168,7 +169,7 @@ public class DispatcherPipelineModeTest
     {
         // given
         final Dispatcher dispatcher = buildDispatcher(b -> b
-                .bufferSize(1024 * 1024)
+                .bufferSize(ByteValue.ofMegabytes(1))
                 .subscriptions("s1", "s2"));
 
         final Future<Subscription> future1 = dispatcher.getSubscriptionAsync("s1");
