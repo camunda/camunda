@@ -74,22 +74,24 @@ class EntityList extends React.Component {
           parentClassName: 'EntityList__data--title'
         },
         {
-          plainText: true,
           content: `Last modified ${moment(lastModified).format('lll')} by ${lastModifier}`,
           parentClassName: 'EntityList__data--metadata'
         },
         {
-          shared,
-          parentClassName: 'EntityList__data--icons'
+          parentClassName: 'EntityList__data--icons',
+          content: shared && <Icon type="share" title={`This ${this.props.label} is shared`} />
         }
       ];
 
       if (this.props.operations.includes('delete')) {
         entry.push({
-          content: 'delete',
-          onClick: this.showDeleteModal({id, name}),
-          props: {type: 'small'},
-          className: 'EntityList__deleteIcon',
+          content: (
+            <Icon
+              type="delete"
+              onClick={this.showDeleteModal({id, name})}
+              className="EntityList__deleteIcon"
+            />
+          ),
           parentClassName: 'EntityList__data--tool'
         });
       }
@@ -134,14 +136,6 @@ class EntityList extends React.Component {
   };
 
   renderCell = cell => {
-    if (cell.plainText) {
-      return cell.content;
-    }
-
-    if (cell.shared) {
-      return <Icon type="share" title={`This ${this.props.label} is shared`} />;
-    }
-
     if (cell.link) {
       return (
         <Link to={cell.link} className={cell.className}>
@@ -149,17 +143,7 @@ class EntityList extends React.Component {
         </Link>
       );
     }
-
-    if (cell.onClick) {
-      return (
-        <Icon
-          {...cell.props}
-          onClick={cell.onClick}
-          className={cell.className}
-          type={cell.content}
-        />
-      );
-    }
+    return cell.content;
   };
 
   render() {
