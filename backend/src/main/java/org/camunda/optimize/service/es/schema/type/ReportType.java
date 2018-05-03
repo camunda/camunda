@@ -49,8 +49,7 @@ public class ReportType extends StrictTypeMappingCreator {
         .field("type", "keyword")
       .endObject()
       .startObject(DATA)
-        .field("type", "text")
-        .field("index", false)
+        .field("enabled", false)
       .endObject();
      return newBuilder;
   }

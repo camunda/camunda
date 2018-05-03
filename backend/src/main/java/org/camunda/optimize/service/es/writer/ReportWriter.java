@@ -3,8 +3,7 @@ package org.camunda.optimize.service.es.writer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionPersistenceDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionUpdateDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.IdGenerator;
@@ -74,16 +73,15 @@ public class ReportWriter {
     return idDto;
   }
 
-  public void updateReport(ReportDefinitionDto updatedReport) throws OptimizeException, JsonProcessingException {
+  public void updateReport(ReportDefinitionUpdateDto updatedReport) throws OptimizeException, JsonProcessingException {
     logger.debug("Updating report with id [{}] in Elasticsearch", updatedReport.getId());
-    ReportDefinitionPersistenceDto persistenceDto = convertToElasticsearchFormat(updatedReport);
     UpdateResponse updateResponse = esclient
       .prepareUpdate(
         configurationService.getOptimizeIndex(configurationService.getReportType()),
         configurationService.getReportType(),
         updatedReport.getId()
       )
-      .setDoc(objectMapper.writeValueAsString(persistenceDto), XContentType.JSON)
+      .setDoc(objectMapper.writeValueAsString(updatedReport), XContentType.JSON)
       .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
       .get();
 
@@ -93,17 +91,6 @@ public class ReportWriter {
         updatedReport.getName());
       throw new OptimizeException("Was not able to store report!");
     }
-  }
-
-  private ReportDefinitionPersistenceDto convertToElasticsearchFormat(ReportDefinitionDto original) throws JsonProcessingException {
-    ReportDefinitionPersistenceDto persistenceDto = new ReportDefinitionPersistenceDto();
-    persistenceDto.setData(objectMapper.writeValueAsString(original.getData()));
-    persistenceDto.setId(original.getId());
-    persistenceDto.setLastModified(original.getLastModified());
-    persistenceDto.setLastModifier(original.getLastModifier());
-    persistenceDto.setName(original.getName());
-    persistenceDto.setOwner(original.getOwner());
-    return persistenceDto;
   }
 
   private String currentDateAsString() {

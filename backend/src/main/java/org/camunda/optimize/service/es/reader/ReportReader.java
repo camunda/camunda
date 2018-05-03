@@ -1,9 +1,7 @@
 package org.camunda.optimize.service.es.reader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionPersistenceDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.get.GetResponse;
@@ -54,41 +52,21 @@ public class ReportReader {
 
     if (getResponse.isExists()) {
       String responseAsString = getResponse.getSourceAsString();
-      ReportDefinitionPersistenceDto persistenceDto;
       try {
-        persistenceDto = objectMapper.readValue(responseAsString, ReportDefinitionPersistenceDto.class);
+        ReportDefinitionDto report = objectMapper.readValue(responseAsString, ReportDefinitionDto.class);
+        return report;
       } catch (IOException e) {
         String reason = "While retrieving report with id [" + reportId +
           "] could not deserialize report from Elasticsearch!";
         logger.error(reason, e);
         throw new OptimizeRuntimeException(reason);
       }
-      return convertToOriginalForm(persistenceDto);
     } else {
       String reason = "Was not able to retrieve report with id [" + reportId +
         "] from Elasticsearch. Report does not exist.";
       logger.error(reason);
       throw new OptimizeRuntimeException(reason);
     }
-  }
-
-  private ReportDefinitionDto convertToOriginalForm(ReportDefinitionPersistenceDto persistenceDto) {
-    ReportDefinitionDto original = new ReportDefinitionDto();
-    original.setId(persistenceDto.getId());
-    original.setName(persistenceDto.getName());
-    original.setOwner(persistenceDto.getOwner());
-    original.setCreated(persistenceDto.getCreated());
-    original.setLastModified(persistenceDto.getLastModified());
-    original.setLastModifier(persistenceDto.getLastModifier());
-    ReportDataDto reportData =
-      null;
-    try {
-      reportData = persistenceDto.getData() != null ? objectMapper.readValue(persistenceDto.getData(), ReportDataDto.class) : null;
-    } catch (IOException e) {
-      logger.error("can't map report data", e);
-    }
-    original.setData(reportData);
-    return original;
   }
 
   public List<ReportDefinitionDto> getAllReports() throws IOException {
@@ -105,9 +83,9 @@ public class ReportReader {
     do {
       for (SearchHit hit : scrollResp.getHits().getHits()) {
         String responseAsString = hit.getSourceAsString();
-        ReportDefinitionPersistenceDto persistenceDto =
-          objectMapper.readValue(responseAsString, ReportDefinitionPersistenceDto.class);
-        reportRequests.add(convertToOriginalForm(persistenceDto));
+        ReportDefinitionDto report =
+          objectMapper.readValue(responseAsString, ReportDefinitionDto.class);
+        reportRequests.add(report);
       }
 
       scrollResp = esclient

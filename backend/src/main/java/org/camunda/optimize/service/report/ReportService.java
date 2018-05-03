@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.report.result.ReportResultDto;
 import org.camunda.optimize.rest.queryparam.adjustment.QueryParamAdjustmentUtil;
 import org.camunda.optimize.service.alert.AlertService;
@@ -23,9 +24,6 @@ import javax.ws.rs.core.MultivaluedMap;
 import java.io.IOException;
 import java.util.List;
 
-/**
- * @author Askar Akhmerov
- */
 @Component
 public class ReportService {
 
@@ -54,13 +52,27 @@ public class ReportService {
     return reportWriter.createNewReportAndReturnId(userId);
   }
 
-  public void updateReport(String reportId, ReportDefinitionDto updatedReport, String userId) throws OptimizeException, JsonProcessingException {
-    updatedReport.setId(reportId);
-    updatedReport.setLastModifier(userId);
-    updatedReport.setLastModified(LocalDateUtil.getCurrentDateTime());
+  public void updateReport(String reportId,
+                           ReportDefinitionDto updatedReport,
+                           String userId) throws OptimizeException, JsonProcessingException {
     ValidationHelper.validateDefinition(updatedReport.getData());
-    reportWriter.updateReport(updatedReport);
+    ReportDefinitionUpdateDto reportUpdate = convertToReportUpdate(reportId, updatedReport, userId);
+    reportWriter.updateReport(reportUpdate);
     alertService.deleteAlertsIfNeeded(reportId, updatedReport.getData());
+  }
+
+  private ReportDefinitionUpdateDto convertToReportUpdate(String reportId, ReportDefinitionDto updatedReport, String userId) {
+    ReportDefinitionUpdateDto reportUpdate = new ReportDefinitionUpdateDto();
+    reportUpdate.setData(updatedReport.getData());
+    reportUpdate.setId(updatedReport.getId());
+    reportUpdate.setLastModified(updatedReport.getLastModified());
+    reportUpdate.setLastModifier(updatedReport.getLastModifier());
+    reportUpdate.setName(updatedReport.getName());
+    reportUpdate.setOwner(updatedReport.getOwner());
+    reportUpdate.setId(reportId);
+    reportUpdate.setLastModifier(userId);
+    reportUpdate.setLastModified(LocalDateUtil.getCurrentDateTime());
+    return reportUpdate;
   }
 
   public List<ReportDefinitionDto> findAndFilterReports(MultivaluedMap<String, String> queryParameters) throws IOException {
