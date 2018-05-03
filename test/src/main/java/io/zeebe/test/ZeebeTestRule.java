@@ -15,6 +15,7 @@
  */
 package io.zeebe.test;
 
+import static io.zeebe.test.EmbeddedBrokerRule.DEFAULT_CONFIG_SUPPLIER;
 import static io.zeebe.test.TopicEventRecorder.taskKey;
 import static io.zeebe.test.TopicEventRecorder.wfInstanceKey;
 import static org.assertj.core.api.Assertions.fail;
@@ -39,7 +40,7 @@ public class ZeebeTestRule extends ExternalResource
 
     public ZeebeTestRule()
     {
-        this(() -> null, Properties::new);
+        this(DEFAULT_CONFIG_SUPPLIER, Properties::new);
     }
 
     public ZeebeTestRule(final Supplier<InputStream> configSupplier, final Supplier<Properties> propertiesProvider)

@@ -15,21 +15,26 @@
  */
 package io.zeebe.test;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.function.Supplier;
 
 import io.zeebe.broker.Broker;
+import io.zeebe.util.FileUtil;
+import org.assertj.core.util.Files;
 import org.junit.rules.ExternalResource;
 
 public class EmbeddedBrokerRule extends ExternalResource
 {
+    public static final Supplier<InputStream> DEFAULT_CONFIG_SUPPLIER = () -> EmbeddedBrokerRule.class.getResourceAsStream("/zeebe.default.cfg.toml");
     private Broker broker;
     private Supplier<InputStream> configSupplier;
+    private File brokerBase;
 
     public EmbeddedBrokerRule()
     {
-        this(() -> null);
+        this(DEFAULT_CONFIG_SUPPLIER);
     }
 
     public EmbeddedBrokerRule(final Supplier<InputStream> configSupplier)
@@ -55,6 +60,17 @@ public class EmbeddedBrokerRule extends ExternalResource
         {
             throw new IllegalStateException(e);
         }
+        finally
+        {
+            try
+            {
+                FileUtil.deleteFolder(brokerBase.getAbsolutePath());
+            }
+            catch (IOException e)
+            {
+                e.printStackTrace();
+            }
+        }
 
         broker = null;
         System.gc();
@@ -64,7 +80,12 @@ public class EmbeddedBrokerRule extends ExternalResource
     {
         try (InputStream configStream = configSupplier.get())
         {
-            broker = new Broker(configStream);
+            if (brokerBase == null)
+            {
+                brokerBase = Files.newTemporaryFolder();
+            }
+
+            broker = new Broker(configStream, brokerBase.getAbsolutePath(), null);
         }
         catch (final IOException e)
         {
