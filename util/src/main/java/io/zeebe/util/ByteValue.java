@@ -33,6 +33,26 @@ public class ByteValue
         this.unit = unit;
     }
 
+    public static ByteValue ofBytes(long value)
+    {
+        return new ByteValue(value, ByteUnit.BYTES);
+    }
+
+    public static ByteValue ofKilobytes(long value)
+    {
+        return new ByteValue(value, ByteUnit.KILOBYTES);
+    }
+
+    public static ByteValue ofMegabytes(long value)
+    {
+        return new ByteValue(value, ByteUnit.MEGABYTES);
+    }
+
+    public static ByteValue ofGigabytes(long value)
+    {
+        return new ByteValue(value, ByteUnit.GIGABYTES);
+    }
+
     public ByteValue(String humanReadable)
     {
         final Matcher matcher = PATTERN.matcher(humanReadable);
