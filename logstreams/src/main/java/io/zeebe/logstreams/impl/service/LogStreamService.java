@@ -25,6 +25,7 @@ import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.servicecontainer.*;
+import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.channel.ActorConditions;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -48,7 +49,7 @@ public class LogStreamService implements LogStream, Service<LogStream>
     private final DirectBuffer topicName;
     private final int partitionId;
 
-    private final int writeBufferSize;
+    private final ByteValue writeBufferSize;
     private final int maxAppendBlockSize;
 
     private final Position commitPosition;
@@ -74,7 +75,7 @@ public class LogStreamService implements LogStream, Service<LogStream>
         this.serviceContainer = builder.getServiceContainer();
         this.onCommitPositionUpdatedConditions = builder.getOnCommitPositionUpdatedConditions();
         this.commitPosition = builder.getCommitPosition();
-        this.writeBufferSize = builder.getWriteBufferSize();
+        this.writeBufferSize = ByteValue.ofBytes(builder.getWriteBufferSize());
         this.maxAppendBlockSize = builder.getMaxAppendBlockSize();
     }
 
