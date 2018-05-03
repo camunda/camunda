@@ -134,3 +134,32 @@ it('should display the name of a failing report', async () => {
 
   expect(node).toIncludeText('Failing Name');
 });
+
+describe('external report', () => {
+  const loadReport = jest.fn();
+
+  const props = {
+    report: {
+      id: '',
+      configuration: {
+        external: 'externalURL'
+      }
+    },
+    loadReport
+  };
+
+  it('should not load report data for an external report', () => {
+    mount(<DashboardReport {...props} />);
+
+    expect(loadReport).not.toHaveBeenCalled();
+  });
+
+  it('should include an iframe with the provided external url', () => {
+    const node = mount(<DashboardReport {...props} />);
+
+    const iframe = node.find('iframe');
+
+    expect(iframe).toBePresent();
+    expect(iframe).toHaveProp('src', 'externalURL');
+  });
+});

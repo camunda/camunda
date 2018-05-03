@@ -17,7 +17,9 @@ export default class DashboardReport extends React.Component {
   }
 
   componentDidMount() {
-    this.loadReportData();
+    if (!this.isExternalReport()) {
+      this.loadReportData();
+    }
   }
 
   loadReportData = async () => {
@@ -32,7 +34,45 @@ export default class DashboardReport extends React.Component {
     return name || (reportDefinition && reportDefinition.name);
   };
 
+  isExternalReport = () => {
+    const {report} = this.props;
+    return report.configuration && report.configuration.external;
+  };
+
   render() {
+    if (this.isExternalReport()) {
+      return this.renderExternal();
+    }
+    return this.renderReport();
+  }
+
+  renderExternal() {
+    const {report, disableReportScrolling, addons, tileDimensions} = this.props;
+
+    if (report.configuration && report.configuration.external) {
+      return (
+        <div className="DashboardReport__wrapper">
+          <iframe
+            title="External Report"
+            src={report.configuration.external}
+            frameBorder="0"
+            scrolling={disableReportScrolling ? 'no' : 'yes'}
+            style={{width: '100%', height: '100%'}}
+          />
+          {addons &&
+            addons.map(addon =>
+              React.cloneElement(addon, {
+                report,
+                loadReportData: this.loadReportData,
+                tileDimensions
+              })
+            )}
+        </div>
+      );
+    }
+  }
+
+  renderReport() {
     if (!this.state.data) {
       return 'loading...';
     }

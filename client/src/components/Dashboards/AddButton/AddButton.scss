@@ -44,3 +44,14 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+.AddButton__externalSourceLink {
+  font-size: 0.8em;
+  color: gray;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.Input.AddButton__externalSourceInput {
+  width: 100%;
+}

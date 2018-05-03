@@ -1,6 +1,6 @@
 import React from 'react';
 
-import {Modal, Button, Select, ControlGroup, DashboardObject} from 'components';
+import {Modal, Button, Select, ControlGroup, DashboardObject, Input} from 'components';
 
 import {loadReports, getOccupiedTiles} from '../service';
 
@@ -15,7 +15,9 @@ export default class AddButton extends React.Component {
     this.state = {
       modalOpen: false,
       availableReports: [],
-      selectedReportId: ''
+      selectedReportId: '',
+      externalSourceMode: false,
+      externalSource: ''
     };
   }
 
@@ -30,7 +32,9 @@ export default class AddButton extends React.Component {
   openModal = evt => {
     this.setState({
       modalOpen: true,
-      selectedReportId: ''
+      selectedReportId: '',
+      externalSourceMode: false,
+      externalSource: ''
     });
   };
 
@@ -51,11 +55,19 @@ export default class AddButton extends React.Component {
 
     const position = this.getAddButtonPosition();
 
-    this.props.addReport({
+    const payload = {
       position: {x: position.x, y: position.y},
-      dimensions: {width: position.width, height: position.height},
-      id: this.state.selectedReportId
-    });
+      dimensions: {width: position.width, height: position.height}
+    };
+
+    if (this.state.externalSourceMode) {
+      payload.id = '';
+      payload.configuration = {external: this.state.externalSource};
+    } else {
+      payload.id = this.state.selectedReportId;
+    }
+
+    this.props.addReport(payload);
   };
 
   render() {
@@ -65,8 +77,6 @@ export default class AddButton extends React.Component {
       return null;
     }
 
-    const noReports = this.state.availableReports.length === 0;
-
     return (
       <DashboardObject tileDimensions={this.props.tileDimensions} {...position}>
         <Button className="AddButton" onClick={this.openModal}>
@@ -75,35 +85,17 @@ export default class AddButton extends React.Component {
         </Button>
         <Modal open={this.state.modalOpen} onClose={this.closeModal} className="AddButton__modal">
           <Modal.Header>Add a Report</Modal.Header>
-          <Modal.Content>
-            <ControlGroup layout="centered">
-              <label htmlFor="AddButton__selectReports">Select a Report…</label>
-              <Select
-                disabled={noReports}
-                value={this.state.selectedReportId}
-                onChange={this.selectReport}
-                name="AddButton__selectReports"
-                className="AddButton__selectReports"
-              >
-                {this.renderPleaseSelectOption(!noReports)}
-                {this.state.availableReports.map(report => {
-                  return (
-                    <Select.Option key={report.id} value={report.id}>
-                      {this.truncate(report.name, 50)}
-                    </Select.Option>
-                  );
-                })}
-                {noReports ? <Select.Option>No reports created yet</Select.Option> : ''}
-              </Select>
-            </ControlGroup>
-          </Modal.Content>
+
+          {this.state.externalSourceMode
+            ? this.renderExternalSourceMode()
+            : this.renderReportMode()}
           <Modal.Actions>
             <Button onClick={this.closeModal}>Cancel</Button>
             <Button
               type="primary"
               color="blue"
               onClick={this.addReport}
-              disabled={noReports || !this.state.selectedReportId}
+              disabled={!this.isAddButtonEnabled()}
             >
               Add Report
             </Button>
@@ -112,6 +104,70 @@ export default class AddButton extends React.Component {
       </DashboardObject>
     );
   }
+
+  isAddButtonEnabled = () => {
+    const {externalSourceMode, externalSource, selectedReportId} = this.state;
+    return (externalSourceMode && externalSource) || (!externalSourceMode && selectedReportId);
+  };
+
+  renderReportMode = () => {
+    const noReports = this.state.availableReports.length === 0;
+    return (
+      <Modal.Content>
+        <ControlGroup layout="centered">
+          <label htmlFor="AddButton__selectReports">Select a Report…</label>
+          <Select
+            disabled={noReports}
+            value={this.state.selectedReportId}
+            onChange={this.selectReport}
+            name="AddButton__selectReports"
+            className="AddButton__selectReports"
+          >
+            {this.renderPleaseSelectOption(!noReports)}
+            {this.state.availableReports.map(report => {
+              return (
+                <Select.Option key={report.id} value={report.id}>
+                  {this.truncate(report.name, 50)}
+                </Select.Option>
+              );
+            })}
+            {noReports ? <Select.Option>No reports created yet</Select.Option> : ''}
+          </Select>
+        </ControlGroup>
+        <p
+          className="AddButton__externalSourceLink"
+          onClick={() =>
+            this.setState({
+              externalSourceMode: true
+            })
+          }
+        >
+          Add External Source
+        </p>
+      </Modal.Content>
+    );
+  };
+
+  renderExternalSourceMode = () => (
+    <Modal.Content>
+      <ControlGroup layout="centered">
+        <label htmlFor="AddButton__externalSourceInput">
+          Enter URL of external datasource to be included on the dashboard
+        </label>
+        <Input
+          name="AddButton__externalSourceInput"
+          className="AddButton__externalSourceInput"
+          placeholder="https://www.example.com/widget/embed.html"
+          value={this.state.externalSource}
+          onChange={({target: {value}}) =>
+            this.setState({
+              externalSource: value
+            })
+          }
+        />
+      </ControlGroup>
+    </Modal.Content>
+  );
 
   truncate = (str, index) => {
     return str.length > index ? str.substr(0, index - 1) + '\u2026' : str;

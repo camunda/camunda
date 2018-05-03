@@ -16,6 +16,7 @@ jest.mock('components', () => {
   return {
     Modal,
     Select,
+    Input: props => <input {...props}>{props.children}</input>,
     Button: props => <button {...props}>{props.children}</button>,
     ControlGroup: props => <div>{props.children}</div>,
     DashboardObject: ({children}) => <div className="DashboardObject">{children}</div>
@@ -178,4 +179,54 @@ it("should truncate report name if it's longer than 50 signs", async () => {
   ).toBeLessThanOrEqual(50);
 
   loadReports.mockReturnValue([]);
+});
+
+it('should contain an Add External Source field', () => {
+  const node = mount(<AddButton {...props} />);
+
+  node.setState({
+    modalOpen: true
+  });
+
+  expect(node).toIncludeText('Add External Source');
+});
+
+it('should render an input field when switching to external mode', () => {
+  const node = mount(<AddButton {...props} />);
+
+  node.setState({
+    modalOpen: true
+  });
+
+  node.find('.AddButton__externalSourceLink').simulate('click');
+
+  expect(node.find('input.AddButton__externalSourceInput')).toBePresent();
+});
+
+it('should call the callback when adding an external source', () => {
+  const spy = jest.fn();
+  const node = mount(<AddButton {...props} addReport={spy} />);
+
+  node.setState({
+    modalOpen: true,
+    externalSourceMode: true,
+    externalSource: 'externalStuff'
+  });
+
+  node.find('button[type="primary"]').simulate('click');
+
+  expect(spy).toHaveBeenCalledWith({
+    dimensions: {
+      height: 4,
+      width: 6
+    },
+    position: {
+      x: 5,
+      y: 0
+    },
+    id: '',
+    configuration: {
+      external: 'externalStuff'
+    }
+  });
 });
