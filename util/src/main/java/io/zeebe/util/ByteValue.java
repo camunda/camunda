@@ -68,24 +68,7 @@ public class ByteValue
 
         final String unitString = matcher.group(2).toUpperCase();
 
-        switch (unitString)
-        {
-            case KILOBYTES_METRIC:
-                unit = ByteUnit.KILOBYTES;
-                break;
-
-            case MEGABYTES_METRIC:
-                unit = ByteUnit.MEGABYTES;
-                break;
-
-            case GIGABYTES_METRIC:
-                unit = ByteUnit.GIGABYTES;
-                break;
-
-            default:
-                unit = ByteUnit.BYTES;
-                break;
-        }
+        unit = ByteUnit.getUnit(unitString);
     }
 
     public ByteUnit getUnit()

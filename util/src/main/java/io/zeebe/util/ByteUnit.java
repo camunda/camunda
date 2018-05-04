@@ -15,151 +15,73 @@
  */
 package io.zeebe.util;
 
+import java.util.Arrays;
+
 public enum ByteUnit
 {
-    BYTES
-    {
-        @Override
-        public long toBytes(long b)
-        {
-            return b;
-        }
-        @Override
-        public long toKilobytes(long d)
-        {
-            return d / 1_000;
-        }
-        @Override
-        public long toMegabytes(long d)
-        {
-            return d / 1_000_000;
-        }
-        @Override
-        public long toGigabytes(long d)
-        {
-            return d / 1_000_000_000;
-        }
-        @Override
-        public String metric()
-        {
-            return BYTES_METRIC;
-        }
-    },
+    BYTES(0, ""),
+    KILOBYTES(1, "K"),
+    MEGABYTES(2, "M"),
+    GIGABYTES(3, "G");
 
-    KILOBYTES
-    {
-        @Override
-        public long toBytes(long b)
-        {
-            return b * 1_000;
-        }
-        @Override
-        public long toKilobytes(long d)
-        {
-            return d;
-        }
-        @Override
-        public long toMegabytes(long d)
-        {
-            return d / 1_000;
-        }
-        @Override
-        public long toGigabytes(long d)
-        {
-            return d / 1_000_000;
-        }
-        @Override
-        public String metric()
-        {
-            return KILOBYTES_METRIC;
-        }
-    },
+    private final double unitFactor;
+    private final String metric;
 
-    MEGABYTES
+    ByteUnit(double factor, String metric)
     {
-        @Override
-        public long toBytes(long b)
-        {
-            return b * 1_000_000;
-        }
-        @Override
-        public long toKilobytes(long d)
-        {
-            return d * 1_000;
-        }
-        @Override
-        public long toMegabytes(long d)
-        {
-            return d;
-        }
-        @Override
-        public long toGigabytes(long d)
-        {
-            return d / 1_000;
-        }
-        @Override
-        public String metric()
-        {
-            return MEGABYTES_METRIC;
-        }
-    },
-
-    GIGABYTES
-    {
-        @Override
-        public long toBytes(long b)
-        {
-            return b * 1_000_000_000;
-        }
-        @Override
-        public long toKilobytes(long d)
-        {
-            return d * 1_000_000;
-        }
-        @Override
-        public long toMegabytes(long d)
-        {
-            return d * 1_000;
-        }
-        @Override
-        public long toGigabytes(long d)
-        {
-            return d / 1;
-        }
-        @Override
-        public String metric()
-        {
-            return GIGABYTES_METRIC;
-        }
-    };
-
-    public static final String BYTES_METRIC = "";
-    public static final String KILOBYTES_METRIC = "K";
-    public static final String MEGABYTES_METRIC = "M";
-    public static final String GIGABYTES_METRIC = "G";
-
-    public long toBytes(long u)
-    {
-        throw new AbstractMethodError();
+        this.unitFactor = factor;
+        this.metric = metric;
     }
 
-    public long toKilobytes(long u)
+    public long toBytes(long value)
     {
-        throw new AbstractMethodError();
+        final double methodFactor = 0;
+        return calculateValue(value, methodFactor);
     }
 
-    public long toMegabytes(long u)
+    public long toKilobytes(long value)
     {
-        throw new AbstractMethodError();
+        final double methodFactor = 1;
+        return calculateValue(value, methodFactor);
     }
 
-    public long toGigabytes(long u)
+    public long toMegabytes(long value)
     {
-        throw new AbstractMethodError();
+        final double methodFactor = 2;
+        return calculateValue(value, methodFactor);
+    }
+
+    public long toGigabytes(long value)
+    {
+        final double methodFactor = 3;
+        return calculateValue(value, methodFactor);
+    }
+
+    private long calculateValue(long value, double methodFactor)
+    {
+        if (unitFactor < methodFactor)
+        {
+            return value / (long) Math.pow(1024, methodFactor - unitFactor);
+        }
+        else if (unitFactor == methodFactor)
+        {
+            return value;
+        }
+        else
+        {
+            return value * (long) Math.pow(1024, unitFactor - methodFactor);
+        }
+    }
+
+    public static ByteUnit getUnit(String unitString)
+    {
+        return Arrays.stream(ByteUnit.values())
+            .filter(unit -> unit.metric.equalsIgnoreCase(unitString))
+            .findAny().orElse(BYTES);
     }
 
     public String metric()
     {
-        throw new AbstractMethodError();
+        return metric;
     }
 }
