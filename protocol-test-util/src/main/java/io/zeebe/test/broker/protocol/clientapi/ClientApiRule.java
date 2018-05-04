@@ -103,11 +103,16 @@ public class ClientApiRule extends ExternalResource
 
         msgPackHelper = new MsgPackHelper();
         streamAddress = transport.registerRemoteAddress(brokerAddress);
-        doRepeatedly(() -> getPartitionsFromTopology(Protocol.SYSTEM_TOPIC)).until(l -> l != null, e -> e == null);
+        doRepeatedly(() -> getPartitionsFromTopology(Protocol.SYSTEM_TOPIC)).until(Objects::nonNull, Objects::isNull);
 
         if (createDefaultTopic)
         {
-            createTopic(DEFAULT_TOPIC_NAME, 1);
+            final ExecuteCommandResponse response = createTopic(DEFAULT_TOPIC_NAME, 1);
+            if (!response.getEvent().get("state").equals("CREATING"))
+            {
+                throw new AssertionError("Failed to send request to create default topic: " + response.getEvent());
+            }
+
             defaultPartitionId = getSinglePartitionId(DEFAULT_TOPIC_NAME);
         }
     }
