@@ -36,6 +36,8 @@ import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
+import one.util.streamex.StreamEx;
+
 public class StreamWrapper<T> implements Stream<T>
 {
     private final Stream<T> wrappedStream;
@@ -43,6 +45,23 @@ public class StreamWrapper<T> implements Stream<T>
     public StreamWrapper(Stream<T> wrappedStream)
     {
         this.wrappedStream = wrappedStream;
+    }
+
+    /**
+     * Skips elements until the predicate is matched. Retains the first element that matches the predicate.
+     */
+    public StreamWrapper<T> skipUntil(Predicate<T> predicate)
+    {
+        return new StreamWrapper<>(StreamEx.of(this).dropWhile(predicate.negate()));
+    }
+
+    /**
+     * short-circuiting operation; limits the stream to the first element that fulfills the predicate
+     */
+    public StreamWrapper<T> limit(Predicate<T> predicate)
+    {
+        // #takeWhile comes with Java >= 9
+        return new StreamWrapper<>(StreamEx.of(this).takeWhileInclusive(predicate.negate()));
     }
 
     public Iterator<T> iterator()
