@@ -133,7 +133,7 @@ public class RemoteWorkflowsManager implements StreamProcessorLifecycleAware
             final Map<Integer, NodeInfo> leaders = new HashMap<>();
             partitionIds.forEach((partitionId) -> {
                 final NodeInfo leader = toplogy.getLeader(partitionId);
-                if (leader != null)
+                if (leader != null && leader.getManagementApiAddress() != null)
                 {
                     leaders.put(partitionId, leader);
                 }

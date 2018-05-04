@@ -15,6 +15,7 @@
  */
 package io.zeebe.broker.it.clustering;
 
+import static io.zeebe.broker.it.clustering.ClusteringRule.DEFAULT_REPLICATION_FACTOR;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.it.ClientRule;
@@ -22,6 +23,7 @@ import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
 import io.zeebe.client.event.DeploymentEvent;
 import io.zeebe.client.event.WorkflowInstanceEvent;
+import io.zeebe.client.topic.Partition;
 import io.zeebe.client.topic.Topic;
 import io.zeebe.client.workflow.impl.CreateWorkflowInstanceCommandImpl;
 import io.zeebe.model.bpmn.Bpmn;
@@ -162,20 +164,16 @@ public class DeploymentClusteredTest
 
         // when
         clusteringRule.restartBroker(ClusteringRule.BROKER_3_CLIENT_ADDRESS);
+        clusteringRule.waitForTopicPartitionReplicationFactor("test", PARTITION_COUNT, DEFAULT_REPLICATION_FACTOR);
 
         // then create wf instance on each partition
-        final Integer[] partitionIds = topic.getPartitions().stream()
-            .mapToInt(p -> p.getId())
-            .boxed()
-            .toArray(Integer[]::new);
+        topic.getPartitions().stream()
+             .mapToInt(Partition::getId)
+             .forEach(partitionId -> {
+                 final WorkflowInstanceEvent workflowInstanceEvent = createWorkflowInstanceOnPartition("test", partitionId, "process");
 
-        for (int partition : partitionIds)
-        {
-            final WorkflowInstanceEvent workflowInstanceEvent =
-                createWorkflowInstanceOnPartition("test", partition, "process");
-
-            assertThat(workflowInstanceEvent.getState()).isEqualTo("WORKFLOW_INSTANCE_CREATED");
-        }
+                 assertThat(workflowInstanceEvent.getState()).isEqualTo("WORKFLOW_INSTANCE_CREATED");
+             });
     }
 
     protected WorkflowInstanceEvent createWorkflowInstanceOnPartition(String topic, int partition, String processId)
@@ -187,7 +185,6 @@ public class DeploymentClusteredTest
     }
 
     @Test
-    @Ignore
     public void shouldDeployAfterRestartBroker()
     {
         // given

@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.util.*;
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import io.zeebe.broker.Broker;
@@ -176,15 +177,27 @@ public class ClusteringRule extends ExternalResource
 
     private boolean hasPartitionsWithReplicationFactor(List<TopologyBroker> brokers, String topicName, int partitionCount, int replicationFactor)
     {
-        final long partitions = brokers.stream()
-                                       .flatMap(b -> b.getPartitions().stream())
-                                       .filter(p -> p.getTopicName().equals(topicName))
-                                       .count();
+        final AtomicLong leaders = new AtomicLong();
+        final AtomicLong followers = new AtomicLong();
 
-        return partitions >= partitionCount * replicationFactor;
+        brokers.stream()
+               .flatMap(b -> b.getPartitions().stream())
+               .filter(p -> p.getTopicName().equals(topicName))
+               .forEach(p -> {
+                   if (p.isLeader())
+                   {
+                       leaders.getAndIncrement();
+                   }
+                   else
+                   {
+                       followers.getAndIncrement();
+                   }
+               });
+
+        return leaders.get() >= partitionCount && followers.get() >= partitionCount * (replicationFactor - 1);
     }
 
-    private void waitForTopicPartitionReplicationFactor(String topicName, int partitionCount, int replicationFactor)
+    public void waitForTopicPartitionReplicationFactor(String topicName, int partitionCount, int replicationFactor)
     {
         waitForSpreading(() ->
         {
