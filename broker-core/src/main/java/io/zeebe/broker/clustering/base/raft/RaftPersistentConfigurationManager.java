@@ -39,7 +39,7 @@ import java.util.List;
  */
 public class RaftPersistentConfigurationManager extends Actor
 {
-    private static final String PARTITION_METAFILE_NAME = "partition.msgpack";
+    private static final String PARTITION_METAFILE_NAME = "partition.json";
     private static final String PARTITION_LOG_DIR = "segments";
     private static final String PARTITION_SNAPSHOTS_DIR = "snapshots";
 

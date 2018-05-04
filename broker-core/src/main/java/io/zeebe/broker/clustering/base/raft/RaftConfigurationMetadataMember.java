@@ -17,42 +17,29 @@
  */
 package io.zeebe.broker.clustering.base.raft;
 
-import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.msgpack.property.IntegerProperty;
-import io.zeebe.msgpack.property.StringProperty;
-import org.agrona.DirectBuffer;
-
-public class RaftConfigurationMetadataMember extends UnpackedObject
+public class RaftConfigurationMetadataMember
 {
-    protected StringProperty hostProp = new StringProperty("host");
-    protected IntegerProperty portProp = new IntegerProperty("port");
+    private String host;
+    private int port;
 
     public RaftConfigurationMetadataMember()
     {
-        this.declareProperty(hostProp)
-            .declareProperty(portProp);
+        this("", 0);
     }
 
-    public DirectBuffer getHost()
+    public RaftConfigurationMetadataMember(String host, int port)
     {
-        return hostProp.getValue();
+        this.host = host;
+        this.port = port;
     }
 
-    public RaftConfigurationMetadataMember setHost(final DirectBuffer host, final int offset, final int length)
+    public String getHost()
     {
-        this.hostProp.setValue(host, offset, length);
-        return this;
+        return host;
     }
 
     public int getPort()
     {
-        return portProp.getValue();
+        return port;
     }
-
-    public RaftConfigurationMetadataMember setPort(final int port)
-    {
-        portProp.setValue(port);
-        return this;
-    }
-
 }

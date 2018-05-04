@@ -18,179 +18,127 @@
 package io.zeebe.broker.clustering.base.raft;
 
 import static io.zeebe.util.EnsureUtil.ensureGreaterThan;
-import static io.zeebe.util.EnsureUtil.ensureNotNull;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
-import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.msgpack.property.*;
-import io.zeebe.transport.SocketAddress;
-import io.zeebe.util.ByteUnit;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.zeebe.util.ByteValue;
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
-public class RaftConfigurationMetadata extends UnpackedObject
+public class RaftConfigurationMetadata
 {
-    private static final DirectBuffer EMPTY_STRING = new UnsafeBuffer(0, 0);
-
-    protected StringProperty topicNameProp = new StringProperty("topicName", "");
-    protected IntegerProperty partitionIdProp = new IntegerProperty("partitionId", -1);
-    protected IntegerProperty replicationFactorProp = new IntegerProperty("replicationFactor", -1);
-    protected LongProperty logSegmentSizeProp = new LongProperty("segmentSize", new ByteValue(512, ByteUnit.MEGABYTES).toBytes());
-    protected IntegerProperty termProp = new IntegerProperty("term", 0);
-    protected StringProperty votedForHostProp = new StringProperty("votedForHost", "");
-    protected IntegerProperty votedForPortProp = new IntegerProperty("votedForPort", 0);
-
-    protected ArrayProperty<RaftConfigurationMetadataMember> membersProp = new ArrayProperty<>(
-        "members",
-        new RaftConfigurationMetadataMember());
+    private String topicName;
+    private int partitionId;
+    private int replicationFactor;
+    private int term;
+    private String votedForHost;
+    private int votedForPort;
+    @JsonProperty("segmentSize") private long logSegmentSize;
+    private List<RaftConfigurationMetadataMember> members;
 
     public RaftConfigurationMetadata()
     {
-        declareProperty(partitionIdProp);
-        declareProperty(replicationFactorProp);
-        declareProperty(topicNameProp);
-        declareProperty(logSegmentSizeProp);
-        declareProperty(termProp);
-        declareProperty(votedForHostProp);
-        declareProperty(votedForPortProp);
-        declareProperty(membersProp);
+        topicName = "";
+        partitionId = -1;
+        replicationFactor = -1;
+        logSegmentSize = ByteValue.ofMegabytes(512).toBytes();
+        term = 0;
+        votedForHost = "";
+        votedForPort = 0;
+        members = new ArrayList<>();
     }
 
-    public DirectBuffer getTopicName()
+    public String getTopicName()
     {
-        return topicNameProp.getValue();
+        return topicName;
     }
 
-    public void setTopicName(final DirectBuffer topicName)
+    public void setTopicName(final String topicName)
     {
-        ensureGreaterThan("Topic name length", topicName.capacity(), 0);
-        topicNameProp.setValue(topicName, 0, topicName.capacity());
+        ensureGreaterThan("Topic name length", topicName.length(), 0);
+        this.topicName = topicName;
     }
 
     public int getPartitionId()
     {
-        return partitionIdProp.getValue();
+        return partitionId;
     }
 
     public int getReplicationFactor()
     {
-        return replicationFactorProp.getValue();
+        return replicationFactor;
     }
 
     public void setPartitionId(final int partitionId)
     {
-        partitionIdProp.setValue(partitionId);
+        this.partitionId = partitionId;
     }
 
     public void setReplicationFactor(int replicationFactor)
     {
-        replicationFactorProp.setValue(replicationFactor);
+        this.replicationFactor = replicationFactor;
     }
 
     public int getTerm()
     {
-        return termProp.getValue();
+        return term;
     }
 
     public void setTerm(final int term)
     {
-        termProp.setValue(term);
+        this.term = term;
     }
 
-    public void getVotedFor(final SocketAddress votedFor)
+    public int getVotedForPort()
     {
-        votedFor.reset();
-
-        final DirectBuffer votedForValue = votedForHostProp.getValue();
-        final int votedForLength = votedForValue.capacity();
-
-        if (votedForLength > 0)
-        {
-            votedFor.host(votedForValue, 0, votedForLength);
-            votedFor.port(votedForPortProp.getValue());
-        }
+        return votedForPort;
     }
 
-    public void setVotedFor(final SocketAddress votedFor)
+    public String getVotedForHost()
     {
-        if (votedFor != null)
-        {
-            votedForHostProp.setValue(votedFor.getHostBuffer(), 0, votedFor.hostLength());
-            votedForPortProp.setValue(votedFor.port());
-        }
-        else
-        {
-            votedForHostProp.setValue(EMPTY_STRING, 0, 0);
-            votedForPortProp.setValue(-1);
-        }
+        return votedForHost;
     }
 
-    public List<SocketAddress> getMembers()
+    public void setVotedForHost(final String votedForHost)
     {
-        final List<SocketAddress> members = new ArrayList<>();
+        this.votedForHost = votedForHost;
+    }
 
-        final Iterator<RaftConfigurationMetadataMember> iterator = membersProp.iterator();
-        while (iterator.hasNext())
-        {
-            final RaftConfigurationMetadataMember configurationMember = iterator.next();
-            final DirectBuffer hostBuffer = configurationMember.getHost();
+    public void setVotedForPort(final int votedForPort)
+    {
+        this.votedForPort = votedForPort;
+    }
 
-
-            final SocketAddress member =
-                new SocketAddress()
-                    .host(hostBuffer, 0, hostBuffer.capacity())
-                    .port(configurationMember.getPort());
-
-            members.add(member);
-        }
-
+    public List<RaftConfigurationMetadataMember> getMembers()
+    {
         return members;
     }
 
-    public void setMembers(final List<SocketAddress> members)
+    public void setMembers(final List<RaftConfigurationMetadataMember> members)
     {
-        membersProp.reset();
-
-        for (int i = 0; i < members.size(); i++)
-        {
-            addMember(members.get(i));
-        }
-    }
-
-    public void addMember(final SocketAddress member)
-    {
-        ensureNotNull("Member", member);
-
-        membersProp.add()
-            .setHost(member.getHostBuffer(), 0, member.hostLength())
-            .setPort(member.port());
-    }
-
-    public void removeMember(final SocketAddress member)
-    {
-        ensureNotNull("Member", member);
-
-        final Iterator<RaftConfigurationMetadataMember> iterator = membersProp.iterator();
-        while (iterator.hasNext())
-        {
-            final RaftConfigurationMetadataMember next = iterator.next();
-            if (next.getHost().equals(member.getHostBuffer()) &&
-                next.getPort() == member.port())
-            {
-                iterator.remove();
-            }
-        }
+        this.members.clear();
+        this.members.addAll(members);
     }
 
     public long getLogSegmentSize()
     {
-        return logSegmentSizeProp.getValue();
+        return logSegmentSize;
     }
 
-    public void setLogSegmentSize(long value)
+    public void setLogSegmentSize(long logSegmentSize)
     {
-        logSegmentSizeProp.setValue(value);
+        this.logSegmentSize = logSegmentSize;
+    }
+
+    public void copy(RaftConfigurationMetadata source)
+    {
+        setLogSegmentSize(source.getLogSegmentSize());
+        setPartitionId(source.getPartitionId());
+        setReplicationFactor(source.getReplicationFactor());
+        setTerm(source.getTerm());
+        setTopicName(source.getTopicName());
+        setMembers(source.getMembers());
+        setVotedForHost(source.getVotedForHost());
+        setVotedForPort(source.getVotedForPort());
     }
 }

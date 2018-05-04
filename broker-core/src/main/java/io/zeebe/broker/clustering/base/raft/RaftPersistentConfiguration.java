@@ -17,16 +17,23 @@
  */
 package io.zeebe.broker.clustering.base.raft;
 
+import static io.zeebe.util.EnsureUtil.ensureNotNull;
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 import java.io.*;
-import java.nio.file.*;
-import java.util.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import io.zeebe.raft.RaftPersistentStorage;
 import io.zeebe.transport.SocketAddress;
-import io.zeebe.util.StreamUtil;
+import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -44,6 +51,15 @@ import org.agrona.concurrent.UnsafeBuffer;
 public class RaftPersistentConfiguration implements RaftPersistentStorage
 {
     private final RaftConfigurationMetadata configuration = new RaftConfigurationMetadata();
+    private static final ObjectWriter JSON_WRITER;
+    private static final ObjectReader JSON_READER;
+    static
+    {
+        final ObjectMapper mapper = new ObjectMapper();
+
+        JSON_WRITER = mapper.writerFor(RaftConfigurationMetadata.class);
+        JSON_READER = mapper.readerFor(RaftConfigurationMetadata.class);
+    }
 
     private final File file;
     private final File tmpFile;
@@ -104,14 +120,16 @@ public class RaftPersistentConfiguration implements RaftPersistentStorage
     @Override
     public RaftPersistentConfiguration setVotedFor(final SocketAddress votedFor)
     {
-        configuration.setVotedFor(votedFor);
-
         if (votedFor != null)
         {
+            configuration.setVotedForHost(votedFor.host());
+            configuration.setVotedForPort(votedFor.port());
             this.votedFor.wrap(votedFor);
         }
         else
         {
+            configuration.setVotedForHost("");
+            configuration.setVotedForPort(0);
             this.votedFor.reset();
         }
 
@@ -120,53 +138,43 @@ public class RaftPersistentConfiguration implements RaftPersistentStorage
 
     public List<SocketAddress> getMembers()
     {
-        final List<SocketAddress> members = new ArrayList<>();
-
-        final Iterator<RaftConfigurationMetadataMember> iterator = configuration.membersProp.iterator();
-        while (iterator.hasNext())
-        {
-            final RaftConfigurationMetadataMember member = iterator.next();
-            final DirectBuffer hostBuffer = member.getHost();
-
-            final SocketAddress socketAddress = new SocketAddress();
-            socketAddress.host(hostBuffer, 0, hostBuffer.capacity());
-            socketAddress.setPort(member.getPort());
-
-            members.add(socketAddress);
-        }
-
-        return members;
+        return configuration.getMembers().stream()
+                .map(member -> new SocketAddress(member.getHost(), member.getPort()))
+                .collect(Collectors.toList());
     }
 
     public RaftPersistentConfiguration setMembers(List<SocketAddress> members)
     {
-        for (SocketAddress socketAddress : members)
-        {
-            addMember(socketAddress);
-        }
+        members.forEach(this::addMember);
         return this;
     }
 
     @Override
-    public RaftPersistentConfiguration addMember(final SocketAddress member)
+    public RaftPersistentConfiguration addMember(final SocketAddress memberAddress)
     {
-        configuration.addMember(member);
+        ensureNotNull("Member address", memberAddress);
+        final RaftConfigurationMetadataMember member = new RaftConfigurationMetadataMember(memberAddress.host(), memberAddress.port());
+        configuration.getMembers().add(member);
 
         return this;
     }
 
     @Override
-    public RaftPersistentStorage removeMember(SocketAddress member)
+    public RaftPersistentStorage removeMember(final SocketAddress memberAddress)
     {
-        configuration.removeMember(member);
+        ensureNotNull("Member address", memberAddress);
 
+        configuration.getMembers().removeIf(member ->
+                member.getHost().equals(memberAddress.host()) &&
+                        member.getPort() == memberAddress.port()
+        );
         return this;
     }
 
     @Override
     public RaftPersistentStorage clearMembers()
     {
-        configuration.membersProp.reset();
+        configuration.getMembers().clear();
 
         return this;
     }
@@ -175,41 +183,32 @@ public class RaftPersistentConfiguration implements RaftPersistentStorage
     {
         if (file.exists())
         {
-            final long length = file.length();
-            if (length > buffer.capacity())
-            {
-                allocateBuffer((int) length);
-            }
+            RaftConfigurationMetadata metadata;
 
             try (InputStream is = new FileInputStream(file))
             {
-                StreamUtil.read(is, buffer.byteArray());
+                metadata = JSON_READER.readValue(is);
             }
             catch (final IOException e)
             {
                 throw new RuntimeException("Unable to read raft storage", e);
             }
 
-            configuration.wrap(buffer);
-            configuration.getVotedFor(votedFor);
+            if (metadata != null)
+            {
+                configuration.copy(metadata);
+                votedFor.host(configuration.getVotedForHost());
+                votedFor.port(configuration.getVotedForPort());
+            }
         }
     }
 
     @Override
     public RaftPersistentConfiguration save()
     {
-        final int length = configuration.getEncodedLength();
-
-        if (length > buffer.capacity())
-        {
-            allocateBuffer(length);
-        }
-
-        configuration.write(buffer, 0);
-
         try (FileOutputStream os = new FileOutputStream(tmpFile))
         {
-            os.write(buffer.byteArray(), 0, length);
+            os.write(JSON_WRITER.writeValueAsBytes(configuration));
             os.flush();
         }
         catch (final IOException e)
@@ -237,14 +236,9 @@ public class RaftPersistentConfiguration implements RaftPersistentStorage
         return this;
     }
 
-    private void allocateBuffer(final int capacity)
-    {
-        buffer.wrap(new byte[capacity]);
-    }
-
     public DirectBuffer getTopicName()
     {
-        return configuration.getTopicName();
+        return BufferUtil.wrapString(configuration.getTopicName());
     }
 
     public int getPartitionId()
@@ -265,7 +259,7 @@ public class RaftPersistentConfiguration implements RaftPersistentStorage
 
     public RaftPersistentConfiguration setTopicName(DirectBuffer topicName)
     {
-        configuration.setTopicName(topicName);
+        configuration.setTopicName(BufferUtil.bufferAsString(topicName));
         return this;
     }
 
