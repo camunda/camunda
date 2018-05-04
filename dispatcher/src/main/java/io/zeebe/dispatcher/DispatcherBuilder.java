@@ -106,7 +106,7 @@ public class DispatcherBuilder
      */
     public DispatcherBuilder bufferSize(final ByteValue byteValue)
     {
-        this.bufferSize = (int) byteValue.toBytes().getValue();
+        this.bufferSize = (int) byteValue.toBytes();
         return this;
     }
 
