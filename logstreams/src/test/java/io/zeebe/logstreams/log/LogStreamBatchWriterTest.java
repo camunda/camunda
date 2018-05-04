@@ -323,12 +323,16 @@ public class LogStreamBatchWriterTest
 
         // then
         final List<LoggedEvent> events = getWrittenEvents(position);
-        final long positionEvent1 = events.get(0).getPosition();
-        final long positionEvent2 = events.get(1).getPosition();
+        final LoggedEvent firstEvent = events.get(0);
+        final long positionEvent1 = firstEvent.getPosition();
+        final LoggedEvent secondEvent = events.get(1);
+        final long positionEvent2 = secondEvent.getPosition();
 
         assertThat(positionEvent1).isGreaterThan(0);
         assertThat(positionEvent2).isGreaterThan(0);
         assertThat(positionEvent1).isLessThan(positionEvent2);
+        assertThat(firstEvent.getKey()).isEqualTo(firstEvent.getPosition());
+        assertThat(secondEvent.getKey()).isEqualTo(secondEvent.getPosition());
     }
 
     @Test

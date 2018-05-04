@@ -256,7 +256,7 @@ public class LogStreamTest
     }
 
     @Test
-    public void shouldTruncateLogStorageAtCommittedPosition()
+    public void shouldTruncateLogStorageAfterCommittedPosition()
     {
         // given
         final LogStream logStream = buildLogStream();
