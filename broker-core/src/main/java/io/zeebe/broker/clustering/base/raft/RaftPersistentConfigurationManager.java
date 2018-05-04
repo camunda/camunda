@@ -17,11 +17,6 @@
  */
 package io.zeebe.broker.clustering.base.raft;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
 import io.zeebe.broker.system.configuration.DataCfg;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.ByteValue;
@@ -31,6 +26,11 @@ import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Manages {@link RaftPersistentConfiguration} instances.
@@ -133,7 +133,7 @@ public class RaftPersistentConfigurationManager extends Actor
                         .setPartitionId(partitionId)
                         .setReplicationFactor(replicationFactor)
                         .setMembers(members)
-                        .setLogSegmentSize(new ByteValue(dataConfiguration.getDefaultLogSegmentSize()).toBytes().getValue())
+                        .setLogSegmentSize(new ByteValue(dataConfiguration.getDefaultLogSegmentSize()).toBytes())
                         .save();
 
                     configurations.add(storage);

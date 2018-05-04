@@ -37,7 +37,7 @@ public class RaftConfigurationMetadata extends UnpackedObject
     protected StringProperty topicNameProp = new StringProperty("topicName", "");
     protected IntegerProperty partitionIdProp = new IntegerProperty("partitionId", -1);
     protected IntegerProperty replicationFactorProp = new IntegerProperty("replicationFactor", -1);
-    protected LongProperty logSegmentSizeProp = new LongProperty("segmentSize", new ByteValue(512, ByteUnit.MEGABYTES).toBytes().getValue());
+    protected LongProperty logSegmentSizeProp = new LongProperty("segmentSize", new ByteValue(512, ByteUnit.MEGABYTES).toBytes());
     protected IntegerProperty termProp = new IntegerProperty("term", 0);
     protected StringProperty votedForHostProp = new StringProperty("votedForHost", "");
     protected IntegerProperty votedForPortProp = new IntegerProperty("votedForPort", 0);
