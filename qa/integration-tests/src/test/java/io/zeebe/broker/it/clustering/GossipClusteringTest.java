@@ -108,7 +108,6 @@ public class GossipClusteringTest
     }
 
     @Test
-    @Ignore
     public void shouldReAddToCluster()
     {
         // given

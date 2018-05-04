@@ -20,10 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
 import java.io.InputStream;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
@@ -71,6 +68,7 @@ public class ClusteringRule extends ExternalResource
     // internal
     private ZeebeClient zeebeClient;
     protected final Map<SocketAddress, Broker> brokers = new HashMap<>();
+    protected final Map<SocketAddress, File> brokerBases = new HashMap<>();
 
     public ClusteringRule(AutoCloseableRule autoCloseableRule, ClientRule clientRule, SocketAddress[] brokerAddresses, String[] brokerConfigs)
     {
@@ -92,7 +90,11 @@ public class ClusteringRule extends ExternalResource
 
         for (int i = 0; i < brokerConfigs.length; i++)
         {
-            brokers.put(brokerAddresses[i], startBroker(brokerConfigs[i]));
+            final File brokerBase = Files.newTemporaryFolder();
+            final SocketAddress brokerAddress = brokerAddresses[i];
+            brokerBases.put(brokerAddress, brokerBase);
+            autoCloseableRule.manage(() -> FileUtil.deleteFolder(brokerBase.getAbsolutePath()));
+            brokers.put(brokerAddress, startBroker(brokerAddress, brokerConfigs[i]));
         }
 
         waitForInternalSystemAndReplicationFactor();
@@ -202,13 +204,12 @@ public class ClusteringRule extends ExternalResource
             .get();
     }
 
-    private Broker startBroker(String configFile)
+    private Broker startBroker(SocketAddress socketAddress, String configFile)
     {
-        final File base = Files.newTemporaryFolder();
+        final File base = brokerBases.get(socketAddress);
 
         final InputStream config = this.getClass().getClassLoader().getResourceAsStream(configFile);
         final Broker broker = new Broker(config, base.getAbsolutePath(), null);
-        autoCloseableRule.manage(() -> FileUtil.deleteFolder(base.getAbsolutePath()));
         autoCloseableRule.manage(broker);
 
         return broker;
@@ -234,7 +235,7 @@ public class ClusteringRule extends ExternalResource
         {
             if (brokerAddresses[i].equals(socketAddress))
             {
-                brokers.put(socketAddress, startBroker(brokerConfigs[i]));
+                brokers.put(socketAddress, startBroker(socketAddress, brokerConfigs[i]));
                 break;
             }
         }
