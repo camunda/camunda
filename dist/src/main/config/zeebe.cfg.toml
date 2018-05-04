@@ -19,7 +19,10 @@
 # sendBufferSize = "16M" (creates a buffer of 16 Megabytes)
 #
 # Time units
-# TODO: currently always in milliseconds
+# Timeouts, intervals, and the likes, must be specified as strings and follow the following
+# format: "VU", where:
+#   - V is a numerical value (e.g. 1, 1.2, 3.56, etc.)
+#   - U is the unit, one of: ms = Millis, s = Seconds, m = Minutes, or h = Hours
 #
 # Paths:
 # Relative paths are resolved relative to the installation directory of the
