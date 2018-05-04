@@ -45,7 +45,7 @@ public class ControllableClientTransportTest
 
     public static final ByteValue SEND_BUFFER_SIZE = ByteValue.ofKilobytes(16);
 
-    public static final int MESSAGES_REQUIRED_TO_SATURATE_SEND_BUFFER = (int)SEND_BUFFER_SIZE.toBytes().getValue() / BUF1.capacity();
+    public static final int MESSAGES_REQUIRED_TO_SATURATE_SEND_BUFFER = (int)SEND_BUFFER_SIZE.toBytes() / BUF1.capacity();
 
     public ControlledActorSchedulerRule scheduler = new ControlledActorSchedulerRule();
     public AutoCloseableRule closeables = new AutoCloseableRule();

@@ -99,7 +99,7 @@ public class BufferingServerTransportTest
 
         final DirectBuffer largeBuf = new UnsafeBuffer(new byte[maximumMessageLength]);
 
-        final int messagesToExhaustReceiveBuffer = ((int) BUFFER_SIZE.toBytes().getValue() / largeBuf.capacity()) + 1;
+        final int messagesToExhaustReceiveBuffer = ((int) BUFFER_SIZE.toBytes() / largeBuf.capacity()) + 1;
 
         final RemoteAddress remoteAddress = clientTransport.registerRemoteAndAwaitChannel(SERVER_ADDRESS);
 

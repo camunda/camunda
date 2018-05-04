@@ -64,7 +64,7 @@ public class ClientTransportTest
 
     public static final int REQUEST_POOL_SIZE = 4;
     public static final ByteValue BUFFER_SIZE = ByteValue.ofKilobytes(16);
-    public static final int MESSAGES_REQUIRED_TO_SATURATE_SEND_BUFFER = (int) BUFFER_SIZE.toBytes().getValue() / BUF1.capacity();
+    public static final int MESSAGES_REQUIRED_TO_SATURATE_SEND_BUFFER = (int) BUFFER_SIZE.toBytes() / BUF1.capacity();
 
     protected Dispatcher clientReceiveBuffer;
 
@@ -312,7 +312,7 @@ public class ClientTransportTest
 
         final DirectBuffer largeBuf = new UnsafeBuffer(new byte[maximumMessageLength]);
 
-        final int messagesToExhaustReceiveBuffer = ((int) BUFFER_SIZE.toBytes().getValue() / largeBuf.capacity()) + 1;
+        final int messagesToExhaustReceiveBuffer = ((int) BUFFER_SIZE.toBytes() / largeBuf.capacity()) + 1;
         final SendMessagesHandler handler = new SendMessagesHandler(messagesToExhaustReceiveBuffer, largeBuf);
 
         buildServerTransport(
