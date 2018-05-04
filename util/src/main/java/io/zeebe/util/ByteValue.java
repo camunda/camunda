@@ -81,22 +81,27 @@ public class ByteValue
         return value;
     }
 
-    public ByteValue toBytes()
+    public long toBytes()
+    {
+        return unit.toBytes(value);
+    }
+
+    public ByteValue toBytesValue()
     {
         return new ByteValue(unit.toBytes(value), BYTES);
     }
 
-    public ByteValue toKilobytes()
+    public ByteValue toKilobytesValue()
     {
         return new ByteValue(unit.toKilobytes(value), KILOBYTES);
     }
 
-    public ByteValue toMegabytes()
+    public ByteValue toMegabytesValue()
     {
         return new ByteValue(unit.toMegabytes(value), MEGABYTES);
     }
 
-    public ByteValue toGigabytes()
+    public ByteValue toGigabytesValue()
     {
         return new ByteValue(unit.toGigabytes(value), ByteUnit.GIGABYTES);
     }

@@ -59,40 +59,44 @@ public class ByteValueTest
     public void shouldConvertUnitBytes()
     {
         final long byteValue = 1_000_000_000L;
-        assertThat(new ByteValue(byteValue, BYTES).toBytes()).isEqualTo(new ByteValue(byteValue, BYTES));
-        assertThat(new ByteValue(byteValue, BYTES).toKilobytes()).isEqualTo(new ByteValue(byteValue / 1024, KILOBYTES));
-        assertThat(new ByteValue(byteValue, BYTES).toMegabytes()).isEqualTo(new ByteValue(byteValue / (1024 * 1024), MEGABYTES));
-        assertThat(new ByteValue(byteValue, BYTES).toGigabytes()).isEqualTo(new ByteValue(byteValue / (1024 * 1024 * 1024), GIGABYTES));
+        assertThat(new ByteValue(byteValue, BYTES).toBytes()).isEqualTo(byteValue);
+        assertThat(new ByteValue(byteValue, BYTES).toBytesValue()).isEqualTo(new ByteValue(byteValue, BYTES));
+        assertThat(new ByteValue(byteValue, BYTES).toKilobytesValue()).isEqualTo(new ByteValue(byteValue / 1024, KILOBYTES));
+        assertThat(new ByteValue(byteValue, BYTES).toMegabytesValue()).isEqualTo(new ByteValue(byteValue / (1024 * 1024), MEGABYTES));
+        assertThat(new ByteValue(byteValue, BYTES).toGigabytesValue()).isEqualTo(new ByteValue(byteValue / (1024 * 1024 * 1024), GIGABYTES));
     }
 
     @Test
     public void shouldConvertUnitKilobytes()
     {
         final long kiloByteValue = 1_000_000L;
-        assertThat(new ByteValue(kiloByteValue, KILOBYTES).toBytes()).isEqualTo(new ByteValue(kiloByteValue * 1024, BYTES));
-        assertThat(new ByteValue(kiloByteValue, KILOBYTES).toKilobytes()).isEqualTo(new ByteValue(kiloByteValue, KILOBYTES));
-        assertThat(new ByteValue(kiloByteValue, KILOBYTES).toMegabytes()).isEqualTo(new ByteValue(kiloByteValue / 1024, MEGABYTES));
-        assertThat(new ByteValue(kiloByteValue, KILOBYTES).toGigabytes()).isEqualTo(new ByteValue(kiloByteValue / (1024 * 1024), GIGABYTES));
+        assertThat(new ByteValue(kiloByteValue, KILOBYTES).toBytes()).isEqualTo(kiloByteValue * 1024);
+        assertThat(new ByteValue(kiloByteValue, KILOBYTES).toBytesValue()).isEqualTo(new ByteValue(kiloByteValue * 1024, BYTES));
+        assertThat(new ByteValue(kiloByteValue, KILOBYTES).toKilobytesValue()).isEqualTo(new ByteValue(kiloByteValue, KILOBYTES));
+        assertThat(new ByteValue(kiloByteValue, KILOBYTES).toMegabytesValue()).isEqualTo(new ByteValue(kiloByteValue / 1024, MEGABYTES));
+        assertThat(new ByteValue(kiloByteValue, KILOBYTES).toGigabytesValue()).isEqualTo(new ByteValue(kiloByteValue / (1024 * 1024), GIGABYTES));
     }
 
     @Test
     public void shouldConvertUnitMegabytes()
     {
         final long megaByteValue = 1_000L;
-        assertThat(new ByteValue(megaByteValue, MEGABYTES).toBytes()).isEqualTo(new ByteValue(megaByteValue * (1024 * 1024), BYTES));
-        assertThat(new ByteValue(megaByteValue, MEGABYTES).toKilobytes()).isEqualTo(new ByteValue(megaByteValue * 1024, KILOBYTES));
-        assertThat(new ByteValue(megaByteValue, MEGABYTES).toMegabytes()).isEqualTo(new ByteValue(megaByteValue, MEGABYTES));
-        assertThat(new ByteValue(megaByteValue, MEGABYTES).toGigabytes()).isEqualTo(new ByteValue(megaByteValue / 1024, GIGABYTES));
+        assertThat(new ByteValue(megaByteValue, MEGABYTES).toBytes()).isEqualTo(megaByteValue * (1024 * 1024));
+        assertThat(new ByteValue(megaByteValue, MEGABYTES).toBytesValue()).isEqualTo(new ByteValue(megaByteValue * (1024 * 1024), BYTES));
+        assertThat(new ByteValue(megaByteValue, MEGABYTES).toKilobytesValue()).isEqualTo(new ByteValue(megaByteValue * 1024, KILOBYTES));
+        assertThat(new ByteValue(megaByteValue, MEGABYTES).toMegabytesValue()).isEqualTo(new ByteValue(megaByteValue, MEGABYTES));
+        assertThat(new ByteValue(megaByteValue, MEGABYTES).toGigabytesValue()).isEqualTo(new ByteValue(megaByteValue / 1024, GIGABYTES));
     }
 
     @Test
     public void shouldConvertUnitGigabytes()
     {
         final long gigaBytes = 100L;
-        assertThat(new ByteValue(gigaBytes, GIGABYTES).toBytes()).isEqualTo(new ByteValue(gigaBytes * (1024 * 1024 * 1024), BYTES));
-        assertThat(new ByteValue(gigaBytes, GIGABYTES).toKilobytes()).isEqualTo(new ByteValue(gigaBytes * (1024 * 1024), KILOBYTES));
-        assertThat(new ByteValue(gigaBytes, GIGABYTES).toMegabytes()).isEqualTo(new ByteValue(gigaBytes * 1024, MEGABYTES));
-        assertThat(new ByteValue(gigaBytes, GIGABYTES).toGigabytes()).isEqualTo(new ByteValue(gigaBytes, GIGABYTES));
+        assertThat(new ByteValue(gigaBytes, GIGABYTES).toBytes()).isEqualTo(gigaBytes * (1024 * 1024 * 1024));
+        assertThat(new ByteValue(gigaBytes, GIGABYTES).toBytesValue()).isEqualTo(new ByteValue(gigaBytes * (1024 * 1024 * 1024), BYTES));
+        assertThat(new ByteValue(gigaBytes, GIGABYTES).toKilobytesValue()).isEqualTo(new ByteValue(gigaBytes * (1024 * 1024), KILOBYTES));
+        assertThat(new ByteValue(gigaBytes, GIGABYTES).toMegabytesValue()).isEqualTo(new ByteValue(gigaBytes * 1024, MEGABYTES));
+        assertThat(new ByteValue(gigaBytes, GIGABYTES).toGigabytesValue()).isEqualTo(new ByteValue(gigaBytes, GIGABYTES));
     }
 
     @Test
