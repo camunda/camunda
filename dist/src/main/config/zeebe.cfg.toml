@@ -12,8 +12,9 @@
 # Conventions:
 #
 # Byte sizes
-# for buffers and others must be specified as strings and follow the following
-# format: "10U" where U is (K = Kilobytes, M = Megabytes, G = Gigabytes).
+# For buffers and others must be specified as strings and follow the following
+# format: "10U" where U (unit) must be replaced with K = Kilobytes, M = Megabytes or G = Gigabytes.
+# If unit is omitted then the default unit is simply bytes.
 # Example:
 # sendBufferSize = "16M" (creates a buffer of 16 Megabytes)
 #
@@ -110,7 +111,7 @@ bootstrap = 1
 
 [data]
 
-# This section allows to configure Zeebe's data storage Data is stored in
+# This section allows to configure Zeebe's data storage. Data is stored in
 # "partition folders". A partition folder has the following structure:
 #
 # internal-system-0                 (root partition folder)
@@ -146,8 +147,8 @@ bootstrap = 1
 
 # Controls the number of non-blocking CPU threads to be used. WARNING: You
 # should never specify a value that is larger than the number of physical cores
-# available Good practice is to leave 1-2 cores for ioThreads and the operating
-# system (it has to run somewhere) For example, when running Zeebe on a machine
+# available. Good practice is to leave 1-2 cores for ioThreads and the operating
+# system (it has to run somewhere). For example, when running Zeebe on a machine
 # which has 4 cores, a good value would be 2.
 cpuThreadCount = 2
 

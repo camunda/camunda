@@ -34,6 +34,8 @@ import io.zeebe.transport.ServerTransport;
 
 public class DeploymentManager implements Service<DeploymentManager>
 {
+    public static final Duration DEPLOYMENT_REQUEST_TIMEOUT = Duration.ofMinutes(1);
+
     private final ServiceGroupReference<Partition> partitionsGroupReference = ServiceGroupReference.<Partition>create()
         .onAdd((name, partition) -> installDeploymentStreamProcessor(partition, name))
         .build();
@@ -63,8 +65,6 @@ public class DeploymentManager implements Service<DeploymentManager>
         final PendingDeployments pendingDeployments = new PendingDeployments();
         final PendingWorkflows pendingWorkflows = new PendingWorkflows();
 
-        final Duration deploymentRequestTimeout = Duration.ofMinutes(1);
-
         final TypedStreamEnvironment streamEnvironment = new TypedStreamEnvironment(partition.getLogStream(), clientApiTransport.getOutput());
 
         final DeploymentEventWriter deploymentEventWriter = new DeploymentEventWriter(streamEnvironment);
@@ -78,7 +78,7 @@ public class DeploymentManager implements Service<DeploymentManager>
         final TypedStreamProcessor streamProcessor = createDeploymentStreamProcessor(workflowVersions,
             pendingDeployments,
             pendingWorkflows,
-            deploymentRequestTimeout,
+            DEPLOYMENT_REQUEST_TIMEOUT,
             streamEnvironment,
             deploymentEventWriter,
             remoteManager);

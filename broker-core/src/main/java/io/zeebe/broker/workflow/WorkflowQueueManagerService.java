@@ -33,6 +33,9 @@ import io.zeebe.util.sched.Actor;
 
 public class WorkflowQueueManagerService extends Actor implements Service<WorkflowQueueManagerService>
 {
+    public static final int DEPLOYMENT_CACHE_SIZE = 32;
+    public static final int PAYLOAD_CACHE_SIZE = 64;
+
     protected static final String NAME = "workflow.queue.manager";
 
     private final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
@@ -64,8 +67,8 @@ public class WorkflowQueueManagerService extends Actor implements Service<Workfl
 
         final WorkflowInstanceStreamProcessor workflowInstanceStreamProcessor = new WorkflowInstanceStreamProcessor(responseWriter,
              createWorkflowResponseSender,
-             32,
-             64);
+            DEPLOYMENT_CACHE_SIZE,
+            PAYLOAD_CACHE_SIZE);
 
         streamProcessorServiceFactory.createService(partition, partitionServiceName)
             .processor(workflowInstanceStreamProcessor)
