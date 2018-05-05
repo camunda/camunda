@@ -135,7 +135,8 @@ public class TopologyManagerImpl extends Actor implements TopologyManager, RaftS
     @Override
     public void onStateChange(Raft raft, RaftState raftState)
     {
-        actor.run(() -> {
+        actor.run(() ->
+        {
             final NodeInfo memberInfo = topology.getLocal();
 
             updatePartition(raft.getPartitionId(),

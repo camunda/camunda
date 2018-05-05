@@ -183,7 +183,7 @@ public class RaftPersistentConfiguration implements RaftPersistentStorage
     {
         if (file.exists())
         {
-            RaftConfigurationMetadata metadata;
+            final RaftConfigurationMetadata metadata;
 
             try (InputStream is = new FileInputStream(file))
             {

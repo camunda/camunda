@@ -33,7 +33,10 @@ public class RaftConfigurationMetadata
     private int term;
     private String votedForHost;
     private int votedForPort;
-    @JsonProperty("segmentSize") private long logSegmentSize;
+
+    @JsonProperty("segmentSize")
+    private long logSegmentSize;
+
     private List<RaftConfigurationMetadataMember> members;
 
     public RaftConfigurationMetadata()

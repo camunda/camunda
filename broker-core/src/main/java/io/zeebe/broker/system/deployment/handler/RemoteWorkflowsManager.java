@@ -131,7 +131,8 @@ public class RemoteWorkflowsManager implements StreamProcessorLifecycleAware
         final ActorFuture<Map<Integer, NodeInfo>> partitionLeaders = topologyManager.query((toplogy) ->
         {
             final Map<Integer, NodeInfo> leaders = new HashMap<>();
-            partitionIds.forEach((partitionId) -> {
+            partitionIds.forEach((partitionId) ->
+            {
                 final NodeInfo leader = toplogy.getLeader(partitionId);
                 if (leader != null && leader.getManagementApiAddress() != null)
                 {

@@ -125,7 +125,8 @@ public class ReplicationFactorService extends Actor implements Service<Replicati
     {
         final ActorFuture<List<PartitionNodes>> requiredInvitationsFuture = knownTopics.queryTopics(topics -> computeRequiredInvitations(topics, currentState));
 
-        actor.runOnCompletion(requiredInvitationsFuture, (requiredInvitations, error) -> {
+        actor.runOnCompletion(requiredInvitationsFuture, (requiredInvitations, error) ->
+        {
             if (error == null)
             {
                 for (final PartitionNodes requiredInvitation : requiredInvitations)

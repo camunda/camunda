@@ -147,7 +147,8 @@ public class TopicCreationService extends Actor implements Service<TopicCreation
     {
         final ActorFuture<List<PendingTopic>> pendingTopicsFuture = knownTopics.queryTopics(topics -> computePendingTopics(topics, currentState));
 
-        actor.runOnCompletion(pendingTopicsFuture, (pendingTopics, error) -> {
+        actor.runOnCompletion(pendingTopicsFuture, (pendingTopics, error) ->
+        {
             if (error == null)
             {
                 for (final PendingTopic pendingTopic : pendingTopics)
@@ -229,7 +230,8 @@ public class TopicCreationService extends Actor implements Service<TopicCreation
     private void createPartition(final PendingTopic pendingTopic)
     {
         final ActorFuture<Integer> idFuture = idGenerator.nextId();
-        actor.runOnCompletion(idFuture, (id, error) -> {
+        actor.runOnCompletion(idFuture, (id, error) ->
+        {
             if (error == null)
             {
                 LOG.debug("Creating partition with id {} for topic {}", id, pendingTopic.getTopicName());

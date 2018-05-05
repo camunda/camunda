@@ -93,7 +93,8 @@ public class RequestPartitionsMessageHandler extends AbstractControlMessageHandl
         {
             final ActorFuture<PartitionsResponse> responseFuture = knownTopics.queryTopics(this::createResponse);
 
-            actor.runOnCompletion(responseFuture, (partitionsResponse, throwable) -> {
+            actor.runOnCompletion(responseFuture, (partitionsResponse, throwable) ->
+            {
                 if (throwable == null)
                 {
                     sendResponse(actor, requestStreamId, requestId, partitionsResponse);
