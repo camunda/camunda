@@ -139,7 +139,7 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
     {
         final ServiceName<Partition> partitionServiceName = leaderPartitionServiceName(raft.getName());
 
-        final int raftMemberSize = raft.getMemberSize() + 1; // raft does not count itself as member
+        final int raftMemberSize = addresses.size() + 1; // raft does not count itself as member
         final int replicationFactor = partitionInfo.getReplicationFactor();
 
         ActorFuture<Void> leaveHandledFuture = CompletableActorFuture.completed(null);
@@ -154,7 +154,7 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
             }
             else
             {
-                LOG.debug("Not removing partition, replication factor still reached, got {}/{}.", partitionInfo, raftMemberSize, replicationFactor);
+                LOG.debug("Not removing partition {}, replication factor still reached, got {}/{}.", partitionInfo, raftMemberSize, replicationFactor);
             }
         }
 
