@@ -1,7 +1,7 @@
 package org.camunda.optimize.test.it.rule;
 
 import org.camunda.optimize.dto.engine.AuthorizationDto;
-import org.camunda.optimize.dto.optimize.query.CredentialsDto;
+import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
 import org.camunda.optimize.jetty.EmbeddedCamundaOptimize;
 import org.camunda.optimize.rest.engine.dto.UserCredentialsDto;
 import org.camunda.optimize.rest.engine.dto.UserDto;
@@ -28,10 +28,12 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Properties;
 
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_APPLICATIONS_RESOURCE_ID;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_RESOURCES_RESOURCE_ID;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_PERMISSION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GLOBAL;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GRANT;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_APPLICATION;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
 
 /**
  * This class is wrapper around the embedded optimize to ensure
@@ -174,6 +176,7 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
   public String getNewAuthenticationToken() {
     addDemoUserToEngine();
     grantDemoUserOptimizeAuthorizations();
+    grantDemoUserAllDefinitionAuthorizations();
     authenticationToken = this.authenticateDemoUser();
     return authenticationToken;
   }
@@ -196,11 +199,29 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
     }
   }
 
+  private void grantDemoUserAllDefinitionAuthorizations() {
+    AuthorizationDto authorizationDto = new AuthorizationDto();
+    authorizationDto.setResourceType(RESOURCE_TYPE_PROCESS_DEFINITION);
+    authorizationDto.setPermissions(Collections.singletonList(ALL_PERMISSION));
+    authorizationDto.setResourceId(ALL_RESOURCES_RESOURCE_ID);
+    authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
+    authorizationDto.setUserId(DEFAULT_USERNAME);
+    try {
+      getClient()
+        .target(getEngineUrl())
+        .path("/authorization/create")
+        .request()
+        .post(Entity.json(authorizationDto));
+    } catch (Exception e) {
+      logger.error("Could not create process definition authorization for demo user", e);
+    }
+  }
+
   private void grantDemoUserOptimizeAuthorizations() {
     AuthorizationDto authorizationDto = new AuthorizationDto();
     authorizationDto.setResourceType(RESOURCE_TYPE_APPLICATION);
     authorizationDto.setPermissions(Collections.singletonList(ALL_PERMISSION));
-    authorizationDto.setResourceId(ALL_APPLICATIONS_RESOURCE_ID);
+    authorizationDto.setResourceId(ALL_RESOURCES_RESOURCE_ID);
     authorizationDto.setType(AUTHORIZATION_TYPE_GLOBAL);
     authorizationDto.setUserId("*");
     try {
@@ -210,7 +231,7 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
         .request()
         .post(Entity.json(authorizationDto));
     } catch (Exception e) {
-      logger.error("Could not create demo user", e);
+      logger.error("Could not create optimize application authorization for demo user", e);
     }
   }
 

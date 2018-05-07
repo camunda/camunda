@@ -16,7 +16,7 @@ public class ConfigurationServiceTest {
   @Test
   public void getSecret() throws Exception {
     ConfigurationService underTest = new ConfigurationService();
-    assertThat(underTest.getLifetime(), is(15));
+    assertThat(underTest.getTokenLifeTime(), is(15));
   }
 
   @Test
@@ -30,7 +30,7 @@ public class ConfigurationServiceTest {
   public void testOverride() {
     String[] locations = { "service-config.yaml", "environment-config.yaml", "override-test-config.yaml" };
     ConfigurationService underTest = new ConfigurationService(locations);
-    assertThat(underTest.getLifetime(), is(10));
+    assertThat(underTest.getTokenLifeTime(), is(10));
   }
 
   @Test

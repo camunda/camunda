@@ -17,7 +17,6 @@ import org.springframework.stereotype.Component;
 
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.List;
 import java.util.Map;
@@ -83,11 +82,11 @@ public class ExportService {
     return bytes;
   }
 
-  public byte[] getCSVForReport(String reportId, Integer limit, Integer offset) {
+  public byte[] getCSVForReport(String userId, String reportId, Integer limit, Integer offset) {
 
     Optional<ReportResultDto> reportResultDto = Optional.empty();
     try {
-      reportResultDto = Optional.ofNullable(reportService.evaluateSavedReport(reportId));
+      reportResultDto = Optional.ofNullable(reportService.evaluateSavedReportWithAuthorizationCheck(userId, reportId));
     } catch (OptimizeException e) {
       logger.error("can't evaluate report",e);
     }
@@ -123,7 +122,12 @@ public class ExportService {
     return this.writeRawDataToBytes(toMap, null, null);
   }
 
-  public byte[] getCSVForReport(String reportId) {
-    return this.getCSVForReport(reportId, configurationService.getExportCsvLimit(), configurationService.getExportCsvOffset());
+  public byte[] getCSVForReport(String userId, String reportId) {
+    return this.getCSVForReport(
+      userId,
+      reportId,
+      configurationService.getExportCsvLimit(),
+      configurationService.getExportCsvOffset()
+    );
   }
 }

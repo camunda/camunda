@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.camunda.optimize.rest.StatusRestServiceIT.ENGINE_ALIAS;
-import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_KEY;
+import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.STRING_VARIABLES;
 import static org.camunda.optimize.service.es.schema.type.index.TimestampBasedImportIndexType.TIMESTAMP_BASED_IMPORT_INDEX_TYPE;
@@ -188,7 +188,7 @@ public class MultipleEngineSupportIT {
     allowedProcessDefinitionKeys.add("TestProcess2");
     assertThat(searchResponse.getHits().getTotalHits(), is(2L));
     for (SearchHit searchHit : searchResponse.getHits().getHits()) {
-      String processDefinitionKey = (String) searchHit.getSourceAsMap().get(PROCESS_DEFINITION_KEY);
+      String processDefinitionKey = (String) searchHit.getSourceAsMap().get(DEFINITION_KEY);
       assertThat(allowedProcessDefinitionKeys.contains(processDefinitionKey), is(true));
       allowedProcessDefinitionKeys.remove(processDefinitionKey);
     }

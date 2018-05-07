@@ -4,13 +4,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.report.result.ReportResultDto;
 import org.camunda.optimize.rest.providers.Secured;
-import org.camunda.optimize.rest.util.AuthenticationUtil;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.report.ReportService;
-import org.camunda.optimize.service.security.TokenService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -30,17 +27,16 @@ import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 import java.util.List;
 
+import static org.camunda.optimize.rest.util.AuthenticationUtil.getRequestUser;
+
+
 @Secured
 @Path("/report")
 @Component
 public class ReportRestService {
 
   @Autowired
-  private TokenService tokenService;
-
-  @Autowired
   private ReportService reportService;
-
 
   /**
    * Creates an empty report.
@@ -51,8 +47,7 @@ public class ReportRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public IdDto createNewReport(@Context ContainerRequestContext requestContext) {
-    String token = AuthenticationUtil.getToken(requestContext);
-    String userId = tokenService.getTokenIssuer(token);
+    String userId = getRequestUser(requestContext);
     return reportService.createNewReportAndReturnId(userId);
   }
 
@@ -69,8 +64,7 @@ public class ReportRestService {
   public void updateReport(@Context ContainerRequestContext requestContext,
                            @PathParam("id") String reportId,
                            ReportDefinitionDto updatedReport) throws OptimizeException, JsonProcessingException {
-    String token = AuthenticationUtil.getToken(requestContext);
-    String userId = tokenService.getTokenIssuer(token);
+    String userId = getRequestUser(requestContext);
     reportService.updateReport(reportId, updatedReport, userId);
   }
 
@@ -81,10 +75,12 @@ public class ReportRestService {
    */
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  public List<ReportDefinitionDto> getStoredReports(@Context UriInfo uriInfo) throws IOException {
+  public List<ReportDefinitionDto> getStoredReports(@Context UriInfo uriInfo,
+                                                    @Context ContainerRequestContext requestContext) throws IOException {
     MultivaluedMap<String, String> queryParameters = uriInfo.getQueryParameters();
-    List<ReportDefinitionDto> reports = reportService.findAndFilterReports(queryParameters);
-    return reports;
+
+    String userId = getRequestUser(requestContext);
+    return reportService.findAndFilterReports(userId, queryParameters);
   }
 
   /**
@@ -117,8 +113,10 @@ public class ReportRestService {
   @Path("/{id}/evaluate")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  public ReportResultDto evaluateReport(@PathParam("id") String reportId) throws OptimizeException {
-    return reportService.evaluateSavedReport(reportId);
+  public ReportResultDto evaluateReport(@Context ContainerRequestContext requestContext,
+                                        @PathParam("id") String reportId) throws OptimizeException {
+    String userId = getRequestUser(requestContext);
+    return reportService.evaluateSavedReportWithAuthorizationCheck(userId, reportId);
   }
 
 
@@ -131,8 +129,12 @@ public class ReportRestService {
   @Path("/evaluate")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public ReportResultDto evaluateReport(ReportDataDto reportData) throws OptimizeException {
-    return reportService.evaluateReportInMemory(reportData);
+  public ReportResultDto evaluateReport(@Context ContainerRequestContext requestContext,
+                                        ReportDataDto reportData) throws OptimizeException {
+    String userId = getRequestUser(requestContext);
+    ReportDefinitionDto reportDefinition = new ReportDefinitionDto();
+    reportDefinition.setData(reportData);
+    return reportService.evaluateReportWithAuthorizationCheck(userId, reportDefinition);
   }
 
 }

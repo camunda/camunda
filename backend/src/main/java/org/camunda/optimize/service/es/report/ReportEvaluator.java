@@ -3,7 +3,6 @@ package org.camunda.optimize.service.es.report;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.query.report.GroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ViewDto;
 import org.camunda.optimize.dto.optimize.query.report.result.ReportResultDto;
 import org.camunda.optimize.service.es.filter.QueryFilterEnhancer;
@@ -24,8 +23,6 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.client.Client;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import java.io.IOException;
 
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_FLOW_NODE_TYPE;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_NONE_TYPE;
@@ -49,12 +46,6 @@ public class ReportEvaluator {
   private QueryFilterEnhancer queryFilterEnhancer;
   @Autowired
   private Client esclient;
-
-  public ReportResultDto evaluate(ReportDefinitionDto reportDefinitionDto) throws OptimizeException {
-    ReportResultDto resultDto = evaluate(reportDefinitionDto.getData());
-    ReportUtil.copyMetaData(reportDefinitionDto, resultDto);
-    return resultDto;
-  }
 
   public ReportResultDto evaluate(ReportDataDto reportData) throws OptimizeException {
     CommandContext commandContext = createCommandContext(reportData);

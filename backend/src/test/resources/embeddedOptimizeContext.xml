@@ -12,7 +12,7 @@
   <context:annotation-config/>
 
   <context:component-scan base-package="org.camunda.optimize.service">
-    <context:exclude-filter type="assignable" expression="org.camunda.optimize.service.security.TokenService"/>
+    <context:exclude-filter type="assignable" expression="org.camunda.optimize.service.security.SessionService"/>
   </context:component-scan>
 
   <context:component-scan base-package="org.camunda.optimize.rest"/>

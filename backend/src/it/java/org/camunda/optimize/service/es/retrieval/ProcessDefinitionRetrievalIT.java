@@ -16,9 +16,7 @@ import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.ALL_VERSIONS;
 import static org.hamcrest.CoreMatchers.is;
@@ -84,6 +82,7 @@ public class ProcessDefinitionRetrievalIT {
         });
 
     // then
+    assertThat(response.getStatus(), is(200));
     assertThat(definitions.size(), is(1));
     assertThat(definitions.get(0).getId(), is(processDefinitionId));
     assertThat(definitions.get(0).getKey(), is(processId));
@@ -216,32 +215,6 @@ public class ProcessDefinitionRetrievalIT {
 
     // then
     assertThat(actualXml, is(Bpmn.convertToString(modelInstance)));
-  }
-
-  @Test
-  public void testGetProcessDefinitionsXml() throws Exception {
-    // given
-    List<String> ids = new ArrayList<>();
-    for (int i = 0; i < 11; i++) {
-      String processId = PROCESS_DEFINITION_KEY + System.currentTimeMillis();
-      String processDefinitionId = deploySimpleServiceTaskProcessDefinition(processId);
-      ids.add(processDefinitionId);
-    }
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-
-    // when
-    Response response =
-        embeddedOptimizeRule.target("process-definition/xmlsToIds")
-            .queryParam("ids", ids.toArray())
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-            .get();
-
-    Map<String, String> map = response.readEntity(new GenericType<Map<String, String>>() {});
-
-    // then
-    assertThat(map.size(), is(11));
   }
 
   private String deploySimpleServiceTaskProcessDefinition(String processId) throws IOException {

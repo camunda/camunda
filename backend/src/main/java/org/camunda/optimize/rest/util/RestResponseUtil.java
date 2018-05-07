@@ -6,12 +6,13 @@ import org.camunda.optimize.service.exceptions.ReportEvaluationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.core.Response;
 
 public class RestResponseUtil {
-  public static final String REPORT_DEFINITION = "\"reportDefinition\" : ";
+  private static final String REPORT_DEFINITION = "\"reportDefinition\" : ";
   private static ObjectMapper OBJECT_MAPPER;
   private static final Logger logger = LoggerFactory.getLogger(RestResponseUtil.class);
 
@@ -25,6 +26,9 @@ public class RestResponseUtil {
     }
     if (NotFoundException.class.equals(e.getClass())) {
       return buildServerNotFoundErrorResponse(e.getMessage());
+    }
+    if (ForbiddenException.class.equals(e.getClass())) {
+      return buildForbiddenErrorResponse(e.getMessage());
     }
     if (ReportEvaluationException.class.equals(e.getClass())) {
       return buildReportEvaluationErrorResponse((ReportEvaluationException)e);
@@ -61,6 +65,13 @@ public class RestResponseUtil {
         .entity("{ \"errorMessage\" : \"" + message + "\"}").build();
   }
 
+  private static Response buildForbiddenErrorResponse(String message) {
+    return Response
+        .serverError()
+        .status(Response.Status.FORBIDDEN)
+        .entity("{ \"errorMessage\" : \"" + message + "\"}").build();
+  }
+
   private static Response buildServerAuthenticationErrorResponse(String message) {
     return Response
         .serverError()
@@ -68,7 +79,7 @@ public class RestResponseUtil {
         .entity("{ \"errorMessage\" : \"" + message + "\"}").build();
   }
 
-  public static Response buildServerErrorResponse(String message) {
+  private static Response buildServerErrorResponse(String message) {
     return Response
         .serverError()
         .entity("{ \"errorMessage\" : \"" + message + "\"}").build();

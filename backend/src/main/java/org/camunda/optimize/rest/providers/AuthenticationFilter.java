@@ -1,7 +1,7 @@
 package org.camunda.optimize.rest.providers;
 
 import org.camunda.optimize.rest.util.AuthenticationUtil;
-import org.camunda.optimize.service.security.TokenService;
+import org.camunda.optimize.service.security.SessionService;
 import org.glassfish.jersey.server.ContainerRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,58 +19,71 @@ import javax.ws.rs.ext.Provider;
 import java.net.URI;
 import java.net.URISyntaxException;
 
-/**
- * @author Askar Akhmerov
- *
- */
 @Secured
 @Provider
 @Priority(Priorities.AUTHENTICATION)
 @Component
 public class AuthenticationFilter implements ContainerRequestFilter {
+
+  private final Logger logger = LoggerFactory.getLogger(getClass());
+
   private static final String CSV_SUFFIX = ".csv";
   private static final String LOG_IN = "/login";
-  private final Logger logger = LoggerFactory.getLogger(getClass());
   private static final String STATUS = "status";
 
   @Autowired
-  private TokenService tokenService;
+  private SessionService sessionService;
 
   @Context
   private ResourceInfo resourceInfo;
 
   @Override
   public void filter(ContainerRequestContext requestContext) {
-    //an exception, do not perform any checks and refreshes
-    String path = ((ContainerRequest) requestContext).getPath(false);
+    String path = retrievePath( requestContext);
     if (path != null && path.toLowerCase().startsWith(STATUS)) {
       return;
     }
 
     try {
       String token = AuthenticationUtil.getToken(requestContext);
-      // Validate the token
-      tokenService.validateToken(token);
-
+      boolean isValidToken = sessionService.isValidToken(token);
+      if (!isValidToken) {
+        handleInvalidToken(requestContext);
+      }
     } catch (Exception e) {
-      if (logger.isDebugEnabled()) {
-        logger.debug("Handling authentication token error", e);
-      }
-      if (path.endsWith(CSV_SUFFIX)) {
-        URI loginUri = null;
-        try {
-          loginUri = new URI(LOG_IN);
-        } catch (URISyntaxException e1) {
-          logger.error("can't build URI to login");
-        }
-        requestContext.abortWith(
-          Response.temporaryRedirect(loginUri).build()
-        );
-      } else {
-        requestContext.abortWith(
-          Response.status(Response.Status.UNAUTHORIZED).build());
-      }
+      logger.debug("Error during issuing of security token!", e);
+      handleInvalidToken(requestContext);
     }
+  }
+
+  private String retrievePath(ContainerRequestContext requestContext) {
+    return ((ContainerRequest) requestContext).getPath(false);
+  }
+
+  private void handleInvalidToken(ContainerRequestContext requestContext) {
+    String path = retrievePath(requestContext);
+    if (isCSVRequest(path)) {
+      redirectToLoginPage(requestContext);
+    } else {
+      requestContext.abortWith(
+        Response.status(Response.Status.UNAUTHORIZED).build());
+    }
+  }
+
+  private void redirectToLoginPage(ContainerRequestContext requestContext) {
+    URI loginUri = null;
+    try {
+      loginUri = new URI(LOG_IN);
+    } catch (URISyntaxException e) {
+      logger.debug("can't build URI to login", e);
+    }
+    requestContext.abortWith(
+      Response.temporaryRedirect(loginUri).build()
+    );
+  }
+
+  private boolean isCSVRequest(String path) {
+    return path.endsWith(CSV_SUFFIX);
   }
 
 }

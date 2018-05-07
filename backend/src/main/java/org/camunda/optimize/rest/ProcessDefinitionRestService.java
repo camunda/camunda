@@ -16,10 +16,14 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
+
+import static org.camunda.optimize.rest.util.AuthenticationUtil.getRequestUser;
+
 
 @Secured
 @Path("/process-definition")
@@ -41,8 +45,11 @@ public class ProcessDefinitionRestService {
   @GET
   @Produces(MediaType.APPLICATION_JSON)
   public Collection<ExtendedProcessDefinitionOptimizeDto> getProcessDefinitions(
+      @Context ContainerRequestContext requestContext,
       @QueryParam("includeXml") boolean includeXml) {
-    return processDefinitionReader.getProcessDefinitions(includeXml);
+
+    String userId = getRequestUser(requestContext);
+    return processDefinitionReader.getProcessDefinitions(userId, includeXml);
   }
 
   /**
@@ -53,8 +60,10 @@ public class ProcessDefinitionRestService {
   @GET
   @Produces(MediaType.APPLICATION_JSON)
   @Path("/groupedByKey")
-  public List<ProcessDefinitionGroupOptimizeDto> getProcessDefinitionsGroupedByKey() {
-    return processDefinitionReader.getProcessDefinitionsGroupedByKey();
+  public List<ProcessDefinitionGroupOptimizeDto>
+      getProcessDefinitionsGroupedByKey(@Context ContainerRequestContext requestContext) {
+    String userId = getRequestUser(requestContext);
+    return processDefinitionReader.getProcessDefinitionsGroupedByKey(userId);
   }
 
   /**
@@ -71,20 +80,6 @@ public class ProcessDefinitionRestService {
       @QueryParam("processDefinitionKey") String processDefinitionKey,
       @QueryParam("processDefinitionVersion") String processDefinitionVersion) {
     return processDefinitionReader.getProcessDefinitionXml(processDefinitionKey, processDefinitionVersion);
-  }
-
-  /**
-   * Get the process definition xmls to the given process definition ids.
-   *
-   * @param ids List of process Definition ids for which the xmls have to be returned
-   * @return The process definition xml requested.
-   */
-  @GET
-  @Path("/xmlsToIds")
-  @Produces(MediaType.APPLICATION_JSON)
-  @Consumes(MediaType.APPLICATION_JSON)
-  public Map<String, String> getProcessDefinitionsXml(@QueryParam("ids") List<String> ids) {
-    return processDefinitionReader.getProcessDefinitionsXml(ids);
   }
 
   /**

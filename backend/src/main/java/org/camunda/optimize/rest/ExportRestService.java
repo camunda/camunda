@@ -8,8 +8,12 @@ import org.springframework.stereotype.Component;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
+import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+
+import static org.camunda.optimize.rest.util.AuthenticationUtil.getRequestUser;
 
 /**
  * @author Askar Akhmerov
@@ -25,11 +29,13 @@ public class ExportRestService {
   @GET
   @Path("csv/{reportId}/{fileName}")
   public Response getCsvReport (
+      @Context ContainerRequestContext requestContext,
       @PathParam("reportId") String reportId,
       @PathParam("fileName") String fileName
   ) {
+    String userId = getRequestUser(requestContext);
     String resultFileName = fileName == null ? System.currentTimeMillis() + ".csv" : fileName;
-    return Response.ok(exportService.getCSVForReport(reportId), MediaType.APPLICATION_OCTET_STREAM)
+    return Response.ok(exportService.getCSVForReport(userId, reportId), MediaType.APPLICATION_OCTET_STREAM)
         .header("Content-Disposition", "attachment; filename=" + resultFileName)
         .build();
   }

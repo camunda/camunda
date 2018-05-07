@@ -15,6 +15,7 @@ public class EngineConstantsUtil {
   public static final String FINISHED_AFTER = "finishedAfter";
   public static final String FINISHED_BEFORE = "finishedBefore";
 
+  public static final String LATEST_VERSION = "latestVersion";
   public static final String INCLUDE_ONLY_FINISHED_INSTANCES = "finished";
   public static final String INCLUDE_ONLY_UNFINISHED_INSTANCES = "unfinished";
   public static final String TRUE = "true";
@@ -35,14 +36,19 @@ public class EngineConstantsUtil {
 
   public static final String ALL_PERMISSION = "ALL";
   public static final String ACCESS_PERMISSION = "ACCESS";
+  public static final String READ_HISTORY_PERMISSION = "READ_HISTORY";
+  public static final String READ_PERMISSION = "READ";
+
+  public static final String RESOURCE_TYPE = "resourceType";
+  public static final int RESOURCE_TYPE_APPLICATION = 0;
+  public static final int RESOURCE_TYPE_PROCESS_DEFINITION = 6;
 
   public static final int AUTHORIZATION_TYPE_GLOBAL = 0;
   public static final int AUTHORIZATION_TYPE_GRANT = 1;
   public static final int AUTHORIZATION_TYPE_REVOKE = 2;
 
-  public static final int RESOURCE_TYPE_APPLICATION = 0;
 
   public static final String OPTIMIZE_APPLICATION_RESOURCE_ID = "optimize";
-  public static final String ALL_APPLICATIONS_RESOURCE_ID = "*";
+  public static final String ALL_RESOURCES_RESOURCE_ID = "*";
 
 }

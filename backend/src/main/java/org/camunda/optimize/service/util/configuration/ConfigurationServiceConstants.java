@@ -5,7 +5,7 @@ package org.camunda.optimize.service.util.configuration;
  * string inlined in the service class.
  */
 public interface ConfigurationServiceConstants {
-  String LIFE_TIME = "$.auth.token.lifeMin";
+  String TOKEN_LIFE_TIME = "$.auth.token.lifeMin";
 
   String CONFIGURED_ENGINES = "$.engines";
 

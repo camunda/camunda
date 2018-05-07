@@ -46,10 +46,7 @@ public class EngineContextFactory {
   }
 
   private EngineContext constructEngineContext(Map.Entry<String, EngineConfiguration> config) {
-    EngineContext result = new EngineContext();
-    result.setEngineClient(constructClient(config));
-    result.setEngineAlias(config.getKey());
-    return result;
+    return new EngineContext(config.getKey(), constructClient(config), configurationService);
   }
 
   private Client constructClient(Map.Entry<String, EngineConfiguration> config) {

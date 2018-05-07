@@ -1,8 +1,5 @@
 package org.camunda.optimize.rest;
 
-import com.auth0.jwt.JWT;
-import com.auth0.jwt.algorithms.Algorithm;
-import org.camunda.optimize.rest.util.AuthenticationUtil;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
@@ -12,7 +9,6 @@ import org.junit.rules.RuleChain;
 
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
-import java.io.UnsupportedEncodingException;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -29,7 +25,7 @@ public class AuthenticationRestServiceIT {
       .outerRule(elasticSearchRule).around(engineIntegrationRule).around(embeddedOptimizeRule);
 
   @Test
-  public void authenticateUserUsingES() {
+  public void authenticateUser() {
     // given
     addAdminUserAndGrantAccessPermission();
 
@@ -61,25 +57,6 @@ public class AuthenticationRestServiceIT {
   }
 
   @Test
-  public void securingRestApiWorksWithProxy() {
-    //given
-    addAdminUserAndGrantAccessPermission();
-    String token = authenticateAdminUser();
-
-    //when
-    Response testResponse = embeddedOptimizeRule.target("authentication/test")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, "Basic ZGVtbzpkZW1v")
-        .header(AuthenticationUtil.OPTIMIZE_AUTHORIZATION, "Bearer " + token)
-        .get();
-
-    //then
-    assertThat(testResponse.getStatus(),is(200));
-    String responseEntity = testResponse.readEntity(String.class);
-    assertThat(responseEntity,is("OK"));
-  }
-
-  @Test
   public void logoutSecure() {
 
     //when
@@ -93,40 +70,26 @@ public class AuthenticationRestServiceIT {
   }
 
   @Test
-  public void cantKickOutUserByProvidingWrongToken() throws UnsupportedEncodingException {
-    // given
-    addAdminUserAndGrantAccessPermission();
-    authenticateAdminUser();
-    Algorithm algorithm = Algorithm.HMAC256("secret");
-    String selfGeneratedEvilToken = JWT.create()
-        .withIssuer("admin")
-        .sign(algorithm);
-
+  public void testAuthenticationIfNotAuthenticated() {
     //when
-    Response logoutResponse = embeddedOptimizeRule.target("authentication/logout")
+    Response logoutResponse = embeddedOptimizeRule.target("authentication/test")
         .request()
-        .header(HttpHeaders.AUTHORIZATION,"Bearer " + selfGeneratedEvilToken)
         .get();
 
     //then
-    assertThat(logoutResponse.getStatus(), is(401));
+    assertThat(logoutResponse.getStatus(),is(401));
   }
 
   @Test
-  public void authenticatingSameUserTwiceDisablesFirstToken() {
-    // given
-    addAdminUserAndGrantAccessPermission();
-    String firstToken = authenticateAdminUser();
-    authenticateAdminUser();
-
-    // when
-    Response logoutResponse = embeddedOptimizeRule.target("authentication/logout")
+  public void testIfAuthenticated() {
+    //when
+    Response logoutResponse = embeddedOptimizeRule.target("authentication/test")
         .request()
-        .header(HttpHeaders.AUTHORIZATION,"Bearer " + firstToken)
+        .header(HttpHeaders.AUTHORIZATION,embeddedOptimizeRule.getAuthorizationHeader())
         .get();
 
-    // then
-    assertThat(logoutResponse.getStatus(), is(401));
+    //then
+    assertThat(logoutResponse.getStatus(),is(200));
   }
 
   private String authenticateAdminUser() {

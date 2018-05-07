@@ -10,19 +10,23 @@ import org.camunda.optimize.rest.queryparam.adjustment.QueryParamAdjustmentUtil;
 import org.camunda.optimize.service.alert.AlertService;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.report.ReportEvaluator;
+import org.camunda.optimize.service.es.report.command.util.ReportUtil;
 import org.camunda.optimize.service.es.writer.ReportWriter;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.exceptions.ReportEvaluationException;
+import org.camunda.optimize.service.security.SessionService;
 import org.camunda.optimize.service.security.SharingService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.core.MultivaluedMap;
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 public class ReportService {
@@ -42,6 +46,9 @@ public class ReportService {
   @Autowired
   private SharingService sharingService;
 
+  @Autowired
+  private SessionService sessionService;
+
   public void deleteReport(String reportId) {
     alertService.deleteAlertsForReport(reportId);
     sharingService.deleteShareForReport(reportId);
@@ -52,16 +59,14 @@ public class ReportService {
     return reportWriter.createNewReportAndReturnId(userId);
   }
 
-  public void updateReport(String reportId,
-                           ReportDefinitionDto updatedReport,
-                           String userId) throws OptimizeException, JsonProcessingException {
+  public void updateReport(String reportId, ReportDefinitionDto updatedReport, String userId) throws OptimizeException, JsonProcessingException {
     ValidationHelper.validateDefinition(updatedReport.getData());
     ReportDefinitionUpdateDto reportUpdate = convertToReportUpdate(reportId, updatedReport, userId);
     reportWriter.updateReport(reportUpdate);
     alertService.deleteAlertsIfNeeded(reportId, updatedReport.getData());
   }
 
-  private ReportDefinitionUpdateDto convertToReportUpdate(String reportId, ReportDefinitionDto updatedReport, String userId) {
+ private ReportDefinitionUpdateDto convertToReportUpdate(String reportId, ReportDefinitionDto updatedReport, String userId) {
     ReportDefinitionUpdateDto reportUpdate = new ReportDefinitionUpdateDto();
     reportUpdate.setData(updatedReport.getData());
     reportUpdate.setId(updatedReport.getId());
@@ -75,9 +80,22 @@ public class ReportService {
     return reportUpdate;
   }
 
-  public List<ReportDefinitionDto> findAndFilterReports(MultivaluedMap<String, String> queryParameters) throws IOException {
+  public List<ReportDefinitionDto> findAndFilterReports(String userId,
+                                                        MultivaluedMap<String, String> queryParameters) throws IOException {
     List<ReportDefinitionDto> reports = reportReader.getAllReports();
+    reports = filterAuthorizedReports(userId, reports);
     reports = QueryParamAdjustmentUtil.adjustReportResultsToQueryParameters(reports, queryParameters);
+    return reports;
+  }
+
+  private List<ReportDefinitionDto> filterAuthorizedReports(String userId, List<ReportDefinitionDto> reports) {
+    reports = reports
+      .stream()
+      .filter(
+        r -> r.getData() == null ||
+          sessionService
+          .isAuthorizedToSeeDefinition(userId, r.getData().getProcessDefinitionKey()))
+      .collect(Collectors.toList());
     return reports;
   }
 
@@ -85,29 +103,44 @@ public class ReportService {
     return reportReader.getReport(reportId);
   }
 
-  public ReportResultDto evaluateSavedReport(String reportId) throws OptimizeException {
-    ReportDefinitionDto reportDefinition;
-    reportDefinition = reportReader.getReport(reportId);
-    ReportResultDto result;
-    try {
-      result = reportEvaluator.evaluate(reportDefinition);
-    } catch (OptimizeException e) {
-      throw new ReportEvaluationException(reportDefinition, e);
-    } catch (OptimizeValidationException e) {
-      throw new ReportEvaluationException(reportDefinition, e);
-    }
+  public ReportResultDto evaluateSavedReportWithAuthorizationCheck(String userId, String reportId) throws OptimizeException {
+    ReportDefinitionDto reportDefinition = reportReader.getReport(reportId);
+    ReportResultDto result = evaluateReportWithAuthorizationCheck(userId, reportDefinition);
+    ReportUtil.copyMetaData(reportDefinition, result);
     return result;
   }
 
-  public ReportResultDto evaluateReportInMemory(ReportDataDto reportData) throws OptimizeException {
-    ReportResultDto result;
+  public ReportResultDto evaluateReportWithAuthorizationCheck(String userId,
+                                                              ReportDefinitionDto reportDefinition) throws OptimizeException {
+    ReportDataDto reportData = reportDefinition.getData();
+    if (reportData != null && !isAuthorizedToEvaluate(userId, reportData)) {
+      throw new ForbiddenException("User [" + userId + "] is not authorized to evaluate report " +
+        "for process definition [" + reportData.getProcessDefinitionKey() + "].");
+    }
+    return evaluateWithErrorCheck(reportDefinition);
+  }
+
+  private ReportResultDto evaluateWithErrorCheck(ReportDefinitionDto reportDefinition) throws ReportEvaluationException {
+    ReportDataDto reportData = reportDefinition.getData();
     try {
-      result = reportEvaluator.evaluate(reportData);
-    } catch (OptimizeException e) {
+      return reportEvaluator.evaluate(reportData);
+    } catch (OptimizeException | OptimizeValidationException e) {
       ReportDefinitionDto definitionWrapper = new ReportDefinitionDto();
       definitionWrapper.setData(reportData);
+      definitionWrapper.setName(reportDefinition.getName());
+      definitionWrapper.setId(reportDefinition.getId());
       throw new ReportEvaluationException(definitionWrapper, e);
     }
+  }
+
+  public ReportResultDto evaluateSavedReport(String reportId) throws OptimizeException {
+    ReportDefinitionDto reportDefinition = reportReader.getReport(reportId);
+    ReportResultDto result = evaluateWithErrorCheck(reportDefinition);
+    ReportUtil.copyMetaData(reportDefinition, result);
     return result;
+  }
+
+  private boolean isAuthorizedToEvaluate(String userId, ReportDataDto reportDataDto) {
+    return sessionService.isAuthorizedToSeeDefinition(userId, reportDataDto.getProcessDefinitionKey());
   }
 }

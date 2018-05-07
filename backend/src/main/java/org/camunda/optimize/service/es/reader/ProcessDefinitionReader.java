@@ -9,6 +9,7 @@ import org.camunda.optimize.dto.optimize.rest.FlowNodeNamesResponseDto;
 import org.camunda.optimize.service.es.report.command.util.ReportConstants;
 import org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.security.SessionService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
@@ -16,6 +17,7 @@ import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,8 +29,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType.PROCESS_DEFINITION_ID;
+import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.DEFINITION_KEY;
+import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.VERSION;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType.PROCESS_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType.PROCESS_DEFINITION_VERSION;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -46,11 +50,15 @@ public class ProcessDefinitionReader {
   @Autowired
   private ObjectMapper objectMapper;
 
-  private List<ExtendedProcessDefinitionOptimizeDto> getProcessDefinitions() {
-    return this.getProcessDefinitions(false);
+  @Autowired
+  private SessionService sessionService;
+
+  private List<ExtendedProcessDefinitionOptimizeDto> getProcessDefinitions(String userId) {
+    return this.getProcessDefinitions(userId, false);
   }
 
-  public List<ExtendedProcessDefinitionOptimizeDto> getProcessDefinitions(boolean withXml) {
+  public List<ExtendedProcessDefinitionOptimizeDto> getProcessDefinitions(String userId,
+                                                                          boolean withXml) {
     logger.debug("Fetching process definitions");
     QueryBuilder query;
     query = QueryBuilders.matchAllQuery();
@@ -85,7 +93,19 @@ public class ProcessDefinitionReader {
           .get();
     } while (scrollResp.getHits().getHits().length != 0);
 
-    return new ArrayList<>(definitionsResult.values());
+    List<ExtendedProcessDefinitionOptimizeDto> result = new ArrayList<>(definitionsResult.values());
+    result = filterAuthorizedProcessDefinitions(userId, result);
+    return result;
+  }
+
+  private List<ExtendedProcessDefinitionOptimizeDto>
+                filterAuthorizedProcessDefinitions(String userId,
+                                                   List<ExtendedProcessDefinitionOptimizeDto> result) {
+    result = result
+      .stream()
+      .filter(def -> sessionService.isAuthorizedToSeeDefinition(userId, def.getKey()))
+      .collect(Collectors.toList());
+    return result;
   }
 
   private void addFullDefinition(HashMap<String, ExtendedProcessDefinitionOptimizeDto> definitionsResult, SearchHit hit) {
@@ -182,28 +202,33 @@ public class ProcessDefinitionReader {
   }
 
 
-  public List<ProcessDefinitionGroupOptimizeDto> getProcessDefinitionsGroupedByKey() {
-    Map<String, ProcessDefinitionGroupOptimizeDto> resultMap = getKeyToProcessDefinitionMap();
+  public List<ProcessDefinitionGroupOptimizeDto> getProcessDefinitionsGroupedByKey(String userId) {
+    Map<String, ProcessDefinitionGroupOptimizeDto> resultMap = getKeyToProcessDefinitionMap(userId);
     return new ArrayList<>(resultMap.values());
   }
 
   private String getLatestVersionToKey(String key) {
-    Map<String, ProcessDefinitionGroupOptimizeDto> keyToVersionsMap = getKeyToProcessDefinitionMap();
-    if (keyToVersionsMap.containsKey(key)) {
-      List<ExtendedProcessDefinitionOptimizeDto> versions = keyToVersionsMap.get(key).getVersions();
-      if (versions != null && !versions.isEmpty()) {
-        return versions.get(0).getVersion().toString();
-      } else {
-        throw new OptimizeRuntimeException("Unable to retrieve latest version for process definition key: " + key);
+    SearchResponse response = esclient
+        .prepareSearch(configurationService.getOptimizeIndex(configurationService.getProcessDefinitionType()))
+        .setTypes(configurationService.getProcessDefinitionType())
+        .setQuery(termQuery(DEFINITION_KEY, key))
+        .addSort(VERSION, SortOrder.DESC)
+        .setSize(1)
+        .get();
+
+    if (response.getHits().getHits().length == 1) {
+      Map<String, Object> sourceAsMap = response.getHits().getAt(0).getSourceAsMap();
+      if (sourceAsMap.containsKey(VERSION)) {
+        return ((Integer) sourceAsMap.get(VERSION)).toString();
       }
-    } else {
-      throw new OptimizeRuntimeException("Unable to retrieve latest version for process definition key: " + key);
+
     }
+    throw new OptimizeRuntimeException("Unable to retrieve latest version for process definition key: " + key);
   }
 
-  private Map<String, ProcessDefinitionGroupOptimizeDto> getKeyToProcessDefinitionMap() {
+  private Map<String, ProcessDefinitionGroupOptimizeDto> getKeyToProcessDefinitionMap(String userId) {
     Map<String, ProcessDefinitionGroupOptimizeDto> resultMap = new HashMap<>();
-    List<ExtendedProcessDefinitionOptimizeDto> allDefinitions = getProcessDefinitions();
+    List<ExtendedProcessDefinitionOptimizeDto> allDefinitions = getProcessDefinitions(userId);
     for (ExtendedProcessDefinitionOptimizeDto process : allDefinitions) {
       String key = process.getKey();
       if (!resultMap.containsKey(key)) {
@@ -219,36 +244,6 @@ public class ProcessDefinitionReader {
   private ProcessDefinitionGroupOptimizeDto constructGroup(ExtendedProcessDefinitionOptimizeDto process) {
     ProcessDefinitionGroupOptimizeDto result = new ProcessDefinitionGroupOptimizeDto();
     result.setKey(process.getKey());
-    return result;
-  }
-
-  public Map<String, String> getProcessDefinitionsXml(List<String> ids) {
-    Map<String, String> result = new HashMap<>();
-    SearchResponse scrollResp = esclient.prepareSearch(
-        configurationService.getOptimizeIndex(configurationService.getProcessDefinitionXmlType()))
-        .setTypes(configurationService.getProcessDefinitionXmlType())
-        .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
-        .setQuery(QueryBuilders.termsQuery(PROCESS_DEFINITION_ID, ids))
-        .setSize(100)
-        .get();
-
-    do {
-      for (SearchHit hit : scrollResp.getHits().getHits()) {
-        String xml = null;
-        if (hit.getSourceAsMap().get(ProcessDefinitionXmlType.BPMN_20_XML) != null) {
-          xml = hit.getSourceAsMap().get(ProcessDefinitionXmlType.BPMN_20_XML).toString();
-        }
-        result.put(
-            hit.getSourceAsMap().get(PROCESS_DEFINITION_ID).toString(),
-            xml
-        );
-      }
-      scrollResp = esclient
-          .prepareSearchScroll(scrollResp.getScrollId())
-          .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
-          .get();
-    } while (scrollResp.getHits().getHits().length != 0);
-
     return result;
   }
 

@@ -5,10 +5,8 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.rest.queryparam.adjustment.QueryParamAdjustmentUtil;
-import org.camunda.optimize.rest.util.AuthenticationUtil;
 import org.camunda.optimize.service.dashboard.DashboardService;
 import org.camunda.optimize.service.exceptions.OptimizeException;
-import org.camunda.optimize.service.security.TokenService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -28,14 +26,14 @@ import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 import java.util.List;
 
+import static org.camunda.optimize.rest.util.AuthenticationUtil.getRequestUser;
+
+
 @Secured
 @Path("/dashboard")
 @Component
 public class DashboardRestService {
 
-
-  @Autowired
-  private TokenService tokenService;
 
   @Autowired
   private DashboardService dashboardService;
@@ -49,8 +47,7 @@ public class DashboardRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public IdDto createNewDashboard(@Context ContainerRequestContext requestContext) {
-    String token = AuthenticationUtil.getToken(requestContext);
-    String userId = tokenService.getTokenIssuer(token);
+    String userId = getRequestUser(requestContext);
     return dashboardService.createNewDashboardAndReturnId(userId);
   }
 
@@ -68,8 +65,7 @@ public class DashboardRestService {
                               @PathParam("id") String dashboardId,
                               DashboardDefinitionDto updatedDashboard) throws OptimizeException, JsonProcessingException {
     updatedDashboard.setId(dashboardId);
-    String token = AuthenticationUtil.getToken(requestContext);
-    String userId = tokenService.getTokenIssuer(token);
+    String userId = getRequestUser(requestContext);
     dashboardService.updateDashboard(updatedDashboard, userId);
   }
 

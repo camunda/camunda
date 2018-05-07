@@ -4,7 +4,7 @@ import org.camunda.optimize.dto.optimize.query.status.ConnectionStatusDto;
 import org.camunda.optimize.dto.optimize.query.status.StatusWithProgressDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
-import org.camunda.optimize.service.security.TokenService;
+import org.camunda.optimize.service.security.SessionService;
 import org.camunda.optimize.service.status.StatusCheckingService;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -42,9 +42,8 @@ public class StatusRestServiceIT {
     mockedEngineClient = Mockito.mock(Client.class);
     EngineContextFactory mockedFactory = Mockito.mock(EngineContextFactory.class);
     List<EngineContext> list = new ArrayList<>();
-    EngineContext context = new EngineContext();
-    context.setEngineAlias(ENGINE_ALIAS);
-    context.setEngineClient(mockedEngineClient);
+    EngineContext context =
+      new EngineContext(ENGINE_ALIAS, mockedEngineClient, embeddedOptimizeRule.getConfigurationService());
     list.add(context);
     Mockito.when(mockedFactory.getConfiguredEngines()).thenReturn(list);
 
@@ -69,22 +68,22 @@ public class StatusRestServiceIT {
 
   @Test
   public void verifySecurityBypass() throws Exception {
-    TokenService tokenService = embeddedOptimizeRule.getApplicationContext().getBean(TokenService.class);
+    SessionService sessionService = embeddedOptimizeRule.getApplicationContext().getBean(SessionService.class);
     //in case this is not the first test to use the spy
-    Mockito.reset(tokenService);
+    Mockito.reset(sessionService);
     // when
     embeddedOptimizeRule.target("status/connection")
         .request()
         .get();
     //then
-    Mockito.verify(tokenService, Mockito.times(0)).validateToken(Mockito.anyString());
+    Mockito.verify(sessionService, Mockito.times(0)).isValidToken(Mockito.anyString());
 
     // when
     embeddedOptimizeRule.target("status")
         .request()
         .get();
     //then
-    Mockito.verify(tokenService, Mockito.times(0)).validateToken(Mockito.anyString());
+    Mockito.verify(sessionService, Mockito.times(0)).isValidToken(Mockito.anyString());
   }
 
   @Test

@@ -9,7 +9,6 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.service.es.reader.AlertReader;
 import org.camunda.optimize.service.es.writer.AlertWriter;
 import org.camunda.optimize.service.report.ReportService;
-import org.camunda.optimize.service.security.TokenService;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.quartz.JobDetail;
@@ -33,13 +32,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.camunda.optimize.rest.util.AuthenticationUtil.getSessionIssuer;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_NONE_TYPE;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.SINGLE_NUMBER_VISUALIZATION;
 
 
-/**
- * @author Askar Akhmerov
- */
 @Component
 public class  AlertService {
   private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -52,9 +49,6 @@ public class  AlertService {
 
   @Autowired
   private AlertWriter alertWriter;
-
-  @Autowired
-  private TokenService tokenService;
 
   @Autowired
   private ConfigurationService configurationService;
@@ -184,7 +178,7 @@ public class  AlertService {
 
   public IdDto createAlert(AlertCreationDto toCreate, String token) {
     validateAlert(toCreate);
-    String userId = tokenService.getTokenIssuer(token);
+    String userId = getSessionIssuer(token);
     String alertId = this.createAlertForUser(toCreate, userId).getId();
     IdDto result = new IdDto();
     result.setId(alertId);
@@ -231,7 +225,7 @@ public class  AlertService {
 
   public void updateAlert(String alertId, AlertCreationDto toCreate, String token) {
     validateAlert(toCreate);
-    String userId = tokenService.getTokenIssuer(token);
+    String userId = getSessionIssuer(token);
     this.updateAlertForUser(alertId, toCreate, userId);
   }
 
@@ -296,8 +290,6 @@ public class  AlertService {
 
   /**
    * Check if it's still evaluated as number.
-   * @param reportId
-   * @param data
    */
   public void deleteAlertsIfNeeded(String reportId, ReportDataDto data) {
     if (

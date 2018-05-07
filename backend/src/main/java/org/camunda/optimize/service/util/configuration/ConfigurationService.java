@@ -46,7 +46,7 @@ public class ConfigurationService {
 
 
   private Map<String, EngineConfiguration> configuredEngines;
-  private Integer lifeTime;
+  private Integer tokenLifeTime;
   private String elasticSearchHost;
   private Integer elasticSearchPort;
   private String optimizeIndex;
@@ -237,11 +237,11 @@ public class ConfigurationService {
     return configuredEngines;
   }
 
-  public Integer getLifetime() {
-    if(lifeTime == null) {
-      lifeTime = jsonContext.read(ConfigurationServiceConstants.LIFE_TIME);
+  public Integer getTokenLifeTime() {
+    if(tokenLifeTime == null) {
+      tokenLifeTime = jsonContext.read(ConfigurationServiceConstants.TOKEN_LIFE_TIME);
     }
-    return lifeTime;
+    return tokenLifeTime;
   }
 
   public String getElasticSearchHost() {
@@ -948,8 +948,8 @@ public class ConfigurationService {
     this.jsonContext = jsonContext;
   }
 
-  public void setLifeTime(Integer lifeTime) {
-    this.lifeTime = lifeTime;
+  public void setTokenLifeTime(Integer tokenLifeTime) {
+    this.tokenLifeTime = tokenLifeTime;
   }
 
   public void setElasticSearchHost(String elasticSearchHost) {

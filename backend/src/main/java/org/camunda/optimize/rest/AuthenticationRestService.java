@@ -1,12 +1,10 @@
 package org.camunda.optimize.rest;
 
-import org.camunda.optimize.dto.optimize.query.CredentialsDto;
+import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.rest.util.AuthenticationUtil;
 import org.camunda.optimize.service.security.AuthenticationService;
-import org.camunda.optimize.service.security.TokenService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.camunda.optimize.service.security.SessionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -26,13 +24,12 @@ import javax.ws.rs.core.Response;
 @Path("/authentication")
 @Component
 public class AuthenticationRestService {
-  private final Logger logger = LoggerFactory.getLogger(AuthenticationRestService.class);
 
   @Autowired
   private AuthenticationService authenticationService;
 
   @Autowired
-  private TokenService tokenService;
+  private SessionService sessionService;
 
   /**
    * Authenticate an user given his credentials.
@@ -44,18 +41,10 @@ public class AuthenticationRestService {
   @Produces("application/json")
   @Consumes("application/json")
   public Response authenticateUser(CredentialsDto credentials) {
-    try {
-      String token = authenticationService.authenticateUser(credentials);
+    String token = authenticationService.authenticateUser(credentials);
 
-      // Return the token on the response
-      return Response.ok(token).build();
-
-    } catch (Exception e) {
-      if (logger.isDebugEnabled()) {
-        logger.error("Error during user authentication", e);
-      }
-      return Response.status(Response.Status.UNAUTHORIZED).build();
-    }
+    // Return the token on the response
+    return Response.ok(token).build();
   }
 
   /**
@@ -73,7 +62,6 @@ public class AuthenticationRestService {
   /**
    * Logout yourself from Optimize.
    *
-   * @param requestContext
    * @return Status code 200 (OK) if the logout was successful.
    */
   @Secured
@@ -81,7 +69,7 @@ public class AuthenticationRestService {
   @Path("logout")
   public Response logout(@Context ContainerRequestContext requestContext) {
     String token = AuthenticationUtil.getToken(requestContext);
-    tokenService.expireToken(token);
+    sessionService.expireToken(token);
     return Response.status(200).entity("OK").build();
   }
 }

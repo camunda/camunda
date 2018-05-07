@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import org.camunda.optimize.dto.optimize.query.CredentialsDto;
+import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
 import org.camunda.optimize.service.util.CustomDeserializer;
 import org.camunda.optimize.service.util.CustomSerializer;
 import org.camunda.optimize.test.util.PropertyUtil;
