@@ -2,6 +2,7 @@ import React from 'react';
 import {mount} from 'enzyme';
 
 import TargetValueModal from './TargetValueModal';
+// import {numberParser} from 'services';
 
 jest.mock('bpmn-js/lib/NavigatedViewer', () => {
   return class Viewer {
@@ -32,6 +33,12 @@ jest.mock('services', () => {
   return {
     formatters: {
       duration: a => a
+    },
+    numberParser: {
+      isValidNumber: value => /^[+-]?\d+(\.\d+)?$/.test(value),
+      isPositiveNumber: value => /^[+-]?\d+(\.\d+)?$/.test(value) && +value > 0,
+      isIntegerNumber: value => /^[+-]?\d+?$/.test(value),
+      isFloatNumber: value => /^[+-]?\d+(\.\d+)?$/.test(value)
     }
   };
 });

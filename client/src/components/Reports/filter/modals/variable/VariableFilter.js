@@ -3,6 +3,8 @@ import classnames from 'classnames';
 import {Modal, Button, Select, Input, ControlGroup, ButtonGroup, ErrorMessage} from 'components';
 
 import {loadVariables, loadValues} from './service';
+import {numberParser} from 'services';
+
 import './VariableFilter.css';
 
 const valuesToLoad = 20;
@@ -166,10 +168,7 @@ export default class VariableFilter extends React.Component {
     const variable = this.state.variables[this.state.selectedVariableIdx];
 
     if (variable && this.typeIsNumeric(variable.type)) {
-      // match float number: https://stackoverflow.com/a/10256077
-      // match integer: https://stackoverflow.com/a/1779019
-      const matcher = this.typeIsFloating(variable.type) ? /^[+-]?\d+(\.\d+)?$/ : /^[+-]?\d+?$/;
-      const containsOnlyValidNumbers = this.state.values.every(value => matcher.test(value));
+      const containsOnlyValidNumbers = this.state.values.every(value => this.isValidInput(value));
       isValid = isValid && containsOnlyValidNumbers;
     }
 
@@ -417,7 +416,11 @@ export default class VariableFilter extends React.Component {
   };
 
   isValidInput = value => {
-    return value.trim() && +value >= 0;
+    const type = this.state.variables[this.state.selectedVariableIdx].type;
+
+    return this.typeIsFloating(type)
+      ? numberParser.isFloatNumber(value)
+      : numberParser.isIntegerNumber(value);
   };
 
   removeValue = index => {

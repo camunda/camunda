@@ -46,6 +46,17 @@ jest.mock('./service', () => {
   };
 });
 
+jest.mock('services', () => {
+  return {
+    numberParser: {
+      isValidNumber: value => /^[+-]?\d+(\.\d+)?$/.test(value),
+      isPositiveNumber: value => /^[+-]?\d+(\.\d+)?$/.test(value) && +value > 0,
+      isIntegerNumber: value => /^[+-]?\d+?$/.test(value),
+      isFloatNumber: value => /^[+-]?\d+(\.\d+)?$/.test(value)
+    }
+  };
+});
+
 it('should contain a modal', () => {
   const node = mount(<VariableFilter />);
 

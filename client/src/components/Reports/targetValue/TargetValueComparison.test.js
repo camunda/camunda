@@ -68,6 +68,12 @@ jest.mock('services', () => {
   return {
     formatters: {
       duration: a => a
+    },
+    numberParser: {
+      isValidNumber: jest.fn(),
+      isPositiveNumber: jest.fn(),
+      isIntegerNumber: jest.fn(),
+      isFloatNumber: jest.fn()
     }
   };
 });

@@ -1,6 +1,7 @@
 import React from 'react';
 
 import {Modal, Button, Input, Select, ErrorMessage} from 'components';
+import {numberParser} from 'services';
 
 import './DurationFilter.css';
 
@@ -27,7 +28,7 @@ export default class DurationFilter extends React.Component {
 
   render() {
     const {value, operator, unit} = this.state;
-    const isValidInput = value.trim() && !isNaN(value.trim()) && +value > 0;
+    const isValidInput = numberParser.isPositiveNumber(value);
     return (
       <Modal open={true} onClose={this.props.close} className="DurationFilter__modal">
         <Modal.Header>Add Duration Filter</Modal.Header>
@@ -63,7 +64,7 @@ export default class DurationFilter extends React.Component {
             </Select>
             {!isValidInput && (
               <ErrorMessage className="DurationFilter__warning">
-                Please enter a numeric value
+                Please enter a positive numeric value
               </ErrorMessage>
             )}
           </div>

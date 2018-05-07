@@ -1,7 +1,20 @@
 import React from 'react';
 
 import DurationFilter from './DurationFilter';
+import {numberParser} from 'services';
+
 import {mount} from 'enzyme';
+
+jest.mock('services', () => {
+  return {
+    numberParser: {
+      isValidNumber: value => /^[+-]?\d+(\.\d+)?$/.test(value),
+      isPositiveNumber: value => /^[+-]?\d+(\.\d+)?$/.test(value) && +value > 0,
+      isIntegerNumber: value => /^[+-]?\d+?$/.test(value),
+      isFloatNumber: value => /^[+-]?\d+(\.\d+)?$/.test(value)
+    }
+  };
+});
 
 jest.mock('components', () => {
   const Modal = props => <div id="modal">{props.children}</div>;

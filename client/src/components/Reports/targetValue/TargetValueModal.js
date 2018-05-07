@@ -15,7 +15,7 @@ import {
   TargetValueBadge,
   ErrorMessage
 } from 'components';
-import {formatters} from 'services';
+import {formatters, numberParser} from 'services';
 
 import './TargetValueModal.css';
 
@@ -174,7 +174,7 @@ export default class TargetValueModal extends React.Component {
   };
 
   isValidInput = value => {
-    return value.trim() === '' || (!isNaN(value.trim()) && +value > 0);
+    return value.trim() === '' || numberParser.isPositiveNumber(value);
   };
 
   hasSomethingChanged = () => {
