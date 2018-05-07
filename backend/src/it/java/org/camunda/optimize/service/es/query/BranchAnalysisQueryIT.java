@@ -333,7 +333,7 @@ public class BranchAnalysisQueryIT {
     dto.setProcessDefinitionVersion(String.valueOf(processDefinition.getVersion()));
     dto.setGateway(SPLITTING_GATEWAY_ID);
     dto.setEnd(END_EVENT_ID);
-    DateUtilHelper.addDateFilter("<", "end_date", nowPlusTimeInMs(1000), dto);
+    DateUtilHelper.addDateFilter("<", "end_date", nowPlusTimeInSec(10), dto);
 
     //when
     BranchAnalysisDto result = getBranchAnalysisDto(dto);
@@ -368,8 +368,8 @@ public class BranchAnalysisQueryIT {
     dto.setProcessDefinitionVersion(String.valueOf(processDefinition.getVersion()));
     dto.setGateway(SPLITTING_GATEWAY_ID);
     dto.setEnd(END_EVENT_ID);
-    DateUtilHelper.addDateFilter("<", "end_date", nowPlusTimeInMs(1000), dto);
-    DateUtilHelper.addDateFilter(">", "start_date", nowPlusTimeInMs(-2000), dto);
+    DateUtilHelper.addDateFilter("<", "end_date", nowPlusTimeInSec(10), dto);
+    DateUtilHelper.addDateFilter(">", "start_date", nowPlusTimeInSec(-20), dto);
 
     //when
     BranchAnalysisDto result = getBranchAnalysisDto(dto);
@@ -775,7 +775,7 @@ public class BranchAnalysisQueryIT {
     return getRawResponse(request);
   }
 
-  private OffsetDateTime nowPlusTimeInMs(int timeInMs) {
+  private OffsetDateTime nowPlusTimeInSec(int timeInMs) {
     return OffsetDateTime.now().plus(timeInMs, ChronoUnit.MILLIS);
   }
 
