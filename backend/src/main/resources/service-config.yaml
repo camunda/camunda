@@ -61,6 +61,14 @@ engine-commons:
     #Maximum time without connection to the engine, Optimize should wait
     #until a time out is triggered.
     timeout: 10000
+  # The webapps configuration allows Optimize to directly link
+  # to the other Camunda Web Applications, e.g. to jump from
+  # Optimize directly to a dedicated process instance in Cockpit
+  webapps:
+    # Defines the endpoint where to find the camunda webapps
+    endpoint: "http://localhost:8080/camunda/"
+    # Enables/disables linking to other Camunda Web Applications
+    enabled: true
   hai:
     #The engine endpoint to the historic activity instance count.
     count: "/history/activity-instance/count"

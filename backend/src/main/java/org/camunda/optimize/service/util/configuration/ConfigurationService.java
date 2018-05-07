@@ -30,9 +30,6 @@ import java.util.Set;
 
 import static org.camunda.optimize.service.util.ValidationHelper.ensureGreaterThanZero;
 
-/**
- * @author Askar Akhmerov
- */
 public class ConfigurationService {
 
   private static final String ENGINES_FIELD = "engines";
@@ -55,6 +52,8 @@ public class ConfigurationService {
   private String userValidationEndpoint;
   private String processDefinitionEndpoint;
   private String processDefinitionCountEndpoint;
+  private String camundaWebappsEndpoint;
+  private Boolean camundaWebappsEndpointEnabled;
 
   private String eventType;
   private String processDefinitionType;
@@ -334,6 +333,21 @@ public class ConfigurationService {
       processDefinitionCountEndpoint = jsonContext.read(ConfigurationServiceConstants.PROCESS_DEFINITION_COUNT_ENDPOINT);
     }
     return processDefinitionCountEndpoint;
+  }
+
+  public String getCamundaWebappsEndpoint() {
+    if (camundaWebappsEndpoint == null) {
+      camundaWebappsEndpoint = jsonContext.read(ConfigurationServiceConstants.WEBAPPS_ENDPOINT);
+    }
+    return camundaWebappsEndpoint;
+  }
+
+  public Boolean getCamundaWebappsEndpointEnabled() {
+    if (camundaWebappsEndpointEnabled == null) {
+      camundaWebappsEndpointEnabled =
+        jsonContext.read(ConfigurationServiceConstants.WEBAPPS_ENDPOINT_ENABLED, Boolean.class);
+    }
+    return camundaWebappsEndpointEnabled;
   }
 
   public String getProcessDefinitionXmlType() {
@@ -1216,5 +1230,11 @@ public class ConfigurationService {
     this.alertEmailProtocol = alertEmailProtocol;
   }
 
+  public void setCamundaWebappsEndpoint(String camundaWebappsEndpoint) {
+    this.camundaWebappsEndpoint = camundaWebappsEndpoint;
+  }
 
+  public void setCamundaWebappsEndpointEnabled(Boolean camundaWebappsEndpointEnabled) {
+    this.camundaWebappsEndpointEnabled = camundaWebappsEndpointEnabled;
+  }
 }
