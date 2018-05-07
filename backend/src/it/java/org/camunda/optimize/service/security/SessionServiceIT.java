@@ -294,6 +294,25 @@ public class SessionServiceIT {
   }
 
   @Test
+  public void deleteUnauthorizedStoredReport() throws Exception {
+    // given
+    addKermitUserAndGrantAccessToOptimize();
+    deploySimpleProcessDefinition("aprocess");
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    String reportId = createReportForDefinition("aprocess");
+
+    // when
+    Response response = embeddedOptimizeRule.target("report/" + reportId)
+      .request()
+      .header(HttpHeaders.AUTHORIZATION, createAuthenticationHeaderForKermit())
+      .delete();
+
+    // then
+    assertThat(response.getStatus(), is(403));
+  }
+
+  @Test
   public void evaluateUnauthorizedOnTheFlyReport() throws Exception {
     // given
     addKermitUserAndGrantAccessToOptimize();

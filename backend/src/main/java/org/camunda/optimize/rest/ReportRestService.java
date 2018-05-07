@@ -98,8 +98,10 @@ public class ReportRestService {
    */
   @DELETE
   @Path("/{id}")
-  public void deleteReport(@PathParam("id") String reportId) {
-    reportService.deleteReport(reportId);
+  public void deleteReport(@Context ContainerRequestContext requestContext,
+                           @PathParam("id") String reportId) {
+    String userId = getRequestUser(requestContext);
+    reportService.deleteReport(userId, reportId);
   }
 
   /**

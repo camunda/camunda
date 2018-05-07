@@ -49,7 +49,14 @@ public class ReportService {
   @Autowired
   private SessionService sessionService;
 
-  public void deleteReport(String reportId) {
+  public void deleteReport(String userId, String reportId) {
+    ReportDefinitionDto reportDefinition = reportReader.getReport(reportId);
+    ReportDataDto reportData = reportDefinition.getData();
+    if (reportData != null && !isAuthorizedToPerformActionOnReport(userId, reportData)) {
+      throw new ForbiddenException("User [" + userId + "] is not authorized to delete report " +
+        "for process definition [" + reportData.getProcessDefinitionKey() + "].");
+    }
+
     alertService.deleteAlertsForReport(reportId);
     sharingService.deleteShareForReport(reportId);
     reportWriter.deleteReport(reportId);
@@ -113,7 +120,7 @@ public class ReportService {
   public ReportResultDto evaluateReportWithAuthorizationCheck(String userId,
                                                               ReportDefinitionDto reportDefinition) throws OptimizeException {
     ReportDataDto reportData = reportDefinition.getData();
-    if (reportData != null && !isAuthorizedToEvaluate(userId, reportData)) {
+    if (reportData != null && !isAuthorizedToPerformActionOnReport(userId, reportData)) {
       throw new ForbiddenException("User [" + userId + "] is not authorized to evaluate report " +
         "for process definition [" + reportData.getProcessDefinitionKey() + "].");
     }
@@ -140,7 +147,7 @@ public class ReportService {
     return result;
   }
 
-  private boolean isAuthorizedToEvaluate(String userId, ReportDataDto reportDataDto) {
+  private boolean isAuthorizedToPerformActionOnReport(String userId, ReportDataDto reportDataDto) {
     return sessionService.isAuthorizedToSeeDefinition(userId, reportDataDto.getProcessDefinitionKey());
   }
 }
