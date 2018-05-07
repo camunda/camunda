@@ -24,6 +24,7 @@ import io.zeebe.client.ClientProperties;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
 import io.zeebe.client.ZeebeClientConfiguration;
+import io.zeebe.util.sched.clock.ActorClock;
 
 public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientConfiguration
 {
@@ -36,6 +37,7 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
     private int numSubscriptionExecutionThreads = 1;
     private int topicSubscriptionPrefetchCapacity = 32;
     private Duration tcpChannelKeepAlivePeriod;
+    private ActorClock actorClock;
 
 
     @Override
@@ -155,10 +157,21 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
         return this;
     }
 
+    public ActorClock getActorClock()
+    {
+        return actorClock;
+    }
+
+    public ZeebeClientBuilder setActorClock(ActorClock actorClock)
+    {
+        this.actorClock = actorClock;
+        return this;
+    }
+
     @Override
     public ZeebeClient create()
     {
-        return new ZeebeClientImpl(this);
+        return new ZeebeClientImpl(this, actorClock);
     }
 
     public static ZeebeClientBuilderImpl fromProperties(Properties properties)

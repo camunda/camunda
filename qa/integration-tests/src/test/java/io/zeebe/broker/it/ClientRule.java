@@ -15,25 +15,29 @@
  */
 package io.zeebe.broker.it;
 
-import static io.zeebe.test.util.TestUtil.doRepeatedly;
-
-import java.util.*;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-
-import io.zeebe.client.clustering.impl.BrokerPartitionState;
-import io.zeebe.client.clustering.impl.TopologyBroker;
-import io.zeebe.client.topic.Partition;
-import io.zeebe.client.topic.Topic;
-import org.junit.rules.ExternalResource;
-
 import io.zeebe.client.TasksClient;
 import io.zeebe.client.TopicsClient;
 import io.zeebe.client.WorkflowsClient;
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.clustering.impl.BrokerPartitionState;
+import io.zeebe.client.clustering.impl.TopologyBroker;
 import io.zeebe.client.clustering.impl.TopologyResponse;
+import io.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.zeebe.client.impl.ZeebeClientImpl;
+import io.zeebe.client.topic.Partition;
+import io.zeebe.client.topic.Topic;
 import io.zeebe.transport.ClientTransport;
+import io.zeebe.util.sched.clock.ControlledActorClock;
+import org.junit.rules.ExternalResource;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
+import static io.zeebe.test.util.TestUtil.doRepeatedly;
 
 public class ClientRule extends ExternalResource
 {
@@ -44,6 +48,7 @@ public class ClientRule extends ExternalResource
     protected final boolean createDefaultTopic;
 
     protected ZeebeClient client;
+    private ControlledActorClock actorClock = new ControlledActorClock();
 
     public ClientRule()
     {
@@ -62,9 +67,9 @@ public class ClientRule extends ExternalResource
     }
 
     @Override
-    protected void before() throws Throwable
+    protected void before()
     {
-        client = ZeebeClient.create(properties);
+        client = ((ZeebeClientBuilderImpl) ZeebeClient.newClient(properties)).setActorClock(actorClock).create();
 
         if (createDefaultTopic)
         {
@@ -162,4 +167,8 @@ public class ClientRule extends ExternalResource
         return defaultPartition;
     }
 
+    public ControlledActorClock getActorClock()
+    {
+        return actorClock;
+    }
 }

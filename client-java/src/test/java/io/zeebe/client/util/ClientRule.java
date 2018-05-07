@@ -15,19 +15,14 @@
  */
 package io.zeebe.client.util;
 
-import java.util.function.Consumer;
-
-import org.junit.rules.ExternalResource;
-
-import io.zeebe.client.TasksClient;
-import io.zeebe.client.TopicsClient;
-import io.zeebe.client.WorkflowsClient;
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.ZeebeClientBuilder;
+import io.zeebe.client.*;
 import io.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.zeebe.client.impl.ZeebeClientImpl;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import io.zeebe.util.sched.clock.ControlledActorClock;
+import org.junit.rules.ExternalResource;
+
+import java.util.function.Consumer;
 
 public class ClientRule extends ExternalResource
 {
