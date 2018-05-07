@@ -15,21 +15,12 @@
  */
 package io.zeebe.broker.it.clustering;
 
-import static io.zeebe.test.util.TestUtil.doRepeatedly;
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.io.File;
-import java.io.InputStream;
-import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
-
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.clustering.impl.BrokerPartitionState;
 import io.zeebe.client.clustering.impl.TopologyBroker;
+import io.zeebe.client.clustering.impl.TopologyResponse;
 import io.zeebe.client.event.Event;
 import io.zeebe.client.topic.Topic;
 import io.zeebe.client.topic.Topics;
@@ -38,6 +29,21 @@ import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.FileUtil;
 import org.assertj.core.util.Files;
 import org.junit.rules.ExternalResource;
+
+import java.io.File;
+import java.io.InputStream;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
+import static io.zeebe.test.util.TestUtil.doRepeatedly;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class ClusteringRule extends ExternalResource
 {
@@ -372,6 +378,16 @@ public class ClusteringRule extends ExternalResource
         });
     }
 
+    public void checkTopology(Predicate<TopologyResponse> topologyPredicate)
+    {
+        final AtomicBoolean predicate = new AtomicBoolean();
+        waitForSpreading(() ->
+        {
+            final TopologyResponse topologyResponse = zeebeClient.requestTopology().execute();
+            predicate.compareAndSet(false, topologyPredicate.test(topologyResponse));
+        });
+        assertThat(predicate).isTrue();
+    }
 
     private void waitForSpreading(Runnable r)
     {

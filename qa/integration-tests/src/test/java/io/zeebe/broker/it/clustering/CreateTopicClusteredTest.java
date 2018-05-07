@@ -15,21 +15,15 @@
  */
 package io.zeebe.broker.it.clustering;
 
-import static io.zeebe.test.util.TestUtil.doRepeatedly;
-import static io.zeebe.test.util.TestUtil.waitUntil;
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
-
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.clustering.impl.TopologyBroker;
+import io.zeebe.client.cmd.ClientException;
 import io.zeebe.client.event.TaskEvent;
 import io.zeebe.client.topic.Partition;
 import io.zeebe.client.topic.Topic;
 import io.zeebe.client.topic.Topics;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.SocketAddress;
 import org.junit.Before;
@@ -37,6 +31,17 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
+
+import java.time.Duration;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
+import java.util.stream.Collectors;
+
+import static io.zeebe.test.util.TestUtil.doRepeatedly;
+import static io.zeebe.test.util.TestUtil.waitUntil;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class CreateTopicClusteredTest
 {
@@ -169,5 +174,35 @@ public class CreateTopicClusteredTest
         assertThat(taskCompleted).isCompleted();
         final TaskEvent completedTask = taskCompleted.get();
         assertThat(completedTask.getState()).isEqualTo("COMPLETED");
+    }
+
+
+    @Test
+    public void shouldRemovePartitionServiceAfterGoUnderReplicationFactor()
+    {
+        // given
+        final TopologyBroker leaderForSystemPartition = clusteringRule.getLeaderForPartition(Protocol.SYSTEM_PARTITION);
+        final SocketAddress[] otherBrokers = clusteringRule.getOtherBrokers(leaderForSystemPartition.getSocketAddress());
+
+        // when
+        // stop broker which is no leader to decrement member size correctly
+        clusteringRule.stopBroker(otherBrokers[0]);
+
+        // then topology contains still topic
+        clusteringRule.checkTopology((topologyResponse ->
+        {
+            return topologyResponse.getBrokers()
+                .stream()
+                .flatMap(broker -> broker.getPartitions().stream())
+                .anyMatch(partition -> partition.getTopicName().equalsIgnoreCase(Protocol.SYSTEM_TOPIC));
+        }));
+
+        // but requesting topics is not possible since replication factor is not reached leader partition was removed
+        final Future<Topics> topicRequestFuture = client.topics().getTopics().executeAsync();
+        doRepeatedly(() -> clientRule.getActorClock().addTime(Duration.ofSeconds(20)))
+            .until((v) -> topicRequestFuture.isDone());
+        assertThatThrownBy(() -> topicRequestFuture.get())
+            .hasMessageContaining("Request timed out (PT15S). Request was: [ target topic = null, target partition = 0, type = REQUEST_PARTITIONS]")
+            .hasCauseInstanceOf(ClientException.class);
     }
 }
