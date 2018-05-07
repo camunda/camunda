@@ -39,8 +39,7 @@
         <validValue name="WORKFLOW">7</validValue>
         <validValue name="NOOP">8</validValue>
         <validValue name="TOPIC">9</validValue>
-        <validValue name="PARTITION">10</validValue>
-        <validValue name="ID">11</validValue>
+        <validValue name="ID">10</validValue>
     </enum>
 
     <enum name="ControlMessageType" encodingType="uint8" description="The type of the control message.">
@@ -63,65 +62,6 @@
         <validValue name="COMMAND">1</validValue>
         <validValue name="COMMAND_REJECTION">2</validValue>
     </enum>
-    
-    <enum name="Intent" encodingType="uint8">
-        <validValue name="CREATE">0</validValue>
-        <validValue name="CREATED">1</validValue>
-        <validValue name="CREATING">2</validValue> 
-        <validValue name="CREATE_COMPLETE">3</validValue>
-        
-        <validValue name="LOCK">4</validValue>
-        <validValue name="LOCKED">5</validValue>
-        
-        <validValue name="COMPLETE">6</validValue>
-        <validValue name="COMPLETED">7</validValue>
-        
-        <validValue name="EXPIRE_LOCK">8</validValue>
-        <validValue name="LOCK_EXPIRED">9</validValue>
-        
-        <validValue name="FAIL">10</validValue>
-        <validValue name="FAILED">11</validValue>
-        
-        <validValue name="UPDATE_RETRIES">12</validValue>
-        <validValue name="RETRIES_UPDATED">13</validValue>
-        
-        <validValue name="CANCEL">14</validValue>
-        <validValue name="CANCELED">15</validValue>
-        
-        <validValue name="START_EVENT_OCCURRED">16</validValue>
-        <validValue name="END_EVENT_OCCURRED">17</validValue>
-        <validValue name="SEQUENCE_FLOW_TAKEN">18</validValue>
-        <validValue name="GATEWAY_ACTIVATED">19</validValue>
-        <validValue name="ACTIVITY_READY">20</validValue>
-        <validValue name="ACTIVITY_ACTIVATED">21</validValue>
-        <validValue name="ACTIVITY_COMPLETING">22</validValue>
-        <validValue name="ACTIVITY_COMPLETED">23</validValue>
-        <validValue name="ACTIVITY_TERMINATED">24</validValue>
-        
-        <validValue name="UPDATE_PAYLOAD">25</validValue>
-        <validValue name="PAYLOAD_UPDATED">26</validValue>
-        
-        <validValue name="DELETE">27</validValue>
-        <validValue name="DELETED">28</validValue>
-        
-        <validValue name="RESOLVE">29</validValue>
-        <validValue name="RESOLVE_FAILED">30</validValue>
-        <validValue name="RESOLVED">31</validValue>
-        
-        <validValue name="VALIDATED">32</validValue>
-        <validValue name="DISTRIBUTED">33</validValue>
-        <validValue name="TIME_OUT">34</validValue>
-        <validValue name="TIMED_OUT">35</validValue>
-        
-        <validValue name="SUBSCRIBE">36</validValue>
-        <validValue name="SUBSCRIBED">37</validValue>
-        
-        <validValue name="ACKNOWLEDGE">38</validValue>
-        <validValue name="ACKNOWLEDGED">39</validValue>
-        
-        <validValue name="GENERATED">40</validValue>
-    </enum>
-
   </types>
 
   <!-- L1 General Messages 0 - 99 -->
@@ -146,7 +86,7 @@
     <field name="position" id="2" type="uint64" presence="optional" /> <!-- Optional: There are requests that do not reference an existing event -->
     <field name="key" id="3" type="uint64" />
     <field name="valueType" id="4" type="ValueType" />
-    <field name="intent" id="5" type="Intent" />
+    <field name="intent" id="5" type="uint8" />
     <data name="value" id="6" type="varDataEncoding" />
   </sbe:message>
 
@@ -155,8 +95,9 @@
     <field name="position" id="2" type="uint64" />
     <field name="key" id="3" type="uint64" />
     <field name="recordType" id="4" type="RecordType" />
-    <field name="intent" id="5" type="Intent" />
-    <data name="value" id="6" type="varDataEncoding" />
+    <field name="valueType" id="5" type="ValueType" />
+    <field name="intent" id="6" type="uint8" />
+    <data name="value" id="7" type="varDataEncoding" />
   </sbe:message>
  
   <sbe:message name="SubscribedRecord" id="30">
@@ -167,7 +108,7 @@
     <field name="recordType" id="5" type="RecordType" />
     <field name="subscriptionType" id="6" type="SubscriptionType" />
     <field name="valueType" id="7" type="ValueType" />
-    <field name="intent" id="8" type="Intent" />
+    <field name="intent" id="8" type="uint8" />
     <data name="value" id="9" type="varDataEncoding" />
   </sbe:message>
 
@@ -180,7 +121,7 @@
     <field name="subscriptionId" id="4" type="uint64" />
     <field name="protocolVersion" id="5" type="uint16" />
     <field name="valueType" id="6" type="ValueType" />
-    <field name="intent" id="7" type="Intent" />
+    <field name="intent" id="7" type="uint8" />
     <field name="incidentKey" id="8" type="uint64" />
   </sbe:message>
   

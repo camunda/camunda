@@ -19,13 +19,13 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
 import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
 import io.zeebe.protocol.clientapi.RecordMetadataDecoder;
 import io.zeebe.protocol.clientapi.RecordMetadataEncoder;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.intent.Intent;
 import io.zeebe.util.buffer.BufferReader;
 import io.zeebe.util.buffer.BufferWriter;
 
@@ -41,7 +41,8 @@ public class RecordMetadata implements BufferWriter, BufferReader
     protected RecordMetadataDecoder decoder = new RecordMetadataDecoder();
 
     private RecordType recordType = RecordType.NULL_VAL;
-    private Intent intent = Intent.NULL_VAL;
+    private short intentValue = Intent.NULL_VAL;
+    private Intent intent = null;
     protected int requestStreamId;
     protected long requestId;
     protected long subscriberKey;
@@ -71,7 +72,7 @@ public class RecordMetadata implements BufferWriter, BufferReader
         subscriberKey = decoder.subscriptionId();
         protocolVersion = decoder.protocolVersion();
         valueType = decoder.valueType();
-        intent = decoder.intent();
+        intent = Intent.fromProtocolValue(valueType, decoder.intent());
         incidentKey = decoder.incidentKey();
     }
 
@@ -102,7 +103,7 @@ public class RecordMetadata implements BufferWriter, BufferReader
             .subscriptionId(subscriberKey)
             .protocolVersion(protocolVersion)
             .valueType(valueType)
-            .intent(intent)
+            .intent(intentValue)
             .incidentKey(incidentKey);
     }
 
@@ -180,6 +181,13 @@ public class RecordMetadata implements BufferWriter, BufferReader
     public RecordMetadata intent(Intent intent)
     {
         this.intent = intent;
+        this.intentValue = intent.value();
+        return this;
+    }
+
+    public RecordMetadata intent(short intent)
+    {
+        this.intentValue = intent;
         return this;
     }
 
@@ -208,7 +216,8 @@ public class RecordMetadata implements BufferWriter, BufferReader
         protocolVersion = Protocol.PROTOCOL_VERSION;
         valueType = ValueType.NULL_VAL;
         incidentKey = RecordMetadataEncoder.incidentKeyNullValue();
-        intent = Intent.NULL_VAL;
+        intentValue = Intent.NULL_VAL;
+        intent = null;
         return this;
     }
 
