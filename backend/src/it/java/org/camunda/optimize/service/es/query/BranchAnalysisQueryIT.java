@@ -776,7 +776,7 @@ public class BranchAnalysisQueryIT {
   }
 
   private OffsetDateTime nowPlusTimeInSec(int timeInMs) {
-    return OffsetDateTime.now().plus(timeInMs, ChronoUnit.MILLIS);
+    return OffsetDateTime.now().plus(timeInMs, ChronoUnit.SECONDS);
   }
 
 }

@@ -28,9 +28,8 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Properties;
 
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_RESOURCES_RESOURCE_ID;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_PERMISSION;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GLOBAL;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_RESOURCES_RESOURCE_ID;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GRANT;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_APPLICATION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
@@ -47,7 +46,7 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
   private final static String DEFAULT_CONTEXT_LOCATION = "classpath:embeddedOptimizeContext.xml";
   private final static String propertiesLocation = "integration-rules.properties";
   public static final String DEFAULT_USERNAME = "demo";
-  public static final String DEFAULT_PASSWORD = "demo";
+  private static final String DEFAULT_PASSWORD = "demo";
 
   private static String authenticationToken;
   private Properties properties;
@@ -222,8 +221,8 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
     authorizationDto.setResourceType(RESOURCE_TYPE_APPLICATION);
     authorizationDto.setPermissions(Collections.singletonList(ALL_PERMISSION));
     authorizationDto.setResourceId(ALL_RESOURCES_RESOURCE_ID);
-    authorizationDto.setType(AUTHORIZATION_TYPE_GLOBAL);
-    authorizationDto.setUserId("*");
+    authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
+    authorizationDto.setUserId(DEFAULT_USERNAME);
     try {
       getClient()
         .target(getEngineUrl())
