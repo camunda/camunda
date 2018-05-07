@@ -35,8 +35,6 @@ import io.zeebe.raft.RaftPersistentStorage;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * Represents the configuration that Raft persists locally on the filesystem.
