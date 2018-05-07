@@ -66,8 +66,6 @@ public class RaftPersistentConfiguration implements RaftPersistentStorage
     private final Path path;
     private final Path tmpPath;
 
-    private final MutableDirectBuffer buffer = new UnsafeBuffer(0, 0);
-
     private final SocketAddress votedFor = new SocketAddress();
 
     private final File logDirectory;
