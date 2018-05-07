@@ -17,10 +17,11 @@
  */
 package io.zeebe.broker.workflow;
 
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADER_PARTITION_GROUP_NAME;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.*;
+
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.STREAM_PROCESSOR_SERVICE_FACTORY;
 import static io.zeebe.broker.transport.TransportServiceNames.*;
-import static io.zeebe.broker.workflow.WorkflowQueueServiceNames.WORKFLOW_QUEUE_MANAGER;
+import static io.zeebe.broker.workflow.WorkflowServiceNames.WORKFLOW_QUEUE_MANAGER;
 
 import io.zeebe.broker.system.Component;
 import io.zeebe.broker.system.SystemContext;
@@ -33,10 +34,11 @@ public class WorkflowComponent implements Component
     {
         final ServiceContainer serviceContainer = context.getServiceContainer();
 
-        final WorkflowQueueManagerService workflowQueueManagerService = new WorkflowQueueManagerService();
+        final WorkflowStreamProcessingManagerService workflowQueueManagerService = new WorkflowStreamProcessingManagerService();
         serviceContainer.createService(WORKFLOW_QUEUE_MANAGER, workflowQueueManagerService)
             .dependency(serverTransport(CLIENT_API_SERVER_NAME), workflowQueueManagerService.getClientApiTransportInjector())
-            .dependency(bufferingServerTransport(MANAGEMENT_API_SERVER_NAME), workflowQueueManagerService.getManagementServerInjector())
+            .dependency(clientTransport(MANAGEMENT_API_CLIENT_NAME), workflowQueueManagerService.getManagementApiClientInjector())
+            .dependency(TOPOLOGY_MANAGER_SERVICE, workflowQueueManagerService.getTopologyManagerInjector())
             .dependency(STREAM_PROCESSOR_SERVICE_FACTORY, workflowQueueManagerService.getStreamProcessorServiceFactoryInjector())
             .groupReference(LEADER_PARTITION_GROUP_NAME, workflowQueueManagerService.getPartitionsGroupReference())
             .install();

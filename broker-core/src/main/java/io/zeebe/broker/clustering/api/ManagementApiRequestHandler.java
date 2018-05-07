@@ -17,7 +17,8 @@
  */
 package io.zeebe.broker.clustering.api;
 
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.*;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LOCAL_NODE;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.partitionInstallServiceName;
 import static io.zeebe.broker.transport.TransportServiceNames.REPLICATION_API_CLIENT_NAME;
 import static io.zeebe.broker.transport.TransportServiceNames.clientTransport;
 
@@ -29,7 +30,6 @@ import io.zeebe.broker.clustering.base.partitions.PartitionInstallService;
 import io.zeebe.broker.clustering.base.raft.RaftPersistentConfiguration;
 import io.zeebe.broker.clustering.base.raft.RaftPersistentConfigurationManager;
 import io.zeebe.broker.system.configuration.BrokerCfg;
-import io.zeebe.broker.system.deployment.handler.WorkflowRequestMessageHandler;
 import io.zeebe.clustering.management.*;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.servicecontainer.ServiceName;
@@ -42,7 +42,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
-public class ManagementApiRequestHandler implements ServerMessageHandler, ServerRequestHandler
+public class ManagementApiRequestHandler implements ServerRequestHandler, ServerMessageHandler
 {
     private static final DirectBuffer EMPTY_BUFFER = new UnsafeBuffer(new byte[0]);
 
@@ -52,20 +52,17 @@ public class ManagementApiRequestHandler implements ServerMessageHandler, Server
     private final CreatePartitionRequest createPartitionRequest = new CreatePartitionRequest();
     private final InvitationRequest invitationRequest = new InvitationRequest();
 
-    private final WorkflowRequestMessageHandler workflowRequestMessageHandler;
     private final RaftPersistentConfigurationManager raftPersistentConfigurationManager;
     private final ActorControl actor;
     private final ServiceStartContext serviceStartContext;
 
     private final BrokerCfg brokerCfg;
 
-    public ManagementApiRequestHandler(WorkflowRequestMessageHandler workflowRequestMessageHandler,
-        RaftPersistentConfigurationManager raftPersistentConfigurationManager,
+    public ManagementApiRequestHandler(RaftPersistentConfigurationManager raftPersistentConfigurationManager,
         ActorControl actor,
         ServiceStartContext serviceStartContext,
         BrokerCfg brokerCfg)
     {
-        this.workflowRequestMessageHandler = workflowRequestMessageHandler;
         this.raftPersistentConfigurationManager = raftPersistentConfigurationManager;
         this.actor = actor;
         this.serviceStartContext = serviceStartContext;
@@ -89,17 +86,13 @@ public class ManagementApiRequestHandler implements ServerMessageHandler, Server
                 {
                     return onInvitationRequest(buffer, offset, length, output, remoteAddress, requestId);
                 }
-                case CreateWorkflowRequestEncoder.TEMPLATE_ID:
-                {
-                    return workflowRequestMessageHandler.onCreateWorkflowRequest(buffer, offset, length, remoteAddress, requestId);
-                }
                 case CreatePartitionRequestDecoder.TEMPLATE_ID:
                 {
                     return onCreatePartitionRequest(buffer, offset, length, output, remoteAddress, requestId);
                 }
                 default:
                 {
-                    // TODO: send error response
+                    // ignore
                     return true;
                 }
             }
@@ -207,30 +200,9 @@ public class ManagementApiRequestHandler implements ServerMessageHandler, Server
     }
 
     @Override
-    public boolean onMessage(ServerOutput output, RemoteAddress remoteAddress, DirectBuffer buffer, int offset,
-            int length)
+    public boolean onMessage(ServerOutput output, RemoteAddress remoteAddress, DirectBuffer buffer, int offset, int length)
     {
-        messageHeaderDecoder.wrap(buffer, offset);
-
-        final int schemaId = messageHeaderDecoder.schemaId();
-
-        if (CreatePartitionRequestDecoder.SCHEMA_ID == schemaId)
-        {
-            final int templateId = messageHeaderDecoder.templateId();
-            switch (templateId)
-            {
-                case DeleteWorkflowMessageDecoder.TEMPLATE_ID:
-                {
-                    workflowRequestMessageHandler.onDeleteWorkflowMessage(buffer, offset, length);
-                    break;
-                }
-                default:
-                {
-                    // ignore
-                }
-            }
-        }
+        // no messages currently supported
         return true;
     }
-
 }

@@ -17,23 +17,16 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
-import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.List;
+import java.util.*;
 
 import io.zeebe.broker.clustering.orchestration.id.IdEvent;
-import io.zeebe.broker.incident.data.IncidentEvent;
 import io.zeebe.broker.clustering.orchestration.topic.TopicEvent;
+import io.zeebe.broker.incident.data.IncidentEvent;
 import io.zeebe.broker.task.data.TaskEvent;
 import io.zeebe.broker.workflow.data.DeploymentEvent;
-import io.zeebe.broker.workflow.data.WorkflowEvent;
 import io.zeebe.broker.workflow.data.WorkflowInstanceEvent;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamWriter;
-import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.processor.EventProcessor;
-import io.zeebe.logstreams.processor.StreamProcessor;
-import io.zeebe.logstreams.processor.StreamProcessorContext;
+import io.zeebe.logstreams.log.*;
+import io.zeebe.logstreams.processor.*;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.EventType;
@@ -157,10 +150,6 @@ public class TypedStreamProcessor implements StreamProcessor
         else if (value instanceof DeploymentEvent)
         {
             return ((DeploymentEvent) value).getState();
-        }
-        else if (value instanceof WorkflowEvent)
-        {
-            return ((WorkflowEvent) value).getState();
         }
         else if (value instanceof TaskEvent)
         {

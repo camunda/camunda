@@ -169,7 +169,8 @@ public class DeploymentClusteredTest
         // then create wf instance on each partition
         topic.getPartitions().stream()
              .mapToInt(Partition::getId)
-             .forEach(partitionId -> {
+             .forEach(partitionId ->
+             {
                  final WorkflowInstanceEvent workflowInstanceEvent = createWorkflowInstanceOnPartition("test", partitionId, "process");
 
                  assertThat(workflowInstanceEvent.getState()).isEqualTo("WORKFLOW_INSTANCE_CREATED");
@@ -227,25 +228,6 @@ public class DeploymentClusteredTest
 
         assertThat(deploymentEventOnTest2.getDeployedWorkflows().size()).isEqualTo(1);
         assertThat(deploymentEventOnTest2.getErrorMessage()).isEmpty();
-    }
-
-    @Test
-    public void shouldDeployMultipleResources()
-    {
-        // given
-        clusteringRule.createTopic("test", PARTITION_COUNT);
-
-        // when
-        final DeploymentEvent deploymentEvent = client.workflows()
-                                                      .deploy("test")
-                                                      .addWorkflowModel(WORKFLOW, "workflow.bpmn")
-                                                      .addWorkflowModel(WORKFLOW_WITH_TASK, "workflowWithTask.bpmn")
-                                                      .addWorkflowModel(WORKFLOW_WITH_OTHER_TASK, "workflowWithOtherTask.bpmn")
-                                                      .execute();
-
-        // then
-        assertThat(deploymentEvent.getDeployedWorkflows().size()).isEqualTo(3);
-        assertThat(deploymentEvent.getErrorMessage()).isEmpty();
     }
 
     @Test

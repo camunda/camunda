@@ -17,43 +17,38 @@
  */
 package io.zeebe.broker.system;
 
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.*;
+import static io.zeebe.broker.transport.TransportServiceNames.*;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADER_PARTITION_SYSTEM_GROUP_NAME;
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.STREAM_PROCESSOR_SERVICE_FACTORY;
 import static io.zeebe.broker.system.SystemServiceNames.*;
-import static io.zeebe.broker.transport.TransportServiceNames.*;
 
 import io.zeebe.broker.system.deployment.service.DeploymentManager;
-import io.zeebe.broker.system.deployment.service.WorkflowRequestMessageHandlerService;
+import io.zeebe.broker.system.deployment.service.DeploymentManagerRequestHandler;
 import io.zeebe.broker.system.metrics.MetricsFileWriterService;
 import io.zeebe.servicecontainer.ServiceContainer;
-import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.transport.ClientTransport;
 
 public class SystemComponent implements Component
 {
     @Override
     public void init(SystemContext context)
     {
-        final ServiceName<ClientTransport> clientTransportServiceName = clientTransport(MANAGEMENT_API_CLIENT_NAME);
-
         final ServiceContainer serviceContainer = context.getServiceContainer();
 
         final MetricsFileWriterService metricsFileWriterService = new MetricsFileWriterService(context.getBrokerConfiguration().getMetrics());
         serviceContainer.createService(METRICS_FILE_WRITER, metricsFileWriterService)
             .install();
 
-        final DeploymentManager deploymentManagerService = new DeploymentManager();
-        serviceContainer.createService(DEPLOYMENT_MANAGER_SERVICE, deploymentManagerService)
-            .dependency(clientTransportServiceName, deploymentManagerService.getManagementClientInjector())
-            .dependency(serverTransport(CLIENT_API_SERVER_NAME), deploymentManagerService.getClientApiTransportInjector())
-            .dependency(STREAM_PROCESSOR_SERVICE_FACTORY, deploymentManagerService.getStreamProcessorServiceFactoryInjector())
-            .dependency(TOPOLOGY_MANAGER_SERVICE, deploymentManagerService.getTopologyManagerInjector())
-            .groupReference(LEADER_PARTITION_SYSTEM_GROUP_NAME, deploymentManagerService.getPartitionsGroupReference())
+        final DeploymentManagerRequestHandler requestHandlerService = new DeploymentManagerRequestHandler();
+        serviceContainer.createService(DEPLOYMENT_MANAGER_REQUEST_HANDLER, requestHandlerService)
+            .dependency(bufferingServerTransport(MANAGEMENT_API_SERVER_NAME), requestHandlerService.getManagementApiServerTransportInjector())
             .install();
 
-        final WorkflowRequestMessageHandlerService workflowRequestHandlerService = new WorkflowRequestMessageHandlerService();
-        serviceContainer.createService(WORKFLOW_REQUEST_MESSAGE_HANDLER_SERVICE, workflowRequestHandlerService)
-            .groupReference(LEADER_PARTITION_GROUP_NAME, workflowRequestHandlerService.getPartitionGroupReference())
+        final DeploymentManager deploymentManagerService = new DeploymentManager();
+        serviceContainer.createService(DEPLOYMENT_MANAGER_SERVICE, deploymentManagerService)
+            .dependency(DEPLOYMENT_MANAGER_REQUEST_HANDLER, deploymentManagerService.getRequestHandlerServiceInjector())
+            .dependency(STREAM_PROCESSOR_SERVICE_FACTORY, deploymentManagerService.getStreamProcessorServiceFactoryInjector())
+            .dependency(serverTransport(CLIENT_API_SERVER_NAME), deploymentManagerService.getClientApiTransportInjector())
+            .groupReference(LEADER_PARTITION_SYSTEM_GROUP_NAME, deploymentManagerService.getPartitionsGroupReference())
             .install();
     }
 }

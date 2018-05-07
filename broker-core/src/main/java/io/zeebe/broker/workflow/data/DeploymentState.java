@@ -20,11 +20,6 @@ package io.zeebe.broker.workflow.data;
 public enum DeploymentState
 {
     CREATE,
-    VALIDATED,
-    DISTRIBUTED,
     CREATED,
-
-    TIMED_OUT,
-    REJECT,
     REJECTED;
 }

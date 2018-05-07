@@ -17,71 +17,91 @@
  */
 package io.zeebe.broker.system.deployment.service;
 
-import java.time.Duration;
-
 import io.zeebe.broker.clustering.base.partitions.Partition;
-import io.zeebe.broker.clustering.base.topology.TopologyManager;
+import io.zeebe.broker.clustering.orchestration.topic.TopicState;
 import io.zeebe.broker.logstreams.processor.*;
 import io.zeebe.broker.system.deployment.data.*;
-import io.zeebe.broker.system.deployment.handler.*;
 import io.zeebe.broker.system.deployment.processor.*;
 import io.zeebe.broker.workflow.data.DeploymentState;
-import io.zeebe.broker.workflow.data.WorkflowState;
+import io.zeebe.logstreams.log.BufferedLogStreamReader;
+import io.zeebe.logstreams.processor.StreamProcessorContext;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.servicecontainer.*;
-import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.ServerTransport;
 
 public class DeploymentManager implements Service<DeploymentManager>
 {
-    public static final Duration DEPLOYMENT_REQUEST_TIMEOUT = Duration.ofMinutes(1);
-
     private final ServiceGroupReference<Partition> partitionsGroupReference = ServiceGroupReference.<Partition>create()
-        .onAdd((name, partition) -> installDeploymentStreamProcessor(partition, name))
+        .onAdd((name, partition) -> installServices(partition, name))
         .build();
 
-    private final Injector<ClientTransport> managementClientInjector = new Injector<>();
-    private final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
     private final Injector<StreamProcessorServiceFactory> streamProcessorServiceFactoryInjector = new Injector<>();
-    private final Injector<TopologyManager> topologyManagerInjector = new Injector<>();
+    private final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
+    private final Injector<DeploymentManagerRequestHandler> requestHandlerServiceInjector = new Injector<>();
 
-    private ClientTransport managementClient;
     private ServerTransport clientApiTransport;
-    private TopologyManager topologyManager;
     private StreamProcessorServiceFactory streamProcessorServiceFactory;
+
+    private DeploymentManagerRequestHandler requestHandlerService;
 
     @Override
     public void start(ServiceStartContext startContext)
     {
-        topologyManager = topologyManagerInjector.getValue();
-        managementClient = managementClientInjector.getValue();
-        clientApiTransport = clientApiTransportInjector.getValue();
-        streamProcessorServiceFactory = streamProcessorServiceFactoryInjector.getValue();
+        this.clientApiTransport = clientApiTransportInjector.getValue();
+        this.streamProcessorServiceFactory = streamProcessorServiceFactoryInjector.getValue();
+        requestHandlerService = requestHandlerServiceInjector.getValue();
     }
 
-    private void installDeploymentStreamProcessor(final Partition partition, ServiceName<Partition> partitionServiceName)
+    private void installServices(final Partition partition, ServiceName<Partition> partitionServiceName)
     {
-        final WorkflowVersions workflowVersions = new WorkflowVersions();
-        final PendingDeployments pendingDeployments = new PendingDeployments();
-        final PendingWorkflows pendingWorkflows = new PendingWorkflows();
-
         final TypedStreamEnvironment streamEnvironment = new TypedStreamEnvironment(partition.getLogStream(), clientApiTransport.getOutput());
 
-        final DeploymentEventWriter deploymentEventWriter = new DeploymentEventWriter(streamEnvironment);
+        final DeploymentPositionByWorkflowKey deploymentPositionByWorkflowKey = new DeploymentPositionByWorkflowKey();
+        final LastWorkflowKey lastWorkflowKey = new LastWorkflowKey();
+        final LatestVersionByProcessIdAndTopicName latestVersionByProcessIdAndTopicName = new LatestVersionByProcessIdAndTopicName();
+        final TopicNames topicNames = new TopicNames();
+        final WorkflowKeyByProcessIdAndVersion workflowKeyByProcessIdAndVersion = new WorkflowKeyByProcessIdAndVersion();
 
-        final RemoteWorkflowsManager remoteManager = new RemoteWorkflowsManager(pendingDeployments,
-            pendingWorkflows,
-            topologyManager,
-            deploymentEventWriter,
-            managementClient);
+        final TypedStreamProcessor streamProcessor = streamEnvironment.newStreamProcessor()
+            .onEvent(EventType.DEPLOYMENT_EVENT, DeploymentState.CREATE, new DeploymentCreateEventProcessor(latestVersionByProcessIdAndTopicName, lastWorkflowKey, topicNames))
+            .onEvent(EventType.DEPLOYMENT_EVENT, DeploymentState.CREATED, new DeploymentCreatedEventProcess(deploymentPositionByWorkflowKey, workflowKeyByProcessIdAndVersion))
+            .onEvent(EventType.DEPLOYMENT_EVENT, DeploymentState.REJECTED, new DeploymentRejectedEventProcessor())
+            .onEvent(EventType.TOPIC_EVENT, TopicState.CREATING, new DeploymentTopicCreatingEventProcessor(topicNames))
+            .withStateResource(lastWorkflowKey.getRawValue())
+            .withStateResource(latestVersionByProcessIdAndTopicName.getRawMap())
+            .withStateResource(topicNames.getRawMap())
+            .withStateResource(workflowKeyByProcessIdAndVersion.getRawMap())
+            .withStateResource(deploymentPositionByWorkflowKey.getRawMap())
+            .withListener(new StreamProcessorLifecycleAware()
+            {
+                private BufferedLogStreamReader reader;
 
-        final TypedStreamProcessor streamProcessor = createDeploymentStreamProcessor(workflowVersions,
-            pendingDeployments,
-            pendingWorkflows,
-            DEPLOYMENT_REQUEST_TIMEOUT,
-            streamEnvironment,
-            deploymentEventWriter,
-            remoteManager);
+                @Override
+                public void onOpen(TypedStreamProcessor streamProcessor)
+                {
+                    final StreamProcessorContext ctx = streamProcessor.getStreamProcessorContext();
+
+                    reader = new BufferedLogStreamReader();
+                    reader.wrap(ctx.getLogStream());
+
+                    final DeploymentWorkflowsCache cache = new DeploymentWorkflowsCache(reader, deploymentPositionByWorkflowKey);
+
+                    final FetchWorkflowRequestHandler requestHandler = new FetchWorkflowRequestHandler(streamProcessor.getActor(),
+                        workflowKeyByProcessIdAndVersion,
+                        latestVersionByProcessIdAndTopicName,
+                        cache);
+
+                    requestHandlerService.setFetchWorkflowRequestHandler(requestHandler);
+                }
+
+                @Override
+                public void onClose()
+                {
+                    requestHandlerService.setFetchWorkflowRequestHandler(null);
+                    reader.close();
+                }
+            })
+            .build();
 
         streamProcessorServiceFactory.createService(partition, partitionServiceName)
             .processor(streamProcessor)
@@ -90,65 +110,15 @@ public class DeploymentManager implements Service<DeploymentManager>
             .build();
     }
 
-    public static TypedStreamProcessor createDeploymentStreamProcessor(
-        final WorkflowVersions workflowVersions,
-        final PendingDeployments pendingDeployments,
-        final PendingWorkflows pendingWorkflows,
-        final Duration deploymentTimeout,
-        final TypedStreamEnvironment streamEnvironment,
-        final DeploymentEventWriter eventWriter,
-        final RemoteWorkflowsManager remoteManager)
-    {
-
-        final TypedEventStreamProcessorBuilder streamProcessorBuilder = streamEnvironment.newStreamProcessor();
-
-        final PartitionCollector partitionCollector = new PartitionCollector();
-        partitionCollector.registerWith(streamProcessorBuilder);
-        final TopicPartitions partitions = partitionCollector.getPartitions();
-
-        final DeploymentTimer timer = new DeploymentTimer(pendingDeployments, eventWriter, deploymentTimeout);
-
-        final TypedStreamProcessor streamProcessor = streamProcessorBuilder
-            .onEvent(EventType.DEPLOYMENT_EVENT, DeploymentState.CREATE, new DeploymentCreateProcessor(partitions, workflowVersions, pendingDeployments))
-            .onEvent(EventType.DEPLOYMENT_EVENT, DeploymentState.VALIDATED, new DeploymentValidatedProcessor(pendingDeployments, timer))
-            .onEvent(EventType.WORKFLOW_EVENT, WorkflowState.CREATE, new WorkflowCreateProcessor(partitions, pendingDeployments, pendingWorkflows, remoteManager))
-            .onEvent(EventType.DEPLOYMENT_EVENT, DeploymentState.DISTRIBUTED, new DeploymentDistributedProcessor(pendingDeployments, pendingWorkflows, timer))
-            .onEvent(EventType.DEPLOYMENT_EVENT, DeploymentState.TIMED_OUT, new DeploymentTimedOutProcessor(pendingDeployments, pendingWorkflows, timer, streamEnvironment.buildStreamReader()))
-            .onEvent(EventType.WORKFLOW_EVENT, WorkflowState.DELETE, new WorkflowDeleteProcessor(pendingDeployments, pendingWorkflows, workflowVersions, remoteManager))
-            .onEvent(EventType.DEPLOYMENT_EVENT, DeploymentState.REJECT, new DeploymentRejectProcessor(pendingDeployments))
-            .withStateResource(workflowVersions.getRawMap())
-            .withStateResource(pendingDeployments.getRawMap())
-            .withStateResource(pendingWorkflows.getRawMap())
-            .withListener(eventWriter)
-            .withListener(timer)
-            .withListener(remoteManager)
-            .build();
-        return streamProcessor;
-    }
-
     @Override
     public DeploymentManager get()
     {
         return this;
     }
 
-    public Injector<TopologyManager> getTopologyManagerInjector()
-    {
-        return topologyManagerInjector;
-    }
-
-    public Injector<ClientTransport> getManagementClientInjector()
-    {
-        return managementClientInjector;
-    }
     public ServiceGroupReference<Partition> getPartitionsGroupReference()
     {
         return partitionsGroupReference;
-    }
-
-    public Injector<ServerTransport> getClientApiTransportInjector()
-    {
-        return clientApiTransportInjector;
     }
 
     public Injector<StreamProcessorServiceFactory> getStreamProcessorServiceFactoryInjector()
@@ -156,5 +126,13 @@ public class DeploymentManager implements Service<DeploymentManager>
         return streamProcessorServiceFactoryInjector;
     }
 
+    public Injector<ServerTransport> getClientApiTransportInjector()
+    {
+        return clientApiTransportInjector;
+    }
 
+    public Injector<DeploymentManagerRequestHandler> getRequestHandlerServiceInjector()
+    {
+        return requestHandlerServiceInjector;
+    }
 }

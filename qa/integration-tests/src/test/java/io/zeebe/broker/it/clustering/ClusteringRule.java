@@ -189,7 +189,8 @@ public class ClusteringRule extends ExternalResource
         brokers.stream()
                .flatMap(b -> b.getPartitions().stream())
                .filter(p -> p.getTopicName().equals(topicName))
-               .forEach(p -> {
+               .forEach(p ->
+               {
                    if (p.isLeader())
                    {
                        leaders.getAndIncrement();

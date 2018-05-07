@@ -17,24 +17,23 @@
  */
 package io.zeebe.broker.workflow.data;
 
-import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_BPMN_PROCESS_ID;
-import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_VERSION;
+import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.*;
 
 import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.msgpack.property.*;
 import org.agrona.DirectBuffer;
-
-import io.zeebe.msgpack.property.IntegerProperty;
-import io.zeebe.msgpack.property.StringProperty;
 
 public class DeployedWorkflow extends UnpackedObject
 {
     private final StringProperty bpmnProcessIdProp = new StringProperty(PROP_WORKFLOW_BPMN_PROCESS_ID);
     private final IntegerProperty versionProp = new IntegerProperty(PROP_WORKFLOW_VERSION);
+    private final LongProperty keyProp = new LongProperty(PROP_WORKFLOW_KEY);
 
     public DeployedWorkflow()
     {
         this.declareProperty(bpmnProcessIdProp)
-            .declareProperty(versionProp);
+            .declareProperty(versionProp)
+            .declareProperty(keyProp);
     }
 
     public DirectBuffer getBpmnProcessId()
@@ -61,6 +60,17 @@ public class DeployedWorkflow extends UnpackedObject
     public DeployedWorkflow setVersion(int version)
     {
         this.versionProp.setValue(version);
+        return this;
+    }
+
+    public long getKey()
+    {
+        return keyProp.getValue();
+    }
+
+    public DeployedWorkflow setKey(long key)
+    {
+        this.keyProp.setValue(key);
         return this;
     }
 

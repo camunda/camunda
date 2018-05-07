@@ -15,14 +15,30 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.data;
+package io.zeebe.broker.system.deployment.data;
 
-public enum WorkflowState
+import io.zeebe.map.Long2LongZbMap;
+
+/**
+ * workflow key -> deployment position
+ *
+ */
+public class DeploymentPositionByWorkflowKey
 {
-    CREATE,
-    CREATED,
-    CREATE_REJECTED,
+    private final Long2LongZbMap map = new Long2LongZbMap();
 
-    DELETE,
-    DELETED;
+    public long get(long key, long missingValue)
+    {
+        return map.get(key, missingValue);
+    }
+
+    public void set(long key, long value)
+    {
+        map.put(key, value);
+    }
+
+    public Long2LongZbMap getRawMap()
+    {
+        return map;
+    }
 }

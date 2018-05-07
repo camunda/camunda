@@ -15,11 +15,26 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow;
+package io.zeebe.broker.system.deployment.processor;
 
-import io.zeebe.servicecontainer.ServiceName;
+import io.zeebe.broker.clustering.orchestration.topic.TopicEvent;
+import io.zeebe.broker.logstreams.processor.TypedEvent;
+import io.zeebe.broker.logstreams.processor.TypedEventProcessor;
+import io.zeebe.broker.system.deployment.data.TopicNames;
 
-public class WorkflowQueueServiceNames
+public class DeploymentTopicCreatingEventProcessor implements TypedEventProcessor<TopicEvent>
 {
-    public static final ServiceName<WorkflowQueueManagerService> WORKFLOW_QUEUE_MANAGER = ServiceName.newServiceName("workflow.manager", WorkflowQueueManagerService.class);
+    private final TopicNames topicNames;
+
+    public DeploymentTopicCreatingEventProcessor(TopicNames topicNames)
+    {
+        this.topicNames = topicNames;
+    }
+
+    @Override
+    public void updateState(TypedEvent<TopicEvent> event)
+    {
+        topicNames.addTopic(event.getValue().getName());
+    }
+
 }

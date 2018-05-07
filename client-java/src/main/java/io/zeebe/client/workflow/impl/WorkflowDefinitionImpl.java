@@ -21,6 +21,7 @@ public class WorkflowDefinitionImpl implements WorkflowDefinition
 {
     private String bpmnProcessId;
     private int version;
+    private long workflowKey;
 
     @Override
     public String getBpmnProcessId()
@@ -44,6 +45,17 @@ public class WorkflowDefinitionImpl implements WorkflowDefinition
     {
         this.version = version;
         return this;
+    }
+
+    public void setWorkflowKey(long workflowKey)
+    {
+        this.workflowKey = workflowKey;
+    }
+
+    @Override
+    public long getWorkflowKey()
+    {
+        return workflowKey;
     }
 
     @Override

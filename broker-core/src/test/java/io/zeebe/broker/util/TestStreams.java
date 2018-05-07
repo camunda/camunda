@@ -59,7 +59,6 @@ public class TestStreams
         EVENT_TYPES.put(IncidentEvent.class, EventType.INCIDENT_EVENT);
         EVENT_TYPES.put(TaskEvent.class, EventType.TASK_EVENT);
         EVENT_TYPES.put(TopicEvent.class, EventType.TOPIC_EVENT);
-        EVENT_TYPES.put(WorkflowEvent.class, EventType.WORKFLOW_EVENT);
         EVENT_TYPES.put(WorkflowInstanceEvent.class, EventType.WORKFLOW_INSTANCE_EVENT);
 
         EVENT_TYPES.put(UnpackedObject.class, EventType.NOOP_EVENT);

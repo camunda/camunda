@@ -17,47 +17,14 @@
  */
 package io.zeebe.broker.system.deployment.processor;
 
-import static io.zeebe.broker.workflow.data.DeploymentState.REJECTED;
-
 import io.zeebe.broker.logstreams.processor.*;
-import io.zeebe.broker.system.deployment.data.PendingDeployments;
 import io.zeebe.broker.workflow.data.DeploymentEvent;
 
-public class DeploymentRejectProcessor implements TypedEventProcessor<DeploymentEvent>
+public class DeploymentRejectedEventProcessor implements TypedEventProcessor<DeploymentEvent>
 {
-    private final PendingDeployments pendingDeployments;
-
-    public DeploymentRejectProcessor(PendingDeployments pendingDeployments)
-    {
-        this.pendingDeployments = pendingDeployments;
-    }
-
-    @Override
-    public void processEvent(TypedEvent<DeploymentEvent> event)
-    {
-        event.getValue().setState(REJECTED);
-
-        if (!event.getMetadata().hasRequestMetadata())
-        {
-            throw new RuntimeException("missing request metadata of deployment");
-        }
-    }
-
     @Override
     public boolean executeSideEffects(TypedEvent<DeploymentEvent> event, TypedResponseWriter responseWriter)
     {
         return responseWriter.write(event);
-    }
-
-    @Override
-    public long writeEvent(TypedEvent<DeploymentEvent> event, TypedStreamWriter writer)
-    {
-        return writer.writeFollowupEvent(event.getKey(), event.getValue());
-    }
-
-    @Override
-    public void updateState(TypedEvent<DeploymentEvent> event)
-    {
-        pendingDeployments.remove(event.getKey());
     }
 }

@@ -17,24 +17,13 @@
  */
 package io.zeebe.broker.incident;
 
-import static io.zeebe.broker.test.MsgPackUtil.JSON_MAPPER;
-import static io.zeebe.broker.test.MsgPackUtil.MSGPACK_MAPPER;
-import static io.zeebe.broker.test.MsgPackUtil.MSGPACK_PAYLOAD;
-import static io.zeebe.broker.test.MsgPackUtil.encodeMsgPack;
-import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.incidentEvents;
-import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.taskEvents;
-import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.workflowInstanceEvents;
+import static io.zeebe.broker.test.MsgPackUtil.*;
+import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.*;
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
-
-import org.agrona.MutableDirectBuffer;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
 
 import io.zeebe.broker.incident.data.ErrorType;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
@@ -43,10 +32,10 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.msgpack.spec.MsgPackHelper;
 import io.zeebe.protocol.clientapi.EventType;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
-import io.zeebe.test.broker.protocol.clientapi.SubscribedEvent;
-import io.zeebe.test.broker.protocol.clientapi.TestTopicClient;
+import io.zeebe.test.broker.protocol.clientapi.*;
+import org.agrona.MutableDirectBuffer;
+import org.junit.*;
+import org.junit.rules.RuleChain;
 
 public class IncidentTest
 {
@@ -541,11 +530,12 @@ public class IncidentTest
         updatePayload(workflowInstanceKey, failureEvent.key(), asMsgPack("foo", 7).byteArray());
 
         // then
+
         testClient.receiveSingleEvent(incidentEvents("RESOLVE"));
         testClient.receiveSingleEvent(workflowInstanceEvents("GATEWAY_ACTIVATED"));
         testClient.receiveSingleEvent(workflowInstanceEvents("SEQUENCE_FLOW_TAKEN"));
-        testClient.receiveSingleEvent(incidentEvents("RESOLVED"));
         testClient.receiveSingleEvent(workflowInstanceEvents("END_EVENT_OCCURRED"));
+        testClient.receiveSingleEvent(incidentEvents("RESOLVED"));
         testClient.receiveSingleEvent(workflowInstanceEvents("WORKFLOW_INSTANCE_COMPLETED"));
     }
 

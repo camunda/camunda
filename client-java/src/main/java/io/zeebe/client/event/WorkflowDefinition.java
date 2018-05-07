@@ -20,4 +20,6 @@ public interface WorkflowDefinition
     String getBpmnProcessId();
 
     int getVersion();
+
+    long getWorkflowKey();
 }

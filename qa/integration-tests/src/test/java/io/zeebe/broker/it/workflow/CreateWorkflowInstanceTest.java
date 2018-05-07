@@ -15,7 +15,6 @@
  */
 package io.zeebe.broker.it.workflow;
 
-import static io.zeebe.broker.it.util.TopicEventRecorder.wfEvent;
 import static io.zeebe.broker.it.util.TopicEventRecorder.wfInstanceEvent;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -25,6 +24,7 @@ import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.TopicEventRecorder;
 import io.zeebe.client.WorkflowsClient;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
+import io.zeebe.client.event.DeploymentEvent;
 import io.zeebe.client.event.WorkflowInstanceEvent;
 import io.zeebe.model.bpmn.Bpmn;
 import org.junit.*;
@@ -33,7 +33,6 @@ import org.junit.rules.RuleChain;
 
 public class CreateWorkflowInstanceTest
 {
-
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
     public ClientRule clientRule = new ClientRule();
     public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule);
@@ -47,12 +46,15 @@ public class CreateWorkflowInstanceTest
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
+    private DeploymentEvent firstDeployment;
+    private DeploymentEvent secondDeployment;
+
     @Before
     public void deployProcess()
     {
         final WorkflowsClient workflowService = clientRule.workflows();
 
-        workflowService.deploy(clientRule.getDefaultTopic())
+        firstDeployment = workflowService.deploy(clientRule.getDefaultTopic())
             .addWorkflowModel(
                 Bpmn.createExecutableWorkflow("anId")
                     .startEvent()
@@ -61,7 +63,7 @@ public class CreateWorkflowInstanceTest
                     "workflow.bpmn")
             .execute();
 
-        workflowService.deploy(clientRule.getDefaultTopic())
+        secondDeployment = workflowService.deploy(clientRule.getDefaultTopic())
             .addWorkflowModel(
                 Bpmn.createExecutableWorkflow("anId")
                     .startEvent()
@@ -118,9 +120,7 @@ public class CreateWorkflowInstanceTest
     {
         final WorkflowsClient workflowService = clientRule.workflows();
 
-        waitUntil(() -> eventRecorder.hasWorkflowEvent(wfEvent("CREATED")));
-
-        final long workflowKey = eventRecorder.getSingleWorkflowEvent(wfEvent("CREATED")).getMetadata().getKey();
+        final long workflowKey = firstDeployment.getDeployedWorkflows().get(0).getWorkflowKey();
 
         // when
         final WorkflowInstanceEvent workflowInstance =

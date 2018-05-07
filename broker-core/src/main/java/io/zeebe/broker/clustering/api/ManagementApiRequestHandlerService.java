@@ -19,7 +19,6 @@ package io.zeebe.broker.clustering.api;
 
 import io.zeebe.broker.clustering.base.raft.RaftPersistentConfigurationManager;
 import io.zeebe.broker.system.configuration.BrokerCfg;
-import io.zeebe.broker.system.deployment.handler.WorkflowRequestMessageHandler;
 import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.BufferingServerTransport;
 import io.zeebe.transport.ServerInputSubscription;
@@ -29,14 +28,12 @@ import io.zeebe.util.sched.future.ActorFuture;
 public class ManagementApiRequestHandlerService extends Actor implements Service<Void>
 {
     private final Injector<BufferingServerTransport> serverTransportInjector = new Injector<>();
-    private final Injector<WorkflowRequestMessageHandler> workflowRequestMessageHandlerInjector = new Injector<>();
     private final Injector<RaftPersistentConfigurationManager> raftPersistentConfigurationManagerInjector = new Injector<>();
 
     private final BrokerCfg brokerCfg;
 
     private BufferingServerTransport serverTransport;
     private ManagementApiRequestHandler managementApiRequestHandler;
-    private WorkflowRequestMessageHandler workflowRequestMessageHandler;
     private RaftPersistentConfigurationManager raftPersistentConfigurationManager;
 
     public ManagementApiRequestHandlerService(BrokerCfg brokerCfg)
@@ -48,10 +45,8 @@ public class ManagementApiRequestHandlerService extends Actor implements Service
     public void start(ServiceStartContext startContext)
     {
         serverTransport = serverTransportInjector.getValue();
-        workflowRequestMessageHandler = workflowRequestMessageHandlerInjector.getValue();
         raftPersistentConfigurationManager = raftPersistentConfigurationManagerInjector.getValue();
-        managementApiRequestHandler = new ManagementApiRequestHandler(workflowRequestMessageHandler,
-            raftPersistentConfigurationManager,
+        managementApiRequestHandler = new ManagementApiRequestHandler(raftPersistentConfigurationManager,
             actor,
             startContext,
             brokerCfg);
@@ -98,11 +93,6 @@ public class ManagementApiRequestHandlerService extends Actor implements Service
     public Injector<BufferingServerTransport> getServerTransportInjector()
     {
         return serverTransportInjector;
-    }
-
-    public Injector<WorkflowRequestMessageHandler> getWorkflowRequestMessageHandlerInjector()
-    {
-        return workflowRequestMessageHandlerInjector;
     }
 
     public Injector<RaftPersistentConfigurationManager> getRaftPersistentConfigurationManagerInjector()

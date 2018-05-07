@@ -76,7 +76,7 @@ public class WorkflowInstanceFunctionalTest
 
         final long workflowInstanceKey = response.key();
         assertThat(event.key()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
-        assertThat(event.position()).isGreaterThan(response.position());
+        assertThat(event.position()).isGreaterThanOrEqualTo(response.position());
         assertThat(event.event())
             .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
             .containsEntry(PROP_WORKFLOW_VERSION, 1)

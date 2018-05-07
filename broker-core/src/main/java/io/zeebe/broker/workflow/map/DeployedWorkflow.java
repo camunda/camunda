@@ -23,13 +23,18 @@ public class DeployedWorkflow
 {
     private final Workflow workflow;
 
+    private final long key;
+
     private final int version;
 
-    public DeployedWorkflow(Workflow workflow, int version)
+    private long fetched;
+
+    public DeployedWorkflow(Workflow workflow, long key, int version, long fetched)
     {
-        super();
         this.workflow = workflow;
+        this.key = key;
         this.version = version;
+        this.fetched = fetched;
     }
 
     public Workflow getWorkflow()
@@ -42,4 +47,18 @@ public class DeployedWorkflow
         return version;
     }
 
+    public long getKey()
+    {
+        return key;
+    }
+
+    public long getFetched()
+    {
+        return fetched;
+    }
+
+    public void setFetched(long fetched)
+    {
+        this.fetched = fetched;
+    }
 }

@@ -131,7 +131,7 @@ public class ServiceTaskTest
         assertThat(taskLockedEvent.getHeaders()).containsOnly(
             entry("bpmnProcessId", "process"),
             entry("workflowDefinitionVersion", 1),
-            entry("workflowKey", workflowInstance.getWorkflowKey()),
+            entry("workflowKey", (int) workflowInstance.getWorkflowKey()),
             entry("workflowInstanceKey", workflowInstance.getWorkflowInstanceKey()),
             entry("activityId", "task"),
             entry("activityInstanceKey", activityInstance.getMetadata().getKey()));

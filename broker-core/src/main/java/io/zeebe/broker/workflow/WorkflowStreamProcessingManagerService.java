@@ -21,37 +21,42 @@ import static io.zeebe.broker.logstreams.processor.StreamProcessorIds.INCIDENT_P
 import static io.zeebe.broker.logstreams.processor.StreamProcessorIds.WORKFLOW_INSTANCE_PROCESSOR_ID;
 
 import io.zeebe.broker.clustering.base.partitions.Partition;
+import io.zeebe.broker.clustering.base.topology.TopologyManager;
 import io.zeebe.broker.incident.processor.IncidentStreamProcessor;
 import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
-import io.zeebe.broker.system.deployment.handler.CreateWorkflowResponseSender;
 import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
 import io.zeebe.broker.workflow.processor.WorkflowInstanceStreamProcessor;
 import io.zeebe.servicecontainer.*;
+import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.ServerTransport;
-import io.zeebe.util.sched.Actor;
 
-public class WorkflowQueueManagerService extends Actor implements Service<WorkflowQueueManagerService>
+/**
+ * Tracks leader partitions and installs the workflow instance stream processors
+ */
+public class WorkflowStreamProcessingManagerService implements Service<WorkflowStreamProcessingManagerService>
 {
-    public static final int DEPLOYMENT_CACHE_SIZE = 32;
     public static final int PAYLOAD_CACHE_SIZE = 64;
 
     protected static final String NAME = "workflow.queue.manager";
 
     private final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
-    private final Injector<ServerTransport> managementServerInjector = new Injector<>();
+    private final Injector<ClientTransport> managementApiClientInjector = new Injector<>();
+    private final Injector<TopologyManager> topologyManagerInjector = new Injector<>();
+
     private final Injector<StreamProcessorServiceFactory> streamProcessorServiceFactoryInjector = new Injector<>();
 
     private final ServiceGroupReference<Partition> partitionsGroupReference = ServiceGroupReference.<Partition>create()
-            .onAdd((name, stream) -> addPartition(stream, name))
-            .build();
+        .onAdd((partitionName, partition) -> startStreamProcessors(partitionName, partition))
+        .build();
 
     private StreamProcessorServiceFactory streamProcessorServiceFactory;
 
     private ServerTransport transport;
+    private TopologyManager topologyManager;
+    private ClientTransport managementApiClient;
 
-
-    public void startWorkflowQueue(Partition partition, ServiceName<Partition> partitionServiceName)
+    public void startStreamProcessors(ServiceName<Partition> partitionServiceName, Partition partition)
     {
         installWorkflowStreamProcessor(partition, partitionServiceName);
         installIncidentStreamProcessor(partition, partitionServiceName);
@@ -62,12 +67,9 @@ public class WorkflowQueueManagerService extends Actor implements Service<Workfl
         final ServerTransport transport = clientApiTransportInjector.getValue();
         final CommandResponseWriter responseWriter = new CommandResponseWriter(transport.getOutput());
 
-        final ServerTransport managementServer = managementServerInjector.getValue();
-        final CreateWorkflowResponseSender createWorkflowResponseSender = new CreateWorkflowResponseSender(managementServer);
-
         final WorkflowInstanceStreamProcessor workflowInstanceStreamProcessor = new WorkflowInstanceStreamProcessor(responseWriter,
-             createWorkflowResponseSender,
-            DEPLOYMENT_CACHE_SIZE,
+            managementApiClient,
+            topologyManager,
             PAYLOAD_CACHE_SIZE);
 
         streamProcessorServiceFactory.createService(partition, partitionServiceName)
@@ -95,18 +97,12 @@ public class WorkflowQueueManagerService extends Actor implements Service<Workfl
     {
         this.transport = clientApiTransportInjector.getValue();
         this.streamProcessorServiceFactory =  streamProcessorServiceFactoryInjector.getValue();
-
-        serviceContext.async(serviceContext.getScheduler().submitActor(this));
+        this.topologyManager = topologyManagerInjector.getValue();
+        this.managementApiClient = managementApiClientInjector.getValue();
     }
 
     @Override
-    public void stop(ServiceStopContext stopContext)
-    {
-        stopContext.async(actor.close());
-    }
-
-    @Override
-    public WorkflowQueueManagerService get()
+    public WorkflowStreamProcessingManagerService get()
     {
         return this;
     }
@@ -121,30 +117,18 @@ public class WorkflowQueueManagerService extends Actor implements Service<Workfl
         return partitionsGroupReference;
     }
 
-    public Injector<ServerTransport> getManagementServerInjector()
-    {
-        return managementServerInjector;
-    }
-
-    public void addPartition(Partition partition, ServiceName<Partition> partitionServiceName)
-    {
-        actor.run(() ->
-        {
-            startWorkflowQueue(partition, partitionServiceName);
-        });
-    }
-
-
-
-    @Override
-    public String getName()
-    {
-        return NAME;
-    }
-
     public Injector<StreamProcessorServiceFactory> getStreamProcessorServiceFactoryInjector()
     {
         return streamProcessorServiceFactoryInjector;
     }
 
+    public Injector<ClientTransport> getManagementApiClientInjector()
+    {
+        return managementApiClientInjector;
+    }
+
+    public Injector<TopologyManager> getTopologyManagerInjector()
+    {
+        return topologyManagerInjector;
+    }
 }

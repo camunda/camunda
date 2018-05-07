@@ -26,19 +26,19 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /**
- * (bpmn-process-id, topicName) -> latest-version
+ * (bpmn-process-id, topicName) -> version
  */
-public class WorkflowVersions
+public class LatestVersionByProcessIdAndTopicName
 {
     private static final int BPMN_PROCESS_ID_LENGTH = ZeebeConstraints.ID_MAX_LENGTH * SIZE_OF_CHAR;
-    private static final int VALUE_LENGTH = BPMN_PROCESS_ID_LENGTH + LogStream.MAX_TOPIC_NAME_LENGTH;
+    private static final int KEY_LENGTH = BPMN_PROCESS_ID_LENGTH + LogStream.MAX_TOPIC_NAME_LENGTH;
 
     private static final int BPMN_PROCESS_ID_OFFSET = 0;
     private static final int TOPIC_NAME_OFFSET = BPMN_PROCESS_ID_LENGTH;
 
-    private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[VALUE_LENGTH]);
+    private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[KEY_LENGTH]);
 
-    private final Bytes2LongZbMap map = new Bytes2LongZbMap(VALUE_LENGTH);
+    private final Bytes2LongZbMap map = new Bytes2LongZbMap(KEY_LENGTH);
 
     public Bytes2LongZbMap getRawMap()
     {
@@ -61,7 +61,7 @@ public class WorkflowVersions
 
     private void wrap(DirectBuffer topicName, DirectBuffer bpmnProcessId)
     {
-        buffer.setMemory(0, VALUE_LENGTH, (byte) 0);
+        buffer.setMemory(0, KEY_LENGTH, (byte) 0);
 
         buffer.putBytes(BPMN_PROCESS_ID_OFFSET, bpmnProcessId, 0, bpmnProcessId.capacity());
         buffer.putBytes(TOPIC_NAME_OFFSET, topicName, 0, topicName.capacity());

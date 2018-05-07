@@ -78,6 +78,12 @@ public class CreateWorkflowInstanceCommandImpl extends CommandImpl<WorkflowInsta
     }
 
     @Override
+    public CreateWorkflowInstanceCommand latestVersionForceRefresh()
+    {
+        return version(LATEST_VERSION_FORCE);
+    }
+
+    @Override
     public CreateWorkflowInstanceCommand workflowKey(long workflowKey)
     {
         this.workflowInstanceEvent.setWorkflowKey(workflowKey);

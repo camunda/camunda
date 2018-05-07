@@ -15,13 +15,9 @@
  */
 package io.zeebe.broker.it.workflow;
 
-import static io.zeebe.broker.it.util.TopicEventRecorder.wfEvent;
-import static io.zeebe.test.util.TestUtil.waitUntil;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.containsString;
-
-import java.io.InputStream;
 
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
@@ -81,42 +77,7 @@ public class CreateDeploymentTest
         final WorkflowDefinition deployedWorkflow = result.getDeployedWorkflows().get(0);
         assertThat(deployedWorkflow.getBpmnProcessId()).isEqualTo("process");
         assertThat(deployedWorkflow.getVersion()).isEqualTo(1);
-
-        waitUntil(() -> eventRecorder.hasWorkflowEvent(wfEvent("CREATED")));
-
-        final WorkflowEvent workflowEvent = eventRecorder.getSingleWorkflowEvent(wfEvent("CREATED"));
-        assertThat(workflowEvent.getBpmnProcessId()).isEqualTo("process");
-        assertThat(workflowEvent.getVersion()).isEqualTo(1);
-        assertThat(workflowEvent.getDeploymentKey()).isEqualTo(result.getMetadata().getKey());
-        assertThat(workflowEvent.getBpmnXml()).isEqualTo(Bpmn.convertToString(workflow));
-    }
-
-    @Test
-    public void shouldDeployMultipleResources()
-    {
-        // given
-        final WorkflowsClient workflowService = clientRule.workflows();
-
-        // when
-        final DeploymentEvent result = workflowService
-                .deploy(clientRule.getDefaultTopic())
-                .addWorkflowModel(Bpmn.createExecutableWorkflow("model1").startEvent().done(), "model1.bpmn")
-                .addWorkflowModel(Bpmn.createExecutableWorkflow("model2").startEvent().done(), "model2.bpmn")
-                .execute();
-
-        // then
-        assertThat(result.getResources())
-            .hasSize(2)
-            .extracting(DeploymentResource::getResourceName)
-            .contains("model1.bpmn", "model2.bpmn");
-
-        assertThat(result.getDeployedWorkflows())
-            .hasSize(2)
-            .extracting(WorkflowDefinition::getBpmnProcessId)
-            .contains("model1", "model2");
-
-        assertThat(eventRecorder.hasWorkflowEvent(w -> w.getBpmnProcessId().equals("model1"))).isTrue();
-        assertThat(eventRecorder.hasWorkflowEvent(w -> w.getBpmnProcessId().equals("model2"))).isTrue();
+        assertThat(deployedWorkflow.getWorkflowKey()).isGreaterThan(0);
     }
 
     @Test
@@ -216,18 +177,7 @@ public class CreateDeploymentTest
         final WorkflowDefinition deployedWorkflow = result.getDeployedWorkflows().get(0);
         assertThat(deployedWorkflow.getBpmnProcessId()).isEqualTo("yaml-workflow");
         assertThat(deployedWorkflow.getVersion()).isEqualTo(1);
-
-        waitUntil(() -> eventRecorder.hasWorkflowEvent(wfEvent("CREATED")));
-
-        final InputStream yamlStream = getClass().getResourceAsStream("/workflows/simple-workflow.yaml");
-        final io.zeebe.model.bpmn.instance.WorkflowDefinition workflowDefinition = Bpmn.readFromYamlStream(yamlStream);
-        final String bpmnXml = Bpmn.convertToString(workflowDefinition);
-
-        final WorkflowEvent workflowEvent = eventRecorder.getSingleWorkflowEvent(wfEvent("CREATED"));
-        assertThat(workflowEvent.getBpmnProcessId()).isEqualTo("yaml-workflow");
-        assertThat(workflowEvent.getVersion()).isEqualTo(1);
-        assertThat(workflowEvent.getDeploymentKey()).isEqualTo(result.getMetadata().getKey());
-        assertThat(workflowEvent.getBpmnXml()).isEqualTo(bpmnXml);
+        assertThat(deployedWorkflow.getWorkflowKey()).isGreaterThan(0);
     }
 
 }

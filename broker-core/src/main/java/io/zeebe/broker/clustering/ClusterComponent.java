@@ -19,14 +19,11 @@ package io.zeebe.broker.clustering;
 
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.*;
 import static io.zeebe.broker.clustering.orchestration.ClusterOrchestrationLayerServiceNames.CLUSTER_ORCHESTRATION_INSTALL_SERVICE_NAME;
-import static io.zeebe.broker.system.SystemServiceNames.WORKFLOW_REQUEST_MESSAGE_HANDLER_SERVICE;
 import static io.zeebe.broker.transport.TransportServiceNames.*;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.api.ManagementApiRequestHandlerService;
-import io.zeebe.broker.clustering.base.bootstrap.BootstrapExpectNodes;
-import io.zeebe.broker.clustering.base.bootstrap.BootstrapLocalPartitions;
-import io.zeebe.broker.clustering.base.bootstrap.BootstrapSystemTopic;
+import io.zeebe.broker.clustering.base.bootstrap.*;
 import io.zeebe.broker.clustering.base.connections.RemoteAddressManager;
 import io.zeebe.broker.clustering.base.gossip.GossipJoinService;
 import io.zeebe.broker.clustering.base.gossip.GossipService;
@@ -77,7 +74,6 @@ public class ClusterComponent implements Component
         baseLayerInstall.createService(MANAGEMENT_API_REQUEST_HANDLER_SERVICE_NAME, managementApiRequestHandlerService)
             .dependency(bufferingServerTransport(MANAGEMENT_API_SERVER_NAME), managementApiRequestHandlerService.getServerTransportInjector())
             .dependency(RAFT_CONFIGURATION_MANAGER, managementApiRequestHandlerService.getRaftPersistentConfigurationManagerInjector())
-            .dependency(WORKFLOW_REQUEST_MESSAGE_HANDLER_SERVICE, managementApiRequestHandlerService.getWorkflowRequestMessageHandlerInjector())
             .install();
 
         initGossip(baseLayerInstall, context);
@@ -153,9 +149,9 @@ public class ClusterComponent implements Component
         final ClusterOrchestrationInstallService clusterOrchestrationInstallService = new ClusterOrchestrationInstallService(serviceContainer);
 
         serviceContainer.createService(CLUSTER_ORCHESTRATION_INSTALL_SERVICE_NAME, clusterOrchestrationInstallService)
-                        .dependency(CONTROL_MESSAGE_HANDLER_MANAGER, clusterOrchestrationInstallService.getControlMessageHandlerManagerInjector())
-                        .dependency(serverTransport(CLIENT_API_SERVER_NAME), clusterOrchestrationInstallService.getTransportInjector())
-                        .groupReference(LEADER_PARTITION_SYSTEM_GROUP_NAME, clusterOrchestrationInstallService.getSystemLeaderGroupReference())
-                        .install();
+            .dependency(CONTROL_MESSAGE_HANDLER_MANAGER, clusterOrchestrationInstallService.getControlMessageHandlerManagerInjector())
+            .dependency(serverTransport(CLIENT_API_SERVER_NAME), clusterOrchestrationInstallService.getTransportInjector())
+            .groupReference(LEADER_PARTITION_SYSTEM_GROUP_NAME, clusterOrchestrationInstallService.getSystemLeaderGroupReference())
+            .install();
     }
 }

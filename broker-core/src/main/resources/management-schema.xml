@@ -41,22 +41,6 @@
     <sbe:message name="InvitationResponse" id="1">
         <field name="term" id="1" type="uint16"/>
     </sbe:message>
-    <!-- if you add more requests then think about a general req/resp message -->
-
-    <sbe:message name="CreateWorkflowRequest" id="3">
-        <field name="partitionId" id="0" type="uint16"/>
-        <field name="workflowKey" id="1" type="uint64"/>
-        <field name="deploymentKey" id="2" type="uint64"/>
-        <field name="version" id="3" type="uint16"/>
-        <data name="bpmnProcessId" id="4" type="varDataEncoding"/>
-        <data name="bpmnXml" id="5" type="varDataEncoding" />
-    </sbe:message>
-
-    <sbe:message name="CreateWorkflowResponse" id="4">
-        <field name="partitionId" id="0" type="uint16"/>
-        <field name="workflowKey" id="1" type="uint64"/>
-        <field name="deploymentKey" id="2" type="uint64"/>
-    </sbe:message>
 
     <sbe:message name="CreatePartitionRequest" id="2">
       <field name="partitionId" id="0" type="uint16"/>
@@ -64,14 +48,22 @@
       <data name="topicName" id="2" type="varDataEncoding" />
     </sbe:message>
 
-    <!-- single message protocol -->
-    <sbe:message name="DeleteWorkflowMessage" id="5">
-        <field name="partitionId" id="0" type="uint16"/>
+    <sbe:message name="FetchWorkflowRequest" id="3">
+        <field name="workflowKey" id="0" type="uint64"/>
+        <field name="version" id="1" type="uint16"/>
+        <data name="bpmnProcessId" id="2" type="varDataEncoding"/>
+        <data name="topicName" id="3" type="varDataEncoding" />
+    </sbe:message>
+
+    <sbe:message name="FetchWorkflowResponse" id="4">
         <field name="workflowKey" id="1" type="uint64"/>
-        <field name="deploymentKey" id="2" type="uint64"/>
-        <field name="version" id="3" type="uint16"/>
-        <data name="bpmnProcessId" id="4" type="varDataEncoding"/>
+        <field name="version" id="2" type="uint16"/>
+        <field name="deploymentKey" id="3" type="uint64"/>
+        <data name="bpmnProcessId" id="4" type="varDataEncoding" />
         <data name="bpmnXml" id="5" type="varDataEncoding" />
+    </sbe:message>
+    
+    <sbe:message name="NotLeaderResponse" id="5">
     </sbe:message>
 
 </sbe:messageSchema>

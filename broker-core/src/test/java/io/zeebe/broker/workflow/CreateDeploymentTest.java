@@ -17,23 +17,12 @@
  */
 package io.zeebe.broker.workflow;
 
-import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_STATE;
-import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_BPMN_PROCESS_ID;
-import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_VERSION;
-import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.workflowEvents;
+import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.*;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.io.*;
+import java.util.*;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.broker.workflow.data.ResourceType;
@@ -43,7 +32,6 @@ import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
-import io.zeebe.test.broker.protocol.clientapi.SubscribedEvent;
 import io.zeebe.util.StreamUtil;
 import org.assertj.core.util.Files;
 import org.junit.Rule;
@@ -109,55 +97,6 @@ public class CreateDeploymentTest
     }
 
     @Test
-    public void shouldWriteWorkflowEvent()
-    {
-        // when
-        final long deploymentKey = apiRule.topic().deploy(ClientApiRule.DEFAULT_TOPIC_NAME, WORKFLOW);
-
-        // then
-        final SubscribedEvent workflowEvent = apiRule.topic().receiveSingleEvent(workflowEvents("CREATED"));
-        assertThat(workflowEvent.key()).isGreaterThanOrEqualTo(0L).isNotEqualTo(deploymentKey);
-        assertThat(workflowEvent.event())
-            .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
-            .containsEntry(PROP_WORKFLOW_VERSION, 1)
-            .containsEntry("deploymentKey", deploymentKey)
-            .containsEntry("bpmnXml", bpmnXml(WORKFLOW));
-    }
-
-    @Test
-    public void shouldCreateDeploymentWithMultipleResources()
-    {
-        // given
-        final WorkflowDefinition definition1 = Bpmn.createExecutableWorkflow("process1").startEvent().done();
-        final WorkflowDefinition definition2 = Bpmn.createExecutableWorkflow("process2").startEvent().done();
-
-        final List<Map<String, Object>> resources = Arrays.asList(deploymentResource(bpmnXml(definition1), "process1.bpmn"),
-                                                                  deploymentResource(bpmnXml(definition2), "process2.bpmn"));
-
-        // when
-        final ExecuteCommandResponse resp = apiRule.createCmdRequest()
-                .partitionId(Protocol.SYSTEM_PARTITION)
-                .eventType(EventType.DEPLOYMENT_EVENT)
-                .command()
-                    .put(PROP_STATE, "CREATE")
-                    .put("topicName", ClientApiRule.DEFAULT_TOPIC_NAME)
-                    .put("resources", resources)
-                .done()
-                .sendAndAwait();
-
-        // then
-        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "CREATED");
-
-        final List<SubscribedEvent> workflowEvents = apiRule.topic().receiveEvents(workflowEvents("CREATED"))
-                .limit(2)
-                .collect(toList());
-
-        assertThat(workflowEvents)
-            .extracting(s -> s.event().get(PROP_WORKFLOW_BPMN_PROCESS_ID))
-            .contains("process1", "process2");
-    }
-
-    @Test
     public void shouldCreateDeploymentResourceWithMultipleWorkflows() throws IOException
     {
         // given
@@ -173,46 +112,11 @@ public class CreateDeploymentTest
         // then
         assertThat(resp.getEvent()).containsEntry(PROP_STATE, "CREATED");
 
-        final List<SubscribedEvent> workflowEvents = apiRule.topic().receiveEvents(workflowEvents("CREATED"))
-                .limit(2)
-                .collect(toList());
+        final List<Map<String, Object>> deployedWorkflows = Arrays.asList(getDeployedWorkflow(resp, 0), getDeployedWorkflow(resp, 1));
 
-        assertThat(workflowEvents)
-            .extracting(s -> s.event().get(PROP_WORKFLOW_BPMN_PROCESS_ID))
+        assertThat(deployedWorkflows)
+            .extracting(s -> s.get(PROP_WORKFLOW_BPMN_PROCESS_ID))
             .contains("process1", "process2");
-    }
-
-    @Test
-    public void shouldCreateDeploymentWithMultipleResourcesAndWorkflows() throws IOException
-    {
-        // given
-        final WorkflowDefinition singleWorkflow = Bpmn.createExecutableWorkflow("singleProcess").startEvent().done();
-        final InputStream multipleWorkflowsResource = getClass().getResourceAsStream("/workflows/collaboration.bpmn");
-
-        final List<Map<String, Object>> resources = Arrays.asList(deploymentResource(bpmnXml(singleWorkflow), "process1.bpmn"),
-                                                                  deploymentResource(StreamUtil.read(multipleWorkflowsResource), "collaboration.bpmn"));
-
-        // when
-        final ExecuteCommandResponse resp = apiRule.createCmdRequest()
-                .partitionId(Protocol.SYSTEM_PARTITION)
-                .eventType(EventType.DEPLOYMENT_EVENT)
-                .command()
-                    .put(PROP_STATE, "CREATE")
-                    .put("topicName", ClientApiRule.DEFAULT_TOPIC_NAME)
-                    .put("resources", resources)
-                .done()
-                .sendAndAwait();
-
-        // then
-        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "CREATED");
-
-        final List<SubscribedEvent> workflowEvents = apiRule.topic().receiveEvents(workflowEvents("CREATED"))
-                .limit(3)
-                .collect(toList());
-
-        assertThat(workflowEvents)
-            .extracting(s -> s.event().get(PROP_WORKFLOW_BPMN_PROCESS_ID))
-            .contains("singleProcess", "process1", "process2");
     }
 
     @Test
@@ -248,8 +152,7 @@ public class CreateDeploymentTest
         // given
         final WorkflowDefinition invalidDefinition = Bpmn.createExecutableWorkflow("process").done();
 
-        final List<Map<String, Object>> resources = Arrays.asList(deploymentResource(bpmnXml(WORKFLOW), "process1.bpmn"),
-                                                                  deploymentResource(bpmnXml(invalidDefinition), "process2.bpmn"));
+        final List<Map<String, Object>> resources = Arrays.asList(deploymentResource(bpmnXml(invalidDefinition), "process2.bpmn"));
 
         // when
         final ExecuteCommandResponse resp = apiRule.createCmdRequest()
@@ -346,37 +249,11 @@ public class CreateDeploymentTest
         // then
         assertThat(resp.getEvent()).containsEntry(PROP_STATE, "CREATED");
 
-        final SubscribedEvent workflowEvent = apiRule.topic().receiveSingleEvent(workflowEvents("CREATED"));
-        assertThat(workflowEvent.event())
-            .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "yaml-workflow")
-            .containsEntry("deploymentKey", resp.key())
-            .containsEntry("bpmnXml", bpmnXml(Bpmn.readFromYamlFile(yamlFile)));
-    }
+        final Map<String, Object> deployedWorkflow = getDeployedWorkflow(resp, 0);
 
-    @Test
-    public void shouldCreateWorkflowOnAllPartitions()
-    {
-        // given
-        final int partitions = 3;
+        assertThat(deployedWorkflow)
+            .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "yaml-workflow");
 
-        apiRule.createTopic("test", partitions);
-        final List<Integer> partitionIds = apiRule.getPartitionsFromTopology("test");
-
-        // when
-        apiRule.topic().deploy("test", WORKFLOW);
-
-        // then
-        final List<Long> workflowKeys = new ArrayList<>();
-        partitionIds.forEach(partitionId ->
-        {
-            final SubscribedEvent event = apiRule.topic(partitionId).receiveSingleEvent(workflowEvents("CREATED"));
-
-            workflowKeys.add(event.key());
-        });
-
-        assertThat(workflowKeys)
-            .hasSize(partitions)
-            .containsOnly(workflowKeys.get(0));
     }
 
     @Test
@@ -387,15 +264,16 @@ public class CreateDeploymentTest
         apiRule.createTopic("bar", 1);
 
         // when
-        apiRule.topic().deploy("foo", WORKFLOW);
-        apiRule.topic().deploy("bar", WORKFLOW);
+        final ExecuteCommandResponse d1 = apiRule.topic().deployWithResponse("foo", WORKFLOW);
+        final ExecuteCommandResponse d2 = apiRule.topic().deployWithResponse("bar", WORKFLOW);
 
         // then
-        final SubscribedEvent eventFoo = apiRule.topic(apiRule.getSinglePartitionId("foo")).receiveSingleEvent(workflowEvents("CREATED"));
-        final SubscribedEvent eventBar = apiRule.topic(apiRule.getSinglePartitionId("bar")).receiveSingleEvent(workflowEvents("CREATED"));
 
-        assertThat(eventFoo.event().get("version")).isEqualTo(1);
-        assertThat(eventBar.event().get("version")).isEqualTo(1);
+        final Map<String, Object> workflow1 = getDeployedWorkflow(d1, 0);
+        assertThat(workflow1.get("version")).isEqualTo(1);
+
+        final Map<String, Object> workflow2 = getDeployedWorkflow(d2, 0);
+        assertThat(workflow2.get("version")).isEqualTo(1);
     }
 
     private Map<String, Object> deploymentResource(final byte[] resource, String name)
@@ -413,4 +291,10 @@ public class CreateDeploymentTest
         return Bpmn.convertToString(definition).getBytes(UTF_8);
     }
 
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> getDeployedWorkflow(final ExecuteCommandResponse d1, int offset)
+    {
+        final List<Map<String, Object>> d1Workflows = (List<Map<String, Object>>) d1.getEvent().get("deployedWorkflows");
+        return d1Workflows.get(offset);
+    }
 }

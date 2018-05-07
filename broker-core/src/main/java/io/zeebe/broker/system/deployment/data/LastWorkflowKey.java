@@ -15,18 +15,28 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker;
+package io.zeebe.broker.system.deployment.data;
 
-import io.zeebe.util.ZbLogger;
-import org.slf4j.Logger;
+import io.zeebe.msgpack.value.LongValue;
 
-public class Loggers
+/**
+ * Used for assigning workflow keys
+ */
+public class LastWorkflowKey
 {
+    private LongValue lastWorkflowKey = new LongValue();
 
-    public static final Logger CLUSTERING_LOGGER = new ZbLogger("io.zeebe.broker.clustering");
-    public static final Logger SERVICES_LOGGER = new ZbLogger("io.zeebe.broker.services");
-    public static final Logger SYSTEM_LOGGER = new ZbLogger("io.zeebe.broker.system");
-    public static final Logger TRANSPORT_LOGGER = new ZbLogger("io.zeebe.broker.transport");
-    public static final Logger STREAM_PROCESSING = new ZbLogger("io.zeebe.broker.streamProcessing");
+    public long incrementAndGet()
+    {
+        final long value = lastWorkflowKey.getValue() + 1;
 
+        lastWorkflowKey.setValue(value);
+
+        return value;
+    }
+
+    public LongValue getRawValue()
+    {
+        return lastWorkflowKey;
+    }
 }

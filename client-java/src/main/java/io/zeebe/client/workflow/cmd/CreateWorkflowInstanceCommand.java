@@ -31,6 +31,12 @@ public interface CreateWorkflowInstanceCommand extends Request<WorkflowInstanceE
     int LATEST_VERSION = -1;
 
     /**
+     * Represents the latest version of a deployed workflow definition forcing
+     * an immediate refresh.
+     */
+    int LATEST_VERSION_FORCE = -2;
+
+    /**
      * Sets the BPMN process id, which identifies the workflow definition. Can
      * be combined with {@link #version(int)} or {@link #latestVersion()} but
      * not with {@link #workflowKey(long)}.
@@ -61,6 +67,17 @@ public interface CreateWorkflowInstanceCommand extends Request<WorkflowInstanceE
      * @return the current create command
      */
     CreateWorkflowInstanceCommand latestVersion();
+
+    /**
+     * Sets the version, which corresponds to the deployed workflow definition,
+     * to latest (forcing a refresh).
+     * <p>
+     * Note: this has a performance impact since the latest version is always fetched.
+     *
+     * @see {@link #version(int)}
+     * @return the current create command
+     */
+    CreateWorkflowInstanceCommand latestVersionForceRefresh();
 
     /**
      * Sets the key which identifies the deployed workflow definition. Can not

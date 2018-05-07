@@ -32,12 +32,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
+import java.time.Duration;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.broker.workflow.data.ResourceType;
+import io.zeebe.broker.workflow.map.WorkflowCache;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.test.broker.protocol.clientapi.*;
@@ -103,16 +104,12 @@ public class CreateWorkflowInstanceTest
                 .sendAndAwait();
 
         // then
-        final SubscribedEvent workflowEvent = testClient.receiveSingleEvent(workflowEvents("CREATED"));
-        final long workflowKey = workflowEvent.key();
-
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
         assertThat(resp.partitionId()).isEqualTo(apiRule.getDefaultPartitionId());
         assertThat(resp.getEvent())
             .containsEntry(PROP_STATE, WORKFLOW_INSTANCE_CREATED.name())
             .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
             .containsEntry(PROP_WORKFLOW_VERSION, 1)
-            .containsEntry(PROP_WORKFLOW_KEY, workflowKey)
             .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, resp.key());
     }
 
@@ -120,12 +117,14 @@ public class CreateWorkflowInstanceTest
     public void shouldCreateWorkflowInstanceByBpmnProcessIdAndLatestVersion()
     {
         // given
-        testClient.deploy(Bpmn.createExecutableWorkflow("process")
-                .startEvent("foo")
+        testClient.deployWithResponse(ClientApiRule.DEFAULT_TOPIC_NAME,
+            Bpmn.createExecutableWorkflow("process")
+                .startEvent("bar")
                 .endEvent()
                 .done());
 
-        testClient.deploy(Bpmn.createExecutableWorkflow("process")
+        final ExecuteCommandResponse deployment2 = testClient.deployWithResponse(ClientApiRule.DEFAULT_TOPIC_NAME,
+            Bpmn.createExecutableWorkflow("process")
                 .startEvent("bar")
                 .endEvent()
                 .done());
@@ -141,11 +140,7 @@ public class CreateWorkflowInstanceTest
                 .sendAndAwait();
 
         // then
-        final SubscribedEvent workflowEvent = testClient.receiveEvents(workflowEvents("CREATED"))
-                .limit(2)
-                .collect(Collectors.toList())
-                .get(1);
-        final long workflowKey = workflowEvent.key();
+        final int workflowKey = extractWorkflowKey(deployment2);
 
         final SubscribedEvent event = testClient.receiveSingleEvent(workflowInstanceEvents(START_EVENT_OCCURRED.name()));
 
@@ -161,15 +156,17 @@ public class CreateWorkflowInstanceTest
     public void shouldCreateWorkflowInstanceByBpmnProcessIdAndPreviosuVersion()
     {
         // given
-        testClient.deploy(Bpmn.createExecutableWorkflow("process")
-                .startEvent("foo")
-                .endEvent()
-                .done());
+        final ExecuteCommandResponse deployment1 = testClient.deployWithResponse(ClientApiRule.DEFAULT_TOPIC_NAME,
+             Bpmn.createExecutableWorkflow("process")
+                 .startEvent("foo")
+                 .endEvent()
+                 .done());
 
-        testClient.deploy(Bpmn.createExecutableWorkflow("process")
-                .startEvent("bar")
-                .endEvent()
-                .done());
+        testClient.deployWithResponse(ClientApiRule.DEFAULT_TOPIC_NAME,
+             Bpmn.createExecutableWorkflow("process")
+                 .startEvent("bar")
+                 .endEvent()
+                 .done());
 
         // when
         final ExecuteCommandResponse resp = apiRule.createCmdRequest()
@@ -182,11 +179,7 @@ public class CreateWorkflowInstanceTest
                 .sendAndAwait();
 
         // then
-        final SubscribedEvent workflowEvent = testClient.receiveEvents(workflowEvents("CREATED"))
-                .limit(2)
-                .collect(Collectors.toList())
-                .get(0);
-        final long workflowKey = workflowEvent.key();
+        final int workflowKey = extractWorkflowKey(deployment1);
 
         final SubscribedEvent event = testClient.receiveSingleEvent(workflowInstanceEvents(START_EVENT_OCCURRED.name()));
 
@@ -207,16 +200,13 @@ public class CreateWorkflowInstanceTest
               .endEvent()
               .done());
 
-        testClient.deploy(Bpmn.createExecutableWorkflow("process")
-              .startEvent("bar")
-              .endEvent()
-              .done());
+        final ExecuteCommandResponse depl = testClient.deployWithResponse(ClientApiRule.DEFAULT_TOPIC_NAME,
+            Bpmn.createExecutableWorkflow("process")
+                .startEvent("bar")
+                .endEvent()
+                .done());
 
-        final SubscribedEvent workflowEvent = testClient.receiveEvents(workflowEvents("CREATED"))
-                .limit(2)
-                .collect(Collectors.toList())
-                .get(1);
-        final long workflowKey = workflowEvent.key();
+        final int workflowKey = extractWorkflowKey(depl);
 
         // when
         final ExecuteCommandResponse resp = apiRule.createCmdRequest()
@@ -242,7 +232,8 @@ public class CreateWorkflowInstanceTest
     public void shouldCreateWorkflowInstanceByWorkflowKeyAndPreviousVersion()
     {
         // given
-        testClient.deploy(Bpmn.createExecutableWorkflow("process")
+        final ExecuteCommandResponse depl = testClient.deployWithResponse(ClientApiRule.DEFAULT_TOPIC_NAME,
+            Bpmn.createExecutableWorkflow("process")
                 .startEvent()
                 .endEvent()
                 .done());
@@ -252,11 +243,7 @@ public class CreateWorkflowInstanceTest
                   .endEvent()
                   .done());
 
-        final SubscribedEvent workflowEvent = testClient.receiveEvents(workflowEvents("CREATED"))
-                .limit(2)
-                .collect(Collectors.toList())
-                .get(0);
-        final long workflowKey = workflowEvent.key();
+        final int workflowKey = extractWorkflowKey(depl);
 
         // when
         final ExecuteCommandResponse resp = apiRule.createCmdRequest()
@@ -370,7 +357,7 @@ public class CreateWorkflowInstanceTest
     }
 
     @Test
-    public void shouldCreateMultipleWorkflowInstancesForDifferentVersions()
+    public void shouldCreateMultipleWorkflowInstancesForDifferentVersionsOnForceRefresh()
     {
         // given
         final WorkflowDefinition workflow = Bpmn.createExecutableWorkflow("process")
@@ -391,8 +378,8 @@ public class CreateWorkflowInstanceTest
         // when
         testClient.deploy(workflow);
 
-        final long workflowInstance2 = testClient.createWorkflowInstance("process");
-
+        // -2 == force refresh
+        final ExecuteCommandResponse resp = testClient.createWorkflowInstanceWithResponse("process", -2);
 
         // then
         final List<SubscribedEvent> workflowInstanceEvents = testClient.receiveEvents(workflowInstanceEvents("ACTIVITY_ACTIVATED"))
@@ -404,7 +391,52 @@ public class CreateWorkflowInstanceTest
             .containsEntry("version", 1);
 
         assertThat(workflowInstanceEvents.get(1).event())
-            .containsEntry("workflowInstanceKey", workflowInstance2)
+            .containsEntry("workflowInstanceKey", resp.key())
+            .containsEntry("version", 2);
+
+        final long createdTasks = testClient.receiveEvents(taskEvents("CREATED")).limit(2).count();
+        assertThat(createdTasks).isEqualTo(2);
+    }
+
+    @Test
+    public void shouldCreateMultipleWorkflowInstancesForDifferentVersionsAfterTimeout() throws InterruptedException
+    {
+        // given
+        final WorkflowDefinition workflow = Bpmn.createExecutableWorkflow("process")
+             .startEvent("start")
+             .serviceTask("task", task -> task
+                          .taskType("test")
+                          .taskRetries(3)
+                          .taskHeader("foo", "bar"))
+             .endEvent("end")
+             .done();
+
+        testClient.deploy(workflow);
+
+        final long workflowInstance1 = testClient.createWorkflowInstance("process");
+
+        testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_ACTIVATED"));
+
+        // when
+        testClient.deploy(workflow);
+
+        // when wait for refresh timeout
+        brokerRule.getClock()
+            .addTime(Duration.ofSeconds(WorkflowCache.LATEST_VERSION_REFRESH_INTERVAL + 1));
+
+        final ExecuteCommandResponse resp = testClient.createWorkflowInstanceWithResponse("process");
+
+        // then
+        final List<SubscribedEvent> workflowInstanceEvents = testClient.receiveEvents(workflowInstanceEvents("ACTIVITY_ACTIVATED"))
+                .limit(2)
+                .collect(Collectors.toList());
+
+        assertThat(workflowInstanceEvents.get(0).event())
+            .containsEntry("workflowInstanceKey", workflowInstance1)
+            .containsEntry("version", 1);
+
+        assertThat(workflowInstanceEvents.get(1).event())
+            .containsEntry("workflowInstanceKey", resp.key())
             .containsEntry("version", 2);
 
         final long createdTasks = testClient.receiveEvents(taskEvents("CREATED")).limit(2).count();
@@ -492,4 +524,10 @@ public class CreateWorkflowInstanceTest
         assertThat(event2.event().get("bpmnProcessId")).isEqualTo("process2");
     }
 
+    @SuppressWarnings("unchecked")
+    private int extractWorkflowKey(final ExecuteCommandResponse deployment1)
+    {
+        final List<Map<String, Object>> deployedWorkflows = (List<Map<String, Object>>) deployment1.getEvent().get("deployedWorkflows");
+        return (int) deployedWorkflows.get(0).get(PROP_WORKFLOW_KEY);
+    }
 }

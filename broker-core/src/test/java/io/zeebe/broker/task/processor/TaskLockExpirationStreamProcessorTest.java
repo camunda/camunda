@@ -36,7 +36,6 @@ import io.zeebe.util.buffer.BufferUtil;
 
 public class TaskLockExpirationStreamProcessorTest
 {
-
     @Rule
     public StreamProcessorRule rule = new StreamProcessorRule();
 

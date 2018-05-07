@@ -228,7 +228,7 @@ public class BrokerRestartTest
 
         final WorkflowInstanceEvent workflowInstanceV2 = clientRule.workflows().create(clientRule.getDefaultTopic())
             .bpmnProcessId("process")
-            .latestVersion()
+            .latestVersionForceRefresh()
             .execute();
 
         // then

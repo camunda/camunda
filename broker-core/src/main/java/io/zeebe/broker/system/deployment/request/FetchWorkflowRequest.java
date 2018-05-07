@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.system.deployment.message;
+package io.zeebe.broker.system.deployment.request;
 
 import io.zeebe.clustering.management.*;
 import io.zeebe.util.buffer.BufferReader;
@@ -24,66 +24,56 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class DeleteWorkflowMessage implements BufferReader, BufferWriter
+public class FetchWorkflowRequest implements BufferReader, BufferWriter
 {
     private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
-    private final DeleteWorkflowMessageEncoder bodyEncoder = new DeleteWorkflowMessageEncoder();
+    private final FetchWorkflowRequestEncoder bodyEncoder = new FetchWorkflowRequestEncoder();
 
     private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
-    private final DeleteWorkflowMessageDecoder bodyDecoder = new DeleteWorkflowMessageDecoder();
+    private final FetchWorkflowRequestDecoder bodyDecoder = new FetchWorkflowRequestDecoder();
 
-    private int partitionId = DeleteWorkflowMessageEncoder.partitionIdNullValue();
-    private long workflowKey = DeleteWorkflowMessageEncoder.workflowKeyNullValue();
-    private long deploymentKey = DeleteWorkflowMessageEncoder.deploymentKeyNullValue();
-    private int version = DeleteWorkflowMessageEncoder.versionNullValue();
-
+    private long workflowKey = FetchWorkflowRequestEncoder.workflowKeyNullValue();
+    private int version = FetchWorkflowRequestEncoder.versionNullValue();
     private final DirectBuffer bpmnProcessId = new UnsafeBuffer(0, 0);
-    private final DirectBuffer bpmnXml = new UnsafeBuffer(0, 0);
+    private final DirectBuffer topicName = new UnsafeBuffer(0, 0);
 
     @Override
     public int getLength()
     {
         return headerEncoder.encodedLength() +
-                bodyEncoder.encodedLength() +
-                DeleteWorkflowMessageEncoder.bpmnProcessIdHeaderLength() +
-                bpmnProcessId.capacity() +
-                DeleteWorkflowMessageEncoder.bpmnXmlHeaderLength() +
-                bpmnXml.capacity();
+            bodyEncoder.sbeBlockLength() +
+            FetchWorkflowRequestEncoder.bpmnProcessIdHeaderLength() +
+            bpmnProcessId.capacity() +
+            FetchWorkflowRequestEncoder.topicNameHeaderLength() +
+            topicName.capacity();
     }
 
-    public DeleteWorkflowMessage partitionId(int partitionId)
-    {
-        this.partitionId = partitionId;
-        return this;
-    }
-
-    public DeleteWorkflowMessage workflowKey(long workflowKey)
+    public FetchWorkflowRequest workflowKey(long workflowKey)
     {
         this.workflowKey = workflowKey;
         return this;
     }
 
-    public DeleteWorkflowMessage deploymentKey(long deploymentKey)
-    {
-        this.deploymentKey = deploymentKey;
-        return this;
-    }
-
-    public DeleteWorkflowMessage version(int version)
+    public FetchWorkflowRequest version(int version)
     {
         this.version = version;
         return this;
     }
 
-    public DeleteWorkflowMessage bpmnProcessId(DirectBuffer bpmnProcessId)
+    public FetchWorkflowRequest latestVersion()
+    {
+        return version(FetchWorkflowRequestEncoder.versionMaxValue());
+    }
+
+    public FetchWorkflowRequest bpmnProcessId(DirectBuffer bpmnProcessId)
     {
         this.bpmnProcessId.wrap(bpmnProcessId);
         return this;
     }
 
-    public DeleteWorkflowMessage bpmnXml(DirectBuffer bpmnXml)
+    public FetchWorkflowRequest topicName(DirectBuffer topicName)
     {
-        this.bpmnXml.wrap(bpmnXml);
+        this.topicName.wrap(topicName);
         return this;
     }
 
@@ -97,12 +87,10 @@ public class DeleteWorkflowMessage implements BufferReader, BufferWriter
             .version(bodyEncoder.sbeSchemaVersion());
 
         bodyEncoder.wrap(buffer, offset + headerEncoder.encodedLength())
-            .partitionId(partitionId)
             .workflowKey(workflowKey)
-            .deploymentKey(deploymentKey)
             .version(version)
             .putBpmnProcessId(bpmnProcessId, 0, bpmnProcessId.capacity())
-            .putBpmnXml(bpmnXml, 0, bpmnXml.capacity());
+            .putTopicName(topicName, 0, topicName.capacity());
     }
 
     @Override
@@ -113,34 +101,34 @@ public class DeleteWorkflowMessage implements BufferReader, BufferWriter
         offset += headerDecoder.encodedLength();
 
         bodyDecoder.wrap(buffer,
-                offset,
-                headerDecoder.blockLength(),
-                headerDecoder.version());
+            offset,
+            headerDecoder.blockLength(),
+            headerDecoder.version());
 
-        partitionId = bodyDecoder.partitionId();
         workflowKey = bodyDecoder.workflowKey();
-        deploymentKey = bodyDecoder.deploymentKey();
         version = bodyDecoder.version();
 
         offset += headerDecoder.blockLength();
 
+        // bpmn process id
+
         final int bpmnProcessIdLength = bodyDecoder.bpmnProcessIdLength();
-        offset += DeleteWorkflowMessageEncoder.bpmnProcessIdHeaderLength();
+        offset += FetchWorkflowRequestDecoder.bpmnProcessIdHeaderLength();
 
         bpmnProcessId.wrap(buffer, offset, bpmnProcessIdLength);
 
         offset += bpmnProcessIdLength;
         bodyDecoder.limit(offset);
 
-        final int bpmnXmlLength = bodyDecoder.bpmnXmlLength();
-        offset += DeleteWorkflowMessageEncoder.bpmnXmlHeaderLength();
+        // bpmn process id
 
-        bpmnXml.wrap(buffer, offset, bpmnXmlLength);
-    }
+        final int topicNameLength = bodyDecoder.topicNameLength();
+        offset += FetchWorkflowRequestDecoder.topicNameHeaderLength();
 
-    public int getPartitionId()
-    {
-        return partitionId;
+        topicName.wrap(buffer, offset, topicNameLength);
+
+        offset += topicNameLength;
+        bodyDecoder.limit(offset);
     }
 
     public long getWorkflowKey()
@@ -148,14 +136,14 @@ public class DeleteWorkflowMessage implements BufferReader, BufferWriter
         return workflowKey;
     }
 
-    public long getDeploymentKey()
-    {
-        return deploymentKey;
-    }
-
     public int getVersion()
     {
         return version;
+    }
+
+    public boolean isLatestVersion()
+    {
+        return version == FetchWorkflowRequestDecoder.versionMaxValue();
     }
 
     public DirectBuffer getBpmnProcessId()
@@ -163,9 +151,18 @@ public class DeleteWorkflowMessage implements BufferReader, BufferWriter
         return bpmnProcessId;
     }
 
-    public DirectBuffer getBpmnXml()
+    public DirectBuffer getTopicName()
     {
-        return bpmnXml;
+        return topicName;
     }
 
+    public FetchWorkflowRequest reset()
+    {
+        workflowKey = FetchWorkflowRequestEncoder.workflowKeyNullValue();
+        version = FetchWorkflowRequestEncoder.versionNullValue();
+        bpmnProcessId.wrap(0, 0);
+        topicName.wrap(0, 0);
+
+        return this;
+    }
 }
