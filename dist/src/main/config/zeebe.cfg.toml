@@ -118,7 +118,7 @@ bootstrap = 1
 # "partition folders". A partition folder has the following structure:
 #
 # internal-system-0                 (root partition folder)
-# ├── partition.msgpack             (metadata about the partition)
+# ├── partition.json                (metadata about the partition)
 # ├── segments                      (the actual data as segment files)
 # │   ├── 00.data
 # │   └── 01.data
