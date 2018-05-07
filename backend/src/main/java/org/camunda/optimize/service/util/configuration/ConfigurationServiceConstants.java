@@ -58,8 +58,6 @@ public interface ConfigurationServiceConstants {
 
   String ENGINE_CONNECT_TIMEOUT = "$.engine-commons.connection.timeout";
   String ENGINE_READ_TIMEOUT = "$.engine-commons.read.timeout";
-  String WEBAPPS_ENDPOINT = "$.engine-commons.webapps.endpoint";
-  String WEBAPPS_ENDPOINT_ENABLED = "$.engine-commons.webapps.enabled";
   String HAI_ENDPOINT = "$.engine-commons.hai.resource";
   String HAI_COUNT_ENDPOINT = "$.engine-commons.hai.count";
   String HVI_ENDPOINT = "$.engine-commons.history.variable.resource";
@@ -95,5 +93,8 @@ public interface ConfigurationServiceConstants {
 
   String EXPORT_CSV_LIMIT = "$.export.csv.limit";
   String EXPORT_CSV_OFFSET = "$.export.csv.offset";
+
+  String WEBAPPS_ENDPOINT = "$.camunda.webapps.endpoint";
+  String WEBAPPS_ENDPOINT_ENABLED = "$.camunda.webapps.enabled";
 
 }

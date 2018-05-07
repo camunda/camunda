@@ -45,7 +45,7 @@ es:
   port: 9300
   index: optimize
 
-engine-commons:
+camunda:
   # The webapps configuration allows Optimize to directly link
   # to the other Camunda Web Applications, e.g. to jump from
   # Optimize directly to a dedicated process instance in Cockpit

@@ -52,8 +52,6 @@ public class ConfigurationService {
   private String userValidationEndpoint;
   private String processDefinitionEndpoint;
   private String processDefinitionCountEndpoint;
-  private String camundaWebappsEndpoint;
-  private Boolean camundaWebappsEndpointEnabled;
 
   private String eventType;
   private String processDefinitionType;
@@ -126,6 +124,9 @@ public class ConfigurationService {
 
   private Integer exportCsvLimit;
   private Integer exportCsvOffset;
+
+  private String camundaWebappsEndpoint;
+  private Boolean camundaWebappsEndpointEnabled;
 
   private Properties quartzProperties;
 
