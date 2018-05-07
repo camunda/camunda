@@ -76,9 +76,17 @@ import io.zeebe.msgpack.mapping.Mapping;
 import io.zeebe.msgpack.mapping.MappingException;
 import io.zeebe.msgpack.mapping.MappingProcessor;
 import io.zeebe.protocol.clientapi.ValueType;
+<<<<<<< a8980d0e12f2a98a0d593a7f37a5278b6926d5d7
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.transport.ClientResponse;
 import io.zeebe.transport.ClientTransport;
+=======
+import io.zeebe.protocol.intent.IncidentIntent;
+import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.intent.TaskIntent;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.intent.WorkflowIntent;
+>>>>>>> structure intents by value type
 import io.zeebe.util.metrics.Metric;
 import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.sched.ActorControl;
@@ -119,6 +127,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         final BpmnAspectEventProcessor bpmnAspectProcessor = new BpmnAspectEventProcessor();
 
         return environment.newStreamProcessor()
+<<<<<<< a8980d0e12f2a98a0d593a7f37a5278b6926d5d7
             .onCommand(ValueType.WORKFLOW_INSTANCE, Intent.CREATE, new CreateWorkflowInstanceEventProcessor())
             .onEvent(ValueType.WORKFLOW_INSTANCE, Intent.CREATED, new WorkflowInstanceCreatedEventProcessor())
             .onCommand(ValueType.WORKFLOW_INSTANCE, Intent.CANCEL, new CancelWorkflowInstanceProcessor())
@@ -136,6 +145,28 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
 
             .onEvent(ValueType.TASK, Intent.CREATED, new TaskCreatedProcessor())
             .onEvent(ValueType.TASK, Intent.COMPLETED, new TaskCompletedEventProcessor())
+=======
+            .onCommand(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CREATE, new CreateWorkflowInstanceEventProcessor())
+            .onEvent(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CREATED, new WorkflowInstanceCreatedEventProcessor())
+            .onCommand(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CANCEL, new CancelWorkflowInstanceProcessor())
+            .onEvent(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, w -> isActive(w.getWorkflowInstanceKey()), new SequenceFlowTakenEventProcessor())
+            .onEvent(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.ACTIVITY_READY, w -> isActive(w.getWorkflowInstanceKey()), new ActivityReadyEventProcessor())
+            .onEvent(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.ACTIVITY_ACTIVATED, w -> isActive(w.getWorkflowInstanceKey()), new ActivityActivatedEventProcessor())
+            .onEvent(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.ACTIVITY_COMPLETING, w -> isActive(w.getWorkflowInstanceKey()), new ActivityCompletingEventProcessor())
+            .onCommand(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.UPDATE_PAYLOAD, new UpdatePayloadProcessor())
+            .onEvent(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.START_EVENT_OCCURRED, this::getBpmnAspectHandler)
+            .onEvent(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.END_EVENT_OCCURRED, this::getBpmnAspectHandler)
+            .onEvent(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.GATEWAY_ACTIVATED, this::getBpmnAspectHandler)
+            .onEvent(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.ACTIVITY_COMPLETED, this::getBpmnAspectHandler)
+            .onEvent(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CANCELED, (Consumer<WorkflowInstanceEvent>) (e) -> workflowInstanceEventCanceled.incrementOrdered())
+            .onEvent(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.COMPLETED, (Consumer<WorkflowInstanceEvent>) (e) -> workflowInstanceEventCompleted.incrementOrdered())
+
+            .onEvent(ValueType.TASK, TaskIntent.CREATED, new TaskCreatedProcessor())
+            .onEvent(ValueType.TASK, TaskIntent.COMPLETED, new TaskCompletedEventProcessor())
+
+            .onCommand(ValueType.WORKFLOW, WorkflowIntent.CREATE, new WorkflowCreateEventProcessor())
+            .onCommand(ValueType.WORKFLOW, WorkflowIntent.DELETE, new WorkflowDeleteEventProcessor())
+>>>>>>> structure intents by value type
 
             .withStateResource(workflowInstanceIndex.getMap())
             .withStateResource(activityInstanceMap.getMap())
@@ -209,7 +240,22 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
 
             workflowInstanceCommand.setWorkflowInstanceKey(command.getKey());
 
+<<<<<<< a8980d0e12f2a98a0d593a7f37a5278b6926d5d7
             final DirectBuffer payload = workflowInstanceCommand.getPayload();
+=======
+        @Override
+        public long writeRecord(TypedRecord<WorkflowRecord> command, TypedStreamWriter writer)
+        {
+            if (isNewWorkflow)
+            {
+                return writer.writeFollowUpEvent(command.getKey(), WorkflowIntent.CREATED, command.getValue());
+            }
+            else
+            {
+                return writer.writeRejection(command);
+            }
+        }
+>>>>>>> structure intents by value type
 
             if (isNilPayload(payload) || isValidPayload(payload))
             {
@@ -233,6 +279,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
                 {
                     final DeployedWorkflow workflowDefinition = workflowCache.getWorkflowByProcessIdAndVersion(bpmnProcessId, version);
 
+<<<<<<< a8980d0e12f2a98a0d593a7f37a5278b6926d5d7
                     if (workflowDefinition != null)
                     {
                         command.setWorkflowKey(workflowDefinition.getKey());
@@ -243,6 +290,9 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
                         fetchWorkflowFuture = workflowCache.fetchWorkflowByBpmnProcessIdAndVersion(bpmnProcessId, version);
                     }
                 }
+=======
+                batchWriter.addFollowUpEvent(command.getKey(), WorkflowIntent.DELETED, command.getValue());
+>>>>>>> structure intents by value type
 
                 // latest by bpmn process id
                 else
@@ -251,6 +301,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
 
                     if (workflowDefinition != null && version != -2)
                     {
+<<<<<<< a8980d0e12f2a98a0d593a7f37a5278b6926d5d7
                         command.setWorkflowKey(workflowDefinition.getKey())
                             .setVersion(workflowDefinition.getVersion());
                         accepted = true;
@@ -258,6 +309,12 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
                     else
                     {
                         fetchWorkflowFuture = workflowCache.fetchLatestWorkflowByBpmnProcessId(bpmnProcessId);
+=======
+                        final long workflowInstanceKey = workflowInstanceKeys.getLong(i);
+                        workflowInstanceRecord.setWorkflowInstanceKey(workflowInstanceKey);
+
+                        batchWriter.addFollowUpEvent(workflowInstanceKey, WorkflowInstanceIntent.CANCEL, workflowInstanceRecord);
+>>>>>>> structure intents by value type
                     }
                 }
             }
@@ -328,11 +385,15 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
 
             if (accepted)
             {
+<<<<<<< a8980d0e12f2a98a0d593a7f37a5278b6926d5d7
                 final TypedBatchWriter batchWriter = writer.newBatch();
                 // TODO: copy request metadata here
                 batchWriter.addFollowUpEvent(command.getKey(), Intent.CREATED, command.getValue());
                 addStartEventOccured(batchWriter, command.getValue());
                 return batchWriter.write();
+=======
+                return responseWriter.writeEvent(WorkflowInstanceIntent.CREATED, command);
+>>>>>>> structure intents by value type
             }
             else
             {
@@ -342,6 +403,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
 
         private void addStartEventOccured(TypedBatchWriter batchWriter, WorkflowInstanceRecord createCommand)
         {
+<<<<<<< a8980d0e12f2a98a0d593a7f37a5278b6926d5d7
             final Workflow workflow = workflowCache.getWorkflowByKey(createCommand.getWorkflowKey()).getWorkflow();
             final StartEvent startEvent = workflow.getInitialStartEvent();
             final DirectBuffer activityId = startEvent.getIdAsBuffer();
@@ -353,6 +415,16 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
                 .setWorkflowInstanceKey(createCommand.getVersion())
                 .setWorkflowKey(createCommand.getWorkflowKey());
             batchWriter.addNewEvent(Intent.START_EVENT_OCCURRED, startEventRecord);
+=======
+            if (success)
+            {
+                return writer.writeFollowUpEvent(command.getKey(), WorkflowInstanceIntent.CREATED, command.getValue());
+            }
+            else
+            {
+                return writer.writeRejection(command);
+            }
+>>>>>>> structure intents by value type
         }
     }
 
@@ -361,7 +433,11 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         @Override
         public boolean executeSideEffects(TypedRecord<WorkflowInstanceRecord> record, TypedResponseWriter responseWriter)
         {
+<<<<<<< a8980d0e12f2a98a0d593a7f37a5278b6926d5d7
             return responseWriter.writeEvent(Intent.CREATED, record);
+=======
+            return writer.writeNewEvent(WorkflowInstanceIntent.START_EVENT_OCCURRED, record.getValue());
+>>>>>>> structure intents by value type
         }
 
         @Override
@@ -400,7 +476,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         @Override
         public long writeRecord(TypedRecord<WorkflowInstanceRecord> record, TypedStreamWriter writer)
         {
-            return writer.writeNewEvent(Intent.SEQUENCE_FLOW_TAKEN, record.getValue());
+            return writer.writeNewEvent(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, record.getValue());
         }
     }
 
@@ -471,17 +547,17 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         {
             if (!createsIncident)
             {
-                return writer.writeNewEvent(Intent.SEQUENCE_FLOW_TAKEN, record.getValue());
+                return writer.writeNewEvent(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, record.getValue());
             }
             else
             {
                 if (!isResolvingIncident)
                 {
-                    return writer.writeNewCommand(Intent.CREATE, incidentCommand);
+                    return writer.writeNewCommand(IncidentIntent.CREATE, incidentCommand);
                 }
                 else
                 {
-                    return writer.writeFollowUpEvent(record.getMetadata().getIncidentKey(), Intent.RESOLVE_FAILED, incidentCommand);
+                    return writer.writeFollowUpEvent(record.getMetadata().getIncidentKey(), IncidentIntent.RESOLVE_FAILED, incidentCommand);
                 }
             }
         }
@@ -514,7 +590,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         {
             if (isCompleted)
             {
-                return writer.writeFollowUpEvent(record.getValue().getWorkflowInstanceKey(), Intent.COMPLETED, record.getValue());
+                return writer.writeFollowUpEvent(record.getValue().getWorkflowInstanceKey(), WorkflowInstanceIntent.COMPLETED, record.getValue());
             }
             else
             {
@@ -548,15 +624,15 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
 
             if (targetNode instanceof EndEvent)
             {
-                nextState = Intent.END_EVENT_OCCURRED;
+                nextState = WorkflowInstanceIntent.END_EVENT_OCCURRED;
             }
             else if (targetNode instanceof ServiceTask)
             {
-                nextState = Intent.ACTIVITY_READY;
+                nextState = WorkflowInstanceIntent.ACTIVITY_READY;
             }
             else if (targetNode instanceof ExclusiveGateway)
             {
-                nextState = Intent.GATEWAY_ACTIVATED;
+                nextState = WorkflowInstanceIntent.GATEWAY_ACTIVATED;
             }
             else
             {
@@ -618,17 +694,17 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         {
             if (!createsIncident)
             {
-                return writer.writeFollowUpEvent(record.getKey(), Intent.ACTIVITY_ACTIVATED, record.getValue());
+                return writer.writeFollowUpEvent(record.getKey(), WorkflowInstanceIntent.ACTIVITY_ACTIVATED, record.getValue());
             }
             else
             {
                 if (!isResolvingIncident)
                 {
-                    return writer.writeNewCommand(Intent.CREATE, incidentCommand);
+                    return writer.writeNewCommand(IncidentIntent.CREATE, incidentCommand);
                 }
                 else
                 {
-                    return writer.writeFollowUpEvent(record.getMetadata().getIncidentKey(), Intent.RESOLVE_FAILED, incidentCommand);
+                    return writer.writeFollowUpEvent(record.getMetadata().getIncidentKey(), IncidentIntent.RESOLVE_FAILED, incidentCommand);
                 }
             }
         }
@@ -695,7 +771,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         @Override
         public long writeRecord(TypedRecord<WorkflowInstanceRecord> record, TypedStreamWriter writer)
         {
-            return writer.writeNewCommand(Intent.CREATE, taskCommand);
+            return writer.writeNewCommand(TaskIntent.CREATE, taskCommand);
         }
     }
 
@@ -775,7 +851,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         public long writeRecord(TypedRecord<TaskRecord> record, TypedStreamWriter writer)
         {
             return activityCompleted ?
-                    writer.writeFollowUpEvent(activityInstanceKey, Intent.ACTIVITY_COMPLETING, workflowInstanceEvent) :
+                    writer.writeFollowUpEvent(activityInstanceKey, WorkflowInstanceIntent.ACTIVITY_COMPLETING, workflowInstanceEvent) :
                     0L;
         }
 
@@ -856,18 +932,17 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         {
             if (!hasIncident)
             {
-                return writer.writeFollowUpEvent(record.getKey(), Intent.ACTIVITY_COMPLETED, record.getValue());
+                return writer.writeFollowUpEvent(record.getKey(), WorkflowInstanceIntent.ACTIVITY_COMPLETED, record.getValue());
             }
             else
             {
-                // TODO: kann man das hier besser lösen? Gehört das nicht eigenlicht in den Incident-Stream-Processor?
                 if (!isResolvingIncident)
                 {
-                    return writer.writeNewCommand(Intent.CREATE, incidentCommand);
+                    return writer.writeNewCommand(IncidentIntent.CREATE, incidentCommand);
                 }
                 else
                 {
-                    return writer.writeFollowUpEvent(record.getMetadata().getIncidentKey(), Intent.RESOLVE_FAILED, incidentCommand);
+                    return writer.writeFollowUpEvent(record.getMetadata().getIncidentKey(), IncidentIntent.RESOLVE_FAILED, incidentCommand);
                 }
             }
         }
@@ -951,7 +1026,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
                             .setActivityId(activityInstanceMap.getActivityId())
                             .setActivityInstanceKey(activityInstanceKey);
 
-                    batchWriter.addFollowUpCommand(taskKey, Intent.CANCEL, taskEvent);
+                    batchWriter.addFollowUpCommand(taskKey, TaskIntent.CANCEL, taskEvent);
                 }
 
                 if (activityInstanceKey > 0)
@@ -963,10 +1038,10 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
                         .setWorkflowInstanceKey(command.getKey())
                         .setActivityId(activityInstanceMap.getActivityId());
 
-                    batchWriter.addFollowUpEvent(activityInstanceKey, Intent.ACTIVITY_TERMINATED, activityInstanceEvent);
+                    batchWriter.addFollowUpEvent(activityInstanceKey, WorkflowInstanceIntent.ACTIVITY_TERMINATED, activityInstanceEvent);
                 }
 
-                batchWriter.addFollowUpEvent(command.getKey(), Intent.CANCELED, value);
+                batchWriter.addFollowUpEvent(command.getKey(), WorkflowInstanceIntent.CANCELED, value);
 
                 return batchWriter.write();
             }
@@ -981,7 +1056,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         {
             if (isCanceled)
             {
-                return responseWriter.writeEvent(Intent.CANCELED, record);
+                return responseWriter.writeEvent(WorkflowInstanceIntent.CANCELED, record);
             }
             else
             {
@@ -1021,7 +1096,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         {
             if (isUpdated)
             {
-                return responseWriter.writeEvent(Intent.PAYLOAD_UPDATED, command);
+                return responseWriter.writeEvent(WorkflowInstanceIntent.PAYLOAD_UPDATED, command);
             }
         }
     }
@@ -1074,7 +1149,11 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
 
             if (deployedWorkflow == null)
             {
+<<<<<<< a8980d0e12f2a98a0d593a7f37a5278b6926d5d7
                 fetchWorkflow(workflowKey, this::resolveCurrentFlowNode, ctx);
+=======
+                return writer.writeFollowUpEvent(command.getKey(), WorkflowInstanceIntent.PAYLOAD_UPDATED, command.getValue());
+>>>>>>> structure intents by value type
             }
             else
             {

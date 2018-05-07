@@ -39,8 +39,8 @@ import io.zeebe.msgpack.property.ArrayProperty;
 import io.zeebe.msgpack.value.ArrayValue;
 import io.zeebe.msgpack.value.IntegerValue;
 import io.zeebe.msgpack.value.ValueArray;
-import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.intent.TopicIntent;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceContainer;
@@ -188,8 +188,8 @@ public class KnownTopics implements Service<KnownTopics>, StreamProcessorLifecyc
 
         final TypedStreamProcessor streamProcessor = new TypedStreamEnvironment(partition.getLogStream(), serverTransport.getOutput())
             .newStreamProcessor()
-            .onCommand(ValueType.TOPIC, Intent.CREATE, topicCreateProcessor)
-            .onEvent(ValueType.TOPIC, Intent.CREATE_COMPLETE, topicCreatedProcessor)
+            .onCommand(ValueType.TOPIC, TopicIntent.CREATE, topicCreateProcessor)
+            .onEvent(ValueType.TOPIC, TopicIntent.CREATE_COMPLETE, topicCreatedProcessor)
             .withListener(this)
             .withStateResource(knownTopics)
             .build();

@@ -21,9 +21,9 @@ import java.util.function.Function;
 import org.agrona.MutableDirectBuffer;
 
 import io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder;
-import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
 import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.intent.Intent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 
 public class ExecuteCommandResponseWriter extends AbstractMessageBuilder<ExecuteCommandRequest>
@@ -116,7 +116,7 @@ public class ExecuteCommandResponseWriter extends AbstractMessageBuilder<Execute
         bodyEncoder
             .wrap(buffer, offset)
             .recordType(recordType)
-            .intent(intent)
+            .intent(intent.value())
             .partitionId(partitionId)
             .key(key)
             .position(position)

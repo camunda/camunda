@@ -18,7 +18,11 @@ package io.zeebe.test.broker.protocol.clientapi;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -30,10 +34,11 @@ import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
-import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
 import io.zeebe.protocol.clientapi.SubscribedRecordDecoder;
 import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.intent.SubscriberIntent;
+import io.zeebe.protocol.intent.TopicIntent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.RemoteAddress;
@@ -188,7 +193,7 @@ public class ClientApiRule extends ExternalResource
     {
         return createCmdRequest()
             .partitionId(partitionId)
-            .type(ValueType.SUBSCRIBER, Intent.SUBSCRIBE)
+            .type(ValueType.SUBSCRIBER, SubscriberIntent.SUBSCRIBE)
             .command()
                 .put("startPosition", startPosition)
                 .put("name", name)
@@ -315,7 +320,7 @@ public class ClientApiRule extends ExternalResource
     {
         final ExecuteCommandResponse response = createCmdRequest()
             .partitionId(Protocol.SYSTEM_PARTITION)
-            .type(ValueType.TOPIC, Intent.CREATE)
+            .type(ValueType.TOPIC, TopicIntent.CREATE)
             .command()
                 .put("name", name)
                 .put("partitions", partitions)
@@ -323,7 +328,7 @@ public class ClientApiRule extends ExternalResource
                 .done()
             .sendAndAwait();
 
-        if (response.intent() == Intent.CREATING)
+        if (response.intent() == TopicIntent.CREATING)
         {
             waitForTopic(name, partitions);
         }

@@ -17,9 +17,9 @@ package io.zeebe.test.broker.protocol.clientapi;
 
 import java.util.stream.Stream;
 
-import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.intent.Intent;
 import io.zeebe.test.util.stream.StreamWrapper;
 
 public class SubscribedRecordStream extends StreamWrapper<SubscribedRecord>

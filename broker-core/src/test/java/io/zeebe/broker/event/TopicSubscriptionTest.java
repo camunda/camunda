@@ -17,22 +17,8 @@
  */
 package io.zeebe.broker.event;
 
-import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.clientapi.ErrorCode;
-import io.zeebe.protocol.clientapi.Intent;
-import io.zeebe.protocol.clientapi.RecordType;
-import io.zeebe.protocol.clientapi.SubscriptionType;
-import io.zeebe.protocol.clientapi.ValueType;
-import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.test.broker.protocol.MsgPackHelper;
-import io.zeebe.test.broker.protocol.clientapi.*;
-import io.zeebe.test.util.TestUtil;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.rules.RuleChain;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 import java.util.Arrays;
 import java.util.List;
@@ -40,8 +26,31 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.junit.rules.RuleChain;
+
+import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.protocol.clientapi.ControlMessageType;
+import io.zeebe.protocol.clientapi.ErrorCode;
+import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.SubscriptionType;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.intent.SubscriberIntent;
+import io.zeebe.protocol.intent.SubscriptionIntent;
+import io.zeebe.protocol.intent.TaskIntent;
+import io.zeebe.servicecontainer.ServiceName;
+import io.zeebe.test.broker.protocol.MsgPackHelper;
+import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
+import io.zeebe.test.broker.protocol.clientapi.ControlMessageResponse;
+import io.zeebe.test.broker.protocol.clientapi.ErrorResponse;
+import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandRequest;
+import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
+import io.zeebe.test.broker.protocol.clientapi.RawMessage;
+import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
+import io.zeebe.test.util.TestUtil;
 
 
 public class TopicSubscriptionTest
@@ -113,7 +122,7 @@ public class TopicSubscriptionTest
 
         // when creating a task
         apiRule.createCmdRequest()
-            .type(ValueType.TASK, Intent.CREATE)
+            .type(ValueType.TASK, TaskIntent.CREATE)
             .command()
                 .put("type", "theTaskType")
                 .done()
@@ -129,7 +138,7 @@ public class TopicSubscriptionTest
     {
         // given
         final ExecuteCommandResponse createTaskResponse = apiRule.createCmdRequest()
-            .type(ValueType.TASK, Intent.CREATE)
+            .type(ValueType.TASK, TaskIntent.CREATE)
             .command()
                 .put("type", "foo")
                 .put("retries", 1)
@@ -158,7 +167,7 @@ public class TopicSubscriptionTest
         assertThat(taskEvent.partitionId()).isEqualTo(apiRule.getDefaultPartitionId());
         assertThat(taskEvent.recordType()).isEqualTo(RecordType.COMMAND);
         assertThat(taskEvent.valueType()).isEqualTo(ValueType.TASK);
-        assertThat(taskEvent.intent()).isEqualTo(Intent.CREATE);
+        assertThat(taskEvent.intent()).isEqualTo(TaskIntent.CREATE);
 
         taskEvent = taskEvents.get(1);
         assertThat(taskEvent.subscriberKey()).isEqualTo(subscriberKey);
@@ -167,7 +176,7 @@ public class TopicSubscriptionTest
         assertThat(taskEvent.partitionId()).isEqualTo(apiRule.getDefaultPartitionId());
         assertThat(taskEvent.recordType()).isEqualTo(RecordType.EVENT);
         assertThat(taskEvent.valueType()).isEqualTo(ValueType.TASK);
-        assertThat(taskEvent.intent()).isEqualTo(Intent.CREATED);
+        assertThat(taskEvent.intent()).isEqualTo(TaskIntent.CREATED);
     }
 
     @Test
@@ -175,7 +184,7 @@ public class TopicSubscriptionTest
     {
         // given
         apiRule.createCmdRequest()
-            .type(ValueType.TASK, Intent.CREATE)
+            .type(ValueType.TASK, TaskIntent.CREATE)
             .command()
                 .put("type", "foo")
                 .put("retries", 1)
@@ -295,7 +304,7 @@ public class TopicSubscriptionTest
         final long subscriberKey = subscriptionResponse.key();
 
         apiRule.createCmdRequest()
-            .type(ValueType.TASK, Intent.CREATE)
+            .type(ValueType.TASK, TaskIntent.CREATE)
             .command()
                 .put("type", "foo")
                 .put("retries", 1)
@@ -310,7 +319,7 @@ public class TopicSubscriptionTest
             .collect(Collectors.toList());
 
         apiRule.createCmdRequest()
-            .type(ValueType.SUBSCRIPTION, Intent.ACKNOWLEDGE)
+            .type(ValueType.SUBSCRIPTION, SubscriptionIntent.ACKNOWLEDGE)
             .command()
                 .put("name", "foo")
                 .put("ackPosition", taskEvents.get(1))
@@ -329,7 +338,7 @@ public class TopicSubscriptionTest
 
         // when
         apiRule.createCmdRequest()
-            .type(ValueType.SUBSCRIBER, Intent.SUBSCRIBE)
+            .type(ValueType.SUBSCRIBER, SubscriberIntent.SUBSCRIBE)
             .command()
                 .put("startPosition", taskEvents.get(0))
                 .put("name", "foo")
@@ -358,7 +367,7 @@ public class TopicSubscriptionTest
         final long subscriberKey = subscriptionResponse.key();
 
         apiRule.createCmdRequest()
-            .type(ValueType.TASK, Intent.CREATE)
+            .type(ValueType.TASK, TaskIntent.CREATE)
             .command()
                 .put("type", "foo")
                 .put("retries", 1)
@@ -461,7 +470,7 @@ public class TopicSubscriptionTest
     {
         // given
         apiRule.createCmdRequest()
-            .type(ValueType.TASK, Intent.CREATE)
+            .type(ValueType.TASK, TaskIntent.CREATE)
             .command()
                 .put("type", "foo")
                 .put("retries", 1)
@@ -475,7 +484,7 @@ public class TopicSubscriptionTest
 
         // then
         final RawMessage subscriptionResponse = apiRule.commandResponses()
-            .filter((m) -> asCommandResponse(m).intent() == Intent.SUBSCRIBED)
+            .filter((m) -> asCommandResponse(m).intent() == SubscriberIntent.SUBSCRIBED)
             .findFirst()
             .get();
 

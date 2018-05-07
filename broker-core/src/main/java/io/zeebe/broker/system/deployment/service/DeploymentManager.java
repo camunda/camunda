@@ -30,14 +30,15 @@ import io.zeebe.broker.system.deployment.data.LatestVersionByProcessIdAndTopicNa
 import io.zeebe.broker.system.deployment.data.TopicNames;
 import io.zeebe.broker.system.deployment.data.WorkflowKeyByProcessIdAndVersion;
 import io.zeebe.broker.system.deployment.processor.DeploymentCreateEventProcessor;
-import io.zeebe.broker.system.deployment.processor.DeploymentCreatedEventProcess;
+import io.zeebe.broker.system.deployment.processor.DeploymentCreatedEventProcessor;
 import io.zeebe.broker.system.deployment.processor.DeploymentRejectedEventProcessor;
 import io.zeebe.broker.system.deployment.processor.DeploymentTopicCreatingEventProcessor;
 import io.zeebe.broker.transport.controlmessage.ControlMessageHandlerManager;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
 import io.zeebe.protocol.clientapi.ValueType;
-import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.intent.DeploymentIntent;
+import io.zeebe.protocol.intent.TopicIntent;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceGroupReference;
@@ -89,10 +90,10 @@ public class DeploymentManager implements Service<DeploymentManager>
         final WorkflowKeyByProcessIdAndVersion workflowKeyByProcessIdAndVersion = new WorkflowKeyByProcessIdAndVersion();
 
         final TypedStreamProcessor streamProcessor = streamEnvironment.newStreamProcessor()
-            .onCommand(ValueType.DEPLOYMENT, Intent.CREATE, new DeploymentCreateEventProcessor(latestVersionByProcessIdAndTopicName, lastWorkflowKey, topicNames))
-            .onEvent(ValueType.DEPLOYMENT, Intent.CREATED, new DeploymentCreatedEventProcess(deploymentPositionByWorkflowKey, workflowKeyByProcessIdAndVersion))
-            .onRejection(ValueType.DEPLOYMENT, Intent.CREATE, new DeploymentRejectedEventProcessor())
-            .onEvent(ValueType.TOPIC, Intent.CREATING, new DeploymentTopicCreatingEventProcessor(topicNames))
+            .onCommand(ValueType.DEPLOYMENT, DeploymentIntent.CREATE, new DeploymentCreateEventProcessor(latestVersionByProcessIdAndTopicName, lastWorkflowKey, topicNames))
+            .onEvent(ValueType.DEPLOYMENT, DeploymentIntent.CREATED, new DeploymentCreatedEventProcessor(deploymentPositionByWorkflowKey, workflowKeyByProcessIdAndVersion))
+            .onRejection(ValueType.DEPLOYMENT, DeploymentIntent.CREATE, new DeploymentRejectedEventProcessor())
+            .onEvent(ValueType.TOPIC, TopicIntent.CREATING, new DeploymentTopicCreatingEventProcessor(topicNames))
             .withStateResource(lastWorkflowKey.getRawValue())
             .withStateResource(latestVersionByProcessIdAndTopicName.getRawMap())
             .withStateResource(topicNames.getRawMap())

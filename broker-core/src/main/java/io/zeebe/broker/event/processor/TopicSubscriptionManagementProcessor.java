@@ -43,10 +43,11 @@ import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.map.Bytes2LongZbMap;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ErrorCode;
-import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.RecordMetadata;
+import io.zeebe.protocol.intent.SubscriberIntent;
+import io.zeebe.protocol.intent.SubscriptionIntent;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.util.sched.ActorControl;
@@ -166,12 +167,12 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
         subscriberEvent.reset();
         subscriberEvent.wrap(event.getValueBuffer(), event.getValueOffset(), event.getValueLength());
 
-        if (metadata.getIntent() == Intent.SUBSCRIBE)
+        if (metadata.getIntent() == SubscriberIntent.SUBSCRIBE)
         {
             subscribeProcessor.wrap(currentEvent, metadata, subscriberEvent);
             return subscribeProcessor;
         }
-        else if (metadata.getIntent() == Intent.SUBSCRIBED)
+        else if (metadata.getIntent() == SubscriberIntent.SUBSCRIBED)
         {
             return subscribedProcessor;
         }
@@ -186,7 +187,7 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
         subscriptionEvent.reset();
         subscriptionEvent.wrap(event.getValueBuffer(), event.getValueOffset(), event.getValueLength());
 
-        if (metadata.getIntent() == Intent.ACKNOWLEDGE)
+        if (metadata.getIntent() == SubscriptionIntent.ACKNOWLEDGE)
         {
             return ackProcessor;
         }
@@ -320,7 +321,7 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
             metadata
                 .recordType(RecordType.EVENT)
                 .valueType(ValueType.SUBSCRIPTION)
-                .intent(Intent.ACKNOWLEDGED)
+                .intent(SubscriptionIntent.ACKNOWLEDGED)
                 .protocolVersion(Protocol.PROTOCOL_VERSION);
 
             return writer
@@ -347,7 +348,8 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
                     .valueWriter(subscriptionEvent)
                     .key(currentEvent.getKey())
                     .recordType(RecordType.EVENT)
-                    .intent(Intent.ACKNOWLEDGED)
+                    .valueType(ValueType.SUBSCRIPTION)
+                    .intent(SubscriptionIntent.ACKNOWLEDGED)
                     .tryWriteResponse(metadata.getRequestStreamId(), metadata.getRequestId());
             }
             else
@@ -378,7 +380,8 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
             final boolean responseWritten = responseWriter
                     .partitionId(logStreamPartitionId)
                     .recordType(RecordType.EVENT)
-                    .intent(Intent.SUBSCRIBED)
+                    .valueType(ValueType.SUBSCRIBER)
+                    .intent(SubscriberIntent.SUBSCRIBED)
                     .valueWriter(subscriberEvent)
                     .position(currentEvent.getPosition())
                     .key(currentEvent.getKey())
@@ -407,7 +410,7 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
             metadata
                 .recordType(RecordType.COMMAND)
                 .valueType(ValueType.SUBSCRIPTION)
-                .intent(Intent.ACKNOWLEDGE)
+                .intent(SubscriptionIntent.ACKNOWLEDGE)
                 .requestStreamId(-1)
                 .requestId(-1);
 

@@ -20,8 +20,8 @@ package io.zeebe.broker.logstreams.processor;
 import java.util.function.Consumer;
 
 import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.protocol.impl.RecordMetadata;
+import io.zeebe.protocol.intent.Intent;
 
 public interface TypedStreamWriter
 {

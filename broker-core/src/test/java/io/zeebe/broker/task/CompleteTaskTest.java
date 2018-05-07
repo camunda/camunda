@@ -30,9 +30,9 @@ import org.junit.rules.RuleChain;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.intent.TaskIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
@@ -62,7 +62,7 @@ public class CompleteTaskTest
 
         // then
         assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
-        assertThat(response.intent()).isEqualTo(Intent.COMPLETED);
+        assertThat(response.intent()).isEqualTo(TaskIntent.COMPLETED);
     }
 
     @Test
@@ -79,7 +79,7 @@ public class CompleteTaskTest
 
         // then
         assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-        assertThat(response.intent()).isEqualTo(Intent.COMPLETE);
+        assertThat(response.intent()).isEqualTo(TaskIntent.COMPLETE);
     }
 
     @Test
@@ -100,7 +100,7 @@ public class CompleteTaskTest
 
         // then
         assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-        assertThat(response.intent()).isEqualTo(Intent.COMPLETE);
+        assertThat(response.intent()).isEqualTo(TaskIntent.COMPLETE);
     }
 
     @Test
@@ -120,7 +120,7 @@ public class CompleteTaskTest
 
         // then
         assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-        assertThat(response.intent()).isEqualTo(Intent.COMPLETE);
+        assertThat(response.intent()).isEqualTo(TaskIntent.COMPLETE);
     }
 
     @Test
@@ -134,7 +134,7 @@ public class CompleteTaskTest
 
         // then
         assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-        assertThat(response.intent()).isEqualTo(Intent.COMPLETE);
+        assertThat(response.intent()).isEqualTo(TaskIntent.COMPLETE);
     }
 
     @Test
@@ -165,14 +165,14 @@ public class CompleteTaskTest
 
         // then
         assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-        assertThat(response.intent()).isEqualTo(Intent.COMPLETE);
+        assertThat(response.intent()).isEqualTo(TaskIntent.COMPLETE);
     }
 
 
     private ExecuteCommandResponse createTask(String type)
     {
         return apiRule.createCmdRequest()
-            .type(ValueType.TASK, Intent.CREATE)
+            .type(ValueType.TASK, TaskIntent.CREATE)
             .command()
                 .put("type", type)
                 .put("retries", 3)
@@ -183,7 +183,7 @@ public class CompleteTaskTest
     private ExecuteCommandResponse completeTask(long key, Map<String, Object> event)
     {
         return apiRule.createCmdRequest()
-            .type(ValueType.TASK, Intent.COMPLETE)
+            .type(ValueType.TASK, TaskIntent.COMPLETE)
             .key(key)
             .command()
                 .putAll(event)

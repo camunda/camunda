@@ -36,9 +36,9 @@ import io.zeebe.broker.task.TaskSubscriptionManager;
 import io.zeebe.broker.task.data.TaskRecord;
 import io.zeebe.broker.task.processor.TaskSubscriptions.SubscriptionIterator;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
-import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.RecordMetadata;
+import io.zeebe.protocol.intent.TaskIntent;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.clock.ActorClock;
@@ -92,10 +92,10 @@ public class LockTaskStreamProcessor implements TypedRecordProcessor<TaskRecord>
         this.partitionId = env.getStream().getPartitionId();
 
         return env.newStreamProcessor()
-                .onEvent(ValueType.TASK, Intent.CREATED, this)
-                .onEvent(ValueType.TASK, Intent.LOCK_EXPIRED, this)
-                .onEvent(ValueType.TASK, Intent.FAILED, this)
-                .onEvent(ValueType.TASK, Intent.RETRIES_UPDATED, this)
+                .onEvent(ValueType.TASK, TaskIntent.CREATED, this)
+                .onEvent(ValueType.TASK, TaskIntent.LOCK_EXPIRED, this)
+                .onEvent(ValueType.TASK, TaskIntent.FAILED, this)
+                .onEvent(ValueType.TASK, TaskIntent.RETRIES_UPDATED, this)
                 .build();
     }
 
@@ -249,7 +249,7 @@ public class LockTaskStreamProcessor implements TypedRecordProcessor<TaskRecord>
         {
             position = writer.writeFollowUpCommand(
                 event.getKey(),
-                Intent.LOCK,
+                TaskIntent.LOCK,
                 event.getValue(),
                 this::assignToSelectedSubscriber);
         }

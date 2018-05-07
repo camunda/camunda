@@ -35,14 +35,8 @@ import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.task.data.TaskRecord;
 import io.zeebe.broker.topic.Records;
 import io.zeebe.broker.topic.StreamProcessorControl;
-<<<<<<< da18e914167c07427c8ddb00c194e17486d13552
-import io.zeebe.broker.workflow.data.DeploymentEvent;
-import io.zeebe.broker.workflow.data.WorkflowInstanceEvent;
-=======
 import io.zeebe.broker.workflow.data.DeploymentRecord;
-import io.zeebe.broker.workflow.data.WorkflowRecord;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
->>>>>>> rename events to record
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;

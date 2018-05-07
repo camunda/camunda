@@ -20,12 +20,12 @@ package io.zeebe.broker.system.deployment.processor;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
-import io.zeebe.broker.workflow.data.DeploymentEvent;
+import io.zeebe.broker.workflow.data.DeploymentRecord;
 
-public class DeploymentRejectedEventProcessor implements TypedRecordProcessor<DeploymentEvent>
+public class DeploymentRejectedEventProcessor implements TypedRecordProcessor<DeploymentRecord>
 {
     @Override
-    public boolean executeSideEffects(TypedRecord<DeploymentEvent> event, TypedResponseWriter responseWriter)
+    public boolean executeSideEffects(TypedRecord<DeploymentRecord> event, TypedResponseWriter responseWriter)
     {
         return responseWriter.writeRejection(event);
     }

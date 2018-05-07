@@ -25,9 +25,10 @@ import org.agrona.io.DirectBufferInputStream;
 
 import io.zeebe.protocol.clientapi.ErrorResponseDecoder;
 import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
-import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
 import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.intent.Intent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.util.buffer.BufferReader;
 
@@ -67,9 +68,14 @@ public class ExecuteCommandResponse implements BufferReader
         return responseDecoder.partitionId();
     }
 
+    public ValueType valueType()
+    {
+        return responseDecoder.valueType();
+    }
+
     public Intent intent()
     {
-        return responseDecoder.intent();
+        return Intent.fromProtocolValue(responseDecoder.valueType(), responseDecoder.intent());
     }
 
     public RecordType recordType()

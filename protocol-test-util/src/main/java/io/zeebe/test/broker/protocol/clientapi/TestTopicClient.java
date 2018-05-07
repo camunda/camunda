@@ -31,10 +31,13 @@ import org.agrona.DirectBuffer;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.intent.DeploymentIntent;
+import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.intent.TaskIntent;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
 public class TestTopicClient
 {
@@ -90,7 +93,7 @@ public class TestTopicClient
 
         return apiRule.createCmdRequest()
                 .partitionId(Protocol.SYSTEM_PARTITION)
-                .type(ValueType.DEPLOYMENT, Intent.CREATE)
+                .type(ValueType.DEPLOYMENT, DeploymentIntent.CREATE)
                 .command()
                     .put("topicName", topic)
                     .put(PROP_WORKFLOW_RESOURCES, Collections.singletonList(deploymentResource))
@@ -103,7 +106,7 @@ public class TestTopicClient
     {
         return apiRule.createCmdRequest()
                       .partitionId(partitionId)
-                      .type(ValueType.WORKFLOW_INSTANCE, Intent.CREATE)
+                      .type(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CREATE)
                       .command()
                           .put(PROP_WORKFLOW_BPMN_PROCESS_ID, bpmnProcessId)
                       .done()
@@ -128,7 +131,7 @@ public class TestTopicClient
         final ExecuteCommandResponse response = createWorkflowInstanceWithResponse(bpmnProcessId);
 
         assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
-        assertThat(response.intent()).isEqualTo(Intent.CREATED);
+        assertThat(response.intent()).isEqualTo(WorkflowInstanceIntent.CREATED);
         assertThat(response.position()).isGreaterThanOrEqualTo(0L);
 
         return response.key();
@@ -143,7 +146,7 @@ public class TestTopicClient
     {
         final ExecuteCommandResponse response = apiRule.createCmdRequest()
                 .partitionId(partitionId)
-                .type(ValueType.WORKFLOW_INSTANCE, Intent.CREATE)
+                .type(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CREATE)
                 .command()
                     .put(PROP_WORKFLOW_BPMN_PROCESS_ID, bpmnProcessId)
                     .put(PROP_WORKFLOW_PAYLOAD, payload)
@@ -151,7 +154,7 @@ public class TestTopicClient
                 .sendAndAwait();
 
         assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
-        assertThat(response.intent()).isEqualTo(Intent.CREATED);
+        assertThat(response.intent()).isEqualTo(WorkflowInstanceIntent.CREATED);
 
         return response.key();
     }
@@ -159,7 +162,7 @@ public class TestTopicClient
     public ExecuteCommandResponse createTask(String type)
     {
         return apiRule.createCmdRequest()
-                .type(ValueType.TASK, Intent.CREATE)
+                .type(ValueType.TASK, TaskIntent.CREATE)
                 .command()
                     .put("type", type)
                     .put("retries", 3)
@@ -194,7 +197,7 @@ public class TestTopicClient
 
         final SubscribedRecord taskEvent = apiRule
             .subscribedEvents()
-            .filter(taskRecords(Intent.LOCKED).and(taskType(taskType)).and(taskEventFilter))
+            .filter(taskRecords(TaskIntent.LOCKED).and(taskType(taskType)).and(taskEventFilter))
             .findFirst()
             .orElseThrow(() -> new AssertionError("Expected task locked event but not found."));
 
@@ -211,13 +214,13 @@ public class TestTopicClient
         final ExecuteCommandResponse response = completeTask(taskEvent.key(), event);
 
         assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
-        assertThat(response.intent()).isEqualTo(Intent.COMPLETED);
+        assertThat(response.intent()).isEqualTo(TaskIntent.COMPLETED);
     }
 
     public ExecuteCommandResponse completeTask(long key, Map<String, Object> event)
     {
         return apiRule.createCmdRequest()
-            .type(ValueType.TASK, Intent.COMPLETE)
+            .type(ValueType.TASK, TaskIntent.COMPLETE)
             .key(key)
             .command()
                 .putAll(event)
@@ -228,7 +231,7 @@ public class TestTopicClient
     public ExecuteCommandResponse failTask(long key, Map<String, Object> event)
     {
         return apiRule.createCmdRequest()
-            .type(ValueType.TASK, Intent.FAIL)
+            .type(ValueType.TASK, TaskIntent.FAIL)
             .key(key)
             .command()
                 .putAll(event)
@@ -239,7 +242,7 @@ public class TestTopicClient
     public ExecuteCommandResponse updateTaskRetries(long key, Map<String, Object> event)
     {
         return apiRule.createCmdRequest()
-            .type(ValueType.TASK, Intent.UPDATE_RETRIES)
+            .type(ValueType.TASK, TaskIntent.UPDATE_RETRIES)
             .key(key)
             .command()
                 .putAll(event)

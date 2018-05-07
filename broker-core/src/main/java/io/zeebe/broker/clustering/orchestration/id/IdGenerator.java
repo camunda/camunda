@@ -36,10 +36,10 @@ import io.zeebe.logstreams.impl.service.StreamProcessorService;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.msgpack.value.IntegerValue;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.RecordMetadata;
+import io.zeebe.protocol.intent.IdIntent;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
@@ -109,7 +109,7 @@ public class IdGenerator implements TypedRecordProcessor<IdRecord>, Service<IdGe
         final TypedStreamEnvironment typedStreamEnvironment = new TypedStreamEnvironment(leaderSystemPartition.getLogStream(), clientApiTransport.getOutput());
 
         final TypedStreamProcessor streamProcessor = typedStreamEnvironment.newStreamProcessor()
-                                                                           .onEvent(ValueType.ID, Intent.GENERATED,  this)
+                                                                           .onEvent(ValueType.ID, IdIntent.GENERATED,  this)
                                                                            .withStateResource(committedId)
                                                                            .build();
 
@@ -143,7 +143,7 @@ public class IdGenerator implements TypedRecordProcessor<IdRecord>, Service<IdGe
             final RecordMetadata metadata = new RecordMetadata();
             metadata.recordType(RecordType.EVENT);
             metadata.valueType(ValueType.ID);
-            metadata.intent(Intent.GENERATED);
+            metadata.intent(IdIntent.GENERATED);
 
             idEvent.reset();
             idEvent.setId(nextIdToWrite);

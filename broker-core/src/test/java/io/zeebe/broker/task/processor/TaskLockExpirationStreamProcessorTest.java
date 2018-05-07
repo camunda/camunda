@@ -31,7 +31,7 @@ import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.task.TaskQueueManagerService;
 import io.zeebe.broker.task.data.TaskRecord;
 import io.zeebe.broker.util.StreamProcessorRule;
-import io.zeebe.protocol.clientapi.Intent;
+import io.zeebe.protocol.intent.TaskIntent;
 import io.zeebe.util.buffer.BufferUtil;
 
 public class TaskLockExpirationStreamProcessorTest
@@ -57,8 +57,8 @@ public class TaskLockExpirationStreamProcessorTest
         rule.runStreamProcessor(e -> new TaskExpireLockStreamProcessor()
             .createStreamProcessor(e));
 
-        rule.writeEvent(1, Intent.LOCKED, task());
-        rule.writeEvent(2, Intent.LOCKED, task());
+        rule.writeEvent(1, TaskIntent.LOCKED, task());
+        rule.writeEvent(2, TaskIntent.LOCKED, task());
 
         // when
         rule.getClock().addTime(TaskQueueManagerService.LOCK_EXPIRATION_INTERVAL.plus(Duration.ofSeconds(1)));
@@ -67,7 +67,7 @@ public class TaskLockExpirationStreamProcessorTest
         final List<TypedRecord<TaskRecord>> expirationEvents = doRepeatedly(
             () -> rule.events()
                 .onlyTaskRecords()
-                .withIntent(Intent.EXPIRE_LOCK)
+                .withIntent(TaskIntent.EXPIRE_LOCK)
                 .collect(Collectors.toList()))
             .until(l -> l.size() == 2);
 

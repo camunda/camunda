@@ -41,8 +41,9 @@ import io.zeebe.broker.task.data.TaskRecord;
 import io.zeebe.broker.topic.StreamProcessorControl;
 import io.zeebe.broker.util.StreamProcessorRule;
 import io.zeebe.logstreams.processor.StreamProcessor;
-import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.intent.TaskIntent;
 import io.zeebe.util.buffer.BufferUtil;
 
 public class TaskInstanceStreamProcessorTest
@@ -70,33 +71,33 @@ public class TaskInstanceStreamProcessorTest
         final long key = 1;
         rule.runStreamProcessor(this::buildStreamProcessor);
 
-        rule.writeCommand(key, Intent.CREATE, task());
-        waitForEventWithIntent(Intent.CREATED);
+        rule.writeCommand(key, TaskIntent.CREATE, task());
+        waitForEventWithIntent(TaskIntent.CREATED);
 
         final TaskRecord lockedTask = lockedTask(nowPlus(Duration.ofSeconds(30)));
-        rule.writeCommand(key, Intent.LOCK, lockedTask);
-        waitForEventWithIntent(Intent.LOCKED);
+        rule.writeCommand(key, TaskIntent.LOCK, lockedTask);
+        waitForEventWithIntent(TaskIntent.LOCKED);
 
-        rule.writeCommand(key, Intent.EXPIRE_LOCK, lockedTask);
-        waitForEventWithIntent(Intent.LOCK_EXPIRED);
+        rule.writeCommand(key, TaskIntent.EXPIRE_LOCK, lockedTask);
+        waitForEventWithIntent(TaskIntent.LOCK_EXPIRED);
 
         // when
-        rule.writeCommand(key, Intent.COMPLETE, lockedTask);
+        rule.writeCommand(key, TaskIntent.COMPLETE, lockedTask);
 
         // then
-        waitForEventWithIntent(Intent.COMPLETED);
+        waitForEventWithIntent(TaskIntent.COMPLETED);
 
         final List<TypedRecord<TaskRecord>> taskEvents = rule.events().onlyTaskRecords().collect(Collectors.toList());
         assertThat(taskEvents).extracting(r -> r.getMetadata()).extracting(m -> m.getRecordType(), m -> m.getIntent())
             .containsExactly(
-                    tuple(RecordType.COMMAND, Intent.CREATE),
-                    tuple(RecordType.EVENT, Intent.CREATED),
-                    tuple(RecordType.COMMAND, Intent.LOCK),
-                    tuple(RecordType.EVENT, Intent.LOCKED),
-                    tuple(RecordType.COMMAND, Intent.EXPIRE_LOCK),
-                    tuple(RecordType.EVENT, Intent.LOCK_EXPIRED),
-                    tuple(RecordType.COMMAND, Intent.COMPLETE),
-                    tuple(RecordType.EVENT, Intent.COMPLETED));
+                    tuple(RecordType.COMMAND, TaskIntent.CREATE),
+                    tuple(RecordType.EVENT, TaskIntent.CREATED),
+                    tuple(RecordType.COMMAND, TaskIntent.LOCK),
+                    tuple(RecordType.EVENT, TaskIntent.LOCKED),
+                    tuple(RecordType.COMMAND, TaskIntent.EXPIRE_LOCK),
+                    tuple(RecordType.EVENT, TaskIntent.LOCK_EXPIRED),
+                    tuple(RecordType.COMMAND, TaskIntent.COMPLETE),
+                    tuple(RecordType.EVENT, TaskIntent.COMPLETED));
     }
 
     @Test
@@ -107,28 +108,28 @@ public class TaskInstanceStreamProcessorTest
 
         final long key = 1;
         final StreamProcessorControl control = rule.runStreamProcessor(this::buildStreamProcessor);
-        control.blockAfterTaskEvent(e -> e.getMetadata().getIntent() == Intent.CREATED);
+        control.blockAfterTaskEvent(e -> e.getMetadata().getIntent() == TaskIntent.CREATED);
 
-        rule.writeCommand(key, Intent.CREATE, task());
-        waitForEventWithIntent(Intent.CREATED);
+        rule.writeCommand(key, TaskIntent.CREATE, task());
+        waitForEventWithIntent(TaskIntent.CREATED);
 
         // when
-        rule.writeCommand(key, Intent.LOCK, lockedTask(nowPlus(Duration.ofSeconds(30))));
-        rule.writeCommand(key, Intent.LOCK, lockedTask(nowPlus(Duration.ofSeconds(30))));
+        rule.writeCommand(key, TaskIntent.LOCK, lockedTask(nowPlus(Duration.ofSeconds(30))));
+        rule.writeCommand(key, TaskIntent.LOCK, lockedTask(nowPlus(Duration.ofSeconds(30))));
         control.unblock();
 
         // then
-        waitForRejection(Intent.LOCK);
+        waitForRejection(TaskIntent.LOCK);
 
         final List<TypedRecord<TaskRecord>> taskEvents = rule.events().onlyTaskRecords().collect(Collectors.toList());
         assertThat(taskEvents).extracting(r -> r.getMetadata()).extracting(m -> m.getRecordType(), m -> m.getIntent())
             .containsExactly(
-                    tuple(RecordType.COMMAND, Intent.CREATE),
-                    tuple(RecordType.EVENT, Intent.CREATED),
-                    tuple(RecordType.COMMAND, Intent.LOCK),
-                    tuple(RecordType.COMMAND, Intent.LOCK),
-                    tuple(RecordType.EVENT, Intent.LOCKED),
-                    tuple(RecordType.COMMAND_REJECTION, Intent.LOCK));
+                    tuple(RecordType.COMMAND, TaskIntent.CREATE),
+                    tuple(RecordType.EVENT, TaskIntent.CREATED),
+                    tuple(RecordType.COMMAND, TaskIntent.LOCK),
+                    tuple(RecordType.COMMAND, TaskIntent.LOCK),
+                    tuple(RecordType.EVENT, TaskIntent.LOCKED),
+                    tuple(RecordType.COMMAND_REJECTION, TaskIntent.LOCK));
     }
 
     @Test
@@ -141,16 +142,16 @@ public class TaskInstanceStreamProcessorTest
         rule.runStreamProcessor(this::buildStreamProcessor);
 
         // when
-        rule.writeCommand(key, Intent.LOCK, lockedTask(nowPlus(Duration.ofSeconds(30))));
+        rule.writeCommand(key, TaskIntent.LOCK, lockedTask(nowPlus(Duration.ofSeconds(30))));
 
         // then
-        waitForRejection(Intent.LOCK);
+        waitForRejection(TaskIntent.LOCK);
 
         final List<TypedRecord<TaskRecord>> taskEvents = rule.events().onlyTaskRecords().collect(Collectors.toList());
         assertThat(taskEvents).extracting(r -> r.getMetadata()).extracting(m -> m.getRecordType(), m -> m.getIntent())
             .containsExactly(
-                    tuple(RecordType.COMMAND, Intent.LOCK),
-                    tuple(RecordType.COMMAND_REJECTION, Intent.LOCK));
+                    tuple(RecordType.COMMAND, TaskIntent.LOCK),
+                    tuple(RecordType.COMMAND_REJECTION, TaskIntent.LOCK));
     }
 
     @Test
@@ -160,34 +161,34 @@ public class TaskInstanceStreamProcessorTest
         final long key = 1;
         final StreamProcessorControl control = rule.runStreamProcessor(this::buildStreamProcessor);
 
-        rule.writeCommand(key, Intent.CREATE, task());
-        waitForEventWithIntent(Intent.CREATED);
+        rule.writeCommand(key, TaskIntent.CREATE, task());
+        waitForEventWithIntent(TaskIntent.CREATED);
 
-        control.blockAfterTaskEvent(e -> e.getMetadata().getIntent() == Intent.LOCKED);
+        control.blockAfterTaskEvent(e -> e.getMetadata().getIntent() == TaskIntent.LOCKED);
 
         final TaskRecord lockedTask = lockedTask(nowPlus(Duration.ofSeconds(30)));
-        rule.writeCommand(key, Intent.LOCK, lockedTask);
-        waitForEventWithIntent(Intent.LOCKED);
+        rule.writeCommand(key, TaskIntent.LOCK, lockedTask);
+        waitForEventWithIntent(TaskIntent.LOCKED);
 
         // when
-        rule.writeCommand(key, Intent.EXPIRE_LOCK, lockedTask);
-        rule.writeCommand(key, Intent.EXPIRE_LOCK, lockedTask);
+        rule.writeCommand(key, TaskIntent.EXPIRE_LOCK, lockedTask);
+        rule.writeCommand(key, TaskIntent.EXPIRE_LOCK, lockedTask);
         control.unblock();
 
         // then
-        waitForRejection(Intent.EXPIRE_LOCK);
+        waitForRejection(TaskIntent.EXPIRE_LOCK);
 
         final List<TypedRecord<TaskRecord>> taskEvents = rule.events().onlyTaskRecords().collect(Collectors.toList());
         assertThat(taskEvents).extracting(r -> r.getMetadata()).extracting(m -> m.getRecordType(), m -> m.getIntent())
             .containsExactly(
-                    tuple(RecordType.COMMAND, Intent.CREATE),
-                    tuple(RecordType.EVENT, Intent.CREATED),
-                    tuple(RecordType.COMMAND, Intent.LOCK),
-                    tuple(RecordType.EVENT, Intent.LOCKED),
-                    tuple(RecordType.COMMAND, Intent.EXPIRE_LOCK),
-                    tuple(RecordType.COMMAND, Intent.EXPIRE_LOCK),
-                    tuple(RecordType.EVENT, Intent.LOCK_EXPIRED),
-                    tuple(RecordType.COMMAND_REJECTION, Intent.EXPIRE_LOCK));
+                    tuple(RecordType.COMMAND, TaskIntent.CREATE),
+                    tuple(RecordType.EVENT, TaskIntent.CREATED),
+                    tuple(RecordType.COMMAND, TaskIntent.LOCK),
+                    tuple(RecordType.EVENT, TaskIntent.LOCKED),
+                    tuple(RecordType.COMMAND, TaskIntent.EXPIRE_LOCK),
+                    tuple(RecordType.COMMAND, TaskIntent.EXPIRE_LOCK),
+                    tuple(RecordType.EVENT, TaskIntent.LOCK_EXPIRED),
+                    tuple(RecordType.COMMAND_REJECTION, TaskIntent.EXPIRE_LOCK));
     }
 
     private Instant nowPlus(Duration duration)
@@ -202,22 +203,22 @@ public class TaskInstanceStreamProcessorTest
         final long key = 1;
         rule.runStreamProcessor(this::buildStreamProcessor);
 
-        rule.writeCommand(key, Intent.CREATE, task());
-        waitForEventWithIntent(Intent.CREATED);
+        rule.writeCommand(key, TaskIntent.CREATE, task());
+        waitForEventWithIntent(TaskIntent.CREATED);
 
         // when
-        rule.writeCommand(key, Intent.EXPIRE_LOCK, task());
+        rule.writeCommand(key, TaskIntent.EXPIRE_LOCK, task());
 
         // then
-        waitForRejection(Intent.EXPIRE_LOCK);
+        waitForRejection(TaskIntent.EXPIRE_LOCK);
 
         final List<TypedRecord<TaskRecord>> taskEvents = rule.events().onlyTaskRecords().collect(Collectors.toList());
         assertThat(taskEvents).extracting(r -> r.getMetadata()).extracting(m -> m.getRecordType(), m -> m.getIntent())
             .containsExactly(
-                    tuple(RecordType.COMMAND, Intent.CREATE),
-                    tuple(RecordType.EVENT, Intent.CREATED),
-                    tuple(RecordType.COMMAND, Intent.EXPIRE_LOCK),
-                    tuple(RecordType.COMMAND_REJECTION, Intent.EXPIRE_LOCK));
+                    tuple(RecordType.COMMAND, TaskIntent.CREATE),
+                    tuple(RecordType.EVENT, TaskIntent.CREATED),
+                    tuple(RecordType.COMMAND, TaskIntent.EXPIRE_LOCK),
+                    tuple(RecordType.COMMAND_REJECTION, TaskIntent.EXPIRE_LOCK));
     }
 
     @Test
@@ -227,34 +228,34 @@ public class TaskInstanceStreamProcessorTest
         final long key = 1;
         final StreamProcessorControl control = rule.runStreamProcessor(this::buildStreamProcessor);
 
-        rule.writeCommand(key, Intent.CREATE, task());
-        waitForEventWithIntent(Intent.CREATED);
+        rule.writeCommand(key, TaskIntent.CREATE, task());
+        waitForEventWithIntent(TaskIntent.CREATED);
 
-        control.blockAfterTaskEvent(e -> e.getMetadata().getIntent() == Intent.LOCKED);
+        control.blockAfterTaskEvent(e -> e.getMetadata().getIntent() == TaskIntent.LOCKED);
 
         final TaskRecord lockedTask = lockedTask(nowPlus(Duration.ofSeconds(30)));
-        rule.writeCommand(key, Intent.LOCK, lockedTask);
-        waitForEventWithIntent(Intent.LOCKED);
+        rule.writeCommand(key, TaskIntent.LOCK, lockedTask);
+        waitForEventWithIntent(TaskIntent.LOCKED);
 
         // when
-        rule.writeCommand(key, Intent.COMPLETE, lockedTask);
-        rule.writeCommand(key, Intent.EXPIRE_LOCK, lockedTask);
+        rule.writeCommand(key, TaskIntent.COMPLETE, lockedTask);
+        rule.writeCommand(key, TaskIntent.EXPIRE_LOCK, lockedTask);
         control.unblock();
 
         // then
-        waitForRejection(Intent.EXPIRE_LOCK);
+        waitForRejection(TaskIntent.EXPIRE_LOCK);
 
         final List<TypedRecord<TaskRecord>> taskEvents = rule.events().onlyTaskRecords().collect(Collectors.toList());
         assertThat(taskEvents).extracting(r -> r.getMetadata()).extracting(m -> m.getRecordType(), m -> m.getIntent())
             .containsExactly(
-                    tuple(RecordType.COMMAND, Intent.CREATE),
-                    tuple(RecordType.EVENT, Intent.CREATED),
-                    tuple(RecordType.COMMAND, Intent.LOCK),
-                    tuple(RecordType.EVENT, Intent.LOCKED),
-                    tuple(RecordType.COMMAND, Intent.COMPLETE),
-                    tuple(RecordType.COMMAND, Intent.EXPIRE_LOCK),
-                    tuple(RecordType.EVENT, Intent.COMPLETED),
-                    tuple(RecordType.COMMAND_REJECTION, Intent.EXPIRE_LOCK));
+                    tuple(RecordType.COMMAND, TaskIntent.CREATE),
+                    tuple(RecordType.EVENT, TaskIntent.CREATED),
+                    tuple(RecordType.COMMAND, TaskIntent.LOCK),
+                    tuple(RecordType.EVENT, TaskIntent.LOCKED),
+                    tuple(RecordType.COMMAND, TaskIntent.COMPLETE),
+                    tuple(RecordType.COMMAND, TaskIntent.EXPIRE_LOCK),
+                    tuple(RecordType.EVENT, TaskIntent.COMPLETED),
+                    tuple(RecordType.COMMAND_REJECTION, TaskIntent.EXPIRE_LOCK));
     }
 
 
@@ -265,34 +266,34 @@ public class TaskInstanceStreamProcessorTest
         final long key = 1;
         final StreamProcessorControl control = rule.runStreamProcessor(this::buildStreamProcessor);
 
-        rule.writeCommand(key, Intent.CREATE, task());
-        waitForEventWithIntent(Intent.CREATED);
+        rule.writeCommand(key, TaskIntent.CREATE, task());
+        waitForEventWithIntent(TaskIntent.CREATED);
 
-        control.blockAfterTaskEvent(e -> e.getMetadata().getIntent() == Intent.LOCKED);
+        control.blockAfterTaskEvent(e -> e.getMetadata().getIntent() == TaskIntent.LOCKED);
 
         final TaskRecord lockedTask = lockedTask(nowPlus(Duration.ofSeconds(30)));
-        rule.writeCommand(key, Intent.LOCK, lockedTask);
-        waitForEventWithIntent(Intent.LOCKED);
+        rule.writeCommand(key, TaskIntent.LOCK, lockedTask);
+        waitForEventWithIntent(TaskIntent.LOCKED);
 
         // when
-        rule.writeCommand(key, Intent.FAIL, lockedTask);
-        rule.writeCommand(key, Intent.EXPIRE_LOCK, lockedTask);
+        rule.writeCommand(key, TaskIntent.FAIL, lockedTask);
+        rule.writeCommand(key, TaskIntent.EXPIRE_LOCK, lockedTask);
         control.unblock();
 
         // then
-        waitForRejection(Intent.EXPIRE_LOCK);
+        waitForRejection(TaskIntent.EXPIRE_LOCK);
 
         final List<TypedRecord<TaskRecord>> taskEvents = rule.events().onlyTaskRecords().collect(Collectors.toList());
         assertThat(taskEvents).extracting(r -> r.getMetadata()).extracting(m -> m.getRecordType(), m -> m.getIntent())
             .containsExactly(
-                    tuple(RecordType.COMMAND, Intent.CREATE),
-                    tuple(RecordType.EVENT, Intent.CREATED),
-                    tuple(RecordType.COMMAND, Intent.LOCK),
-                    tuple(RecordType.EVENT, Intent.LOCKED),
-                    tuple(RecordType.COMMAND, Intent.FAIL),
-                    tuple(RecordType.COMMAND, Intent.EXPIRE_LOCK),
-                    tuple(RecordType.EVENT, Intent.FAILED),
-                    tuple(RecordType.COMMAND_REJECTION, Intent.EXPIRE_LOCK));
+                    tuple(RecordType.COMMAND, TaskIntent.CREATE),
+                    tuple(RecordType.EVENT, TaskIntent.CREATED),
+                    tuple(RecordType.COMMAND, TaskIntent.LOCK),
+                    tuple(RecordType.EVENT, TaskIntent.LOCKED),
+                    tuple(RecordType.COMMAND, TaskIntent.FAIL),
+                    tuple(RecordType.COMMAND, TaskIntent.EXPIRE_LOCK),
+                    tuple(RecordType.EVENT, TaskIntent.FAILED),
+                    tuple(RecordType.COMMAND_REJECTION, TaskIntent.EXPIRE_LOCK));
     }
 
     @Test
@@ -303,16 +304,16 @@ public class TaskInstanceStreamProcessorTest
         rule.runStreamProcessor(this::buildStreamProcessor);
 
         // when
-        rule.writeCommand(key, Intent.EXPIRE_LOCK, lockedTask(nowPlus(Duration.ofSeconds(30))));
+        rule.writeCommand(key, TaskIntent.EXPIRE_LOCK, lockedTask(nowPlus(Duration.ofSeconds(30))));
 
         // then
-        waitForRejection(Intent.EXPIRE_LOCK);
+        waitForRejection(TaskIntent.EXPIRE_LOCK);
 
         final List<TypedRecord<TaskRecord>> taskEvents = rule.events().onlyTaskRecords().collect(Collectors.toList());
         assertThat(taskEvents).extracting(r -> r.getMetadata()).extracting(m -> m.getRecordType(), m -> m.getIntent())
             .containsExactly(
-                    tuple(RecordType.COMMAND, Intent.EXPIRE_LOCK),
-                    tuple(RecordType.COMMAND_REJECTION, Intent.EXPIRE_LOCK));
+                    tuple(RecordType.COMMAND, TaskIntent.EXPIRE_LOCK),
+                    tuple(RecordType.COMMAND_REJECTION, TaskIntent.EXPIRE_LOCK));
     }
 
     @Test
@@ -322,22 +323,22 @@ public class TaskInstanceStreamProcessorTest
         final long key = 1;
         rule.runStreamProcessor(this::buildStreamProcessor);
 
-        rule.writeCommand(key, Intent.CREATE, task());
-        waitForEventWithIntent(Intent.CREATED);
+        rule.writeCommand(key, TaskIntent.CREATE, task());
+        waitForEventWithIntent(TaskIntent.CREATED);
 
         // when
-        rule.writeCommand(key, Intent.CANCEL, task());
+        rule.writeCommand(key, TaskIntent.CANCEL, task());
 
         // then
-        waitForEventWithIntent(Intent.CANCELED);
+        waitForEventWithIntent(TaskIntent.CANCELED);
 
         final List<TypedRecord<TaskRecord>> taskEvents = rule.events().onlyTaskRecords().collect(Collectors.toList());
         assertThat(taskEvents).extracting(r -> r.getMetadata()).extracting(m -> m.getRecordType(), m -> m.getIntent())
             .containsExactly(
-                tuple(RecordType.COMMAND, Intent.CREATE),
-                tuple(RecordType.EVENT, Intent.CREATED),
-                tuple(RecordType.COMMAND, Intent.CANCEL),
-                tuple(RecordType.EVENT, Intent.CANCELED));
+                tuple(RecordType.COMMAND, TaskIntent.CREATE),
+                tuple(RecordType.EVENT, TaskIntent.CREATED),
+                tuple(RecordType.COMMAND, TaskIntent.CANCEL),
+                tuple(RecordType.EVENT, TaskIntent.CANCELED));
     }
 
     @Test
@@ -347,28 +348,28 @@ public class TaskInstanceStreamProcessorTest
         final long key = 1;
         rule.runStreamProcessor(this::buildStreamProcessor);
 
-        rule.writeCommand(key, Intent.CREATE, task());
-        waitForEventWithIntent(Intent.CREATED);
+        rule.writeCommand(key, TaskIntent.CREATE, task());
+        waitForEventWithIntent(TaskIntent.CREATED);
 
         final TaskRecord lockedTask = lockedTask(nowPlus(Duration.ofSeconds(30)));
-        rule.writeCommand(key, Intent.LOCK, lockedTask);
-        waitForEventWithIntent(Intent.LOCKED);
+        rule.writeCommand(key, TaskIntent.LOCK, lockedTask);
+        waitForEventWithIntent(TaskIntent.LOCKED);
 
         // when
-        rule.writeCommand(key, Intent.CANCEL, lockedTask);
+        rule.writeCommand(key, TaskIntent.CANCEL, lockedTask);
 
         // then
-        waitForEventWithIntent(Intent.CANCELED);
+        waitForEventWithIntent(TaskIntent.CANCELED);
 
         final List<TypedRecord<TaskRecord>> taskEvents = rule.events().onlyTaskRecords().collect(Collectors.toList());
         assertThat(taskEvents).extracting(r -> r.getMetadata()).extracting(m -> m.getRecordType(), m -> m.getIntent())
             .containsExactly(
-                tuple(RecordType.COMMAND, Intent.CREATE),
-                tuple(RecordType.EVENT, Intent.CREATED),
-                tuple(RecordType.COMMAND, Intent.LOCK),
-                tuple(RecordType.EVENT, Intent.LOCKED),
-                tuple(RecordType.COMMAND, Intent.CANCEL),
-                tuple(RecordType.EVENT, Intent.CANCELED));
+                tuple(RecordType.COMMAND, TaskIntent.CREATE),
+                tuple(RecordType.EVENT, TaskIntent.CREATED),
+                tuple(RecordType.COMMAND, TaskIntent.LOCK),
+                tuple(RecordType.EVENT, TaskIntent.LOCKED),
+                tuple(RecordType.COMMAND, TaskIntent.CANCEL),
+                tuple(RecordType.EVENT, TaskIntent.CANCELED));
     }
 
     @Test
@@ -378,33 +379,33 @@ public class TaskInstanceStreamProcessorTest
         final long key = 1;
         rule.runStreamProcessor(this::buildStreamProcessor);
 
-        rule.writeCommand(key, Intent.CREATE, task());
-        waitForEventWithIntent(Intent.CREATED);
+        rule.writeCommand(key, TaskIntent.CREATE, task());
+        waitForEventWithIntent(TaskIntent.CREATED);
 
         final TaskRecord lockedTask = lockedTask(nowPlus(Duration.ofSeconds(30)));
-        rule.writeCommand(key, Intent.LOCK, lockedTask);
-        waitForEventWithIntent(Intent.LOCKED);
+        rule.writeCommand(key, TaskIntent.LOCK, lockedTask);
+        waitForEventWithIntent(TaskIntent.LOCKED);
 
-        rule.writeCommand(key, Intent.FAIL, lockedTask);
-        waitForEventWithIntent(Intent.FAILED);
+        rule.writeCommand(key, TaskIntent.FAIL, lockedTask);
+        waitForEventWithIntent(TaskIntent.FAILED);
 
         // when
-        rule.writeCommand(key, Intent.CANCEL, lockedTask);
+        rule.writeCommand(key, TaskIntent.CANCEL, lockedTask);
 
         // then
-        waitForEventWithIntent(Intent.CANCELED);
+        waitForEventWithIntent(TaskIntent.CANCELED);
 
         final List<TypedRecord<TaskRecord>> taskEvents = rule.events().onlyTaskRecords().collect(Collectors.toList());
         assertThat(taskEvents).extracting(r -> r.getMetadata()).extracting(m -> m.getRecordType(), m -> m.getIntent())
             .containsExactly(
-                tuple(RecordType.COMMAND, Intent.CREATE),
-                tuple(RecordType.EVENT, Intent.CREATED),
-                tuple(RecordType.COMMAND, Intent.LOCK),
-                tuple(RecordType.EVENT, Intent.LOCKED),
-                tuple(RecordType.COMMAND, Intent.FAIL),
-                tuple(RecordType.EVENT, Intent.FAILED),
-                tuple(RecordType.COMMAND, Intent.CANCEL),
-                tuple(RecordType.EVENT, Intent.CANCELED));
+                tuple(RecordType.COMMAND, TaskIntent.CREATE),
+                tuple(RecordType.EVENT, TaskIntent.CREATED),
+                tuple(RecordType.COMMAND, TaskIntent.LOCK),
+                tuple(RecordType.EVENT, TaskIntent.LOCKED),
+                tuple(RecordType.COMMAND, TaskIntent.FAIL),
+                tuple(RecordType.EVENT, TaskIntent.FAILED),
+                tuple(RecordType.COMMAND, TaskIntent.CANCEL),
+                tuple(RecordType.EVENT, TaskIntent.CANCELED));
     }
 
 
@@ -415,33 +416,33 @@ public class TaskInstanceStreamProcessorTest
         final long key = 1;
         rule.runStreamProcessor(this::buildStreamProcessor);
 
-        rule.writeCommand(key, Intent.CREATE, task());
-        waitForEventWithIntent(Intent.CREATED);
+        rule.writeCommand(key, TaskIntent.CREATE, task());
+        waitForEventWithIntent(TaskIntent.CREATED);
 
         final TaskRecord lockedTask = lockedTask(nowPlus(Duration.ofSeconds(30)));
-        rule.writeCommand(key, Intent.LOCK, lockedTask);
-        waitForEventWithIntent(Intent.LOCKED);
+        rule.writeCommand(key, TaskIntent.LOCK, lockedTask);
+        waitForEventWithIntent(TaskIntent.LOCKED);
 
-        rule.writeCommand(key, Intent.COMPLETE, lockedTask);
-        waitForEventWithIntent(Intent.COMPLETED);
+        rule.writeCommand(key, TaskIntent.COMPLETE, lockedTask);
+        waitForEventWithIntent(TaskIntent.COMPLETED);
 
         // when
-        rule.writeCommand(key, Intent.CANCEL, lockedTask);
+        rule.writeCommand(key, TaskIntent.CANCEL, lockedTask);
 
         // then
-        waitForRejection(Intent.CANCEL);
+        waitForRejection(TaskIntent.CANCEL);
 
         final List<TypedRecord<TaskRecord>> taskEvents = rule.events().onlyTaskRecords().collect(Collectors.toList());
         assertThat(taskEvents).extracting(r -> r.getMetadata()).extracting(m -> m.getRecordType(), m -> m.getIntent())
             .containsExactly(
-                tuple(RecordType.COMMAND, Intent.CREATE),
-                tuple(RecordType.EVENT, Intent.CREATED),
-                tuple(RecordType.COMMAND, Intent.LOCK),
-                tuple(RecordType.EVENT, Intent.LOCKED),
-                tuple(RecordType.COMMAND, Intent.COMPLETE),
-                tuple(RecordType.EVENT, Intent.COMPLETED),
-                tuple(RecordType.COMMAND, Intent.CANCEL),
-                tuple(RecordType.COMMAND_REJECTION, Intent.CANCEL));
+                tuple(RecordType.COMMAND, TaskIntent.CREATE),
+                tuple(RecordType.EVENT, TaskIntent.CREATED),
+                tuple(RecordType.COMMAND, TaskIntent.LOCK),
+                tuple(RecordType.EVENT, TaskIntent.LOCKED),
+                tuple(RecordType.COMMAND, TaskIntent.COMPLETE),
+                tuple(RecordType.EVENT, TaskIntent.COMPLETED),
+                tuple(RecordType.COMMAND, TaskIntent.CANCEL),
+                tuple(RecordType.COMMAND_REJECTION, TaskIntent.CANCEL));
     }
 
     private void waitForEventWithIntent(Intent intent)

@@ -20,10 +20,15 @@ package io.zeebe.broker.transport.clientapi;
 import java.util.EnumMap;
 import java.util.function.Consumer;
 
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.collections.Int2ObjectHashMap;
+import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
+
 import io.zeebe.broker.clustering.base.partitions.Partition;
+import io.zeebe.broker.clustering.orchestration.topic.TopicRecord;
 import io.zeebe.broker.event.processor.TopicSubscriberEvent;
 import io.zeebe.broker.event.processor.TopicSubscriptionEvent;
-import io.zeebe.broker.clustering.orchestration.topic.TopicRecord;
 import io.zeebe.broker.task.data.TaskRecord;
 import io.zeebe.broker.transport.controlmessage.ControlMessageRequestHeaderDescriptor;
 import io.zeebe.broker.workflow.data.DeploymentRecord;
@@ -34,16 +39,17 @@ import io.zeebe.logstreams.log.LogStreamWriter;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.*;
+import io.zeebe.protocol.clientapi.ControlMessageRequestDecoder;
+import io.zeebe.protocol.clientapi.ErrorCode;
+import io.zeebe.protocol.clientapi.ExecuteCommandRequestDecoder;
+import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
+import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.ServerMessageHandler;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerRequestHandler;
-import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
-import org.agrona.collections.Int2ObjectHashMap;
-import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 
 public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequestHandler
 {
@@ -106,7 +112,7 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
         }
 
         final ValueType eventType = executeCommandRequestDecoder.valueType();
-        final Intent intent = executeCommandRequestDecoder.intent();
+        final short intent = executeCommandRequestDecoder.intent();
         final UnpackedObject event = recordsByType.get(eventType);
 
         if (event == null)

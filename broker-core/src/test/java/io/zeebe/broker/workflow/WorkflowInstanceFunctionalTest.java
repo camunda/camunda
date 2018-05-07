@@ -43,8 +43,11 @@ import io.zeebe.broker.workflow.data.ResourceType;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.intent.DeploymentIntent;
+import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.intent.TaskIntent;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
@@ -84,7 +87,7 @@ public class WorkflowInstanceFunctionalTest
 
         // then
         final SubscribedRecord event = testClient.receiveEvents()
-                .withIntent(Intent.START_EVENT_OCCURRED)
+                .withIntent(WorkflowInstanceIntent.START_EVENT_OCCURRED)
                 .getFirst();
 
         final long workflowInstanceKey = response.key();
@@ -113,7 +116,7 @@ public class WorkflowInstanceFunctionalTest
 
         // then
         final SubscribedRecord event = testClient.receiveEvents()
-            .withIntent(Intent.SEQUENCE_FLOW_TAKEN)
+            .withIntent(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN)
             .getFirst();
 
         assertThat(event.key()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
@@ -138,7 +141,7 @@ public class WorkflowInstanceFunctionalTest
 
         // then
         final SubscribedRecord event = testClient.receiveEvents()
-            .withIntent(Intent.END_EVENT_OCCURRED)
+            .withIntent(WorkflowInstanceIntent.END_EVENT_OCCURRED)
             .getFirst();
 
         assertThat(event.key()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
@@ -164,7 +167,7 @@ public class WorkflowInstanceFunctionalTest
         // then
         final SubscribedRecord event = testClient.receiveEvents()
             .ofTypeWorkflowInstance()
-            .withIntent(Intent.COMPLETED)
+            .withIntent(WorkflowInstanceIntent.COMPLETED)
             .getFirst();
 
         assertThat(event.key()).isEqualTo(workflowInstanceKey);
@@ -189,7 +192,7 @@ public class WorkflowInstanceFunctionalTest
         // then
         final SubscribedRecord event = testClient.receiveEvents()
             .ofTypeWorkflowInstance()
-            .withIntent(Intent.COMPLETED)
+            .withIntent(WorkflowInstanceIntent.COMPLETED)
             .getFirst();
 
         assertThat(event.key()).isEqualTo(workflowInstanceKey);
@@ -219,7 +222,7 @@ public class WorkflowInstanceFunctionalTest
         // then
         final SubscribedRecord event = testClient.receiveEvents()
             .ofTypeWorkflowInstance()
-            .withIntent(Intent.COMPLETED)
+            .withIntent(WorkflowInstanceIntent.COMPLETED)
             .getFirst();
 
         assertThat(event.key()).isEqualTo(workflowInstanceKey);
@@ -245,7 +248,7 @@ public class WorkflowInstanceFunctionalTest
 
         // then
         final SubscribedRecord event = testClient.receiveEvents()
-            .withIntent(Intent.ACTIVITY_ACTIVATED)
+            .withIntent(WorkflowInstanceIntent.ACTIVITY_ACTIVATED)
             .getFirst();
 
         assertThat(event.key()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
@@ -272,7 +275,7 @@ public class WorkflowInstanceFunctionalTest
         // then
         final SubscribedRecord event = testClient.receiveCommands()
             .ofTypeTask()
-            .withIntent(Intent.CREATE)
+            .withIntent(TaskIntent.CREATE)
             .getFirst();
 
         assertThat(event.key()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
@@ -300,7 +303,7 @@ public class WorkflowInstanceFunctionalTest
         // then
         final SubscribedRecord event = testClient.receiveCommands()
             .ofTypeTask()
-            .withIntent(Intent.CREATE)
+            .withIntent(TaskIntent.CREATE)
             .getFirst();
 
         final Map<String, Object> headers = (Map<String, Object>) event.value().get("headers");
@@ -336,11 +339,11 @@ public class WorkflowInstanceFunctionalTest
 
         // then
         final SubscribedRecord activityActivatedEvent = testClient.receiveEvents()
-            .withIntent(Intent.ACTIVITY_ACTIVATED)
+            .withIntent(WorkflowInstanceIntent.ACTIVITY_ACTIVATED)
             .getFirst();
 
         final SubscribedRecord activityCompletedEvent = testClient.receiveEvents()
-            .withIntent(Intent.ACTIVITY_COMPLETED)
+            .withIntent(WorkflowInstanceIntent.ACTIVITY_COMPLETED)
             .getFirst();
 
         assertThat(activityCompletedEvent.key()).isEqualTo(activityActivatedEvent.key());
@@ -371,13 +374,13 @@ public class WorkflowInstanceFunctionalTest
         final long workflowInstance2 = testClient.createWorkflowInstance("workflow", asMsgPack("foo", 8));
         final long workflowInstance3 = testClient.createWorkflowInstance("workflow", asMsgPack("foo", 12));
 
-        SubscribedRecord endEvent = receiveWorkflowInstanceEvent(workflowInstance1, Intent.END_EVENT_OCCURRED);
+        SubscribedRecord endEvent = receiveWorkflowInstanceEvent(workflowInstance1, WorkflowInstanceIntent.END_EVENT_OCCURRED);
         assertThat(endEvent.value()).containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "a");
 
-        endEvent = receiveWorkflowInstanceEvent(workflowInstance2, Intent.END_EVENT_OCCURRED);
+        endEvent = receiveWorkflowInstanceEvent(workflowInstance2, WorkflowInstanceIntent.END_EVENT_OCCURRED);
         assertThat(endEvent.value()).containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "b");
 
-        endEvent = receiveWorkflowInstanceEvent(workflowInstance3, Intent.END_EVENT_OCCURRED);
+        endEvent = receiveWorkflowInstanceEvent(workflowInstance3, WorkflowInstanceIntent.END_EVENT_OCCURRED);
         assertThat(endEvent.value()).containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "c");
     }
 
@@ -400,11 +403,11 @@ public class WorkflowInstanceFunctionalTest
         final long workflowInstance1 = testClient.createWorkflowInstance("workflow", asMsgPack("foo", 4));
         final long workflowInstance2 = testClient.createWorkflowInstance("workflow", asMsgPack("foo", 8));
 
-        receiveWorkflowInstanceEvent(workflowInstance1, Intent.COMPLETED);
-        receiveWorkflowInstanceEvent(workflowInstance2, Intent.COMPLETED);
+        receiveWorkflowInstanceEvent(workflowInstance1, WorkflowInstanceIntent.COMPLETED);
+        receiveWorkflowInstanceEvent(workflowInstance2, WorkflowInstanceIntent.COMPLETED);
 
         List<String> takenSequenceFlows = testClient.receiveEvents()
-            .withIntent(Intent.SEQUENCE_FLOW_TAKEN)
+            .withIntent(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN)
             .filter(r -> (Long) r.value().get("workflowInstanceKey") == workflowInstance1)
             .limit(3)
             .map(s -> (String) s.value().get("activityId"))
@@ -412,7 +415,7 @@ public class WorkflowInstanceFunctionalTest
         assertThat(takenSequenceFlows).contains("s1");
 
         takenSequenceFlows = testClient.receiveEvents()
-            .withIntent(Intent.SEQUENCE_FLOW_TAKEN)
+            .withIntent(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN)
             .filter(r -> (Long) r.value().get("workflowInstanceKey") == workflowInstance2)
             .limit(3)
             .map(s -> (String) s.value().get("activityId"))
@@ -445,17 +448,17 @@ public class WorkflowInstanceFunctionalTest
                 .collect(Collectors.toList());
 
         assertThat(workflowEvents).extracting(e -> e.intent()).containsExactly(
-                Intent.CREATE,
-                Intent.CREATED,
-                Intent.START_EVENT_OCCURRED,
-                Intent.SEQUENCE_FLOW_TAKEN,
-                Intent.ACTIVITY_READY,
-                Intent.ACTIVITY_ACTIVATED,
-                Intent.ACTIVITY_COMPLETING,
-                Intent.ACTIVITY_COMPLETED,
-                Intent.SEQUENCE_FLOW_TAKEN,
-                Intent.END_EVENT_OCCURRED,
-                Intent.COMPLETED);
+                WorkflowInstanceIntent.CREATE,
+                WorkflowInstanceIntent.CREATED,
+                WorkflowInstanceIntent.START_EVENT_OCCURRED,
+                WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN,
+                WorkflowInstanceIntent.ACTIVITY_READY,
+                WorkflowInstanceIntent.ACTIVITY_ACTIVATED,
+                WorkflowInstanceIntent.ACTIVITY_COMPLETING,
+                WorkflowInstanceIntent.ACTIVITY_COMPLETED,
+                WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN,
+                WorkflowInstanceIntent.END_EVENT_OCCURRED,
+                WorkflowInstanceIntent.COMPLETED);
     }
 
     @Test
@@ -484,14 +487,14 @@ public class WorkflowInstanceFunctionalTest
                 .collect(Collectors.toList());
 
         assertThat(workflowEvents).extracting(e -> e.intent()).containsExactly(
-                Intent.CREATE,
-                Intent.CREATED,
-                Intent.START_EVENT_OCCURRED,
-                Intent.SEQUENCE_FLOW_TAKEN,
-                Intent.GATEWAY_ACTIVATED,
-                Intent.SEQUENCE_FLOW_TAKEN,
-                Intent.END_EVENT_OCCURRED,
-                Intent.COMPLETED);
+                WorkflowInstanceIntent.CREATE,
+                WorkflowInstanceIntent.CREATED,
+                WorkflowInstanceIntent.START_EVENT_OCCURRED,
+                WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN,
+                WorkflowInstanceIntent.GATEWAY_ACTIVATED,
+                WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN,
+                WorkflowInstanceIntent.END_EVENT_OCCURRED,
+                WorkflowInstanceIntent.COMPLETED);
     }
 
     @Test
@@ -508,14 +511,14 @@ public class WorkflowInstanceFunctionalTest
 
         final ExecuteCommandResponse deploymentResp = apiRule.createCmdRequest()
                 .partitionId(Protocol.SYSTEM_PARTITION)
-                .type(ValueType.DEPLOYMENT, Intent.CREATE)
+                .type(ValueType.DEPLOYMENT, DeploymentIntent.CREATE)
                 .command()
                     .put("topicName", ClientApiRule.DEFAULT_TOPIC_NAME)
                     .put("resources", Collections.singletonList(deploymentResource))
                 .done()
                 .sendAndAwait();
 
-        assertThat(deploymentResp.intent()).isEqualTo(Intent.CREATED);
+        assertThat(deploymentResp.intent()).isEqualTo(DeploymentIntent.CREATED);
 
         final long workflowInstanceKey = testClient.createWorkflowInstance("yaml-workflow");
 
@@ -526,7 +529,7 @@ public class WorkflowInstanceFunctionalTest
         // then
         final SubscribedRecord event = testClient.receiveEvents()
             .ofTypeWorkflowInstance()
-            .withIntent(Intent.COMPLETED)
+            .withIntent(WorkflowInstanceIntent.COMPLETED)
             .getFirst();
 
         assertThat(event.key()).isEqualTo(workflowInstanceKey);

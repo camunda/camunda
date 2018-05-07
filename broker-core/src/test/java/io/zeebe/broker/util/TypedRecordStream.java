@@ -21,8 +21,8 @@ import java.util.stream.Stream;
 
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.intent.Intent;
 import io.zeebe.test.util.stream.StreamWrapper;
 
 public class TypedRecordStream<T extends UnpackedObject> extends StreamWrapper<TypedRecord<T>>

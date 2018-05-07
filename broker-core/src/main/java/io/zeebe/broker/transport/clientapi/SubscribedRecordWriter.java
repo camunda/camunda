@@ -28,12 +28,12 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.SubscribedRecordEncoder;
 import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.intent.Intent;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.TransportMessage;
 import io.zeebe.util.buffer.BufferWriter;
@@ -53,7 +53,7 @@ public class SubscribedRecordWriter implements BufferWriter
     protected DirectBufferWriter valueBuffer = new DirectBufferWriter();
     protected BufferWriter valueWriter;
     private RecordType recordType = RecordType.NULL_VAL;
-    private Intent intent = Intent.NULL_VAL;
+    private short intent = Intent.NULL_VAL;
 
     protected final ServerOutput output;
     protected final TransportMessage message = new TransportMessage();
@@ -107,7 +107,7 @@ public class SubscribedRecordWriter implements BufferWriter
 
     public SubscribedRecordWriter intent(Intent intent)
     {
-        this.intent = intent;
+        this.intent = intent.value();
         return this;
     }
 

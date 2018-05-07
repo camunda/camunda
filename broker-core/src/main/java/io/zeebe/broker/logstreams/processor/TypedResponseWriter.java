@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
-import io.zeebe.protocol.clientapi.Intent;
+import io.zeebe.protocol.intent.Intent;
 
 public interface TypedResponseWriter
 {

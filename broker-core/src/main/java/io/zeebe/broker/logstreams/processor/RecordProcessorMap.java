@@ -19,69 +19,84 @@ package io.zeebe.broker.logstreams.processor;
 
 import java.util.Iterator;
 
-@SuppressWarnings({ "unchecked", "rawtypes" })
-public class FlatEnumMap<V>
-{
-    private final Object[] elements;
+import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.intent.Intent;
 
-    private final int enum2Cardinality;
-    private final int enum3Cardinality;
+@SuppressWarnings({ "rawtypes" })
+public class RecordProcessorMap
+{
+    private final TypedRecordProcessor[] elements;
+
+    private final int valueTypeCardinality;
+    private final int intentCardinality;
 
     private final ValueIterator valueIt = new ValueIterator();
 
-    public <R extends Enum<R>, S extends Enum<S>, T extends Enum<T>> FlatEnumMap(
-            Class<R> enum1,
-            Class<S> enum2,
-            Class<T> enum3)
+    public <R extends Enum<R>, S extends Enum<S>> RecordProcessorMap()
     {
-
-        this.enum2Cardinality = enum2.getEnumConstants().length;
-        this.enum3Cardinality = enum3.getEnumConstants().length;
+        final int recordTypeCardinality = RecordType.class.getEnumConstants().length;
+        this.valueTypeCardinality = ValueType.class.getEnumConstants().length;
+        this.intentCardinality = Intent.maxCardinality();
 
         final int cardinality =
-                enum1.getEnumConstants().length
-                * enum2Cardinality
-                * enum3Cardinality;
-        this.elements = new Object[cardinality];
+                recordTypeCardinality
+                * valueTypeCardinality
+                * intentCardinality;
+        this.elements = new TypedRecordProcessor[cardinality];
     }
 
-    public V get(Enum key1, Enum key2, Enum key3)
+    public TypedRecordProcessor get(RecordType key1, ValueType key2, int key3)
     {
         final int index = mapToIndex(key1, key2, key3);
-        return (V) elements[index];
-    }
 
-    public void put(Enum key1, Enum key2, Enum key3, V value)
-    {
-        final int index = mapToIndex(key1, key2, key3);
-        if (elements[index] != null)
+        if (index >= 0)
         {
-            throw new RuntimeException("test - overwrite detected");
+            return elements[index];
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+    public void put(RecordType key1, ValueType key2, int key3, TypedRecordProcessor value)
+    {
+        final int index = mapToIndex(key1, key2, key3);
+
+        if (index < 0)
+        {
+            throw new RuntimeException("Invalid intent value " + key3);
         }
         elements[index] = value;
     }
 
-    public boolean containsKey(Enum key1, Enum key2, Enum key3)
+    public boolean containsKey(RecordType key1, ValueType key2, int key3)
     {
         final int index = mapToIndex(key1, key2, key3);
-        return elements[index] != null;
+        return index >= 0 && elements[index] != null;
     }
 
-    private int mapToIndex(Enum key1, Enum key2, Enum key3)
+    private int mapToIndex(RecordType key1, ValueType key2, int key3)
     {
-        return (key1.ordinal() * enum2Cardinality * enum3Cardinality) + (key2.ordinal() * enum3Cardinality) + key3.ordinal();
+        if (key3 >= intentCardinality)
+        {
+            return -1;
+        }
+
+        return (key1.ordinal() * valueTypeCardinality * intentCardinality) + (key2.ordinal() * intentCardinality) + key3;
     }
 
     /**
      * BEWARE: does not detect concurrent modifications and behaves incorrectly in this case
      */
-    public Iterator<V> values()
+    public Iterator<TypedRecordProcessor> values()
     {
         valueIt.init();
         return valueIt;
     }
 
-    private class ValueIterator implements Iterator<V>
+    private class ValueIterator implements Iterator<TypedRecordProcessor>
     {
         private int next;
 
@@ -107,9 +122,9 @@ public class FlatEnumMap<V>
         }
 
         @Override
-        public V next()
+        public TypedRecordProcessor next()
         {
-            final V element = (V) elements[next];
+            final TypedRecordProcessor element = elements[next];
             scanToNext();
             return element;
         }

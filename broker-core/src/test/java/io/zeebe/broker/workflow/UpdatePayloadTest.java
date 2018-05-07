@@ -30,9 +30,9 @@ import org.junit.rules.RuleChain;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
-import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
@@ -83,11 +83,11 @@ public class UpdatePayloadTest
                                                               MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("{'foo':'bar'}")));
 
         // then
-        assertThat(response.intent()).isEqualTo(Intent.PAYLOAD_UPDATED);
+        assertThat(response.intent()).isEqualTo(WorkflowInstanceIntent.PAYLOAD_UPDATED);
 
         final SubscribedRecord updatedEvent = testClient.receiveEvents()
             .ofTypeWorkflowInstance()
-            .withIntent(Intent.PAYLOAD_UPDATED)
+            .withIntent(WorkflowInstanceIntent.PAYLOAD_UPDATED)
             .getFirst();
 
 
@@ -117,7 +117,7 @@ public class UpdatePayloadTest
 
         testClient.receiveEvents()
             .ofTypeWorkflowInstance()
-            .withIntent(Intent.PAYLOAD_UPDATED)
+            .withIntent(WorkflowInstanceIntent.PAYLOAD_UPDATED)
             .getFirst();
 
         testClient.completeTaskOfType("task-1", MSGPACK_PAYLOAD);
@@ -147,7 +147,7 @@ public class UpdatePayloadTest
         assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
 
         final SubscribedRecord rejection = testClient.receiveRejections()
-            .withIntent(Intent.UPDATE_PAYLOAD)
+            .withIntent(WorkflowInstanceIntent.UPDATE_PAYLOAD)
             .getFirst();
 
         assertThat(rejection).isNotNull();
@@ -163,7 +163,7 @@ public class UpdatePayloadTest
         assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
 
         final SubscribedRecord rejection = testClient.receiveRejections()
-            .withIntent(Intent.UPDATE_PAYLOAD)
+            .withIntent(WorkflowInstanceIntent.UPDATE_PAYLOAD)
             .getFirst();
 
         assertThat(rejection).isNotNull();
@@ -193,7 +193,7 @@ public class UpdatePayloadTest
         assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
 
         final SubscribedRecord rejection = testClient.receiveRejections()
-            .withIntent(Intent.UPDATE_PAYLOAD)
+            .withIntent(WorkflowInstanceIntent.UPDATE_PAYLOAD)
             .getFirst();
 
         assertThat(rejection).isNotNull();
@@ -204,7 +204,7 @@ public class UpdatePayloadTest
         return testClient
             .receiveEvents()
             .ofTypeWorkflowInstance()
-            .withIntent(Intent.COMPLETED)
+            .withIntent(WorkflowInstanceIntent.COMPLETED)
             .getFirst();
     }
 
@@ -213,7 +213,7 @@ public class UpdatePayloadTest
         return testClient
             .receiveEvents()
             .ofTypeWorkflowInstance()
-            .withIntent(Intent.ACTIVITY_COMPLETED)
+            .withIntent(WorkflowInstanceIntent.ACTIVITY_COMPLETED)
             .getFirst();
     }
 
@@ -222,14 +222,14 @@ public class UpdatePayloadTest
         return testClient
                 .receiveEvents()
                 .ofTypeWorkflowInstance()
-                .withIntent(Intent.ACTIVITY_ACTIVATED)
+                .withIntent(WorkflowInstanceIntent.ACTIVITY_ACTIVATED)
                 .getFirst();
     }
 
     private ExecuteCommandResponse updatePayload(final long workflowInstanceKey, final long activityInstanceKey, byte[] payload) throws Exception
     {
         return apiRule.createCmdRequest()
-            .type(ValueType.WORKFLOW_INSTANCE, Intent.UPDATE_PAYLOAD)
+            .type(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.UPDATE_PAYLOAD)
             .key(activityInstanceKey)
             .command()
                 .put("workflowInstanceKey", workflowInstanceKey)

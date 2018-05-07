@@ -21,9 +21,9 @@ import org.agrona.DirectBuffer;
 import org.agrona.io.DirectBufferInputStream;
 
 import io.zeebe.protocol.clientapi.ExecuteCommandRequestDecoder;
-import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
 import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.intent.Intent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.util.buffer.BufferReader;
@@ -67,7 +67,7 @@ public class ExecuteCommandRequest implements BufferReader
 
     public Intent intent()
     {
-        return bodyDecoder.intent();
+        return Intent.fromProtocolValue(valueType(), bodyDecoder.intent());
     }
 
     public Map<String, Object> getCommand()

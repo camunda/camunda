@@ -33,8 +33,8 @@ import org.junit.rules.RuleChain;
 
 import io.zeebe.broker.task.TaskQueueManagerService;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.intent.TaskIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
@@ -147,14 +147,14 @@ public class TaskLockExpirationTest
         assertThat(events).extracting(e -> e.key()).contains(taskKey1);
         assertThat(events).extracting(e -> e.intent())
             .containsExactly(
-                Intent.CREATE,
-                Intent.CREATED,
-                Intent.LOCK,
-                Intent.LOCKED,
-                Intent.EXPIRE_LOCK,
-                Intent.LOCK_EXPIRED,
-                Intent.LOCK,
-                Intent.LOCKED);
+                TaskIntent.CREATE,
+                TaskIntent.CREATED,
+                TaskIntent.LOCK,
+                TaskIntent.LOCKED,
+                TaskIntent.EXPIRE_LOCK,
+                TaskIntent.LOCK_EXPIRED,
+                TaskIntent.LOCK,
+                TaskIntent.LOCKED);
     }
 
     @Test
@@ -189,19 +189,19 @@ public class TaskLockExpirationTest
                                                     .collect(Collectors.toList());
 
         assertThat(expiredEvents)
-            .filteredOn(e -> e.intent() == Intent.LOCKED)
+            .filteredOn(e -> e.intent() == TaskIntent.LOCKED)
             .hasSize(4)
             .extracting(e -> e.key()).containsExactly(taskKey1, taskKey2, taskKey1, taskKey2);
 
         assertThat(expiredEvents)
-            .filteredOn(e -> e.intent() == Intent.LOCK_EXPIRED)
+            .filteredOn(e -> e.intent() == TaskIntent.LOCK_EXPIRED)
             .extracting(e -> e.key()).containsExactlyInAnyOrder(taskKey1, taskKey2);
     }
 
     private long createTask(String type)
     {
         final ExecuteCommandResponse resp = apiRule.createCmdRequest()
-            .type(ValueType.TASK, Intent.CREATE)
+            .type(ValueType.TASK, TaskIntent.CREATE)
             .command()
                 .put("type", type)
                 .put("retries", 3)
@@ -214,7 +214,7 @@ public class TaskLockExpirationTest
     private void completeTask(SubscribedRecord lockedTask)
     {
         apiRule.createCmdRequest()
-            .type(ValueType.TASK, Intent.COMPLETE)
+            .type(ValueType.TASK, TaskIntent.COMPLETE)
             .key(lockedTask.key())
             .command()
                 .putAll(lockedTask.value())
@@ -225,7 +225,7 @@ public class TaskLockExpirationTest
     private void failTask(long key, Map<String, Object> event)
     {
         apiRule.createCmdRequest()
-            .type(ValueType.TASK, Intent.FAIL)
+            .type(ValueType.TASK, TaskIntent.FAIL)
             .key(key)
             .command()
                 .putAll(event)

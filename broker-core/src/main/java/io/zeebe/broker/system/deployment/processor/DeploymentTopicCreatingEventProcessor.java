@@ -17,12 +17,12 @@
  */
 package io.zeebe.broker.system.deployment.processor;
 
-import io.zeebe.broker.clustering.orchestration.topic.TopicEvent;
-import io.zeebe.broker.logstreams.processor.TypedEvent;
-import io.zeebe.broker.logstreams.processor.TypedEventProcessor;
+import io.zeebe.broker.clustering.orchestration.topic.TopicRecord;
+import io.zeebe.broker.logstreams.processor.TypedRecord;
+import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.system.deployment.data.TopicNames;
 
-public class DeploymentTopicCreatingEventProcessor implements TypedEventProcessor<TopicEvent>
+public class DeploymentTopicCreatingEventProcessor implements TypedRecordProcessor<TopicRecord>
 {
     private final TopicNames topicNames;
 
@@ -32,7 +32,7 @@ public class DeploymentTopicCreatingEventProcessor implements TypedEventProcesso
     }
 
     @Override
-    public void updateState(TypedEvent<TopicEvent> event)
+    public void updateState(TypedRecord<TopicRecord> event)
     {
         topicNames.addTopic(event.getValue().getName());
     }

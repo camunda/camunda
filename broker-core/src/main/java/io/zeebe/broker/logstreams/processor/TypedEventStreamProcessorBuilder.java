@@ -31,9 +31,9 @@ import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.map.ZbMap;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.value.BaseValue;
-import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.intent.Intent;
 
 @SuppressWarnings("rawtypes")
 public class TypedEventStreamProcessorBuilder
@@ -42,7 +42,7 @@ public class TypedEventStreamProcessorBuilder
 
     protected List<ComposableSnapshotSupport> stateResources = new ArrayList<>();
 
-    protected FlatEnumMap<TypedRecordProcessor> eventProcessors = new FlatEnumMap<>(ValueType.class, RecordType.class, Intent.class);
+    protected RecordProcessorMap eventProcessors = new RecordProcessorMap();
     protected List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
 
     public TypedEventStreamProcessorBuilder(TypedStreamEnvironment environment)
@@ -50,6 +50,7 @@ public class TypedEventStreamProcessorBuilder
         this.environment = environment;
     }
 
+    // TODO: könnte man hier sogar auf den valueType verzichten, weil der aus dem Intent folgt
     public TypedEventStreamProcessorBuilder onEvent(ValueType valueType, Intent intent, TypedRecordProcessor<?> processor)
     {
         return onRecord(RecordType.EVENT, valueType, intent, processor);
@@ -72,7 +73,7 @@ public class TypedEventStreamProcessorBuilder
 
     private TypedEventStreamProcessorBuilder onRecord(RecordType recordType, ValueType valueType, Intent intent, TypedRecordProcessor<?> processor)
     {
-        eventProcessors.put(valueType, recordType, intent, processor);
+        eventProcessors.put(recordType, valueType, intent.value(), processor);
 
         return this;
     }

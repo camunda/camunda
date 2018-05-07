@@ -35,8 +35,8 @@ import io.zeebe.broker.task.TaskQueueManagerService;
 import io.zeebe.broker.task.data.TaskRecord;
 import io.zeebe.map.Long2BytesZbMap;
 import io.zeebe.map.iterator.Long2BytesZbMapEntry;
-import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.intent.TaskIntent;
 import io.zeebe.util.sched.ScheduledTimer;
 import io.zeebe.util.sched.clock.ActorClock;
 
@@ -92,7 +92,7 @@ public class TaskExpireLockStreamProcessor implements StreamProcessorLifecycleAw
                 //   that we can stop consuming/yield on backpressure
 
                 final TypedRecord<TaskRecord> event = reader.readValue(eventPosition, TaskRecord.class);
-                final long position = writer.writeFollowUpCommand(event.getKey(), Intent.EXPIRE_LOCK, event.getValue());
+                final long position = writer.writeFollowUpCommand(event.getKey(), TaskIntent.EXPIRE_LOCK, event.getValue());
                 final boolean success = position >= 0;
 
                 if (!success)
@@ -134,10 +134,10 @@ public class TaskExpireLockStreamProcessor implements StreamProcessorLifecycleAw
         };
 
         return environment.newStreamProcessor()
-            .onEvent(ValueType.TASK, Intent.LOCKED, registerTask)
-            .onEvent(ValueType.TASK, Intent.LOCK_EXPIRED, unregisterTask)
-            .onEvent(ValueType.TASK, Intent.COMPLETED, unregisterTask)
-            .onEvent(ValueType.TASK, Intent.FAILED, unregisterTask)
+            .onEvent(ValueType.TASK, TaskIntent.LOCKED, registerTask)
+            .onEvent(ValueType.TASK, TaskIntent.LOCK_EXPIRED, unregisterTask)
+            .onEvent(ValueType.TASK, TaskIntent.COMPLETED, unregisterTask)
+            .onEvent(ValueType.TASK, TaskIntent.FAILED, unregisterTask)
             .withListener(this)
             .withStateResource(expirationMap)
             .build();

@@ -18,9 +18,9 @@
 package io.zeebe.broker.logstreams.processor;
 
 import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
-import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.impl.RecordMetadata;
+import io.zeebe.protocol.intent.Intent;
 import io.zeebe.transport.ServerOutput;
 
 public class TypedResponseWriterImpl implements TypedResponseWriter
@@ -56,6 +56,7 @@ public class TypedResponseWriterImpl implements TypedResponseWriter
             .key(record.getKey())
             .intent(intent)
             .recordType(type)
+            .valueType(metadata.getValueType())
             .valueWriter(record.getValue())
             .tryWriteResponse(metadata.getRequestStreamId(), metadata.getRequestId());
     }

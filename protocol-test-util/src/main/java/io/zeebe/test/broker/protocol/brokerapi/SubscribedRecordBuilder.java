@@ -19,12 +19,12 @@ import java.util.Map;
 
 import org.agrona.MutableDirectBuffer;
 
-import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.SubscribedRecordEncoder;
 import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.intent.Intent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.test.util.collection.MapBuilder;
 import io.zeebe.transport.RemoteAddress;
@@ -151,7 +151,7 @@ public class SubscribedRecordBuilder implements BufferWriter
         bodyEncoder.wrap(buffer, offset + headerEncoder.encodedLength())
             .recordType(recordType)
             .valueType(valueType)
-            .intent(intent)
+            .intent(intent.value())
             .key(key)
             .position(position)
             .subscriberKey(subscriberKey)

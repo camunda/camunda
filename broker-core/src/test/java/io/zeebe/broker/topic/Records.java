@@ -24,10 +24,10 @@ import io.zeebe.broker.task.data.TaskRecord;
 import io.zeebe.broker.workflow.data.DeploymentRecord;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.RecordMetadata;
+import io.zeebe.protocol.intent.Intent;
 import io.zeebe.util.ReflectUtil;
 import io.zeebe.util.buffer.BufferUtil;
 

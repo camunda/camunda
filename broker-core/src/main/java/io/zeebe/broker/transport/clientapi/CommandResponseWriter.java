@@ -17,10 +17,10 @@
  */
 package io.zeebe.broker.transport.clientapi;
 
-import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.valueHeaderLength;
 import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.keyNullValue;
 import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.partitionIdNullValue;
 import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.positionNullValue;
+import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.valueHeaderLength;
 
 import java.util.Objects;
 
@@ -28,9 +28,10 @@ import org.agrona.MutableDirectBuffer;
 
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder;
-import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
 import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.intent.Intent;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerResponse;
 import io.zeebe.util.buffer.BufferWriter;
@@ -44,7 +45,8 @@ public class CommandResponseWriter implements BufferWriter
     protected long position = positionNullValue();
     protected long key = keyNullValue();
     private RecordType recordType = RecordType.NULL_VAL;
-    private Intent intent = Intent.NULL_VAL;
+    private ValueType valueType = ValueType.NULL_VAL;
+    private short intent = Intent.NULL_VAL;
 
     protected BufferWriter valueWriter;
     protected final ServerResponse response = new ServerResponse();
@@ -63,7 +65,13 @@ public class CommandResponseWriter implements BufferWriter
 
     public CommandResponseWriter intent(Intent intent)
     {
-        this.intent = intent;
+        this.intent = intent.value();
+        return this;
+    }
+
+    public CommandResponseWriter valueType(ValueType valueType)
+    {
+        this.valueType = valueType;
         return this;
     }
 
@@ -129,6 +137,7 @@ public class CommandResponseWriter implements BufferWriter
             .recordType(recordType)
             .partitionId(partitionId)
             .position(position)
+            .valueType(valueType)
             .intent(intent)
             .key(key);
 
@@ -157,6 +166,7 @@ public class CommandResponseWriter implements BufferWriter
         valueWriter = null;
         recordType = RecordType.NULL_VAL;
         intent = Intent.NULL_VAL;
+        valueType = ValueType.NULL_VAL;
     }
 
 }

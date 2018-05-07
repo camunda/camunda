@@ -17,8 +17,6 @@
  */
 package io.zeebe.broker.system.deployment.processor;
 
-import static io.zeebe.broker.workflow.data.DeploymentState.CREATED;
-import static io.zeebe.broker.workflow.data.DeploymentState.REJECTED;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
@@ -26,17 +24,26 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Iterator;
 
-import io.zeebe.broker.logstreams.processor.*;
-import io.zeebe.broker.system.deployment.data.*;
-import io.zeebe.broker.workflow.data.*;
+import org.agrona.DirectBuffer;
+
+import io.zeebe.broker.logstreams.processor.TypedRecord;
+import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
+import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
+import io.zeebe.broker.system.deployment.data.LastWorkflowKey;
+import io.zeebe.broker.system.deployment.data.LatestVersionByProcessIdAndTopicName;
+import io.zeebe.broker.system.deployment.data.TopicNames;
+import io.zeebe.broker.workflow.data.DeployedWorkflow;
+import io.zeebe.broker.workflow.data.DeploymentRecord;
+import io.zeebe.broker.workflow.data.DeploymentResource;
+import io.zeebe.broker.workflow.data.ResourceType;
 import io.zeebe.model.bpmn.BpmnModelApi;
 import io.zeebe.model.bpmn.ValidationResult;
 import io.zeebe.model.bpmn.instance.Workflow;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.msgpack.value.ValueArray;
-import org.agrona.DirectBuffer;
+import io.zeebe.protocol.intent.DeploymentIntent;
 
-public class DeploymentCreateEventProcessor implements TypedEventProcessor<DeploymentEvent>
+public class DeploymentCreateEventProcessor implements TypedRecordProcessor<DeploymentRecord>
 {
     private final BpmnModelApi bpmn = new BpmnModelApi();
 
@@ -44,6 +51,8 @@ public class DeploymentCreateEventProcessor implements TypedEventProcessor<Deplo
     private final LastWorkflowKey lastWorkflowKey;
 
     private final TopicNames definedTopics;
+
+    private boolean accepted;
 
     public DeploymentCreateEventProcessor(LatestVersionByProcessIdAndTopicName workflowVersions,
         LastWorkflowKey lastWorkflowKey,
@@ -55,42 +64,49 @@ public class DeploymentCreateEventProcessor implements TypedEventProcessor<Deplo
     }
 
     @Override
-    public void processEvent(TypedEvent<DeploymentEvent> event)
+    public void processRecord(TypedRecord<DeploymentRecord> event)
     {
-        final DeploymentEvent deploymentEvent = event.getValue();
+        final DeploymentRecord deploymentEvent = event.getValue();
         final DirectBuffer topicName = deploymentEvent.getTopicName();
-
-        boolean success = false;
 
         if (topicExists(topicName))
         {
-            success = readAndValidateWorkflows(deploymentEvent);
+            accepted = readAndValidateWorkflows(deploymentEvent);
         }
         else
         {
             final String name = bufferAsString(topicName);
             deploymentEvent.setErrorMessage("No topic found with name " + name);
+            accepted = false;
         }
-
-        deploymentEvent.setState(success ? CREATED : REJECTED);
     }
 
     @Override
-    public long writeEvent(TypedEvent<DeploymentEvent> event, TypedStreamWriter writer)
+    public long writeRecord(TypedRecord<DeploymentRecord> event, TypedStreamWriter writer)
     {
-        return writer.writeFollowupEvent(event.getKey(),
-            event.getValue(),
-            (m) -> m.requestId(event.getMetadata().getRequestId())
-                .requestStreamId(event.getMetadata().getRequestStreamId()));
-    }
-
-    @Override
-    public void updateState(TypedEvent<DeploymentEvent> event)
-    {
-        final DeploymentEvent deploymentEvent = event.getValue();
-
-        if (deploymentEvent.getState() == DeploymentState.CREATED)
+        if (accepted)
         {
+            return writer.writeFollowUpEvent(
+                event.getKey(),
+                DeploymentIntent.CREATED,
+                event.getValue(),
+                (m) -> m.requestId(event.getMetadata().getRequestId())
+                    .requestStreamId(event.getMetadata().getRequestStreamId()));
+        }
+        else
+        {
+            return writer.writeRejection(event);
+        }
+    }
+
+    @Override
+    public void updateState(TypedRecord<DeploymentRecord> event)
+    {
+
+        if (accepted)
+        {
+            final DeploymentRecord deploymentEvent = event.getValue();
+
             final ValueArray<DeployedWorkflow> deployedWorkflows = deploymentEvent.deployedWorkflows();
             final DirectBuffer topicName = deploymentEvent.getTopicName();
 
@@ -109,7 +125,7 @@ public class DeploymentCreateEventProcessor implements TypedEventProcessor<Deplo
         return definedTopics.exists(topicName);
     }
 
-    private boolean readAndValidateWorkflows(final DeploymentEvent deploymentEvent)
+    private boolean readAndValidateWorkflows(final DeploymentRecord deploymentEvent)
     {
         final DirectBuffer topicName = deploymentEvent.getTopicName();
         final StringBuilder validationErrors = new StringBuilder();

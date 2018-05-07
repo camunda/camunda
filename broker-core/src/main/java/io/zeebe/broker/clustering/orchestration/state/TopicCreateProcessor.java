@@ -32,7 +32,7 @@ import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
-import io.zeebe.protocol.clientapi.Intent;
+import io.zeebe.protocol.intent.TopicIntent;
 
 public class TopicCreateProcessor implements TypedRecordProcessor<TopicRecord>
 {
@@ -83,7 +83,7 @@ public class TopicCreateProcessor implements TypedRecordProcessor<TopicRecord>
     {
         if (isCreating)
         {
-            final boolean written = responseWriter.writeEvent(Intent.CREATING, command);
+            final boolean written = responseWriter.writeEvent(TopicIntent.CREATING, command);
 
             if (written)
             {
@@ -103,7 +103,7 @@ public class TopicCreateProcessor implements TypedRecordProcessor<TopicRecord>
     {
         if (isCreating)
         {
-            return writer.writeFollowUpEvent(command.getKey(), Intent.CREATING, command.getValue());
+            return writer.writeFollowUpEvent(command.getKey(), TopicIntent.CREATING, command.getValue());
         }
         else
         {

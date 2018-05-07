@@ -38,8 +38,9 @@ import io.zeebe.broker.task.processor.TaskSubscription;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.ErrorCode;
-import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.protocol.clientapi.SubscriptionType;
+import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.intent.TaskIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ControlMessageRequestBuilder;
 import io.zeebe.test.broker.protocol.clientapi.ControlMessageResponse;
@@ -89,7 +90,7 @@ public class TaskSubscriptionTest
         // then
         final SubscribedRecord taskEvent = testClient.receiveEvents()
                 .ofTypeTask()
-                .withIntent(Intent.LOCKED)
+                .withIntent(TaskIntent.LOCKED)
                 .getFirst();
         assertThat(taskEvent.key()).isEqualTo(response.key());
         assertThat(taskEvent.position()).isGreaterThan(response.position());
@@ -105,7 +106,7 @@ public class TaskSubscriptionTest
             .map(e -> e.intent())
             .collect(Collectors.toList());
 
-        assertThat(taskStates).containsExactly(Intent.CREATE, Intent.CREATED, Intent.LOCK, Intent.LOCKED);
+        assertThat(taskStates).containsExactly(TaskIntent.CREATE, TaskIntent.CREATED, TaskIntent.LOCK, TaskIntent.LOCKED);
     }
 
     @Test
@@ -153,7 +154,7 @@ public class TaskSubscriptionTest
         assertThat(receivedEvents).hasSize(2);
         assertThat(receivedEvents).allMatch(e -> e.subscriptionType() == SubscriptionType.TOPIC_SUBSCRIPTION);
         assertThat(receivedEvents).extracting(r -> r.intent())
-            .containsExactly(Intent.CREATE, Intent.CREATED); // no more LOCK etc.
+            .containsExactly(TaskIntent.CREATE, TaskIntent.CREATED); // no more LOCK etc.
     }
 
     @Test
@@ -490,7 +491,7 @@ public class TaskSubscriptionTest
         // then
         final List<SubscribedRecord> taskEvents = testClient.receiveEvents()
                 .ofTypeTask()
-                .withIntent(Intent.LOCKED)
+                .withIntent(TaskIntent.LOCKED)
                 .limit(2)
                 .collect(Collectors.toList());
 
@@ -532,7 +533,7 @@ public class TaskSubscriptionTest
 
         final List<SubscribedRecord> taskEvents = testClient.receiveEvents()
                 .ofTypeTask()
-                .withIntent(Intent.LOCKED)
+                .withIntent(TaskIntent.LOCKED)
                 .limit(2)
                 .collect(Collectors.toList());
 

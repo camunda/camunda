@@ -42,7 +42,7 @@ import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.msgpack.value.IntegerValue;
 import io.zeebe.msgpack.value.ValueArray;
-import io.zeebe.protocol.clientapi.Intent;
+import io.zeebe.protocol.intent.TopicIntent;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
@@ -185,7 +185,7 @@ public class TopicCreationService extends Actor implements Service<TopicCreation
                             final ValueArray<IntegerValue> eventPartitionIds = topicEvent.getPartitionIds();
                             pendingTopic.getPartitionIds().forEach(id -> eventPartitionIds.add().setValue(id));
 
-                            actor.runUntilDone(() -> writeEvent(pendingTopic.getKey(), Intent.CREATE_COMPLETE, topicEvent));
+                            actor.runUntilDone(() -> writeEvent(pendingTopic.getKey(), TopicIntent.CREATE_COMPLETE, topicEvent));
 
                             pendingTopicCreationRequests.remove(topicName);
                             pendingTopicCompletions.add(topicName);
@@ -287,7 +287,7 @@ public class TopicCreationService extends Actor implements Service<TopicCreation
         });
     }
 
-    private void writeEvent(final long key, Intent intent, final TopicRecord topicEvent)
+    private void writeEvent(final long key, TopicIntent intent, final TopicRecord topicEvent)
     {
         if (streamWriter.writeFollowUpEvent(key, intent, topicEvent) >= 0)
         {

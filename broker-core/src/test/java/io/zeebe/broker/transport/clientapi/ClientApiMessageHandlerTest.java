@@ -57,10 +57,12 @@ import io.zeebe.protocol.clientapi.ControlMessageRequestEncoder;
 import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.clientapi.ErrorResponseDecoder;
 import io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder;
-import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.RecordMetadata;
+import io.zeebe.protocol.intent.DeploymentIntent;
+import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.intent.TaskIntent;
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.test.util.TestUtil;
@@ -162,7 +164,7 @@ public class ClientApiMessageHandlerTest
     public void shouldHandleCommandRequest() throws InterruptedException, ExecutionException
     {
         // given
-        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_PARTITION_ID, null, ValueType.TASK, Intent.CREATE);
+        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_PARTITION_ID, null, ValueType.TASK, TaskIntent.CREATE);
 
         // when
         final boolean isHandled = messageHandler.onRequest(serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, REQUEST_ID);
@@ -193,7 +195,7 @@ public class ClientApiMessageHandlerTest
     {
         // given
         final short clientProtocolVersion = Protocol.PROTOCOL_VERSION - 1;
-        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_PARTITION_ID, clientProtocolVersion, ValueType.TASK, Intent.CREATE);
+        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_PARTITION_ID, clientProtocolVersion, ValueType.TASK, TaskIntent.CREATE);
 
         // when
         final boolean isHandled = messageHandler.onRequest(serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, 123);
@@ -215,7 +217,7 @@ public class ClientApiMessageHandlerTest
     public void shouldWriteCommandRequestEventType() throws InterruptedException, ExecutionException
     {
         // given
-        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_PARTITION_ID, null, ValueType.TASK, Intent.CREATE);
+        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_PARTITION_ID, null, ValueType.TASK, TaskIntent.CREATE);
 
         // when
         final boolean isHandled = messageHandler.onRequest(serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, 123);
@@ -231,7 +233,7 @@ public class ClientApiMessageHandlerTest
         loggedEvent.readMetadata(eventMetadata);
 
         assertThat(eventMetadata.getValueType()).isEqualTo(ValueType.TASK);
-        assertThat(eventMetadata.getIntent()).isEqualTo(Intent.CREATE);
+        assertThat(eventMetadata.getIntent()).isEqualTo(TaskIntent.CREATE);
     }
 
     @Test
@@ -274,7 +276,7 @@ public class ClientApiMessageHandlerTest
     public void shouldSendErrorMessageIfTopicNotFound()
     {
         // given
-        final int writtenLength = writeCommandRequestToBuffer(buffer, 99, null, ValueType.TASK, Intent.CREATE);
+        final int writtenLength = writeCommandRequestToBuffer(buffer, 99, null, ValueType.TASK, TaskIntent.CREATE);
 
         // when
         final boolean isHandled = messageHandler.onRequest(serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, REQUEST_ID);
@@ -319,7 +321,7 @@ public class ClientApiMessageHandlerTest
     public void shouldSendErrorMessageOnRequestWithNewerProtocolVersion()
     {
         // given
-        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_PARTITION_ID, Short.MAX_VALUE, ValueType.TASK, Intent.CREATE);
+        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_PARTITION_ID, Short.MAX_VALUE, ValueType.TASK, TaskIntent.CREATE);
 
         // when
         final boolean isHandled = messageHandler.onRequest(serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, REQUEST_ID);
@@ -340,7 +342,7 @@ public class ClientApiMessageHandlerTest
     {
         // given
         // request is invalid because Value type DEPLOYMENT does not match value contents, i.e. required values are not present
-        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_PARTITION_ID, null, ValueType.DEPLOYMENT, Intent.CREATE);
+        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_PARTITION_ID, null, ValueType.DEPLOYMENT, DeploymentIntent.CREATE);
 
         // when
         final boolean isHandled = messageHandler.onRequest(serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, REQUEST_ID);
@@ -362,7 +364,7 @@ public class ClientApiMessageHandlerTest
     public void shouldSendErrorMessageOnUnsupportedRequest() throws InterruptedException, ExecutionException
     {
         // given
-        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_PARTITION_ID, null, ValueType.SBE_UNKNOWN, Intent.SBE_UNKNOWN);
+        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_PARTITION_ID, null, ValueType.SBE_UNKNOWN, Intent.UNKNOWN);
 
         // when
         final boolean isHandled = messageHandler.onRequest(serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, REQUEST_ID);
@@ -398,7 +400,7 @@ public class ClientApiMessageHandlerTest
         commandRequestEncoder
             .partitionId(partitionId)
             .valueType(eventTypeToWrite)
-            .intent(intent)
+            .intent(intent.value())
             .putValue(TASK_EVENT, 0, TASK_EVENT.length);
 
         return headerEncoder.encodedLength() +

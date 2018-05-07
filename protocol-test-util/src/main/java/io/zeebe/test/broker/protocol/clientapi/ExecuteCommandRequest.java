@@ -24,9 +24,9 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
 import io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder;
-import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
 import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.intent.Intent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.transport.ClientOutput;
 import io.zeebe.transport.ClientResponse;
@@ -46,7 +46,7 @@ public class ExecuteCommandRequest implements BufferWriter
     protected int partitionId = partitionIdNullValue();
     protected long key = keyNullValue();
     protected ValueType valueType = ValueType.NULL_VAL;
-    private Intent intent = Intent.NULL_VAL;
+    private Intent intent = null;
     protected byte[] encodedCmd;
 
     protected ActorFuture<ClientResponse> responseFuture;
@@ -143,7 +143,7 @@ public class ExecuteCommandRequest implements BufferWriter
             .partitionId(partitionId)
             .key(key)
             .valueType(valueType)
-            .intent(intent)
+            .intent(intent.value())
             .putValue(encodedCmd, 0, encodedCmd.length);
     }
 

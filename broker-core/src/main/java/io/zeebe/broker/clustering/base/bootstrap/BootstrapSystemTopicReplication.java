@@ -22,10 +22,10 @@ import io.zeebe.broker.clustering.base.topology.PartitionInfo;
 import io.zeebe.broker.clustering.orchestration.topic.TopicRecord;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.RecordMetadata;
+import io.zeebe.protocol.intent.TopicIntent;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
@@ -65,7 +65,7 @@ class BootstrapSystemTopicReplication extends Actor implements Service<Void>
 
         metadata.recordType(RecordType.EVENT);
         metadata.valueType(ValueType.TOPIC);
-        metadata.intent(Intent.CREATE_COMPLETE);
+        metadata.intent(TopicIntent.CREATE_COMPLETE);
 
         topicEvent.setName(partitionInfo.getTopicNameBuffer());
         topicEvent.setReplicationFactor(partitionInfo.getReplicationFactor());

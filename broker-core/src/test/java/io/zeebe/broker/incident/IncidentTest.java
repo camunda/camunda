@@ -43,7 +43,14 @@ import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.msgpack.spec.MsgPackHelper;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
+<<<<<<< a8980d0e12f2a98a0d593a7f37a5278b6926d5d7
 import io.zeebe.protocol.intent.Intent;
+=======
+import io.zeebe.protocol.intent.IncidentIntent;
+import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.intent.TaskIntent;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+>>>>>>> structure intents by value type
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
@@ -104,8 +111,8 @@ public class IncidentTest
         final long workflowInstanceKey = testClient.createWorkflowInstance("process");
 
         // then
-        final SubscribedRecord failureEvent = receiveFirstWorkflowInstanceEvent(Intent.ACTIVITY_READY);
-        final SubscribedRecord incidentEvent = receiveFirstIncidentEvent(Intent.CREATED);
+        final SubscribedRecord failureEvent = receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_READY);
+        final SubscribedRecord incidentEvent = receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
         assertThat(incidentEvent.key()).isGreaterThan(0);
         assertThat(incidentEvent.value())
@@ -131,8 +138,8 @@ public class IncidentTest
         testClient.completeTaskOfType("test", MSGPACK_PAYLOAD);
 
         // then
-        final SubscribedRecord failureEvent = receiveFirstWorkflowInstanceEvent(Intent.ACTIVITY_COMPLETING);
-        final SubscribedRecord incidentEvent = receiveFirstIncidentEvent(Intent.CREATED);
+        final SubscribedRecord failureEvent = receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_COMPLETING);
+        final SubscribedRecord incidentEvent = receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
         assertThat(incidentEvent.key()).isGreaterThan(0);
         assertThat(incidentEvent.value())
@@ -154,17 +161,17 @@ public class IncidentTest
 
         final long workflowInstanceKey = testClient.createWorkflowInstance("process");
 
-        final SubscribedRecord failureEvent = receiveFirstWorkflowInstanceEvent(Intent.ACTIVITY_READY);
-        final SubscribedRecord incidentEvent = receiveFirstIncidentEvent(Intent.CREATED);
+        final SubscribedRecord failureEvent = receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_READY);
+        final SubscribedRecord incidentEvent = receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
         // when
         updatePayload(workflowInstanceKey, failureEvent.key(), PAYLOAD);
 
         // then
-        final SubscribedRecord followUpEvent = receiveFirstWorkflowInstanceEvent(Intent.ACTIVITY_ACTIVATED);
+        final SubscribedRecord followUpEvent = receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_ACTIVATED);
         assertThat(followUpEvent.value()).containsEntry("payload", PAYLOAD);
 
-        final SubscribedRecord incidentResolvedEvent = receiveFirstIncidentEvent(Intent.RESOLVED);
+        final SubscribedRecord incidentResolvedEvent = receiveFirstIncidentEvent(IncidentIntent.RESOLVED);
         assertThat(incidentResolvedEvent.key()).isEqualTo(incidentEvent.key());
         assertThat(incidentResolvedEvent.value())
             .containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
@@ -186,17 +193,17 @@ public class IncidentTest
 
         testClient.completeTaskOfType("test", MSGPACK_PAYLOAD);
 
-        final SubscribedRecord failureEvent = receiveFirstWorkflowInstanceEvent(Intent.ACTIVITY_COMPLETING);
-        final SubscribedRecord incidentEvent = receiveFirstIncidentEvent(Intent.CREATED);
+        final SubscribedRecord failureEvent = receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_COMPLETING);
+        final SubscribedRecord incidentEvent = receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
         // when
         updatePayload(workflowInstanceKey, failureEvent.key(), PAYLOAD);
 
         // then
-        final SubscribedRecord followUpEvent = receiveFirstWorkflowInstanceEvent(Intent.ACTIVITY_COMPLETED);
+        final SubscribedRecord followUpEvent = receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_COMPLETED);
         assertThat(followUpEvent.value()).containsEntry("payload", PAYLOAD);
 
-        final SubscribedRecord incidentResolvedEvent = receiveFirstIncidentEvent(Intent.RESOLVED);
+        final SubscribedRecord incidentResolvedEvent = receiveFirstIncidentEvent(IncidentIntent.RESOLVED);
         assertThat(incidentResolvedEvent.key()).isEqualTo(incidentEvent.key());
         assertThat(incidentResolvedEvent.value())
             .containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
@@ -223,7 +230,7 @@ public class IncidentTest
         testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
 
         // then incident is created
-        final SubscribedRecord incidentEvent = receiveFirstIncidentCommand(Intent.CREATE);
+        final SubscribedRecord incidentEvent = receiveFirstIncidentCommand(IncidentIntent.CREATE);
 
         assertThat(incidentEvent.key()).isGreaterThan(0);
         assertThat(incidentEvent.value()).containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
@@ -244,20 +251,20 @@ public class IncidentTest
         final long workflowInstanceKey = testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
 
         // then incident is created
-        final SubscribedRecord failureEvent = receiveFirstWorkflowInstanceEvent(Intent.ACTIVITY_READY);
-        final SubscribedRecord incidentEvent = receiveFirstIncidentEvent(Intent.CREATED);
+        final SubscribedRecord failureEvent = receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_READY);
+        final SubscribedRecord incidentEvent = receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
         // when
         updatePayload(workflowInstanceKey, failureEvent, "{'string':{'obj':'test'}}");
 
         // then
-        final SubscribedRecord followUpEvent = receiveFirstWorkflowInstanceEvent(Intent.ACTIVITY_ACTIVATED);
+        final SubscribedRecord followUpEvent = receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_ACTIVATED);
 
         final byte[] result = (byte[]) followUpEvent.value()
                                                     .get(PROP_PAYLOAD);
         assertThat(MSGPACK_MAPPER.readTree(result)).isEqualTo(JSON_MAPPER.readTree("{'obj':'test'}"));
 
-        final SubscribedRecord incidentResolvedEvent = receiveFirstIncidentEvent(Intent.RESOLVED);
+        final SubscribedRecord incidentResolvedEvent = receiveFirstIncidentEvent(IncidentIntent.RESOLVED);
         assertThat(incidentResolvedEvent.key()).isEqualTo(incidentEvent.key());
         assertThat(incidentResolvedEvent.value()).containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
                                                  .containsEntry("errorMessage",
@@ -284,10 +291,10 @@ public class IncidentTest
 
         // when
         testClient.completeTaskOfType("external", MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("{'testAttr':'test'}")));
-        receiveFirstWorkflowInstanceEvent(Intent.ACTIVITY_ACTIVATED);
+        receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_ACTIVATED);
 
         // then incident is created
-        final SubscribedRecord incidentEvent = receiveFirstIncidentCommand(Intent.CREATE);
+        final SubscribedRecord incidentEvent = receiveFirstIncidentCommand(IncidentIntent.CREATE);
 
         assertThat(incidentEvent.key()).isGreaterThan(0);
         assertThat(incidentEvent.value()).containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
@@ -309,23 +316,23 @@ public class IncidentTest
 
         // when
         testClient.completeTaskOfType("external", MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("{'testAttr':'test'}")));
-        receiveFirstWorkflowInstanceEvent(Intent.ACTIVITY_ACTIVATED);
+        receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_ACTIVATED);
 
         // then incident is created
-        final SubscribedRecord failureEvent = receiveFirstWorkflowInstanceEvent(Intent.ACTIVITY_COMPLETING);
-        final SubscribedRecord incidentEvent = receiveFirstIncidentEvent(Intent.CREATED);
+        final SubscribedRecord failureEvent = receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_COMPLETING);
+        final SubscribedRecord incidentEvent = receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
         // when
         updatePayload(workflowInstanceKey, failureEvent, "{'testAttr':{'obj':'test'}}");
 
         // then
-        final SubscribedRecord followUpEvent = receiveFirstWorkflowInstanceEvent(Intent.ACTIVITY_COMPLETED);
+        final SubscribedRecord followUpEvent = receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_COMPLETED);
 
         final byte[] result = (byte[]) followUpEvent.value()
                                                     .get(PROP_PAYLOAD);
         assertThat(MSGPACK_MAPPER.readTree(result)).isEqualTo(JSON_MAPPER.readTree("{'obj':'test'}"));
 
-        final SubscribedRecord incidentResolvedEvent = receiveFirstIncidentEvent(Intent.RESOLVED);
+        final SubscribedRecord incidentResolvedEvent = receiveFirstIncidentEvent(IncidentIntent.RESOLVED);
         assertThat(incidentResolvedEvent.key()).isEqualTo(incidentEvent.key());
         assertThat(incidentResolvedEvent.value()).containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
                                                  .containsEntry("errorMessage",
@@ -354,7 +361,7 @@ public class IncidentTest
         testClient.completeTaskOfType("external");
 
         // then incident is created
-        final SubscribedRecord incidentEvent = receiveFirstIncidentCommand(Intent.CREATE);
+        final SubscribedRecord incidentEvent = receiveFirstIncidentCommand(IncidentIntent.CREATE);
 
         assertThat(incidentEvent.key()).isGreaterThan(0);
         assertThat(incidentEvent.value()).containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
@@ -378,20 +385,20 @@ public class IncidentTest
         testClient.completeTaskOfType("external");
 
         // then incident is created
-        final SubscribedRecord failureEvent = receiveFirstWorkflowInstanceEvent(Intent.ACTIVITY_COMPLETING);
-        final SubscribedRecord incidentEvent = receiveFirstIncidentEvent(Intent.CREATED);
+        final SubscribedRecord failureEvent = receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_COMPLETING);
+        final SubscribedRecord incidentEvent = receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
         // when
         updatePayload(workflowInstanceKey, failureEvent, "{'testAttr':{'obj':'test'}}");
 
         // then
-        final SubscribedRecord followUpEvent = receiveFirstWorkflowInstanceEvent(Intent.ACTIVITY_COMPLETED);
+        final SubscribedRecord followUpEvent = receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_COMPLETED);
 
         final byte[] result = (byte[]) followUpEvent.value()
                                                     .get(PROP_PAYLOAD);
         assertThat(MSGPACK_MAPPER.readTree(result)).isEqualTo(JSON_MAPPER.readTree("{'obj':'test'}"));
 
-        final SubscribedRecord incidentResolvedEvent = receiveFirstIncidentEvent(Intent.RESOLVED);
+        final SubscribedRecord incidentResolvedEvent = receiveFirstIncidentEvent(IncidentIntent.RESOLVED);
         assertThat(incidentResolvedEvent.key()).isEqualTo(incidentEvent.key());
         assertThat(incidentResolvedEvent.value()).containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
                                                  .containsEntry("errorMessage",
@@ -419,7 +426,7 @@ public class IncidentTest
         testClient.completeTaskOfType("external");
 
         // then incident is created
-        final SubscribedRecord incidentEvent = receiveFirstIncidentCommand(Intent.CREATE);
+        final SubscribedRecord incidentEvent = receiveFirstIncidentCommand(IncidentIntent.CREATE);
 
         assertThat(incidentEvent.key()).isGreaterThan(0);
         assertThat(incidentEvent.value()).containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
@@ -442,20 +449,20 @@ public class IncidentTest
         testClient.completeTaskOfType("external");
 
         // then incident is created
-        final SubscribedRecord failureEvent = receiveFirstWorkflowInstanceEvent(Intent.ACTIVITY_COMPLETING);
-        final SubscribedRecord incidentEvent = receiveFirstIncidentEvent(Intent.CREATED);
+        final SubscribedRecord failureEvent = receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_COMPLETING);
+        final SubscribedRecord incidentEvent = receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
         // when
         updatePayload(workflowInstanceKey, failureEvent, "{'testAttr':{'obj':'test'}}");
 
         // then
-        final SubscribedRecord followUpEvent = receiveFirstWorkflowInstanceEvent(Intent.ACTIVITY_COMPLETED);
+        final SubscribedRecord followUpEvent = receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_COMPLETED);
 
         final byte[] result = (byte[]) followUpEvent.value()
                                                     .get(PROP_PAYLOAD);
         assertThat(MSGPACK_MAPPER.readTree(result)).isEqualTo(JSON_MAPPER.readTree("{'obj':'test'}"));
 
-        final SubscribedRecord incidentResolvedEvent = receiveFirstIncidentEvent(Intent.RESOLVED);
+        final SubscribedRecord incidentResolvedEvent = receiveFirstIncidentEvent(IncidentIntent.RESOLVED);
         assertThat(incidentResolvedEvent.key()).isEqualTo(incidentEvent.key());
         assertThat(incidentResolvedEvent.value()).containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
                                                  .containsEntry("errorMessage",
@@ -484,7 +491,7 @@ public class IncidentTest
         testClient.createWorkflowInstance("workflow", asMsgPack("foo", 12));
 
         // then incident is created
-        final SubscribedRecord incidentEvent = receiveFirstIncidentCommand(Intent.CREATE);
+        final SubscribedRecord incidentEvent = receiveFirstIncidentCommand(IncidentIntent.CREATE);
 
         assertThat(incidentEvent.key()).isGreaterThan(0);
         assertThat(incidentEvent.value()).containsEntry("errorType", ErrorType.CONDITION_ERROR.name())
@@ -509,7 +516,7 @@ public class IncidentTest
         testClient.createWorkflowInstance("workflow", asMsgPack("foo", "bar"));
 
         // then incident is created
-        final SubscribedRecord incidentEvent = receiveFirstIncidentCommand(Intent.CREATE);
+        final SubscribedRecord incidentEvent = receiveFirstIncidentCommand(IncidentIntent.CREATE);
 
         assertThat(incidentEvent.key()).isGreaterThan(0);
         assertThat(incidentEvent.value()).containsEntry("errorType", ErrorType.CONDITION_ERROR.name())
@@ -534,9 +541,9 @@ public class IncidentTest
         final long workflowInstanceKey = testClient.createWorkflowInstance("workflow", asMsgPack("foo", "bar"));
 
         // then incident is created
-        receiveFirstIncidentEvent(Intent.CREATED);
+        receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
-        final SubscribedRecord failureEvent = receiveFirstWorkflowInstanceEvent(Intent.GATEWAY_ACTIVATED);
+        final SubscribedRecord failureEvent = receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.GATEWAY_ACTIVATED);
 
         // when correct payload is used
         updatePayload(workflowInstanceKey, failureEvent.key(), asMsgPack("foo", 7).byteArray());
@@ -544,23 +551,23 @@ public class IncidentTest
         // then
         final List<SubscribedRecord> records = testClient
                 .receiveRecords()
-                .limit(r -> r.valueType() == ValueType.WORKFLOW_INSTANCE && r.intent() == Intent.COMPLETED)
+                .limit(r -> r.valueType() == ValueType.WORKFLOW_INSTANCE && r.intent() == WorkflowInstanceIntent.COMPLETED)
                 .collect(Collectors.toList());
 
         // RESOLVE triggers GATEWAY_ACTIVATED, SEQUENCE_FLOW_TAKEN and RESOLVED
         assertThat(records).extracting(r -> r.recordType(), r -> r.valueType(), r -> r.intent())
             .containsSubsequence(
-                tuple(RecordType.COMMAND, ValueType.INCIDENT, Intent.RESOLVE),
-                tuple(RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, Intent.GATEWAY_ACTIVATED),
-                tuple(RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, Intent.SEQUENCE_FLOW_TAKEN),
-                tuple(RecordType.EVENT, ValueType.INCIDENT, Intent.RESOLVED));
+                tuple(RecordType.COMMAND, ValueType.INCIDENT, IncidentIntent.RESOLVE),
+                tuple(RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.GATEWAY_ACTIVATED),
+                tuple(RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
+                tuple(RecordType.EVENT, ValueType.INCIDENT, IncidentIntent.RESOLVED));
 
         // SEQUENCE_FLOW_TAKEN triggers the rest of the process
         assertThat(records).extracting(r -> r.recordType(), r -> r.valueType(), r -> r.intent())
             .containsSubsequence(
-                tuple(RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, Intent.SEQUENCE_FLOW_TAKEN),
-                tuple(RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, Intent.END_EVENT_OCCURRED),
-                tuple(RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, Intent.COMPLETED));
+                tuple(RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
+                tuple(RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.END_EVENT_OCCURRED),
+                tuple(RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.COMPLETED));
     }
 
     @Test
@@ -580,9 +587,9 @@ public class IncidentTest
         final long workflowInstanceKey = testClient.createWorkflowInstance("workflow", asMsgPack("foo", "bar"));
 
         // then incident is created
-        receiveFirstIncidentEvent(Intent.CREATED);
+        receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
-        final SubscribedRecord failureEvent = receiveFirstWorkflowInstanceEvent(Intent.GATEWAY_ACTIVATED);
+        final SubscribedRecord failureEvent = receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.GATEWAY_ACTIVATED);
 
         // when not correct payload is used
         updatePayload(workflowInstanceKey, failureEvent.key(), asMsgPack("foo", 10).byteArray());
@@ -590,14 +597,14 @@ public class IncidentTest
         // then
         List<SubscribedRecord> records = testClient
             .receiveRecords()
-            .limit(r -> r.valueType() == ValueType.INCIDENT && r.intent() == Intent.RESOLVE_FAILED)
+            .limit(r -> r.valueType() == ValueType.INCIDENT && r.intent() == IncidentIntent.RESOLVE_FAILED)
             .collect(Collectors.toList());
 
         assertThat(records).extracting(r -> r.recordType(), r -> r.valueType(), r -> r.intent())
             .containsSubsequence(
-                tuple(RecordType.COMMAND, ValueType.INCIDENT, Intent.RESOLVE),
-                tuple(RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, Intent.GATEWAY_ACTIVATED),
-                tuple(RecordType.EVENT, ValueType.INCIDENT, Intent.RESOLVE_FAILED));
+                tuple(RecordType.COMMAND, ValueType.INCIDENT, IncidentIntent.RESOLVE),
+                tuple(RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.GATEWAY_ACTIVATED),
+                tuple(RecordType.EVENT, ValueType.INCIDENT, IncidentIntent.RESOLVE_FAILED));
 
         // when correct payload is used
         updatePayload(workflowInstanceKey, failureEvent.key(), asMsgPack("foo", 7).byteArray());
@@ -605,24 +612,24 @@ public class IncidentTest
         // then
         records = testClient
             .receiveRecords()
-            .skipUntil(r -> r.valueType() == ValueType.INCIDENT && r.intent() == Intent.RESOLVE_FAILED)
-            .limit(r -> r.valueType() == ValueType.WORKFLOW_INSTANCE && r.intent() == Intent.COMPLETED)
+            .skipUntil(r -> r.valueType() == ValueType.INCIDENT && r.intent() == IncidentIntent.RESOLVE_FAILED)
+            .limit(r -> r.valueType() == ValueType.WORKFLOW_INSTANCE && r.intent() == WorkflowInstanceIntent.COMPLETED)
             .collect(Collectors.toList());
 
         // RESOLVE triggers GATEWAY_ACTIVATED, SEQUENCE_FLOW_TAKEN and RESOLVED
         assertThat(records).extracting(r -> r.recordType(), r -> r.valueType(), r -> r.intent())
             .containsSubsequence(
-                tuple(RecordType.COMMAND, ValueType.INCIDENT, Intent.RESOLVE),
-                tuple(RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, Intent.GATEWAY_ACTIVATED),
-                tuple(RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, Intent.SEQUENCE_FLOW_TAKEN),
-                tuple(RecordType.EVENT, ValueType.INCIDENT, Intent.RESOLVED));
+                tuple(RecordType.COMMAND, ValueType.INCIDENT, IncidentIntent.RESOLVE),
+                tuple(RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.GATEWAY_ACTIVATED),
+                tuple(RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
+                tuple(RecordType.EVENT, ValueType.INCIDENT, IncidentIntent.RESOLVED));
 
         // SEQUENCE_FLOW_TAKEN triggers the rest of the process
         assertThat(records).extracting(r -> r.recordType(), r -> r.valueType(), r -> r.intent())
             .containsSubsequence(
-                tuple(RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, Intent.SEQUENCE_FLOW_TAKEN),
-                tuple(RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, Intent.END_EVENT_OCCURRED),
-                tuple(RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, Intent.COMPLETED));
+                tuple(RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
+                tuple(RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.END_EVENT_OCCURRED),
+                tuple(RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.COMPLETED));
     }
 
     @Test
@@ -642,16 +649,16 @@ public class IncidentTest
         final long workflowInstanceKey = testClient.createWorkflowInstance("workflow", asMsgPack("foo", 12));
 
         // then incident is created
-        receiveFirstIncidentEvent(Intent.CREATED);
+        receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
-        final SubscribedRecord failureEvent = receiveFirstWorkflowInstanceEvent(Intent.GATEWAY_ACTIVATED);
+        final SubscribedRecord failureEvent = receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.GATEWAY_ACTIVATED);
 
         // when
         updatePayload(workflowInstanceKey, failureEvent.key(), asMsgPack("foo", 7).byteArray());
 
         // then
-        receiveFirstIncidentEvent(Intent.RESOLVED);
-        receiveFirstWorkflowInstanceEvent(Intent.COMPLETED);
+        receiveFirstIncidentEvent(IncidentIntent.RESOLVED);
+        receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.COMPLETED);
     }
 
     @Test
@@ -669,15 +676,15 @@ public class IncidentTest
 
         final long workflowInstanceKey = testClient.createWorkflowInstance("process");
 
-        final  SubscribedRecord failureEvent = receiveFirstWorkflowInstanceEvent(Intent.ACTIVITY_READY);
-        final SubscribedRecord incidentEvent = receiveFirstIncidentEvent(Intent.CREATED);
+        final  SubscribedRecord failureEvent = receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_READY);
+        final SubscribedRecord incidentEvent = receiveFirstIncidentEvent(IncidentIntent.CREATED);
         assertThat(incidentEvent.value()).containsEntry("errorMessage", "No data found for query $.foo.");
 
         // when
         updatePayload(workflowInstanceKey, failureEvent.key(), PAYLOAD);
 
         // then
-        final SubscribedRecord resolveFailedEvent = receiveFirstIncidentEvent(Intent.RESOLVE_FAILED);
+        final SubscribedRecord resolveFailedEvent = receiveFirstIncidentEvent(IncidentIntent.RESOLVE_FAILED);
         assertThat(resolveFailedEvent.key()).isEqualTo(incidentEvent.key());
         assertThat(resolveFailedEvent.value())
             .containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
@@ -695,18 +702,18 @@ public class IncidentTest
 
         final long workflowInstanceKey = testClient.createWorkflowInstance("process");
 
-        final SubscribedRecord failureEvent = receiveFirstWorkflowInstanceEvent(Intent.ACTIVITY_READY);
-        final SubscribedRecord incidentEvent = receiveFirstIncidentEvent(Intent.CREATED);
+        final SubscribedRecord failureEvent = receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_READY);
+        final SubscribedRecord incidentEvent = receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
         updatePayload(workflowInstanceKey, failureEvent.key(), MsgPackHelper.EMTPY_OBJECT);
 
-        receiveFirstIncidentEvent(Intent.RESOLVE_FAILED);
+        receiveFirstIncidentEvent(IncidentIntent.RESOLVE_FAILED);
 
         // when
         updatePayload(workflowInstanceKey, failureEvent.key(), PAYLOAD);
 
         // then
-        final SubscribedRecord incidentResolvedEvent = receiveFirstIncidentEvent(Intent.RESOLVED);
+        final SubscribedRecord incidentResolvedEvent = receiveFirstIncidentEvent(IncidentIntent.RESOLVED);
         assertThat(incidentResolvedEvent.key()).isEqualTo(incidentEvent.key());
         assertThat(incidentResolvedEvent.value())
             .containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
@@ -724,19 +731,19 @@ public class IncidentTest
 
         // create and resolve an first incident
         long workflowInstanceKey = testClient.createWorkflowInstance("process");
-        SubscribedRecord failureEvent = receiveFirstWorkflowInstanceEvent(workflowInstanceKey, Intent.ACTIVITY_READY);
+        SubscribedRecord failureEvent = receiveFirstWorkflowInstanceEvent(workflowInstanceKey, WorkflowInstanceIntent.ACTIVITY_READY);
         updatePayload(workflowInstanceKey, failureEvent.key(), PAYLOAD);
 
         // create a second incident
         workflowInstanceKey = testClient.createWorkflowInstance("process");
-        failureEvent = receiveFirstWorkflowInstanceEvent(workflowInstanceKey, Intent.ACTIVITY_READY);
-        final SubscribedRecord incidentEvent = receiveFirstIncidentEvent(workflowInstanceKey, Intent.CREATED);
+        failureEvent = receiveFirstWorkflowInstanceEvent(workflowInstanceKey, WorkflowInstanceIntent.ACTIVITY_READY);
+        final SubscribedRecord incidentEvent = receiveFirstIncidentEvent(workflowInstanceKey, IncidentIntent.CREATED);
 
         // when
         updatePayload(workflowInstanceKey, failureEvent.key(), PAYLOAD);
 
         // then
-        final SubscribedRecord incidentResolvedEvent = receiveFirstIncidentEvent(workflowInstanceKey, Intent.RESOLVED);
+        final SubscribedRecord incidentResolvedEvent = receiveFirstIncidentEvent(workflowInstanceKey, IncidentIntent.RESOLVED);
         assertThat(incidentResolvedEvent.key()).isEqualTo(incidentEvent.key());
     }
 
@@ -748,13 +755,13 @@ public class IncidentTest
 
         final long workflowInstanceKey = testClient.createWorkflowInstance("process");
 
-        final SubscribedRecord incidentCreatedEvent = receiveFirstIncidentEvent(Intent.CREATED);
+        final SubscribedRecord incidentCreatedEvent = receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
         // when
         cancelWorkflowInstance(workflowInstanceKey);
 
         // then
-        final SubscribedRecord incidentEvent = receiveFirstIncidentEvent(Intent.DELETED);
+        final SubscribedRecord incidentEvent = receiveFirstIncidentEvent(IncidentIntent.DELETED);
 
         assertThat(incidentEvent.key()).isEqualTo(incidentCreatedEvent.key());
         assertThat(incidentEvent.value())
@@ -782,13 +789,13 @@ public class IncidentTest
 
         // create another instance which creates an incident
         workflowInstanceKey = testClient.createWorkflowInstance("process");
-        final SubscribedRecord incidentCreatedEvent = receiveFirstIncidentEvent(workflowInstanceKey, Intent.CREATED);
+        final SubscribedRecord incidentCreatedEvent = receiveFirstIncidentEvent(workflowInstanceKey, IncidentIntent.CREATED);
 
         // when
         cancelWorkflowInstance(workflowInstanceKey);
 
         // then
-        final SubscribedRecord incidentEvent = receiveFirstIncidentEvent(workflowInstanceKey, Intent.DELETED);
+        final SubscribedRecord incidentEvent = receiveFirstIncidentEvent(workflowInstanceKey, IncidentIntent.DELETED);
 
         assertThat(incidentEvent.key()).isEqualTo(incidentCreatedEvent.key());
         assertThat(incidentEvent.value())
@@ -812,9 +819,9 @@ public class IncidentTest
         failTaskWithNoRetriesLeft();
 
         // then
-        final SubscribedRecord activityEvent = receiveFirstWorkflowInstanceEvent(Intent.ACTIVITY_ACTIVATED);
-        final SubscribedRecord failedEvent = receiveFirstTaskEvent(Intent.FAILED);
-        final SubscribedRecord incidentEvent = receiveFirstIncidentEvent(Intent.CREATED);
+        final SubscribedRecord activityEvent = receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_ACTIVATED);
+        final SubscribedRecord failedEvent = receiveFirstTaskEvent(TaskIntent.FAILED);
+        final SubscribedRecord incidentEvent = receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
         assertThat(incidentEvent.key()).isGreaterThan(0);
         assertThat(incidentEvent.value())
@@ -842,9 +849,9 @@ public class IncidentTest
         updateTaskRetries();
 
         // then
-        final SubscribedRecord taskEvent = receiveFirstTaskEvent(Intent.FAILED);
-        final SubscribedRecord activityEvent = receiveFirstWorkflowInstanceEvent(Intent.ACTIVITY_ACTIVATED);
-        SubscribedRecord incidentEvent = receiveFirstIncidentCommand(Intent.DELETE);
+        final SubscribedRecord taskEvent = receiveFirstTaskEvent(TaskIntent.FAILED);
+        final SubscribedRecord activityEvent = receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_ACTIVATED);
+        SubscribedRecord incidentEvent = receiveFirstIncidentCommand(IncidentIntent.DELETE);
 
         assertThat(incidentEvent.key()).isGreaterThan(0);
         assertThat(incidentEvent.value())
@@ -856,7 +863,7 @@ public class IncidentTest
             .containsEntry("activityInstanceKey", activityEvent.key())
             .containsEntry("taskKey", taskEvent.key());
 
-        incidentEvent = receiveFirstIncidentEvent(Intent.DELETED);
+        incidentEvent = receiveFirstIncidentEvent(IncidentIntent.DELETED);
 
         assertThat(incidentEvent.key()).isGreaterThan(0);
         assertThat(incidentEvent.value())
@@ -879,14 +886,14 @@ public class IncidentTest
 
         failTaskWithNoRetriesLeft();
 
-        final SubscribedRecord incidentCreatedEvent = receiveFirstIncidentEvent(Intent.CREATED);
+        final SubscribedRecord incidentCreatedEvent = receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
         // when
         cancelWorkflowInstance(workflowInstanceKey);
 
         // then
-        final SubscribedRecord taskEvent = receiveFirstTaskEvent(Intent.FAILED);
-        SubscribedRecord incidentEvent = receiveFirstIncidentCommand(Intent.DELETE);
+        final SubscribedRecord taskEvent = receiveFirstTaskEvent(TaskIntent.FAILED);
+        SubscribedRecord incidentEvent = receiveFirstIncidentCommand(IncidentIntent.DELETE);
 
         assertThat(incidentEvent.key()).isEqualTo(incidentCreatedEvent.key());
         assertThat(incidentEvent.value())
@@ -898,7 +905,7 @@ public class IncidentTest
             .containsEntry("activityInstanceKey", incidentEvent.value().get("activityInstanceKey"))
             .containsEntry("taskKey", taskEvent.key());
 
-        incidentEvent = receiveFirstIncidentEvent(Intent.DELETED);
+        incidentEvent = receiveFirstIncidentEvent(IncidentIntent.DELETED);
 
         assertThat(incidentEvent.key()).isEqualTo(incidentCreatedEvent.key());
         assertThat(incidentEvent.value())
@@ -921,8 +928,8 @@ public class IncidentTest
         failTaskWithNoRetriesLeft();
 
         // then
-        final SubscribedRecord failedEvent = receiveFirstTaskEvent(Intent.FAILED);
-        final SubscribedRecord incidentEvent = receiveFirstIncidentEvent(Intent.CREATED);
+        final SubscribedRecord failedEvent = receiveFirstTaskEvent(TaskIntent.FAILED);
+        final SubscribedRecord incidentEvent = receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
         assertThat(incidentEvent.key()).isGreaterThan(0);
         assertThat(incidentEvent.value())
@@ -948,8 +955,8 @@ public class IncidentTest
         updateTaskRetries();
 
         // then
-        final SubscribedRecord taskEvent = receiveFirstTaskEvent(Intent.FAILED);
-        final SubscribedRecord incidentEvent = receiveFirstIncidentEvent(Intent.DELETED);
+        final SubscribedRecord taskEvent = receiveFirstTaskEvent(TaskIntent.FAILED);
+        final SubscribedRecord incidentEvent = receiveFirstIncidentEvent(IncidentIntent.DELETED);
 
         assertThat(incidentEvent.key()).isGreaterThan(0);
         assertThat(incidentEvent.value())
@@ -962,7 +969,7 @@ public class IncidentTest
             .containsEntry("taskKey", taskEvent.key());
     }
 
-    private SubscribedRecord receiveFirstIncidentEvent(Intent intent)
+    private SubscribedRecord receiveFirstIncidentEvent(IncidentIntent intent)
     {
         return testClient.receiveEvents()
             .ofTypeIncident()
@@ -980,7 +987,7 @@ public class IncidentTest
             .get();
     }
 
-    private SubscribedRecord receiveFirstIncidentCommand(Intent intent)
+    private SubscribedRecord receiveFirstIncidentCommand(IncidentIntent intent)
     {
         return testClient.receiveCommands()
             .ofTypeIncident()
@@ -988,7 +995,7 @@ public class IncidentTest
             .getFirst();
     }
 
-    private SubscribedRecord receiveFirstWorkflowInstanceEvent(Intent intent)
+    private SubscribedRecord receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent intent)
     {
         return testClient.receiveEvents()
             .ofTypeWorkflowInstance()
@@ -1006,7 +1013,7 @@ public class IncidentTest
             .get();
     }
 
-    private SubscribedRecord receiveFirstTaskEvent(Intent intent)
+    private SubscribedRecord receiveFirstTaskEvent(TaskIntent intent)
     {
         return testClient.receiveEvents()
             .ofTypeTask()
@@ -1019,11 +1026,11 @@ public class IncidentTest
     {
         apiRule.openTaskSubscription("test").await();
 
-        final SubscribedRecord taskEvent = receiveFirstTaskEvent(Intent.LOCKED);
+        final SubscribedRecord taskEvent = receiveFirstTaskEvent(TaskIntent.LOCKED);
 
         final ExecuteCommandResponse response = apiRule.createCmdRequest()
             .key(taskEvent.key())
-            .type(ValueType.TASK, Intent.FAIL)
+            .type(ValueType.TASK, TaskIntent.FAIL)
             .command()
                 .put("retries", 0)
                 .put("type", "failingTask")
@@ -1033,13 +1040,13 @@ public class IncidentTest
             .sendAndAwait();
 
         assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
-        assertThat(response.intent()).isEqualTo(Intent.FAILED);
+        assertThat(response.intent()).isEqualTo(TaskIntent.FAILED);
     }
 
     private void createStandaloneTask()
     {
         final ExecuteCommandResponse response = apiRule.createCmdRequest()
-            .type(ValueType.TASK, Intent.CREATE)
+            .type(ValueType.TASK, TaskIntent.CREATE)
             .command()
                 .put("type", "test")
                 .put("retries", 3)
@@ -1047,16 +1054,16 @@ public class IncidentTest
             .sendAndAwait();
 
         assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
-        assertThat(response.intent()).isEqualTo(Intent.CREATED);
+        assertThat(response.intent()).isEqualTo(TaskIntent.CREATED);
     }
 
     private void updateTaskRetries()
     {
-        final SubscribedRecord taskEvent = receiveFirstTaskEvent(Intent.FAILED);
+        final SubscribedRecord taskEvent = receiveFirstTaskEvent(TaskIntent.FAILED);
 
         final ExecuteCommandResponse response = apiRule.createCmdRequest()
             .key(taskEvent.key())
-            .type(ValueType.TASK, Intent.UPDATE_RETRIES)
+            .type(ValueType.TASK, TaskIntent.UPDATE_RETRIES)
             .command()
                 .put("retries", 1)
                 .put("type", "test")
@@ -1066,13 +1073,13 @@ public class IncidentTest
             .sendAndAwait();
 
         assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
-        assertThat(response.intent()).isEqualTo(Intent.RETRIES_UPDATED);
+        assertThat(response.intent()).isEqualTo(TaskIntent.RETRIES_UPDATED);
     }
 
     private void updatePayload(final long workflowInstanceKey, final long activityInstanceKey, byte[] payload)
     {
         final ExecuteCommandResponse response = apiRule.createCmdRequest()
-            .type(ValueType.WORKFLOW_INSTANCE, Intent.UPDATE_PAYLOAD)
+            .type(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.UPDATE_PAYLOAD)
             .key(activityInstanceKey)
             .command()
                 .put("workflowInstanceKey", workflowInstanceKey)
@@ -1081,7 +1088,7 @@ public class IncidentTest
             .sendAndAwait();
 
         assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
-        assertThat(response.intent()).isEqualTo(Intent.PAYLOAD_UPDATED);
+        assertThat(response.intent()).isEqualTo(WorkflowInstanceIntent.PAYLOAD_UPDATED);
     }
 
 
@@ -1094,13 +1101,13 @@ public class IncidentTest
     {
         final ExecuteCommandResponse response = apiRule.createCmdRequest()
             .key(workflowInstanceKey)
-            .type(ValueType.WORKFLOW_INSTANCE, Intent.CANCEL)
+            .type(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CANCEL)
             .command()
                 .done()
             .sendAndAwait();
 
         assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
-        assertThat(response.intent()).isEqualTo(Intent.CANCELED);
+        assertThat(response.intent()).isEqualTo(WorkflowInstanceIntent.CANCELED);
     }
 
 }

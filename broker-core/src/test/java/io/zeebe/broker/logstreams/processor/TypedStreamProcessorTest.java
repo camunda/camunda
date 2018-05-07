@@ -34,9 +34,9 @@ import io.zeebe.broker.topic.StreamProcessorControl;
 import io.zeebe.broker.util.TestStreams;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.intent.TopicIntent;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.ServerOutput;
@@ -83,7 +83,7 @@ public class TypedStreamProcessorTest
         final TypedStreamEnvironment env = new TypedStreamEnvironment(streams.getLogStream(STREAM_NAME), output);
 
         final TypedStreamProcessor streamProcessor = env.newStreamProcessor()
-            .onCommand(ValueType.TOPIC, Intent.CREATE, new BatchProcessor())
+            .onCommand(ValueType.TOPIC, TopicIntent.CREATE, new BatchProcessor())
             .build();
 
         final StreamProcessorControl streamProcessorControl = streams.initStreamProcessor(STREAM_NAME, STREAM_PROCESSOR_ID, () -> streamProcessor);
@@ -91,14 +91,14 @@ public class TypedStreamProcessorTest
         final long firstEventPosition = streams.newRecord(STREAM_NAME)
                 .event(topic("foo", 1))
                 .recordType(RecordType.COMMAND)
-                .intent(Intent.CREATE)
+                .intent(TopicIntent.CREATE)
                 .write();
 
         // when
         streamProcessorControl.unblock();
 
         final LoggedEvent writtenEvent = doRepeatedly(() -> streams.events(STREAM_NAME)
-                .filter(e -> Records.isRejection(e, ValueType.TOPIC, Intent.CREATE))
+                .filter(e -> Records.isRejection(e, ValueType.TOPIC, TopicIntent.CREATE))
                 .findFirst())
             .until(o -> o.isPresent())
             .get();

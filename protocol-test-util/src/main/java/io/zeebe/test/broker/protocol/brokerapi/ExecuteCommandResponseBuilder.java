@@ -19,8 +19,8 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.intent.Intent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.test.util.collection.MapFactoryBuilder;
 

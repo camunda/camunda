@@ -33,9 +33,11 @@ import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.intent.SubscriberIntent;
+import io.zeebe.protocol.intent.SubscriptionIntent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.test.broker.protocol.brokerapi.data.BrokerPartitionState;
 import io.zeebe.test.broker.protocol.brokerapi.data.Topology;
@@ -315,10 +317,10 @@ public class StubBrokerRule extends ExternalResource
         final AtomicLong subscriberKeyProvider = new AtomicLong(initialSubscriberKey);
         final AtomicLong subscriptionKeyProvider = new AtomicLong(0);
 
-        onExecuteCommandRequest(ValueType.SUBSCRIBER, Intent.SUBSCRIBE)
+        onExecuteCommandRequest(ValueType.SUBSCRIBER, SubscriberIntent.SUBSCRIBE)
             .respondWith()
             .event()
-            .intent(Intent.SUBSCRIBED)
+            .intent(SubscriberIntent.SUBSCRIBED)
             .key((r) -> subscriberKeyProvider.getAndIncrement())
             .value()
                 .allOf((r) -> r.getCommand())
@@ -332,10 +334,10 @@ public class StubBrokerRule extends ExternalResource
                 .done()
             .register();
 
-        onExecuteCommandRequest(ValueType.SUBSCRIPTION, Intent.ACKNOWLEDGE)
+        onExecuteCommandRequest(ValueType.SUBSCRIPTION, SubscriptionIntent.ACKNOWLEDGE)
             .respondWith()
             .event()
-            .intent(Intent.ACKNOWLEDGED)
+            .intent(SubscriptionIntent.ACKNOWLEDGED)
             .key((r) -> subscriptionKeyProvider.getAndIncrement())
             .partitionId((r) -> r.partitionId())
             .value()

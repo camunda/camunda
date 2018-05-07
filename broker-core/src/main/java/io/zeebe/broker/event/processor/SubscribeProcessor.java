@@ -17,15 +17,16 @@
  */
 package io.zeebe.broker.event.processor;
 
+import org.agrona.DirectBuffer;
+
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
 import io.zeebe.logstreams.log.LogStreamWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.processor.EventProcessor;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.protocol.impl.RecordMetadata;
+import io.zeebe.protocol.intent.SubscriberIntent;
 import io.zeebe.util.sched.future.ActorFuture;
-import org.agrona.DirectBuffer;
 
 public class SubscribeProcessor implements EventProcessor
 {
@@ -218,7 +219,7 @@ public class SubscribeProcessor implements EventProcessor
         {
             metadata
                 .protocolVersion(Protocol.PROTOCOL_VERSION)
-                .intent(Intent.SUBSCRIBED);
+                .intent(SubscriberIntent.SUBSCRIBED);
 
             subscriberEvent
                 .setStartPosition(processor.getStartPosition());

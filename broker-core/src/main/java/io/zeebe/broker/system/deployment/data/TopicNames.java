@@ -19,9 +19,9 @@ package io.zeebe.broker.system.deployment.data;
 
 import static io.zeebe.logstreams.log.LogStream.MAX_TOPIC_NAME_LENGTH;
 
-import io.zeebe.broker.clustering.orchestration.topic.TopicState;
-import io.zeebe.map.Bytes2LongZbMap;
 import org.agrona.DirectBuffer;
+
+import io.zeebe.map.Bytes2LongZbMap;
 
 /**
  * Set of defined topics: when a deployment CREATE command is processed,

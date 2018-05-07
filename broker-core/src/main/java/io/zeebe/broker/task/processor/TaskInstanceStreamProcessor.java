@@ -33,11 +33,11 @@ import io.zeebe.broker.task.TaskSubscriptionManager;
 import io.zeebe.broker.task.data.TaskRecord;
 import io.zeebe.broker.task.map.TaskInstanceMap;
 import io.zeebe.broker.transport.clientapi.SubscribedRecordWriter;
-import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.RecordMetadata;
+import io.zeebe.protocol.intent.TaskIntent;
 import io.zeebe.util.buffer.BufferUtil;
 
 public class TaskInstanceStreamProcessor
@@ -67,13 +67,13 @@ public class TaskInstanceStreamProcessor
         this.subscribedEventWriter = new SubscribedRecordWriter(environment.getOutput());
 
         return environment.newStreamProcessor()
-            .onCommand(ValueType.TASK, Intent.CREATE, new CreateTaskProcessor())
-            .onCommand(ValueType.TASK, Intent.LOCK, new LockTaskProcessor())
-            .onCommand(ValueType.TASK, Intent.COMPLETE, new CompleteTaskProcessor())
-            .onCommand(ValueType.TASK, Intent.FAIL, new FailTaskProcessor())
-            .onCommand(ValueType.TASK, Intent.EXPIRE_LOCK, new ExpireLockTaskProcessor())
-            .onCommand(ValueType.TASK, Intent.UPDATE_RETRIES, new UpdateRetriesTaskProcessor())
-            .onCommand(ValueType.TASK, Intent.CANCEL, new CancelTaskProcessor())
+            .onCommand(ValueType.TASK, TaskIntent.CREATE, new CreateTaskProcessor())
+            .onCommand(ValueType.TASK, TaskIntent.LOCK, new LockTaskProcessor())
+            .onCommand(ValueType.TASK, TaskIntent.COMPLETE, new CompleteTaskProcessor())
+            .onCommand(ValueType.TASK, TaskIntent.FAIL, new FailTaskProcessor())
+            .onCommand(ValueType.TASK, TaskIntent.EXPIRE_LOCK, new ExpireLockTaskProcessor())
+            .onCommand(ValueType.TASK, TaskIntent.UPDATE_RETRIES, new UpdateRetriesTaskProcessor())
+            .onCommand(ValueType.TASK, TaskIntent.CANCEL, new CancelTaskProcessor())
             .withStateResource(taskIndex.getMap())
             .build();
     }
@@ -88,7 +88,7 @@ public class TaskInstanceStreamProcessor
 
             if (command.getMetadata().hasRequestMetadata())
             {
-                success = responseWriter.writeEvent(Intent.CREATED, command);
+                success = responseWriter.writeEvent(TaskIntent.CREATED, command);
             }
 
             return success;
@@ -97,7 +97,7 @@ public class TaskInstanceStreamProcessor
         @Override
         public long writeRecord(TypedRecord<TaskRecord> command, TypedStreamWriter writer)
         {
-            return writer.writeFollowUpEvent(command.getKey(), Intent.CREATED, command.getValue());
+            return writer.writeFollowUpEvent(command.getKey(), TaskIntent.CREATED, command.getValue());
         }
 
         @Override
@@ -139,7 +139,7 @@ public class TaskInstanceStreamProcessor
 
                 success = subscribedEventWriter
                         .recordType(RecordType.EVENT)
-                        .intent(Intent.LOCKED)
+                        .intent(TaskIntent.LOCKED)
                         .partitionId(logStreamPartitionId)
                         .position(command.getPosition())
                         .key(command.getKey())
@@ -166,7 +166,7 @@ public class TaskInstanceStreamProcessor
         {
             if (isLocked)
             {
-                return writer.writeFollowUpEvent(command.getKey(), Intent.LOCKED, command.getValue());
+                return writer.writeFollowUpEvent(command.getKey(), TaskIntent.LOCKED, command.getValue());
             }
             else
             {
@@ -220,7 +220,7 @@ public class TaskInstanceStreamProcessor
         {
             if (isCompleted)
             {
-                return responseWriter.writeEvent(Intent.COMPLETED, event);
+                return responseWriter.writeEvent(TaskIntent.COMPLETED, event);
             }
             else
             {
@@ -233,7 +233,7 @@ public class TaskInstanceStreamProcessor
         {
             if (isCompleted)
             {
-                return writer.writeFollowUpEvent(event.getKey(), Intent.COMPLETED, event.getValue());
+                return writer.writeFollowUpEvent(event.getKey(), TaskIntent.COMPLETED, event.getValue());
             }
             else
             {
@@ -274,7 +274,7 @@ public class TaskInstanceStreamProcessor
         {
             if (isFailed)
             {
-                return responseWriter.writeEvent(Intent.FAILED, command);
+                return responseWriter.writeEvent(TaskIntent.FAILED, command);
             }
             else
             {
@@ -287,7 +287,7 @@ public class TaskInstanceStreamProcessor
         {
             if (isFailed)
             {
-                return writer.writeFollowUpEvent(command.getKey(), Intent.FAILED, command.getValue());
+                return writer.writeFollowUpEvent(command.getKey(), TaskIntent.FAILED, command.getValue());
             }
             else
             {
@@ -329,7 +329,7 @@ public class TaskInstanceStreamProcessor
         {
             if (isExpired)
             {
-                return writer.writeFollowUpEvent(command.getKey(), Intent.LOCK_EXPIRED, command.getValue());
+                return writer.writeFollowUpEvent(command.getKey(), TaskIntent.LOCK_EXPIRED, command.getValue());
             }
             else
             {
@@ -366,7 +366,7 @@ public class TaskInstanceStreamProcessor
         {
             if (success)
             {
-                return responseWriter.writeEvent(Intent.RETRIES_UPDATED, command);
+                return responseWriter.writeEvent(TaskIntent.RETRIES_UPDATED, command);
             }
             else
             {
@@ -379,7 +379,7 @@ public class TaskInstanceStreamProcessor
         {
             if (success)
             {
-                return writer.writeFollowUpEvent(command.getKey(), Intent.RETRIES_UPDATED, command.getValue());
+                return writer.writeFollowUpEvent(command.getKey(), TaskIntent.RETRIES_UPDATED, command.getValue());
             }
             else
             {
@@ -404,7 +404,7 @@ public class TaskInstanceStreamProcessor
         {
             if (isCanceled)
             {
-                return writer.writeFollowUpEvent(command.getKey(), Intent.CANCELED, command.getValue());
+                return writer.writeFollowUpEvent(command.getKey(), TaskIntent.CANCELED, command.getValue());
             }
             else
             {

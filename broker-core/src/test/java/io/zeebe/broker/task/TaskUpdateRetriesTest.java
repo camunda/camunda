@@ -33,10 +33,10 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.intent.TaskIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
@@ -83,7 +83,7 @@ public class TaskUpdateRetriesTest
 
         // then
         assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
-        assertThat(response.intent()).isEqualTo(Intent.RETRIES_UPDATED);
+        assertThat(response.intent()).isEqualTo(TaskIntent.RETRIES_UPDATED);
 
         // and the task is published again
         final SubscribedRecord republishedEvent = receiveSingleSubscribedEvent();
@@ -106,16 +106,16 @@ public class TaskUpdateRetriesTest
 
         assertThat(taskEvents).extracting(e -> e.recordType(), e -> e.valueType(), e -> e.intent())
             .containsExactly(
-                tuple(RecordType.COMMAND, ValueType.TASK, Intent.CREATE),
-                tuple(RecordType.EVENT, ValueType.TASK, Intent.CREATED),
-                tuple(RecordType.COMMAND, ValueType.TASK, Intent.LOCK),
-                tuple(RecordType.EVENT, ValueType.TASK, Intent.LOCKED),
-                tuple(RecordType.COMMAND, ValueType.TASK, Intent.FAIL),
-                tuple(RecordType.EVENT, ValueType.TASK, Intent.FAILED),
-                tuple(RecordType.COMMAND, ValueType.TASK, Intent.UPDATE_RETRIES),
-                tuple(RecordType.EVENT, ValueType.TASK, Intent.RETRIES_UPDATED),
-                tuple(RecordType.COMMAND, ValueType.TASK, Intent.LOCK),
-                tuple(RecordType.EVENT, ValueType.TASK, Intent.LOCKED));
+                tuple(RecordType.COMMAND, ValueType.TASK, TaskIntent.CREATE),
+                tuple(RecordType.EVENT, ValueType.TASK, TaskIntent.CREATED),
+                tuple(RecordType.COMMAND, ValueType.TASK, TaskIntent.LOCK),
+                tuple(RecordType.EVENT, ValueType.TASK, TaskIntent.LOCKED),
+                tuple(RecordType.COMMAND, ValueType.TASK, TaskIntent.FAIL),
+                tuple(RecordType.EVENT, ValueType.TASK, TaskIntent.FAILED),
+                tuple(RecordType.COMMAND, ValueType.TASK, TaskIntent.UPDATE_RETRIES),
+                tuple(RecordType.EVENT, ValueType.TASK, TaskIntent.RETRIES_UPDATED),
+                tuple(RecordType.COMMAND, ValueType.TASK, TaskIntent.LOCK),
+                tuple(RecordType.EVENT, ValueType.TASK, TaskIntent.LOCKED));
     }
 
     @Test
@@ -132,7 +132,7 @@ public class TaskUpdateRetriesTest
 
         // then
         assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-        assertThat(response.intent()).isEqualTo(Intent.UPDATE_RETRIES);
+        assertThat(response.intent()).isEqualTo(TaskIntent.UPDATE_RETRIES);
     }
 
     @Test
@@ -156,7 +156,7 @@ public class TaskUpdateRetriesTest
 
         // then
         assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-        assertThat(response.intent()).isEqualTo(Intent.UPDATE_RETRIES);
+        assertThat(response.intent()).isEqualTo(TaskIntent.UPDATE_RETRIES);
     }
 
     @Test
@@ -177,7 +177,7 @@ public class TaskUpdateRetriesTest
 
         // then
         assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-        assertThat(response.intent()).isEqualTo(Intent.UPDATE_RETRIES);
+        assertThat(response.intent()).isEqualTo(TaskIntent.UPDATE_RETRIES);
     }
 
 
@@ -203,7 +203,7 @@ public class TaskUpdateRetriesTest
 
         // then
         assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-        assertThat(response.intent()).isEqualTo(Intent.UPDATE_RETRIES);
+        assertThat(response.intent()).isEqualTo(TaskIntent.UPDATE_RETRIES);
     }
 
     @Test
@@ -228,7 +228,7 @@ public class TaskUpdateRetriesTest
 
         // then
         assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-        assertThat(response.intent()).isEqualTo(Intent.UPDATE_RETRIES);
+        assertThat(response.intent()).isEqualTo(TaskIntent.UPDATE_RETRIES);
     }
 
     private SubscribedRecord receiveSingleSubscribedEvent()

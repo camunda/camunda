@@ -30,9 +30,10 @@ import org.junit.rules.RuleChain;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.intent.SubscriptionIntent;
+import io.zeebe.protocol.intent.TaskIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
@@ -80,7 +81,7 @@ public class TopicSubscriptionAcknowledgementTest
     {
         // when
         final ExecuteCommandResponse response = apiRule.createCmdRequest()
-            .type(ValueType.SUBSCRIPTION, Intent.ACKNOWLEDGE)
+            .type(ValueType.SUBSCRIPTION, SubscriptionIntent.ACKNOWLEDGE)
             .command()
                 .put("name", SUBSCRIPTION_NAME)
                 .put("ackPosition", 0)
@@ -90,7 +91,7 @@ public class TopicSubscriptionAcknowledgementTest
         // then
         assertThat(response.getValue()).containsEntry("name", SUBSCRIPTION_NAME);
         assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
-        assertThat(response.intent()).isEqualTo(Intent.ACKNOWLEDGED);
+        assertThat(response.intent()).isEqualTo(SubscriptionIntent.ACKNOWLEDGED);
     }
 
     @Test
@@ -105,7 +106,7 @@ public class TopicSubscriptionAcknowledgementTest
                 .collect(Collectors.toList());
 
         apiRule.createCmdRequest()
-            .type(ValueType.SUBSCRIPTION, Intent.ACKNOWLEDGE)
+            .type(ValueType.SUBSCRIPTION, SubscriptionIntent.ACKNOWLEDGE)
             .command()
                 .put("name", SUBSCRIPTION_NAME)
                 .put("ackPosition", events.get(0).position())
@@ -133,7 +134,7 @@ public class TopicSubscriptionAcknowledgementTest
     {
         // given
         apiRule.createCmdRequest()
-            .type(ValueType.SUBSCRIPTION, Intent.ACKNOWLEDGE)
+            .type(ValueType.SUBSCRIPTION, SubscriptionIntent.ACKNOWLEDGE)
             .command()
                 .put("name", SUBSCRIPTION_NAME)
                 .put("ackPosition", Long.MAX_VALUE)
@@ -149,7 +150,7 @@ public class TopicSubscriptionAcknowledgementTest
 
         // and
         final ExecuteCommandResponse response = apiRule.createCmdRequest()
-            .type(ValueType.TASK, Intent.CREATE)
+            .type(ValueType.TASK, TaskIntent.CREATE)
             .command()
                 .put("type", "theTaskType")
                 .done()
@@ -197,7 +198,7 @@ public class TopicSubscriptionAcknowledgementTest
     private ExecuteCommandResponse createTask()
     {
         return apiRule.createCmdRequest()
-            .type(ValueType.TASK, Intent.CREATE)
+            .type(ValueType.TASK, TaskIntent.CREATE)
             .command()
                 .put("type", "foo")
                 .put("retries", 1)

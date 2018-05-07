@@ -42,7 +42,7 @@ public class TypedStreamProcessor implements StreamProcessor
 
     protected final SnapshotSupport snapshotSupport;
     protected final ServerOutput output;
-    protected final FlatEnumMap<TypedRecordProcessor> eventProcessors;
+    protected final RecordProcessorMap recordProcessors;
     protected final List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
 
     protected final RecordMetadata metadata = new RecordMetadata();
@@ -59,15 +59,15 @@ public class TypedStreamProcessor implements StreamProcessor
     public TypedStreamProcessor(
             SnapshotSupport snapshotSupport,
             ServerOutput output,
-            FlatEnumMap<TypedRecordProcessor> eventProcessors,
+            RecordProcessorMap recordProcessors,
             List<StreamProcessorLifecycleAware> lifecycleListeners,
             EnumMap<ValueType, Class<? extends UnpackedObject>> eventRegistry,
             TypedStreamEnvironment environment)
     {
         this.snapshotSupport = snapshotSupport;
         this.output = output;
-        this.eventProcessors = eventProcessors;
-        eventProcessors.values().forEachRemaining(p -> this.lifecycleListeners.add(p));
+        this.recordProcessors = recordProcessors;
+        recordProcessors.values().forEachRemaining(p -> this.lifecycleListeners.add(p));
 
         this.lifecycleListeners.addAll(lifecycleListeners);
 
@@ -110,7 +110,10 @@ public class TypedStreamProcessor implements StreamProcessor
         metadata.reset();
         event.readMetadata(metadata);
 
-        final TypedRecordProcessor currentProcessor = eventProcessors.get(metadata.getValueType(), metadata.getRecordType(), metadata.getIntent());
+        final TypedRecordProcessor currentProcessor = recordProcessors.get(
+                metadata.getRecordType(),
+                metadata.getValueType(),
+                metadata.getIntent().value());
 
         if (currentProcessor != null)
         {
@@ -130,7 +133,7 @@ public class TypedStreamProcessor implements StreamProcessor
 
     public MetadataFilter buildTypeFilter()
     {
-        return m -> eventProcessors.containsKey(m.getValueType(), m.getRecordType(), m.getIntent());
+        return m -> recordProcessors.containsKey(m.getRecordType(), m.getValueType(), m.getIntent().value());
     }
 
     public ActorFuture<Void> runAsync(Runnable runnable)

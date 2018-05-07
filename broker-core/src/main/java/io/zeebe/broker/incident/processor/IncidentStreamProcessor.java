@@ -31,9 +31,11 @@ import io.zeebe.broker.task.data.TaskRecord;
 import io.zeebe.broker.task.data.TaskHeaders;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.map.Long2LongZbMap;
-import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.RecordMetadata;
+import io.zeebe.protocol.intent.IncidentIntent;
+import io.zeebe.protocol.intent.TaskIntent;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
 /**
  * Is responsible for the incident lifecycle.
@@ -62,32 +64,32 @@ public class IncidentStreamProcessor
 
         // incident events
         builder = builder
-            .onCommand(ValueType.INCIDENT, Intent.CREATE, new CreateIncidentProcessor())
-            .onCommand(ValueType.INCIDENT, Intent.RESOLVE, new ResolveIncidentProcessor(env))
-            .onEvent(ValueType.INCIDENT, Intent.RESOLVE_FAILED, new ResolveFailedProcessor())
-            .onCommand(ValueType.INCIDENT, Intent.DELETE, new DeleteIncidentProcessor(env));
+            .onCommand(ValueType.INCIDENT, IncidentIntent.CREATE, new CreateIncidentProcessor())
+            .onCommand(ValueType.INCIDENT, IncidentIntent.RESOLVE, new ResolveIncidentProcessor(env))
+            .onEvent(ValueType.INCIDENT, IncidentIntent.RESOLVE_FAILED, new ResolveFailedProcessor())
+            .onCommand(ValueType.INCIDENT, IncidentIntent.DELETE, new DeleteIncidentProcessor(env));
 
         // workflow instance events
         final ActivityRewrittenProcessor activityRewrittenProcessor = new ActivityRewrittenProcessor();
         final ActivityIncidentResolvedProcessor activityIncidentResolvedProcessor = new ActivityIncidentResolvedProcessor(env);
 
         builder = builder
-            .onEvent(ValueType.WORKFLOW_INSTANCE, Intent.PAYLOAD_UPDATED, new PayloadUpdatedProcessor())
-            .onEvent(ValueType.WORKFLOW_INSTANCE, Intent.ACTIVITY_TERMINATED, new ActivityTerminatedProcessor())
-            .onEvent(ValueType.WORKFLOW_INSTANCE, Intent.ACTIVITY_READY, activityRewrittenProcessor)
-            .onEvent(ValueType.WORKFLOW_INSTANCE, Intent.GATEWAY_ACTIVATED, activityRewrittenProcessor)
-            .onEvent(ValueType.WORKFLOW_INSTANCE, Intent.ACTIVITY_COMPLETING, activityRewrittenProcessor)
-            .onEvent(ValueType.WORKFLOW_INSTANCE, Intent.ACTIVITY_ACTIVATED, activityIncidentResolvedProcessor)
-            .onEvent(ValueType.WORKFLOW_INSTANCE, Intent.SEQUENCE_FLOW_TAKEN, activityIncidentResolvedProcessor)
-            .onEvent(ValueType.WORKFLOW_INSTANCE, Intent.ACTIVITY_COMPLETED, activityIncidentResolvedProcessor);
+            .onEvent(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.PAYLOAD_UPDATED, new PayloadUpdatedProcessor())
+            .onEvent(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.ACTIVITY_TERMINATED, new ActivityTerminatedProcessor())
+            .onEvent(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.ACTIVITY_READY, activityRewrittenProcessor)
+            .onEvent(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.GATEWAY_ACTIVATED, activityRewrittenProcessor)
+            .onEvent(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.ACTIVITY_COMPLETING, activityRewrittenProcessor)
+            .onEvent(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.ACTIVITY_ACTIVATED, activityIncidentResolvedProcessor)
+            .onEvent(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, activityIncidentResolvedProcessor)
+            .onEvent(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.ACTIVITY_COMPLETED, activityIncidentResolvedProcessor);
 
         // task events
         final TaskIncidentResolvedProcessor taskIncidentResolvedProcessor = new TaskIncidentResolvedProcessor(env);
 
         builder = builder
-            .onEvent(ValueType.TASK, Intent.FAILED, new TaskFailedProcessor())
-            .onEvent(ValueType.TASK, Intent.RETRIES_UPDATED, taskIncidentResolvedProcessor)
-            .onEvent(ValueType.TASK, Intent.CANCELED, taskIncidentResolvedProcessor);
+            .onEvent(ValueType.TASK, TaskIntent.FAILED, new TaskFailedProcessor())
+            .onEvent(ValueType.TASK, TaskIntent.RETRIES_UPDATED, taskIncidentResolvedProcessor)
+            .onEvent(ValueType.TASK, TaskIntent.CANCELED, taskIncidentResolvedProcessor);
 
         return builder.build();
     }
@@ -112,7 +114,7 @@ public class IncidentStreamProcessor
         {
             if (isCreated)
             {
-                return writer.writeFollowUpEvent(command.getKey(), Intent.CREATED, command.getValue());
+                return writer.writeFollowUpEvent(command.getKey(), IncidentIntent.CREATED, command.getValue());
             }
             else
             {
@@ -175,7 +177,7 @@ public class IncidentStreamProcessor
         @Override
         public long writeRecord(TypedRecord<WorkflowInstanceRecord> event, TypedStreamWriter writer)
         {
-            return isResolving ? writer.writeFollowUpCommand(incidentKey, Intent.RESOLVE, incidentEvent) : 0L;
+            return isResolving ? writer.writeFollowUpCommand(incidentKey, IncidentIntent.RESOLVE, incidentEvent) : 0L;
         }
     }
 
@@ -321,7 +323,7 @@ public class IncidentStreamProcessor
         {
             if (isDeleted)
             {
-                return writer.writeFollowUpEvent(incidentToWrite.getKey(), Intent.DELETED, incidentToWrite.getValue());
+                return writer.writeFollowUpEvent(incidentToWrite.getKey(), IncidentIntent.DELETED, incidentToWrite.getValue());
             }
             else
             {
@@ -401,7 +403,7 @@ public class IncidentStreamProcessor
         public long writeRecord(TypedRecord<WorkflowInstanceRecord> event, TypedStreamWriter writer)
         {
             return isResolved ?
-                    writer.writeFollowUpEvent(incidentEvent.getKey(), Intent.RESOLVED, incidentEvent.getValue())
+                    writer.writeFollowUpEvent(incidentEvent.getKey(), IncidentIntent.RESOLVED, incidentEvent.getValue())
                     : 0L;
         }
 
@@ -452,7 +454,7 @@ public class IncidentStreamProcessor
         {
 
             return isTerminated ?
-                    writer.writeFollowUpCommand(incidentKey, Intent.DELETE, incidentEvent)
+                    writer.writeFollowUpCommand(incidentKey, IncidentIntent.DELETE, incidentEvent)
                     : 0L;
         }
 
@@ -509,11 +511,11 @@ public class IncidentStreamProcessor
             {
                 if (!isResolvingIncident)
                 {
-                    return writer.writeNewCommand(Intent.CREATE, incidentEvent);
+                    return writer.writeNewCommand(IncidentIntent.CREATE, incidentEvent);
                 }
                 else
                 {
-                    return writer.writeFollowUpEvent(event.getMetadata().getIncidentKey(), Intent.RESOLVE_FAILED, incidentEvent);
+                    return writer.writeFollowUpEvent(event.getMetadata().getIncidentKey(), IncidentIntent.RESOLVE_FAILED, incidentEvent);
                 }
             }
         }
@@ -588,7 +590,7 @@ public class IncidentStreamProcessor
         public long writeRecord(TypedRecord<TaskRecord> event, TypedStreamWriter writer)
         {
             return isResolved ?
-                    writer.writeFollowUpCommand(persistedIncident.getKey(), Intent.DELETE, persistedIncident.getValue()) :
+                    writer.writeFollowUpCommand(persistedIncident.getKey(), IncidentIntent.DELETE, persistedIncident.getValue()) :
                     0L;
         }
 

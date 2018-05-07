@@ -19,19 +19,22 @@ package io.zeebe.broker.system.deployment.processor;
 
 import java.util.Iterator;
 
-import io.zeebe.broker.logstreams.processor.*;
+import io.zeebe.broker.logstreams.processor.TypedRecord;
+import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
+import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.system.deployment.data.DeploymentPositionByWorkflowKey;
 import io.zeebe.broker.system.deployment.data.WorkflowKeyByProcessIdAndVersion;
 import io.zeebe.broker.workflow.data.DeployedWorkflow;
-import io.zeebe.broker.workflow.data.DeploymentEvent;
+import io.zeebe.broker.workflow.data.DeploymentRecord;
 import io.zeebe.msgpack.value.ValueArray;
+import io.zeebe.protocol.intent.DeploymentIntent;
 
-public class DeploymentCreatedEventProcess implements TypedEventProcessor<DeploymentEvent>
+public class DeploymentCreatedEventProcessor implements TypedRecordProcessor<DeploymentRecord>
 {
     private final DeploymentPositionByWorkflowKey deploymentPositionByWorkflowKey;
     private final WorkflowKeyByProcessIdAndVersion workflowKeyByProcessIdAndVersion;
 
-    public DeploymentCreatedEventProcess(DeploymentPositionByWorkflowKey deploymentPositionByWorkflowKey,
+    public DeploymentCreatedEventProcessor(DeploymentPositionByWorkflowKey deploymentPositionByWorkflowKey,
         WorkflowKeyByProcessIdAndVersion workflowKeyByProcessIdAndVersion)
     {
         this.deploymentPositionByWorkflowKey = deploymentPositionByWorkflowKey;
@@ -39,15 +42,15 @@ public class DeploymentCreatedEventProcess implements TypedEventProcessor<Deploy
     }
 
     @Override
-    public boolean executeSideEffects(TypedEvent<DeploymentEvent> event, TypedResponseWriter responseWriter)
+    public boolean executeSideEffects(TypedRecord<DeploymentRecord> event, TypedResponseWriter responseWriter)
     {
-        return responseWriter.write(event);
+        return responseWriter.writeEvent(DeploymentIntent.CREATED, event);
     }
 
     @Override
-    public void updateState(TypedEvent<DeploymentEvent> event)
+    public void updateState(TypedRecord<DeploymentRecord> event)
     {
-        final DeploymentEvent deploymentEvent = event.getValue();
+        final DeploymentRecord deploymentEvent = event.getValue();
 
         final ValueArray<DeployedWorkflow> deployedWorkflows = deploymentEvent.deployedWorkflows();
 

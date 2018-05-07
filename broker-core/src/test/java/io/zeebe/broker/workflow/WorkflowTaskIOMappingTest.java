@@ -37,8 +37,11 @@ import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
-import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.intent.IncidentIntent;
+import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.intent.TaskIntent;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
@@ -131,7 +134,7 @@ public class WorkflowTaskIOMappingTest
         // then
         final SubscribedRecord event = testClient.receiveCommands()
             .ofTypeTask()
-            .withIntent(Intent.CREATE)
+            .withIntent(TaskIntent.CREATE)
             .getFirst();
 
         assertThat(event.key()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
@@ -154,7 +157,7 @@ public class WorkflowTaskIOMappingTest
 
         // when
         testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
-        final SubscribedRecord event = receiveFirstTaskCommand(Intent.CREATE);
+        final SubscribedRecord event = receiveFirstTaskCommand(TaskIntent.CREATE);
 
         // then payload is expected as
         final byte[] result = (byte[]) event.value().get(PROP_TASK_PAYLOAD);
@@ -174,7 +177,7 @@ public class WorkflowTaskIOMappingTest
 
         // when
         testClient.createWorkflowInstance("process");
-        final SubscribedRecord event = receiveFirstTaskCommand(Intent.CREATE);
+        final SubscribedRecord event = receiveFirstTaskCommand(TaskIntent.CREATE);
 
         // then
         assertThat(event.value()).containsEntry(WorkflowInstanceRecord.PROP_WORKFLOW_PAYLOAD, NIL);
@@ -194,7 +197,7 @@ public class WorkflowTaskIOMappingTest
 
         // when
         testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
-        final SubscribedRecord incidentEvent = receiveFirstIncidentCommand(Intent.CREATE);
+        final SubscribedRecord incidentEvent = receiveFirstIncidentCommand(IncidentIntent.CREATE);
 
         // then incident is created
         assertThat(incidentEvent.key()).isGreaterThan(0);
@@ -218,7 +221,7 @@ public class WorkflowTaskIOMappingTest
 
         // when
         testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
-        final SubscribedRecord incidentEvent = receiveFirstIncidentCommand(Intent.CREATE);
+        final SubscribedRecord incidentEvent = receiveFirstIncidentCommand(IncidentIntent.CREATE);
 
         // then incident is created
         assertThat(incidentEvent.key()).isGreaterThan(0);
@@ -259,7 +262,8 @@ public class WorkflowTaskIOMappingTest
         testClient.completeTaskOfType("external", MSGPACK_PAYLOAD);
 
         // then
-        final SubscribedRecord activityCompletedEvent = receiveFirstWorkflowInstanceEvent(Intent.ACTIVITY_COMPLETED);
+        final SubscribedRecord activityCompletedEvent = receiveFirstWorkflowInstanceEvent(
+                WorkflowInstanceIntent.ACTIVITY_COMPLETED);
 
         final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_TASK_PAYLOAD);
         assertThat(MSGPACK_MAPPER.readTree(result))
@@ -284,12 +288,14 @@ public class WorkflowTaskIOMappingTest
         testClient.completeTaskOfWorkflowInstance("external", secondWFInstanceKey, MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("{'foo':'bar'}")));
 
         // then first event payload is expected as
-        final SubscribedRecord firstWFActivityCompletedEvent = receiveFirstWorkflowInstanceEvent(firstWFInstanceKey, Intent.ACTIVITY_COMPLETED);
+        final SubscribedRecord firstWFActivityCompletedEvent =
+                receiveFirstWorkflowInstanceEvent(firstWFInstanceKey, WorkflowInstanceIntent.ACTIVITY_COMPLETED);
         byte[] payload = (byte[]) firstWFActivityCompletedEvent.value().get(PROP_TASK_PAYLOAD);
         assertThat(MSGPACK_MAPPER.readTree(payload)).isEqualTo(JSON_MAPPER.readTree(JSON_DOCUMENT));
 
         // and second event payload is expected as
-        final SubscribedRecord secondWFActivityCompletedEvent = receiveFirstWorkflowInstanceEvent(secondWFInstanceKey, Intent.ACTIVITY_COMPLETED);
+        final SubscribedRecord secondWFActivityCompletedEvent =
+                receiveFirstWorkflowInstanceEvent(secondWFInstanceKey, WorkflowInstanceIntent.ACTIVITY_COMPLETED);
         payload = (byte[]) secondWFActivityCompletedEvent.value().get(PROP_TASK_PAYLOAD);
         assertThat(MSGPACK_MAPPER.readTree(payload)).isEqualTo(JSON_MAPPER.readTree("{'foo':'bar'}"));
     }
@@ -314,13 +320,15 @@ public class WorkflowTaskIOMappingTest
         testClient.completeTaskOfWorkflowInstance("external", secondWFInstanceKey, MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("{'foo':'bar'}")));
 
         // then first event payload is expected as
-        final SubscribedRecord firstWFActivityCompletedEvent = receiveFirstWorkflowInstanceEvent(firstWFInstanceKey, Intent.ACTIVITY_COMPLETED);
+        final SubscribedRecord firstWFActivityCompletedEvent =
+                receiveFirstWorkflowInstanceEvent(firstWFInstanceKey, WorkflowInstanceIntent.ACTIVITY_COMPLETED);
         byte[] payload = (byte[]) firstWFActivityCompletedEvent.value().get(PROP_TASK_PAYLOAD);
         assertThat(MSGPACK_MAPPER.readTree(payload))
             .isEqualTo(JSON_MAPPER.readTree("{'string':'value', 'jsonObject':{'testAttr':'test'},'taskPayload':{'string':'value', 'jsonObject':{'testAttr':'test'}}}"));
 
         // and second event payload is expected as
-        final SubscribedRecord secondWFActivityCompletedEvent = receiveFirstWorkflowInstanceEvent(secondWFInstanceKey, Intent.ACTIVITY_COMPLETED);
+        final SubscribedRecord secondWFActivityCompletedEvent =
+                receiveFirstWorkflowInstanceEvent(secondWFInstanceKey, WorkflowInstanceIntent.ACTIVITY_COMPLETED);
         payload = (byte[]) secondWFActivityCompletedEvent.value().get(PROP_TASK_PAYLOAD);
         assertThat(MSGPACK_MAPPER.readTree(payload))
             .isEqualTo(JSON_MAPPER.readTree("{'otherPayload':'value','taskPayload':{'foo':'bar'}}"));
@@ -345,7 +353,8 @@ public class WorkflowTaskIOMappingTest
         testClient.completeTaskOfType("external", MSGPACK_PAYLOAD);
 
         // then
-        final SubscribedRecord activityCompletedEvent = receiveFirstWorkflowInstanceEvent(Intent.ACTIVITY_COMPLETED);
+        final SubscribedRecord activityCompletedEvent =
+                receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_COMPLETED);
 
         final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_TASK_PAYLOAD);
         assertThat(MSGPACK_MAPPER.readTree(result))
@@ -368,7 +377,8 @@ public class WorkflowTaskIOMappingTest
         testClient.completeTaskOfType("external");
 
         // then
-        final SubscribedRecord activityCompletedEvent = receiveFirstWorkflowInstanceEvent(Intent.ACTIVITY_COMPLETED);
+        final SubscribedRecord activityCompletedEvent =
+                receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_COMPLETED);
 
         assertThat(activityCompletedEvent.value())
             .containsEntry(WorkflowInstanceRecord.PROP_WORKFLOW_PAYLOAD, MSGPACK_PAYLOAD);
@@ -390,7 +400,8 @@ public class WorkflowTaskIOMappingTest
 
         // when
         testClient.completeTaskOfType("external", MSGPACK_PAYLOAD);
-        final SubscribedRecord activityCompletedEvent = receiveFirstWorkflowInstanceEvent(Intent.ACTIVITY_COMPLETED);
+        final SubscribedRecord activityCompletedEvent =
+                receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_COMPLETED);
 
         // then payload contains old objects
         final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_TASK_PAYLOAD);
@@ -415,9 +426,9 @@ public class WorkflowTaskIOMappingTest
 
         // when
         testClient.completeTaskOfType("external", MSGPACK_PAYLOAD);
-        receiveFirstWorkflowInstanceEvent(Intent.ACTIVITY_ACTIVATED);
+        receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_ACTIVATED);
 
-        final SubscribedRecord incidentEvent = receiveFirstIncidentCommand(Intent.CREATE);
+        final SubscribedRecord incidentEvent = receiveFirstIncidentCommand(IncidentIntent.CREATE);
 
         // then incident is created
         assertThat(incidentEvent.key()).isGreaterThan(0);
@@ -461,7 +472,7 @@ public class WorkflowTaskIOMappingTest
 
         // when
         testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
-        final SubscribedRecord event = receiveFirstTaskCommand(Intent.CREATE);
+        final SubscribedRecord event = receiveFirstTaskCommand(TaskIntent.CREATE);
 
         // then payload is expected as
         byte[] result = (byte[]) event.value().get(PROP_TASK_PAYLOAD);
@@ -473,7 +484,8 @@ public class WorkflowTaskIOMappingTest
         testClient.completeTaskOfType("external", MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("{'testAttr':123}")));
 
         // then
-        final SubscribedRecord activityCompletedEvent = receiveFirstWorkflowInstanceEvent(Intent.ACTIVITY_COMPLETED);
+        final SubscribedRecord activityCompletedEvent =
+                receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_COMPLETED);
 
         result = (byte[]) activityCompletedEvent.value().get(PROP_TASK_PAYLOAD);
         assertThat(MSGPACK_MAPPER.readTree(result))
