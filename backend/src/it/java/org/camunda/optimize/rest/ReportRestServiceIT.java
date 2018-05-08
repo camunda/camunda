@@ -160,7 +160,7 @@ public class ReportRestServiceIT {
   }
 
   @Test
-  public void getReportForNonExistingIdThrowsError() {
+  public void getReportForNonExistingIdThrowsNotFoundError() {
     // when
     Response response =
       embeddedOptimizeRule.target("report/FooId")
@@ -169,7 +169,7 @@ public class ReportRestServiceIT {
         .get();
 
     // then the status code is okay
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(404));
     assertThat(response.readEntity(String.class).contains("Report does not exist."), is(true));
   }
 
@@ -298,9 +298,8 @@ public class ReportRestServiceIT {
 
   private String createAndStoreDefaultReportDefinition(ReportDataDto reportDataViewRawAsTable) {
     String id = createNewReportHelper();
-    ReportDataDto reportData = reportDataViewRawAsTable;
     ReportDefinitionDto report = new ReportDefinitionDto();
-    report.setData(reportData);
+    report.setData(reportDataViewRawAsTable);
     report.setId(RANDOM_STRING);
     report.setLastModifier(RANDOM_STRING);
     report.setName(RANDOM_STRING);

@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -65,7 +66,7 @@ public class ReportReader {
       String reason = "Was not able to retrieve report with id [" + reportId +
         "] from Elasticsearch. Report does not exist.";
       logger.error(reason);
-      throw new OptimizeRuntimeException(reason);
+      throw new NotFoundException(reason);
     }
   }
 

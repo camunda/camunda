@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -53,7 +54,7 @@ public class DashboardReader {
       }
     } else {
       logger.error("Was not able to retrieve dashboard with id [{}] from Elasticsearch.", dashboardId);
-      throw new OptimizeRuntimeException("Dashboard does not exist! Tried to retried dashboard with id " + dashboardId);
+      throw new NotFoundException("Dashboard does not exist! Tried to retried dashboard with id " + dashboardId);
     }
   }
 
