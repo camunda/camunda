@@ -24,6 +24,7 @@ services:
         environment:
             - ZEEBE_LOG_LEVEL=${ZEEBE_LOG_LEVEL:-info}
             - INITIAL_CONTACT_POINT=broker-1:51016
+            - BOOTSTRAP=0
         volumes:
             - broker_2:/usr/local/zeebe/data
 
@@ -34,5 +35,6 @@ services:
         environment:
             - ZEEBE_LOG_LEVEL=${ZEEBE_LOG_LEVEL:-info}
             - INITIAL_CONTACT_POINT=broker-1:51016
+            - BOOTSTRAP=0
         volumes:
             - broker_3:/usr/local/zeebe/data

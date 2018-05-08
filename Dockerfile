@@ -5,7 +5,7 @@ ARG DISTBALL
 ENV ZB_HOME=/usr/local/zeebe/ \
     ZEEBE_LOG_LEVEL=info \
     DEPLOY_ON_KUBERNETES=false \
-    BOOTSTRAP=0
+    BOOTSTRAP=1
 
 COPY ${DISTBALL} ${ZB_HOME}
 
