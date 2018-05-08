@@ -110,6 +110,7 @@ public class VariableReader {
             .subAggregation(
               terms(NAMES_AGGREGATION)
                 .field(getNestedVariableNameFieldLabel(variableFieldLabel))
+                .size(10_000)
                 .order(BucketOrder.key(true))
             )
         );

@@ -20,6 +20,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
 
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.service.util.VariableHelper.isVariableTypeSupported;
@@ -63,6 +64,25 @@ public class VariableRetrievalIT {
     assertThat(variableResponse.get(1).getName(), is("var2"));
     assertThat(variableResponse.get(2).getName(), is("var3"));
     assertThat(variableResponse.get(3).getName(), is("var4"));
+  }
+
+  @Test
+  public void getMoreThan10Variables() throws Exception {
+    // given
+    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
+    Map<String, Object> variables = new HashMap<>();
+    IntStream.range(0,15).forEach(
+      i -> variables.put("var" + i, "value" + i)
+    );
+    engineRule.startProcessInstance(processDefinition.getId(), variables);
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    List<VariableRetrievalDto> variableResponse = getVariables(processDefinition);
+
+    // then
+    assertThat(variableResponse.size(), is(15));
   }
 
   @Test
