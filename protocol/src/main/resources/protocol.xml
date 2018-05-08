@@ -25,6 +25,7 @@
       <validValue name="REQUEST_TIMEOUT">4</validValue>
       <validValue name="REQUEST_PROCESSING_FAILURE">5</validValue>
       <validValue name="INVALID_MESSAGE">6</validValue>
+      <validValue name="NOT_FOUND">7</validValue>
     </enum>
 
     <enum name="EventType" encodingType="uint8" description="The type of an event">
@@ -49,6 +50,7 @@
         <validValue name="REMOVE_TOPIC_SUBSCRIPTION">3</validValue>
         <validValue name="REQUEST_TOPOLOGY">4</validValue>
         <validValue name="REQUEST_PARTITIONS">5</validValue>
+        <validValue name="REQUEST_WORKFLOW">6</validValue>
     </enum>
 
     <enum name="SubscriptionType" encodingType="uint8" description="The type of the subscription.">
