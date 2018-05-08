@@ -546,7 +546,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     String reportId = createReport();
     String dashboardWithReport = createDashboardWithReport(reportId);
 
-    String dashboardShareId = addShareForDashboard(dashboardWithReport);
+    addShareForDashboard(dashboardWithReport);
 
     ShareSearchDto statusRequest = new ShareSearchDto();
     statusRequest.getDashboards().add(dashboardWithReport);
@@ -577,7 +577,7 @@ public class SharingServiceIT extends AbstractSharingIT {
   @Test
   public void canCheckReportSharingStatus() throws Exception {
     String reportId = createReport();
-    String reportShareId = addShareForReport(reportId);
+    addShareForReport(reportId);
 
     ShareSearchDto statusRequest = new ShareSearchDto();
     statusRequest.getReports().add(reportId);
@@ -617,7 +617,7 @@ public class SharingServiceIT extends AbstractSharingIT {
   }
 
   @Test
-  public void errorMessageIsWellStructured () throws Exception {
+  public void errorMessageIsWellStructured () {
     //given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();

@@ -10,8 +10,8 @@ import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchResultDto;
 import org.camunda.optimize.service.dashboard.DashboardService;
 import org.camunda.optimize.service.es.reader.SharingReader;
 import org.camunda.optimize.service.es.writer.SharingWriter;
-import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.exceptions.ReportEvaluationException;
 import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.slf4j.Logger;
@@ -87,12 +87,24 @@ public class SharingService  {
 
   public void validateDashboardShare(DashboardShareDto dashboardShare) {
     ValidationHelper.ensureNotEmpty("dashboardId", dashboardShare.getDashboardId());
-    dashboardService.getDashboardDefinition(dashboardShare.getDashboardId());
+    try {
+      dashboardService.getDashboardDefinition(dashboardShare.getDashboardId());
+    } catch (Exception e) {
+      String errorMessage = "Could not retrieve dashboard [" +
+        dashboardShare.getDashboardId() + "]. Probably it does not exist.";
+      throw new OptimizeRuntimeException(errorMessage, e);
+    }
   }
 
   public void validateReportShare(ReportShareDto reportShare) {
     ValidationHelper.ensureNotEmpty("reportId", reportShare.getReportId());
-    reportService.getReport(reportShare.getReportId());
+    try {
+      reportService.getReport(reportShare.getReportId());
+    } catch (Exception e) {
+      String errorMessage = "Could not retrieve report [" +
+        reportShare.getReportId() + "]. Probably it does not exist.";
+      throw new OptimizeRuntimeException(errorMessage, e);
+    }
   }
 
   public void deleteReportShare(String shareId) {
@@ -105,7 +117,7 @@ public class SharingService  {
     base.ifPresent((share) -> sharingWriter.deleteDashboardShare(shareId));
   }
 
-  public ReportResultDto evaluateReport(String shareId) {
+  public ReportResultDto evaluateReportShare(String shareId) {
     Optional<ReportShareDto> optionalReportShare = sharingReader.findReportShare(shareId);
 
     return optionalReportShare
@@ -113,7 +125,7 @@ public class SharingService  {
         .orElseThrow(() -> new OptimizeRuntimeException("share [" + shareId + "] does not exist or is of unsupported type"));
   }
 
-  public ReportResultDto evaluateReportForSharedDashboard(String dashboardShareId, String reportId) throws OptimizeException {
+  public ReportResultDto evaluateReportForSharedDashboard(String dashboardShareId, String reportId) {
     Optional<DashboardShareDto> sharedDashboard = sharingReader.findDashboardShare(dashboardShareId);
     ReportResultDto result;
 
@@ -121,7 +133,7 @@ public class SharingService  {
       DashboardShareDto share = sharedDashboard.get();
       boolean hasGivenReport = share.getReportShares().stream().anyMatch(r -> r.getId().equals(reportId));
       if (hasGivenReport) {
-        result = reportService.evaluateSavedReport(reportId);
+        result = evaluateReport(reportId);
       } else {
         String reason = "Cannot evaluate report [" + reportId +
             "] for shared dashboard id [" + dashboardShareId + "]. Given report is not contained in dashboard.";
@@ -138,14 +150,19 @@ public class SharingService  {
    return result;
   }
 
-  private ReportResultDto constructReportShare(ReportShareDto share) {
+  public ReportResultDto evaluateReport(String reportId) {
     try {
-      return reportService.evaluateSavedReport(share.getReportId());
-    } catch (OptimizeException e) {
-      String reason = "Cannot evaluate shared report [" + share.getReportId() + "]";
-      logger.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
+      return reportService.evaluateSavedReport(reportId);
+    } catch (ReportEvaluationException e) {
+      throw e;
+    } catch (Exception e) {
+      String reason = "Cannot evaluate shared report [" + reportId + "]. Probably report does not exist.";
+      throw new OptimizeRuntimeException(reason);
     }
+  }
+
+  private ReportResultDto constructReportShare(ReportShareDto share) {
+    return evaluateReport(share.getReportId());
   }
 
   public Optional<DashboardDefinitionDto> evaluateDashboard(String shareId) {

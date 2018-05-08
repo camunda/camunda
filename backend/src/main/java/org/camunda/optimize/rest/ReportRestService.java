@@ -132,7 +132,7 @@ public class ReportRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public ReportResultDto evaluateReport(@Context ContainerRequestContext requestContext,
-                                        ReportDataDto reportData) throws OptimizeException {
+                                        ReportDataDto reportData) {
     String userId = getRequestUser(requestContext);
     ReportDefinitionDto reportDefinition = new ReportDefinitionDto();
     reportDefinition.setData(reportData);

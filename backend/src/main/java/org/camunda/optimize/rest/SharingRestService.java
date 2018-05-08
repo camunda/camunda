@@ -87,7 +87,7 @@ public class SharingRestService {
   @Path("/report/{shareId}/evaluate")
   @Produces(MediaType.APPLICATION_JSON)
   public ReportResultDto evaluateReport(@PathParam("shareId") String reportShareId) {
-    return sharingService.evaluateReport(reportShareId);
+    return sharingService.evaluateReportShare(reportShareId);
   }
 
   @GET

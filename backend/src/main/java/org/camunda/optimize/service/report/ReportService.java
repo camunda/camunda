@@ -110,7 +110,7 @@ public class ReportService {
     return reportReader.getReport(reportId);
   }
 
-  public ReportResultDto evaluateSavedReportWithAuthorizationCheck(String userId, String reportId) throws OptimizeException {
+  public ReportResultDto evaluateSavedReportWithAuthorizationCheck(String userId, String reportId) {
     ReportDefinitionDto reportDefinition = reportReader.getReport(reportId);
     ReportResultDto result = evaluateReportWithAuthorizationCheck(userId, reportDefinition);
     ReportUtil.copyMetaData(reportDefinition, result);
@@ -118,7 +118,7 @@ public class ReportService {
   }
 
   public ReportResultDto evaluateReportWithAuthorizationCheck(String userId,
-                                                              ReportDefinitionDto reportDefinition) throws OptimizeException {
+                                                              ReportDefinitionDto reportDefinition) {
     ReportDataDto reportData = reportDefinition.getData();
     if (reportData != null && !isAuthorizedToPerformActionOnReport(userId, reportData)) {
       throw new ForbiddenException("User [" + userId + "] is not authorized to evaluate report " +
@@ -140,7 +140,7 @@ public class ReportService {
     }
   }
 
-  public ReportResultDto evaluateSavedReport(String reportId) throws OptimizeException {
+  public ReportResultDto evaluateSavedReport(String reportId) {
     ReportDefinitionDto reportDefinition = reportReader.getReport(reportId);
     ReportResultDto result = evaluateWithErrorCheck(reportDefinition);
     ReportUtil.copyMetaData(reportDefinition, result);

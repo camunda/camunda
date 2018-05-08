@@ -87,7 +87,7 @@ public class ExportService {
     Optional<ReportResultDto> reportResultDto = Optional.empty();
     try {
       reportResultDto = Optional.ofNullable(reportService.evaluateSavedReportWithAuthorizationCheck(userId, reportId));
-    } catch (OptimizeException e) {
+    } catch (Exception e) {
       logger.error("can't evaluate report",e);
     }
 

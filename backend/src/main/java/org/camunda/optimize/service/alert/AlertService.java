@@ -8,6 +8,7 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.service.es.reader.AlertReader;
 import org.camunda.optimize.service.es.writer.AlertWriter;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -186,7 +187,15 @@ public class  AlertService {
   }
 
   private void validateAlert(AlertCreationDto toCreate) {
-    ReportDefinitionDto report = reportService.getReport(toCreate.getReportId());
+    ReportDefinitionDto report;
+    try {
+      report = reportService.getReport(toCreate.getReportId());
+    } catch (Exception e) {
+      String errorMessage = "Could not create alert [" + toCreate.getName() + "]. Report id [" +
+        toCreate.getReportId() + "] does not exist.";
+      logger.error(errorMessage);
+      throw new OptimizeRuntimeException(errorMessage, e);
+    }
     ValidationHelper.ensureNotEmpty("report", report);
 
     ValidationHelper.ensureNotEmpty("operator", toCreate.getThresholdOperator());

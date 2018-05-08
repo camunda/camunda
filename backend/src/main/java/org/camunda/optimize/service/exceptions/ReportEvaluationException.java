@@ -2,7 +2,7 @@ package org.camunda.optimize.service.exceptions;
 
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 
-public class ReportEvaluationException extends OptimizeException {
+public class ReportEvaluationException extends OptimizeRuntimeException {
 
   protected ReportDefinitionDto reportDefinition;
 
