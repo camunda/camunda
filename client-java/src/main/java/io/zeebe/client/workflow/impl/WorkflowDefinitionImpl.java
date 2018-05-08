@@ -22,6 +22,7 @@ public class WorkflowDefinitionImpl implements WorkflowDefinition
     private String bpmnProcessId;
     private int version;
     private long workflowKey;
+    private byte[] bpmnXml;
 
     @Override
     public String getBpmnProcessId()
@@ -56,6 +57,16 @@ public class WorkflowDefinitionImpl implements WorkflowDefinition
     public long getWorkflowKey()
     {
         return workflowKey;
+    }
+
+    public byte[] getBpmnXml()
+    {
+        return bpmnXml;
+    }
+
+    public void setBpmnXml(byte[] bpmnXml)
+    {
+        this.bpmnXml = bpmnXml;
     }
 
     @Override

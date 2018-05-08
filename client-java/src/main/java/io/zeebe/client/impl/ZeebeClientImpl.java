@@ -29,6 +29,7 @@ import io.zeebe.client.clustering.impl.ClientTopologyManager;
 import io.zeebe.client.clustering.impl.RequestTopologyCmdImpl;
 import io.zeebe.client.clustering.impl.TopologyResponse;
 import io.zeebe.client.cmd.Request;
+import io.zeebe.client.event.WorkflowDefinition;
 import io.zeebe.client.event.impl.TopicClientImpl;
 import io.zeebe.client.impl.data.MsgPackConverter;
 import io.zeebe.client.impl.data.MsgPackMapper;
@@ -198,6 +199,12 @@ public class ZeebeClientImpl implements ZeebeClient
     public Request<TopologyResponse> requestTopology()
     {
         return new RequestTopologyCmdImpl(apiCommandManager, topologyManager);
+    }
+
+    @Override
+    public Request<WorkflowDefinition> requestWorkflowDefinitionByKey(long key)
+    {
+        return new RequestWorkflowDefinitionByKey(apiCommandManager, topologyManager, key);
     }
 
     @Override

@@ -23,10 +23,12 @@ import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.TopicEventRecorder;
 import io.zeebe.client.WorkflowsClient;
+import io.zeebe.client.cmd.BrokerErrorException;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
 import io.zeebe.client.event.*;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.impl.instance.ProcessImpl;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -78,6 +80,48 @@ public class CreateDeploymentTest
         assertThat(deployedWorkflow.getBpmnProcessId()).isEqualTo("process");
         assertThat(deployedWorkflow.getVersion()).isEqualTo(1);
         assertThat(deployedWorkflow.getWorkflowKey()).isGreaterThan(0);
+    }
+
+    @Test
+    public void shouldRequestWorkflowDefinition()
+    {
+        // given
+        final WorkflowsClient workflowService = clientRule.workflows();
+
+        final io.zeebe.model.bpmn.instance.WorkflowDefinition workflow = Bpmn.createExecutableWorkflow("process")
+               .startEvent()
+               .endEvent()
+               .done();
+        final DeploymentEvent result = workflowService
+                .deploy(clientRule.getDefaultTopic())
+                .addWorkflowModel(workflow, "workflow.bpmn")
+                .execute();
+
+        final WorkflowDefinition deployedDefinition = result.getDeployedWorkflows().get(0);
+
+        // when
+        final WorkflowDefinition workflowdefinition = clientRule.getClient()
+            .requestWorkflowDefinitionByKey(deployedDefinition.getWorkflowKey())
+            .execute();
+
+        // then
+
+        assertThat(workflowdefinition.getWorkflowKey()).isEqualTo(deployedDefinition.getWorkflowKey());
+        assertThat(workflowdefinition.getVersion()).isEqualTo(deployedDefinition.getVersion());
+        assertThat(workflowdefinition.getBpmnProcessId()).isEqualTo(deployedDefinition.getBpmnProcessId());
+        Bpmn.readFromXmlBuffer(new UnsafeBuffer(workflowdefinition.getBpmnXml()));
+    }
+
+    @Test
+    public void shouldNotFindUnexistingWorkflow()
+    {
+        // when then
+        exception.expect(BrokerErrorException.class);
+        exception.expectMessage("No workflow with key 100 deployed");
+
+        clientRule.getClient()
+            .requestWorkflowDefinitionByKey(100)
+            .execute();
     }
 
     @Test

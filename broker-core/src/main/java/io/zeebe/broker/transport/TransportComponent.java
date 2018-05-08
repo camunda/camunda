@@ -132,6 +132,7 @@ public class TransportComponent implements Component
             .dependency(TaskQueueServiceNames.TASK_QUEUE_SUBSCRIPTION_MANAGER, controlMessageHandlerManagerService.getTaskSubscriptionManagerInjector())
             .dependency(TopicSubscriptionServiceNames.TOPIC_SUBSCRIPTION_SERVICE, controlMessageHandlerManagerService.getTopicSubscriptionServiceInjector())
             .dependency(ClusterBaseLayerServiceNames.TOPOLOGY_MANAGER_SERVICE, controlMessageHandlerManagerService.getTopologyManagerInjector())
+            .dependency(TransportServiceNames.clientTransport(MANAGEMENT_API_CLIENT_NAME), controlMessageHandlerManagerService.getManagementClientTransportInjector())
             .install();
     }
 

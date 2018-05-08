@@ -25,6 +25,7 @@ import static io.zeebe.broker.system.SystemServiceNames.*;
 import io.zeebe.broker.system.deployment.service.DeploymentManager;
 import io.zeebe.broker.system.deployment.service.DeploymentManagerRequestHandler;
 import io.zeebe.broker.system.metrics.MetricsFileWriterService;
+import io.zeebe.broker.transport.TransportServiceNames;
 import io.zeebe.servicecontainer.ServiceContainer;
 
 public class SystemComponent implements Component
@@ -48,6 +49,7 @@ public class SystemComponent implements Component
             .dependency(DEPLOYMENT_MANAGER_REQUEST_HANDLER, deploymentManagerService.getRequestHandlerServiceInjector())
             .dependency(STREAM_PROCESSOR_SERVICE_FACTORY, deploymentManagerService.getStreamProcessorServiceFactoryInjector())
             .dependency(serverTransport(CLIENT_API_SERVER_NAME), deploymentManagerService.getClientApiTransportInjector())
+            .dependency(TransportServiceNames.CONTROL_MESSAGE_HANDLER_MANAGER, deploymentManagerService.getControlMessageHandlerManagerServiceInjector())
             .groupReference(LEADER_PARTITION_SYSTEM_GROUP_NAME, deploymentManagerService.getPartitionsGroupReference())
             .install();
     }

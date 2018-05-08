@@ -17,64 +17,58 @@
  */
 package io.zeebe.broker.system.deployment.service;
 
-import io.zeebe.broker.system.deployment.data.LatestVersionByProcessIdAndTopicName;
-import io.zeebe.broker.system.deployment.data.WorkflowKeyByProcessIdAndVersion;
 import io.zeebe.broker.system.deployment.request.FetchWorkflowRequest;
 import io.zeebe.broker.system.deployment.request.FetchWorkflowResponse;
 import io.zeebe.clustering.management.FetchWorkflowRequestDecoder;
 import io.zeebe.transport.*;
-import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.ActorControl;
+import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
 
 public class FetchWorkflowRequestHandler
 {
     private final FetchWorkflowRequest fetchWorkflowRequest = new FetchWorkflowRequest();
-    private final FetchWorkflowResponse fetchWorkflowResponse = new FetchWorkflowResponse();
 
-    private final DeploymentWorkflowsCache deploymentWorkflowsCache;
-    private final LatestVersionByProcessIdAndTopicName latestWorkflowKeyByProcessIdAndTopicName;
-    private final WorkflowKeyByProcessIdAndVersion workflowKeyByProcessIdAndVersion;
-    private final ActorControl actor;
+    private final WorkflowRepositoryService workflowRepositoryService;
 
-    public FetchWorkflowRequestHandler(ActorControl actor,
-        WorkflowKeyByProcessIdAndVersion workflowKeyByProcessIdAndVersion,
-        LatestVersionByProcessIdAndTopicName latestWorkflowKeyByProcessIdAndTopicName,
-        DeploymentWorkflowsCache deploymentWorkflowsCache)
+    public FetchWorkflowRequestHandler(WorkflowRepositoryService workflowRepositoryService)
     {
-        this.actor = actor;
-        this.workflowKeyByProcessIdAndVersion = workflowKeyByProcessIdAndVersion;
-        this.latestWorkflowKeyByProcessIdAndTopicName = latestWorkflowKeyByProcessIdAndTopicName;
-        this.deploymentWorkflowsCache = deploymentWorkflowsCache;
+        this.workflowRepositoryService = workflowRepositoryService;
     }
 
-    public void onFetchWorkfow(DirectBuffer buffer, int offset, int length, ServerOutput output, RemoteAddress remoteAddress, long requestId)
+    public void onFetchWorkfow(DirectBuffer buffer, int offset, int length, ServerOutput output, RemoteAddress remoteAddress, long requestId, ActorControl actor)
     {
-        final DirectBuffer bufferCopy = BufferUtil.cloneBuffer(buffer, offset, length);
+        fetchWorkflowRequest.wrap(buffer, offset, length);
 
-        actor.run(() ->
+        final ActorFuture<DeploymentCachedWorkflow> workflowFuture;
+
+        final long workflowKey = fetchWorkflowRequest.getWorkflowKey();
+
+        if (workflowKey == FetchWorkflowRequestDecoder.workflowKeyNullValue())
         {
-            fetchWorkflowRequest.wrap(bufferCopy, 0, bufferCopy.capacity());
+            final DirectBuffer topicName = fetchWorkflowRequest.getTopicName();
 
-            long workflowKey = fetchWorkflowRequest.getWorkflowKey();
+            final int version = fetchWorkflowRequest.getVersion();
 
-            if (workflowKey == FetchWorkflowRequestDecoder.workflowKeyNullValue())
+            final DirectBuffer bpmnProcessId = fetchWorkflowRequest.getBpmnProcessId();
+
+            if (version == FetchWorkflowRequestDecoder.versionMaxValue())
             {
-                int version = fetchWorkflowRequest.getVersion();
-                final DirectBuffer bpmnProcessId = fetchWorkflowRequest.getBpmnProcessId();
-
-                if (version == FetchWorkflowRequestDecoder.versionMaxValue())
-                {
-                    final DirectBuffer topicName = fetchWorkflowRequest.getTopicName();
-                    version = latestWorkflowKeyByProcessIdAndTopicName.getLatestVersion(topicName, bpmnProcessId, -1);
-                }
-
-                workflowKey = workflowKeyByProcessIdAndVersion.get(bpmnProcessId, version, -1);
+                workflowFuture = workflowRepositoryService.getLatestWorkflowByBpmnProcessId(topicName, bpmnProcessId);
             }
+            else
+            {
+                workflowFuture = workflowRepositoryService.getWorkflowByBpmnProcessIdAndVersion(topicName, bpmnProcessId, version);
+            }
+        }
+        else
+        {
+            workflowFuture = workflowRepositoryService.getWorkflowByKey(workflowKey);
+        }
 
-            final DeploymentCachedWorkflow workflow = deploymentWorkflowsCache.getWorkflow(workflowKey);
-
-            fetchWorkflowResponse.reset();
+        actor.runOnCompletion(workflowFuture, (workflow, err) ->
+        {
+            final FetchWorkflowResponse fetchWorkflowResponse = new FetchWorkflowResponse();
 
             if (workflow != null)
             {

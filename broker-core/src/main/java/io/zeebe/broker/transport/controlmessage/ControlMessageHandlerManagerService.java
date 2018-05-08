@@ -26,17 +26,14 @@ import io.zeebe.broker.event.handler.RemoveTopicSubscriptionHandler;
 import io.zeebe.broker.event.processor.TopicSubscriptionService;
 import io.zeebe.broker.task.TaskSubscriptionManager;
 import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.servicecontainer.Injector;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
-import io.zeebe.transport.ServerOutput;
-import io.zeebe.transport.ServerTransport;
+import io.zeebe.servicecontainer.*;
+import io.zeebe.transport.*;
 import io.zeebe.util.sched.ActorScheduler;
 
 public class ControlMessageHandlerManagerService implements Service<ControlMessageHandlerManager>
 {
     protected final Injector<ServerTransport> transportInjector = new Injector<>();
+    protected final Injector<ClientTransport> managementClientTransportInjector = new Injector<>();
     protected final Injector<Dispatcher> controlMessageBufferInjector = new Injector<>();
     protected final Injector<TaskSubscriptionManager> taskSubscriptionManagerInjector = new Injector<>();
     protected final Injector<TopicSubscriptionService> topicSubscriptionServiceInjector = new Injector<>();
@@ -54,6 +51,7 @@ public class ControlMessageHandlerManagerService implements Service<ControlMessa
 
         final TaskSubscriptionManager taskSubscriptionManager = taskSubscriptionManagerInjector.getValue();
         final TopicSubscriptionService topicSubscriptionService = topicSubscriptionServiceInjector.getValue();
+        final TopologyManager topologyManager = topologyManagerInjector.getValue();
 
         final ServerOutput output = transport.getOutput();
 
@@ -62,7 +60,7 @@ public class ControlMessageHandlerManagerService implements Service<ControlMessa
             new IncreaseTaskSubscriptionCreditsHandler(output, taskSubscriptionManager),
             new RemoveTaskSubscriptionHandler(output, taskSubscriptionManager),
             new RemoveTopicSubscriptionHandler(output, topicSubscriptionService),
-            new RequestTopologyHandler(output, topologyManagerInjector.getValue())
+            new RequestTopologyHandler(output, topologyManager)
         );
 
         service = new ControlMessageHandlerManager(
@@ -109,5 +107,10 @@ public class ControlMessageHandlerManagerService implements Service<ControlMessa
     public Injector<TopologyManager> getTopologyManagerInjector()
     {
         return topologyManagerInjector;
+    }
+
+    public Injector<ClientTransport> getManagementClientTransportInjector()
+    {
+        return managementClientTransportInjector;
     }
 }

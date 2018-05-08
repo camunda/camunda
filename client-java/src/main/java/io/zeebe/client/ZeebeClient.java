@@ -19,6 +19,7 @@ import java.util.Properties;
 
 import io.zeebe.client.clustering.impl.TopologyResponse;
 import io.zeebe.client.cmd.Request;
+import io.zeebe.client.event.WorkflowDefinition;
 import io.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.zeebe.client.impl.ZeebeClientImpl;
 
@@ -44,6 +45,8 @@ public interface ZeebeClient extends AutoCloseable
      * and which broker is the leader of which topic.
      */
     Request<TopologyResponse> requestTopology();
+
+    Request<WorkflowDefinition> requestWorkflowDefinitionByKey(long key);
 
     /**
      * @return the client's configuration

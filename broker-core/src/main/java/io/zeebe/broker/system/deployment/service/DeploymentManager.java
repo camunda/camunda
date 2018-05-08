@@ -20,8 +20,10 @@ package io.zeebe.broker.system.deployment.service;
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.orchestration.topic.TopicState;
 import io.zeebe.broker.logstreams.processor.*;
+import io.zeebe.broker.system.SystemServiceNames;
 import io.zeebe.broker.system.deployment.data.*;
 import io.zeebe.broker.system.deployment.processor.*;
+import io.zeebe.broker.transport.controlmessage.ControlMessageHandlerManager;
 import io.zeebe.broker.workflow.data.DeploymentState;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
@@ -38,18 +40,28 @@ public class DeploymentManager implements Service<DeploymentManager>
     private final Injector<StreamProcessorServiceFactory> streamProcessorServiceFactoryInjector = new Injector<>();
     private final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
     private final Injector<DeploymentManagerRequestHandler> requestHandlerServiceInjector = new Injector<>();
+    private final Injector<ControlMessageHandlerManager> controlMessageHandlerManagerServiceInjector = new Injector<>();
 
     private ServerTransport clientApiTransport;
     private StreamProcessorServiceFactory streamProcessorServiceFactory;
 
     private DeploymentManagerRequestHandler requestHandlerService;
 
+    private ServiceStartContext startContext;
+
+    private RequestWorkflowControlMessageHandler controlMessageHandler;
+
     @Override
     public void start(ServiceStartContext startContext)
     {
+        this.startContext = startContext;
         this.clientApiTransport = clientApiTransportInjector.getValue();
         this.streamProcessorServiceFactory = streamProcessorServiceFactoryInjector.getValue();
-        requestHandlerService = requestHandlerServiceInjector.getValue();
+        this.requestHandlerService = requestHandlerServiceInjector.getValue();
+
+        controlMessageHandler = new RequestWorkflowControlMessageHandler(clientApiTransport.getOutput());
+
+        controlMessageHandlerManagerServiceInjector.getValue().registerHandler(controlMessageHandler);
     }
 
     private void installServices(final Partition partition, ServiceName<Partition> partitionServiceName)
@@ -86,18 +98,27 @@ public class DeploymentManager implements Service<DeploymentManager>
 
                     final DeploymentWorkflowsCache cache = new DeploymentWorkflowsCache(reader, deploymentPositionByWorkflowKey);
 
-                    final FetchWorkflowRequestHandler requestHandler = new FetchWorkflowRequestHandler(streamProcessor.getActor(),
+                    final WorkflowRepositoryService workflowRepositoryService = new WorkflowRepositoryService(ctx.getActorControl(),
                         workflowKeyByProcessIdAndVersion,
                         latestVersionByProcessIdAndTopicName,
                         cache);
 
+                    startContext.createService(SystemServiceNames.REPOSITORY_SERVICE, workflowRepositoryService)
+                        .dependency(partitionServiceName)
+                        .install();
+
+                    final FetchWorkflowRequestHandler requestHandler = new FetchWorkflowRequestHandler(workflowRepositoryService);
                     requestHandlerService.setFetchWorkflowRequestHandler(requestHandler);
+
+                    controlMessageHandler.setWorkflowRepositoryService(workflowRepositoryService);
                 }
 
                 @Override
                 public void onClose()
                 {
                     requestHandlerService.setFetchWorkflowRequestHandler(null);
+                    controlMessageHandler.setWorkflowRepositoryService(null);
+
                     reader.close();
                 }
             })
@@ -134,5 +155,10 @@ public class DeploymentManager implements Service<DeploymentManager>
     public Injector<DeploymentManagerRequestHandler> getRequestHandlerServiceInjector()
     {
         return requestHandlerServiceInjector;
+    }
+
+    public Injector<ControlMessageHandlerManager> getControlMessageHandlerManagerServiceInjector()
+    {
+        return controlMessageHandlerManagerServiceInjector;
     }
 }

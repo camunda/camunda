@@ -22,4 +22,6 @@ public interface WorkflowDefinition
     int getVersion();
 
     long getWorkflowKey();
+
+    byte[] getBpmnXml();
 }

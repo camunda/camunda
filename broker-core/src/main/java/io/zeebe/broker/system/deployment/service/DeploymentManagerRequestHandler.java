@@ -122,7 +122,7 @@ public class DeploymentManagerRequestHandler extends Actor implements Service<De
 
         if (handler != null)
         {
-            handler.onFetchWorkfow(buffer, offset, length, output, remoteAddress, requestId);
+            handler.onFetchWorkfow(buffer, offset, length, output, remoteAddress, requestId, actor);
 
             return true;
         }
