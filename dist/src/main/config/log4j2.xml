@@ -2,7 +2,7 @@
 <Configuration status="WARN">
 
   <Properties>
-    <Property name="log.path">${app.home}/logs</Property>
+    <Property name="log.path">${sys:app.home}/logs</Property>
   </Properties>
 
   <Appenders>
