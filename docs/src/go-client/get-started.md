@@ -85,7 +85,7 @@ func main() {
 		panic(errClientStartFailed)
 	}
 
-	topology, err := zbClient.RefreshTopology()
+	topology, err := zbClient.GetTopology()
 	if err != nil {
 		panic(err)
 	}
@@ -340,7 +340,7 @@ func main() {
 
 	fmt.Println(msg.String())
 
-	subscription, err := zbClient.TaskSubscription(topicName, "sample-app", "payment-service", 32, func(client zbsubscribe.ZeebeAPI, event *zbsubscriptions.SubscriptionEvent) {
+	subscription, err := zbClient.TaskSubscription(topicName, "sample-app", "payment-service", 1000, 32, func(client zbsubscribe.ZeebeAPI, event *zbsubscriptions.SubscriptionEvent) {
 		fmt.Println(event.String())
 
 		// complete task after processing
