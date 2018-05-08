@@ -54,6 +54,8 @@ public class StreamProcessorController extends Actor
     private final EventFilter eventFilter;
     private final boolean isReadOnlyProcessor;
 
+    private final EventLifecycleContextImpl eventLifecycleContext = new EventLifecycleContextImpl();
+
     private final Runnable readNextEvent = this::readNextEvent;
 
     private long snapshotPosition = -1L;
@@ -109,6 +111,8 @@ public class StreamProcessorController extends Actor
     @Override
     protected void onActorStarting()
     {
+        streamProcessor.getStateResource().reset();
+
         final LogStream logStream = streamProcessorContext.getLogStream();
 
         final MetricsManager metricsManager = actorScheduler.getMetricsManager();
@@ -124,14 +128,29 @@ public class StreamProcessorController extends Actor
         try
         {
             snapshotPosition = recoverFromSnapshot();
-
-            streamProcessor.onOpen(streamProcessorContext);
-
             lastSourceEventPosition = seekToLastSourceEvent();
 
+            streamProcessor.onOpen(streamProcessorContext);
+        }
+        catch (Exception e)
+        {
+            onFailure();
+            LangUtil.rethrowUnchecked(e);
+        }
+    }
+
+    @Override
+    protected void onActorStarted()
+    {
+        try
+        {
             if (lastSourceEventPosition > snapshotPosition)
             {
-                actor.runUntilDone(this::reprocessNextEvent);
+                reprocessNextEvent();
+            }
+            else
+            {
+                onRecovered();
             }
         }
         catch (Exception e)
@@ -143,8 +162,6 @@ public class StreamProcessorController extends Actor
 
     private long recoverFromSnapshot() throws Exception
     {
-        streamProcessor.getStateResource().reset();
-
         long snapshotPosition = -1L;
 
         final ReadableSnapshot lastSnapshot = snapshotStorage.getLastSnapshot(streamProcessorContext.getName());
@@ -211,16 +228,6 @@ public class StreamProcessorController extends Actor
                 if (currentEventPosition <= lastSourceEventPosition)
                 {
                     reprocessEvent(currentEvent);
-
-                    if (currentEventPosition == lastSourceEventPosition)
-                    {
-                        actor.done();
-                    }
-                    else
-                    {
-                        // continue with next event
-                        actor.yield();
-                    }
                 }
                 else
                 {
@@ -234,8 +241,6 @@ public class StreamProcessorController extends Actor
         }
         catch (Exception e)
         {
-            actor.done();
-
             onFailure();
             LangUtil.rethrowUnchecked(e);
         }
@@ -253,7 +258,35 @@ public class StreamProcessorController extends Actor
                 {
                     // don't execute side effects or write events
                     eventProcessor.processEvent();
-                    eventProcessor.updateState();
+
+                    eventLifecycleContext.reset();
+                    eventProcessor.processEvent(eventLifecycleContext);
+
+                    if (eventLifecycleContext.future != null)
+                    {
+                        actor.runOnCompletion(eventLifecycleContext.future, (res, err) ->
+                        {
+                            if (err == null)
+                            {
+                                eventProcessor.updateState();
+                                continueRepocessing(currentEvent);
+                            }
+                            else
+                            {
+                                LOG.error("Exception during async reprocessing", err);
+                                onFailure();
+                            }
+                        });
+                    }
+                    else
+                    {
+                        eventProcessor.updateState();
+                        continueRepocessing(currentEvent);
+                    }
+                }
+                else
+                {
+                    continueRepocessing(currentEvent);
                 }
             }
             catch (Exception e)
@@ -261,10 +294,25 @@ public class StreamProcessorController extends Actor
                 throw new RuntimeException(String.format(ERROR_MESSAGE_REPROCESSING_FAILED, getName(), currentEvent), e);
             }
         }
+        else
+        {
+            continueRepocessing(currentEvent);
+        }
     }
 
-    @Override
-    protected void onActorStarted()
+    private void continueRepocessing(LoggedEvent currentEvent)
+    {
+        if (currentEvent.getPosition() == lastSourceEventPosition)
+        {
+            onRecovered();
+        }
+        else
+        {
+            reprocessNextEvent();
+        }
+    }
+
+    private void onRecovered()
     {
         onCommitPositionUpdatedCondition = actor.onCondition(getName() + "-on-commit-position-updated", readNextEvent);
         streamProcessorContext.logStream.registerOnCommitPositionUpdatedCondition(onCommitPositionUpdatedCondition);
@@ -278,7 +326,7 @@ public class StreamProcessorController extends Actor
 
     private void readNextEvent()
     {
-        if (isOpened() && !isSuspended() && logStreamReader.hasNext())
+        if (isOpened() && !isSuspended() && logStreamReader.hasNext() && eventProcessor == null)
         {
             currentEvent = logStreamReader.next();
 
@@ -308,7 +356,30 @@ public class StreamProcessorController extends Actor
 
                 eventProcessor.processEvent();
 
-                actor.runUntilDone(this::executeSideEffects);
+                eventLifecycleContext.reset();
+                eventProcessor.processEvent(eventLifecycleContext);
+
+                final ActorFuture<?> whenEventProcessed = eventLifecycleContext.future;
+
+                if (whenEventProcessed != null)
+                {
+                    actor.runOnCompletion(whenEventProcessed, (res, err) ->
+                    {
+                        if (err != null)
+                        {
+                            LOG.error(ERROR_MESSAGE_PROCESSING_FAILED, getName(), err);
+                            onFailure();
+                        }
+                        else
+                        {
+                            actor.runUntilDone(this::executeSideEffects);
+                        }
+                    });
+                }
+                else
+                {
+                    actor.runUntilDone(this::executeSideEffects);
+                }
             }
             catch (Exception e)
             {
@@ -409,6 +480,7 @@ public class StreamProcessorController extends Actor
             }
 
             // continue with next event
+            eventProcessor = null;
             actor.submit(readNextEvent);
         }
         catch (Exception e)
@@ -550,5 +622,21 @@ public class StreamProcessorController extends Actor
     {
         suspended = false;
         actor.submit(readNextEvent);
+    }
+
+    private class EventLifecycleContextImpl implements EventLifecycleContext
+    {
+        private ActorFuture<?> future;
+
+        private void reset()
+        {
+            future = null;
+        }
+
+        @Override
+        public void async(ActorFuture<?> future)
+        {
+            this.future = future;
+        }
     }
 }

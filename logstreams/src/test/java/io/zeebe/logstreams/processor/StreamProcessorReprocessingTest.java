@@ -238,6 +238,7 @@ public class StreamProcessorReprocessingTest
     }
 
     @Test
+    @Ignore
     public void shouldFailOnReprocessing()
     {
         // given [1|S:-] --> [2|S:1]

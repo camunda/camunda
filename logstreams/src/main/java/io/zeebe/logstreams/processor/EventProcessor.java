@@ -23,11 +23,20 @@ import io.zeebe.logstreams.log.LogStreamWriter;
  */
 public interface EventProcessor
 {
+    default void processEvent(EventLifecycleContext ctx)
+    {
+
+    }
+
     /**
      * Process the event. Do no execute any side effect, or write an event, or
      * update the internal state.
      */
-    void processEvent();
+    @Deprecated
+    default void processEvent()
+    {
+
+    }
 
     /**
      * (Optional) Execute the side effects which are caused by the processed
