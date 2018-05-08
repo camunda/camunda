@@ -28,7 +28,7 @@ public interface Intent
         IncidentIntent.class,
         SubscriberIntent.class,
         SubscriptionIntent.class,
-        TaskIntent.class,
+        JobIntent.class,
         TopicIntent.class,
         WorkflowIntent.class,
         WorkflowInstanceIntent.class);
@@ -64,8 +64,8 @@ public interface Intent
                 return SubscriberIntent.from(intent);
             case SUBSCRIPTION:
                 return SubscriptionIntent.from(intent);
-            case TASK:
-                return TaskIntent.from(intent);
+            case JOB:
+                return JobIntent.from(intent);
             case TOPIC:
                 return TopicIntent.from(intent);
             case WORKFLOW:

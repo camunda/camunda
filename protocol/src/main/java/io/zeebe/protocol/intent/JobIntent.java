@@ -15,7 +15,7 @@
  */
 package io.zeebe.protocol.intent;
 
-public enum TaskIntent implements Intent
+public enum JobIntent implements Intent
 {
     CREATE((short) 0),
     CREATED((short) 1),
@@ -40,7 +40,7 @@ public enum TaskIntent implements Intent
 
     private short value;
 
-    TaskIntent(short value)
+    JobIntent(short value)
     {
         this.value = value;
     }

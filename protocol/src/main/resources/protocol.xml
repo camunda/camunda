@@ -29,7 +29,7 @@
     </enum>
 
     <enum name="ValueType" encodingType="uint8" description="The type of a record value">
-        <validValue name="TASK">0</validValue>
+        <validValue name="JOB">0</validValue>
         <validValue name="RAFT">1</validValue>
         <validValue name="SUBSCRIPTION">2</validValue>
         <validValue name="SUBSCRIBER">3</validValue>
@@ -43,9 +43,9 @@
     </enum>
 
     <enum name="ControlMessageType" encodingType="uint8" description="The type of the control message.">
-        <validValue name="ADD_TASK_SUBSCRIPTION">0</validValue>
-        <validValue name="REMOVE_TASK_SUBSCRIPTION">1</validValue>
-        <validValue name="INCREASE_TASK_SUBSCRIPTION_CREDITS">2</validValue>
+        <validValue name="ADD_JOB_SUBSCRIPTION">0</validValue>
+        <validValue name="REMOVE_JOB_SUBSCRIPTION">1</validValue>
+        <validValue name="INCREASE_JOB_SUBSCRIPTION_CREDITS">2</validValue>
         <validValue name="REMOVE_TOPIC_SUBSCRIPTION">3</validValue>
         <validValue name="REQUEST_TOPOLOGY">4</validValue>
         <validValue name="REQUEST_PARTITIONS">5</validValue>
@@ -53,7 +53,7 @@
     </enum>
 
     <enum name="SubscriptionType" encodingType="uint8" description="The type of the subscription.">
-        <validValue name="TASK_SUBSCRIPTION">0</validValue>
+        <validValue name="JOB_SUBSCRIPTION">0</validValue>
         <validValue name="TOPIC_SUBSCRIPTION">1</validValue>
     </enum>
     
