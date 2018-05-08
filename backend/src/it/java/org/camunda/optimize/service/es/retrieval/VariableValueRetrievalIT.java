@@ -2,9 +2,8 @@ package org.camunda.optimize.service.es.retrieval;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.service.exceptions.OptimizeException;
-import org.camunda.optimize.test.it.Engine78;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
+import org.camunda.optimize.test.it.Engine78;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
@@ -12,9 +11,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.GenericType;
@@ -23,11 +19,10 @@ import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
 
 import static org.camunda.optimize.rest.VariableRestService.NAME;
 import static org.camunda.optimize.rest.VariableRestService.PROCESS_DEFINITION_KEY;
@@ -70,6 +65,31 @@ public class VariableValueRetrievalIT {
     assertThat(variableResponse.contains("value1"), is(true));
     assertThat(variableResponse.contains("value2"), is(true));
     assertThat(variableResponse.contains("value3"), is(true));
+  }
+
+  @Test
+  public void getMoreThan10VariableValues() throws Exception {
+    // given
+    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
+    Map<String, Object> variables = new HashMap<>();
+    IntStream.range(0, 15).forEach(
+      i -> {
+         variables.put("var", "value" + i);
+        try {
+          engineRule.startProcessInstance(processDefinition.getId(), variables);
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
+      }
+    );
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    List<String> variableResponse = getVariableValues(processDefinition, "var");
+
+    // then
+    assertThat(variableResponse.size(), is(15));
   }
 
   @Test

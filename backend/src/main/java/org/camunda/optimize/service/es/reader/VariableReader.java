@@ -8,7 +8,6 @@ import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
@@ -152,6 +151,7 @@ public class VariableReader {
     TermsAggregationBuilder variableValuesAgg =
       terms(VALUE_AGGREGATION)
         .field(getNestedVariableValueFieldLabel(variableFieldLabel))
+        .size(10_000)
         .order(BucketOrder.key(true));
     if (DATE_VARIABLES.equals(variableFieldLabel)) {
       variableValuesAgg.format(configurationService.getOptimizeDateFormat());
