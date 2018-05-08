@@ -13,8 +13,9 @@ services:
             - 51015:51015
         environment:
             - ZEEBE_LOG_LEVEL=${ZEEBE_LOG_LEVEL:-info}
+            - BOOTSTRAP=3
         volumes:
-            - broker_1:/usr/local/zeebe/bin/data
+            - broker_1:/usr/local/zeebe/data
 
     broker-2:
         image: camunda/zeebe:${ZEEBE_VERSION:-latest}
@@ -24,7 +25,7 @@ services:
             - ZEEBE_LOG_LEVEL=${ZEEBE_LOG_LEVEL:-info}
             - INITIAL_CONTACT_POINT=broker-1:51016
         volumes:
-            - broker_2:/usr/local/zeebe/bin/data
+            - broker_2:/usr/local/zeebe/data
 
     broker-3:
         image: camunda/zeebe:${ZEEBE_VERSION:-latest}
@@ -34,4 +35,4 @@ services:
             - ZEEBE_LOG_LEVEL=${ZEEBE_LOG_LEVEL:-info}
             - INITIAL_CONTACT_POINT=broker-1:51016
         volumes:
-            - broker_3:/usr/local/zeebe/bin/data
+            - broker_3:/usr/local/zeebe/data
