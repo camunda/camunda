@@ -15,9 +15,6 @@
  */
 package io.zeebe.broker.it.clustering;
 
-import static io.zeebe.broker.it.clustering.ClusteringRule.DEFAULT_REPLICATION_FACTOR;
-import static org.assertj.core.api.Assertions.assertThat;
-
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
@@ -36,6 +33,9 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
+
+import static io.zeebe.broker.it.clustering.ClusteringRule.DEFAULT_REPLICATION_FACTOR;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class DeploymentClusteredTest
 {
@@ -131,6 +131,7 @@ public class DeploymentClusteredTest
     }
 
     @Test
+    @Ignore("https://github.com/zeebe-io/zeebe/issues/844")
     public void shouldDeployOnRemainingBrokers()
     {
         // given
@@ -186,17 +187,19 @@ public class DeploymentClusteredTest
     }
 
     @Test
+    @Ignore("https://github.com/zeebe-io/zeebe/issues/844")
     public void shouldDeployAfterRestartBroker()
     {
         // given
-        clusteringRule.createTopic("test", PARTITION_COUNT);
+        final String topicName = "test";
+        clusteringRule.createTopic(topicName, PARTITION_COUNT);
 
         // when
         clusteringRule.restartBroker(ClusteringRule.BROKER_3_CLIENT_ADDRESS);
 
         // then
         final DeploymentEvent deploymentEvent = client.workflows()
-                                                      .deploy("test")
+                                                      .deploy(topicName)
                                                       .addWorkflowModel(WORKFLOW, "workflow.bpmn")
                                                       .execute();
 

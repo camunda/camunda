@@ -27,6 +27,7 @@ import io.zeebe.protocol.Protocol;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.SocketAddress;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -137,12 +138,16 @@ public class CreateTopicClusteredTest
     }
 
     @Test
+    @Ignore("https://github.com/zeebe-io/zeebe/issues/844")
     public void shouldCompleteTaskAfterNewLeaderWasChosen() throws Exception
     {
         // given
         final int partitionsCount = 1;
-        clusteringRule.createTopic("foo", partitionsCount, 3);
-        final TaskEvent taskEvent = client.tasks().create("foo", "bar").execute();
+        final String topicName = "foo";
+        final int replicationFactor = 3;
+        clusteringRule.createTopic(topicName, partitionsCount, replicationFactor);
+
+        final TaskEvent taskEvent = client.tasks().create(topicName, "bar").execute();
         final int partitionId = taskEvent.getMetadata().getPartitionId();
 
         final TopologyBroker leaderForPartition = clusteringRule.getLeaderForPartition(partitionId);
@@ -157,7 +162,7 @@ public class CreateTopicClusteredTest
 
         final CompletableFuture<TaskEvent> taskCompleted = new CompletableFuture<>();
         client.tasks()
-              .newTaskSubscription("foo")
+              .newTaskSubscription(topicName)
               .handler((taskClient, lockedEvent) ->
               {
                   final TaskEvent completedTask = taskClient.complete(lockedEvent)
