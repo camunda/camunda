@@ -104,8 +104,11 @@ public class RaftJoinService implements Service<Void>
 
         final Runnable onLeaveCluster = () ->
         {
-            raft.notifyRaftStateListeners();
-            whenLeaveCompleted.complete(null);
+            if (!whenLeaveCompleted.isDone())
+            {
+                raft.notifyRaftStateListeners();
+                whenLeaveCompleted.complete(null);
+            }
         };
 
         sendConfigurationRequest((nextMember) ->
@@ -117,9 +120,12 @@ public class RaftJoinService implements Service<Void>
 
         actor.runDelayed(leaveTimeout, () ->
         {
-            final String timeoutMessage = "Timeout while leaving raft cluster.";
-            LOG.warn(timeoutMessage);
-            whenLeaveCompleted.completeExceptionally(new RuntimeException(timeoutMessage));
+            if (!whenLeaveCompleted.isDone())
+            {
+                final String timeoutMessage = "Timeout while leaving raft cluster.";
+                LOG.warn(timeoutMessage);
+                whenLeaveCompleted.completeExceptionally(new RuntimeException(timeoutMessage));
+            }
         });
     }
 
