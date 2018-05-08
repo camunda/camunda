@@ -94,14 +94,14 @@ public class LeaderState extends AbstractRaftState
         {
             if (initialEventCommitted && !configurationChangeController.isHandlingConfigurationChange())
             {
-                final SocketAddress socketAddress = configurationRequest.getSocketAddress();
+                final SocketAddress member = configurationRequest.getSocketAddress();
                 if (configurationRequest.isJoinRequest())
                 {
-                    join(serverOutput, remoteAddress, requestId, socketAddress);
+                    join(serverOutput, remoteAddress, requestId, member);
                 }
                 else
                 {
-                    leave(serverOutput, remoteAddress, requestId, socketAddress);
+                    leave(serverOutput, remoteAddress, requestId, member);
                 }
             }
             else
@@ -111,16 +111,16 @@ public class LeaderState extends AbstractRaftState
         }
     }
 
-    private void join(final ServerOutput serverOutput, final RemoteAddress remoteAddress, final long requestId, SocketAddress socketAddress)
+    private void join(final ServerOutput serverOutput, final RemoteAddress remoteAddress, final long requestId, SocketAddress newMember)
     {
-        if (raftMembers.hasMember(socketAddress))
+        if (raftMembers.hasMember(newMember))
         {
             acceptConfigurationRequest(serverOutput, remoteAddress, requestId);
         }
         else
         {
             // create new socket address object as it is stored in a map
-            if (raft.joinMember(new SocketAddress(socketAddress)))
+            if (raft.joinMember(new SocketAddress(newMember)))
             {
                 configurationChangeController.prepare(serverOutput, remoteAddress, requestId);
                 configurationChangeController.appendEvent();
@@ -131,9 +131,9 @@ public class LeaderState extends AbstractRaftState
         }
     }
 
-    private void leave(final ServerOutput serverOutput, final RemoteAddress remoteAddress, final long requestId, SocketAddress socketAddress)
+    private void leave(final ServerOutput serverOutput, final RemoteAddress remoteAddress, final long requestId, SocketAddress member)
     {
-        if (!raftMembers.hasMember(socketAddress))
+        if (!raftMembers.hasMember(member))
         {
             acceptConfigurationRequest(serverOutput, remoteAddress, requestId);
         }
@@ -141,7 +141,7 @@ public class LeaderState extends AbstractRaftState
         {
             configurationChangeController.prepare(serverOutput, remoteAddress, requestId);
 
-            raftActor.runOnCompletion(raft.leaveMember(socketAddress), (canLeave, t) ->
+            raftActor.runOnCompletion(raft.memberLeaves(member), (canLeave, t) ->
             {
                 if (canLeave)
                 {

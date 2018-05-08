@@ -591,26 +591,26 @@ public class Raft extends Actor implements ServerMessageHandler, ServerRequestHa
         return false;
     }
 
-    public ActorFuture<Boolean> leaveMember(final SocketAddress socketAddress)
+    public ActorFuture<Boolean> memberLeaves(final SocketAddress memberAddress)
     {
         final CompletableActorFuture<Boolean> leaveFuture = new CompletableActorFuture<>();
 
-        LOG.debug("Member {} leaving the cluster", socketAddress);
+        LOG.debug("Member {} leaving the cluster", memberAddress);
 
-        if (raftMembers.hasMember(socketAddress))
+        if (raftMembers.hasMember(memberAddress))
         {
             final List<SocketAddress> listWithoutMemberThatIsLeaving = raftMembers.getMemberAddresses();
 
-            listWithoutMemberThatIsLeaving.remove(socketAddress);
+            listWithoutMemberThatIsLeaving.remove(memberAddress);
 
             actor.runOnCompletion(notifyMemberLeavingListeners(listWithoutMemberThatIsLeaving), (t) ->
             {
                 if (state.getState() == RaftState.LEADER)
                 {
-                    raftMembers.removeMember(socketAddress);
+                    raftMembers.removeMember(memberAddress);
                     persistentStorage.save();
                     // stop replication
-                    serviceContext.removeService(replicateLogConrollerServiceName(raftName, getTerm(), socketAddress));
+                    serviceContext.removeService(replicateLogConrollerServiceName(raftName, getTerm(), memberAddress));
                     leaveFuture.complete(true);
                 }
                 else
