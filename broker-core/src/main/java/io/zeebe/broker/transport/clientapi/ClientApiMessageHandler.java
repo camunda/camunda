@@ -29,7 +29,7 @@ import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.orchestration.topic.TopicRecord;
 import io.zeebe.broker.event.processor.TopicSubscriberEvent;
 import io.zeebe.broker.event.processor.TopicSubscriptionEvent;
-import io.zeebe.broker.task.data.TaskRecord;
+import io.zeebe.broker.job.data.JobRecord;
 import io.zeebe.broker.transport.controlmessage.ControlMessageRequestHeaderDescriptor;
 import io.zeebe.broker.workflow.data.DeploymentRecord;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
@@ -80,7 +80,7 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
     private void initEventTypeMap()
     {
         recordsByType.put(ValueType.DEPLOYMENT, new DeploymentRecord());
-        recordsByType.put(ValueType.TASK, new TaskRecord());
+        recordsByType.put(ValueType.JOB, new JobRecord());
         recordsByType.put(ValueType.WORKFLOW_INSTANCE, new WorkflowInstanceRecord());
         recordsByType.put(ValueType.SUBSCRIBER, new TopicSubscriberEvent());
         recordsByType.put(ValueType.SUBSCRIPTION, new TopicSubscriptionEvent());

@@ -18,6 +18,8 @@
 package io.zeebe.broker.incident;
 
 import static io.zeebe.test.util.TestUtil.waitUntil;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -27,15 +29,18 @@ import org.junit.Test;
 
 import io.zeebe.broker.incident.data.IncidentRecord;
 import io.zeebe.broker.incident.processor.IncidentStreamProcessor;
+import io.zeebe.broker.job.data.JobRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
-import io.zeebe.broker.task.data.TaskRecord;
 import io.zeebe.broker.topic.StreamProcessorControl;
 import io.zeebe.broker.util.StreamProcessorRule;
+import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
+import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.Intent;
-import io.zeebe.protocol.intent.TaskIntent;
+import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.util.buffer.BufferUtil;
 
 public class IncidentStreamProcessorTest
@@ -52,17 +57,17 @@ public class IncidentStreamProcessorTest
     /**
      * Event order:
      *
-     * Task FAILED -> UPDATE_RETRIES -> RETRIES UPDATED -> Incident CREATE -> Incident CREATE_REJECTED
+     * Job FAILED -> UPDATE_RETRIES -> RETRIES UPDATED -> Incident CREATE -> Incident CREATE_REJECTED
      */
     @Test
     public void shouldNotCreateIncidentIfRetriesAreUpdatedIntermittently()
     {
         // given
-        final TaskRecord task = task(0);
-        final long key = rule.writeEvent(TaskIntent.FAILED, task); // trigger incident creation
+        final JobRecord job = job(0);
+        final long key = rule.writeEvent(JobIntent.FAILED, job); // trigger incident creation
 
-        task.setRetries(1);
-        rule.writeEvent(key, TaskIntent.RETRIES_UPDATED, task); // triggering incident removal
+        job.setRetries(1);
+        rule.writeEvent(key, JobIntent.RETRIES_UPDATED, job); // triggering incident removal
 
         // when
         rule.runStreamProcessor(this::buildStreamProcessor);
@@ -121,9 +126,9 @@ public class IncidentStreamProcessorTest
                 tuple(RecordType.EVENT, IncidentIntent.DELETED));
     }
 
-    private TaskRecord task(int retries)
+    private JobRecord job(int retries)
     {
-        final TaskRecord event = new TaskRecord();
+        final JobRecord event = new JobRecord();
 
         event.setRetries(retries);
         event.setType(BufferUtil.wrapString("foo"));

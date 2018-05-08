@@ -33,7 +33,7 @@ import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.SubscriptionIntent;
-import io.zeebe.protocol.intent.TaskIntent;
+import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
@@ -98,7 +98,7 @@ public class TopicSubscriptionAcknowledgementTest
     public void shouldResumeAfterAcknowledgedPosition()
     {
         // given
-        createTask();
+        createJob();
 
         final List<SubscribedRecord> events = apiRule
                 .subscribedEvents()
@@ -150,13 +150,13 @@ public class TopicSubscriptionAcknowledgementTest
 
         // and
         final ExecuteCommandResponse response = apiRule.createCmdRequest()
-            .type(ValueType.TASK, TaskIntent.CREATE)
+            .type(ValueType.JOB, JobIntent.CREATE)
             .command()
-                .put("type", "theTaskType")
+                .put("type", "theJobType")
                 .done()
             .sendAndAwait();
 
-        final long taskKey = response.key();
+        final long jobKey = response.key();
 
         // then
         final Optional<SubscribedRecord> firstEvent = apiRule
@@ -164,17 +164,17 @@ public class TopicSubscriptionAcknowledgementTest
                 .findFirst();
 
         assertThat(firstEvent).isPresent();
-        assertThat(firstEvent.get().key()).isEqualTo(taskKey);
+        assertThat(firstEvent.get().key()).isEqualTo(jobKey);
     }
 
     @Test
     public void shouldPersistStartPosition()
     {
         // given
-        createTask();
+        createJob();
 
-        final List<Long> taskEventPositions = apiRule.subscribedEvents()
-            .filter((e) -> e.valueType() == ValueType.TASK)
+        final List<Long> jobEventPositions = apiRule.subscribedEvents()
+            .filter((e) -> e.valueType() == ValueType.JOB)
             .map((e) -> e.position())
             .limit(2)
             .collect(Collectors.toList());
@@ -183,22 +183,22 @@ public class TopicSubscriptionAcknowledgementTest
         apiRule.moveMessageStreamToTail();
 
         // when
-        openSubscription(taskEventPositions.get(1));
+        openSubscription(jobEventPositions.get(1));
 
         // then it begins at the original offset (we didn't send any ACK before)
-        final List<Long> taskEventPositionsAfterReopen = apiRule.subscribedEvents()
-            .filter((e) -> e.valueType() == ValueType.TASK)
+        final List<Long> jobEventPositionsAfterReopen = apiRule.subscribedEvents()
+            .filter((e) -> e.valueType() == ValueType.JOB)
             .map((e) -> e.position())
             .limit(2)
             .collect(Collectors.toList());
 
-        assertThat(taskEventPositionsAfterReopen).containsExactlyElementsOf(taskEventPositions);
+        assertThat(jobEventPositionsAfterReopen).containsExactlyElementsOf(jobEventPositions);
     }
 
-    private ExecuteCommandResponse createTask()
+    private ExecuteCommandResponse createJob()
     {
         return apiRule.createCmdRequest()
-            .type(ValueType.TASK, TaskIntent.CREATE)
+            .type(ValueType.JOB, JobIntent.CREATE)
             .command()
                 .put("type", "foo")
                 .put("retries", 1)

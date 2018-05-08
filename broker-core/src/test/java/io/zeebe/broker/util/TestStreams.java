@@ -31,12 +31,13 @@ import java.util.stream.StreamSupport;
 
 import io.zeebe.broker.clustering.orchestration.topic.TopicRecord;
 import io.zeebe.broker.incident.data.IncidentRecord;
+import io.zeebe.broker.job.data.JobRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
-import io.zeebe.broker.task.data.TaskRecord;
 import io.zeebe.broker.topic.Records;
 import io.zeebe.broker.topic.StreamProcessorControl;
 import io.zeebe.broker.workflow.data.DeploymentRecord;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
+import io.zeebe.broker.workflow.data.WorkflowRecord;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
@@ -72,7 +73,7 @@ public class TestStreams
     {
         VALUE_TYPES.put(DeploymentRecord.class, ValueType.DEPLOYMENT);
         VALUE_TYPES.put(IncidentRecord.class, ValueType.INCIDENT);
-        VALUE_TYPES.put(TaskRecord.class, ValueType.TASK);
+        VALUE_TYPES.put(JobRecord.class, ValueType.JOB);
         VALUE_TYPES.put(TopicRecord.class, ValueType.TOPIC);
         VALUE_TYPES.put(WorkflowInstanceRecord.class, ValueType.WORKFLOW_INSTANCE);
 
@@ -261,9 +262,9 @@ public class TestStreams
         }
 
         @Override
-        public void blockAfterTaskEvent(Predicate<TypedRecord<TaskRecord>> test)
+        public void blockAfterJobEvent(Predicate<TypedRecord<JobRecord>> test)
         {
-            blockAfterEvent(e -> Records.isTaskRecord(e) && test.test(CopiedTypedEvent.toTypedEvent(e, TaskRecord.class)));
+            blockAfterEvent(e -> Records.isJobRecord(e) && test.test(CopiedTypedEvent.toTypedEvent(e, JobRecord.class)));
         }
 
         @Override

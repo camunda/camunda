@@ -35,7 +35,6 @@ import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.Intent;
 
-@SuppressWarnings("rawtypes")
 public class TypedEventStreamProcessorBuilder
 {
     protected final TypedStreamEnvironment environment;
@@ -81,6 +80,11 @@ public class TypedEventStreamProcessorBuilder
     public TypedEventStreamProcessorBuilder onCommand(ValueType valueType, Intent intent, TypedRecordProcessor<?> processor)
     {
         return onRecord(RecordType.COMMAND, valueType, intent, processor);
+    }
+
+    public <T extends UnpackedObject> TypedEventStreamProcessorBuilder onCommand(ValueType valueType, Intent intent, Predicate<T> activationFunction, TypedRecordProcessor<T> processor)
+    {
+        return onCommand(valueType, intent, new DelegatingEventProcessor<T>(r -> activationFunction.test(r.getValue()) ? processor : null));
     }
 
     public TypedEventStreamProcessorBuilder onRejection(ValueType valueType, Intent intent, TypedRecordProcessor<?> processor)

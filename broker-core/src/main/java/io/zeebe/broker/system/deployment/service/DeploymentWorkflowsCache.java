@@ -19,12 +19,13 @@ package io.zeebe.broker.system.deployment.service;
 
 import java.util.Iterator;
 
+import org.agrona.collections.Long2ObjectHashMap;
+
 import io.zeebe.broker.system.deployment.data.DeploymentPositionByWorkflowKey;
 import io.zeebe.broker.workflow.data.DeployedWorkflow;
-import io.zeebe.broker.workflow.data.DeploymentEvent;
+import io.zeebe.broker.workflow.data.DeploymentRecord;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
-import org.agrona.collections.Long2ObjectHashMap;
 
 /**
  * Caches workflow information for answering requests
@@ -37,7 +38,7 @@ public class DeploymentWorkflowsCache
 
     private final BufferedLogStreamReader reader;
 
-    private final DeploymentEvent deploymentEvent = new DeploymentEvent();
+    private final DeploymentRecord deploymentEvent = new DeploymentRecord();
 
     public DeploymentWorkflowsCache(final BufferedLogStreamReader reader,
         DeploymentPositionByWorkflowKey deploymentPositionByWorkflowKey)

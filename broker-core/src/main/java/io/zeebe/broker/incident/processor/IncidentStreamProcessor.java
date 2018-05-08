@@ -20,6 +20,8 @@ package io.zeebe.broker.incident.processor;
 import io.zeebe.broker.incident.data.ErrorType;
 import io.zeebe.broker.incident.data.IncidentRecord;
 import io.zeebe.broker.incident.index.IncidentMap;
+import io.zeebe.broker.job.data.JobHeaders;
+import io.zeebe.broker.job.data.JobRecord;
 import io.zeebe.broker.logstreams.processor.TypedEventStreamProcessorBuilder;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
@@ -27,14 +29,12 @@ import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.logstreams.processor.TypedStreamReader;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
-import io.zeebe.broker.task.data.TaskRecord;
-import io.zeebe.broker.task.data.TaskHeaders;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.map.Long2LongZbMap;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.protocol.intent.IncidentIntent;
-import io.zeebe.protocol.intent.TaskIntent;
+import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
 /**
@@ -49,7 +49,7 @@ public class IncidentStreamProcessor
     private static final long NON_PERSISTENT_INCIDENT = -2L;
 
     private final Long2LongZbMap activityInstanceMap = new Long2LongZbMap();
-    private final Long2LongZbMap failedTaskMap = new Long2LongZbMap();
+    private final Long2LongZbMap failedJobMap = new Long2LongZbMap();
     private final IncidentMap incidentMap = new IncidentMap();
     private final Long2LongZbMap resolvingEvents = new Long2LongZbMap();
 
@@ -57,7 +57,7 @@ public class IncidentStreamProcessor
     {
         TypedEventStreamProcessorBuilder builder = env.newStreamProcessor()
             .withStateResource(activityInstanceMap)
-            .withStateResource(failedTaskMap)
+            .withStateResource(failedJobMap)
             .withStateResource(incidentMap.getMap())
             .withStateResource(resolvingEvents);
 
@@ -83,13 +83,13 @@ public class IncidentStreamProcessor
             .onEvent(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, activityIncidentResolvedProcessor)
             .onEvent(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.ACTIVITY_COMPLETED, activityIncidentResolvedProcessor);
 
-        // task events
-        final TaskIncidentResolvedProcessor taskIncidentResolvedProcessor = new TaskIncidentResolvedProcessor(env);
+        // job events
+        final JobIncidentResolvedProcessor jobIncidentResolvedProcessor = new JobIncidentResolvedProcessor(env);
 
         builder = builder
-            .onEvent(ValueType.TASK, TaskIntent.FAILED, new TaskFailedProcessor())
-            .onEvent(ValueType.TASK, TaskIntent.RETRIES_UPDATED, taskIncidentResolvedProcessor)
-            .onEvent(ValueType.TASK, TaskIntent.CANCELED, taskIncidentResolvedProcessor);
+            .onEvent(ValueType.JOB, JobIntent.FAILED, new JobFailedProcessor())
+            .onEvent(ValueType.JOB, JobIntent.RETRIES_UPDATED, jobIncidentResolvedProcessor)
+            .onEvent(ValueType.JOB, JobIntent.CANCELED, jobIncidentResolvedProcessor);
 
         return builder.build();
     }
@@ -97,16 +97,16 @@ public class IncidentStreamProcessor
     private final class CreateIncidentProcessor implements TypedRecordProcessor<IncidentRecord>
     {
         private boolean isCreated;
-        private boolean isTaskIncident;
+        private boolean isJobIncident;
 
         @Override
         public void processRecord(TypedRecord<IncidentRecord> command)
         {
             final IncidentRecord incidentEvent = command.getValue();
 
-            isTaskIncident = incidentEvent.getTaskKey() > 0;
-            // ensure that the task is not resolved yet
-            isCreated = isTaskIncident ? failedTaskMap.get(incidentEvent.getTaskKey(), -1L) == NON_PERSISTENT_INCIDENT : true;
+            isJobIncident = incidentEvent.getJobKey() > 0;
+            // ensure that the job is not resolved yet
+            isCreated = isJobIncident ? failedJobMap.get(incidentEvent.getJobKey(), -1L) == NON_PERSISTENT_INCIDENT : true;
         }
 
         @Override
@@ -135,9 +135,9 @@ public class IncidentStreamProcessor
                     .setFailureEventPosition(incidentEvent.getFailureEventPosition())
                     .write();
 
-                if (isTaskIncident)
+                if (isJobIncident)
                 {
-                    failedTaskMap.put(incidentEvent.getTaskKey(), command.getKey());
+                    failedJobMap.put(incidentEvent.getJobKey(), command.getKey());
                 }
                 else
                 {
@@ -469,7 +469,7 @@ public class IncidentStreamProcessor
         }
     }
 
-    private final class TaskFailedProcessor implements TypedRecordProcessor<TaskRecord>
+    private final class JobFailedProcessor implements TypedRecordProcessor<JobRecord>
     {
         private final IncidentRecord incidentEvent = new IncidentRecord();
 
@@ -477,31 +477,31 @@ public class IncidentStreamProcessor
         private boolean isResolvingIncident;
 
         @Override
-        public void processRecord(TypedRecord<TaskRecord> event)
+        public void processRecord(TypedRecord<JobRecord> event)
         {
-            final TaskRecord value = event.getValue();
+            final JobRecord value = event.getValue();
             hasRetries = value.getRetries() > 0;
             isResolvingIncident = event.getMetadata().hasIncidentKey();
 
             if (!hasRetries)
             {
-                final TaskHeaders taskHeaders = value.headers();
+                final JobHeaders jobHeaders = value.headers();
 
                 incidentEvent.reset();
                 incidentEvent
-                    .setErrorType(ErrorType.TASK_NO_RETRIES)
+                    .setErrorType(ErrorType.JOB_NO_RETRIES)
                     .setErrorMessage("No more retries left.")
                     .setFailureEventPosition(event.getPosition())
-                    .setBpmnProcessId(taskHeaders.getBpmnProcessId())
-                    .setWorkflowInstanceKey(taskHeaders.getWorkflowInstanceKey())
-                    .setActivityId(taskHeaders.getActivityId())
-                    .setActivityInstanceKey(taskHeaders.getActivityInstanceKey())
-                    .setTaskKey(event.getKey());
+                    .setBpmnProcessId(jobHeaders.getBpmnProcessId())
+                    .setWorkflowInstanceKey(jobHeaders.getWorkflowInstanceKey())
+                    .setActivityId(jobHeaders.getActivityId())
+                    .setActivityInstanceKey(jobHeaders.getActivityInstanceKey())
+                    .setJobKey(event.getKey());
             }
         }
 
         @Override
-        public long writeRecord(TypedRecord<TaskRecord> event, TypedStreamWriter writer)
+        public long writeRecord(TypedRecord<JobRecord> event, TypedStreamWriter writer)
         {
             if (hasRetries)
             {
@@ -521,16 +521,16 @@ public class IncidentStreamProcessor
         }
 
         @Override
-        public void updateState(TypedRecord<TaskRecord> event)
+        public void updateState(TypedRecord<JobRecord> event)
         {
             if (!hasRetries)
             {
-                failedTaskMap.put(event.getKey(), NON_PERSISTENT_INCIDENT);
+                failedJobMap.put(event.getKey(), NON_PERSISTENT_INCIDENT);
             }
         }
     }
 
-    private final class TaskIncidentResolvedProcessor implements TypedRecordProcessor<TaskRecord>
+    private final class JobIncidentResolvedProcessor implements TypedRecordProcessor<JobRecord>
     {
         private final TypedStreamEnvironment environment;
 
@@ -539,7 +539,7 @@ public class IncidentStreamProcessor
         private TypedRecord<IncidentRecord> persistedIncident;
         private boolean isTransientIncident;
 
-        TaskIncidentResolvedProcessor(TypedStreamEnvironment environment)
+        JobIncidentResolvedProcessor(TypedStreamEnvironment environment)
         {
             this.environment = environment;
         }
@@ -557,12 +557,12 @@ public class IncidentStreamProcessor
         }
 
         @Override
-        public void processRecord(TypedRecord<TaskRecord> event)
+        public void processRecord(TypedRecord<JobRecord> event)
         {
             isResolved = false;
             isTransientIncident = false;
 
-            final long incidentKey = failedTaskMap.get(event.getKey(), -1L);
+            final long incidentKey = failedJobMap.get(event.getKey(), -1L);
             persistedIncident = null;
 
             if (incidentKey > 0)
@@ -587,7 +587,7 @@ public class IncidentStreamProcessor
         }
 
         @Override
-        public long writeRecord(TypedRecord<TaskRecord> event, TypedStreamWriter writer)
+        public long writeRecord(TypedRecord<JobRecord> event, TypedStreamWriter writer)
         {
             return isResolved ?
                     writer.writeFollowUpCommand(persistedIncident.getKey(), IncidentIntent.DELETE, persistedIncident.getValue()) :
@@ -595,11 +595,11 @@ public class IncidentStreamProcessor
         }
 
         @Override
-        public void updateState(TypedRecord<TaskRecord> event)
+        public void updateState(TypedRecord<JobRecord> event)
         {
             if (isResolved || isTransientIncident)
             {
-                failedTaskMap.remove(event.getKey(), -1L);
+                failedJobMap.remove(event.getKey(), -1L);
             }
         }
     }

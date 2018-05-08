@@ -30,7 +30,7 @@ import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.SubscriberIntent;
 import io.zeebe.protocol.intent.SubscriptionIntent;
-import io.zeebe.protocol.intent.TaskIntent;
+import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.util.TestUtil;
 
@@ -60,10 +60,10 @@ public class TopicSubscriptionThrottlingTest
     public void shouldNotPushMoreThanPrefetchCapacity() throws InterruptedException
     {
         // given
-        final int nrOfTasks = 5;
+        final int nrOfJobs = 5;
         final int prefetchCapacity = 3;
 
-        createTasks(nrOfTasks);
+        createJobs(nrOfJobs);
 
         // when
         openSubscription(prefetchCapacity);
@@ -79,10 +79,10 @@ public class TopicSubscriptionThrottlingTest
     public void shouldPushMoreAfterAck() throws InterruptedException
     {
         // given
-        final int nrOfTasks = 5;
+        final int nrOfJobs = 5;
         final int prefetchCapacity = 3;
 
-        createTasks(nrOfTasks);
+        createJobs(nrOfJobs);
         openSubscription(prefetchCapacity);
         TestUtil.waitUntil(() -> apiRule.numSubscribedEventsAvailable() == 3);
 
@@ -119,28 +119,28 @@ public class TopicSubscriptionThrottlingTest
     public void shouldPushAllEventsWithoutPrefetchCapacity() throws InterruptedException
     {
         // given
-        final int nrOfTasks = 5;
+        final int nrOfJobs = 5;
         final int prefetchCapacity = -1;
 
-        createTasks(nrOfTasks);
+        createJobs(nrOfJobs);
 
         // when
         openSubscription(prefetchCapacity);
 
         // then
-        final int expectedNumberOfEvents = nrOfTasks * 2; // CREATE and CREATED
+        final int expectedNumberOfEvents = nrOfJobs * 2; // CREATE and CREATED
 
         TestUtil.waitUntil(() -> apiRule.numSubscribedEventsAvailable() == expectedNumberOfEvents);
     }
 
-    protected void createTasks(int nrOfTasks)
+    protected void createJobs(int nrOfJobs)
     {
-        for (int i = 0; i < nrOfTasks; i++)
+        for (int i = 0; i < nrOfJobs; i++)
         {
             apiRule.createCmdRequest()
-                .type(ValueType.TASK, TaskIntent.CREATE)
+                .type(ValueType.JOB, JobIntent.CREATE)
                 .command()
-                    .put("type", "theTaskType")
+                    .put("type", "theJobType")
                     .done()
                 .sendAndAwait();
         }

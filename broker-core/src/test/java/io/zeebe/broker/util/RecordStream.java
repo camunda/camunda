@@ -19,9 +19,9 @@ package io.zeebe.broker.util;
 
 import java.util.stream.Stream;
 
-import io.zeebe.broker.incident.data.IncidentRecord;
 import io.zeebe.broker.clustering.orchestration.topic.TopicRecord;
-import io.zeebe.broker.task.data.TaskRecord;
+import io.zeebe.broker.incident.data.IncidentRecord;
+import io.zeebe.broker.job.data.JobRecord;
 import io.zeebe.broker.topic.Records;
 import io.zeebe.broker.workflow.data.DeploymentRecord;
 import io.zeebe.logstreams.log.LoggedEvent;
@@ -35,11 +35,11 @@ public class RecordStream extends StreamWrapper<LoggedEvent>
         super(stream);
     }
 
-    public TypedRecordStream<TaskRecord> onlyTaskRecords()
+    public TypedRecordStream<JobRecord> onlyJobRecords()
     {
         return new TypedRecordStream<>(
-            filter(Records::isTaskRecord)
-            .map(e -> CopiedTypedEvent.toTypedEvent(e, TaskRecord.class)));
+            filter(Records::isJobRecord)
+            .map(e -> CopiedTypedEvent.toTypedEvent(e, JobRecord.class)));
     }
 
     public TypedRecordStream<IncidentRecord> onlyIncidentRecords()

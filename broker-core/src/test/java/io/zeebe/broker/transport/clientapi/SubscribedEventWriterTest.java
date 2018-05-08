@@ -32,7 +32,7 @@ import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.SubscribedRecordDecoder;
 import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.protocol.clientapi.ValueType;
-import io.zeebe.protocol.intent.TaskIntent;
+import io.zeebe.protocol.intent.JobIntent;
 
 public class SubscribedEventWriterTest
 {
@@ -56,8 +56,8 @@ public class SubscribedEventWriterTest
         eventWriter
             .value(BUFFER, 1, BUFFER.capacity() - 1)
             .recordType(RecordType.EVENT)
-            .valueType(ValueType.TASK)
-            .intent(TaskIntent.CREATED)
+            .valueType(ValueType.JOB)
+            .intent(JobIntent.CREATED)
             .key(123L)
             .position(546L)
             .partitionId(876)
@@ -74,8 +74,8 @@ public class SubscribedEventWriterTest
         bodyDecoder.wrap(buffer, 2 + headerDecoder.encodedLength(), headerDecoder.blockLength(), headerDecoder.version());
 
         assertThat(bodyDecoder.recordType()).isEqualTo(RecordType.EVENT);
-        assertThat(bodyDecoder.valueType()).isEqualTo(ValueType.TASK);
-        assertThat(bodyDecoder.intent()).isEqualTo(TaskIntent.CREATED.value());
+        assertThat(bodyDecoder.valueType()).isEqualTo(ValueType.JOB);
+        assertThat(bodyDecoder.intent()).isEqualTo(JobIntent.CREATED.value());
         assertThat(bodyDecoder.key()).isEqualTo(123L);
         assertThat(bodyDecoder.position()).isEqualTo(546L);
         assertThat(bodyDecoder.partitionId()).isEqualTo(876);

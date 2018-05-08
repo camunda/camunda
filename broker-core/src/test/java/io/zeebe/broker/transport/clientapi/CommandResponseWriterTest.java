@@ -29,7 +29,7 @@ import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
-import io.zeebe.protocol.intent.TaskIntent;
+import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.util.buffer.DirectBufferWriter;
 
 public class CommandResponseWriterTest
@@ -62,8 +62,8 @@ public class CommandResponseWriterTest
             .partitionId(PARTITION_ID)
             .key(KEY)
             .recordType(RecordType.EVENT)
-            .valueType(ValueType.TASK)
-            .intent(TaskIntent.CREATED)
+            .valueType(ValueType.JOB)
+            .intent(JobIntent.CREATED)
             .valueWriter(eventWriter);
 
         final UnsafeBuffer buf = new UnsafeBuffer(new byte[responseWriter.getLength()]);
@@ -86,8 +86,8 @@ public class CommandResponseWriterTest
         assertThat(responseDecoder.partitionId()).isEqualTo(PARTITION_ID);
         assertThat(responseDecoder.key()).isEqualTo(2L);
         assertThat(responseDecoder.recordType()).isEqualTo(RecordType.EVENT);
-        assertThat(responseDecoder.valueType()).isEqualTo(ValueType.TASK);
-        assertThat(responseDecoder.intent()).isEqualTo(TaskIntent.CREATED.value());
+        assertThat(responseDecoder.valueType()).isEqualTo(ValueType.JOB);
+        assertThat(responseDecoder.intent()).isEqualTo(JobIntent.CREATED.value());
 
         assertThat(responseDecoder.valueLength()).isEqualTo(EVENT.length);
 

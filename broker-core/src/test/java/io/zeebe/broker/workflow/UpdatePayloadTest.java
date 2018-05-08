@@ -120,7 +120,7 @@ public class UpdatePayloadTest
             .withIntent(WorkflowInstanceIntent.PAYLOAD_UPDATED)
             .getFirst();
 
-        testClient.completeTaskOfType("task-1", MSGPACK_PAYLOAD);
+        testClient.completeJobOfType("task-1", MSGPACK_PAYLOAD);
 
         // then
         final SubscribedRecord activityCompletedEvent = waitForActivityCompletedEvent();
@@ -179,10 +179,10 @@ public class UpdatePayloadTest
 
         final SubscribedRecord activityInstanceEvent = waitForActivityActivatedEvent();
 
-        testClient.completeTaskOfType("task-1", MSGPACK_PAYLOAD);
+        testClient.completeJobOfType("task-1", MSGPACK_PAYLOAD);
 
         waitForActivityCompletedEvent();
-        testClient.completeTaskOfType("task-2");
+        testClient.completeJobOfType("task-2");
 
         waitForWorkflowInstanceCompletedEvent();
 

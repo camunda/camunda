@@ -22,20 +22,20 @@ import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import io.zeebe.broker.taskqueue.data.TaskEvent;
-import io.zeebe.broker.taskqueue.data.TaskEventType;
-import io.zeebe.msgpack.spec.MsgPackReader;
-import io.zeebe.msgpack.spec.MsgPackWriter;
-import io.zeebe.util.buffer.BufferUtil;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
+
+import io.zeebe.broker.job.data.JobEvent;
+import io.zeebe.msgpack.spec.MsgPackReader;
+import io.zeebe.msgpack.spec.MsgPackWriter;
+import io.zeebe.util.buffer.BufferUtil;
 
 @State(Scope.Thread)
 public class POJOMappingContext
 {
 
-    protected TaskEvent taskEvent = new TaskEvent();
+    protected JobEvent jobEvent = new JobEvent();
 
     /*
      * values encoded in the way TaskEvent declares them
@@ -50,9 +50,8 @@ public class POJOMappingContext
     public void setUp()
     {
 
-        taskEvent.setEventType(TaskEventType.CREATE);
-        taskEvent.setLockTime(System.currentTimeMillis());
-        taskEvent.setType(BufferUtil.wrapString("someTaskType"));
+        jobEvent.setLockTime(System.currentTimeMillis());
+        jobEvent.setType(BufferUtil.wrapString("someTaskType"));
 
         final DirectBuffer payload = write((w) ->
         {
@@ -65,7 +64,7 @@ public class POJOMappingContext
             w.writeString(BufferUtil.wrapString("key4"));
             w.writeString(BufferUtil.wrapString("yetAnotherValue"));
         });
-        taskEvent.setPayload(payload);
+        jobEvent.setPayload(payload);
 
         final DirectBuffer headers = write((w) ->
         {
@@ -75,10 +74,10 @@ public class POJOMappingContext
             w.writeString(BufferUtil.wrapString("key2"));
             w.writeString(BufferUtil.wrapString("value"));
         });
-        taskEvent.setHeaders(headers);
+        jobEvent.setCustomHeaders(headers);
 
-        optimalOrderMsgPack = new UnsafeBuffer(new byte[taskEvent.getLength()]);
-        taskEvent.write(optimalOrderMsgPack, 0);
+        optimalOrderMsgPack = new UnsafeBuffer(new byte[jobEvent.getLength()]);
+        jobEvent.write(optimalOrderMsgPack, 0);
 
         this.reverseOrderMsgPack = revertMapProperties(optimalOrderMsgPack);
 
@@ -95,12 +94,12 @@ public class POJOMappingContext
         return buffer;
     }
 
-    public DirectBuffer getOptimalOrderEncodedTaskEvent()
+    public DirectBuffer getOptimalOrderEncodedJobEvent()
     {
         return optimalOrderMsgPack;
     }
 
-    public DirectBuffer getReverseOrderEncodedTaskEvent()
+    public DirectBuffer getReverseOrderEncodedJobEvent()
     {
         return reverseOrderMsgPack;
     }
@@ -110,9 +109,9 @@ public class POJOMappingContext
         return writeBuffer;
     }
 
-    public TaskEvent getTaskEvent()
+    public JobEvent getJobEvent()
     {
-        return taskEvent;
+        return jobEvent;
     }
 
     protected DirectBuffer revertMapProperties(DirectBuffer msgPack)

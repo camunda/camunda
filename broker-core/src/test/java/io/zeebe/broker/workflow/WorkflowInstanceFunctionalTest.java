@@ -46,7 +46,7 @@ import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.protocol.intent.Intent;
-import io.zeebe.protocol.intent.TaskIntent;
+import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
@@ -56,8 +56,8 @@ import io.zeebe.test.util.MsgPackUtil;
 
 public class WorkflowInstanceFunctionalTest
 {
-    private static final String PROP_TASK_TYPE = "type";
-    private static final String PROP_TASK_RETRIES = "retries";
+    private static final String PROP_JOB_TYPE = "type";
+    private static final String PROP_JOB_RETRIES = "retries";
 
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
     public ClientApiRule apiRule = new ClientApiRule();
@@ -217,7 +217,7 @@ public class WorkflowInstanceFunctionalTest
         // when
         final long workflowInstanceKey = testClient.createWorkflowInstance("process");
 
-        testClient.completeTaskOfType("bar");
+        testClient.completeJobOfType("bar");
 
         // then
         final SubscribedRecord event = testClient.receiveEvents()
@@ -274,19 +274,19 @@ public class WorkflowInstanceFunctionalTest
 
         // then
         final SubscribedRecord event = testClient.receiveCommands()
-            .ofTypeTask()
-            .withIntent(TaskIntent.CREATE)
+            .ofTypeJob()
+            .withIntent(JobIntent.CREATE)
             .getFirst();
 
         assertThat(event.key()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
         assertThat(event.value())
-            .containsEntry(PROP_TASK_TYPE, "bar")
-            .containsEntry(PROP_TASK_RETRIES, 5);
+            .containsEntry(PROP_JOB_TYPE, "bar")
+            .containsEntry(PROP_JOB_RETRIES, 5);
     }
 
     @SuppressWarnings("unchecked")
     @Test
-    public void shouldCreateTaskWithWorkflowInstanceAndCustomHeaders()
+    public void shouldCreateJobWithWorkflowInstanceAndCustomHeaders()
     {
         // given
         testClient.deploy(Bpmn.createExecutableWorkflow("process")
@@ -302,8 +302,8 @@ public class WorkflowInstanceFunctionalTest
 
         // then
         final SubscribedRecord event = testClient.receiveCommands()
-            .ofTypeTask()
-            .withIntent(TaskIntent.CREATE)
+            .ofTypeJob()
+            .withIntent(JobIntent.CREATE)
             .getFirst();
 
         final Map<String, Object> headers = (Map<String, Object>) event.value().get("headers");
@@ -335,7 +335,7 @@ public class WorkflowInstanceFunctionalTest
         final long workflowInstanceKey = testClient.createWorkflowInstance("process");
 
         // when
-        testClient.completeTaskOfType("bar");
+        testClient.completeJobOfType("bar");
 
         // then
         final SubscribedRecord activityActivatedEvent = testClient.receiveEvents()
@@ -438,7 +438,7 @@ public class WorkflowInstanceFunctionalTest
         testClient.createWorkflowInstance("process");
 
         // when
-        testClient.completeTaskOfType("foo");
+        testClient.completeJobOfType("foo");
 
         // then
         final List<SubscribedRecord> workflowEvents = testClient
@@ -523,8 +523,8 @@ public class WorkflowInstanceFunctionalTest
         final long workflowInstanceKey = testClient.createWorkflowInstance("yaml-workflow");
 
         // when
-        testClient.completeTaskOfType("foo");
-        testClient.completeTaskOfType("bar");
+        testClient.completeJobOfType("foo");
+        testClient.completeJobOfType("bar");
 
         // then
         final SubscribedRecord event = testClient.receiveEvents()

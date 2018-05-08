@@ -20,7 +20,7 @@ package io.zeebe.broker.topic;
 import org.agrona.DirectBuffer;
 
 import io.zeebe.broker.clustering.orchestration.topic.TopicRecord;
-import io.zeebe.broker.task.data.TaskRecord;
+import io.zeebe.broker.job.data.JobRecord;
 import io.zeebe.broker.workflow.data.DeploymentRecord;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.msgpack.UnpackedObject;
@@ -44,9 +44,9 @@ public class Records
         return readValueAs(event, TopicRecord.class);
     }
 
-    public static TaskRecord asTaskRecord(LoggedEvent event)
+    public static JobRecord asJobRecord(LoggedEvent event)
     {
-        return readValueAs(event, TaskRecord.class);
+        return readValueAs(event, JobRecord.class);
     }
 
     protected static <T extends UnpackedObject> T readValueAs(LoggedEvent event, Class<T> valueClass)
@@ -62,19 +62,14 @@ public class Records
         return isRecordOfType(event, ValueType.DEPLOYMENT);
     }
 
-    public static boolean isPartitionRecord(LoggedEvent event)
-    {
-        return isRecordOfType(event, ValueType.PARTITION);
-    }
-
     public static boolean isTopicRecord(LoggedEvent event)
     {
         return isRecordOfType(event, ValueType.TOPIC);
     }
 
-    public static boolean isTaskRecord(LoggedEvent event)
+    public static boolean isJobRecord(LoggedEvent event)
     {
-        return isRecordOfType(event, ValueType.TASK);
+        return isRecordOfType(event, ValueType.JOB);
     }
 
     public static boolean isIncidentRecord(LoggedEvent event)

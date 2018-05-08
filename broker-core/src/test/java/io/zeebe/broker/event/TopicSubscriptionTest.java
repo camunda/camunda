@@ -40,7 +40,7 @@ import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.SubscriberIntent;
 import io.zeebe.protocol.intent.SubscriptionIntent;
-import io.zeebe.protocol.intent.TaskIntent;
+import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
@@ -120,11 +120,11 @@ public class TopicSubscriptionTest
 
         apiRule.moveMessageStreamToTail();
 
-        // when creating a task
+        // when creating a job
         apiRule.createCmdRequest()
-            .type(ValueType.TASK, TaskIntent.CREATE)
+            .type(ValueType.JOB, JobIntent.CREATE)
             .command()
-                .put("type", "theTaskType")
+                .put("type", "theJobType")
                 .done()
             .sendAndAwait();
 
@@ -137,14 +137,14 @@ public class TopicSubscriptionTest
     public void shouldPushEvents()
     {
         // given
-        final ExecuteCommandResponse createTaskResponse = apiRule.createCmdRequest()
-            .type(ValueType.TASK, TaskIntent.CREATE)
+        final ExecuteCommandResponse createJobResponse = apiRule.createCmdRequest()
+            .type(ValueType.JOB, JobIntent.CREATE)
             .command()
                 .put("type", "foo")
                 .put("retries", 1)
                 .done()
             .sendAndAwait();
-        final long taskKey = createTaskResponse.key();
+        final long jobKey = createJobResponse.key();
 
         // when
         final ExecuteCommandResponse addResponse = apiRule
@@ -154,29 +154,29 @@ public class TopicSubscriptionTest
         final long subscriberKey = addResponse.key();
 
         // then
-        final List<SubscribedRecord> taskEvents = apiRule.subscribedEvents()
-            .filter((e) -> e.valueType() == ValueType.TASK)
+        final List<SubscribedRecord> jobEvents = apiRule.subscribedEvents()
+            .filter((e) -> e.valueType() == ValueType.JOB)
             .limit(2)
             .collect(Collectors.toList());
 
-        assertThat(taskEvents).hasSize(2);
-        SubscribedRecord taskEvent = taskEvents.get(0);
-        assertThat(taskEvent.subscriberKey()).isEqualTo(subscriberKey);
-        assertThat(taskEvent.subscriptionType()).isEqualTo(SubscriptionType.TOPIC_SUBSCRIPTION);
-        assertThat(taskEvent.position()).isEqualTo(taskKey);
-        assertThat(taskEvent.partitionId()).isEqualTo(apiRule.getDefaultPartitionId());
-        assertThat(taskEvent.recordType()).isEqualTo(RecordType.COMMAND);
-        assertThat(taskEvent.valueType()).isEqualTo(ValueType.TASK);
-        assertThat(taskEvent.intent()).isEqualTo(TaskIntent.CREATE);
+        assertThat(jobEvents).hasSize(2);
+        SubscribedRecord jobEvent = jobEvents.get(0);
+        assertThat(jobEvent.subscriberKey()).isEqualTo(subscriberKey);
+        assertThat(jobEvent.subscriptionType()).isEqualTo(SubscriptionType.TOPIC_SUBSCRIPTION);
+        assertThat(jobEvent.position()).isEqualTo(jobKey);
+        assertThat(jobEvent.partitionId()).isEqualTo(apiRule.getDefaultPartitionId());
+        assertThat(jobEvent.recordType()).isEqualTo(RecordType.COMMAND);
+        assertThat(jobEvent.valueType()).isEqualTo(ValueType.JOB);
+        assertThat(jobEvent.intent()).isEqualTo(JobIntent.CREATE);
 
-        taskEvent = taskEvents.get(1);
-        assertThat(taskEvent.subscriberKey()).isEqualTo(subscriberKey);
-        assertThat(taskEvent.subscriptionType()).isEqualTo(SubscriptionType.TOPIC_SUBSCRIPTION);
-        assertThat(taskEvent.position()).isGreaterThan(taskKey);
-        assertThat(taskEvent.partitionId()).isEqualTo(apiRule.getDefaultPartitionId());
-        assertThat(taskEvent.recordType()).isEqualTo(RecordType.EVENT);
-        assertThat(taskEvent.valueType()).isEqualTo(ValueType.TASK);
-        assertThat(taskEvent.intent()).isEqualTo(TaskIntent.CREATED);
+        jobEvent = jobEvents.get(1);
+        assertThat(jobEvent.subscriberKey()).isEqualTo(subscriberKey);
+        assertThat(jobEvent.subscriptionType()).isEqualTo(SubscriptionType.TOPIC_SUBSCRIPTION);
+        assertThat(jobEvent.position()).isGreaterThan(jobKey);
+        assertThat(jobEvent.partitionId()).isEqualTo(apiRule.getDefaultPartitionId());
+        assertThat(jobEvent.recordType()).isEqualTo(RecordType.EVENT);
+        assertThat(jobEvent.valueType()).isEqualTo(ValueType.JOB);
+        assertThat(jobEvent.intent()).isEqualTo(JobIntent.CREATED);
     }
 
     @Test
@@ -184,7 +184,7 @@ public class TopicSubscriptionTest
     {
         // given
         apiRule.createCmdRequest()
-            .type(ValueType.TASK, TaskIntent.CREATE)
+            .type(ValueType.JOB, JobIntent.CREATE)
             .command()
                 .put("type", "foo")
                 .put("retries", 1)
@@ -304,16 +304,16 @@ public class TopicSubscriptionTest
         final long subscriberKey = subscriptionResponse.key();
 
         apiRule.createCmdRequest()
-            .type(ValueType.TASK, TaskIntent.CREATE)
+            .type(ValueType.JOB, JobIntent.CREATE)
             .command()
                 .put("type", "foo")
                 .put("retries", 1)
                 .done()
             .sendAndAwait();
 
-        // wait for two task events
-        final List<Long> taskEvents = apiRule.subscribedEvents()
-            .filter((e) -> e.valueType() == ValueType.TASK)
+        // wait for two job events
+        final List<Long> jobEvents = apiRule.subscribedEvents()
+            .filter((e) -> e.valueType() == ValueType.JOB)
             .limit(2)
             .map((e) -> e.position())
             .collect(Collectors.toList());
@@ -322,7 +322,7 @@ public class TopicSubscriptionTest
             .type(ValueType.SUBSCRIPTION, SubscriptionIntent.ACKNOWLEDGE)
             .command()
                 .put("name", "foo")
-                .put("ackPosition", taskEvents.get(1))
+                .put("ackPosition", jobEvents.get(1))
                 .done()
             .sendAndAwait();
 
@@ -340,21 +340,21 @@ public class TopicSubscriptionTest
         apiRule.createCmdRequest()
             .type(ValueType.SUBSCRIBER, SubscriberIntent.SUBSCRIBE)
             .command()
-                .put("startPosition", taskEvents.get(0))
+                .put("startPosition", jobEvents.get(0))
                 .put("name", "foo")
                 .put("forceStart", true)
                 .done()
             .sendAndAwait();
 
         // then
-        final List<Long> taskEventsAfterReopening = apiRule.subscribedEvents()
-            .filter((e) -> e.valueType() == ValueType.TASK)
+        final List<Long> jobEventsAfterReopening = apiRule.subscribedEvents()
+            .filter((e) -> e.valueType() == ValueType.JOB)
             .limit(2)
             .map((e) -> e.position())
             .collect(Collectors.toList());
 
-        assertThat(taskEventsAfterReopening).hasSize(2);
-        assertThat(taskEventsAfterReopening).containsExactlyElementsOf(taskEvents);
+        assertThat(jobEventsAfterReopening).hasSize(2);
+        assertThat(jobEventsAfterReopening).containsExactlyElementsOf(jobEvents);
     }
 
     @Test
@@ -367,16 +367,16 @@ public class TopicSubscriptionTest
         final long subscriberKey = subscriptionResponse.key();
 
         apiRule.createCmdRequest()
-            .type(ValueType.TASK, TaskIntent.CREATE)
+            .type(ValueType.JOB, JobIntent.CREATE)
             .command()
                 .put("type", "foo")
                 .put("retries", 1)
                 .done()
             .sendAndAwait();
 
-        // wait for two task events, but send no ACK
-        final List<Long> taskEvents = apiRule.subscribedEvents()
-            .filter((e) -> e.valueType() == ValueType.TASK)
+        // wait for two job events, but send no ACK
+        final List<Long> jobEvents = apiRule.subscribedEvents()
+            .filter((e) -> e.valueType() == ValueType.JOB)
             .limit(2)
             .map((e) -> e.position())
             .collect(Collectors.toList());
@@ -392,17 +392,17 @@ public class TopicSubscriptionTest
 
         // when
         apiRule
-            .openTopicSubscription("foo", taskEvents.get(1))
+            .openTopicSubscription("foo", jobEvents.get(1))
             .await();
 
         // then the subscription should restart at the last ACKED position, which is the original start position
-        final List<Long> taskEventsAfterReopen = apiRule.subscribedEvents()
-            .filter((e) -> e.valueType() == ValueType.TASK)
+        final List<Long> jobEventsAfterReopen = apiRule.subscribedEvents()
+            .filter((e) -> e.valueType() == ValueType.JOB)
             .limit(2)
             .map((e) -> e.position())
             .collect(Collectors.toList());
 
-        assertThat(taskEventsAfterReopen).containsExactlyElementsOf(taskEvents);
+        assertThat(jobEventsAfterReopen).containsExactlyElementsOf(jobEvents);
     }
 
     @Test
@@ -470,7 +470,7 @@ public class TopicSubscriptionTest
     {
         // given
         apiRule.createCmdRequest()
-            .type(ValueType.TASK, TaskIntent.CREATE)
+            .type(ValueType.JOB, JobIntent.CREATE)
             .command()
                 .put("type", "foo")
                 .put("retries", 1)

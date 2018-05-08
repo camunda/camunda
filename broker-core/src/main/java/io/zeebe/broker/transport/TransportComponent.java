@@ -28,11 +28,11 @@ import java.util.Collections;
 import io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames;
 import io.zeebe.broker.clustering.base.raft.RaftApiMessageHandlerService;
 import io.zeebe.broker.event.TopicSubscriptionServiceNames;
+import io.zeebe.broker.job.JobQueueServiceNames;
 import io.zeebe.broker.services.DispatcherService;
 import io.zeebe.broker.system.*;
 import io.zeebe.broker.system.configuration.NetworkCfg;
 import io.zeebe.broker.system.configuration.SocketBindingCfg;
-import io.zeebe.broker.task.TaskQueueServiceNames;
 import io.zeebe.broker.transport.clientapi.ClientApiMessageHandlerService;
 import io.zeebe.broker.transport.controlmessage.ControlMessageHandlerManagerService;
 import io.zeebe.dispatcher.*;
@@ -129,7 +129,7 @@ public class TransportComponent implements Component
         serviceContainer.createService(TransportServiceNames.CONTROL_MESSAGE_HANDLER_MANAGER, controlMessageHandlerManagerService)
             .dependency(controlMessageBufferService, controlMessageHandlerManagerService.getControlMessageBufferInjector())
             .dependency(TransportServiceNames.serverTransport(CLIENT_API_SERVER_NAME), controlMessageHandlerManagerService.getTransportInjector())
-            .dependency(TaskQueueServiceNames.TASK_QUEUE_SUBSCRIPTION_MANAGER, controlMessageHandlerManagerService.getTaskSubscriptionManagerInjector())
+            .dependency(JobQueueServiceNames.JOB_QUEUE_SUBSCRIPTION_MANAGER, controlMessageHandlerManagerService.getJobSubscriptionManagerInjector())
             .dependency(TopicSubscriptionServiceNames.TOPIC_SUBSCRIPTION_SERVICE, controlMessageHandlerManagerService.getTopicSubscriptionServiceInjector())
             .dependency(ClusterBaseLayerServiceNames.TOPOLOGY_MANAGER_SERVICE, controlMessageHandlerManagerService.getTopologyManagerInjector())
             .dependency(TransportServiceNames.clientTransport(MANAGEMENT_API_CLIENT_NAME), controlMessageHandlerManagerService.getManagementClientTransportInjector())

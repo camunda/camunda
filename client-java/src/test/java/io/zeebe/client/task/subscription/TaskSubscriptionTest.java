@@ -102,7 +102,7 @@ public class TaskSubscriptionTest
     public void shouldOpenSubscription()
     {
         // given
-        broker.stubTaskSubscriptionApi(123L);
+        broker.stubJobSubscriptionApi(123L);
 
         // when
         final TaskSubscription subscription = clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopicName())
@@ -132,7 +132,7 @@ public class TaskSubscriptionTest
     public void shouldCloseSubscription()
     {
         // given
-        broker.stubTaskSubscriptionApi(123L);
+        broker.stubJobSubscriptionApi(123L);
 
         final TaskSubscription subscription = clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopicName())
             .handler(DO_NOTHING)
@@ -159,7 +159,7 @@ public class TaskSubscriptionTest
     public void shouldOpenPollableSubscription()
     {
         // given
-        broker.stubTaskSubscriptionApi(123L);
+        broker.stubJobSubscriptionApi(123L);
 
         // when
         final PollableTaskSubscription subscription = clientRule.tasks().newPollableTaskSubscription(clientRule.getDefaultTopicName())
@@ -186,7 +186,7 @@ public class TaskSubscriptionTest
     public void shouldValidateMissingTaskType()
     {
         // given
-        broker.stubTaskSubscriptionApi(123L);
+        broker.stubJobSubscriptionApi(123L);
 
         // then
         exception.expect(RuntimeException.class);
@@ -204,7 +204,7 @@ public class TaskSubscriptionTest
     public void shouldValidateMissingTaskHandler()
     {
         // given
-        broker.stubTaskSubscriptionApi(123L);
+        broker.stubJobSubscriptionApi(123L);
 
         // then
         exception.expect(RuntimeException.class);
@@ -222,7 +222,7 @@ public class TaskSubscriptionTest
     public void shouldUseDefaultTaskFetchSize()
     {
         // given
-        broker.stubTaskSubscriptionApi(123L);
+        broker.stubJobSubscriptionApi(123L);
 
         // when
         clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopicName())
@@ -243,7 +243,7 @@ public class TaskSubscriptionTest
     public void shouldValidateMissingLockTime()
     {
         // given
-        broker.stubTaskSubscriptionApi(123L);
+        broker.stubJobSubscriptionApi(123L);
 
         // then
         exception.expect(RuntimeException.class);
@@ -261,7 +261,7 @@ public class TaskSubscriptionTest
     public void shouldValidateLockTimePositive()
     {
         // given
-        broker.stubTaskSubscriptionApi(123L);
+        broker.stubJobSubscriptionApi(123L);
 
         // then
         exception.expect(RuntimeException.class);
@@ -280,7 +280,7 @@ public class TaskSubscriptionTest
     public void shouldOpenSubscriptionWithLockTimeAsDuration()
     {
         // given
-        broker.stubTaskSubscriptionApi(123L);
+        broker.stubJobSubscriptionApi(123L);
 
         // when
         clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopicName())
@@ -301,7 +301,7 @@ public class TaskSubscriptionTest
     public void shouldOpenPollableSubscriptionWithLockTimeAsDuration()
     {
         // given
-        broker.stubTaskSubscriptionApi(123L);
+        broker.stubJobSubscriptionApi(123L);
 
         // when
         clientRule.tasks().newPollableTaskSubscription(clientRule.getDefaultTopicName())
@@ -345,7 +345,7 @@ public class TaskSubscriptionTest
     public void shouldInvokeTaskHandler() throws JsonParseException, JsonMappingException, IOException
     {
         // given
-        broker.stubTaskSubscriptionApi(123L);
+        broker.stubJobSubscriptionApi(123L);
         stubTaskCompleteRequest();
 
         final RecordingTaskHandler handler = new RecordingTaskHandler();
@@ -405,7 +405,7 @@ public class TaskSubscriptionTest
     public void shouldInvokeTaskHandlerWithTwoSubscriptions()
     {
         // given
-        broker.stubTaskSubscriptionApi(123L);
+        broker.stubJobSubscriptionApi(123L);
         stubTaskCompleteRequest();
 
         final RecordingTaskHandler handler1 = new RecordingTaskHandler();
@@ -427,8 +427,8 @@ public class TaskSubscriptionTest
         final RemoteAddress clientAddress = getSubscribeRequests().findFirst().get().getSource();
 
         // when
-        broker.pushLockedTask(clientAddress, 123L, 4L, 5L, "foo", "type1");
-        broker.pushLockedTask(clientAddress, 124L, 5L, 6L, "bar", "type2");
+        broker.pushLockedJob(clientAddress, 123L, 4L, 5L, "foo", "type1");
+        broker.pushLockedJob(clientAddress, 124L, 5L, 6L, "bar", "type2");
 
         // then
         TestUtil.waitUntil(() -> !handler1.getHandledTasks().isEmpty());
@@ -452,7 +452,7 @@ public class TaskSubscriptionTest
     public void shouldInvokeTaskHandlerForPollableSubscription()
     {
         // given
-        broker.stubTaskSubscriptionApi(123L);
+        broker.stubJobSubscriptionApi(123L);
         stubTaskCompleteRequest();
 
         final RecordingTaskHandler handler = new RecordingTaskHandler();
@@ -464,7 +464,7 @@ public class TaskSubscriptionTest
 
         final RemoteAddress clientAddress = getSubscribeRequests().findFirst().get().getSource();
 
-        broker.pushLockedTask(clientAddress, 123L, 4L, 5L, "foo", "type");
+        broker.pushLockedJob(clientAddress, 123L, 4L, 5L, "foo", "type");
 
         // when
         final Integer handledTasks = TestUtil.doRepeatedly(() -> subscription.poll(handler))
@@ -484,7 +484,7 @@ public class TaskSubscriptionTest
     public void shouldNotAutocompleteTask() throws InterruptedException
     {
         // given
-        broker.stubTaskSubscriptionApi(123L);
+        broker.stubJobSubscriptionApi(123L);
         stubTaskCompleteRequest();
 
         final RecordingTaskHandler handler = new RecordingTaskHandler();
@@ -498,7 +498,7 @@ public class TaskSubscriptionTest
         final RemoteAddress clientAddress = getSubscribeRequests().findFirst().get().getSource();
 
         // when
-        broker.pushLockedTask(clientAddress, 123L, 4L, 5L, "foo", "bar");
+        broker.pushLockedJob(clientAddress, 123L, 4L, 5L, "foo", "bar");
 
         // then
         Thread.sleep(1000L);
@@ -512,7 +512,7 @@ public class TaskSubscriptionTest
     public void shouldCompleteTaskWithPayload()
     {
         // given
-        broker.stubTaskSubscriptionApi(123L);
+        broker.stubJobSubscriptionApi(123L);
         stubTaskCompleteRequest();
 
         clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopicName())
@@ -525,7 +525,7 @@ public class TaskSubscriptionTest
         final RemoteAddress eventSource = getSubscribeRequests().findFirst().get().getSource();
 
         // when
-        broker.pushLockedTask(eventSource, 123L, 4L, 5L, "foo", "bar");
+        broker.pushLockedJob(eventSource, 123L, 4L, 5L, "foo", "bar");
 
         // then
         final ExecuteCommandRequest taskRequest = TestUtil.doRepeatedly(() -> broker.getReceivedCommandRequests().stream()
@@ -547,7 +547,7 @@ public class TaskSubscriptionTest
     public void shouldSetPayloadAndCompleteTask()
     {
         // given
-        broker.stubTaskSubscriptionApi(123L);
+        broker.stubJobSubscriptionApi(123L);
         stubTaskCompleteRequest();
 
         clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopicName())
@@ -560,7 +560,7 @@ public class TaskSubscriptionTest
         final RemoteAddress eventSource = getSubscribeRequests().findFirst().get().getSource();
 
         // when
-        broker.pushLockedTask(eventSource, 123L, 4L, 5L, "foo", "bar");
+        broker.pushLockedJob(eventSource, 123L, 4L, 5L, "foo", "bar");
 
         // then
         final ExecuteCommandRequest taskRequest = TestUtil.doRepeatedly(() -> broker.getReceivedCommandRequests().stream()
@@ -582,7 +582,7 @@ public class TaskSubscriptionTest
     public void shouldCompleteTaskWithoutPayload()
     {
         // given
-        broker.stubTaskSubscriptionApi(123L);
+        broker.stubJobSubscriptionApi(123L);
         stubTaskCompleteRequest();
 
         clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopicName())
@@ -595,7 +595,7 @@ public class TaskSubscriptionTest
         final RemoteAddress eventSource = getSubscribeRequests().findFirst().get().getSource();
 
         // when
-        broker.pushLockedTask(eventSource, 123L, 4L, 5L, "foo", "bar");
+        broker.pushLockedJob(eventSource, 123L, 4L, 5L, "foo", "bar");
 
         // then
         final ExecuteCommandRequest taskRequest = TestUtil.doRepeatedly(() -> broker.getReceivedCommandRequests().stream()
@@ -617,7 +617,7 @@ public class TaskSubscriptionTest
     public void shouldMarkTaskAsFailedOnExpcetion()
     {
         // given
-        broker.stubTaskSubscriptionApi(123L);
+        broker.stubJobSubscriptionApi(123L);
         broker.onExecuteCommandRequest(isTaskFailCommand())
             .respondWith()
             .value()
@@ -639,7 +639,7 @@ public class TaskSubscriptionTest
         final RemoteAddress clientAddress = getSubscribeRequests().findFirst().get().getSource();
 
         // when
-        broker.pushLockedTask(clientAddress, 123L, 4L, 5L, "foo", "bar");
+        broker.pushLockedJob(clientAddress, 123L, 4L, 5L, "foo", "bar");
 
         // then
         final ExecuteCommandRequest taskRequest = TestUtil.doRepeatedly(() -> broker.getReceivedCommandRequests().stream()
@@ -660,7 +660,7 @@ public class TaskSubscriptionTest
     public void shouldCloseSubscriptionOnChannelClose() throws InterruptedException
     {
         // given
-        broker.stubTaskSubscriptionApi(123L);
+        broker.stubJobSubscriptionApi(123L);
 
         final TaskSubscription subscription = clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopicName())
             .handler((c, t) -> c.complete(t).withoutPayload().execute())
@@ -698,7 +698,7 @@ public class TaskSubscriptionTest
     public void shouldRetryWithMoreTasksThanSubscriptionCapacity() throws InterruptedException
     {
         // given
-        broker.stubTaskSubscriptionApi(123L);
+        broker.stubJobSubscriptionApi(123L);
         broker.onExecuteCommandRequest(EventType.TASK_EVENT, "COMPLETE")
             .respondWith()
             .key((r) -> r.key())
@@ -725,13 +725,13 @@ public class TaskSubscriptionTest
 
         for (int i = 0; i < taskCapacity + numExecutionThreads; i++)
         {
-            broker.pushLockedTask(clientAddress, 123L, i, i, "owner", "foo");
+            broker.pushLockedJob(clientAddress, 123L, i, i, "owner", "foo");
         }
 
         TestUtil.waitUntil(() -> handler.numWaitingThreads.get() > 0);
 
         // pushing one more event, exceeding client capacity
-        broker.pushLockedTask(clientAddress, 123L, Integer.MAX_VALUE, Integer.MAX_VALUE, "owner", "foo");
+        broker.pushLockedJob(clientAddress, 123L, Integer.MAX_VALUE, Integer.MAX_VALUE, "owner", "foo");
 
         // waiting for the client to receive all pending tasks
         Thread.sleep(500L);
@@ -751,7 +751,7 @@ public class TaskSubscriptionTest
     public void shouldNotLoseCreditsOnFailureToReportTaskFailure() throws InterruptedException
     {
         // given
-        broker.stubTaskSubscriptionApi(123L);
+        broker.stubJobSubscriptionApi(123L);
         failTaskFailure();
 
         final int subscriptionCapacity = 8;
@@ -775,7 +775,7 @@ public class TaskSubscriptionTest
 
         for (int i = 0; i < subscriptionCapacity; i++)
         {
-            broker.pushLockedTask(clientAddress, 123L, i, i, "owner", "foo");
+            broker.pushLockedJob(clientAddress, 123L, i, i, "owner", "foo");
         }
 
 
@@ -797,7 +797,7 @@ public class TaskSubscriptionTest
     public void shouldReopenSubscriptionAfterChannelInterruption()
     {
         // given
-        broker.stubTaskSubscriptionApi(123L);
+        broker.stubJobSubscriptionApi(123L);
 
         clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopicName())
             .handler(DO_NOTHING)
@@ -823,7 +823,7 @@ public class TaskSubscriptionTest
     public void shouldSendCorrectCreditsRequest()
     {
         // given
-        broker.stubTaskSubscriptionApi(123L);
+        broker.stubJobSubscriptionApi(123L);
         final TasksClientImpl taskClient = (TasksClientImpl) clientRule.tasks();
 
         // when
@@ -856,7 +856,7 @@ public class TaskSubscriptionTest
         final int replenishmentThreshold = (int) (Math.ceil(subscriptionCapacity * Subscriber.REPLENISHMENT_THRESHOLD));
         final int tasksToHandleBeforeReplenishment = subscriptionCapacity - replenishmentThreshold;
 
-        broker.stubTaskSubscriptionApi(123L);
+        broker.stubJobSubscriptionApi(123L);
 
         final WaitingTaskHandler handler = new WaitingTaskHandler();
         handler.shouldWait = false;
@@ -874,14 +874,14 @@ public class TaskSubscriptionTest
         // handling these tasks should not yet trigger replenishment; the next handled task would
         for (int i = 0; i < tasksToHandleBeforeReplenishment; i++)
         {
-            broker.pushLockedTask(clientAddress, 123L, 4L + i, 5L + i, "foo", "type");
+            broker.pushLockedJob(clientAddress, 123L, 4L + i, 5L + i, "foo", "type");
         }
         waitUntil(() -> handler.numHandledEvents.get() == tasksToHandleBeforeReplenishment);
 
         handler.shouldWait = true;
         for (int i = 0; i < NUM_EXECUTION_THREADS; i++)
         {
-            broker.pushLockedTask(clientAddress, 123L, 4L + i, 5L + i, "foo", "type");
+            broker.pushLockedJob(clientAddress, 123L, 4L + i, 5L + i, "foo", "type");
         }
         waitUntil(() -> handler.numWaitingThreads.get() == NUM_EXECUTION_THREADS);
 

@@ -32,7 +32,7 @@ import io.zeebe.model.bpmn.impl.ZeebeConstraints;
 /**
  * Maps <b>activity instance key</b> to
  *
- * <li>task instance key
+ * <li>job instance key
  * <li>activity id length
  * <li>activity id (max 255 chars)
  */
@@ -41,8 +41,8 @@ public class ActivityInstanceMap implements AutoCloseable
     private static final int SIZE_OF_ACTIVITY_ID = ZeebeConstraints.ID_MAX_LENGTH * SIZE_OF_CHAR;
     private static final int INDEX_VALUE_SIZE = SIZE_OF_LONG + SIZE_OF_INT + SIZE_OF_ACTIVITY_ID;
 
-    private static final int TASK_KEY_OFFSET = 0;
-    private static final int ACTIVITY_ID_LENGTH_OFFSET = TASK_KEY_OFFSET + SIZE_OF_LONG;
+    private static final int JOB_KEY_OFFSET = 0;
+    private static final int ACTIVITY_ID_LENGTH_OFFSET = JOB_KEY_OFFSET + SIZE_OF_LONG;
     private static final int ACTIVITY_ID_OFFSET = ACTIVITY_ID_LENGTH_OFFSET + SIZE_OF_INT;
 
     private static final ByteOrder BYTE_ORDER = ByteOrder.LITTLE_ENDIAN;
@@ -89,9 +89,9 @@ public class ActivityInstanceMap implements AutoCloseable
         return this;
     }
 
-    public long getTaskKey()
+    public long getJobKey()
     {
-        return isRead ? buffer.getLong(TASK_KEY_OFFSET, BYTE_ORDER) : -1L;
+        return isRead ? buffer.getLong(JOB_KEY_OFFSET, BYTE_ORDER) : -1L;
     }
 
     public DirectBuffer getActivityId()
@@ -130,10 +130,10 @@ public class ActivityInstanceMap implements AutoCloseable
         return this;
     }
 
-    public ActivityInstanceMap setTaskKey(long taskKey)
+    public ActivityInstanceMap setJobKey(long jobKey)
     {
         ensureRead();
-        buffer.putLong(TASK_KEY_OFFSET, taskKey, BYTE_ORDER);
+        buffer.putLong(JOB_KEY_OFFSET, jobKey, BYTE_ORDER);
         return this;
     }
 

@@ -20,11 +20,11 @@ package io.zeebe.broker;
 import java.io.InputStream;
 
 import io.zeebe.broker.clustering.ClusterComponent;
+import io.zeebe.broker.job.JobQueueComponent;
 import io.zeebe.broker.logstreams.LogStreamsComponent;
 import io.zeebe.broker.system.SystemComponent;
 import io.zeebe.broker.system.SystemContext;
 import io.zeebe.broker.system.configuration.BrokerCfg;
-import io.zeebe.broker.task.TaskQueueComponent;
 import io.zeebe.broker.transport.TransportComponent;
 import io.zeebe.broker.workflow.WorkflowComponent;
 import io.zeebe.util.LogUtil;
@@ -74,7 +74,7 @@ public class Broker implements AutoCloseable
         brokerContext.addComponent(new SystemComponent());
         brokerContext.addComponent(new TransportComponent());
         brokerContext.addComponent(new LogStreamsComponent());
-        brokerContext.addComponent(new TaskQueueComponent());
+        brokerContext.addComponent(new JobQueueComponent());
         brokerContext.addComponent(new WorkflowComponent());
         brokerContext.addComponent(new ClusterComponent());
 

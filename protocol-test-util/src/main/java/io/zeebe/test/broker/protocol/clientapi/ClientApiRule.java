@@ -213,32 +213,32 @@ public class ClientApiRule extends ExternalResource
                 .send();
     }
 
-    public ControlMessageRequest openTaskSubscription(final String type)
+    public ControlMessageRequest openJobSubscription(final String type)
     {
-        return openTaskSubscription(defaultPartitionId, type, DEFAULT_LOCK_DURATION);
+        return openJobSubscription(defaultPartitionId, type, DEFAULT_LOCK_DURATION);
     }
 
-    public ControlMessageRequest closeTaskSubscription(long subscriberKey)
+    public ControlMessageRequest closeJobSubscription(long subscriberKey)
     {
         return createControlMessageRequest()
-                    .messageType(ControlMessageType.REMOVE_TASK_SUBSCRIPTION)
+                    .messageType(ControlMessageType.REMOVE_JOB_SUBSCRIPTION)
                     .data()
                         .put("subscriberKey", subscriberKey)
                     .done()
                 .send();
     }
 
-    public ControlMessageRequest openTaskSubscription(
+    public ControlMessageRequest openJobSubscription(
             final int partitionId,
             final String type,
             long lockDuration,
             int credits)
     {
         return createControlMessageRequest()
-                .messageType(ControlMessageType.ADD_TASK_SUBSCRIPTION)
+                .messageType(ControlMessageType.ADD_JOB_SUBSCRIPTION)
                 .partitionId(partitionId)
                 .data()
-                    .put("taskType", type)
+                    .put("jobType", type)
                     .put("lockDuration", lockDuration)
                     .put("lockOwner", "test")
                     .put("credits", credits)
@@ -246,12 +246,12 @@ public class ClientApiRule extends ExternalResource
                 .send();
     }
 
-    public ControlMessageRequest openTaskSubscription(
+    public ControlMessageRequest openJobSubscription(
             final int partitionId,
             final String type,
             long lockDuration)
     {
-        return openTaskSubscription(partitionId, type, lockDuration, 10);
+        return openJobSubscription(partitionId, type, lockDuration, 10);
     }
 
     public Stream<RawMessage> incomingMessages()

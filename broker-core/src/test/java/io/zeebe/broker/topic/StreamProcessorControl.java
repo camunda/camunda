@@ -21,8 +21,8 @@ import java.util.function.Predicate;
 
 import io.zeebe.broker.clustering.orchestration.topic.TopicRecord;
 import io.zeebe.broker.incident.data.IncidentRecord;
+import io.zeebe.broker.job.data.JobRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
-import io.zeebe.broker.task.data.TaskRecord;
 import io.zeebe.broker.workflow.data.DeploymentRecord;
 import io.zeebe.logstreams.log.LoggedEvent;
 
@@ -33,7 +33,7 @@ public interface StreamProcessorControl
 
     void blockAfterEvent(Predicate<LoggedEvent> test);
 
-    void blockAfterTaskEvent(Predicate<TypedRecord<TaskRecord>> test);
+    void blockAfterJobEvent(Predicate<TypedRecord<JobRecord>> test);
 
     void blockAfterDeploymentEvent(Predicate<TypedRecord<DeploymentRecord>> test);
 

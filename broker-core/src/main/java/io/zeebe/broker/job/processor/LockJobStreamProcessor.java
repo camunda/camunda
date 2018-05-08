@@ -1,0 +1,278 @@
+/*
+ * Zeebe Broker Core
+ * Copyright © 2017 camunda services GmbH (info@camunda.com)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package io.zeebe.broker.job.processor;
+
+import static io.zeebe.util.EnsureUtil.ensureGreaterThan;
+import static io.zeebe.util.EnsureUtil.ensureLessThanOrEqual;
+import static io.zeebe.util.EnsureUtil.ensureNotNull;
+import static io.zeebe.util.EnsureUtil.ensureNotNullOrEmpty;
+
+import org.agrona.DirectBuffer;
+
+import io.zeebe.broker.job.CreditsRequest;
+import io.zeebe.broker.job.CreditsRequestBuffer;
+import io.zeebe.broker.job.JobSubscriptionManager;
+import io.zeebe.broker.job.data.JobRecord;
+import io.zeebe.broker.job.processor.JobSubscriptions.SubscriptionIterator;
+import io.zeebe.broker.logstreams.processor.StreamProcessorLifecycleAware;
+import io.zeebe.broker.logstreams.processor.TypedRecord;
+import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
+import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
+import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
+import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
+import io.zeebe.logstreams.processor.StreamProcessorContext;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.impl.RecordMetadata;
+import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.util.buffer.BufferUtil;
+import io.zeebe.util.sched.ActorControl;
+import io.zeebe.util.sched.clock.ActorClock;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
+
+public class LockJobStreamProcessor implements TypedRecordProcessor<JobRecord>, StreamProcessorLifecycleAware
+{
+    protected final CreditsRequestBuffer creditsBuffer = new CreditsRequestBuffer(JobSubscriptionManager.NUM_CONCURRENT_REQUESTS, this::increaseSubscriptionCredits);
+
+    private final JobSubscriptions subscriptions = new JobSubscriptions(8);
+    private final SubscriptionIterator jobDistributionIterator;
+    private final SubscriptionIterator managementIterator;
+
+    private final DirectBuffer subscribedJobType;
+    private int partitionId;
+    private ActorControl actor;
+    private StreamProcessorContext context;
+
+    private JobSubscription selectedSubscriber;
+
+    public LockJobStreamProcessor(DirectBuffer jobType)
+    {
+        this.subscribedJobType = jobType;
+        this.jobDistributionIterator = subscriptions.iterator();
+        this.managementIterator = subscriptions.iterator();
+    }
+
+    public DirectBuffer getSubscriptedJobType()
+    {
+        return subscribedJobType;
+    }
+
+    public int getLogStreamPartitionId()
+    {
+        return partitionId;
+    }
+
+    @Override
+    public void onOpen(TypedStreamProcessor streamProcessor)
+    {
+        this.context = streamProcessor.getStreamProcessorContext();
+        this.actor = context.getActorControl();
+
+        // activate the processor while adding the first subscription
+        context.suspendController();
+    }
+
+    public TypedStreamProcessor createStreamProcessor(TypedStreamEnvironment env)
+    {
+        this.partitionId = env.getStream().getPartitionId();
+
+        return env.newStreamProcessor()
+                .onEvent(ValueType.JOB, JobIntent.CREATED, this)
+                .onEvent(ValueType.JOB, JobIntent.LOCK_EXPIRED, this)
+                .onEvent(ValueType.JOB, JobIntent.FAILED, this)
+                .onEvent(ValueType.JOB, JobIntent.RETRIES_UPDATED, this)
+                .build();
+    }
+
+    public ActorFuture<Void> addSubscription(JobSubscription subscription)
+    {
+        try
+        {
+            ensureNotNull("subscription", subscription);
+            ensureNotNullOrEmpty("lock job type", subscription.getLockJobType());
+            ensureNotNullOrEmpty("lock owner", subscription.getLockOwner());
+            ensureGreaterThan("length of lock owner", subscription.getLockOwner().capacity(), 0);
+            ensureLessThanOrEqual("length of lock owner", subscription.getLockOwner().capacity(), JobSubscription.LOCK_OWNER_MAX_LENGTH);
+            ensureGreaterThan("lock duration", subscription.getLockDuration(), 0);
+            ensureGreaterThan("subscription credits", subscription.getCredits(), 0);
+        }
+        catch (Exception e)
+        {
+            return CompletableActorFuture.completedExceptionally(e);
+        }
+
+        if (!BufferUtil.equals(subscription.getLockJobType(), subscribedJobType))
+        {
+            final String errorMessage = String.format("Subscription job type is not equal to '%s'.", BufferUtil.bufferAsString(subscribedJobType));
+            throw new RuntimeException(errorMessage);
+        }
+
+        return actor.call(() ->
+        {
+            subscriptions.addSubscription(subscription);
+
+            context.resumeController();
+        });
+    }
+
+    public ActorFuture<Boolean> removeSubscription(long subscriberKey)
+    {
+        return actor.call(() ->
+        {
+            subscriptions.removeSubscription(subscriberKey);
+            final boolean isSuspended = subscriptions.isEmpty();
+            if (isSuspended)
+            {
+                context.suspendController();
+            }
+
+            return !isSuspended;
+        });
+    }
+
+    public ActorFuture<Boolean> onClientChannelCloseAsync(int channelId)
+    {
+        return actor.call(() ->
+        {
+            managementIterator.reset();
+
+            while (managementIterator.hasNext())
+            {
+                final JobSubscription subscription = managementIterator.next();
+                if (subscription.getStreamId() == channelId)
+                {
+                    managementIterator.remove();
+                }
+            }
+
+            final boolean isSuspended = subscriptions.isEmpty();
+            if (isSuspended)
+            {
+                context.suspendController();
+            }
+            return !isSuspended;
+        });
+    }
+
+    public boolean increaseSubscriptionCreditsAsync(CreditsRequest request)
+    {
+        actor.call(() ->
+        {
+            creditsBuffer.handleRequests();
+        });
+
+        return this.creditsBuffer.offerRequest(request);
+    }
+
+    protected void increaseSubscriptionCredits(CreditsRequest request)
+    {
+        final long subscriberKey = request.getSubscriberKey();
+        final int credits = request.getCredits();
+
+        subscriptions.addCredits(subscriberKey, credits);
+
+        context.resumeController();
+    }
+
+    protected JobSubscription getNextAvailableSubscription()
+    {
+        JobSubscription nextSubscription = null;
+
+        if (subscriptions.getTotalCredits() > 0)
+        {
+
+            final int subscriptionSize = subscriptions.size();
+            int seenSubscriptions = 0;
+
+            while (seenSubscriptions < subscriptionSize && nextSubscription == null)
+            {
+                if (!jobDistributionIterator.hasNext())
+                {
+                    jobDistributionIterator.reset();
+                }
+
+                final JobSubscription subscription = jobDistributionIterator.next();
+                if (subscription.getCredits() > 0)
+                {
+                    nextSubscription = subscription;
+                }
+
+                seenSubscriptions += 1;
+            }
+        }
+        return nextSubscription;
+    }
+
+    @Override
+    public void processRecord(TypedRecord<JobRecord> event)
+    {
+        selectedSubscriber = null;
+
+        final JobRecord jobEvent = event.getValue();
+        final boolean handlesJobType = BufferUtil.equals(jobEvent.getType(), subscribedJobType);
+
+        if (handlesJobType && jobEvent.getRetries() > 0)
+        {
+            selectedSubscriber = getNextAvailableSubscription();
+            if (selectedSubscriber != null)
+            {
+                final long lockTimeout = ActorClock.currentTimeMillis() + selectedSubscriber.getLockDuration();
+
+                jobEvent
+                    .setLockTime(lockTimeout)
+                    .setLockOwner(selectedSubscriber.getLockOwner());
+            }
+        }
+    }
+
+    @Override
+    public long writeRecord(TypedRecord<JobRecord> event, TypedStreamWriter writer)
+    {
+        long position = 0;
+
+        if (selectedSubscriber != null)
+        {
+            position = writer.writeFollowUpCommand(
+                event.getKey(),
+                JobIntent.LOCK,
+                event.getValue(),
+                this::assignToSelectedSubscriber);
+        }
+        return position;
+    }
+
+    private void assignToSelectedSubscriber(RecordMetadata metadata)
+    {
+        metadata.subscriberKey(selectedSubscriber.getSubscriberKey());
+        metadata.requestStreamId(selectedSubscriber.getStreamId());
+    }
+
+    @Override
+    public void updateState(TypedRecord<JobRecord> event)
+    {
+        if (selectedSubscriber != null)
+        {
+            subscriptions.addCredits(selectedSubscriber.getSubscriberKey(), -1);
+
+            if (subscriptions.getTotalCredits() <= 0)
+            {
+                context.suspendController();
+            }
+        }
+    }
+}

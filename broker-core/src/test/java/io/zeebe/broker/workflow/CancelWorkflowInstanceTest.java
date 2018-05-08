@@ -37,7 +37,7 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
-import io.zeebe.protocol.intent.TaskIntent;
+import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
@@ -146,17 +146,17 @@ public class CancelWorkflowInstanceTest
     }
 
     @Test
-    public void shouldCancelTaskForActivity()
+    public void shouldCancelJobForActivity()
     {
         // given
         testClient.deploy(WORKFLOW);
 
         final long workflowInstanceKey = testClient.createWorkflowInstance("process");
 
-        final SubscribedRecord taskCreatedEvent = testClient
+        final SubscribedRecord jobCreatedEvent = testClient
             .receiveEvents()
-            .ofTypeTask()
-            .withIntent(TaskIntent.CREATED)
+            .ofTypeJob()
+            .withIntent(JobIntent.CREATED)
             .getFirst();
 
         final ExecuteCommandResponse response = cancelWorkflowInstance(workflowInstanceKey);
@@ -164,16 +164,16 @@ public class CancelWorkflowInstanceTest
         // then
         assertThat(response.intent()).isEqualTo(WorkflowInstanceIntent.CANCELED);
 
-        final SubscribedRecord taskCanceledEvent = testClient
+        final SubscribedRecord jobCanceledEvent = testClient
             .receiveEvents()
-            .ofTypeTask()
-            .withIntent(TaskIntent.CANCELED)
+            .ofTypeJob()
+            .withIntent(JobIntent.CANCELED)
             .getFirst();
 
-        assertThat(taskCanceledEvent.key()).isEqualTo(taskCreatedEvent.key());
+        assertThat(jobCanceledEvent.key()).isEqualTo(jobCreatedEvent.key());
 
         @SuppressWarnings("unchecked")
-        final Map<String, Object> headers = (Map<String, Object>) taskCanceledEvent.value().get("headers");
+        final Map<String, Object> headers = (Map<String, Object>) jobCanceledEvent.value().get("headers");
         assertThat(headers)
             .containsEntry("workflowInstanceKey", workflowInstanceKey)
             .containsEntry("bpmnProcessId", "process")

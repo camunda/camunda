@@ -23,7 +23,7 @@ public enum ErrorType
 
     IO_MAPPING_ERROR,
 
-    TASK_NO_RETRIES,
+    JOB_NO_RETRIES,
 
     CONDITION_ERROR,
 }

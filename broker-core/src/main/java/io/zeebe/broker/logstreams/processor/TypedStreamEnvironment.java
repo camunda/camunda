@@ -22,7 +22,7 @@ import java.util.EnumMap;
 import io.zeebe.broker.clustering.orchestration.id.IdRecord;
 import io.zeebe.broker.clustering.orchestration.topic.TopicRecord;
 import io.zeebe.broker.incident.data.IncidentRecord;
-import io.zeebe.broker.task.data.TaskRecord;
+import io.zeebe.broker.job.data.JobRecord;
 import io.zeebe.broker.workflow.data.DeploymentRecord;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.logstreams.log.LogStream;
@@ -39,7 +39,7 @@ public class TypedStreamEnvironment
     {
         EVENT_REGISTRY.put(ValueType.TOPIC, TopicRecord.class);
         EVENT_REGISTRY.put(ValueType.DEPLOYMENT, DeploymentRecord.class);
-        EVENT_REGISTRY.put(ValueType.TASK, TaskRecord.class);
+        EVENT_REGISTRY.put(ValueType.JOB, JobRecord.class);
         EVENT_REGISTRY.put(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceRecord.class);
         EVENT_REGISTRY.put(ValueType.INCIDENT, IncidentRecord.class);
         EVENT_REGISTRY.put(ValueType.ID, IdRecord.class);

@@ -346,11 +346,11 @@ public class StubBrokerRule extends ExternalResource
             .register();
     }
 
-    public void stubTaskSubscriptionApi(long initialSubscriberKey)
+    public void stubJobSubscriptionApi(long initialSubscriberKey)
     {
         final AtomicLong subscriberKeyProvider = new AtomicLong(initialSubscriberKey);
 
-        onControlMessageRequest((r) -> r.messageType() == ControlMessageType.ADD_TASK_SUBSCRIPTION)
+        onControlMessageRequest((r) -> r.messageType() == ControlMessageType.ADD_JOB_SUBSCRIPTION)
             .respondWith()
             .data()
                 .allOf((r) -> r.getData())
@@ -358,14 +358,14 @@ public class StubBrokerRule extends ExternalResource
                 .done()
             .register();
 
-        onControlMessageRequest((r) -> r.messageType() == ControlMessageType.REMOVE_TASK_SUBSCRIPTION)
+        onControlMessageRequest((r) -> r.messageType() == ControlMessageType.REMOVE_JOB_SUBSCRIPTION)
             .respondWith()
             .data()
                 .allOf((r) -> r.getData())
                 .done()
             .register();
 
-        onControlMessageRequest((r) -> r.messageType() == ControlMessageType.INCREASE_TASK_SUBSCRIPTION_CREDITS)
+        onControlMessageRequest((r) -> r.messageType() == ControlMessageType.INCREASE_JOB_SUBSCRIPTION_CREDITS)
             .respondWith()
             .data()
                 .allOf((r) -> r.getData())
@@ -412,17 +412,17 @@ public class StubBrokerRule extends ExternalResource
 
     }
 
-    public void pushLockedTask(RemoteAddress remote, long subscriberKey, long key, long position, String lockOwner, String taskType)
+    public void pushLockedJob(RemoteAddress remote, long subscriberKey, long key, long position, String lockOwner, String jobType)
     {
         newSubscribedEvent()
             .partitionId(TEST_PARTITION_ID)
             .key(key)
             .position(position)
-            .valueType(ValueType.TASK)
+            .valueType(ValueType.JOB)
             .subscriberKey(subscriberKey)
-            .subscriptionType(SubscriptionType.TASK_SUBSCRIPTION)
+            .subscriptionType(SubscriptionType.JOB_SUBSCRIPTION)
             .value()
-                .put("type", taskType)
+                .put("type", jobType)
                 .put("lockTime", 1000L)
                 .put("lockOwner", lockOwner)
                 .put("retries", 3)

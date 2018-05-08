@@ -40,9 +40,9 @@ public final class PayloadUtil
         return isValid;
     }
 
-    public static boolean isNilPayload(DirectBuffer taskPayload)
+    public static boolean isNilPayload(DirectBuffer jobPayload)
     {
-        return taskPayload.capacity() == 1 && taskPayload.getByte(0) == MsgPackCodes.NIL;
+        return jobPayload.capacity() == 1 && jobPayload.getByte(0) == MsgPackCodes.NIL;
     }
 
 }

@@ -19,15 +19,18 @@ package io.zeebe.broker.system.deployment.service;
 
 import java.util.concurrent.atomic.AtomicReference;
 
-import io.zeebe.broker.transport.controlmessage.*;
+import org.agrona.DirectBuffer;
+
+import io.zeebe.broker.transport.controlmessage.AbstractControlMessageHandler;
+import io.zeebe.broker.transport.controlmessage.RequestWorkflowControlRequest;
+import io.zeebe.broker.transport.controlmessage.RequestWorkflowControlResponse;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.ErrorCode;
-import io.zeebe.protocol.impl.BrokerEventMetadata;
+import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
-import org.agrona.DirectBuffer;
 
 public class RequestWorkflowControlMessageHandler extends AbstractControlMessageHandler
 {
@@ -45,7 +48,7 @@ public class RequestWorkflowControlMessageHandler extends AbstractControlMessage
     }
 
     @Override
-    public void handle(ActorControl actor, int partitionId, DirectBuffer buffer, BrokerEventMetadata metadata)
+    public void handle(ActorControl actor, int partitionId, DirectBuffer buffer, RecordMetadata metadata)
     {
         final WorkflowRepositoryService repository = workflowRepositroyServiceRef.get();
 

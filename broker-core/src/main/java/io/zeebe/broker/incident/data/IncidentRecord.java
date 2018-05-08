@@ -42,7 +42,7 @@ public class IncidentRecord extends UnpackedObject
     private final LongProperty workflowInstanceKeyProp = new LongProperty("workflowInstanceKey", -1L);
     private final StringProperty activityIdProp = new StringProperty("activityId", "");
     private final LongProperty activityInstanceKeyProp = new LongProperty("activityInstanceKey", -1L);
-    private final LongProperty taskKeyProp = new LongProperty("taskKey", -1L);
+    private final LongProperty jobKeyProp = new LongProperty("jobKey", -1L);
 
     private final BinaryProperty payloadProp = new BinaryProperty("payload", EMPTY_PAYLOAD);
 
@@ -56,7 +56,7 @@ public class IncidentRecord extends UnpackedObject
             .declareProperty(workflowInstanceKeyProp)
             .declareProperty(activityIdProp)
             .declareProperty(activityInstanceKeyProp)
-            .declareProperty(taskKeyProp)
+            .declareProperty(jobKeyProp)
             .declareProperty(payloadProp);
     }
 
@@ -137,14 +137,14 @@ public class IncidentRecord extends UnpackedObject
         return this;
     }
 
-    public long getTaskKey()
+    public long getJobKey()
     {
-        return taskKeyProp.getValue();
+        return jobKeyProp.getValue();
     }
 
-    public IncidentRecord setTaskKey(long taskKey)
+    public IncidentRecord setJobKey(long jobKey)
     {
-        this.taskKeyProp.setValue(taskKey);
+        this.jobKeyProp.setValue(jobKey);
         return this;
     }
 

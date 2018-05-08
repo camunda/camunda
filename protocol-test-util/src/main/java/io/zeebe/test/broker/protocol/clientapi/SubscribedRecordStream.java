@@ -60,9 +60,9 @@ public class SubscribedRecordStream extends StreamWrapper<SubscribedRecord>
         return recordsOfValueType(ValueType.WORKFLOW_INSTANCE);
     }
 
-    public SubscribedRecordStream ofTypeTask()
+    public SubscribedRecordStream ofTypeJob()
     {
-        return recordsOfValueType(ValueType.TASK);
+        return recordsOfValueType(ValueType.JOB);
     }
 
     public SubscribedRecordStream ofTypeIncident()

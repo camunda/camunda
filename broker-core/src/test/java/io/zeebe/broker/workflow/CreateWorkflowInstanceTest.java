@@ -52,7 +52,7 @@ import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.Intent;
 =======
 import io.zeebe.protocol.intent.DeploymentIntent;
-import io.zeebe.protocol.intent.TaskIntent;
+import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowIntent;
 >>>>>>> structure intents by value type
@@ -511,11 +511,11 @@ public class CreateWorkflowInstanceTest
             .containsEntry("workflowInstanceKey", resp.key())
             .containsEntry("version", 2);
 
-        final long createdTasks = testClient.receiveEvents()
-                .ofTypeTask()
-                .withIntent(TaskIntent.CREATED)
+        final long createdJobs = testClient.receiveEvents()
+                .ofTypeJob()
+                .withIntent(JobIntent.CREATED)
                 .limit(2).count();
-        assertThat(createdTasks).isEqualTo(2);
+        assertThat(createdJobs).isEqualTo(2);
     }
 
     @Test

@@ -80,8 +80,8 @@ public class PartitionedTaskSubscriptionTest
     public void shouldSubscribeToMultiplePartitionsOfATopic()
     {
         // given
-        broker1.stubTaskSubscriptionApi(456);
-        broker2.stubTaskSubscriptionApi(789);
+        broker1.stubJobSubscriptionApi(456);
+        broker2.stubJobSubscriptionApi(789);
 
         // when
         final TaskSubscription subscription = client.tasks().newTaskSubscription(TOPIC)
@@ -117,10 +117,10 @@ public class PartitionedTaskSubscriptionTest
     {
         // given
         final int subscriberKey1 = 456;
-        broker1.stubTaskSubscriptionApi(subscriberKey1);
+        broker1.stubJobSubscriptionApi(subscriberKey1);
 
         final int subscriberKey2 = 789;
-        broker2.stubTaskSubscriptionApi(subscriberKey2);
+        broker2.stubJobSubscriptionApi(subscriberKey2);
 
         final RecordingTaskHandler eventHandler = new RecordingTaskHandler();
         client.tasks().newTaskSubscription(TOPIC)
@@ -164,10 +164,10 @@ public class PartitionedTaskSubscriptionTest
     {
         // given
         final int subscriberKey1 = 456;
-        broker1.stubTaskSubscriptionApi(subscriberKey1);
+        broker1.stubJobSubscriptionApi(subscriberKey1);
 
         final int subscriberKey2 = 789;
-        broker2.stubTaskSubscriptionApi(subscriberKey2);
+        broker2.stubJobSubscriptionApi(subscriberKey2);
 
         final RecordingTaskHandler eventHandler = new RecordingTaskHandler();
         final PollableTaskSubscription subscription = client.tasks().newPollableTaskSubscription(TOPIC)

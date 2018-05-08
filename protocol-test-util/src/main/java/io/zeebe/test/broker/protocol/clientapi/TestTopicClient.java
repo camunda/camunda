@@ -36,7 +36,7 @@ import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.protocol.intent.Intent;
-import io.zeebe.protocol.intent.TaskIntent;
+import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
 public class TestTopicClient
@@ -159,10 +159,10 @@ public class TestTopicClient
         return response.key();
     }
 
-    public ExecuteCommandResponse createTask(String type)
+    public ExecuteCommandResponse createJob(String type)
     {
         return apiRule.createCmdRequest()
-                .type(ValueType.TASK, TaskIntent.CREATE)
+                .type(ValueType.JOB, JobIntent.CREATE)
                 .command()
                     .put("type", type)
                     .put("retries", 3)
@@ -170,38 +170,38 @@ public class TestTopicClient
                 .sendAndAwait();
     }
 
-    public void completeTaskOfType(String taskType)
+    public void completeJobOfType(String jobType)
     {
-        completeTaskOfType(taskType, (byte[]) null);
+        completeJobOfType(jobType, (byte[]) null);
     }
 
-    public void completeTaskOfType(String taskType, DirectBuffer payload)
+    public void completeJobOfType(String jobType, DirectBuffer payload)
     {
-        completeTaskOfType(taskType, bufferAsArray(payload));
+        completeJobOfType(jobType, bufferAsArray(payload));
     }
 
-    public void completeTaskOfType(String taskType, byte[] payload)
+    public void completeJobOfType(String jobType, byte[] payload)
     {
-        completeTask(taskType, payload, e -> true);
+        completeJob(jobType, payload, e -> true);
     }
 
     @SuppressWarnings("rawtypes")
-    public void completeTaskOfWorkflowInstance(String taskType, long workflowInstanceKey, byte[] payload)
+    public void completeJobOfWorkflowInstance(String jobType, long workflowInstanceKey, byte[] payload)
     {
-        completeTask(taskType, payload, e -> ((Map) e.value().get("headers")).get(PROP_WORKFLOW_INSTANCE_KEY).equals(workflowInstanceKey));
+        completeJob(jobType, payload, e -> ((Map) e.value().get("headers")).get(PROP_WORKFLOW_INSTANCE_KEY).equals(workflowInstanceKey));
     }
 
-    public void completeTask(String taskType, byte[] payload, Predicate<SubscribedRecord> taskEventFilter)
+    public void completeJob(String jobType, byte[] payload, Predicate<SubscribedRecord> jobEventFilter)
     {
-        apiRule.openTaskSubscription(partitionId, taskType, 1000L).await();
+        apiRule.openJobSubscription(partitionId, jobType, 1000L).await();
 
-        final SubscribedRecord taskEvent = apiRule
+        final SubscribedRecord jobEvent = apiRule
             .subscribedEvents()
-            .filter(taskRecords(TaskIntent.LOCKED).and(taskType(taskType)).and(taskEventFilter))
+            .filter(jobRecords(JobIntent.LOCKED).and(jobType(jobType)).and(jobEventFilter))
             .findFirst()
-            .orElseThrow(() -> new AssertionError("Expected task locked event but not found."));
+            .orElseThrow(() -> new AssertionError("Expected job locked event but not found."));
 
-        final Map<String, Object> event = new HashMap<>(taskEvent.value());
+        final Map<String, Object> event = new HashMap<>(jobEvent.value());
         if (payload != null)
         {
             event.put("payload", payload);
@@ -211,16 +211,16 @@ public class TestTopicClient
             event.remove("payload");
         }
 
-        final ExecuteCommandResponse response = completeTask(taskEvent.key(), event);
+        final ExecuteCommandResponse response = completeJob(jobEvent.key(), event);
 
         assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
-        assertThat(response.intent()).isEqualTo(TaskIntent.COMPLETED);
+        assertThat(response.intent()).isEqualTo(JobIntent.COMPLETED);
     }
 
-    public ExecuteCommandResponse completeTask(long key, Map<String, Object> event)
+    public ExecuteCommandResponse completeJob(long key, Map<String, Object> event)
     {
         return apiRule.createCmdRequest()
-            .type(ValueType.TASK, TaskIntent.COMPLETE)
+            .type(ValueType.JOB, JobIntent.COMPLETE)
             .key(key)
             .command()
                 .putAll(event)
@@ -228,10 +228,10 @@ public class TestTopicClient
             .sendAndAwait();
     }
 
-    public ExecuteCommandResponse failTask(long key, Map<String, Object> event)
+    public ExecuteCommandResponse failJob(long key, Map<String, Object> event)
     {
         return apiRule.createCmdRequest()
-            .type(ValueType.TASK, TaskIntent.FAIL)
+            .type(ValueType.JOB, JobIntent.FAIL)
             .key(key)
             .command()
                 .putAll(event)
@@ -239,10 +239,10 @@ public class TestTopicClient
             .sendAndAwait();
     }
 
-    public ExecuteCommandResponse updateTaskRetries(long key, Map<String, Object> event)
+    public ExecuteCommandResponse updateJobRetries(long key, Map<String, Object> event)
     {
         return apiRule.createCmdRequest()
-            .type(ValueType.TASK, TaskIntent.UPDATE_RETRIES)
+            .type(ValueType.JOB, JobIntent.UPDATE_RETRIES)
             .key(key)
             .command()
                 .putAll(event)
@@ -334,19 +334,19 @@ public class TestTopicClient
         return workflowInstanceRecords(intent).and(workflowInstanceKey(workflowInstanceKey));
     }
 
-    public static Predicate<SubscribedRecord> taskRecords()
+    public static Predicate<SubscribedRecord> jobRecords()
     {
-        return e -> e.valueType() == ValueType.TASK;
+        return e -> e.valueType() == ValueType.JOB;
     }
 
-    public static Predicate<SubscribedRecord> taskRecords(Intent intent)
+    public static Predicate<SubscribedRecord> jobRecords(Intent intent)
     {
-        return taskRecords().and(intent(intent));
+        return jobRecords().and(intent(intent));
     }
 
-    public static Predicate<SubscribedRecord> taskType(String taskType)
+    public static Predicate<SubscribedRecord> jobType(String jobType)
     {
-        return e -> taskType.equals(e.value().get("type"));
+        return e -> jobType.equals(e.value().get("type"));
     }
 
     public static Predicate<SubscribedRecord> incidentEvents()

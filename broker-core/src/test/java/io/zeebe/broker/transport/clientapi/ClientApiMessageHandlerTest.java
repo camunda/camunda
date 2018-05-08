@@ -43,7 +43,7 @@ import org.mockito.stubbing.Answer;
 
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.base.topology.PartitionInfo;
-import io.zeebe.broker.task.data.TaskRecord;
+import io.zeebe.broker.job.data.JobRecord;
 import io.zeebe.broker.transport.controlmessage.ControlMessageRequestHeaderDescriptor;
 import io.zeebe.dispatcher.ClaimedFragment;
 import io.zeebe.dispatcher.Dispatcher;
@@ -62,7 +62,7 @@ import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.protocol.intent.Intent;
-import io.zeebe.protocol.intent.TaskIntent;
+import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.test.util.TestUtil;
@@ -80,16 +80,16 @@ public class ClientApiMessageHandlerTest
     protected static final DirectBuffer LOG_STREAM_TOPIC_NAME = wrapString("test-topic");
     protected static final int LOG_STREAM_PARTITION_ID = 1;
 
-    protected static final byte[] TASK_EVENT;
+    protected static final byte[] JOB_EVENT;
     static
     {
-        final TaskRecord taskEvent = new TaskRecord()
+        final JobRecord jobEvent = new JobRecord()
                 .setType(wrapString("test"));
 
-        final UnsafeBuffer buffer = new UnsafeBuffer(new byte[taskEvent.getEncodedLength()]);
-        taskEvent.write(buffer, 0);
+        final UnsafeBuffer buffer = new UnsafeBuffer(new byte[jobEvent.getEncodedLength()]);
+        jobEvent.write(buffer, 0);
 
-        TASK_EVENT = buffer.byteArray();
+        JOB_EVENT = buffer.byteArray();
     }
 
     protected final UnsafeBuffer buffer = new UnsafeBuffer(new byte[1024 * 1024]);
@@ -164,7 +164,7 @@ public class ClientApiMessageHandlerTest
     public void shouldHandleCommandRequest() throws InterruptedException, ExecutionException
     {
         // given
-        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_PARTITION_ID, null, ValueType.TASK, TaskIntent.CREATE);
+        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_PARTITION_ID, null, ValueType.JOB, JobIntent.CREATE);
 
         // when
         final boolean isHandled = messageHandler.onRequest(serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, REQUEST_ID);
@@ -177,11 +177,11 @@ public class ClientApiMessageHandlerTest
 
         final LoggedEvent loggedEvent = logStreamReader.next();
 
-        final byte[] valueBuffer = new byte[TASK_EVENT.length];
+        final byte[] valueBuffer = new byte[JOB_EVENT.length];
         loggedEvent.getValueBuffer().getBytes(loggedEvent.getValueOffset(), valueBuffer, 0, loggedEvent.getValueLength());
 
-        assertThat(loggedEvent.getValueLength()).isEqualTo(TASK_EVENT.length);
-        assertThat(valueBuffer).isEqualTo(TASK_EVENT);
+        assertThat(loggedEvent.getValueLength()).isEqualTo(JOB_EVENT.length);
+        assertThat(valueBuffer).isEqualTo(JOB_EVENT);
 
         final RecordMetadata eventMetadata = new RecordMetadata();
         loggedEvent.readMetadata(eventMetadata);
@@ -195,7 +195,7 @@ public class ClientApiMessageHandlerTest
     {
         // given
         final short clientProtocolVersion = Protocol.PROTOCOL_VERSION - 1;
-        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_PARTITION_ID, clientProtocolVersion, ValueType.TASK, TaskIntent.CREATE);
+        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_PARTITION_ID, clientProtocolVersion, ValueType.JOB, JobIntent.CREATE);
 
         // when
         final boolean isHandled = messageHandler.onRequest(serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, 123);
@@ -217,7 +217,7 @@ public class ClientApiMessageHandlerTest
     public void shouldWriteCommandRequestEventType() throws InterruptedException, ExecutionException
     {
         // given
-        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_PARTITION_ID, null, ValueType.TASK, TaskIntent.CREATE);
+        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_PARTITION_ID, null, ValueType.JOB, JobIntent.CREATE);
 
         // when
         final boolean isHandled = messageHandler.onRequest(serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, 123);
@@ -232,8 +232,8 @@ public class ClientApiMessageHandlerTest
         final RecordMetadata eventMetadata = new RecordMetadata();
         loggedEvent.readMetadata(eventMetadata);
 
-        assertThat(eventMetadata.getValueType()).isEqualTo(ValueType.TASK);
-        assertThat(eventMetadata.getIntent()).isEqualTo(TaskIntent.CREATE);
+        assertThat(eventMetadata.getValueType()).isEqualTo(ValueType.JOB);
+        assertThat(eventMetadata.getIntent()).isEqualTo(JobIntent.CREATE);
     }
 
     @Test
@@ -269,14 +269,14 @@ public class ClientApiMessageHandlerTest
 
         final byte[] requestData = readBytes(controlRequestDecoder::getData, controlRequestDecoder::dataLength);
 
-        assertThat(requestData).isEqualTo(TASK_EVENT);
+        assertThat(requestData).isEqualTo(JOB_EVENT);
     }
 
     @Test
     public void shouldSendErrorMessageIfTopicNotFound()
     {
         // given
-        final int writtenLength = writeCommandRequestToBuffer(buffer, 99, null, ValueType.TASK, TaskIntent.CREATE);
+        final int writtenLength = writeCommandRequestToBuffer(buffer, 99, null, ValueType.JOB, JobIntent.CREATE);
 
         // when
         final boolean isHandled = messageHandler.onRequest(serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, REQUEST_ID);
@@ -321,7 +321,7 @@ public class ClientApiMessageHandlerTest
     public void shouldSendErrorMessageOnRequestWithNewerProtocolVersion()
     {
         // given
-        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_PARTITION_ID, Short.MAX_VALUE, ValueType.TASK, TaskIntent.CREATE);
+        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_PARTITION_ID, Short.MAX_VALUE, ValueType.JOB, JobIntent.CREATE);
 
         // when
         final boolean isHandled = messageHandler.onRequest(serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, REQUEST_ID);
@@ -401,7 +401,7 @@ public class ClientApiMessageHandlerTest
             .partitionId(partitionId)
             .valueType(eventTypeToWrite)
             .intent(intent.value())
-            .putValue(TASK_EVENT, 0, TASK_EVENT.length);
+            .putValue(JOB_EVENT, 0, JOB_EVENT.length);
 
         return headerEncoder.encodedLength() +
                 commandRequestEncoder.encodedLength();
@@ -421,7 +421,7 @@ public class ClientApiMessageHandlerTest
 
         controlRequestEncoder.wrap(buffer, offset);
 
-        controlRequestEncoder.putData(TASK_EVENT, 0, TASK_EVENT.length);
+        controlRequestEncoder.putData(JOB_EVENT, 0, JOB_EVENT.length);
 
         return headerEncoder.encodedLength() +
                 controlRequestEncoder.encodedLength();
