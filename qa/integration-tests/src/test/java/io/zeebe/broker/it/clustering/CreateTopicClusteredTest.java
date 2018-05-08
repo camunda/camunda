@@ -34,6 +34,7 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
@@ -181,9 +182,8 @@ public class CreateTopicClusteredTest
         assertThat(completedTask.getState()).isEqualTo("COMPLETED");
     }
 
-
     @Test
-    public void shouldRemovePartitionServiceAfterGoUnderReplicationFactor()
+    public void shouldNotBeAbleToRequestTopicsAfterGoingUnderReplicationFactor()
     {
         // given
         final TopologyBroker leaderForSystemPartition = clusteringRule.getLeaderForPartition(Protocol.SYSTEM_PARTITION);
@@ -202,12 +202,50 @@ public class CreateTopicClusteredTest
                 .anyMatch(partition -> partition.getTopicName().equalsIgnoreCase(Protocol.SYSTEM_TOPIC));
         }));
 
-        // but requesting topics is not possible since replication factor is not reached leader partition was removed
+        // but requesting topics is not possible since replication factor is not reached -> leader partition was removed
         final Future<Topics> topicRequestFuture = client.topics().getTopics().executeAsync();
-        doRepeatedly(() -> clientRule.getActorClock().addTime(Duration.ofSeconds(20)))
+        doRepeatedly(() -> clientRule.getActorClock().addTime(Duration.ofSeconds(1)))
             .until((v) -> topicRequestFuture.isDone());
         assertThatThrownBy(() -> topicRequestFuture.get())
             .hasMessageContaining("Request timed out (PT15S). Request was: [ target topic = null, target partition = 0, type = REQUEST_PARTITIONS]")
+            .hasCauseInstanceOf(ClientException.class);
+    }
+
+    @Test
+    public void shouldNotBeAbleToCreateTaskAfterGoingUnderReplicationFactor()
+    {
+        // given
+        final int partitionCount = 1;
+        final int replicationFactor = 3;
+        final String topicName = "topicName";
+        final Topic topic = clusteringRule.createTopic(topicName, partitionCount, replicationFactor);
+
+        final TopologyBroker leaderForSystemPartition = clusteringRule.getLeaderForPartition(Protocol.SYSTEM_PARTITION);
+        final int partitionId = topic.getPartitions().get(0).getId();
+        final TopologyBroker leaderForTopicPartition = clusteringRule.getLeaderForPartition(partitionId);
+        final SocketAddress[] otherBrokers = clusteringRule.getOtherBrokers(leaderForTopicPartition.getSocketAddress());
+
+        // when
+        // stop broker which is no leader to decrement member size correctly
+        final SocketAddress brokerWhichIsNoLeader = Arrays.stream(otherBrokers).filter(broker -> !broker.equals(leaderForSystemPartition.getSocketAddress())).findAny().get();
+        clusteringRule.stopBroker(brokerWhichIsNoLeader);
+
+        // then topology contains still topic
+        clusteringRule.checkTopology((topologyResponse ->
+        {
+            return topologyResponse.getBrokers()
+                .stream()
+                .flatMap(broker -> broker.getPartitions().stream())
+                .anyMatch(partition -> partition.getTopicName().equalsIgnoreCase(topicName));
+        }));
+
+        // but creating task on topic is no longer possible since replication factor is not reached -> leader partition was removed
+        final String taskType = "taskType";
+        final Future<TaskEvent> taskCreationFuture = client.tasks().create(topicName, taskType).executeAsync();
+        doRepeatedly(() -> clientRule.getActorClock().addTime(Duration.ofSeconds(1)))
+            .until((v) -> taskCreationFuture.isDone());
+        assertThatThrownBy(() -> taskCreationFuture.get())
+            .hasMessageContaining("Request timed out (PT15S). Request was: [ topic = topicName, partition = 1, event type = TASK, state = CREATE ]")
             .hasCauseInstanceOf(ClientException.class);
     }
 }
