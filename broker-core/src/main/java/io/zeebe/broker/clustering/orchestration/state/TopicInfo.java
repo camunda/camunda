@@ -20,7 +20,7 @@ package io.zeebe.broker.clustering.orchestration.state;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
 
-import io.zeebe.broker.clustering.orchestration.topic.TopicEvent;
+import io.zeebe.broker.clustering.orchestration.topic.TopicRecord;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.ArrayProperty;
 import io.zeebe.msgpack.property.IntegerProperty;
@@ -103,7 +103,7 @@ public class TopicInfo extends UnpackedObject
         return partitionIds;
     }
 
-    public void asTopicEvent(final TopicEvent topicEvent)
+    public void asTopicEvent(final TopicRecord topicEvent)
     {
         topicEvent.reset();
         topicEvent.setName(getTopicNameBuffer());
@@ -114,9 +114,9 @@ public class TopicInfo extends UnpackedObject
         getPartitionIds().forEach(id -> eventPartitionIds.add().setValue(id.getValue()));
     }
 
-    public TopicEvent toTopicEvent()
+    public TopicRecord toTopicEvent()
     {
-        final TopicEvent topicEvent = new TopicEvent();
+        final TopicRecord topicEvent = new TopicRecord();
         asTopicEvent(topicEvent);
         return topicEvent;
     }

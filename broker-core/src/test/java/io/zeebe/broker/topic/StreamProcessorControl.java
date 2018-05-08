@@ -19,11 +19,11 @@ package io.zeebe.broker.topic;
 
 import java.util.function.Predicate;
 
-import io.zeebe.broker.clustering.orchestration.topic.TopicEvent;
-import io.zeebe.broker.incident.data.IncidentEvent;
+import io.zeebe.broker.clustering.orchestration.topic.TopicRecord;
+import io.zeebe.broker.incident.data.IncidentRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
-import io.zeebe.broker.task.data.TaskEvent;
-import io.zeebe.broker.workflow.data.DeploymentEvent;
+import io.zeebe.broker.task.data.TaskRecord;
+import io.zeebe.broker.workflow.data.DeploymentRecord;
 import io.zeebe.logstreams.log.LoggedEvent;
 
 public interface StreamProcessorControl
@@ -33,13 +33,13 @@ public interface StreamProcessorControl
 
     void blockAfterEvent(Predicate<LoggedEvent> test);
 
-    void blockAfterTaskEvent(Predicate<TypedRecord<TaskEvent>> test);
+    void blockAfterTaskEvent(Predicate<TypedRecord<TaskRecord>> test);
 
-    void blockAfterDeploymentEvent(Predicate<TypedRecord<DeploymentEvent>> test);
+    void blockAfterDeploymentEvent(Predicate<TypedRecord<DeploymentRecord>> test);
 
-    void blockAfterIncidentEvent(Predicate<TypedRecord<IncidentEvent>> test);
+    void blockAfterIncidentEvent(Predicate<TypedRecord<IncidentRecord>> test);
 
-    void blockAfterTopicEvent(Predicate<TypedRecord<TopicEvent>> test);
+    void blockAfterTopicEvent(Predicate<TypedRecord<TopicRecord>> test);
 
     void purgeSnapshot();
 

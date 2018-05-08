@@ -24,7 +24,7 @@ import io.zeebe.msgpack.property.ArrayProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.msgpack.value.ValueArray;
 
-public class DeploymentEvent extends UnpackedObject
+public class DeploymentRecord extends UnpackedObject
 {
     private final StringProperty topicNameProp = new StringProperty("topicName");
 
@@ -38,7 +38,7 @@ public class DeploymentEvent extends UnpackedObject
 
     private final StringProperty errorMessageProp = new StringProperty("errorMessage", "");
 
-    public DeploymentEvent()
+    public DeploymentRecord()
     {
         this
             .declareProperty(topicNameProp)
@@ -62,13 +62,13 @@ public class DeploymentEvent extends UnpackedObject
         return errorMessageProp.getValue();
     }
 
-    public DeploymentEvent setErrorMessage(String errorMessage)
+    public DeploymentRecord setErrorMessage(String errorMessage)
     {
         this.errorMessageProp.setValue(errorMessage);
         return this;
     }
 
-    public DeploymentEvent setErrorMessage(DirectBuffer errorMessage, int offset, int length)
+    public DeploymentRecord setErrorMessage(DirectBuffer errorMessage, int offset, int length)
     {
         this.errorMessageProp.setValue(errorMessage, offset, length);
         return this;
@@ -79,7 +79,7 @@ public class DeploymentEvent extends UnpackedObject
         return topicNameProp.getValue();
     }
 
-    public DeploymentEvent setTopicName(String topicName)
+    public DeploymentRecord setTopicName(String topicName)
     {
         this.topicNameProp.setValue(topicName);
         return this;

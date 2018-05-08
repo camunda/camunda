@@ -23,11 +23,11 @@ import java.util.function.Consumer;
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.event.processor.TopicSubscriberEvent;
 import io.zeebe.broker.event.processor.TopicSubscriptionEvent;
-import io.zeebe.broker.clustering.orchestration.topic.TopicEvent;
-import io.zeebe.broker.task.data.TaskEvent;
+import io.zeebe.broker.clustering.orchestration.topic.TopicRecord;
+import io.zeebe.broker.task.data.TaskRecord;
 import io.zeebe.broker.transport.controlmessage.ControlMessageRequestHeaderDescriptor;
-import io.zeebe.broker.workflow.data.DeploymentEvent;
-import io.zeebe.broker.workflow.data.WorkflowInstanceEvent;
+import io.zeebe.broker.workflow.data.DeploymentRecord;
+import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.dispatcher.ClaimedFragment;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.logstreams.log.LogStreamWriter;
@@ -73,12 +73,12 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
 
     private void initEventTypeMap()
     {
-        recordsByType.put(ValueType.DEPLOYMENT, new DeploymentEvent());
-        recordsByType.put(ValueType.TASK, new TaskEvent());
-        recordsByType.put(ValueType.WORKFLOW_INSTANCE, new WorkflowInstanceEvent());
+        recordsByType.put(ValueType.DEPLOYMENT, new DeploymentRecord());
+        recordsByType.put(ValueType.TASK, new TaskRecord());
+        recordsByType.put(ValueType.WORKFLOW_INSTANCE, new WorkflowInstanceRecord());
         recordsByType.put(ValueType.SUBSCRIBER, new TopicSubscriberEvent());
         recordsByType.put(ValueType.SUBSCRIPTION, new TopicSubscriptionEvent());
-        recordsByType.put(ValueType.TOPIC, new TopicEvent());
+        recordsByType.put(ValueType.TOPIC, new TopicRecord());
     }
 
     private boolean handleExecuteCommandRequest(

@@ -25,7 +25,7 @@ import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 
 import io.zeebe.broker.Loggers;
-import io.zeebe.broker.clustering.orchestration.topic.TopicEvent;
+import io.zeebe.broker.clustering.orchestration.topic.TopicRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
@@ -33,17 +33,17 @@ import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.util.buffer.BufferUtil;
 
-public class TopicCreatedProcessor implements TypedRecordProcessor<TopicEvent>
+public class TopicCreatedProcessor implements TypedRecordProcessor<TopicRecord>
 {
     private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
 
     private final Predicate<DirectBuffer> topicAlreadyCreated;
     private final Consumer<DirectBuffer> notifyListeners;
-    private final BiConsumer<Long, TopicEvent> updateTopicState;
+    private final BiConsumer<Long, TopicRecord> updateTopicState;
 
     private boolean isCreated;
 
-    public TopicCreatedProcessor(final Predicate<DirectBuffer> topicAlreadyCreated, final Consumer<DirectBuffer> notifyListeners, final BiConsumer<Long, TopicEvent> updateTopicState)
+    public TopicCreatedProcessor(final Predicate<DirectBuffer> topicAlreadyCreated, final Consumer<DirectBuffer> notifyListeners, final BiConsumer<Long, TopicRecord> updateTopicState)
     {
         this.topicAlreadyCreated = topicAlreadyCreated;
         this.notifyListeners = notifyListeners;
@@ -51,9 +51,9 @@ public class TopicCreatedProcessor implements TypedRecordProcessor<TopicEvent>
     }
 
     @Override
-    public void processRecord(final TypedRecord<TopicEvent> event)
+    public void processRecord(final TypedRecord<TopicRecord> event)
     {
-        final TopicEvent topicEvent = event.getValue();
+        final TopicRecord topicEvent = event.getValue();
 
         final DirectBuffer topicName = topicEvent.getName();
 
@@ -66,7 +66,7 @@ public class TopicCreatedProcessor implements TypedRecordProcessor<TopicEvent>
     }
 
     @Override
-    public boolean executeSideEffects(final TypedRecord<TopicEvent> event, final TypedResponseWriter responseWriter)
+    public boolean executeSideEffects(final TypedRecord<TopicRecord> event, final TypedResponseWriter responseWriter)
     {
         if (isCreated)
         {
@@ -77,7 +77,7 @@ public class TopicCreatedProcessor implements TypedRecordProcessor<TopicEvent>
     }
 
     @Override
-    public long writeRecord(final TypedRecord<TopicEvent> event, final TypedStreamWriter writer)
+    public long writeRecord(final TypedRecord<TopicRecord> event, final TypedStreamWriter writer)
     {
         if (isCreated)
         {
@@ -90,7 +90,7 @@ public class TopicCreatedProcessor implements TypedRecordProcessor<TopicEvent>
     }
 
     @Override
-    public void updateState(final TypedRecord<TopicEvent> event)
+    public void updateState(final TypedRecord<TopicRecord> event)
     {
         if (isCreated)
         {

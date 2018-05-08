@@ -30,7 +30,7 @@ import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.task.CreditsRequest;
 import io.zeebe.broker.task.TaskSubscriptionManager;
-import io.zeebe.broker.task.data.TaskEvent;
+import io.zeebe.broker.task.data.TaskRecord;
 import io.zeebe.broker.task.map.TaskInstanceMap;
 import io.zeebe.broker.transport.clientapi.SubscribedRecordWriter;
 import io.zeebe.protocol.clientapi.Intent;
@@ -78,11 +78,11 @@ public class TaskInstanceStreamProcessor
             .build();
     }
 
-    private class CreateTaskProcessor implements TypedRecordProcessor<TaskEvent>
+    private class CreateTaskProcessor implements TypedRecordProcessor<TaskRecord>
     {
 
         @Override
-        public boolean executeSideEffects(TypedRecord<TaskEvent> command, TypedResponseWriter responseWriter)
+        public boolean executeSideEffects(TypedRecord<TaskRecord> command, TypedResponseWriter responseWriter)
         {
             boolean success = true;
 
@@ -95,13 +95,13 @@ public class TaskInstanceStreamProcessor
         }
 
         @Override
-        public long writeRecord(TypedRecord<TaskEvent> command, TypedStreamWriter writer)
+        public long writeRecord(TypedRecord<TaskRecord> command, TypedStreamWriter writer)
         {
             return writer.writeFollowUpEvent(command.getKey(), Intent.CREATED, command.getValue());
         }
 
         @Override
-        public void updateState(TypedRecord<TaskEvent> command)
+        public void updateState(TypedRecord<TaskRecord> command)
         {
             taskIndex
                 .newTaskInstance(command.getKey())
@@ -110,13 +110,13 @@ public class TaskInstanceStreamProcessor
         }
     }
 
-    private class LockTaskProcessor implements TypedRecordProcessor<TaskEvent>
+    private class LockTaskProcessor implements TypedRecordProcessor<TaskRecord>
     {
         protected boolean isLocked;
         protected final CreditsRequest creditsRequest = new CreditsRequest();
 
         @Override
-        public void processRecord(TypedRecord<TaskEvent> command)
+        public void processRecord(TypedRecord<TaskRecord> command)
         {
             isLocked = false;
 
@@ -129,7 +129,7 @@ public class TaskInstanceStreamProcessor
         }
 
         @Override
-        public boolean executeSideEffects(TypedRecord<TaskEvent> command, TypedResponseWriter responseWriter)
+        public boolean executeSideEffects(TypedRecord<TaskRecord> command, TypedResponseWriter responseWriter)
         {
             boolean success = true;
 
@@ -162,7 +162,7 @@ public class TaskInstanceStreamProcessor
         }
 
         @Override
-        public long writeRecord(TypedRecord<TaskEvent> command, TypedStreamWriter writer)
+        public long writeRecord(TypedRecord<TaskRecord> command, TypedStreamWriter writer)
         {
             if (isLocked)
             {
@@ -175,7 +175,7 @@ public class TaskInstanceStreamProcessor
         }
 
         @Override
-        public void updateState(TypedRecord<TaskEvent> command)
+        public void updateState(TypedRecord<TaskRecord> command)
         {
             if (isLocked)
             {
@@ -187,19 +187,19 @@ public class TaskInstanceStreamProcessor
         }
     }
 
-    private class CompleteTaskProcessor implements TypedRecordProcessor<TaskEvent>
+    private class CompleteTaskProcessor implements TypedRecordProcessor<TaskRecord>
     {
         protected boolean isCompleted;
 
         @Override
-        public void processRecord(TypedRecord<TaskEvent> event)
+        public void processRecord(TypedRecord<TaskRecord> event)
         {
             isCompleted = false;
 
             taskIndex.wrapTaskInstanceKey(event.getKey());
             final short state = taskIndex.getState();
 
-            final TaskEvent value = event.getValue();
+            final TaskRecord value = event.getValue();
 
             final boolean isCompletable = state == STATE_LOCKED || state == STATE_LOCK_EXPIRED;
             if (isCompletable)
@@ -216,7 +216,7 @@ public class TaskInstanceStreamProcessor
         }
 
         @Override
-        public boolean executeSideEffects(TypedRecord<TaskEvent> event, TypedResponseWriter responseWriter)
+        public boolean executeSideEffects(TypedRecord<TaskRecord> event, TypedResponseWriter responseWriter)
         {
             if (isCompleted)
             {
@@ -229,7 +229,7 @@ public class TaskInstanceStreamProcessor
         }
 
         @Override
-        public long writeRecord(TypedRecord<TaskEvent> event, TypedStreamWriter writer)
+        public long writeRecord(TypedRecord<TaskRecord> event, TypedStreamWriter writer)
         {
             if (isCompleted)
             {
@@ -242,7 +242,7 @@ public class TaskInstanceStreamProcessor
         }
 
         @Override
-        public void updateState(TypedRecord<TaskEvent> event)
+        public void updateState(TypedRecord<TaskRecord> event)
         {
             if (isCompleted)
             {
@@ -251,16 +251,16 @@ public class TaskInstanceStreamProcessor
         }
     }
 
-    private class FailTaskProcessor implements TypedRecordProcessor<TaskEvent>
+    private class FailTaskProcessor implements TypedRecordProcessor<TaskRecord>
     {
         protected boolean isFailed;
 
         @Override
-        public void processRecord(TypedRecord<TaskEvent> command)
+        public void processRecord(TypedRecord<TaskRecord> command)
         {
             isFailed = false;
 
-            final TaskEvent value = command.getValue();
+            final TaskRecord value = command.getValue();
 
             taskIndex.wrapTaskInstanceKey(command.getKey());
             if (taskIndex.getState() == STATE_LOCKED && BufferUtil.contentsEqual(taskIndex.getLockOwner(), value.getLockOwner()))
@@ -270,7 +270,7 @@ public class TaskInstanceStreamProcessor
         }
 
         @Override
-        public boolean executeSideEffects(TypedRecord<TaskEvent> command, TypedResponseWriter responseWriter)
+        public boolean executeSideEffects(TypedRecord<TaskRecord> command, TypedResponseWriter responseWriter)
         {
             if (isFailed)
             {
@@ -283,7 +283,7 @@ public class TaskInstanceStreamProcessor
         }
 
         @Override
-        public long writeRecord(TypedRecord<TaskEvent> command, TypedStreamWriter writer)
+        public long writeRecord(TypedRecord<TaskRecord> command, TypedStreamWriter writer)
         {
             if (isFailed)
             {
@@ -296,7 +296,7 @@ public class TaskInstanceStreamProcessor
         }
 
         @Override
-        public void updateState(TypedRecord<TaskEvent> command)
+        public void updateState(TypedRecord<TaskRecord> command)
         {
             if (isFailed)
             {
@@ -307,12 +307,12 @@ public class TaskInstanceStreamProcessor
         }
     }
 
-    private class ExpireLockTaskProcessor implements TypedRecordProcessor<TaskEvent>
+    private class ExpireLockTaskProcessor implements TypedRecordProcessor<TaskRecord>
     {
         protected boolean isExpired;
 
         @Override
-        public void processRecord(TypedRecord<TaskEvent> command)
+        public void processRecord(TypedRecord<TaskRecord> command)
         {
             isExpired = false;
 
@@ -325,7 +325,7 @@ public class TaskInstanceStreamProcessor
         }
 
         @Override
-        public long writeRecord(TypedRecord<TaskEvent> command, TypedStreamWriter writer)
+        public long writeRecord(TypedRecord<TaskRecord> command, TypedStreamWriter writer)
         {
             if (isExpired)
             {
@@ -338,7 +338,7 @@ public class TaskInstanceStreamProcessor
         }
 
         @Override
-        public void updateState(TypedRecord<TaskEvent> command)
+        public void updateState(TypedRecord<TaskRecord> command)
         {
             if (isExpired)
             {
@@ -349,20 +349,20 @@ public class TaskInstanceStreamProcessor
         }
     }
 
-    private class UpdateRetriesTaskProcessor implements TypedRecordProcessor<TaskEvent>
+    private class UpdateRetriesTaskProcessor implements TypedRecordProcessor<TaskRecord>
     {
         private boolean success;
 
         @Override
-        public void processRecord(TypedRecord<TaskEvent> command)
+        public void processRecord(TypedRecord<TaskRecord> command)
         {
             final short state = taskIndex.wrapTaskInstanceKey(command.getKey()).getState();
-            final TaskEvent value = command.getValue();
+            final TaskRecord value = command.getValue();
             success = state == STATE_FAILED && value.getRetries() > 0;
         }
 
         @Override
-        public boolean executeSideEffects(TypedRecord<TaskEvent> command, TypedResponseWriter responseWriter)
+        public boolean executeSideEffects(TypedRecord<TaskRecord> command, TypedResponseWriter responseWriter)
         {
             if (success)
             {
@@ -375,7 +375,7 @@ public class TaskInstanceStreamProcessor
         }
 
         @Override
-        public long writeRecord(TypedRecord<TaskEvent> command, TypedStreamWriter writer)
+        public long writeRecord(TypedRecord<TaskRecord> command, TypedStreamWriter writer)
         {
             if (success)
             {
@@ -388,19 +388,19 @@ public class TaskInstanceStreamProcessor
         }
     }
 
-    private class CancelTaskProcessor implements TypedRecordProcessor<TaskEvent>
+    private class CancelTaskProcessor implements TypedRecordProcessor<TaskRecord>
     {
         private boolean isCanceled;
 
         @Override
-        public void processRecord(TypedRecord<TaskEvent> command)
+        public void processRecord(TypedRecord<TaskRecord> command)
         {
             final short state = taskIndex.wrapTaskInstanceKey(command.getKey()).getState();
             isCanceled = state > 0;
         }
 
         @Override
-        public long writeRecord(TypedRecord<TaskEvent> command, TypedStreamWriter writer)
+        public long writeRecord(TypedRecord<TaskRecord> command, TypedStreamWriter writer)
         {
             if (isCanceled)
             {
@@ -413,7 +413,7 @@ public class TaskInstanceStreamProcessor
         }
 
         @Override
-        public void updateState(TypedRecord<TaskEvent> command)
+        public void updateState(TypedRecord<TaskRecord> command)
         {
             if (isCanceled)
             {

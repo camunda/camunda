@@ -19,9 +19,9 @@ package io.zeebe.broker.topic;
 
 import org.agrona.DirectBuffer;
 
-import io.zeebe.broker.clustering.orchestration.topic.TopicEvent;
-import io.zeebe.broker.task.data.TaskEvent;
-import io.zeebe.broker.workflow.data.DeploymentEvent;
+import io.zeebe.broker.clustering.orchestration.topic.TopicRecord;
+import io.zeebe.broker.task.data.TaskRecord;
+import io.zeebe.broker.workflow.data.DeploymentRecord;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.Intent;
@@ -34,19 +34,19 @@ import io.zeebe.util.buffer.BufferUtil;
 public class Records
 {
 
-    public static DeploymentEvent asDeploymentRecord(LoggedEvent event)
+    public static DeploymentRecord asDeploymentRecord(LoggedEvent event)
     {
-        return readValueAs(event, DeploymentEvent.class);
+        return readValueAs(event, DeploymentRecord.class);
     }
 
-    public static TopicEvent asTopicRecord(LoggedEvent event)
+    public static TopicRecord asTopicRecord(LoggedEvent event)
     {
-        return readValueAs(event, TopicEvent.class);
+        return readValueAs(event, TopicRecord.class);
     }
 
-    public static TaskEvent asTaskRecord(LoggedEvent event)
+    public static TaskRecord asTaskRecord(LoggedEvent event)
     {
-        return readValueAs(event, TaskEvent.class);
+        return readValueAs(event, TaskRecord.class);
     }
 
     protected static <T extends UnpackedObject> T readValueAs(LoggedEvent event, Class<T> valueClass)

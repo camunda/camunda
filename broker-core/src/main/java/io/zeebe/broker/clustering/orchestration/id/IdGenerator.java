@@ -48,7 +48,7 @@ import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 
-public class IdGenerator implements TypedRecordProcessor<IdEvent>, Service<IdGenerator>
+public class IdGenerator implements TypedRecordProcessor<IdRecord>, Service<IdGenerator>
 {
 
     private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
@@ -58,7 +58,7 @@ public class IdGenerator implements TypedRecordProcessor<IdEvent>, Service<IdGen
     private final Injector<Partition> partitionInjector = new Injector<>();
 
     private final Queue<ActorFuture<Integer>> pendingFutures = new ArrayDeque<>();
-    private final IdEvent idEvent = new IdEvent();
+    private final IdRecord idEvent = new IdRecord();
 
     private final IntegerValue committedId = new IntegerValue(0);
     private int nextIdToWrite = Protocol.SYSTEM_PARTITION + 1;
@@ -74,10 +74,10 @@ public class IdGenerator implements TypedRecordProcessor<IdEvent>, Service<IdGen
     }
 
     @Override
-    public boolean executeSideEffects(final TypedRecord<IdEvent> event, final TypedResponseWriter responseWriter)
+    public boolean executeSideEffects(final TypedRecord<IdRecord> event, final TypedResponseWriter responseWriter)
     {
         // complete pending futures
-        final IdEvent value = event.getValue();
+        final IdRecord value = event.getValue();
         final ActorFuture<Integer> pendingIdFuture = pendingFutures.poll();
         if (pendingIdFuture != null)
         {
@@ -92,7 +92,7 @@ public class IdGenerator implements TypedRecordProcessor<IdEvent>, Service<IdGen
     }
 
     @Override
-    public void updateState(final TypedRecord<IdEvent> event)
+    public void updateState(final TypedRecord<IdRecord> event)
     {
         committedId.setValue(event.getValue().getId());
     }

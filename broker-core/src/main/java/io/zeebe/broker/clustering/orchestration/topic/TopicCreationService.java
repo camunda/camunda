@@ -177,7 +177,7 @@ public class TopicCreationService extends Actor implements Service<TopicCreation
                             final int partitionCount = pendingTopic.getPartitionCount();
                             final int replicationFactor = pendingTopic.getReplicationFactor();
 
-                            final TopicEvent topicEvent = new TopicEvent();
+                            final TopicRecord topicEvent = new TopicRecord();
                             topicEvent.setName(pendingTopic.getTopicNameBuffer());
                             topicEvent.setPartitions(partitionCount);
                             topicEvent.setReplicationFactor(replicationFactor);
@@ -287,7 +287,7 @@ public class TopicCreationService extends Actor implements Service<TopicCreation
         });
     }
 
-    private void writeEvent(final long key, Intent intent, final TopicEvent topicEvent)
+    private void writeEvent(final long key, Intent intent, final TopicRecord topicEvent)
     {
         if (streamWriter.writeFollowUpEvent(key, intent, topicEvent) >= 0)
         {

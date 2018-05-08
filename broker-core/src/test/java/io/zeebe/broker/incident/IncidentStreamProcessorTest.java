@@ -27,15 +27,15 @@ import java.util.stream.Collectors;
 import org.junit.Rule;
 import org.junit.Test;
 
-import io.zeebe.broker.incident.data.IncidentEvent;
+import io.zeebe.broker.incident.data.IncidentRecord;
 import io.zeebe.broker.incident.processor.IncidentStreamProcessor;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
-import io.zeebe.broker.task.data.TaskEvent;
+import io.zeebe.broker.task.data.TaskRecord;
 import io.zeebe.broker.topic.StreamProcessorControl;
 import io.zeebe.broker.util.StreamProcessorRule;
-import io.zeebe.broker.workflow.data.WorkflowInstanceEvent;
+import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.util.buffer.BufferUtil;
@@ -60,7 +60,7 @@ public class IncidentStreamProcessorTest
     public void shouldNotCreateIncidentIfRetriesAreUpdatedIntermittently()
     {
         // given
-        final TaskEvent task = task(0);
+        final TaskRecord task = task(0);
         final long key = rule.writeEvent(Intent.FAILED, task); // trigger incident creation
 
         task.setRetries(1);
@@ -72,7 +72,7 @@ public class IncidentStreamProcessorTest
         // then
         waitForRejectionWithIntent(Intent.CREATE);
 
-        final List<TypedRecord<IncidentEvent>> incidentEvents = rule.events().onlyIncidentRecords().collect(Collectors.toList());
+        final List<TypedRecord<IncidentRecord>> incidentEvents = rule.events().onlyIncidentRecords().collect(Collectors.toList());
         assertThat(incidentEvents).extracting(r -> r.getMetadata()).extracting(m -> m.getRecordType(), m -> m.getIntent())
             .containsExactly(
                 tuple(RecordType.COMMAND, Intent.CREATE),
@@ -89,12 +89,12 @@ public class IncidentStreamProcessorTest
         final StreamProcessorControl control = rule.runStreamProcessor(this::buildStreamProcessor);
         control.blockAfterIncidentEvent(e -> e.getMetadata().getIntent() == Intent.CREATED);
 
-        final WorkflowInstanceEvent activityInstance = new WorkflowInstanceEvent();
+        final WorkflowInstanceRecord activityInstance = new WorkflowInstanceRecord();
         activityInstance.setWorkflowInstanceKey(workflowInstanceKey);
 
         final long position = rule.writeEvent(activityInstanceKey, Intent.ACTIVITY_READY, activityInstance);
 
-        final IncidentEvent incident = new IncidentEvent();
+        final IncidentRecord incident = new IncidentRecord();
         incident.setWorkflowInstanceKey(workflowInstanceKey);
         incident.setActivityInstanceKey(activityInstanceKey);
         incident.setFailureEventPosition(position);
@@ -111,7 +111,7 @@ public class IncidentStreamProcessorTest
 
         // then
         waitForEventWithIntent(Intent.DELETED);
-        final List<TypedRecord<IncidentEvent>> incidentEvents = rule.events().onlyIncidentRecords().collect(Collectors.toList());
+        final List<TypedRecord<IncidentRecord>> incidentEvents = rule.events().onlyIncidentRecords().collect(Collectors.toList());
 
         assertThat(incidentEvents).extracting(r -> r.getMetadata()).extracting(m -> m.getRecordType(), m -> m.getIntent())
             .containsExactly(
@@ -123,9 +123,9 @@ public class IncidentStreamProcessorTest
                 tuple(RecordType.EVENT, Intent.DELETED));
     }
 
-    private TaskEvent task(int retries)
+    private TaskRecord task(int retries)
     {
-        final TaskEvent event = new TaskEvent();
+        final TaskRecord event = new TaskRecord();
 
         event.setRetries(retries);
         event.setType(BufferUtil.wrapString("foo"));

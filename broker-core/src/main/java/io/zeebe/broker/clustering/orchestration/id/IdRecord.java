@@ -20,12 +20,12 @@ package io.zeebe.broker.clustering.orchestration.id;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.IntegerProperty;
 
-public class IdEvent extends UnpackedObject
+public class IdRecord extends UnpackedObject
 {
 
     private final IntegerProperty id = new IntegerProperty("id");
 
-    public IdEvent()
+    public IdRecord()
     {
         this.declareProperty(id);
     }

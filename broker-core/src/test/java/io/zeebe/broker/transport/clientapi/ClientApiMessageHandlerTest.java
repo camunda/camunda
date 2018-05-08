@@ -43,7 +43,7 @@ import org.mockito.stubbing.Answer;
 
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.base.topology.PartitionInfo;
-import io.zeebe.broker.task.data.TaskEvent;
+import io.zeebe.broker.task.data.TaskRecord;
 import io.zeebe.broker.transport.controlmessage.ControlMessageRequestHeaderDescriptor;
 import io.zeebe.dispatcher.ClaimedFragment;
 import io.zeebe.dispatcher.Dispatcher;
@@ -81,7 +81,7 @@ public class ClientApiMessageHandlerTest
     protected static final byte[] TASK_EVENT;
     static
     {
-        final TaskEvent taskEvent = new TaskEvent()
+        final TaskRecord taskEvent = new TaskRecord()
                 .setType(wrapString("test"));
 
         final UnsafeBuffer buffer = new UnsafeBuffer(new byte[taskEvent.getEncodedLength()]);

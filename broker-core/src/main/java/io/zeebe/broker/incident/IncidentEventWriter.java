@@ -21,8 +21,8 @@ import static io.zeebe.util.EnsureUtil.ensureGreaterThan;
 import static io.zeebe.util.EnsureUtil.ensureNotNull;
 
 import io.zeebe.broker.incident.data.ErrorType;
-import io.zeebe.broker.incident.data.IncidentEvent;
-import io.zeebe.broker.workflow.data.WorkflowInstanceEvent;
+import io.zeebe.broker.incident.data.IncidentRecord;
+import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.logstreams.log.LogStreamWriter;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.Intent;
@@ -35,9 +35,9 @@ public class IncidentEventWriter
     private static final String UNKNOWN_ERROR = "unknown";
 
     private final RecordMetadata incidentEventMetadata = new RecordMetadata();
-    private final IncidentEvent incidentEvent = new IncidentEvent();
+    private final IncidentRecord incidentEvent = new IncidentRecord();
 
-    private final WorkflowInstanceEvent workflowInstanceEvent;
+    private final WorkflowInstanceRecord workflowInstanceEvent;
     private final RecordMetadata failureEventMetadata;
 
     private long failureEventPosition;
@@ -46,7 +46,7 @@ public class IncidentEventWriter
     private ErrorType errorType;
     private String errorMessage;
 
-    public IncidentEventWriter(RecordMetadata failureEventMetadata, WorkflowInstanceEvent workflowInstanceEvent)
+    public IncidentEventWriter(RecordMetadata failureEventMetadata, WorkflowInstanceRecord workflowInstanceEvent)
     {
         ensureNotNull("failure event metadata", failureEventMetadata);
         ensureNotNull("workflow instance event", workflowInstanceEvent);

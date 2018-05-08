@@ -37,7 +37,7 @@ import org.mockito.MockitoAnnotations;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.broker.task.TaskSubscriptionManager;
-import io.zeebe.broker.task.data.TaskEvent;
+import io.zeebe.broker.task.data.TaskRecord;
 import io.zeebe.broker.topic.StreamProcessorControl;
 import io.zeebe.broker.util.StreamProcessorRule;
 import io.zeebe.logstreams.processor.StreamProcessor;
@@ -73,7 +73,7 @@ public class TaskInstanceStreamProcessorTest
         rule.writeCommand(key, Intent.CREATE, task());
         waitForEventWithIntent(Intent.CREATED);
 
-        final TaskEvent lockedTask = lockedTask(nowPlus(Duration.ofSeconds(30)));
+        final TaskRecord lockedTask = lockedTask(nowPlus(Duration.ofSeconds(30)));
         rule.writeCommand(key, Intent.LOCK, lockedTask);
         waitForEventWithIntent(Intent.LOCKED);
 
@@ -86,7 +86,7 @@ public class TaskInstanceStreamProcessorTest
         // then
         waitForEventWithIntent(Intent.COMPLETED);
 
-        final List<TypedRecord<TaskEvent>> taskEvents = rule.events().onlyTaskRecords().collect(Collectors.toList());
+        final List<TypedRecord<TaskRecord>> taskEvents = rule.events().onlyTaskRecords().collect(Collectors.toList());
         assertThat(taskEvents).extracting(r -> r.getMetadata()).extracting(m -> m.getRecordType(), m -> m.getIntent())
             .containsExactly(
                     tuple(RecordType.COMMAND, Intent.CREATE),
@@ -120,7 +120,7 @@ public class TaskInstanceStreamProcessorTest
         // then
         waitForRejection(Intent.LOCK);
 
-        final List<TypedRecord<TaskEvent>> taskEvents = rule.events().onlyTaskRecords().collect(Collectors.toList());
+        final List<TypedRecord<TaskRecord>> taskEvents = rule.events().onlyTaskRecords().collect(Collectors.toList());
         assertThat(taskEvents).extracting(r -> r.getMetadata()).extracting(m -> m.getRecordType(), m -> m.getIntent())
             .containsExactly(
                     tuple(RecordType.COMMAND, Intent.CREATE),
@@ -146,7 +146,7 @@ public class TaskInstanceStreamProcessorTest
         // then
         waitForRejection(Intent.LOCK);
 
-        final List<TypedRecord<TaskEvent>> taskEvents = rule.events().onlyTaskRecords().collect(Collectors.toList());
+        final List<TypedRecord<TaskRecord>> taskEvents = rule.events().onlyTaskRecords().collect(Collectors.toList());
         assertThat(taskEvents).extracting(r -> r.getMetadata()).extracting(m -> m.getRecordType(), m -> m.getIntent())
             .containsExactly(
                     tuple(RecordType.COMMAND, Intent.LOCK),
@@ -165,7 +165,7 @@ public class TaskInstanceStreamProcessorTest
 
         control.blockAfterTaskEvent(e -> e.getMetadata().getIntent() == Intent.LOCKED);
 
-        final TaskEvent lockedTask = lockedTask(nowPlus(Duration.ofSeconds(30)));
+        final TaskRecord lockedTask = lockedTask(nowPlus(Duration.ofSeconds(30)));
         rule.writeCommand(key, Intent.LOCK, lockedTask);
         waitForEventWithIntent(Intent.LOCKED);
 
@@ -177,7 +177,7 @@ public class TaskInstanceStreamProcessorTest
         // then
         waitForRejection(Intent.EXPIRE_LOCK);
 
-        final List<TypedRecord<TaskEvent>> taskEvents = rule.events().onlyTaskRecords().collect(Collectors.toList());
+        final List<TypedRecord<TaskRecord>> taskEvents = rule.events().onlyTaskRecords().collect(Collectors.toList());
         assertThat(taskEvents).extracting(r -> r.getMetadata()).extracting(m -> m.getRecordType(), m -> m.getIntent())
             .containsExactly(
                     tuple(RecordType.COMMAND, Intent.CREATE),
@@ -211,7 +211,7 @@ public class TaskInstanceStreamProcessorTest
         // then
         waitForRejection(Intent.EXPIRE_LOCK);
 
-        final List<TypedRecord<TaskEvent>> taskEvents = rule.events().onlyTaskRecords().collect(Collectors.toList());
+        final List<TypedRecord<TaskRecord>> taskEvents = rule.events().onlyTaskRecords().collect(Collectors.toList());
         assertThat(taskEvents).extracting(r -> r.getMetadata()).extracting(m -> m.getRecordType(), m -> m.getIntent())
             .containsExactly(
                     tuple(RecordType.COMMAND, Intent.CREATE),
@@ -232,7 +232,7 @@ public class TaskInstanceStreamProcessorTest
 
         control.blockAfterTaskEvent(e -> e.getMetadata().getIntent() == Intent.LOCKED);
 
-        final TaskEvent lockedTask = lockedTask(nowPlus(Duration.ofSeconds(30)));
+        final TaskRecord lockedTask = lockedTask(nowPlus(Duration.ofSeconds(30)));
         rule.writeCommand(key, Intent.LOCK, lockedTask);
         waitForEventWithIntent(Intent.LOCKED);
 
@@ -244,7 +244,7 @@ public class TaskInstanceStreamProcessorTest
         // then
         waitForRejection(Intent.EXPIRE_LOCK);
 
-        final List<TypedRecord<TaskEvent>> taskEvents = rule.events().onlyTaskRecords().collect(Collectors.toList());
+        final List<TypedRecord<TaskRecord>> taskEvents = rule.events().onlyTaskRecords().collect(Collectors.toList());
         assertThat(taskEvents).extracting(r -> r.getMetadata()).extracting(m -> m.getRecordType(), m -> m.getIntent())
             .containsExactly(
                     tuple(RecordType.COMMAND, Intent.CREATE),
@@ -270,7 +270,7 @@ public class TaskInstanceStreamProcessorTest
 
         control.blockAfterTaskEvent(e -> e.getMetadata().getIntent() == Intent.LOCKED);
 
-        final TaskEvent lockedTask = lockedTask(nowPlus(Duration.ofSeconds(30)));
+        final TaskRecord lockedTask = lockedTask(nowPlus(Duration.ofSeconds(30)));
         rule.writeCommand(key, Intent.LOCK, lockedTask);
         waitForEventWithIntent(Intent.LOCKED);
 
@@ -282,7 +282,7 @@ public class TaskInstanceStreamProcessorTest
         // then
         waitForRejection(Intent.EXPIRE_LOCK);
 
-        final List<TypedRecord<TaskEvent>> taskEvents = rule.events().onlyTaskRecords().collect(Collectors.toList());
+        final List<TypedRecord<TaskRecord>> taskEvents = rule.events().onlyTaskRecords().collect(Collectors.toList());
         assertThat(taskEvents).extracting(r -> r.getMetadata()).extracting(m -> m.getRecordType(), m -> m.getIntent())
             .containsExactly(
                     tuple(RecordType.COMMAND, Intent.CREATE),
@@ -308,7 +308,7 @@ public class TaskInstanceStreamProcessorTest
         // then
         waitForRejection(Intent.EXPIRE_LOCK);
 
-        final List<TypedRecord<TaskEvent>> taskEvents = rule.events().onlyTaskRecords().collect(Collectors.toList());
+        final List<TypedRecord<TaskRecord>> taskEvents = rule.events().onlyTaskRecords().collect(Collectors.toList());
         assertThat(taskEvents).extracting(r -> r.getMetadata()).extracting(m -> m.getRecordType(), m -> m.getIntent())
             .containsExactly(
                     tuple(RecordType.COMMAND, Intent.EXPIRE_LOCK),
@@ -331,7 +331,7 @@ public class TaskInstanceStreamProcessorTest
         // then
         waitForEventWithIntent(Intent.CANCELED);
 
-        final List<TypedRecord<TaskEvent>> taskEvents = rule.events().onlyTaskRecords().collect(Collectors.toList());
+        final List<TypedRecord<TaskRecord>> taskEvents = rule.events().onlyTaskRecords().collect(Collectors.toList());
         assertThat(taskEvents).extracting(r -> r.getMetadata()).extracting(m -> m.getRecordType(), m -> m.getIntent())
             .containsExactly(
                 tuple(RecordType.COMMAND, Intent.CREATE),
@@ -350,7 +350,7 @@ public class TaskInstanceStreamProcessorTest
         rule.writeCommand(key, Intent.CREATE, task());
         waitForEventWithIntent(Intent.CREATED);
 
-        final TaskEvent lockedTask = lockedTask(nowPlus(Duration.ofSeconds(30)));
+        final TaskRecord lockedTask = lockedTask(nowPlus(Duration.ofSeconds(30)));
         rule.writeCommand(key, Intent.LOCK, lockedTask);
         waitForEventWithIntent(Intent.LOCKED);
 
@@ -360,7 +360,7 @@ public class TaskInstanceStreamProcessorTest
         // then
         waitForEventWithIntent(Intent.CANCELED);
 
-        final List<TypedRecord<TaskEvent>> taskEvents = rule.events().onlyTaskRecords().collect(Collectors.toList());
+        final List<TypedRecord<TaskRecord>> taskEvents = rule.events().onlyTaskRecords().collect(Collectors.toList());
         assertThat(taskEvents).extracting(r -> r.getMetadata()).extracting(m -> m.getRecordType(), m -> m.getIntent())
             .containsExactly(
                 tuple(RecordType.COMMAND, Intent.CREATE),
@@ -381,7 +381,7 @@ public class TaskInstanceStreamProcessorTest
         rule.writeCommand(key, Intent.CREATE, task());
         waitForEventWithIntent(Intent.CREATED);
 
-        final TaskEvent lockedTask = lockedTask(nowPlus(Duration.ofSeconds(30)));
+        final TaskRecord lockedTask = lockedTask(nowPlus(Duration.ofSeconds(30)));
         rule.writeCommand(key, Intent.LOCK, lockedTask);
         waitForEventWithIntent(Intent.LOCKED);
 
@@ -394,7 +394,7 @@ public class TaskInstanceStreamProcessorTest
         // then
         waitForEventWithIntent(Intent.CANCELED);
 
-        final List<TypedRecord<TaskEvent>> taskEvents = rule.events().onlyTaskRecords().collect(Collectors.toList());
+        final List<TypedRecord<TaskRecord>> taskEvents = rule.events().onlyTaskRecords().collect(Collectors.toList());
         assertThat(taskEvents).extracting(r -> r.getMetadata()).extracting(m -> m.getRecordType(), m -> m.getIntent())
             .containsExactly(
                 tuple(RecordType.COMMAND, Intent.CREATE),
@@ -418,7 +418,7 @@ public class TaskInstanceStreamProcessorTest
         rule.writeCommand(key, Intent.CREATE, task());
         waitForEventWithIntent(Intent.CREATED);
 
-        final TaskEvent lockedTask = lockedTask(nowPlus(Duration.ofSeconds(30)));
+        final TaskRecord lockedTask = lockedTask(nowPlus(Duration.ofSeconds(30)));
         rule.writeCommand(key, Intent.LOCK, lockedTask);
         waitForEventWithIntent(Intent.LOCKED);
 
@@ -431,7 +431,7 @@ public class TaskInstanceStreamProcessorTest
         // then
         waitForRejection(Intent.CANCEL);
 
-        final List<TypedRecord<TaskEvent>> taskEvents = rule.events().onlyTaskRecords().collect(Collectors.toList());
+        final List<TypedRecord<TaskRecord>> taskEvents = rule.events().onlyTaskRecords().collect(Collectors.toList());
         assertThat(taskEvents).extracting(r -> r.getMetadata()).extracting(m -> m.getRecordType(), m -> m.getIntent())
             .containsExactly(
                 tuple(RecordType.COMMAND, Intent.CREATE),
@@ -454,18 +454,18 @@ public class TaskInstanceStreamProcessorTest
         waitUntil(() -> rule.events().onlyTaskRecords().onlyRejections().withIntent(commandIntent).findFirst().isPresent());
     }
 
-    private TaskEvent task()
+    private TaskRecord task()
     {
-        final TaskEvent event = new TaskEvent();
+        final TaskRecord event = new TaskRecord();
 
         event.setType(BufferUtil.wrapString("foo"));
 
         return event;
     }
 
-    private TaskEvent lockedTask(Instant lockTime)
+    private TaskRecord lockedTask(Instant lockTime)
     {
-        final TaskEvent event = new TaskEvent();
+        final TaskRecord event = new TaskRecord();
 
         event.setType(BufferUtil.wrapString("foo"));
         event.setLockOwner(BufferUtil.wrapString("bar"));

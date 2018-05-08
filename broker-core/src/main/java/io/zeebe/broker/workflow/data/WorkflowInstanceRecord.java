@@ -23,7 +23,7 @@ import io.zeebe.msgpack.spec.MsgPackHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class WorkflowInstanceEvent extends UnpackedObject
+public class WorkflowInstanceRecord extends UnpackedObject
 {
     public static final DirectBuffer NO_PAYLOAD = new UnsafeBuffer(MsgPackHelper.NIL);
 
@@ -43,7 +43,7 @@ public class WorkflowInstanceEvent extends UnpackedObject
 
     private final BinaryProperty payloadProp = new BinaryProperty(PROP_WORKFLOW_PAYLOAD, NO_PAYLOAD);
 
-    public WorkflowInstanceEvent()
+    public WorkflowInstanceRecord()
     {
         this
             .declareProperty(bpmnProcessIdProp)
@@ -59,13 +59,13 @@ public class WorkflowInstanceEvent extends UnpackedObject
         return bpmnProcessIdProp.getValue();
     }
 
-    public WorkflowInstanceEvent setBpmnProcessId(DirectBuffer directBuffer)
+    public WorkflowInstanceRecord setBpmnProcessId(DirectBuffer directBuffer)
     {
         bpmnProcessIdProp.setValue(directBuffer);
         return this;
     }
 
-    public WorkflowInstanceEvent setBpmnProcessId(DirectBuffer directBuffer, int offset, int length)
+    public WorkflowInstanceRecord setBpmnProcessId(DirectBuffer directBuffer, int offset, int length)
     {
         bpmnProcessIdProp.setValue(directBuffer, offset, length);
         return this;
@@ -76,18 +76,18 @@ public class WorkflowInstanceEvent extends UnpackedObject
         return activityIdProp.getValue();
     }
 
-    public WorkflowInstanceEvent setActivityId(String activityId)
+    public WorkflowInstanceRecord setActivityId(String activityId)
     {
         this.activityIdProp.setValue(activityId);
         return this;
     }
 
-    public WorkflowInstanceEvent setActivityId(DirectBuffer activityId)
+    public WorkflowInstanceRecord setActivityId(DirectBuffer activityId)
     {
         return setActivityId(activityId, 0, activityId.capacity());
     }
 
-    public WorkflowInstanceEvent setActivityId(DirectBuffer activityId, int offset, int length)
+    public WorkflowInstanceRecord setActivityId(DirectBuffer activityId, int offset, int length)
     {
         this.activityIdProp.setValue(activityId, offset, length);
         return this;
@@ -98,7 +98,7 @@ public class WorkflowInstanceEvent extends UnpackedObject
         return workflowInstanceKeyProp.getValue();
     }
 
-    public WorkflowInstanceEvent setWorkflowInstanceKey(long workflowInstanceKey)
+    public WorkflowInstanceRecord setWorkflowInstanceKey(long workflowInstanceKey)
     {
         this.workflowInstanceKeyProp.setValue(workflowInstanceKey);
         return this;
@@ -109,7 +109,7 @@ public class WorkflowInstanceEvent extends UnpackedObject
         return versionProp.getValue();
     }
 
-    public WorkflowInstanceEvent setVersion(int version)
+    public WorkflowInstanceRecord setVersion(int version)
     {
         this.versionProp.setValue(version);
         return this;
@@ -120,7 +120,7 @@ public class WorkflowInstanceEvent extends UnpackedObject
         return workflowKeyProp.getValue();
     }
 
-    public WorkflowInstanceEvent setWorkflowKey(long workflowKey)
+    public WorkflowInstanceRecord setWorkflowKey(long workflowKey)
     {
         this.workflowKeyProp.setValue(workflowKey);
         return this;
@@ -131,13 +131,13 @@ public class WorkflowInstanceEvent extends UnpackedObject
         return payloadProp.getValue();
     }
 
-    public WorkflowInstanceEvent setPayload(DirectBuffer payload)
+    public WorkflowInstanceRecord setPayload(DirectBuffer payload)
     {
         payloadProp.setValue(payload);
         return this;
     }
 
-    public WorkflowInstanceEvent setPayload(DirectBuffer payload, int offset, int length)
+    public WorkflowInstanceRecord setPayload(DirectBuffer payload, int offset, int length)
     {
         payloadProp.setValue(payload, offset, length);
         return this;

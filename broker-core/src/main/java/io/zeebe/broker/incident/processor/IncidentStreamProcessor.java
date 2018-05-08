@@ -18,7 +18,7 @@
 package io.zeebe.broker.incident.processor;
 
 import io.zeebe.broker.incident.data.ErrorType;
-import io.zeebe.broker.incident.data.IncidentEvent;
+import io.zeebe.broker.incident.data.IncidentRecord;
 import io.zeebe.broker.incident.index.IncidentMap;
 import io.zeebe.broker.logstreams.processor.TypedEventStreamProcessorBuilder;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
@@ -27,9 +27,9 @@ import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.logstreams.processor.TypedStreamReader;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
-import io.zeebe.broker.task.data.TaskEvent;
+import io.zeebe.broker.task.data.TaskRecord;
 import io.zeebe.broker.task.data.TaskHeaders;
-import io.zeebe.broker.workflow.data.WorkflowInstanceEvent;
+import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.map.Long2LongZbMap;
 import io.zeebe.protocol.clientapi.Intent;
 import io.zeebe.protocol.clientapi.ValueType;
@@ -92,15 +92,15 @@ public class IncidentStreamProcessor
         return builder.build();
     }
 
-    private final class CreateIncidentProcessor implements TypedRecordProcessor<IncidentEvent>
+    private final class CreateIncidentProcessor implements TypedRecordProcessor<IncidentRecord>
     {
         private boolean isCreated;
         private boolean isTaskIncident;
 
         @Override
-        public void processRecord(TypedRecord<IncidentEvent> command)
+        public void processRecord(TypedRecord<IncidentRecord> command)
         {
-            final IncidentEvent incidentEvent = command.getValue();
+            final IncidentRecord incidentEvent = command.getValue();
 
             isTaskIncident = incidentEvent.getTaskKey() > 0;
             // ensure that the task is not resolved yet
@@ -108,7 +108,7 @@ public class IncidentStreamProcessor
         }
 
         @Override
-        public long writeRecord(TypedRecord<IncidentEvent> command, TypedStreamWriter writer)
+        public long writeRecord(TypedRecord<IncidentRecord> command, TypedStreamWriter writer)
         {
             if (isCreated)
             {
@@ -121,11 +121,11 @@ public class IncidentStreamProcessor
         }
 
         @Override
-        public void updateState(TypedRecord<IncidentEvent> command)
+        public void updateState(TypedRecord<IncidentRecord> command)
         {
             if (isCreated)
             {
-                final IncidentEvent incidentEvent = command.getValue();
+                final IncidentRecord incidentEvent = command.getValue();
                 incidentMap
                     .newIncident(command.getKey())
                     .setState(STATE_CREATED)
@@ -145,14 +145,14 @@ public class IncidentStreamProcessor
         }
     }
 
-    private final class PayloadUpdatedProcessor implements TypedRecordProcessor<WorkflowInstanceEvent>
+    private final class PayloadUpdatedProcessor implements TypedRecordProcessor<WorkflowInstanceRecord>
     {
         private boolean isResolving;
         private long incidentKey;
-        private final IncidentEvent incidentEvent = new IncidentEvent();
+        private final IncidentRecord incidentEvent = new IncidentRecord();
 
         @Override
-        public void processRecord(TypedRecord<WorkflowInstanceEvent> event)
+        public void processRecord(TypedRecord<WorkflowInstanceRecord> event)
         {
             isResolving = false;
 
@@ -160,7 +160,7 @@ public class IncidentStreamProcessor
 
             if (incidentKey > 0 && incidentMap.wrapIncidentKey(incidentKey).getState() == STATE_CREATED)
             {
-                final WorkflowInstanceEvent workflowInstanceEvent = event.getValue();
+                final WorkflowInstanceRecord workflowInstanceEvent = event.getValue();
 
                 incidentEvent.reset();
                 incidentEvent
@@ -173,19 +173,19 @@ public class IncidentStreamProcessor
         }
 
         @Override
-        public long writeRecord(TypedRecord<WorkflowInstanceEvent> event, TypedStreamWriter writer)
+        public long writeRecord(TypedRecord<WorkflowInstanceRecord> event, TypedStreamWriter writer)
         {
             return isResolving ? writer.writeFollowUpCommand(incidentKey, Intent.RESOLVE, incidentEvent) : 0L;
         }
     }
 
-    private final class ResolveIncidentProcessor implements TypedRecordProcessor<IncidentEvent>
+    private final class ResolveIncidentProcessor implements TypedRecordProcessor<IncidentRecord>
     {
         private final TypedStreamEnvironment environment;
         private TypedStreamReader reader;
 
         private boolean resolving;
-        private TypedRecord<WorkflowInstanceEvent> failureEvent;
+        private TypedRecord<WorkflowInstanceRecord> failureEvent;
         private long incidentKey;
 
         ResolveIncidentProcessor(TypedStreamEnvironment environment)
@@ -200,7 +200,7 @@ public class IncidentStreamProcessor
         }
 
         @Override
-        public void processRecord(TypedRecord<IncidentEvent> command)
+        public void processRecord(TypedRecord<IncidentRecord> command)
         {
             resolving = false;
 
@@ -212,13 +212,13 @@ public class IncidentStreamProcessor
             if (resolving)
             {
                 // re-write the failure event with new payload
-                failureEvent = reader.readValue(incidentMap.getFailureEventPosition(), WorkflowInstanceEvent.class);
+                failureEvent = reader.readValue(incidentMap.getFailureEventPosition(), WorkflowInstanceRecord.class);
                 failureEvent.getValue().setPayload(command.getValue().getPayload());
             }
         }
 
         @Override
-        public long writeRecord(TypedRecord<IncidentEvent> command, TypedStreamWriter writer)
+        public long writeRecord(TypedRecord<IncidentRecord> command, TypedStreamWriter writer)
         {
             final long position;
 
@@ -243,7 +243,7 @@ public class IncidentStreamProcessor
         }
 
         @Override
-        public void updateState(TypedRecord<IncidentEvent> command)
+        public void updateState(TypedRecord<IncidentRecord> command)
         {
             if (resolving)
             {
@@ -254,12 +254,12 @@ public class IncidentStreamProcessor
         }
     }
 
-    private final class ResolveFailedProcessor implements TypedRecordProcessor<IncidentEvent>
+    private final class ResolveFailedProcessor implements TypedRecordProcessor<IncidentRecord>
     {
         private boolean isFailed;
 
         @Override
-        public void processRecord(TypedRecord<IncidentEvent> event)
+        public void processRecord(TypedRecord<IncidentRecord> event)
         {
             incidentMap.wrapIncidentKey(event.getKey());
 
@@ -267,7 +267,7 @@ public class IncidentStreamProcessor
         }
 
         @Override
-        public void updateState(TypedRecord<IncidentEvent> event)
+        public void updateState(TypedRecord<IncidentRecord> event)
         {
             if (isFailed)
             {
@@ -278,13 +278,13 @@ public class IncidentStreamProcessor
         }
     }
 
-    private final class DeleteIncidentProcessor implements TypedRecordProcessor<IncidentEvent>
+    private final class DeleteIncidentProcessor implements TypedRecordProcessor<IncidentRecord>
     {
         private TypedStreamReader reader;
         private final TypedStreamEnvironment environment;
 
         private boolean isDeleted;
-        private TypedRecord<IncidentEvent> incidentToWrite;
+        private TypedRecord<IncidentRecord> incidentToWrite;
 
         DeleteIncidentProcessor(TypedStreamEnvironment environment)
         {
@@ -298,7 +298,7 @@ public class IncidentStreamProcessor
         }
 
         @Override
-        public void processRecord(TypedRecord<IncidentEvent> command)
+        public void processRecord(TypedRecord<IncidentRecord> command)
         {
             isDeleted = false;
 
@@ -309,15 +309,15 @@ public class IncidentStreamProcessor
 
             if (isDeleted)
             {
-                final TypedRecord<IncidentEvent> priorIncidentEvent =
-                        reader.readValue(incidentEventPosition, IncidentEvent.class);
+                final TypedRecord<IncidentRecord> priorIncidentEvent =
+                        reader.readValue(incidentEventPosition, IncidentRecord.class);
 
                 incidentToWrite = priorIncidentEvent;
             }
         }
 
         @Override
-        public long writeRecord(TypedRecord<IncidentEvent> command, TypedStreamWriter writer)
+        public long writeRecord(TypedRecord<IncidentRecord> command, TypedStreamWriter writer)
         {
             if (isDeleted)
             {
@@ -330,7 +330,7 @@ public class IncidentStreamProcessor
         }
 
         @Override
-        public void updateState(TypedRecord<IncidentEvent> command)
+        public void updateState(TypedRecord<IncidentRecord> command)
         {
             if (isDeleted)
             {
@@ -339,10 +339,10 @@ public class IncidentStreamProcessor
         }
     }
 
-    private final class ActivityRewrittenProcessor implements TypedRecordProcessor<WorkflowInstanceEvent>
+    private final class ActivityRewrittenProcessor implements TypedRecordProcessor<WorkflowInstanceRecord>
     {
         @Override
-        public void updateState(TypedRecord<WorkflowInstanceEvent> record)
+        public void updateState(TypedRecord<WorkflowInstanceRecord> record)
         {
             final long incidentKey = record.getMetadata().getIncidentKey();
             if (incidentKey > 0)
@@ -352,13 +352,13 @@ public class IncidentStreamProcessor
         }
     }
 
-    private final class ActivityIncidentResolvedProcessor implements TypedRecordProcessor<WorkflowInstanceEvent>
+    private final class ActivityIncidentResolvedProcessor implements TypedRecordProcessor<WorkflowInstanceRecord>
     {
         private final TypedStreamEnvironment environment;
         private TypedStreamReader reader;
 
         private boolean isResolved;
-        private TypedRecord<IncidentEvent> incidentEvent;
+        private TypedRecord<IncidentRecord> incidentEvent;
 
         ActivityIncidentResolvedProcessor(TypedStreamEnvironment environment)
         {
@@ -372,7 +372,7 @@ public class IncidentStreamProcessor
         }
 
         @Override
-        public void processRecord(TypedRecord<WorkflowInstanceEvent> event)
+        public void processRecord(TypedRecord<WorkflowInstanceRecord> event)
         {
             isResolved = false;
             incidentEvent = null;
@@ -386,7 +386,7 @@ public class IncidentStreamProcessor
                 {
                     // incident is resolved when read next activity lifecycle event
                     final long incidentPosition = incidentMap.getIncidentEventPosition();
-                    incidentEvent = reader.readValue(incidentPosition, IncidentEvent.class);
+                    incidentEvent = reader.readValue(incidentPosition, IncidentRecord.class);
 
                     isResolved = true;
                 }
@@ -398,7 +398,7 @@ public class IncidentStreamProcessor
         }
 
         @Override
-        public long writeRecord(TypedRecord<WorkflowInstanceEvent> event, TypedStreamWriter writer)
+        public long writeRecord(TypedRecord<WorkflowInstanceRecord> event, TypedStreamWriter writer)
         {
             return isResolved ?
                     writer.writeFollowUpEvent(incidentEvent.getKey(), Intent.RESOLVED, incidentEvent.getValue())
@@ -406,7 +406,7 @@ public class IncidentStreamProcessor
         }
 
         @Override
-        public void updateState(TypedRecord<WorkflowInstanceEvent> event)
+        public void updateState(TypedRecord<WorkflowInstanceRecord> event)
         {
             if (isResolved)
             {
@@ -417,16 +417,16 @@ public class IncidentStreamProcessor
         }
     }
 
-    private final class ActivityTerminatedProcessor implements TypedRecordProcessor<WorkflowInstanceEvent>
+    private final class ActivityTerminatedProcessor implements TypedRecordProcessor<WorkflowInstanceRecord>
     {
-        private final IncidentEvent incidentEvent = new IncidentEvent();
+        private final IncidentRecord incidentEvent = new IncidentRecord();
 
         private boolean isTerminated;
         private long incidentKey;
 
 
         @Override
-        public void processRecord(TypedRecord<WorkflowInstanceEvent> event)
+        public void processRecord(TypedRecord<WorkflowInstanceRecord> event)
         {
             isTerminated = false;
 
@@ -448,7 +448,7 @@ public class IncidentStreamProcessor
         }
 
         @Override
-        public long writeRecord(TypedRecord<WorkflowInstanceEvent> event, TypedStreamWriter writer)
+        public long writeRecord(TypedRecord<WorkflowInstanceRecord> event, TypedStreamWriter writer)
         {
 
             return isTerminated ?
@@ -457,7 +457,7 @@ public class IncidentStreamProcessor
         }
 
         @Override
-        public void updateState(TypedRecord<WorkflowInstanceEvent> event)
+        public void updateState(TypedRecord<WorkflowInstanceRecord> event)
         {
             if (isTerminated)
             {
@@ -467,17 +467,17 @@ public class IncidentStreamProcessor
         }
     }
 
-    private final class TaskFailedProcessor implements TypedRecordProcessor<TaskEvent>
+    private final class TaskFailedProcessor implements TypedRecordProcessor<TaskRecord>
     {
-        private final IncidentEvent incidentEvent = new IncidentEvent();
+        private final IncidentRecord incidentEvent = new IncidentRecord();
 
         private boolean hasRetries;
         private boolean isResolvingIncident;
 
         @Override
-        public void processRecord(TypedRecord<TaskEvent> event)
+        public void processRecord(TypedRecord<TaskRecord> event)
         {
-            final TaskEvent value = event.getValue();
+            final TaskRecord value = event.getValue();
             hasRetries = value.getRetries() > 0;
             isResolvingIncident = event.getMetadata().hasIncidentKey();
 
@@ -499,7 +499,7 @@ public class IncidentStreamProcessor
         }
 
         @Override
-        public long writeRecord(TypedRecord<TaskEvent> event, TypedStreamWriter writer)
+        public long writeRecord(TypedRecord<TaskRecord> event, TypedStreamWriter writer)
         {
             if (hasRetries)
             {
@@ -519,7 +519,7 @@ public class IncidentStreamProcessor
         }
 
         @Override
-        public void updateState(TypedRecord<TaskEvent> event)
+        public void updateState(TypedRecord<TaskRecord> event)
         {
             if (!hasRetries)
             {
@@ -528,13 +528,13 @@ public class IncidentStreamProcessor
         }
     }
 
-    private final class TaskIncidentResolvedProcessor implements TypedRecordProcessor<TaskEvent>
+    private final class TaskIncidentResolvedProcessor implements TypedRecordProcessor<TaskRecord>
     {
         private final TypedStreamEnvironment environment;
 
         private TypedStreamReader reader;
         private boolean isResolved;
-        private TypedRecord<IncidentEvent> persistedIncident;
+        private TypedRecord<IncidentRecord> persistedIncident;
         private boolean isTransientIncident;
 
         TaskIncidentResolvedProcessor(TypedStreamEnvironment environment)
@@ -555,7 +555,7 @@ public class IncidentStreamProcessor
         }
 
         @Override
-        public void processRecord(TypedRecord<TaskEvent> event)
+        public void processRecord(TypedRecord<TaskRecord> event)
         {
             isResolved = false;
             isTransientIncident = false;
@@ -569,7 +569,7 @@ public class IncidentStreamProcessor
 
                 if (incidentMap.getState() == STATE_CREATED)
                 {
-                    persistedIncident = reader.readValue(incidentMap.getIncidentEventPosition(), IncidentEvent.class);
+                    persistedIncident = reader.readValue(incidentMap.getIncidentEventPosition(), IncidentRecord.class);
 
                     isResolved = true;
                 }
@@ -585,7 +585,7 @@ public class IncidentStreamProcessor
         }
 
         @Override
-        public long writeRecord(TypedRecord<TaskEvent> event, TypedStreamWriter writer)
+        public long writeRecord(TypedRecord<TaskRecord> event, TypedStreamWriter writer)
         {
             return isResolved ?
                     writer.writeFollowUpCommand(persistedIncident.getKey(), Intent.DELETE, persistedIncident.getValue()) :
@@ -593,7 +593,7 @@ public class IncidentStreamProcessor
         }
 
         @Override
-        public void updateState(TypedRecord<TaskEvent> event)
+        public void updateState(TypedRecord<TaskRecord> event)
         {
             if (isResolved || isTransientIncident)
             {

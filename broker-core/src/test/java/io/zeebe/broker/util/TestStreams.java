@@ -29,14 +29,20 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import io.zeebe.broker.clustering.orchestration.topic.TopicEvent;
-import io.zeebe.broker.incident.data.IncidentEvent;
+import io.zeebe.broker.clustering.orchestration.topic.TopicRecord;
+import io.zeebe.broker.incident.data.IncidentRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
-import io.zeebe.broker.task.data.TaskEvent;
+import io.zeebe.broker.task.data.TaskRecord;
 import io.zeebe.broker.topic.Records;
 import io.zeebe.broker.topic.StreamProcessorControl;
+<<<<<<< da18e914167c07427c8ddb00c194e17486d13552
 import io.zeebe.broker.workflow.data.DeploymentEvent;
 import io.zeebe.broker.workflow.data.WorkflowInstanceEvent;
+=======
+import io.zeebe.broker.workflow.data.DeploymentRecord;
+import io.zeebe.broker.workflow.data.WorkflowRecord;
+import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
+>>>>>>> rename events to record
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
@@ -70,11 +76,11 @@ public class TestStreams
 
     static
     {
-        VALUE_TYPES.put(DeploymentEvent.class, ValueType.DEPLOYMENT);
-        VALUE_TYPES.put(IncidentEvent.class, ValueType.INCIDENT);
-        VALUE_TYPES.put(TaskEvent.class, ValueType.TASK);
-        VALUE_TYPES.put(TopicEvent.class, ValueType.TOPIC);
-        VALUE_TYPES.put(WorkflowInstanceEvent.class, ValueType.WORKFLOW_INSTANCE);
+        VALUE_TYPES.put(DeploymentRecord.class, ValueType.DEPLOYMENT);
+        VALUE_TYPES.put(IncidentRecord.class, ValueType.INCIDENT);
+        VALUE_TYPES.put(TaskRecord.class, ValueType.TASK);
+        VALUE_TYPES.put(TopicRecord.class, ValueType.TOPIC);
+        VALUE_TYPES.put(WorkflowInstanceRecord.class, ValueType.WORKFLOW_INSTANCE);
 
         VALUE_TYPES.put(UnpackedObject.class, ValueType.NOOP);
     }
@@ -261,27 +267,27 @@ public class TestStreams
         }
 
         @Override
-        public void blockAfterTaskEvent(Predicate<TypedRecord<TaskEvent>> test)
+        public void blockAfterTaskEvent(Predicate<TypedRecord<TaskRecord>> test)
         {
-            blockAfterEvent(e -> Records.isTaskRecord(e) && test.test(CopiedTypedEvent.toTypedEvent(e, TaskEvent.class)));
+            blockAfterEvent(e -> Records.isTaskRecord(e) && test.test(CopiedTypedEvent.toTypedEvent(e, TaskRecord.class)));
         }
 
         @Override
-        public void blockAfterDeploymentEvent(Predicate<TypedRecord<DeploymentEvent>> test)
+        public void blockAfterDeploymentEvent(Predicate<TypedRecord<DeploymentRecord>> test)
         {
-            blockAfterEvent(e -> Records.isDeploymentRecord(e) && test.test(CopiedTypedEvent.toTypedEvent(e, DeploymentEvent.class)));
+            blockAfterEvent(e -> Records.isDeploymentRecord(e) && test.test(CopiedTypedEvent.toTypedEvent(e, DeploymentRecord.class)));
         }
 
         @Override
-        public void blockAfterTopicEvent(Predicate<TypedRecord<TopicEvent>> test)
+        public void blockAfterTopicEvent(Predicate<TypedRecord<TopicRecord>> test)
         {
-            blockAfterEvent(e -> Records.isTopicRecord(e) && test.test(CopiedTypedEvent.toTypedEvent(e, TopicEvent.class)));
+            blockAfterEvent(e -> Records.isTopicRecord(e) && test.test(CopiedTypedEvent.toTypedEvent(e, TopicRecord.class)));
         }
 
         @Override
-        public void blockAfterIncidentEvent(Predicate<TypedRecord<IncidentEvent>> test)
+        public void blockAfterIncidentEvent(Predicate<TypedRecord<IncidentRecord>> test)
         {
-            blockAfterEvent(e -> Records.isIncidentRecord(e) && test.test(CopiedTypedEvent.toTypedEvent(e, IncidentEvent.class)));
+            blockAfterEvent(e -> Records.isIncidentRecord(e) && test.test(CopiedTypedEvent.toTypedEvent(e, IncidentRecord.class)));
         }
 
         @Override

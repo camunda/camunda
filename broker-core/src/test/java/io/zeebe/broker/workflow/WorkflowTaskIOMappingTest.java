@@ -34,7 +34,7 @@ import org.junit.rules.RuleChain;
 
 import io.zeebe.broker.incident.data.ErrorType;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.broker.workflow.data.WorkflowInstanceEvent;
+import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.protocol.clientapi.Intent;
@@ -177,7 +177,7 @@ public class WorkflowTaskIOMappingTest
         final SubscribedRecord event = receiveFirstTaskCommand(Intent.CREATE);
 
         // then
-        assertThat(event.value()).containsEntry(WorkflowInstanceEvent.PROP_WORKFLOW_PAYLOAD, NIL);
+        assertThat(event.value()).containsEntry(WorkflowInstanceRecord.PROP_WORKFLOW_PAYLOAD, NIL);
     }
 
 
@@ -371,7 +371,7 @@ public class WorkflowTaskIOMappingTest
         final SubscribedRecord activityCompletedEvent = receiveFirstWorkflowInstanceEvent(Intent.ACTIVITY_COMPLETED);
 
         assertThat(activityCompletedEvent.value())
-            .containsEntry(WorkflowInstanceEvent.PROP_WORKFLOW_PAYLOAD, MSGPACK_PAYLOAD);
+            .containsEntry(WorkflowInstanceRecord.PROP_WORKFLOW_PAYLOAD, MSGPACK_PAYLOAD);
     }
 
     @Test

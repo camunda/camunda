@@ -28,7 +28,7 @@ import org.junit.rules.TemporaryFolder;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import io.zeebe.broker.clustering.orchestration.topic.TopicEvent;
+import io.zeebe.broker.clustering.orchestration.topic.TopicRecord;
 import io.zeebe.broker.topic.Records;
 import io.zeebe.broker.topic.StreamProcessorControl;
 import io.zeebe.broker.util.TestStreams;
@@ -110,9 +110,9 @@ public class TypedStreamProcessorTest
         assertThat(writtenEvent.getSourceEventPosition()).isEqualTo(firstEventPosition);
     }
 
-    protected TopicEvent topic(String name, int partitions)
+    protected TopicRecord topic(String name, int partitions)
     {
-        final TopicEvent event = new TopicEvent();
+        final TopicRecord event = new TopicRecord();
         event.setName(BufferUtil.wrapString(name));
         event.setPartitions(partitions);
 
@@ -120,11 +120,11 @@ public class TypedStreamProcessorTest
     }
 
 
-    protected static class BatchProcessor implements TypedRecordProcessor<TopicEvent>
+    protected static class BatchProcessor implements TypedRecordProcessor<TopicRecord>
     {
 
         @Override
-        public long writeRecord(TypedRecord<TopicEvent> event, TypedStreamWriter writer)
+        public long writeRecord(TypedRecord<TopicRecord> event, TypedStreamWriter writer)
         {
             return writer.newBatch().addRejection(event).write();
         }

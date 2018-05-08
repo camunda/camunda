@@ -32,7 +32,7 @@ import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.logstreams.processor.TypedStreamReader;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.task.TaskQueueManagerService;
-import io.zeebe.broker.task.data.TaskEvent;
+import io.zeebe.broker.task.data.TaskRecord;
 import io.zeebe.map.Long2BytesZbMap;
 import io.zeebe.map.iterator.Long2BytesZbMapEntry;
 import io.zeebe.protocol.clientapi.Intent;
@@ -91,7 +91,7 @@ public class TaskExpireLockStreamProcessor implements StreamProcessorLifecycleAw
                 // TODO: would be nicer to have a consumable channel for timed-out timers
                 //   that we can stop consuming/yield on backpressure
 
-                final TypedRecord<TaskEvent> event = reader.readValue(eventPosition, TaskEvent.class);
+                final TypedRecord<TaskRecord> event = reader.readValue(eventPosition, TaskRecord.class);
                 final long position = writer.writeFollowUpCommand(event.getKey(), Intent.EXPIRE_LOCK, event.getValue());
                 final boolean success = position >= 0;
 
@@ -110,10 +110,10 @@ public class TaskExpireLockStreamProcessor implements StreamProcessorLifecycleAw
 
     public TypedStreamProcessor createStreamProcessor(TypedStreamEnvironment environment)
     {
-        final TypedRecordProcessor<TaskEvent> registerTask = new TypedRecordProcessor<TaskEvent>()
+        final TypedRecordProcessor<TaskRecord> registerTask = new TypedRecordProcessor<TaskRecord>()
         {
             @Override
-            public void updateState(TypedRecord<TaskEvent> event)
+            public void updateState(TypedRecord<TaskRecord> event)
             {
                 final long lockTime = event.getValue().getLockTime();
 
@@ -124,10 +124,10 @@ public class TaskExpireLockStreamProcessor implements StreamProcessorLifecycleAw
             }
         };
 
-        final TypedRecordProcessor<TaskEvent> unregisterTask = new TypedRecordProcessor<TaskEvent>()
+        final TypedRecordProcessor<TaskRecord> unregisterTask = new TypedRecordProcessor<TaskRecord>()
         {
             @Override
-            public void updateState(TypedRecord<TaskEvent> event)
+            public void updateState(TypedRecord<TaskRecord> event)
             {
                 expirationMap.remove(event.getKey());
             }

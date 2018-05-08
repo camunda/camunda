@@ -28,7 +28,7 @@ import org.slf4j.Logger;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.base.partitions.Partition;
-import io.zeebe.broker.clustering.orchestration.topic.TopicEvent;
+import io.zeebe.broker.clustering.orchestration.topic.TopicRecord;
 import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
 import io.zeebe.broker.logstreams.processor.StreamProcessorLifecycleAware;
 import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
@@ -113,7 +113,7 @@ public class KnownTopics implements Service<KnownTopics>, StreamProcessorLifecyc
     }
 
 
-    private void addTopic(final long key, final TopicEvent topicEvent)
+    private void addTopic(final long key, final TopicRecord topicEvent)
     {
         final TopicInfo topicInfo = createTopicInfo(key, topicEvent);
 
@@ -136,7 +136,7 @@ public class KnownTopics implements Service<KnownTopics>, StreamProcessorLifecyc
         topicsListeners.forEach(l -> l.topicCreated(name));
     }
 
-    private TopicInfo createTopicInfo(final long key, final TopicEvent topicEvent)
+    private TopicInfo createTopicInfo(final long key, final TopicRecord topicEvent)
     {
         final TopicInfo topicInfo = knownTopics.add();
         topicInfo.setTopicName(topicEvent.getName())
@@ -147,7 +147,7 @@ public class KnownTopics implements Service<KnownTopics>, StreamProcessorLifecyc
         return topicInfo;
     }
 
-    private TopicInfo getOrCreateTopicInfo(final long key, final TopicEvent topicEvent)
+    private TopicInfo getOrCreateTopicInfo(final long key, final TopicRecord topicEvent)
     {
         final TopicInfo topicInfo = getTopic(topicEvent.getName());
 
@@ -161,7 +161,7 @@ public class KnownTopics implements Service<KnownTopics>, StreamProcessorLifecyc
         }
     }
 
-    private void completeTopicCreation(final long key, final TopicEvent topicEvent)
+    private void completeTopicCreation(final long key, final TopicRecord topicEvent)
     {
         final TopicInfo topicInfo = getOrCreateTopicInfo(key, topicEvent);
 

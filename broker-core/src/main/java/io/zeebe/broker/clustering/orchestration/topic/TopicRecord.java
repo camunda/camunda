@@ -26,14 +26,14 @@ import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.StringProperty;
 
-public class TopicEvent extends UnpackedObject
+public class TopicRecord extends UnpackedObject
 {
     protected final StringProperty name = new StringProperty("name");
     protected final IntegerProperty partitions = new IntegerProperty("partitions");
     protected final IntegerProperty replicationFactor = new IntegerProperty("replicationFactor", 1);
     protected final ArrayProperty<IntegerValue> partitionIds = new ArrayProperty<>("partitionIds", new IntegerValue());
 
-    public TopicEvent()
+    public TopicRecord()
     {
         this
             .declareProperty(name)

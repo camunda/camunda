@@ -19,12 +19,12 @@ package io.zeebe.broker.logstreams.processor;
 
 import java.util.EnumMap;
 
-import io.zeebe.broker.clustering.orchestration.id.IdEvent;
-import io.zeebe.broker.clustering.orchestration.topic.TopicEvent;
-import io.zeebe.broker.incident.data.IncidentEvent;
-import io.zeebe.broker.task.data.TaskEvent;
-import io.zeebe.broker.workflow.data.DeploymentEvent;
-import io.zeebe.broker.workflow.data.WorkflowInstanceEvent;
+import io.zeebe.broker.clustering.orchestration.id.IdRecord;
+import io.zeebe.broker.clustering.orchestration.topic.TopicRecord;
+import io.zeebe.broker.incident.data.IncidentRecord;
+import io.zeebe.broker.task.data.TaskRecord;
+import io.zeebe.broker.workflow.data.DeploymentRecord;
+import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.ValueType;
@@ -37,12 +37,12 @@ public class TypedStreamEnvironment
     protected static final EnumMap<ValueType, Class<? extends UnpackedObject>> EVENT_REGISTRY = new EnumMap<>(ValueType.class);
     static
     {
-        EVENT_REGISTRY.put(ValueType.TOPIC, TopicEvent.class);
-        EVENT_REGISTRY.put(ValueType.DEPLOYMENT, DeploymentEvent.class);
-        EVENT_REGISTRY.put(ValueType.TASK, TaskEvent.class);
-        EVENT_REGISTRY.put(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceEvent.class);
-        EVENT_REGISTRY.put(ValueType.INCIDENT, IncidentEvent.class);
-        EVENT_REGISTRY.put(ValueType.ID, IdEvent.class);
+        EVENT_REGISTRY.put(ValueType.TOPIC, TopicRecord.class);
+        EVENT_REGISTRY.put(ValueType.DEPLOYMENT, DeploymentRecord.class);
+        EVENT_REGISTRY.put(ValueType.TASK, TaskRecord.class);
+        EVENT_REGISTRY.put(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceRecord.class);
+        EVENT_REGISTRY.put(ValueType.INCIDENT, IncidentRecord.class);
+        EVENT_REGISTRY.put(ValueType.ID, IdRecord.class);
     }
 
     private TypedStreamReader reader;

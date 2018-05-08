@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.task.data;
 
-import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.*;
+import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.*;
 
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.IntegerProperty;

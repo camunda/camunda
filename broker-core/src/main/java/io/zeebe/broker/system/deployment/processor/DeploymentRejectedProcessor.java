@@ -20,9 +20,9 @@ package io.zeebe.broker.system.deployment.processor;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.system.deployment.data.PendingDeployments;
-import io.zeebe.broker.workflow.data.DeploymentEvent;
+import io.zeebe.broker.workflow.data.DeploymentRecord;
 
-public class DeploymentRejectedProcessor implements TypedRecordProcessor<DeploymentEvent>
+public class DeploymentRejectedProcessor implements TypedRecordProcessor<DeploymentRecord>
 {
     private final PendingDeployments pendingDeployments;
 
@@ -32,7 +32,7 @@ public class DeploymentRejectedProcessor implements TypedRecordProcessor<Deploym
     }
 
     @Override
-    public void updateState(TypedRecord<DeploymentEvent> record)
+    public void updateState(TypedRecord<DeploymentRecord> record)
     {
         pendingDeployments.remove(record.getKey());
     }

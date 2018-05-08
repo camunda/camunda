@@ -19,7 +19,7 @@ package io.zeebe.broker.clustering.base.bootstrap;
 
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.base.topology.PartitionInfo;
-import io.zeebe.broker.clustering.orchestration.topic.TopicEvent;
+import io.zeebe.broker.clustering.orchestration.topic.TopicRecord;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.Intent;
@@ -42,7 +42,7 @@ class BootstrapSystemTopicReplication extends Actor implements Service<Void>
     private final Injector<Partition> partitionInjector = new Injector<>();
 
     private final RecordMetadata metadata = new RecordMetadata();
-    private final TopicEvent topicEvent = new TopicEvent();
+    private final TopicRecord topicEvent = new TopicRecord();
     private final LogStreamWriterImpl writer = new LogStreamWriterImpl();
 
     @Override

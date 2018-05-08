@@ -33,7 +33,7 @@ import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.task.CreditsRequest;
 import io.zeebe.broker.task.CreditsRequestBuffer;
 import io.zeebe.broker.task.TaskSubscriptionManager;
-import io.zeebe.broker.task.data.TaskEvent;
+import io.zeebe.broker.task.data.TaskRecord;
 import io.zeebe.broker.task.processor.TaskSubscriptions.SubscriptionIterator;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
 import io.zeebe.protocol.clientapi.Intent;
@@ -45,7 +45,7 @@ import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 
-public class LockTaskStreamProcessor implements TypedRecordProcessor<TaskEvent>, StreamProcessorLifecycleAware
+public class LockTaskStreamProcessor implements TypedRecordProcessor<TaskRecord>, StreamProcessorLifecycleAware
 {
     protected final CreditsRequestBuffer creditsBuffer = new CreditsRequestBuffer(TaskSubscriptionManager.NUM_CONCURRENT_REQUESTS, this::increaseSubscriptionCredits);
 
@@ -219,11 +219,11 @@ public class LockTaskStreamProcessor implements TypedRecordProcessor<TaskEvent>,
     }
 
     @Override
-    public void processRecord(TypedRecord<TaskEvent> event)
+    public void processRecord(TypedRecord<TaskRecord> event)
     {
         selectedSubscriber = null;
 
-        final TaskEvent taskEvent = event.getValue();
+        final TaskRecord taskEvent = event.getValue();
         final boolean handlesTaskType = BufferUtil.equals(taskEvent.getType(), subscribedTaskType);
 
         if (handlesTaskType && taskEvent.getRetries() > 0)
@@ -241,7 +241,7 @@ public class LockTaskStreamProcessor implements TypedRecordProcessor<TaskEvent>,
     }
 
     @Override
-    public long writeRecord(TypedRecord<TaskEvent> event, TypedStreamWriter writer)
+    public long writeRecord(TypedRecord<TaskRecord> event, TypedStreamWriter writer)
     {
         long position = 0;
 
@@ -263,7 +263,7 @@ public class LockTaskStreamProcessor implements TypedRecordProcessor<TaskEvent>,
     }
 
     @Override
-    public void updateState(TypedRecord<TaskEvent> event)
+    public void updateState(TypedRecord<TaskRecord> event)
     {
         if (selectedSubscriber != null)
         {

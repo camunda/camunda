@@ -25,7 +25,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import io.zeebe.msgpack.spec.MsgPackHelper;
 import io.zeebe.protocol.Protocol;
 
-public class TaskEvent extends UnpackedObject
+public class TaskRecord extends UnpackedObject
 {
     protected static final DirectBuffer NO_PAYLOAD = new UnsafeBuffer(MsgPackHelper.NIL);
     protected static final DirectBuffer NO_HEADERS = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
@@ -38,7 +38,7 @@ public class TaskEvent extends UnpackedObject
     private final PackedProperty customHeadersProp = new PackedProperty("customHeaders", NO_HEADERS);
     private final BinaryProperty payloadProp = new BinaryProperty("payload", NO_PAYLOAD);
 
-    public TaskEvent()
+    public TaskRecord()
     {
         this
             .declareProperty(lockTimeProp)
@@ -55,7 +55,7 @@ public class TaskEvent extends UnpackedObject
         return lockTimeProp.getValue();
     }
 
-    public TaskEvent setLockTime(long val)
+    public TaskRecord setLockTime(long val)
     {
         lockTimeProp.setValue(val);
         return this;
@@ -66,12 +66,12 @@ public class TaskEvent extends UnpackedObject
         return lockOwnerProp.getValue();
     }
 
-    public TaskEvent setLockOwner(DirectBuffer lockOwer)
+    public TaskRecord setLockOwner(DirectBuffer lockOwer)
     {
         return setLockOwner(lockOwer, 0, lockOwer.capacity());
     }
 
-    public TaskEvent setLockOwner(DirectBuffer lockOwer, int offset, int length)
+    public TaskRecord setLockOwner(DirectBuffer lockOwer, int offset, int length)
     {
         lockOwnerProp.setValue(lockOwer, offset, length);
         return this;
@@ -82,7 +82,7 @@ public class TaskEvent extends UnpackedObject
         return retriesProp.getValue();
     }
 
-    public TaskEvent setRetries(int retries)
+    public TaskRecord setRetries(int retries)
     {
         retriesProp.setValue(retries);
         return this;
@@ -93,12 +93,12 @@ public class TaskEvent extends UnpackedObject
         return typeProp.getValue();
     }
 
-    public TaskEvent setType(DirectBuffer buf)
+    public TaskRecord setType(DirectBuffer buf)
     {
         return setType(buf, 0, buf.capacity());
     }
 
-    public TaskEvent setType(DirectBuffer buf, int offset, int length)
+    public TaskRecord setType(DirectBuffer buf, int offset, int length)
     {
         typeProp.setValue(buf, offset, length);
         return this;
@@ -109,13 +109,13 @@ public class TaskEvent extends UnpackedObject
         return payloadProp.getValue();
     }
 
-    public TaskEvent setPayload(DirectBuffer payload)
+    public TaskRecord setPayload(DirectBuffer payload)
     {
         payloadProp.setValue(payload);
         return this;
     }
 
-    public TaskEvent setPayload(DirectBuffer payload, int offset, int length)
+    public TaskRecord setPayload(DirectBuffer payload, int offset, int length)
     {
         payloadProp.setValue(payload, offset, length);
         return this;

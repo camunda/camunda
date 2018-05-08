@@ -23,7 +23,7 @@ import io.zeebe.broker.logstreams.processor.StreamProcessorLifecycleAware;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.logstreams.processor.TypedStreamReader;
-import io.zeebe.broker.workflow.data.WorkflowInstanceEvent;
+import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.map.Long2LongZbMap;
 import io.zeebe.util.cache.ExpandableBufferCache;
 
@@ -62,7 +62,7 @@ public class PayloadCache implements AutoCloseable, StreamProcessorLifecycleAwar
 
     private DirectBuffer lookupPayload(long position)
     {
-        final TypedRecord<WorkflowInstanceEvent> record = logStreamReader.readValue(position, WorkflowInstanceEvent.class);
+        final TypedRecord<WorkflowInstanceRecord> record = logStreamReader.readValue(position, WorkflowInstanceRecord.class);
         return record.getValue().getPayload();
     }
 
@@ -76,7 +76,7 @@ public class PayloadCache implements AutoCloseable, StreamProcessorLifecycleAwar
         {
             payload = cache.get(position);
         }
-        return payload == null ? WorkflowInstanceEvent.NO_PAYLOAD : payload;
+        return payload == null ? WorkflowInstanceRecord.NO_PAYLOAD : payload;
     }
 
     public void addPayload(long workflowInstanceKey, long payloadEventPosition, DirectBuffer payload)
