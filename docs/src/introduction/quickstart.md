@@ -84,8 +84,9 @@ topic name `quickstart`.
 $ ./bin/zbctl create topic quickstart
 {
   "Name": "quickstart",
-  "State": "CREATED",
-  "Partitions": 1
+  "State": "CREATING",
+  "Partitions": 1,
+  "ReplicationFactor": 1
 }
 ```
 
@@ -188,25 +189,62 @@ subscription. You have to specify the topic name.
 ```
 $ ./bin/zbctl --topic quickstart subscribe topic
 [...]
-Metadata [topic=quickstart, partition=1, key=4294974816, position=4294974816, type=Task]
-Task Event [state: CREATE, type: step4, retries: 3, lockOwner: , lockTime: 0, headers: {}: customHeaders: {}, payload: {zeebe: 2018}]
+Metadata [topic=quickstart, partition=1, key=4294969248, position=4294970096, type=Task]
+{
+  "State": "LOCKED",
+  "LockTime": 1525797756019,
+  "LockOwner": "zbctl-mdSDPzXmCq",
+  "Headers": {
+    "activityId": "",
+    "activityInstanceKey": -1,
+    "bpmnProcessId": "",
+    "workflowDefinitionVersion": -1,
+    "workflowInstanceKey": -1,
+    "workflowKey": -1
+  },
+  "CustomHeader": {},
+  "Retries": 3,
+  "Type": "step4",
+  "Payload": "gaV6ZWViZctAn4gAAAAAAA=="
+}
 
-Metadata [topic=quickstart, partition=1, key=4294974816, position=4294975016, type=Task]
-Task Event [state: CREATED, type: step4, retries: 3, lockOwner: , lockTime: 0, headers: {workflowKey: -1, workflowInstanceKey: -1, activityId: , activityInstanceKey: -1, bpmnProcessId: , workflowDefinitionVersion: -1}: customHeaders: {}, payload: {zeebe: 2018}]
+Metadata [topic=quickstart, partition=1, key=4294969248, position=4294970432, type=Task]
+{
+  "State": "COMPLETE",
+  "LockTime": 1525797756019,
+  "LockOwner": "zbctl-mdSDPzXmCq",
+  "Headers": {
+    "activityId": "",
+    "activityInstanceKey": -1,
+    "bpmnProcessId": "",
+    "workflowDefinitionVersion": -1,
+    "workflowInstanceKey": -1,
+    "workflowKey": -1
+  },
+  "CustomHeader": {},
+  "Retries": 3,
+  "Type": "step4",
+  "Payload": "gaV6ZWViZctAn4gAAAAAAA=="
+}
 
-Metadata [topic=quickstart, partition=1, key=4294974816, position=4294975328, type=Task]
-Task Event [state: LOCK, type: step4, retries: 3, lockOwner: zbctl-AKVtEPLotx, lockTime: 1522659936659, headers: {workflowDefinitionVersion: -1, workflowKey: -1, workflowInstanceKey: -1, activityId:
-, activityInstanceKey: -1, bpmnProcessId: }: customHeaders: {}, payload: {zeebe: 2018}]
-
-Metadata [topic=quickstart, partition=1, key=4294974816, position=4294975664, type=Task]
-Task Event [state: LOCKED, type: step4, retries: 3, lockOwner: zbctl-AKVtEPLotx, lockTime: 1522659936659, headers: {bpmnProcessId: , workflowDefinitionVersion: -1, workflowKey: -1, workflowInstanceKey: -1, activityId: , activityInstanceKey: -1}: customHeaders: {}, payload: {zeebe: 2018}]
-
-Metadata [topic=quickstart, partition=1, key=4294974816, position=4294976000, type=Task]
-Task Event [state: COMPLETE, type: step4, retries: 3, lockOwner: zbctl-AKVtEPLotx, lockTime: 1522659936659, headers: {workflowKey: -1, workflowInstanceKey: -1, activityId: , activityInstanceKey: -1,
-bpmnProcessId: , workflowDefinitionVersion: -1}: customHeaders: {}, payload: {zeebe: 2018}]
-
-Metadata [topic=quickstart, partition=1, key=4294974816, position=4294976336, type=Task]
-Task Event [state: COMPLETED, type: step4, retries: 3, lockOwner: zbctl-AKVtEPLotx, lockTime: 1522659936659, headers: {bpmnProcessId: , workflowDefinitionVersion: -1, workflowKey: -1, workflowInstanceKey: -1, activityId: , activityInstanceKey: -1}: customHeaders: {}, payload: {zeebe: 2018}]
+Metadata [topic=quickstart, partition=1, key=4294969248, position=4294970768, type=Task]
+{
+  "State": "COMPLETED",
+  "LockTime": 1525797756019,
+  "LockOwner": "zbctl-mdSDPzXmCq",
+  "Headers": {
+    "activityId": "",
+    "activityInstanceKey": -1,
+    "bpmnProcessId": "",
+    "workflowDefinitionVersion": -1,
+    "workflowInstanceKey": -1,
+    "workflowKey": -1
+  },
+  "CustomHeader": {},
+  "Retries": 3,
+  "Type": "step4",
+  "Payload": "gaV6ZWViZctAn4gAAAAAAA=="
+}
 ```
 
 The event stream will now contain events which describe the lifecycle of our
@@ -289,12 +327,11 @@ specify the initial data of the instance as payload when we start the instance.
 ```
 $ ./bin/zbctl --topic quickstart create instance order-process --payload '{"orderId": 1234}'
 {
-  "State": "WORKFLOW_INSTANCE_CREATED",
   "BPMNProcessID": "order-process",
-  "Version": 1,
   "Payload": "gadvcmRlcklky0CTSAAAAAAA",
-  "PayloadJSON": null,
-  "WorkflowInstanceKey": 8589934688
+  "State": "WORKFLOW_INSTANCE_CREATED",
+  "Version": 1,
+  "WorkflowInstanceKey": 4294972120
 }
 ```
 
@@ -317,17 +354,25 @@ indicate that the workflow instance was completed.
 
 ```
 $ ./bin/zbctl --topic quickstart subscribe topic
-Metadata [topic=quickstart, partition=1, key=4294986384, position=4294989528, type=Workflow Instance]
-Workflow Instance Event [state: ACTIVITY_COMPLETED, workflowInstanceKey: 4294977952, workflowKey: 4294979320, activityId: ship-parcel, processId: order-process, version: 1, payload: {orderId: 1234}]
+Metadata [topic=quickstart, partition=1, key=4294996328, position=4294996328, type=Workflow Instance]
+{
+  "ActivityID": "",
+  "BPMNProcessID": "order-process",
+  "Payload": "gadvcmRlcklky0CTSAAAAAAA",
+  "State": "END_EVENT_OCCURRED",
+  "Version": 1,
+  "WorkflowInstanceKey": 4294974384
+}
 
-Metadata [topic=quickstart, partition=1, key=4294989792, position=4294989792, type=Workflow Instance]
-Workflow Instance Event [state: SEQUENCE_FLOW_TAKEN, workflowInstanceKey: 4294977952, workflowKey: 4294979320, activityId: SequenceFlow_1qj94z0, processId: order-process, version: 1, payload: {orderId: 1234}]
-
-Metadata [topic=quickstart, partition=1, key=4294990064, position=4294990064, type=Workflow Instance]
-Workflow Instance Event [state: END_EVENT_OCCURRED, workflowInstanceKey: 4294977952, workflowKey: 4294979320, activityId: order-delivered, processId: order-process, version: 1, payload: {orderId: 1234}]
-
-Metadata [topic=quickstart, partition=1, key=4294977952, position=4294990328, type=Workflow Instance]
-Workflow Instance Event [state: WORKFLOW_INSTANCE_COMPLETED, workflowInstanceKey: 4294977952, workflowKey: 4294979320, activityId: , processId: order-process, version: 1, payload: {orderId: 1234}]
+Metadata [topic=quickstart, partition=1, key=4294974384, position=4294996584, type=Workflow Instance]
+{
+  "ActivityID": "",
+  "BPMNProcessID": "order-process",
+  "Payload": "gadvcmRlcklky0CTSAAAAAAA",
+  "State": "WORKFLOW_INSTANCE_COMPLETED",
+  "Version": 1,
+  "WorkflowInstanceKey": 4294974384
+}
 ```
 
 As you can see in the event log the last event was a workflow instance event
