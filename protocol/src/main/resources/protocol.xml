@@ -36,10 +36,9 @@
         <validValue name="DEPLOYMENT">4</validValue>
         <validValue name="WORKFLOW_INSTANCE">5</validValue>
         <validValue name="INCIDENT">6</validValue>
-        <validValue name="WORKFLOW">7</validValue>
-        <validValue name="NOOP">8</validValue>
-        <validValue name="TOPIC">9</validValue>
-        <validValue name="ID">10</validValue>
+        <validValue name="NOOP">7</validValue>
+        <validValue name="TOPIC">8</validValue>
+        <validValue name="ID">9</validValue>
     </enum>
 
     <enum name="ControlMessageType" encodingType="uint8" description="The type of the control message.">

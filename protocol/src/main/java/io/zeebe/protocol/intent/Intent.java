@@ -30,7 +30,6 @@ public interface Intent
         SubscriptionIntent.class,
         JobIntent.class,
         TopicIntent.class,
-        WorkflowIntent.class,
         WorkflowInstanceIntent.class);
 
     Intent UNKNOWN = new Intent()
@@ -68,8 +67,6 @@ public interface Intent
                 return JobIntent.from(intent);
             case TOPIC:
                 return TopicIntent.from(intent);
-            case WORKFLOW:
-                return WorkflowIntent.from(intent);
             case WORKFLOW_INSTANCE:
                 return WorkflowInstanceIntent.from(intent);
             case NULL_VAL:
