@@ -23,6 +23,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import java.time.Duration;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -33,6 +34,7 @@ import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.spi.ReadableSnapshot;
 import io.zeebe.logstreams.util.*;
 import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.*;
@@ -107,6 +109,113 @@ public class StreamProcessorControllerTest
         inOrder.verify(eventProcessor, times(1)).updateState();
 
         inOrder.verify(streamProcessor, times(1)).onClose();
+        inOrder.verifyNoMoreInteractions();
+    }
+
+    @Test
+    public void testAsyncProcessEvent() throws InterruptedException, ExecutionException, TimeoutException
+    {
+        final ActorFuture<Void> whenProcessingInvoked = new CompletableActorFuture<>();
+        final ActorFuture<Void> whenProcessingDone = new CompletableActorFuture<>();
+
+        doAnswer(invocation ->
+        {
+            final EventLifecycleContext ctx = invocation.getArgument(0);
+            ctx.async(whenProcessingDone);
+
+            whenProcessingInvoked.complete(null);
+
+            return null;
+
+        }).when(eventProcessor).processEvent(any());
+
+        // when
+        writer.writeEvent(EVENT_1, true);
+        whenProcessingInvoked.get(5, TimeUnit.SECONDS);
+
+        // then
+        final InOrder inOrder = inOrder(eventProcessor);
+
+        inOrder.verify(eventProcessor, times(1)).processEvent(any());
+        inOrder.verifyNoMoreInteractions();
+
+        // and when
+        whenProcessingDone.complete(null);
+        waitUntil(() -> streamProcessor.getProcessedEventCount() == 1);
+
+        // then
+        inOrder.verify(eventProcessor, times(1)).executeSideEffects();
+        inOrder.verify(eventProcessor, times(1)).writeEvent(any());
+        inOrder.verify(eventProcessor, times(1)).updateState();
+
+        inOrder.verifyNoMoreInteractions();
+    }
+
+    @Test
+    public void testAsyncProcessEventWaitEvenIfNewEventIsWritten() throws InterruptedException, ExecutionException, TimeoutException
+    {
+        // tests that the stream processor that is currently blocked on
+        // future passed during processEvent does not continue when a new
+        // event is written (the stream processor is triggered on commit update)
+
+        final ActorFuture<Void> whenProcessingInvoked = new CompletableActorFuture<>();
+        final ActorFuture<Void> whenProcessingDone = new CompletableActorFuture<>();
+
+        doAnswer(invocation ->
+        {
+            final EventLifecycleContext ctx = invocation.getArgument(0);
+
+            if (!whenProcessingDone.isDone()) // only block on first invocation
+            {
+                ctx.async(whenProcessingDone);
+                whenProcessingInvoked.complete(null);
+            }
+
+            return null;
+
+        }).when(eventProcessor).processEvent(any());
+
+        // given
+        writer.writeEvent(EVENT_1, true);
+        whenProcessingInvoked.get(5, TimeUnit.SECONDS);
+
+        // when
+        writer.writeEvent(EVENT_2, true);
+        Thread.sleep(500); // how to do it better?
+
+        // then
+        verify(eventProcessor, times(1)).processEvent(any());
+
+        // and when
+        whenProcessingDone.complete(null);
+        waitUntil(() -> streamProcessor.getProcessedEventCount() == 2);
+
+        // then
+        verify(eventProcessor, times(2)).processEvent(any());
+    }
+
+    @Test
+    public void testAsyncProcessEventCompleteExceptionally() throws InterruptedException, ExecutionException, TimeoutException
+    {
+        final ActorFuture<Void> whenProcessingInvoked = new CompletableActorFuture<>();
+
+        doAnswer(invocation ->
+        {
+            final EventLifecycleContext ctx = invocation.getArgument(0);
+            ctx.async(CompletableActorFuture.completedExceptionally(new RuntimeException()));
+            whenProcessingInvoked.complete(null);
+            return null;
+
+        }).when(eventProcessor).processEvent(any());
+
+        // when
+        writer.writeEvent(EVENT_1, true);
+        whenProcessingInvoked.get(5, TimeUnit.SECONDS);
+
+        // then
+        final InOrder inOrder = inOrder(eventProcessor);
+
+        inOrder.verify(eventProcessor, times(1)).processEvent(any());
         inOrder.verifyNoMoreInteractions();
     }
 

@@ -257,8 +257,6 @@ public class StreamProcessorController extends Actor
                 if (eventProcessor != null)
                 {
                     // don't execute side effects or write events
-                    eventProcessor.processEvent();
-
                     eventLifecycleContext.reset();
                     eventProcessor.processEvent(eventLifecycleContext);
 
@@ -353,8 +351,6 @@ public class StreamProcessorController extends Actor
             try
             {
                 metrics.incrementEventsProcessedCount();
-
-                eventProcessor.processEvent();
 
                 eventLifecycleContext.reset();
                 eventProcessor.processEvent(eventLifecycleContext);
