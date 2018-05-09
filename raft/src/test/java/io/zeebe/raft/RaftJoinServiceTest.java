@@ -47,7 +47,6 @@ public class RaftJoinServiceTest
 
         // then
         assertThat(raft1.isClosed()).isTrue();
-        assertThat(raft1.getMemberSize()).isEqualTo(1);
         assertThat(raft2.isJoined()).isFalse();
     }
 }
