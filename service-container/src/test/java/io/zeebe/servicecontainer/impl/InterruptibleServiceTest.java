@@ -33,10 +33,10 @@ public class InterruptibleServiceTest
     @Rule
     public ControlledActorSchedulerRule actorSchedulerRule = new ControlledActorSchedulerRule();
 
-    ServiceContainer serviceContainer;
+    private ServiceContainer serviceContainer;
 
-    ServiceName<Object> service1Name;
-    ServiceName<Object> service2Name;
+    private ServiceName<Object> serviceName;
+    private ServiceName<Object> dependentName;
 
     @Before
     public void setup()
@@ -44,8 +44,34 @@ public class InterruptibleServiceTest
         serviceContainer = new ServiceContainerImpl(actorSchedulerRule.get());
         serviceContainer.start();
 
-        service1Name = ServiceName.newServiceName("service1", Object.class);
-        service2Name = ServiceName.newServiceName("service2", Object.class);
+        serviceName = ServiceName.newServiceName("service", Object.class);
+        dependentName = ServiceName.newServiceName("dependent", Object.class);
+    }
+
+    @Test
+    public void shouldBeInterruptedOnDependentsStopped()
+    {
+        // given
+        final InterruptibleService service = new InterruptibleService(true);
+        service.future = new CompletableFuture<>();
+        final ActorFuture<Object> startFuture = serviceContainer.createService(serviceName, service)
+            .dependency(dependentName)
+            .install();
+
+        final InterruptibleService dependent = new InterruptibleService(false);
+        dependent.future = new CompletableFuture<>();
+        serviceContainer.createService(dependentName, dependent).install();
+        actorSchedulerRule.workUntilDone();
+
+        // when
+        dependent.future.complete(null);
+        actorSchedulerRule.awaitBlockingTasksCompleted(1);
+
+        serviceContainer.removeService(dependentName);
+        actorSchedulerRule.workUntilDone();
+
+        // then
+        assertInterrupted(service, startFuture);
     }
 
     @Test
@@ -55,12 +81,12 @@ public class InterruptibleServiceTest
         final InterruptibleService service = new InterruptibleService(false);
         service.future = new CompletableFuture<>();
 
-        final ActorFuture<Object> startFuture = serviceContainer.createService(service1Name, service)
+        final ActorFuture<Object> startFuture = serviceContainer.createService(serviceName, service)
             .install();
         actorSchedulerRule.workUntilDone();
 
         // when
-        serviceContainer.removeService(service1Name);
+        serviceContainer.removeService(serviceName);
         actorSchedulerRule.workUntilDone();
 
         // then
@@ -74,7 +100,7 @@ public class InterruptibleServiceTest
         final InterruptibleService service = new InterruptibleService(false);
         service.future = new CompletableFuture<>();
 
-        final ActorFuture<Object> startFuture = serviceContainer.createService(service1Name, service)
+        final ActorFuture<Object> startFuture = serviceContainer.createService(serviceName, service)
             .install();
         actorSchedulerRule.workUntilDone();
 
@@ -82,7 +108,7 @@ public class InterruptibleServiceTest
         service.future.complete(null);
         actorSchedulerRule.workUntilDone();
 
-        serviceContainer.removeService(service1Name);
+        serviceContainer.removeService(serviceName);
         actorSchedulerRule.workUntilDone();
 
         // then
@@ -98,17 +124,22 @@ public class InterruptibleServiceTest
         final InterruptibleService service = new InterruptibleService(true);
         service.future = new CompletableFuture<>();
 
-        final ActorFuture<Object> startFuture = serviceContainer.createService(service1Name, service)
+        final ActorFuture<Object> startFuture = serviceContainer.createService(serviceName, service)
             .install();
         actorSchedulerRule.workUntilDone();
 
         // when
-        serviceContainer.removeService(service1Name);
+        serviceContainer.removeService(serviceName);
         actorSchedulerRule.workUntilDone();
 
         // then
-        assertCompleted(startFuture);
-        assertThat(startFuture.getException()).isInstanceOf(ServiceInterruptedException.class);
+        assertInterrupted(service, startFuture);
+    }
+
+    private void assertInterrupted(InterruptibleService service, ActorFuture<?> future)
+    {
+        assertCompleted(future);
+        assertThat(future.getException()).isInstanceOf(ServiceInterruptedException.class);
         assertThat(service.wasInterrupted).isTrue();
         assertThat(service.wasStopped).isTrue();
     }
