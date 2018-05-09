@@ -96,9 +96,17 @@ public class RaftRule extends ExternalResource implements RaftStateListener
     protected Set<Integer> interrupedStreams = Collections.synchronizedSet(new HashSet<>());
     private ServiceName<Raft> raftServiceName;
 
+    private boolean isUnreachable;
+
     public RaftRule(final ServiceContainerRule serviceContainerRule, final String host, final int port, final String topicName, final int partition, final RaftRule... members)
     {
         this(serviceContainerRule, new RaftConfiguration(), host, port, topicName, partition, members);
+    }
+
+    public RaftRule(final ServiceContainerRule serviceContainerRule, final String host, final int port, final String topicName, final int partition, final boolean isUnreachable, final RaftRule... members)
+    {
+        this(serviceContainerRule, new RaftConfiguration(), host, port, topicName, partition, members);
+        this.isUnreachable = isUnreachable;
     }
 
     public RaftRule(final ServiceContainerRule serviceContainerRule, final RaftConfiguration configuration, final String host, final int port, final String topicName, final int partition, final RaftRule... members)
@@ -173,7 +181,7 @@ public class RaftRule extends ExternalResource implements RaftStateListener
                 final TransportMessage msg = invocation.getArgument(0);
                 final int stream = readRemoteStreamId(msg);
 
-                if (interrupedStreams.contains(stream))
+                if (isUnreachable || interrupedStreams.contains(stream))
                 {
                     return true;
                 }
@@ -229,6 +237,11 @@ public class RaftRule extends ExternalResource implements RaftStateListener
     public void closeRaft()
     {
         LogUtil.catchAndLog(Loggers.RAFT_LOGGER, () -> serviceContainer.removeService(raftServiceName).get(5, TimeUnit.SECONDS));
+    }
+
+    public boolean isClosed()
+    {
+        return !serviceContainer.hasService(raftServiceName);
     }
 
     public SocketAddress getSocketAddress()

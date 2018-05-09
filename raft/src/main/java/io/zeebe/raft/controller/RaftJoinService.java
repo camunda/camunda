@@ -64,15 +64,18 @@ public class RaftJoinService implements Service<Void>
     @Override
     public void start(ServiceStartContext startContext)
     {
-        startContext.async(whenJoinCompleted);
+        startContext.async(whenJoinCompleted, true);
         actor.call(this::join);
     }
 
     @Override
     public void stop(ServiceStopContext stopContext)
     {
-        stopContext.async(whenLeaveCompleted);
-        actor.call(this::leave);
+        if (!stopContext.wasInterrupted())
+        {
+            stopContext.async(whenLeaveCompleted);
+            actor.call(this::leave);
+        }
     }
 
     public void join()
