@@ -15,7 +15,9 @@ import org.junit.rules.RuleChain;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
+import java.time.OffsetDateTime;
 
+import static junit.framework.TestCase.assertTrue;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_FLOW_NODE_TYPE;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.HEAT_VISUALIZATION;
 import static org.hamcrest.CoreMatchers.is;
@@ -219,6 +221,31 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
       embeddedOptimizeRule.getAlertService().getScheduler().getJobGroupNames().size(),
       is(2)
     );
+  }
+
+  @Test
+  public void reminderJobsAreScheduledCorrectly() throws Exception {
+    //given
+    AlertCreationDto simpleAlert = createBasicAlertWithReminder();
+    AlertInterval checkInterval = new AlertInterval();
+    checkInterval.setUnit("Minutes");
+    checkInterval.setValue(10);
+    simpleAlert.setCheckInterval(checkInterval);
+
+    // when
+    Response response =
+      embeddedOptimizeRule.target(ALERT)
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
+        .post(Entity.json(simpleAlert));
+    assertThat(response.getStatus(), is(200));
+    String id = response.readEntity(IdDto.class).getId();
+    triggerAndCompleteCheckJob(id);
+
+    // then
+    OffsetDateTime nextTimeReminderIsExecuted = getNextReminderExecutionTime(id);
+    OffsetDateTime upperBoundary = OffsetDateTime.now().plusSeconds(2L); // 1 second is too unstable
+    assertTrue(nextTimeReminderIsExecuted.isBefore(upperBoundary));
   }
 
   @Test

@@ -8,7 +8,6 @@ import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.report.ReportEvaluator;
 import org.camunda.optimize.service.es.writer.AlertWriter;
 import org.camunda.optimize.service.exceptions.OptimizeException;
-import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.quartz.Job;
 import org.quartz.JobDataMap;
@@ -19,11 +18,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-
-/**
- * @author Askar Akhmerov
- */
 @Component
 public class AlertJob implements Job {
   private static final String HTTP_PREFIX = "http://";
@@ -101,7 +95,7 @@ public class AlertJob implements Job {
         "] is not exceeded anymore. " +
         "Current value: " +
         result.getResult() +
-        ". Please check your Optimize dashboard for more information! \n" +
+        ". Please check your Optimize report for more information! \n" +
         createViewLink(alert);
     return emailBody;
   }
@@ -117,7 +111,6 @@ public class AlertJob implements Job {
       ReportDefinitionDto reportDefinition,
       NumberReportResultDto result
   ) {
-
     boolean triggeredReminder = isReminder(key) && alert.isTriggered();
     boolean haveToNotify = triggeredReminder || !alert.isTriggered();
     if (haveToNotify) {
@@ -127,7 +120,8 @@ public class AlertJob implements Job {
     AlertJobResult alertJobResult = new AlertJobResult(alert);
 
     if (haveToNotify) {
-      alertWriter.writeAlertStatus(haveToNotify, alertId);
+      logger.debug("Sending reminder notification!");
+      alertWriter.writeAlertStatus(true, alertId);
 
       notificationService.notifyRecipient(
           composeAlertText(alert, reportDefinition, result),
@@ -150,14 +144,14 @@ public class AlertJob implements Job {
       NumberReportResultDto result
   ) {
     String emailBody = "Camunda Optimize - Report Status\n" +
-        "Alert [" + alert.getName() + "]:\n" +
+        "Alert name: " + alert.getName() + "\n" +
         "Report name: " + reportDefinition.getName() + "\n" +
         "Status: Given threshold [" +
         alert.getThreshold() +
         "] was exceeded. " +
         "Current value: " +
         result.getResult() +
-        ". Please check your Optimize dashboard for more information!\n" +
+        ". Please check your Optimize report for more information!\n" +
         createViewLink(alert);
     return emailBody;
   }

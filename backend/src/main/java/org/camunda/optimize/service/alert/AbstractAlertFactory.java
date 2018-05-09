@@ -21,9 +21,6 @@ import java.util.Map;
 import static org.quartz.SimpleScheduleBuilder.simpleSchedule;
 import static org.quartz.TriggerBuilder.newTrigger;
 
-/**
- * @author Askar Akhmerov
- */
 public abstract class AbstractAlertFactory {
 
   @Autowired
@@ -44,10 +41,10 @@ public abstract class AbstractAlertFactory {
 
   public Trigger createTrigger(AlertDefinitionDto alert, JobDetail jobDetail) {
     SimpleTrigger trigger = null;
-    if (alert.getCheckInterval() != null) {
+    if (getInterval(alert) != null) {
       OffsetDateTime startFuture = OffsetDateTime.now()
           .plus(
-              alert.getCheckInterval().getValue(),
+              getInterval(alert).getValue(),
               unitOf(getInterval(alert).getUnit())
           );
 

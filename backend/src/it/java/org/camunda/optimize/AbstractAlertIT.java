@@ -26,7 +26,9 @@ import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -75,6 +77,16 @@ public abstract class AbstractAlertIT {
 
   private JobKey reminderJobKey(String id) {
     return new JobKey(id + "-reminder-job", "statusReminder-job");
+  }
+
+  protected OffsetDateTime getNextReminderExecutionTime(String id) throws SchedulerException {
+    Date nextTimeReminderIsExecuted =  embeddedOptimizeRule
+      .getAlertService()
+      .getScheduler()
+      .getTriggersOfJob(reminderJobKey(id))
+      .get(0)
+      .getNextFireTime();
+    return OffsetDateTime.ofInstant(nextTimeReminderIsExecuted.toInstant(), ZoneId.systemDefault());
   }
 
   protected ProcessInstanceEngineDto deployWithTimeShift(long daysToShift, long durationInSec) throws SQLException, InterruptedException {

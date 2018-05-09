@@ -76,6 +76,7 @@ public class  AlertService {
       schedulerFactoryBean.setOverwriteExistingJobs(true);
       schedulerFactoryBean.setJobFactory(sampleJobFactory);
 
+
       List<AlertDefinitionDto> alerts = new ArrayList<>();
       try {
         alerts = this.getStoredAlerts();
