@@ -117,9 +117,8 @@ public class TestTopicClient
     {
         return apiRule.createCmdRequest()
                       .partitionId(partitionId)
-                      .eventTypeWorkflow()
+                      .type(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CREATE)
                       .command()
-                      .put(PROP_STATE, "CREATE_WORKFLOW_INSTANCE")
                       .put(PROP_WORKFLOW_BPMN_PROCESS_ID, bpmnProcessId)
                       .put(PROP_WORKFLOW_VERSION, version)
                       .done()
@@ -362,10 +361,5 @@ public class TestTopicClient
     public static Predicate<SubscribedRecord> incidentRecords(Intent intent, long workflowInstanceKey)
     {
         return incidentRecords(intent).and(workflowInstanceKey(workflowInstanceKey));
-    }
-
-    public static Predicate<SubscribedRecord> workflowRecords(Intent intent)
-    {
-        return workflowRecords().and(intent(intent));
     }
 }

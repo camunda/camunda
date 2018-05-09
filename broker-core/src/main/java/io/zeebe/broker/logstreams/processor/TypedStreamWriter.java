@@ -33,6 +33,11 @@ public interface TypedStreamWriter
     /**
      * @return position of new event, negative value on failure
      */
+    long writeRejection(TypedRecord<? extends UnpackedObject> command, Consumer<RecordMetadata> metadata);
+
+    /**
+     * @return position of new event, negative value on failure
+     */
     long writeNewCommand(Intent intent, UnpackedObject value);
 
     /**

@@ -50,11 +50,6 @@ public class SubscribedRecordStream extends StreamWrapper<SubscribedRecord>
         return recordsOfType(RecordType.COMMAND);
     }
 
-    public SubscribedRecordStream ofTypeWorkflow()
-    {
-        return recordsOfValueType(ValueType.WORKFLOW);
-    }
-
     public SubscribedRecordStream ofTypeWorkflowInstance()
     {
         return recordsOfValueType(ValueType.WORKFLOW_INSTANCE);

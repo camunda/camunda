@@ -151,7 +151,21 @@ public class TypedStreamWriterImpl implements TypedStreamWriter, TypedBatchWrite
     @Override
     public long writeRejection(TypedRecord<? extends UnpackedObject> command)
     {
-        return writeRecord(command.getKey(), RecordType.COMMAND_REJECTION, command.getMetadata().getIntent(), command.getValue(), noop);
+        return writeRecord(command.getKey(),
+                RecordType.COMMAND_REJECTION,
+                command.getMetadata().getIntent(),
+                command.getValue(),
+                noop);
+    }
+
+    @Override
+    public long writeRejection(TypedRecord<? extends UnpackedObject> command, Consumer<RecordMetadata> metadata)
+    {
+        return writeRecord(command.getKey(),
+                RecordType.COMMAND_REJECTION,
+                command.getMetadata().getIntent(),
+                command.getValue(),
+                metadata);
     }
 
     @Override
@@ -187,7 +201,22 @@ public class TypedStreamWriterImpl implements TypedStreamWriter, TypedBatchWrite
     @Override
     public TypedBatchWriter addRejection(TypedRecord<? extends UnpackedObject> command)
     {
-        return addRecord(command.getKey(), RecordType.COMMAND_REJECTION, command.getMetadata().getIntent(), command.getValue(), noop);
+        return addRecord(command.getKey(),
+                RecordType.COMMAND_REJECTION,
+                command.getMetadata().getIntent(),
+                command.getValue(),
+                noop);
+    }
+
+    @Override
+    public TypedBatchWriter addRejection(TypedRecord<? extends UnpackedObject> command,
+            Consumer<RecordMetadata> metadata)
+    {
+        return addRecord(command.getKey(),
+                RecordType.COMMAND_REJECTION,
+                command.getMetadata().getIntent(),
+                command.getValue(),
+                metadata);
     }
 
     private TypedBatchWriter addRecord(

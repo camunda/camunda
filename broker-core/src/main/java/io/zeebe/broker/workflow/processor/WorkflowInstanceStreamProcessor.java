@@ -70,6 +70,7 @@ import io.zeebe.msgpack.mapping.Mapping;
 import io.zeebe.msgpack.mapping.MappingException;
 import io.zeebe.msgpack.mapping.MappingProcessor;
 import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.protocol.intent.JobIntent;
@@ -104,9 +105,11 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
     private ActorControl actor;
 
     public WorkflowInstanceStreamProcessor(
-            TopologyManager topologyManager,
-            int payloadCacheSize)
+        ClientTransport managementApiClient,
+        TopologyManager topologyManager,
+        int payloadCacheSize)
     {
+        this.managementApiClient = managementApiClient;
         this.payloadCache = new PayloadCache(payloadCacheSize);
         this.topologyManager = topologyManager;
     }
@@ -124,7 +127,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
             .onEvent(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.ACTIVITY_READY, w -> isActive(w.getWorkflowInstanceKey()), new ActivityReadyEventProcessor())
             .onEvent(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.ACTIVITY_ACTIVATED, w -> isActive(w.getWorkflowInstanceKey()), new ActivityActivatedEventProcessor())
             .onEvent(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.ACTIVITY_COMPLETING, w -> isActive(w.getWorkflowInstanceKey()), new ActivityCompletingEventProcessor())
-            .onCommand(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.UPDATE_PAYLOAD, w -> isActive(w.getWorkflowInstanceKey()), new UpdatePayloadProcessor())
+            .onCommand(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.UPDATE_PAYLOAD, new UpdatePayloadProcessor())
             .onEvent(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.START_EVENT_OCCURRED, w -> isActive(w.getWorkflowInstanceKey()), bpmnAspectProcessor)
             .onEvent(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.END_EVENT_OCCURRED, w -> isActive(w.getWorkflowInstanceKey()), bpmnAspectProcessor)
             .onEvent(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.GATEWAY_ACTIVATED, w -> isActive(w.getWorkflowInstanceKey()), bpmnAspectProcessor)
@@ -148,6 +151,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
     public void onOpen(TypedStreamProcessor streamProcessor)
     {
 
+        this.actor = streamProcessor.getActor();
         final LogStream logStream = streamProcessor.getEnvironment().getStream();
         this.workflowCache = new WorkflowCache(managementApiClient,
             topologyManager,
@@ -199,11 +203,17 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         private boolean accepted;
         private final WorkflowInstanceRecord startEventRecord = new WorkflowInstanceRecord();
 
+        private long requestId;
+        private int requestStreamId;
+
         @Override
         public void processRecord(TypedRecord<WorkflowInstanceRecord> command, EventLifecycleContext ctx)
         {
             accepted = false;
             final WorkflowInstanceRecord workflowInstanceCommand = command.getValue();
+
+            this.requestId = command.getMetadata().getRequestId();
+            this.requestStreamId = command.getMetadata().getRequestStreamId();
 
             workflowInstanceCommand.setWorkflowInstanceKey(command.getKey());
 
@@ -214,6 +224,11 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
                 accepted = true;
                 resolveWorkflowDefinition(workflowInstanceCommand, ctx);
             }
+        }
+
+        private void addRequestMetadata(RecordMetadata metadata)
+        {
+            metadata.requestId(requestId).requestStreamId(requestStreamId);
         }
 
         private void resolveWorkflowDefinition(WorkflowInstanceRecord command, EventLifecycleContext ctx)
@@ -327,14 +342,17 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
             if (accepted)
             {
                 final TypedBatchWriter batchWriter = writer.newBatch();
-                // TODO: copy request metadata here
-                batchWriter.addFollowUpEvent(command.getKey(), WorkflowInstanceIntent.CREATED, command.getValue());
+                batchWriter.addFollowUpEvent(
+                        command.getKey(),
+                        WorkflowInstanceIntent.CREATED,
+                        command.getValue(),
+                        this::addRequestMetadata);
                 addStartEventOccured(batchWriter, command.getValue());
                 return batchWriter.write();
             }
             else
             {
-                return writer.writeRejection(command);
+                return writer.writeRejection(command, this::addRequestMetadata);
             }
         }
 
@@ -348,7 +366,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
                 .setBpmnProcessId(createCommand.getBpmnProcessId())
                 .setPayload(createCommand.getPayload())
                 .setVersion(createCommand.getVersion())
-                .setWorkflowInstanceKey(createCommand.getVersion())
+                .setWorkflowInstanceKey(createCommand.getWorkflowInstanceKey())
                 .setWorkflowKey(createCommand.getWorkflowKey());
             batchWriter.addNewEvent(WorkflowInstanceIntent.START_EVENT_OCCURRED, startEventRecord);
         }
@@ -413,6 +431,8 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         {
             try
             {
+                isResolvingIncident = event.getMetadata().hasIncidentKey();
+
                 final WorkflowInstanceRecord value = event.getValue();
                 final SequenceFlow sequenceFlow = getSequenceFlowWithFulfilledCondition(exclusiveGateway, value.getPayload());
 
@@ -1022,7 +1042,30 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
             }
             else
             {
-                return true;
+                return responseWriter.writeRejection(command);
+            }
+        }
+
+        @Override
+        public long writeRecord(TypedRecord<WorkflowInstanceRecord> command, TypedStreamWriter writer)
+        {
+            if (isUpdated)
+            {
+                return writer.writeFollowUpEvent(command.getKey(), WorkflowInstanceIntent.PAYLOAD_UPDATED, command.getValue());
+            }
+            else
+            {
+                return writer.writeRejection(command);
+            }
+        }
+
+        @Override
+        public void updateState(TypedRecord<WorkflowInstanceRecord> command)
+        {
+            if (isUpdated)
+            {
+                final WorkflowInstanceRecord workflowInstanceEvent = command.getValue();
+                payloadCache.addPayload(workflowInstanceEvent.getWorkflowInstanceKey(), command.getPosition(), workflowInstanceEvent.getPayload());
             }
         }
     }

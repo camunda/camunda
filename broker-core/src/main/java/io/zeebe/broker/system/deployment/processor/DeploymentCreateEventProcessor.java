@@ -90,12 +90,14 @@ public class DeploymentCreateEventProcessor implements TypedRecordProcessor<Depl
                 event.getKey(),
                 DeploymentIntent.CREATED,
                 event.getValue(),
-                (m) -> m.requestId(event.getMetadata().getRequestId())
+                m -> m.requestId(event.getMetadata().getRequestId())
                     .requestStreamId(event.getMetadata().getRequestStreamId()));
         }
         else
         {
-            return writer.writeRejection(event);
+            return writer.writeRejection(event,
+                m -> m.requestId(event.getMetadata().getRequestId())
+                    .requestStreamId(event.getMetadata().getRequestStreamId()));
         }
     }
 

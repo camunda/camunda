@@ -48,14 +48,9 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
-<<<<<<< a8980d0e12f2a98a0d593a7f37a5278b6926d5d7
-import io.zeebe.protocol.intent.Intent;
-=======
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import io.zeebe.protocol.intent.WorkflowIntent;
->>>>>>> structure intents by value type
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
@@ -118,15 +113,6 @@ public class CreateWorkflowInstanceTest
                 .sendAndAwait();
 
         // then
-<<<<<<< a8980d0e12f2a98a0d593a7f37a5278b6926d5d7
-=======
-        final SubscribedRecord workflowEvent = testClient.receiveEvents()
-                .ofTypeWorkflow()
-                .withIntent(WorkflowIntent.CREATED)
-                .getFirst();
-        final long workflowKey = workflowEvent.key();
-
->>>>>>> structure intents by value type
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
         assertThat(resp.partitionId()).isEqualTo(apiRule.getDefaultPartitionId());
         assertThat(resp.intent()).isEqualTo(WorkflowInstanceIntent.CREATED);
@@ -162,19 +148,7 @@ public class CreateWorkflowInstanceTest
                 .sendAndAwait();
 
         // then
-<<<<<<< a8980d0e12f2a98a0d593a7f37a5278b6926d5d7
         final int workflowKey = extractWorkflowKey(deployment2);
-=======
-        final SubscribedRecord workflowEvent = testClient.receiveEvents()
-                .ofTypeWorkflow()
-                .withIntent(WorkflowIntent.CREATED)
-                .limit(2)
-                .collect(Collectors.toList())
-                .get(1);
-        final long workflowKey = workflowEvent.key();
->>>>>>> structure intents by value type
-
-
 
         final SubscribedRecord event = testClient.receiveEvents()
                 .ofTypeWorkflowInstance()
@@ -215,17 +189,7 @@ public class CreateWorkflowInstanceTest
                 .sendAndAwait();
 
         // then
-<<<<<<< a8980d0e12f2a98a0d593a7f37a5278b6926d5d7
         final int workflowKey = extractWorkflowKey(deployment1);
-=======
-        final SubscribedRecord workflowEvent = testClient.receiveEvents()
-                .ofTypeWorkflow()
-                .withIntent(WorkflowIntent.CREATED)
-                .limit(2)
-                .collect(Collectors.toList())
-                .get(0);
-        final long workflowKey = workflowEvent.key();
->>>>>>> structure intents by value type
 
         final SubscribedRecord event = testClient.receiveEvents()
                 .ofTypeWorkflowInstance()
@@ -255,17 +219,7 @@ public class CreateWorkflowInstanceTest
                 .endEvent()
                 .done());
 
-<<<<<<< a8980d0e12f2a98a0d593a7f37a5278b6926d5d7
         final int workflowKey = extractWorkflowKey(depl);
-=======
-        final SubscribedRecord workflowEvent = testClient.receiveEvents()
-                .ofTypeWorkflow()
-                .withIntent(WorkflowIntent.CREATED)
-                .limit(2)
-                .collect(Collectors.toList())
-                .get(1);
-        final long workflowKey = workflowEvent.key();
->>>>>>> structure intents by value type
 
         // when
         final ExecuteCommandResponse resp = apiRule.createCmdRequest()
@@ -301,17 +255,7 @@ public class CreateWorkflowInstanceTest
                   .endEvent()
                   .done());
 
-<<<<<<< a8980d0e12f2a98a0d593a7f37a5278b6926d5d7
         final int workflowKey = extractWorkflowKey(depl);
-=======
-        final SubscribedRecord workflowEvent = testClient.receiveEvents()
-                .ofTypeWorkflow()
-                .withIntent(WorkflowIntent.CREATED)
-                .limit(2)
-                .collect(Collectors.toList())
-                .get(0);
-        final long workflowKey = workflowEvent.key();
->>>>>>> structure intents by value type
 
         // when
         final ExecuteCommandResponse resp = apiRule.createCmdRequest()
@@ -440,7 +384,10 @@ public class CreateWorkflowInstanceTest
 
         final long workflowInstance1 = testClient.createWorkflowInstance("process");
 
-        testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_ACTIVATED"));
+        testClient.receiveEvents()
+            .ofTypeWorkflowInstance()
+            .withIntent(WorkflowInstanceIntent.ACTIVITY_ACTIVATED)
+            .getFirst();
 
         // when
         testClient.deploy(workflow);
@@ -449,19 +396,24 @@ public class CreateWorkflowInstanceTest
         final ExecuteCommandResponse resp = testClient.createWorkflowInstanceWithResponse("process", -2);
 
         // then
-        final List<SubscribedEvent> workflowInstanceEvents = testClient.receiveEvents(workflowInstanceEvents("ACTIVITY_ACTIVATED"))
+        final List<SubscribedRecord> workflowInstanceEvents = testClient.receiveEvents()
+                .ofTypeWorkflowInstance()
+                .withIntent(WorkflowInstanceIntent.ACTIVITY_ACTIVATED)
                 .limit(2)
                 .collect(Collectors.toList());
 
-        assertThat(workflowInstanceEvents.get(0).event())
+        assertThat(workflowInstanceEvents.get(0).value())
             .containsEntry("workflowInstanceKey", workflowInstance1)
             .containsEntry("version", 1);
 
-        assertThat(workflowInstanceEvents.get(1).event())
+        assertThat(workflowInstanceEvents.get(1).value())
             .containsEntry("workflowInstanceKey", resp.key())
             .containsEntry("version", 2);
 
-        final long createdTasks = testClient.receiveEvents(taskEvents("CREATED")).limit(2).count();
+        final long createdTasks = testClient.receiveEvents()
+            .ofTypeJob()
+            .withIntent(JobIntent.CREATED)
+            .limit(2).count();
         assertThat(createdTasks).isEqualTo(2);
     }
 
@@ -507,7 +459,7 @@ public class CreateWorkflowInstanceTest
             .containsEntry("workflowInstanceKey", workflowInstance1)
             .containsEntry("version", 1);
 
-        assertThat(workflowInstanceEvents.get(1).event())
+        assertThat(workflowInstanceEvents.get(1).value())
             .containsEntry("workflowInstanceKey", resp.key())
             .containsEntry("version", 2);
 
@@ -617,7 +569,7 @@ public class CreateWorkflowInstanceTest
     @SuppressWarnings("unchecked")
     private int extractWorkflowKey(final ExecuteCommandResponse deployment1)
     {
-        final List<Map<String, Object>> deployedWorkflows = (List<Map<String, Object>>) deployment1.getEvent().get("deployedWorkflows");
+        final List<Map<String, Object>> deployedWorkflows = (List<Map<String, Object>>) deployment1.getValue().get("deployedWorkflows");
         return (int) deployedWorkflows.get(0).get(PROP_WORKFLOW_KEY);
     }
 }

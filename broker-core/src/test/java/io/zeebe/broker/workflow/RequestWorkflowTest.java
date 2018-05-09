@@ -17,12 +17,25 @@
  */
 package io.zeebe.broker.workflow;
 
-import static io.zeebe.broker.workflow.data.WorkflowInstanceEvent.*;
+import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_BPMN_PROCESS_ID;
+import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_KEY;
+import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_VERSION;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.*;
-import java.util.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.assertj.core.util.Files;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.broker.workflow.data.ResourceType;
@@ -30,13 +43,13 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.clientapi.EventType;
-import io.zeebe.test.broker.protocol.clientapi.*;
+import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.intent.DeploymentIntent;
+import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
+import io.zeebe.test.broker.protocol.clientapi.ControlMessageResponse;
+import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.util.StreamUtil;
-import org.assertj.core.util.Files;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
 
 public class RequestWorkflowTest
 {
@@ -86,7 +99,7 @@ public class RequestWorkflowTest
         ExecuteCommandResponse resp = apiRule.topic().deployWithResponse(ClientApiRule.DEFAULT_TOPIC_NAME, WORKFLOW);
 
         // then
-        List<Map<String, Object>> deployedWorkflows = (List<Map<String, Object>>) resp.getEvent().get("deployedWorkflows");
+        List<Map<String, Object>> deployedWorkflows = (List<Map<String, Object>>) resp.getValue().get("deployedWorkflows");
         assertThat(deployedWorkflows).hasSize(1);
         assertThat(deployedWorkflows.get(0)).containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process");
         assertThat(deployedWorkflows.get(0)).containsEntry(PROP_WORKFLOW_VERSION, 1);
@@ -95,7 +108,7 @@ public class RequestWorkflowTest
         resp = apiRule.topic().deployWithResponse(ClientApiRule.DEFAULT_TOPIC_NAME, WORKFLOW);
 
         // then the workflow definition version is increased
-        deployedWorkflows = (List<Map<String, Object>>) resp.getEvent().get("deployedWorkflows");
+        deployedWorkflows = (List<Map<String, Object>>) resp.getValue().get("deployedWorkflows");
         assertThat(deployedWorkflows).hasSize(1);
         assertThat(deployedWorkflows.get(0)).containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process");
         assertThat(deployedWorkflows.get(0)).containsEntry(PROP_WORKFLOW_VERSION, 2);
@@ -115,7 +128,7 @@ public class RequestWorkflowTest
                                     "collaboration.bpmn");
 
         // then
-        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "CREATED");
+        assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATED);
 
         final List<Map<String, Object>> deployedWorkflows = Arrays.asList(getDeployedWorkflow(resp, 0), getDeployedWorkflow(resp, 1));
 
@@ -132,8 +145,8 @@ public class RequestWorkflowTest
 
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
-        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "REJECTED");
-        assertThat((String) resp.getEvent().get("errorMessage")).isEqualTo("No topic found with name not-existing");
+        assertThat(resp.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+        assertThat((String) resp.getValue().get("errorMessage")).isEqualTo("No topic found with name not-existing");
     }
 
     @Test
@@ -147,8 +160,8 @@ public class RequestWorkflowTest
 
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
-        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "REJECTED");
-        assertThat((String) resp.getEvent().get("errorMessage")).contains("The process must contain at least one none start event.");
+        assertThat(resp.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+        assertThat((String) resp.getValue().get("errorMessage")).contains("The process must contain at least one none start event.");
     }
 
     @Test
@@ -162,9 +175,8 @@ public class RequestWorkflowTest
         // when
         final ExecuteCommandResponse resp = apiRule.createCmdRequest()
                 .partitionId(Protocol.SYSTEM_PARTITION)
-                .eventType(EventType.DEPLOYMENT_EVENT)
+                .type(ValueType.DEPLOYMENT, DeploymentIntent.CREATE)
                 .command()
-                    .put(PROP_STATE, "CREATE")
                     .put("topicName", ClientApiRule.DEFAULT_TOPIC_NAME)
                     .put("resources", resources)
                 .done()
@@ -172,8 +184,8 @@ public class RequestWorkflowTest
 
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
-        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "REJECTED");
-        assertThat((String) resp.getEvent().get("errorMessage"))
+        assertThat(resp.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+        assertThat((String) resp.getValue().get("errorMessage"))
             .contains("Resource 'process2.bpmn':")
             .contains("The process must contain at least one none start event.");
     }
@@ -184,9 +196,8 @@ public class RequestWorkflowTest
         // when
         final ExecuteCommandResponse resp = apiRule.createCmdRequest()
                 .partitionId(Protocol.SYSTEM_PARTITION)
-                .eventType(EventType.DEPLOYMENT_EVENT)
+                .type(ValueType.DEPLOYMENT, DeploymentIntent.CREATE)
                 .command()
-                    .put(PROP_STATE, "CREATE")
                     .put("topicName", ClientApiRule.DEFAULT_TOPIC_NAME)
                     .put("resources", Collections.emptyList())
                 .done()
@@ -194,8 +205,8 @@ public class RequestWorkflowTest
 
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
-        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "REJECTED");
-        assertThat((String) resp.getEvent().get("errorMessage")).isEqualTo("Deployment doesn't contain a resource to deploy.");
+        assertThat(resp.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+        assertThat((String) resp.getValue().get("errorMessage")).isEqualTo("Deployment doesn't contain a resource to deploy.");
     }
 
     @Test
@@ -210,8 +221,8 @@ public class RequestWorkflowTest
 
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
-        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "REJECTED");
-        assertThat((String) resp.getEvent().get("errorMessage"))
+        assertThat(resp.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+        assertThat((String) resp.getValue().get("errorMessage"))
             .contains("Failed to deploy resource 'invalid.bpmn':")
             .contains("Failed to read BPMN model");
     }
@@ -233,8 +244,8 @@ public class RequestWorkflowTest
 
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
-        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "REJECTED");
-        assertThat((String) resp.getEvent().get("errorMessage")).contains("The condition 'foobar' is not valid");
+        assertThat(resp.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+        assertThat((String) resp.getValue().get("errorMessage")).contains("The condition 'foobar' is not valid");
     }
 
     @Test
@@ -252,7 +263,7 @@ public class RequestWorkflowTest
                                     "simple-workflow.yaml");
 
         // then
-        assertThat(resp.getEvent()).containsEntry(PROP_STATE, "CREATED");
+        assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATED);
 
         final Map<String, Object> deployedWorkflow = getDeployedWorkflow(resp, 0);
 
@@ -299,7 +310,7 @@ public class RequestWorkflowTest
     @SuppressWarnings("unchecked")
     private Map<String, Object> getDeployedWorkflow(final ExecuteCommandResponse d1, int offset)
     {
-        final List<Map<String, Object>> d1Workflows = (List<Map<String, Object>>) d1.getEvent().get("deployedWorkflows");
+        final List<Map<String, Object>> d1Workflows = (List<Map<String, Object>>) d1.getValue().get("deployedWorkflows");
         return d1Workflows.get(offset);
     }
 }

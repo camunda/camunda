@@ -23,6 +23,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import io.zeebe.logstreams.processor.EventLifecycleContext;
 import io.zeebe.logstreams.snapshot.BaseValueSnapshotSupport;
 import io.zeebe.logstreams.snapshot.ComposedSnapshot;
 import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
@@ -49,7 +50,7 @@ public class TypedEventStreamProcessorBuilder
         this.environment = environment;
     }
 
-    // TODO: könnte man hier sogar auf den valueType verzichten, weil der aus dem Intent folgt
+    // TODO: could remove the ValueType argument as it follows from the intent
     public TypedEventStreamProcessorBuilder onEvent(ValueType valueType, Intent intent, TypedRecordProcessor<?> processor)
     {
         return onRecord(RecordType.EVENT, valueType, intent, processor);
@@ -132,7 +133,6 @@ public class TypedEventStreamProcessorBuilder
             snapshotSupport = new NoopSnapshotSupport();
         }
 
-        // TODO: vll kann man hier env.getOutput etc. wegmachen
         return new TypedStreamProcessor(
                 snapshotSupport,
                 environment.getOutput(),
@@ -161,6 +161,17 @@ public class TypedEventStreamProcessorBuilder
                 selectedProcessor.processRecord(record);
             }
         }
+
+        @Override
+        public void processRecord(TypedRecord<T> record, EventLifecycleContext ctx)
+        {
+            selectedProcessor = dispatcher.apply(record);
+            if (selectedProcessor != null)
+            {
+                selectedProcessor.processRecord(record, ctx);
+            }
+        }
+
         @Override
         public boolean executeSideEffects(TypedRecord<T> record, TypedResponseWriter responseWriter)
         {

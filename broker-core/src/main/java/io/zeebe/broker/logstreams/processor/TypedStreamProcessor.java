@@ -24,6 +24,7 @@ import java.util.List;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.logstreams.processor.EventLifecycleContext;
 import io.zeebe.logstreams.processor.EventProcessor;
 import io.zeebe.logstreams.processor.StreamProcessor;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
@@ -174,6 +175,12 @@ public class TypedStreamProcessor implements StreamProcessor
         public void processEvent()
         {
             eventProcessor.processRecord(event);
+        }
+
+        @Override
+        public void processEvent(EventLifecycleContext ctx)
+        {
+            eventProcessor.processRecord(event, ctx);
         }
 
         @Override

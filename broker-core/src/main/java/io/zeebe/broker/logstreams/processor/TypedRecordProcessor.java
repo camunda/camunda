@@ -35,6 +35,7 @@ public interface TypedRecordProcessor<T extends UnpackedObject> extends StreamPr
      */
     default void processRecord(TypedRecord<T> record, EventLifecycleContext ctx)
     {
+        processRecord(record);
     }
 
     /**

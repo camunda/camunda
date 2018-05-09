@@ -31,6 +31,7 @@ import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceGroupReference;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.ServerTransport;
 
 /**
@@ -43,6 +44,7 @@ public class WorkflowStreamProcessingManagerService implements Service<WorkflowS
     protected static final String NAME = "workflow.queue.manager";
 
     private final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
+    private final Injector<ClientTransport> managementApiClientInjector = new Injector<>();
     private final Injector<TopologyManager> topologyManagerInjector = new Injector<>();
 
     private final Injector<StreamProcessorServiceFactory> streamProcessorServiceFactoryInjector = new Injector<>();
@@ -67,6 +69,7 @@ public class WorkflowStreamProcessingManagerService implements Service<WorkflowS
         final ServerTransport transport = clientApiTransportInjector.getValue();
 
         final WorkflowInstanceStreamProcessor streamProcessor = new WorkflowInstanceStreamProcessor(
+            managementApiClientInjector.getValue(),
             topologyManager,
             PAYLOAD_CACHE_SIZE);
         final TypedStreamEnvironment env = new TypedStreamEnvironment(partition.getLogStream(), transport.getOutput());
@@ -122,5 +125,10 @@ public class WorkflowStreamProcessingManagerService implements Service<WorkflowS
     public Injector<TopologyManager> getTopologyManagerInjector()
     {
         return topologyManagerInjector;
+    }
+
+    public Injector<ClientTransport> getManagementApiClientInjector()
+    {
+        return managementApiClientInjector;
     }
 }
