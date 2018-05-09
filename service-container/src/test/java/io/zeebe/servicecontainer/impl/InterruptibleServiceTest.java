@@ -106,7 +106,7 @@ public class InterruptibleServiceTest
 
         // when
         service.future.complete(null);
-        actorSchedulerRule.workUntilDone();
+        actorSchedulerRule.awaitBlockingTasksCompleted(1);
 
         serviceContainer.removeService(serviceName);
         actorSchedulerRule.workUntilDone();
