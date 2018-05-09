@@ -21,14 +21,13 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessDefinitionFetcher
-  extends RetryBackoffEngineEntityFetcher<ProcessDefinitionEngineDto, AllEntitiesBasedImportPage> {
+  extends RetryBackoffEngineEntityFetcher<ProcessDefinitionEngineDto> {
 
   public ProcessDefinitionFetcher(EngineContext engineContext) {
     super(engineContext);
   }
 
-  @Override
-  protected List<ProcessDefinitionEngineDto> fetchEntities(AllEntitiesBasedImportPage page) {
+  public List<ProcessDefinitionEngineDto> fetchProcessDefinitions(AllEntitiesBasedImportPage page) {
     return fetchProcessDefinitions(
       page.getIndexOfFirstResult(),
       page.getPageSize()
@@ -39,7 +38,21 @@ public class ProcessDefinitionFetcher
     List<ProcessDefinitionEngineDto> entries;
 
     long requestStart = System.currentTimeMillis();
-    entries = getEngineClient()
+    entries =
+      fetchWithRetry(() -> performProcessDefinitionRequest(indexOfFirstResult, maxPageSize));
+    long requestEnd = System.currentTimeMillis();
+    logger.debug(
+      "Fetched [{}] process definitions within [{}] ms",
+      entries.size(),
+      requestEnd - requestStart
+    );
+
+
+    return entries;
+  }
+
+  private List<ProcessDefinitionEngineDto> performProcessDefinitionRequest(long indexOfFirstResult, long maxPageSize) {
+    return getEngineClient()
       .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
       .path(configurationService.getProcessDefinitionEndpoint())
       .queryParam(INDEX_OF_FIRST_RESULT, indexOfFirstResult)
@@ -50,16 +63,6 @@ public class ProcessDefinitionFetcher
       .acceptEncoding(UTF8)
       .get(new GenericType<List<ProcessDefinitionEngineDto>>() {
       });
-
-    long requestEnd = System.currentTimeMillis();
-    logger.debug(
-      "Fetched [{}] process definitions within [{}] ms",
-      entries.size(),
-      requestEnd - requestStart
-    );
-
-
-    return entries;
   }
 
 }

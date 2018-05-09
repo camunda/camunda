@@ -46,7 +46,7 @@ public class ProcessDefinitionXmlEngineImportMediator
   protected boolean importNextEnginePage() {
     IdSetBasedImportPage page = importIndexHandler.getNextPage();
     if (!page.getIds().isEmpty()) {
-      List<ProcessDefinitionXmlEngineDto> entities = engineEntityFetcher.fetchEngineEntities(page);
+      List<ProcessDefinitionXmlEngineDto> entities = engineEntityFetcher.fetchXmlsForDefinitions(page);
       if (!entities.isEmpty()) {
         definitionXmlImportService.executeImport(entities);
       }

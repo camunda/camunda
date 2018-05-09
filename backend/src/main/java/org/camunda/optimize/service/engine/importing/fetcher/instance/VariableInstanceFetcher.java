@@ -24,14 +24,13 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class  VariableInstanceFetcher
-  extends RetryBackoffEngineEntityFetcher<HistoricVariableInstanceDto, IdSetBasedImportPage> {
+  extends RetryBackoffEngineEntityFetcher<HistoricVariableInstanceDto> {
 
   public VariableInstanceFetcher(EngineContext engineContext) {
     super(engineContext);
   }
 
-  @Override
-  public List<HistoricVariableInstanceDto> fetchEntities(IdSetBasedImportPage page) {
+  public List<HistoricVariableInstanceDto> fetchHistoricVariableInstances(IdSetBasedImportPage page) {
     return fetchHistoricVariableInstances(page.getIds());
   }
 
@@ -44,15 +43,8 @@ public class  VariableInstanceFetcher
     pids.put(INCLUDE_VARIABLE_TYPE_IN, supportedVariableTypes);
     logger.debug("fetching variables for [{}] PIs", processInstanceIds.size());
 
-    List<HistoricVariableInstanceDto> entries = getEngineClient()
-      .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
-      .queryParam("deserializeValues", "false")
-      .path(configurationService.getHistoricVariableInstanceEndpoint())
-      .request(MediaType.APPLICATION_JSON)
-      .acceptEncoding(UTF8)
-      .post(Entity.entity(pids, MediaType.APPLICATION_JSON))
-      .readEntity(new GenericType<List<HistoricVariableInstanceDto>>() {
-      });
+    List<HistoricVariableInstanceDto> entries =
+      fetchWithRetry(() -> performHistoricVariableInstanceRequest(pids));
 
     long requestEnd = System.currentTimeMillis();
     logger.debug(
@@ -61,5 +53,17 @@ public class  VariableInstanceFetcher
       requestEnd - requestStart
     );
     return entries;
+  }
+
+  private List<HistoricVariableInstanceDto> performHistoricVariableInstanceRequest(Map<String, Set<String>> pids) {
+    return getEngineClient()
+      .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
+      .queryParam("deserializeValues", "false")
+      .path(configurationService.getHistoricVariableInstanceEndpoint())
+      .request(MediaType.APPLICATION_JSON)
+      .acceptEncoding(UTF8)
+      .post(Entity.entity(pids, MediaType.APPLICATION_JSON))
+      .readEntity(new GenericType<List<HistoricVariableInstanceDto>>() {
+      });
   }
 }

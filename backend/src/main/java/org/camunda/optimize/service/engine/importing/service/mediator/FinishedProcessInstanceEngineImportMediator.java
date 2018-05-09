@@ -14,7 +14,6 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.time.OffsetDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 @Component
@@ -44,13 +43,17 @@ public class FinishedProcessInstanceEngineImportMediator
 
   @Override
   public boolean importNextEnginePage() {
+    List<HistoricProcessInstanceDto> entitiesOfLastTimestamp =
+      engineEntityFetcher.fetchHistoricFinishedProcessInstances(importIndexHandler.getTimestampOfLastEntity());
+
     TimestampBasedImportPage page = importIndexHandler.getNextPage();
-    List<HistoricProcessInstanceDto> entities = engineEntityFetcher.fetchEngineEntities(page);
+    List<HistoricProcessInstanceDto> entities =
+      engineEntityFetcher.fetchHistoricFinishedProcessInstances(page);
     if (!entities.isEmpty()) {
-      // we have to subtract one millisecond because the operator for comparing (finished after) timestamps
-      // in the engine is >= . Therefore we add the small count of the smallest unit to achieve the > operator
-      OffsetDateTime timestamp = entities.get(entities.size() - 1).getEndTime().plus(1L, ChronoUnit.MILLIS);
+
+      OffsetDateTime timestamp = entities.get(entities.size() - 1).getEndTime();
       importIndexHandler.updateTimestampOfLastEntity(timestamp);
+      entities.addAll(entitiesOfLastTimestamp);
       finishedProcessInstanceImportService.executeImport(entities);
     }
     return entities.size() >= configurationService.getEngineImportProcessInstanceMaxPageSize();

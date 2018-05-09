@@ -27,7 +27,7 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ActivityInstanceFetcher
-  extends RetryBackoffEngineEntityFetcher<HistoricActivityInstanceEngineDto, TimestampBasedImportPage> {
+  extends RetryBackoffEngineEntityFetcher<HistoricActivityInstanceEngineDto> {
 
   @Autowired
   private DateTimeFormatter dateTimeFormatter;
@@ -36,8 +36,7 @@ public class ActivityInstanceFetcher
     super(engineContext);
   }
 
-  @Override
-  public List<HistoricActivityInstanceEngineDto> fetchEntities(TimestampBasedImportPage page) {
+  public List<HistoricActivityInstanceEngineDto> fetchHistoricActivityInstances(TimestampBasedImportPage page) {
     return fetchHistoricActivityInstances(
       page.getTimestampOfLastEntity(),
       configurationService.getEngineImportActivityInstanceMaxPageSize()
@@ -47,7 +46,22 @@ public class ActivityInstanceFetcher
   private List<HistoricActivityInstanceEngineDto> fetchHistoricActivityInstances(OffsetDateTime timeStamp,
                                                                                  long pageSize) {
     long requestStart = System.currentTimeMillis();
-    List<HistoricActivityInstanceEngineDto> entries = getEngineClient()
+
+    List<HistoricActivityInstanceEngineDto> entries =
+      fetchWithRetry(() -> performHistoricActivityInstanceRequest(timeStamp, pageSize));
+    long requestEnd = System.currentTimeMillis();
+    logger.debug(
+      "Fetched [{}] historic activity instances which ended after set timestamp with page size [{}] within [{}] ms",
+      entries.size(),
+      pageSize,
+      requestEnd - requestStart
+    );
+
+    return entries;
+  }
+
+  private List<HistoricActivityInstanceEngineDto> performHistoricActivityInstanceRequest(OffsetDateTime timeStamp, long pageSize) {
+    return getEngineClient()
       .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
       .path(configurationService.getHistoricActivityInstanceEndpoint())
       .queryParam(SORT_BY, SORT_TYPE_END_TIME)
@@ -59,28 +73,24 @@ public class ActivityInstanceFetcher
       .acceptEncoding(UTF8)
       .get(new GenericType<List<HistoricActivityInstanceEngineDto>>() {
       });
-    long requestEnd = System.currentTimeMillis();
-    logger.debug(
-      "Fetched [{}] historic activity instances which ended after set timestamp with page size [{}] within [{}] ms",
-      entries.size(),
-      pageSize,
-      requestEnd - requestStart
-    );
-
-    if (!entries.isEmpty()) {
-      OffsetDateTime endTimeOfLastInstance = entries.get(entries.size() - 1).getEndTime();
-      List<HistoricActivityInstanceEngineDto> secondEntries =
-        fetchHistoricActivityInstancesForTimestamp(endTimeOfLastInstance);
-      entries.addAll(secondEntries);
-    }
-    removeDuplicates(entries);
-    return entries;
   }
 
-  private List<HistoricActivityInstanceEngineDto> fetchHistoricActivityInstancesForTimestamp(
+  public List<HistoricActivityInstanceEngineDto> fetchHistoricActivityInstancesForTimestamp(
     OffsetDateTime endTimeOfLastInstance) {
     long requestStart = System.currentTimeMillis();
-    List<HistoricActivityInstanceEngineDto> secondEntries = getEngineClient()
+    List<HistoricActivityInstanceEngineDto> secondEntries =
+      fetchWithRetry(() -> performHistoricActivityInstanceRequest(endTimeOfLastInstance));
+    long requestEnd = System.currentTimeMillis();
+    logger.debug(
+      "Fetched [{}] historic activity instances for set end time within [{}] ms",
+      secondEntries.size(),
+      requestEnd - requestStart
+    );
+    return secondEntries;
+  }
+
+  private List<HistoricActivityInstanceEngineDto> performHistoricActivityInstanceRequest(OffsetDateTime endTimeOfLastInstance) {
+    return getEngineClient()
       .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
       .path(configurationService.getHistoricActivityInstanceEndpoint())
       .queryParam(FINISHED_AFTER, dateTimeFormatter.format(endTimeOfLastInstance))
@@ -90,13 +100,6 @@ public class ActivityInstanceFetcher
       .acceptEncoding(UTF8)
       .get(new GenericType<List<HistoricActivityInstanceEngineDto>>() {
       });
-    long requestEnd = System.currentTimeMillis();
-    logger.debug(
-      "Fetched [{}] historic activity instances for set end time within [{}] ms",
-      secondEntries.size(),
-      requestEnd - requestStart
-    );
-    return secondEntries;
   }
 
 }

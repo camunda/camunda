@@ -27,7 +27,7 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class FinishedProcessInstanceFetcher extends
-  RetryBackoffEngineEntityFetcher<HistoricProcessInstanceDto, TimestampBasedImportPage> {
+  RetryBackoffEngineEntityFetcher<HistoricProcessInstanceDto> {
 
   @Autowired
   private DateTimeFormatter dateTimeFormatter;
@@ -36,8 +36,7 @@ public class FinishedProcessInstanceFetcher extends
     super(engineContext);
   }
 
-  @Override
-  public List<HistoricProcessInstanceDto> fetchEntities(TimestampBasedImportPage page) {
+  public List<HistoricProcessInstanceDto> fetchHistoricFinishedProcessInstances(TimestampBasedImportPage page) {
     return fetchHistoricFinishedProcessInstances(
       page.getTimestampOfLastEntity(),
       configurationService.getEngineImportActivityInstanceMaxPageSize()
@@ -47,7 +46,20 @@ public class FinishedProcessInstanceFetcher extends
   private List<HistoricProcessInstanceDto> fetchHistoricFinishedProcessInstances(OffsetDateTime timeStamp,
                                                                                  long pageSize) {
     long requestStart = System.currentTimeMillis();
-    List<HistoricProcessInstanceDto> entries = getEngineClient()
+    List<HistoricProcessInstanceDto> entries =
+      fetchWithRetry(() -> performFinishedHistoricProcessInstanceRequest(timeStamp, pageSize));
+    long requestEnd = System.currentTimeMillis();
+    logger.debug(
+      "Fetched [{}] historic process instances which ended after set timestamp with page size [{}] within [{}] ms",
+      entries.size(),
+      pageSize,
+      requestEnd - requestStart
+    );
+    return entries;
+  }
+
+  private List<HistoricProcessInstanceDto> performFinishedHistoricProcessInstanceRequest(OffsetDateTime timeStamp, long pageSize) {
+    return getEngineClient()
       .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
       .path(configurationService.getHistoricProcessInstanceEndpoint())
       .queryParam(SORT_BY, SORT_TYPE_END_TIME)
@@ -59,27 +71,23 @@ public class FinishedProcessInstanceFetcher extends
       .acceptEncoding(UTF8)
       .get(new GenericType<List<HistoricProcessInstanceDto>>() {
       });
-    long requestEnd = System.currentTimeMillis();
-    logger.debug(
-      "Fetched [{}] historic process instances which ended after set timestamp with page size [{}] within [{}] ms",
-      entries.size(),
-      pageSize,
-      requestEnd - requestStart
-    );
-
-    if (!entries.isEmpty()) {
-      OffsetDateTime endTimeOfLastInstance = entries.get(entries.size() - 1).getEndTime();
-      List<HistoricProcessInstanceDto> secondEntries =
-        fetchFinishedProcessInstancesForTimestamp(endTimeOfLastInstance);
-      entries.addAll(secondEntries);
-    }
-    removeDuplicates(entries);
-    return entries;
   }
 
-  private List<HistoricProcessInstanceDto> fetchFinishedProcessInstancesForTimestamp(OffsetDateTime endTimeOfLastInstance) {
+  public List<HistoricProcessInstanceDto> fetchHistoricFinishedProcessInstances(OffsetDateTime endTimeOfLastInstance) {
     long requestStart = System.currentTimeMillis();
-    List<HistoricProcessInstanceDto> secondEntries = getEngineClient()
+    List<HistoricProcessInstanceDto> secondEntries =
+      fetchWithRetry(() -> performFinishedHistoricProcessInstanceRequest(endTimeOfLastInstance));
+    long requestEnd = System.currentTimeMillis();
+    logger.debug(
+      "Fetched [{}] historic process instances for set end time within [{}] ms",
+      secondEntries.size(),
+      requestEnd - requestStart
+    );
+    return secondEntries;
+  }
+
+  private List<HistoricProcessInstanceDto> performFinishedHistoricProcessInstanceRequest(OffsetDateTime endTimeOfLastInstance) {
+    return getEngineClient()
       .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
       .path(configurationService.getHistoricProcessInstanceEndpoint())
       .queryParam(FINISHED_AFTER, dateTimeFormatter.format(endTimeOfLastInstance))
@@ -89,12 +97,5 @@ public class FinishedProcessInstanceFetcher extends
       .acceptEncoding(UTF8)
       .get(new GenericType<List<HistoricProcessInstanceDto>>() {
       });
-    long requestEnd = System.currentTimeMillis();
-    logger.debug(
-      "Fetched [{}] historic process instances for set end time within [{}] ms",
-      secondEntries.size(),
-      requestEnd - requestStart
-    );
-    return secondEntries;
   }
 }

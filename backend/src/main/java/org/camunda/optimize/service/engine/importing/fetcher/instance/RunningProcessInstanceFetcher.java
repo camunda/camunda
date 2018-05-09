@@ -20,14 +20,13 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class RunningProcessInstanceFetcher extends
-  RetryBackoffEngineEntityFetcher<HistoricProcessInstanceDto, IdSetBasedImportPage> {
+  RetryBackoffEngineEntityFetcher<HistoricProcessInstanceDto> {
 
   public RunningProcessInstanceFetcher(EngineContext engineContext) {
     super(engineContext);
   }
 
-  @Override
-  public List<HistoricProcessInstanceDto> fetchEntities(IdSetBasedImportPage page) {
+  public List<HistoricProcessInstanceDto> fetchHistoricProcessInstances(IdSetBasedImportPage page) {
     return fetchHistoricProcessInstances(page.getIds());
   }
 
@@ -37,14 +36,8 @@ public class RunningProcessInstanceFetcher extends
 
     Map<String, Set<String>> pids = new HashMap<>();
     pids.put(INCLUDE_PROCESS_INSTANCE_IDS, processInstanceIds);
-    List<HistoricProcessInstanceDto> entries = getEngineClient()
-      .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
-      .path(configurationService.getHistoricProcessInstanceEndpoint())
-      .request(MediaType.APPLICATION_JSON)
-      .acceptEncoding(UTF8)
-      .post(Entity.entity(pids, MediaType.APPLICATION_JSON))
-      .readEntity(new GenericType<List<HistoricProcessInstanceDto>>() {
-      });
+    List<HistoricProcessInstanceDto> entries =
+      fetchWithRetry(() -> performRunningHistoricProcessInstanceRequest(pids));
 
     long requestEnd = System.currentTimeMillis();
     logger.debug(
@@ -53,5 +46,16 @@ public class RunningProcessInstanceFetcher extends
       requestEnd - requestStart
     );
     return entries;
+  }
+
+  private List<HistoricProcessInstanceDto> performRunningHistoricProcessInstanceRequest(Map<String, Set<String>> pids) {
+    return getEngineClient()
+      .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
+      .path(configurationService.getHistoricProcessInstanceEndpoint())
+      .request(MediaType.APPLICATION_JSON)
+      .acceptEncoding(UTF8)
+      .post(Entity.entity(pids, MediaType.APPLICATION_JSON))
+      .readEntity(new GenericType<List<HistoricProcessInstanceDto>>() {
+      });
   }
 }

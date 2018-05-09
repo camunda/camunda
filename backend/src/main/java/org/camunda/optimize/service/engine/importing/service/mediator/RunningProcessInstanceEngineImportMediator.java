@@ -45,7 +45,7 @@ public class RunningProcessInstanceEngineImportMediator
   protected boolean importNextEnginePage() {
     IdSetBasedImportPage page = importIndexHandler.getNextPage();
     if (!page.getIds().isEmpty()) {
-      List<HistoricProcessInstanceDto> entities = engineEntityFetcher.fetchEngineEntities(page);
+      List<HistoricProcessInstanceDto> entities = engineEntityFetcher.fetchHistoricProcessInstances(page);
       if (!entities.isEmpty()) {
         runningProcessInstanceImportService.executeImport(entities);
         return true;

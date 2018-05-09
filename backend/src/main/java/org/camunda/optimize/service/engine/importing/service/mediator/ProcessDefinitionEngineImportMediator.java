@@ -44,7 +44,7 @@ public class ProcessDefinitionEngineImportMediator
   @Override
   protected boolean importNextEnginePage() {
     AllEntitiesBasedImportPage page = importIndexHandler.getNextPage();
-    List<ProcessDefinitionEngineDto> entities = engineEntityFetcher.fetchEngineEntities(page);
+    List<ProcessDefinitionEngineDto> entities = engineEntityFetcher.fetchProcessDefinitions(page);
     if (!entities.isEmpty()) {
       definitionImportService.executeImport(entities);
       importIndexHandler.moveImportIndex(entities.size());

@@ -11,13 +11,14 @@ import org.springframework.stereotype.Component;
 
 import javax.ws.rs.core.MediaType;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessDefinitionXmlFetcher
-  extends RetryBackoffEngineEntityFetcher<ProcessDefinitionXmlEngineDto, IdSetBasedImportPage> {
+  extends RetryBackoffEngineEntityFetcher<ProcessDefinitionXmlEngineDto> {
 
   @Autowired
   private BeanHelper beanHelper;
@@ -27,8 +28,7 @@ public class ProcessDefinitionXmlFetcher
     super(engineContext);
   }
 
-  @Override
-  protected List<ProcessDefinitionXmlEngineDto> fetchEntities(IdSetBasedImportPage page) {
+  public List<ProcessDefinitionXmlEngineDto> fetchXmlsForDefinitions(IdSetBasedImportPage page) {
     Set<String> ids = page.getIds();
     return fetchXmlsForDefinitions(new ArrayList<>(ids));
   }
@@ -37,12 +37,9 @@ public class ProcessDefinitionXmlFetcher
     List<ProcessDefinitionXmlEngineDto> xmls = new ArrayList<>(processDefinitionIds.size());
     long requestStart = System.currentTimeMillis();
     for (String processDefinitionId : processDefinitionIds) {
-      ProcessDefinitionXmlEngineDto xml = getEngineClient()
-        .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
-        .path(configurationService.getProcessDefinitionXmlEndpoint(processDefinitionId))
-        .request(MediaType.APPLICATION_JSON)
-        .get(ProcessDefinitionXmlEngineDto.class);
-      xmls.add(xml);
+      List<ProcessDefinitionXmlEngineDto> singleXml =
+        fetchWithRetry(() -> performProcessDefinitionXmlRequest(processDefinitionId));
+      xmls.addAll(singleXml);
     }
     long requestEnd = System.currentTimeMillis();
     logger.debug(
@@ -50,7 +47,15 @@ public class ProcessDefinitionXmlFetcher
       processDefinitionIds.size(),
       requestEnd - requestStart
     );
-
     return xmls;
+  }
+
+  private List<ProcessDefinitionXmlEngineDto> performProcessDefinitionXmlRequest(String processDefinitionId) {
+    ProcessDefinitionXmlEngineDto processDefinitionXmlEngineDto = getEngineClient()
+      .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
+      .path(configurationService.getProcessDefinitionXmlEndpoint(processDefinitionId))
+      .request(MediaType.APPLICATION_JSON)
+      .get(ProcessDefinitionXmlEngineDto.class);
+    return Collections.singletonList(processDefinitionXmlEngineDto);
   }
 }

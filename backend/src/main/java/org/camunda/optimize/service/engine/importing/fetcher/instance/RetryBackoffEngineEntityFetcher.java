@@ -2,32 +2,25 @@ package org.camunda.optimize.service.engine.importing.fetcher.instance;
 
 import org.camunda.optimize.dto.engine.EngineDto;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.engine.importing.index.page.ImportPage;
+import org.camunda.optimize.service.engine.importing.fetcher.EngineEntityFetcher;
 
 import java.util.List;
 
-public abstract class RetryBackoffEngineEntityFetcher<ENG extends EngineDto, PAGE extends ImportPage>
-    extends EngineEntityFetcher<ENG, PAGE> {
+public abstract class RetryBackoffEngineEntityFetcher<ENG extends EngineDto>
+    extends EngineEntityFetcher {
 
   private static final long STARTING_BACKOFF = 0;
   private long backoffCounter = 0L;
 
-  public RetryBackoffEngineEntityFetcher(EngineContext engineContext) {
+  RetryBackoffEngineEntityFetcher(EngineContext engineContext) {
     super(engineContext);
   }
 
-  /**
-   * Queries the engine to fetch the entities from there given a page,
-   * which contains all the information of which chunk of data should be fetched.
-   */
-  protected abstract List<ENG> fetchEntities(PAGE page);
-
-  @Override
-  public List<ENG> fetchEngineEntities(PAGE page) {
+  protected List<ENG> fetchWithRetry(FetcherFunction<ENG> fetchFunction) {
     List<ENG> result = null;
     while (result == null) {
       try {
-        result = fetchEntities(page);
+        result = fetchFunction.fetch();
       } catch (Exception exception) {
         logError(exception);
         long timeToSleep = calculateSleepTime();
@@ -37,6 +30,11 @@ public abstract class RetryBackoffEngineEntityFetcher<ENG extends EngineDto, PAG
     }
     resetBackoffCounter();
     return result;
+  }
+
+  @FunctionalInterface
+  public interface FetcherFunction<ENG> {
+    List<ENG> fetch();
   }
 
   private void resetBackoffCounter() {

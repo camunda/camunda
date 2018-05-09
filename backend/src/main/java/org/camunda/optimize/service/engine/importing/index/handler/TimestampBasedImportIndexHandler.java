@@ -14,6 +14,7 @@ import javax.annotation.PostConstruct;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
 public abstract class TimestampBasedImportIndexHandler
@@ -45,6 +46,10 @@ public abstract class TimestampBasedImportIndexHandler
     timestampOfLastEntity = timestamp;
   }
 
+  public OffsetDateTime getTimestampOfLastEntity() {
+    return timestampOfLastEntity;
+  }
+
   /**
    * States the Elasticsearch type where the index information should be stored.
    */
@@ -63,7 +68,9 @@ public abstract class TimestampBasedImportIndexHandler
   @Override
   public TimestampBasedImportPage getNextPage() {
     TimestampBasedImportPage page = new TimestampBasedImportPage();
-    page.setTimestampOfLastEntity(timestampOfLastEntity);
+    // we have to add one millisecond because the operator for comparing (finished after) timestamps
+    // in the engine is >= . Therefore we add one count of the smallest unit to achieve the > operator
+    page.setTimestampOfLastEntity(timestampOfLastEntity.plus(1L, ChronoUnit.MILLIS));
     return page;
   }
 

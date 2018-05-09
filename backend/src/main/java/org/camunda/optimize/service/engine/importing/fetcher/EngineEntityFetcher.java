@@ -8,10 +8,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.ws.rs.client.Client;
 
-/**
- * @author Askar Akhmerov
- */
-public abstract class AbstractEngineAwareFetcher {
+public abstract class EngineEntityFetcher {
+
+  public static final String UTF8 = "UTF-8";
 
   protected Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -20,7 +19,7 @@ public abstract class AbstractEngineAwareFetcher {
   @Autowired
   protected ConfigurationService configurationService;
 
-  public AbstractEngineAwareFetcher(EngineContext engineContext) {
+  public EngineEntityFetcher(EngineContext engineContext) {
     this.engineContext = engineContext;
   }
 
