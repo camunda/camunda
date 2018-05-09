@@ -15,22 +15,10 @@
  */
 package io.zeebe.servicecontainer;
 
-public interface Service<S>
+public class ServiceInterruptedException extends RuntimeException
 {
-    default void start(ServiceStartContext startContext)
+    public ServiceInterruptedException(String message)
     {
-
+        super(message);
     }
-
-    default void stop(ServiceStopContext stopContext)
-    {
-
-    }
-
-    default void onInterruption(ServiceStartContext startContext)
-    {
-
-    }
-
-    S get();
 }

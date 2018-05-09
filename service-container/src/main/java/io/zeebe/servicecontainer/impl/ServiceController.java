@@ -218,7 +218,15 @@ public class ServiceController extends Actor
                 case DEPENDENCIES_UNAVAILABLE:
                 case DEPENDENTS_STOPPED:
                 case SERVICE_STOPPING:
-                    stopAfterStarted = true;
+                    if (startContext.isInterruptible())
+                    {
+                        startFuture.completeExceptionally(new ServiceInterruptedException(String.format("Service %s was interrupted", name)));
+                        invokeStop(true);
+                    }
+                    else
+                    {
+                        stopAfterStarted = true;
+                    }
                     break;
 
                 default:
@@ -233,9 +241,9 @@ public class ServiceController extends Actor
             if (stopAfterStarted)
             {
                 startFuture.completeExceptionally(new RuntimeException(String.format("Could not start service %s" +
-                        " removed while starting", name)));
+                    " removed while starting", name)));
 
-                invokeStop();
+                invokeStop(false);
             }
             else
             {
@@ -292,7 +300,7 @@ public class ServiceController extends Actor
         {
             if (t.getType() == ServiceEventType.DEPENDENTS_STOPPED)
             {
-                invokeStop();
+                invokeStop(false);
             }
         }
     }
@@ -327,7 +335,7 @@ public class ServiceController extends Actor
         }
     }
 
-    private void invokeStop()
+    private void invokeStop(boolean interrupted)
     {
         state = awaitStopState;
 
@@ -337,6 +345,7 @@ public class ServiceController extends Actor
         }
 
         stopContext = new StopContextImpl();
+        stopContext.wasInterrupted = interrupted;
 
         try
         {
@@ -365,6 +374,7 @@ public class ServiceController extends Actor
 
         boolean isValid = true;
         boolean isAsync = false;
+        boolean isInterruptible = false;
         boolean stopOnCompletion = false;
         Runnable action;
 
@@ -445,11 +455,12 @@ public class ServiceController extends Actor
         }
 
         @Override
-        public void async(Future<?> future)
+        public void async(Future<?> future, boolean interruptible)
         {
             validCheck();
             notAsyncCheck();
             isAsync = true;
+            isInterruptible = interruptible;
 
             if (future instanceof ActorFuture)
             {
@@ -494,6 +505,12 @@ public class ServiceController extends Actor
             return isAsync;
         }
 
+        boolean isInterruptible()
+        {
+            validCheck();
+            return isInterruptible;
+        }
+
         private void notAsyncCheck()
         {
             if (isAsync)
@@ -535,6 +552,13 @@ public class ServiceController extends Actor
         boolean isValid = true;
         boolean isAsync = false;
         Runnable action;
+        boolean wasInterrupted = false;
+
+        @Override
+        public boolean wasInterrupted()
+        {
+            return wasInterrupted;
+        }
 
         @Override
         public void async(Future<?> future)

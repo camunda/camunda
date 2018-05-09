@@ -148,7 +148,14 @@ public class ServiceContainerImpl extends Actor implements ServiceContainer
             {
                 if (t != null)
                 {
-                    LOG.error("Failed to build service", t);
+                    if (t instanceof ServiceInterruptedException)
+                    {
+                        LOG.debug(String.format("Service %s interrupted while building", serviceName.getName()));
+                    }
+                    else
+                    {
+                        LOG.error("Failed to build service", t);
+                    }
                 }
             });
         });
