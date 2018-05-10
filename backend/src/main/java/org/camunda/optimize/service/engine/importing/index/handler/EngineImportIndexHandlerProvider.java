@@ -34,7 +34,7 @@ public class EngineImportIndexHandlerProvider {
 
   private List<AllEntitiesBasedImportIndexHandler>  allEntitiesBasedHandlers;
   private List<ScrollBasedImportIndexHandler>       scrollBasedHandlers;
-  private List<TimestampBasedImportIndexHandler>   definitionBasedHandlers;
+  private List<TimestampBasedImportIndexHandler> timestampBasedHandlers;
   private Map<String, ImportIndexHandler>           allHandlers;
 
   public EngineImportIndexHandlerProvider(EngineContext engineContext) {
@@ -45,7 +45,7 @@ public class EngineImportIndexHandlerProvider {
   public void init() {
     allEntitiesBasedHandlers = new ArrayList<>();
     scrollBasedHandlers = new ArrayList<>();
-    definitionBasedHandlers = new ArrayList<>();
+    timestampBasedHandlers = new ArrayList<>();
     allHandlers = new HashMap<>();
 
     allHandlers.put(ActivityImportIndexHandler.class.getSimpleName(), getActivityImportIndexHandler());
@@ -55,12 +55,12 @@ public class EngineImportIndexHandlerProvider {
     allHandlers.put(RunningProcessInstanceImportIndexHandler.class.getSimpleName(), getUnfinishedProcessInstanceImportIndexHandler());
     allHandlers.put(VariableInstanceImportIndexHandler.class.getSimpleName(), getVariableInstanceImportIndexHandler());
 
-    scrollBasedHandlers.add(getUnfinishedProcessInstanceImportIndexHandler());
     scrollBasedHandlers.add(getVariableInstanceImportIndexHandler());
     scrollBasedHandlers.add(getProcessDefinitionXmlImportIndexHandler());
 
-    definitionBasedHandlers.add(getActivityImportIndexHandler());
-    definitionBasedHandlers.add(getFinishedProcessInstanceImportIndexHandler());
+    timestampBasedHandlers.add(getUnfinishedProcessInstanceImportIndexHandler());
+    timestampBasedHandlers.add(getActivityImportIndexHandler());
+    timestampBasedHandlers.add(getFinishedProcessInstanceImportIndexHandler());
 
     allEntitiesBasedHandlers.add(getProcessDefinitionImportIndexHandler());
   }
@@ -70,8 +70,8 @@ public class EngineImportIndexHandlerProvider {
     return allEntitiesBasedHandlers;
   }
 
-  public List<TimestampBasedImportIndexHandler> getDefinitionBasedHandlers() {
-    return definitionBasedHandlers;
+  public List<TimestampBasedImportIndexHandler> getTimestampBasedHandlers() {
+    return timestampBasedHandlers;
   }
 
   public List<ScrollBasedImportIndexHandler> getScrollBasedHandlers() {

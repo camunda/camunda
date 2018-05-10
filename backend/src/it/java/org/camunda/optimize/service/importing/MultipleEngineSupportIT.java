@@ -293,6 +293,7 @@ public class MultipleEngineSupportIT {
     // given
     addSecondEngineToConfiguration();
     deployAndStartSimpleProcessDefinitionForAllEngines();
+    deployAndStartUserTaskProcessForAllEngines();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     embeddedOptimizeRule.storeImportIndexesToElasticsearch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -309,7 +310,7 @@ public class MultipleEngineSupportIT {
       .setSize(100)
       .get();
 
-    assertThat(searchResponse.getHits().getTotalHits(), is(4L));
+    assertThat(searchResponse.getHits().getTotalHits(), is(6L));
     for (SearchHit searchHit : searchResponse.getHits().getHits()) {
       String timestampOfLastEntity = searchHit.getSourceAsMap().get(TIMESTAMP_OF_LAST_ENTITY).toString();
       OffsetDateTime timestamp = OffsetDateTime.parse(timestampOfLastEntity, embeddedOptimizeRule.getDateTimeFormatter());
@@ -333,6 +334,23 @@ public class MultipleEngineSupportIT {
         .endEvent()
         .done(),
       variables
+    );
+  }
+
+  private void deployAndStartUserTaskProcessForAllEngines() {
+    defaultEngineRule.deployAndStartProcess(
+      Bpmn.createExecutableProcess("TestProcess1")
+        .startEvent()
+        .userTask()
+        .endEvent()
+        .done()
+    );
+    secondEngineRule.deployAndStartProcess(
+      Bpmn.createExecutableProcess("TestProcess2")
+        .startEvent()
+        .userTask()
+        .endEvent()
+        .done()
     );
   }
 

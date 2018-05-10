@@ -123,12 +123,7 @@ public class ImportIT  {
   @Test
   public void unfinishedActivitiesAreNotSkippedDuringImport() {
     // given
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .startEvent()
-      .userTask()
-      .endEvent()
-      .done();
-    engineRule.deployAndStartProcess(processModel);
+    deployAndStartUserTaskProcess();
     deployAndStartSimpleServiceTask();
 
     // when
@@ -144,15 +139,19 @@ public class ImportIT  {
     }
   }
 
+  public void deployAndStartUserTaskProcess() {
+    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
+      .startEvent()
+      .userTask()
+      .endEvent()
+      .done();
+    engineRule.deployAndStartProcess(processModel);
+  }
+
   @Test
   public void unfinishedProcessesIndexedAfterFinish() {
     // given
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-        .startEvent()
-        .userTask()
-        .endEvent()
-        .done();
-    engineRule.deployAndStartProcess(processModel);
+    deployAndStartUserTaskProcess();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
 
     //then
@@ -364,7 +363,9 @@ public class ImportIT  {
   @Test
   public void latestImportIndexAfterRestartOfOptimize() throws Exception {
     // given
+    deployAndStartUserTaskProcess();
     deployAndStartSimpleServiceTask();
+
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     embeddedOptimizeRule.storeImportIndexesToElasticsearch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();

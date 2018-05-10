@@ -50,7 +50,8 @@ public class FinishedProcessInstanceFetcher extends
       fetchWithRetry(() -> performFinishedHistoricProcessInstanceRequest(timeStamp, pageSize));
     long requestEnd = System.currentTimeMillis();
     logger.debug(
-      "Fetched [{}] historic process instances which ended after set timestamp with page size [{}] within [{}] ms",
+      "Fetched [{}] completed historic process instances which ended after " +
+        "set timestamp with page size [{}] within [{}] ms",
       entries.size(),
       pageSize,
       requestEnd - requestStart
@@ -79,7 +80,7 @@ public class FinishedProcessInstanceFetcher extends
       fetchWithRetry(() -> performFinishedHistoricProcessInstanceRequest(endTimeOfLastInstance));
     long requestEnd = System.currentTimeMillis();
     logger.debug(
-      "Fetched [{}] historic process instances for set end time within [{}] ms",
+      "Fetched [{}] completed historic process instances for set end time within [{}] ms",
       secondEntries.size(),
       requestEnd - requestStart
     );

@@ -49,7 +49,7 @@ public class ImportIndexHandlerProvider {
     List<TimestampBasedImportIndexHandler> result = new ArrayList<>();
     EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(engineAlias);
     if (engineImportIndexHandlerProvider != null) {
-      result = engineImportIndexHandlerProvider.getDefinitionBasedHandlers();
+      result = engineImportIndexHandlerProvider.getTimestampBasedHandlers();
     }
     return result;
   }
