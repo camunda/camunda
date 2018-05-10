@@ -22,8 +22,8 @@ import java.util.*;
 
 import io.zeebe.broker.clustering.base.topology.NodeInfo;
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
-import io.zeebe.broker.system.deployment.request.FetchWorkflowRequest;
-import io.zeebe.broker.system.deployment.request.FetchWorkflowResponse;
+import io.zeebe.broker.system.workflow.repository.api.management.FetchWorkflowRequest;
+import io.zeebe.broker.system.workflow.repository.api.management.FetchWorkflowResponse;
 import io.zeebe.clustering.management.FetchWorkflowResponseDecoder;
 import io.zeebe.model.bpmn.BpmnModelApi;
 import io.zeebe.model.bpmn.instance.Workflow;

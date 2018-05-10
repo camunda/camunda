@@ -22,9 +22,9 @@ import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADE
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.STREAM_PROCESSOR_SERVICE_FACTORY;
 import static io.zeebe.broker.system.SystemServiceNames.*;
 
-import io.zeebe.broker.system.deployment.service.DeploymentManager;
-import io.zeebe.broker.system.deployment.service.DeploymentManagerRequestHandler;
 import io.zeebe.broker.system.metrics.MetricsFileWriterService;
+import io.zeebe.broker.system.workflow.repository.api.management.DeploymentManagerRequestHandler;
+import io.zeebe.broker.system.workflow.repository.service.DeploymentManager;
 import io.zeebe.broker.transport.TransportServiceNames;
 import io.zeebe.servicecontainer.ServiceContainer;
 

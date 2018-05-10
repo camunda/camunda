@@ -17,8 +17,9 @@
  */
 package io.zeebe.broker.system;
 
-import io.zeebe.broker.system.deployment.service.*;
 import io.zeebe.broker.system.metrics.MetricsFileWriter;
+import io.zeebe.broker.system.workflow.repository.api.management.DeploymentManagerRequestHandler;
+import io.zeebe.broker.system.workflow.repository.service.*;
 import io.zeebe.servicecontainer.ServiceName;
 
 public class SystemServiceNames

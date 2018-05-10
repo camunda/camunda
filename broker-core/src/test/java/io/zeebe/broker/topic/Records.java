@@ -21,7 +21,7 @@ import org.agrona.DirectBuffer;
 
 import io.zeebe.broker.clustering.orchestration.topic.TopicRecord;
 import io.zeebe.broker.job.data.JobRecord;
-import io.zeebe.broker.workflow.data.DeploymentRecord;
+import io.zeebe.broker.system.workflow.repository.data.DeploymentRecord;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.RecordType;

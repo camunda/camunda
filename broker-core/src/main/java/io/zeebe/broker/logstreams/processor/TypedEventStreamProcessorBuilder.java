@@ -119,6 +119,12 @@ public class TypedEventStreamProcessorBuilder
         return this;
     }
 
+    public TypedEventStreamProcessorBuilder withStateResource(ComposableSnapshotSupport snapshotSupport)
+    {
+        this.stateResources.add(snapshotSupport);
+        return this;
+    }
+
     public TypedStreamProcessor build()
     {
 
