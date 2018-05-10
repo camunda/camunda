@@ -13,10 +13,6 @@ import java.util.List;
 
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.INDEX_OF_FIRST_RESULT;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.MAX_RESULTS_TO_RETURN;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.SORT_BY;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.SORT_ORDER;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.SORT_ORDER_TYPE_DESCENDING;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.SORT_TYPE_ID;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
@@ -57,8 +53,6 @@ public class ProcessDefinitionFetcher
       .path(configurationService.getProcessDefinitionEndpoint())
       .queryParam(INDEX_OF_FIRST_RESULT, indexOfFirstResult)
       .queryParam(MAX_RESULTS_TO_RETURN, maxPageSize)
-      .queryParam(SORT_BY, SORT_TYPE_ID)
-      .queryParam(SORT_ORDER, SORT_ORDER_TYPE_DESCENDING)
       .request(MediaType.APPLICATION_JSON)
       .acceptEncoding(UTF8)
       .get(new GenericType<List<ProcessDefinitionEngineDto>>() {

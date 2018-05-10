@@ -4,6 +4,7 @@ import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.fetcher.instance.ProcessDefinitionFetcher;
 import org.camunda.optimize.service.engine.importing.index.handler.AllEntitiesBasedImportIndexHandler;
+import org.camunda.optimize.service.engine.importing.index.handler.impl.ProcessDefinitionImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.page.AllEntitiesBasedImportPage;
 import org.camunda.optimize.service.engine.importing.service.ProcessDefinitionImportService;
 import org.camunda.optimize.service.es.writer.ProcessDefinitionWriter;
@@ -18,7 +19,7 @@ import java.util.List;
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessDefinitionEngineImportMediator
-  extends BackoffImportMediator<AllEntitiesBasedImportIndexHandler> {
+  extends BackoffImportMediator<ProcessDefinitionImportIndexHandler> {
 
   protected EngineContext engineContext;
   private ProcessDefinitionFetcher engineEntityFetcher;
@@ -45,12 +46,12 @@ public class ProcessDefinitionEngineImportMediator
   protected boolean importNextEnginePage() {
     AllEntitiesBasedImportPage page = importIndexHandler.getNextPage();
     List<ProcessDefinitionEngineDto> entities = engineEntityFetcher.fetchProcessDefinitions(page);
-    if (!entities.isEmpty()) {
-      definitionImportService.executeImport(entities);
-      importIndexHandler.moveImportIndex(entities.size());
-      return entities.size() >= configurationService.getEngineImportProcessDefinitionMaxPageSize();
+    List<ProcessDefinitionEngineDto> newEntities = importIndexHandler.filterNewDefinitions(entities);
+    if (!newEntities.isEmpty()) {
+      importIndexHandler.addImportedDefinitions(newEntities);
+      definitionImportService.executeImport(newEntities);
     }
-    return false;
+    return !newEntities.isEmpty();
   }
 
 }

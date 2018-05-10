@@ -6,6 +6,7 @@ import org.camunda.optimize.service.engine.importing.index.page.AllEntitiesBased
 import org.camunda.optimize.service.es.reader.ImportIndexReader;
 import org.camunda.optimize.service.util.EsHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.elasticsearch.client.Client;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -21,7 +22,7 @@ public abstract class AllEntitiesBasedImportIndexHandler
   @Autowired
   protected ConfigurationService configurationService;
 
-  protected long importIndex = 0;
+  private long importIndex = 0;
   protected EngineContext engineContext;
 
   public AllEntitiesBasedImportIndexHandler(EngineContext engineContext) {
@@ -53,12 +54,10 @@ public abstract class AllEntitiesBasedImportIndexHandler
   @Override
   public AllEntitiesBasedImportPage getNextPage() {
     AllEntitiesBasedImportPage page = new AllEntitiesBasedImportPage();
-    page.setIndexOfFirstResult(importIndex);
-    page.setPageSize(getMaxPageSize());
+    page.setIndexOfFirstResult(0);
+    page.setPageSize(Integer.MAX_VALUE);
     return page;
   }
-
-  protected abstract long getMaxPageSize();
 
   protected abstract String getElasticsearchImportIndexType();
 
