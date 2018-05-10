@@ -48,7 +48,8 @@
         <validValue name="REMOVE_TOPIC_SUBSCRIPTION">3</validValue>
         <validValue name="REQUEST_TOPOLOGY">4</validValue>
         <validValue name="REQUEST_PARTITIONS">5</validValue>
-        <validValue name="REQUEST_WORKFLOW">6</validValue>
+        <validValue name="GET_WORKFLOW">6</validValue>
+        <validValue name="LIST_WORKFLOWS">7</validValue>
     </enum>
 
     <enum name="SubscriptionType" encodingType="uint8" description="The type of the subscription.">
