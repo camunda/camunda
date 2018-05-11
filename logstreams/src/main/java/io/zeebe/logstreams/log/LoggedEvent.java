@@ -56,6 +56,11 @@ public interface LoggedEvent
     long getKey();
 
     /**
+     * @return the timestamp of the event, the ActorClock current time when the event was written
+     */
+    long getTimestamp();
+
+    /**
      * @return a buffer containing the event's metadata at offset
      *         {@link #getMetadataOffset()} and with length {@link #getMetadataLength()}.
      */

@@ -15,8 +15,8 @@
  */
 package io.zeebe.logstreams.log;
 
-import org.agrona.DirectBuffer;
 import io.zeebe.util.buffer.BufferWriter;
+import org.agrona.DirectBuffer;
 
 public interface LogStreamWriter
 {

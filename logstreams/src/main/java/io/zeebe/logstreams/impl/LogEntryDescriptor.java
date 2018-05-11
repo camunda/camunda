@@ -47,6 +47,9 @@ import org.agrona.MutableDirectBuffer;
  *  |                               KEY                             |
  *  |                                                               |
  *  +---------------------------------------------------------------+
+ *  |                           TIMESTAMP                           |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
  *  |        METADATA LENGTH         |       unused                 |
  *  +---------------------------------------------------------------+
  *  |                         ...METADATA...                        |
@@ -73,6 +76,8 @@ public class LogEntryDescriptor
     public static final int SOURCE_EVENT_POSITION_OFFSET;
 
     public static final int KEY_OFFSET;
+
+    public static final int TIMESTAMP_OFFSET;
 
     public static final int METADATA_LENGTH_OFFSET;
 
@@ -106,6 +111,9 @@ public class LogEntryDescriptor
         offset += SIZE_OF_LONG;
 
         KEY_OFFSET = offset;
+        offset += SIZE_OF_LONG;
+
+        TIMESTAMP_OFFSET = offset;
         offset += SIZE_OF_LONG;
 
         METADATA_LENGTH_OFFSET = offset;
@@ -218,6 +226,21 @@ public class LogEntryDescriptor
     public static void setKey(final MutableDirectBuffer buffer, final int offset, final long key)
     {
         buffer.putLong(keyOffset(offset), key);
+    }
+
+    public static int timestampOffset(final int offset)
+    {
+        return TIMESTAMP_OFFSET + offset;
+    }
+
+    public static long getTimestamp(final DirectBuffer buffer, final int offset)
+    {
+        return buffer.getLong(timestampOffset(offset));
+    }
+
+    public static void setTimestamp(final MutableDirectBuffer buffer, final int offset, final long timestamp)
+    {
+        buffer.putLong(timestampOffset(offset), timestamp);
     }
 
     public static int metadataLengthOffset(final int offset)

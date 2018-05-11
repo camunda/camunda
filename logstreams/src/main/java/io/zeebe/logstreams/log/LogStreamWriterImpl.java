@@ -16,21 +16,8 @@
 package io.zeebe.logstreams.log;
 
 import static io.zeebe.dispatcher.impl.log.LogBufferAppender.RESULT_PADDING_AT_END_OF_PARTITION;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.headerLength;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.metadataOffset;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.setKey;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.setMetadataLength;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.setPosition;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.setProducerId;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.setRaftTerm;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.setSourceEventLogStreamPartitionId;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.setSourceEventPosition;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.valueOffset;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.*;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
-
-import org.agrona.DirectBuffer;
-import org.agrona.LangUtil;
-import org.agrona.MutableDirectBuffer;
 
 import io.zeebe.dispatcher.ClaimedFragment;
 import io.zeebe.dispatcher.Dispatcher;
@@ -38,6 +25,10 @@ import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
 import io.zeebe.util.EnsureUtil;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.buffer.DirectBufferWriter;
+import io.zeebe.util.sched.clock.ActorClock;
+import org.agrona.DirectBuffer;
+import org.agrona.LangUtil;
+import org.agrona.MutableDirectBuffer;
 
 public class LogStreamWriterImpl implements LogStreamWriter
 {
@@ -193,6 +184,7 @@ public class LogStreamWriterImpl implements LogStreamWriter
                 setSourceEventLogStreamPartitionId(writeBuffer, bufferOffset, sourceEventLogStreamPartitionId);
                 setSourceEventPosition(writeBuffer, bufferOffset, sourceEventPosition);
                 setKey(writeBuffer, bufferOffset, keyToWrite);
+                setTimestamp(writeBuffer, bufferOffset, ActorClock.currentTimeMillis());
                 setMetadataLength(writeBuffer, bufferOffset, (short) metadataLength);
 
                 if (metadataLength > 0)

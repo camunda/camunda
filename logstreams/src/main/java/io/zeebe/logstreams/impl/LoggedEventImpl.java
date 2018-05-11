@@ -103,6 +103,12 @@ public class LoggedEventImpl implements ReadableFragment, LoggedEvent
     }
 
     @Override
+    public long getTimestamp()
+    {
+        return LogEntryDescriptor.getTimestamp(buffer, messageOffset);
+    }
+
+    @Override
     public DirectBuffer getMetadata()
     {
         return buffer;
@@ -184,6 +190,8 @@ public class LoggedEventImpl implements ReadableFragment, LoggedEvent
             getPosition() +
             ", key=" +
             getKey() +
+            ", timestamp=" +
+            getTimestamp() +
             ", sourceEventLogStreamPartitionId=" +
             getSourceEventLogStreamPartitionId() +
             ", sourceEventPosition=" +
