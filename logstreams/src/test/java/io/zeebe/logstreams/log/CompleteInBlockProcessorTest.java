@@ -42,8 +42,8 @@ public class CompleteInBlockProcessorTest
 {
     private static final int SEGMENT_SIZE = 1024 * 16;
 
-    protected static final int LENGTH = headerLength(0);
-    protected static final int ALIGNED_LEN = alignedFramedLength(LENGTH);
+    protected static final int LENGTH = headerLength(0); // 44 -> 52
+    protected static final int ALIGNED_LEN = alignedFramedLength(LENGTH); // 56 -> 64
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
@@ -213,7 +213,9 @@ public class CompleteInBlockProcessorTest
     public void shouldInsufficientBufferCapacityIfPosWasSetAndNewEventCantReadCompletely()
     {
         // given
-        final ByteBuffer writeBuffer = ByteBuffer.allocate(176);
+        final int largeEventMetadataSize = 8;
+        final int writeBufferLength = (3 * ALIGNED_LEN) + largeEventMetadataSize;
+        final ByteBuffer writeBuffer = ByteBuffer.allocate(writeBufferLength);
         final MutableDirectBuffer directBuffer = new UnsafeBuffer(0, 0);
         directBuffer.wrap(writeBuffer);
 
@@ -227,7 +229,7 @@ public class CompleteInBlockProcessorTest
 
         // a large event
         idx = 2 * ALIGNED_LEN;
-        directBuffer.putInt(lengthOffset(idx), framedLength(headerLength(64 - 56)));
+        directBuffer.putInt(lengthOffset(idx), framedLength(headerLength(largeEventMetadataSize)));
         directBuffer.putLong(positionOffset(messageOffset(idx)), 3);
 
         final long appendedAddress = fsLogStorage.append(writeBuffer);
@@ -257,8 +259,8 @@ public class CompleteInBlockProcessorTest
 
         // then
         assertThat(opResult).isGreaterThan(result);
-        assertThat(largerBuffer.position()).isEqualTo(ALIGNED_LEN + 64);
-        assertThat(largerBuffer.limit()).isEqualTo(ALIGNED_LEN + 64);
+        assertThat(largerBuffer.position()).isEqualTo(writeBufferLength - ALIGNED_LEN);
+        assertThat(largerBuffer.limit()).isEqualTo(writeBufferLength - ALIGNED_LEN);
     }
 
     @Test
