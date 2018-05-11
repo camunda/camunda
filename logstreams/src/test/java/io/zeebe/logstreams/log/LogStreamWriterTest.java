@@ -19,8 +19,13 @@ import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+
 import io.zeebe.logstreams.util.*;
 import io.zeebe.util.buffer.DirectBufferWriter;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.*;
@@ -203,6 +208,41 @@ public class LogStreamWriterTest
 
         // then
         assertThat(getWrittenEvent(position).getKey()).isEqualTo(123L);
+    }
+
+    @Test
+    public void shouldWriteEventWithTimestamp() throws InterruptedException, ExecutionException
+    {
+        // before
+        final ControlledActorSchedulerRule scheduler = new ControlledActorSchedulerRule();
+        final Callable<Long> doWrite = () -> writer.positionAsKey().value(EVENT_VALUE).tryWrite();
+        scheduler.get().start();
+
+        // given
+        final long firstTimestamp = System.currentTimeMillis();
+        scheduler.getClock().setCurrentTime(firstTimestamp);
+
+        // when
+        final ActorFuture<Long> firstPosition = scheduler.call(doWrite);
+        scheduler.workUntilDone();
+
+        // then
+        assertThat(getWrittenEvent(firstPosition.get()).getTimestamp())
+            .isEqualTo(firstTimestamp);
+
+        // given
+        final long secondTimestamp = firstTimestamp + 1_000;
+        scheduler.getClock().setCurrentTime(secondTimestamp);
+
+        // when
+        final ActorFuture<Long> secondPosition = scheduler.call(doWrite);
+        scheduler.workUntilDone();
+
+        // then
+        assertThat(getWrittenEvent(secondPosition.get()).getTimestamp())
+            .isEqualTo(secondTimestamp);
+
+        scheduler.get().stop();
     }
 
     @Test
