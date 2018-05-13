@@ -21,6 +21,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import io.zeebe.transport.impl.memory.BlockingMemoryPool;
+import io.zeebe.transport.impl.memory.NonBlockingMemoryPool;
 import io.zeebe.util.ByteValue;
 import io.zeebe.util.buffer.DirectBufferWriter;
 import io.zeebe.util.sched.ActorScheduler;
@@ -33,7 +34,7 @@ import org.openjdk.jmh.annotations.*;
 @Fork(1)
 @Warmup(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
-public class RequestResponseStressTest
+public class MultiRemoteRequestResponseStressTest
 {
     static final AtomicInteger THREAD_ID = new AtomicInteger(0);
     private static final int BURST_SIZE = 1_000;
@@ -46,12 +47,13 @@ public class RequestResponseStressTest
     public void sendBurstSync1(BenchmarkContext ctx) throws InterruptedException
     {
         final ClientOutput output = ctx.output;
-        final RemoteAddress remote = ctx.remote;
+        final RemoteAddress remote1 = ctx.remote1;
+        final RemoteAddress remote2 = ctx.remote2;
 
-        for (int i = 0; i < BURST_SIZE; i++)
+        for (int i = 0; i < BURST_SIZE / 2; i++)
         {
-            final ActorFuture<ClientResponse> responseFuture = output.sendRequest(remote, WRITER);
-            responseFuture.join();
+            output.sendRequest(remote1, WRITER).join();
+            output.sendRequest(remote2, WRITER).join();
         }
     }
 
@@ -60,12 +62,13 @@ public class RequestResponseStressTest
     public void sendBurstSync2(BenchmarkContext ctx) throws InterruptedException
     {
         final ClientOutput output = ctx.output;
-        final RemoteAddress remote = ctx.remote;
+        final RemoteAddress remote1 = ctx.remote1;
+        final RemoteAddress remote2 = ctx.remote2;
 
-        for (int i = 0; i < BURST_SIZE; i++)
+        for (int i = 0; i < BURST_SIZE / 2; i++)
         {
-            final ActorFuture<ClientResponse> responseFuture = output.sendRequest(remote, WRITER);
-            responseFuture.join();
+            output.sendRequest(remote1, WRITER).join();
+            output.sendRequest(remote2, WRITER).join();
         }
     }
 
@@ -74,12 +77,13 @@ public class RequestResponseStressTest
     public void sendBurstSync8(BenchmarkContext ctx) throws InterruptedException
     {
         final ClientOutput output = ctx.output;
-        final RemoteAddress remote = ctx.remote;
+        final RemoteAddress remote1 = ctx.remote1;
+        final RemoteAddress remote2 = ctx.remote2;
 
-        for (int i = 0; i < BURST_SIZE; i++)
+        for (int i = 0; i < BURST_SIZE / 2; i++)
         {
-            final ActorFuture<ClientResponse> responseFuture = output.sendRequest(remote, WRITER);
-            responseFuture.join();
+            output.sendRequest(remote1, WRITER).join();
+            output.sendRequest(remote2, WRITER).join();
         }
     }
 
@@ -88,12 +92,13 @@ public class RequestResponseStressTest
     public void sendBurstSync16(BenchmarkContext ctx) throws InterruptedException
     {
         final ClientOutput output = ctx.output;
-        final RemoteAddress remote = ctx.remote;
+        final RemoteAddress remote1 = ctx.remote1;
+        final RemoteAddress remote2 = ctx.remote2;
 
-        for (int i = 0; i < BURST_SIZE; i++)
+        for (int i = 0; i < BURST_SIZE / 2; i++)
         {
-            final ActorFuture<ClientResponse> responseFuture = output.sendRequest(remote, WRITER);
-            responseFuture.join();
+            output.sendRequest(remote1, WRITER).join();
+            output.sendRequest(remote2, WRITER).join();
         }
     }
 
@@ -102,12 +107,13 @@ public class RequestResponseStressTest
     public void sendBurstSync32(BenchmarkContext ctx) throws InterruptedException
     {
         final ClientOutput output = ctx.output;
-        final RemoteAddress remote = ctx.remote;
+        final RemoteAddress remote1 = ctx.remote1;
+        final RemoteAddress remote2 = ctx.remote2;
 
-        for (int i = 0; i < BURST_SIZE; i++)
+        for (int i = 0; i < BURST_SIZE / 2; i++)
         {
-            final ActorFuture<ClientResponse> responseFuture = output.sendRequest(remote, WRITER);
-            responseFuture.join();
+            output.sendRequest(remote1, WRITER).join();
+            output.sendRequest(remote2, WRITER).join();
         }
     }
 
@@ -116,15 +122,17 @@ public class RequestResponseStressTest
     public void sendBurstAsync(BenchmarkContext ctx) throws InterruptedException
     {
         final ClientOutput output = ctx.output;
-        final RemoteAddress remote = ctx.remote;
+        final RemoteAddress remote1 = ctx.remote1;
+        final RemoteAddress remote2 = ctx.remote2;
 
         for (int k = 0; k < 4; k++)
         {
             final List<ActorFuture<ClientResponse>> inFlightRequests = new ArrayList<>();
 
-            for (int i = 0; i < BURST_SIZE / 4; i++)
+            for (int i = 0; i < BURST_SIZE / 8; i++)
             {
-                inFlightRequests.add(output.sendRequest(remote, WRITER));
+                inFlightRequests.add(output.sendRequest(remote1, WRITER));
+                inFlightRequests.add(output.sendRequest(remote2, WRITER));
             }
 
             inFlightRequests.forEach(ActorFuture::join);
@@ -140,39 +148,51 @@ public class RequestResponseStressTest
             .build();
 
         private ClientTransport clientTransport;
-
-        private ServerTransport serverTransport;
+        private ServerTransport serverTransport1;
 
         private ClientOutput output;
 
-        private RemoteAddress remote;
+        private RemoteAddress remote1;
+        private RemoteAddress remote2;
+
+        private ServerTransport serverTransport2;
 
         @Setup
         public void setUp()
         {
             scheduler.start();
 
-            final SocketAddress addr = new SocketAddress("localhost", 51115);
+            final SocketAddress addr1 = new SocketAddress("localhost", 51115);
+            final SocketAddress addr2 = new SocketAddress("localhost", 51116);
 
             clientTransport = Transports.newClientTransport()
                 .scheduler(scheduler)
                 .requestMemoryPool(new BlockingMemoryPool(ByteValue.ofMegabytes(4), 1000))
                 .build();
 
-            serverTransport = Transports.newServerTransport()
-                .bindAddress(addr.toInetSocketAddress())
+            serverTransport1 = Transports.newServerTransport()
+                .bindAddress(addr1.toInetSocketAddress())
                 .scheduler(scheduler)
+                .messageMemoryPool(new NonBlockingMemoryPool(ByteValue.ofMegabytes(4)))
+                .build(null, new EchoRequestResponseHandler());
+
+            serverTransport2 = Transports.newServerTransport()
+                .bindAddress(addr2.toInetSocketAddress())
+                .scheduler(scheduler)
+                .messageMemoryPool(new NonBlockingMemoryPool(ByteValue.ofMegabytes(4)))
                 .build(null, new EchoRequestResponseHandler());
 
             output = clientTransport.getOutput();
 
-            remote = clientTransport.registerRemoteAndAwaitChannel(addr);
+            remote1 = clientTransport.registerRemoteAndAwaitChannel(addr1);
+            remote2 = clientTransport.registerRemoteAndAwaitChannel(addr2);
         }
 
         @TearDown
         public void tearDown() throws InterruptedException, ExecutionException, TimeoutException
         {
-            serverTransport.close();
+            serverTransport1.close();
+            serverTransport2.close();
             clientTransport.close();
             scheduler.stop().get();
         }

@@ -13,23 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.transport;
+package io.zeebe.transport.impl.memory;
 
-import org.agrona.DirectBuffer;
+import java.nio.ByteBuffer;
 
-public class EchoMessageHandler implements ServerMessageHandler
+public interface TransportMemoryPool
 {
-    private final TransportMessage message = new TransportMessage();
+    ByteBuffer allocate(int requestedCapacity);
 
-    @Override
-    public boolean onMessage(ServerOutput output, RemoteAddress remoteAddress, DirectBuffer buffer, int offset, int length)
-    {
-        message.reset()
-            .buffer(buffer, offset, length)
-            .remoteAddress(remoteAddress)
-            .remoteStreamId(remoteAddress.getStreamId());
-
-        return output.sendMessage(message);
-    }
-
+    void reclaim(ByteBuffer buffer);
 }

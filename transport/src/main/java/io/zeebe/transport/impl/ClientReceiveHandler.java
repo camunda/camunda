@@ -18,22 +18,23 @@ package io.zeebe.transport.impl;
 import java.util.List;
 
 import org.agrona.DirectBuffer;
-
+import org.agrona.concurrent.UnsafeBuffer;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.transport.ClientInputListener;
+import io.zeebe.transport.impl.sender.Sender;
 
 public class ClientReceiveHandler implements FragmentHandler
 {
     private final TransportHeaderDescriptor transportHeaderDescriptor = new TransportHeaderDescriptor();
     private final RequestResponseHeaderDescriptor requestResponseHeaderDescriptor = new RequestResponseHeaderDescriptor();
 
-    protected final ClientRequestPool requestPool;
+    protected final Sender requestPool;
     protected final Dispatcher receiveBuffer;
     protected final List<ClientInputListener> listeners;
 
     public ClientReceiveHandler(
-            ClientRequestPool requestPool,
+            Sender requestPool,
             Dispatcher receiveBuffer,
             List<ClientInputListener> listeners)
     {
@@ -61,18 +62,13 @@ public class ClientReceiveHandler implements FragmentHandler
 
                 final long requestId = requestResponseHeaderDescriptor.requestId();
 
-                final ClientRequestController request = requestPool.getOpenRequestById(requestId);
+                final UnsafeBuffer responseBuffer = new UnsafeBuffer(new byte[length]);
+                buffer.getBytes(readOffset, responseBuffer, 0, length);
 
-                if (request != null)
-                {
-                    request.processResponse(requestId, buffer, readOffset, length);
-                    invokeResponseListeners(streamId, requestId, buffer, readOffset, length);
-                    return CONSUME_FRAGMENT_RESULT;
-                }
-                else
-                {
-                    return FAILED_FRAGMENT_RESULT;
-                }
+                invokeResponseListeners(streamId, requestId, buffer, readOffset, length);
+                requestPool.submitResponse(new IncomingResponse(requestId, responseBuffer));
+
+                return CONSUME_FRAGMENT_RESULT;
 
             case TransportHeaderDescriptor.FULL_DUPLEX_SINGLE_MESSAGE:
 

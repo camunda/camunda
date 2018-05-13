@@ -22,12 +22,9 @@ import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.impl.ControlMessages;
-import io.zeebe.util.ByteValue;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.clock.ControlledActorClock;
@@ -51,34 +48,19 @@ public class ClientChannelKeepAliveTest
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule(actorSchedulerRule).around(closeables);
 
-    private Dispatcher clientSendBuffer;
-
     protected ControlMessageRecorder serverRecorder;
 
 
     @Before
     public void setUp()
     {
-        clientSendBuffer = Dispatchers.create("clientSendBuffer")
-            .bufferSize(ByteValue.ofKilobytes(32))
-            .actorScheduler(actorSchedulerRule.get())
-            .build();
-        closeables.manage(clientSendBuffer);
-
         serverRecorder = new ControlMessageRecorder();
         buildServerTransport(ADDRESS, serverRecorder);
     }
 
     protected ServerTransport buildServerTransport(SocketAddress bindAddress, ControlMessageRecorder recorder)
     {
-        final Dispatcher serverSendBuffer = Dispatchers.create("serverSendBuffer")
-            .bufferSize(ByteValue.ofKilobytes(32))
-            .actorScheduler(actorSchedulerRule.get())
-            .build();
-        closeables.manage(serverSendBuffer);
-
         final ServerTransport serverTransport = Transports.newServerTransport()
-            .sendBuffer(serverSendBuffer)
             .bindAddress(bindAddress.toInetSocketAddress())
             .scheduler(actorSchedulerRule.get())
             .controlMessageListener(recorder)
@@ -91,8 +73,6 @@ public class ClientChannelKeepAliveTest
     protected ClientTransport buildClientTransport(Duration keepAlivePeriod)
     {
         final ClientTransportBuilder transportBuilder = Transports.newClientTransport()
-            .sendBuffer(clientSendBuffer)
-            .requestPoolSize(32)
             .scheduler(actorSchedulerRule.get());
 
         if (keepAlivePeriod != null)

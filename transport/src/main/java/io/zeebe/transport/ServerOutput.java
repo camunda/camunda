@@ -17,7 +17,6 @@ package io.zeebe.transport;
 
 public interface ServerOutput
 {
-
     /**
      * <p>Sends a message according to the single message protocol.
      *

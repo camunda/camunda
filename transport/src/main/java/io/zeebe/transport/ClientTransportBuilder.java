@@ -22,6 +22,10 @@ import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.transport.impl.*;
 import io.zeebe.transport.impl.actor.*;
+import io.zeebe.transport.impl.memory.NonBlockingMemoryPool;
+import io.zeebe.transport.impl.memory.TransportMemoryPool;
+import io.zeebe.transport.impl.sender.Sender;
+import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.ActorScheduler;
 
 public class ClientTransportBuilder
@@ -32,15 +36,16 @@ public class ClientTransportBuilder
     protected static final Duration DEFAULT_CHANNEL_KEEP_ALIVE_PERIOD = Duration.ofSeconds(5);
     protected static final long DEFAULT_CHANNEL_CONNECT_TIMEOUT = 500;
 
-    private int requestPoolSize = 64;
     private int messageMaxLength = 1024 * 512;
     protected Duration keepAlivePeriod = DEFAULT_CHANNEL_KEEP_ALIVE_PERIOD;
 
     protected Dispatcher receiveBuffer;
-    private Dispatcher sendBuffer;
     private ActorScheduler scheduler;
     protected List<ClientInputListener> listeners;
     protected TransportChannelFactory channelFactory;
+
+    private TransportMemoryPool requestMemoryPool = new NonBlockingMemoryPool(ByteValue.ofMegabytes(4));
+    private TransportMemoryPool messageMemoryPool = new NonBlockingMemoryPool(ByteValue.ofMegabytes(4));
 
     protected Duration defaultRequestRetryTimeout = Duration.ofSeconds(15);
 
@@ -60,6 +65,18 @@ public class ClientTransportBuilder
         return this;
     }
 
+    public ClientTransportBuilder requestMemoryPool(TransportMemoryPool requestMemoryPool)
+    {
+        this.requestMemoryPool = requestMemoryPool;
+        return this;
+    }
+
+    public ClientTransportBuilder messageMemoryPool(TransportMemoryPool messageMemoryPool)
+    {
+        this.messageMemoryPool = messageMemoryPool;
+        return this;
+    }
+
     public ClientTransportBuilder inputListener(ClientInputListener listener)
     {
         if (listeners == null)
@@ -70,27 +87,9 @@ public class ClientTransportBuilder
         return this;
     }
 
-    /**
-     * Send buffer must have an open subscription named {@link ClientTransportBuilder#SEND_BUFFER_SUBSCRIPTION_NAME}.
-     */
-    public ClientTransportBuilder sendBuffer(Dispatcher sendBuffer)
-    {
-        this.sendBuffer = sendBuffer;
-        return this;
-    }
-
     public ClientTransportBuilder messageMaxLength(int messageMaxLength)
     {
         this.messageMaxLength = messageMaxLength;
-        return this;
-    }
-
-    /**
-     * Maximum number of concurrent requests.
-     */
-    public ClientTransportBuilder requestPoolSize(int requestPoolSize)
-    {
-        this.requestPoolSize = requestPoolSize;
         return this;
     }
 
@@ -122,22 +121,26 @@ public class ClientTransportBuilder
     public ClientTransport build()
     {
         validate();
-        final ClientRequestPool clientRequestPool = new ClientRequestPool(scheduler, requestPoolSize, sendBuffer);
+
+        final ClientActorContext actorContext = new ClientActorContext();
+
+        final Sender sender = new Sender(actorContext,
+            messageMemoryPool,
+            requestMemoryPool,
+            keepAlivePeriod);
 
         final RemoteAddressListImpl remoteAddressList = new RemoteAddressListImpl();
 
         final TransportContext transportContext =
                 buildTransportContext(
-                        clientRequestPool,
                         remoteAddressList,
-                        new ClientReceiveHandler(clientRequestPool, receiveBuffer, listeners),
+                        new ClientReceiveHandler(sender, receiveBuffer, listeners),
                         receiveBuffer);
 
-        return build(transportContext);
+        return build(actorContext, transportContext);
     }
 
     protected TransportContext buildTransportContext(
-            ClientRequestPool clientRequestPool,
             RemoteAddressListImpl addressList,
             FragmentHandler receiveHandler,
             Dispatcher receiveBuffer)
@@ -146,12 +149,9 @@ public class ClientTransportBuilder
         context.setName("client");
         context.setReceiveBuffer(receiveBuffer);
         context.setMessageMaxLength(messageMaxLength);
-        context.setClientRequestPool(clientRequestPool);
         context.setRemoteAddressList(addressList);
         context.setReceiveHandler(receiveHandler);
-        context.setSendFailureHandler(new ClientSendFailureHandler(clientRequestPool));
         context.setChannelKeepAlivePeriod(keepAlivePeriod);
-        context.setSendBuffer(sendBuffer);
 
         if (channelFactory != null)
         {
@@ -165,24 +165,21 @@ public class ClientTransportBuilder
         return context;
     }
 
-    protected ClientTransport build(TransportContext context)
+    protected ClientTransport build(ClientActorContext actorContext, TransportContext context)
     {
-        final ClientActorContext actorContext = new ClientActorContext();
         actorContext.setMetricsManager(scheduler.getMetricsManager());
 
         final ClientConductor conductor = new ClientConductor(actorContext, context);
-        final Sender sender = new Sender(actorContext, context);
         final Receiver receiver = new Receiver(actorContext, context);
+        final Sender sender = actorContext.getSender();
 
-        final ClientOutput output = new ClientOutputImpl(
-                sendBuffer,
-                context.getClientRequestPool(),
-                defaultRequestRetryTimeout);
+        final ClientOutput output = new ClientOutputImpl(sender, defaultRequestRetryTimeout);
+
         context.setClientOutput(output);
 
         scheduler.submitActor(conductor, true);
-        scheduler.submitActor(sender, true);
         scheduler.submitActor(receiver, true);
+        scheduler.submitActor(sender, true);
 
         return new ClientTransport(actorContext, context);
     }
@@ -190,7 +187,6 @@ public class ClientTransportBuilder
     private void validate()
     {
         Objects.requireNonNull(scheduler, "Scheduler must be provided");
-        Objects.requireNonNull(sendBuffer, "Send buffer must be provieded");
     }
 
 }

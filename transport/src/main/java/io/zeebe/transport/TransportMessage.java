@@ -61,6 +61,16 @@ public class TransportMessage
         return this;
     }
 
+    public int getRemoteStreamId()
+    {
+        return remoteStreamId;
+    }
+
+    public BufferWriter getWriter()
+    {
+        return writer;
+    }
+
     public TransportMessage reset()
     {
         remoteStreamId = -1;

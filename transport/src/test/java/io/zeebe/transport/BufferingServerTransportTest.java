@@ -20,21 +20,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import io.zeebe.util.ByteValue;
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.impl.TransportHeaderDescriptor;
 import io.zeebe.transport.util.RecordingMessageHandler;
 import io.zeebe.transport.util.TransportTestUtil;
+import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.*;
+import org.junit.rules.RuleChain;
 
 public class BufferingServerTransportTest
 {
@@ -57,23 +54,10 @@ public class BufferingServerTransportTest
     @Before
     public void setUp()
     {
-        final Dispatcher clientSendBuffer = Dispatchers.create("clientSendBuffer")
-            .bufferSize(BUFFER_SIZE)
-            .actorScheduler(actorSchedulerRule.get())
-            .build();
-        closeables.manage(clientSendBuffer);
-
         clientTransport = Transports.newClientTransport()
-            .sendBuffer(clientSendBuffer)
             .scheduler(actorSchedulerRule.get())
             .build();
         closeables.manage(clientTransport);
-
-        final Dispatcher serverSendBuffer = Dispatchers.create("serverSendBuffer")
-            .bufferSize(BUFFER_SIZE)
-            .actorScheduler(actorSchedulerRule.get())
-            .build();
-        closeables.manage(serverSendBuffer);
 
         serverReceiveBuffer = Dispatchers.create("serverReceiveBuffer")
             .bufferSize(BUFFER_SIZE)
@@ -82,7 +66,6 @@ public class BufferingServerTransportTest
         closeables.manage(serverReceiveBuffer);
 
         serverTransport = Transports.newServerTransport()
-            .sendBuffer(serverSendBuffer)
             .scheduler(actorSchedulerRule.get())
             .bindAddress(SERVER_ADDRESS.toInetSocketAddress())
             .buildBuffering(serverReceiveBuffer);

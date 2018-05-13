@@ -15,37 +15,65 @@
  */
 package io.zeebe.transport.impl;
 
+import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.transport.*;
+import io.zeebe.transport.impl.sender.*;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class ClientOutputImpl implements ClientOutput
 {
-    protected final Dispatcher sendBuffer;
-    protected final ClientRequestPool requestPool;
+    protected final Sender requestManager;
     protected final Duration defaultRequestRetryTimeout;
 
     public ClientOutputImpl(
-            Dispatcher sendBuffer,
-            ClientRequestPool requestPool,
+            Sender requestManager,
             Duration defaultRequestRetryTimeout)
     {
-        this.sendBuffer = sendBuffer;
-        this.requestPool = requestPool;
+        this.requestManager = requestManager;
         this.defaultRequestRetryTimeout = defaultRequestRetryTimeout;
     }
 
     @Override
     public boolean sendMessage(TransportMessage transportMessage)
     {
-        return transportMessage.trySend(sendBuffer);
+        final BufferWriter writer = transportMessage.getWriter();
+        final int framedMessageLength = TransportHeaderWriter.getFramedMessageLength(writer.getLength());
+
+        final ByteBuffer allocatedBuffer = requestManager.allocateMessageBuffer(framedMessageLength);
+
+        if (allocatedBuffer != null)
+        {
+            try
+            {
+                final int remoteStreamId = transportMessage.getRemoteStreamId();
+                final UnsafeBuffer bufferView = new UnsafeBuffer(allocatedBuffer);
+                final TransportHeaderWriter headerWriter = new TransportHeaderWriter();
+
+                headerWriter.wrapMessage(bufferView, writer, remoteStreamId);
+
+                final OutgoingMessage outgoingMessage = new OutgoingMessage(remoteStreamId, bufferView);
+
+                requestManager.submitMessage(outgoingMessage);
+
+                return true;
+            }
+            catch (RuntimeException e)
+            {
+                requestManager.reclaimMessageBuffer(allocatedBuffer);
+                throw e;
+            }
+        }
+        else
+        {
+            return false;
+        }
     }
 
     @Override
@@ -57,16 +85,41 @@ public class ClientOutputImpl implements ClientOutput
     @Override
     public ActorFuture<ClientResponse> sendRequest(RemoteAddress addr, BufferWriter writer, Duration timeout)
     {
-        return sendRequestWithRetry(() -> CompletableActorFuture.completed(addr), (b) -> false, writer, timeout);
+        return sendRequestWithRetry(() -> addr, (b) -> false, writer, timeout);
     }
 
     @Override
-    public ActorFuture<ClientResponse> sendRequestWithRetry(Supplier<ActorFuture<RemoteAddress>> remoteAddressSupplier, Predicate<DirectBuffer> responseInspector,
-            BufferWriter writer, Duration timeout)
+    public ActorFuture<ClientResponse> sendRequestWithRetry(Supplier<RemoteAddress> remoteAddressSupplier,
+        Predicate<DirectBuffer> responseInspector,
+        BufferWriter writer,
+        Duration timeout)
     {
-        return requestPool.openRequest(remoteAddressSupplier,
-            responseInspector,
-            writer,
-            timeout);
+        final int messageLength = writer.getLength();
+        final int framedLength = TransportHeaderWriter.getFramedRequestLength(messageLength);
+
+        final ByteBuffer allocatedBuffer = requestManager.allocateRequestBuffer(framedLength);
+
+        if (allocatedBuffer != null)
+        {
+            try
+            {
+                final UnsafeBuffer bufferView = new UnsafeBuffer(allocatedBuffer);
+                final OutgoingRequest request = new OutgoingRequest(remoteAddressSupplier, responseInspector, bufferView, timeout);
+
+                request.getHeaderWriter()
+                    .wrapRequest(bufferView, writer);
+
+                return requestManager.submitRequest(request);
+            }
+            catch (RuntimeException e)
+            {
+                requestManager.reclaimRequestBuffer(allocatedBuffer);
+                throw e;
+            }
+        }
+        else
+        {
+            return null;
+        }
     }
 }

@@ -29,7 +29,6 @@ import io.zeebe.transport.ServerOutput;
 
 public class RecordingMessageHandler implements ServerMessageHandler, ClientMessageHandler
 {
-
     protected List<ReceivedMessage> receivedMessages = new CopyOnWriteArrayList<>();
 
     @Override

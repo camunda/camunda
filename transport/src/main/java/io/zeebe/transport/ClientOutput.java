@@ -36,7 +36,7 @@ public interface ClientOutput
 
     /**
      * Same as {@link #sendRequest(RemoteAddress, BufferWriter, long)} where the timeout is set to the configured default timeout.
-     * @return the response future
+     * @return the response future or null in case no memory is currently available to allocate the request
      */
     ActorFuture<ClientResponse> sendRequest(RemoteAddress addr, BufferWriter writer);
 
@@ -44,7 +44,7 @@ public interface ClientOutput
      * <p>Like {@link #sendRequestWithRetry(Supplier, Predicate, BufferWriter, Duration)}
      * with a static remote and no respons inspection (i.e. first response is accepted).
      *
-     * @return the response future
+     * @return the response future or null in case no memory is currently available to allocate the request
      */
     ActorFuture<ClientResponse> sendRequest(RemoteAddress addr, BufferWriter writer, Duration timeout);
 
@@ -68,7 +68,7 @@ public interface ClientOutput
      *            In this case we want to do a retry and send the request to a different node, based on the content
      *            of the response
      * @param timeout The timeout until the returned future fails if no response is received.
-     * @return a future carrying the response that was accepted. Can complete exceptionally in failure cases such as timeout.
+     * @return a future carrying the response that was accepted or null in case no memory is currently available to allocate the request. Can complete exceptionally in failure cases such as timeout.
      */
-    ActorFuture<ClientResponse> sendRequestWithRetry(Supplier<ActorFuture<RemoteAddress>> remoteAddressSupplier, Predicate<DirectBuffer> responseInspector, BufferWriter writer, Duration timeout);
+    ActorFuture<ClientResponse> sendRequestWithRetry(Supplier<RemoteAddress> remoteAddressSupplier, Predicate<DirectBuffer> responseInspector, BufferWriter writer, Duration timeout);
 }

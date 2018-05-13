@@ -19,21 +19,18 @@ import static io.zeebe.test.util.BufferAssert.assertThatBuffer;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.util.ByteValue;
-import org.agrona.DirectBuffer;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.util.RecordingChannelListener;
 import io.zeebe.transport.util.RecordingMessageHandler;
+import io.zeebe.util.ByteValue;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import org.agrona.DirectBuffer;
+import org.junit.*;
+import org.junit.rules.RuleChain;
 
 public class ServerTransportTest
 {
@@ -61,12 +58,6 @@ public class ServerTransportTest
     @Before
     public void setUp()
     {
-        final Dispatcher clientSendBuffer = Dispatchers.create("clientSendBuffer")
-            .bufferSize(SEND_BUFFER_SIZE)
-            .actorScheduler(actorSchedulerRule.get())
-            .build();
-        closeables.manage(clientSendBuffer);
-
         final Dispatcher clientReceiveBuffer = Dispatchers.create("clientReceiveBuffer")
             .bufferSize(SEND_BUFFER_SIZE)
             .actorScheduler(actorSchedulerRule.get())
@@ -74,21 +65,12 @@ public class ServerTransportTest
         closeables.manage(clientReceiveBuffer);
 
         clientTransport = Transports.newClientTransport()
-            .sendBuffer(clientSendBuffer)
             .messageReceiveBuffer(clientReceiveBuffer)
-            .requestPoolSize(REQUEST_POOL_SIZE)
             .scheduler(actorSchedulerRule.get())
             .build();
         closeables.manage(clientTransport);
 
-        final Dispatcher serverSendBuffer = Dispatchers.create("serverSendBuffer")
-            .bufferSize(SEND_BUFFER_SIZE)
-            .actorScheduler(actorSchedulerRule.get())
-            .build();
-        closeables.manage(serverSendBuffer);
-
         serverTransport = Transports.newServerTransport()
-            .sendBuffer(serverSendBuffer)
             .scheduler(actorSchedulerRule.get())
             .bindAddress(SERVER_ADDRESS.toInetSocketAddress())
             .build(serverHandler, null);

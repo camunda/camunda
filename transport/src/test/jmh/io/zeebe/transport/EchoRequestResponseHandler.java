@@ -15,7 +15,6 @@
  */
 package io.zeebe.transport;
 
-import io.zeebe.transport.*;
 import org.agrona.DirectBuffer;
 
 public class EchoRequestResponseHandler implements ServerRequestHandler

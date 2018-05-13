@@ -25,9 +25,7 @@ import static org.mockito.Mockito.*;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
+import java.util.function.*;
 
 import io.zeebe.dispatcher.*;
 import io.zeebe.test.util.AutoCloseableRule;
@@ -41,7 +39,6 @@ import io.zeebe.util.ByteValue;
 import io.zeebe.util.buffer.*;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -69,17 +66,10 @@ public class ClientTransportTest
     protected Dispatcher clientReceiveBuffer;
 
     protected ClientTransport clientTransport;
-    private Dispatcher sendBuffer;
 
     @Before
     public void setUp()
     {
-        sendBuffer = Dispatchers.create("clientSendBuffer")
-            .bufferSize(BUFFER_SIZE)
-            .actorScheduler(actorSchedulerRule.get())
-            .build();
-        closeables.manage(sendBuffer);
-
         clientReceiveBuffer = Dispatchers.create("clientReceiveBuffer")
             .bufferSize(BUFFER_SIZE)
             .actorScheduler(actorSchedulerRule.get())
@@ -87,11 +77,9 @@ public class ClientTransportTest
         closeables.manage(clientReceiveBuffer);
 
         clientTransport = Transports.newClientTransport()
-                .sendBuffer(sendBuffer)
-                .requestPoolSize(REQUEST_POOL_SIZE)
-                .scheduler(actorSchedulerRule.get())
-                .messageReceiveBuffer(clientReceiveBuffer)
-                .build();
+            .scheduler(actorSchedulerRule.get())
+            .messageReceiveBuffer(clientReceiveBuffer)
+            .build();
         closeables.manage(clientTransport);
     }
 
@@ -111,7 +99,6 @@ public class ClientTransportTest
         closeables.manage(serverSendBuffer);
 
         final ServerTransportBuilder transportBuilder = Transports.newServerTransport()
-            .sendBuffer(serverSendBuffer)
             .scheduler(actorSchedulerRule.get());
 
         final ServerTransport serverTransport = builderConsumer.apply(transportBuilder);
@@ -437,8 +424,8 @@ public class ClientTransportTest
         clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
 
         // then
-        waitUntil(() -> channelListener.getOpenedConnections().size() == 2);
-        assertThat(channelListener.getOpenedConnections()).containsExactly(remote, remote);
+        waitUntil(() -> channelListener.getOpenedConnections().size() >= 2);
+        assertThat(channelListener.getOpenedConnections()).contains(remote, remote);
     }
 
     @Test
@@ -457,10 +444,8 @@ public class ClientTransportTest
                 Duration.ofSeconds(10));
 
         // then
-        try (ClientResponse response = request.join())
-        {
-            assertThatBuffer(response.getResponseBuffer()).hasBytes(BUF1);
-        }
+        final ClientResponse response = request.join();
+        assertThatBuffer(response.getResponseBuffer()).hasBytes(BUF1);
     }
 
     @Test
@@ -500,44 +485,57 @@ public class ClientTransportTest
                 .build(null, new EchoRequestResponseHandler()));
 
         // then the request was not serialized more than once
-        response.join().close();
+        response.join();
         verify(writer, times(1)).write(ArgumentMatchers.any(), ArgumentMatchers.anyInt());
     }
 
     @Test
-    public void shouldResubmitRequestsBeforeTimeout() throws InterruptedException
+    public void shouldSendMultipleRequests() throws InterruptedException
     {
         // given
-        final Duration resubmitTimeout = Duration.ofMillis(100L);
-        clock.pinCurrentTime();
-
-        // For this test to work, it is important that the send buffer works in pub_sub mode
-        // or else the sender subscription could never process fragments independent of
-        // the counter, which would make the test pointless. Note that pub_sub
-        // is enabled if the next #openSubscription call works.
-        final Subscription subscription = sendBuffer.openSubscription("foo");
-        final CountFragmentsHandler counter = new CountFragmentsHandler();
-
         final BufferWriter writer = mock(BufferWriter.class);
         when(writer.getLength()).thenReturn(16);
 
+        buildServerTransport(b -> b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress())
+            .build(null, new EchoRequestResponseHandler()));
+
         final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
 
-        // when
-        clientTransport.getOutput().sendRequest(remote, writer);
+        for (int i = 0; i < 10; i++)
+        {
+            clientTransport.getOutput().sendRequest(remote, writer)
+                .join();
+        }
+    }
 
-        // then
-        // should not resubmit the request because no time has elapsed
-        Thread.sleep(500L);
-        subscription.poll(counter, Integer.MAX_VALUE);
-        assertThat(counter.getCount()).isEqualTo(1);
+    @Test
+    public void shouldSendMultipleMessages() throws InterruptedException
+    {
+        // given
+        final BufferWriter writer = mock(BufferWriter.class);
+        when(writer.getLength()).thenReturn(16);
 
-        clock.addTime(resubmitTimeout.plusMillis(30));
+        final RecordingMessageHandler messageHandler = new RecordingMessageHandler();
 
-        // should resubmit request once because timeout has elapsed once
-        Thread.sleep(500L);
-        subscription.poll(counter, Integer.MAX_VALUE);
-        assertThat(counter.getCount()).isEqualTo(2);
+        buildServerTransport(b ->
+        {
+            return b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress())
+                .build(messageHandler, null);
+        });
+
+        final RemoteAddress remote = clientTransport.registerRemoteAndAwaitChannel(SERVER_ADDRESS1);
+
+        for (int i = 0; i < 10; i++)
+        {
+            final TransportMessage message = new TransportMessage();
+
+            message.writer(writer);
+            message.remoteAddress(remote);
+
+            clientTransport.getOutput().sendMessage(message);
+        }
+
+        waitUntil(() -> messageHandler.numReceivedMessages() == 10);
     }
 
     @Test
@@ -572,9 +570,8 @@ public class ClientTransportTest
         final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
 
         final AtomicInteger attemptCounter = new AtomicInteger(0);
-        final Supplier<ActorFuture<RemoteAddress>> addressSupplier =
-            () -> attemptCounter.getAndIncrement() == 0 ?
-                    CompletableActorFuture.completed((RemoteAddress) null) : CompletableActorFuture.completed(remote);
+        final Supplier<RemoteAddress> addressSupplier =
+            () -> attemptCounter.getAndIncrement() == 0 ? null : remote;
 
         // when
         final ActorFuture<ClientResponse> responseFuture =
@@ -584,63 +581,8 @@ public class ClientTransportTest
                     new DirectBufferWriter().wrap(BUF1),
                     Duration.ofSeconds(2));
 
-        try (ClientResponse response = responseFuture.join())
-        {
-            assertThatBuffer(response.getResponseBuffer()).hasBytes(BUF1);
-        }
-    }
-
-    @Test
-    public void shouldOpenRequestWhenSendBufferIsSaturated()
-    {
-        // given
-        // making sure the sender cannot make progress on the send buffer
-        final Subscription subscription = sendBuffer.openSubscription("blocking");
-        closeables.manage(() ->
-        {
-            sendBuffer.closeSubscription(subscription);
-
-        });
-
-        final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
-        final ClientOutput clientOutput = clientTransport.getOutput();
-
-        for (int i = 0; i < MESSAGES_REQUIRED_TO_SATURATE_SEND_BUFFER; i++)
-        {
-            clientOutput.sendRequest(remoteAddress, new DirectBufferWriter().wrap(BUF1));
-        }
-
-        // when
-        final ActorFuture<ClientResponse> response = clientOutput.sendRequest(remoteAddress, new DirectBufferWriter().wrap(BUF1));
-
-        // then
-        assertThat(response).isNotNull();
-    }
-
-    @Test
-    public void shouldRejectMessageWhenSendBufferIsSaturated()
-    {
-        // given
-        // making sure the sender cannot make progress on the send buffer
-        sendBuffer.openSubscription("blocking");
-
-        final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
-        final ClientOutput clientOutput = clientTransport.getOutput();
-
-        final TransportMessage message = new TransportMessage();
-        message.buffer(BUF1);
-        message.remoteAddress(remoteAddress);
-
-        for (int i = 0; i < MESSAGES_REQUIRED_TO_SATURATE_SEND_BUFFER; i++)
-        {
-            clientOutput.sendMessage(message);
-        }
-
-        // when
-        final boolean success = clientTransport.getOutput().sendMessage(message);
-
-        // then
-        assertThat(success).isFalse();
+        final ClientResponse response = responseFuture.join();
+        assertThatBuffer(response.getResponseBuffer()).hasBytes(BUF1);
     }
 
     @Test
@@ -715,7 +657,7 @@ public class ClientTransportTest
         final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
 
         final ActorFuture<ClientResponse> responseFuture = clientTransport.getOutput().sendRequestWithRetry(
-            () -> CompletableActorFuture.completed(remote),
+            () -> remote,
             blockingInspector,
             new DirectBufferWriter().wrap(BUF1),
             Duration.ofSeconds(30));

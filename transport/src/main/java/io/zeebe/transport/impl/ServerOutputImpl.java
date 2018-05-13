@@ -15,29 +15,97 @@
  */
 package io.zeebe.transport.impl;
 
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.transport.ServerOutput;
-import io.zeebe.transport.ServerResponse;
-import io.zeebe.transport.TransportMessage;
+import java.nio.ByteBuffer;
+
+import io.zeebe.transport.*;
+import io.zeebe.transport.impl.sender.*;
+import io.zeebe.util.buffer.BufferWriter;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class ServerOutputImpl implements ServerOutput
 {
+    private Sender sender;
 
-    protected final Dispatcher sendBuffer;
-
-    public ServerOutputImpl(Dispatcher sendBuffer)
+    public ServerOutputImpl(Sender sender)
     {
-        this.sendBuffer = sendBuffer;
+        this.sender = sender;
     }
 
+    @Override
     public boolean sendMessage(TransportMessage transportMessage)
     {
-        return transportMessage.trySend(sendBuffer);
+        final BufferWriter writer = transportMessage.getWriter();
+        final int framedMessageLength = TransportHeaderWriter.getFramedMessageLength(writer.getLength());
+
+        final ByteBuffer allocatedBuffer = sender.allocateMessageBuffer(framedMessageLength);
+
+        if (allocatedBuffer != null)
+        {
+            try
+            {
+                final int remoteStreamId = transportMessage.getRemoteStreamId();
+                final UnsafeBuffer bufferView = new UnsafeBuffer(allocatedBuffer);
+                final TransportHeaderWriter headerWriter = new TransportHeaderWriter();
+
+                headerWriter.wrapMessage(bufferView, writer, remoteStreamId);
+
+                final OutgoingMessage outgoingMessage = new OutgoingMessage(remoteStreamId, bufferView);
+
+                sender.submitMessage(outgoingMessage);
+
+                return true;
+            }
+            catch (RuntimeException e)
+            {
+                sender.reclaimMessageBuffer(allocatedBuffer);
+                throw e;
+            }
+        }
+        else
+        {
+            return false;
+        }
     }
 
+    @Override
     public boolean sendResponse(ServerResponse response)
     {
-        return response.trySend(sendBuffer);
+        final BufferWriter writer = response.getWriter();
+        final int framedLength = TransportHeaderWriter.getFramedRequestLength(writer.getLength());
+
+        final ByteBuffer allocatedBuffer = sender.allocateMessageBuffer(framedLength);
+
+        if (allocatedBuffer != null)
+        {
+            try
+            {
+                final int remoteStreamId = response.getRemoteStreamId();
+                final long requestId = response.getRequestId();
+
+                final UnsafeBuffer bufferView = new UnsafeBuffer(allocatedBuffer);
+                final TransportHeaderWriter headerWriter = new TransportHeaderWriter();
+
+                headerWriter.wrapRequest(bufferView, writer);
+
+                headerWriter.setStreamId(remoteStreamId)
+                    .setRequestId(requestId);
+
+                final OutgoingMessage outgoingMessage = new OutgoingMessage(remoteStreamId, bufferView);
+
+                sender.submitMessage(outgoingMessage);
+
+                return true;
+            }
+            catch (RuntimeException e)
+            {
+                sender.reclaimMessageBuffer(allocatedBuffer);
+                throw e;
+            }
+        }
+        else
+        {
+            return false;
+        }
     }
 
 }

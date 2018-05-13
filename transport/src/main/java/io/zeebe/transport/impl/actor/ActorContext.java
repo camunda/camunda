@@ -16,6 +16,7 @@
 package io.zeebe.transport.impl.actor;
 
 import io.zeebe.transport.TransportListener;
+import io.zeebe.transport.impl.sender.Sender;
 import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.sched.future.ActorFuture;
 
@@ -30,11 +31,6 @@ public abstract class ActorContext
     public void setConductor(Conductor clientConductor)
     {
         this.conductor = clientConductor;
-    }
-
-    public void setSender(Sender sender)
-    {
-        this.sender = sender;
     }
 
     public void setReceiver(Receiver receiver)
@@ -67,11 +63,6 @@ public abstract class ActorContext
         return conductor.interruptAllChannels();
     }
 
-    public ActorFuture<Void> closeSender()
-    {
-        return sender.close();
-    }
-
     public ActorFuture<Void> closeReceiver()
     {
         return receiver.close();
@@ -92,11 +83,6 @@ public abstract class ActorContext
         return (ServerConductor) conductor;
     }
 
-    public Sender getSender()
-    {
-        return sender;
-    }
-
     public Receiver getReceiver()
     {
         return receiver;
@@ -110,5 +96,20 @@ public abstract class ActorContext
     public void setMetricsManager(MetricsManager metricsManager)
     {
         this.metricsManager = metricsManager;
+    }
+
+    public Sender getSender()
+    {
+        return sender;
+    }
+
+    public void setSender(Sender sender)
+    {
+        this.sender = sender;
+    }
+
+    public ActorFuture<Void> closeSender()
+    {
+        return sender.close();
     }
 }

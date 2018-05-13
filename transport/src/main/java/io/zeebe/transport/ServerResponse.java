@@ -135,4 +135,19 @@ public class ServerResponse implements BufferWriter
 
         writer.write(buffer, offset);
     }
+
+    public BufferWriter getWriter()
+    {
+        return writer;
+    }
+
+    public long getRequestId()
+    {
+        return requestId;
+    }
+
+    public int getRemoteStreamId()
+    {
+        return remoteStreamId;
+    }
 }

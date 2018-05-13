@@ -13,23 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.transport;
+package io.zeebe.transport.impl;
 
 import org.agrona.DirectBuffer;
 
-public class EchoMessageHandler implements ServerMessageHandler
+public class IncomingResponse
 {
-    private final TransportMessage message = new TransportMessage();
+    private final long requestId;
+    private final DirectBuffer responseBuffer;
 
-    @Override
-    public boolean onMessage(ServerOutput output, RemoteAddress remoteAddress, DirectBuffer buffer, int offset, int length)
+    public IncomingResponse(long requestId, DirectBuffer responseBuffer)
     {
-        message.reset()
-            .buffer(buffer, offset, length)
-            .remoteAddress(remoteAddress)
-            .remoteStreamId(remoteAddress.getStreamId());
-
-        return output.sendMessage(message);
+        this.requestId = requestId;
+        this.responseBuffer = responseBuffer;
     }
 
+    public long getRequestId()
+    {
+        return requestId;
+    }
+
+    public DirectBuffer getResponseBuffer()
+    {
+        return responseBuffer;
+    }
 }

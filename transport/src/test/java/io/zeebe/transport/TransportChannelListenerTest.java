@@ -22,30 +22,21 @@ import java.nio.channels.SocketChannel;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-import io.zeebe.util.ByteValue;
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.TestUtil;
-import io.zeebe.transport.impl.DefaultChannelFactory;
-import io.zeebe.transport.impl.RemoteAddressImpl;
-import io.zeebe.transport.impl.TransportChannel;
+import io.zeebe.transport.impl.*;
 import io.zeebe.transport.impl.TransportChannel.ChannelLifecycleListener;
 import io.zeebe.transport.impl.TransportChannel.TransportChannelMetrics;
-import io.zeebe.transport.impl.TransportChannelFactory;
 import io.zeebe.transport.util.RecordingChannelListener;
 import io.zeebe.transport.util.RecordingChannelListener.Event;
 import io.zeebe.util.buffer.DirectBufferWriter;
 import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.*;
+import org.junit.rules.RuleChain;
 
 public class TransportChannelListenerTest
 {
@@ -63,15 +54,7 @@ public class TransportChannelListenerTest
     @Before
     public void setUp()
     {
-
-        final Dispatcher serverSendBuffer = Dispatchers.create("serverSendBuffer")
-            .bufferSize(ByteValue.ofMegabytes(32))
-            .actorScheduler(actorSchedulerRule.get())
-            .build();
-        closeables.manage(serverSendBuffer);
-
         serverTransport = Transports.newServerTransport()
-            .sendBuffer(serverSendBuffer)
             .bindAddress(ADDRESS.toInetSocketAddress())
             .scheduler(actorSchedulerRule.get())
             .build(null, null);
@@ -87,15 +70,7 @@ public class TransportChannelListenerTest
 
     private ClientTransport buildClientTransport(Consumer<ClientTransportBuilder> builderConsumer)
     {
-        final Dispatcher clientSendBuffer = Dispatchers.create("clientSendBuffer")
-            .bufferSize(ByteValue.ofMegabytes(32))
-            .actorScheduler(actorSchedulerRule.get())
-            .build();
-        closeables.manage(clientSendBuffer);
-
         final ClientTransportBuilder transportBuilder = Transports.newClientTransport()
-            .sendBuffer(clientSendBuffer)
-            .requestPoolSize(128)
             .scheduler(actorSchedulerRule.get());
         builderConsumer.accept(transportBuilder);
 

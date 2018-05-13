@@ -21,7 +21,7 @@ import org.agrona.DirectBuffer;
  * Response obtained to a client request. See
  * {@link ClientOutput#sendRequest(RemoteAddress, io.zeebe.util.buffer.BufferWriter)} and others.
  */
-public interface ClientResponse extends AutoCloseable
+public interface ClientResponse
 {
     /**
      * @return the remote address from which the response was obtained
@@ -37,11 +37,4 @@ public interface ClientResponse extends AutoCloseable
      * @return the response data
      */
     DirectBuffer getResponseBuffer();
-
-    /**
-     * Closes the response and frees the underlying buffers.
-     * Must be called by the users of this api.
-     */
-    @Override
-    void close();
 }

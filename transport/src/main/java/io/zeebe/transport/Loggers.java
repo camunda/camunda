@@ -21,5 +21,6 @@ public class Loggers
 {
 
     public static final ZbLogger TRANSPORT_LOGGER = new ZbLogger("io.zeebe.transport");
+    public static final ZbLogger TRANSPORT_MEMORY_LOGGER = new ZbLogger("io.zeebe.transport.memory");
 
 }

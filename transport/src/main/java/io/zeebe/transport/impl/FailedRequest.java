@@ -13,23 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.transport;
+package io.zeebe.transport.impl;
 
-import org.agrona.DirectBuffer;
-
-public class EchoMessageHandler implements ServerMessageHandler
+public class FailedRequest
 {
-    private final TransportMessage message = new TransportMessage();
+    private final long requestId;
+    private final String failure;
+    private final Exception cause;
 
-    @Override
-    public boolean onMessage(ServerOutput output, RemoteAddress remoteAddress, DirectBuffer buffer, int offset, int length)
+    public FailedRequest(long requestId, String failure, Exception cause)
     {
-        message.reset()
-            .buffer(buffer, offset, length)
-            .remoteAddress(remoteAddress)
-            .remoteStreamId(remoteAddress.getStreamId());
-
-        return output.sendMessage(message);
+        this.requestId = requestId;
+        this.failure = failure;
+        this.cause = cause;
     }
 
+    public long getRequestId()
+    {
+        return requestId;
+    }
+
+    public String getFailure()
+    {
+        return failure;
+    }
+
+    public Exception getCause()
+    {
+        return cause;
+    }
 }

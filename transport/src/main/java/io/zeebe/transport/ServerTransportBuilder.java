@@ -22,6 +22,10 @@ import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.transport.impl.*;
 import io.zeebe.transport.impl.actor.*;
+import io.zeebe.transport.impl.memory.NonBlockingMemoryPool;
+import io.zeebe.transport.impl.memory.TransportMemoryPool;
+import io.zeebe.transport.impl.sender.Sender;
+import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.ActorScheduler;
 
 public class ServerTransportBuilder
@@ -29,7 +33,6 @@ public class ServerTransportBuilder
     private int messageMaxLength = 1024 * 512;
 
     private String name = "server";
-    private Dispatcher sendBuffer;
     private ServerOutput output;
     private ActorScheduler scheduler;
     private InetSocketAddress bindAddress;
@@ -37,9 +40,17 @@ public class ServerTransportBuilder
     protected RemoteAddressListImpl remoteAddressList;
     protected ServerControlMessageListener controlMessageListener;
 
+    private TransportMemoryPool messageMemoryPool = new NonBlockingMemoryPool(ByteValue.ofMegabytes(4));
+
     public ServerTransportBuilder name(String name)
     {
         this.name = name;
+        return this;
+    }
+
+    public ServerTransportBuilder messageMemoryPool(TransportMemoryPool messageMemoryPool)
+    {
+        this.messageMemoryPool = messageMemoryPool;
         return this;
     }
 
@@ -52,13 +63,6 @@ public class ServerTransportBuilder
     public ServerTransportBuilder scheduler(ActorScheduler scheduler)
     {
         this.scheduler = scheduler;
-        return this;
-    }
-
-    public ServerTransportBuilder sendBuffer(Dispatcher sendBuffer)
-    {
-        this.sendBuffer = sendBuffer;
-        this.output = new ServerOutputImpl(sendBuffer);
         return this;
     }
 
@@ -84,12 +88,21 @@ public class ServerTransportBuilder
     {
         remoteAddressList = new RemoteAddressListImpl();
 
+        final ServerActorContext actorContext = new ServerActorContext();
+
+        final Sender sender = new Sender(actorContext,
+            messageMemoryPool,
+            null,
+            null);
+
+        output = new ServerOutputImpl(sender);
+
         receiveHandler(new ServerReceiveHandler(output, remoteAddressList, messageHandler, requestHandler, controlMessageListener));
 
         validate();
 
         final TransportContext context = buildTransportContext();
-        final ServerActorContext actorContext = new ServerActorContext();
+
         actorContext.setMetricsManager(scheduler.getMetricsManager());
 
         buildActors(context, actorContext);
@@ -104,8 +117,16 @@ public class ServerTransportBuilder
 
         validate();
 
-        final TransportContext context = buildTransportContext();
         final ServerActorContext actorContext = new ServerActorContext();
+
+        final Sender sender = new Sender(actorContext,
+            messageMemoryPool,
+            null,
+            null);
+
+        output = new ServerOutputImpl(sender);
+
+        final TransportContext context = buildTransportContext();
 
         context.setReceiveBuffer(receiveBuffer);
         actorContext.setMetricsManager(scheduler.getMetricsManager());
@@ -128,7 +149,6 @@ public class ServerTransportBuilder
         context.setRemoteAddressList(remoteAddressList);
         context.setReceiveHandler(receiveHandler);
         context.setServerSocketBinding(serverSocketBinding);
-        context.setSendBuffer(sendBuffer);
         context.setChannelFactory(new DefaultChannelFactory(scheduler.getMetricsManager(), context.getName()));
 
         return context;
@@ -137,7 +157,7 @@ public class ServerTransportBuilder
     protected void buildActors(TransportContext context, ServerActorContext actorContext)
     {
         final ServerConductor conductor = new ServerConductor(actorContext, context);
-        final Sender sender = new Sender(actorContext, context);
+        final Sender sender = actorContext.getSender();
         final Receiver receiver = new Receiver(actorContext, context);
 
         scheduler.submitActor(conductor, true);
@@ -148,7 +168,6 @@ public class ServerTransportBuilder
     protected void validate()
     {
         Objects.requireNonNull(scheduler, "Scheduler must be provided");
-        Objects.requireNonNull(sendBuffer, "Send buffer must be provided");
         Objects.requireNonNull(bindAddress, "Bind Address must be provided");
         Objects.requireNonNull(receiveHandler, "Receive Handler must be defined");
     }

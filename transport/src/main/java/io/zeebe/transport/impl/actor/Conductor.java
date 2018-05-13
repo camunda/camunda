@@ -15,22 +15,20 @@
  */
 package io.zeebe.transport.impl.actor;
 
+import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import io.zeebe.transport.Loggers;
 import io.zeebe.transport.TransportListener;
 import io.zeebe.transport.impl.*;
 import io.zeebe.transport.impl.TransportChannel.ChannelLifecycleListener;
-import io.zeebe.util.sched.ActorThread;
 import io.zeebe.util.metrics.Metric;
 import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.ActorThread;
 import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.slf4j.Logger;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class Conductor extends Actor implements ChannelLifecycleListener
 {
@@ -101,7 +99,7 @@ public abstract class Conductor extends Actor implements ChannelLifecycleListene
         activeConnectionsMetric.incrementOrdered();
 
         final ActorFuture<Void> f1 = actorContext.getReceiver().registerChannel(ch);
-        final ActorFuture<Void> f2 = actorContext.getSender().registerChannel(ch);
+        final ActorFuture<Void> f2 = actorContext.getSender().onChannelConnected(ch);
 
         actor.runOnCompletion(Arrays.asList(f1, f2), (t) ->
         {
@@ -140,7 +138,7 @@ public abstract class Conductor extends Actor implements ChannelLifecycleListene
                 {
                     failRequestsOnChannel(ch, "Socket channel has been disconnected");
                     final ActorFuture<Void> f1 = actorContext.getReceiver().removeChannel(ch);
-                    final ActorFuture<Void> f2 = actorContext.getSender().removeChannel(ch);
+                    final ActorFuture<Void> f2 = actorContext.getSender().onChannelClosed(ch);
 
                     // wait for deregistration in order to not mix up the order of listener callbacks
                     actor.runOnCompletion(Arrays.asList(f1, f2), t ->
@@ -165,11 +163,8 @@ public abstract class Conductor extends Actor implements ChannelLifecycleListene
 
     protected void failRequestsOnChannel(TransportChannel ch, String reason)
     {
-        final ClientRequestPool clientRequestPool = transportContext.getClientRequestPool();
-        if (clientRequestPool != null)
-        {
-            clientRequestPool.failPendingRequestsToRemote(ch.getRemoteAddress(), reason);
-        }
+        actorContext.getSender()
+            .failPendingRequestsToRemote(ch.getRemoteAddress(), reason);
     }
 
     @Override

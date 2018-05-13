@@ -18,9 +18,6 @@ package io.zeebe.transport;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.dispatcher.Dispatchers;
-import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.ActorScheduler;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -36,7 +33,6 @@ public class SingleMessageStressTest
     static final AtomicInteger THREAD_ID = new AtomicInteger(0);
     private static final int BURST_SIZE = 1_000;
 
-    private static final int MAX_CONCURRENT_REQUESTS = 128;
     private static final MutableDirectBuffer MSG = new UnsafeBuffer(new byte[576]);
 
     @Benchmark
@@ -103,10 +99,6 @@ public class SingleMessageStressTest
             .setCpuBoundActorThreadCount(2)
             .build();
 
-        private Dispatcher clientSendBuffer;
-
-        private Dispatcher serverSendBuffer;
-
         private ClientTransport clientTransport;
 
         private ServerTransport serverTransport;
@@ -124,25 +116,12 @@ public class SingleMessageStressTest
 
             final SocketAddress addr = new SocketAddress("localhost", 51115);
 
-            clientSendBuffer = Dispatchers.create("clientSendBuffer")
-                .bufferSize(ByteValue.ofMegabytes(32))
-                .actorScheduler(scheduler)
-                .build();
-
-            serverSendBuffer = Dispatchers.create("serverSendBuffer")
-                .bufferSize(ByteValue.ofMegabytes(32))
-                .actorScheduler(scheduler)
-                .build();
-
             clientTransport = Transports.newClientTransport()
-                .sendBuffer(clientSendBuffer)
-                .requestPoolSize(MAX_CONCURRENT_REQUESTS)
                 .scheduler(scheduler)
                 .inputListener(this)
                 .build();
 
             serverTransport = Transports.newServerTransport()
-                .sendBuffer(serverSendBuffer)
                 .bindAddress(addr.toInetSocketAddress())
                 .scheduler(scheduler)
                 .build(new EchoMessageHandler(), null);
@@ -157,8 +136,6 @@ public class SingleMessageStressTest
         {
             serverTransport.close();
             clientTransport.close();
-            serverSendBuffer.close();
-            clientSendBuffer.close();
             scheduler.stop().get();
         }
 

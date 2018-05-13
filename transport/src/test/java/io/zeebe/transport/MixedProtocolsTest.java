@@ -19,19 +19,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.concurrent.ExecutionException;
 
-import io.zeebe.util.ByteValue;
+import io.zeebe.test.util.AutoCloseableRule;
+import io.zeebe.util.buffer.DirectBufferWriter;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.dispatcher.Dispatchers;
-import io.zeebe.test.util.AutoCloseableRule;
-import io.zeebe.util.buffer.DirectBufferWriter;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.testing.ActorSchedulerRule;
 
 public class MixedProtocolsTest
 {
@@ -53,21 +49,7 @@ public class MixedProtocolsTest
         final SocketAddress addr = new SocketAddress("localhost", 51115);
         final int numRequests = 1000;
 
-        final Dispatcher clientSendBuffer = Dispatchers.create("clientSendBuffer")
-            .bufferSize(ByteValue.ofMegabytes(32))
-            .actorScheduler(actorSchedulerRule.get())
-            .build();
-        closeables.manage(clientSendBuffer);
-
-        final Dispatcher serverSendBuffer = Dispatchers.create("serverSendBuffer")
-            .bufferSize(ByteValue.ofMegabytes(32))
-            .actorScheduler(actorSchedulerRule.get())
-            .build();
-        closeables.manage(serverSendBuffer);
-
         final ClientTransport clientTransport = Transports.newClientTransport()
-            .sendBuffer(clientSendBuffer)
-            .requestPoolSize(128)
             .scheduler(actorSchedulerRule.get())
             .build();
         closeables.manage(clientTransport);
@@ -75,7 +57,6 @@ public class MixedProtocolsTest
         final ReverseOrderChannelHandler handler = new ReverseOrderChannelHandler();
 
         final ServerTransport serverTransport = Transports.newServerTransport()
-            .sendBuffer(serverSendBuffer)
             .bindAddress(addr.toInetSocketAddress())
             .scheduler(actorSchedulerRule.get())
             .build(handler, handler);
@@ -102,10 +83,8 @@ public class MixedProtocolsTest
                 throw new RuntimeException("Could not send message");
             }
 
-            try (ClientResponse response = responseFuture.join())
-            {
-                assertThat(response.getResponseBuffer().getInt(0)).isEqualTo(i);
-            }
+            final ClientResponse response = responseFuture.join();
+            assertThat(response.getResponseBuffer().getInt(0)).isEqualTo(i);
         }
 
     }

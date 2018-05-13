@@ -16,7 +16,6 @@
 package io.zeebe.transport.impl.actor;
 
 import java.time.Duration;
-import java.util.Collection;
 
 import io.zeebe.dispatcher.Subscription;
 import io.zeebe.transport.*;
@@ -28,14 +27,12 @@ import io.zeebe.util.sched.future.CompletableActorFuture;
 public class ClientConductor extends Conductor
 {
     private final ConnectTransportPoller connectTransportPoller;
-    private final ClientRequestPool clientRequestPool;
 
     public ClientConductor(ActorContext actorContext, TransportContext context)
     {
         super(actorContext, context);
         connectTransportPoller = new ConnectTransportPoller();
         remoteAddressList.setOnAddressAddedConsumer(this::onRemoteAddressAdded);
-        clientRequestPool = context.getClientRequestPool();
     }
 
     @Override
@@ -52,17 +49,6 @@ public class ClientConductor extends Conductor
         super.onActorClosing();
     }
 
-    @Override
-    protected void onSenderAndReceiverClosed()
-    {
-        final Collection<ActorFuture<Void>> closeFutures = clientRequestPool.close();
-
-        closeFutures.forEach(f -> actor.runOnCompletionBlockingCurrentPhase(f, (r, t) ->
-        {
-            // Nothing, just making sure the request controllers are closed before we close
-        }));
-    }
-
     public void openChannel(RemoteAddressImpl address, int connectAttempt)
     {
         final TransportChannel channel =
@@ -71,7 +57,6 @@ public class ClientConductor extends Conductor
                 address,
                 transportContext.getMessageMaxLength(),
                 transportContext.getReceiveHandler());
-
 
         if (channel.beginConnect(connectAttempt))
         {
