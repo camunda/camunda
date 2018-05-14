@@ -30,12 +30,16 @@ public interface ActorClock
     static ActorClock current()
     {
         final ActorThread current = ActorThread.current();
-        return current != null ? current.getClock() : null;
+        if (current == null)
+        {
+            throw new UnsupportedOperationException("ActorClock.current() can only be called from actor thread.");
+        }
+
+        return current.getClock();
     }
 
     static long currentTimeMillis()
     {
-        final ActorClock clock = current();
-        return clock != null ? clock.getTimeMillis() : System.currentTimeMillis();
+        return current().getTimeMillis();
     }
 }
