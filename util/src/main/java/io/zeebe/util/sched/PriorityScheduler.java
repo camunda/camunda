@@ -41,6 +41,7 @@ public class PriorityScheduler implements TaskScheduler
 
         int getTimeSlicePriority(long now)
         {
+            assert now >= startNs : "now " + now + " is smaller then startNs " + startNs;
             sliceId = (int) ((now - startNs) / TIME_SLICE_LENTH_NS);
 
             if (sliceId >= TIME_SLICES_PER_SECOND)
