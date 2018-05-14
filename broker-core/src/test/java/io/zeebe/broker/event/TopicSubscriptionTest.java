@@ -26,6 +26,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import io.zeebe.util.sched.clock.ControlledActorClock;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -134,8 +135,13 @@ public class TopicSubscriptionTest
     }
 
     @Test
-    public void shouldPushEvents()
+    public void shouldPushEvents() throws InterruptedException
     {
+        // given
+        final long fixedClockEpoch = 1L;
+        final ControlledActorClock clock = brokerRule.getClock();
+        clock.setCurrentTime(fixedClockEpoch);
+
         // given
         final ExecuteCommandResponse createJobResponse = apiRule.createCmdRequest()
             .type(ValueType.JOB, JobIntent.CREATE)
@@ -168,6 +174,7 @@ public class TopicSubscriptionTest
         assertThat(jobEvent.recordType()).isEqualTo(RecordType.COMMAND);
         assertThat(jobEvent.valueType()).isEqualTo(ValueType.JOB);
         assertThat(jobEvent.intent()).isEqualTo(JobIntent.CREATE);
+        assertThat(jobEvent.timestamp()).isEqualTo(fixedClockEpoch);
 
         jobEvent = jobEvents.get(1);
         assertThat(jobEvent.subscriberKey()).isEqualTo(subscriberKey);
@@ -177,6 +184,7 @@ public class TopicSubscriptionTest
         assertThat(jobEvent.recordType()).isEqualTo(RecordType.EVENT);
         assertThat(jobEvent.valueType()).isEqualTo(ValueType.JOB);
         assertThat(jobEvent.intent()).isEqualTo(JobIntent.CREATED);
+        assertThat(jobEvent.timestamp()).isEqualTo(fixedClockEpoch);
     }
 
     @Test

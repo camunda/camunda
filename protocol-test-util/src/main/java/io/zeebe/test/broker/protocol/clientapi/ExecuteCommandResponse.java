@@ -63,6 +63,11 @@ public class ExecuteCommandResponse implements BufferReader
         return responseDecoder.key();
     }
 
+    public long timestamp()
+    {
+        return responseDecoder.timestamp();
+    }
+
     public int partitionId()
     {
         return responseDecoder.partitionId();

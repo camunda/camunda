@@ -59,6 +59,7 @@ public class SubscribedEventWriterTest
             .valueType(ValueType.JOB)
             .intent(JobIntent.CREATED)
             .key(123L)
+            .timestamp(456L)
             .position(546L)
             .partitionId(876)
             .subscriberKey(4L)
@@ -77,6 +78,7 @@ public class SubscribedEventWriterTest
         assertThat(bodyDecoder.valueType()).isEqualTo(ValueType.JOB);
         assertThat(bodyDecoder.intent()).isEqualTo(JobIntent.CREATED.value());
         assertThat(bodyDecoder.key()).isEqualTo(123L);
+        assertThat(bodyDecoder.timestamp()).isEqualTo(456L);
         assertThat(bodyDecoder.position()).isEqualTo(546L);
         assertThat(bodyDecoder.partitionId()).isEqualTo(876);
         assertThat(bodyDecoder.subscriberKey()).isEqualTo(4L);
