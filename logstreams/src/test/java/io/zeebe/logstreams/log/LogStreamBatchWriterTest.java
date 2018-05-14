@@ -29,7 +29,6 @@ import io.zeebe.logstreams.util.LogStreamRule;
 import io.zeebe.logstreams.util.LogStreamWriterRule;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.buffer.DirectBufferWriter;
-import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 import org.agrona.DirectBuffer;
