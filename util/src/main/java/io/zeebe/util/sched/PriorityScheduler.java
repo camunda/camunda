@@ -43,6 +43,7 @@ public class PriorityScheduler implements TaskScheduler
         {
             assert now >= startNs : "now " + now + " is smaller then startNs " + startNs;
             sliceId = (int) ((now - startNs) / TIME_SLICE_LENTH_NS);
+            assert sliceId >= 0 : "Integer overflow happening with now " + now + " and startNs " + startNs;
 
             if (sliceId >= TIME_SLICES_PER_SECOND)
             {
