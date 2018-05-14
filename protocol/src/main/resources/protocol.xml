@@ -56,7 +56,7 @@
         <validValue name="JOB_SUBSCRIPTION">0</validValue>
         <validValue name="TOPIC_SUBSCRIPTION">1</validValue>
     </enum>
-    
+
     <enum name="RecordType" encodingType="uint8">
         <validValue name="EVENT">0</validValue>
         <validValue name="COMMAND">1</validValue>
@@ -97,9 +97,10 @@
     <field name="recordType" id="4" type="RecordType" />
     <field name="valueType" id="5" type="ValueType" />
     <field name="intent" id="6" type="uint8" />
-    <data name="value" id="7" type="varDataEncoding" />
+    <field name="timestamp" id="7" type="uint64" />
+    <data name="value" id="8" type="varDataEncoding" />
   </sbe:message>
- 
+
   <sbe:message name="SubscribedRecord" id="30">
     <field name="partitionId" id="1" type="uint16" />
     <field name="position" id="2" type="uint64" />
@@ -109,7 +110,8 @@
     <field name="subscriptionType" id="6" type="SubscriptionType" />
     <field name="valueType" id="7" type="ValueType" />
     <field name="intent" id="8" type="uint8" />
-    <data name="value" id="9" type="varDataEncoding" />
+    <field name="timestamp" id="9" type="uint64" />
+    <data name="value" id="10" type="varDataEncoding" />
   </sbe:message>
 
   <!-- L2 Common Messages 200 - 399 -->
@@ -124,5 +126,5 @@
     <field name="intent" id="7" type="uint8" />
     <field name="incidentKey" id="8" type="uint64" />
   </sbe:message>
-  
+
 </sbe:messageSchema>
