@@ -146,15 +146,8 @@ public class RaftJoinService implements Service<Void>
             {
                 if (throwable == null)
                 {
-                    try
-                    {
-                        final DirectBuffer responseBuffer = response.getResponseBuffer();
-                        configurationResponse.wrap(responseBuffer, 0, responseBuffer.capacity());
-                    }
-                    finally
-                    {
-                        response.close();
-                    }
+                    final DirectBuffer responseBuffer = response.getResponseBuffer();
+                    configurationResponse.wrap(responseBuffer, 0, responseBuffer.capacity());
 
                     if (!raft.mayStepDown(configurationResponse) && raft.isTermCurrent(configurationResponse))
                     {

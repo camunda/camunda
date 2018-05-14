@@ -136,22 +136,15 @@ public class ConsensusRequestController
                 pendingRequests--;
                 if (throwable == null)
                 {
-                    try
-                    {
-                        final DirectBuffer responseBuffer = clientRequest.getResponseBuffer();
+                    final DirectBuffer responseBuffer = clientRequest.getResponseBuffer();
 
-                        if (consensusRequestHandler.isResponseGranted(raft, responseBuffer))
-                        {
-                            granted++;
-                            if (isGranted() && !grantedFuture.isDone())
-                            {
-                                grantedFuture.complete(null);
-                            }
-                        }
-                    }
-                    finally
+                    if (consensusRequestHandler.isResponseGranted(raft, responseBuffer))
                     {
-                        clientRequest.close();
+                        granted++;
+                        if (isGranted() && !grantedFuture.isDone())
+                        {
+                            grantedFuture.complete(null);
+                        }
                     }
                 }
                 else

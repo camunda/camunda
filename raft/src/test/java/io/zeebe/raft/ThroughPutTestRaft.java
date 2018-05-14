@@ -22,8 +22,6 @@ import java.nio.file.Files;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
@@ -35,7 +33,6 @@ import io.zeebe.raft.util.InMemoryRaftPersistentStorage;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.*;
-import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.channel.OneToOneRingBufferChannel;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -54,8 +51,6 @@ public class ThroughPutTestRaft implements RaftStateListener
     private final String name;
 
     protected ClientTransport clientTransport;
-    protected Dispatcher clientSendBuffer;
-    protected Dispatcher serverSendBuffer;
     protected ServerTransport serverTransport;
 
     protected LogStream logStream;
@@ -80,29 +75,15 @@ public class ThroughPutTestRaft implements RaftStateListener
         this.serviceContainer = serviceContainer;
         final RaftApiMessageHandler raftApiMessageHandler = new RaftApiMessageHandler();
 
-        serverSendBuffer =
-            Dispatchers.create("serverSendBuffer-" + name)
-                       .bufferSize(ByteValue.ofMegabytes(8))
-                       .actorScheduler(scheduler)
-                       .build();
 
         serverTransport =
             Transports.newServerTransport()
-                      .sendBuffer(serverSendBuffer)
                       .bindAddress(socketAddress.toInetSocketAddress())
                       .scheduler(scheduler)
                       .build(raftApiMessageHandler, raftApiMessageHandler);
 
-        clientSendBuffer =
-            Dispatchers.create("clientSendBuffer-" + name)
-                       .bufferSize(ByteValue.ofMegabytes(8))
-                       .actorScheduler(scheduler)
-                       .build();
-
         clientTransport =
             Transports.newClientTransport()
-                      .sendBuffer(clientSendBuffer)
-                      .requestPoolSize(128)
                       .scheduler(scheduler)
                       .build();
 
@@ -145,10 +126,7 @@ public class ThroughPutTestRaft implements RaftStateListener
         logStream.close();
 
         serverTransport.close();
-        serverSendBuffer.close();
-
         clientTransport.close();
-        clientSendBuffer.close();
     }
 
     public SocketAddress getSocketAddress()
