@@ -17,10 +17,7 @@
  */
 package io.zeebe.broker.transport.clientapi;
 
-import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.keyNullValue;
-import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.partitionIdNullValue;
-import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.positionNullValue;
-import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.valueHeaderLength;
+import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.*;
 
 import java.util.Objects;
 
@@ -44,6 +41,7 @@ public class CommandResponseWriter implements BufferWriter
     protected int partitionId = partitionIdNullValue();
     protected long position = positionNullValue();
     protected long key = keyNullValue();
+    protected long timestamp = timestampNullValue();
     private RecordType recordType = RecordType.NULL_VAL;
     private ValueType valueType = ValueType.NULL_VAL;
     private short intent = Intent.NULL_VAL;
@@ -93,6 +91,12 @@ public class CommandResponseWriter implements BufferWriter
         return this;
     }
 
+    public CommandResponseWriter timestamp(final long timestamp)
+    {
+        this.timestamp = timestamp;
+        return this;
+    }
+
     public CommandResponseWriter valueWriter(final BufferWriter writer)
     {
         this.valueWriter = writer;
@@ -139,7 +143,8 @@ public class CommandResponseWriter implements BufferWriter
             .position(position)
             .valueType(valueType)
             .intent(intent)
-            .key(key);
+            .key(key)
+            .timestamp(timestamp);
 
         offset = responseEncoder.limit();
 
@@ -167,6 +172,7 @@ public class CommandResponseWriter implements BufferWriter
         recordType = RecordType.NULL_VAL;
         intent = Intent.NULL_VAL;
         valueType = ValueType.NULL_VAL;
+        timestamp = timestampNullValue();
     }
 
 }

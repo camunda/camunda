@@ -54,6 +54,7 @@ public class TypedResponseWriterImpl implements TypedResponseWriter
             .partitionId(partitionId)
             .position(0) // TODO: this depends on the value of written event => https://github.com/zeebe-io/zeebe/issues/374
             .key(record.getKey())
+            .timestamp(record.getTimestamp())
             .intent(intent)
             .recordType(type)
             .valueType(metadata.getValueType())

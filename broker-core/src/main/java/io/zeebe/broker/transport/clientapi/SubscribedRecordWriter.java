@@ -17,10 +17,7 @@
  */
 package io.zeebe.broker.transport.clientapi;
 
-import static io.zeebe.protocol.clientapi.SubscribedRecordEncoder.keyNullValue;
-import static io.zeebe.protocol.clientapi.SubscribedRecordEncoder.partitionIdNullValue;
-import static io.zeebe.protocol.clientapi.SubscribedRecordEncoder.positionNullValue;
-import static io.zeebe.protocol.clientapi.SubscribedRecordEncoder.subscriberKeyNullValue;
+import static io.zeebe.protocol.clientapi.SubscribedRecordEncoder.*;
 
 import java.util.Objects;
 
@@ -54,6 +51,7 @@ public class SubscribedRecordWriter implements BufferWriter
     protected BufferWriter valueWriter;
     private RecordType recordType = RecordType.NULL_VAL;
     private short intent = Intent.NULL_VAL;
+    protected long timestamp = timestampNullValue();
 
     protected final ServerOutput output;
     protected final TransportMessage message = new TransportMessage();
@@ -124,6 +122,12 @@ public class SubscribedRecordWriter implements BufferWriter
         return this;
     }
 
+    public SubscribedRecordWriter timestamp(long timestamp)
+    {
+        this.timestamp = timestamp;
+        return this;
+    }
+
     @Override
     public int getLength()
     {
@@ -151,6 +155,7 @@ public class SubscribedRecordWriter implements BufferWriter
             .partitionId(partitionId)
             .position(position)
             .key(key)
+            .timestamp(timestamp)
             .subscriberKey(subscriberKey)
             .subscriptionType(subscriptionType)
             .valueType(valueType)
@@ -188,6 +193,7 @@ public class SubscribedRecordWriter implements BufferWriter
         this.partitionId = partitionIdNullValue();
         this.position = positionNullValue();
         this.key = keyNullValue();
+        this.timestamp = timestampNullValue();
         this.subscriberKey = subscriberKeyNullValue();
         this.subscriptionType = SubscriptionType.NULL_VAL;
         this.valueType = ValueType.NULL_VAL;
