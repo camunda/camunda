@@ -187,6 +187,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
     @Override
     public void onClose()
     {
+        workflowCache.close();
         workflowInstanceEventCreate.close();
         workflowInstanceEventCanceled.close();
         workflowInstanceEventCompleted.close();
@@ -306,27 +307,20 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
                     }
                     else
                     {
-                        try
-                        {
-                            final DeployedWorkflow workflowDefinition = workflowCache.addWorkflow(response.getResponseBuffer());
+                        final DeployedWorkflow workflowDefinition = workflowCache.addWorkflow(response.getResponseBuffer());
 
-                            if (workflowDefinition != null)
-                            {
-                                command
-                                    .setBpmnProcessId(workflowDefinition.getWorkflow().getBpmnProcessId())
-                                    .setWorkflowKey(workflowDefinition.getKey())
-                                    .setVersion(workflowDefinition.getVersion());
-                                accepted = true;
-                            }
-                            else
-                            {
-                                // workflow not deployed
-                                accepted = false;
-                            }
-                        }
-                        finally
+                        if (workflowDefinition != null)
                         {
-                            response.close();
+                            command
+                                .setBpmnProcessId(workflowDefinition.getWorkflow().getBpmnProcessId())
+                                .setWorkflowKey(workflowDefinition.getKey())
+                                .setVersion(workflowDefinition.getVersion());
+                            accepted = true;
+                        }
+                        else
+                        {
+                            // workflow not deployed
+                            accepted = false;
                         }
                     }
 
@@ -1096,10 +1090,6 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
                 catch (Exception e)
                 {
                     onCompleted.completeExceptionally(new RuntimeException("Error while processing fetched workflow", e));
-                }
-                finally
-                {
-                    response.close();
                 }
             }
         });

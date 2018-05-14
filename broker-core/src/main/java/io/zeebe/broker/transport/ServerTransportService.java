@@ -19,9 +19,10 @@ package io.zeebe.broker.transport;
 
 import java.net.InetSocketAddress;
 
-import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.*;
+import io.zeebe.transport.impl.memory.SimpleMemoryPool;
+import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.ActorScheduler;
 import org.slf4j.Logger;
 
@@ -29,34 +30,34 @@ public class ServerTransportService implements Service<ServerTransport>
 {
     public static final Logger LOG = Loggers.TRANSPORT_LOGGER;
 
-    protected final Injector<Dispatcher> sendBufferInjector = new Injector<>();
     protected final Injector<ServerRequestHandler> requestHandlerInjector = new Injector<>();
     protected final Injector<ServerMessageHandler> messageHandlerInjector = new Injector<>();
 
     protected final String readableName;
     protected final InetSocketAddress bindAddress;
+    private final ByteValue sendBufferSize;
 
     protected ServerTransport serverTransport;
 
-    public ServerTransportService(String readableName, InetSocketAddress bindAddress)
+    public ServerTransportService(String readableName, InetSocketAddress bindAddress, ByteValue sendBufferSize)
     {
         this.readableName = readableName;
         this.bindAddress = bindAddress;
+        this.sendBufferSize = sendBufferSize;
     }
 
     @Override
     public void start(ServiceStartContext serviceContext)
     {
         final ActorScheduler scheduler = serviceContext.getScheduler();
-        final Dispatcher sendBuffer = sendBufferInjector.getValue();
         final ServerRequestHandler requestHandler = requestHandlerInjector.getValue();
         final ServerMessageHandler messageHandler = messageHandlerInjector.getValue();
 
         serverTransport = Transports.newServerTransport()
             .name(readableName)
             .bindAddress(bindAddress)
-            .sendBuffer(sendBuffer)
             .scheduler(scheduler)
+            .messageMemoryPool(new SimpleMemoryPool(sendBufferSize))
             .build(messageHandler, requestHandler);
 
         LOG.info("Bound {} to {}", readableName, bindAddress);
@@ -72,11 +73,6 @@ public class ServerTransportService implements Service<ServerTransport>
     public ServerTransport get()
     {
         return serverTransport;
-    }
-
-    public Injector<Dispatcher> getSendBufferInjector()
-    {
-        return sendBufferInjector;
     }
 
     public Injector<ServerRequestHandler> getRequestHandlerInjector()

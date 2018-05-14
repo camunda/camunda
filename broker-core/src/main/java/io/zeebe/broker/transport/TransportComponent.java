@@ -44,8 +44,6 @@ import io.zeebe.util.sched.future.ActorFuture;
 
 public class TransportComponent implements Component
 {
-    protected static final int MGMT_REQUEST_POOL_SIZE = 128;
-
     @Override
     public void init(SystemContext context)
     {
@@ -62,8 +60,6 @@ public class TransportComponent implements Component
         final ActorFuture<ClientTransport> managementClientFuture = createClientTransport(serviceContainer,
             MANAGEMENT_API_CLIENT_NAME,
             new ByteValue(networkCfg.getDefaultSendBufferSize()),
-            MGMT_REQUEST_POOL_SIZE,
-            true,
             Collections.singletonList(managementEndpoint));
 
         context.addRequiredStartAction(managementClientFuture);
@@ -71,8 +67,6 @@ public class TransportComponent implements Component
         final ActorFuture<ClientTransport> replicationClientFuture = createClientTransport(serviceContainer,
             REPLICATION_API_CLIENT_NAME,
             new ByteValue(networkCfg.getDefaultSendBufferSize()),
-            MGMT_REQUEST_POOL_SIZE,
-            false,
             null);
 
         context.addRequiredStartAction(replicationClientFuture);
@@ -180,12 +174,9 @@ public class TransportComponent implements Component
             ServiceName<? extends ServerRequestHandler> requestHandlerDependency,
             ServiceName<? extends ServerMessageHandler> messageHandlerDependency)
     {
-        final ServiceName<Dispatcher> sendBufferName = createSendBuffer(serviceContainer, name, sendBufferSize);
-
-        final ServerTransportService service = new ServerTransportService(name, bindAddress);
+        final ServerTransportService service = new ServerTransportService(name, bindAddress, sendBufferSize);
 
         return serviceContainer.createService(TransportServiceNames.serverTransport(name), service)
-            .dependency(sendBufferName, service.getSendBufferInjector())
             .dependency(requestHandlerDependency, service.getRequestHandlerInjector())
             .dependency(messageHandlerDependency, service.getMessageHandlerInjector())
             .install();
@@ -199,14 +190,12 @@ public class TransportComponent implements Component
             ByteValue sendBufferSize,
             ByteValue receiveBufferSize)
     {
-        final ServiceName<Dispatcher> sendBufferName = createSendBuffer(serviceContainer, name, sendBufferSize);
         final ServiceName<Dispatcher> receiveBufferName = createReceiveBuffer(serviceContainer, name, receiveBufferSize);
 
-        final BufferingServerTransportService service = new BufferingServerTransportService(name, bindAddress);
+        final BufferingServerTransportService service = new BufferingServerTransportService(name, bindAddress, sendBufferSize);
 
         return serviceContainer.createService(TransportServiceNames.bufferingServerTransport(name), service)
             .dependency(receiveBufferName, service.getReceiveBufferInjector())
-            .dependency(sendBufferName, service.getSendBufferInjector())
             .install();
     }
 
@@ -218,14 +207,6 @@ public class TransportComponent implements Component
         final DispatcherService receiveBufferService = new DispatcherService(dispatcherBuilder);
         serviceContainer.createService(name, receiveBufferService)
             .install();
-    }
-
-    protected ServiceName<Dispatcher> createSendBuffer(ServiceContainer serviceContainer, String transportName, ByteValue sendBufferSize)
-    {
-        final ServiceName<Dispatcher> serviceName = TransportServiceNames.sendBufferName(transportName);
-        createDispatcher(serviceContainer, serviceName, sendBufferSize);
-
-        return serviceName;
     }
 
     protected ServiceName<Dispatcher> createReceiveBuffer(
@@ -243,16 +224,11 @@ public class TransportComponent implements Component
             ServiceContainer serviceContainer,
             String name,
             ByteValue sendBufferSize,
-            int requestPoolSize,
-            boolean enableManagedRequests,
             Collection<SocketAddress> defaultEndpoints)
     {
-        final ServiceName<Dispatcher> sendBufferName = createSendBuffer(serviceContainer, name, sendBufferSize);
-
-        final ClientTransportService service = new ClientTransportService(requestPoolSize, enableManagedRequests, defaultEndpoints);
+        final ClientTransportService service = new ClientTransportService(defaultEndpoints, sendBufferSize);
 
         return serviceContainer.createService(TransportServiceNames.clientTransport(name), service)
-            .dependency(sendBufferName, service.getSendBufferInjector())
             .install();
     }
 }

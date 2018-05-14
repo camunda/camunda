@@ -19,9 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.client.clustering.Topology;
 import io.zeebe.client.clustering.impl.ClientTopologyManager;
 import io.zeebe.client.clustering.impl.TopologyImpl;
-import io.zeebe.client.cmd.BrokerErrorException;
-import io.zeebe.client.cmd.ClientCommandRejectedException;
-import io.zeebe.client.cmd.ClientException;
+import io.zeebe.client.cmd.*;
 import io.zeebe.client.event.Event;
 import io.zeebe.client.impl.cmd.CommandImpl;
 import io.zeebe.client.impl.cmd.ReceiverAwareResponseResult;
@@ -50,7 +48,6 @@ public class RequestManager extends Actor
     protected final ObjectMapper msgPackMapper;
     protected final Duration requestTimeout;
     protected final RequestDispatchStrategy dispatchStrategy;
-    protected final Semaphore concurrentRequestsSemaphore;
     protected final long blockTimeMillis;
 
     public RequestManager(
@@ -58,7 +55,6 @@ public class RequestManager extends Actor
             ClientTopologyManager topologyManager,
             ObjectMapper msgPackMapper,
             Duration requestTimeout,
-            int requestPoolSize,
             long blockTimeMillis)
     {
         this.output = output;
@@ -67,7 +63,6 @@ public class RequestManager extends Actor
         this.requestTimeout = requestTimeout;
         this.blockTimeMillis = blockTimeMillis;
         this.dispatchStrategy = new RoundRobinDispatchStrategy(topologyManager);
-        this.concurrentRequestsSemaphore = new Semaphore(requestPoolSize);
     }
 
     public ActorFuture<Void> close()
@@ -87,27 +82,20 @@ public class RequestManager extends Actor
 
     private <E> ActorFuture<E> executeAsync(final RequestResponseHandler requestHandler)
     {
-        try
-        {
-            if (!concurrentRequestsSemaphore.tryAcquire(blockTimeMillis, TimeUnit.MILLISECONDS))
-            {
-                throw new RuntimeException("Could not send request in under " + Duration.ofMillis(blockTimeMillis) +
-                        ". This either means that requests cannot be sent fast enought or that you are " +
-                        "trying to send more concurrent requests than you have configured on the client " +
-                        "and are not calling .get() on the response future. You need to call .get() " +
-                        "on the response future before sending more requests.");
-            }
-        }
-        catch (InterruptedException e)
-        {
-            throw new RuntimeException(e);
-        }
+        final Supplier<RemoteAddress> remoteProvider = determineRemoteProvider(requestHandler);
 
-        final Supplier<ActorFuture<RemoteAddress>> remoteProvider = determineRemoteProvider(requestHandler);
         final ActorFuture<ClientResponse> responseFuture =
                 output.sendRequestWithRetry(remoteProvider, RequestManager::shouldRetryRequest, requestHandler, requestTimeout);
 
-        return new ResponseFuture<>(responseFuture, requestHandler, requestTimeout, concurrentRequestsSemaphore);
+        if (responseFuture == null)
+        {
+            return new ResponseFuture<>(responseFuture, requestHandler, requestTimeout);
+        }
+        else
+        {
+            throw new ClientOutOfMemoryException("Zeebe client is out of buffer memory and cannot make " +
+                "new requests until memory is reclaimed.");
+        }
     }
 
     private static boolean shouldRetryRequest(DirectBuffer responseContent)
@@ -162,9 +150,8 @@ public class RequestManager extends Actor
         });
     }
 
-    private Supplier<ActorFuture<RemoteAddress>> determineRemoteProvider(RequestResponseHandler requestHandler)
+    private Supplier<RemoteAddress> determineRemoteProvider(RequestResponseHandler requestHandler)
     {
-
         if (!requestHandler.addressesSpecificTopic() && !requestHandler.addressesSpecificPartition())
         {
             return new BrokerProvider((topology) -> topology.getRandomBroker());
@@ -250,7 +237,7 @@ public class RequestManager extends Actor
         }
     }
 
-    private class BrokerProvider implements Supplier<ActorFuture<RemoteAddress>>
+    private class BrokerProvider implements Supplier<RemoteAddress>
     {
         private int attempt = 0;
 
@@ -262,39 +249,17 @@ public class RequestManager extends Actor
         }
 
         @Override
-        public ActorFuture<RemoteAddress> get()
+        public RemoteAddress get()
         {
             if (attempt > 0)
             {
-
-                final CompletableActorFuture<RemoteAddress> remoteFuture = new CompletableActorFuture<>();
-
-                actor.call(() ->
-                {
-                    final ActorFuture<Topology> topologyFuture = topologyManager.requestTopology();
-
-                    actor.runOnCompletion(topologyFuture, (r, t) ->
-                    {
-                        final RemoteAddress remoteAddress = determineRemoteWithCurrentTopology();
-                        remoteFuture.complete(remoteAddress);
-                    });
-                });
-
-                return remoteFuture;
+                topologyManager.requestTopology();
             }
-            else
-            {
-                attempt++;
 
-                return CompletableActorFuture.completed(determineRemoteWithCurrentTopology());
-            }
-        }
+            attempt++;
 
-        private RemoteAddress determineRemoteWithCurrentTopology()
-        {
             final TopologyImpl topology = topologyManager.getTopology();
             return addressStrategy.apply(topology);
-
         }
     }
 
@@ -305,20 +270,17 @@ public class RequestManager extends Actor
         protected final ErrorResponseHandler errorHandler = new ErrorResponseHandler();
         protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
         protected final Duration requestTimeout;
-        protected final Semaphore semaphore;
 
         protected E result = null;
         protected ExecutionException failure = null;
 
         ResponseFuture(ActorFuture<ClientResponse> transportFuture,
                 RequestResponseHandler responseHandler,
-                Duration requestTimeout,
-                Semaphore semaphore)
+                Duration requestTimeout)
         {
             this.transportFuture = transportFuture;
             this.responseHandler = responseHandler;
             this.requestTimeout = requestTimeout;
-            this.semaphore = semaphore;
         }
 
         @Override
@@ -346,8 +308,9 @@ public class RequestManager extends Actor
                 return;
             }
 
-            try (ClientResponse response = transportFuture.get(timeout, unit))
+            try
             {
+                final ClientResponse response = transportFuture.get(timeout, unit);
                 final DirectBuffer responsBuffer = response.getResponseBuffer();
 
                 headerDecoder.wrap(responsBuffer, 0);
@@ -384,10 +347,6 @@ public class RequestManager extends Actor
             {
                 failWith("Could not complete request", e);
                 return;
-            }
-            finally
-            {
-                semaphore.release();
             }
         }
 

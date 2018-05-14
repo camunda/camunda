@@ -18,36 +18,20 @@ package io.zeebe.test.broker.protocol.clientapi;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.agrona.DirectBuffer;
-import org.junit.rules.ExternalResource;
-
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
-import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
-import io.zeebe.protocol.clientapi.SubscribedRecordDecoder;
-import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.clientapi.*;
 import io.zeebe.protocol.intent.SubscriberIntent;
 import io.zeebe.protocol.intent.TopicIntent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
-import io.zeebe.transport.ClientTransport;
-import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.SocketAddress;
-import io.zeebe.transport.Transports;
-import io.zeebe.util.ByteValue;
+import io.zeebe.transport.*;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ControlledActorClock;
+import org.agrona.DirectBuffer;
+import org.junit.rules.ExternalResource;
 
 public class ClientApiRule extends ExternalResource
 {
@@ -56,7 +40,6 @@ public class ClientApiRule extends ExternalResource
     public static final int DEFAULT_REPLICATION_FACTOR = 1;
 
     protected ClientTransport transport;
-    protected Dispatcher sendBuffer;
 
     protected final SocketAddress brokerAddress;
     protected RemoteAddress streamAddress;
@@ -95,18 +78,11 @@ public class ClientApiRule extends ExternalResource
                                   .build();
         scheduler.start();
 
-        sendBuffer = Dispatchers.create("clientSendBuffer")
-            .bufferSize(ByteValue.ofMegabytes(32))
-            .actorScheduler(scheduler)
-            .build();
-
         incomingMessageCollector = new RawMessageCollector();
 
         transport = Transports.newClientTransport()
                 .inputListener(incomingMessageCollector)
                 .scheduler(scheduler)
-                .requestPoolSize(128)
-                .sendBuffer(sendBuffer)
                 .build();
 
         msgPackHelper = new MsgPackHelper();
@@ -131,11 +107,6 @@ public class ClientApiRule extends ExternalResource
         if (transport != null)
         {
             transport.close();
-        }
-
-        if (sendBuffer != null)
-        {
-            sendBuffer.close();
         }
 
         if (scheduler != null)

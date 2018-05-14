@@ -80,25 +80,21 @@ public class ControlMessageRequest implements BufferWriter
 
     public ControlMessageResponse await()
     {
-        try (ClientResponse response = responseFuture.join())
-        {
-            final DirectBuffer responseBuffer = response.getResponseBuffer();
+        final ClientResponse response = responseFuture.join();
+        final DirectBuffer responseBuffer = response.getResponseBuffer();
 
-            final ControlMessageResponse result = new ControlMessageResponse(msgPackHelper);
-            result.wrap(responseBuffer, 0, responseBuffer.capacity());
-            return result;
-        }
+        final ControlMessageResponse result = new ControlMessageResponse(msgPackHelper);
+        result.wrap(responseBuffer, 0, responseBuffer.capacity());
+        return result;
     }
 
     public ErrorResponse awaitError()
     {
-        try (ClientResponse response = responseFuture.join())
-        {
-            final ErrorResponse errorResponse = new ErrorResponse(msgPackHelper);
-            final DirectBuffer responseBuffer = response.getResponseBuffer();
-            errorResponse.wrap(responseBuffer, 0, responseBuffer.capacity());
-            return errorResponse;
-        }
+        final ClientResponse response = responseFuture.join();
+        final ErrorResponse errorResponse = new ErrorResponse(msgPackHelper);
+        final DirectBuffer responseBuffer = response.getResponseBuffer();
+        errorResponse.wrap(responseBuffer, 0, responseBuffer.capacity());
+        return errorResponse;
     }
 
     @Override

@@ -24,6 +24,8 @@ import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.BufferingServerTransport;
 import io.zeebe.transport.Transports;
+import io.zeebe.transport.impl.memory.SimpleMemoryPool;
+import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.ActorScheduler;
 import org.slf4j.Logger;
 
@@ -32,17 +34,18 @@ public class BufferingServerTransportService implements Service<BufferingServerT
     public static final Logger LOG = Loggers.TRANSPORT_LOGGER;
 
     protected final Injector<Dispatcher> receiveBufferInjector = new Injector<>();
-    protected final Injector<Dispatcher> sendBufferInjector = new Injector<>();
 
     protected final String readableName;
     protected final InetSocketAddress bindAddress;
+    private final ByteValue sendBufferSize;
 
     protected BufferingServerTransport serverTransport;
 
-    public BufferingServerTransportService(String readableName, InetSocketAddress bindAddress)
+    public BufferingServerTransportService(String readableName, InetSocketAddress bindAddress, ByteValue sendBufferSize)
     {
         this.readableName = readableName;
         this.bindAddress = bindAddress;
+        this.sendBufferSize = sendBufferSize;
     }
 
     @Override
@@ -50,12 +53,11 @@ public class BufferingServerTransportService implements Service<BufferingServerT
     {
         final ActorScheduler scheduler = serviceContext.getScheduler();
         final Dispatcher receiveBuffer = receiveBufferInjector.getValue();
-        final Dispatcher sendBuffer = sendBufferInjector.getValue();
 
         serverTransport = Transports.newServerTransport()
             .name(readableName)
             .bindAddress(bindAddress)
-            .sendBuffer(sendBuffer)
+            .messageMemoryPool(new SimpleMemoryPool(sendBufferSize))
             .scheduler(scheduler)
             .buildBuffering(receiveBuffer);
 
@@ -78,10 +80,4 @@ public class BufferingServerTransportService implements Service<BufferingServerT
     {
         return receiveBufferInjector;
     }
-
-    public Injector<Dispatcher> getSendBufferInjector()
-    {
-        return sendBufferInjector;
-    }
-
 }

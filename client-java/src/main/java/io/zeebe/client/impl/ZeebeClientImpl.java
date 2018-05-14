@@ -15,19 +15,10 @@
  */
 package io.zeebe.client.impl;
 
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 
-import io.zeebe.util.ByteValue;
-import org.slf4j.Logger;
-
-import io.zeebe.client.WorkflowsClient;
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.ZeebeClientConfiguration;
-import io.zeebe.client.clustering.impl.ClientTopologyManager;
-import io.zeebe.client.clustering.impl.RequestTopologyCmdImpl;
-import io.zeebe.client.clustering.impl.TopologyResponse;
+import io.zeebe.client.*;
+import io.zeebe.client.clustering.impl.*;
 import io.zeebe.client.cmd.Request;
 import io.zeebe.client.event.WorkflowDefinition;
 import io.zeebe.client.event.impl.TopicClientImpl;
@@ -36,17 +27,16 @@ import io.zeebe.client.impl.data.MsgPackMapper;
 import io.zeebe.client.task.impl.subscription.SubscriptionManager;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
-import io.zeebe.transport.ClientTransport;
-import io.zeebe.transport.ClientTransportBuilder;
-import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.SocketAddress;
-import io.zeebe.transport.Transports;
+import io.zeebe.transport.*;
+import io.zeebe.transport.impl.memory.BlockingMemoryPool;
+import io.zeebe.transport.impl.memory.UnboundedMemoryPool;
+import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ActorClock;
+import org.slf4j.Logger;
 
 public class ZeebeClientImpl implements ZeebeClient
 {
-
     public static final Logger LOG = Loggers.CLIENT_LOGGER;
 
     public static final String VERSION;
@@ -60,7 +50,6 @@ public class ZeebeClientImpl implements ZeebeClient
     protected final ZeebeClientConfiguration configuration;
 
     protected Dispatcher dataFrameReceiveBuffer;
-    protected Dispatcher sendBuffer;
     protected ActorScheduler scheduler;
 
     protected ClientTransport transport;
@@ -90,31 +79,29 @@ public class ZeebeClientImpl implements ZeebeClient
         final SocketAddress contactPoint = SocketAddress.from(configuration.getBrokerContactPoint());
 
         this.scheduler = ActorScheduler.newActorScheduler()
-                                       .setCpuBoundActorThreadCount(configuration.getNumManagementThreads())
-                                       .setIoBoundActorThreadCount(0)
-                                       .setActorClock(actorClock)
-                                       .setSchedulerName("client")
-                                       .build();
+            .setCpuBoundActorThreadCount(configuration.getNumManagementThreads())
+            .setIoBoundActorThreadCount(0)
+            .setActorClock(actorClock)
+            .setSchedulerName("client")
+            .build();
         this.scheduler.start();
 
+        final ByteValue sendBufferSize = ByteValue.ofMegabytes(configuration.getSendBufferSize());
+        final long requestBlockTimeMs = configuration.getRequestBlocktime().toMillis();
+
         dataFrameReceiveBuffer = Dispatchers.create("receive-buffer")
-            .bufferSize(ByteValue.ofMegabytes(configuration.getSendBufferSize()))
+            .bufferSize(sendBufferSize)
             .modePubSub()
             .frameMaxLength(1024 * 1024)
             .actorScheduler(scheduler)
             .build();
 
-        sendBuffer = Dispatchers.create("send-buffer")
-            .actorScheduler(scheduler)
-            .bufferSize(ByteValue.ofMegabytes(configuration.getSendBufferSize()))
-            .build();
-
         final ClientTransportBuilder transportBuilder = Transports.newClientTransport()
             .messageMaxLength(1024 * 1024)
             .messageReceiveBuffer(dataFrameReceiveBuffer)
-            .requestPoolSize(configuration.getMaxRequests() + 16)
-            .scheduler(scheduler)
-            .sendBuffer(sendBuffer);
+            .messageMemoryPool(new UnboundedMemoryPool()) // Client is not sending any heavy messages
+            .requestMemoryPool(new BlockingMemoryPool(sendBufferSize, requestBlockTimeMs))
+            .scheduler(scheduler);
 
         if (configuration.getTcpChannelKeepAlivePeriod() != null)
         {
@@ -134,12 +121,11 @@ public class ZeebeClientImpl implements ZeebeClient
         scheduler.submitActor(topologyManager);
 
         apiCommandManager = new RequestManager(
-                transport.getOutput(),
-                topologyManager,
-                objectMapper,
-                configuration.getRequestTimeout(),
-                configuration.getMaxRequests(),
-                configuration.getRequestBlocktime().toMillis());
+            transport.getOutput(),
+            topologyManager,
+            objectMapper,
+            configuration.getRequestTimeout(),
+            requestBlockTimeMs);
         this.scheduler.submitActor(apiCommandManager);
 
         this.subscriptionManager = new SubscriptionManager(this);
@@ -168,8 +154,6 @@ public class ZeebeClientImpl implements ZeebeClient
         doAndLogException(() -> transport.close());
         LOG.debug("data frame receive buffer closed");
         doAndLogException(() -> dataFrameReceiveBuffer.close());
-        LOG.debug("sendbuffer closed");
-        doAndLogException(() -> sendBuffer.close());
 
         try
         {

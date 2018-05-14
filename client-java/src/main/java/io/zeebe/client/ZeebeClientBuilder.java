@@ -27,11 +27,6 @@ public interface ZeebeClientBuilder
     ZeebeClientBuilder brokerContactPoint(String contactPoint);
 
     /**
-     * @param maxRequests The maximum count of concurrently in flight requests. Default value is 128.
-     */
-    ZeebeClientBuilder maxRequests(int maxRequests);
-
-    /**
      * @param requestTimeout The request timeout in seconds. Default value is 15 seconds.
      */
     ZeebeClientBuilder requestTimeout(Duration requestTimeout);

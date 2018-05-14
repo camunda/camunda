@@ -101,24 +101,20 @@ public class ExecuteCommandRequest implements BufferWriter
 
     public ExecuteCommandResponse await()
     {
-        try (ClientResponse response = responseFuture.join())
-        {
-            final DirectBuffer responseBuffer = response.getResponseBuffer();
-            final ExecuteCommandResponse result = new ExecuteCommandResponse(msgPackHelper);
-            result.wrap(responseBuffer, 0, responseBuffer.capacity());
-            return result;
-        }
+        final ClientResponse response = responseFuture.join();
+        final DirectBuffer responseBuffer = response.getResponseBuffer();
+        final ExecuteCommandResponse result = new ExecuteCommandResponse(msgPackHelper);
+        result.wrap(responseBuffer, 0, responseBuffer.capacity());
+        return result;
     }
 
     public ErrorResponse awaitError()
     {
-        try (ClientResponse response = responseFuture.join())
-        {
-            final DirectBuffer responseBuffer = response.getResponseBuffer();
-            final ErrorResponse result = new ErrorResponse(msgPackHelper);
-            result.wrap(responseBuffer, 0, responseBuffer.capacity());
-            return result;
-        }
+        final ClientResponse response = responseFuture.join();
+        final DirectBuffer responseBuffer = response.getResponseBuffer();
+        final ErrorResponse result = new ErrorResponse(msgPackHelper);
+        result.wrap(responseBuffer, 0, responseBuffer.capacity());
+        return result;
     }
 
     @Override

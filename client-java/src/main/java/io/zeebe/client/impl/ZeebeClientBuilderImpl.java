@@ -20,16 +20,12 @@ import static io.zeebe.client.ClientProperties.*;
 import java.time.Duration;
 import java.util.Properties;
 
-import io.zeebe.client.ClientProperties;
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.ZeebeClientBuilder;
-import io.zeebe.client.ZeebeClientConfiguration;
+import io.zeebe.client.*;
 import io.zeebe.util.sched.clock.ActorClock;
 
 public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientConfiguration
 {
     private String brokerContactPoint = "127.0.0.1:51015";
-    private int maxRequests = 128;
     private Duration requestTimeout = Duration.ofSeconds(15);
     private Duration requestBlocktime = Duration.ofSeconds(15);
     private int sendBufferSize = 16;
@@ -50,19 +46,6 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
     public ZeebeClientBuilder brokerContactPoint(String contactPoint)
     {
         this.brokerContactPoint = contactPoint;
-        return this;
-    }
-
-    @Override
-    public int getMaxRequests()
-    {
-        return maxRequests;
-    }
-
-    @Override
-    public ZeebeClientBuilder maxRequests(int maxRequests)
-    {
-        this.maxRequests = maxRequests;
         return this;
     }
 
@@ -182,10 +165,6 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
         {
             builder.brokerContactPoint(properties.getProperty(ClientProperties.BROKER_CONTACTPOINT));
         }
-        if (properties.containsKey(CLIENT_MAXREQUESTS))
-        {
-            builder.maxRequests(Integer.parseInt(properties.getProperty(CLIENT_MAXREQUESTS)));
-        }
         if (properties.containsKey(ClientProperties.CLIENT_REQUEST_TIMEOUT_SEC))
         {
             builder.requestTimeout(Duration.ofSeconds(Integer.parseInt(properties.getProperty(ClientProperties.CLIENT_REQUEST_TIMEOUT_SEC))));
@@ -224,7 +203,6 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
         final StringBuilder sb = new StringBuilder();
 
         appendProperty(sb, "brokerContactPoint", brokerContactPoint);
-        appendProperty(sb, "maxRequests", maxRequests);
         appendProperty(sb, "requestTimeout", requestTimeout);
         appendProperty(sb, "requestBlocktime", requestBlocktime);
         appendProperty(sb, "sendBufferSize", sendBufferSize);

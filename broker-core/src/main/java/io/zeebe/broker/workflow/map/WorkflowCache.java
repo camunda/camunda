@@ -20,8 +20,7 @@ package io.zeebe.broker.workflow.map;
 import java.time.Duration;
 import java.util.*;
 
-import io.zeebe.broker.clustering.base.topology.NodeInfo;
-import io.zeebe.broker.clustering.base.topology.TopologyManager;
+import io.zeebe.broker.clustering.base.topology.*;
 import io.zeebe.broker.system.workflow.repository.api.management.FetchWorkflowRequest;
 import io.zeebe.broker.system.workflow.repository.api.management.FetchWorkflowResponse;
 import io.zeebe.clustering.management.FetchWorkflowResponseDecoder;
@@ -37,7 +36,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.collections.Long2ObjectHashMap;
 
-public class WorkflowCache
+public class WorkflowCache implements TopologyPartitionListener
 {
     public static final long LATEST_VERSION_REFRESH_INTERVAL = Duration.ofSeconds(10).toMillis();
 
@@ -57,6 +56,8 @@ public class WorkflowCache
 
     private final DirectBuffer topicName;
 
+    private volatile RemoteAddress systemTopicLeaderAddress;
+
     public WorkflowCache(ClientTransport clientTransport,
         TopologyManager topologyManager,
         DirectBuffer topicName)
@@ -64,6 +65,13 @@ public class WorkflowCache
         this.clientTransport = clientTransport;
         this.topologyManager = topologyManager;
         this.topicName = topicName;
+
+        topologyManager.addTopologyPartitionListener(this);
+    }
+
+    public void close()
+    {
+        topologyManager.removeTopologyPartitionListener(this);
     }
 
     public ActorFuture<ClientResponse> fetchWorkflowByKey(long key)
@@ -166,21 +174,9 @@ public class WorkflowCache
         return deployedWorkflow;
     }
 
-    private ActorFuture<RemoteAddress> systemTopicLeader()
+    private RemoteAddress systemTopicLeader()
     {
-        return topologyManager.query((t) ->
-        {
-            final NodeInfo leader = t.getLeader(Protocol.SYSTEM_PARTITION);
-
-            if (leader != null)
-            {
-                return clientTransport.registerRemoteAddress(leader.getManagementApiAddress());
-            }
-            else
-            {
-                return null;
-            }
-        });
+        return systemTopicLeaderAddress;
     }
 
     public DeployedWorkflow getLatestWorkflowVersionByProcessId(DirectBuffer processId)
@@ -218,5 +214,23 @@ public class WorkflowCache
     public DeployedWorkflow getWorkflowByKey(long key)
     {
         return workflowsByKey.get(key);
+    }
+
+    @Override
+    public void onPartitionUpdated(PartitionInfo partitionInfo, NodeInfo member)
+    {
+        final RemoteAddress currentLeader = systemTopicLeaderAddress;
+
+        if (partitionInfo.getPartitionId() == Protocol.SYSTEM_PARTITION)
+        {
+            if (member.getLeaders().contains(partitionInfo))
+            {
+                final SocketAddress managementApiAddress = member.getManagementApiAddress();
+                if (currentLeader == null || currentLeader.getAddress().equals(managementApiAddress))
+                {
+                    systemTopicLeaderAddress = clientTransport.registerRemoteAddress(managementApiAddress);
+                }
+            }
+        }
     }
 }

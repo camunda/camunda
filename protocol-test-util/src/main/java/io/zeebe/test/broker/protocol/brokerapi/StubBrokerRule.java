@@ -18,44 +18,27 @@ package io.zeebe.test.broker.protocol.brokerapi;
 import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
 
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-import org.junit.rules.ExternalResource;
-
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.clientapi.SubscriptionType;
-import io.zeebe.protocol.clientapi.ValueType;
-import io.zeebe.protocol.intent.Intent;
-import io.zeebe.protocol.intent.SubscriberIntent;
-import io.zeebe.protocol.intent.SubscriptionIntent;
+import io.zeebe.protocol.clientapi.*;
+import io.zeebe.protocol.intent.*;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
-import io.zeebe.test.broker.protocol.brokerapi.data.BrokerPartitionState;
-import io.zeebe.test.broker.protocol.brokerapi.data.Topology;
-import io.zeebe.test.broker.protocol.brokerapi.data.TopologyBroker;
+import io.zeebe.test.broker.protocol.brokerapi.data.*;
 import io.zeebe.test.util.collection.MapFactoryBuilder;
-import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.ServerTransport;
-import io.zeebe.transport.Transports;
-import io.zeebe.util.ByteValue;
+import io.zeebe.transport.*;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ControlledActorClock;
+import org.junit.rules.ExternalResource;
 
 public class StubBrokerRule extends ExternalResource
 {
-
     public static final String TEST_TOPIC_NAME = DEFAULT_TOPIC_NAME;
     public static final int TEST_PARTITION_ID = 99;
-
 
     private ControlledActorClock clock = new ControlledActorClock();
     protected ActorScheduler scheduler;
@@ -64,7 +47,6 @@ public class StubBrokerRule extends ExternalResource
     protected final int port;
 
     protected ServerTransport transport;
-    protected Dispatcher sendBuffer;
 
     protected StubResponseChannelHandler channelHandler;
     protected MsgPackHelper msgPackHelper;
@@ -96,11 +78,6 @@ public class StubBrokerRule extends ExternalResource
 
         scheduler.start();
 
-        sendBuffer = Dispatchers.create("send-buffer")
-            .actorScheduler(scheduler)
-            .bufferSize(ByteValue.ofMegabytes(1))
-            .build();
-
         channelHandler = new StubResponseChannelHandler(msgPackHelper);
         bindAddr = new InetSocketAddress(host, port);
 
@@ -119,10 +96,6 @@ public class StubBrokerRule extends ExternalResource
         if (transport != null)
         {
             closeTransport();
-        }
-        if (sendBuffer != null)
-        {
-            sendBuffer.close();
         }
         if (scheduler != null)
         {
@@ -155,7 +128,6 @@ public class StubBrokerRule extends ExternalResource
             transport = Transports.newServerTransport()
                     .bindAddress(bindAddr)
                     .scheduler(scheduler)
-                    .sendBuffer(sendBuffer)
                     .build(null, channelHandler);
         }
         else

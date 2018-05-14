@@ -22,9 +22,7 @@ import io.zeebe.broker.transport.controlmessage.ControlMessageHandlerManager;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.raft.RaftApiMessageHandler;
 import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.transport.BufferingServerTransport;
-import io.zeebe.transport.ClientTransport;
-import io.zeebe.transport.ServerTransport;
+import io.zeebe.transport.*;
 
 public class TransportServiceNames
 {
@@ -41,11 +39,6 @@ public class TransportServiceNames
     public static ServiceName<Dispatcher> receiveBufferName(String identifier)
     {
         return ServiceName.newServiceName(String.format("transport.%s.receive-buffer", identifier), Dispatcher.class);
-    }
-
-    public static ServiceName<Dispatcher> sendBufferName(String identifier)
-    {
-        return ServiceName.newServiceName(String.format("transport.%s.send-buffer", identifier), Dispatcher.class);
     }
 
     public static ServiceName<ServerTransport> serverTransport(String identifier)

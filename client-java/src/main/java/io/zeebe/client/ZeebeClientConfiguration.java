@@ -25,11 +25,6 @@ public interface ZeebeClientConfiguration
     String getBrokerContactPoint();
 
     /**
-     * @see ZeebeClientBuilder#maxRequests(int)
-     */
-    int getMaxRequests();
-
-    /**
      * @see ZeebeClientBuilder#requestTimeout(Duration)
      */
     Duration getRequestTimeout();

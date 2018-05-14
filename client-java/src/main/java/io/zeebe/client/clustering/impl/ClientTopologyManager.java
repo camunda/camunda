@@ -160,15 +160,8 @@ public class ClientTopologyManager extends Actor
     {
         if (t == null)
         {
-            try
-            {
-                final TopologyResponse topologyResponse = decodeTopology(response.getResponseBuffer());
-                onNewTopology(topologyResponse);
-            }
-            finally
-            {
-                response.close();
-            }
+            final TopologyResponse topologyResponse = decodeTopology(response.getResponseBuffer());
+            onNewTopology(topologyResponse);
         }
         else
         {

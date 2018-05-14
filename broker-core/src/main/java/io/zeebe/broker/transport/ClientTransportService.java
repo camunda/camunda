@@ -19,40 +19,37 @@ package io.zeebe.broker.transport;
 
 import java.util.Collection;
 
-import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.*;
+import io.zeebe.transport.impl.memory.SimpleMemoryPool;
+import io.zeebe.transport.impl.memory.UnboundedMemoryPool;
+import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.ActorScheduler;
 
 public class ClientTransportService implements Service<ClientTransport>
 {
-    protected final Injector<Dispatcher> sendBufferInjector = new Injector<>();
-
-    protected final int requestPoolSize;
     protected final Collection<SocketAddress> defaultEndpoints;
-    protected final boolean enableManagedRequests;
+    private final ByteValue messageBufferSize;
 
     protected ClientTransport transport;
 
-    public ClientTransportService(int requestPoolSize, boolean enableManagedRequests, Collection<SocketAddress> defaultEndpoints)
+    public ClientTransportService(Collection<SocketAddress> defaultEndpoints, ByteValue messageBufferSize)
     {
-        this.requestPoolSize = requestPoolSize;
         this.defaultEndpoints = defaultEndpoints;
-        this.enableManagedRequests = enableManagedRequests;
+        this.messageBufferSize = messageBufferSize;
     }
 
     @Override
     public void start(ServiceStartContext startContext)
     {
-
-        final Dispatcher sendBuffer = sendBufferInjector.getValue();
         final ActorScheduler scheduler = startContext.getScheduler();
 
         final ClientTransportBuilder transportBuilder = Transports.newClientTransport();
 
         transport = transportBuilder
-            .sendBuffer(sendBuffer)
-            .requestPoolSize(requestPoolSize)
+            .messageMemoryPool(new SimpleMemoryPool(messageBufferSize))
+            // client transport in broker should no do any high volume interactions using request/resp
+            .requestMemoryPool(new UnboundedMemoryPool())
             .scheduler(scheduler)
             .build();
 
@@ -74,10 +71,4 @@ public class ClientTransportService implements Service<ClientTransport>
     {
         return transport;
     }
-
-    public Injector<Dispatcher> getSendBufferInjector()
-    {
-        return sendBufferInjector;
-    }
-
 }

@@ -23,11 +23,6 @@ public class ClientProperties
     public static final String BROKER_CONTACTPOINT = "zeebe.client.broker.contactPoint";
 
     /**
-     * The maximum count of concurrently in flight requests.
-     */
-    public static final String CLIENT_MAXREQUESTS = "zeebe.client.maxRequests";
-
-    /**
      * The time in milliseconds to block when the user submits a request and the client
      * has no buffer (pooling) capacity to send the request. After this time, an exception is thrown.
      */
