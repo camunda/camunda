@@ -16,7 +16,6 @@
 package io.zeebe.util.sched.testing;
 
 import java.time.Duration;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadPoolExecutor;
 
 import io.zeebe.util.sched.*;
@@ -25,7 +24,6 @@ import io.zeebe.util.sched.ActorScheduler.ActorThreadFactory;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
 import io.zeebe.util.sched.metrics.ActorThreadMetrics;
 import org.junit.Assert;
 import org.junit.rules.ExternalResource;
@@ -94,32 +92,6 @@ public class ControlledActorSchedulerRule extends ExternalResource
     public void workUntilDone()
     {
         controlledActorTaskRunner.workUntilDone();
-    }
-
-    public <T> ActorFuture<T> call(Callable<T> callable)
-    {
-        final ActorFuture<T> future = new CompletableActorFuture<>();
-
-        submitActor(new Actor()
-        {
-            @Override
-            protected void onActorStarted()
-            {
-                actor.run(() ->
-                {
-                    try
-                    {
-                        future.complete(callable.call());
-                    }
-                    catch (Exception e)
-                    {
-                        future.completeExceptionally(e);
-                    }
-                });
-            }
-        });
-
-        return future;
     }
 
     static class ControlledActorThreadFactory implements ActorThreadFactory
