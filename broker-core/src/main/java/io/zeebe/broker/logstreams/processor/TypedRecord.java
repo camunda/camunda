@@ -28,6 +28,8 @@ public interface TypedRecord<T extends UnpackedObject>
 
     long getKey();
 
+    long getTimestamp();
+
     RecordMetadata getMetadata();
 
     T getValue();

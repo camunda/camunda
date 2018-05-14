@@ -54,6 +54,12 @@ public class TypedEventImpl implements TypedRecord
     }
 
     @Override
+    public long getTimestamp()
+    {
+        return rawEvent.getTimestamp();
+    }
+
+    @Override
     public RecordMetadata getMetadata()
     {
         return metadata;
