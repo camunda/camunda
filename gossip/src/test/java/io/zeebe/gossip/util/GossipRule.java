@@ -54,10 +54,8 @@ public class GossipRule extends ExternalResource
     private ActorControl gossipActor;
 
     private ClientTransport clientTransport;
-    private Dispatcher clientSendBuffer;
 
     private BufferingServerTransport serverTransport;
-    private Dispatcher serverSendBuffer;
     private Dispatcher serverReceiveBuffer;
 
     private ClientOutput spyClientOutput;
@@ -84,13 +82,6 @@ public class GossipRule extends ExternalResource
 
         final String name = socketAddress.toString();
 
-        serverSendBuffer = Dispatchers
-                .create("serverSendBuffer-" + name)
-                .bufferSize(ByteValue.ofMegabytes(32))
-                .subscriptions("sender" + name)
-                .actorScheduler(actorScheduler)
-                .build();
-
         serverReceiveBuffer = Dispatchers
                 .create("serverReceiveBuffer-" + name)
                 .bufferSize(ByteValue.ofMegabytes(32))
@@ -100,22 +91,12 @@ public class GossipRule extends ExternalResource
 
         serverTransport = Transports
                 .newServerTransport()
-                .sendBuffer(serverSendBuffer)
                 .bindAddress(socketAddress.toInetSocketAddress())
                 .scheduler(actorScheduler)
                 .buildBuffering(serverReceiveBuffer);
 
-        clientSendBuffer = Dispatchers
-                .create("clientSendBuffer-" + name)
-                .bufferSize(ByteValue.ofMegabytes(32))
-                .subscriptions("sender" + name)
-                .actorScheduler(actorScheduler)
-                .build();
-
         clientTransport = Transports
                 .newClientTransport()
-                .sendBuffer(clientSendBuffer)
-                .requestPoolSize(128)
                 .scheduler(actorScheduler)
                 .inputListener(receivedEventsCollector)
                 .build();
@@ -181,11 +162,7 @@ public class GossipRule extends ExternalResource
 
         serverTransport.close();
         clientTransport.close();
-
-        serverSendBuffer.close();
         serverReceiveBuffer.close();
-
-        clientSendBuffer.close();
     }
 
     public ActorFuture<Void> join(GossipRule... contactPoints)

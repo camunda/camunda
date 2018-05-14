@@ -151,8 +151,6 @@ public class PingController
     {
         final DirectBuffer responseBuffer = response.getResponseBuffer();
         ackResponse.wrap(responseBuffer, 0, responseBuffer.capacity());
-
-        response.close();
     }
 
     private void sendSuspect()

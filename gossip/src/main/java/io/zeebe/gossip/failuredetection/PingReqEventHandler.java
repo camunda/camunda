@@ -69,8 +69,6 @@ public class PingReqEventHandler implements GossipEventConsumer
                     final DirectBuffer responseBuffer = resp.getResponseBuffer();
                     ackResponse.wrap(responseBuffer, 0, responseBuffer.capacity());
 
-                    resp.close();
-
                     LOG.trace("Forward ACK to '{}'", sender.getId());
 
                     gossipEventSender.responseAck(requestId, streamId);

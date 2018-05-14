@@ -146,8 +146,6 @@ public class JoinController
     {
         final DirectBuffer responseBuffer = response.getResponseBuffer();
         ackResponse.wrap(responseBuffer, 0, responseBuffer.capacity());
-
-        response.close();
     }
 
     private void sendSyncRequest(final SocketAddress contactPoint)
@@ -165,8 +163,6 @@ public class JoinController
                 // process response
                 final DirectBuffer response = request.getResponseBuffer();
                 syncResponse.wrap(response, 0, response.capacity());
-
-                request.close();
 
                 isJoined = true;
                 joinFuture.complete(null);
@@ -247,14 +243,6 @@ public class JoinController
             {
                 LOG.info("Left cluster but timeout is reached before event is confirmed by all members");
             }
-
-            requestFutures.forEach(future ->
-            {
-                if (!future.isCompletedExceptionally())
-                {
-                    future.join().close();
-                }
-            });
 
             isJoined = false;
             leaveFuture.complete(null);
