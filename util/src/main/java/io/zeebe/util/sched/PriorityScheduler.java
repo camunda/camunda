@@ -37,13 +37,11 @@ public class PriorityScheduler implements TaskScheduler
         /** the nanotime when this run was started */
         long startNs = 0;
 
-        int sliceId = 0;
+        long sliceId = 0;
 
         int getTimeSlicePriority(long now)
         {
-            assert now >= startNs : "now " + now + " is smaller then startNs " + startNs;
-            sliceId = (int) ((now - startNs) / TIME_SLICE_LENTH_NS);
-            assert sliceId >= 0 : "Integer overflow happening with now " + now + " and startNs " + startNs;
+            sliceId = ((now - startNs) / TIME_SLICE_LENTH_NS);
 
             if (sliceId >= TIME_SLICES_PER_SECOND)
             {
@@ -51,7 +49,7 @@ public class PriorityScheduler implements TaskScheduler
                 sliceId = sliceId % TIME_SLICES_PER_SECOND;
             }
 
-            return slicePriorities[sliceId];
+            return slicePriorities[(int) sliceId];
         }
     }
 
