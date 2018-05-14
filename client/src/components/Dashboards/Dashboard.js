@@ -14,7 +14,8 @@ import {
   Icon,
   Dropdown,
   Popover,
-  ErrorMessage
+  ErrorMessage,
+  ErrorPage
 } from 'components';
 
 import {
@@ -56,12 +57,21 @@ export default class Dashboard extends React.Component {
       deleteModalVisible: false,
       addButtonVisible: true,
       autoRefreshInterval: null,
-      fullScreenActive: false
+      fullScreenActive: false,
+      dashboardExists: true
     };
   }
 
   componentDidMount = async () => {
-    const {name, lastModifier, lastModified, reports} = await loadDashboard(this.id);
+    const response = await loadDashboard(this.id);
+
+    if (response === 404) {
+      this.setState({
+        dashboardExists: false
+      });
+      return;
+    }
+    const {name, lastModifier, lastModified, reports} = response;
 
     this.setState({
       lastModifier,
@@ -395,7 +405,27 @@ export default class Dashboard extends React.Component {
   render() {
     const {viewMode} = this.props.match.params;
 
-    const {loaded, redirect} = this.state;
+    const {loaded, redirect, dashboardExists} = this.state;
+
+    if (!dashboardExists) {
+      const errorDescription = (
+        <div>
+          <div className="Dashboard__dashboard-not-found-message">
+            Please access the dashboards page to see a list of all available dashboards!
+          </div>
+          <Link className="Dashboard__dashboard-not-found-link" to={`/dashboards/`}>
+            Go to dashboards list page
+          </Link>
+        </div>
+      );
+      return (
+        <ErrorPage
+          errorMessage="This dashboard does not exist."
+          errorDescription={errorDescription}
+        />
+      );
+      //return <div>EROR</div>
+    }
 
     if (!loaded) {
       return <div className="dashboard-loading-indicator">loading...</div>;

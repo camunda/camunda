@@ -1,8 +1,13 @@
 import {get, del, put, post} from 'request';
 
 export async function loadDashboard(id) {
-  const response = await get('/api/dashboard/' + id);
+  let response;
 
+  try {
+    response = await get('/api/dashboard/' + id);
+  } catch (e) {
+    return e.status;
+  }
   return await response.json();
 }
 

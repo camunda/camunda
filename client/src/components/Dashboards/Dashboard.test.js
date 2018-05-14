@@ -91,6 +91,14 @@ beforeEach(() => {
   props.match.params.viewMode = 'view';
 });
 
+it("should show an error page if dashboard doesn't exist", async () => {
+  loadDashboard.mockReturnValueOnce(404);
+
+  const node = await mount(<Dashboard {...props} />);
+
+  expect(node).toIncludeText('error page');
+});
+
 it('should display a loading indicator', () => {
   const node = mount(<Dashboard {...props} />);
 

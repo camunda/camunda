@@ -2,7 +2,6 @@ import React from 'react';
 import {mount} from 'enzyme';
 
 import TargetValueModal from './TargetValueModal';
-// import {numberParser} from 'services';
 
 jest.mock('bpmn-js/lib/NavigatedViewer', () => {
   return class Viewer {

@@ -11,7 +11,8 @@ import {
   ReportView,
   Popover,
   Icon,
-  ErrorMessage
+  ErrorMessage,
+  ErrorPage
 } from 'components';
 
 import {
@@ -47,7 +48,8 @@ export default class Report extends React.Component {
       loaded: false,
       redirect: false,
       originalName: null,
-      deleteModalVisible: false
+      deleteModalVisible: false,
+      reportExists: true
     };
   }
 
@@ -82,7 +84,15 @@ export default class Report extends React.Component {
 
   componentDidMount = async () => {
     const isNew = this.isNew;
-    const {name, lastModifier, lastModified, data} = await loadSingleReport(this.id);
+    const response = await loadSingleReport(this.id);
+
+    if (response === 404) {
+      this.setState({
+        reportExists: false
+      });
+      return;
+    }
+    const {name, lastModifier, lastModified, data} = response;
 
     const reportResult = await getReportData(this.id);
     const stateData = data || (await this.initializeReport());
@@ -447,7 +457,23 @@ export default class Report extends React.Component {
   render() {
     const {viewMode} = this.props.match.params;
 
-    const {loaded, redirect} = this.state;
+    const {loaded, redirect, reportExists} = this.state;
+
+    if (!reportExists) {
+      const errorDescription = (
+        <div>
+          <div className="Report__report-not-found-message">
+            Please access the reports page to see a list of all available reports!
+          </div>
+          <Link className="Report__report-not-found-link" to={`/reports/`}>
+            Go to reports list page
+          </Link>
+        </div>
+      );
+      return (
+        <ErrorPage errorMessage="This report does not exist." errorDescription={errorDescription} />
+      );
+    }
 
     if (!loaded) {
       return <div className="report-loading-indicator">loading...</div>;

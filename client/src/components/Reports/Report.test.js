@@ -86,6 +86,14 @@ it('should display a loading indicator', () => {
   expect(node.find('.report-loading-indicator')).toBePresent();
 });
 
+it("should show an error page if report doesn't exist", async () => {
+  loadSingleReport.mockReturnValueOnce(404);
+
+  const node = await mount(<Report {...props} />);
+
+  expect(node).toIncludeText('error page');
+});
+
 it('should initially load data', () => {
   mount(<Report {...props} />);
 
