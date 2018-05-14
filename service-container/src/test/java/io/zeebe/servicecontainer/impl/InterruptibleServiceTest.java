@@ -53,18 +53,16 @@ public class InterruptibleServiceTest
     {
         // given
         final InterruptibleService service = new InterruptibleService(true);
-        service.future = new CompletableFuture<>();
         final ActorFuture<Object> startFuture = serviceContainer.createService(serviceName, service)
             .dependency(dependentName)
             .install();
 
         final InterruptibleService dependent = new InterruptibleService(false);
-        dependent.future = new CompletableFuture<>();
         serviceContainer.createService(dependentName, dependent).install();
         actorSchedulerRule.workUntilDone();
 
         // when
-        dependent.future.complete(null);
+        dependent.finishStart();
         actorSchedulerRule.awaitBlockingTasksCompleted(1);
 
         serviceContainer.removeService(dependentName);
@@ -79,7 +77,6 @@ public class InterruptibleServiceTest
     {
         // given
         final InterruptibleService service = new InterruptibleService(false);
-        service.future = new CompletableFuture<>();
 
         final ActorFuture<Object> startFuture = serviceContainer.createService(serviceName, service)
             .install();
@@ -98,14 +95,13 @@ public class InterruptibleServiceTest
     {
         // given
         final InterruptibleService service = new InterruptibleService(false);
-        service.future = new CompletableFuture<>();
 
         final ActorFuture<Object> startFuture = serviceContainer.createService(serviceName, service)
             .install();
         actorSchedulerRule.workUntilDone();
 
         // when
-        service.future.complete(null);
+        service.finishStart();
         actorSchedulerRule.awaitBlockingTasksCompleted(1);
 
         serviceContainer.removeService(serviceName);
@@ -122,7 +118,6 @@ public class InterruptibleServiceTest
     {
         // given
         final InterruptibleService service = new InterruptibleService(true);
-        service.future = new CompletableFuture<>();
 
         final ActorFuture<Object> startFuture = serviceContainer.createService(serviceName, service)
             .install();
@@ -146,7 +141,7 @@ public class InterruptibleServiceTest
 
     static class InterruptibleService implements Service<Object>
     {
-        CompletableFuture<Void> future;
+        CompletableFuture<Void> startFuture = new CompletableFuture<>();
         Object value = new Object();
         boolean isInterruptible;
         volatile boolean wasInterrupted;
@@ -162,7 +157,7 @@ public class InterruptibleServiceTest
         @Override
         public void start(ServiceStartContext startContext)
         {
-            startContext.async(future, isInterruptible);
+            startContext.async(startFuture, isInterruptible);
         }
 
         @Override
@@ -174,6 +169,11 @@ public class InterruptibleServiceTest
             }
 
             wasStopped = true;
+        }
+
+        public void finishStart()
+        {
+            startFuture.complete(null);
         }
 
         @Override
