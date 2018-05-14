@@ -146,6 +146,7 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
             .recordType(metadata.getRecordType())
             .intent(metadata.getIntent())
             .key(event.getKey())
+            .timestamp(event.getTimestamp())
             .position(event.getPosition())
             .subscriberKey(subscriberKey)
             .subscriptionType(SubscriptionType.TOPIC_SUBSCRIPTION)

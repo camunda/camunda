@@ -347,6 +347,7 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
                     .partitionId(logStreamPartitionId)
                     .valueWriter(subscriptionEvent)
                     .key(currentEvent.getKey())
+                    .timestamp(currentEvent.getTimestamp())
                     .recordType(RecordType.EVENT)
                     .valueType(ValueType.SUBSCRIPTION)
                     .intent(SubscriptionIntent.ACKNOWLEDGED)
@@ -385,6 +386,7 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
                     .valueWriter(subscriberEvent)
                     .position(currentEvent.getPosition())
                     .key(currentEvent.getKey())
+                    .timestamp(currentEvent.getTimestamp())
                     .tryWriteResponse(metadata.getRequestStreamId(), metadata.getRequestId());
 
             if (responseWritten)

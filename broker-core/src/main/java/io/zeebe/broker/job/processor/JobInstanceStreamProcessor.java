@@ -141,6 +141,7 @@ public class JobInstanceStreamProcessor
                         .partitionId(logStreamPartitionId)
                         .position(command.getPosition())
                         .key(command.getKey())
+                        .timestamp(command.getTimestamp())
                         .subscriberKey(metadata.getSubscriberKey())
                         .subscriptionType(SubscriptionType.JOB_SUBSCRIPTION)
                         .valueType(ValueType.JOB)
