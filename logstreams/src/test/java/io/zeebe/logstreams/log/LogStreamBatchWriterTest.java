@@ -47,6 +47,12 @@ public class LogStreamBatchWriterTest
     private static final DirectBuffer EVENT_METADATA_1 = wrapString("foobar");
     private static final DirectBuffer EVENT_METADATA_2 = wrapString("baz");
 
+    /**
+     * used by some test to write to the logstream in an actor thread.
+     */
+    @Rule
+    public final ControlledActorSchedulerRule writerScheduler = new ControlledActorSchedulerRule();
+
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
@@ -442,13 +448,11 @@ public class LogStreamBatchWriterTest
     public void shouldWriteEventWithTimestamp() throws InterruptedException, ExecutionException
     {
         // given
-        final ControlledActorSchedulerRule scheduler = new ControlledActorSchedulerRule();
         final long timestamp = System.currentTimeMillis() + 10;
-        scheduler.getClock().setCurrentTime(timestamp);
+        writerScheduler.getClock().setCurrentTime(timestamp);
 
         // when
-        scheduler.get().start();
-        final ActorFuture<Long> position = scheduler.call(() ->
+        final ActorFuture<Long> position = writerScheduler.call(() ->
         {
             return writer
                 .event()
@@ -461,14 +465,12 @@ public class LogStreamBatchWriterTest
                     .done()
                 .tryWrite();
         });
-        scheduler.workUntilDone();
+        writerScheduler.workUntilDone();
 
         // then
         assertThat(getWrittenEvents(position.get()))
             .extracting(LoggedEvent::getTimestamp)
             .containsExactly(timestamp, timestamp);
-
-        scheduler.get().stop();
     }
 
     @Test

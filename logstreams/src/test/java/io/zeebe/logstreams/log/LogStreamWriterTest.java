@@ -36,6 +36,12 @@ public class LogStreamWriterTest
     private static final DirectBuffer EVENT_VALUE = wrapString("value");
     private static final DirectBuffer EVENT_METADATA = wrapString("metadata");
 
+    /**
+     * used by some test to write to the logstream in an actor thread.
+     */
+    @Rule
+    public final ControlledActorSchedulerRule writerScheduler = new ControlledActorSchedulerRule();
+
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
@@ -213,18 +219,15 @@ public class LogStreamWriterTest
     @Test
     public void shouldWriteEventWithTimestamp() throws InterruptedException, ExecutionException
     {
-        // before
-        final ControlledActorSchedulerRule scheduler = new ControlledActorSchedulerRule();
         final Callable<Long> doWrite = () -> writer.positionAsKey().value(EVENT_VALUE).tryWrite();
-        scheduler.get().start();
 
         // given
         final long firstTimestamp = System.currentTimeMillis();
-        scheduler.getClock().setCurrentTime(firstTimestamp);
+        writerScheduler.getClock().setCurrentTime(firstTimestamp);
 
         // when
-        final ActorFuture<Long> firstPosition = scheduler.call(doWrite);
-        scheduler.workUntilDone();
+        final ActorFuture<Long> firstPosition = writerScheduler.call(doWrite);
+        writerScheduler.workUntilDone();
 
         // then
         assertThat(getWrittenEvent(firstPosition.get()).getTimestamp())
@@ -232,17 +235,15 @@ public class LogStreamWriterTest
 
         // given
         final long secondTimestamp = firstTimestamp + 1_000;
-        scheduler.getClock().setCurrentTime(secondTimestamp);
+        writerScheduler.getClock().setCurrentTime(secondTimestamp);
 
         // when
-        final ActorFuture<Long> secondPosition = scheduler.call(doWrite);
-        scheduler.workUntilDone();
+        final ActorFuture<Long> secondPosition = writerScheduler.call(doWrite);
+        writerScheduler.workUntilDone();
 
         // then
         assertThat(getWrittenEvent(secondPosition.get()).getTimestamp())
             .isEqualTo(secondTimestamp);
-
-        scheduler.get().stop();
     }
 
     @Test
