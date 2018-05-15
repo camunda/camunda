@@ -243,6 +243,26 @@ describe('number variables', () => {
     expect(node.find('.VariableFilter__removeItemButton button').length).toBe(2);
   });
 
+  it('should remove all values except the first one and the "add value" button if operator is "is less/greater than"', async () => {
+    const node = await mount(
+      <VariableFilter processDefinitionKey="procDefKey" processDefinitionVersion="1" />
+    );
+    await node.setState({
+      variables: [{name: 'foo', type: 'Float'}],
+      selectedVariableIdx: 0,
+      values: ['123', '12', '17']
+    });
+    await node.instance().selectOperator({
+      preventDefault: () => null,
+      target: {
+        getAttribute: atr => (atr === 'value' ? null : '<')
+      }
+    });
+    await node.update();
+    expect(node.state().values).toHaveLength(1);
+    expect(node.find('.VariableFilter__addValueButton')).not.toBePresent();
+  });
+
   it('should disable add filter button if provided value is invalid', () => {
     const node = mount(
       <VariableFilter processDefinitionKey="procDefKey" processDefinitionVersion="1" />

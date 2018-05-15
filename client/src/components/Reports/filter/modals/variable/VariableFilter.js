@@ -218,16 +218,21 @@ export default class VariableFilter extends React.Component {
   selectOperator = evt => {
     evt.preventDefault();
 
+    const operator = evt.target.getAttribute('operator');
+    const value = evt.target.getAttribute('value');
+
     const changes = {
-      operator: evt.target.getAttribute('operator')
+      operator
     };
 
-    const value = evt.target.getAttribute('value');
     if (value !== null) {
       // cast string value from DOM element to boolean
       changes.values = [value === 'true'];
     }
 
+    if (operator === '<' || operator === '>') {
+      changes.values = [this.state.values[0]];
+    }
     this.setState(changes);
   };
 
@@ -371,6 +376,7 @@ export default class VariableFilter extends React.Component {
       case 'Boolean':
         return null;
       default:
+        const onlyOneValueAllowed = this.state.operator === '<' || this.state.operator === '>';
         return (
           <ul className="VariableFilter__valueList VariableFilter__valueList--inputs">
             {values.map((value, idx) => {
@@ -403,13 +409,13 @@ export default class VariableFilter extends React.Component {
                 <ErrorMessage>All fields should have a numeric value</ErrorMessage>
               </li>
             )}
-            {
+            {!onlyOneValueAllowed && (
               <li className="VariableFilter__valueListButton">
                 <Button onClick={this.addValue} className="VariableFilter__addValueButton">
                   Add Value
                 </Button>
               </li>
-            }
+            )}
           </ul>
         );
     }
