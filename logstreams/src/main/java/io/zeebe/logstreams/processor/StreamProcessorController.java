@@ -54,7 +54,7 @@ public class StreamProcessorController extends Actor
     private final EventFilter eventFilter;
     private final boolean isReadOnlyProcessor;
 
-    private final EventLifecycleContextImpl eventLifecycleContext = new EventLifecycleContextImpl();
+    private final EventLifecycleContext eventLifecycleContext = new EventLifecycleContext();
 
     private final Runnable readNextEvent = this::readNextEvent;
 
@@ -260,9 +260,9 @@ public class StreamProcessorController extends Actor
                     eventLifecycleContext.reset();
                     eventProcessor.processEvent(eventLifecycleContext);
 
-                    if (eventLifecycleContext.future != null)
+                    if (eventLifecycleContext.hasFuture())
                     {
-                        actor.runOnCompletion(eventLifecycleContext.future, (res, err) ->
+                        actor.runOnCompletion(eventLifecycleContext.getFuture(), (res, err) ->
                         {
                             if (err == null)
                             {
@@ -355,11 +355,9 @@ public class StreamProcessorController extends Actor
                 eventLifecycleContext.reset();
                 eventProcessor.processEvent(eventLifecycleContext);
 
-                final ActorFuture<?> whenEventProcessed = eventLifecycleContext.future;
-
-                if (whenEventProcessed != null)
+                if (eventLifecycleContext.hasFuture())
                 {
-                    actor.runOnCompletion(whenEventProcessed, (res, err) ->
+                    actor.runOnCompletion(eventLifecycleContext.getFuture(), (res, err) ->
                     {
                         if (err != null)
                         {
@@ -618,21 +616,5 @@ public class StreamProcessorController extends Actor
     {
         suspended = false;
         actor.submit(readNextEvent);
-    }
-
-    private class EventLifecycleContextImpl implements EventLifecycleContext
-    {
-        private ActorFuture<?> future;
-
-        private void reset()
-        {
-            future = null;
-        }
-
-        @Override
-        public void async(ActorFuture<?> future)
-        {
-            this.future = future;
-        }
     }
 }
