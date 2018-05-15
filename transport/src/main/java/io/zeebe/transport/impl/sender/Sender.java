@@ -207,6 +207,7 @@ public class Sender extends Actor implements TimerHandler
             final ChannelWriteQueue sendQueue = channelMap.get(remoteAddress.getStreamId());
             if (sendQueue != null)
             {
+                request.markRemoteAddress(remoteAddress);
                 sendQueue.offer(request);
             }
             else
