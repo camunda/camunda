@@ -128,6 +128,6 @@ public class LogStorageAppender extends Actor
 
     public long getCurrentAppenderPosition()
     {
-        return writeBufferSubscription.getPositionVolatile();
+        return writeBufferSubscription.getPosition();
     }
 }
