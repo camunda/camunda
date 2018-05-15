@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import io.zeebe.dispatcher.*;
 import io.zeebe.util.ByteValue;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -34,12 +35,6 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Rule;
 import org.junit.Test;
 
-import io.zeebe.dispatcher.BlockPeek;
-import io.zeebe.dispatcher.ClaimedFragment;
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.dispatcher.Dispatchers;
-import io.zeebe.dispatcher.FragmentHandler;
-import io.zeebe.dispatcher.Subscription;
 import io.zeebe.dispatcher.impl.log.LogBuffer;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
@@ -60,18 +55,15 @@ public class DispatcherIntegrationTest
 
     class Consumer implements FragmentHandler
     {
-
-        int counter = 0;
+        final ArrayList<Integer> counters = new ArrayList<>();
+        final AtomicInteger counter = new AtomicInteger(0);
 
         @Override
         public int onFragment(final DirectBuffer buffer, final int offset, final int length, final int streamId, boolean isMarkedFailed)
         {
             final int newCounter = buffer.getInt(offset);
-            if (newCounter  - 1 != counter)
-            {
-                throw new RuntimeException(newCounter + " " + counter);
-            }
-            counter = newCounter;
+            counters.add(newCounter);
+            this.counter.lazySet(newCounter);
             return FragmentHandler.CONSUME_FRAGMENT_RESULT;
         }
 
@@ -95,7 +87,7 @@ public class DispatcherIntegrationTest
 
         final Thread consumerThread = new Thread(() ->
         {
-            while (consumer.counter < totalWork)
+            while (consumer.counter.get() < totalWork)
             {
                 subscription.poll(consumer, Integer.MAX_VALUE);
             }
@@ -113,7 +105,7 @@ public class DispatcherIntegrationTest
     @Test
     public void testClaim() throws Exception
     {
-        final int totalWork = 1000000;
+        final int totalWork = 1_000;
         final ClaimedFragment claimedFragment = new ClaimedFragment();
 
         final Dispatcher dispatcher = Dispatchers.create("default")
@@ -127,7 +119,7 @@ public class DispatcherIntegrationTest
 
         final Thread consumerThread = new Thread(() ->
         {
-            while (consumer.counter < totalWork)
+            while (consumer.counter.get() < totalWork)
             {
                 subscription.poll(consumer, Integer.MAX_VALUE);
             }
@@ -140,6 +132,43 @@ public class DispatcherIntegrationTest
         consumerThread.join();
 
         dispatcher.close();
+    }
+
+    @Test
+    public void testClaimOnDifferentThreads() throws Exception
+    {
+        final int totalWork = 2;
+
+        final Dispatcher dispatcher = Dispatchers.create("default")
+            .actorScheduler(actorSchedulerRule.get())
+            .bufferSize(ByteValue.ofMegabytes(10))
+            .build();
+
+        final Consumer consumer = new Consumer();
+
+        final Subscription subscription = dispatcher.openSubscription("test");
+
+        final Thread consumerThread = new Thread(() ->
+        {
+            while (consumer.counters.size() < totalWork)
+            {
+                if (subscription.hasAvailable())
+                {
+                    subscription.poll(consumer, Integer.MAX_VALUE);
+                }
+            }
+
+        });
+
+        consumerThread.start();
+
+        claimFragmentOnDifferentThreads(dispatcher, totalWork);
+
+        consumerThread.join();
+
+        dispatcher.close();
+        assertThat(consumer.counters.size()).isEqualTo(totalWork);
+        assertThat(consumer.counters).contains(1, 2);
     }
 
     @Test
@@ -210,7 +239,7 @@ public class DispatcherIntegrationTest
 
         final Thread consumerThread1 = new Thread(() ->
         {
-            while (consumer1.counter < totalWork)
+            while (consumer1.counter.get() < totalWork)
             {
                 subscription1.peekAndConsume(consumer1, Integer.MAX_VALUE);
             }
@@ -220,11 +249,11 @@ public class DispatcherIntegrationTest
 
         final Thread consumerThread2 = new Thread(() ->
         {
-            while (consumer2.counter < totalWork)
+            while (consumer2.counter.get() < totalWork)
             {
                 // in pipeline mode, the second consumer should not overtake the
                 // first consumer
-                if (consumer2.counter > consumer1.counter)
+                if (consumer2.counter.get() > consumer1.counter.get())
                 {
                     thread2OvertookThread1.set(true);
                     // do not leave the loop or else the other thread won't be able to complete
@@ -393,7 +422,7 @@ public class DispatcherIntegrationTest
 
         final Thread consumerThread = new Thread(() ->
         {
-            while (consumer.counter < totalWork)
+            while (consumer.counter.get() < totalWork)
             {
                 subscription.poll(consumer, Integer.MAX_VALUE);
             }
@@ -537,6 +566,29 @@ public class DispatcherIntegrationTest
             final MutableDirectBuffer buffer = claimedFragment.getBuffer();
             buffer.putInt(claimedFragment.getOffset(), i);
             claimedFragment.commit();
+        }
+    }
+
+    protected void claimFragmentOnDifferentThreads(final Dispatcher dispatcher, final int totalWork)
+    {
+        for (int i = 1; i <= totalWork; i++)
+        {
+            final int runCount = i;
+            new Thread()
+            {
+                @Override
+                public void run()
+                {
+                    final ClaimedFragment claimedFragment = new ClaimedFragment();
+                    while (dispatcher.claim(claimedFragment, 59) <= 0)
+                    {
+                        // spin
+                    }
+                    final MutableDirectBuffer buffer = claimedFragment.getBuffer();
+                    buffer.putInt(claimedFragment.getOffset(), runCount);
+                    claimedFragment.commit();
+                }
+            }.start();
         }
     }
 

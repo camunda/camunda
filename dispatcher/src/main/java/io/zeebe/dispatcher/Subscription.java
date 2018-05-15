@@ -15,19 +15,20 @@
  */
 package io.zeebe.dispatcher;
 
-import static io.zeebe.dispatcher.impl.PositionUtil.*;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.*;
-
-import java.nio.ByteBuffer;
-
-import io.zeebe.dispatcher.impl.log.*;
+import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
+import io.zeebe.dispatcher.impl.log.LogBuffer;
+import io.zeebe.dispatcher.impl.log.LogBufferPartition;
 import io.zeebe.util.metrics.Metric;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.channel.ActorConditions;
 import io.zeebe.util.sched.channel.ConsumableChannel;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.status.Position;
 import org.slf4j.Logger;
+
+import java.nio.ByteBuffer;
+
+import static io.zeebe.dispatcher.impl.PositionUtil.*;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.*;
 
 public class Subscription implements ConsumableChannel
 {
@@ -35,8 +36,8 @@ public class Subscription implements ConsumableChannel
 
     protected final ActorConditions actorConditions = new ActorConditions();
 
-    protected final Position limit;
-    protected final Position position;
+    protected final AtomicPosition limit;
+    protected final AtomicPosition position;
     protected final LogBuffer logBuffer;
     protected final int id;
     protected final String name;
@@ -47,8 +48,8 @@ public class Subscription implements ConsumableChannel
     protected volatile boolean isClosed = false;
 
 
-    public Subscription(Position position,
-            Position limit,
+    public Subscription(AtomicPosition position,
+            AtomicPosition limit,
             int id,
             String name,
             ActorCondition onConsumption,
@@ -205,7 +206,7 @@ public class Subscription implements ConsumableChannel
         }
         while (fragmentResult != FragmentHandler.POSTPONE_FRAGMENT_RESULT && fragmentsConsumed < maxNumOfFragments && position(partitionId, fragmentOffset) < limit);
 
-        position.setOrdered(position(partitionId, fragmentOffset));
+        position.set(position(partitionId, fragmentOffset));
         dataConsumed.signal();
         this.fragmentsConsumedMetric.getAndAddOrdered(fragmentsConsumed);
 

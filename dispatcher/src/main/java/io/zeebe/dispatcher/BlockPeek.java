@@ -15,18 +15,17 @@
  */
 package io.zeebe.dispatcher;
 
-import static io.zeebe.dispatcher.impl.PositionUtil.position;
-
-import java.nio.ByteBuffer;
-import java.util.Iterator;
-
 import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
 import io.zeebe.util.metrics.Metric;
 import io.zeebe.util.sched.ActorCondition;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.status.Position;
+
+import java.nio.ByteBuffer;
+import java.util.Iterator;
+
+import static io.zeebe.dispatcher.impl.PositionUtil.position;
 
 /**
  * Represents a block of fragments to read from.
@@ -35,7 +34,7 @@ public class BlockPeek implements Iterable<DirectBuffer>
 {
     protected ByteBuffer byteBuffer;
     protected UnsafeBuffer bufferView = new UnsafeBuffer(0, 0);
-    protected Position subscriberPosition;
+    protected AtomicPosition subscriberPosition;
 
     protected int streamId;
 
@@ -52,7 +51,7 @@ public class BlockPeek implements Iterable<DirectBuffer>
 
     public void setBlock(
             final ByteBuffer byteBuffer,
-            final Position position,
+            final AtomicPosition position,
             final ActorCondition dataConsumed,
             final int streamId,
             final int bufferOffset,

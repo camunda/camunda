@@ -15,41 +15,24 @@
  */
 package io.zeebe.dispatcher;
 
-import static org.agrona.BitUtil.align;
-import static org.assertj.core.api.Assertions.assertThat;
-import static io.zeebe.dispatcher.impl.PositionUtil.position;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.FRAME_ALIGNMENT;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.TYPE_MESSAGE;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.TYPE_PADDING;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedFramedLength;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.framedLength;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.enableFlagFailed;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.flagsOffset;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.streamIdOffset;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.typeOffset;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
-
-import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.status.Position;
 import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
 import io.zeebe.dispatcher.impl.log.LogBuffer;
 import io.zeebe.dispatcher.impl.log.LogBufferPartition;
 import io.zeebe.util.metrics.Metric;
 import io.zeebe.util.sched.ActorCondition;
-
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
+
+import static io.zeebe.dispatcher.impl.PositionUtil.position;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.*;
+import static org.agrona.BitUtil.align;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.*;
 
 public class SubscriptionPollFragmentsTest
 {
@@ -62,7 +45,7 @@ public class SubscriptionPollFragmentsTest
     UnsafeBuffer metadataBufferMock;
     UnsafeBuffer dataBufferMock;
     LogBufferPartition logBufferPartition;
-    Position mockSubscriberPosition;
+    AtomicPosition mockSubscriberPosition;
     FragmentHandler mockFragmentHandler;
 
     Subscription subscription;
@@ -76,11 +59,11 @@ public class SubscriptionPollFragmentsTest
         when(dataBufferMock.capacity()).thenReturn(A_PARTITION_LENGTH);
         logBufferPartition = new LogBufferPartition(dataBufferMock, metadataBufferMock, 0);
 
-        mockSubscriberPosition = mock(Position.class);
+        mockSubscriberPosition = mock(AtomicPosition.class);
         mockFragmentHandler = mock(FragmentHandler.class);
         final ActorCondition onConsumed = mock(ActorCondition.class);
 
-        subscription = new Subscription(mockSubscriberPosition, mock(Position.class), 0, "0", onConsumed, mock(LogBuffer.class), mock(Metric.class));
+        subscription = new Subscription(mockSubscriberPosition, mock(AtomicPosition.class), 0, "0", onConsumed, mock(LogBuffer.class), mock(Metric.class));
     }
 
     @Test
@@ -102,7 +85,7 @@ public class SubscriptionPollFragmentsTest
         verify(mockFragmentHandler).onFragment(dataBufferMock, messageOffset(fragOffset), A_MSG_PAYLOAD_LENGTH, A_STREAM_ID, false);
         verifyNoMoreInteractions(mockFragmentHandler);
         // and the position was increased by the fragment length
-        verify(mockSubscriberPosition).setOrdered(position(A_PARTITION_ID, nextFragmentOffset(fragOffset)));
+        verify(mockSubscriberPosition).set(position(A_PARTITION_ID, nextFragmentOffset(fragOffset)));
     }
 
     @Test
@@ -124,7 +107,7 @@ public class SubscriptionPollFragmentsTest
         verify(mockFragmentHandler).onFragment(dataBufferMock, messageOffset(fragOffset), A_MSG_PAYLOAD_LENGTH, A_STREAM_ID, true);
         verifyNoMoreInteractions(mockFragmentHandler);
         // and the position was increased by the fragment length
-        verify(mockSubscriberPosition).setOrdered(position(A_PARTITION_ID, nextFragmentOffset(fragOffset)));
+        verify(mockSubscriberPosition).set(position(A_PARTITION_ID, nextFragmentOffset(fragOffset)));
     }
 
     @Test
@@ -158,7 +141,7 @@ public class SubscriptionPollFragmentsTest
 
         // and the position was increased by the fragment length
         final int expectedPartitionOffset = nextFragmentOffset(secondFragOffset);
-        verify(mockSubscriberPosition).setOrdered(position(A_PARTITION_ID, expectedPartitionOffset));
+        verify(mockSubscriberPosition).set(position(A_PARTITION_ID, expectedPartitionOffset));
     }
 
     @Test
@@ -190,7 +173,7 @@ public class SubscriptionPollFragmentsTest
         inOrder.verifyNoMoreInteractions();
 
         // and the position was increased by the fragment length
-        verify(mockSubscriberPosition).setOrdered(position(A_PARTITION_ID, secondFragOffset));
+        verify(mockSubscriberPosition).set(position(A_PARTITION_ID, secondFragOffset));
     }
 
     @Test
@@ -209,7 +192,7 @@ public class SubscriptionPollFragmentsTest
         // the fragment handler was not handed any fragments
         verifyNoMoreInteractions(mockFragmentHandler);
         // the position was set to the beginning of the next partition
-        verify(mockSubscriberPosition).setOrdered(position(A_PARTITION_ID + 1, 0));
+        verify(mockSubscriberPosition).set(position(A_PARTITION_ID + 1, 0));
     }
 
     @Test
@@ -230,7 +213,7 @@ public class SubscriptionPollFragmentsTest
 
         // and the position was increased by the fragment length
         final int expectedPartitionOffset = nextFragmentOffset(fragOffset);
-        verify(mockSubscriberPosition).setOrdered(position(A_PARTITION_ID, expectedPartitionOffset));
+        verify(mockSubscriberPosition).set(position(A_PARTITION_ID, expectedPartitionOffset));
     }
 
     @Test
@@ -248,7 +231,7 @@ public class SubscriptionPollFragmentsTest
         // the fragment handler was not handed any fragments
         verifyNoMoreInteractions(mockFragmentHandler);
         // and the position was set but not increased
-        verify(mockSubscriberPosition).setOrdered(position(A_PARTITION_ID, fragOffset));
+        verify(mockSubscriberPosition).set(position(A_PARTITION_ID, fragOffset));
     }
 
     @Test
@@ -269,7 +252,7 @@ public class SubscriptionPollFragmentsTest
         // then
         assertThat(fragmentsRead).isEqualTo(0);
         // and the position was not increased
-        verify(mockSubscriberPosition).setOrdered(position(A_PARTITION_ID, fragOffset));
+        verify(mockSubscriberPosition).set(position(A_PARTITION_ID, fragOffset));
     }
 
     @Test
@@ -290,7 +273,7 @@ public class SubscriptionPollFragmentsTest
         // then
         assertThat(fragmentsRead).isEqualTo(1);
         // and the position was increased
-        verify(mockSubscriberPosition).setOrdered(position(A_PARTITION_ID, nextFragmentOffset(fragOffset)));
+        verify(mockSubscriberPosition).set(position(A_PARTITION_ID, nextFragmentOffset(fragOffset)));
     }
 
     @Test
@@ -311,7 +294,7 @@ public class SubscriptionPollFragmentsTest
         // then
         assertThat(fragmentsRead).isEqualTo(1);
         // and the position was increased by the fragment length
-        verify(mockSubscriberPosition).setOrdered(position(A_PARTITION_ID, nextFragmentOffset(fragOffset)));
+        verify(mockSubscriberPosition).set(position(A_PARTITION_ID, nextFragmentOffset(fragOffset)));
     }
 
     @Test

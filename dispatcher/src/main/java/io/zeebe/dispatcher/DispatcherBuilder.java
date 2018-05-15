@@ -15,24 +15,25 @@
  */
 package io.zeebe.dispatcher;
 
-import static io.zeebe.dispatcher.impl.PositionUtil.position;
-import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.PARTITION_COUNT;
-import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.requiredCapacity;
+import io.zeebe.dispatcher.impl.log.LogBuffer;
+import io.zeebe.dispatcher.impl.log.LogBufferAppender;
+import io.zeebe.util.ByteValue;
+import io.zeebe.util.EnsureUtil;
+import io.zeebe.util.allocation.AllocatedBuffer;
+import io.zeebe.util.allocation.BufferAllocators;
+import io.zeebe.util.allocation.ExternallyAllocatedBuffer;
+import io.zeebe.util.sched.ActorScheduler;
+import org.agrona.BitUtil;
+import org.agrona.concurrent.AtomicBuffer;
+import org.agrona.concurrent.status.CountersManager;
 
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
-import io.zeebe.dispatcher.impl.log.LogBuffer;
-import io.zeebe.dispatcher.impl.log.LogBufferAppender;
-import io.zeebe.util.ByteValue;
-import io.zeebe.util.EnsureUtil;
-import io.zeebe.util.allocation.*;
-import io.zeebe.util.sched.ActorScheduler;
-import org.agrona.BitUtil;
-import org.agrona.concurrent.AtomicBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.status.*;
+import static io.zeebe.dispatcher.impl.PositionUtil.position;
+import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.PARTITION_COUNT;
+import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.requiredCapacity;
 
 /**
  * Builder for a {@link Dispatcher}
@@ -125,18 +126,6 @@ public class DispatcherBuilder
         return this;
     }
 
-    public DispatcherBuilder countersManager(final CountersManager countersManager)
-    {
-        this.countersManager = countersManager;
-        return this;
-    }
-
-    public DispatcherBuilder countersBuffer(final AtomicBuffer countersBuffer)
-    {
-        this.countersBuffer = countersBuffer;
-        return this;
-    }
-
     public DispatcherBuilder initialPartitionId(int initialPartitionId)
     {
         EnsureUtil.ensureGreaterThanOrEqual("initial partition id", initialPartitionId, 0);
@@ -191,26 +180,16 @@ public class DispatcherBuilder
 
         // allocate the counters
 
-        Position publisherLimit = null;
-        Position publisherPosition = null;
+        AtomicPosition publisherLimit = null;
+        AtomicPosition publisherPosition = null;
 
-        if (countersManager != null)
-        {
-            final int publisherPositionCounter = countersManager.allocate(String.format("%s.publisher.position", dispatcherName));
-            publisherPosition = new UnsafeBufferPosition((UnsafeBuffer) countersBuffer, publisherPositionCounter, countersManager);
-            final int publisherLimitCounter = countersManager.allocate(String.format("%s.publisher.limit", dispatcherName));
-            publisherLimit = new UnsafeBufferPosition((UnsafeBuffer) countersBuffer, publisherLimitCounter, countersManager);
-        }
-        else
-        {
-            final long initialPosition = position(initialPartitionId, 0);
+        final long initialPosition = position(initialPartitionId, 0);
 
-            publisherLimit = new AtomicLongPosition();
-            publisherLimit.setOrdered(initialPosition);
+        publisherLimit = new AtomicPosition();
+        publisherLimit.set(initialPosition);
 
-            publisherPosition = new AtomicLongPosition();
-            publisherPosition.setOrdered(initialPosition);
-        }
+        publisherPosition = new AtomicPosition();
+        publisherPosition.set(initialPosition);
 
         // create dispatcher
 

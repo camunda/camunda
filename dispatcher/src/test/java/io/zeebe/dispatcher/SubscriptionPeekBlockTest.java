@@ -15,22 +15,23 @@
  */
 package io.zeebe.dispatcher;
 
+import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
+import io.zeebe.dispatcher.impl.log.LogBuffer;
+import io.zeebe.dispatcher.impl.log.LogBufferPartition;
+import io.zeebe.util.allocation.AllocatedBuffer;
+import io.zeebe.util.metrics.Metric;
+import io.zeebe.util.sched.ActorCondition;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.Before;
+import org.junit.Test;
+
+import java.nio.ByteBuffer;
+
 import static io.zeebe.dispatcher.impl.PositionUtil.position;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.*;
 import static org.agrona.BitUtil.align;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
-
-import java.nio.ByteBuffer;
-
-import io.zeebe.dispatcher.impl.log.*;
-import io.zeebe.util.allocation.AllocatedBuffer;
-import io.zeebe.util.metrics.Metric;
-import io.zeebe.util.sched.ActorCondition;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.status.Position;
-import org.junit.Before;
-import org.junit.Test;
 
 public class SubscriptionPeekBlockTest
 {
@@ -45,7 +46,7 @@ public class SubscriptionPeekBlockTest
     UnsafeBuffer metadataBufferMock;
     UnsafeBuffer dataBufferMock;
     LogBufferPartition logBufferPartition;
-    Position subscriberPositionMock;
+    AtomicPosition subscriberPositionMock;
     AllocatedBuffer allocatedBufferMock;
     ByteBuffer rawBuffer;
     ByteBuffer rawBufferView;
@@ -69,7 +70,7 @@ public class SubscriptionPeekBlockTest
         when(allocatedBufferMock.getRawBuffer()).thenReturn(rawBuffer);
         logBufferPartition = new LogBufferPartition(dataBufferMock, metadataBufferMock, A_PARTITION_DATA_SECTION_OFFSET);
 
-        subscriberPositionMock = mock(Position.class);
+        subscriberPositionMock = mock(AtomicPosition.class);
 
         blockPeekSpy = spy(new BlockPeek());
 
@@ -78,7 +79,7 @@ public class SubscriptionPeekBlockTest
 
         dataConsumed = mock(ActorCondition.class);
         metric = mock(Metric.class);
-        subscription = new Subscription(subscriberPositionMock, mock(Position.class), 0, "0", dataConsumed, logBuffer, metric);
+        subscription = new Subscription(subscriberPositionMock, mock(AtomicPosition.class), 0, "0", dataConsumed, logBuffer, metric);
     }
 
     @Test

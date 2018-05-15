@@ -15,19 +15,21 @@
  */
 package io.zeebe.dispatcher;
 
-import static io.zeebe.dispatcher.impl.PositionUtil.*;
-import static io.zeebe.dispatcher.impl.log.LogBufferAppender.RESULT_PADDING_AT_END_OF_PARTITION;
+import io.zeebe.dispatcher.impl.log.LogBuffer;
+import io.zeebe.dispatcher.impl.log.LogBufferAppender;
+import io.zeebe.dispatcher.impl.log.LogBufferPartition;
+import io.zeebe.util.metrics.Metric;
+import io.zeebe.util.metrics.MetricsManager;
+import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.ActorCondition;
+import io.zeebe.util.sched.FutureUtil;
+import io.zeebe.util.sched.future.ActorFuture;
+import org.agrona.DirectBuffer;
 
 import java.util.Arrays;
 
-import io.zeebe.dispatcher.impl.log.*;
-import io.zeebe.util.metrics.Metric;
-import io.zeebe.util.metrics.MetricsManager;
-import io.zeebe.util.sched.*;
-import io.zeebe.util.sched.future.ActorFuture;
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.status.AtomicLongPosition;
-import org.agrona.concurrent.status.Position;
+import static io.zeebe.dispatcher.impl.PositionUtil.*;
+import static io.zeebe.dispatcher.impl.log.LogBufferAppender.RESULT_PADDING_AT_END_OF_PARTITION;
 
 
 /**
@@ -43,8 +45,8 @@ public class Dispatcher extends Actor implements AutoCloseable
     protected final LogBufferAppender logAppender;
 
     protected final MetricsManager metricsManager;
-    protected final Position publisherLimit;
-    protected final Position publisherPosition;
+    protected final AtomicPosition publisherLimit;
+    protected final AtomicPosition publisherPosition;
     protected final String[] defaultSubscriptionNames;
     protected Subscription[] subscriptions;
 
@@ -66,8 +68,8 @@ public class Dispatcher extends Actor implements AutoCloseable
     public Dispatcher(
             LogBuffer logBuffer,
             LogBufferAppender logAppender,
-            Position publisherLimit,
-            Position publisherPosition,
+            AtomicPosition publisherLimit,
+            AtomicPosition publisherPosition,
             int logWindowLength,
             String[] subscriptionNames,
             int mode,
@@ -98,7 +100,7 @@ public class Dispatcher extends Actor implements AutoCloseable
 
     private void runBackgroundTask()
     {
-        updatePublisherLimit();
+        final int updateSuccessful = updatePublisherLimit();
         logBuffer.cleanPartitions();
     }
 
@@ -483,9 +485,9 @@ public class Dispatcher extends Actor implements AutoCloseable
 
     protected Subscription newSubscription(final int subscriptionId, final String subscriptionName, ActorCondition onConsumption)
     {
-        final AtomicLongPosition position = new AtomicLongPosition();
-        position.setOrdered(position(logBuffer.getActivePartitionIdVolatile(), 0));
-        final Position limit = determineLimit(subscriptionId);
+        final AtomicPosition position = new AtomicPosition();
+        position.set(position(logBuffer.getActivePartitionIdVolatile(), 0));
+        final AtomicPosition limit = determineLimit(subscriptionId);
 
         final Metric fragmentsRead = metricsManager.newMetric("buffer_fragments_read")
             .type("counter")
@@ -496,7 +498,7 @@ public class Dispatcher extends Actor implements AutoCloseable
         return new Subscription(position, limit, subscriptionId, subscriptionName, onConsumption, logBuffer, fragmentsRead);
     }
 
-    protected Position determineLimit(int subscriptionId)
+    protected AtomicPosition determineLimit(int subscriptionId)
     {
         if (mode == MODE_PUB_SUB)
         {

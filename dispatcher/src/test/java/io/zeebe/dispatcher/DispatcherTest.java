@@ -15,6 +15,21 @@
  */
 package io.zeebe.dispatcher;
 
+import io.zeebe.dispatcher.impl.log.LogBuffer;
+import io.zeebe.dispatcher.impl.log.LogBufferAppender;
+import io.zeebe.dispatcher.impl.log.LogBufferPartition;
+import io.zeebe.util.metrics.MetricsManager;
+import io.zeebe.util.sched.ActorCondition;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.mockito.Mockito;
+
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+
 import static io.zeebe.dispatcher.impl.PositionUtil.position;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.FRAME_ALIGNMENT;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
@@ -23,30 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
-
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-
-import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.status.Position;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.mockito.Mockito;
-
-import io.zeebe.dispatcher.impl.log.LogBuffer;
-import io.zeebe.dispatcher.impl.log.LogBufferAppender;
-import io.zeebe.dispatcher.impl.log.LogBufferPartition;
-import io.zeebe.util.metrics.MetricsManager;
-import io.zeebe.util.sched.ActorCondition;
+import static org.mockito.Mockito.*;
 
 public class DispatcherTest
 {
@@ -66,12 +58,12 @@ public class DispatcherTest
     LogBufferPartition logBufferPartition1;
     LogBufferPartition logBufferPartition2;
     LogBufferAppender logAppender;
-    Position publisherLimit;
-    Position publisherPosition;
+    AtomicPosition publisherLimit;
+    AtomicPosition publisherPosition;
     Subscription subscriptionSpy;
     FragmentHandler fragmentHandler;
     ClaimedFragment claimedFragment;
-    Position subscriberPosition;
+    AtomicPosition subscriberPosition;
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -93,11 +85,11 @@ public class DispatcherTest
         when(logBuffer.createRawBufferView()).thenReturn(ByteBuffer.allocate(32));
 
         logAppender = mock(LogBufferAppender.class);
-        publisherLimit = mock(Position.class);
-        publisherPosition = mock(Position.class);
+        publisherLimit = mock(AtomicPosition.class);
+        publisherPosition = mock(AtomicPosition.class);
         fragmentHandler = mock(FragmentHandler.class);
         claimedFragment = mock(ClaimedFragment.class);
-        subscriberPosition = mock(Position.class);
+        subscriberPosition = mock(AtomicPosition.class);
 
         dispatcher = new Dispatcher(logBuffer,
                 logAppender,
