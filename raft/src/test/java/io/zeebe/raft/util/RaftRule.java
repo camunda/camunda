@@ -92,17 +92,9 @@ public class RaftRule extends ExternalResource implements RaftStateListener
     protected Set<Integer> interrupedStreams = Collections.synchronizedSet(new HashSet<>());
     private ServiceName<Raft> raftServiceName;
 
-    private boolean isUnreachable;
-
     public RaftRule(final ServiceContainerRule serviceContainerRule, final String host, final int port, final String topicName, final int partition, final RaftRule... members)
     {
         this(serviceContainerRule, new RaftConfiguration(), host, port, topicName, partition, members);
-    }
-
-    public RaftRule(final ServiceContainerRule serviceContainerRule, final String host, final int port, final String topicName, final int partition, final boolean isUnreachable, final RaftRule... members)
-    {
-        this(serviceContainerRule, new RaftConfiguration(), host, port, topicName, partition, members);
-        this.isUnreachable = isUnreachable;
     }
 
     public RaftRule(final ServiceContainerRule serviceContainerRule, final RaftConfiguration configuration, final String host, final int port, final String topicName, final int partition, final RaftRule... members)
@@ -160,7 +152,7 @@ public class RaftRule extends ExternalResource implements RaftStateListener
                 final TransportMessage msg = invocation.getArgument(0);
                 final int stream = readRemoteStreamId(msg);
 
-                if (isUnreachable || interrupedStreams.contains(stream))
+                if (interrupedStreams.contains(stream))
                 {
                     return true;
                 }
