@@ -12,7 +12,7 @@ services:
         ports:
             - 51015:51015
         environment:
-            - ZEEBE_LOG_LEVEL=${ZEEBE_LOG_LEVEL:-info}
+            - ZEEBE_LOG_LEVEL=${ZEEBE_LOG_LEVEL:-debug}
             - BOOTSTRAP=3
         volumes:
             - broker_1:/usr/local/zeebe/data
@@ -22,7 +22,7 @@ services:
         ports:
             - 51016:51015
         environment:
-            - ZEEBE_LOG_LEVEL=${ZEEBE_LOG_LEVEL:-info}
+            - ZEEBE_LOG_LEVEL=${ZEEBE_LOG_LEVEL:-debug}
             - INITIAL_CONTACT_POINT=broker-1:51016
             - BOOTSTRAP=0
         volumes:
@@ -33,7 +33,7 @@ services:
         ports:
             - 51017:51015
         environment:
-            - ZEEBE_LOG_LEVEL=${ZEEBE_LOG_LEVEL:-info}
+            - ZEEBE_LOG_LEVEL=${ZEEBE_LOG_LEVEL:-debug}
             - INITIAL_CONTACT_POINT=broker-1:51016
             - BOOTSTRAP=0
         volumes:
