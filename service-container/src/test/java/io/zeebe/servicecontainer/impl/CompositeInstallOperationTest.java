@@ -15,21 +15,20 @@
  */
 package io.zeebe.servicecontainer.impl;
 
+import static io.zeebe.servicecontainer.impl.ActorFutureAssertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.*;
+
 import io.zeebe.servicecontainer.*;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.mockito.InOrder;
-
-import java.util.concurrent.CompletableFuture;
-
-import static io.zeebe.servicecontainer.impl.ActorFutureAssertions.*;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
 
 @SuppressWarnings("unchecked")
 public class CompositeInstallOperationTest
@@ -94,7 +93,7 @@ public class CompositeInstallOperationTest
         final ServiceContainer container = serviceContainerRule.get();
 
         final AsyncStartService asyncService2 = new AsyncStartService();
-        asyncService2.future = new CompletableFuture<>();
+        asyncService2.future = new CompletableActorFuture<>();
 
         // when
         final CompositeServiceBuilder composite = container.createComposite(compositeName);
@@ -113,7 +112,6 @@ public class CompositeInstallOperationTest
 
         // when
         asyncService2.future.complete(null);
-        actorSchedulerRule.awaitBlockingTasksCompleted(1);
         actorSchedulerRule.workUntilDone();
 
         assertCompleted(service1Future);
@@ -127,7 +125,7 @@ public class CompositeInstallOperationTest
         final ServiceContainer container = serviceContainerRule.get();
 
         final AsyncStartService asyncService2 = new AsyncStartService();
-        asyncService2.future = new CompletableFuture<>();
+        asyncService2.future = new CompletableActorFuture<>();
 
         // when
         final CompositeServiceBuilder composite = container.createComposite(compositeName);
@@ -148,7 +146,6 @@ public class CompositeInstallOperationTest
 
         // when
         asyncService2.future.completeExceptionally(new RuntimeException());
-        actorSchedulerRule.awaitBlockingTasksCompleted(1);
         actorSchedulerRule.workUntilDone();
 
         assertCompleted(service1Future); // future is still completed
@@ -167,7 +164,7 @@ public class CompositeInstallOperationTest
 
     static class AsyncStartService implements Service<Object>
     {
-        CompletableFuture<Void> future;
+        CompletableActorFuture<Void> future;
         Object value = new Object();
         Runnable action;
         volatile boolean wasStopped = false;

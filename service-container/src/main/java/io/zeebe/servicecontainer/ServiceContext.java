@@ -15,11 +15,7 @@
  */
 package io.zeebe.servicecontainer;
 
-import java.util.concurrent.Future;
-
-public interface AsyncContext
+public interface ServiceContext extends io.zeebe.util.sched.AsyncContext
 {
-    void async(Future<?> future);
-
     void run(Runnable action);
 }

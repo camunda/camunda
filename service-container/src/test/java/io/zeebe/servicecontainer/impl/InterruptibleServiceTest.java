@@ -19,10 +19,9 @@ import static io.zeebe.servicecontainer.impl.ActorFutureAssertions.assertComplet
 import static io.zeebe.servicecontainer.impl.ActorFutureAssertions.assertNotCompleted;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.concurrent.CompletableFuture;
-
 import io.zeebe.servicecontainer.*;
 import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 import org.junit.Before;
 import org.junit.Rule;
@@ -63,7 +62,7 @@ public class InterruptibleServiceTest
 
         // when
         dependent.finishStart();
-        actorSchedulerRule.awaitBlockingTasksCompleted(1);
+        actorSchedulerRule.workUntilDone();
 
         serviceContainer.removeService(dependentName);
         actorSchedulerRule.workUntilDone();
@@ -102,7 +101,7 @@ public class InterruptibleServiceTest
 
         // when
         service.finishStart();
-        actorSchedulerRule.awaitBlockingTasksCompleted(1);
+        actorSchedulerRule.workUntilDone();
 
         serviceContainer.removeService(serviceName);
         actorSchedulerRule.workUntilDone();
@@ -141,7 +140,7 @@ public class InterruptibleServiceTest
 
     static class InterruptibleService implements Service<Object>
     {
-        CompletableFuture<Void> startFuture = new CompletableFuture<>();
+        CompletableActorFuture<Void> startFuture = new CompletableActorFuture<>();
         Object value = new Object();
         boolean isInterruptible;
         volatile boolean wasInterrupted;

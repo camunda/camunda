@@ -15,12 +15,10 @@
  */
 package io.zeebe.servicecontainer;
 
-import java.util.concurrent.Future;
-
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
 
-public interface ServiceStartContext extends AsyncContext
+public interface ServiceStartContext extends ServiceContext
 {
     String getName();
 
@@ -40,10 +38,10 @@ public interface ServiceStartContext extends AsyncContext
 
     ActorScheduler getScheduler();
 
-    void async(Future<?> future, boolean interruptible);
+    void async(ActorFuture<?> future, boolean interruptible);
 
     @Override
-    default void async(Future<?> future)
+    default void async(ActorFuture<?> future)
     {
         async(future, false);
     }

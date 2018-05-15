@@ -15,7 +15,7 @@
  */
 package io.zeebe.servicecontainer;
 
-public interface ServiceStopContext extends AsyncContext
+public interface ServiceStopContext extends ServiceContext
 {
     boolean wasInterrupted();
 }

@@ -217,7 +217,7 @@ public class ServiceContainerImpl extends Actor implements ServiceContainer
     @Override
     public void close(long awaitTime, TimeUnit timeUnit) throws InterruptedException, ExecutionException, TimeoutException
     {
-        final Future<Void> containerCloseFuture = closeAsync();
+        final ActorFuture<Void> containerCloseFuture = closeAsync();
 
         try
         {

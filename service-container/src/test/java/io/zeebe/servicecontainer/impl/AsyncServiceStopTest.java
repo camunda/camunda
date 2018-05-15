@@ -18,12 +18,11 @@ package io.zeebe.servicecontainer.impl;
 import io.zeebe.servicecontainer.*;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-
-import java.util.concurrent.CompletableFuture;
 
 import static io.zeebe.servicecontainer.impl.ActorFutureAssertions.assertCompleted;
 import static io.zeebe.servicecontainer.impl.ActorFutureAssertions.assertNotCompleted;
@@ -48,7 +47,7 @@ public class AsyncServiceStopTest
 
         // given
         final AsyncStopService service = new AsyncStopService();
-        service.future = new CompletableFuture<Void>();
+        service.future = new CompletableActorFuture<Void>();
 
         serviceContainer.createService(service1Name, service)
             .install();
@@ -69,7 +68,7 @@ public class AsyncServiceStopTest
 
         // given
         final AsyncStopService service = new AsyncStopService();
-        service.future = new CompletableFuture<Void>();
+        service.future = new CompletableActorFuture<Void>();
 
         serviceContainer.createService(service1Name, service)
             .install();
@@ -80,7 +79,6 @@ public class AsyncServiceStopTest
 
         // when
         service.future.complete(null);
-        actorSchedulerRule.awaitBlockingTasksCompleted(1);
         actorSchedulerRule.workUntilDone();
 
         // then
@@ -94,7 +92,7 @@ public class AsyncServiceStopTest
 
         // given
         final AsyncStopService service = new AsyncStopService();
-        service.future = new CompletableFuture<>();
+        service.future = new CompletableActorFuture<>();
 
         serviceContainer.createService(service1Name, service)
             .install();
@@ -105,13 +103,11 @@ public class AsyncServiceStopTest
 
         // when
         service.future.completeExceptionally(new RuntimeException());
-        actorSchedulerRule.awaitBlockingTasksCompleted(1);
         actorSchedulerRule.workUntilDone();
 
         // then
         assertCompleted(removeFuture);
     }
-
 
     @Test
     public void shouldWaitForAction()
@@ -198,7 +194,7 @@ public class AsyncServiceStopTest
 
         // given
         final AsyncStopService service = new AsyncStopService();
-        service.future = new CompletableFuture<Void>();
+        service.future = new CompletableActorFuture<Void>();
 
         serviceContainer.createService(service1Name, service)
                 .dependency(service2Name)
@@ -224,7 +220,7 @@ public class AsyncServiceStopTest
 
         // given
         final AsyncStopService service = new AsyncStopService();
-        service.future = new CompletableFuture<Void>();
+        service.future = new CompletableActorFuture<Void>();
 
         serviceContainer.createService(service1Name, service)
                 .dependency(service2Name)
@@ -239,7 +235,6 @@ public class AsyncServiceStopTest
 
         // when
         service.future.complete(null);
-        actorSchedulerRule.awaitBlockingTasksCompleted(1);
         actorSchedulerRule.workUntilDone();
 
         // then
@@ -249,7 +244,7 @@ public class AsyncServiceStopTest
 
     static class AsyncStopService implements Service<Object>
     {
-        CompletableFuture<Void> future;
+        CompletableActorFuture<Void> future;
         Object value = new Object();
         Runnable action;
 

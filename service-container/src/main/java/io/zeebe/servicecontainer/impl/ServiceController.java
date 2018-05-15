@@ -16,13 +16,13 @@
 package io.zeebe.servicecontainer.impl;
 
 import java.util.*;
-import java.util.concurrent.Future;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import io.zeebe.servicecontainer.*;
 import io.zeebe.servicecontainer.impl.ServiceEvent.ServiceEventType;
-import io.zeebe.util.sched.*;
+import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.channel.ConcurrentQueueChannel;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
@@ -455,21 +455,13 @@ public class ServiceController extends Actor
         }
 
         @Override
-        public void async(Future<?> future, boolean interruptible)
+        public void async(ActorFuture<?> future, boolean interruptible)
         {
             validCheck();
             notAsyncCheck();
             isAsync = true;
             isInterruptible = interruptible;
-
-            if (future instanceof ActorFuture)
-            {
-                actor.runOnCompletion((ActorFuture<?>) future, (v, t) -> accept(t));
-            }
-            else
-            {
-                actor.runBlocking(FutureUtil.wrap(future), this);
-            }
+            actor.runOnCompletion(future, (v, t) -> accept(t));
         }
 
         @Override
@@ -561,20 +553,12 @@ public class ServiceController extends Actor
         }
 
         @Override
-        public void async(Future<?> future)
+        public void async(ActorFuture<?> future)
         {
             validCheck();
             notAsyncCheck();
             isAsync = true;
-
-            if (future instanceof ActorFuture)
-            {
-                actor.runOnCompletion((ActorFuture<?>) future, (v, t) -> accept(t));
-            }
-            else
-            {
-                actor.runBlocking(FutureUtil.wrap(future), this);
-            }
+            actor.runOnCompletion(future, (v, t) -> accept(t));
         }
 
         @Override
