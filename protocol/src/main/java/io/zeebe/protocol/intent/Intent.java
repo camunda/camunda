@@ -39,11 +39,19 @@ public interface Intent
         {
             return NULL_VAL;
         }
+
+        @Override
+        public String name()
+        {
+            return "UNKNOWN";
+        }
     };
 
     short NULL_VAL = 255;
 
     short value();
+
+    String name();
 
     static Intent fromProtocolValue(ValueType valueType, short intent)
     {
