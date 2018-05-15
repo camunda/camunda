@@ -19,31 +19,19 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class AtomicPosition
 {
-
     private final AtomicLong position;
-    private boolean closed;
 
     public AtomicPosition()
     {
         this.position = new AtomicLong(0);
     }
 
-    public void close()
+    public void reset()
     {
-        closed = true;
-    }
-
-    public boolean isClosed()
-    {
-        return closed;
+        set(-1);
     }
 
     public long get()
-    {
-        return position.get();
-    }
-
-    public long getVolatile()
     {
         return position.get();
     }

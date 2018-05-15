@@ -118,7 +118,7 @@ public class DispatcherTest
         when(logBuffer.getActivePartitionIdVolatile()).thenReturn(0);
         when(logBufferPartition0.getTailCounterVolatile()).thenReturn(0);
         // publisher limit of 0
-        when(publisherLimit.getVolatile()).thenReturn(position(0, 0));
+        when(publisherLimit.get()).thenReturn(position(0, 0));
 
         // if
         final long newPosition = dispatcher.offer(A_MSG, 0, A_MSG_PAYLOAD_LENGTH);
@@ -126,7 +126,7 @@ public class DispatcherTest
         // then
         assertThat(newPosition).isEqualTo(-1);
 
-        verify(publisherLimit).getVolatile();
+        verify(publisherLimit).get();
         verifyNoMoreInteractions(publisherLimit);
         verifyNoMoreInteractions(logAppender);
         verify(logBuffer).getActivePartitionIdVolatile();
@@ -142,7 +142,7 @@ public class DispatcherTest
         when(logBuffer.getActivePartitionIdVolatile()).thenReturn(0);
         when(logBufferPartition0.getTailCounterVolatile()).thenReturn(0);
         // publisher limit of 0
-        when(publisherLimit.getVolatile()).thenReturn(position(0, 0));
+        when(publisherLimit.get()).thenReturn(position(0, 0));
 
         // if
         final long newPosition = dispatcher.claim(claimedFragment, A_MSG_PAYLOAD_LENGTH);
@@ -150,7 +150,7 @@ public class DispatcherTest
         // then
         assertThat(newPosition).isEqualTo(-1);
 
-        verify(publisherLimit).getVolatile();
+        verify(publisherLimit).get();
         verifyNoMoreInteractions(publisherLimit);
         verifyNoMoreInteractions(logAppender);
         verifyNoMoreInteractions(claimedFragment);
@@ -166,7 +166,7 @@ public class DispatcherTest
         // position is 0,0
         when(logBuffer.getActivePartitionIdVolatile()).thenReturn(0);
         when(logBufferPartition0.getTailCounterVolatile()).thenReturn(0);
-        when(publisherLimit.getVolatile()).thenReturn(position(0, A_FRAGMENT_LENGTH));
+        when(publisherLimit.get()).thenReturn(position(0, A_FRAGMENT_LENGTH));
 
         when(logAppender.appendFrame(logBufferPartition0, 0, A_MSG, 0, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID)).thenReturn(A_FRAGMENT_LENGTH);
 
@@ -178,7 +178,7 @@ public class DispatcherTest
 
         verify(logAppender).appendFrame(logBufferPartition0, 0, A_MSG, 0, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID);
 
-        verify(publisherLimit).getVolatile();
+        verify(publisherLimit).get();
         verify(publisherPosition).proposeMaxOrdered(position(0, A_FRAGMENT_LENGTH));
 
         verify(logBuffer).getActivePartitionIdVolatile();
@@ -194,7 +194,7 @@ public class DispatcherTest
         // position is 0,0
         when(logBuffer.getActivePartitionIdVolatile()).thenReturn(0);
         when(logBufferPartition0.getTailCounterVolatile()).thenReturn(0);
-        when(publisherLimit.getVolatile()).thenReturn(position(0, A_FRAGMENT_LENGTH));
+        when(publisherLimit.get()).thenReturn(position(0, A_FRAGMENT_LENGTH));
 
         when(logAppender.claim(eq(logBufferPartition0), eq(0), eq(claimedFragment), eq(A_MSG_PAYLOAD_LENGTH), eq(A_STREAM_ID), any())).thenReturn(A_FRAGMENT_LENGTH);
 
@@ -206,7 +206,7 @@ public class DispatcherTest
 
         verify(logAppender).claim(eq(logBufferPartition0), eq(0), eq(claimedFragment), eq(A_MSG_PAYLOAD_LENGTH), eq(A_STREAM_ID), Mockito.any());
 
-        verify(publisherLimit).getVolatile();
+        verify(publisherLimit).get();
         verify(publisherPosition).proposeMaxOrdered(position(0, A_FRAGMENT_LENGTH));
 
         verify(logBuffer).getActivePartitionIdVolatile();
@@ -222,7 +222,7 @@ public class DispatcherTest
         // position is 0,0
         when(logBuffer.getActivePartitionIdVolatile()).thenReturn(0);
         when(logBufferPartition0.getTailCounterVolatile()).thenReturn(0);
-        when(publisherLimit.getVolatile()).thenReturn(position(0, A_FRAGMENT_LENGTH));
+        when(publisherLimit.get()).thenReturn(position(0, A_FRAGMENT_LENGTH));
 
         when(logAppender.appendFrame(logBufferPartition0, 0, A_MSG, 0, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID)).thenReturn(-2);
 
@@ -232,7 +232,7 @@ public class DispatcherTest
         // then
         assertThat(newPosition).isEqualTo(-2);
 
-        verify(publisherLimit).getVolatile();
+        verify(publisherLimit).get();
         verify(publisherPosition).proposeMaxOrdered(-2);
 
         verify(logBuffer).getActivePartitionIdVolatile();
@@ -250,7 +250,7 @@ public class DispatcherTest
         // position is 0,0
         when(logBuffer.getActivePartitionIdVolatile()).thenReturn(0);
         when(logBufferPartition0.getTailCounterVolatile()).thenReturn(0);
-        when(publisherLimit.getVolatile()).thenReturn(position(0, A_FRAGMENT_LENGTH));
+        when(publisherLimit.get()).thenReturn(position(0, A_FRAGMENT_LENGTH));
 
         when(logAppender.appendFrame(logBufferPartition0, 0, A_MSG, 0, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID)).thenReturn(-1);
 
@@ -260,7 +260,7 @@ public class DispatcherTest
         // then
         assertThat(newPosition).isEqualTo(-1);
 
-        verify(publisherLimit).getVolatile();
+        verify(publisherLimit).get();
         verify(publisherPosition).proposeMaxOrdered(-1);
 
         verify(logBuffer).getActivePartitionIdVolatile();

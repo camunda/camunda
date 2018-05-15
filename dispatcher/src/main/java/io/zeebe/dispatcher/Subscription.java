@@ -73,11 +73,6 @@ public class Subscription implements ConsumableChannel
         return position.get();
     }
 
-    public long getPositionVolatile()
-    {
-        return position.getVolatile();
-    }
-
     @Override
     public boolean hasAvailable()
     {
@@ -86,14 +81,7 @@ public class Subscription implements ConsumableChannel
 
     protected long getLimit()
     {
-        if (!limit.isClosed())
-        {
-            return limit.get();
-        }
-        else
-        {
-            return -1;
-        }
+        return limit.get();
     }
 
     /**

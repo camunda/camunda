@@ -114,8 +114,8 @@ public class Dispatcher extends Actor implements AutoCloseable
     @Override
     protected void onActorClosing()
     {
-        publisherLimit.close();
-        publisherPosition.close();
+        publisherLimit.reset();
+        publisherPosition.reset();
 
         final Subscription[] subscriptionsCopy = Arrays.copyOf(subscriptions, subscriptions.length);
 
@@ -188,7 +188,7 @@ public class Dispatcher extends Actor implements AutoCloseable
 
         if (!isClosed)
         {
-            final long limit = publisherLimit.getVolatile();
+            final long limit = publisherLimit.get();
 
             final int activePartitionId = logBuffer.getActivePartitionIdVolatile();
             final LogBufferPartition partition = logBuffer.getPartition(activePartitionId);
@@ -264,7 +264,7 @@ public class Dispatcher extends Actor implements AutoCloseable
      */
     public long claim(ClaimedFragment claim, int length, int streamId)
     {
-        final long limit = publisherLimit.getVolatile();
+        final long limit = publisherLimit.get();
 
         final int activePartitionId = logBuffer.getActivePartitionIdVolatile();
         final LogBufferPartition partition = logBuffer.getPartition(activePartitionId);
@@ -317,7 +317,7 @@ public class Dispatcher extends Actor implements AutoCloseable
 
         if (!isClosed)
         {
-            final long limit = publisherLimit.getVolatile();
+            final long limit = publisherLimit.get();
 
             final int activePartitionId = logBuffer.getActivePartitionIdVolatile();
             final LogBufferPartition partition = logBuffer.getPartition(activePartitionId);
@@ -556,7 +556,7 @@ public class Dispatcher extends Actor implements AutoCloseable
 
         // close subscription
         subscriptionToClose.isClosed = true;
-        subscriptionToClose.position.close();
+        subscriptionToClose.position.reset();
         subscriptionToClose.fragmentsConsumedMetric.close();
 
         // remove from list
