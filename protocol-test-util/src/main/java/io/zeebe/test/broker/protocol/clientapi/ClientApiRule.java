@@ -317,15 +317,22 @@ public class ClientApiRule extends ExternalResource
     @SuppressWarnings("unchecked")
     public List<Integer> getPartitionIds(String topicName)
     {
-        final ControlMessageResponse response = requestPartitions();
+        try
+        {
+            final ControlMessageResponse response = requestPartitions();
 
-        final Map<String, Object> data = response.getData();
-        final List<Map<String, Object>> partitions = (List<Map<String, Object>>) data.get("partitions");
+            final Map<String, Object> data = response.getData();
+            final List<Map<String, Object>> partitions = (List<Map<String, Object>>) data.get("partitions");
 
-        return partitions.stream()
-                         .filter(p -> topicName.equals(p.get("topic")))
-                         .map(p -> (Integer) p.get("id"))
-                         .collect(Collectors.toList());
+            return partitions.stream()
+                .filter(p -> topicName.equals(p.get("topic")))
+                .map(p -> (Integer) p.get("id"))
+                .collect(Collectors.toList());
+        }
+        catch (Exception e)
+        {
+            return Collections.EMPTY_LIST;
+        }
     }
 
     public ControlMessageResponse requestPartitions()
